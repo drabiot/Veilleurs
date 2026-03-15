@@ -1,5 +1,10 @@
+/* ═══════════════════════════════════════════════
+   Les Veilleurs au Clair de Lune — style.css
+   Fusion : fond chaud/mystique + layout terminal
+═══════════════════════════════════════════════ */
+
 :root {
-  /* Fond */
+  /* Fond chaud et profond */
   --bg:         #0e0c0a;
   --deep:       #13100d;
   --surface:    #191410;
@@ -106,15 +111,7 @@ body > *:not(.ambient-bg) { position: relative; z-index: 1; }
   backdrop-filter: blur(8px);
 }
 
-.header-inner {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 14px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
+/* header-top defined in nav block */
 
 .header-left  { display: flex; align-items: center; gap: 10px; }
 .header-right { display: flex; align-items: center; gap: 14px; }
@@ -145,6 +142,63 @@ body > *:not(.ambient-bg) { position: relative; z-index: 1; }
   color: var(--muted);
   font-style: italic;
 }
+
+.header-top {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+/* Navigation principale imposante */
+.header-nav {
+  display: flex;
+  border-top: 1px solid var(--rim);
+  border-bottom: 1px solid var(--rim);
+  background: linear-gradient(180deg, rgba(20,17,12,.6) 0%, rgba(14,12,10,.8) 100%);
+}
+.nav-link {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 13px 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-right: 1px solid var(--rim);
+  position: relative;
+  transition: color .2s, background .2s;
+}
+.nav-link:first-child { border-left: none; }
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transition: transform .2s ease;
+}
+.nav-link:hover {
+  color: var(--bright);
+  background: rgba(224,172,96,.04);
+}
+.nav-link:hover::after { transform: scaleX(1); }
+.nav-link.active {
+  color: var(--gold);
+  background: rgba(224,172,96,.07);
+}
+.nav-link.active::after { transform: scaleX(1); }
+
+.nav-icon  { font-size: 14px; }
+.nav-label { }
 
 .filter-toggle-btn {
   font-family: 'JetBrains Mono', monospace;
@@ -500,7 +554,7 @@ kbd {
 }
 
 /* ══════════════════════════════════
-   HIDDEN
+   FILTRÉ / CACHÉ
 ══════════════════════════════════ */
 .patch-entry.hidden-by-filter { display: none; }
 .change-group.hidden-by-filter { display: none; }

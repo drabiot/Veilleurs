@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="img/VeilleursLogo.png" />
+  <title>Carte — Veilleurs au Clair de Lune</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="map.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+</head>
+<body class="map-page">
+
+  <!-- Fond ambiant -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="moon"></div>
+    <div class="fog fog-1"></div>
+    <div class="fog fog-2"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <!-- ══════ HEADER ══════ -->
+  <header class="site-header">
+    <div class="header-top">
+      <div class="header-left">
+        <div class="traffic-lights">
+          <span class="tl tl-red"></span>
+          <span class="tl tl-yellow"></span>
+          <span class="tl tl-green"></span>
+        </div>
+        <span class="header-sep">─────</span>
+        <a href="index.html" class="header-logo">🌙 Les Veilleurs au Clair de Lune</a>
+      </div>
+      <div class="header-right"></div>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link">
+        <span class="nav-icon">📜</span>
+        <span class="nav-label">Patchnotes</span>
+      </a>
+      <a href="map.html" class="nav-link active">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-label">Carte</span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- ══════ MAP LAYOUT ══════ -->
+  <div class="map-layout">
+
+    <!-- ── Sidebar gauche ── -->
+    <aside class="map-sidebar">
+      <div class="sidebar-title">Légende</div>
+      <div class="legend-filters" id="legend-filters">
+        <label class="legend-item legend-toggle-all">
+          <input type="checkbox" id="toggle-all-filters" unchecked />
+          <span class="legend-emoji" style="background:#333;">⚙️</span>
+          <span>Tout sélectionner</span>
+        </label>
+        <div class="sidebar-sep"></div>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="région" checked />
+          <span class="legend-emoji" style="background:#e8c8c8;">📍</span>
+          <span>Régions</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="donjon" checked />
+          <span class="legend-emoji" style="background:#c47a6a;">⚔️</span>
+          <span>Donjon</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="quête_principale" />
+          <span class="legend-emoji" style="background:#b8893a;">💬</span>
+          <span>Quête Principale</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="quête_secondaire" />
+          <span class="legend-emoji" style="background:#d4b57e;">❓</span>
+          <span>Quête Secondaire</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="artisant" />
+          <span class="legend-emoji" style="background:#6a4daa;">⚒️</span>
+          <span>Artisant</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="repreneur_butin" />
+          <span class="legend-emoji" style="background:#153f55;">🛒</span>
+          <span>Repreneur de Butin</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="marchand" />
+          <span class="legend-emoji" style="background:#3a6e8a;">💰</span>
+          <span>Marchand</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="clef" />
+          <span class="legend-emoji" style="background:#f1dd6a;">🗝️</span>
+          <span>Clef et Secrets</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="ressource" />
+          <span class="legend-emoji" style="background:#4a7d48;">🌿</span>
+          <span>Ressource</span>
+        </label>
+      </div>
+
+      <div class="sidebar-sep"></div>
+      <div class="sidebar-title">Étage actuel</div>
+      <div class="floor-info">
+        <span class="floor-info-num" id="floor-info-num">1</span>
+        <span class="floor-info-label">/ 100</span>
+      </div>
+      <div class="sidebar-sep"></div>
+      <div class="sidebar-title">Zoom</div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoom-in">+</button>
+        <span class="zoom-level" id="zoom-level">100%</span>
+        <button class="zoom-btn" id="zoom-out">−</button>
+        <button class="zoom-btn zoom-reset" id="zoom-reset">⟳</button>
+      </div>
+    </aside>
+
+    <!-- ── Zone centrale ── -->
+    <main class="map-main">
+
+      <div class="map-topbar">
+        <span class="map-topbar-label">ÉTAGE</span>
+        <span class="map-topbar-num" id="floor-display">01</span>
+        <span class="map-topbar-name" id="floor-name-display">Forêt</span>
+      </div>
+      <div class="map-searchbar">
+        <input type="text" id="search-input" class="search-input" placeholder="🔍  Rechercher un marqueur…" autocomplete="off" />
+        <div class="search-results hidden" id="search-results"></div>
+      </div>
+
+      <!-- Viewport : contient la carte ET l'overlay des marqueurs -->
+      <div class="map-viewport" id="map-viewport">
+
+        <!-- Canvas zoomé : contient uniquement l'image -->
+        <div class="map-canvas" id="map-canvas">
+          <img id="map-svg" src="" data-missing="true" width="900" height="900" alt="Carte" draggable="false" />
+        </div>
+
+        <!-- Overlay fixe : marqueurs positionnés en coords écran -->
+        <div class="markers-layer" id="markers-layer"></div>
+
+      </div>
+
+      <!-- Tooltip -->
+      <div class="map-tooltip hidden" id="map-tooltip">
+        <div class="tooltip-type" id="tooltip-type"></div>
+        <div class="tooltip-name" id="tooltip-name"></div>
+        <div class="tooltip-desc" id="tooltip-desc"></div>
+        <a class="tooltip-link hidden" id="tooltip-link" href="#" target="_blank">Voir le guide →</a>
+      </div>
+
+    </main>
+
+    <!-- ── Molette droite ── -->
+    <div class="floor-wheel-panel">
+      <button class="wheel-btn wheel-up" id="wheel-up" title="Étage suivant">▲</button>
+      <div class="wheel-display">
+        <div class="wheel-track" id="wheel-track"></div>
+      </div>
+      <div class="wheel-current">
+        <input type="text" id="floor-input" class="floor-input" value="1" maxlength="3"
+               title="Tapez un numéro d'étage" aria-label="Numéro d'étage" />
+        <span class="wheel-current-label">étage</span>
+      </div>
+      <button class="wheel-btn wheel-down" id="wheel-down" title="Étage précédent">▼</button>
+    </div>
+
+  </div>
+
+  <script src="map.js"></script>
+</body>
+</html>
