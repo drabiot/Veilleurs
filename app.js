@@ -1,77 +1,79 @@
-/* ═══════════════════════════════════════════════
-   PATCHNOTES — app.js
-═══════════════════════════════════════════════ */
-
 document.addEventListener('DOMContentLoaded', () => {
 
-  /* ── Compteur d'entrées ── */
+  /* ── Compteur ── */
   const entries = document.querySelectorAll('.patch-entry');
   const countEl = document.getElementById('entry-count');
   countEl.textContent = `${entries.length} version${entries.length > 1 ? 's' : ''}`;
 
   /* ── Date footer ── */
-  const footerDate = document.getElementById('footer-date');
-  const now = new Date();
-  footerDate.textContent = `généré le ${now.toLocaleDateString('fr-FR', {
-    day: '2-digit', month: 'long', year: 'numeric'
-  })}`;
+  document.getElementById('footer-date').textContent =
+    new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
-  /* ── Accordion : collapse / expand ── */
+  /* ── Accordion ── */
   document.querySelectorAll('.version-header').forEach(header => {
-    header.addEventListener('click', () => {
-      const entry = header.closest('.patch-entry');
-      const body  = entry.querySelector('.patch-body');
-      const isOpen = !body.classList.contains('hidden');
+    const activate = () => {
+      const entry   = header.closest('.patch-entry');
+      const body    = entry.querySelector('.patch-body');
+      const chevron = header.querySelector('.chevron');
+      const isOpen  = !body.classList.contains('hidden');
 
       if (isOpen) {
         body.classList.add('hidden');
-        entry.classList.remove('open');
+        chevron.classList.add('chevron-closed');
+        header.setAttribute('aria-expanded', 'false');
       } else {
         body.classList.remove('hidden');
-        entry.classList.add('open');
+        chevron.classList.remove('chevron-closed');
+        header.setAttribute('aria-expanded', 'true');
       }
+    };
+
+    header.addEventListener('click', activate);
+    header.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
     });
   });
 
-  /* ── Filter bar toggle ── */
+  /* ── Toggle barre de filtres ── */
   const filterToggle = document.getElementById('filter-toggle');
   const filterBar    = document.getElementById('filter-bar');
 
   filterToggle.addEventListener('click', () => {
-    const isHidden = filterBar.classList.contains('hidden');
-    filterBar.classList.toggle('hidden', !isHidden);
-    filterToggle.textContent = isHidden ? 'fermer ✕' : 'filtrer ↓';
+    const opening = filterBar.classList.contains('hidden');
+    filterBar.classList.toggle('hidden', !opening);
+    filterToggle.textContent = opening ? 'fermer ✕' : 'filtrer ↓';
   });
 
   /* ── Filtres par type ── */
   document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      // Active state
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
       const filter = btn.dataset.filter;
 
-      entries.forEach(entry => {
+      // Afficher/cacher les groupes à l'intérieur de chaque article
+      document.querySelectorAll('.change-group').forEach(group => {
         if (filter === 'all') {
-          entry.classList.remove('hidden-by-filter');
-          return;
+          group.classList.remove('hidden-by-filter');
+        } else {
+          group.classList.toggle('hidden-by-filter', group.dataset.type !== filter);
         }
-
-        // Cherche si l'entrée contient ce type de changement
-        const hasType = entry.querySelector(`.change-group[data-type="${filter}"]`);
-        entry.classList.toggle('hidden-by-filter', !hasType);
       });
 
-      // Mise à jour compteur
-      const visible = document.querySelectorAll('.patch-entry:not(.hidden-by-filter)').length;
+      // Mettre à jour le compteur avec les articles qui ont au moins un groupe visible
+      const visible = [...entries].filter(entry => {
+        if (filter === 'all') return true;
+        return entry.querySelector(`.change-group[data-type="${filter}"]`);
+      }).length;
       countEl.textContent = `${visible} version${visible > 1 ? 's' : ''}`;
     });
   });
 
-  /* ── Keyboard shortcut : "f" pour focus filtre ── */
+  /* ── Raccourcis clavier ── */
   document.addEventListener('keydown', e => {
-    if (e.key === 'f' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') {
+    if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+    if (e.key === 'f') {
       filterBar.classList.remove('hidden');
       filterToggle.textContent = 'fermer ✕';
     }
@@ -82,30 +84,3 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
 });
-
-
-/* ═══════════════════════════════════════════════
-   COMMENT AJOUTER UNE NOUVELLE VERSION
-   ───────────────────────────────────────────────
-   Copie ce bloc dans index.html avant la première
-   <article> existante :
-
-  <article class="patch-entry mb-1" data-version="X.Y.Z">
-    <div class="version-header flex items-baseline gap-4 py-5 cursor-pointer select-none group">
-      <span class="version-tag text-accent font-bold text-sm">vX.Y.Z</span>
-      <span class="text-bright font-display font-bold text-xl group-hover:text-accent transition-colors">Titre de la version</span>
-      <span class="text-muted text-xs ml-auto tabular-nums">AAAA-MM-JJ</span>
-      <span class="chevron text-muted text-xs ml-2 transition-transform">▼</span>
-    </div>
-    <div class="patch-body border-l-2 border-accent/30 ml-1 pl-6 pb-6 space-y-4">
-      <div class="change-group" data-type="added|fixed|changed|removed">
-        <div class="type-label added|fixed|changed|removed">✦ ajouté</div>
-        <ul class="change-list">
-          <li>Description du changement</li>
-        </ul>
-      </div>
-    </div>
-  </article>
-  <div class="separator"></div>
-
-═══════════════════════════════════════════════ */
