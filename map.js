@@ -484,7 +484,8 @@ function cleanupAllZones() {
     clearTimeout(window._zoneLeaveTimer);
     window._zoneLeaveTimer = null;
   }
-  //document.querySelectorAll('.monster-pin').forEach(p => p.remove());
+  document.querySelectorAll('.monster-pin-hover').forEach(p => p.remove());
+  document.querySelectorAll('.monster-pin-static').forEach(p => p.remove());
   const zt = document.getElementById('zone-tooltip');
   if (zt) zt.classList.add('hidden');
   // Réapplique l'état correct sur tous les polygones
@@ -548,8 +549,8 @@ function buildWheel() {
   });
   mapViewport.addEventListener('mouseleave', () => {
     coordDisplay.classList.add('hidden');
-    // Nettoyage immédiat quand la souris quitte le viewport
-    cleanupAllZones();
+    window._zonePinActive = false; // ← AJOUT : reset le flag immédiatement
+    cleanupAllZones();             // déjà présent, mais maintenant cleanupAllZones nettoie vraiment tout
   });
 }
 
@@ -750,6 +751,24 @@ function spawnMonsterPins(zone) {
 /* ══════════════════════════════════
    RENDU ZONES
 ══════════════════════════════════ */
+function isZoneHoverEnabled() {
+  const cb = document.getElementById('zone-hover-toggle');
+  return cb ? cb.checked : true;
+}
+
+// ── Ajoute cette fonction en haut du fichier (une seule fois) ──
+function pointInPolygon(x, y, points) {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const xi = points[i].gx, yi = points[i].gy;
+    const xj = points[j].gx, yj = points[j].gy;
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
 function renderZones() {
   let svgEl = document.getElementById('zones-layer');
   if (!svgEl) {
@@ -766,13 +785,11 @@ function renderZones() {
   }
   svgEl.innerHTML = '';
 
-  // Nettoyage au re-render
-  if (window._zoneLeaveTimer) {
-    clearTimeout(window._zoneLeaveTimer);
-    window._zoneLeaveTimer = null;
-  }
+  if (window._zoneLeaveTimer) { clearTimeout(window._zoneLeaveTimer); window._zoneLeaveTimer = null; }
+  if (window._zoneHoverHandler) { mapViewport.removeEventListener('mousemove', window._zoneHoverHandler); window._zoneHoverHandler = null; }
   document.querySelectorAll('.monster-pin-hover').forEach(p => p.remove());
-  window._zoneCleanup = null;
+  window._zoneCleanup   = null;
+  window._activeZoneId  = null;
 
   let zoneTooltip = document.getElementById('zone-tooltip');
   if (!zoneTooltip) {
@@ -781,7 +798,6 @@ function renderZones() {
     zoneTooltip.className = 'zone-tooltip hidden';
     document.querySelector('.map-main').appendChild(zoneTooltip);
   }
-  // Masque le tooltip zone au re-render
   zoneTooltip.classList.add('hidden');
 
   const zoneOn = isZoneFilterEnabled();
@@ -805,8 +821,7 @@ function renderZones() {
     poly.setAttribute('fill',             zoneOn ? zone.color + '55' : zone.color + '2a');
     poly.style.transition    = 'opacity .25s ease';
     poly.style.opacity       = zoneOn ? '1' : '0';
-    poly.style.pointerEvents = 'fill';
-    poly.style.cursor        = 'default';
+    poly.style.pointerEvents = 'none'; // ← toujours none, le hit-test se fait en JS
 
     const cx   = zone.points.reduce((s, p) => s + p.gx, 0) / zone.points.length;
     const cy   = zone.points.reduce((s, p) => s + p.gy, 0) / zone.points.length;
@@ -825,65 +840,54 @@ function renderZones() {
     emojiText.textContent = zone.emoji || '❓';
 
     const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    label.setAttribute('x',              sC.x);
-    label.setAttribute('y',              sC.y + 16);
-    label.setAttribute('text-anchor',    'middle');
+    label.setAttribute('x',                 sC.x);
+    label.setAttribute('y',                 sC.y + 16);
+    label.setAttribute('text-anchor',       'middle');
     label.setAttribute('dominant-baseline', 'middle');
-    label.setAttribute('fill',           zone.color);
-    label.setAttribute('font-family',    'JetBrains Mono, monospace');
-    label.setAttribute('font-size',      '13');
-    label.setAttribute('font-weight',    '700');
-    label.setAttribute('stroke',         'rgba(0,0,0,0.9)');
-    label.setAttribute('stroke-width',   '4');
-    label.setAttribute('paint-order',    'stroke fill');
-    label.setAttribute('letter-spacing', '1');
+    label.setAttribute('fill',              zone.color);
+    label.setAttribute('font-family',       'JetBrains Mono, monospace');
+    label.setAttribute('font-size',         '13');
+    label.setAttribute('font-weight',       '700');
+    label.setAttribute('stroke',            'rgba(0,0,0,0.9)');
+    label.setAttribute('stroke-width',      '4');
+    label.setAttribute('paint-order',       'stroke fill');
+    label.setAttribute('letter-spacing',    '1');
     label.style.transition    = 'opacity .25s ease';
     label.style.opacity       = zoneOn ? '1' : '0';
     label.style.pointerEvents = 'none';
     label.textContent = zone.name;
 
-    // ── Fonction de nettoyage spécifique à cette zone ──
-    const cleanup = () => {
+    // ── _cleanup et _activate capturent poly/emojiText/label de cette zone ──
+    zone._cleanup = () => {
       const stillOn = isZoneFilterEnabled();
-      poly.style.opacity = stillOn ? '1' : '0';
+      poly.style.opacity      = stillOn ? '1' : '0';
       poly.setAttribute('fill', stillOn ? zone.color + '55' : zone.color + '2a');
       emojiText.style.opacity = stillOn ? '1' : '0';
       label.style.opacity     = stillOn ? '1' : '0';
       zoneTooltip.classList.add('hidden');
       document.querySelectorAll('.monster-pin-hover').forEach(p => p.remove());
-      // ...restauration pin région
-      window._zoneCleanup = null;
+      const regionName = zone.regionName || zone.name;
+      const markerData = (FLOOR_MARKERS[currentFloor] || []).find(m => m.type === 'région' && m.name === regionName);
+      if (markerData) {
+        const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
+        if (pin) pin.style.opacity = '1';
+      }
+      window._activeZoneId = null;
+      window._zoneCleanup  = null;
     };
 
-    // ── mouseenter ──
-    poly.addEventListener('mouseenter', () => {
-      // Annule tout timer en cours
-      if (window._zoneLeaveTimer) {
-        clearTimeout(window._zoneLeaveTimer);
-        window._zoneLeaveTimer = null;
-      }
-      // Si on change de zone, nettoie l'ancienne immédiatement
-      if (window._zoneCleanup && window._zoneCleanup !== cleanup) {
-        window._zoneCleanup();
-      }
-      window._zoneCleanup = cleanup;
-
-      poly.style.opacity = '1';
+    zone._activate = () => {
+      window._zoneCleanup     = zone._cleanup;
+      poly.style.opacity      = '1';
       poly.setAttribute('fill', zone.color + '55');
       emojiText.style.opacity = '1';
       label.style.opacity     = '1';
-
-      // Cache le pin région associé
       const regionName = zone.regionName || zone.name;
-      const markerData = (FLOOR_MARKERS[currentFloor] || []).find(m =>
-        m.type === 'région' && m.name === regionName
-      );
+      const markerData = (FLOOR_MARKERS[currentFloor] || []).find(m => m.type === 'région' && m.name === regionName);
       if (markerData) {
         const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
         if (pin) pin.style.opacity = '0';
       }
-
-      // Tooltip
       if (zone.monsters && zone.monsters.length > 0) {
         const monstersHtml = zone.monsters.map(m => `
           <div class="zone-tooltip-monster">
@@ -901,27 +905,8 @@ function renderZones() {
           <div class="zone-tooltip-monsters">${monstersHtml}</div>`;
         zoneTooltip.classList.remove('hidden');
       }
-
       spawnMonsterPins(zone);
-    });
-
-    // ── mouseleave ──
-    poly.addEventListener('mouseleave', () => {
-      window._zonePinActive = false;
-
-      window._zoneLeaveTimer = setTimeout(() => {
-
-        if (window._zonePinActive) return;
-
-        // ne nettoie que les pins hover
-        document.querySelectorAll('.monster-pin-hover').forEach(p => p.remove());
-
-        if (!isZoneFilterEnabled()) {
-          cleanup();
-        }
-
-      }, 400);
-    });
+    };
 
     g.appendChild(poly);
     g.appendChild(emojiText);
@@ -929,8 +914,57 @@ function renderZones() {
     svgEl.appendChild(g);
   });
 
-// Si filtre actif : cache les pins région associés + affiche les monstres
-// Si filtre actif : cache les pins région associés + affiche les monstres
+  // ── Listener unique sur le viewport pour tout le hit-test ──
+  window._zoneHoverHandler = (e) => {
+    if (!isZoneHoverEnabled()) return;
+
+    // Pin prioritaire sous le curseur → désactive la zone
+    const els = document.elementsFromPoint(e.clientX, e.clientY);
+    const hasPriorityPin = els.some(el => {
+      const marker = el.closest('.marker');
+      return marker &&
+             marker.dataset.type !== 'zone_monstre' &&
+             marker.dataset.type !== 'monster-static' &&
+             !marker.classList.contains('monster-pin-hover') &&
+             !marker.classList.contains('monster-pin-static');
+    });
+    if (hasPriorityPin) {
+      if (window._zoneCleanup) { window._zoneCleanup(); }
+      return;
+    }
+
+    // Hit-test JS sur les zones
+    const vp  = clientToVp(e.clientX, e.clientY);
+    const img = screenToImage(vp.x, vp.y);
+    const gp  = pixelToGame(img.x, img.y);
+    const hitZone = zones.find(z => pointInPolygon(gp.x, gp.y, z.points));
+
+    if (!hitZone) {
+      // Plus dans aucune zone → timer de sortie
+      if (window._zoneCleanup && !window._zoneLeaveTimer) {
+        window._zoneLeaveTimer = setTimeout(() => {
+          if (window._zoneCleanup) window._zoneCleanup();
+          window._zoneLeaveTimer = null;
+        }, 400);
+      }
+      return;
+    }
+
+    // Annule le timer de sortie si on est dans une zone
+    if (window._zoneLeaveTimer) { clearTimeout(window._zoneLeaveTimer); window._zoneLeaveTimer = null; }
+
+    // Même zone → rien à faire
+    if (window._activeZoneId === hitZone.id) return;
+
+    // Change de zone → nettoie l'ancienne et active la nouvelle
+    if (window._zoneCleanup) window._zoneCleanup();
+    window._activeZoneId = hitZone.id;
+    hitZone._activate();
+  };
+
+  mapViewport.addEventListener('mousemove', window._zoneHoverHandler);
+
+  // Filtre actif : pins monstres statiques
   if (zoneOn) {
     zones.forEach(zone => {
       const regionName = zone.regionName || zone.name;
