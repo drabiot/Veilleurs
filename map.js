@@ -484,7 +484,7 @@ function cleanupAllZones() {
     clearTimeout(window._zoneLeaveTimer);
     window._zoneLeaveTimer = null;
   }
-  document.querySelectorAll('.monster-pin').forEach(p => p.remove());
+  //document.querySelectorAll('.monster-pin').forEach(p => p.remove());
   const zt = document.getElementById('zone-tooltip');
   if (zt) zt.classList.add('hidden');
   // Réapplique l'état correct sur tous les polygones
@@ -614,8 +614,58 @@ function clusterMarkers(markers) {
 /* ══════════════════════════════════
    PINS MONSTRES AU HOVER
 ══════════════════════════════════ */
+function spawnMonsterPinsStatic(zone) {
+  if (!zone.monsters || zone.monsters.length === 0) return;
+
+  const cx  = zone.points.reduce((s, p) => s + p.gx, 0) / zone.points.length;
+  const cy  = zone.points.reduce((s, p) => s + p.gy, 0) / zone.points.length;
+  const imgC = gameToPixel(cx, cy);
+  const sC   = imageToScreen(imgC.x, imgC.y);
+  const count = zone.monsters.length;
+  const radius = 52;
+  const startAngle  = -150 * (Math.PI / 180);
+  const endAngle    = -30  * (Math.PI / 180);
+  const step        = count > 1 ? (endAngle - startAngle) / (count - 1) : 0;
+  const offsetAngle = count === 1 ? (startAngle + endAngle) / 2 : startAngle;
+
+  zone.monsters.forEach((monster, i) => {
+    const angle = offsetAngle + i * step;
+    const sx = sC.x + Math.cos(angle) * radius;
+    const sy = sC.y + Math.sin(angle) * radius;
+
+    const pin = document.createElement('div');
+    pin.className    = 'marker monster-pin-static';
+    pin.dataset.type = 'monster-static'; // ← pas zone_monstre, pas filtré
+    pin.style.left   = sx + 'px';
+    pin.style.top    = sy + 'px';
+    pin.style.zIndex = '10';
+    if (monster.link) pin.style.cursor = 'pointer';
+
+    const icon = document.createElement('div');
+    icon.className        = 'marker-icon';
+    icon.textContent      = monster.emoji || '💀';
+    icon.style.background = zone.color;
+    icon.style.boxShadow  = `0 2px 12px ${zone.color}88`;
+    pin.appendChild(icon);
+
+    pin.addEventListener('mouseenter', () => showTooltip({
+      type: 'zone_monstre',
+      name: monster.name,
+      desc: `Niveau ${monster.level} · ${monster.difficulty}`,
+      link: monster.link,
+    }));
+    pin.addEventListener('mouseleave', hideTooltip);
+    pin.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (monster.link) window.open(monster.link, '_blank');
+    });
+
+    markersLayer.appendChild(pin);
+  });
+}
+
 function spawnMonsterPins(zone) {
-  document.querySelectorAll('.monster-pin').forEach(p => p.remove());
+  document.querySelectorAll('.monster-pin-hover').forEach(p => p.remove());
   if (!zone.monsters || zone.monsters.length === 0) return;
 
   const cx      = zone.points.reduce((s, p) => s + p.gx, 0) / zone.points.length;
@@ -635,7 +685,7 @@ function spawnMonsterPins(zone) {
     const sy    = sC.y + Math.sin(angle) * radius;
 
     const pin = document.createElement('div');
-    pin.className    = 'marker monster-pin';
+    pin.className    = 'marker monster-pin-hover';
     pin.dataset.type = 'zone_monstre';
     pin.style.left   = sx + 'px';
     pin.style.top    = sy + 'px';
@@ -721,7 +771,7 @@ function renderZones() {
     clearTimeout(window._zoneLeaveTimer);
     window._zoneLeaveTimer = null;
   }
-  document.querySelectorAll('.monster-pin').forEach(p => p.remove());
+  document.querySelectorAll('.monster-pin-hover').forEach(p => p.remove());
   window._zoneCleanup = null;
 
   let zoneTooltip = document.getElementById('zone-tooltip');
@@ -800,7 +850,7 @@ function renderZones() {
       emojiText.style.opacity = stillOn ? '1' : '0';
       label.style.opacity     = stillOn ? '1' : '0';
       zoneTooltip.classList.add('hidden');
-      document.querySelectorAll('.monster-pin').forEach(p => p.remove());
+      document.querySelectorAll('.monster-pin-hover').forEach(p => p.remove());
       // ...restauration pin région
       window._zoneCleanup = null;
     };
@@ -857,10 +907,19 @@ function renderZones() {
 
     // ── mouseleave ──
     poly.addEventListener('mouseleave', () => {
-      window._zonePinActive = false; // ← AJOUT
+      window._zonePinActive = false;
+
       window._zoneLeaveTimer = setTimeout(() => {
-        if (window._zonePinActive) return; // ← AJOUT
-        cleanup();
+
+        if (window._zonePinActive) return;
+
+        // ne nettoie que les pins hover
+        document.querySelectorAll('.monster-pin-hover').forEach(p => p.remove());
+
+        if (!isZoneFilterEnabled()) {
+          cleanup();
+        }
+
       }, 400);
     });
 
@@ -870,7 +929,8 @@ function renderZones() {
     svgEl.appendChild(g);
   });
 
-  // Si filtre actif : cache les pins région associés
+// Si filtre actif : cache les pins région associés + affiche les monstres
+// Si filtre actif : cache les pins région associés + affiche les monstres
   if (zoneOn) {
     zones.forEach(zone => {
       const regionName = zone.regionName || zone.name;
@@ -881,6 +941,7 @@ function renderZones() {
         const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
         if (pin) pin.style.opacity = '0';
       }
+      spawnMonsterPinsStatic(zone);
     });
   }
 }
