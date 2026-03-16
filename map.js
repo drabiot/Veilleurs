@@ -550,9 +550,10 @@ function buildWheel() {
 }
 
 function scrollWheelTo(floor) {
-  const display   = document.querySelector('.wheel-display');
-  const midHeight = display.offsetHeight / 2;
-  const offset    = -(floor - 1) * ITEM_HEIGHT + midHeight - ITEM_HEIGHT / 2;
+  const display = document.querySelector('.wheel-display');
+  const h       = display.offsetHeight;
+  if (h === 0) { requestAnimationFrame(() => scrollWheelTo(floor)); return; }
+  const offset  = -(floor - 1) * ITEM_HEIGHT + h / 2 - ITEM_HEIGHT / 2;
   wheelTrack.style.transform = `translateY(${offset}px)`;
   document.querySelectorAll('.wheel-num').forEach(el => {
     el.classList.toggle('wheel-active', parseInt(el.dataset.floor) === floor);
@@ -1390,7 +1391,13 @@ searchInput.addEventListener('keydown', (e) => {
 /* ══════════════════════════════════
    INIT
 ══════════════════════════════════ */
-updateVpBounds();
-requestAnimationFrame(() => { updateVpBounds(); renderMarkers(); });
 buildWheel();
 goToFloor(1);
+
+function _initLayout() {
+  updateVpBounds();
+  if (_vpW === 0 || _vpH === 0) { requestAnimationFrame(_initLayout); return; }
+  renderMarkers();
+  scrollWheelTo(currentFloor);
+}
+requestAnimationFrame(_initLayout);
