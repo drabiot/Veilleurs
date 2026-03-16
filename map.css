@@ -308,7 +308,7 @@
 /* Couleurs + emoji par type */
 .marker[data-type="donjon"]                .marker-icon { background: #c47a6a; color: #c47a6a; box-shadow: 0 2px 12px rgba(196,122,106,.5); }
 .marker[data-type="quête_principale"]      .marker-icon { background: #b8893a; color: #E0AC60; box-shadow: 0 2px 12px rgba(224,172,96,.5);  }
-.marker[data-type="quête_principale"]      .marker-icon { background: #e1c697; color: #e1c697; box-shadow: 0 2px 12px rgba(208, 183, 145, 0.5);  }
+.marker[data-type="quête_secondaire"]      .marker-icon { background: #e1c697; color: #e1c697; box-shadow: 0 2px 12px rgba(208, 183, 145, 0.5);  }
 .marker[data-type="ressource"]             .marker-icon { background: #4a7d48; color: #7db87a; box-shadow: 0 2px 12px rgba(125,184,122,.5); }
 .marker[data-type="marchand"]              .marker-icon { background: #3a6e8a; color: #7aaccc; box-shadow: 0 2px 12px rgba(122,172,204,.5); }
 .marker[data-type="artisant"]              .marker-icon { background: #6a4daa; color: #a07de0; box-shadow: 0 2px 12px rgba(160,125,224,.5); }
