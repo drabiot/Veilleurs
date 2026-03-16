@@ -1,7 +1,3 @@
-/* ═══════════════════════════════════════════════
-   Veilleurs au Clair de Lune — map.js
-═══════════════════════════════════════════════ */
-
 const FLOOR_COUNT = 100;
 
 const MARKER_EMOJI = {
@@ -478,17 +474,17 @@ function isZoneFilterEnabled() {
   return cb ? cb.checked : false;
 }
 
-/* Nettoyage global de toutes les zones actives */
 function cleanupAllZones() {
   if (window._zoneLeaveTimer) {
     clearTimeout(window._zoneLeaveTimer);
     window._zoneLeaveTimer = null;
   }
   document.querySelectorAll('.monster-pin-hover').forEach(p => p.remove());
-  document.querySelectorAll('.monster-pin-static').forEach(p => p.remove());
+  if (!isZoneFilterEnabled()) {
+    document.querySelectorAll('.monster-pin-static').forEach(p => p.remove());
+  }
   const zt = document.getElementById('zone-tooltip');
   if (zt) zt.classList.add('hidden');
-  // Réapplique l'état correct sur tous les polygones
   const svgEl = document.getElementById('zones-layer');
   if (svgEl) {
     const zoneOn = isZoneFilterEnabled();
@@ -499,7 +495,6 @@ function cleanupAllZones() {
       t.style.opacity = zoneOn ? '1' : '0';
     });
   }
-  // Restaure les pins région
   const zones = FLOOR_ZONES[currentFloor] || [];
   if (!isZoneFilterEnabled()) {
     zones.forEach(zone => {
@@ -549,8 +544,8 @@ function buildWheel() {
   });
   mapViewport.addEventListener('mouseleave', () => {
     coordDisplay.classList.add('hidden');
-    window._zonePinActive = false; // ← AJOUT : reset le flag immédiatement
-    cleanupAllZones();             // déjà présent, mais maintenant cleanupAllZones nettoie vraiment tout
+    window._zonePinActive = false;
+    cleanupAllZones();
   });
 }
 
@@ -636,7 +631,7 @@ function spawnMonsterPinsStatic(zone) {
 
     const pin = document.createElement('div');
     pin.className    = 'marker monster-pin-static';
-    pin.dataset.type = 'monster-static'; // ← pas zone_monstre, pas filtré
+    pin.dataset.type = 'monster-static';
     pin.style.left   = sx + 'px';
     pin.style.top    = sy + 'px';
     pin.style.zIndex = '10';
@@ -706,8 +701,7 @@ function spawnMonsterPins(zone) {
       clearTimeout(window._zoneLeaveTimer);
       window._zoneLeaveTimer = null;
     }
-    window._zonePinActive = true; // ← AJOUT
-    // Garde le zone-tooltip visible
+    window._zonePinActive = true;
     const zt = document.getElementById('zone-tooltip');
     if (zt) zt.classList.remove('hidden');
 
@@ -726,11 +720,8 @@ function spawnMonsterPins(zone) {
   });
 
     pin.addEventListener('mouseleave', (e) => {
-      // Vérifie qu'on ne va pas sur un élément enfant du pin
       if (pin.contains(e.relatedTarget)) return;
       window._zonePinActive = false;
-      // Ne cache le tooltip que si on quitte vraiment vers l'extérieur
-      // (pas vers un autre pin ou le poly — géré par le timer)
       window._zoneLeaveTimer = setTimeout(() => {
         if (!window._zonePinActive) {
           hideTooltip();
@@ -756,7 +747,6 @@ function isZoneHoverEnabled() {
   return cb ? cb.checked : true;
 }
 
-// ── Ajoute cette fonction en haut du fichier (une seule fois) ──
 function pointInPolygon(x, y, points) {
   let inside = false;
   for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
@@ -821,7 +811,7 @@ function renderZones() {
     poly.setAttribute('fill',             zoneOn ? zone.color + '55' : zone.color + '2a');
     poly.style.transition    = 'opacity .25s ease';
     poly.style.opacity       = zoneOn ? '1' : '0';
-    poly.style.pointerEvents = 'none'; // ← toujours none, le hit-test se fait en JS
+    poly.style.pointerEvents = 'none';
 
     const cx   = zone.points.reduce((s, p) => s + p.gx, 0) / zone.points.length;
     const cy   = zone.points.reduce((s, p) => s + p.gy, 0) / zone.points.length;
@@ -857,7 +847,6 @@ function renderZones() {
     label.style.pointerEvents = 'none';
     label.textContent = zone.name;
 
-    // ── _cleanup et _activate capturent poly/emojiText/label de cette zone ──
     zone._cleanup = () => {
       const stillOn = isZoneFilterEnabled();
       poly.style.opacity      = stillOn ? '1' : '0';
@@ -914,11 +903,8 @@ function renderZones() {
     svgEl.appendChild(g);
   });
 
-  // ── Listener unique sur le viewport pour tout le hit-test ──
   window._zoneHoverHandler = (e) => {
     if (!isZoneHoverEnabled()) return;
-
-    // Pin prioritaire sous le curseur → désactive la zone
     const els = document.elementsFromPoint(e.clientX, e.clientY);
     const hasPriorityPin = els.some(el => {
       const marker = el.closest('.marker');
@@ -933,14 +919,12 @@ function renderZones() {
       return;
     }
 
-    // Hit-test JS sur les zones
     const vp  = clientToVp(e.clientX, e.clientY);
     const img = screenToImage(vp.x, vp.y);
     const gp  = pixelToGame(img.x, img.y);
     const hitZone = zones.find(z => pointInPolygon(gp.x, gp.y, z.points));
 
     if (!hitZone) {
-      // Plus dans aucune zone → timer de sortie
       if (window._zoneCleanup && !window._zoneLeaveTimer) {
         window._zoneLeaveTimer = setTimeout(() => {
           if (window._zoneCleanup) window._zoneCleanup();
@@ -950,13 +934,10 @@ function renderZones() {
       return;
     }
 
-    // Annule le timer de sortie si on est dans une zone
     if (window._zoneLeaveTimer) { clearTimeout(window._zoneLeaveTimer); window._zoneLeaveTimer = null; }
 
-    // Même zone → rien à faire
     if (window._activeZoneId === hitZone.id) return;
 
-    // Change de zone → nettoie l'ancienne et active la nouvelle
     if (window._zoneCleanup) window._zoneCleanup();
     window._activeZoneId = hitZone.id;
     hitZone._activate();
@@ -964,7 +945,6 @@ function renderZones() {
 
   mapViewport.addEventListener('mousemove', window._zoneHoverHandler);
 
-  // Filtre actif : pins monstres statiques
   if (zoneOn) {
     zones.forEach(zone => {
       const regionName = zone.regionName || zone.name;
@@ -1176,7 +1156,7 @@ function showTooltip(marker) {
 
 function hideTooltip() {
   if (_pinnedTooltip) return;
-  if (window._zonePinActive) return; // ← AJOUT
+  if (window._zonePinActive) return;
   _tooltipHideTimer = setTimeout(() => tooltip.classList.add('hidden'), 150);
 }
 
