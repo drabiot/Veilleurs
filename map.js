@@ -504,7 +504,7 @@ function cleanupAllZones() {
       );
       if (markerData) {
         const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
-        if (pin) pin.style.opacity = '1';
+        if (pin) { pin.style.opacity = '1'; pin.style.pointerEvents = ''; pin.style.cursor = ''; }
       }
     });
   }
@@ -550,10 +550,9 @@ function buildWheel() {
 }
 
 function scrollWheelTo(floor) {
-  const display = document.querySelector('.wheel-display');
-  const h       = display.offsetHeight;
-  if (h === 0) { requestAnimationFrame(() => scrollWheelTo(floor)); return; }
-  const offset  = -(floor - 1) * ITEM_HEIGHT + h / 2 - ITEM_HEIGHT / 2;
+  const display   = document.querySelector('.wheel-display');
+  const midHeight = display.offsetHeight / 2;
+  const offset    = -(floor - 1) * ITEM_HEIGHT + midHeight - ITEM_HEIGHT / 2;
   wheelTrack.style.transform = `translateY(${offset}px)`;
   document.querySelectorAll('.wheel-num').forEach(el => {
     el.classList.toggle('wheel-active', parseInt(el.dataset.floor) === floor);
@@ -860,7 +859,7 @@ function renderZones() {
       const markerData = (FLOOR_MARKERS[currentFloor] || []).find(m => m.type === 'région' && m.name === regionName);
       if (markerData) {
         const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
-        if (pin) pin.style.opacity = '1';
+        if (pin) { pin.style.opacity = '1'; pin.style.pointerEvents = ''; pin.style.cursor = ''; }
       }
       window._activeZoneId = null;
       window._zoneCleanup  = null;
@@ -876,7 +875,7 @@ function renderZones() {
       const markerData = (FLOOR_MARKERS[currentFloor] || []).find(m => m.type === 'région' && m.name === regionName);
       if (markerData) {
         const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
-        if (pin) pin.style.opacity = '0';
+        if (pin) { pin.style.opacity = '0'; pin.style.pointerEvents = 'none'; pin.style.cursor = 'default'; }
       }
       if (zone.monsters && zone.monsters.length > 0) {
         const monstersHtml = zone.monsters.map(m => `
@@ -954,7 +953,7 @@ function renderZones() {
       );
       if (markerData) {
         const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
-        if (pin) pin.style.opacity = '0';
+        if (pin) { pin.style.opacity = '0'; pin.style.pointerEvents = 'none'; pin.style.cursor = 'default'; }
       }
       spawnMonsterPinsStatic(zone);
     });
@@ -1391,13 +1390,7 @@ searchInput.addEventListener('keydown', (e) => {
 /* ══════════════════════════════════
    INIT
 ══════════════════════════════════ */
+updateVpBounds();
+requestAnimationFrame(() => { updateVpBounds(); renderMarkers(); });
 buildWheel();
 goToFloor(1);
-
-function _initLayout() {
-  updateVpBounds();
-  if (_vpW === 0 || _vpH === 0) { requestAnimationFrame(_initLayout); return; }
-  renderMarkers();
-  scrollWheelTo(currentFloor);
-}
-requestAnimationFrame(_initLayout);
