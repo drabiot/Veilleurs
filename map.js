@@ -180,6 +180,7 @@ function scrollWheelTo(floor) {
 ══════════════════════════════════ */
 function goToFloor(n) {
   n = Math.max(1, Math.min(FLOOR_COUNT, n));
+  history.pushState({ floor: n }, '', `#floor-${n}`);
   currentFloor = n;
   floorInput.value          = n;
   floorDisplay.textContent  = String(n).padStart(2, '0');
@@ -879,7 +880,7 @@ document.getElementById('wheel-down').addEventListener('click', () => goToFloor(
 
 document.querySelector('.wheel-display').addEventListener('wheel', (e) => {
   e.preventDefault();
-  goToFloor(currentFloor + (e.deltaY > 0 ? -1 : 1));
+  goToFloor(currentFloor + (e.deltaY > 0 ? 1 : -1));
 }, { passive: false });
 
 let wheelDragging = false, wheelDragStartY = 0, wheelDragFloor = 1;
@@ -1008,5 +1009,14 @@ searchInput.addEventListener('keydown', (e) => {
 ══════════════════════════════════ */
 updateVpBounds();
 requestAnimationFrame(() => { updateVpBounds(); renderMarkers(); });
+window.addEventListener('popstate', (e) => {
+  const floor = e.state?.floor;
+  if (floor) goToFloor(floor);
+  else {
+    const hash = window.location.hash.match(/#floor-(\d+)/);
+    goToFloor(hash ? parseInt(hash[1]) : 1);
+  }
+});
 buildWheel();
-goToFloor(1);
+const hash = window.location.hash.match(/#floor-(\d+)/);
+goToFloor(hash ? parseInt(hash[1]) : 1);
