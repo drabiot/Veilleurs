@@ -436,7 +436,7 @@ const FLOOR_MARKERS = {
     { id: 'm1a12', type: 'artisant', gx: 2355, gy: 2412, name: "Forgeron d'Armures",                desc: "Forgeron d'Armures du Donjon du Labyrinthe des Déchus", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/forgerons#armure-2' },
     { id: 'm1a13', type: 'artisant', gx: 2394, gy: 4293, name: 'Bucheron',                          desc: "Bucheron permettant la Réalisation de Planches", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/bucherons#ville-de-depart' },
     { id: 'm1a14', type: 'artisant', gx: 1712, gy: 4091, name: 'Alchimiste',                        desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/alchimistes#ville-de-depart' },
-    { id: 'm1a15', type: 'artisant', gx: 3257, gy: 1626, name: 'Alchimiste',                        desc: "Alchimiste de Tolbana", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/alchimistes#tolbana' },
+    { id: 'm1a15', type: 'artisant', gx: 3257, gy: 1626, name: 'Alchimiste',                        desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/alchimistes#tolbana' },
 
     { id: 'm1b1',  type: 'repreneur_butin', gx: 1720, gy: 4170, name: 'Repreneur des Débutants',       desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/repreneurs-de-butins#ville-de-depart' },
     { id: 'm1b2',  type: 'repreneur_butin', gx: 1446, gy: 3415, name: 'Repreneur de la Forêt',         desc: "Achète des ressources de la Forêt", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/repreneurs-de-butins#hanaka' },
@@ -557,19 +557,61 @@ const FLOOR_MARKERS = {
     { id: 'm2r10',  type: 'région',  gx: 798, gy: 253, name: 'Oasis Secret',                              desc: "Une oasis secrète où des pécheurs vivent au rythme de l'eau et du silence", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/oasis-secret' },
     { id: 'm2r11',  type: 'région',  gx: -88, gy: -92, name: 'Baobab Millénaire',                         desc: "Un baobab millénaire aux racines géantes, gardien silencieux du temps et des légendes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/baobab-millenaire' },
     { id: 'm2r12',  type: 'région',  gx: 524, gy: -435, name: 'Autel des Deux Lunes',                     desc: "Personne ne détient d'information liée à ce lieu. Simplement deux autels ^portant une lune chacune...", link: 'http://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/autel-des-deux-lunes' },
-    { id: 'm2r13',  type: 'région',  gx: -315, gy: 139, name: 'Taran',                                    desc: "Ville abandonné dans un caillou", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/taran' },
+    { id: 'm2r13',  type: 'région',  gx: -397, gy: 256, name: 'Taran',                                    desc: "Ville abandonné dans un caillou", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/taran' },
     { id: 'm2r14',  type: 'région',  gx: 671, gy: -255, name: 'Marome',                                   desc: "Petit village de marchands autosuffisant, uni par les prières à la déesse maternelle", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/marome' },
     { id: 'm2r15',  type: 'région',  gx: -390, gy: -400, name: 'Maisons des Ngangas',                     desc: "Maisons de Kwabeno et Kwabena, deux ermites perdus des montagnes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/maisons-des-ngangas' },
     { id: 'm2r16',  type: 'région',  gx: -150, gy: 740, name: 'Tour de Taurus',                           desc: "Une tour massive où résonnent les pas de Taurus, le Roi taureau redoutable", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/tour-de-taurus' },
+
+    { id: 'm2t1',  type: 'ressource', emoji: '🌳', gx: -88, gy: -92, name: 'Acacia',                      desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/bucheron#acacia' },
+    { id: 'm2t2',  type: 'ressource', emoji: '🌾', gx: -432, gy: 308, name: 'Sépal d\'Ambre',             desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#sepal-dambre' },
+    { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: -432, gy: 308, name: 'Épine d\'Oracile',           desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
+    { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: 84, gy: 248, name: 'Épine d\'Oracile',             desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
+    { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: 491, gy: -97, name: 'Épine d\'Oracile',            desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
+
+    { id: 'm2b1',  type: 'repreneur_butin', gx: 64, gy: -321, name: 'Repreneur des Ressources aux abords de Urbus',          desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#urbus' },
+    { id: 'm2b2',  type: 'repreneur_butin', gx: -530, gy: -239, name: 'Repreneur des Ressources des Harpies',                desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#kaelor' },
+    { id: 'm2b3',  type: 'repreneur_butin', gx: 665, gy: -256, name: 'Repreneur des Ressources du Sanctuaire de Khesûn',     desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#marome' },
+
+    { id: 'm2c1', type: 'clef', emoji: '🗝️', gx: 150, gy: -290,  name: "Clef du Donjon Ruche de Melliona",                  desc: "Clef permettant d'ouvrir la porte du Donjon Ruche de Melliona",                link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#urbus-melliona' },
+    { id: 'm2c1', type: 'clef', emoji: '🗝️', gx: 150, gy: -290,  name: "Clef du Donjon Tombeau du Nécromancien",            desc: "Clef permettant d'ouvrir la porte du Donjon Tombeau du Nécromancien",                link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#urbus-tombeau-du-necromancien' },
+    { id: 'm2c3', type: 'clef', emoji: '💍', gx: 72, gy: -45, name: "Fabricant Secret des Taureaux",                         desc: "Permet la confection Secrète du Talisman Féroce",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#lac-des-taureaux' },
+    { id: 'm2c4', type: 'clef', emoji: '💍', gx: -761, gy: 88, name: "Fabricant Secret de la Harpie Noyé",                   desc: "Permet la confection Secrète de l'Anneau de la Harpie Noyée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#baie-des-monstres-ondoyante' },
+    { id: 'm2c5', type: 'clef', emoji: '💍', gx: -571, gy: 480, name: "Fabricant Secret de la Harpie Écrasée",               desc: "Permet la confection Secrète de l'Anneau de la Harpie Écrasée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#foret-des-ailes-demeraude' },
+    { id: 'm2c5', type: 'clef', emoji: '💍', gx: -43, gy: 188, name: "Fabricant Secret du Sanctuaire",                       desc: "Permet la confection Secrète du Collier Runique",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#sanctuaire-de-khesun' },
+
+    { id: 'm2m1',  type: 'marchand', gx: -538, gy: -262, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/marchands#kaelor' },
+    { id: 'm2m2',  type: 'marchand', gx: -527, gy: -262, name: "Marchand d'Accessoires",   desc: "Vends des Accessoires de la faune du Palier 2", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/marchands#kaelor-1' },
+    { id: 'm2m3',  type: 'marchand', gx: -543, gy: -258, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/marchands#kaelor-2' },
+
+    { id: 'm2a1', type: 'artisant',  gx: -527, gy: -274, name: 'Alchimiste',               desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/alchimistes#kaelor' },
+    { id: 'm2a2', type: 'artisant',  gx: -538, gy: -274, name: 'Bucheron',                 desc: "Bucheron permettant la Réalisation de Planches", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/bucherons#kaelor' },
+    { id: 'm1a3', type: 'artisant',  gx: 2,    gy: -332, name: 'Refaçonneur',              desc: "Permet la fabrication de ficelle en tout genre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/refaconneurs#urbus' },
+    { id: 'm1a4', type: 'artisant',  gx: 107,  gy: -387, name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires puissant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#urbus-accessoires' },
+    { id: 'm1a5', type: 'artisant',  gx: 117,  gy: -358, name: 'Forgeron de Lingots',      desc: "Permet la fabrication de lingots de Bauxite et d'Onyx Impur", link: '' },
+    { id: 'm1a6', type: 'artisant',  gx: -807, gy: -271, name: 'Forgeron de Lingots',      desc: "Permet la fabrication d'Onyx Pur", link: '' },
+    { id: 'm1a7', type: 'artisant',  gx: -559, gy: -265, name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires des Ours et du Taureau", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#kaelor-accessoires' },
+    { id: 'm1a8', type: 'artisant',  gx: -722, gy: 20,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Feraille", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#accessoires-ferraile' },
+    { id: 'm1a9', type: 'artisant',  gx: -184, gy: 23,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Bauxite", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#accessoires-bauxite' },
+    { id: 'm1a10',type: 'artisant',  gx: -464, gy: 313,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires d'Onyx Impur", link: '' },
   ],
   
 };
 
 const FLOOR_MARKERS_UNDERGROUND = {
   2: [
+    { id: 'm2d1u1',  type: 'donjon',  gx: 673, gy: 227, name: 'Donjon Tombeau du Nécromancien',           desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/donjons/donjon-tombeau-du-necromancien' },
+
     { id: 'm2r1u1',  type: 'région',  gx: -540, gy: 226, name: 'Nid de Brasier',                          desc: "Un nid enflammé, refuge des harpies de feu au cœur de terres brûlantes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/nid-de-brasier' },
     { id: 'm2r2u1',  type: 'région',  gx: 210, gy: 288, name: 'Les Veines de Sablemor',                   desc: "Des veines de sable profondes, sombres et étroites, cachant Magnus, le redoutable boss", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/les-veines-de-sablemor' },
     { id: 'm2r3u1',  type: 'région',  gx: -296, gy: -79, name: 'Grotte de Taran',                         desc: "Grotte remplie de minéraux impressionnants et de mystères", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/grotte-de-taran' },
+    { id: 'm2r4u1',  type: 'région',  gx: 673, gy: 227, name: 'Tombeau du Nécromancien',                  desc: "Un nécromancien repose dans un tombeau secret, enfoui au cœur d'un labyrinthe désertique", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/tombeau-du-necromancien' },
+
+    { id: 'm2t1u1', type: 'ressource', emoji: '⛏️', gx: -362,  gy: -30, name: 'Onyx',                     desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/mineur#onyx' },
+    { id: 'm2t2u1', type: 'ressource', emoji: '⛏️', gx: -206,  gy: -185, name: 'Bauxite',                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/mineur#bauxite' },
+
+    { id: 'm2c1u1', type: 'clef', emoji: '💍', gx: -645, gy: 179, name: "Fabricant Secret de la Harpie Enflammée",                     desc: "Permet la confection Secrète de l'Anneau de la Harpie Enflammée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#nid-de-brasier' },
+
+    { id: 'm1a1u1',type: 'artisant',  gx: 304, gy: 464,   name: 'Forgeron d\'Accessoires',                 desc: "Permet la fabrication d'Accessoires d'Onyx Pur", link: '' },
   ],
 };
 

@@ -173,9 +173,9 @@ function buildLayerSwitcher() {
 /* Texte du bouton : indique où on VA (pas où on est) */
 function getLayerBtnHTML() {
   if (currentLayer === 'surface') {
-    return `<span style="font-size:14px;line-height:1">⬇️</span> Sous-sol`;
+    return `<span style="font-size:14px;line-height:1">🕳️</span> Sous-sol`;
   }
-  return `<span style="font-size:14px;line-height:1">⬆️</span> Surface`;
+  return `<span style="font-size:14px;line-height:1">⛰️</span> Surface`;
 }
 
 function updateLayerBtn() {
