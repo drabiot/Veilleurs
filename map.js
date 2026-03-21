@@ -3,6 +3,7 @@
 ══════════════════════════════════ */
 const MAP_SIZE          = 900;
 let   currentFloor      = 1;
+let   currentLayer      = 'surface'; // 'surface' | 'underground'
 let   zoomLevel         = 1;
 const ZOOM_MIN          = 0.4;
 const ZOOM_MAX          = 10;
@@ -33,6 +34,236 @@ const tooltipLink   = document.getElementById('tooltip-link');
 const mapCanvas     = document.getElementById('map-canvas');
 const mapViewport   = document.getElementById('map-viewport');
 const zoomLevelEl   = document.getElementById('zoom-level');
+
+/* ══════════════════════════════════
+   DONNÉES PAR COUCHE
+   Remplace FLOOR_MARKERS et FLOOR_ZONES par ces deux objets séparés.
+   Exemple de structure :
+     FLOOR_MARKERS_SURFACE    = { 1: [...], 2: [...] }
+     FLOOR_MARKERS_UNDERGROUND = { 1: [...], 2: [...] }
+     FLOOR_ZONES_SURFACE      = { 1: [...] }
+     FLOOR_ZONES_UNDERGROUND  = { 1: [...] }
+   Les noms FLOOR_NAMES et FLOOR_COUNT restent partagés (ou tu peux
+   les dupliquer si les couches ont des noms/étages différents).
+══════════════════════════════════ */
+function getFloorMarkers(floor) {
+  if (currentLayer === 'underground') {
+    const src = (typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined') ? FLOOR_MARKERS_UNDERGROUND : null;
+    return (src && src[floor]) || [];
+  }
+  /* surface : préfère FLOOR_MARKERS_SURFACE, sinon tombe sur l'ancien FLOOR_MARKERS */
+  const src = (typeof FLOOR_MARKERS_SURFACE !== 'undefined')
+    ? FLOOR_MARKERS_SURFACE
+    : (typeof FLOOR_MARKERS !== 'undefined' ? FLOOR_MARKERS : null);
+  return (src && src[floor]) || [];
+}
+
+function getFloorZones(floor) {
+  if (currentLayer === 'underground') {
+    const src = (typeof FLOOR_ZONES_UNDERGROUND !== 'undefined') ? FLOOR_ZONES_UNDERGROUND : null;
+    return (src && src[floor]) || [];
+  }
+  /* surface : préfère FLOOR_ZONES_SURFACE, sinon tombe sur l'ancien FLOOR_ZONES */
+  const src = (typeof FLOOR_ZONES_SURFACE !== 'undefined')
+    ? FLOOR_ZONES_SURFACE
+    : (typeof FLOOR_ZONES !== 'undefined' ? FLOOR_ZONES : null);
+  return (src && src[floor]) || [];
+}
+
+/* ══════════════════════════════════
+   GHOST OVERLAY (map surface transparente)
+   Une image supplémentaire affichée sous la map active
+   quand on est en couche underground.
+══════════════════════════════════ */
+function ensureGhostOverlay() {
+  let ghost = document.getElementById('map-ghost');
+  if (!ghost) {
+    ghost = document.createElement('img');
+    ghost.id  = 'map-ghost';
+    ghost.alt = '';
+    ghost.style.cssText = `
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      z-index: 0;
+    `;
+    const mapImg = document.getElementById('map-svg');
+    mapImg.parentElement.insertBefore(ghost, mapImg);
+  }
+  return ghost;
+}
+
+/* Retourne true si l'étage possède un sous-sol (FLOOR_DATA[n].hasUnderground). */
+function floorHasUnderground(n) {
+  if (typeof FLOOR_DATA !== 'undefined' && FLOOR_DATA[n]) {
+    return !!FLOOR_DATA[n].hasUnderground;
+  }
+  return false;
+}
+
+function updateGhostOverlay() {
+  const ghost  = ensureGhostOverlay();
+  const mapImg = document.getElementById('map-svg');
+
+  if (currentLayer === 'underground') {
+    ghost.src           = `img/maps/floor-${currentFloor}.png`;
+    ghost.style.opacity = '0.10';
+    ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
+    mapImg.style.zIndex = '1';
+  } else {
+    ghost.style.opacity = '0';
+    mapImg.style.zIndex = '';
+  }
+}
+
+/* ══════════════════════════════════
+   LAYER SWITCHER — bouton toggle
+══════════════════════════════════ */
+function buildLayerSwitcher() {
+  const btn = document.createElement('button');
+  btn.id        = 'layer-toggle-btn';
+  btn.title     = 'Changer de couche';
+  btn.innerHTML = getLayerBtnHTML();
+  btn.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.07);
+    color: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    user-select: none;
+  `;
+
+  btn.addEventListener('mouseenter', () => {
+    btn.style.background   = 'rgba(255,255,255,0.13)';
+    btn.style.borderColor  = 'rgba(255,255,255,0.28)';
+  });
+  btn.addEventListener('mouseleave', () => {
+    btn.style.background   = 'rgba(255,255,255,0.07)';
+    btn.style.borderColor  = 'rgba(255,255,255,0.15)';
+  });
+
+  btn.addEventListener('click', () => {
+    goToLayer(currentLayer === 'surface' ? 'underground' : 'surface');
+  });
+
+  const searchbar = document.querySelector('.map-searchbar');
+  if (searchbar) {
+    searchbar.style.display    = 'flex';
+    searchbar.style.alignItems = 'center';
+    searchbar.style.gap        = '8px';
+    searchbar.appendChild(btn);
+  }
+
+  updateLayerBtnVisibility();
+}
+
+/* Texte du bouton : indique où on VA (pas où on est) */
+function getLayerBtnHTML() {
+  if (currentLayer === 'surface') {
+    return `<span style="font-size:14px;line-height:1">⬇️</span> Sous-sol`;
+  }
+  return `<span style="font-size:14px;line-height:1">⬆️</span> Surface`;
+}
+
+function updateLayerBtn() {
+  const btn = document.getElementById('layer-toggle-btn');
+  if (btn) btn.innerHTML = getLayerBtnHTML();
+}
+
+/* Cache le bouton si l'étage n'a pas de sous-sol.
+   Si on était en underground sur un étage sans sous-sol, force le retour surface. */
+function updateLayerBtnVisibility() {
+  const btn = document.getElementById('layer-toggle-btn');
+  if (!btn) return;
+  const hasUnder = floorHasUnderground(currentFloor);
+  if (!hasUnder) {
+    btn.style.display = 'none';
+    if (currentLayer === 'underground') {
+      currentLayer = 'surface';
+      updateLayerBtn();
+      updateGhostOverlay();
+    }
+  } else {
+    btn.style.display = 'flex';
+  }
+}
+
+
+/* ══════════════════════════════════
+   CHARGEMENT IMAGE MAP
+   Source de vérité unique pour charger
+   la bonne image selon étage + couche.
+══════════════════════════════════ */
+function loadMapImage(n, layer) {
+  const mapImg = document.getElementById('map-svg');
+  const ghost  = ensureGhostOverlay();
+
+  if (layer === 'underground') {
+    /* Map souterraine au premier plan */
+    mapImg.style.opacity = '0';
+    mapImg.style.zIndex  = '1';
+    mapImg.src = `img/maps/floor-${n}_underground.png`;
+    mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
+    mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
+
+    /* Ghost : map de surface, très discrète en dessous */
+    ghost.src           = `img/maps/floor-${n}.png`;
+    ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
+    ghost.style.zIndex  = '0';
+    ghost.style.opacity = '0.10';
+  } else {
+    /* Map de surface normale */
+    mapImg.style.opacity = '0';
+    mapImg.style.zIndex  = '';
+    mapImg.src = `img/maps/floor-${n}.png`;
+    mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
+    mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
+
+    /* Cacher le ghost */
+    ghost.style.opacity = '0';
+  }
+}
+
+/* ══════════════════════════════════
+   CHANGEMENT DE COUCHE
+══════════════════════════════════ */
+function goToLayer(layer) {
+  if (layer === currentLayer) return;
+  currentLayer = layer;
+  updateLayerBtn();
+  loadMapImage(currentFloor, currentLayer);
+  history.replaceState(
+    { floor: currentFloor, layer: currentLayer },
+    '',
+    `#floor-${currentFloor}-${currentLayer}`
+  );
+  renderMarkers();
+  hideTooltip();
+}
+
+/* ══════════════════════════════════
+   HASH PARSING
+══════════════════════════════════ */
+function parseHash(hash) {
+  const m = (hash || window.location.hash).match(/#floor-(\d+)(?:-(surface|underground))?/);
+  return {
+    floor: m ? parseInt(m[1]) : 1,
+    layer: (m && m[2]) ? m[2] : 'surface',
+  };
+}
 
 /* ══════════════════════════════════
    POSITION VIEWPORT
@@ -109,11 +340,11 @@ function cleanupAllZones() {
       t.style.opacity = zoneOn ? '1' : '0';
     });
   }
-  const zones = FLOOR_ZONES[currentFloor] || [];
+  const zones = getFloorZones(currentFloor);
   if (!isZoneFilterEnabled()) {
     zones.forEach(zone => {
       const regionName = zone.regionName || zone.name;
-      const markerData = (FLOOR_MARKERS[currentFloor] || []).find(m =>
+      const markerData = getFloorMarkers(currentFloor).find(m =>
         m.type === 'région' && m.name === regionName
       );
       if (markerData) {
@@ -178,19 +409,20 @@ function scrollWheelTo(floor) {
 ══════════════════════════════════ */
 function goToFloor(n) {
   n = Math.max(1, Math.min(FLOOR_COUNT, n));
-  history.pushState({ floor: n }, '', `#floor-${n}`);
+  history.pushState(
+    { floor: n, layer: currentLayer },
+    '',
+    `#floor-${n}-${currentLayer}`
+  );
   currentFloor = n;
   floorInput.value          = n;
   floorDisplay.textContent  = String(n).padStart(2, '0');
   floorInfoNum.textContent  = n;
   floorNameDisp.textContent = FLOOR_NAMES[n] || `Étage ${n}`;
 
-  const mapImg = document.getElementById('map-svg');
-  mapImg.style.opacity = '0';
-  mapImg.src = `img/maps/floor-${n}.png`;
-  mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
-  mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
+  loadMapImage(n, currentLayer);
 
+  updateLayerBtnVisibility();
   scrollWheelTo(n);
   renderMarkers();
   hideTooltip();
@@ -311,28 +543,28 @@ function spawnMonsterPins(zone) {
     icon.style.color      = zone.color;
     pin.appendChild(icon);
 
-  pin.addEventListener('mouseenter', () => {
-    if (window._zoneLeaveTimer) {
-      clearTimeout(window._zoneLeaveTimer);
-      window._zoneLeaveTimer = null;
-    }
-    window._zonePinActive = true;
-    const zt = document.getElementById('zone-tooltip');
-    if (zt) zt.classList.remove('hidden');
+    pin.addEventListener('mouseenter', () => {
+      if (window._zoneLeaveTimer) {
+        clearTimeout(window._zoneLeaveTimer);
+        window._zoneLeaveTimer = null;
+      }
+      window._zonePinActive = true;
+      const zt = document.getElementById('zone-tooltip');
+      if (zt) zt.classList.remove('hidden');
 
-    tooltipType.textContent = 'Monstre';
-    tooltipName.textContent = monster.name;
-    tooltipDesc.textContent = `Niveau ${monster.level} · ${monster.difficulty}`;
-    if (monster.link) {
-      tooltipLink.href   = monster.link;
-      tooltipLink.target = '_blank';
-      tooltipLink.rel    = 'noopener noreferrer';
-      tooltipLink.classList.remove('hidden');
-    } else {
-      tooltipLink.classList.add('hidden');
-    }
-    tooltip.classList.remove('hidden');
-  });
+      tooltipType.textContent = 'Monstre';
+      tooltipName.textContent = monster.name;
+      tooltipDesc.textContent = `Niveau ${monster.level} · ${monster.difficulty}`;
+      if (monster.link) {
+        tooltipLink.href   = monster.link;
+        tooltipLink.target = '_blank';
+        tooltipLink.rel    = 'noopener noreferrer';
+        tooltipLink.classList.remove('hidden');
+      } else {
+        tooltipLink.classList.add('hidden');
+      }
+      tooltip.classList.remove('hidden');
+    });
 
     pin.addEventListener('mouseleave', (e) => {
       if (pin.contains(e.relatedTarget)) return;
@@ -406,7 +638,7 @@ function renderZones() {
   zoneTooltip.classList.add('hidden');
 
   const zoneOn = isZoneFilterEnabled();
-  const zones  = FLOOR_ZONES[currentFloor] || [];
+  const zones  = getFloorZones(currentFloor);
 
   zones.forEach(zone => {
     const pointsStr = zone.points.map(p => {
@@ -471,7 +703,7 @@ function renderZones() {
       zoneTooltip.classList.add('hidden');
       document.querySelectorAll('.monster-pin-hover').forEach(p => p.remove());
       const regionName = zone.regionName || zone.name;
-      const markerData = (FLOOR_MARKERS[currentFloor] || []).find(m => m.type === 'région' && m.name === regionName);
+      const markerData = getFloorMarkers(currentFloor).find(m => m.type === 'région' && m.name === regionName);
       if (markerData) {
         const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
         if (pin) { pin.style.opacity = '1'; pin.style.pointerEvents = ''; pin.style.cursor = ''; }
@@ -487,7 +719,7 @@ function renderZones() {
       emojiText.style.opacity = '1';
       label.style.opacity     = '1';
       const regionName = zone.regionName || zone.name;
-      const markerData = (FLOOR_MARKERS[currentFloor] || []).find(m => m.type === 'région' && m.name === regionName);
+      const markerData = getFloorMarkers(currentFloor).find(m => m.type === 'région' && m.name === regionName);
       if (markerData) {
         const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
         if (pin) { pin.style.opacity = '0'; pin.style.pointerEvents = 'none'; pin.style.cursor = 'default'; }
@@ -563,7 +795,7 @@ function renderZones() {
   if (zoneOn) {
     zones.forEach(zone => {
       const regionName = zone.regionName || zone.name;
-      const markerData = (FLOOR_MARKERS[currentFloor] || []).find(m =>
+      const markerData = getFloorMarkers(currentFloor).find(m =>
         m.type === 'région' && m.name === regionName
       );
       if (markerData) {
@@ -582,7 +814,7 @@ function renderMarkers() {
   markersLayer.innerHTML = '';
   document.querySelectorAll('.cluster-expanded').forEach(n => n.remove());
 
-  const markers = FLOOR_MARKERS[currentFloor] || [];
+  const markers = getFloorMarkers(currentFloor);
   const focused = _searchFocusId ? markers.find(m => m.id === _searchFocusId) : null;
 
   const visible = markers.filter(m => {
@@ -919,8 +1151,8 @@ floorInput.addEventListener('blur', () => {
 });
 document.addEventListener('keydown', (e) => {
   if (document.activeElement === floorInput) return;
-  if (e.key === 'ArrowUp')   goToFloor(currentFloor + 1);
-  if (e.key === 'ArrowDown') goToFloor(currentFloor - 1);
+  if (e.key === 'ArrowUp')   goToFloor(currentFloor - 1);
+  if (e.key === 'ArrowDown') goToFloor(currentFloor + 1);
 });
 
 window.addEventListener('resize', () => { updateVpBounds(); renderMarkers(); });
@@ -933,7 +1165,15 @@ const searchResults = document.getElementById('search-results');
 
 function getAllMarkers() {
   const all = [];
-  Object.entries(FLOOR_MARKERS).forEach(([floor, markers]) => {
+  let src;
+  if (currentLayer === 'underground') {
+    src = (typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined') ? FLOOR_MARKERS_UNDERGROUND : null;
+  } else {
+    src = (typeof FLOOR_MARKERS_SURFACE !== 'undefined')
+      ? FLOOR_MARKERS_SURFACE
+      : (typeof FLOOR_MARKERS !== 'undefined' ? FLOOR_MARKERS : null);
+  }
+  Object.entries(src || {}).forEach(([floor, markers]) => {
     markers.forEach(m => all.push({ ...m, floor: parseInt(floor) }));
   });
   return all;
@@ -1006,15 +1246,26 @@ searchInput.addEventListener('keydown', (e) => {
    INIT
 ══════════════════════════════════ */
 updateVpBounds();
-requestAnimationFrame(() => { updateVpBounds(); renderMarkers(); });
-window.addEventListener('popstate', (e) => {
-  const floor = e.state?.floor;
-  if (floor) goToFloor(floor);
-  else {
-    const hash = window.location.hash.match(/#floor-(\d+)/);
-    goToFloor(hash ? parseInt(hash[1]) : 1);
-  }
-});
+
+/* Parse le hash initial : #floor-3-underground ou #floor-2 (rétrocompat) */
+const _initHash = parseHash(window.location.hash);
+currentLayer = _initHash.layer;
+buildLayerSwitcher();
 buildWheel();
-const hash = window.location.hash.match(/#floor-(\d+)/);
-goToFloor(hash ? parseInt(hash[1]) : 1);
+
+requestAnimationFrame(() => {
+  updateVpBounds();
+  goToFloor(_initHash.floor);
+});
+
+window.addEventListener('popstate', (e) => {
+  const state = e.state || parseHash();
+  const layer = state.layer || 'surface';
+  const floor = state.floor || 1;
+  if (layer !== currentLayer) {
+    currentLayer = layer;
+    updateLayerBtn();
+    updateGhostOverlay();
+  }
+  goToFloor(floor);
+});

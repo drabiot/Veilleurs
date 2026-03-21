@@ -18,10 +18,15 @@ const FLOOR_NAMES = {
   2: 'Désert',
 };
 
+const FLOOR_DATA = {
+  1: { hasUnderground: false  },
+  2: { hasUnderground: true }
+};
+
 const FLOOR_ZONES = {
   1: [
     {
-      id: 'z1',
+      id: 'm1z1',
       name: 'Vallée des Loups',
       regionName: 'Vallée des Loups',
       color: '#e0ac60',
@@ -38,7 +43,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z2',
+      id: 'm1z2',
       name: 'Zone des Sangliers',
       regionName: 'Zone des Sangliers',
       color: '#644d58',
@@ -53,7 +58,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z3',
+      id: 'm1z3',
       name: 'Champs de Mizunari',
       color: '#82e753',
       emoji: '🌾',
@@ -66,7 +71,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z4',
+      id: 'm1z4',
       name: 'Marécage Putride',
       regionName: 'Marécage Putride',
       color: '#ee7560',
@@ -85,7 +90,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z5',
+      id: 'm1z5',
       name: 'Vallhat',
       regionName: 'Vallhat',
       color: '#74ce50',
@@ -104,7 +109,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z6',
+      id: 'm1z6',
       name: 'Ruines Maudites',
       color: '#eecf21',
       emoji: '💀',
@@ -119,7 +124,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z7',
+      id: 'm1z7',
       name: 'Mine de Geldorak',
       regionName: 'Mine de Geldorak',
       color: '#75bdcf',
@@ -136,7 +141,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z8',
+      id: 'm1z8',
       name: "Archipel d'Ika",
       regionName: "Archipel d'Ika",
       color: '#3e9db4',
@@ -151,7 +156,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z9',
+      id: 'm1z9',
       name: "Arakh'Nol",
       regionName: "Arakh'Nol",
       color: '#8bbeca',
@@ -168,7 +173,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z10',
+      id: 'm1z10',
       name: 'Montagnes de Tolbana',
       color: '#ddb04e',
       emoji: '🏔️',
@@ -181,7 +186,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z11a',
+      id: 'm1z11',
       name: 'Citadelle des Neiges',
       regionName: 'Citadelle des Neiges',
       color: '#224ba5',
@@ -198,7 +203,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z11b',
+      id: 'm1z12',
       name: 'Lac de Virelune',
       regionName: 'Antre de Aepep',
       color: '#bde3f1',
@@ -214,7 +219,7 @@ const FLOOR_ZONES = {
       ],
     },
     {
-      id: 'z12',
+      id: 'm1z13',
       name: 'Prairie des Sangliers',
       color: '#644d58',
       emoji: '🐗',
@@ -227,12 +232,152 @@ const FLOOR_ZONES = {
       ],
     },
   ],
-  2: [],
+  2: [
+    {
+      id: 'm2z1',
+      name: 'Lac des Taureaux',
+      regionName: 'Lac des Taureaux',
+      color: '#39494e',
+      emoji: '🐂',
+      monsters: [
+        { name: 'Taureau', level: 10, difficulty: '⭐', emoji: '🐃', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lac-des-taureaux/taureau' },
+        { name: 'Taureau Monstrueux', level: 10, difficulty: '⭐', emoji: '🐃', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lac-des-taureaux/taureau_monstrueux' },
+        ],
+        points: [
+          { gx: 151, gy: -135 }, { gx: 200, gy: -81 }, { gx: 175, gy: -9 },
+          { gx: 92, gy: 4 }, { gx: 20, gy: -75 }, { gx: 36, gy: -118 },
+        ]
+    },
+    {
+      id: 'm2z2',
+      name: 'Forêt Sucrée',
+      regionName: 'Forêt Sucrée',
+      color: '#53cb38',
+      emoji: '🍯',
+      monsters: [
+        { name: 'Ours de la Forêt', level: 11, difficulty: '⭐', emoji: '🐻', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lforêt-sucrée/ours-de-la-foret' },
+        { name: 'Winnie', level: 11, difficulty: '⭐⭐⭐', emoji: '🐻', link: '' },
+        ],
+        points: [
+          { gx: 294, gy: -625 }, { gx: 334, gy: -709 }, { gx: 541, gy: -719 },
+          { gx: 561, gy: -560 }, { gx: 455, gy: -544 }, { gx: 386, gy: -584 }, { gx: 332, gy: -563 },
+        ]
+    },
+    {
+      id: 'm2z3',
+      name: 'Désert des Crocs Argentés',
+      regionName: 'Désert des Crocs Argentés',
+      color: '#f3c26f',
+      emoji: '🐺',
+      monsters: [
+        { name: 'Loups des Montagnes', level: 10, difficulty: '⭐⭐', emoji: '🐺', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/desert-des-crocs-argentes/loups-des-montagnes' },
+        { name: 'Loups des Savanes', level: 10, difficulty: '⭐⭐', emoji: '🐺', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/desert-des-crocs-argentes/loups-des-savanes' },
+      ],
+      points: [
+        { gx: -207, gy: -593 }, { gx: -263, gy: -481 }, { gx: -528, gy: -395 },
+        { gx: -561, gy: -476 }, { gx: -529, gy: -542 }, { gx: -372, gy: -568 },
+      ]
+    },
+    {
+      id: 'm2z4',
+      name: 'Forêt des Ailes d\'Émeraude',
+      regionName: 'Forêt des Ailes d\'Émeraude',
+      color: '#53cb38',
+      emoji: '🍃',
+      monsters: [
+        { name: 'Harpie de Terre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/foret-des-ailes-demeraude/harpie-de-terre' },
+        ],
+        points: [
+          { gx: -583, gy: 385 }, { gx: -568, gy: 374 }, { gx: -531, gy: 410 },
+          { gx: -494, gy: 394 }, { gx: -476, gy: 472 }, { gx: -515, gy: 528 }, { gx: -553, gy: 501 }, { gx: -538, gy: 451 }, { gx: -551, gy: 421 },
+        ]
+    },
+    {
+      id: 'm2z5',
+      name: 'Baie des Monstres Ondoyante',
+      regionName: 'Baie des Monstres Ondoyante',
+      color: '#6363d7',
+      emoji: '🌊',
+      monsters: [
+        { name: 'Harpie de Foudre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/baie-des-monstres-ondoyante/harpie-de-foudre' },
+        { name: 'Poisson Fulgurant', level: 12, difficulty: '⭐', emoji: '🐟', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/baie-des-monstres-ondoyante/poisson-fulgurant' },
+        ],
+        points: [
+          { gx: -519, gy: -48 }, { gx: -452, gy: 76 }, { gx: -533, gy: 193 },
+          { gx: -721, gy: 220 }, { gx: -766, gy: 266 }, { gx: -839, gy: 211 }, { gx: -754, gy: 48 }, { gx: -675, gy: 54 },
+        ]
+    },
+    {
+      id: 'm2z6',
+      name: 'Sanctuaire de Khesûn',
+      regionName: 'Sanctuaire de Khesûn',
+      color: '#e0e02c',
+      emoji: '🛕',
+      monsters: [
+        { name: 'Squelette du Sanctuaire - Archer', level: 13, difficulty: '⭐⭐', emoji: '🏹', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/squelette-du-sanctuaire-archer' },
+        { name: 'Squelette du Sanctuaire - Shaman', level: 13, difficulty: '⭐⭐', emoji: '🌿', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/squelette-du-sanctuaire-shaman' },
+        { name: 'Squelette du Sanctuaire - Guerrier', level: 13, difficulty: '⭐⭐⭐', emoji: '⚔️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/squelette-du-sanctuaire-guerrier' },
+        { name: 'Gardien du Sanctuaire', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '☠️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/gardien-du-sanctuaire'},
+        { name: 'Minion du Gardien', level: 13, difficulty: '⭐', emoji: '🦴', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/minion-du-gardien'},
+        ],
+        points: [
+          { gx: -18, gy: 123 }, { gx: 14, gy: 127 }, { gx: 36, gy: 172 },
+          { gx: 36, gy: 200 }, { gx: -23, gy: 223 }, { gx: -47, gy: 218 }, { gx: -47, gy: 191 },
+        ]
+    },
+    {
+      id: 'm2z7',
+      name: 'Oasis Secret',
+      regionName: 'Oasis Secret',
+      color: '#98f8f9',
+      emoji: '🏝️',
+      monsters: [
+        { name: 'Velindra la Tisseuse', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🧙‍♀️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/oasis-secret/velindrala-tisseuse'},
+        ],
+        points: [
+          { gx: 754, gy: 301 }, { gx: 766, gy: 248 }, { gx: 816, gy: 225 },
+          { gx: 833, gy: 260 }, { gx: 795, gy: 284 },
+        ]
+    },
+  ],
+};
+
+const FLOOR_ZONES_UNDERGROUND = {
+  2: [
+    {
+      id: 'm2z1u1',
+      name: 'Nid de Brasier',
+      regionName: 'Nid de Brasier',
+      color: '#df6c42',
+      emoji: '🔥',
+      monsters: [
+        { name: 'Harpie de Feu', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/nid-de-brasier/harpie-de-feu' },
+      ],
+      points: [
+        { gx: -431, gy: 192 }, { gx: -506, gy: 317 }, { gx: -649, gy: 232 },
+        { gx: -680, gy: 231 }, { gx: -687, gy: 221 }, { gx: -677, gy: 208 }, { gx: -626, gy: 179 }, { gx: -538, gy: 152 }
+      ],
+    },
+    {
+      id: 'm2z2u1',
+      name: 'Les Veines de Sablemor',
+      regionName: 'Les Veines de Sablemor',
+      color: '#ded26b',
+      emoji: '🕳️',
+      monsters: [
+        { name: 'Golem de Pierre', level: 13, difficulty: '⭐⭐⭐', emoji: '🗿', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/les-veines-de-sablemor/golem-de-pierre' },
+        { name: 'Magnus, Colosse des Veines', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🛡️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/les-veines-de-sablemor/magnus-colosse-des-veines' },
+      ],
+      points: [
+        { gx: 226, gy: 341 }, { gx: 166, gy: 327 }, { gx: 154, gy: 298 },
+        { gx: 156, gy: 269 }, { gx: 181, gy: 234 }, { gx: 238, gy: 234 }, { gx: 267, gy: 267 }, { gx: 256, gy: 326 }
+      ],
+    },
+  ],
 };
 
 const FLOOR_MARKERS = {
   1: [
-    { id: 'm1d1',  type: 'donjon',  gx: 3334, gy: 1038, name: "Raid Tour du Kobold",                desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-kokolb' },
     { id: 'm1d2',  type: 'donjon',  gx: 2709, gy: 4408, name: 'Sous-Donjon Nasgul',                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-squelette' },
     { id: 'm1d3',  type: 'donjon',  gx: 4210, gy: 3895, name: 'Donjon Mine de Geldorak',            desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-geldorak' },
     { id: 'm1d4',  type: 'donjon',  gx: 2300, gy: 2400, name: "Donjon Labyrinthe des Déchus",       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-labyrinthe-des-dechus' },
@@ -310,7 +455,8 @@ const FLOOR_MARKERS = {
     { id: 'm1m7',  type: 'marchand', gx: 1940, gy: 843,  name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/marchands#tolbana-3' },
     { id: 'm1m8',  type: 'marchand', gx: 3230, gy: 1658, name: "Marchand de Consommables", desc: "Vends des Utilitaires comme des Potions ou des Parchemins", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/marchands#tolbana-2' },
     { id: 'm1m9',  type: 'marchand', gx: 3240, gy: 1658, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/marchands#tolbana' },
-    { id: 'm1m10', type: 'marchand', gx: 3257, gy: 1638, name: "Marchand d'Outils",        desc: "Vends des outils de Candelia", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/marchands#candelia' },
+    { id: 'm1m10', type: 'marchand', gx: 3257, gy: 1638, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/marchands#candelia' },
+    { id: 'm1m10', type: 'marchand', gx: 3071, gy: 3700, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/marchands#mizunari' },
 
     { id: 'm1c1', type: 'clef', emoji: '🗝️', gx: 1750, gy: 4170, name: 'Clef du Donjon Mine de Geldorak',      desc: "Clef permettant d'ouvrir la porte du Donjon des Mines de Geldorak",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/fabricants-clefs-et-secret#ville-de-depart' },
     { id: 'm1c2', type: 'clef', emoji: '🗝️', gx: 4210, gy: 3895, name: 'Clef du Donjon Mine de Geldorak',      desc: "Clef permettant d'ouvrir la porte du Donjon des Mines de Geldorak",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/personnages/fabricants-clefs-et-secret#mine-de-geldorak' },
@@ -396,7 +542,35 @@ const FLOOR_MARKERS = {
     { id: 'm1p28', type: 'quête_principale', gx: 3182,  gy: 1422, name: "28 - Donjon: Le Kobold",            desc: "Retournez voir le roi Harald et menez une expédition punitive, afin de défaire le roi Kobold: Illfang", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/donjon-le-kobold' },
   
   ],
-  2: [],
+  2: [
+    { id: 'm2d1',  type: 'donjon',  gx: 473, gy: -669, name: 'Donjon Ruche de Melliona',                  desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/donjons/donjon-ruche-de-melliona' },
+
+    { id: 'm2r1',  type: 'région',  gx: 118, gy: -68, name: 'Lac des Taureaux',                           desc: "Un lac asséché, dont le sol craquelé est parcouru des taureaux errants", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lac-des-taureaux' },
+    { id: 'm2r2',  type: 'région',  gx: 64, gy: -348, name: 'Urbus',                                      desc: "Ville marchande prospère, garde l'entrée du palier avec ses étals animés", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/urbus' },
+    { id: 'm2r3',  type: 'région',  gx: -545, gy: -245, name: 'Kaelor',                                   desc: "Ville fortifié, imprenable et dévouée au Dieu de la Guerre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/kaelor' },
+    { id: 'm2r4',  type: 'région',  gx: -389, gy: -493, name: 'Désert des Crocs Argentés',                desc: "Un désert impitoyable où rodent des loups aux crocs argentés", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/desert_des_crocs_argentes' },
+    { id: 'm2r5',  type: 'région',  gx: 445, gy: -611, name: 'Forêt Sucrée',                              desc: "Une forêt parfumée de miel, habitée par des ours et le bourdonnement des abeilles", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/foret-sucree' },
+    { id: 'm2r6',  type: 'région',  gx: 473, gy: -669, name: 'Ruche de Melliona',                         desc: "Une ruche géante et bourdonnante, royaume de Melliona et ses abeilles", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/ruche-de-melliona' },
+    { id: 'm2r7',  type: 'région',  gx: -525, gy: 444, name: 'Forêt des Ailes d\'Émeraude',               desc: "Une forêt luxuriante, refuge des harpies aux ailes vertes émeraude", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/foret-des-ailes-demeraude' },
+    { id: 'm2r8',  type: 'région',  gx: -780, gy: 171, name: 'Baie des Monstres Ondoyante',               desc: "Un marais tourbillonnant habité par des harpies de foudre aux cris perçants", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/baie-des-monstres-ondoyante' },
+    { id: 'm2r9',  type: 'région',  gx: -6, gy: 181, name: 'Sanctuaire de Khesûn',                        desc: "Un sanctuaire abandonné dans le désert, peuplé de squelettes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/sanctuaire-de-khesun' },
+    { id: 'm2r10',  type: 'région',  gx: 798, gy: 253, name: 'Oasis Secret',                              desc: "Une oasis secrète où des pécheurs vivent au rythme de l'eau et du silence", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/oasis-secret' },
+    { id: 'm2r11',  type: 'région',  gx: -88, gy: -92, name: 'Baobab Millénaire',                         desc: "Un baobab millénaire aux racines géantes, gardien silencieux du temps et des légendes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/baobab-millenaire' },
+    { id: 'm2r12',  type: 'région',  gx: 524, gy: -435, name: 'Autel des Deux Lunes',                     desc: "Personne ne détient d'information liée à ce lieu. Simplement deux autels ^portant une lune chacune...", link: 'http://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/autel-des-deux-lunes' },
+    { id: 'm2r13',  type: 'région',  gx: -315, gy: 139, name: 'Taran',                                    desc: "Ville abandonné dans un caillou", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/taran' },
+    { id: 'm2r14',  type: 'région',  gx: 671, gy: -255, name: 'Marome',                                   desc: "Petit village de marchands autosuffisant, uni par les prières à la déesse maternelle", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/marome' },
+    { id: 'm2r15',  type: 'région',  gx: -390, gy: -400, name: 'Maisons des Ngangas',                     desc: "Maisons de Kwabeno et Kwabena, deux ermites perdus des montagnes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/maisons-des-ngangas' },
+    { id: 'm2r16',  type: 'région',  gx: -150, gy: 740, name: 'Tour de Taurus',                           desc: "Une tour massive où résonnent les pas de Taurus, le Roi taureau redoutable", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/tour-de-taurus' },
+  ],
+  
+};
+
+const FLOOR_MARKERS_UNDERGROUND = {
+  2: [
+    { id: 'm2r1u1',  type: 'région',  gx: -540, gy: 226, name: 'Nid de Brasier',                          desc: "Un nid enflammé, refuge des harpies de feu au cœur de terres brûlantes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/nid-de-brasier' },
+    { id: 'm2r2u1',  type: 'région',  gx: 210, gy: 288, name: 'Les Veines de Sablemor',                   desc: "Des veines de sable profondes, sombres et étroites, cachant Magnus, le redoutable boss", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/les-veines-de-sablemor' },
+    { id: 'm2r3u1',  type: 'région',  gx: -296, gy: -79, name: 'Grotte de Taran',                         desc: "Grotte remplie de minéraux impressionnants et de mystères", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/grotte-de-taran' },
+  ],
 };
 
 const MAP_CALIBRATION = {
