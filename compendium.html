@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="img/VeilleursLogo.png" />
+  <title>[VCL] - Compendium</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="compendium.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+</head>
+<body class="glossary-page">
+
+  <!-- Fond ambiant -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="moon"></div>
+    <div class="fog fog-1"></div>
+    <div class="fog fog-2"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <!-- ══════ HEADER ══════ -->
+  <header class="site-header">
+    <div class="header-top">
+      <div class="header-left">
+        <div class="traffic-lights">
+          <span class="tl tl-red"></span>
+          <span class="tl tl-yellow"></span>
+          <span class="tl tl-green"></span>
+        </div>
+        <span class="header-sep">─────</span>
+        <a href="index.html" class="header-logo">Veilleurs au Clair de Lune</a>
+      </div>
+      <div class="header-right"></div>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html" class="nav-link">
+        <span class="nav-icon">📜</span>
+        <span class="nav-label">Patchnotes</span>
+      </a>
+      <a href="map.html" class="nav-link">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-label">Carte</span>
+      </a>
+      <a href="glossaire.html" class="nav-link active">
+        <span class="nav-icon">📖</span>
+        <span class="nav-label">Compendium</span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- ══════ LAYOUT ══════ -->
+  <div class="glossary-layout">
+
+    <!-- ── Sidebar gauche ── -->
+    <aside class="glossary-sidebar">
+      <div class="sidebar-search">
+        <input type="text" id="sidebar-search" placeholder="🔍  Rechercher un item…" autocomplete="off" />
+      </div>
+      <div class="sidebar-sort-bar">
+        <button class="sort-btn active" id="sort-palier" title="Trier par palier">⬡ Palier</button>
+        <button class="sort-btn" id="sort-alpha" title="Trier par ordre alphabétique">A → Z</button>
+      </div>
+      <div id="sidebar-tree"></div>
+    </aside>
+
+    <!-- ── Zone principale ── -->
+    <main class="glossary-main">
+      <div class="glossary-main-header">
+        <h1 class="glossary-title">Glossaire des Items</h1>
+        <p class="glossary-subtitle">// BASE DE DONNÉES · VEILLEURS AU CLAIR DE LUNE</p>
+      </div>
+
+      <div id="glossary-placeholder" class="glossary-placeholder">
+        <div class="glossary-placeholder-icon">📖</div>
+        <div class="glossary-placeholder-text">Sélectionner un item</div>
+      </div>
+
+      <div id="item-display"></div>
+    </main>
+
+  </div>
+
+  <script src="compendium.js"></script>
+</body>
+</html>
