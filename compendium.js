@@ -35,7 +35,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/dague_dentrainement.png",
     lore:     "Forgée pour ceux qui n'ont encore rien prouvé.",
     tags:     ['Arme', 'Dague', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans le tutoriel"
@@ -46,7 +46,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/epee_dentrainement.png",
     lore:     "Petite épée un peu rouillée parfaite pour s'entraîner ou pour démarrer son aventure.",
     tags:     ['Arme', 'Épée', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -57,18 +57,18 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/bouclier_de_pacotille.png",
     lore:     "Un vieux bouclier. Il bloque encore à peu près.",
     tags:     ['Arme', 'Bouclier', 'Rondache', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
   },
   {
     id:       'dague_délabrée',
-    name:     "Épée d'Entrainement",
+    name:     "Dague Délabrée",
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/dague_delabree.png",
     lore:     "Dague bien délabrée, même un coup sur du bois et l'épée peut être détruite.",
     tags:     ['Arme', 'Dague', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -79,7 +79,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/arc_courbe.png",
     lore:     "Un arc rudimentaire utilisé par les premiers tireurs.",
     tags:     ['Arme', 'Arc', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -90,7 +90,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    images:   ["img/compendium/textures/weapons/baton_mediocre_mage.png", "img/compendium/textures/weapons/baton_mediocre_shaman.png"],
     lore:     "Un bâton d'apprentissage magique inoffensif, mais porteur d'énergie.",
     tags:     ['Arme', 'Bâton', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -101,7 +101,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/grimoire_delie-sauvage.png",
     lore:     "Un livre incomplet débordant de magie.",
     tags:     ['Arme', 'Catalyseur', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -112,7 +112,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/grimoire_delie-sauvage.png",
     lore:     "Un livre incomplet débordant de magie.",
     tags:     ['Arme', 'Catalyseur', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -123,7 +123,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/epee_en_fer.png",
     lore:     "Épée en fer créée grâce aux loups de la vallée et avec un autre ingrédient.",
     tags:     ['Arme', 'Épée', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -134,7 +134,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/bouclier_dika.png",
     lore:     "Forgé dans la carapace des tortues d'Ika. Idéal pour encaisser sans broncher.",
     tags:     ['Arme', 'Bouclier', 'Pavois', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -145,7 +145,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/bouclier_pointu_en_bois.png",
     lore:     "Ce bouclier fait de bois possède une pointe en son centre. Il peut encaisser quelques coups aussi.",
     tags:     ['Arme', 'Bouclier', 'Rondache', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -156,7 +156,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/dague_intermediaire.png",
     lore:     "Standard des nouvelles recrues. Facile à manier, légère et très fiable.",
     tags:     ['Arme', 'Dague', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -167,7 +167,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/hache_double_en_fer.png",
     lore:     "Double hache en fer créée grâce aux loups de la vallée et avec un autre ingrédient.",
     tags:     ['Arme', 'Hache', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -178,7 +178,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'nourriture',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/viande_de_sanglier.png",
     lore:     "Cette belle viande de sanglier, bien juteuse, peut vous donner encore plus envie de manger !",
     tags:     ['Nourriture', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Sangliers Corrompus\n- Pumba"
@@ -189,7 +189,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/peau_de_sanglier.png",
     lore:     "Utilisable pour de la tannerie basique.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Sangliers Corrompus\n- Pumba"
@@ -200,7 +200,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/cristal_corrompu.png",
     lore:     "Des traces de corruptions émanent de cet objet.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Sangliers Corrompus\n- Pumba"
@@ -211,7 +211,7 @@ const ITEMS = [
     rarity:   'legendaire',
     category: 'accessoire',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/trinkets/P1/Anneau\ de\ Pumba.png",
     lore:     "Taillé dans un métal épais et marqué par une rayure rouge, cet anneau est inspiré du célèbre sanglier massif.",
     tags:     ['Accessoire', 'Anneau', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en tuant:\n- Pumba"
@@ -222,7 +222,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/fourrure_de_loup.png",
     lore:     "Une fourrure souple et légère, utilisée pour fabriquer des armures.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)\n- Albal"
@@ -233,7 +233,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/crocs_de_loup.png",
     lore:     "Une dent longue et acérée, prisée de certains artisans.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)\n- Albal"
@@ -244,7 +244,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/crocs_de_albal.gif",
     lore:     "Un croc massif imprégné de sa rage sauvage. Son essence est utilisée pour concoter des potions de force redoutable.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Albal"
@@ -255,7 +255,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/spore_corrompu.png",
     lore:     "Un spore étrange imprégné de corruption...",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Nephentes"
@@ -266,7 +266,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/fragment_de_feuille.png",
     lore:     "Des restes végétaux porteurs d'une étrange énergie naturelle.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Nephentes"
@@ -277,7 +277,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/pousse_de_sylve.png",
     lore:     "Petite pousse dans un bol très utile dans la confection de potion de vie.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Minis Tréants"
@@ -288,7 +288,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/eclat_de_bois_magique.png",
     lore:     "Fragment d'un ancien Tréant. Même détaché de celui-ci il conserve encore de la magie à l'intérieur.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Minis Tréants"
@@ -299,7 +299,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/ecorce_de_titan.png",
     lore:     "Ressource très dure presque incassable, les Guerriers pourront se protéger avec.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Guerriers Tréants"
@@ -321,7 +321,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/bouclier_sylvestre.png",
     lore:     "Grand bouclier en bois qui peut seulement être obtenu par un Guerrier Tréant.",
     tags:     ['Arme', 'Bouclier', 'Pavois', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Guerriers Tréants"
@@ -343,7 +343,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/corde_darc_sylvestre.png",
     lore:     "Longue et tendue, cette corde robuste est idéale pour confectionner un nouvel arc.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Tréants d'Élites"
@@ -354,7 +354,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/arc_sylvestre.png",
     lore:     "Arc construitavec l'aidees Tréants du Palier 1 de l'Aincrad.",
     tags:     ['Arme', 'Arc', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Tréants d'Élites\nFabricable au Forgeron d'Armes de la Ville de Départ"
@@ -365,7 +365,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/brindille_enchantee.png",
     lore:     "Brindille du Mage Sylvestre, ce bâton peutêtre utilisé comme basepour une arme magique.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres"
@@ -376,7 +376,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/coeur_de_bois.png",
     lore:     "Cœur imprégné de magie, si vous l'utilisez avec précaution une arme très redoutable peut être créée.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres"
@@ -387,7 +387,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/tissu_spectral.png",
     lore:     "Un tissu imprégné de magie noire et de malédictions.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres"
@@ -398,7 +398,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    images:    ["img/compendium/textures/weapons/baton_sylvestre_mage.png", "img/compendium/textures/weapons/baton_sylvestre_shaman.png"],
     lore:     "Un livre forgé par des matériaux venant d'un marécage putride et ancien. Il renferme une magie élémentaire.",
     tags:     ['Arme', 'Catalyseur', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -409,7 +409,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/grimoire_sylvestre.png",
     lore:     "Un livre forgé par des matériaux venant d'un marécage putride et ancien. Il renferme une magie élémentaire.",
     tags:     ['Arme', 'Catalyseur', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -420,7 +420,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/grimoire_bestial.png",
     lore:     "Un livre forgé par des matériaux venant d'un marécage putride et ancien. Il renferme une magie bestiale.",
     tags:     ['Arme', 'Catalyseur', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -431,7 +431,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/mycelium_magique.png",
     lore:     "Ingrédient assez rare pour de la haute alchimie ou pour autre chose ?",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Gardiens Colossaux"
@@ -442,7 +442,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/marteau_du_colosse.png",
     lore:     "Arme de destruction du Gardien Colossal. Ce marteau est puissant mais lourd.",
     tags:     ['Arme', 'Marteau', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Gardiens Colossaux"
@@ -464,7 +464,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/noyau_de_slime.png",
     lore:     "Noyau imprégné de la magie des slimes. Utilisé dasn la confection d'accessoires magiques.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Slimes Soigneurs\n- Slimes Magiciens\n- Gorbel"
@@ -475,7 +475,7 @@ const ITEMS = [
     rarity:   'epique',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/essence_de_gorbel.png",
     lore:     "Essence d'un slime qui a atteint son plus haut potentiel.",
     tags:     ['Matériaux', 'Palier 1', 'Épique'],
     obtain:   "Obtenable en tuant:\n- Gorbel"
@@ -486,7 +486,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/os_de_squelette.png",
     lore:     "Petit os que l'on trouve sur des squelettes de bas rang. Sûrement utile pour certaines confections.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes\n- Squelettes Hallebardiers\n- Squelettes Mages"
@@ -519,7 +519,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/ames_des_ruines.png",
     lore:     "Âme de squelette abreuvé de corruption.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes\n- Squelettes Hallebardiers\n- Archers Squelettes"
@@ -530,7 +530,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/epee_osseuse.png",
     lore:     "Taillé dans les os d'un ancien guerrier tombé en disgrâce.",
     tags:     ['Armes', 'Épée', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes"
@@ -541,7 +541,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/tissu_maudit.png",
     lore:     "Les forces obscures devorent ce tissu.",
     tags:     ['Quête', 'Palier 1', 'commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes"
@@ -552,7 +552,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/baton_squelettique.png",
     lore:     "Bâton ancien des ruines maudites, encore vivant de la flamme des morts.",
     tags:     ['Armes', 'Bâton', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelettes Mages"
@@ -563,7 +563,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/coeur_putrefie.png",
     lore:     "La putréfaction ronge peu à peu ce cœur.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit"
@@ -574,7 +574,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    null,
+    images:    ["img/compendium/textures/weapons/baton_de_squelette_maudit_mage.png", "img/compendium/textures/weapons/baton_de_squelette_maudit_shaman.png"],
     lore:     "Bâton encore imprégné de sa magie après la mort de son propriétaire.",
     tags:     ['Armes', 'Bâton', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit"
@@ -585,7 +585,7 @@ const ITEMS = [
     rarity:   'legendaire',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/morceau_de_criniere_spectrale.png",
     lore:     "Une mèche de crinière éthérée, arrachée a une monture spectrale. Elle palpite encore d'une énergie rapide.",
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
     obtain:   "Obtenable en tuant:\n- Nasgul"
@@ -596,7 +596,7 @@ const ITEMS = [
     rarity:   'legendaire',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/eclat_du_sabot_maudit.png",
     lore:     "Fragment arraché au sabot d'une créature maudite. Il renferme une énergie sombre qui confère à son porteur une vitesse surnaturelle.",
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
     obtain:   "Obtenable en tuant:\n- Nasgul"
@@ -607,7 +607,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/items/cuir_use.png",
     lore:     "Un morceau de cuir abîmé autrefois portépar des Bandits. Il reste utilisable.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Bandits Archer\n- Bandits Assassins\n- Bandits Robustes"
@@ -629,7 +629,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/arbalete_de_bandit.png",
     lore:     "Arbalète d'un bandit qui devient presque inutilisable après tous ces combats.",
     tags:     ['Armes', 'Arbalète', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Bandits Archer"
@@ -640,7 +640,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    null,
+    image:    "img/compendium/textures/weapons/dague_de_bandit.png",
     lore:     "Dague émoussé d'un bandit après tous ces combats sanglants.",
     tags:     ['Armes', 'Dague', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Bandits Assassins"
@@ -902,41 +902,13 @@ function buildSidebar(items, expandAll = false) {
 
 /* ══════════════════════════════════════════════════════════════
    VISIONNEUSE D'IMAGES — DIAPORAMA + WEBGL
-   ──────────────────────────────────────────────────────────────
-   Un item peut avoir :
-
-     image  : "path.png" | "path.gif"
-              → une seule image ou GIF
-
-     images : ["a.png", "b.gif", { model: {...}, texture: "c.png" }]
-              → diaporama avec pause, chaque entrée peut être
-                une image/GIF ou un modèle 3D
-
-     model  : { model: {...}, texture: "path.png" }
-              → un seul modèle 3D
-
-   ⚠️  IMPORTANT — site ouvert en file:// (sans serveur) :
-       Le champ `model` doit être l'OBJET JSON directement,
-       pas un chemin de fichier. Exemple :
-
-         model: {
-           model:   { ...contenu du .json minecraft... },
-           texture: "img/items/ma_texture.png"
-         }
-
-       Copiez-collez simplement le contenu de votre fichier
-       .json Minecraft comme valeur du champ `model`.
-
-   Si vous utilisez un vrai serveur HTTP (Live Server, etc.)
-   vous pouvez aussi passer un chemin : model: "models/item.json"
 ══════════════════════════════════════════════════════════════ */
-const SLIDE_DELAY = 3000; // ms entre chaque slide
+const SLIDE_DELAY = 3000;
 let   _slideTimer = null;
 let   _slideIndex = 0;
 let   _slidePaused = false;
-let   _slideMedia  = [];  // liste normalisée des médias de l'item courant
+let   _slideMedia  = [];
 
-/* Normalise le champ image/images/model en tableau uniforme */
 function resolveMedia(item) {
   if (item.images && Array.isArray(item.images)) return item.images;
   if (item.model)  return [item.model];
@@ -944,17 +916,14 @@ function resolveMedia(item) {
   return [];
 }
 
-/* Arrête le timer de diaporama en cours */
 function stopSlideshow() {
   if (_slideTimer) { clearInterval(_slideTimer); _slideTimer = null; }
 }
 
-/* ── Rendu d'un média dans #item-media-inner ── */
 function renderMedia(media, color, altName) {
   const inner = document.getElementById('item-media-inner');
   if (!inner) return;
 
-  /* Fondu sortant */
   inner.classList.add('fade-out');
 
   setTimeout(() => {
@@ -967,14 +936,12 @@ function renderMedia(media, color, altName) {
       return;
     }
 
-    /* Objet → modèle 3D */
     if (typeof media === 'object' && media.model) {
       renderWebGL(inner, media.model, media.texture, color);
       inner.classList.remove('fade-out');
       return;
     }
 
-    /* Chaîne → image / gif */
     const img = document.createElement('img');
     img.src = media;
     img.alt = altName || '';
@@ -984,7 +951,6 @@ function renderMedia(media, color, altName) {
   }, 220);
 }
 
-/* ── Mise à jour des indicateurs du diaporama ── */
 function updateSlideIndicators() {
   document.querySelectorAll('.slide-dot').forEach((dot, i) => {
     dot.classList.toggle('active', i === _slideIndex);
@@ -993,14 +959,12 @@ function updateSlideIndicators() {
   if (counter) counter.textContent = `${_slideIndex + 1} / ${_slideMedia.length}`;
 }
 
-/* ── Aller à un slide précis ── */
 function goToSlide(index, color, name) {
   _slideIndex = (index + _slideMedia.length) % _slideMedia.length;
   renderMedia(_slideMedia[_slideIndex], color, name);
   updateSlideIndicators();
 }
 
-/* ── Démarrer le diaporama ── */
 function startSlideshow(color, name) {
   stopSlideshow();
   if (_slideMedia.length <= 1 || _slidePaused) return;
@@ -1020,10 +984,6 @@ function togglePause(color, name) {
 
 /* ══════════════════════════════════
    RENDU WEBGL — MODÈLE MINECRAFT
-   ──────────────────────────────────
-   Charge un fichier model Minecraft (.json) + texture (.png)
-   et affiche un cube 3D interactif avec Three.js (CDN).
-   L'utilisateur peut faire tourner le modèle à la souris.
 ══════════════════════════════════ */
 let _webglRenderer = null;
 let _webglAnimId   = null;
@@ -1034,7 +994,6 @@ function stopWebGL() {
 }
 
 function renderWebGL(container, modelPath, texturePath, accentColor) {
-  /* Charger Three.js dynamiquement si besoin */
   function initScene() {
     const W = container.clientWidth  || 128;
     const H = container.clientHeight || 128;
@@ -1051,7 +1010,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
     camera.position.set(0, 0, 3.5);
     camera.lookAt(0, 0, 0);
 
-    /* Lumières — ambiance douce + directionnel */
     scene.add(new THREE.AmbientLight(0xffffff, 1.2));
     const dir = new THREE.DirectionalLight(0xffffff, 0.5);
     dir.position.set(3, 5, 3);
@@ -1063,9 +1021,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
         texture.minFilter = THREE.NearestFilter;
       }
 
-      /* modelPath peut être :
-         - un objet JS (JSON déjà parsé) → utilisé directement, fonctionne en file://
-         - une chaîne URL                → fetch, nécessite un serveur HTTP */
       if (typeof modelPath === 'object' && modelPath !== null) {
         buildFromMCModel(scene, modelPath, texture, accentColor);
       } else {
@@ -1079,9 +1034,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
       }
     }
 
-    /* Chargement de la texture compatible file://
-       TextureLoader utilise fetch en interne sur certains navigateurs,
-       on passe par un <img> natif qui fonctionne partout. */
     function loadTextureCompat(src, onLoad) {
       const img = new Image();
       img.onload = () => {
@@ -1092,7 +1044,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
         onLoad(tex);
       };
       img.onerror = () => onLoad(null);
-      /* Évite le blocage CORS quand on est sur le même domaine / file:// */
       img.crossOrigin = '';
       img.src = src;
     }
@@ -1106,7 +1057,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
       buildScene(null);
     }
 
-    /* Rotation auto + drag souris */
     let isDragging = false, lastX = 0, lastY = 0;
     let rotX = 0.4, rotY = 0.6;
     let autoRotate = true;
@@ -1129,7 +1079,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
       isDragging = false; el.style.cursor = 'grab';
     });
 
-    /* Touch */
     el.addEventListener('touchstart', e => {
       isDragging = true; autoRotate = false;
       lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
@@ -1142,7 +1091,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
     }, { passive: true });
     el.addEventListener('touchend', () => { isDragging = false; });
 
-    /* Boucle de rendu */
     const pivot = new THREE.Group();
     scene.add(pivot);
     window._mcPivot = pivot;
@@ -1159,11 +1107,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
 
   /* ══════════════════════════════════════════════════════════
      PARSEUR MINECRAFT — UV correct par face
-     ──────────────────────────────────────────────────────────
-     On construit chaque face visible comme un PlaneGeometry
-     indépendant avec les UVs précalculées dans l'atlas.
-     Cela évite les problèmes de texture.clone() + offset/repeat
-     qui ne fonctionnent pas correctement avec Three.js r128.
   ══════════════════════════════════════════════════════════ */
   function buildFromMCModel(scene, mcModel, texture, accentColor) {
     const pivot    = window._mcPivot || scene;
@@ -1172,14 +1115,12 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
 
     const TW = (mcModel.texture_size && mcModel.texture_size[0]) || 64;
     const TH = (mcModel.texture_size && mcModel.texture_size[1]) || 64;
-    const S  = 1 / 16; // coordonnées MC → unités Three.js
+    const S  = 1 / 16;
 
-    /* Matériau de base partagé (une seule texture, UVs dans la géo) */
     const baseMat = texture
       ? new THREE.MeshLambertMaterial({ map: texture, transparent: true, alphaTest: 0.05 })
       : new THREE.MeshLambertMaterial({ color: accentColor || 0x888888 });
 
-    /* Direction normale + axes UV pour chaque face MC */
     const FACE_META = {
       north: { normal: [  0,  0, -1 ], right: [-1, 0, 0], up: [0,  1, 0] },
       south: { normal: [  0,  0,  1 ], right: [ 1, 0, 0], up: [0,  1, 0] },
@@ -1193,13 +1134,11 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
       const fx = elDef.from[0], fy = elDef.from[1], fz = elDef.from[2];
       const tx = elDef.to[0],   ty = elDef.to[1],   tz = elDef.to[2];
 
-      /* Taille et centre de la boîte en coordonnées Three.js */
       const sx = (tx - fx) * S, sy = (ty - fy) * S, sz = (tz - fz) * S;
       const cx = ((fx + tx) / 2 - 8) * S;
       const cy = ((fy + ty) / 2 - 8) * S;
       const cz = ((fz + tz) / 2 - 8) * S;
 
-      /* Groupe pour cet élément (applique la rotation MC si besoin) */
       let elementParent = pivot;
       let elementOffset = new THREE.Vector3(cx, cy, cz);
 
@@ -1221,14 +1160,12 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
         elementOffset = new THREE.Vector3(cx - ox, cy - oy, cz - oz);
       }
 
-      /* Une face = un PlaneGeometry avec UVs précises */
       Object.entries(FACE_META).forEach(([faceName, meta]) => {
         const faceDef = elDef.faces && elDef.faces[faceName];
-        if (!faceDef) return; // face absente → skip
+        if (!faceDef) return;
 
         const uv = faceDef.uv;
 
-        /* Taille du plan selon la face */
         let pw, ph;
         if (faceName === 'north' || faceName === 'south') { pw = sx; ph = sy; }
         else if (faceName === 'east'  || faceName === 'west')  { pw = sz; ph = sy; }
@@ -1236,12 +1173,10 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
 
         const geo = new THREE.PlaneGeometry(pw, ph);
 
-        /* Calcul des UVs normalisées dans l'atlas */
         if (uv && texture) {
           let u1 = uv[0] / TW, v1 = 1 - uv[3] / TH;
           let u2 = uv[2] / TW, v2 = 1 - uv[1] / TH;
 
-          /* Rotation UV (multiple de 90°) */
           const rot = (faceDef.rotation || 0) % 360;
           const uvCoords = [
             [u1, v2], // bl
@@ -1255,7 +1190,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
             uvCoords[0] = tl; uvCoords[1] = bl; uvCoords[2] = tr; uvCoords[3] = br;
           }
 
-          /* PlaneGeometry a 4 vertices : 0=tl, 1=tr, 2=bl, 3=br */
           const uvAttr = geo.attributes.uv;
           uvAttr.setXY(0, uvCoords[2][0], uvCoords[2][1]); // tl
           uvAttr.setXY(1, uvCoords[3][0], uvCoords[3][1]); // tr
@@ -1266,7 +1200,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
 
         const mesh = new THREE.Mesh(geo, baseMat);
 
-        /* Positionner et orienter le plan */
         const n  = meta.normal;
         const halfX = sx / 2, halfY = sy / 2, halfZ = sz / 2;
         const offsets = {
@@ -1284,7 +1217,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
           elementOffset.z + off[2]
         );
 
-        /* Orienter le plan face à sa normale */
         mesh.lookAt(
           mesh.position.x + n[0],
           mesh.position.y + n[1],
@@ -1295,7 +1227,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
       });
     });
 
-    /* Appliquer la rotation GUI (affichage inventaire) */
     if (mcModel.display && mcModel.display.gui) {
       const g = mcModel.display.gui;
       if (g.rotation) {
@@ -1306,7 +1237,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
     }
   }
 
-  /* Cube de fallback si le JSON ne charge pas */
   function buildFallbackCube(scene, texture) {
     const pivot = window._mcPivot || scene;
     const geo = new THREE.BoxGeometry(1, 1, 1);
@@ -1316,7 +1246,6 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
     pivot.add(new THREE.Mesh(geo, mat));
   }
 
-  /* Injecter Three.js si pas encore chargé */
   if (typeof THREE === 'undefined') {
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
@@ -1353,7 +1282,6 @@ function showItem(id) {
 
   const hasSlideshow = _slideMedia.length > 1;
 
-  /* ── Contrôles diaporama ── */
   const slideshowControls = hasSlideshow ? `
     <div class="slideshow-controls">
       <button class="slide-btn" id="slide-prev" title="Précédent">‹</button>
@@ -1365,7 +1293,6 @@ function showItem(id) {
       <button class="slide-btn" id="slide-next" title="Suivant">›</button>
     </div>` : '';
 
-  /* ── Indicateur de type de média ── */
   function mediaTypeLabel(m) {
     if (!m) return '';
     if (typeof m === 'object' && m.model) return '<span class="media-type-badge">3D</span>';
@@ -1401,20 +1328,19 @@ function showItem(id) {
       </div>
 
       <div class="item-sep"></div>
+      <div class="item-section-title">Comment obtenir cet item</div>
+      <div class="item-obtain">${parseText(item.obtain)}</div>
+      <div class="item-sep"></div>
       <div class="item-tags">
         ${(item.tags || []).map(t => `<span class="item-tag">${t}</span>`).join('')}
       </div>
-      <div class="item-sep"></div>
-      <div class="item-section-title">Comment obtenir cet item</div>
-      <div class="item-obtain">${parseText(item.obtain)}</div>
-    </div>`;
 
-  /* ── Afficher le premier média ── */
+    </div>`
+
   if (_slideMedia.length > 0) {
     renderMedia(_slideMedia[0], color, item.name);
   }
 
-  /* ── Brancher les boutons du diaporama ── */
   if (hasSlideshow) {
     document.getElementById('slide-prev').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1466,12 +1392,11 @@ window.addEventListener('popstate', () => {
 ══════════════════════════════════ */
 buildSidebar(ITEMS);
 
-/* Si un hash est déjà dans l'URL, ouvrir l'accordéon correspondant et afficher l'item */
 const initId = window.location.hash.replace('#', '');
 if (initId) {
   const target = ITEMS.find(i => i.id === initId);
   if (target) {
-    /* Ouvrir le bon palier + catégorie */
+
     buildSidebar(ITEMS);
     requestAnimationFrame(() => {
       const link = sidebarTree.querySelector(`.sidebar-item[data-id="${initId}"]`);
