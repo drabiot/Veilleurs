@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="img/VeilleursLogo.png" />
+  <title>[VCL] — Atelier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="atelier.css" />
+</head>
+<body>
+
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="moon"></div>
+    <div class="fog fog-1"></div>
+    <div class="fog fog-2"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <header class="site-header">
+    <div class="header-top">
+      <div class="header-left">
+        <div class="traffic-lights">
+          <span class="tl tl-red"></span>
+          <span class="tl tl-yellow"></span>
+          <span class="tl tl-green"></span>
+        </div>
+        <span class="header-sep">─────</span>
+        <a href="index.html" class="header-logo">Veilleurs au Clair de Lune</a>
+      </div>
+      <div class="header-right"></div>
+    </div>
+    <nav class="header-nav">
+      <a href="index.html"         class="nav-link"><span class="nav-icon">📜</span><span class="nav-label">Patchnotes</span></a>
+      <a href="map.html"           class="nav-link"><span class="nav-icon">🗺️</span><span class="nav-label">Carte</span></a>
+      <a href="compendium.html"    class="nav-link"><span class="nav-icon">📖</span><span class="nav-label">Compendium</span></a>
+      <a href="atelier.html" class="nav-link active"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
+    </nav>
+  </header>
+
+  <div class="page">
+    <div class="body">
+
+      <!-- ── Gauche : actions ── -->
+      <aside class="sidebar sidebar-left">
+        <div class="sidebar-head">⬡ Classe</div>
+        <div id="class-picker" class="class-picker"></div>
+        <div class="sidebar-head">⬡ Actions</div>
+        <div class="actions">
+          <input id="inp-name" class="input-name" type="text" placeholder="Nom du stuff…" autocomplete="off" />
+          <div class="divider"></div>
+          <button id="btn-export" class="action-btn primary">◈ Exporter le Stuff</button>
+          <button id="btn-import" class="action-btn">↑ Importer</button>
+          <div class="divider"></div>
+          <button id="btn-reset"  class="action-btn danger">✕ Réinitialiser</button>
+        </div>
+      </aside>
+
+      <!-- ── Centre : mannequin gauche + stats droite ── -->
+      <main class="center">
+        <div class="center-head">
+          <div class="center-title">Atelier</div>
+          <div class="center-sub">// CONSTRUCTEUR D'ÉQUIPEMENT · VEILLEURS AU CLAIR DE LUNE</div>
+        </div>
+
+        <div class="center-body">
+
+          <!-- Mannequin -->
+          <div class="mannequin-col">
+            <div class="mq">
+              <div class="mq-main-row">
+                <div class="mq-col-left"  id="col-left"></div>
+                <div class="mq-skin" id="mq-skin">
+                  <span class="sk-c"></span>
+                  <div class="skin-ph">
+                    <div class="skin-ph-icon">🧍</div>
+                    <div class="skin-ph-label">Modèle<br>Minecraft<br>à venir</div>
+                  </div>
+                </div>
+                <div class="mq-col-right" id="col-right"></div>
+              </div>
+              <div class="mq-row-bot" id="row-bot"></div>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="stats-col">
+            <div class="stats-head">⬡ Statistiques</div>
+            <div class="stats-list" id="stats-list"></div>
+          </div>
+
+        </div>
+      </main>
+
+      <!-- ── Droite : picker ── -->
+      <aside class="sidebar sidebar-right">
+        <div class="sidebar-head">⬡ Choisir un Item</div>
+        <div class="picker-slot-info" id="picker-info">
+          <div class="psi-hint">Cliquez sur un emplacement</div>
+        </div>
+        <div class="picker-search-wrap">
+          <input id="inp-search" class="picker-search-input" type="text" placeholder="🔍  Filtrer les items…" autocomplete="off" />
+        </div>
+        <div class="picker-filters-wrap" id="filters-wrap"></div>
+        <div class="picker-items-list"   id="items-list">
+          <div class="picker-empty-msg">Sélectionnez un emplacement pour voir les items</div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+
+  <!-- Modal export -->
+  <div class="modal-backdrop" id="modal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="btn-modal-close">✕</button>
+      <div class="modal-title">Exporter le Stuff</div>
+      <textarea class="modal-ta" id="modal-ta" readonly></textarea>
+      <div class="modal-foot">
+        <button id="btn-copy"         class="action-btn primary">◈ Copier</button>
+        <button id="btn-modal-close2" class="action-btn">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="atelier.js"></script>
+</body>
+</html>

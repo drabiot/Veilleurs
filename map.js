@@ -173,9 +173,9 @@ function buildLayerSwitcher() {
 /* Texte du bouton : indique où on VA (pas où on est) */
 function getLayerBtnHTML() {
   if (currentLayer === 'surface') {
-    return `<span style="font-size:14px;line-height:1">🕳️</span> Sous-sol`;
+    return `<span style="font-size:14px;line-height:1">⬇️</span> Sous-sol`;
   }
-  return `<span style="font-size:14px;line-height:1">⛰️</span> Surface`;
+  return `<span style="font-size:14px;line-height:1">⬆️</span> Surface`;
 }
 
 function updateLayerBtn() {
@@ -811,6 +811,7 @@ function renderZones() {
    RENDU MARQUEURS
 ══════════════════════════════════ */
 function renderMarkers() {
+  clearQuestChain();
   markersLayer.innerHTML = '';
   document.querySelectorAll('.cluster-expanded').forEach(n => n.remove());
 
@@ -842,6 +843,123 @@ function renderMarkers() {
   renderZones();
 }
 
+
+/* ══════════════════════════════════
+   CHAÎNE QUÊTES PRINCIPALES
+   Au hover d'un pin quête_principale,
+   trace une ligne SVG reliant tous les
+   pins précédents dans l'ordre.
+══════════════════════════════════ */
+
+function getQuestOrder(name) {
+  const m = name.match(/^(\d+)\s*[-–]/);
+  return m ? parseInt(m[1]) : null;
+}
+
+function getQuestChainSvg() {
+  let svg = document.getElementById('quest-chain-layer');
+  if (!svg) {
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.id = 'quest-chain-layer';
+    svg.style.cssText = `
+      position:absolute; top:0; left:0;
+      width:100%; height:100%;
+      pointer-events:none;
+      z-index:5;
+      overflow:visible;
+    `;
+    markersLayer.parentElement.insertBefore(svg, markersLayer.nextSibling);
+  }
+  return svg;
+}
+
+function clearQuestChain() {
+  const svg = document.getElementById('quest-chain-layer');
+  if (svg) svg.innerHTML = '';
+  /* Retirer le highlight des pins */
+  markersLayer.querySelectorAll('.marker[data-quest-chain]').forEach(el => {
+    el.removeAttribute('data-quest-chain');
+    el.querySelector('.marker-icon') && (el.querySelector('.marker-icon').style.outline = '');
+    el.style.zIndex = '';
+  });
+}
+
+function showQuestChain(hoveredMarker) {
+  clearQuestChain();
+
+  const order = getQuestOrder(hoveredMarker.name);
+  if (order === null) return;
+
+  /* Récupérer tous les marqueurs de quête principale du floor actuel */
+  const allMarkers = getFloorMarkers(currentFloor).filter(m => m.type === 'quête_principale');
+
+  /* Trier par numéro */
+  const sorted = allMarkers
+    .map(m => ({ ...m, order: getQuestOrder(m.name) }))
+    .filter(m => m.order !== null)
+    .sort((a, b) => a.order - b.order);
+
+  /* Ne garder que jusqu'à la quête hovée (incluse) */
+  const chain = sorted.filter(m => m.order <= order);
+  if (chain.length < 2) return;
+
+  /* Convertir en coordonnées écran */
+  const screenPoints = chain.map(m => {
+    const img = gameToPixel(m.gx, m.gy);
+    return imageToScreen(img.x, img.y);
+  });
+
+  const svg = getQuestChainSvg();
+  const COLOR = '#f0c040';
+
+  /* Ligne de chemin */
+  for (let i = 0; i < screenPoints.length - 1; i++) {
+    const a = screenPoints[i];
+    const b = screenPoints[i + 1];
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', a.x);
+    line.setAttribute('y1', a.y);
+    line.setAttribute('x2', b.x);
+    line.setAttribute('y2', b.y);
+    line.setAttribute('stroke', COLOR);
+    line.setAttribute('stroke-width', '2');
+    line.setAttribute('stroke-dasharray', '6 4');
+    line.setAttribute('stroke-linecap', 'round');
+    line.style.opacity = '0.75';
+    svg.appendChild(line);
+  }
+
+  /* Numéroter chaque étape avec un petit cercle SVG */
+  screenPoints.forEach((pt, i) => {
+    const m = chain[i];
+    const isHovered = m.order === order;
+
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', pt.x);
+    circle.setAttribute('cy', pt.y);
+    circle.setAttribute('r', isHovered ? '14' : '10');
+    circle.setAttribute('fill', isHovered ? COLOR : '#a07820');
+    circle.setAttribute('stroke', COLOR);
+    circle.setAttribute('stroke-width', '2');
+    circle.style.opacity = isHovered ? '1' : '0.7';
+    svg.appendChild(circle);
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', pt.x);
+    text.setAttribute('y', pt.y);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('font-size', isHovered ? '10' : '8');
+    text.setAttribute('font-weight', '700');
+    text.setAttribute('font-family', 'JetBrains Mono, monospace');
+    text.setAttribute('fill', '#1a1000');
+    text.style.pointerEvents = 'none';
+    text.textContent = m.order;
+    svg.appendChild(text);
+  });
+}
+
 function renderSingleMarker(m) {
   const el = document.createElement('div');
   el.className    = 'marker';
@@ -871,8 +989,14 @@ function renderSingleMarker(m) {
     el.appendChild(icon);
   }
 
-  el.addEventListener('mouseenter', () => showTooltip(m));
-  el.addEventListener('mouseleave', hideTooltip);
+  el.addEventListener('mouseenter', () => {
+    showTooltip(m);
+    if (m.type === 'quête_principale') showQuestChain(m);
+  });
+  el.addEventListener('mouseleave', () => {
+    hideTooltip();
+    if (m.type === 'quête_principale') clearQuestChain();
+  });
   el.addEventListener('click', (e) => {
     e.stopPropagation();
     pinTooltip(m);
@@ -935,8 +1059,14 @@ function renderCluster(group) {
       icon.textContent = m.emoji || MARKER_EMOJI[m.type] || '📍';
       sub.appendChild(icon);
 
-      sub.addEventListener('mouseenter', () => showTooltip(m));
-      sub.addEventListener('mouseleave', hideTooltip);
+      sub.addEventListener('mouseenter', () => {
+        showTooltip(m);
+        if (m.type === 'quête_principale') showQuestChain(m);
+      });
+      sub.addEventListener('mouseleave', () => {
+        hideTooltip();
+        if (m.type === 'quête_principale') clearQuestChain();
+      });
       sub.addEventListener('click', (e) => {
         e.stopPropagation();
         pinTooltip(m);
@@ -1151,8 +1281,8 @@ floorInput.addEventListener('blur', () => {
 });
 document.addEventListener('keydown', (e) => {
   if (document.activeElement === floorInput) return;
-  if (e.key === 'ArrowUp')   goToFloor(currentFloor - 1);
-  if (e.key === 'ArrowDown') goToFloor(currentFloor + 1);
+  if (e.key === 'ArrowUp')   goToFloor(currentFloor + 1);
+  if (e.key === 'ArrowDown') goToFloor(currentFloor - 1);
 });
 
 window.addEventListener('resize', () => { updateVpBounds(); renderMarkers(); });
