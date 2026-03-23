@@ -232,8 +232,8 @@
   const RUNES = [
     { id:'noel',     name:'Rune de Noël',        color:'#e03a3a', stats:{ vol_vie:2, omnivamp:2.5, sante:20, mana:5, stamina:2.5 } },
     { id:'st_val',   name:'Rune de Teddy Bear',  color:'#f4acbc', stats:{ vitesse_attaque:0.2, crit_comp_chance:20, crit_comp_degats:10, defense:2, sante:20 } },
-    { id:'lunaire',  name:'Rune Lunaire',        color:'#ecd783', stats:{ crit_chance:7, crit_degats:12, crit_comp_chance:7, crit_comp_degats:12, sante:5 } },
-    { id:'dragon',   name:'Rune du Dragon',      color:'#e35f48', stats:{ crit_chance:8, crit_degats:13, crit_comp_chance:8, crit_comp_degats:13, sante:10, vitesse_deplacement:0.15 } },
+    { id:'lunaire',  name:'Rune Lunaire',         color:'#ecd783', stats:{ crit_chance:7, crit_degats:12, crit_comp_chance:7, crit_comp_degats:12, sante:5 } },
+    { id:'dragon',   name:'Rune du Dragon',       color:'#e35f48', stats:{ crit_chance:8, crit_degats:13, crit_comp_chance:8, crit_comp_degats:13, sante:10, vitesse_deplacement:0.15 } },
   ];
 
   /* ══ HELPERS FOURCHETTES ══ */
@@ -408,6 +408,24 @@
   let filterQ       = '';
   let filterRar     = null;
   let activeClass   = null;
+
+  /* ══ VALIDATION DES RUNES ══ */
+  function isRuneKeyValid(runeKey, equippedItems) {
+    // Format attendu : "{slotId}_rune_{index}"
+    const match = runeKey.match(/^(.+)_rune_(\d+)$/);
+    if (!match) return false;
+
+    const slotId    = match[1];
+    const runeIndex = parseInt(match[2]);
+    const item      = equippedItems[slotId];
+
+    if (!item || !item.stats) return false;
+
+    const slots = item.stats['Emplacement de Runes'];
+    if (!slots || slots <= 0) return false;
+
+    return runeIndex < slots;
+  }
 
   /* ══ SÉLECTEUR DE CLASSE ══ */
   function buildClassPicker() {
@@ -1105,7 +1123,6 @@
           buildItemStatsHTML(item) +
         '</div>';
       row.addEventListener('click', function() {
-        /* Si on remplace un item avec des runes, on nettoie les runes de l'ancien */
         clearRunesForSlot(activeSlot);
         equipped[activeSlot] = item;
         saveToStorage();
@@ -1214,19 +1231,27 @@
       if (parsed.v === 1 && parsed.slots) {
         equipped = {};
         equippedRunes = {};
+
+        /* 1. Charger les items en premier */
         Object.entries(parsed.slots).forEach(function(e) {
           const slotId = e[0]; const itemId = e[1];
           const item = ITEMS.find(function(i) { return i.id === itemId; });
           if (item) equipped[slotId] = item;
         });
+
+        /* 2. Valider et charger les runes */
         if (parsed.runes && typeof parsed.runes === 'object') {
           Object.entries(parsed.runes).forEach(function(e) {
             const runeKey = e[0]; const runeId = e[1];
-            if (RUNES.find(function(r) { return r.id === runeId; })) {
+            if (
+              RUNES.find(function(r) { return r.id === runeId; }) &&
+              isRuneKeyValid(runeKey, equipped)
+            ) {
               equippedRunes[runeKey] = runeId;
             }
           });
         }
+
         if (parsed.name) document.getElementById('inp-name').value = parsed.name;
         if (parsed.classe) {
           activeClass = parsed.classe || null;
@@ -1348,18 +1373,26 @@
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed.sig === SIG && parsed.v === 1 && parsed.slots) {
+
+          /* 1. Charger les items en premier */
           Object.entries(parsed.slots).forEach(function(e) {
             const item = ITEMS.find(function(i) { return i.id === e[1]; });
             if (item) equipped[e[0]] = item;
           });
+
+          /* 2. Valider et charger les runes */
           if (parsed.runes && typeof parsed.runes === 'object') {
             Object.entries(parsed.runes).forEach(function(e) {
               const runeKey = e[0]; const runeId = e[1];
-              if (RUNES.find(function(r) { return r.id === runeId; })) {
+              if (
+                RUNES.find(function(r) { return r.id === runeId; }) &&
+                isRuneKeyValid(runeKey, equipped)
+              ) {
                 equippedRunes[runeKey] = runeId;
               }
             });
           }
+
           if (parsed.name) document.getElementById('inp-name').value = parsed.name;
           if (parsed.classe) {
             activeClass = parsed.classe;
