@@ -422,22 +422,74 @@
     });
 
     wrap.addEventListener('click', function(e) {
-      const btn = e.target.closest('.class-btn');
-      if (!btn) return;
-      activeClass = btn.dataset.c || null;
+    const btn = e.target.closest('.class-btn');
+    if (!btn) return;
+    const newClass = btn.dataset.c || null;
+
+    const itemsAtRisk = Object.keys(equipped).filter(function(slotId) {
+      const item = equipped[slotId];
+      return item && !itemAllowedForClass(item, newClass);
+    });
+
+    function applyClassChange() {
+      activeClass = newClass;
       wrap.querySelectorAll('.class-btn').forEach(function(b) { b.classList.remove('active'); });
       btn.classList.add('active');
-      Object.keys(equipped).forEach(function(slotId) {
-        const item = equipped[slotId];
-        if (item && !itemAllowedForClass(item, activeClass)) {
-          delete equipped[slotId];
-          redrawSlot(slotId);
-        }
+      itemsAtRisk.forEach(function(slotId) {
+        delete equipped[slotId];
+        redrawSlot(slotId);
       });
       renderStats();
       renderItemList();
       saveToStorage();
+    }
+
+    if (!itemsAtRisk.length) { applyClassChange(); return; }
+
+    // Prépare le contenu de la modale
+    const newLabel = newClass
+      ? (CLASSES.find(function(c) { return c.id === newClass; }) || { label: '?' }).label
+      : 'Toutes classes';
+
+    document.getElementById('modal-title').textContent = '⚠ Changement de classe';
+
+    const hint = document.getElementById('modal-class-hint');
+    hint.innerHTML =
+      'Passer en <span style="color:var(--gold);font-family:\'Cinzel\',serif;font-weight:600">' + newLabel + '</span>' +
+      ' supprimera <span style="color:#d9614a;font-weight:700">' + itemsAtRisk.length + '</span>' +
+      ' item' + (itemsAtRisk.length > 1 ? 's' : '') + ' incompatible' + (itemsAtRisk.length > 1 ? 's' : '') + ' :';
+
+    const container = document.getElementById('modal-class-items');
+    container.innerHTML = '';
+    itemsAtRisk.forEach(function(slotId) {
+      const item = equipped[slotId];
+      const slotDef = ALL_SLOTS.find(function(s) { return s.id === slotId; });
+      const slotLabel = slotDef ? slotDef.label : slotId;
+      const rarColor = (RARITIES[item.rarity] || { color: '#888' }).color;
+      const line = document.createElement('div');
+      line.className = 'class-warn-item';
+      line.innerHTML =
+        '<span style="width:6px;height:6px;border-radius:50%;background:' + rarColor + ';flex-shrink:0;display:inline-block"></span>' +
+        '<span class="class-warn-item-name">' + item.name + '</span>' +
+        '<span class="class-warn-slot">' + slotDef.ico + ' ' + slotLabel + '</span>';
+      container.appendChild(line);
     });
+
+    // Affiche la zone confirm-class
+    ['export', 'import', 'reset', 'confirm-class'].forEach(function(m) {
+      const zone = document.getElementById('modal-zone-' + m);
+      if (zone) zone.style.display = 'none';
+    });
+    document.getElementById('modal-zone-confirm-class').style.display = 'flex';
+
+    // Callbacks des boutons
+    document.getElementById('btn-confirm-class').onclick = function() {
+      applyClassChange();
+      closeModal();
+    };
+
+    document.getElementById('modal').classList.add('open');
+  });
   }
 
   function itemAllowedForClass(item, classId) {
@@ -708,6 +760,10 @@
     box.appendChild(wrap);
   }
 
+  function roundUp2(n) {
+    return Math.ceil(n * 100) / 100;
+  }
+
   function renderStats() {
     const result = computeStats();
     const mins = result.mins; const maxs = result.maxs;
@@ -717,8 +773,8 @@
       const barEl = document.getElementById('sb-' + stat.id);
       if (!valEl || !barEl) return;
 
-      const lo = mins[stat.id] || 0;
-      const hi = maxs[stat.id] || 0;
+      const lo = roundUp2(mins[stat.id] || 0);
+      const hi = roundUp2(maxs[stat.id] || 0);
 
       if (hi === 0) {
         valEl.innerHTML = '—';

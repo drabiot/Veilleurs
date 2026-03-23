@@ -111,13 +111,14 @@
     </div>
   </div>
 
+  
   <!-- ══ MODALE UNIFIÉE ══ -->
   <div class="modal-backdrop" id="modal">
     <div class="modal-box">
-
+      
       <button class="modal-close-btn" id="btn-modal-close">✕</button>
       <div class="modal-title" id="modal-title">Atelier</div>
-
+      
       <!-- ── Zone EXPORT ── -->
       <div id="modal-zone-export" style="display:none; flex-direction:column; gap:12px">
         <p class="modal-hint">Copiez ce JSON pour sauvegarder ou partager votre build. Vous pourrez le réimporter à tout moment.</p>
@@ -126,7 +127,7 @@
           <button id="btn-copy"        class="action-btn primary">◈ Copier</button>
         </div>
       </div>
-
+      
       <!-- ── Zone IMPORT ── -->
       <div id="modal-zone-import" style="display:none; flex-direction:column; gap:12px">
         <p class="modal-hint">Collez le JSON d'un build exporté ci-dessous. L'équipement actuel sera remplacé.</p>
@@ -136,7 +137,7 @@
           <button id="btn-confirm-import" class="action-btn primary">↑ Importer</button>
         </div>
       </div>
-
+      
       <!-- ── Zone RESET ── -->
       <div id="modal-zone-reset" style="display:none; flex-direction:column; gap:20px; align-items:center; text-align:center; padding: 8px 0">
         <p class="modal-hint" style="font-size:.95rem">
@@ -147,10 +148,19 @@
           <button id="btn-confirm-reset" class="action-btn danger">✕ Confirmer la réinitialisation</button>
         </div>
       </div>
-
+      
+      <!-- ── Zone CONFIRM-CLASS ── -->
+      <div id="modal-zone-confirm-class" style="display:none; flex-direction:column; gap:20px; align-items:center; text-align:center; padding: 8px 0">
+        <p class="modal-hint" id="modal-class-hint" style="font-size:.9rem; text-align:left; width:100%"></p>
+        <div id="modal-class-items" style="width:100%; display:flex; flex-direction:column; gap:4px;"></div>
+        <div class="modal-foot" style="width:100%; justify-content:flex-end;">
+          <button id="btn-confirm-class" class="action-btn danger">✕ Changer quand même</button>
+        </div>
+      </div>
+      
     </div>
   </div>
-
+  
   <script src="atelier.js"></script>
 </body>
 </html>

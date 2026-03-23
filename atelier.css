@@ -825,3 +825,21 @@ html, body {
   opacity: .75;
   cursor: default;
 }
+
+.class-warn-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 10px;
+  background: rgba(217, 97, 74, .07);
+  border: 1px solid rgba(217, 97, 74, .25);
+  border-left: 2px solid rgba(217, 97, 74, .7);
+}
+.class-warn-item-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: #d9614a;
+  letter-spacing: .06em;
+}
+.class-warn-slot {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; color: var(--muted);
+  letter-spacing: .05em; margin-left: auto;
+}
