@@ -781,3 +781,47 @@ html, body {
 .set-carousel-collapse:hover {
   color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow);
 }
+
+.modal-hint {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: .8rem;
+  margin: 0;
+  line-height: 1.6;
+  font-family: 'JetBrains Mono', monospace;
+}
+ 
+/* Message d'erreur stylisé (remplace l'alert natif) */
+.modal-error {
+  color: #e05555;
+  font-size: .78rem;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(224, 85, 85, .08);
+  border: 1px solid rgba(224, 85, 85, .3);
+  border-radius: 6px;
+  padding: 7px 11px;
+  line-height: 1.5;
+}
+ 
+/* Les deux textareas partagent le même style — export (readonly) et import */
+#modal-ta-export,
+#modal-ta-import {
+  /* Hérite de .modal-ta si elle existe déjà, sinon décommentez : */
+  /*
+  width: 100%;
+  min-height: 180px;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px;
+  color: rgba(255,255,255,.8);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .75rem;
+  padding: 10px 12px;
+  resize: vertical;
+  box-sizing: border-box;
+  */
+}
+ 
+#modal-ta-export {
+  opacity: .75;
+  cursor: default;
+}

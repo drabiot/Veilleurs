@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/png" href="img/VeilleursLogo.png" />
-  <title>[VCL] — Atelier</title>
+  <title>[VCL] - Atelier</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
@@ -57,7 +57,7 @@
         </div>
       </aside>
 
-      <!-- ── Centre : mannequin gauche + stats droite ── -->
+      <!-- ── Centre : mannequin + stats ── -->
       <main class="center">
         <div class="center-head">
           <div class="center-title">Atelier</div>
@@ -111,16 +111,46 @@
     </div>
   </div>
 
-  <!-- Modal export -->
+  <!-- ══ MODALE UNIFIÉE ══ -->
   <div class="modal-backdrop" id="modal">
     <div class="modal-box">
+
       <button class="modal-close-btn" id="btn-modal-close">✕</button>
-      <div class="modal-title">Exporter le Stuff</div>
-      <textarea class="modal-ta" id="modal-ta" readonly></textarea>
-      <div class="modal-foot">
-        <button id="btn-copy"         class="action-btn primary">◈ Copier</button>
-        <button id="btn-modal-close2" class="action-btn">Fermer</button>
+      <div class="modal-title" id="modal-title">Atelier</div>
+
+      <!-- ── Zone EXPORT ── -->
+      <div id="modal-zone-export" style="display:none; flex-direction:column; gap:12px">
+        <p class="modal-hint">Copiez ce JSON pour sauvegarder ou partager votre build. Vous pourrez le réimporter à tout moment.</p>
+        <textarea class="modal-ta" id="modal-ta-export" readonly></textarea>
+        <div class="modal-foot">
+          <button id="btn-copy"        class="action-btn primary">◈ Copier</button>
+          <button id="btn-modal-cancel" class="action-btn">Fermer</button>
+        </div>
       </div>
+
+      <!-- ── Zone IMPORT ── -->
+      <div id="modal-zone-import" style="display:none; flex-direction:column; gap:12px">
+        <p class="modal-hint">Collez le JSON d'un build exporté ci-dessous. L'équipement actuel sera remplacé.</p>
+        <textarea class="modal-ta" id="modal-ta-import" placeholder='Collez votre JSON ici…'></textarea>
+        <div id="modal-error" class="modal-error" style="display:none"></div>
+        <div class="modal-foot">
+          <button id="btn-confirm-import" class="action-btn primary">↑ Importer</button>
+          <button id="btn-modal-cancel"   class="action-btn">Annuler</button>
+        </div>
+      </div>
+
+      <!-- ── Zone RESET ── -->
+      <div id="modal-zone-reset" style="display:none; flex-direction:column; gap:20px; align-items:center; text-align:center; padding: 8px 0">
+        <p class="modal-hint" style="font-size:.95rem">
+          Réinitialiser tout l'équipement ?<br>
+          <span style="opacity:.5; font-size:.82rem">Cette action ne peut pas être annulée.</span>
+        </p>
+        <div class="modal-foot">
+          <button id="btn-confirm-reset" class="action-btn danger">✕ Confirmer la réinitialisation</button>
+          <button id="btn-modal-cancel"  class="action-btn">Annuler</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
