@@ -1046,7 +1046,6 @@
 
   /* ══ FERMETURE MODALE ══ */
   document.getElementById('btn-modal-close').addEventListener('click',   closeModal);
-  document.getElementById('btn-modal-cancel').addEventListener('click',  closeModal);
   document.getElementById('modal').addEventListener('click', function(e) {
     if (e.target === document.getElementById('modal')) closeModal();
   });
