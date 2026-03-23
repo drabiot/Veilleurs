@@ -1049,3 +1049,16 @@ html, body {
 .tier-wrap::-webkit-scrollbar        { height: 3px; }
 .tier-wrap::-webkit-scrollbar-track  { background: transparent; }
 .tier-wrap::-webkit-scrollbar-thumb  { background: rgba(255,255,255,.18); border-radius: 2px; }
+
+.level-num,
+.car-val {
+  background: transparent;
+  border: none;
+  text-align: center;
+  width: 2.5ch;
+  -moz-appearance: textfield;
+}
+.level-num::-webkit-outer-spin-button,
+.level-num::-webkit-inner-spin-button,
+.car-val::-webkit-outer-spin-button,
+.car-val::-webkit-inner-spin-button { display: none; }

@@ -296,8 +296,8 @@
   let caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
 
   function getAvailablePoints() {
-    const spent = Object.values(caracterPoints).reduce((a, b) => a + b, -1);
-    return (buildLevel - 1) - spent;
+	const spent = Object.values(caracterPoints).reduce((a, b) => a + b, 0);
+	return buildLevel - spent;
   }
 
   /* ══ HELPERS FOURCHETTES ══ */
@@ -645,14 +645,23 @@
     btnDec.addEventListener('click', () => changeLevelBy(-1));
 
     const levelDisplay = document.createElement('div');
-    levelDisplay.className = 'level-display';
-    levelDisplay.id = 'level-display';
+	levelDisplay.className = 'level-display';
+	levelDisplay.id = 'level-display';
 
-    const lvlNum = document.createElement('span');
-    lvlNum.className = 'level-num';
-    lvlNum.id = 'level-num';
-    lvlNum.textContent = buildLevel;
-
+	const lvlNum = document.createElement('input');
+	lvlNum.type = 'number';
+	lvlNum.className = 'level-num';
+	lvlNum.id = 'level-num';
+	lvlNum.value = buildLevel;
+	lvlNum.min = 1;
+	lvlNum.max = MAX_LEVEL;
+	lvlNum.addEventListener('change', function() {
+		const val = Math.max(1, Math.min(MAX_LEVEL, parseInt(this.value) || 1));
+		this.value = val;
+		const delta = val - buildLevel;
+		if (delta !== 0) changeLevelBy(delta);
+	});
+	
     const lvlMax = document.createElement('span');
     lvlMax.className = 'level-max';
     lvlMax.textContent = '/ ' + MAX_LEVEL;
@@ -712,10 +721,24 @@
       btnMinus.dataset.car = car.id;
       btnMinus.addEventListener('click', () => adjustCar(car.id, -1));
 
-      const val = document.createElement('span');
-      val.className = 'car-val';
-      val.id = 'car-val-' + car.id;
-      val.textContent = caracterPoints[car.id];
+      const val = document.createElement('input');
+		val.type = 'number';
+		val.className = 'car-val';
+		val.id = 'car-val-' + car.id;
+		val.value = caracterPoints[car.id];
+		val.min = 0;
+		val.addEventListener('change', function() {
+		const avail   = getAvailablePoints();
+		const current = caracterPoints[car.id] || 0;
+		const requested = parseInt(this.value) || 0;
+		const delta = requested - current;
+		const clamped = delta > 0 ? current + Math.min(delta, avail) : Math.max(0, requested);
+		caracterPoints[car.id] = clamped;
+		this.value = clamped;
+		updateLevelUI();
+		renderStats();
+		saveToStorage();
+		});
 
       const btnPlus = document.createElement('button');
       btnPlus.className = 'car-btn car-btn-plus';
@@ -747,7 +770,7 @@
 
   function updateLevelUI() {
     const numEl = document.getElementById('level-num');
-    if (numEl) numEl.textContent = buildLevel;
+	if (numEl) numEl.value = buildLevel;
 
     const fill = document.getElementById('level-progress-fill');
     if (fill) fill.style.width = ((buildLevel / MAX_LEVEL) * 100) + '%';
@@ -767,9 +790,9 @@
     }
 
     CARACTERISTIQUES.forEach(car => {
-      const valEl = document.getElementById('car-val-' + car.id);
-      if (valEl) valEl.textContent = caracterPoints[car.id];
-    });
+		const valEl = document.getElementById('car-val-' + car.id);
+		if (valEl) valEl.value = caracterPoints[car.id];
+	});
   }
 
   function changeLevelBy(delta) {
@@ -777,7 +800,7 @@
     if (newLevel === buildLevel) return;
 
     if (delta < 0) {
-      const newMaxPoints = newLevel - 1;
+      const newMaxPoints = newLevel;
       const spent = Object.values(caracterPoints).reduce((a, b) => a + b, 0);
 
       const itemsAtRisk = Object.keys(equipped).filter(slotId => {
@@ -858,7 +881,7 @@
       });
     }
 
-    const maxPoints = buildLevel - 1;
+    const maxPoints = buildLevel;
     const spent = Object.values(caracterPoints).reduce((a, b) => a + b, 0);
     if (spent > maxPoints) {
       caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
