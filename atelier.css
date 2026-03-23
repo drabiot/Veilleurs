@@ -120,7 +120,6 @@ html, body {
   position: relative; z-index: 1;
   display: flex; flex-direction: column;
   overflow: hidden;
-  /* Hauteur initiale CSS — JS la recalcule ensuite précisément */
   height: calc(100vh - 90px);
 }
 
@@ -130,7 +129,7 @@ html, body {
 .body {
   flex: 1; min-height: 0;
   display: grid;
-  grid-template-columns: 200px 1fr 265px;
+  grid-template-columns: 210px 1fr 265px;
 }
 
 /* ============================================================
@@ -156,9 +155,11 @@ html, body {
 
 /* ── Actions gauche ── */
 .actions {
-  flex: 1; display: flex; flex-direction: column;
-  justify-content: center; gap: 11px;
-  padding: 24px 16px;
+  flex-shrink: 0;
+  display: flex; flex-direction: column;
+  gap: 9px;
+  padding: 14px 14px 16px;
+  border-top: 1px solid var(--rim);
 }
 .input-name {
   width: 100%; padding: 9px 11px;
@@ -492,6 +493,16 @@ html, body {
 .item-row:hover  { background:rgba(255,255,255,.04); border-color:var(--rim); }
 .item-row.active { background:var(--gold-glow); border-color:var(--gold-dim); }
 
+/* Item verrouillé par niveau */
+.item-row.item-locked {
+  opacity: .45;
+  cursor: not-allowed;
+}
+.item-row.item-locked:hover {
+  background: rgba(217,97,74,.04);
+  border-color: rgba(217,97,74,.2);
+}
+
 .item-thumb {
   width:38px; height:38px; flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
@@ -501,9 +512,22 @@ html, body {
 .item-thumb img { width:30px; height:30px; object-fit:contain; image-rendering:pixelated; }
 .item-thumb-bar { position:absolute; bottom:0; left:0; right:0; height:2px; }
 .item-meta { min-width:0; flex:1; }
-.item-meta-name   { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.item-meta-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+}
+.item-meta-name   { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; }
 .item-meta-rarity { font-family:'JetBrains Mono',monospace; font-size:8px; margin-top:2px; }
 .picker-empty-msg { padding:24px 14px; text-align:center; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); font-style:italic; }
+
+/* Badge niveau item dans le picker */
+.item-lvl-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7.5px; letter-spacing: .06em;
+  padding: 1px 5px;
+  border: 1px solid;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 
 /* ============================================================
    MODAL
@@ -547,9 +571,8 @@ html, body {
 .modal-foot { display:flex; gap:10px; margin-top:14px; }
 
 /* ============================================================
-   FOURCHETTES DE STATS — panneau stats (colonne droite centre)
+   FOURCHETTES DE STATS
    ============================================================ */
-
 .stat-value.has-range {
   display: flex;
   flex-direction: column;
@@ -567,7 +590,7 @@ html, body {
 }
 
 /* ============================================================
-   STATS PAR ITEM — affichées dans le picker sous chaque item
+   STATS PAR ITEM — picker
    ============================================================ */
 .istat-block {
   margin-top: 5px;
@@ -598,7 +621,7 @@ html, body {
 .istat-hi    { color: var(--gold);  font-size: 9px; font-weight: 700; }
 
 /* ============================================================
-   SÉLECTEUR DE CLASSE (sidebar gauche)
+   SÉLECTEUR DE CLASSE
    ============================================================ */
 .class-picker {
   flex-shrink: 0;
@@ -634,7 +657,7 @@ html, body {
 .class-btn-label  { font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600; letter-spacing: .08em; }
 
 /* ============================================================
-   BADGES DE CLASSE — affiché dans le picker sous chaque item
+   BADGES DE CLASSE — picker
    ============================================================ */
 .item-class-badges {
   display: flex; flex-wrap: wrap; gap: 4px;
@@ -651,7 +674,7 @@ html, body {
 }
 
 /* ============================================================
-   PANOPLIES — zone affichée en haut de la colonne stats
+   PANOPLIES
    ============================================================ */
 .set-bonuses {
   flex-shrink: 0;
@@ -686,7 +709,6 @@ html, body {
   border-radius: 2px;
 }
 
-/* Palier individuel */
 .set-bonus-tier {
   margin-top: 3px;
   padding: 3px 6px;
@@ -765,7 +787,6 @@ html, body {
 }
 .set-carousel-dot.active { background: var(--gold); }
 
-/* Bouton masquer/afficher panoplie */
 .set-carousel-collapse {
   width: 20px; height: 20px;
   display: flex; align-items: center; justify-content: center;
@@ -788,7 +809,6 @@ html, body {
   font-family: 'JetBrains Mono', monospace;
 }
  
-/* Message d'erreur stylisé (remplace l'alert natif) */
 .modal-error {
   color: #e05555;
   font-size: .78rem;
@@ -798,10 +818,6 @@ html, body {
   border-radius: 6px;
   padding: 7px 11px;
   line-height: 1.5;
-}
- 
-#modal-ta-export,
-#modal-ta-import {
 }
  
 #modal-ta-export {
@@ -841,3 +857,182 @@ html, body {
 .rune-picker-sep { border-top:1px solid rgba(255,255,255,.08); margin:4px 0; }
 .rune-picker-remove { padding:5px 8px; font-size:11px; color:#d9614a; cursor:pointer; border-radius:6px; }
 .rune-picker-remove:hover { background:rgba(217,97,74,.1); }
+
+/* ============================================================
+   PANNEAU NIVEAU DU BUILD (sidebar gauche)
+   ============================================================ */
+.level-panel {
+  flex-shrink: 0;
+  padding: 10px 14px 12px;
+  border-bottom: 1px solid var(--rim);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Ligne niveau + contrôles */
+.level-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.level-arrow {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid var(--rim2);
+  color: var(--muted);
+  font-size: 16px; line-height: 1;
+  cursor: pointer; flex-shrink: 0;
+  transition: color .12s, border-color .12s, background .12s;
+  font-family: 'JetBrains Mono', monospace;
+}
+.level-arrow:hover {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: var(--gold-glow);
+}
+
+.level-display {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+}
+.level-num {
+  font-family: 'Cinzel', serif;
+  font-size: 22px; font-weight: 900;
+  color: var(--gold);
+  line-height: 1;
+}
+.level-max {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: .06em;
+}
+
+/* Barre de progression */
+.level-progress-wrap {
+  height: 3px;
+  background: rgba(255,255,255,.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.level-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold-dim), var(--gold));
+  border-radius: 2px;
+  transition: width .3s ease;
+}
+
+/* Ligne points disponibles */
+.level-points-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px;
+  background: rgba(255,255,255,.02);
+  border: 1px solid var(--rim);
+  min-height: 24px;
+}
+.points-avail-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  color: var(--muted);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.points-avail-val {
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Bloc caractéristiques */
+.car-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.car-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 2px;
+  transition: background .12s;
+}
+.car-row:hover {
+  background: rgba(255,255,255,.025);
+}
+
+.car-icon {
+  font-size: 11px;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+  filter: saturate(.8);
+}
+
+.car-label {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  color: var(--text);
+  letter-spacing: .04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.car-controls {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.car-btn {
+  width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid var(--rim2);
+  color: var(--muted);
+  font-size: 13px; line-height: 1;
+  cursor: pointer;
+  transition: color .12s, border-color .12s, background .12s;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 0;
+}
+.car-btn:hover {
+  color: var(--gold);
+  border-color: var(--gold-dim);
+  background: var(--gold-glow);
+}
+.car-btn-plus:hover { color: #59d059; border-color: rgba(89,208,89,.4); background: rgba(89,208,89,.06); }
+.car-btn-minus:hover { color: #d9614a; border-color: rgba(217,97,74,.4); background: rgba(217,97,74,.06); }
+
+.car-val {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  min-width: 20px;
+  text-align: center;
+}
+
+/* ============================================================
+   SIDEBAR GAUCHE — scroll interne si trop petite
+   ============================================================ */
+.sidebar-left {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.sidebar-left::-webkit-scrollbar       { width: 3px; }
+.sidebar-left::-webkit-scrollbar-track { background: transparent; }
+.sidebar-left::-webkit-scrollbar-thumb { background: var(--rim2); border-radius: 2px; }

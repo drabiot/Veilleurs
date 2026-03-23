@@ -230,152 +230,216 @@
 
   /* ══ RUNES ══ */
   const RUNES = [
-    { id:'noel',     name:'Rune de Noël',        color:'#e03a3a', stats:{ vol_vie:2, omnivamp:2.5, sante:20, mana:5, stamina:2.5 } },
-    { id:'st_val',   name:'Rune de Teddy Bear',  color:'#f4acbc', stats:{ vitesse_attaque:0.2, crit_comp_chance:20, crit_comp_degats:10, defense:2, sante:20 } },
+    { id:'noel',     name:'Rune de Noël',         color:'#e03a3a', stats:{ vol_vie:2, omnivamp:2.5, sante:20, mana:5, stamina:2.5 } },
+    { id:'st_val',   name:'Rune de Teddy Bear',   color:'#f4acbc', stats:{ vitesse_attaque:0.2, crit_comp_chance:20, crit_comp_degats:10, defense:2, sante:20 } },
     { id:'lunaire',  name:'Rune Lunaire',         color:'#ecd783', stats:{ crit_chance:7, crit_degats:12, crit_comp_chance:7, crit_comp_degats:12, sante:5 } },
     { id:'dragon',   name:'Rune du Dragon',       color:'#e35f48', stats:{ crit_chance:8, crit_degats:13, crit_comp_chance:8, crit_comp_degats:13, sante:10, vitesse_deplacement:0.15 } },
   ];
+
+  /* ══ SYSTÈME DE NIVEAU ══ */
+  const MAX_LEVEL = 14;
+
+  /* ══ CARACTÉRISTIQUES ══ */
+  const CARACTERISTIQUES = [
+	  {
+		  id:'force',
+		  label:'Force',
+		  icon:'⚔️',
+		  color:'#e07a35',
+		  desc:'Augmente les Dégâts physiques infligés.',
+		  stats:{ degats: 1, crit_degats:0.75 }
+	  },
+	  {
+		  id:'intelligence',
+		  label:'Intelligence',
+		  icon:'📖',
+		  color:'#9a5de8',
+		  desc:'Amplifie la puissance des sorts et des compétences magiques',
+		  stats:{ degats_magique: 1, crit_comp_chance:0.75 }
+		},
+		{
+			id:'dexterite',
+			label:'Dextérité',
+			icon:'🏹',
+			color:'#e0c840',
+			desc:'Améliore l\'Agilité et les chances de coups critique',
+			stats:{ crit_chance: 0.75, esquive: 0.3 }
+		},
+		{
+			id:'esprit',
+			label:'Esprit',
+			icon:'🌿',
+			color:'#59d059',
+			desc:'Augmente la Régénération de Santé et d\'Énergie',
+			stats:{ regen_sante: 0.15, regen_mana: 0.1, regen_stamina: 0.05 }
+		},
+		{
+		  id:'vitalite',
+		  label:'Vitalité',
+		  icon:'❤️',
+		  color:'#e05555',
+		  desc:'Augmente la Santé maximale',
+		  stats:{ sante: 3 }
+		},
+		{
+		  id:'defense_car',
+		  label:'Défense',
+		  icon:'🛡️',
+		  color:'#5588e0',
+		  desc:'Réduit les dégâts subis en augmentant la Défense',
+		  stats:{ defense: 0.4 }
+		},
+	];
+	
+  /* Niveau actuel et points alloués */
+  let buildLevel = 1;
+  let caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
+
+  function getAvailablePoints() {
+    const spent = Object.values(caracterPoints).reduce((a, b) => a + b, -1);
+    return (buildLevel - 1) - spent;
+  }
 
   /* ══ HELPERS FOURCHETTES ══ */
   function getMin(val) { return Array.isArray(val) ? val[0] : val; }
   function getMax(val) { return Array.isArray(val) ? val[1] : val; }
 
   const ITEMS = [
-    { id:'dague_entr',      name:"Dague d'Entrainement",          rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/dague_dentrainement.png",            stats:{degats:7, vitesse_attaque:1.2} },
-    { id:'epee_entr',       name:"Épée d'Entrainement",           rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/epee_dentrainement.png",             stats:{degats:12, vitesse_attaque:1}, classes:['guerrier'] },
-    { id:'boucl_paco',      name:"Bouclier de Pacotille",         rarity:'commun',    cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/bouclier_de_pacotille.png",          stats:{sante:5}, classes:['guerrier'] },
-    { id:'dague_dela',      name:"Dague Délabrée",                rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/dague_delabree.png",                 stats:{degats:13.5, vitesse_attaque:1.1}, classes:['assassin'] },
-    { id:'arc_courbe',      name:"Arc Courbé",                    rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/arc_courbe.png",                     stats:{degats:3, vitesse_attaque:1}, classes:['archer'] },
-    { id:'baton_med_mag',   name:"Bâton Médiocre",                rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_mediocre_mage.png",            stats:{degats:6.5, vitesse_attaque:1}, classes:['mage'] },
-    { id:'baton_med_sha',   name:"Bâton Médiocre",                rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_mediocre_shaman.png",          stats:{degats:6.2, vitesse_attaque:1, soin_bonus:1}, classes:['shaman'] },
-    { id:'epee_fer',        name:"Épée en Fer",                   rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/epee_en_fer.png",                    stats:{degats:[14,16], vitesse_attaque:1}, classes:['guerrier'] },
-    { id:'boucl_ika',       name:"Bouclier d'Ika",                rarity:'commun',    cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/bouclier_dika.png",                  stats:{sante:[8,12], defense:[1,1.5]}, classes:['guerrier'] },
-    { id:'boucl_bois',      name:"Bouclier Pointu Bois",          rarity:'commun',    cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/bouclier_pointu_en_bois.png",        stats:{sante:[4,6], defense:[0.5,0.8], degats:0.5}, classes:['guerrier'] },
-    { id:'dague_int',       name:"Dague Intermédiaire",           rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/dague_intermediaire.png",            stats:{degats:[17,20], vitesse_attaque:[1.1,1.2]}, classes:['assassin'] },
-    { id:'hache_fer',       name:"Hache Double en Fer",           rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/hache_double_en_fer.png",            stats:{degats:[17,19], vitesse_attaque:0.9}, classes:['guerrier'] },
-    { id:'arc_sylv',        name:"Arc Sylvestre",                 rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/arc_sylvestre.png",                  stats:{degats:[4,6], vitesse_attaque:1}, classes:['archer'] },
-    { id:'baton_sylv_mag',  name:"Bâton Sylvestre",               rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_sylvestre_mage.png",           stats:{degats:[12,13], vitesse_attaque:1}, classes:['mage'] },
-    { id:'baton_sylv_sha',  name:"Bâton Sylvestre",               rarity:'commun',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_sylvestre_shaman.png",         stats:{degats:[8,10], vitesse_attaque:1, soin_bonus:[1,2]}, classes:['shaman'] },
-    { id:'grim_delie',      name:"Grimoire Delié",                rarity:'commun',    cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/grimoire_delie-sauvage.png",         stats:{degats_magique:2, mana:5}, classes:['mage'] },
-    { id:'grim_sauvage',    name:"Grimoire Sauvage",              rarity:'commun',    cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/grimoire_delie-sauvage.png",         stats:{regen_mana:0.1, mana:5}, classes:['shaman'] },
-    { id:'grim_sylv',       name:"Grimoire Sylvestre",            rarity:'commun',    cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/grimoire_sylvestre.png",             stats:{degats_magique:2.5, mana:7.5}, classes:['mage'] },
-    { id:'grim_best',       name:"Grimoire Bestial",              rarity:'commun',    cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/grimoire_bestial.png",               stats:{regen_mana:0.15, mana:7.5}, classes:['shaman'] },
-    { id:'grim_mag',        name:"Grimoire du Magicien",          rarity:'rare',      cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/grimoire_du_magicien.png",           stats:{degats_magique:3.5, mana:10}, classes:['mage'] },
-    { id:'grim_sor',        name:"Grimoire du Sorcier",           rarity:'rare',      cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/grimoire_du_sorcier.png",            stats:{regen_mana:0.25, mana:10}, classes:['shaman'] },
-    { id:'grim_obsc',       name:"Grimoire Obscur",               rarity:'rare',      cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/grimoire_obscur.png",                stats:{degats_magique:4, mana:12.5}, classes:['mage'] },
-    { id:'grim_fant',       name:"Grimoire Fantomatique",         rarity:'rare',      cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/grimoire_fantome.png",               stats:{regen_mana:0.3, mana:12.5}, classes:['shaman'] },
-    { id:'boucl_syl',       name:"Bouclier Sylvestre",            rarity:'rare',      cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/bouclier_sylvestre.png",             stats:{sante:15, defense:1.7}, classes:['guerrier'] },
-    { id:'marteau_col',     name:"Marteau du Colosse",            rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/marteau_du_colosse.png",             stats:{degats:23, vitesse_attaque:0.8}, classes:['guerrier'] },
-    { id:'epee_oss',        name:"Épée Osseuse",                  rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/epee_osseuse.png",                   stats:{degats:17.5, vitesse_attaque:1}, classes:['guerrier'] },
-    { id:'baton_sque_mag',  name:"Bâton de Squelette",            rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_squelettique.png",             stats:{degats:15, vitesse_attaque:1}, classes:['mage'] },
-    { id:'baton_sque_sha',  name:"Bâton de Squelette",            rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_squelettique.png",             stats:{degats:12, vitesse_attaque:1, soin_bonus:2.5}, classes:['shaman'] },
-    { id:'baton_maudit_m',  name:"Bâton Squelette Maudit",        rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_de_squelette_maudit_mage.png", stats:{degats:18, vitesse_attaque:1.1, degats_competence:2.5, sante:-10, mana:-5}, classes:['mage'] },
-    { id:'baton_maudit_s',  name:"Bâton Squelette Maudit",        rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_de_squelette_maudit_shaman.png",stats:{degats:14, vitesse_attaque:1.1, soin_bonus:3.5, regen_mana:0.2, sante:-20}, classes:['shaman'] },
-    { id:'arbalete',        name:"Arbalète de Bandit",            rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/arbalete_de_bandit.png",             stats:{degats:12, vitesse_attaque:0.7}, classes:['archer'] },
-    { id:'dague_band',      name:"Dague de Bandit",               rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/dague_de_bandit.png",                stats:{degats:25, vitesse_attaque:1.2}, classes:['assassin'] },
-    { id:'epee_mag',        name:"Épée Magique",                  rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/epee_magique.png",                   stats:{degats:[18,20], vitesse_attaque:1.1}, classes:['guerrier'] },
-    { id:'marteau_mag',     name:"Marteau Magique",               rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/marteau_magique.png",                stats:{degats:[25,30], vitesse_attaque:0.8}, classes:['guerrier'] },
-    { id:'epee_gard',       name:"Épée du Gardien",               rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/epee_du_gardien.png",                stats:{degats:[20,24], vitesse_attaque:1.1, crit_chance:[8,12]}, classes:['guerrier'] },
-    { id:'hallebarde_roy',  name:"Hallebarde Royale",             rarity:'legendaire',cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/hallebarde_royale.png",              stats:{degats:35, vitesse_attaque:0.7}, classes:['guerrier'] },
-    { id:'hache_ill',       name:"Hache de Illfang",              rarity:'legendaire',cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/hache_de_illfang.png",               stats:{degats:60, vitesse_attaque:0.7}, classes:['guerrier'] },
-    { id:'nodachi',         name:"Nodachi",                       rarity:'mythique',  cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/nodachi.png",                        stats:{degats:45, vitesse_attaque:1.2, crit_chance:10, crit_degats:10}, classes:['guerrier'] },
-    { id:'boucl_res',       name:"Bouclier Résistant de Tolbana", rarity:'rare',      cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/bouclier_resistant_de_tolbana.png",  stats:{sante:[16,20], defense:[1.9,2.1]}, classes:['guerrier'] },
-    { id:'boucl_pui',       name:"Bouclier Puissant de Tolbana",  rarity:'rare',      cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/bouclier_puissant_de_tolbana.png",   stats:{sante:[8,12], defense:[1.2,1.4], degats:2}, classes:['guerrier'] },
-    { id:'boucl_ill',       name:"Bouclier de Illfang",           rarity:'mythique',  cat:'arme_s',  tier:1, img:"img/compendium/textures/weapons/bouclier_de_illfang.png",            stats:{sante:45, defense:5}, classes:['guerrier'] },
-    { id:'baton_magicien',  name:"Bâton du Magicien",             rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_tolbana.png",                  stats:{degats:[18,21], vitesse_attaque:1}, classes:['mage'] },
-    { id:'baton_sorcier',   name:"Bâton du Sorcier",              rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_tolbana.png",                  stats:{degats:[16,18], vitesse_attaque:1, soin_bonus:[2.5,3.5]}, classes:['shaman'] },
-    { id:'baton_magicien_p',name:"Bâton du Magicien Puissant",    rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_tolbana_puissant.png",          stats:{degats:[20,22], vitesse_attaque:1.1, degats_competence:3, sante:-15, mana:-10}, classes:['mage'] },
-    { id:'baton_sorcier_p', name:"Bâton du Sorcier Puissant",     rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_tolbana_puissant.png",          stats:{degats:[18,20], vitesse_attaque:1.1, soin_bonus:[3.5,4.5], regen_mana:0.2, sante:-30}, classes:['shaman'] },
-    { id:'baton_obscur_m',  name:"Bâton Obscur",                  rarity:'epique',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_obscur_mage.png",              stats:{degats:[21.5,24.5], vitesse_attaque:1}, classes:['mage'] },
-    { id:'baton_obscur_s',  name:"Bâton Obscur",                  rarity:'epique',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_obscur_shaman.png",            stats:{degats:[19,22], vitesse_attaque:1, soin_bonus:[3,4]}, classes:['shaman'] },
-    { id:'baton_obscur_m_p',name:"Bâton Obscur Puissant",         rarity:'epique',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_obscur_mage.png",              stats:{degats:[23,27], vitesse_attaque:1.1, degats_competence:4, sante:-20, mana:-15}, classes:['mage'] },
-    { id:'baton_obscur_s_p',name:"Bâton Obscur Puissant",         rarity:'epique',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_obscur_shaman.png",            stats:{degats:[21,22], vitesse_attaque:1.1, soin_bonus:[4.5,5.5], regen_mana:0.3, sante:-40}, classes:['shaman'] },
-    { id:'baton_nodachi_m', name:"Bâton Nodachi",                 rarity:'mythique',  cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_nodachi.png",                  stats:{degats:50, vitesse_attaque:1, crit_comp_chance:15}, classes:['mage'] },
-    { id:'baton_nodachi_s', name:"Bâton Nodachi",                 rarity:'mythique',  cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/baton_nodachi.png",                  stats:{degats:35, vitesse_attaque:1.2, soin_bonus:10, regen_sante:0.3, regen_mana:0.3}, classes:['shaman'] },
-    { id:'dague_sombre',    name:"Dague Sombre",                  rarity:'epique',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/dague_sombre.png",                   stats:{degats:[27,31], vitesse_attaque:1.2}, classes:['assassin'] },
-    { id:'l_dague_sombre',  name:"Longue Dague Sombre",           rarity:'epique',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/longue_dague_sombre.png",            stats:{degats:[35,40], vitesse_attaque:[0.8,0.9]}, classes:['assassin'] },
-    { id:'dague_hero',      name:"Dague Héroïque",                rarity:'epique',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/dague_heroique.png",                 stats:{degats:[31,35], vitesse_attaque:[1.3,1.5]}, classes:['assassin'] },
-    { id:'katana_hero',     name:"Katana Héroïque",               rarity:'epique',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/katana_heroique.png",                stats:{degats:[40,44.98], vitesse_attaque:[0.7,0.9]}, classes:['assassin'] },
-    { id:'arc_chasse',      name:"Arc de Chasse",                 rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/arc_de_chasse.png",                  stats:{degats:[10,13], vitesse_attaque:1}, classes:['archer'] },
-    { id:'arc_fallen',      name:"Arc du Fallen",                 rarity:'epique',    cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/arc_du_fallen.png",                  stats:{degats:[14,16], vitesse_attaque:[1,1.1]}, classes:['archer'] },
-    { id:'arbalete_chasse', name:"Arbalète de Chasse",            rarity:'rare',      cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/arbalete_de_chasse.png",             stats:{degats:[15,19], vitesse_attaque:0.7}, classes:['archer'] },
-    { id:'arbalete_cendre', name:"Arbalète de Cendre",            rarity:'legendaire',cat:'arme_p',  tier:1, img:"img/compendium/textures/weapons/arbalete_de_cendre.png",             stats:{degats:23.5, vitesse_attaque:0.7}, classes:['archer'] },
+    { id:'dague_entr',      name:"Dague d'Entrainement",          rarity:'commun',    cat:'arme_p',  tier:1, lvl:1,  img:"img/compendium/textures/weapons/dague_dentrainement.png",            stats:{degats:7, vitesse_attaque:1.2} },
+    { id:'epee_entr',       name:"Épée d'Entrainement",           rarity:'commun',    cat:'arme_p',  tier:1, lvl:1,  img:"img/compendium/textures/weapons/epee_dentrainement.png",             stats:{degats:12, vitesse_attaque:1}, classes:['guerrier'] },
+    { id:'boucl_paco',      name:"Bouclier de Pacotille",         rarity:'commun',    cat:'arme_s',  tier:1, lvl:1,  img:"img/compendium/textures/weapons/bouclier_de_pacotille.png",          stats:{sante:5}, classes:['guerrier'] },
+    { id:'dague_dela',      name:"Dague Délabrée",                rarity:'commun',    cat:'arme_p',  tier:1, lvl:1,  img:"img/compendium/textures/weapons/dague_delabree.png",                 stats:{degats:13.5, vitesse_attaque:1.1}, classes:['assassin'] },
+    { id:'arc_courbe',      name:"Arc Courbé",                    rarity:'commun',    cat:'arme_p',  tier:1, lvl:1,  img:"img/compendium/textures/weapons/arc_courbe.png",                     stats:{degats:3, vitesse_attaque:1}, classes:['archer'] },
+    { id:'baton_med_mag',   name:"Bâton Médiocre",                rarity:'commun',    cat:'arme_p',  tier:1, lvl:1,  img:"img/compendium/textures/weapons/baton_mediocre_mage.png",            stats:{degats:6.5, vitesse_attaque:1}, classes:['mage'] },
+    { id:'baton_med_sha',   name:"Bâton Médiocre",                rarity:'commun',    cat:'arme_p',  tier:1, lvl:1,  img:"img/compendium/textures/weapons/baton_mediocre_shaman.png",          stats:{degats:6.2, vitesse_attaque:1, soin_bonus:1}, classes:['shaman'] },
+    { id:'epee_fer',        name:"Épée en Fer",                   rarity:'commun',    cat:'arme_p',  tier:1, lvl:3,  img:"img/compendium/textures/weapons/epee_en_fer.png",                    stats:{degats:[14,16], vitesse_attaque:1}, classes:['guerrier'] },
+    { id:'boucl_ika',       name:"Bouclier d'Ika",                rarity:'commun',    cat:'arme_s',  tier:1, lvl:3,  img:"img/compendium/textures/weapons/bouclier_dika.png",                  stats:{sante:[8,12], defense:[1,1.5]}, classes:['guerrier'] },
+    { id:'boucl_bois',      name:"Bouclier Pointu Bois",          rarity:'commun',    cat:'arme_s',  tier:1, lvl:3,  img:"img/compendium/textures/weapons/bouclier_pointu_en_bois.png",        stats:{sante:[4,6], defense:[0.5,0.8], degats:0.5}, classes:['guerrier'] },
+    { id:'dague_int',       name:"Dague Intermédiaire",           rarity:'commun',    cat:'arme_p',  tier:1, lvl:3,  img:"img/compendium/textures/weapons/dague_intermediaire.png",            stats:{degats:[17,20], vitesse_attaque:[1.1,1.2]}, classes:['assassin'] },
+    { id:'hache_fer',       name:"Hache Double en Fer",           rarity:'commun',    cat:'arme_p',  tier:1, lvl:3,  img:"img/compendium/textures/weapons/hache_double_en_fer.png",            stats:{degats:[17,19], vitesse_attaque:0.9}, classes:['guerrier'] },
+    { id:'arc_sylv',        name:"Arc Sylvestre",                 rarity:'commun',    cat:'arme_p',  tier:1, lvl:3,  img:"img/compendium/textures/weapons/arc_sylvestre.png",                  stats:{degats:[4,6], vitesse_attaque:1}, classes:['archer'] },
+    { id:'baton_sylv_mag',  name:"Bâton Sylvestre",               rarity:'commun',    cat:'arme_p',  tier:1, lvl:3,  img:"img/compendium/textures/weapons/baton_sylvestre_mage.png",           stats:{degats:[12,13], vitesse_attaque:1}, classes:['mage'] },
+    { id:'baton_sylv_sha',  name:"Bâton Sylvestre",               rarity:'commun',    cat:'arme_p',  tier:1, lvl:3,  img:"img/compendium/textures/weapons/baton_sylvestre_shaman.png",         stats:{degats:[8,10], vitesse_attaque:1, soin_bonus:[1,2]}, classes:['shaman'] },
+    { id:'grim_delie',      name:"Grimoire Delié",                rarity:'commun',    cat:'arme_s',  tier:1, lvl:1,  img:"img/compendium/textures/weapons/grimoire_delie-sauvage.png",         stats:{degats_magique:2, mana:5}, classes:['mage'] },
+    { id:'grim_sauvage',    name:"Grimoire Sauvage",              rarity:'commun',    cat:'arme_s',  tier:1, lvl:1,  img:"img/compendium/textures/weapons/grimoire_delie-sauvage.png",         stats:{regen_mana:0.1, mana:5}, classes:['shaman'] },
+    { id:'grim_sylv',       name:"Grimoire Sylvestre",            rarity:'commun',    cat:'arme_s',  tier:1, lvl:3,  img:"img/compendium/textures/weapons/grimoire_sylvestre.png",             stats:{degats_magique:2.5, mana:7.5}, classes:['mage'] },
+    { id:'grim_best',       name:"Grimoire Bestial",              rarity:'commun',    cat:'arme_s',  tier:1, lvl:3,  img:"img/compendium/textures/weapons/grimoire_bestial.png",               stats:{regen_mana:0.15, mana:7.5}, classes:['shaman'] },
+    { id:'grim_mag',        name:"Grimoire du Magicien",          rarity:'rare',      cat:'arme_s',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/grimoire_du_magicien.png",           stats:{degats_magique:3.5, mana:10}, classes:['mage'] },
+    { id:'grim_sor',        name:"Grimoire du Sorcier",           rarity:'rare',      cat:'arme_s',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/grimoire_du_sorcier.png",            stats:{regen_mana:0.25, mana:10}, classes:['shaman'] },
+    { id:'grim_obsc',       name:"Grimoire Obscur",               rarity:'rare',      cat:'arme_s',  tier:1, lvl:9,  img:"img/compendium/textures/weapons/grimoire_obscur.png",                stats:{degats_magique:4, mana:12.5}, classes:['mage'] },
+    { id:'grim_fant',       name:"Grimoire Fantomatique",         rarity:'rare',      cat:'arme_s',  tier:1, lvl:9,  img:"img/compendium/textures/weapons/grimoire_fantome.png",               stats:{regen_mana:0.3, mana:12.5}, classes:['shaman'] },
+    { id:'boucl_syl',       name:"Bouclier Sylvestre",            rarity:'rare',      cat:'arme_s',  tier:1, lvl:5,  img:"img/compendium/textures/weapons/bouclier_sylvestre.png",             stats:{sante:15, defense:1.7}, classes:['guerrier'] },
+    { id:'marteau_col',     name:"Marteau du Colosse",            rarity:'rare',      cat:'arme_p',  tier:1, lvl:5,  img:"img/compendium/textures/weapons/marteau_du_colosse.png",             stats:{degats:23, vitesse_attaque:0.8}, classes:['guerrier'] },
+    { id:'epee_oss',        name:"Épée Osseuse",                  rarity:'rare',      cat:'arme_p',  tier:1, lvl:5,  img:"img/compendium/textures/weapons/epee_osseuse.png",                   stats:{degats:17.5, vitesse_attaque:1}, classes:['guerrier'] },
+    { id:'baton_sque_mag',  name:"Bâton de Squelette",            rarity:'rare',      cat:'arme_p',  tier:1, lvl:5,  img:"img/compendium/textures/weapons/baton_squelettique.png",             stats:{degats:15, vitesse_attaque:1}, classes:['mage'] },
+    { id:'baton_sque_sha',  name:"Bâton de Squelette",            rarity:'rare',      cat:'arme_p',  tier:1, lvl:5,  img:"img/compendium/textures/weapons/baton_squelettique.png",             stats:{degats:12, vitesse_attaque:1, soin_bonus:2.5}, classes:['shaman'] },
+    { id:'baton_maudit_m',  name:"Bâton Squelette Maudit",        rarity:'rare',      cat:'arme_p',  tier:1, lvl:5,  img:"img/compendium/textures/weapons/baton_de_squelette_maudit_mage.png", stats:{degats:18, vitesse_attaque:1.1, degats_competence:2.5, sante:-10, mana:-5}, classes:['mage'] },
+    { id:'baton_maudit_s',  name:"Bâton Squelette Maudit",        rarity:'rare',      cat:'arme_p',  tier:1, lvl:5,  img:"img/compendium/textures/weapons/baton_de_squelette_maudit_shaman.png",stats:{degats:14, vitesse_attaque:1.1, soin_bonus:3.5, regen_mana:0.2, sante:-20}, classes:['shaman'] },
+    { id:'arbalete',        name:"Arbalète de Bandit",            rarity:'rare',      cat:'arme_p',  tier:1, lvl:5,  img:"img/compendium/textures/weapons/arbalete_de_bandit.png",             stats:{degats:12, vitesse_attaque:0.7}, classes:['archer'] },
+    { id:'dague_band',      name:"Dague de Bandit",               rarity:'rare',      cat:'arme_p',  tier:1, lvl:5,  img:"img/compendium/textures/weapons/dague_de_bandit.png",                stats:{degats:25, vitesse_attaque:1.2}, classes:['assassin'] },
+    { id:'epee_mag',        name:"Épée Magique",                  rarity:'rare',      cat:'arme_p',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/epee_magique.png",                   stats:{degats:[18,20], vitesse_attaque:1.1}, classes:['guerrier'] },
+    { id:'marteau_mag',     name:"Marteau Magique",               rarity:'rare',      cat:'arme_p',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/marteau_magique.png",                stats:{degats:[25,30], vitesse_attaque:0.8}, classes:['guerrier'] },
+    { id:'epee_gard',       name:"Épée du Gardien",               rarity:'rare',      cat:'arme_p',  tier:1, lvl:9,  img:"img/compendium/textures/weapons/epee_du_gardien.png",                stats:{degats:[20,24], vitesse_attaque:1.1, crit_chance:[8,12]}, classes:['guerrier'] },
+    { id:'hallebarde_roy',  name:"Hallebarde Royale",             rarity:'legendaire',cat:'arme_p',  tier:1, lvl:10, img:"img/compendium/textures/weapons/hallebarde_royale.png",              stats:{degats:35, vitesse_attaque:0.7}, classes:['guerrier'] },
+    { id:'hache_ill',       name:"Hache de Illfang",              rarity:'legendaire',cat:'arme_p',  tier:1, lvl:10, img:"img/compendium/textures/weapons/hache_de_illfang.png",               stats:{degats:60, vitesse_attaque:0.7}, classes:['guerrier'] },
+    { id:'nodachi',         name:"Nodachi",                       rarity:'mythique',  cat:'arme_p',  tier:1, lvl:10, img:"img/compendium/textures/weapons/nodachi.png",                        stats:{degats:45, vitesse_attaque:1.2, crit_chance:10, crit_degats:10}, classes:['guerrier'] },
+    { id:'boucl_res',       name:"Bouclier Résistant de Tolbana", rarity:'rare',      cat:'arme_s',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/bouclier_resistant_de_tolbana.png",  stats:{sante:[16,20], defense:[1.9,2.1]}, classes:['guerrier'] },
+    { id:'boucl_pui',       name:"Bouclier Puissant de Tolbana",  rarity:'rare',      cat:'arme_s',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/bouclier_puissant_de_tolbana.png",   stats:{sante:[8,12], defense:[1.2,1.4], degats:2}, classes:['guerrier'] },
+    { id:'boucl_ill',       name:"Bouclier de Illfang",           rarity:'mythique',  cat:'arme_s',  tier:1, lvl:10, img:"img/compendium/textures/weapons/bouclier_de_illfang.png",            stats:{sante:45, defense:5}, classes:['guerrier'] },
+    { id:'baton_magicien',  name:"Bâton du Magicien",             rarity:'rare',      cat:'arme_p',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/baton_tolbana.png",                  stats:{degats:[18,21], vitesse_attaque:1}, classes:['mage'] },
+    { id:'baton_sorcier',   name:"Bâton du Sorcier",              rarity:'rare',      cat:'arme_p',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/baton_tolbana.png",                  stats:{degats:[16,18], vitesse_attaque:1, soin_bonus:[2.5,3.5]}, classes:['shaman'] },
+    { id:'baton_magicien_p',name:"Bâton du Magicien Puissant",    rarity:'rare',      cat:'arme_p',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/baton_tolbana_puissant.png",          stats:{degats:[20,22], vitesse_attaque:1.1, degats_competence:3, sante:-15, mana:-10}, classes:['mage'] },
+    { id:'baton_sorcier_p', name:"Bâton du Sorcier Puissant",     rarity:'rare',      cat:'arme_p',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/baton_tolbana_puissant.png",          stats:{degats:[18,20], vitesse_attaque:1.1, soin_bonus:[3.5,4.5], regen_mana:0.2, sante:-30}, classes:['shaman'] },
+    { id:'baton_obscur_m',  name:"Bâton Obscur",                  rarity:'epique',    cat:'arme_p',  tier:1, lvl:9,  img:"img/compendium/textures/weapons/baton_obscur_mage.png",              stats:{degats:[21.5,24.5], vitesse_attaque:1}, classes:['mage'] },
+    { id:'baton_obscur_s',  name:"Bâton Obscur",                  rarity:'epique',    cat:'arme_p',  tier:1, lvl:9,  img:"img/compendium/textures/weapons/baton_obscur_shaman.png",            stats:{degats:[19,22], vitesse_attaque:1, soin_bonus:[3,4]}, classes:['shaman'] },
+    { id:'baton_obscur_m_p',name:"Bâton Obscur Puissant",         rarity:'epique',    cat:'arme_p',  tier:1, lvl:9,  img:"img/compendium/textures/weapons/baton_obscur_mage.png",              stats:{degats:[23,27], vitesse_attaque:1.1, degats_competence:4, sante:-20, mana:-15}, classes:['mage'] },
+    { id:'baton_obscur_s_p',name:"Bâton Obscur Puissant",         rarity:'epique',    cat:'arme_p',  tier:1, lvl:9,  img:"img/compendium/textures/weapons/baton_obscur_shaman.png",            stats:{degats:[21,22], vitesse_attaque:1.1, soin_bonus:[4.5,5.5], regen_mana:0.3, sante:-40}, classes:['shaman'] },
+    { id:'baton_nodachi_m', name:"Bâton Nodachi",                 rarity:'mythique',  cat:'arme_p',  tier:1, lvl:11, img:"img/compendium/textures/weapons/baton_nodachi.png",                  stats:{degats:50, vitesse_attaque:1, crit_comp_chance:15}, classes:['mage'] },
+    { id:'baton_nodachi_s', name:"Bâton Nodachi",                 rarity:'mythique',  cat:'arme_p',  tier:1, lvl:10, img:"img/compendium/textures/weapons/baton_nodachi.png",                  stats:{degats:35, vitesse_attaque:1.2, soin_bonus:10, regen_sante:0.3, regen_mana:0.3}, classes:['shaman'] },
+    { id:'dague_sombre',    name:"Dague Sombre",                  rarity:'epique',    cat:'arme_p',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/dague_sombre.png",                   stats:{degats:[27,31], vitesse_attaque:1.2}, classes:['assassin'] },
+    { id:'l_dague_sombre',  name:"Longue Dague Sombre",           rarity:'epique',    cat:'arme_p',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/longue_dague_sombre.png",            stats:{degats:[35,40], vitesse_attaque:[0.8,0.9]}, classes:['assassin'] },
+    { id:'dague_hero',      name:"Dague Héroïque",                rarity:'epique',    cat:'arme_p',  tier:1, lvl:9,  img:"img/compendium/textures/weapons/dague_heroique.png",                 stats:{degats:[31,35], vitesse_attaque:[1.3,1.5]}, classes:['assassin'] },
+    { id:'katana_hero',     name:"Katana Héroïque",               rarity:'epique',    cat:'arme_p',  tier:1, lvl:9,  img:"img/compendium/textures/weapons/katana_heroique.png",                stats:{degats:[40,44.98], vitesse_attaque:[0.7,0.9]}, classes:['assassin'] },
+    { id:'arc_chasse',      name:"Arc de Chasse",                 rarity:'rare',      cat:'arme_p',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/arc_de_chasse.png",                  stats:{degats:[10,13], vitesse_attaque:1}, classes:['archer'] },
+    { id:'arc_fallen',      name:"Arc du Fallen",                 rarity:'epique',    cat:'arme_p',  tier:1, lvl:9,  img:"img/compendium/textures/weapons/arc_du_fallen.png",                  stats:{degats:[14,16], vitesse_attaque:[1,1.1]}, classes:['archer'] },
+    { id:'arbalete_chasse', name:"Arbalète de Chasse",            rarity:'rare',      cat:'arme_p',  tier:1, lvl:7,  img:"img/compendium/textures/weapons/arbalete_de_chasse.png",             stats:{degats:[15,19], vitesse_attaque:0.7}, classes:['archer'] },
+    { id:'arbalete_cendre', name:"Arbalète de Cendre",            rarity:'legendaire',cat:'arme_p',  tier:1, lvl:10, img:"img/compendium/textures/weapons/arbalete_de_cendre.png",             stats:{degats:23.5, vitesse_attaque:0.7}, classes:['archer'] },
 
-    { id:'anneau_cuivre',   name:"Anneau de Cuivre",      set:'cuivre',    rarity:'commun',    cat:'anneau',    tier:1, img:"img/compendium/textures/trinkets/P1/Set de Cuivre/Anneau de Cuivre.png",                         stats:{sante:5} },
-    { id:'anneau_pumba',    name:"Anneau de Pumba",                        rarity:'legendaire',cat:'anneau',    tier:1, img:"img/compendium/textures/trinkets/P1/Anneau de Pumba.png",                                        stats:{sante:10, defense:1} },
-    { id:'anneau_fer',      name:"Anneau de Fer",          set:'fer',       rarity:'rare',      cat:'anneau',    tier:1, img:"img/compendium/textures/trinkets/P1/Set de Fer/Anneau de Fer.png",                               stats:{defense:0.5} },
-    { id:'bague_glue',      name:"Bague Gluante",          set:'slime',     rarity:'commun',    cat:'anneau',    tier:1, img:"img/compendium/textures/trinkets/P1/Set des Slimes Gélatineux/Bague Gluante.png",               stats:{sante:2.5, regen_sante:0.1} },
-    { id:'bague_sque',      name:"Bague de Squelette",     set:'squelette', rarity:'commun',    cat:'anneau',    tier:1, img:"img/compendium/textures/trinkets/P1/Set Squelette Poussiéreux/Bague de Squelette.png",          stats:{degats_competence:1, sante:2.5} },
-    { id:'anneau_sylv',     name:"Anneau Sylvestre",        set:'sylve',     rarity:'rare',      cat:'anneau',    tier:1, img:"img/compendium/textures/trinkets/P1/Set de la Sylve/Anneau Sylvestre.png",                      stats:{soin_bonus:1, mana:1, stamina:0.5, regen_sante:0.2} },
-    { id:'anneau_glue',     name:"Anneau Gluant",           set:'slime',     rarity:'epique',    cat:'anneau',    tier:1, img:"img/compendium/textures/trinkets/P1/Set des Slimes Gélatineux/Anneau Gluant.png",               stats:{tenacite:15, sante:20, regen_sante:0.5} },
-    { id:'anneau_levi',     name:"Anneau de Léviathan",                      rarity:'epique',    cat:'anneau',    tier:1, img:"img/compendium/textures/trinkets/P1/Anneau de Léviathan.png",                                   stats:{defense:2.5} },
-    { id:'amulette_cuivre', name:"Amulette de Cuivre",     set:'cuivre',    rarity:'commun',    cat:'amulette',  tier:1, img:"img/compendium/textures/trinkets/P1/Set de Cuivre/Amulette de Cuivre.png",                      stats:{sante:5} },
-    { id:'amulette_bois',   name:"Amulette des Bois",       set:'sylve',     rarity:'commun',    cat:'amulette',  tier:1, img:"img/compendium/textures/trinkets/P1/Set de la Sylve/Amulette des Bois.png",                     stats:{degats_competence:2.5, mana:2.5, stamina:1.5} },
-    { id:'collier_albal',   name:"Collier de Albal",        set:'loup',      rarity:'rare',      cat:'amulette',  tier:1, img:"img/compendium/textures/trinkets/P1/Set Loup Faiblard/Collier d'Albal.png",                    stats:{crit_chance:5, vitesse_deplacement:0.25} },
-    { id:'amulette_glue',   name:"Amulette Gluante",        set:'slime',     rarity:'commun',    cat:'amulette',  tier:1, img:"img/compendium/textures/trinkets/P1/Set des Slimes Gélatineux/Amulette Gluante.png",           stats:{soin_bonus:1, regen_sante:0.1} },
-    { id:'amulette_fer',    name:"Amulette de Fer",          set:'fer',       rarity:'rare',      cat:'amulette',  tier:1, img:"img/compendium/textures/trinkets/P1/Set de Fer/Amulette de Fer.png",                           stats:{defense:1, sante:5} },
-    { id:'amulette_squel',  name:"Amulette Squelettique",   set:'squelette', rarity:'rare',      cat:'amulette',  tier:1, img:"img/compendium/textures/trinkets/P1/Set Squelette Poussiéreux/Amulette Squelettique.png",      stats:{degats_competence:1, mana:4, stamina:2} },
-    { id:'gants_cuivre',    name:"Gants de Cuivre",          set:'cuivre',    rarity:'commun',    cat:'gants',     tier:1, img:"img/compendium/textures/trinkets/P1/Set de Cuivre/Gants de Cuivre.png",                        stats:{degats:1} },
-    { id:'gants_cerfs',     name:"Gants des Cerfs",          set:'cerf',      rarity:'commun',    cat:'gants',     tier:1, img:"img/compendium/textures/trinkets/P1/Set des Cerfs Paisibles/Gants des Cerfs.png",              stats:{degats_competence:2} },
-    { id:'gants_bandit',    name:"Gants de Bandit",                           rarity:'commun',    cat:'gants',     tier:1, img:"img/compendium/textures/trinkets/P1/Gants de Bandit.png",                                      stats:{vitesse_attaque:0.1} },
-    { id:'gants_os',        name:"Gants Osseux",              set:'squelette', rarity:'rare',      cat:'gants',     tier:1, img:"img/compendium/textures/trinkets/P1/Set Squelette Poussiéreux/Gants Osseux.png",              stats:{defense:0.5} },
-    { id:'gants_fer',       name:"Gants de Fer",              set:'fer',       rarity:'rare',      cat:'gants',     tier:1, img:"img/compendium/textures/trinkets/P1/Set de Fer/Gants de Fer.png",                             stats:{degats:1.5} },
-    { id:'bracelet_cuivre', name:"Bracelet de Cuivre",        set:'cuivre',    rarity:'commun',    cat:'bracelet',  tier:1, img:"img/compendium/textures/trinkets/P1/Set de Cuivre/Bracelet de Cuivre.png",                    stats:{sante:5} },
-    { id:'bracelet_fer',    name:"Bracelet de Fer",            set:'fer',       rarity:'rare',      cat:'bracelet',  tier:1, img:"img/compendium/textures/trinkets/P1/Set de Fer/Bracelet de Fer.png",                         stats:{sante:5, defense:1} },
-    { id:'bracelet_sylv',   name:"Bracelet Sylvestre",         set:'sylve',     rarity:'commun',    cat:'bracelet',  tier:1, img:"img/compendium/textures/trinkets/P1/Set de la Sylve/Bracelet Sylvestre.png",                 stats:{regen_sante:0.2, regen_mana:0.2, regen_stamina:0.2} },
-    { id:'bracelet_arai',   name:"Bracelet d'Araignée",                         rarity:'rare',      cat:'bracelet',  tier:1, img:"img/compendium/textures/trinkets/P1/Bracelet d'Araignée.png",                               stats:{esquive:2.5, vitesse_deplacement:0.5} },
-    { id:'bracelet_glue',   name:"Bracelet Gluant",            set:'slime',     rarity:'rare',      cat:'bracelet',  tier:1, img:"img/compendium/textures/trinkets/P1/Set des Slimes Gélatineux/Bracelet Gluant.png",         stats:{soin_bonus:1, sante:5, regen_sante:0.1} },
-    { id:'bracelet_cerf',   name:"Bracelet des Cerfs",          set:'cerf',      rarity:'rare',      cat:'bracelet',  tier:1, img:"img/compendium/textures/trinkets/P1/Set des Cerfs Paisibles/Bracelet des Cerfs.png",        stats:{mana:2, stamina:1, regen_mana:0.2, regen_stamina:0.2} },
-    { id:'bracelet_glace',  name:"Bracelet de Glace",                            rarity:'epique',    cat:'bracelet',  tier:1, img:"img/compendium/textures/trinkets/P1/Bracelet de Glace.png",                                 stats:{degats_competence:5, regen_mana:0.3, regen_stamina:0.2} },
-    { id:'manteau_vole',    name:"Manteau Volé",                                  rarity:'commun',    cat:'artefact',  tier:1, img:"img/compendium/textures/trinkets/P1/Manteau Volé.png",                                    stats:{defense:1.5, sante:10} },
-    { id:'lien_sylve',      name:"Lien de la Sylve",            set:'sylve',     rarity:'legendaire',cat:'artefact',  tier:1, img:"img/compendium/textures/trinkets/P1/Set de la Sylve/Lien de la Sylve.png",                 stats:{sante:10, mana:10, stamina:5} },
-    { id:'piece_cuivre',    name:"Pièce de Cuivre",              set:'cuivre',    rarity:'commun',    cat:'artefact',  tier:1, img:"img/compendium/textures/trinkets/P1/Set de Cuivre/Pièce de Cuivre.png",                   stats:{defense:1} },
-    { id:'piece_fer',       name:"Pièce de Fer",                  set:'fer',       rarity:'rare',      cat:'artefact',  tier:1, img:"img/compendium/textures/trinkets/P1/Set de Fer/Pièce de Fer.png",                        stats:{defense:1, sante:5} },
-    { id:'collier_aragorn', name:"Collier d'Aragorn",                              rarity:'epique',    cat:'artefact',  tier:1, img:"img/compendium/textures/trinkets/P1/Collier de Aragorn.png",                             stats:{reduction_degats:3, reduction_chutes:25, esquive:3} },
-    { id:'manteau_minuit',  name:"Manteau de Minuit",                              rarity:'godlike',   cat:'artefact',  tier:1, img:"img/compendium/textures/trinkets/P1/Manteau de Minuit.png",                              stats:{degats:5, esquive:15, mana:25, stamina:15, vitesse:2} },
+    { id:'anneau_cuivre',   name:"Anneau de Cuivre",      set:'cuivre',    rarity:'commun',    cat:'anneau',    	tier:1, lvl:3,  img:"img/compendium/textures/trinkets/P1/Set de Cuivre/Anneau de Cuivre.png",                         stats:{sante:5} },
+    { id:'anneau_pumba',    name:"Anneau de Pumba",                        rarity:'legendaire',cat:'anneau',    	tier:1, lvl:3, img:"img/compendium/textures/trinkets/P1/Anneau de Pumba.png",                                        stats:{sante:10, defense:1} },
+    { id:'anneau_fer',      name:"Anneau de Fer",          set:'fer',       rarity:'rare',      cat:'anneau',    	tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Set de Fer/Anneau de Fer.png",                               stats:{defense:0.5} },
+    { id:'bague_glue',      name:"Bague Gluante",          set:'slime',     rarity:'commun',    cat:'anneau',    	tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Set des Slimes Gélatineux/Bague Gluante.png",               stats:{sante:2.5, regen_sante:0.1} },
+    { id:'bague_sque',      name:"Bague de Squelette",     set:'squelette', rarity:'commun',    cat:'anneau',    	tier:1, lvl:7,  img:"img/compendium/textures/trinkets/P1/Set Squelette Poussiéreux/Bague de Squelette.png",          stats:{degats_competence:1, sante:2.5} },
+    { id:'anneau_sylv',     name:"Anneau Sylvestre",        set:'sylve',     rarity:'rare',      cat:'anneau',    	tier:1, lvl:7,  img:"img/compendium/textures/trinkets/P1/Set de la Sylve/Anneau Sylvestre.png",                      stats:{soin_bonus:1, mana:1, stamina:0.5, regen_sante:0.2} },
+    { id:'anneau_glue',     name:"Anneau Gluant",           set:'slime',     rarity:'epique',    cat:'anneau',    	tier:1, lvl:9, img:"img/compendium/textures/trinkets/P1/Set des Slimes Gélatineux/Anneau Gluant.png",               stats:{tenacite:15, sante:20, regen_sante:0.5} },
+    { id:'anneau_levi',     name:"Anneau de Léviathan",                      rarity:'epique',    cat:'anneau',    	tier:1, lvl:9, img:"img/compendium/textures/trinkets/P1/Anneau de Léviathan.png",                                   stats:{defense:2.5} },
+    { id:'amulette_cuivre', name:"Amulette de Cuivre",     set:'cuivre',    rarity:'commun',    cat:'amulette',  	tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Set de Cuivre/Amulette de Cuivre.png",                      stats:{sante:5} },
+    { id:'amulette_bois',   name:"Amulette des Bois",       set:'sylve',     rarity:'commun',    cat:'amulette',  	tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Set de la Sylve/Amulette des Bois.png",                     stats:{degats_competence:2.5, mana:2.5, stamina:1.5} },
+    { id:'collier_albal',   name:"Collier de Albal",        set:'loup',      rarity:'rare',      cat:'amulette',  	tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Set Loup Faiblard/Collier d'Albal.png",                    stats:{crit_chance:5, vitesse_deplacement:0.25} },
+    { id:'amulette_glue',   name:"Amulette Gluante",        set:'slime',     rarity:'commun',    cat:'amulette',  	tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Set des Slimes Gélatineux/Amulette Gluante.png",           stats:{soin_bonus:1, regen_sante:0.1} },
+    { id:'amulette_fer',    name:"Amulette de Fer",          set:'fer',       rarity:'rare',      cat:'amulette',  	tier:1, lvl:7,  img:"img/compendium/textures/trinkets/P1/Set de Fer/Amulette de Fer.png",                           stats:{defense:1, sante:5} },
+    { id:'amulette_squel',  name:"Amulette Squelettique",   set:'squelette', rarity:'rare',      cat:'amulette',  	tier:1, lvl:7,  img:"img/compendium/textures/trinkets/P1/Set Squelette Poussiéreux/Amulette Squelettique.png",      stats:{degats_competence:1, mana:4, stamina:2} },
+    { id:'gants_cuivre',    name:"Gants de Cuivre",          set:'cuivre',    rarity:'commun',    cat:'gants',     	tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Set de Cuivre/Gants de Cuivre.png",                        stats:{degats:1} },
+    { id:'gants_cerfs',     name:"Gants des Cerfs",          set:'cerf',      rarity:'commun',    cat:'gants',     	tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Set des Cerfs Paisibles/Gants des Cerfs.png",              stats:{degats_competence:2} },
+    { id:'gants_bandit',    name:"Gants de Bandit",                           rarity:'commun',    cat:'gants',     	tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Gants de Bandit.png",                                      stats:{vitesse_attaque:0.1} },
+    { id:'gants_os',        name:"Gants Osseux",              set:'squelette', rarity:'rare',      cat:'gants',     tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Set Squelette Poussiéreux/Gants Osseux.png",              stats:{defense:0.5} },
+    { id:'gants_fer',       name:"Gants de Fer",              set:'fer',       rarity:'rare',      cat:'gants',     tier:1, lvl:7,  img:"img/compendium/textures/trinkets/P1/Set de Fer/Gants de Fer.png",                             stats:{degats:1.5} },
+    { id:'bracelet_cuivre', name:"Bracelet de Cuivre",        set:'cuivre',    rarity:'commun',    cat:'bracelet',  tier:1, lvl:3,  img:"img/compendium/textures/trinkets/P1/Set de Cuivre/Bracelet de Cuivre.png",                    stats:{sante:5} },
+    { id:'bracelet_fer',    name:"Bracelet de Fer",            set:'fer',       rarity:'rare',      cat:'bracelet', tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Set de Fer/Bracelet de Fer.png",                         stats:{sante:5, defense:1} },
+    { id:'bracelet_sylv',   name:"Bracelet Sylvestre",         set:'sylve',     rarity:'commun',    cat:'bracelet', tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Set de la Sylve/Bracelet Sylvestre.png",                 stats:{regen_sante:0.2, regen_mana:0.2, regen_stamina:0.2} },
+    { id:'bracelet_arai',   name:"Bracelet d'Araignée",                         rarity:'rare',      cat:'bracelet', tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Bracelet d'Araignée.png",                               stats:{esquive:2.5, vitesse_deplacement:0.5} },
+    { id:'bracelet_glue',   name:"Bracelet Gluant",            set:'slime',     rarity:'rare',      cat:'bracelet', tier:1, lvl:7,  img:"img/compendium/textures/trinkets/P1/Set des Slimes Gélatineux/Bracelet Gluant.png",         stats:{soin_bonus:1, sante:5, regen_sante:0.1} },
+    { id:'bracelet_cerf',   name:"Bracelet des Cerfs",          set:'cerf',      rarity:'rare',      cat:'bracelet',tier:1, lvl:7,  img:"img/compendium/textures/trinkets/P1/Set des Cerfs Paisibles/Bracelet des Cerfs.png",        stats:{mana:2, stamina:1, regen_mana:0.2, regen_stamina:0.2} },
+    { id:'bracelet_glace',  name:"Bracelet de Glace",                            rarity:'epique',    cat:'bracelet',tier:1, lvl:9, img:"img/compendium/textures/trinkets/P1/Bracelet de Glace.png",                                 stats:{degats_competence:5, regen_mana:0.3, regen_stamina:0.2} },
+    { id:'manteau_vole',    name:"Manteau Volé",                                  rarity:'commun',    cat:'artefact',tier:1, lvl:5,  img:"img/compendium/textures/trinkets/P1/Manteau Volé.png",                                    stats:{defense:1.5, sante:10} },
+    { id:'lien_sylve',      name:"Lien de la Sylve",            set:'sylve',     rarity:'legendaire',cat:'artefact',tier:1, lvl:5, img:"img/compendium/textures/trinkets/P1/Set de la Sylve/Lien de la Sylve.png",                 stats:{sante:10, mana:10, stamina:5} },
+    { id:'piece_cuivre',    name:"Pièce de Cuivre",              set:'cuivre',    rarity:'commun',    cat:'artefact',tier:1, lvl:7,  img:"img/compendium/textures/trinkets/P1/Set de Cuivre/Pièce de Cuivre.png",                   stats:{defense:1} },
+    { id:'piece_fer',       name:"Pièce de Fer",                  set:'fer',       rarity:'rare',      cat:'artefact',tier:1, lvl:9,  img:"img/compendium/textures/trinkets/P1/Set de Fer/Pièce de Fer.png",                        stats:{defense:1, sante:5} },
+    { id:'collier_aragorn', name:"Collier d'Aragorn",                              rarity:'epique',    cat:'artefact',tier:1, lvl:9, img:"img/compendium/textures/trinkets/P1/Collier de Aragorn.png",                             stats:{reduction_degats:3, reduction_chutes:25, esquive:3} },
+    { id:'manteau_minuit',  name:"Manteau de Minuit",                              rarity:'godlike',   cat:'artefact',tier:1, lvl:10, img:"img/compendium/textures/trinkets/P1/Manteau de Minuit.png",                              stats:{degats:5, esquive:15, mana:25, stamina:15, vitesse:2} },
 
-    { id:'tunique_deb',     name:"Tunique du Débutant",                            rarity:'commun',    cat:'plastron',  tier:1, img:"img/compendium/textures/armors/chestplate_debutant.png", stats:{sante:[12,15]} },
-    { id:'jambieres_deb',   name:"Jambières du Débutant",                          rarity:'commun',    cat:'jambières', tier:1, img:"img/compendium/textures/armors/leggings_debutant.png", stats:{sante:[7,10]} },
-    { id:'bottes_deb',      name:"Bottes du Débutant",                             rarity:'commun',    cat:'bottes',    tier:1, img:"img/compendium/textures/armors/boots_debutant.png", stats:{sante:[5,7]} },
-    { id:'tunique_ika',     name:"Tunique d'Ika",          set:'ika',              rarity:'commun',    cat:'plastron',  tier:1, img:"", stats:{sante:[23,25.99], defense:[0.7,1.2]}, classes:['guerrier'] },
-    { id:'jambieres_ika',   name:"Jambières d'Ika",        set:'ika',              rarity:'commun',    cat:'jambières', tier:1, img:"", stats:{sante:[20,25], defense:[0.6,1]}, classes:['guerrier'] },
-    { id:'bottes_ika',      name:"Bottes d'Ika",            set:'ika',              rarity:'commun',    cat:'bottes',    tier:1, img:"", stats:{sante:[17,20], defense:[0.4,0.8]}, classes:['guerrier'] },
-    { id:'casque_titan',    name:"Casque du Titan",          set:'titan',           rarity:'rare',      cat:'casque',    tier:1, img:"img/compendium/textures/armors/helmet_titan.png",        stats:{sante:[30,35], defense:[1.2,1.6]}, classes:['guerrier'] },
-    { id:'plastron_titan',  name:"Plastron du Titan",        set:'titan',           rarity:'rare',      cat:'plastron',  tier:1, img:"img/compendium/textures/armors/chestplate_titan.png",    stats:{sante:[34,38.99], defense:[3.2,3.7]}, classes:['guerrier'] },
-    { id:'jambieres_titan', name:"Jambières du Titan",       set:'titan',           rarity:'rare',      cat:'jambières', tier:1, img:"img/compendium/textures/armors/leggings_titan.png",      stats:{sante:[32,37], defense:[1.4,1.92]}, classes:['guerrier'] },
-    { id:'bottes_titan',    name:"Bottes du Titan",           set:'titan',           rarity:'rare',      cat:'bottes',    tier:1, img:"img/compendium/textures/armors/boots_titan.png",          stats:{sante:[27,31], defense:[0.9,1.4]}, classes:['guerrier'] },
-    { id:'casque_gard',     name:"Casque du Gardien",         set:'gardien',         rarity:'epique',    cat:'casque',    tier:1, img:"img/compendium/textures/armors/helmet_gardien.png", stats:{sante:[30,35], defense:[2,2.5]}, classes:['guerrier'] },
-    { id:'plastron_gard',   name:"Plastron du Gardien",       set:'gardien',         rarity:'epique',    cat:'plastron',  tier:1, img:"img/compendium/textures/armors/chestplate_gardien.png", stats:{sante:[34,40], defense:[3.5,4], 'Emplacement de Runes':2}, classes:['guerrier'] },
-    { id:'jambieres_gar',   name:"Jambières du Gardien",      set:'gardien',         rarity:'epique',    cat:'jambières', tier:1, img:"img/compendium/textures/armors/leggings_gardien.png", stats:{sante:[32,37], defense:[3,3.5]}, classes:['guerrier'] },
-    { id:'bottes_gard',     name:"Bottes du Gardien",          set:'gardien',         rarity:'epique',    cat:'bottes',    tier:1, img:"img/compendium/textures/armors/boots_gardien.png", stats:{sante:[28,33], defense:[1.6,2]}, classes:['guerrier'] },
-    { id:'tunique_tacti',   name:"Tunique Tactique",           set:'tactique',        rarity:'commun',    cat:'plastron',  tier:1, img:"img/compendium/textures/armors/chestplate_tactique.png",  stats:{sante:[21,25], defense:0.4}, classes:['assassin','archer'] },
-    { id:'jambieres_tacti', name:"Jambières Tactique",         set:'tactique',        rarity:'commun',    cat:'jambières', tier:1, img:"img/compendium/textures/armors/leggings_tactique.png",    stats:{sante:[17,21], defense:0.4}, classes:['assassin','archer'] },
-    { id:'bottes_tacti',    name:"Bottes Tactique",             set:'tactique',        rarity:'commun',    cat:'bottes',    tier:1, img:"img/compendium/textures/armors/boots_tactique.png",        stats:{sante:[15,18], defense:0.3}, classes:['assassin','archer'] },
-    { id:'tunique_ninja',   name:"Tunique du Ninja",            set:'ninja',           rarity:'rare',      cat:'plastron',  tier:1, img:"img/compendium/textures/armors/chestplate_ninja.png",     stats:{sante:[29,34], defense:[1.5,2.3]}, classes:['assassin'] },
-    { id:'jambieres_ninja', name:"Jambières du Ninja",          set:'ninja',           rarity:'rare',      cat:'jambières', tier:1, img:"img/compendium/textures/armors/leggings_ninja.png",       stats:{sante:[23,27], defense:[0.9,1.4]}, classes:['assassin'] },
-    { id:'bottes_ninja',    name:"Bottines du Ninja",            set:'ninja',           rarity:'rare',      cat:'bottes',    tier:1, img:"img/compendium/textures/armors/boots_ninja.png",           stats:{sante:[18,23], defense:[0.8,1]}, classes:['assassin'] },
-    { id:'tunique_chass',   name:"Plastron du Chasseur",         set:'chasseur',        rarity:'rare',      cat:'plastron',  tier:1, img:"img/compendium/textures/armors/chestplate_chasseur.png",  stats:{sante:[25,30], defense:[1.3,2]}, classes:['archer'] },
-    { id:'jambieres_chass', name:"Jambières du Chasseur",        set:'chasseur',        rarity:'rare',      cat:'jambières', tier:1, img:"img/compendium/textures/armors/leggings_chasseur.png",    stats:{sante:[20,24], defense:[0.7,1.2]}, classes:['archer'] },
-    { id:'bottes_chass',    name:"Bottines du Chasseur",          set:'chasseur',        rarity:'rare',      cat:'bottes',    tier:1, img:"img/compendium/textures/armors/boots_chasseur.png",        stats:{sante:[16,20], defense:[0.7,0.9]}, classes:['archer'] },
-    { id:'casque_her',      name:"Casque du Héraut",              set:'heraut',          rarity:'epique',    cat:'casque',    tier:1, img:"img/compendium/textures/armors/helmet_heraut.png", stats:{sante:[26,31], defense:[2.7,3.2]}, classes:['assassin','archer'] },
-    { id:'plastron_her',    name:"Plastron du Héraut",            set:'heraut',          rarity:'epique',    cat:'plastron',  tier:1, img:"img/compendium/textures/armors/chestplate_heraut.png", stats:{sante:[32,37], defense:[3.5,4.3], 'Emplacement de Runes':2}, classes:['assassin','archer'] },
-    { id:'jambieres_her',   name:"Jambières du Héraut",           set:'heraut',          rarity:'epique',    cat:'jambières', tier:1, img:"img/compendium/textures/armors/leggings_heraut.png", stats:{sante:[23,27], defense:[2.9,3.4]}, classes:['assassin','archer'] },
-    { id:'bottes_her',      name:"Bottes du Héraut",               set:'heraut',          rarity:'epique',    cat:'bottes',    tier:1, img:"img/compendium/textures/armors/boots_heraut.png", stats:{sante:[18,23], defense:[2.8,3]}, classes:['assassin','archer'] },
-    { id:'tunique_spect',   name:"Tunique Spectral",               set:'spectral',        rarity:'commun',    cat:'plastron',  tier:1, img:"img/compendium/textures/armors/chestplate_spectral.png", stats:{sante:[15,19], defense:0.4}, classes:['mage','shaman'] },
-    { id:'jambieres_spect', name:"Jambières Spectral",             set:'spectral',        rarity:'commun',    cat:'jambières', tier:1, img:"img/compendium/textures/armors/leggings_spectral.png", stats:{sante:[13,17], defense:0.4}, classes:['mage','shaman'] },
-    { id:'bottes_spect',    name:"Bottes Spectral",                 set:'spectral',        rarity:'commun',    cat:'bottes',    tier:1, img:"img/compendium/textures/armors/boots_spectral.png", stats:{sante:[10,13], defense:0.3}, classes:['mage','shaman'] },
-    { id:'robe_sorc',       name:"Robe du Sorcier",                 set:'sorcier',         rarity:'rare',      cat:'plastron',  tier:1, img:"img/compendium/textures/armors/chestplate_sorcier.png", stats:{sante:[27,32], defense:[1.5,2.3]}, classes:['mage'] },
-    { id:'pantalon_sorc',   name:"Pantalon du Sorcier",             set:'sorcier',         rarity:'rare',      cat:'jambières', tier:1, img:"img/compendium/textures/armors/leggings_sorcier.png", stats:{sante:[20,24], defense:[0.9,1.4]}, classes:['mage'] },
-    { id:'sandales_sorc',   name:"Sandales du Sorcier",             set:'sorcier',         rarity:'rare',      cat:'bottes',    tier:1, img:"img/compendium/textures/armors/boots_sorcier.png", stats:{sante:[14,18.72], defense:[0.7,0.9]}, classes:['mage'] },
-    { id:'robe_magic',      name:"Robe du Magicien",                set:'magicien',        rarity:'rare',      cat:'plastron',  tier:1, img:"img/compendium/textures/armors/chestplate_magicien.png", stats:{sante:[27,32], defense:[1.5,2.3]}, classes:['shaman'] },
-    { id:'pantalon_magic',  name:"Pantalon du Magicien",            set:'magicien',        rarity:'rare',      cat:'jambières', tier:1, img:"img/compendium/textures/armors/leggings_magicien.png",   stats:{sante:[20,24], defense:[0.9,1.4]}, classes:['shaman'] },
-    { id:'sandales_magic',  name:"Sandales du Magicien",            set:'magicien',        rarity:'rare',      cat:'bottes',    tier:1, img:"img/compendium/textures/armors/boots_magicien.png",       stats:{sante:[14,18.72], defense:[0.7,0.9]}, classes:['shaman'] },
-    { id:'casque_fau',      name:"Casque de la Faucheuse",          set:'faucheuse',       rarity:'epique',    cat:'casque',    tier:1, img:"img/compendium/textures/armors/helmet_faucheuse.png", stats:{sante:[16,20], defense:[2.8,3.4]}, classes:['mage','shaman'] },
-    { id:'plastron_fau',    name:"Plastron de la Faucheuse",        set:'faucheuse',       rarity:'epique',    cat:'plastron',  tier:1, img:"img/compendium/textures/armors/chestplate_faucheuse.png", stats:{sante:[27,32], defense:[3.5,4.3], 'Emplacement de Runes':2}, classes:['mage','shaman'] },
-    { id:'jambieres_fau',   name:"Jambières de la Faucheuse",       set:'faucheuse',       rarity:'epique',    cat:'jambières', tier:1, img:"img/compendium/textures/armors/leggings_faucheuse.png", stats:{sante:[20,24], defense:[2.9,3.4]}, classes:['mage','shaman'] },
-    { id:'bottes_fau',      name:"Bottes de la Faucheuse",          set:'faucheuse',       rarity:'epique',    cat:'bottes',    tier:1, img:"img/compendium/textures/armors/boots_faucheuse.png", stats:{sante:[10.2,13.8], defense:[2.7,2.9]}, classes:['mage','shaman'] },
-    { id:'bottes_rev',      name:"Bottes du Revenant",                                     rarity:'legendaire',cat:'bottes',    tier:1, img:"img/compendium/textures/armors/bottes_du_revenant.png",   stats:{vitesse_deplacement:5} },
-    { id:'bottes_ecu',      name:"Bottes de l'Écume",                                      rarity:'legendaire',cat:'bottes',    tier:1, img:"img/compendium/textures/armors/bottes_decume.png",         stats:{'Agilité Aquatique':10} },
+    { id:'tunique_deb',     name:"Tunique du Débutant",                            rarity:'commun',    cat:'plastron',  tier:1, lvl:1,  img:"img/compendium/textures/armors/chestplate_debutant.png", stats:{sante:[12,15]} },
+    { id:'jambieres_deb',   name:"Jambières du Débutant",                          rarity:'commun',    cat:'jambières', tier:1, lvl:1,  img:"img/compendium/textures/armors/leggings_debutant.png", stats:{sante:[7,10]} },
+    { id:'bottes_deb',      name:"Bottes du Débutant",                             rarity:'commun',    cat:'bottes',    tier:1, lvl:1,  img:"img/compendium/textures/armors/boots_debutant.png", stats:{sante:[5,7]} },
+    { id:'tunique_ika',     name:"Tunique d'Ika",          set:'ika',              rarity:'commun',    cat:'plastron',  tier:1, lvl:3,  img:"", stats:{sante:[23,25.99], defense:[0.7,1.2]}, classes:['guerrier'] },
+    { id:'jambieres_ika',   name:"Jambières d'Ika",        set:'ika',              rarity:'commun',    cat:'jambières', tier:1, lvl:3,  img:"", stats:{sante:[20,25], defense:[0.6,1]}, classes:['guerrier'] },
+    { id:'bottes_ika',      name:"Bottes d'Ika",            set:'ika',              rarity:'commun',    cat:'bottes',    tier:1, lvl:3,  img:"", stats:{sante:[17,20], defense:[0.4,0.8]}, classes:['guerrier'] },
+    { id:'casque_titan',    name:"Casque du Titan",          set:'titan',           rarity:'rare',      cat:'casque',    tier:1, lvl:7, img:"img/compendium/textures/armors/helmet_titan.png",        stats:{sante:[30,35], defense:[1.2,1.6]}, classes:['guerrier'] },
+    { id:'plastron_titan',  name:"Plastron du Titan",        set:'titan',           rarity:'rare',      cat:'plastron',  tier:1, lvl:7, img:"img/compendium/textures/armors/chestplate_titan.png",    stats:{sante:[34,38.99], defense:[3.2,3.7]}, classes:['guerrier'] },
+    { id:'jambieres_titan', name:"Jambières du Titan",       set:'titan',           rarity:'rare',      cat:'jambières', tier:1, lvl:7, img:"img/compendium/textures/armors/leggings_titan.png",      stats:{sante:[32,37], defense:[1.4,1.92]}, classes:['guerrier'] },
+    { id:'bottes_titan',    name:"Bottes du Titan",           set:'titan',           rarity:'rare',      cat:'bottes',    tier:1, lvl:7, img:"img/compendium/textures/armors/boots_titan.png",          stats:{sante:[27,31], defense:[0.9,1.4]}, classes:['guerrier'] },
+    { id:'casque_gard',     name:"Casque du Gardien",         set:'gardien',         rarity:'epique',    cat:'casque',    tier:1, lvl:9, img:"img/compendium/textures/armors/helmet_gardien.png", stats:{sante:[30,35], defense:[2,2.5]}, classes:['guerrier'] },
+    { id:'plastron_gard',   name:"Plastron du Gardien",       set:'gardien',         rarity:'epique',    cat:'plastron',  tier:1, lvl:9, img:"img/compendium/textures/armors/chestplate_gardien.png", stats:{sante:[34,40], defense:[3.5,4], 'Emplacement de Runes':2}, classes:['guerrier'] },
+    { id:'jambieres_gar',   name:"Jambières du Gardien",      set:'gardien',         rarity:'epique',    cat:'jambières', tier:1, lvl:9, img:"img/compendium/textures/armors/leggings_gardien.png", stats:{sante:[32,37], defense:[3,3.5]}, classes:['guerrier'] },
+    { id:'bottes_gard',     name:"Bottes du Gardien",          set:'gardien',         rarity:'epique',    cat:'bottes',    tier:1, lvl:9, img:"img/compendium/textures/armors/boots_gardien.png", stats:{sante:[28,33], defense:[1.6,2]}, classes:['guerrier'] },
+    { id:'tunique_tacti',   name:"Tunique Tactique",           set:'tactique',        rarity:'commun',    cat:'plastron',  tier:1, lvl:3,  img:"img/compendium/textures/armors/chestplate_tactique.png",  stats:{sante:[21,25], defense:0.4}, classes:['assassin','archer'] },
+    { id:'jambieres_tacti', name:"Jambières Tactique",         set:'tactique',        rarity:'commun',    cat:'jambières', tier:1, lvl:3,  img:"img/compendium/textures/armors/leggings_tactique.png",    stats:{sante:[17,21], defense:0.4}, classes:['assassin','archer'] },
+    { id:'bottes_tacti',    name:"Bottes Tactique",             set:'tactique',        rarity:'commun',    cat:'bottes',    tier:1, lvl:3,  img:"img/compendium/textures/armors/boots_tactique.png",        stats:{sante:[15,18], defense:0.3}, classes:['assassin','archer'] },
+    { id:'tunique_ninja',   name:"Tunique du Ninja",            set:'ninja',           rarity:'rare',      cat:'plastron',  tier:1, lvl:7, img:"img/compendium/textures/armors/chestplate_ninja.png",     stats:{sante:[29,34], defense:[1.5,2.3]}, classes:['assassin'] },
+    { id:'jambieres_ninja', name:"Jambières du Ninja",          set:'ninja',           rarity:'rare',      cat:'jambières', tier:1, lvl:7, img:"img/compendium/textures/armors/leggings_ninja.png",       stats:{sante:[23,27], defense:[0.9,1.4]}, classes:['assassin'] },
+    { id:'bottes_ninja',    name:"Bottines du Ninja",            set:'ninja',           rarity:'rare',      cat:'bottes',    tier:1, lvl:7, img:"img/compendium/textures/armors/boots_ninja.png",           stats:{sante:[18,23], defense:[0.8,1]}, classes:['assassin'] },
+    { id:'tunique_chass',   name:"Plastron du Chasseur",         set:'chasseur',        rarity:'rare',      cat:'plastron',  tier:1, lvl:7, img:"img/compendium/textures/armors/chestplate_chasseur.png",  stats:{sante:[25,30], defense:[1.3,2]}, classes:['archer'] },
+    { id:'jambieres_chass', name:"Jambières du Chasseur",        set:'chasseur',        rarity:'rare',      cat:'jambières', tier:1, lvl:7, img:"img/compendium/textures/armors/leggings_chasseur.png",    stats:{sante:[20,24], defense:[0.7,1.2]}, classes:['archer'] },
+    { id:'bottes_chass',    name:"Bottines du Chasseur",          set:'chasseur',        rarity:'rare',      cat:'bottes',    tier:1, lvl:7, img:"img/compendium/textures/armors/boots_chasseur.png",        stats:{sante:[16,20], defense:[0.7,0.9]}, classes:['archer'] },
+    { id:'casque_her',      name:"Casque du Héraut",              set:'heraut',          rarity:'epique',    cat:'casque',    tier:1, lvl:9, img:"img/compendium/textures/armors/helmet_heraut.png", stats:{sante:[26,31], defense:[2.7,3.2]}, classes:['assassin','archer'] },
+    { id:'plastron_her',    name:"Plastron du Héraut",            set:'heraut',          rarity:'epique',    cat:'plastron',  tier:1, lvl:9, img:"img/compendium/textures/armors/chestplate_heraut.png", stats:{sante:[32,37], defense:[3.5,4.3], 'Emplacement de Runes':2}, classes:['assassin','archer'] },
+    { id:'jambieres_her',   name:"Jambières du Héraut",           set:'heraut',          rarity:'epique',    cat:'jambières', tier:1, lvl:9, img:"img/compendium/textures/armors/leggings_heraut.png", stats:{sante:[23,27], defense:[2.9,3.4]}, classes:['assassin','archer'] },
+    { id:'bottes_her',      name:"Bottes du Héraut",               set:'heraut',          rarity:'epique',    cat:'bottes',    tier:1, lvl:9, img:"img/compendium/textures/armors/boots_heraut.png", stats:{sante:[18,23], defense:[2.8,3]}, classes:['assassin','archer'] },
+    { id:'tunique_spect',   name:"Tunique Spectral",               set:'spectral',        rarity:'commun',    cat:'plastron',  tier:1, lvl:3,  img:"img/compendium/textures/armors/chestplate_spectral.png", stats:{sante:[15,19], defense:0.4}, classes:['mage','shaman'] },
+    { id:'jambieres_spect', name:"Jambières Spectral",             set:'spectral',        rarity:'commun',    cat:'jambières', tier:1, lvl:3,  img:"img/compendium/textures/armors/leggings_spectral.png", stats:{sante:[13,17], defense:0.4}, classes:['mage','shaman'] },
+    { id:'bottes_spect',    name:"Bottes Spectral",                 set:'spectral',        rarity:'commun',    cat:'bottes',    tier:1, lvl:3,  img:"img/compendium/textures/armors/boots_spectral.png", stats:{sante:[10,13], defense:0.3}, classes:['mage','shaman'] },
+    { id:'robe_sorc',       name:"Robe du Sorcier",                 set:'sorcier',         rarity:'rare',      cat:'plastron',  tier:1, lvl:7, img:"img/compendium/textures/armors/chestplate_sorcier.png", stats:{sante:[27,32], defense:[1.5,2.3]}, classes:['mage'] },
+    { id:'pantalon_sorc',   name:"Pantalon du Sorcier",             set:'sorcier',         rarity:'rare',      cat:'jambières', tier:1, lvl:7, img:"img/compendium/textures/armors/leggings_sorcier.png", stats:{sante:[20,24], defense:[0.9,1.4]}, classes:['mage'] },
+    { id:'sandales_sorc',   name:"Sandales du Sorcier",             set:'sorcier',         rarity:'rare',      cat:'bottes',    tier:1, lvl:7, img:"img/compendium/textures/armors/boots_sorcier.png", stats:{sante:[14,18.72], defense:[0.7,0.9]}, classes:['mage'] },
+    { id:'robe_magic',      name:"Robe du Magicien",                set:'magicien',        rarity:'rare',      cat:'plastron',  tier:1, lvl:7, img:"img/compendium/textures/armors/chestplate_magicien.png", stats:{sante:[27,32], defense:[1.5,2.3]}, classes:['shaman'] },
+    { id:'pantalon_magic',  name:"Pantalon du Magicien",            set:'magicien',        rarity:'rare',      cat:'jambières', tier:1, lvl:7, img:"img/compendium/textures/armors/leggings_magicien.png",   stats:{sante:[20,24], defense:[0.9,1.4]}, classes:['shaman'] },
+    { id:'sandales_magic',  name:"Sandales du Magicien",            set:'magicien',        rarity:'rare',      cat:'bottes',    tier:1, lvl:7, img:"img/compendium/textures/armors/boots_magicien.png",       stats:{sante:[14,18.72], defense:[0.7,0.9]}, classes:['shaman'] },
+    { id:'casque_fau',      name:"Casque de la Faucheuse",          set:'faucheuse',       rarity:'epique',    cat:'casque',    tier:1, lvl:9, img:"img/compendium/textures/armors/helmet_faucheuse.png", stats:{sante:[16,20], defense:[2.8,3.4]}, classes:['mage','shaman'] },
+    { id:'plastron_fau',    name:"Plastron de la Faucheuse",        set:'faucheuse',       rarity:'epique',    cat:'plastron',  tier:1, lvl:9, img:"img/compendium/textures/armors/chestplate_faucheuse.png", stats:{sante:[27,32], defense:[3.5,4.3], 'Emplacement de Runes':2}, classes:['mage','shaman'] },
+    { id:'jambieres_fau',   name:"Jambières de la Faucheuse",       set:'faucheuse',       rarity:'epique',    cat:'jambières', tier:1, lvl:9, img:"img/compendium/textures/armors/leggings_faucheuse.png", stats:{sante:[20,24], defense:[2.9,3.4]}, classes:['mage','shaman'] },
+    { id:'bottes_fau',      name:"Bottes de la Faucheuse",          set:'faucheuse',       rarity:'epique',    cat:'bottes',    tier:1, lvl:9, img:"img/compendium/textures/armors/boots_faucheuse.png", stats:{sante:[10.2,13.8], defense:[2.7,2.9]}, classes:['mage','shaman'] },
+    { id:'bottes_rev',      name:"Bottes du Revenant",                                     rarity:'legendaire',cat:'bottes',    tier:1, lvl:5, img:"img/compendium/textures/armors/bottes_du_revenant.png",   stats:{vitesse_deplacement:5} },
+    { id:'bottes_ecu',      name:"Bottes de l'Écume",                                      rarity:'legendaire',cat:'bottes',    tier:1, lvl:5, img:"img/compendium/textures/armors/bottes_decume.png",         stats:{'Agilité Aquatique':10} },
   ];
 
   /* ══ SLOTS ══ */
@@ -411,20 +475,409 @@
 
   /* ══ VALIDATION DES RUNES ══ */
   function isRuneKeyValid(runeKey, equippedItems) {
-    // Format attendu : "{slotId}_rune_{index}"
     const match = runeKey.match(/^(.+)_rune_(\d+)$/);
     if (!match) return false;
-
     const slotId    = match[1];
     const runeIndex = parseInt(match[2]);
     const item      = equippedItems[slotId];
-
     if (!item || !item.stats) return false;
-
     const slots = item.stats['Emplacement de Runes'];
     if (!slots || slots <= 0) return false;
-
     return runeIndex < slots;
+  }
+
+  /* ══ VÉRIFICATION NIVEAU ══ */
+  function itemAllowedForLevel(item, level) {
+    const reqLvl = item.lvl || 1;
+    return level >= reqLvl;
+  }
+
+  /* ══ TOOLTIP CARACTÉRISTIQUES ══ */
+  function buildCarTooltip() {
+    if (document.getElementById('car-tooltip')) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      .car-tooltip {
+        position: fixed;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(6px) scale(0.97);
+        transition: opacity .15s ease, transform .15s ease;
+        background: #111220;
+        border: 1px solid rgba(255,255,255,.1);
+        border-radius: 10px;
+        padding: 11px 14px;
+        min-width: 190px;
+        max-width: 250px;
+        box-shadow: 0 8px 28px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04);
+        font-size: 11.5px;
+        color: rgba(255,255,255,.75);
+        line-height: 1.5;
+      }
+      .car-tooltip.visible {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+      .car-tt-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .car-tt-icon {
+        font-size: 15px;
+        line-height: 1;
+      }
+      .car-tt-name {
+        font-weight: 700;
+        font-size: 12.5px;
+        letter-spacing: .02em;
+      }
+      .car-tt-desc {
+        font-style: italic;
+        color: rgba(255,255,255,.45);
+        font-size: 11px;
+        margin-bottom: 8px;
+        line-height: 1.45;
+      }
+      .car-tt-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        border-top: 1px solid rgba(255,255,255,.07);
+        padding-top: 7px;
+      }
+      .car-tt-stat-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .car-tt-stat-icon { font-size: 12px; flex-shrink: 0; width: 16px; text-align: center; }
+      .car-tt-stat-label { flex: 1; color: rgba(255,255,255,.6); font-size: 11px; }
+      .car-tt-stat-val {
+        font-weight: 700;
+        font-size: 11.5px;
+        white-space: nowrap;
+      }
+      .car-tt-per-pt {
+        font-size: 9.5px;
+        color: rgba(255,255,255,.3);
+        margin-left: 2px;
+        font-weight: 400;
+      }
+    `;
+    document.head.appendChild(style);
+
+    const tooltip = document.createElement('div');
+    tooltip.id = 'car-tooltip';
+    tooltip.className = 'car-tooltip';
+    document.body.appendChild(tooltip);
+  }
+
+  function positionCarTooltip(e, tooltip) {
+    const offset = 16;
+    const tw = tooltip.offsetWidth  || 230;
+    const th = tooltip.offsetHeight || 100;
+    let x = e.clientX + offset;
+    let y = e.clientY + offset;
+    if (x + tw > window.innerWidth  - 8) x = e.clientX - tw - offset;
+    if (y + th > window.innerHeight - 8) y = e.clientY - th - offset;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top  = y + 'px';
+  }
+
+  function showCarTooltip(e, car) {
+    const tooltip = document.getElementById('car-tooltip');
+    if (!tooltip) return;
+
+    let html = '<div class="car-tt-header">' +
+               '<span class="car-tt-icon">' + car.icon + '</span>' +
+               '<span class="car-tt-name" style="color:' + car.color + '">' + car.label + '</span>' +
+               '</div>';
+
+    html += '<div class="car-tt-desc">' + car.desc + '</div>';
+
+    if (car.stats && Object.keys(car.stats).length > 0) {
+      html += '<div class="car-tt-stats">';
+      Object.entries(car.stats).forEach(function(entry) {
+        const statDef = ALL_STATS.find(function(s) { return s.id === entry[0]; });
+        const label = statDef ? statDef.label : entry[0];
+        const unit  = statDef ? statDef.unit  : '';
+        const icon  = statDef ? statDef.icon  : '◈';
+        const val   = entry[1];
+        html += '<div class="car-tt-stat-row">' +
+                '<span class="car-tt-stat-icon">' + icon + '</span>' +
+                '<span class="car-tt-stat-label">' + label + '</span>' +
+                '<span class="car-tt-stat-val" style="color:' + car.color + '">+' + val + unit +
+                '<span class="car-tt-per-pt">/ pt</span>' +
+                '</span>' +
+                '</div>';
+      });
+      html += '</div>';
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.classList.add('visible');
+    positionCarTooltip(e, tooltip);
+  }
+
+  function hideCarTooltip() {
+    const tooltip = document.getElementById('car-tooltip');
+    if (tooltip) tooltip.classList.remove('visible');
+  }
+
+  /* ══ SÉLECTEUR DE NIVEAU ══ */
+  function buildLevelPanel() {
+    const wrap = document.getElementById('level-panel');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+
+    /* Barre de niveau */
+    const levelRow = document.createElement('div');
+    levelRow.className = 'level-row';
+
+    const btnDec = document.createElement('button');
+    btnDec.className = 'level-arrow';
+    btnDec.textContent = '−';
+    btnDec.addEventListener('click', () => changeLevelBy(-1));
+
+    const levelDisplay = document.createElement('div');
+    levelDisplay.className = 'level-display';
+    levelDisplay.id = 'level-display';
+
+    const lvlNum = document.createElement('span');
+    lvlNum.className = 'level-num';
+    lvlNum.id = 'level-num';
+    lvlNum.textContent = buildLevel;
+
+    const lvlMax = document.createElement('span');
+    lvlMax.className = 'level-max';
+    lvlMax.textContent = '/ ' + MAX_LEVEL;
+
+    levelDisplay.appendChild(lvlNum);
+    levelDisplay.appendChild(lvlMax);
+
+    const btnInc = document.createElement('button');
+    btnInc.className = 'level-arrow';
+    btnInc.textContent = '+';
+    btnInc.addEventListener('click', () => changeLevelBy(1));
+
+    levelRow.appendChild(btnDec);
+    levelRow.appendChild(levelDisplay);
+    levelRow.appendChild(btnInc);
+    wrap.appendChild(levelRow);
+
+    /* Barre de progression */
+    const progressWrap = document.createElement('div');
+    progressWrap.className = 'level-progress-wrap';
+    const progressFill = document.createElement('div');
+    progressFill.className = 'level-progress-fill';
+    progressFill.id = 'level-progress-fill';
+    progressFill.style.width = ((buildLevel / MAX_LEVEL) * 100) + '%';
+    progressWrap.appendChild(progressFill);
+    wrap.appendChild(progressWrap);
+
+    /* Points disponibles */
+    const pointsRow = document.createElement('div');
+    pointsRow.className = 'level-points-row';
+    pointsRow.id = 'level-points-row';
+    wrap.appendChild(pointsRow);
+
+    /* Caractéristiques */
+    const carBlock = document.createElement('div');
+    carBlock.className = 'car-block';
+
+    CARACTERISTIQUES.forEach(car => {
+      const row = document.createElement('div');
+      row.className = 'car-row';
+
+      const icon = document.createElement('span');
+      icon.className = 'car-icon';
+      icon.textContent = car.icon;
+      icon.style.color = car.color;
+
+      const label = document.createElement('span');
+      label.className = 'car-label';
+      label.textContent = car.label;
+
+      const controls = document.createElement('div');
+      controls.className = 'car-controls';
+
+      const btnMinus = document.createElement('button');
+      btnMinus.className = 'car-btn car-btn-minus';
+      btnMinus.textContent = '−';
+      btnMinus.dataset.car = car.id;
+      btnMinus.addEventListener('click', () => adjustCar(car.id, -1));
+
+      const val = document.createElement('span');
+      val.className = 'car-val';
+      val.id = 'car-val-' + car.id;
+      val.textContent = caracterPoints[car.id];
+
+      const btnPlus = document.createElement('button');
+      btnPlus.className = 'car-btn car-btn-plus';
+      btnPlus.textContent = '+';
+      btnPlus.dataset.car = car.id;
+      btnPlus.addEventListener('click', () => adjustCar(car.id, +1));
+
+      controls.appendChild(btnMinus);
+      controls.appendChild(val);
+      controls.appendChild(btnPlus);
+
+      row.appendChild(icon);
+      row.appendChild(label);
+      row.appendChild(controls);
+      carBlock.appendChild(row);
+
+      /* ── Tooltip hover ── */
+      row.addEventListener('mouseenter', function(e) { showCarTooltip(e, car); });
+      row.addEventListener('mousemove',  function(e) {
+        const tooltip = document.getElementById('car-tooltip');
+        if (tooltip && tooltip.classList.contains('visible')) positionCarTooltip(e, tooltip);
+      });
+      row.addEventListener('mouseleave', hideCarTooltip);
+    });
+
+    wrap.appendChild(carBlock);
+    updateLevelUI();
+  }
+
+  function updateLevelUI() {
+    const numEl = document.getElementById('level-num');
+    if (numEl) numEl.textContent = buildLevel;
+
+    const fill = document.getElementById('level-progress-fill');
+    if (fill) fill.style.width = ((buildLevel / MAX_LEVEL) * 100) + '%';
+
+    const avail = getAvailablePoints();
+    const pointsRow = document.getElementById('level-points-row');
+    if (pointsRow) {
+      if (avail > 0) {
+        pointsRow.innerHTML =
+          '<span class="points-avail-label">Points disponibles</span>' +
+          '<span class="points-avail-val" style="color:var(--gold)">' + avail + '</span>';
+      } else {
+        pointsRow.innerHTML =
+          '<span class="points-avail-label">Points disponibles</span>' +
+          '<span class="points-avail-val" style="color:var(--muted)">0</span>';
+      }
+    }
+
+    CARACTERISTIQUES.forEach(car => {
+      const valEl = document.getElementById('car-val-' + car.id);
+      if (valEl) valEl.textContent = caracterPoints[car.id];
+    });
+  }
+
+  function changeLevelBy(delta) {
+    const newLevel = Math.max(1, Math.min(MAX_LEVEL, buildLevel + delta));
+    if (newLevel === buildLevel) return;
+
+    if (delta < 0) {
+      const newMaxPoints = newLevel - 1;
+      const spent = Object.values(caracterPoints).reduce((a, b) => a + b, 0);
+
+      const itemsAtRisk = Object.keys(equipped).filter(slotId => {
+        const item = equipped[slotId];
+        return item && !itemAllowedForLevel(item, newLevel);
+      });
+
+      if (itemsAtRisk.length > 0 || spent > newMaxPoints) {
+        openLevelChangeModal(newLevel, itemsAtRisk, spent > newMaxPoints ? spent - newMaxPoints : 0);
+        return;
+      }
+    }
+
+    applyLevelChange(newLevel);
+  }
+
+  function openLevelChangeModal(newLevel, itemsAtRisk, pointsToRemove) {
+    document.getElementById('modal-title').textContent = '⚠ Changement de Niveau';
+
+    const hint = document.getElementById('modal-level-hint');
+    const lines = [];
+
+    if (itemsAtRisk.length > 0) {
+      lines.push(
+        'Passer au niveau <span style="color:var(--gold);font-family:\'Cinzel\',serif;font-weight:600">' + newLevel + '</span>' +
+        ' supprimera <span style="color:#d9614a;font-weight:700">' + itemsAtRisk.length + '</span>' +
+        ' item' + (itemsAtRisk.length > 1 ? 's' : '') + ' dont le niveau requis est trop élevé :'
+      );
+    }
+    if (pointsToRemove > 0) {
+      lines.push(
+        '<div style="text-align: center;"><span style="color:#e09555">⚠ Les points de caractéristique seront réinitialisés car ils dépassent le nouveau maximum.</span>'
+      );
+    }
+
+    hint.innerHTML = lines.join('<br><br>');
+
+    const container = document.getElementById('modal-level-items');
+    container.innerHTML = '';
+    itemsAtRisk.forEach(slotId => {
+      const item = equipped[slotId];
+      const slotDef = ALL_SLOTS.find(s => s.id === slotId);
+      const rarColor = (RARITIES[item.rarity] || { color: '#888' }).color;
+      const line = document.createElement('div');
+      line.className = 'class-warn-item';
+      line.innerHTML =
+        '<span style="width:6px;height:6px;border-radius:50%;background:' + rarColor + ';flex-shrink:0;display:inline-block"></span>' +
+        '<span class="class-warn-item-name">' + item.name + '</span>' +
+        '<span class="class-warn-slot">' + (slotDef ? slotDef.ico + ' ' + slotDef.label : slotId) + '</span>' +
+        '<span style="font-size:8px;color:#d9614a;margin-left:4px">Niv. ' + (item.lvl || 1) + '</span>';
+      container.appendChild(line);
+    });
+
+    ['export', 'import', 'reset', 'confirm-class'].forEach(m => {
+      const z = document.getElementById('modal-zone-' + m);
+      if (z) z.style.display = 'none';
+    });
+    document.getElementById('modal-zone-confirm-level').style.display = 'flex';
+
+    document.getElementById('btn-confirm-level').onclick = () => {
+      applyLevelChange(newLevel, itemsAtRisk, pointsToRemove);
+      closeModal();
+    };
+
+    document.getElementById('modal').classList.add('open');
+  }
+
+  function applyLevelChange(newLevel, itemsAtRisk, pointsToRemove) {
+    buildLevel = newLevel;
+
+    if (itemsAtRisk && itemsAtRisk.length) {
+      itemsAtRisk.forEach(slotId => {
+        delete equipped[slotId];
+        clearRunesForSlot(slotId);
+        redrawSlot(slotId);
+      });
+    }
+
+    const maxPoints = buildLevel - 1;
+    const spent = Object.values(caracterPoints).reduce((a, b) => a + b, 0);
+    if (spent > maxPoints) {
+      caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
+    }
+
+    updateLevelUI();
+    renderStats();
+    renderItemList();
+    saveToStorage();
+  }
+
+  function adjustCar(carId, delta) {
+    const current = caracterPoints[carId] || 0;
+    const avail   = getAvailablePoints();
+
+    if (delta > 0 && avail <= 0) return;
+    if (delta < 0 && current <= 0) return;
+
+    caracterPoints[carId] = current + delta;
+    updateLevelUI();
+    renderStats();
+    saveToStorage();
   }
 
   /* ══ SÉLECTEUR DE CLASSE ══ */
@@ -501,7 +954,7 @@
         container.appendChild(line);
       });
 
-      ['export', 'import', 'reset', 'confirm-class'].forEach(function(m) {
+      ['export', 'import', 'reset', 'confirm-level'].forEach(function(m) {
         const zone = document.getElementById('modal-zone-' + m);
         if (zone) zone.style.display = 'none';
       });
@@ -571,7 +1024,6 @@
       }
       appendDiv(el, 'slot-name', item.name);
 
-      /* ══ BOULES DE RUNES ══ */
       const runeCount = item.stats && item.stats['Emplacement de Runes'];
       if (runeCount && runeCount > 0) {
         const orbsRow = document.createElement('div');
@@ -618,7 +1070,6 @@
 
   /* ══ RUNE PICKER ══ */
   function openRunePicker(runeKey, anchorEl, slotId) {
-    /* Ferme le picker existant si même orbe */
     const existing = document.getElementById('rune-picker-popup');
     if (existing) {
       const wasKey = existing.dataset.runeKey;
@@ -633,14 +1084,12 @@
 
     const currentRuneId = equippedRunes[runeKey];
 
-    /* Titre */
     const title = document.createElement('div');
     title.className = 'rune-picker-title';
     const orbIdx = parseInt(runeKey.split('_rune_')[1]) + 1;
     title.textContent = 'Emplacement de Rune ' + orbIdx;
     popup.appendChild(title);
 
-    /* Liste des runes */
     RUNES.forEach(function(rune) {
       const item = document.createElement('div');
       item.className = 'rune-picker-item' + (currentRuneId === rune.id ? ' active' : '');
@@ -677,7 +1126,6 @@
       popup.appendChild(item);
     });
 
-    /* Retirer */
     if (currentRuneId) {
       const sep = document.createElement('div');
       sep.className = 'rune-picker-sep';
@@ -697,7 +1145,6 @@
       popup.appendChild(rem);
     }
 
-    /* Positionnement */
     document.body.appendChild(popup);
     const rect = anchorEl.getBoundingClientRect();
     const popW = popup.offsetWidth || 260;
@@ -709,7 +1156,6 @@
     popup.style.left = left + 'px';
     popup.style.top  = top  + 'px';
 
-    /* Fermeture au clic extérieur */
     setTimeout(function() {
       function onOutside(e) {
         if (!popup.contains(e.target) && e.target !== anchorEl) {
@@ -721,7 +1167,6 @@
     }, 0);
   }
 
-  /* Supprime toutes les runes associées à un slot */
   function clearRunesForSlot(slotId) {
     Object.keys(equippedRunes).forEach(function(key) {
       if (key.startsWith(slotId + '_rune_')) delete equippedRunes[key];
@@ -790,7 +1235,7 @@
     const maxs = {};
     ALL_STATS.forEach(s => { mins[s.id] = 0; maxs[s.id] = 0; });
 
-    /* Stats des items équipés */
+    /* ── Items équipés ── */
     Object.values(equipped).forEach(item => {
       if (!item || !item.stats) return;
       Object.entries(item.stats).forEach(function(entry) {
@@ -801,7 +1246,7 @@
       });
     });
 
-    /* Stats des panoplies */
+    /* ── Bonus de panoplies ── */
     const setCounts = computeSetCounts();
     const sb = computeSetBonuses(setCounts);
     ALL_STATS.forEach(function(s) {
@@ -809,7 +1254,7 @@
       maxs[s.id] += sb.bonusMaxs[s.id];
     });
 
-    /* Stats des runes */
+    /* ── Bonus des runes ── */
     Object.entries(equippedRunes).forEach(function(entry) {
       const runeId = entry[1];
       const rune = RUNES.find(function(r) { return r.id === runeId; });
@@ -819,6 +1264,20 @@
         if (!(sid in mins)) return;
         mins[sid] += val;
         maxs[sid] += val;
+      });
+    });
+
+    /* ── Bonus des caractéristiques ── */
+    CARACTERISTIQUES.forEach(function(car) {
+      if (!car.stats) return;
+      const pts = caracterPoints[car.id] || 0;
+      if (pts <= 0) return;
+      Object.entries(car.stats).forEach(function(entry) {
+        const sid      = entry[0];
+        const perPoint = entry[1];
+        if (!(sid in mins)) return;
+        mins[sid] += pts * perPoint;
+        maxs[sid] += pts * perPoint;
       });
     });
 
@@ -939,7 +1398,7 @@
   }
 
   function roundUp2(n) {
-    return Math.ceil(n * 100) / 100;
+    return Math.floor(n * 100) / 100;
   }
 
   function renderStats() {
@@ -1085,6 +1544,14 @@
     return '<div class="item-class-badges">' + badges + '</div>';
   }
 
+  function buildItemLevelBadgeHTML(item) {
+    const lvl = item.lvl || 1;
+    const allowed = itemAllowedForLevel(item, buildLevel);
+    const color = allowed ? 'var(--muted)' : '#d9614a';
+    return '<span class="item-lvl-badge" style="color:' + color + ';border-color:' + color + '50">' +
+           (allowed ? '' : '⚠ ') + 'Niv. ' + lvl + '</span>';
+  }
+
   function renderItemList() {
     const list = document.getElementById('items-list');
     if (!activeSlot) {
@@ -1107,7 +1574,8 @@
     list.innerHTML = '';
     visible.forEach(function(item) {
       const row = document.createElement('div');
-      row.className = 'item-row';
+      const levelOk = itemAllowedForLevel(item, buildLevel);
+      row.className = 'item-row' + (!levelOk ? ' item-locked' : '');
       if (equipped[activeSlot] && equipped[activeSlot].id === item.id) row.classList.add('active');
       const rarColor = (RARITIES[item.rarity] || { color: '#888' }).color;
       const rarLabel = (RARITIES[item.rarity] || { label: item.rarity }).label;
@@ -1117,19 +1585,27 @@
           '<div class="item-thumb-bar" style="background:' + rarColor + '"></div>' +
         '</div>' +
         '<div class="item-meta">' +
-          '<div class="item-meta-name">' + item.name + '</div>' +
+          '<div class="item-meta-top">' +
+            '<div class="item-meta-name">' + item.name + '</div>' +
+            buildItemLevelBadgeHTML(item) +
+          '</div>' +
           '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · Palier ' + item.tier + '</div>' +
           buildClassBadgesHTML(item) +
           buildItemStatsHTML(item) +
         '</div>';
-      row.addEventListener('click', function() {
-        clearRunesForSlot(activeSlot);
-        equipped[activeSlot] = item;
-        saveToStorage();
-        redrawSlot(activeSlot);
-        renderStats();
-        renderItemList();
-      });
+
+      if (levelOk) {
+        row.addEventListener('click', function() {
+          clearRunesForSlot(activeSlot);
+          equipped[activeSlot] = item;
+          saveToStorage();
+          redrawSlot(activeSlot);
+          renderStats();
+          renderItemList();
+        });
+      } else {
+        row.title = 'Niveau ' + (item.lvl || 1) + ' requis';
+      }
       list.appendChild(row);
     });
   }
@@ -1149,6 +1625,8 @@
         sig: SIG,
         name: document.getElementById('inp-name').value.trim(),
         classe: activeClass || '',
+        level: buildLevel,
+        caracterPoints: caracterPoints,
         slots: equippedIds,
         runes: equippedRunes,
       }));
@@ -1161,7 +1639,7 @@
     modal.dataset.mode = mode;
     const errEl = document.getElementById('modal-error');
     if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
-    ['export', 'import', 'reset'].forEach(function(m) {
+    ['export', 'import', 'reset', 'confirm-class', 'confirm-level'].forEach(function(m) {
       const zone = document.getElementById('modal-zone-' + m);
       if (zone) zone.style.display = (m === mode) ? 'flex' : 'none';
     });
@@ -1184,6 +1662,8 @@
       sig: SIG,
       name: name,
       classe: activeClass || '',
+      level: buildLevel,
+      caracterPoints: caracterPoints,
       slots: equippedIds,
       runes: equippedRunes,
     };
@@ -1232,14 +1712,12 @@
         equipped = {};
         equippedRunes = {};
 
-        /* 1. Charger les items en premier */
         Object.entries(parsed.slots).forEach(function(e) {
           const slotId = e[0]; const itemId = e[1];
           const item = ITEMS.find(function(i) { return i.id === itemId; });
           if (item) equipped[slotId] = item;
         });
 
-        /* 2. Valider et charger les runes */
         if (parsed.runes && typeof parsed.runes === 'object') {
           Object.entries(parsed.runes).forEach(function(e) {
             const runeKey = e[0]; const runeId = e[1];
@@ -1257,6 +1735,16 @@
           activeClass = parsed.classe || null;
           buildClassPicker();
         }
+        if (parsed.level && parsed.level >= 1 && parsed.level <= MAX_LEVEL) {
+          buildLevel = parsed.level;
+        }
+        if (parsed.caracterPoints && typeof parsed.caracterPoints === 'object') {
+          Object.keys(caracterPoints).forEach(k => {
+            if (typeof parsed.caracterPoints[k] === 'number') {
+              caracterPoints[k] = parsed.caracterPoints[k];
+            }
+          });
+        }
       }
       else if (typeof parsed === 'object' && !Array.isArray(parsed)) {
         equipped = parsed;
@@ -1266,6 +1754,7 @@
       }
 
       buildGrid();
+      buildLevelPanel();
       saveToStorage();
       renderStats();
       renderPickerInfo();
@@ -1290,8 +1779,11 @@
     equipped = {};
     equippedRunes = {};
     activeSlot = null;
+    buildLevel = 1;
+    caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
     localStorage.removeItem(STORAGE_KEY);
     buildGrid();
+    buildLevelPanel();
     renderStats();
     renderPickerInfo();
     renderItemList();
@@ -1299,7 +1791,7 @@
   });
 
   /* ══ FERMETURE MODALE ══ */
-  document.getElementById('btn-modal-close').addEventListener('click',   closeModal);
+  document.getElementById('btn-modal-close').addEventListener('click', closeModal);
   document.getElementById('modal').addEventListener('click', function(e) {
     if (e.target === document.getElementById('modal')) closeModal();
   });
@@ -1362,25 +1854,24 @@
 
   /* ══ INIT ══ */
   function init() {
+    buildCarTooltip();
     buildClassPicker();
     buildGrid();
     buildFilters();
     buildStatsUI();
+    buildLevelPanel();
 
-    /* Restauration depuis localStorage */
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed.sig === SIG && parsed.v === 1 && parsed.slots) {
 
-          /* 1. Charger les items en premier */
           Object.entries(parsed.slots).forEach(function(e) {
             const item = ITEMS.find(function(i) { return i.id === e[1]; });
             if (item) equipped[e[0]] = item;
           });
 
-          /* 2. Valider et charger les runes */
           if (parsed.runes && typeof parsed.runes === 'object') {
             Object.entries(parsed.runes).forEach(function(e) {
               const runeKey = e[0]; const runeId = e[1];
@@ -1398,10 +1889,22 @@
             activeClass = parsed.classe;
             buildClassPicker();
           }
+          if (parsed.level && parsed.level >= 1 && parsed.level <= MAX_LEVEL) {
+            buildLevel = parsed.level;
+          }
+          if (parsed.caracterPoints && typeof parsed.caracterPoints === 'object') {
+            Object.keys(caracterPoints).forEach(k => {
+              if (typeof parsed.caracterPoints[k] === 'number') {
+                caracterPoints[k] = parsed.caracterPoints[k];
+              }
+            });
+          }
+
           buildGrid();
+          buildLevelPanel();
         }
       }
-    } catch(e) { /* storage corrompu */ }
+    } catch(e) { }
 
     renderStats();
     renderPickerInfo();
