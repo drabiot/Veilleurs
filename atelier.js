@@ -436,6 +436,7 @@
       });
       renderStats();
       renderItemList();
+      saveToStorage();
     });
   }
 
@@ -764,6 +765,7 @@
 
   function clearSlot(slotId) {
     delete equipped[slotId];
+    saveToStorage();
     redrawSlot(slotId);
     renderStats();
     if (activeSlot === slotId) renderItemList();
@@ -880,12 +882,33 @@
         '</div>';
       row.addEventListener('click', function() {
         equipped[activeSlot] = item;
+        saveToStorage();
         redrawSlot(activeSlot);
         renderStats();
         renderItemList();
       });
       list.appendChild(row);
     });
+  }
+
+  /* ══ PERSISTANCE localStorage ══ */
+  const SIG = "🌙𝓥𝓮𝓲𝓵𝓵𝓮𝓾𝓻𝓼 𝓪𝓾 𝓒𝓵𝓪𝓲𝓻 𝓭𝓮 𝓛𝓾𝓷𝓮🌙";
+  const STORAGE_KEY = 'vcl_atelier';
+
+  function saveToStorage() {
+    const equippedIds = {};
+    Object.entries(equipped).forEach(function(e) {
+      if (e[1]) equippedIds[e[0]] = e[1].id;
+    });
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        v: 1,
+        sig: SIG,
+        name: document.getElementById('inp-name').value.trim(),
+        classe: activeClass || '',
+        slots: equippedIds,
+      }));
+    } catch(e) { /* quota dépassé ou mode privé, on ignore */ }
   }
 
   /* ══ MODALES ══ */
@@ -922,7 +945,7 @@
 
     const payload = {
       v: 1,
-      sig: "🌙𝓥𝓮𝓲𝓵𝓵𝓮𝓾𝓻𝓼 𝓪𝓾 𝓒𝓵𝓪𝓲𝓻 𝓭𝓮 𝓛𝓾𝓷𝓮🌙",
+      sig: SIG,
       name: name,
       classe: activeClass || '',
       slots: equippedIds,
@@ -965,7 +988,7 @@
     try {
       const parsed = JSON.parse(raw);
 
-      if (parsed.sig !== "🌙𝓥𝓮𝓲𝓵𝓵𝓮𝓾𝓻𝓼 𝓪𝓾 𝓒𝓵𝓪𝓲𝓻 𝓭𝓮 𝓛𝓾𝓷𝓮🌙") {
+      if (parsed.sig !== SIG) {
         throw new Error('Signature invalide');
       }
       
@@ -990,6 +1013,7 @@
       }
 
       buildGrid();
+      saveToStorage();
       renderStats();
       renderPickerInfo();
       renderItemList();
@@ -1012,6 +1036,7 @@
   document.getElementById('btn-confirm-reset').addEventListener('click', function() {
     equipped = {};
     activeSlot = null;
+    localStorage.removeItem(STORAGE_KEY);
     buildGrid();
     renderStats();
     renderPickerInfo();
@@ -1030,6 +1055,10 @@
   document.getElementById('inp-search').addEventListener('input', function(e) {
     filterQ = e.target.value.trim();
     renderItemList();
+  });
+
+  document.getElementById('inp-name').addEventListener('input', function() {
+    saveToStorage();
   });
 
   /* ══ RESIZE ══ */
@@ -1084,6 +1113,27 @@
     buildGrid();
     buildFilters();
     buildStatsUI();
+
+    /* Restauration depuis localStorage */
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.sig === SIG && parsed.v === 1 && parsed.slots) {
+          Object.entries(parsed.slots).forEach(function(e) {
+            const item = ITEMS.find(function(i) { return i.id === e[1]; });
+            if (item) equipped[e[0]] = item;
+          });
+          if (parsed.name) document.getElementById('inp-name').value = parsed.name;
+          if (parsed.classe) {
+            activeClass = parsed.classe;
+            buildClassPicker();
+          }
+          buildGrid();
+        }
+      }
+    } catch(e) { /* storage corrompu, on ignore */ }
+
     renderStats();
     renderPickerInfo();
     requestAnimationFrame(function() {
