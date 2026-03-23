@@ -20,10 +20,7 @@
     { id:'shaman',   label:'Shaman',   ico:'🌿'  },
   ];
 
-  /* ══ PANOPLIES ══
-   * bonuses: { 2: { stat_id: val }, 3: { … } }  — val = nombre ou [min,max]
-   * Les bonus sont CUMULATIFS : 4 pièces → paliers 2 + 3 + 4 tous actifs.
-   */
+  /* ══ PANOPLIES ══ */
   const SETS = {
     cuivre: {
       label: 'Set de Cuivre',
@@ -219,6 +216,8 @@
     {
       label: 'Régénération & Soutien',
       stats: [
+        { id:'vol_vie',             label:'Vol de Vie',                      icon:'🩸',  unit:'%',   max:100  },
+        { id:'omnivamp',            label:'Omnivampirisme',                  icon:'👄',  unit:'%',   max:100  },
         { id:'soin_bonus',          label:'Soin Bonus',                      icon:'✳️',  unit:'',   max:500  },
         { id:'regen_sante',         label:'Régénération Santé',              icon:'💓',  unit:'/s', max:200  },
         { id:'regen_mana',          label:'Régénération Mana',               icon:'💦',  unit:'/s', max:200  },
@@ -228,6 +227,14 @@
   ];
 
   const ALL_STATS = STAT_GROUPS.flatMap(g => g.stats);
+
+  /* ══ RUNES ══ */
+  const RUNES = [
+    { id:'noel',     name:'Rune de Noël',        color:'#e03a3a', stats:{ vol_vie:2, omnivamp:2.5, sante:20, mana:5, stamina:2.5 } },
+    { id:'st_val',   name:'Rune de Teddy Bear',  color:'#f4acbc', stats:{ vitesse_attaque:0.2, crit_comp_chance:20, crit_comp_degats:10, defense:2, sante:20 } },
+    { id:'lunaire',  name:'Rune Lunaire',        color:'#ecd783', stats:{ crit_chance:7, crit_degats:12, crit_comp_chance:7, crit_comp_degats:12, sante:5 } },
+    { id:'dragon',   name:'Rune du Dragon',      color:'#e35f48', stats:{ crit_chance:8, crit_degats:13, crit_comp_chance:8, crit_comp_degats:13, sante:10, vitesse_deplacement:0.15 } },
+  ];
 
   /* ══ HELPERS FOURCHETTES ══ */
   function getMin(val) { return Array.isArray(val) ? val[0] : val; }
@@ -395,11 +402,12 @@
   const ALL_SLOTS = [...SLOTS_LEFT, ...SLOTS_RIGHT, ...SLOTS_BOT];
 
   /* ══ ÉTAT ══ */
-  let equipped    = {};
-  let activeSlot  = null;
-  let filterQ     = '';
-  let filterRar   = null;
-  let activeClass = null;
+  let equipped      = {};
+  let equippedRunes = {};
+  let activeSlot    = null;
+  let filterQ       = '';
+  let filterRar     = null;
+  let activeClass   = null;
 
   /* ══ SÉLECTEUR DE CLASSE ══ */
   function buildClassPicker() {
@@ -422,74 +430,72 @@
     });
 
     wrap.addEventListener('click', function(e) {
-    const btn = e.target.closest('.class-btn');
-    if (!btn) return;
-    const newClass = btn.dataset.c || null;
+      const btn = e.target.closest('.class-btn');
+      if (!btn) return;
+      const newClass = btn.dataset.c || null;
 
-    const itemsAtRisk = Object.keys(equipped).filter(function(slotId) {
-      const item = equipped[slotId];
-      return item && !itemAllowedForClass(item, newClass);
-    });
-
-    function applyClassChange() {
-      activeClass = newClass;
-      wrap.querySelectorAll('.class-btn').forEach(function(b) { b.classList.remove('active'); });
-      btn.classList.add('active');
-      itemsAtRisk.forEach(function(slotId) {
-        delete equipped[slotId];
-        redrawSlot(slotId);
+      const itemsAtRisk = Object.keys(equipped).filter(function(slotId) {
+        const item = equipped[slotId];
+        return item && !itemAllowedForClass(item, newClass);
       });
-      renderStats();
-      renderItemList();
-      saveToStorage();
-    }
 
-    if (!itemsAtRisk.length) { applyClassChange(); return; }
+      function applyClassChange() {
+        activeClass = newClass;
+        wrap.querySelectorAll('.class-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        itemsAtRisk.forEach(function(slotId) {
+          delete equipped[slotId];
+          clearRunesForSlot(slotId);
+          redrawSlot(slotId);
+        });
+        renderStats();
+        renderItemList();
+        saveToStorage();
+      }
 
-    // Prépare le contenu de la modale
-    const newLabel = newClass
-      ? (CLASSES.find(function(c) { return c.id === newClass; }) || { label: '?' }).label
-      : 'Toutes classes';
+      if (!itemsAtRisk.length) { applyClassChange(); return; }
 
-    document.getElementById('modal-title').textContent = '⚠ Changement de classe';
+      const newLabel = newClass
+        ? (CLASSES.find(function(c) { return c.id === newClass; }) || { label: '?' }).label
+        : 'Toutes classes';
 
-    const hint = document.getElementById('modal-class-hint');
-    hint.innerHTML =
-      'Passer en <span style="color:var(--gold);font-family:\'Cinzel\',serif;font-weight:600">' + newLabel + '</span>' +
-      ' supprimera <span style="color:#d9614a;font-weight:700">' + itemsAtRisk.length + '</span>' +
-      ' item' + (itemsAtRisk.length > 1 ? 's' : '') + ' incompatible' + (itemsAtRisk.length > 1 ? 's' : '') + ' :';
+      document.getElementById('modal-title').textContent = '⚠ Changement de classe';
 
-    const container = document.getElementById('modal-class-items');
-    container.innerHTML = '';
-    itemsAtRisk.forEach(function(slotId) {
-      const item = equipped[slotId];
-      const slotDef = ALL_SLOTS.find(function(s) { return s.id === slotId; });
-      const slotLabel = slotDef ? slotDef.label : slotId;
-      const rarColor = (RARITIES[item.rarity] || { color: '#888' }).color;
-      const line = document.createElement('div');
-      line.className = 'class-warn-item';
-      line.innerHTML =
-        '<span style="width:6px;height:6px;border-radius:50%;background:' + rarColor + ';flex-shrink:0;display:inline-block"></span>' +
-        '<span class="class-warn-item-name">' + item.name + '</span>' +
-        '<span class="class-warn-slot">' + slotDef.ico + ' ' + slotLabel + '</span>';
-      container.appendChild(line);
+      const hint = document.getElementById('modal-class-hint');
+      hint.innerHTML =
+        'Passer en <span style="color:var(--gold);font-family:\'Cinzel\',serif;font-weight:600">' + newLabel + '</span>' +
+        ' supprimera <span style="color:#d9614a;font-weight:700">' + itemsAtRisk.length + '</span>' +
+        ' item' + (itemsAtRisk.length > 1 ? 's' : '') + ' incompatible' + (itemsAtRisk.length > 1 ? 's' : '') + ' :';
+
+      const container = document.getElementById('modal-class-items');
+      container.innerHTML = '';
+      itemsAtRisk.forEach(function(slotId) {
+        const item = equipped[slotId];
+        const slotDef = ALL_SLOTS.find(function(s) { return s.id === slotId; });
+        const slotLabel = slotDef ? slotDef.label : slotId;
+        const rarColor = (RARITIES[item.rarity] || { color: '#888' }).color;
+        const line = document.createElement('div');
+        line.className = 'class-warn-item';
+        line.innerHTML =
+          '<span style="width:6px;height:6px;border-radius:50%;background:' + rarColor + ';flex-shrink:0;display:inline-block"></span>' +
+          '<span class="class-warn-item-name">' + item.name + '</span>' +
+          '<span class="class-warn-slot">' + slotDef.ico + ' ' + slotLabel + '</span>';
+        container.appendChild(line);
+      });
+
+      ['export', 'import', 'reset', 'confirm-class'].forEach(function(m) {
+        const zone = document.getElementById('modal-zone-' + m);
+        if (zone) zone.style.display = 'none';
+      });
+      document.getElementById('modal-zone-confirm-class').style.display = 'flex';
+
+      document.getElementById('btn-confirm-class').onclick = function() {
+        applyClassChange();
+        closeModal();
+      };
+
+      document.getElementById('modal').classList.add('open');
     });
-
-    // Affiche la zone confirm-class
-    ['export', 'import', 'reset', 'confirm-class'].forEach(function(m) {
-      const zone = document.getElementById('modal-zone-' + m);
-      if (zone) zone.style.display = 'none';
-    });
-    document.getElementById('modal-zone-confirm-class').style.display = 'flex';
-
-    // Callbacks des boutons
-    document.getElementById('btn-confirm-class').onclick = function() {
-      applyClassChange();
-      closeModal();
-    };
-
-    document.getElementById('modal').classList.add('open');
-  });
   }
 
   function itemAllowedForClass(item, classId) {
@@ -546,6 +552,33 @@
         appendDiv(el, 'slot-icon', slotDef.ico);
       }
       appendDiv(el, 'slot-name', item.name);
+
+      /* ══ BOULES DE RUNES ══ */
+      const runeCount = item.stats && item.stats['Emplacement de Runes'];
+      if (runeCount && runeCount > 0) {
+        const orbsRow = document.createElement('div');
+        orbsRow.className = 'rune-orbs-row';
+        for (let i = 0; i < runeCount; i++) {
+          const runeKey = slotDef.id + '_rune_' + i;
+          const runeId  = equippedRunes[runeKey];
+          const rune    = runeId ? RUNES.find(function(r) { return r.id === runeId; }) : null;
+          const orb = document.createElement('div');
+          orb.className = 'rune-orb' + (rune ? ' rune-orb-filled' : ' rune-orb-empty');
+          if (rune) {
+            orb.style.background   = rune.color + '30';
+            orb.style.borderColor  = rune.color;
+            orb.style.boxShadow    = '0 0 0 2px ' + rune.color + '55';
+            orb.title = rune.name;
+          }
+          orb.addEventListener('click', function(e) {
+            e.stopPropagation();
+            openRunePicker(runeKey, orb, slotDef.id);
+          });
+          orbsRow.appendChild(orb);
+        }
+        el.appendChild(orbsRow);
+      }
+
     } else {
       appendDiv(el, 'slot-icon', slotDef.ico);
       appendDiv(el, 'slot-label', slotDef.label);
@@ -563,6 +596,118 @@
     const def = ALL_SLOTS.find(s => s.id === slotId);
     const el  = document.querySelector('.slot[data-slot-id="' + slotId + '"]');
     if (def && el) drawSlot(el, def);
+  }
+
+  /* ══ RUNE PICKER ══ */
+  function openRunePicker(runeKey, anchorEl, slotId) {
+    /* Ferme le picker existant si même orbe */
+    const existing = document.getElementById('rune-picker-popup');
+    if (existing) {
+      const wasKey = existing.dataset.runeKey;
+      existing.remove();
+      if (wasKey === runeKey) return;
+    }
+
+    const popup = document.createElement('div');
+    popup.id = 'rune-picker-popup';
+    popup.className = 'rune-picker-popup';
+    popup.dataset.runeKey = runeKey;
+
+    const currentRuneId = equippedRunes[runeKey];
+
+    /* Titre */
+    const title = document.createElement('div');
+    title.className = 'rune-picker-title';
+    const orbIdx = parseInt(runeKey.split('_rune_')[1]) + 1;
+    title.textContent = 'Emplacement de Rune ' + orbIdx;
+    popup.appendChild(title);
+
+    /* Liste des runes */
+    RUNES.forEach(function(rune) {
+      const item = document.createElement('div');
+      item.className = 'rune-picker-item' + (currentRuneId === rune.id ? ' active' : '');
+
+      const pip = document.createElement('span');
+      pip.className = 'rune-pip';
+      pip.style.background = rune.color;
+
+      const name = document.createElement('span');
+      name.className = 'rune-picker-name';
+      name.textContent = rune.name;
+
+      const statsStr = Object.entries(rune.stats).map(function(e) {
+        const statDef = ALL_STATS.find(function(s) { return s.id === e[0]; });
+        return '+' + e[1] + '\u202f' + (statDef ? statDef.label : e[0]);
+      }).join(' · ');
+      const stats = document.createElement('span');
+      stats.className = 'rune-picker-stats';
+      stats.textContent = statsStr;
+
+      item.appendChild(pip);
+      item.appendChild(name);
+      item.appendChild(stats);
+
+      item.addEventListener('click', function(e) {
+        e.stopPropagation();
+        equippedRunes[runeKey] = rune.id;
+        popup.remove();
+        redrawSlot(slotId);
+        renderStats();
+        saveToStorage();
+      });
+
+      popup.appendChild(item);
+    });
+
+    /* Retirer */
+    if (currentRuneId) {
+      const sep = document.createElement('div');
+      sep.className = 'rune-picker-sep';
+      popup.appendChild(sep);
+
+      const rem = document.createElement('div');
+      rem.className = 'rune-picker-remove';
+      rem.textContent = '✕ Retirer la rune';
+      rem.addEventListener('click', function(e) {
+        e.stopPropagation();
+        delete equippedRunes[runeKey];
+        popup.remove();
+        redrawSlot(slotId);
+        renderStats();
+        saveToStorage();
+      });
+      popup.appendChild(rem);
+    }
+
+    /* Positionnement */
+    document.body.appendChild(popup);
+    const rect = anchorEl.getBoundingClientRect();
+    const popW = popup.offsetWidth || 260;
+    const popH = popup.offsetHeight || 300;
+    let left = rect.left + window.scrollX;
+    let top  = rect.bottom + window.scrollY + 5;
+    if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
+    if (top + popH > window.innerHeight + window.scrollY - 8) top = rect.top + window.scrollY - popH - 5;
+    popup.style.left = left + 'px';
+    popup.style.top  = top  + 'px';
+
+    /* Fermeture au clic extérieur */
+    setTimeout(function() {
+      function onOutside(e) {
+        if (!popup.contains(e.target) && e.target !== anchorEl) {
+          popup.remove();
+          document.removeEventListener('click', onOutside);
+        }
+      }
+      document.addEventListener('click', onOutside);
+    }, 0);
+  }
+
+  /* Supprime toutes les runes associées à un slot */
+  function clearRunesForSlot(slotId) {
+    Object.keys(equippedRunes).forEach(function(key) {
+      if (key.startsWith(slotId + '_rune_')) delete equippedRunes[key];
+    });
   }
 
   /* ══ STATS ══ */
@@ -627,6 +772,7 @@
     const maxs = {};
     ALL_STATS.forEach(s => { mins[s.id] = 0; maxs[s.id] = 0; });
 
+    /* Stats des items équipés */
     Object.values(equipped).forEach(item => {
       if (!item || !item.stats) return;
       Object.entries(item.stats).forEach(function(entry) {
@@ -637,11 +783,25 @@
       });
     });
 
+    /* Stats des panoplies */
     const setCounts = computeSetCounts();
     const sb = computeSetBonuses(setCounts);
     ALL_STATS.forEach(function(s) {
       mins[s.id] += sb.bonusMins[s.id];
       maxs[s.id] += sb.bonusMaxs[s.id];
+    });
+
+    /* Stats des runes */
+    Object.entries(equippedRunes).forEach(function(entry) {
+      const runeId = entry[1];
+      const rune = RUNES.find(function(r) { return r.id === runeId; });
+      if (!rune) return;
+      Object.entries(rune.stats).forEach(function(sv) {
+        const sid = sv[0]; const val = sv[1];
+        if (!(sid in mins)) return;
+        mins[sid] += val;
+        maxs[sid] += val;
+      });
     });
 
     return { mins, maxs, setCounts };
@@ -821,6 +981,7 @@
 
   function clearSlot(slotId) {
     delete equipped[slotId];
+    clearRunesForSlot(slotId);
     saveToStorage();
     redrawSlot(slotId);
     renderStats();
@@ -875,6 +1036,13 @@
 
     const lines = entries.map(function(e) {
       const key = e[0]; const val = e[1];
+      if (key === 'Emplacement de Runes') {
+        return '<div class="istat-row">' +
+               '<span class="istat-icon">💎</span>' +
+               '<span class="istat-label">Emplacement de Runes</span>' +
+               '<span class="istat-val">' + val + '</span>' +
+               '</div>';
+      }
       const statDef = ALL_STATS.find(function(s) { return s.id === key; });
       const label = statDef ? statDef.label : key;
       const unit  = statDef ? statDef.unit  : '';
@@ -937,6 +1105,8 @@
           buildItemStatsHTML(item) +
         '</div>';
       row.addEventListener('click', function() {
+        /* Si on remplace un item avec des runes, on nettoie les runes de l'ancien */
+        clearRunesForSlot(activeSlot);
         equipped[activeSlot] = item;
         saveToStorage();
         redrawSlot(activeSlot);
@@ -963,18 +1133,17 @@
         name: document.getElementById('inp-name').value.trim(),
         classe: activeClass || '',
         slots: equippedIds,
+        runes: equippedRunes,
       }));
-    } catch(e) { /* quota dépassé ou mode privé, on ignore */ }
+    } catch(e) { /* quota dépassé ou mode privé */ }
   }
 
   /* ══ MODALES ══ */
   function openModal(mode) {
     const modal = document.getElementById('modal');
     modal.dataset.mode = mode;
-    // Réinitialise l'erreur
     const errEl = document.getElementById('modal-error');
     if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
-    // Affiche la bonne zone
     ['export', 'import', 'reset'].forEach(function(m) {
       const zone = document.getElementById('modal-zone-' + m);
       if (zone) zone.style.display = (m === mode) ? 'flex' : 'none';
@@ -989,24 +1158,18 @@
   /* ══ EXPORT ══ */
   document.getElementById('btn-export').addEventListener('click', function() {
     const name = document.getElementById('inp-name').value.trim() || 'Mon Stuff';
-    const cls  = activeClass
-      ? (CLASSES.find(function(c) { return c.id === activeClass; }) || { label: '?' }).label
-      : 'Toutes classes';
-
-    // Sérialise uniquement les IDs pour un JSON compact et fiable
     const equippedIds = {};
     Object.entries(equipped).forEach(function(e) {
       if (e[1]) equippedIds[e[0]] = e[1].id;
     });
-
     const payload = {
       v: 1,
       sig: SIG,
       name: name,
       classe: activeClass || '',
       slots: equippedIds,
+      runes: equippedRunes,
     };
-
     const ta = document.getElementById('modal-ta-export');
     if (ta) ta.value = JSON.stringify(payload, null, 2);
     document.getElementById('modal-title').textContent = '◈ Exporter — ' + name;
@@ -1047,23 +1210,32 @@
       if (parsed.sig !== SIG) {
         throw new Error('Signature invalide');
       }
-      
+
       if (parsed.v === 1 && parsed.slots) {
         equipped = {};
+        equippedRunes = {};
         Object.entries(parsed.slots).forEach(function(e) {
           const slotId = e[0]; const itemId = e[1];
           const item = ITEMS.find(function(i) { return i.id === itemId; });
           if (item) equipped[slotId] = item;
         });
+        if (parsed.runes && typeof parsed.runes === 'object') {
+          Object.entries(parsed.runes).forEach(function(e) {
+            const runeKey = e[0]; const runeId = e[1];
+            if (RUNES.find(function(r) { return r.id === runeId; })) {
+              equippedRunes[runeKey] = runeId;
+            }
+          });
+        }
         if (parsed.name) document.getElementById('inp-name').value = parsed.name;
         if (parsed.classe) {
           activeClass = parsed.classe || null;
           buildClassPicker();
         }
       }
-      // Format legacy : objet équipé brut (slot → item complet)
       else if (typeof parsed === 'object' && !Array.isArray(parsed)) {
         equipped = parsed;
+        equippedRunes = {};
       } else {
         throw new Error('Format non reconnu');
       }
@@ -1091,6 +1263,7 @@
 
   document.getElementById('btn-confirm-reset').addEventListener('click', function() {
     equipped = {};
+    equippedRunes = {};
     activeSlot = null;
     localStorage.removeItem(STORAGE_KEY);
     buildGrid();
@@ -1179,6 +1352,14 @@
             const item = ITEMS.find(function(i) { return i.id === e[1]; });
             if (item) equipped[e[0]] = item;
           });
+          if (parsed.runes && typeof parsed.runes === 'object') {
+            Object.entries(parsed.runes).forEach(function(e) {
+              const runeKey = e[0]; const runeId = e[1];
+              if (RUNES.find(function(r) { return r.id === runeId; })) {
+                equippedRunes[runeKey] = runeId;
+              }
+            });
+          }
           if (parsed.name) document.getElementById('inp-name').value = parsed.name;
           if (parsed.classe) {
             activeClass = parsed.classe;
@@ -1187,7 +1368,7 @@
           buildGrid();
         }
       }
-    } catch(e) { /* storage corrompu, on ignore */ }
+    } catch(e) { /* storage corrompu */ }
 
     renderStats();
     renderPickerInfo();
