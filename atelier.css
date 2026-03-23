@@ -1036,3 +1036,16 @@ html, body {
 .sidebar-left::-webkit-scrollbar       { width: 3px; }
 .sidebar-left::-webkit-scrollbar-track { background: transparent; }
 .sidebar-left::-webkit-scrollbar-thumb { background: var(--rim2); border-radius: 2px; }
+
+.tier-wrap {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.15) transparent;
+  padding-bottom: 4px;
+}
+.tier-wrap::-webkit-scrollbar        { height: 3px; }
+.tier-wrap::-webkit-scrollbar-track  { background: transparent; }
+.tier-wrap::-webkit-scrollbar-thumb  { background: rgba(255,255,255,.18); border-radius: 2px; }

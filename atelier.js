@@ -471,6 +471,7 @@
   let activeSlot    = null;
   let filterQ       = '';
   let filterRar     = null;
+  let filterTier 	= null;
   let activeClass   = null;
 
   /* ══ VALIDATION DES RUNES ══ */
@@ -796,23 +797,25 @@
   function openLevelChangeModal(newLevel, itemsAtRisk, pointsToRemove) {
     document.getElementById('modal-title').textContent = '⚠ Changement de Niveau';
 
-    const hint = document.getElementById('modal-level-hint');
-    const lines = [];
+	const hint = document.getElementById('modal-level-hint');
+	const lines = [];
 
-    if (itemsAtRisk.length > 0) {
-      lines.push(
-        'Passer au niveau <span style="color:var(--gold);font-family:\'Cinzel\',serif;font-weight:600">' + newLevel + '</span>' +
-        ' supprimera <span style="color:#d9614a;font-weight:700">' + itemsAtRisk.length + '</span>' +
-        ' item' + (itemsAtRisk.length > 1 ? 's' : '') + ' dont le niveau requis est trop élevé :'
-      );
-    }
-    if (pointsToRemove > 0) {
-      lines.push(
-        '<div style="text-align: center;"><span style="color:#e09555">⚠ Les points de caractéristique seront réinitialisés car ils dépassent le nouveau maximum.</span>'
-      );
-    }
+	if (itemsAtRisk.length > 0) {
+	lines.push(
+		'Passer au niveau\u00a0<span style="color:var(--gold);font-family:\'Cinzel\',serif;font-weight:600">' + newLevel + '</span>' +
+		' supprimera\u00a0<span style="color:#d9614a;font-weight:700">' + itemsAtRisk.length + '</span>' +
+		'\u00a0item' + (itemsAtRisk.length > 1 ? 's' : '') + ' dont le niveau requis est trop élevé\u00a0:'
+	);
+	}
+	if (pointsToRemove > 0) {
+	lines.push(
+		'<span style="color:#e09555">⚠\u00a0Les points de caractéristique alloués dépassent le maximum autorisé au niveau\u00a0' +
+		'<span style="color:var(--gold);font-family:\'Cinzel\',serif;font-weight:600">' + newLevel + '</span>' +
+		'\u00a0et seront réinitialisés.</span>'
+	);
+	}
 
-    hint.innerHTML = lines.join('<br><br>');
+	hint.innerHTML = lines.join('<br><br>');
 
     const container = document.getElementById('modal-level-items');
     container.innerHTML = '';
@@ -1493,6 +1496,37 @@
     });
   }
 
+  function buildTierFilter() {
+	const wrap = document.getElementById('tier-wrap');
+	if (!wrap) return;
+	wrap.innerHTML = '';
+
+	const tiers = [...new Set(ITEMS.map(i => i.tier))].sort((a, b) => a - b);
+
+	const all = document.createElement('button');
+	all.className = 'rarity-chip active';
+	all.textContent = 'Tout';
+	all.dataset.t = '';
+	wrap.appendChild(all);
+
+	tiers.forEach(function(t) {
+	const btn = document.createElement('button');
+	btn.className = 'rarity-chip';
+	btn.dataset.t = t;
+	btn.textContent = t === 0 ? 'Évènements' : 'Palier ' + t;
+	wrap.appendChild(btn);
+	});
+
+	wrap.addEventListener('click', function(e) {
+	const chip = e.target.closest('.rarity-chip');
+	if (!chip || !('t' in chip.dataset)) return;
+	filterTier = chip.dataset.t !== '' ? parseInt(chip.dataset.t) : null;
+	wrap.querySelectorAll('.rarity-chip').forEach(c => c.classList.remove('active'));
+	chip.classList.add('active');
+	renderItemList();
+	});
+	}
+
   function formatStatValue(val, unit) {
     if (Array.isArray(val)) {
       if (val[0] === val[1]) return val[0] + unit;
@@ -1562,11 +1596,12 @@
     const norm = function(str) { return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
     const q    = norm(filterQ);
     const visible = ITEMS.filter(function(item) {
-      return slot.cats.includes(item.cat) &&
-             itemAllowedForClass(item, activeClass) &&
-             (!filterRar || item.rarity === filterRar) &&
-             (!q || norm(item.name).includes(q));
-    });
+		return slot.cats.includes(item.cat) &&
+				itemAllowedForClass(item, activeClass) &&
+				(!filterRar  || item.rarity === filterRar) &&
+				(filterTier === null || item.tier === filterTier) &&
+				(!q || norm(item.name).includes(q));
+		});
     if (!visible.length) {
       list.innerHTML = '<div class="picker-empty-msg">Aucun item compatible</div>';
       return;
@@ -1596,13 +1631,17 @@
 
       if (levelOk) {
         row.addEventListener('click', function() {
-          clearRunesForSlot(activeSlot);
-          equipped[activeSlot] = item;
-          saveToStorage();
-          redrawSlot(activeSlot);
-          renderStats();
-          renderItemList();
-        });
+		if (equipped[activeSlot] && equipped[activeSlot].id === item.id) {
+			clearSlot(activeSlot);
+		} else {
+			clearRunesForSlot(activeSlot);
+			equipped[activeSlot] = item;
+			saveToStorage();
+			redrawSlot(activeSlot);
+			renderStats();
+			renderItemList();
+		}
+		});
       } else {
         row.title = 'Niveau ' + (item.lvl || 1) + ' requis';
       }
@@ -1858,6 +1897,7 @@
     buildClassPicker();
     buildGrid();
     buildFilters();
+	buildTierFilter();
     buildStatsUI();
     buildLevelPanel();
 
