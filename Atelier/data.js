@@ -232,12 +232,103 @@ const SETS = {
     label: 'Set Faible Corruption',
     color: 'rgb(173, 91, 221)',
     bonuses: {
-      2: { hate:10 },
+      2: { stamina:5, regen_stamina:0.1 },
+      3: { reduction_degats:5.5 },
+      4: { defense:4, sante:10 },
+    }
+  },
+  abeille_guer: {
+    label: 'Set Abeille Guerrier',
+    color: 'rgb(236, 140, 49)',
+    bonuses: {
+      2: { stamina:5, regen_stamina:0.1 },
+      3: { reduction_degats:5.5 },
+      4: { defense:4, sante:10 },
+    }
+  },
+  abeille_assa: {
+    label: 'Set Abeille Feroce',
+    color: 'rgb(223, 100, 29)',
+    bonuses: {
+      2: { crit_chance:5, crit_degats:15 },
       3: { vitesse_deplacement:0.5 },
-      4: { esquive:4 },
+      4: { degats:8 },
+    }
+  },
+  abeille_arch: {
+    label: 'Set Abeille Mystique',
+    color: 'rgb(238, 200, 97)',
+    bonuses: {
+      2: { crit_chance:15, crit_degats:5 },
+      3: { vitesse_deplacement:0.75 },
+      4: { degats:7 },
+    }
+  },
+  abeille_mage: {
+    label: 'Set Abeille Magique',
+    color: 'rgb(246, 136, 250)',
+    bonuses: {
+      2: { crit_comp_chance:2.5, mana:30 },
+      3: { hate:6 },
+      4: { degats_magique:6 },
+    }
+  },
+  abeille_sham: {
+    label: 'Set Abeille Merveilleuse',
+    color: 'rgb(161, 233, 79)',
+    bonuses: {
+      2: { regen_mana:0.1, mana:30 },
+      3: { hate:6.5 },
+      4: { soin_bonus:2 },
+    }
+  },
+  necro_guer: {
+    label: 'Set Necromancien Guerrier',
+    color: 'rgb(245, 75, 75)',
+    bonuses: {
+      2: { stamina:6, regen_stamina:0.2 },
+      3: { reduction_degats:6 },
+      4: { defense:5.5, sante:20 },
+    }
+  },
+  necro_assa: {
+    label: 'Set Necromancien Feroce',
+    color: 'rgb(126, 10, 35)',
+    bonuses: {
+      2: { crit_chance:10, crit_degats:20 },
+      3: { vitesse_deplacement:0.6 },
+      4: { degats:10 },
+    }
+  },
+  necro_arch: {
+    label: 'Set Necromancien Mystique',
+    color: 'rgb(248, 69, 93)',
+    bonuses: {
+      2: { crit_chance:20, crit_degats:10 },
+      3: { vitesse_deplacement:0.85 },
+      4: { degats:8 },
+    }
+  },
+  necro_mage: {
+    label: 'Set Necromancien Magique',
+    color: 'rgb(202, 36, 128)',
+    bonuses: {
+      2: { crit_comp_chance:3.5, mana:35 },
+      3: { hate:7 },
+      4: { degats_magique:7 },
+    }
+  },
+  necro_sham: {
+    label: 'Set Necromancien Sauvage',
+    color: 'rgb(58, 87, 26)',
+    bonuses: {
+      2: { regen_mana:0.2, mana:35 },
+      3: { hate:8 },
+      4: { soin_bonus:3 },
     }
   },
 };
+
 
 /* ══ DÉFINITION DES STATS ══ */
 const STAT_GROUPS = [
@@ -546,6 +637,8 @@ const ITEMS = [
   { id:'tunique_deb',     				name:"Tunique du Débutant",                            		rarity:'commun',    cat:'plastron',  	tier:1, lvl:1,  img:"../img/compendium/textures/armors/chestplate_debutant.png", 						stats:{sante:[12,15]} },
   { id:'jambieres_deb',   				name:"Jambières du Débutant",                          		rarity:'commun',    cat:'jambières', 	tier:1, lvl:1,  img:"../img/compendium/textures/armors/leggings_debutant.png", 							stats:{sante:[7,10]} },
   { id:'bottes_deb',      				name:"Bottes du Débutant",                             		rarity:'commun',    cat:'bottes',    	tier:1, lvl:1,  img:"../img/compendium/textures/armors/boots_debutant.png", 							stats:{sante:[5,7]} },
+  /* ══ Guerrier ══ */
+  /* ══ Palier 1 ══ */
   { id:'tunique_ika',     				name:"Tunique d'Ika",          			set:'ika',          rarity:'commun',    cat:'plastron',  	tier:1, lvl:3,  img:"../img/compendium/textures/armors/chestplate_ika.png", 							stats:{sante:[23,25.99], defense:[0.7,1.2]}, classes:['guerrier'] },
   { id:'jambieres_ika',   				name:"Jambières d'Ika",        			set:'ika',          rarity:'commun',    cat:'jambières', 	tier:1, lvl:3,  img:"../img/compendium/textures/armors/leggings_ika.png", 								stats:{sante:[20,25], defense:[0.6,1]}, classes:['guerrier'] },
   { id:'bottes_ika',      				name:"Bottes d'Ika",            		set:'ika',          rarity:'commun',    cat:'bottes',    	tier:1, lvl:3,  img:"../img/compendium/textures/armors/boots_ika.png", 									stats:{sante:[17,20], defense:[0.4,0.8]}, classes:['guerrier'] },
@@ -557,6 +650,9 @@ const ITEMS = [
   { id:'plastron_gard',   				name:"Plastron du Gardien",       		set:'gardien',      rarity:'epique',    cat:'plastron',  	tier:1, lvl:9, 	img:"../img/compendium/textures/armors/chestplate_gardien.png", 						stats:{sante:[34,40], defense:[3.5,4], 'Emplacement de Runes':2}, classes:['guerrier'] },
   { id:'jambieres_gar',   				name:"Jambières du Gardien",      		set:'gardien',      rarity:'epique',    cat:'jambières', 	tier:1, lvl:9, 	img:"../img/compendium/textures/armors/leggings_gardien.png", 							stats:{sante:[32,37], defense:[3,3.5]}, classes:['guerrier'] },
   { id:'bottes_gard',     				name:"Bottes du Gardien",          		set:'gardien',      rarity:'epique',    cat:'bottes',    	tier:1, lvl:9, 	img:"../img/compendium/textures/armors/boots_gardien.png", 								stats:{sante:[28,33], defense:[1.6,2]}, classes:['guerrier'] },
+  /* ══ Palier 2 ══ */
+  /* ══ Assassin - Archer ══ */
+  /* ══ Palier 1 ══ */
   { id:'tunique_tacti',   				name:"Tunique Tactique",           		set:'tactique',     rarity:'commun',    cat:'plastron',  	tier:1, lvl:3,  img:"../img/compendium/textures/armors/chestplate_tactique.png",  						stats:{sante:[21,25], defense:0.4}, classes:['assassin','archer'] },
   { id:'jambieres_tacti', 				name:"Jambières Tactique",         		set:'tactique',     rarity:'commun',    cat:'jambières', 	tier:1, lvl:3,  img:"../img/compendium/textures/armors/leggings_tactique.png",    						stats:{sante:[17,21], defense:0.4}, classes:['assassin','archer'] },
   { id:'bottes_tacti',    				name:"Bottes Tactique",             	set:'tactique',     rarity:'commun',    cat:'bottes',    	tier:1, lvl:3,  img:"../img/compendium/textures/armors/boots_tactique.png",        						stats:{sante:[15,18], defense:0.3}, classes:['assassin','archer'] },
@@ -570,6 +666,9 @@ const ITEMS = [
   { id:'plastron_her',    				name:"Plastron du Héraut",            	set:'heraut',       rarity:'epique',    cat:'plastron',  	tier:1, lvl:9, 	img:"../img/compendium/textures/armors/chestplate_heraut.png", 							stats:{sante:[32,37], defense:[3.5,4.3], 'Emplacement de Runes':2}, classes:['assassin','archer'] },
   { id:'jambieres_her',   				name:"Jambières du Héraut",           	set:'heraut',       rarity:'epique',    cat:'jambières', 	tier:1, lvl:9, 	img:"../img/compendium/textures/armors/leggings_heraut.png", 							stats:{sante:[23,27], defense:[2.9,3.4]}, classes:['assassin','archer'] },
   { id:'bottes_her',      				name:"Bottes du Héraut",               	set:'heraut',       rarity:'epique',    cat:'bottes',    	tier:1, lvl:9, 	img:"../img/compendium/textures/armors/boots_heraut.png", 								stats:{sante:[18,23], defense:[2.8,3]}, classes:['assassin','archer'] },
+  /* ══ Palier 2 ══ */
+  /* ══ Mage - Shaman ══ */
+  /* ══ Palier 1 ══ */
   { id:'tunique_spect',   				name:"Tunique Spectral",               	set:'spectral',     rarity:'commun',    cat:'plastron',  	tier:1, lvl:3,  img:"../img/compendium/textures/armors/chestplate_spectral.png", 						stats:{sante:[15,19], defense:0.4}, classes:['mage','shaman'] },
   { id:'jambieres_spect', 				name:"Jambières Spectral",             	set:'spectral',     rarity:'commun',    cat:'jambières', 	tier:1, lvl:3, 	img:"../img/compendium/textures/armors/leggings_spectral.png", 							stats:{sante:[13,17], defense:0.4}, classes:['mage','shaman'] },
   { id:'bottes_spect',    				name:"Bottes Spectral",                 set:'spectral',     rarity:'commun',    cat:'bottes',    	tier:1, lvl:3, 	img:"../img/compendium/textures/armors/boots_spectral.png", 							stats:{sante:[10,13], defense:0.3}, classes:['mage','shaman'] },
@@ -583,6 +682,8 @@ const ITEMS = [
   { id:'plastron_fau',    				name:"Plastron de la Faucheuse",        set:'faucheuse',    rarity:'epique',    cat:'plastron',  	tier:1, lvl:9, 	img:"../img/compendium/textures/armors/chestplate_faucheuse.png", 						stats:{sante:[27,32], defense:[3.5,4.3], 'Emplacement de Runes':2}, classes:['mage','shaman'] },
   { id:'jambieres_fau',   				name:"Jambières de la Faucheuse",       set:'faucheuse',    rarity:'epique',    cat:'jambières', 	tier:1, lvl:9, 	img:"../img/compendium/textures/armors/leggings_faucheuse.png", 						stats:{sante:[20,24], defense:[2.9,3.4]}, classes:['mage','shaman'] },
   { id:'bottes_fau',      				name:"Bottes de la Faucheuse",          set:'faucheuse',    rarity:'epique',    cat:'bottes',    	tier:1, lvl:9, 	img:"../img/compendium/textures/armors/boots_faucheuse.png", 							stats:{sante:[10.2,13.8], defense:[2.7,2.9]}, classes:['mage','shaman'] },
+  /* ══ Palier 2 ══ */
+  /* ══ Other ══ */
   { id:'bottes_rev',      				name:"Bottes du Revenant",                                  rarity:'legendaire',cat:'bottes',    	tier:1, lvl:5, 	img:"../img/compendium/textures/armors/bottes_du_revenant.png",   						stats:{vitesse_deplacement:5} },
   { id:'bottes_ecu',      				name:"Bottes de l'Écume",                                   rarity:'legendaire',cat:'bottes',    	tier:1, lvl:5, 	img:"../img/compendium/textures/armors/bottes_decume.png",         						stats:{'Agilité Aquatique':10} },
 ];
