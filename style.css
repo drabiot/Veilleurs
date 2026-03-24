@@ -576,6 +576,15 @@ kbd {
 ::-webkit-scrollbar-thumb { background: var(--rim2); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
+.ambient-bg,
+.ambient-bg::before,
+.ambient-bg::after,
+.moon,
+.fog,
+.vignette {
+  pointer-events: none !important;
+}
+
 /* ══════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════ */
