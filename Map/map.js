@@ -3,7 +3,7 @@
 ══════════════════════════════════ */
 const MAP_SIZE          = 900;
 let   currentFloor      = 1;
-let   currentLayer      = 'surface'; // 'surface' | 'underground'
+let   currentLayer      = 'surface';
 let   zoomLevel         = 1;
 const ZOOM_MIN          = 0.4;
 const ZOOM_MAX          = 10;
@@ -35,23 +35,11 @@ const mapCanvas     = document.getElementById('map-canvas');
 const mapViewport   = document.getElementById('map-viewport');
 const zoomLevelEl   = document.getElementById('zoom-level');
 
-/* ══════════════════════════════════
-   DONNÉES PAR COUCHE
-   Remplace FLOOR_MARKERS et FLOOR_ZONES par ces deux objets séparés.
-   Exemple de structure :
-     FLOOR_MARKERS_SURFACE    = { 1: [...], 2: [...] }
-     FLOOR_MARKERS_UNDERGROUND = { 1: [...], 2: [...] }
-     FLOOR_ZONES_SURFACE      = { 1: [...] }
-     FLOOR_ZONES_UNDERGROUND  = { 1: [...] }
-   Les noms FLOOR_NAMES et FLOOR_COUNT restent partagés (ou tu peux
-   les dupliquer si les couches ont des noms/étages différents).
-══════════════════════════════════ */
 function getFloorMarkers(floor) {
   if (currentLayer === 'underground') {
     const src = (typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined') ? FLOOR_MARKERS_UNDERGROUND : null;
     return (src && src[floor]) || [];
   }
-  /* surface : préfère FLOOR_MARKERS_SURFACE, sinon tombe sur l'ancien FLOOR_MARKERS */
   const src = (typeof FLOOR_MARKERS_SURFACE !== 'undefined')
     ? FLOOR_MARKERS_SURFACE
     : (typeof FLOOR_MARKERS !== 'undefined' ? FLOOR_MARKERS : null);
@@ -63,18 +51,12 @@ function getFloorZones(floor) {
     const src = (typeof FLOOR_ZONES_UNDERGROUND !== 'undefined') ? FLOOR_ZONES_UNDERGROUND : null;
     return (src && src[floor]) || [];
   }
-  /* surface : préfère FLOOR_ZONES_SURFACE, sinon tombe sur l'ancien FLOOR_ZONES */
   const src = (typeof FLOOR_ZONES_SURFACE !== 'undefined')
     ? FLOOR_ZONES_SURFACE
     : (typeof FLOOR_ZONES !== 'undefined' ? FLOOR_ZONES : null);
   return (src && src[floor]) || [];
 }
 
-/* ══════════════════════════════════
-   GHOST OVERLAY (map surface transparente)
-   Une image supplémentaire affichée sous la map active
-   quand on est en couche underground.
-══════════════════════════════════ */
 function ensureGhostOverlay() {
   let ghost = document.getElementById('map-ghost');
   if (!ghost) {
@@ -97,7 +79,6 @@ function ensureGhostOverlay() {
   return ghost;
 }
 
-/* Retourne true si l'étage possède un sous-sol (FLOOR_DATA[n].hasUnderground). */
 function floorHasUnderground(n) {
   if (typeof FLOOR_DATA !== 'undefined' && FLOOR_DATA[n]) {
     return !!FLOOR_DATA[n].hasUnderground;
@@ -110,7 +91,7 @@ function updateGhostOverlay() {
   const mapImg = document.getElementById('map-svg');
 
   if (currentLayer === 'underground') {
-    ghost.src           = `img/maps/floor-${currentFloor}.png`;
+    ghost.src           = `../img/maps/floor-${currentFloor}.png`;
     ghost.style.opacity = '0.10';
     ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
     mapImg.style.zIndex = '1';
@@ -170,7 +151,6 @@ function buildLayerSwitcher() {
   updateLayerBtnVisibility();
 }
 
-/* Texte du bouton : indique où on VA (pas où on est) */
 function getLayerBtnHTML() {
   if (currentLayer === 'surface') {
     return `<span style="font-size:14px;line-height:1">⬇️</span> Sous-sol`;
@@ -183,8 +163,6 @@ function updateLayerBtn() {
   if (btn) btn.innerHTML = getLayerBtnHTML();
 }
 
-/* Cache le bouton si l'étage n'a pas de sous-sol.
-   Si on était en underground sur un étage sans sous-sol, force le retour surface. */
 function updateLayerBtnVisibility() {
   const btn = document.getElementById('layer-toggle-btn');
   if (!btn) return;
@@ -212,27 +190,23 @@ function loadMapImage(n, layer) {
   const ghost  = ensureGhostOverlay();
 
   if (layer === 'underground') {
-    /* Map souterraine au premier plan */
     mapImg.style.opacity = '0';
     mapImg.style.zIndex  = '1';
     mapImg.src = `img/maps/floor-${n}_underground.png`;
     mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
     mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
 
-    /* Ghost : map de surface, très discrète en dessous */
     ghost.src           = `img/maps/floor-${n}.png`;
     ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
     ghost.style.zIndex  = '0';
     ghost.style.opacity = '0.10';
   } else {
-    /* Map de surface normale */
     mapImg.style.opacity = '0';
     mapImg.style.zIndex  = '';
     mapImg.src = `img/maps/floor-${n}.png`;
     mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
     mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
 
-    /* Cacher le ghost */
     ghost.style.opacity = '0';
   }
 }

@@ -35,7 +35,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/dague_dentrainement.png",
+    image:    "../img/compendium/textures/weapons/dague_dentrainement.png",
     lore:     "Forgée pour ceux qui n'ont encore rien prouvé.",
     tags:     ['Arme', 'Dague', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans le tutoriel"
@@ -46,7 +46,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/epee_dentrainement.png",
+    image:    "../img/compendium/textures/weapons/epee_dentrainement.png",
     lore:     "Petite épée un peu rouillée parfaite pour s'entraîner ou pour démarrer son aventure.",
     tags:     ['Arme', 'Épée', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -57,7 +57,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/bouclier_de_pacotille.png",
+    image:    "../img/compendium/textures/weapons/bouclier_de_pacotille.png",
     lore:     "Un vieux bouclier. Il bloque encore à peu près.",
     tags:     ['Arme', 'Bouclier', 'Rondache', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -68,7 +68,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/dague_delabree.png",
+    image:    "../img/compendium/textures/weapons/dague_delabree.png",
     lore:     "Dague bien délabrée, même un coup sur du bois et l'épée peut être détruite.",
     tags:     ['Arme', 'Dague', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -79,7 +79,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/arc_courbe.png",
+    image:    "../img/compendium/textures/weapons/arc_courbe.png",
     lore:     "Un arc rudimentaire utilisé par les premiers tireurs.",
     tags:     ['Arme', 'Arc', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -90,7 +90,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    images:   ["img/compendium/textures/weapons/baton_mediocre_mage.png", "img/compendium/textures/weapons/baton_mediocre_shaman.png"],
+    images:   ["../img/compendium/textures/weapons/baton_mediocre_mage.png", "../img/compendium/textures/weapons/baton_mediocre_shaman.png"],
     lore:     "Un bâton d'apprentissage magique inoffensif, mais porteur d'énergie.",
     tags:     ['Arme', 'Bâton', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -101,7 +101,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/grimoire_delie-sauvage.png",
+    image:    "../img/compendium/textures/weapons/grimoire_delie-sauvage.png",
     lore:     "Un livre incomplet débordant de magie.",
     tags:     ['Arme', 'Catalyseur', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -112,7 +112,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/grimoire_delie-sauvage.png",
+    image:    "../img/compendium/textures/weapons/grimoire_delie-sauvage.png",
     lore:     "Un livre incomplet débordant de magie.",
     tags:     ['Arme', 'Catalyseur', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -123,7 +123,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/epee_en_fer.png",
+    image:    "../img/compendium/textures/weapons/epee_en_fer.png",
     lore:     "Épée en fer créée grâce aux loups de la vallée et avec un autre ingrédient.",
     tags:     ['Arme', 'Épée', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -134,7 +134,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/bouclier_dika.png",
+    image:    "../img/compendium/textures/weapons/bouclier_dika.png",
     lore:     "Forgé dans la carapace des tortues d'Ika. Idéal pour encaisser sans broncher.",
     tags:     ['Arme', 'Bouclier', 'Pavois', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -145,7 +145,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/bouclier_pointu_en_bois.png",
+    image:    "../img/compendium/textures/weapons/bouclier_pointu_en_bois.png",
     lore:     "Ce bouclier fait de bois possède une pointe en son centre. Il peut encaisser quelques coups aussi.",
     tags:     ['Arme', 'Bouclier', 'Rondache', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -156,7 +156,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/dague_intermediaire.png",
+    image:    "../img/compendium/textures/weapons/dague_intermediaire.png",
     lore:     "Standard des nouvelles recrues. Facile à manier, légère et très fiable.",
     tags:     ['Arme', 'Dague', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -167,7 +167,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/hache_double_en_fer.png",
+    image:    "../img/compendium/textures/weapons/hache_double_en_fer.png",
     lore:     "Double hache en fer créée grâce aux loups de la vallée et avec un autre ingrédient.",
     tags:     ['Arme', 'Hache', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -178,7 +178,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'nourriture',
     palier:   1,
-    image:    "img/compendium/textures/items/viande_de_sanglier.png",
+    image:    "../img/compendium/textures/items/viande_de_sanglier.png",
     lore:     "Cette belle viande de sanglier, bien juteuse, peut vous donner encore plus envie de manger !",
     tags:     ['Nourriture', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Sangliers Corrompus\n- Pumba"
@@ -189,7 +189,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/peau_de_sanglier.png",
+    image:    "../img/compendium/textures/items/peau_de_sanglier.png",
     lore:     "Utilisable pour de la tannerie basique.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Sangliers Corrompus\n- Pumba"
@@ -200,7 +200,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    "img/compendium/textures/items/cristal_corrompu.png",
+    image:    "../img/compendium/textures/items/cristal_corrompu.png",
     lore:     "Des traces de corruptions émanent de cet objet.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Sangliers Corrompus\n- Pumba"
@@ -211,7 +211,7 @@ const ITEMS = [
     rarity:   'legendaire',
     category: 'accessoire',
     palier:   1,
-    image:    "img/compendium/textures/trinkets/P1/Anneau\ de\ Pumba.png",
+    image:    "../img/compendium/textures/trinkets/P1/Anneau\ de\ Pumba.png",
     lore:     "Taillé dans un métal épais et marqué par une rayure rouge, cet anneau est inspiré du célèbre sanglier massif.",
     tags:     ['Accessoire', 'Anneau', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en tuant:\n- Pumba"
@@ -222,7 +222,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/fourrure_de_loup.png",
+    image:    "../img/compendium/textures/items/fourrure_de_loup.png",
     lore:     "Une fourrure souple et légère, utilisée pour fabriquer des armures.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)\n- Albal"
@@ -233,7 +233,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/crocs_de_loup.png",
+    image:    "../img/compendium/textures/items/crocs_de_loup.png",
     lore:     "Une dent longue et acérée, prisée de certains artisans.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)\n- Albal"
@@ -244,7 +244,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/crocs_de_albal.gif",
+    image:    "../img/compendium/textures/items/crocs_de_albal.gif",
     lore:     "Un croc massif imprégné de sa rage sauvage. Son essence est utilisée pour concoter des potions de force redoutable.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Albal"
@@ -255,7 +255,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    "img/compendium/textures/items/spore_corrompu.png",
+    image:    "../img/compendium/textures/items/spore_corrompu.png",
     lore:     "Un spore étrange imprégné de corruption...",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Nephentes"
@@ -266,7 +266,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/fragment_de_feuille.png",
+    image:    "../img/compendium/textures/items/fragment_de_feuille.png",
     lore:     "Des restes végétaux porteurs d'une étrange énergie naturelle.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Nephentes"
@@ -277,7 +277,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/pousse_de_sylve.png",
+    image:    "../img/compendium/textures/items/pousse_de_sylve.png",
     lore:     "Petite pousse dans un bol très utile dans la confection de potion de vie.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Minis Tréants"
@@ -288,7 +288,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/eclat_de_bois_magique.png",
+    image:    "../img/compendium/textures/items/eclat_de_bois_magique.png",
     lore:     "Fragment d'un ancien Tréant. Même détaché de celui-ci il conserve encore de la magie à l'intérieur.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Minis Tréants"
@@ -299,7 +299,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/ecorce_de_titan.png",
+    image:    "../img/compendium/textures/items/ecorce_de_titan.png",
     lore:     "Ressource très dure presque incassable, les Guerriers pourront se protéger avec.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Guerriers Tréants"
@@ -321,7 +321,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/bouclier_sylvestre.png",
+    image:    "../img/compendium/textures/weapons/bouclier_sylvestre.png",
     lore:     "Grand bouclier en bois qui peut seulement être obtenu par un Guerrier Tréant.",
     tags:     ['Arme', 'Bouclier', 'Pavois', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Guerriers Tréants"
@@ -343,7 +343,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/corde_darc_sylvestre.png",
+    image:    "../img/compendium/textures/items/corde_darc_sylvestre.png",
     lore:     "Longue et tendue, cette corde robuste est idéale pour confectionner un nouvel arc.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Tréants d'Élites"
@@ -354,7 +354,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/arc_sylvestre.png",
+    image:    "../img/compendium/textures/weapons/arc_sylvestre.png",
     lore:     "Arc construitavec l'aidees Tréants du Palier 1 de l'Aincrad.",
     tags:     ['Arme', 'Arc', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Tréants d'Élites\nFabricable au Forgeron d'Armes de la Ville de Départ"
@@ -365,7 +365,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/brindille_enchantee.png",
+    image:    "../img/compendium/textures/items/brindille_enchantee.png",
     lore:     "Brindille du Mage Sylvestre, ce bâton peutêtre utilisé comme basepour une arme magique.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres"
@@ -376,7 +376,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/coeur_de_bois.png",
+    image:    "../img/compendium/textures/items/coeur_de_bois.png",
     lore:     "Cœur imprégné de magie, si vous l'utilisez avec précaution une arme très redoutable peut être créée.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres"
@@ -387,7 +387,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/tissu_spectral.png",
+    image:    "../img/compendium/textures/items/tissu_spectral.png",
     lore:     "Un tissu imprégné de magie noire et de malédictions.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres"
@@ -398,7 +398,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    images:    ["img/compendium/textures/weapons/baton_sylvestre_mage.png", "img/compendium/textures/weapons/baton_sylvestre_shaman.png"],
+    images:    ["../img/compendium/textures/weapons/baton_sylvestre_mage.png", "../img/compendium/textures/weapons/baton_sylvestre_shaman.png"],
     lore:     "Un livre forgé par des matériaux venant d'un marécage putride et ancien. Il renferme une magie élémentaire.",
     tags:     ['Arme', 'Catalyseur', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -409,7 +409,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/grimoire_sylvestre.png",
+    image:    "../img/compendium/textures/weapons/grimoire_sylvestre.png",
     lore:     "Un livre forgé par des matériaux venant d'un marécage putride et ancien. Il renferme une magie élémentaire.",
     tags:     ['Arme', 'Catalyseur', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -420,7 +420,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/grimoire_bestial.png",
+    image:    "../img/compendium/textures/weapons/grimoire_bestial.png",
     lore:     "Un livre forgé par des matériaux venant d'un marécage putride et ancien. Il renferme une magie bestiale.",
     tags:     ['Arme', 'Catalyseur', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
@@ -431,7 +431,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/mycelium_magique.png",
+    image:    "../img/compendium/textures/items/mycelium_magique.png",
     lore:     "Ingrédient assez rare pour de la haute alchimie ou pour autre chose ?",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Gardiens Colossaux"
@@ -442,7 +442,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/marteau_du_colosse.png",
+    image:    "../img/compendium/textures/weapons/marteau_du_colosse.png",
     lore:     "Arme de destruction du Gardien Colossal. Ce marteau est puissant mais lourd.",
     tags:     ['Arme', 'Marteau', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Gardiens Colossaux"
@@ -464,7 +464,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/noyau_de_slime.png",
+    image:    "../img/compendium/textures/items/noyau_de_slime.png",
     lore:     "Noyau imprégné de la magie des slimes. Utilisé dasn la confection d'accessoires magiques.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Slimes Soigneurs\n- Slimes Magiciens\n- Gorbel"
@@ -475,7 +475,7 @@ const ITEMS = [
     rarity:   'epique',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/essence_de_gorbel.png",
+    image:    "../img/compendium/textures/items/essence_de_gorbel.png",
     lore:     "Essence d'un slime qui a atteint son plus haut potentiel.",
     tags:     ['Matériaux', 'Palier 1', 'Épique'],
     obtain:   "Obtenable en tuant:\n- Gorbel"
@@ -486,7 +486,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/os_de_squelette.png",
+    image:    "../img/compendium/textures/items/os_de_squelette.png",
     lore:     "Petit os que l'on trouve sur des squelettes de bas rang. Sûrement utile pour certaines confections.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes\n- Squelettes Hallebardiers\n- Squelettes Mages"
@@ -519,7 +519,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/ames_des_ruines.png",
+    image:    "../img/compendium/textures/items/ames_des_ruines.png",
     lore:     "Âme de squelette abreuvé de corruption.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes\n- Squelettes Hallebardiers\n- Archers Squelettes"
@@ -530,7 +530,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/epee_osseuse.png",
+    image:    "../img/compendium/textures/weapons/epee_osseuse.png",
     lore:     "Taillé dans les os d'un ancien guerrier tombé en disgrâce.",
     tags:     ['Armes', 'Épée', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes"
@@ -541,7 +541,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    "img/compendium/textures/items/tissu_maudit.png",
+    image:    "../img/compendium/textures/items/tissu_maudit.png",
     lore:     "Les forces obscures devorent ce tissu.",
     tags:     ['Quête', 'Palier 1', 'commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes"
@@ -552,7 +552,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/baton_squelettique.png",
+    image:    "../img/compendium/textures/weapons/baton_squelettique.png",
     lore:     "Bâton ancien des ruines maudites, encore vivant de la flamme des morts.",
     tags:     ['Armes', 'Bâton', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelettes Mages"
@@ -563,7 +563,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    "img/compendium/textures/items/coeur_putrefie.png",
+    image:    "../img/compendium/textures/items/coeur_putrefie.png",
     lore:     "La putréfaction ronge peu à peu ce cœur.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit"
@@ -574,7 +574,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    images:    ["img/compendium/textures/weapons/baton_de_squelette_maudit_mage.png", "img/compendium/textures/weapons/baton_de_squelette_maudit_shaman.png"],
+    images:    ["../img/compendium/textures/weapons/baton_de_squelette_maudit_mage.png", "../img/compendium/textures/weapons/baton_de_squelette_maudit_shaman.png"],
     lore:     "Bâton encore imprégné de sa magie après la mort de son propriétaire.",
     tags:     ['Armes', 'Bâton', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit"
@@ -585,7 +585,7 @@ const ITEMS = [
     rarity:   'legendaire',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/morceau_de_criniere_spectrale.png",
+    image:    "../img/compendium/textures/items/morceau_de_criniere_spectrale.png",
     lore:     "Une mèche de crinière éthérée, arrachée a une monture spectrale. Elle palpite encore d'une énergie rapide.",
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
     obtain:   "Obtenable en tuant:\n- Nasgul"
@@ -596,7 +596,7 @@ const ITEMS = [
     rarity:   'legendaire',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/eclat_du_sabot_maudit.png",
+    image:    "../img/compendium/textures/items/eclat_du_sabot_maudit.png",
     lore:     "Fragment arraché au sabot d'une créature maudite. Il renferme une énergie sombre qui confère à son porteur une vitesse surnaturelle.",
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
     obtain:   "Obtenable en tuant:\n- Nasgul"
@@ -607,7 +607,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "img/compendium/textures/items/cuir_use.png",
+    image:    "../img/compendium/textures/items/cuir_use.png",
     lore:     "Un morceau de cuir abîmé autrefois portépar des Bandits. Il reste utilisable.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Bandits Archer\n- Bandits Assassins\n- Bandits Robustes"
@@ -629,7 +629,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/arbalete_de_bandit.png",
+    image:    "../img/compendium/textures/weapons/arbalete_de_bandit.png",
     lore:     "Arbalète d'un bandit qui devient presque inutilisable après tous ces combats.",
     tags:     ['Armes', 'Arbalète', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Bandits Archer"
@@ -640,7 +640,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'arme',
     palier:   1,
-    image:    "img/compendium/textures/weapons/dague_de_bandit.png",
+    image:    "../img/compendium/textures/weapons/dague_de_bandit.png",
     lore:     "Dague émoussé d'un bandit après tous ces combats sanglants.",
     tags:     ['Armes', 'Dague', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Bandits Assassins"
