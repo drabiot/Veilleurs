@@ -159,7 +159,7 @@ body > *:not(.ambient-bg) { position: relative; z-index: 1; }
   border-top: 1px solid var(--rim);
   border-bottom: 1px solid var(--rim);
   background: linear-gradient(180deg, rgba(20,17,12,.6) 0%, rgba(14,12,10,.8) 100%);
-  max-width: 860px;
+  width: 100%;
 }
 .nav-link {
   font-family: 'Cinzel', serif;
