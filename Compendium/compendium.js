@@ -1170,7 +1170,7 @@ function currentItems() {
         normalize(item.name).includes(norm) ||
         normalize(item.lore || '').includes(norm) ||
         normalize(catData(item.category).label).includes(norm) ||
-        (item.tags || []).some(t => normalize(t).includes(norm))
+        (item.tags || []).some(t => t != null && normalize(String(t)).includes(norm))
       )
     : [...ITEMS];
   return filtered;
