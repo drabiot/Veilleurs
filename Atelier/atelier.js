@@ -975,18 +975,18 @@
       const lo = roundUp2(mins[stat.id] || 0);
       const hi = roundUp2(maxs[stat.id] || 0);
 
-      if (hi === 0) {
-        valEl.innerHTML = '—';
-        valEl.className = 'stat-value';
-      } else if (lo === hi) {
-        valEl.innerHTML = lo + stat.unit;
-        valEl.className = 'stat-value nonzero';
-      } else {
-        valEl.innerHTML =
-          '<span class="sv-hi">' + hi + stat.unit + '</span>' +
-          '<span class="sv-lo">' + lo + stat.unit + '</span>';
-        valEl.className = 'stat-value nonzero has-range';
-      }
+      if (hi === 0 && lo === 0) {
+		valEl.innerHTML = '—';
+		valEl.className = 'stat-value';
+	  } else if (lo === hi) {
+		valEl.innerHTML = '<span style="' + (lo < 0 ? 'color:#d9614a' : '') + '">' + lo + stat.unit + '</span>';
+		valEl.className = 'stat-value nonzero';
+	  } else {
+		valEl.innerHTML =
+			'<span class="sv-hi"' + (hi < 0 ? ' style="color:#d9614a"' : '') + '>' + hi + stat.unit + '</span>' +
+			'<span class="sv-lo"' + (lo < 0 ? ' style="color:#d9614a"' : '') + '>' + lo + stat.unit + '</span>';
+		valEl.className = 'stat-value nonzero has-range';
+	  }
 
       const pct = Math.min(100, Math.round((hi / stat.max) * 100));
       barEl.style.width = pct + '%';
@@ -1099,9 +1099,10 @@
   }
 
   function buildItemStatsHTML(item) {
-    const entries = Object.entries(item.stats || {}).filter(function(e) {
-      return (Array.isArray(e[1]) ? e[1][1] : e[1]) > 0;
-    });
+   	const entries = Object.entries(item.stats || {}).filter(function(e) {
+		const v = Array.isArray(e[1]) ? e[1][1] : e[1];
+		return v !== 0;
+	});
     if (!entries.length) return '';
 
     const lines = entries.map(function(e) {
@@ -1117,11 +1118,12 @@
       const label = statDef ? statDef.label : key;
       const unit  = statDef ? statDef.unit  : '';
       const icon  = statDef ? statDef.icon  : '';
-      return '<div class="istat-row">' +
-             '<span class="istat-icon">' + icon + '</span>' +
-             '<span class="istat-label">' + label + '</span>' +
-             '<span class="istat-val">' + formatStatValue(val, unit) + '</span>' +
-             '</div>';
+	  const isNeg = Array.isArray(val) ? val[1] < 0 : val < 0;
+	  return '<div class="istat-row">' +
+		'<span class="istat-icon">' + icon + '</span>' +
+		'<span class="istat-label">' + label + '</span>' +
+		'<span class="istat-val"' + (isNeg ? ' style="color:#d9614a"' : '') + '>' + formatStatValue(val, unit) + '</span>' +
+		'</div>';
     }).join('');
 
     return '<div class="istat-block">' + lines + '</div>';

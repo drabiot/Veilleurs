@@ -228,7 +228,7 @@ const SETS = {
 	  5: { sante:15, defense:3.5, vitesse_deplacement:0.75 }
     }
   },
-  faible_corruption: {
+  faible_corru: {
     label: 'Set Faible Corruption',
     color: 'rgb(173, 91, 221)',
     bonuses: {
@@ -245,6 +245,7 @@ const STAT_GROUPS = [
     label: 'Offensif',
     stats: [
       { id:'degats',              label:'Dégâts',                          icon:'🗡️',  unit:'',   max:500  },
+	  { id:'degats_physique',     label:'Dégâts Physique',                 icon:'💥',  unit:'%',  max:100  },
       { id:'degats_arme',         label:'Dégâts d\'Arme',                  icon:'⚔️',  unit:'%',  max:100  },
       { id:'degats_magique',      label:'Dégâts Magiques',                 icon:'📖',  unit:'%',  max:100  },
       { id:'degats_competence',   label:'Dégâts de Compétence',            icon:'✨',  unit:'%',  max:100  },
@@ -458,8 +459,9 @@ const ITEMS = [
   { id:'anneau_harpie_enflammee',     	name:"Anneau de la Harpie Enflammée",  				    	rarity:'epique',    cat:'anneau',    	tier:2, lvl:13, img:"../img/compendium/textures/trinkets/P2/Anneau de la Harpie Enflammée.png",                      		stats:{degat_arme:7.5, vol_vie:2, sante:15} },
   { id:'anneau_harpie_ecrasee',     	name:"Anneau de la Harpie Écrasée",  				    	rarity:'epique',    cat:'anneau',    	tier:2, lvl:13, img:"../img/compendium/textures/trinkets/P2/Anneau de la Harpie Écrasée.png",                      			stats:{defense:2.5, reduction_degats:2.5, maitrise_bloc:5, puissance_bloc:1} },
   { id:'anneau_harpie_noyee',     		name:"Anneau de la Harpie Noyée",  				    		rarity:'epique',    cat:'anneau',    	tier:2, lvl:13, img:"../img/compendium/textures/trinkets/P2/Anneau de la Harpie Noyée.png",                      			stats:{degats_competence:7.5, omnivamp:1.5, mana:10, stamina:5} },
-  { id:'anneau_onyx_impur',     		name:"Anneau d'Onyx Impur'",            set:'onyx_impur',   rarity:'epique',   	cat:'anneau',    	tier:2, lvl:13, img:"",                     stats:{crit_chance:1, defense:1.5, sante:10} },
-  { id:'anneau_onyx_pur',     			name:"Anneau d'Onyx Pur'",            	set:'onyx_pur',   	rarity:'legendaire',cat:'anneau',    	tier:2, lvl:14, img:"",                     	stats:{crit_chance:2, crit_degats:1, defense:1, sante:20} },
+  { id:'anneau_onyx_impur',     		name:"Anneau d'Onyx Impur",            	set:'onyx_impur',   rarity:'epique',   	cat:'anneau',    	tier:2, lvl:13, img:"",                     stats:{crit_chance:1, defense:1.5, sante:10} },
+  { id:'anneau_winnie',     			name:"Anneau de Winnie",           		set:'ours',   		rarity:'mythique',  cat:'anneau',    	tier:2, lvl:13, img:"",                     stats:{crit_chance:5, crit_comp_chance:5, reduction_degats:2.5, sante:10} },
+  { id:'anneau_onyx_pur',     			name:"Anneau d'Onyx Pur",            	set:'onyx_pur',   	rarity:'legendaire',cat:'anneau',    	tier:2, lvl:14, img:"",                     	stats:{crit_chance:2, crit_degats:1, defense:1, sante:20} },
   /* ══ Events ══ */
   { id:'anneau_amour',    				name:"Anneau d'Amour",          			    			rarity:'',   	 	cat:'anneau',     	tier:0, lvl:10, img:"",                        		stats:{crit_chance:5, crit_degats:5, crit_comp_chance:5, crit_comp_degats:5, sante:15} },
   /* ══ Amulettes ══ */
@@ -473,9 +475,14 @@ const ITEMS = [
   /* ══ Palier 2 ══ */
   { id:'collier_acamiel',  				name:"Collier Acamiel",   			 						rarity:'rare',      cat:'amulette',  	tier:2, lvl:11,  img:"../img/compendium/textures/trinkets/P2/Collier Acamiel.png",      									stats:{vitesse_attaque:0.1, soin_bonus:1} },
   { id:'amulette_ferraille',  			name:"Amulette de Ferraille",  			set:'ferraille', 	rarity:'commun',    cat:'amulette',  	tier:2, lvl:11,  img:"../img/compendium/textures/trinkets/P2/Set de Ferraille/Amulette de Ferraille.png",      				stats:{defense:1, sante:10} },
-  { id:'amulette_bauxite',  			name:"Amulette de Bauxite",  			set:'bauxite', 		rarity:'rare',    	cat:'amulette',  	tier:2, lvl:12,  img:"../img/compendium/textures/trinkets/P2/Set de Bauxite/Amulette de Bauxite.png",      				stats:{defense:1.5, sante:10} },
+  { id:'amulette_bauxite',  			name:"Amulette de Bauxite",  			set:'bauxite', 		rarity:'rare',    	cat:'amulette',  	tier:2, lvl:12,  img:"../img/compendium/textures/trinkets/P2/Set de Bauxite/Amulette de Bauxite.png",      					stats:{defense:1.5, sante:10} },
+  { id:'collier_tricolore',  			name:"Collier Tricolore",  									rarity:'rare',    	cat:'amulette',  	tier:2, lvl:12,  img:"../img/compendium/textures/trinkets/P2/Collier Tricolore.png",      									stats:{degats_arme:10, degats_competence:5, vol_vie:1, omnivamp:2, defense:1, maitrise_bloc:2.5, puissance_bloc:0.5, sante:5, mana:5, stamina:2.5} },
+  { id:'collier_taureaux',  			name:"Collier des Taureaux",  			set:'taureau', 		rarity:'rare',    	cat:'amulette',  	tier:2, lvl:12,  img:"../img/compendium/textures/trinkets/P2/Set des Taureaux/Collier des Taureaux.png",      				stats:{crit_chance:2.5, degats_physique:2.5, sante:5} },
+  { id:'collier_runique', 	 			name:"Collier Runique", 	 			set:'squelette', 	rarity:'epique',    cat:'amulette',  	tier:2, lvl:12,  img:"../img/compendium/textures/trinkets/P2/Collier Runique.png",      									stats:{defense:2.5, sante:15} },
+  { id:'amulette_onyx_impur', 	 		name:"Amulette d'Onyx Impur", 	 		set:'onyx_impur', 	rarity:'epique',    cat:'amulette',  	tier:2, lvl:13,  img:"",      									stats:{defense:2, sante:15} },
+  { id:'amulette_onyx_pur', 	 		name:"Amulette d'Onyx Pur", 	 		set:'onyx_pur', 	rarity:'legendaire',cat:'amulette',  	tier:2, lvl:14,  img:"",      									stats:{defense:2, sante:20} },
   /* ══ Events ══ */
-  { id:'collier_amour',    				name:"Collier d'Amour",          			    			rarity:'',   	 	cat:'amulette',     tier:0, lvl:10, img:"",                        		stats:{sante:15, mana:5, stamina:5} },
+  { id:'collier_amour',    				name:"Collier d'Amour",          			    			rarity:'',   	 	cat:'amulette',     tier:0, lvl:10, img:"",                        		stats:{sante:5, mana:5, stamina:5} },
   /* ══ Gants ══ */
   /* ══ Palier 1 ══ */
   { id:'gants_cuivre',    				name:"Gants de Cuivre",          		set:'cuivre',    	rarity:'commun',    cat:'gants',     	tier:1, lvl:5,  img:"../img/compendium/textures/trinkets/P1/Set de Cuivre/Gants de Cuivre.png",                        		stats:{degats:1} },
@@ -484,6 +491,12 @@ const ITEMS = [
   { id:'gants_osseux',        			name:"Gants Osseux",              		set:'squelette', 	rarity:'rare',      cat:'gants',     	tier:1, lvl:5,  img:"../img/compendium/textures/trinkets/P1/Set Squelette Poussiéreux/Gants Osseux.png",              		stats:{defense:0.5} },
   { id:'gants_fer',       				name:"Gants de Fer",              		set:'fer',       	rarity:'rare',      cat:'gants',     	tier:1, lvl:7,  img:"../img/compendium/textures/trinkets/P1/Set de Fer/Gants de Fer.png",                             		stats:{degats:1.5} },
   /* ══ Palier 2 ══ */
+  { id:'gants_taureaux',       			name:"Gants des Taureaux",              set:'taureau',      rarity:'commun',    cat:'gants',     	tier:2, lvl:11,  img:"../img/compendium/textures/trinkets/P2/Set des Taureaux/Gants des Taureaux.png",                      stats:{degats_physique:1.5, defense:0.5, mana:5, stamina:2.5} },
+  { id:'gants_ours',       				name:"Gants des Ours",              				    	rarity:'rare',    	cat:'gants',     	tier:2, lvl:11,  img:"../img/compendium/textures/trinkets/P2/Set des Ours/Gants des Ours.png",                      		stats:{defense:1, regen_mana:0.6, regen_stamina:0.3} },
+  { id:'gants_ferraille',       		name:"Gants de Ferraille",             	set:'ferraille',	rarity:'commun',   	cat:'gants',     	tier:2, lvl:11,  img:"../img/compendium/textures/trinkets/P2/Set de Ferraille/Gants de Ferraille.png",                     	stats:{degats:2, crit_chance:2.5} },
+  { id:'gants_bauxite',       			name:"Gants de Bauxite",             	set:'bauxite',		rarity:'rare',   	cat:'gants',     	tier:2, lvl:12,  img:"../img/compendium/textures/trinkets/P2/Set de Bauxite/Gants de Bauxite.png",                     		stats:{degats:2.5, crit_chance:3, defense:1} },
+  { id:'gants_onyx_impur',       		name:"Gants d'Onyx Impur",             	set:'onyx_impur',	rarity:'epique',   	cat:'gants',     	tier:2, lvl:13,  img:"",                     		stats:{degats:2.5, crit_chance:3, defense:1} },
+  { id:'gants_onyx_pur',       			name:"Gants d'Onyx Pur",             	set:'onyx_pur',		rarity:'legendaire',cat:'gants',     	tier:2, lvl:14,  img:"",                     		stats:{degats:2.5, crit_chance:3, defense:1} },
   /* ══ Events ══ */
   { id:'moufles_noel_vertes',    		name:"Moufles de Noël Vertes",          			    	rarity:'',   	 	cat:'gants',     	tier:0, lvl:10, img:"",                        		stats:{esquive:10, soin_bonus:5, sante:5, regen_sante:0.3, regen_mana:0.4, regen_stamina:0.2} },
   /* ══ Bracelets ══ */
@@ -496,6 +509,13 @@ const ITEMS = [
   { id:'bracelet_cerf',   				name:"Bracelet des Cerfs",          	set:'cerf',      	rarity:'rare',      cat:'bracelet',		tier:1, lvl:7,  img:"../img/compendium/textures/trinkets/P1/Set des Cerfs Paisibles/Bracelet des Cerfs.png",        		stats:{mana:2, stamina:1, regen_mana:0.2, regen_stamina:0.2} },
   { id:'bracelet_glace',  				name:"Bracelet de Glace",                            		rarity:'epique',    cat:'bracelet',		tier:1, lvl:9, 	img:"../img/compendium/textures/trinkets/P1/Bracelet de Glace.png",                                 		stats:{degats_competence:5, regen_mana:0.3, regen_stamina:0.2} },
   /* ══ Palier 2 ══ */
+  { id:'bracelet_loups',  				name:"Bracelet des Loups",              set:'loup',         rarity:'commun',    cat:'bracelet',		tier:2, lvl:11, img:"../img/compendium/textures/trinkets/P2/Set Loup Faiblard/Bracelet des Loups.png",                      stats:{degats:2, vitesse_attaque:0.1, defense:0.5} },
+  { id:'bracelet_mielleux',  			name:"Bracelet Mielleux",              				        rarity:'rare',    	cat:'bracelet',		tier:2, lvl:11, img:"../img/compendium/textures/trinkets/P2/Bracelet Mielleux.png",                      					stats:{hate:2.5, soin_bonus:2, sante:5, mana:2.5} },
+  { id:'bracelet_runimiel',  			name:"Bracelet Runimiel",              				        rarity:'rare',    	cat:'bracelet',		tier:2, lvl:11, img:"../img/compendium/textures/trinkets/P2/Bracelet Runimiel.png",                      					stats:{soin_bonus:5, sante:-10, mana:-10} },
+  { id:'bracelet_ferraille',  			name:"Bracelet de Ferraille",           set:'ferraille',    rarity:'commun',    cat:'bracelet',		tier:2, lvl:11, img:"../img/compendium/textures/trinkets/P2/Set de Ferraille/Bracelet de Ferraille.png",                    stats:{defense:1, sante:10} },
+  { id:'bracelet_bauxite',  			name:"Bracelet de Bauxite",          	set:'bauxite',    	rarity:'rare',    	cat:'bracelet',		tier:2, lvl:12, img:"../img/compendium/textures/trinkets/P2/Set de Bauxite/Bracelet de Bauxite.png",                    	stats:{defense:2, sante:10} },
+  { id:'bracelet_onyx_impur',  			name:"Bracelet d'Onyx Impur",          	set:'onyx_impur',   rarity:'epique',    cat:'bracelet',		tier:2, lvl:13, img:"",                    	stats:{defense:2, sante:15, regen_sante:0.1} },
+  { id:'bracelet_onyx_pur',  			name:"Bracelet d'Onyx Pur",          	set:'onyx_pur',    	rarity:'legendaire',cat:'bracelet',		tier:2, lvl:14, img:"",                    	stats:{defense:2, sante:20, regen_sante:0.2} },
   /* ══ Events ══ */
   { id:'bracelet_yuleck',    			name:"Bracelet de Yuleck",          			    		rarity:'',   	 	cat:'bracelet',     tier:0, lvl:10, img:"",                        		stats:{soin_bonus:2, sante:7, regen_sante:0.3, vitesse_deplacement:-0.5} },
   /* ══ Artefacts ══ */
@@ -506,7 +526,18 @@ const ITEMS = [
   { id:'collier_aragorn', 				name:"Collier d'Aragorn",                              		rarity:'epique',    cat:'artefact',		tier:1, lvl:9, 	img:"../img/compendium/textures/trinkets/P1/Collier de Aragorn.png",                             			stats:{reduction_degats:3, reduction_chutes:25, esquive:3} },
   { id:'manteau_minuit',  				name:"Manteau de Minuit",                              		rarity:'godlike',   cat:'artefact',		tier:1, lvl:10, img:"../img/compendium/textures/trinkets/P1/Manteau de Minuit.png",                              			stats:{degats:5, esquive:15, mana:25, stamina:15, vitesse:2} },
   /* ══ Palier 2 ══ */
+  { id:'simple_ceinture',  				name:"Simple Ceinture",                              		rarity:'commun',   	cat:'artefact',		tier:2, lvl:11, img:"../img/compendium/textures/trinkets/P2/Simple Ceinture.png",                              				stats:{defense:1, sante:5, mana:3, stamina:1.5} },
+  { id:'ceinture_taureau',  			name:"Ceinture du Taureau",             set:'taureau',      rarity:'rare',   	cat:'artefact',		tier:2, lvl:11, img:"../img/compendium/textures/trinkets/P2/Set des Taureaux/Ceinture du Taureau.png",                      stats:{crit_degats:3.5, defense:0.5, sante:10} },
+  { id:'ceinture_ours',  				name:"Ceinture de l'Ours",              set:'ours',         rarity:'rare',   	cat:'artefact',		tier:2, lvl:11, img:"../img/compendium/textures/trinkets/P2/Set des Ours/Ceinture de l'Ours.png",                           stats:{crit_comp_degats:2.5, defense:1.5, sante:5} },
+  { id:'piece_ferraille',  				name:"Pièce de Ferraille",              set:'ferraille',    rarity:'commun',   	cat:'artefact',		tier:2, lvl:11, img:"../img/compendium/textures/trinkets/P2/Set de Ferraille/Pièce de Ferraille.png",                       stats:{defense:2, sante:5} },
+  { id:'plume_flamboyante',  			name:"Plume Flamboyante",                              		rarity:'rare',   	cat:'artefact',		tier:2, lvl:11, img:"../img/compendium/textures/trinkets/P2/Plume Flamboyante.png",                              			stats:{degats_arme:3, vol_vie:1.7, sante:7} },
+  { id:'plume_ecarlate',  				name:"Plume Écarlate",                              		rarity:'rare',   	cat:'artefact',		tier:2, lvl:11, img:"../img/compendium/textures/trinkets/P2/Plume Écarlate.png",                              				stats:{defense:1, reduction_degats:1, maitrise_bloc:2.5, puissance_bloc:0.5} },
   { id:'plume_azur',  					name:"Plume Azur",                              			rarity:'rare',   	cat:'artefact',		tier:2, lvl:11, img:"../img/compendium/textures/trinkets/P2/Plume Azur.png",                              					stats:{degats_competence:3, omnivamp:1, mana:5, stamina:2.5} },
+  { id:'piece_bauxite',  				name:"Pièce de Bauxite",              	set:'bauxite',    	rarity:'rare',   	cat:'artefact',		tier:2, lvl:12, img:"../img/compendium/textures/trinkets/P2/Set de Bauxite/Pièce de Bauxite.png",                       	stats:{crit_chance:2.5, defense:2, sante:10} },
+  { id:'piece_onyx_impur',  			name:"Pièce d'Onyx Impur",             	set:'onyx_impur',   rarity:'epique',   	cat:'artefact',		tier:2, lvl:13, img:"",                       	stats:{crit_chance:3, crit_degats:1.5, defense:2.5, sante:13} },
+  { id:'talisman_feroce',  				name:"Talisman Féroce",              	set:'taureau',    	rarity:'epique',   	cat:'artefact',		tier:2, lvl:13, img:"../img/compendium/textures/trinkets/P2/Set des Taureaux/Talisman Féroce.png",                       	stats:{crit_chance:3.5, degats_arme:10, defense:1} },
+  { id:'piece_onyx_pur',  				name:"Pièce d'Onyx Pur",              	set:'onyx_pur',    	rarity:'legendaire',cat:'artefact',		tier:2, lvl:14, img:"",                       	stats:{crit_chance:4, crit_degats:2, defense:3, sante:15} },
+  { id:'masque_corrompu',  				name:"Masque Corrompu",              	set:'faible_corru', rarity:'godlike',	cat:'artefact',		tier:2, lvl:14, img:"",                       	stats:{crit_chance:10, crit_degats:10, crit_comp_chance:10, crit_comp_degats:10, degats_arme:10, degats_competence:10, sante:-50} },
   /* ══ Events ══ */
   { id:'bracelet_rafales',    			name:"Bracelet des Rafales",          			    		rarity:'',   	 	cat:'artefact',     tier:0, lvl:10, img:"",                        		stats:{esquive:2.5, sante:5, mana:5, stamina:5, vitesse_deplacement:0.5} },
   { id:'couronne_solstice',    			name:"Couronne du Solstice",          			    		rarity:'',   	 	cat:'artefact',     tier:0, lvl:10, img:"",                        		stats:{hate:5, mana:5, stamina:2.5} },
