@@ -91,7 +91,7 @@ function updateGhostOverlay() {
   const mapImg = document.getElementById('map-svg');
 
   if (currentLayer === 'underground') {
-    ghost.src           = `../img/maps/floor-${currentFloor}.png`;
+    ghost.src           = `img/maps/floor-${currentFloor}.png`;
     ghost.style.opacity = '0.10';
     ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
     mapImg.style.zIndex = '1';
@@ -192,18 +192,18 @@ function loadMapImage(n, layer) {
   if (layer === 'underground') {
     mapImg.style.opacity = '0';
     mapImg.style.zIndex  = '1';
-    mapImg.src = `img/maps/floor-${n}_underground.png`;
+    mapImg.src = `../img/maps/floor-${n}_underground.png`;
     mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
     mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
 
-    ghost.src           = `img/maps/floor-${n}.png`;
+    ghost.src           = `../img/maps/floor-${n}.png`;
     ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
     ghost.style.zIndex  = '0';
     ghost.style.opacity = '0.10';
   } else {
     mapImg.style.opacity = '0';
     mapImg.style.zIndex  = '';
-    mapImg.src = `img/maps/floor-${n}.png`;
+    mapImg.src = `../img/maps/floor-${n}.png`;
     mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
     mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
 
