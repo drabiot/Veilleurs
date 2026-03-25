@@ -31,11 +31,15 @@ sortAlphaBtn.addEventListener('click', () => {
 function currentItems() {
   const q = searchInput.value.trim();
   const norm = normalize(q);
+  ITEMS.forEach(item => {
+	if (typeof item.name !== 'string') console.warn('Item sans name string:', item);
+	if (item.lore !== undefined && typeof item.lore !== 'string') console.warn('Lore invalide:', item);
+	});
   const filtered = q.length >= 1
     ? ITEMS.filter(item =>
-        normalize(item.name).includes(norm) ||
-        normalize(item.lore || '').includes(norm) ||
-        normalize(catData(item.category).label).includes(norm) ||
+        normalize(String(item.name  || '')).includes(norm) ||
+        normalize(String(item.lore  || '')).includes(norm) ||
+        normalize(catData(item.category).label || '').includes(norm) ||
         (item.tags || []).some(t => t != null && normalize(String(t)).includes(norm))
       )
     : [...ITEMS];
@@ -82,7 +86,8 @@ function buildSidebarAlpha(items) {
    HELPERS
 ══════════════════════════════════ */
 function normalize(str) {
-  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (str == null) return '';
+  return String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 function rarityColor(rarityKey) {
