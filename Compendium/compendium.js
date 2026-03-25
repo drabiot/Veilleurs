@@ -252,6 +252,7 @@ function resolveMedia(item) {
   if (item.images && Array.isArray(item.images)) return item.images;
   if (item.model)  return [item.model];
   if (item.image)  return [item.image];
+  if (item.img)  return [item.img];
   return [];
 }
 

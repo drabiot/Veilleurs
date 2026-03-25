@@ -1060,7 +1060,7 @@
 	if (!wrap) return;
 	wrap.innerHTML = '';
 
-	const tiers = [...new Set(ITEMS.map(i => i.tier))].sort((a, b) => a - b);
+	const tiers = [...new Set(ITEMS.map(i => i.palier))].sort((a, b) => a - b);
 
 	const all = document.createElement('button');
 	all.className = 'rarity-chip active';
@@ -1160,7 +1160,7 @@
 		return slot.cats.includes(item.cat) &&
 				itemAllowedForClass(item, activeClass) &&
 				(!filterRar  || item.rarity === filterRar) &&
-				(filterTier === null || item.tier === filterTier) &&
+				(filterTier === null || item.palier === filterTier) &&
 				(!q || norm(item.name).includes(q));
 		});
     if (!visible.length) {
@@ -1185,9 +1185,9 @@
             '<div class="item-meta-name">' + item.name + '</div>' +
             buildItemLevelBadgeHTML(item) +
           '</div>' +
-          '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · Palier ' + item.tier + '</div>' +
-          buildClassBadgesHTML(item) +
-          buildItemStatsHTML(item) +
+        '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · Palier ' + item.palier + '</div>' +
+        buildClassBadgesHTML(item) +
+        buildItemStatsHTML(item) +
         '</div>';
 
       if (levelOk) {
