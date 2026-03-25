@@ -520,7 +520,7 @@ const ITEMS = [
 		stats:		{degats:12, vitesse_attaque:1},
 		classes:	['guerrier'],
 		lore:     "Petite épée un peu rouillée parfaite pour s'entraîner ou pour démarrer son aventure.",
-    tags:     ['Arme', 'Épée', 'Palier 1', 'Commun'],
+    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
 	},	
   {
@@ -535,7 +535,7 @@ const ITEMS = [
 		stats:		{degats:[14,16], vitesse_attaque:1},
 		classes:	['guerrier'],
 		lore:     "Épée en fer créée grâce aux loups de la vallée et avec un autre ingrédient.",
-    tags:     ['Arme', 'Épée', 'Palier 1', 'Commun'],
+    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
 	},
   {
@@ -550,7 +550,7 @@ const ITEMS = [
 		stats:		{degats:17.5, vitesse_attaque:1},
 		classes:	['guerrier'],
 		lore:     "Taillé dans les os d'un ancien guerrier tombé en disgrâce.",
-    tags:     ['Armes', 'Épée', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Épée', 'Guerrier', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes"
 	},
   {
@@ -565,7 +565,7 @@ const ITEMS = [
 		stats:		{degats:[18,20], vitesse_attaque:1.1},
 		classes:	['guerrier'],
 		lore:     "Épée dont la magie a été imprégnée des monstres de la citadelle des neiges.",
-    tags:     ['Arme', 'Épée', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
 	},
   {
@@ -580,7 +580,7 @@ const ITEMS = [
 		stats:		{degats:[20,24], vitesse_attaque:1.1, crit_chance:[8,12]},
 		classes:	['guerrier'],
 		lore:     "Tout juste sortie de la forge, cette lame incarne l'idéal du protecteur.",
-    tags:     ['Arme', 'Épée', 'Palier 1', 'Épique'],
+    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
 	},
   {
@@ -595,7 +595,7 @@ const ITEMS = [
 		stats:		{degats:45, vitesse_attaque:1.2, crit_chance:10, crit_degats:10},
 		classes:	['guerrier'],
 		lore:     "Longue épée ayant appartenu à Illfang the Kobold Lord. Ce n'est toutefois qu'une relique mythique.",
-    tags:     ['Arme', 'Épée', 'Palier 1', 'Mythique'],
+    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
 	},
   {
@@ -610,7 +610,7 @@ const ITEMS = [
 		stats:		{degats:[26.01,29.99], vitesse_attaque:1.2},
 		classes:	['guerrier'],
 		lore:     "Lame tranchante, percante, et puissante comme le dard d'une abeille en colère.",
-    tags:     ['Arme', 'Épée', 'Palier 2', 'Rare'],
+    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona"
 	},
   {
@@ -625,7 +625,7 @@ const ITEMS = [
 		stats:		{degats:[30,35], vitesse_attaque:1.2, crit_chance:[10,15]},
 		classes:	['guerrier'],
 		lore:     "Lame tranchante, percante, et puissante comme le sort d'un nécromancien en colère.",
-    tags:     ['Arme', 'Épée', 'Palier 2', 'Épique'],
+    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
   /* ══ Boucliers ══ */
@@ -641,7 +641,7 @@ const ITEMS = [
 		stats:{sante:5},
 		classes:['guerrier'],
 		lore:     "Un vieux bouclier. Il bloque encore à peu près.",
-    tags:     ['Arme', 'Bouclier', 'Rondache', 'Palier 1', 'Commun'],
+    tags:     ['Arme', 'Bouclier', 'Rondache', 'Guerrier', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
 	},
   {
@@ -656,7 +656,7 @@ const ITEMS = [
 		stats:		{sante:[8,12], defense:[1,1.5]},
 		classes:	['guerrier'],
 		lore:     "Forgé dans la carapace des tortues d'Ika. Idéal pour encaisser sans broncher.",
-    tags:     ['Arme', 'Bouclier', 'Pavois', 'Palier 1', 'Commun'],
+    tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
 	},
   {
@@ -671,7 +671,7 @@ const ITEMS = [
 		stats:		{sante:[4,6], defense:[0.5,0.8], degats:0.5},
 		classes:	['guerrier'],
 		lore:     "Ce bouclier fait de bois possède une pointe en son centre. Il peut encaisser quelques coups aussi.",
-    tags:     ['Arme', 'Bouclier', 'Rondache', 'Palier 1', 'Commun'],
+    tags:     ['Arme', 'Bouclier', 'Rondache', 'Guerrier', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
 	},
   {
@@ -686,7 +686,7 @@ const ITEMS = [
 		stats:		{sante:15, defense:1.7},
 		classes:	['guerrier'],
 		lore:     "Grand bouclier en bois qui peut seulement être obtenu par un Guerrier Tréant.",
-    tags:     ['Arme', 'Bouclier', 'Pavois', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Guerriers Tréants"
 	},
   {
@@ -701,7 +701,7 @@ const ITEMS = [
 		stats:		{sante:[16,20], defense:[1.9,2.1]},
 		classes:	['guerrier'],
 		lore:     "Le bouclier le plus résistant que Tolbana puisse offrir.",
-    tags:     ['Arme', 'Bouclier', 'Pavois', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
 	},
   {
@@ -716,7 +716,7 @@ const ITEMS = [
 		stats:		{sante:[8,12], defense:[1.2,1.4], degats:2},
 		classes:	['guerrier'],
 		lore:     "La version équilibrée parmi tous les boucliers de Tolbana.",
-    tags:     ['Arme', 'Bouclier', 'Rondache', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Bouclier', 'Rondache', 'Guerrier', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
 	},
   {
@@ -731,7 +731,7 @@ const ITEMS = [
 		stats:		{sante:45, defense:5},
 		classes:	['guerrier'],
 		lore:     "Érodé par le temps et la poussière, ce bouclier était perdu à travers le temps et les dimensions.",
-    tags:     ['Arme', 'Bouclier', 'Rondache', 'Palier 1', 'Mythique'],
+    tags:     ['Arme', 'Bouclier', 'Rondache', 'Guerrier', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
 	},
   {
@@ -746,7 +746,7 @@ const ITEMS = [
 		stats:		{sante:[25.71,34.29], defense:[3,4]},
 		classes:	['guerrier'],
 		lore:     "Solide et résistant, il protège la malédiction qui pèse sur son porteur, ainsi absorbant les assauts.",
-    tags:     ['Arme', 'Bouclier', 'Pavois', 'Palier 2', 'Épique'],
+    tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
   /* ══ Hast ══ */
@@ -762,7 +762,7 @@ const ITEMS = [
 		stats:		{degats:[17,19], vitesse_attaque:0.9},
 		classes:	['guerrier'],
 		lore:     "Double hache en fer créée grâce aux loups de la vallée et avec un autre ingrédient.",
-    tags:     ['Arme', 'Hache Double', 'Deux Mains', 'Palier 1', 'Commun'],
+    tags:     ['Arme', 'Hache Double', 'Deux Mains', 'Guerrier', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
 	},
   {
@@ -777,7 +777,7 @@ const ITEMS = [
 		stats:		{degats:23, vitesse_attaque:0.8},
 		classes:	['guerrier'],
 		lore:     "Arme de destruction du Gardien Colossal. Ce marteau est puissant mais lourd.",
-    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Gardiens Colossaux"
 	},
   {
@@ -792,7 +792,7 @@ const ITEMS = [
 		stats:		{degats:[25,30], vitesse_attaque:0.8},
 		classes:	['guerrier'],
 		lore:     "Marteau dont la magie a été imprégnée des monstres de la citadelle des neiges.",
-    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
 	},
   {
@@ -807,7 +807,7 @@ const ITEMS = [
 		stats:		{degats:35, vitesse_attaque:0.7},
 		classes:	['guerrier'],
 		lore:     "Hallebarde d'un seigneur déchu anciennement grand guerrier dans l'Aincrad et dans tout The Seed.",
-    tags:     ['Arme', 'Hallebarde', 'Deux Mains', 'Palier 1', 'Légendaire'],
+    tags:     ['Arme', 'Hallebarde', 'Deux Mains', 'Guerrier', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en tuant:\n- Smough, Dévastateur Déchu"
 	},
   {
@@ -822,7 +822,7 @@ const ITEMS = [
 		stats:		{degats:60, vitesse_attaque:0.7},
 		classes:	['guerrier'],
 		lore:     "Longue et lourde hache du puissant boss palier : Illfang the Kobold Lord !",
-    tags:     ['Arme', 'Hache', 'Deux Mains', 'Palier 1', 'Légendaire'],
+    tags:     ['Arme', 'Hache', 'Deux Mains', 'Guerrier', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
 	},
   {
@@ -837,7 +837,7 @@ const ITEMS = [
 		stats:		{degats:[35,40], vitesse_attaque:0.8},
 		classes:	['guerrier'],
 		lore:     "Poids écrasant, frappant, assommant comme le dard d'une abeille en colère.",
-    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Palier 2', 'Rare'],
+    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona"
 	},
   {
@@ -852,7 +852,7 @@ const ITEMS = [
 		stats:		{degats:[45,50], vitesse_attaque:0.8},
 		classes:	['guerrier'],
 		lore:     "Poids écrasant, frappant, assommant comme le sort d'un nécromancien en colère.",
-    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Palier 2', 'Épique'],
+    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
   /* ══ Assassin ══ */
@@ -868,7 +868,7 @@ const ITEMS = [
 		stats:		{degats:13.5, vitesse_attaque:1.1},
 		classes:	['assassin'],
     lore:     "Dague bien délabrée, même un coup sur du bois et l'épée peut être détruite.",
-    tags:     ['Arme', 'Dague', 'Palier 1', 'Commun'],
+    tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
 	},
   {
@@ -883,7 +883,7 @@ const ITEMS = [
 		stats:		{degats:[17,20], vitesse_attaque:[1.1,1.2]},
 		classes:	['assassin'],
     lore:     "Standard des nouvelles recrues. Facile à manier, légère et très fiable.",
-    tags:     ['Arme', 'Dague', 'Palier 1', 'Commun'],
+    tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
 	},
   {
@@ -898,7 +898,7 @@ const ITEMS = [
 		stats:		{degats:25, vitesse_attaque:1.2},
 		classes:	['assassin'],
     lore:     "Dague émoussé d'un bandit après tous ces combats sanglants.",
-    tags:     ['Armes', 'Dague', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Bandits Assassins"
 	},
   {
@@ -913,7 +913,7 @@ const ITEMS = [
 		stats:		{degats:[27,31], vitesse_attaque:1.2},
 		classes:	['assassin'],
     lore:     "Petite dague Sombre, forgé avec des éclats magiques et d'autres loot. Elle en devient redoutable.",
-    tags:     ['Armes', 'Dague', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
 	},
   {
@@ -928,7 +928,7 @@ const ITEMS = [
 		stats:		{degats:[35,40], vitesse_attaque:[0.8,0.9]},
 		classes:	['assassin'],
     lore:     "Une longue dague Sombre, forgé avec des éclats magiques et d'autres loot. Elle en devient redoutable.",
-    tags:     ['Armes', 'Longue Dague', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Longue Dague', 'Assassin', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
 	},
   {
@@ -943,7 +943,7 @@ const ITEMS = [
 		stats:		{degats:[31,35], vitesse_attaque:[1.3,1.5]},
 		classes:	['assassin'],
     lore:     "Dague très puissante fait à partir de métal enchanté et d'âme, légère et facile à manier.",
-    tags:     ['Armes', 'Dague', 'Palier 1', 'Épique'],
+    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
 	},
   {
@@ -958,7 +958,7 @@ const ITEMS = [
 		stats:		{degats:[40,44.98], vitesse_attaque:[0.7,0.9]},
 		classes:	['assassin'],
     lore:     "Katana très puissant fait à partir de métal enchanté et d'âme, tranchant et facile à manier.",
-    tags:     ['Armes', 'Katana', 'Deux Mains', 'Palier 1', 'Épique'],
+    tags:     ['Armes', 'Katana', 'Deux Mains', 'Assassin', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
 	},
   {
@@ -973,7 +973,7 @@ const ITEMS = [
 		stats:		{degats:55, vitesse_attaque:1.8, vol_vie:3.5, vitesse_deplacement:1},
 		classes:	['assassin'],
     lore:     "Une belle dague forgée à l'aide de fragments de véritable Nodachi. Ce n'est toutefois plus qu'une relique pour le moment.",
-    tags:     ['Armes', 'Dague', 'Palier 1', 'Mythique'],
+    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
 	},
   {
@@ -988,7 +988,7 @@ const ITEMS = [
 		stats:		{degats:[34,38], vitesse_attaque:[1.4,1.5]},
 		classes:	['assassin'],
     lore:     "Une Serpe fine aux teintes dorées et noires, dont la lame effilée évoque le dard mortel d'une abeille.",
-    tags:     ['Armes', 'Serpe', 'Palier 2', 'Rare'],
+    tags:     ['Armes', 'Serpe', 'Assassin', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona"
 	},
   {
@@ -1003,7 +1003,7 @@ const ITEMS = [
 		stats:		{degats:[46,50], vitesse_attaque:0.8},
 		classes:	['assassin'],
     lore:     "Une faux fine aux lignes acérées, décorée de motifs d'alvéoles, évoquant la précision et la menace d'un insecte prédateur.",
-    tags:     ['Armes', 'Faux', 'Palier 2', 'Rare'],
+    tags:     ['Armes', 'Faux', 'Assassin', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona"
 	},
   {
@@ -1018,7 +1018,7 @@ const ITEMS = [
 		stats:		{degats:[39,43.99], vitesse_attaque:[1.4,1.5]},
 		classes:	['assassin'],
     lore:     "Une Serpe sombre aux gravures funéraires, dont la lame courbe semble liée aux arts interdits..",
-    tags:     ['Armes', 'Serpe', 'Palier 2', 'Épique'],
+    tags:     ['Armes', 'Serpe', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
   {
@@ -1033,7 +1033,7 @@ const ITEMS = [
 		stats:		{degats:[51,57], vitesse_attaque:0.8},
 		classes:	['assassin'],
     lore:     "Une faux austère aux runes sépulcrales dont la lame noire évoque les rites anciens et les forces d'outre-tombe.",
-    tags:     ['Armes', 'Faux', 'Palier 2', 'Épique'],
+    tags:     ['Armes', 'Faux', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
   /* ══ Archer ══ */
@@ -1050,7 +1050,7 @@ const ITEMS = [
 		stats:		{degats:3, vitesse_attaque:1},
 		classes:	['archer'],
     lore:     "Un arc rudimentaire utilisé par les premiers tireurs.",
-    tags:     ['Arme', 'Arc', 'Palier 1', 'Commun'],
+    tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
 	},
   {
@@ -1065,7 +1065,7 @@ const ITEMS = [
 		stats:		{degats:[4,6], vitesse_attaque:1},
 		classes:	['archer'],
     lore:     "Arc construit avec l'aide des Tréants du Palier 1 de l'Aincrad.",
-    tags:     ['Arme', 'Arc', 'Palier 1', 'Commun'],
+    tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Tréants d'Élites\nFabricable au Forgeron d'Armes de la Ville de Départ"
 	},
   {
@@ -1080,7 +1080,7 @@ const ITEMS = [
 		stats:		{degats:[10,13], vitesse_attaque:1},
 		classes:	['archer'],
     lore:     "Arc pour chasser les puissants monstres du Palier 1.",
-    tags:     ['Arme', 'Arc', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
 	},
   {
@@ -1095,7 +1095,7 @@ const ITEMS = [
 		stats:		{degats:[14,16], vitesse_attaque:[1,1.1]},
 		classes:	['archer'],
     lore:     "Arc puissant qui appartenait à l'un des Fallen du Labyrinthe.",
-    tags:     ['Arme', 'Arc', 'Palier 1', 'Épique'],
+    tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
 	},
   {
@@ -1110,7 +1110,7 @@ const ITEMS = [
 		stats:		{degats:23.5, vitesse_attaque:1.3, crit_chance:10, crit_degats:5},
 		classes:	['archer'],
     lore:     "Arc créé à l'aide de fragments et de minerais de Nodachite. Puissant, mais ce n'est toutefois plus qu'une relique pour le moment.",
-    tags:     ['Arme', 'Arc', 'Palier 1', 'Mythique'],
+    tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
 	},
   {
@@ -1125,22 +1125,22 @@ const ITEMS = [
 		stats:		{degats:[17,19], vitesse_attaque:[1,1.2]},
 		classes:	['archer'],
     lore:     "Arc agile, conçu pour les chasseurs patients et mortels.",
-    tags:     ['Arme', 'Arc', 'Palier 2', 'Rare'],
+    tags:     ['Arme', 'Arc', 'Archer', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona"
 	},
   {
-		id:'arc_necropole',
-		name:"Arc de la Nécropole",
-		rarity:'epique',
-		cat:'arme_p',
+		id:				'arc_necropole',
+		name:			"Arc de la Nécropole",
+		rarity:		'epique',
+		cat:			'arme_p',
 		category:	'arme',
-		palier:2,
-		lvl:13,
-		img:"../img/compendium/textures/weapons/arc_necropole.png",
-		stats:{degats:[20,22], vitesse_attaque:[1,1.3]},
-		classes:['archer'],
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/weapons/arc_necropole.png",
+		stats:		{degats:[20,22], vitesse_attaque:[1,1.3]},
+		classes:	['archer'],
     lore:     "Un arc sombre aux gravures funéraires, dont les branches semblent façonnées par une magie d'outre-tombe.",
-    tags:     ['Arme', 'Arc', 'Palier 2', 'Épique'],
+    tags:     ['Arme', 'Arc', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
   /* ══ Arbalètes ══ */
@@ -1156,7 +1156,7 @@ const ITEMS = [
 		stats:		{degats:12, vitesse_attaque:0.7},
 		classes:	['archer'],
     lore:     "Arbalète d'un bandit qui devient presque inutilisable après tous ces combats.",
-    tags:     ['Armes', 'Arbalète', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Bandits Archer"
 	},
   {
@@ -1171,7 +1171,7 @@ const ITEMS = [
 		stats:		{degats:[15,19], vitesse_attaque:0.7},
 		classes:	['archer'],
     lore:     "Arbalète pour chasser les puissants monstres du Palier 1.",
-    tags:     ['Armes', 'Arbalète', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
 	},
   {
@@ -1186,7 +1186,7 @@ const ITEMS = [
 		stats:		{degats:23.5, vitesse_attaque:0.7},
 		classes:	['archer'],
     lore:     "Forgé dans les ruines d'un ancien fort de guerre, elle tremble encore de ces anciens combats.",
-    tags:     ['Armes', 'Arbalète', 'Palier 1', 'Légendaire'],
+    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en récompense du Donjon Labyrinthe des Déchus"
 	},
   {
@@ -1201,7 +1201,7 @@ const ITEMS = [
 		stats:		{degats:[23.5,25.26], vitesse_attaque:[0.7,0.8]},
 		classes:	['archer'],
     lore:     "Une arme fiable pour frapper même les ennemis les plus résistants.",
-    tags:     ['Armes', 'Arbalète', 'Palier 2', 'Rare'],
+    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona"
 	},
   {
@@ -1216,7 +1216,7 @@ const ITEMS = [
 		stats:		{degats:[27,29], vitesse_attaque:[0.7,0.8]},
 		classes:	['archer'],
     lore:     "Une arbalète austère aux ornements sépulcraux, imprégnée d'une présence silencieuse venue d'outre-tombe.",
-    tags:     ['Armes', 'Arbalète', 'Palier 2', 'Épique'],
+    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
   /* ══ Mage - Shaman ══ */
