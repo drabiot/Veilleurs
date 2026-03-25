@@ -789,3 +789,40 @@ html, body {
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--rim2); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+.mq-skin-canvas {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.04),
+    inset 0 0 30px rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.2);
+}
+
+.mq-skin-canvas::before,
+.mq-skin-canvas::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: rgba(215, 175, 95, 0.5);
+  border-style: solid;
+  z-index: 2;
+  pointer-events: none;
+}
+.mq-skin-canvas::before {
+  top: 4px; left: 4px;
+  border-width: 1px 0 0 1px;
+}
+.mq-skin-canvas::after {
+  bottom: 4px; right: 4px;
+  border-width: 0 1px 1px 0;
+}
+
+#mq-skin-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

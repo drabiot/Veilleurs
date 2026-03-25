@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/skinview3d@3.0.0/bundles/skinview3d.bundle.js"></script>
 </head>
 <body>
 
@@ -76,12 +77,9 @@
               <div class="mq-main-row">
                 <div class="mq-col-left"  id="col-left"></div>
                 <div class="mq-skin" id="mq-skin">
-                  <span class="sk-c"></span>
-                  <div class="skin-ph">
-                    <div class="skin-ph-icon">🧍</div>
-                    <div class="skin-ph-label">Modèle<br>Minecraft<br>à venir</div>
-                  </div>
-                </div>
+					<span class="sk-c"></span>
+					<canvas id="mq-skin-canvas"></canvas>
+				</div>
                 <div class="mq-col-right" id="col-right"></div>
               </div>
               <div class="mq-row-bot" id="row-bot"></div>
@@ -175,7 +173,6 @@
     </div>
   </div>
   
-
 
   <script src="../Compendium/data.js"></script>
   <script src="atelier.js"></script>

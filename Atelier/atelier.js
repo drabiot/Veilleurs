@@ -113,6 +113,172 @@
     document.body.appendChild(tooltip);
   }
 
+  /* ══ SKIN 3D ══ */
+function getSkinPath(classId) {
+  if (!classId) return '../img/skins/default.png';
+  return '../img/skins/' + classId + '.png';
+}
+
+function initSkinViewer(W, colH) {
+  const canvas = document.getElementById('mq-skin-canvas');
+  if (!canvas) return;
+
+  if (window.__skinViewer) {
+    window.__skinViewer.dispose();
+    window.__skinViewer = null;
+  }
+
+  window.__skinViewer = new skinview3d.SkinViewer({
+    canvas: canvas,
+    width:  W,
+    height: colH,
+  });
+
+  window.__skinViewer.autoRotate  = false;
+  window.__skinViewer.zoom        = 0.85;
+  window.__skinViewer.globalLight = 3;
+  window.__skinViewer.cameraLight = 1;
+
+  // La bonne API pour cette version
+  const walk = new skinview3d.WalkingAnimation();
+  walk.speed = 0.4;
+  window.__skinViewer.animation = walk;
+
+  window.__skinViewer.loadSkin(getSkinPath(activeClass))
+    .catch(function(err) { console.error('Skin init failed:', err); });
+  window.__skinViewer.loadSkin(getSkinPath(activeClass))
+    .then(function() { loadAccessoriesForClass(activeClass); })
+    .catch(function(err) { console.error('Skin init failed:', err); });
+}
+
+function updateSkinClass() {
+  if (!window.__skinViewer) return;
+  clearAccessories();
+  window.__skinViewer.loadSkin(getSkinPath(activeClass))
+    .then(function() { loadAccessoriesForClass(activeClass); })
+    .catch(function(err) { console.error('Skin update failed:', err); });
+}
+/* ══ ACCESSOIRES 3D ══ */
+function clearAccessories() {
+  if (!window.__skinViewer) return;
+  const skin = window.__skinViewer.playerObject.skin;
+  ['head', 'rightArm', 'leftArm', 'body'].forEach(function(boneName) {
+    const bone = skin[boneName];
+    if (!bone) return;
+    // Supprime uniquement les meshes taggés comme accessoires
+    const toRemove = bone.children.filter(function(c) { return c.userData.isAccessory; });
+    toRemove.forEach(function(c) { bone.remove(c); });
+  });
+}
+
+function loadAccessoriesForClass(classId) {
+  clearAccessories();
+  if (!window.__skinViewer) return;
+  const skin = window.__skinViewer.playerObject.skin;
+  const THREE = skinview3d.THREE;
+
+  if (!THREE) { console.warn('THREE non trouvé'); return; }
+
+  const ACCESSORIES = {
+    guerrier: function() {
+      // Épée dans la main droite
+      const blade = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.9, 0.06),
+        new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.8, roughness: 0.2 })
+      );
+      blade.position.set(0.1, -0.7, 0);
+      blade.rotation.z = Math.PI / 12;
+      blade.userData.isAccessory = true;
+      skin.rightArm.add(blade);
+
+      // Garde de l'épée
+      const guard = new THREE.Mesh(
+        new THREE.BoxGeometry(0.35, 0.08, 0.08),
+        new THREE.MeshStandardMaterial({ color: 0xb8860b, metalness: 0.6 })
+      );
+      guard.position.set(0.1, -0.35, 0);
+      guard.userData.isAccessory = true;
+      skin.rightArm.add(guard);
+    },
+
+    assassin: function() {
+      // Dague courte main droite
+      const dagger = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.5, 0.05),
+        new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.9, roughness: 0.1 })
+      );
+      dagger.position.set(0.08, -0.55, 0.05);
+      dagger.rotation.z = -Math.PI / 8;
+      dagger.userData.isAccessory = true;
+      skin.rightArm.add(dagger);
+
+      // Dague main gauche
+      const dagger2 = dagger.clone();
+      dagger2.position.set(-0.08, -0.55, 0.05);
+      dagger2.rotation.z = Math.PI / 8;
+      dagger2.userData.isAccessory = true;
+      skin.leftArm.add(dagger2);
+    },
+
+    archer: function() {
+      // Arc (main gauche)
+      const bow = new THREE.Mesh(
+        new THREE.TorusGeometry(0.28, 0.03, 6, 12, Math.PI),
+        new THREE.MeshStandardMaterial({ color: 0x8B4513, roughness: 0.8 })
+      );
+      bow.position.set(-0.05, -0.4, 0.1);
+      bow.rotation.x = Math.PI / 2;
+      bow.rotation.z = Math.PI / 2;
+      bow.userData.isAccessory = true;
+      skin.leftArm.add(bow);
+    },
+
+    mage: function() {
+      // Bâton main droite
+      const staff = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8),
+        new THREE.MeshStandardMaterial({ color: 0x4a2080, roughness: 0.6 })
+      );
+      staff.position.set(0.1, -0.7, 0);
+      staff.userData.isAccessory = true;
+      skin.rightArm.add(staff);
+
+      // Orbe en haut du bâton
+      const orb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 10, 10),
+        new THREE.MeshStandardMaterial({ color: 0x8844ff, emissive: 0x4400aa, roughness: 0.1 })
+      );
+      orb.position.set(0.1, -0.05, 0);
+      orb.userData.isAccessory = true;
+      skin.rightArm.add(orb);
+    },
+
+    shaman: function() {
+      // Totem / bâton nature
+      const totem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 1.1, 6),
+        new THREE.MeshStandardMaterial({ color: 0x5a3010, roughness: 0.9 })
+      );
+      totem.position.set(0.1, -0.65, 0);
+      totem.userData.isAccessory = true;
+      skin.rightArm.add(totem);
+
+      // Feuilles au sommet
+      const leaves = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 7, 7),
+        new THREE.MeshStandardMaterial({ color: 0x228822, emissive: 0x114411, roughness: 0.7 })
+      );
+      leaves.position.set(0.1, -0.02, 0);
+      leaves.userData.isAccessory = true;
+      skin.rightArm.add(leaves);
+    },
+  };
+
+  if (classId && ACCESSORIES[classId]) {
+    ACCESSORIES[classId]();
+  }
+}
+
   function positionCarTooltip(e, tooltip) {
     const offset = 16;
     const tw = tooltip.offsetWidth  || 230;
@@ -427,6 +593,7 @@
     renderStats();
     renderItemList();
     saveToStorage();
+	updateSkinClass();
   }
 
   function adjustCar(carId, delta) {
@@ -484,6 +651,7 @@
         renderStats();
         renderItemList();
         saveToStorage();
+		updateSkinClass();
       }
 
       if (!itemsAtRisk.length) { applyClassChange(); return; }
@@ -1440,8 +1608,11 @@
     mq.style.setProperty('--W', W + 'px');
     mq.style.setProperty('--G', G + 'px');
 
-    const skin = document.getElementById('mq-skin');
-    if (skin) { skin.style.width = W + 'px'; skin.style.height = colH + 'px'; }
+    if (window.__skinViewer) {
+		window.__skinViewer.setSize(W, colH);
+	} else {
+		initSkinViewer(W, colH);
+	}
 
     const totalW = 2 * S + W + 2 * G;
     const rowBot = document.getElementById('row-bot');
@@ -1509,10 +1680,10 @@
 
     renderStats();
     renderPickerInfo();
-    requestAnimationFrame(function() {
-      fitGrid();
-      requestAnimationFrame(fitGrid);
-    });
+	requestAnimationFrame(function() {
+		fitGrid();
+		requestAnimationFrame(fitGrid);
+	});
     if (window.ResizeObserver) {
       new ResizeObserver(fitGrid).observe(document.querySelector('.site-header'));
     }
