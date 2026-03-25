@@ -3730,7 +3730,10 @@ const ITEMS = [
   /* ══ Mage - Shaman ══ */
   /* ══ Palier 1 ══ */
   {
-		id:'tunique_spectral',   			name:"Tunique Spectral",               	set:'spectral',     rarity:'commun',    cat:'plastron',
+		id:'tunique_spectral',
+		name:"Tunique Spectral",
+		set:'spectral',
+		rarity:'commun',    cat:'plastron',
 		category:	'armure',
 		palier:1,
 		lvl:3,  img:"../img/compendium/textures/armors/chestplate_spectral.png", 						stats:{sante:[15,19], defense:0.4}, classes:['mage','shaman'] },
@@ -3787,20 +3790,20 @@ const ITEMS = [
 		palier:1, lvl:9, 	img:"../img/compendium/textures/armors/boots_faucheuse.png", 							stats:{sante:[10.2,13.8], defense:[2.7,2.9]}, classes:['mage','shaman'] },
   /* ══ Palier 2 ══ */
   {
-		id:'casque_miel_cr',     			name:"Casque en Miel Cristallisé",      set:'abeille_mage', rarity:'rare',    	cat:'casque',
+		id:'casque_miel_cristallisé',     			name:"Casque en Miel Cristallisé",      set:'abeille_mage', rarity:'rare',    	cat:'casque',
 		category:	'armure',
 		palier:2, lvl:11, 	img:"../img/compendium/textures/armors/helmet_abeille.png", 							stats:{sante:[26,31], defense:[3.2,3.5]}, classes:['mage'] },
   {
-		id:'plastron_miel_cr',   			name:"Plastron en Miel Cristallisé",    set:'abeille_mage', rarity:'rare',    	cat:'plastron',
+		id:'plastron_miel_cristallisé',   			name:"Plastron en Miel Cristallisé",    set:'abeille_mage', rarity:'rare',    	cat:'plastron',
 		category:	'armure',
 		palier:2,
 		lvl:11, 	img:"../img/compendium/textures/armors/chestplate_abeille.png", 						stats:{sante:[35,40], defense:[4.1,4.5], 'Emplacement de Runes':1}, classes:['mage'] },
   {
-		id:'jambieres_miel_cr',   			name:"Jambières en Miel Cristallisé",   set:'abeille_mage', rarity:'rare',    	cat:'jambières',
+		id:'jambieres_miel_cristallisé',   			name:"Jambières en Miel Cristallisé",   set:'abeille_mage', rarity:'rare',    	cat:'jambières',
 		category:	'armure',
 		palier:2, lvl:11, 	img:"../img/compendium/textures/armors/leggings_abeille.png", 							stats:{sante:[26.01,29.99], defense:[3.2,3.5]}, classes:['mage'] },
   {
-		id:'bottes_miel_cr',     			name:"Bottes en Miel Cristallisé",      set:'abeille_mage', rarity:'rare',    	cat:'bottes',
+		id:'bottes_miel_cristallisé',     			name:"Bottes en Miel Cristallisé",      set:'abeille_mage', rarity:'rare',    	cat:'bottes',
 		category:	'armure',
 		palier:2, lvl:11, 	img:"../img/compendium/textures/armors/boots_abeille.png", 								stats:{sante:[21,27], defense:[2.8,3.2]}, classes:['mage'] },
   {
@@ -3821,48 +3824,68 @@ const ITEMS = [
 		category:	'armure',
 		palier:2, lvl:13, 	img:"../img/compendium/textures/armors/boots_necromancien.png", 								stats:{sante:[28,31], defense:[3.3,3.6]}, classes:['mage'] },
   {
-		id:'casque_miel_my',     			name:"Casque de la Miel Mysticisé",     set:'abeille_sham', rarity:'rare',    	cat:'casque',
+		id:'casque_miel_myysticisé',     			name:"Casque de la Miel Mysticisé",     set:'abeille_sham', rarity:'rare',    	cat:'casque',
 		category:	'armure',
 		palier:2, lvl:11, 	img:"../img/compendium/textures/armors/helmet_abeille.png", 							stats:{sante:[26,31], defense:[3.2,3.5]}, classes:['shaman'] },
   {
-		id:'plastron_miel_my',   			name:"Plastron de la Miel Mysticisé",   set:'abeille_sham', rarity:'rare',    	cat:'plastron',
+		id:'plastron_miel_myysticisé',   			name:"Plastron de la Miel Mysticisé",   set:'abeille_sham', rarity:'rare',    	cat:'plastron',
 		category:	'armure',
 		palier:2,
 		lvl:11, 	img:"../img/compendium/textures/armors/chestplate_abeille.png", 						stats:{sante:[35,40], defense:[4.1,4.5], 'Emplacement de Runes':1}, classes:['shaman'] },
   {
-		id:'jambieres_miel_my',   			name:"Jambières de la Miel Mysticisé",  set:'abeille_sham', rarity:'rare',    	cat:'jambières',
+		id:'jambieres_miel_myysticisé',   			name:"Jambières de la Miel Mysticisé",  set:'abeille_sham', rarity:'rare',    	cat:'jambières',
 		category:	'armure',
 		palier:2, lvl:11, 	img:"../img/compendium/textures/armors/leggings_abeille.png", 							stats:{sante:[26.01,29.99], defense:[3.2,3.5]}, classes:['shaman'] },
   {
-		id:'bottes_miel_my',     			name:"Bottes de la Miel Mysticisé",     set:'abeille_sham', rarity:'rare',    	cat:'bottes',
+		id:'bottes_miel_myysticisé',     			name:"Bottes de la Miel Mysticisé",     set:'abeille_sham', rarity:'rare',    	cat:'bottes',
 		category:	'armure',
 		palier:2, lvl:11, 	img:"../img/compendium/textures/armors/boots_abeille.png", 								stats:{sante:[21,27], defense:[2.8,3.2]}, classes:['shaman'] },
   {
-		id:'casque_necro_sham',     		name:"Casque du Nécromancien",         	set:'necro_sham', 	rarity:'epique',    cat:'casque',
+		id:'casque_necro_shaman',     		name:"Casque du Nécromancien",         	set:'necro_sham', 	rarity:'epique',    cat:'casque',
 		category:	'armure',
 		palier:2, lvl:13, 	img:"../img/compendium/textures/armors/helmet_necromancien.png", 							stats:{sante:[29,32], defense:[3.13,3.37]}, classes:['shaman'] },
   {
-		id:'plastron_necro_sham',   		name:"Plastron du Nécromancien",       	set:'necro_sham', 	rarity:'epique',    cat:'plastron',
+		id:'plastron_necro_shaman',   		name:"Plastron du Nécromancien",       	set:'necro_sham', 	rarity:'epique',    cat:'plastron',
 		category:	'armure',
 		palier:2,
 		lvl:13, 	img:"../img/compendium/textures/armors/chestplate_necromancien.png", 						stats:{sante:[41,44], defense:[4.6,5.06], 'Emplacement de Runes':2}, classes:['shaman'] },
   {
-		id:'jambieres_necro_sham',   		name:"Jambières du Nécromancien",      	set:'necro_sham', 	rarity:'epique',    cat:'jambières',
+		id:'jambieres_necro_shaman',   		name:"Jambières du Nécromancien",      	set:'necro_sham', 	rarity:'epique',    cat:'jambières',
 		category:	'armure',
 		palier:2, lvl:13, 	img:"../img/compendium/textures/armors/leggings_necromancien.png", 							stats:{sante:[31,34], defense:[3.6,3.9]}, classes:['shaman'] },
   {
-		id:'bottes_necro_sham',     		name:"Bottes du Nécromancien",          set:'necro_sham', 	rarity:'epique',    cat:'bottes',
+		id:'bottes_necro_shaman',     		name:"Bottes du Nécromancien",          set:'necro_sham', 	rarity:'epique',    cat:'bottes',
 		category:	'armure',
 		palier:2, lvl:13, 	img:"../img/compendium/textures/armors/boots_necromancien.png", 								stats:{sante:[28,31], defense:[3.3,3.6]}, classes:['shaman'] },
   /* ══ Other ══ */
   {
-		id:'bottes_revenant',      			name:"Bottes du Revenant",                                  rarity:'legendaire',cat:'bottes',
+		id:				'bottes_revenant',
+		name:			"Bottes du Revenant",
+		rarity:		'legendaire',
+		cat:			'bottes',
 		category:	'armure',
-		palier:1, lvl:5, 	img:"../img/compendium/textures/armors/bottes_du_revenant.png",   						stats:{vitesse_deplacement:5} },
+		palier:		1,
+		lvl:			5,
+		img:			"../img/compendium/textures/armors/bottes_du_revenant.png",
+		stats:		{vitesse_deplacement:5},
+    lore:     "Imprégnées de la vitesse d'un cheval maudit, elles confèrent à leur porteur une très grande vitesse.",
+    tags:     ['Armure', 'Bottes', 'Palier 1', 'Légendaire'],
+    obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ"
+	},
   {
-		id:'bottes_ecume',      			name:"Bottes de l'Écume",                                   rarity:'legendaire',cat:'bottes',
+		id:				'bottes_ecume',
+		name:			"Bottes de l'Écume",
+		rarity:		'legendaire',
+		cat:			'bottes',
 		category:	'armure',
-		palier:1, lvl:5, 	img:"../img/compendium/textures/armors/bottes_decume.png",         						stats:{'Agilité Aquatique':10} },
+		palier:		1,
+		lvl:			5,
+		img:			"../img/compendium/textures/armors/bottes_decume.png",
+		stats:		{'Agilité Aquatique':10},
+    lore:     "Petites paires de bottes faites à partir de magie de l'au-delà et de composants assez rares.",
+    tags:     ['Armure', 'Bottes', 'Palier 1', 'Légendaire'],
+    obtain:   "Récupérable une fois fini la Quête Principale «22 - Chasse aux Poissons Requin», donné par Malrik"
+	},
 
   {
     id:       'viande_de_sanglier',
@@ -4241,12 +4264,12 @@ const ITEMS = [
   {
     id:       'artefact_fallen',
     name:     "Artéfact des Fallen",
-    rarity:   null,
+    rarity:   'epique',
     category: 'quete',
     palier:   1,
     image:    null,
-    lore:     null,
-    tags:     ['Objets de Quête', 'Palier 1', null],
+    lore:     "Fragment arraché à l'un des 3 Fallens du Donjon très utile pour accéder à la salle de boss des Chevaliers Jumeaux",
+    tags:     ['Objets de Quête', 'Palier 1', 'Épique'],
     obtain:   "Obtenable en tuant:\n- Gardien Déchu\n- Héraut Déchu\n- Faucheuse Déchu"
   },
   {
