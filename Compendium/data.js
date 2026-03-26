@@ -346,7 +346,7 @@ const STAT_GROUPS = [
     label: 'Offensif',
     stats: [
       { id:'degats',              label:'Dégâts',                          icon:'🗡️',  unit:'',   max:500  },
-	  { id:'degats_physique',     label:'Dégâts Physique',                 icon:'💥',  unit:'%',  max:100  },
+	  	{ id:'degats_physique',     label:'Dégâts Physique',                 icon:'💥',  unit:'%',  max:100  },
       { id:'degats_arme',         label:'Dégâts d\'Arme',                  icon:'⚔️',  unit:'%',  max:100  },
       { id:'degats_magique',      label:'Dégâts Magiques',                 icon:'📖',  unit:'%',  max:100  },
       { id:'degats_competence',   label:'Dégâts de Compétence',            icon:'✨',  unit:'%',  max:100  },
@@ -362,8 +362,8 @@ const STAT_GROUPS = [
     label: 'Défensif',
     stats: [
       { id:'defense',             label:'Défense',                         icon:'🛡️',  unit:'',   max:1000 },
-	  { id:'maitrise_bloc',       label:'Maîtrise de Blocage',             icon:'🧱',  unit:'%',   max:100 },
-	  { id:'puissance_bloc',      label:'Puissance de Blocage',            icon:'💪',  unit:'%',   max:100 },
+	  	{ id:'maitrise_bloc',       label:'Maîtrise de Blocage',             icon:'🧱',  unit:'%',   max:100 },
+	  	{ id:'puissance_bloc',      label:'Puissance de Blocage',            icon:'💪',  unit:'%',   max:100 },
       { id:'sante',               label:'Santé',                           icon:'❤️',  unit:'',   max:2000 },
       { id:'esquive',             label:'Esquive',                         icon:'💨',  unit:'%',  max:100  },
       { id:'reduction_degats',    label:'Réduction de Dégâts',             icon:'🔰',  unit:'%',  max:100  },
@@ -552,7 +552,7 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Taillé dans les os d'un ancien guerrier tombé en disgrâce.",
     tags:     ['Armes', 'Épée', 'Guerrier', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes"
+    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[5]\n- Guerriers Squelettes[7]"
 	},
   {
 		id:				'epee_magique',
@@ -597,7 +597,7 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Longue épée ayant appartenu à Illfang the Kobold Lord. Ce n'est toutefois qu'une relique mythique.",
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Mythique'],
-    obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
+    obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]",
 	},
   {
 		id:				'epee_dard_tranchant',
@@ -733,7 +733,7 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Grand bouclier en bois qui peut seulement être obtenu par un Guerrier Tréant.",
     tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Guerriers Tréants"
+    obtain:   "Obtenable en tuant:\n- Guerriers Tréants[3]"
 	},
   {
 		id:				'bouclier_resistant_tolbana',
@@ -778,7 +778,7 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Érodé par le temps et la poussière, ce bouclier était perdu à travers le temps et les dimensions.",
     tags:     ['Arme', 'Bouclier', 'Rondache', 'Guerrier', 'Palier 1', 'Mythique'],
-    obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
+    obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
   {
 		id:				'bouclier_maudit',
@@ -884,7 +884,7 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Hallebarde d'un seigneur déchu anciennement grand guerrier dans l'Aincrad et dans tout The Seed.",
     tags:     ['Arme', 'Hallebarde', 'Deux Mains', 'Guerrier', 'Palier 1', 'Légendaire'],
-    obtain:   "Obtenable en tuant:\n- Smough, Dévastateur Déchu"
+    obtain:   "Obtenable en tuant:\n- Smough, Dévastateur Déchu[1]"
 	},
   {
 		id:				'hache_illfang',
@@ -899,7 +899,7 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Longue et lourde hache du puissant boss palier : Illfang the Kobold Lord !",
     tags:     ['Arme', 'Hache', 'Deux Mains', 'Guerrier', 'Palier 1', 'Légendaire'],
-    obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
+    obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
   {
 		id:				'marteau_dard_ecrasant',
@@ -1080,7 +1080,7 @@ const ITEMS = [
 		classes:	['assassin'],
     lore:     "Une belle dague forgée à l'aide de fragments de véritable Nodachi. Ce n'est toutefois plus qu'une relique pour le moment.",
     tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Mythique'],
-    obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
+    obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
   {
 		id:				'serpe_assassine',
@@ -1262,7 +1262,7 @@ const ITEMS = [
 		classes:	['archer'],
     lore:     "Arc construit avec l'aide des Tréants du Palier 1 de l'Aincrad.",
     tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Tréants d'Élites\nFabricable au Forgeron d'Armes de la Ville de Départ"
+    obtain:   "Obtenable en tuant:\n- Tréants d'Élites[2]\nFabricable au Forgeron d'Armes de la Ville de Départ"
 	},
   {
 		id:				'arc_chasse',
@@ -1307,7 +1307,7 @@ const ITEMS = [
 		classes:	['archer'],
     lore:     "Arc créé à l'aide de fragments et de minerais de Nodachite. Puissant, mais ce n'est toutefois plus qu'une relique pour le moment.",
     tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Mythique'],
-    obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
+    obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
   {
 		id:				'arc_abeille_traqueuse',
@@ -1428,7 +1428,7 @@ const ITEMS = [
 		classes:	['archer'],
     lore:     "Forgé dans les ruines d'un ancien fort de guerre, elle tremble encore de ces anciens combats.",
     tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 1', 'Légendaire'],
-    obtain:   "Obtenable en récompense du Donjon Labyrinthe des Déchus"
+    obtain:   "Obtenable en récompense du Donjon Labyrinthe des Déchus[1]"
 	},
   {
 		id:				'arbalete_abeille_fer',
@@ -1520,7 +1520,7 @@ const ITEMS = [
 		classes:	['mage'],
     lore:     "Grâce aux Cœurs de Bois et à des Brindilles Enchantées, un bâton est né.",
     tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Mages Sylvestres\nFabricable au Forgeron d'Armes de la Ville de Départ"
+    obtain:   "Obtenable en tuant:\n- Mages Sylvestres[2]\nFabricable au Forgeron d'Armes de la Ville de Départ"
 	},
   {
 		id:				'baton_sylvestre_sha',
@@ -1535,7 +1535,7 @@ const ITEMS = [
 		classes:	['shaman'],
     lore:     "Grâce aux Cœurs de Bois et à des Brindilles Enchantées, un bâton est né.",
     tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Mages Sylvestres\nFabricable au Forgeron d'Armes de la Ville de Départ"
+    obtain:   "Obtenable en tuant:\n- Mages Sylvestres[2]\nFabricable au Forgeron d'Armes de la Ville de Départ"
 	},
   {
 		id:				'baton_squelette_mag',
@@ -1730,7 +1730,7 @@ const ITEMS = [
 		classes:	['mage'],
     lore:     "Bâton très puissant, forgé grâce à la puissance d'Illfang et à des minerais rares. Ce n'est toutefois plus qu'une relique pour le moment.",
     tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Mythique'],
-    obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
+    obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
   {
 		id:				'baton_nodachi_sha',
@@ -1745,7 +1745,7 @@ const ITEMS = [
 		classes:	['shaman'],
     lore:     "Bâton très puissant, forgé grâce à la puissance d'Illfang et à des minerais rares. Ce n'est toutefois plus qu'une relique pour le moment.",
     tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Mythique'],
-    obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
+    obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
 	{
 		id:				'baton_magiquement_dechu',
@@ -4754,7 +4754,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/viande_de_sanglier.png",
     lore:     "Cette belle viande de sanglier, bien juteuse, peut vous donner encore plus envie de manger !",
     tags:     ['Nourriture', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus\n- Pumba"
+    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[100]\n- Pumba[100]"
   },
 	/* ══ Palier 2 ══ */
 	/* ══ Consommable ══ */
@@ -4771,7 +4771,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/peau_de_sanglier.png",
     lore:     "Utilisable pour de la tannerie basique.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus\n- Pumba"
+    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[60]\n- Pumba[100]"
   },
   {
     id:       'fourrure_de_loup',
@@ -4782,7 +4782,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/fourrure_de_loup.png",
     lore:     "Une fourrure souple et légère, utilisée pour fabriquer des armures.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)\n- Albal"
+    obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)[60]\n- Albal[100]"
   },
   {
     id:       'crocs_de_loup',
@@ -4793,7 +4793,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/crocs_de_loup.png",
     lore:     "Une dent longue et acérée, prisée de certains artisans.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)\n- Albal"
+    obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)[30]\n- Albal[70]"
   },
   {
     id:       'crocs_de_albal',
@@ -4804,7 +4804,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/crocs_de_albal.gif",
     lore:     "Un croc massif imprégné de sa rage sauvage. Son essence est utilisée pour concoter des potions de force redoutable.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Albal"
+    obtain:   "Obtenable en tuant:\n- Albal[20]"
   },
   {
     id:       'fragment_de_feuille',
@@ -4815,7 +4815,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/fragment_de_feuille.png",
     lore:     "Des restes végétaux porteurs d'une étrange énergie naturelle.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Nephentes"
+    obtain:   "Obtenable en tuant:\n- Nephentes[45]"
   },
   {
     id:       'pousse_de_sylve',
@@ -4826,7 +4826,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/pousse_de_sylve.png",
     lore:     "Petite pousse dans un bol très utile dans la confection de potion de vie.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Minis Tréants"
+    obtain:   "Obtenable en tuant:\n- Minis Tréants[40]"
   },
   {
     id:       'éclat_de_bois_magique',
@@ -4837,7 +4837,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/eclat_de_bois_magique.png",
     lore:     "Fragment d'un ancien Tréant. Même détaché de celui-ci il conserve encore de la magie à l'intérieur.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Minis Tréants"
+    obtain:   "Obtenable en tuant:\n- Minis Tréants[30]"
   },
   {
     id:       'écorce_de_titan',
@@ -4848,7 +4848,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/ecorce_de_titan.png",
     lore:     "Ressource très dure presque incassable, les Guerriers pourront se protéger avec.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Guerriers Tréants"
+    obtain:   "Obtenable en tuant:\n- Guerriers Tréants[35]"
   },
   {
     id:       'racine_ancestrale',
@@ -4859,7 +4859,7 @@ const ITEMS = [
     image:    null,
     lore:     "Un loot assez rare du Guerrier Tréant. Utile si vous avez besoin de fabriquer des potions.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Guerriers Tréants"
+    obtain:   "Obtenable en tuant:\n- Guerriers Tréants[10]"
   },
   {
     id:       'écorce_sylvestre',
@@ -4870,7 +4870,7 @@ const ITEMS = [
     image:    null,
     lore:     "Matériau de la nature, utilisé principalement pour des armures légères et rapides.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Tréants d'Élites"
+    obtain:   "Obtenable en tuant:\n- Tréants d'Élites[40]"
   },
   {
     id:       'corde_darc_sylvestre',
@@ -4881,7 +4881,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/corde_darc_sylvestre.png",
     lore:     "Longue et tendue, cette corde robuste est idéale pour confectionner un nouvel arc.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Tréants d'Élites"
+    obtain:   "Obtenable en tuant:\n- Tréants d'Élites[25]"
   },
   {
     id:       'brindille_enchantée',
@@ -4892,7 +4892,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/brindille_enchantee.png",
     lore:     "Brindille du Mage Sylvestre, ce bâton peutêtre utilisé comme basepour une arme magique.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Mages Sylvestres"
+    obtain:   "Obtenable en tuant:\n- Mages Sylvestres[30]"
   },
   {
     id:       'coeur_de_bois',
@@ -4903,7 +4903,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/coeur_de_bois.png",
     lore:     "Cœur imprégné de magie, si vous l'utilisez avec précaution une arme très redoutable peut être créée.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Mages Sylvestres"
+    obtain:   "Obtenable en tuant:\n- Mages Sylvestres[20]"
   },
   {
     id:       'tissu_spectral',
@@ -4914,7 +4914,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/tissu_spectral.png",
     lore:     "Un tissu imprégné de magie noire et de malédictions.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Mages Sylvestres"
+    obtain:   "Obtenable en tuant:\n- Mages Sylvestres[30]"
   },
   {
     id:       'mycelium_magique',
@@ -4925,7 +4925,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/mycelium_magique.png",
     lore:     "Ingrédient assez rare pour de la haute alchimie ou pour autre chose ?",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Gardiens Colossaux"
+    obtain:   "Obtenable en tuant:\n- Gardiens Colossaux[20]"
   },
   {
     id:       'gelée_de_slime',
@@ -4936,7 +4936,7 @@ const ITEMS = [
     image:    null,
     lore:     "Une petite et belle gelée gluante qui colle à vos mains pendant longtemps.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Petits Slimes\n- Guerriers Slimes\n- Slimes Soigneurs\n- Slimes Magiciens\n- Gorbel"
+    obtain:   "Obtenable en tuant:\n- Petits Slimes[30]\n- Guerriers Slimes[30]\n- Slimes Soigneurs[30]\n- Slimes Magiciens[30]\n- Gorbel[30]"
   },
   {
     id:       'noyau_de_slime',
@@ -4947,7 +4947,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/noyau_de_slime.png",
     lore:     "Noyau imprégné de la magie des slimes. Utilisé dasn la confection d'accessoires magiques.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Slimes Soigneurs\n- Slimes Magiciens\n- Gorbel"
+    obtain:   "Obtenable en tuant:\n- Slimes Soigneurs[5]\n- Slimes Magiciens[5]\n- Gorbel[5]"
   },
   {
     id:       'essence_de_gorbel',
@@ -4958,7 +4958,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/essence_de_gorbel.png",
     lore:     "Essence d'un slime qui a atteint son plus haut potentiel.",
     tags:     ['Matériaux', 'Palier 1', 'Épique'],
-    obtain:   "Obtenable en tuant:\n- Gorbel"
+    obtain:   "Obtenable en tuant:\n- Gorbel[5]"
   },
   {
     id:       'os_de_squelette',
@@ -4969,7 +4969,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/os_de_squelette.png",
     lore:     "Petit os que l'on trouve sur des squelettes de bas rang. Sûrement utile pour certaines confections.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes\n- Squelettes Hallebardiers\n- Squelettes Mages"
+    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[45]\n- Guerriers Squelettes[40]\n- Squelettes Hallebardiers[45]\n- Squelettes Mages[40]"
   },
   {
     id:       'poussière_dos',
@@ -4980,7 +4980,7 @@ const ITEMS = [
     image:    null,
     lore:     "Résidu d'os réduit en poudre. Sert de catalyseur pour des potions de vie.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes\n- Squelettes Hallebardiers\n- Archers Squelettes\n- Tanks Squelettes\n- Squelettes Mages"
+    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[35]\n- Guerriers Squelettes[30]\n- Squelettes Hallebardiers[35]\n- Archers Squelettes[20]\n- Tanks Squelettes[30]\n- Squelettes Mages[30]"
   },
   {
     id:       'os_de_squelette_renforcé',
@@ -4991,7 +4991,7 @@ const ITEMS = [
     image:    null,
     lore:     "Contrairement au petit os, ces os sont plus résistants et sûrement utiles aussi dans certaines confections.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Hallebardiers\n- Archers Squelettes\n- Tanks Squelettes"
+    obtain:   "Obtenable en tuant:\n- Squelettes Hallebardiers[35]\n- Archers Squelettes[30]\n- Tanks Squelettes[40]"
   },
   {
     id:       'ames_des_ruines',
@@ -5002,7 +5002,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/ames_des_ruines.png",
     lore:     "Âme de squelette abreuvé de corruption.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes\n- Squelettes Hallebardiers\n- Archers Squelettes"
+    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[40]\n- Guerriers Squelettes[40]\n- Squelettes Hallebardiers[40]\n- Archers Squelettes[40]"
   },
   {
     id:       'morceau_de_crinière_spectrale',
@@ -5013,7 +5013,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/morceau_de_criniere_spectrale.png",
     lore:     "Une mèche de crinière éthérée, arrachée a une monture spectrale. Elle palpite encore d'une énergie rapide.",
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
-    obtain:   "Obtenable en tuant:\n- Nasgul"
+    obtain:   "Obtenable en tuant:\n- Nasgul[2.5]"
   },
   {
     id:       'éclat_du_sabot_maudit',
@@ -5024,7 +5024,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/eclat_du_sabot_maudit.png",
     lore:     "Fragment arraché au sabot d'une créature maudite. Il renferme une énergie sombre qui confère à son porteur une vitesse surnaturelle.",
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
-    obtain:   "Obtenable en tuant:\n- Nasgul"
+    obtain:   "Obtenable en tuant:\n- Nasgul[1]"
   },
   {
     id:       'cuir_usé',
@@ -5035,7 +5035,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/cuir_use.png",
     lore:     "Un morceau de cuir abîmé autrefois portépar des Bandits. Il reste utilisable.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Bandits Archer\n- Bandits Assassins\n- Bandits Robustes"
+    obtain:   "Obtenable en tuant:\n- Bandits Archer[40]\n- Bandits Assassins[30]\n- Bandits Robustes[80]"
   },
   {
     id:       'petite_bourse',
@@ -5046,7 +5046,7 @@ const ITEMS = [
     image:    null,
     lore:     "Un petit sac en tissu, parfait pour y glisser des pièces.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Bandits Archer\n- Bandits Assassins\n- Bandits Robustes"
+    obtain:   "Obtenable en tuant:\n- Bandits Archer[25]\n- Bandits Assassins[35]\n- Bandits Robustes[40]"
   },
   {
     id:       'carapace_dika',
@@ -5057,7 +5057,7 @@ const ITEMS = [
     image:    null,
     lore:     "Un morceau épais de carapace issu d'une tortue d'Ika abattue.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Ika"
+    obtain:   "Obtenable en tuant:\n- Ika[80]"
   },
   {
     id:       'pièce_métal_enchanté',
@@ -5068,7 +5068,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/piece_de_metal_enchante.png",
     lore:     "Petite ferraille de métal, avec d'autres ingrédients il est possible d'en faire des Lingôts de Métal Enchanté.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Soldat Déchu\n- Guerrier Déchu"
+    obtain:   "Obtenable en tuant:\n- Soldat Déchu[20]\n- Guerrier Déchu[20]"
   },
   {
     id:       'pièce_âme_métal',
@@ -5079,7 +5079,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/piece_dame_de_metal.png",
     lore:     "Petite ferraille de métal, avec d'autres ingrédients il est possible d'en faire des Lingôts d'Âme de Métal.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Guerrier Déchu"
+    obtain:   "Obtenable en tuant:\n- Guerrier Déchu[25]"
   },
   {
     id:       'âme_warden',
@@ -5090,7 +5090,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/ame_du_warden.png",
     lore:     "Une âme est contenue dans cet objet. Il peut être obtenu en tuant son possesseur ou en le fabriquant au forgeron.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Gardien Déchu"
+    obtain:   "Obtenable en tuant:\n- Gardien Déchu[30]"
   },
   {
     id:       'âme_herald',
@@ -5101,7 +5101,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/ame_de_herald.png",
     lore:     "Une âme est contenue dans cet objet. Il peut être obtenu en tuant son possesseur ou en le fabriquant au forgeron.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Héraut Déchu"
+    obtain:   "Obtenable en tuant:\n- Héraut Déchu[30]"
   },
   {
     id:       'âme_reaper',
@@ -5112,7 +5112,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/ame_du_reaper.png",
     lore:     "Une âme est contenue dans cet objet. Il peut être obtenu en tuant son possesseur ou en le fabriquant au forgeron.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Faucheuse Déchue"
+    obtain:   "Obtenable en tuant:\n- Faucheuse Déchue[30]"
   },
   {
     id:       'tissu_araignée',
@@ -5123,7 +5123,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/tissu_daraignee.png",
     lore:     "Un tissu fin, mais incroyablement résistant. Idéal pour des équipements légers ou enchantés.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Araignée des Forêts"
+    obtain:   "Obtenable en tuant:\n- Araignée des Forêts[40]"
   },
   {
     id:       'fil_araignée',
@@ -5134,7 +5134,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/fil_daraignee.png",
     lore:     "Petit fil très fragile il peut se casser à tout moment.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Araignée des Forêts"
+    obtain:   "Obtenable en tuant:\n- Araignée des Forêts[50]"
   },
   {
     id:       'peau_cerf_montagnes',
@@ -5145,7 +5145,7 @@ const ITEMS = [
     image:    null,
     lore:     "Un morceau de peau épaisse, rigide, utile pour des armures robustes.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Cerf des Montagnes"
+    obtain:   "Obtenable en tuant:\n- Cerf des Montagnes[45]"
   },
   {
     id:       'peau_dur_glacial',
@@ -5156,7 +5156,7 @@ const ITEMS = [
     image:    null,
     lore:     "Une plaque de givre solidifiée, aussi dur que de la pierre.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Golem de Glace"
+    obtain:   "Obtenable en tuant:\n- Golem de Glace[30]"
   },
   {
     id:       'poussière_givre',
@@ -5167,7 +5167,7 @@ const ITEMS = [
     image:   "../img/compendium/textures/items/poussiere_de_givre.gif",
     lore:     "Une fine poudre glaciale récoltée sur des créatures de glace.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Golem de Glace\n- Spirite de Glace\n- Ours de Glace"
+    obtain:   "Obtenable en tuant:\n- Golem de Glace[40]\n- Spirite de Glace[45]\n- Ours de Glace[80]"
   },
   {
     id:       'éclat_magique_glacial',
@@ -5178,7 +5178,7 @@ const ITEMS = [
     image:    null,
     lore:     "Un fragment cristallin baigné de magie ancienne. Il est prisé pour forger des armures mystiques.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Spirite de Glace"
+    obtain:   "Obtenable en tuant:\n- Spirite de Glace[35]"
   },
   {
     id:       'fragment_âme_ours',
@@ -5189,7 +5189,7 @@ const ITEMS = [
     image:    null,
     lore:     "L'âme de l'Ours repose dans ce fragment. Utilisez-le avec sagesse, car son pouvoir est colossal.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Ours de Glace"
+    obtain:   "Obtenable en tuant:\n- Ours de Glace[5]"
   },
   {
     id:       'carapace_requin',
@@ -5200,7 +5200,7 @@ const ITEMS = [
     image:    null,
     lore:     "Une plaque de carapace très dure, arrachée à un poisson-requin. Solide et résistante parfaite pour une certaine armure lourdre.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Poisson Requin"
+    obtain:   "Obtenable en tuant:\n- Poisson Requin[40]"
   },
 	/* ══ Palier 2 ══ */
   {
@@ -5212,7 +5212,7 @@ const ITEMS = [
     image:    null,
     lore:     "Une peau robuste et résistante, capable d'absorber de lourds impacts.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Taureau Monstrueux"
+    obtain:   "Obtenable en tuant:\n- Taureau Monstrueux[40]"
   },
   {
     id:       'corne_taureau',
@@ -5223,7 +5223,7 @@ const ITEMS = [
     image:    null,
     lore:     "Solide et acérée, cette corne témoigne de la force brutale de l'animal.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Taureau"
+    obtain:   "Obtenable en tuant:\n- Taureau[40]"
   },
   {
     id:       'peau_ours',
@@ -5234,7 +5234,7 @@ const ITEMS = [
     image:    null,
     lore:     "Une épaisse fourrure tannée, capable de résister aux assauts et d'offrir une chaleur inégalée.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt"
+    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[50]"
   },
   {
     id:       'griffe_ours',
@@ -5245,7 +5245,7 @@ const ITEMS = [
     image:    null,
     lore:     "Tranchante et recourbée, elle témoigne de la férocité et de la force d'un prédateur redoutable.",
     tags:     ['Matériaux', 'Palier 2','commun'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt"
+    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[45]"
   },
   {
     id:       'graisse_ours',
@@ -5256,7 +5256,7 @@ const ITEMS = [
     image:    null,
     lore:     "Utilisée pour l'entretien du cuir ou comme combustible, cette graisse dégage une forte odeur sauvage.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt"
+    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[5]"
   },
   {
     id:       'résidu_miel',
@@ -5267,7 +5267,7 @@ const ITEMS = [
     image:    null,
     lore:     "Restes collants et sucrés, souvent imprégnés de pollen et de senteurs florales.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt"
+    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[60]"
   },
   {
     id:       'fourrure_loup',
@@ -5278,7 +5278,7 @@ const ITEMS = [
     image:    null,
     lore:     "Chaud et souple, ce pelage protège efficacement du froid. Parfait pour créer des armures légères.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Loups des Montagnes\n- Loups des Savanes"
+    obtain:   "Obtenable en tuant:\n- Loups des Montagnes[40]\n- Loups des Savanes[50]"
   },
   {
     id:       'dard',
@@ -5289,7 +5289,7 @@ const ITEMS = [
     image:    null,
     lore:     "Pointu et redoutable, ce dard d'abeille géante est un matériau de choix pour fabriquer des équipements perforants.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Ouvrière\n- Dardroyal\n- Melisara, Souveraine de la Ruche"
+    obtain:   "Obtenable en tuant:\n- Ouvrière[30]\n- Dardroyal[35]\n- Melisara, Souveraine de la Ruche[90]"
   },
   {
     id:       'miel',
@@ -5300,7 +5300,7 @@ const ITEMS = [
     image:    null,
     lore:     "Doux mais étonnement visqueux, ce miel concentré est utilisé pour enduire certaines armures.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Ouvrière\n- Melisara, Souveraine de la Ruche"
+    obtain:   "Obtenable en tuant:\n- Ouvrière[30]\n- Melisara, Souveraine de la Ruche[100]"
   },
   {
     id:       'carapace_abeille',
@@ -5311,7 +5311,7 @@ const ITEMS = [
     image:    null,
     lore:     "Épaisse et segmentée, cette carapace protège efficacement contre les assauts. Parfaite pour façonner des équipements.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Dardroyal\n- Melisara, Souveraine de la Ruche"
+    obtain:   "Obtenable en tuant:\n- Dardroyal[30]\n- Melisara, Souveraine de la Ruche[80]"
   },
   {
     id:       'plume_enflammée',
@@ -5322,7 +5322,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/drop_plume_rouge.png",
     lore:     "Une plume incandescente, vibrant d'énergie magique. Utilisée par les artisans.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Feu"
+    obtain:   "Obtenable en tuant:\n- Harpie de Feu[50]"
   },
   {
     id:       'plume_terreuse',
@@ -5333,7 +5333,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/drop_plume_vert.png",
     lore:     "Une plume dense et résistante, imprégnée de force tellurique parfaite.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Terre"
+    obtain:   "Obtenable en tuant:\n- Harpie de Terre[50]"
   },
   {
     id:       'plume_ondoyante',
@@ -5344,7 +5344,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/drop_plume_bleu.png",
     lore:     "Une plume souple et scintillante, gorgée d'essence aquatique.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Foudre"
+    obtain:   "Obtenable en tuant:\n- Harpie de Foudre[50]"
   },
   {
     id:       'œuf_harpie_eau',
@@ -5355,7 +5355,7 @@ const ITEMS = [
     image:    null,
     lore:     "Un œuf provenant d'une harpie... Cache-t-il peut-être un nouveau-né ?",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Foudre"
+    obtain:   "Obtenable en tuant:\n- Harpie de Foudre[25]"
   },
   {
     id:       'pierre_runique',
@@ -5366,7 +5366,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/mine_tablette.png",
     lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer\n- Squelette du Sanctuaire - Shaman\n- Squelette du Sanctuaire - Guerrier\n- Gardien du Sanctuaire"
+    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[5]\n- Squelette du Sanctuaire - Shaman[5]\n- Squelette du Sanctuaire - Guerrier[7]\n- Gardien du Sanctuaire[40]"
   },
   {
     id:       'chaîne_spectrale',
@@ -5377,7 +5377,7 @@ const ITEMS = [
     image:    null,
     lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer\n- Squelette du Sanctuaire - Shaman\n- Squelette du Sanctuaire - Guerrier"
+    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[35]\n- Squelette du Sanctuaire - Shaman[35]\n- Squelette du Sanctuaire - Guerrier[30]"
   },
   {
     id:       'vêtement_déchiré',
@@ -5388,7 +5388,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/drop_capuchon.png",
     lore:     "Un vêtement déchiré appartenant à un ancien humain, devenu squelette protégeant son domaine.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer\n- Squelette du Sanctuaire - Guerrier"
+    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[30]\n- Squelette du Sanctuaire - Guerrier[30]"
   },
   {
     id:       'poudre_moelle',
@@ -5399,7 +5399,7 @@ const ITEMS = [
     image:    null,
     lore:     "Une belle poudre blanchâtre à l'odeur minérale, possiblement utilisé dans certains rituels.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Shaman"
+    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Shaman[20]"
   },
   {
     id:       'morceau_ferraille',
@@ -5410,7 +5410,7 @@ const ITEMS = [
     image:    null,
     lore:     "Morceau de feraille, solide malgré son état. Idéal pour expérimenter la forge ou tester des recettes alchimiques.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Golem de Pierre"
+    obtain:   "Obtenable en tuant:\n- Golem de Pierre[40]"
   },
   {
     id:       'pierre_osseuse_noire',
@@ -5421,7 +5421,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/mine_roche_noir.png",
     lore:     "Un fragment d'os dur et sombre, marqué par le temps et par la mort.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- ??\n- Morveth l'Écorcheur d'Âmes"
+    obtain:   "Obtenable en tuant:\n- ??\n- Morveth l'Écorcheur d'Âmes[100]"
   },
 	/* ══ Quêtes ══ */
 	/* ══ Palier 1 ══ */
@@ -5434,7 +5434,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/cristal_corrompu.png",
     lore:     "Des traces de corruptions émanent de cet objet.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus\n- Pumba"
+    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[50]\n- Pumba[100]"
   },
 	{
     id:       'Rune_etrange',
@@ -5456,7 +5456,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/spore_corrompu.png",
     lore:     "Un spore étrange imprégné de corruption...",
     tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Nephentes"
+    obtain:   "Obtenable en tuant:\n- Nephentes[50]"
   },
 	{
     id:       'tissu_maudit',
@@ -5467,7 +5467,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/tissu_maudit.png",
     lore:     "Les forces obscures devorent ce tissu.",
     tags:     ['Quête', 'Palier 1', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste\n- Guerriers Squelettes"
+    obtain:   "Obtenable en tuant:\n- Squelettes Mages[50]"
   },
   {
     id:       'coeur_putréfié',
@@ -5478,7 +5478,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/coeur_putrefie.png",
     lore:     "La putréfaction ronge peu à peu ce cœur.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit"
+    obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit[70]"
   },
 	{
     id:       'fragment_ancien',
@@ -5523,7 +5523,7 @@ const ITEMS = [
     image:    null,
     lore:     "Une des trois écorces utilisées comme offrande à l'un des dieux présents au Palier 2 !",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Poisson Fulgurant"
+    obtain:   "Obtenable en tuant:\n- Poisson Fulgurant[40]"
   },
 	/* ══ Clefs ══ */
 	/* ══ Palier 1 ══ */

@@ -102,46 +102,77 @@ function catData(categoryKey) {
   return CATEGORIES[categoryKey] || { label: categoryKey, emoji: '📦' };
 }
 
-/*
-  parseText — mini convertisseur pour les champs lore et obtain.
-  Supporte :
-    - Sauts de ligne (\n) → <br> ou liste si c'est des tirets
-    - Lignes commençant par - ou * → <ul><li>…</li></ul>
-    - **gras** → <strong>
-*/
 function parseText(str) {
   if (!str) return '';
 
   const lines = str.split('\n');
-  let html    = '';
-  let inList  = false;
+
+  // Pré-analyse : collecte tous les taux présents
+  const rates = lines
+    .map(l => { const m = l.match(/\[(\d+(?:\.\d+)?)\]/); return m ? parseFloat(m[1]) : null; })
+    .filter(v => v !== null);
+  const maxRate = rates.length > 1 ? Math.max(...rates) : null;
+  const minRate = rates.length > 1 ? Math.min(...rates) : null;
+
+  function getRank(str) {
+    const m = str.match(/\[(\d+(?:\.\d+)?)\]/);
+    if (!m || maxRate === null) return 'neutral';
+    if (maxRate === minRate) return 'neutral';
+    const v = parseFloat(m[1]);
+    if (v === maxRate) return 'high';
+    if (v === minRate) return 'low';
+    return 'neutral';
+  }
+
+  let html = '';
+  let inList = false;
+  let lastWasText = false;
 
   lines.forEach(raw => {
     const line = raw.trim();
+    const rank  = getRank(line);
 
     if (line.match(/^[-*]\s+/)) {
-      // Ligne de liste
-      if (!inList) { html += '<ul class="item-list">'; inList = true; }
-      html += `<li>${inlineMd(line.replace(/^[-*]\s+/, ''))}</li>`;
+      if (!inList) {
+        if (lastWasText) html = html.replace(/<br>$/, '');
+        html += '<ul class="item-list">';
+        inList = true;
+      }
+      const content = line.replace(/^[-*]\s+/, '');
+      const { badge, text } = extractBadge(content, rank);
+      html += `<li class="obtain-line"><span class="obtain-bullet">◆</span>${badge}<span class="obtain-text">${inlineMd(text)}</span></li>`;
+      lastWasText = false;
     } else {
       if (inList) { html += '</ul>'; inList = false; }
       if (line === '') {
         html += '<br>';
+        lastWasText = false;
       } else {
-        html += `<span>${inlineMd(line)}</span><br>`;
+        const { badge, text } = extractBadge(line, rank);
+        html += `<span class="obtain-line">${badge}<span class="obtain-text">${inlineMd(text)}</span></span><br>`;
+        lastWasText = true;
       }
     }
   });
 
   if (inList) html += '</ul>';
-
-  // Nettoyer les <br> superflus en fin
   html = html.replace(/(<br>)+$/, '');
-
   return html;
 }
 
-/* Gère le **gras** inline */
+function extractBadge(str, rank) {
+  const match = str.match(/\[(\d+(?:\.\d+)?)\]/);
+  if (!match) return { badge: '', text: str };
+
+  let color = '#c9a84c';
+  if (rank === 'high') color = '#7fdf62';
+  if (rank === 'low')  color = '#c0392b';
+
+  const badge = `<span class="drop-badge" style="color:${color}; border-color:${color}33;">${match[1]}%</span>`;
+  const text  = str.replace(match[0], '').trim();
+  return { badge, text };
+}
+
 function inlineMd(str) {
   return str.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }

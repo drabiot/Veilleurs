@@ -470,16 +470,16 @@
   font-size: 12px;
   line-height: 1.6;
   list-style: none;
-  position: relative;
-  padding-left: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 0;
 }
-.item-list li::before {
-  content: '◆';
-  position: absolute;
-  left: 0;
+
+.obtain-bullet {
   font-size: 7px;
-  top: 4px;
   color: var(--gold-dim);
+  flex-shrink: 0;
 }
 
 /* ══════════════════════════════════
@@ -588,4 +588,33 @@
   .glossary-sidebar.open { transform: translateX(0); }
   .glossary-main { padding: 20px 16px; }
   .item-header { grid-template-columns: 1fr; }
+}
+
+.obtain-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.obtain-text {
+  display: inline;
+}
+
+.drop-badge {
+  flex-shrink: 0;
+  order: -1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 45px;
+  padding: 1px 7px;
+  border-radius: 0px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #c9a84c;
+  white-space: nowrap;
 }
