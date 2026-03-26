@@ -151,8 +151,6 @@ function initSkinViewer(W, colH) {
   window.__skinViewer.animation = walk;
 
   window.__skinViewer.loadSkin(getSkinPath(activeClass))
-    .catch(function(err) { console.error('Skin init failed:', err); });
-  window.__skinViewer.loadSkin(getSkinPath(activeClass))
     .then(function() { loadAccessoriesForClass(activeClass); })
     .catch(function(err) { console.error('Skin init failed:', err); });
 }
@@ -1472,7 +1470,7 @@ function loadAccessoriesForClass(classId) {
       runes: equippedRunes,
     };
     const ta = document.getElementById('modal-ta-export');
-    if (ta) ta.value = JSON.stringify(payload, null, 2);
+    if (ta) ta.value = '```json\n' + JSON.stringify(payload, null, 2) + '\n```';
     document.getElementById('modal-title').textContent = '◈ Exporter — ' + name;
     openModal('export');
   });
@@ -1498,15 +1496,16 @@ function loadAccessoriesForClass(classId) {
   document.getElementById('btn-confirm-import').addEventListener('click', function() {
     const ta = document.getElementById('modal-ta-import');
     const raw = ta ? ta.value.trim() : '';
+	const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     const errEl = document.getElementById('modal-error');
 
-    if (!raw) {
+    if (!cleaned) {
       if (errEl) { errEl.textContent = '⚠ Collez un JSON valide avant d\'importer.'; errEl.style.display = 'block'; }
       return;
     }
 
     try {
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(cleaned);
 
       if (parsed.sig !== SIG) {
         throw new Error('Signature invalide');
@@ -1551,6 +1550,7 @@ function loadAccessoriesForClass(classId) {
         if (parsed.classe) {
           activeClass = parsed.classe || null;
           buildClassPicker();
+		  updateSkinClass();
         }
       }
       else if (typeof parsed === 'object' && !Array.isArray(parsed)) {
