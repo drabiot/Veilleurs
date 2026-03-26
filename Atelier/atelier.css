@@ -850,3 +850,20 @@ html, body {
 .thresh-icon { font-size: 12px; width: 16px; text-align: center; }
 .thresh-label { flex: 1; }
 .thresh-val { font-weight: 700; font-size: 11px; white-space: nowrap; }
+
+.stat-row {
+  cursor: pointer;
+  border-radius: 0;
+  transition: background .15s, outline .15s;
+}
+.stat-row:hover {
+  background: rgba(255,255,255,.04);
+}
+.stat-row.stat-filtered {
+  background: rgba(215, 175, 95, .1);
+  outline: 1px solid rgba(215, 175, 95, .4);
+}
+.stat-row.stat-filtered .stat-name,
+.stat-row.stat-filtered .stat-icon {
+  color: var(--gold);
+}

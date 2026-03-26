@@ -9,6 +9,7 @@
   let filterRar     = null;
   let filterTier 	= null;
   let activeClass   = null;
+  let filterStats	= new Set();
 
   /* ══ VALIDATION DES RUNES ══ */
   function isRuneKeyValid(runeKey, equippedItems) {
@@ -929,6 +930,17 @@ function loadAccessoriesForClass(classId) {
           '<span class="stat-icon">' + stat.icon + '</span>' +
           '<span class="stat-name">' + stat.label + '</span>';
         list.appendChild(row);
+		row.style.cursor = 'pointer';
+		row.addEventListener('click', function() {
+		if (filterStats.has(stat.id)) {
+			filterStats.delete(stat.id);
+			row.classList.remove('stat-filtered');
+		} else {
+			filterStats.add(stat.id);
+			row.classList.add('stat-filtered');
+		}
+		renderItemList();
+		});
       });
     });
   }
@@ -1334,7 +1346,14 @@ function loadAccessoriesForClass(classId) {
 				itemAllowedForClass(item, activeClass) &&
 				(!filterRar  || item.rarity === filterRar) &&
 				(filterTier === null || item.palier === filterTier) &&
-				(!q || norm(item.name).includes(q));
+				(!q || norm(item.name).includes(q)) &&
+				(filterStats.size === 0 || [...filterStats].every(function(sid) {
+					if (!item.stats) return false;
+					const val = item.stats[sid];
+					if (val === undefined) return false;
+					const v = Array.isArray(val) ? val[1] : val;
+					return v !== 0;
+				})); 
 		});
     if (!visible.length) {
       list.innerHTML = '<div class="picker-empty-msg">Aucun item compatible</div>';
@@ -1595,6 +1614,9 @@ function loadAccessoriesForClass(classId) {
     renderPickerInfo();
     renderItemList();
     closeModal();
+	filterStats = new Set();
+	document.querySelectorAll('.stat-row.stat-filtered')
+	.forEach(function(r) { r.classList.remove('stat-filtered'); });
   });
 
   /* ══ FERMETURE MODALE ══ */

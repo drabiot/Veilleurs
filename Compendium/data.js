@@ -795,8 +795,8 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
 	{
-		id:				'bouclier_hivernale',
-		name:			"Bouclier Hivernale",
+		id:				'bouclier_hivernal',
+		name:			"Bouclier Hivernal",
 		rarity:		'event',
 		cat:			'arme_s',
 		category:	'arme',
@@ -946,8 +946,8 @@ const ITEMS = [
 		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
 	},
 	{
-		id:				'marteau_hivernale',
-		name:			"Marteau Hivernale",
+		id:				'marteau_hivernal',
+		name:			"Marteau Hivernal",
 		rarity:		'event',
 		cat:			'arme_p',
 		category:	'arme',
@@ -1369,8 +1369,8 @@ const ITEMS = [
 		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
 	},
 	{
-		id:				'arc_hivernale',
-		name:			"Arc Hivernale",
+		id:				'arc_hivernal',
+		name:			"Arc Hivernal",
 		rarity:		'event',
 		cat:			'arme_p',
 		category:	'arme',
@@ -1379,7 +1379,7 @@ const ITEMS = [
 		img:			"../img/compendium/textures/weapons/events/bow_christmas.png",
 		stats:		{degats:18.5, vitesse_attaque:1.2},
 		classes:	['archer'],
-		lore:     "Un arc sculpté dans un bois hivernale et lié aux bonheurs des enfants durant les fêtes hivernales.",
+		lore:     "Un arc sculpté dans un bois hivernal et lié aux bonheurs des enfants durant les fêtes hivernales.",
 		tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Event', 'Noël'],
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
@@ -1808,7 +1808,7 @@ const ITEMS = [
 	},
 	{
 		id:				'scpectre_hivernal_mag',
-		name:			"Scpetre Hivernale Mage",
+		name:			"Scpetre Hivernal Mage",
 		rarity:		'event',
 		cat:			'arme_p',
 		category:	'arme',
@@ -1823,7 +1823,7 @@ const ITEMS = [
 	},
 	{
 		id:				'scpectre_hivernal_sha',
-		name:			"Scpetre Hivernale Shaman",
+		name:			"Scpetre Hivernal Shaman",
 		rarity:		'event',
 		cat:			'arme_p',
 		category:	'arme',
@@ -1959,7 +1959,7 @@ const ITEMS = [
 	},
 	{
 		id:				'catalyseur_hivernal_mag',
-		name:			"Catalyseur Hivernale Mage",
+		name:			"Catalyseur Hivernal Mage",
 		rarity:		'event',
 		cat:			'arme_s',
 		category:	'arme',
@@ -1974,7 +1974,7 @@ const ITEMS = [
 	},
 	{
 		id:				'catalyseur_hivernal_sha',
-		name:			"Catalyseur Hivernale Shaman",
+		name:			"Catalyseur Hivernal Shaman",
 		rarity:		'event',
 		cat:			'arme_s',
 		category:	'arme',
