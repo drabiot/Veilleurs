@@ -628,6 +628,36 @@ const ITEMS = [
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
+	{
+		id:				'epee_dechue',
+		name:			"Épée Déchu",
+		rarity:		'legendaire',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/epee_kazor.png",
+		stats:		{degats:28, vitesse_attaque:1.2, sante:5, regen_sante:0.03},
+		classes:	['guerrier'],
+		lore:     "Lame vide d'âme, tranchante et capable d'absorber la vie des defunts.",
+		tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'claymore_hivernale',
+		name:			"Claymore Hivernale",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/sword_christmas.png",
+		stats:		{degats:28, vitesse_attaque:1.2, crit_chance:15},
+		classes:	['guerrier'],
+		lore:     "Une lourde épée recouverte de motifs glacés dont la lame semble toujours froide.",
+		tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
   /* ══ Boucliers ══ */
   {
 		id:				'bouclier_pacotille',
@@ -749,6 +779,21 @@ const ITEMS = [
     tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
+	{
+		id:				'bouclier_hivernale',
+		name:			"Bouclier Hivernale",
+		rarity:		'event',
+		cat:			'arme_s',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/shield_christmas.png",
+		stats:		{defense:3.5, sante:30},
+		classes:	['guerrier'],
+		lore:     "Un bouclier massif décoré de symboles hivernaux, couvert de cadeaux.",
+		tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
   /* ══ Hast ══ */
   {
 		id:				'hache_double_fer',
@@ -854,6 +899,36 @@ const ITEMS = [
 		lore:     "Poids écrasant, frappant, assommant comme le sort d'un nécromancien en colère.",
     tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
+	},
+	{
+		id:				'hache_double_dechue',
+		name:			"Hache Double Déchue",
+		rarity:		'legendaire',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/battleaxe_kazor.png",
+		stats:		{degats:37, vitesse_attaque:0.8, crit_chance:3.2, stamina:3},
+		classes:	['guerrier'],
+		lore:     "Poids d'une guerre sans âme, terrifiante et tranchant toute forme de vie.",
+		tags:     ['Arme', 'Hache Double', 'Guerrier', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'marteau_hivernale',
+		name:			"Marteau Hivernale",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/hammer_christmas.png",
+		stats:		{degats:40, vitesse_attaque:0.8},
+		classes:	['guerrier'],
+		lore:     "Un marteau imposant à la tête hivernale semblant taillé dans les cadeaux des enfants.",
+		tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
   /* ══ Assassin ══ */
   {
@@ -1036,6 +1111,66 @@ const ITEMS = [
     tags:     ['Armes', 'Faux', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
+	{
+		id:				'dague_dechue',
+		name:			"Dague Déchue",
+		rarity:		'legendaire',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/dague_kazor.png",
+		stats:		{degats:36, vitesse_attaque:1.4, vol_vie:1, vitesse_deplacement:0.2},
+		classes:	['assassin'],
+		lore:     "Des fragments d'âme à chaque bout de flèches, ôtant toute vie.",
+		tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'faux_dechue',
+		name:			"Faux Déchue",
+		rarity:		'legendaire',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/faux_kazor.png",
+		stats:		{degats:48, vitesse_attaque:0.8, crit_comp_chance:3.5, stamina:3},
+		classes:	['assassin'],
+		lore:     "Des fragments d'âme à chaque bout de flèches, ôtant toute vie.",
+		tags:     ['Arme', 'Faux', 'Assassin', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'serpe_hivernale',
+		name:			"Serpe Hivernale",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/hoe_christmas.png",
+		stats:		{degats:40, vitesse_attaque:1.5},
+		classes:	['assassin'],
+		lore:     "Sa taille massive symbolise le poids du jugement porté sur les vivants.",
+		tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+	{
+		id:				'faux_hivernale',
+		name:			"Faux Hivernale",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/scythe_christmas.png",
+		stats:		{degats:50, vitesse_attaque:0.8},
+		classes:	['assassin'],
+		lore:     "Sa taille massive symbolise le poids du jugement porté sur les vivants.",
+		tags:     ['Arme', 'Faux', 'Assassin', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
   /* ══ Archer ══ */
   /* ══ Arcs ══ */
   {
@@ -1143,6 +1278,51 @@ const ITEMS = [
     tags:     ['Arme', 'Arc', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
 	},
+	{
+		id:				'arc_dechue',
+		name:			"Arc Déchue",
+		rarity:		'legendaire',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/arc_kazor.png",
+		stats:		{degats:18, vitesse_attaque:1.1, crit_chance:3.5, vitesse_deplacement:0.1},
+		classes:	['archer'],
+		lore:     "Des fragments d'âme à chaque bout de flèches, ôtant toute vie.",
+		tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'arbalete_dechue',
+		name:			"Arbalète Déchue",
+		rarity:		'legendaire',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/arbalete_kazor.png",
+		stats:		{degats:24, vitesse_attaque:0.8, crit_degats:5, stamina:3},
+		classes:	['archer'],
+		lore:     "Des fragments d'âme à chaque bout de flèches, ôtant toute vie.",
+		tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'arc_hivernale',
+		name:			"Arc Hivernale",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/bow_christmas.png",
+		stats:		{degats:18.5, vitesse_attaque:1.2},
+		classes:	['archer'],
+		lore:     "Un arc sculpté dans un bois hivernale et lié aux bonheurs des enfants durant les fêtes hivernales.",
+		tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
   /* ══ Arbalètes ══ */
   {
 		id:				'arbalete_bandit',
@@ -1218,6 +1398,21 @@ const ITEMS = [
     lore:     "Une arbalète austère aux ornements sépulcraux, imprégnée d'une présence silencieuse venue d'outre-tombe.",
     tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
+	},
+	{
+		id:				'arbalete_hurlante',
+		name:			"Arbalète Hurlante",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/crossbow_christmas.png",
+		stats:		{degats:25, vitesse_attaque:0.7},
+		classes:	['archer'],
+		lore:     "Chaque carreau libère un souffle glaçant qui refroidit le cœur des cibles.",
+		tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
   /* ══ Mage - Shaman ══ */
   /* ══ Bâtons ══ */
@@ -1491,8 +1686,83 @@ const ITEMS = [
     tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
 	},
-  {
-		id:				'spectre_hivernal_sha',
+	{
+		id:				'baton_magiquement_dechu',
+		name:			"Bâton Magiquement Déchu",
+		rarity:		'legendaire',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/staff_mage_kazor.png",
+		stats:		{degats:26, vitesse_attaque:1, degats_competence:1, mana:5},
+		classes:	['mage'],
+		lore:     "Une flamme, brulant toute âme de manière ardente et violente, au bout d'un vieux bâton.",
+		tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'baton_sauvagement_dechu',
+		name:			"Bâton Sauvagement Déchu",
+		rarity:		'legendaire',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/staff_shaman_kazor.png",
+		stats:		{degats:24, vitesse_attaque:1, hate:2.5, soin_bonus:4.5, mana:5},
+		classes:	['shaman'],
+		lore:     "Une orbe vivante, soignant toute âme de manière intense et profonde, au bout d'un vieux bâton.",
+		tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'baton_magiquement_dechu_puissant',
+		name:			"Bâton Magiquement Déchu Puissant",
+		rarity:		'legendaire',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/staff_mage_kazor.png",
+		stats:		{degats:28, vitesse_attaque:1.1, crit_chance:2.5, crit_degats:1.5, degats_competence:2.5, sante:-20, mana:-15},
+		classes:	['mage'],
+		lore:     "Une flamme, brulant toute âme de manière ardente et violente, au bout d'un vieux bâton.",
+		tags:     ['Arme', 'Bâton Puissant', 'Mage', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'baton_sauvagement_dechu_puissant',
+		name:			"Bâton Sauvagement Déchu Puissant",
+		rarity:		'legendaire',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/staff_shaman_kazor.png",
+		stats:		{degats:29, vitesse_attaque:1.1, soin_bonus:6, sante:-35, regen_mana:0.5},
+		classes:	['shaman'],
+		lore:     "Une orbe vivante, soignant toute âme de manière intense et profonde, au bout d'un vieux bâton.",
+		tags:     ['Arme', 'Bâton Puissant', 'Shaman', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'scpectre_hivernal_mag',
+		name:			"Scpetre Hivernale Mage",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/staff_christmas.png",
+		stats:		{degats:30, vitesse_attaque:1},
+		classes:	['mage'],
+		lore:     "Déborde d'une énergie hivernale qui gèle l'air ambiant. Quiconque le porte est condamné à offrir le bonheur aux enfants.",
+		tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+	{
+		id:				'scpectre_hivernal_sha',
 		name:			"Scpetre Hivernale Shaman",
 		rarity:		'event',
 		cat:			'arme_p',
@@ -1502,11 +1772,11 @@ const ITEMS = [
 		img:			"../img/compendium/textures/weapons/events/staff_christmas.png",
 		stats:		{degats:25, vitesse_attaque:1, soin_bonus:6},
 		classes:	['shaman'],
-    lore:     "Déborde d'une énergie hivernale qui gèle l'air ambiant. Quiconque le porte est condamné à offrir le bonheur aux enfants.",
-    tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+		lore:     "Déborde d'une énergie hivernale qui gèle l'air ambiant. Quiconque le porte est condamné à offrir le bonheur aux enfants.",
+		tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
-  /* ══ Catalyseurs ══ */
+	/* ══ Catalyseurs ══ */
   {
 		id:				'grimoire_delie',
 		name:			"Grimoire Delié",
@@ -1626,6 +1896,36 @@ const ITEMS = [
     lore:     "Un mélange obscur d'anciens matériaux perdu dans un grand labyrinthe. Il pourrait être le grimoire d'un fantôme.",
     tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
+	},
+	{
+		id:				'catalyseur_hivernal_mag',
+		name:			"Catalyseur Hivernale Mage",
+		rarity:		'event',
+		cat:			'arme_s',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/book_christmas.png",
+		stats:		{degats_magique:5, mana:15},
+		classes:	['mage'],
+		lore:     "Elle porte le poids du bonheur de tout les enfants, et de l'odeur des petits gâteaux.",
+		tags:     ['Armes', 'Catalyseur', 'Grimoire', 'Mage', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+	{
+		id:				'catalyseur_hivernal_sha',
+		name:			"Catalyseur Hivernale Shaman",
+		rarity:		'event',
+		cat:			'arme_s',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/book_christmas.png",
+		stats:		{regen_mana:0.4, mana:15},
+		classes:	['shaman'],
+		lore:     "Elle porte le poids du bonheur de tout les enfants, et de l'odeur des petits gâteaux.",
+		tags:     ['Armes', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
   
   /* ══ Accessoires ══ */
@@ -1764,6 +2064,21 @@ const ITEMS = [
     tags:     ['Accessoire', 'Anneau', 'Palier 1', "Légendaire"],
     obtain:   "Obtenable en tuant : Faucheuse Déchue"
   },
+	{
+		id:				'anneau_dechu_druide',
+		name:			"Anneau Déchu du Druide",
+		rarity:		'legendaire',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Kazor/anneau_dechu.png",
+		stats:		{hate:1.5, soin_bonus:1, sante:5, regen_mana:0.5},
+		threshold:{defense_car:2},
+    lore:     "Un anneau ancien et mystérieux servant pour mesurer l'âme des êtres qui l'entoure.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
   /* ══ Palier 2 ══ */
   {
 		id:				'bague_bouleau',
@@ -2075,6 +2390,81 @@ const ITEMS = [
     tags:     ['Accessoire', 'Amulette', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ"
 	},
+	{
+		id:				'collier_dechu_soldat',
+		name:			"Collier Déchu du Soldat",
+		rarity:		'legendaire',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Kazor/collier_dechu.png",
+		stats:		{degats_physique:-2.5, defense:2, sante:20, vitesse_deplacement:-0.15},
+		threshold:{vitalite:1, defense_car:2},
+    lore:     "Des boules de métaux différents soudés au fil des siècles, refusant de céder à l'érosion du temps.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'pendentif_dechu_voleur',
+		name:			"Pendentif Déchu du Voleur",
+		rarity:		'legendaire',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Kazor/pendentif_oublie.png",
+		stats:		{crit_degats:6.5, degats_physique:3.5, stamina:5, vitesse_deplacement:0.25},
+		threshold:{dexterite:1, force:2},
+    lore:     "Tourne sans bruit, sans friction. Ceux qui le portent disparaissent avant même d'avoir bougé, vidé de leur âme.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'amulette_dechue_chasseur',
+		name:			"Amulette Déchue du Chasseur",
+		rarity:		'legendaire',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Kazor/amulette_oublie.png",
+		stats:		{vitesse_attaque:0.1, degats_projectile:	2.5, sante:5, vitesse_deplacement:0.15},
+		threshold:{dexterite:1, force:2},
+    lore:     "Une âme qui cherche toujours une cible. Trouvé, perdu et arraché.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'pendentif_dechu_sorcier',
+		name:			"Pendentif Déchu du Sorcier",
+		rarity:		'legendaire',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Kazor/pendentif_dechu.png",
+		stats:		{crit_degats:5, degats_magique:2.5, hate:2.5, sante:5, mana:10},
+		threshold:{esprit:1, intelligence:2},
+    lore:     "Un fragment du cœur des déchus, encore chaud, laissant filtrer une lumière qu'aucun sort ne peux expliquer.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'amulette_dechue_druide',
+		name:			"Amulette Déchue du Druide",
+		rarity:		'legendaire',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Kazor/amulette_dechu.png",
+		stats:		{vitesse_attaque:-0.1, hate:3.5, soin_bonus:2, sante:15, mana:5},
+		threshold:{esprit:1, sante:2},
+    lore:     "Elle vibre au pouls des alliés, comme si elle cherchait encore une machine à maintenir en vie.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
   /* ══ Palier 2 ══ */
   {
 		id:				'collier_acamiel',
@@ -2284,6 +2674,21 @@ const ITEMS = [
     lore:     "Une paire de gants en fer poli, aux reflets froids et à l'aspect solidement forgé.",
     tags:     ['Accessoire', 'Gants', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Accessoires de Fer de la Ville de Départ, au Sud, derrière la Cathédrale"
+	},
+	{
+		id:				'gants_dechus_chasseur',
+		name:			"Gants Déchus du Chasseur",
+		rarity:		'legendaire',
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Kazor/gants_dechu.png",
+		stats:		{degats:2.5, vitesse_attaque:0.1, defense:1, stamina:5},
+		threshold:{force:2},
+    lore:     "Une paire de gants fluctuant des âmes de ses victimes, mortes et oubliées.",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
 	},
   /* ══ Palier 2 ══ */
   {
@@ -2701,6 +3106,51 @@ const ITEMS = [
     lore:     "Manteau mystérieux et sombre, obtenu après la conquête de la tour du redoutable kobold Illfang.\nIl paraît qu'il aide à masquer la présence de son porteur.",
     tags:     ['Accessoire', 'Artefact', 'Manteau', 'Palier 1', 'Godlike'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
+	},
+	{
+		id:				'heaume_dechu_soldat',
+		name:			"Heaume Déchu du Soldat",
+		rarity:		'legendaire',
+		cat:			'artefact',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Kazor/casque_dechu.png",
+		stats:		{reduction_degats:2, maitrise_bloc:5, puissance_bloc:1.5, sante:10},
+		threshold:{defense_car:3},
+    lore:     "Porter ce casque, c'est sentir quelque chose tourner, derrière les tempes, sans jamais s'arrêter.",
+    tags:     ['Accessoire', 'Artefact', 'Casque', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'bottes_dechues_voleur',
+		name:			"Bottes Déchues du Voleur",
+		rarity:		'legendaire',
+		cat:			'artefact',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Kazor/bottes_dechu.png",
+		stats:		{crit_chance:2.5, degats_physique:1.5, esquive:5, vitesse_deplacement:0.75},
+		threshold:{dexterite:3},
+    lore:     "Grippées, mais rapides, comme si la rouille elle même avait appris à courir avec son âme.",
+    tags:     ['Accessoire', 'Artefact', 'Bottes', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+	},
+	{
+		id:				'grimoire_dechu_sorcier',
+		name:			"Grimoire Déchu du Sorcier",
+		rarity:		'legendaire',
+		cat:			'artefact',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Kazor/grimoire_oublie.png",
+		stats:		{crit_comp_chance:2.5, degats_competence:2.5, regen_mana:0.8, regen_stamina:0.4},
+		threshold:{intelligence:3},
+    lore:     "Un vieux livre de sorts oublié, son ancien propriétaire a mis son âmae à travers ses pages.",
+    tags:     ['Accessoire', 'Artefact', 'Grimoire', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
 	},
   /* ══ Palier 2 ══ */
   {
