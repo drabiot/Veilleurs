@@ -28,6 +28,12 @@
     const reqLvl = item.lvl || 1;
     return level >= reqLvl;
   }
+  function itemMeetsThreshold(item) {
+  	if (!item.threshold) return true;
+  	return Object.entries(item.threshold).every(function(e) {
+    	return (caracterPoints[e[0]] || 0) >= e[1];
+  		});
+	}
 
   /* ══ TOOLTIP CARACTÉRISTIQUES ══ */
   function buildCarTooltip() {
@@ -606,6 +612,7 @@ function loadAccessoriesForClass(classId) {
     caracterPoints[carId] = current + delta;
     updateLevelUI();
     renderStats();
+	renderItemList();
     saveToStorage();
   }
 
@@ -1339,7 +1346,9 @@ function loadAccessoriesForClass(classId) {
     visible.forEach(function(item) {
       const row = document.createElement('div');
       const levelOk = itemAllowedForLevel(item, buildLevel);
-      row.className = 'item-row' + (!levelOk ? ' item-locked' : '');
+	  const thresholdOk = itemMeetsThreshold(item);
+	  const isLocked    = !levelOk || !thresholdOk;
+	  row.className = 'item-row' + (isLocked ? ' item-locked' : '');
       if (equipped[activeSlot] && equipped[activeSlot].id === item.id) row.classList.add('active');
       const rarColor = (RARITIES[item.rarity] || { color: '#888' }).color;
       const rarLabel = (RARITIES[item.rarity] || { label: item.rarity }).label;
@@ -1356,13 +1365,17 @@ function loadAccessoriesForClass(classId) {
         '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · Palier ' + item.palier + '</div>' +
         buildClassBadgesHTML(item) +
         buildItemStatsHTML(item) +
+		buildThresholdHTML(item) +
         '</div>';
 
-      if (levelOk) {
+      if (!isLocked) {
         row.addEventListener('click', function() {
 		if (equipped[activeSlot] && equipped[activeSlot].id === item.id) {
 			clearSlot(activeSlot);
 		} else {
+			row.title = !levelOk
+				? 'Niveau ' + (item.lvl || 1) + ' requis'
+				: 'Caractéristiques insuffisantes';
 			clearRunesForSlot(activeSlot);
 			equipped[activeSlot] = item;
 			saveToStorage();
@@ -1377,6 +1390,30 @@ function loadAccessoriesForClass(classId) {
       list.appendChild(row);
     });
   }
+
+  function buildThresholdHTML(item) {
+  if (!item.threshold || !Object.keys(item.threshold).length) return '';
+  const rows = Object.entries(item.threshold).map(function(e) {
+    const carDef = CARACTERISTIQUES.find(function(c) { return c.id === e[0]; });
+    const label  = carDef ? carDef.label : e[0];
+    const icon   = carDef ? carDef.icon  : '◈';
+    const color  = carDef ? carDef.color : '#888';
+    const current = caracterPoints[e[0]] || 0;
+    const required = e[1];
+    const ok = current >= required;
+    return '<div class="thresh-row">' +
+      '<span class="thresh-icon">' + icon + '</span>' +
+      '<span class="thresh-label" style="color:' + color + '">' + label + '</span>' +
+      '<span class="thresh-val" style="color:' + (ok ? '#6dba6d' : '#d9614a') + '">' +
+        (ok ? '✓' : '✕') + ' ' + current + ' / ' + required +
+      '</span>' +
+    '</div>';
+  }).join('');
+  return '<div class="thresh-block">' +
+    '<div class="thresh-title">Prérequis</div>' +
+    rows +
+  '</div>';
+}
 
   /* ══ PERSISTANCE localStorage ══ */
   const SIG = "🌙𝓥𝓮𝓲𝓵𝓵𝓮𝓾𝓻𝓼 𝓪𝓾 𝓒𝓵𝓪𝓲𝓻 𝓭𝓮 𝓛𝓾𝓷𝓮🌙";

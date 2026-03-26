@@ -826,3 +826,27 @@ html, body {
   width: 100%;
   height: 100%;
 }
+
+.thresh-block {
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,.04);
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.08);
+}
+.thresh-title {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: rgba(255,255,255,.35);
+  margin-bottom: 4px;
+}
+.thresh-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+.thresh-icon { font-size: 12px; width: 16px; text-align: center; }
+.thresh-label { flex: 1; }
+.thresh-val { font-weight: 700; font-size: 11px; white-space: nowrap; }

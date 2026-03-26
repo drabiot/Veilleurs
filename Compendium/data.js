@@ -457,7 +457,7 @@ const CARACTERISTIQUES = [
 		  desc:'Réduit les dégâts subis en augmentant la Défense',
 		  stats:{ defense: 0.4 }
 		},
-	];
+];
 	
 /* Niveau actuel et points alloués */
 let buildLevel = 1;
