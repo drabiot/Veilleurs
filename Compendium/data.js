@@ -658,6 +658,21 @@ const ITEMS = [
 		tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Event', 'Noël'],
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
+	{
+		id:				'claymore_crepusculaire',
+		name:			"Claymore Crépusculaire",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/greatsword_halloween.png",
+		stats:		{degats:28, vitesse_attaque:1.2, crit_chance:15},
+		classes:	['guerrier'],
+		lore:     "Sa taille massive symbolise le poids du jugement porté sur les vivants.",
+		tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Event', 'Halloween'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
+	},
   /* ══ Boucliers ══ */
   {
 		id:				'bouclier_pacotille',
@@ -793,6 +808,21 @@ const ITEMS = [
 		lore:     "Un bouclier massif décoré de symboles hivernaux, couvert de cadeaux.",
 		tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Event', 'Noël'],
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+	{
+		id:				'bouclier_putride',
+		name:			"Bouclier Putride",
+		rarity:		'event',
+		cat:			'arme_s',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/shield_halloween.png",
+		stats:		{defense:3.5, sante:30},
+		classes:	['guerrier'],
+		lore:     "Assemblage de chair et de métal rouillé trouvé dans un tombeau profané. Chaque impact libère une puanteur écœurante qui trouble les assaillants.",
+		tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Event', 'Halloween'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
 	},
   /* ══ Hast ══ */
   {
@@ -1170,6 +1200,36 @@ const ITEMS = [
 		lore:     "Sa taille massive symbolise le poids du jugement porté sur les vivants.",
 		tags:     ['Arme', 'Faux', 'Assassin', 'Palier 1', 'Event', 'Noël'],
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+	{
+		id:				'serpe_macabre',
+		name:			"serpe macabre",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/hoe_halloween.png",
+		stats:		{degats:40, vitesse_attaque:1.5},
+		classes:	['assassin'],
+		lore:     "Lame tordue forgée dans les cauchemars d'une nuit d'épouvante. Elle fauche les esprits errants et récolte les âmes perdues.",
+		tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 1', 'Event', 'Halloween'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
+	},
+	{
+		id:				'faux_macabre',
+		name:			"Faux macabre",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/scythe_halloween.png",
+		stats:		{degats:50, vitesse_attaque:0.8},
+		classes:	['assassin'],
+		lore:     "Lame tordue forgée dans les cauchemars d'une nuit d'épouvante. Elle fauche les esprits errants et récolte les âmes perdues.",
+		tags:     ['Arme', 'Faux', 'Assassin', 'Palier 1', 'Event', 'Halloween'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
 	},
   /* ══ Archer ══ */
   /* ══ Arcs ══ */
