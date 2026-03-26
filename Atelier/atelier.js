@@ -1419,24 +1419,23 @@ function loadAccessoriesForClass(classId) {
   const SIG = "🌙𝓥𝓮𝓲𝓵𝓵𝓮𝓾𝓻𝓼 𝓪𝓾 𝓒𝓵𝓪𝓲𝓻 𝓭𝓮 𝓛𝓾𝓷𝓮🌙";
   const STORAGE_KEY = 'vcl_atelier';
 
-  function saveToStorage() {
-    const equippedIds = {};
-    Object.entries(equipped).forEach(function(e) {
-      if (e[1]) equippedIds[e[0]] = e[1].id;
-    });
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        v: 1,
-        sig: SIG,
-        name: document.getElementById('inp-name').value.trim(),
-        classe: activeClass || '',
-        level: buildLevel,
-        caracterPoints: caracterPoints,
-        slots: equippedIds,
-        runes: equippedRunes,
-      }));
-    } catch(e) { /* quota dépassé ou mode privé */ }
-  }
+	function saveToStorage() {
+	const equippedIds = {};
+	Object.entries(equipped).forEach(function(e) {
+		if (e[1]) equippedIds[e[0]] = e[1].id;
+	});
+	try {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify({
+		v: 1, sig: SIG,
+		name: document.getElementById('inp-name').value.trim(),
+		classe: activeClass || '',
+		level: buildLevel,
+		caracterPoints: caracterPoints,
+		slots: equippedIds,
+		runes: equippedRunes,
+		}));
+	} catch(e) {}
+	}
 
   /* ══ MODALES ══ */
   function openModal(mode) {
@@ -1517,11 +1516,24 @@ function loadAccessoriesForClass(classId) {
         equipped = {};
         equippedRunes = {};
 
-        Object.entries(parsed.slots).forEach(function(e) {
-          const slotId = e[0]; const itemId = e[1];
-          const item = ITEMS.find(function(i) { return i.id === itemId; });
-          if (item) equipped[slotId] = item;
-        });
+		if (parsed.level && parsed.level >= 1 && parsed.level <= MAX_LEVEL) {
+          buildLevel = parsed.level;
+        }
+        if (parsed.caracterPoints && typeof parsed.caracterPoints === 'object') {
+          Object.keys(caracterPoints).forEach(k => {
+            if (typeof parsed.caracterPoints[k] === 'number') {
+              caracterPoints[k] = parsed.caracterPoints[k];
+            }
+          });
+        }
+
+		const importLevel = (parsed.level >= 1 && parsed.level <= MAX_LEVEL) ? parsed.level : buildLevel;
+		Object.entries(parsed.slots).forEach(function(e) {
+			const slotId = e[0]; const itemId = e[1];
+			const item = ITEMS.find(function(i) { return i.id === itemId; });
+			if (item && itemAllowedForLevel(item, importLevel) && itemMeetsThreshold(item))
+				equipped[slotId] = item;
+		});
 
         if (parsed.runes && typeof parsed.runes === 'object') {
           Object.entries(parsed.runes).forEach(function(e) {
@@ -1539,16 +1551,6 @@ function loadAccessoriesForClass(classId) {
         if (parsed.classe) {
           activeClass = parsed.classe || null;
           buildClassPicker();
-        }
-        if (parsed.level && parsed.level >= 1 && parsed.level <= MAX_LEVEL) {
-          buildLevel = parsed.level;
-        }
-        if (parsed.caracterPoints && typeof parsed.caracterPoints === 'object') {
-          Object.keys(caracterPoints).forEach(k => {
-            if (typeof parsed.caracterPoints[k] === 'number') {
-              caracterPoints[k] = parsed.caracterPoints[k];
-            }
-          });
         }
       }
       else if (typeof parsed === 'object' && !Array.isArray(parsed)) {
