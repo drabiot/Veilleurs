@@ -5977,7 +5977,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Poisson Fulgurant[40]"
   },
 	{
-    id:       'artefcat_yaa',
+    id:       'artefact_yaa',
     name:     "Artefact de Yaa",
     rarity:   'epique',
     category: 'quete',
@@ -5988,7 +5988,7 @@ const ITEMS = [
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
   },
 	{
-    id:       'artefcat_bia',
+    id:       'artefact_bia',
     name:     "Artefact de Bia",
     rarity:   'epique',
     category: 'quete',
@@ -5999,7 +5999,7 @@ const ITEMS = [
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
   },
 	{
-    id:       'artefcat_tano',
+    id:       'artefact_tano',
     name:     "Artefact de Tano",
     rarity:   'epique',
     category: 'quete',
@@ -6027,7 +6027,7 @@ const ITEMS = [
     name:     "Clé des Déchus",
     rarity:   'rare',
     category: 'donjon',
-    palier:   2,
+    palier:   1,
     image:    "../img/compendium/textures/items/key_laby.png",
     lore:     "Peut accéder au donjon : Labyrinthe des Déchus.",
     tags:     ['Donjon', 'Labyrinthe des Déchus', 'Palier 1', 'Rare'],
