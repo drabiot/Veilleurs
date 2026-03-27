@@ -2920,6 +2920,20 @@ const ITEMS = [
 	},
   /* ══ Events ══ */
 	{
+		id:				'moufles_noel_rouges',
+		name:			"Moufles de Noël Rouges",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_rouge.png",
+		stats:		{},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+	{
 		id:				'moufles_noel_grises',
 		name:			"Moufles de Noël Grises",
 		rarity:		'event',   	 	
@@ -2931,7 +2945,7 @@ const ITEMS = [
 		stats:		{defense:2, maitrise_bloc:10, puissance_bloc:3, sante:20},
     lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
     tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "..."
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025"
 	},
   {
 		id:				'moufles_noel_vertes',
@@ -2945,7 +2959,63 @@ const ITEMS = [
 		stats:		{esquive:10, soin_bonus:5, sante:5, regen_sante:0.3, regen_mana:0.4, regen_stamina:0.2},
     lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
     tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "..."
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025"
+	},
+	{
+		id:				'moufles_noel_jaunes',
+		name:			"Moufles de Noël Jaunes",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_jaune.png",
+		stats:		{crit_chance:5, crit_degats:10, crit_comp_chance:10, crit_comp_degats:5, vitesse:1.5},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025"
+	},
+	{
+		id:				'moufles_noel_oranges',
+		name:			"Moufles de Noël Oranges",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_orange.png",
+		stats:		{},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025"
+	},
+	{
+		id:				'moufles_noel_roses',
+		name:			"Moufles de Noël Roses",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_rose.png",
+		stats:		{},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025"
+	},
+	{
+		id:				'moufles_noel_bleues',
+		name:			"Moufles de Noël Bleues",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_bleu.png",
+		stats:		{},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025"
 	},
   /* ══ Bracelets ══ */
   /* ══ Palier 1 ══ */
@@ -5762,7 +5832,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/dard_abeille.png",
     lore:     "Pointu et redoutable, ce dard d'abeille géante est un matériau de choix pour fabriquer des équipements perforants.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
     obtain:   "Obtenable en tuant:\n- Ouvrière[30]\n- Dardroyal[35]\n- Melisara, Souveraine de la Ruche[90]"
