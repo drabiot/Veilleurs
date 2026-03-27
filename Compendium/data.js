@@ -403,46 +403,53 @@ const ALL_STATS = STAT_GROUPS.flatMap(g => g.stats);
 /* ══ RUNES ══ */
 const RUNES = [
 	{
-		id:'vitalite_1',
-		name:'Rune de Vitalité I',
-		color:'#e03a3a',
-		stats:{sante:5}
+		id:			'vitalite_1',
+		name:		'Rune de Vitalité I',
+		color:	'#e03a3a',
+		stats:	{sante:5},
 	},
 	{
-		id:'sorcellerie_1',
-		name:'Rune de Sorcellerie I',
-		color:'#b856c5',
-		stats:{degats_competence:5}
+		id:			'sorcellerie_1',
+		name:		'Rune de Sorcellerie I',
+		color:	'#b856c5',
+		stats:	{degats_competence:5}
 	},
 	{
-		id:'agilite_1',
-		name:'Rune d\'Agilité I',
-		color:'#3fa147',
-		stats:{vitesse_deplacement:1}
+		id:			'agilite_1',
+		name:		'Rune d\'Agilité I',
+		color:	'#3fa147',
+		stats:	{vitesse_deplacement:1}
 	},
   {
-		id:'noel',
-		name:'Rune de Noël',
-		color:'#7fe0dc',
-		stats:{vol_vie:2, omnivamp:2.5, sante:5, mana:5, stamina:2.5}
+		id:			'noel',
+		name:		'Rune de Noël',
+		color:	'#7fe0dc',
+		stats:	{vol_vie:2, omnivamp:2.5, sante:5, mana:5, stamina:2.5}
 	},
   {
-		id:'st_val',
-		name:'Rune de Teddy Bear',
-		color:'#f4acbc',
-		stats:{vitesse_attaque:0.2, crit_comp_chance:20, crit_comp_degats:10, defense:2, sante:20}
+		id:			'st_val',
+		name:		'Rune de Teddy Bear',
+		color:	'#f4acbc',
+		stats:	{vitesse_attaque:0.2, crit_comp_chance:20, crit_comp_degats:10, defense:2, sante:20}
 	},
   {
-		id:'lunaire',
-		name:'Rune Lunaire',
-		color:'#ecd783',
-		stats:{crit_chance:7, crit_degats:12, crit_comp_chance:7, crit_comp_degats:12, sante:5}
+		id:			'lunaire',
+		name:		'Rune Lunaire',
+		color:	'#ecd783',
+		stats:	{crit_chance:7, crit_degats:12, crit_comp_chance:7, crit_comp_degats:12, sante:5}
 	},
   {
-		id:'dragon',
-		name:'Rune du Dragon',
-		color:'#e35f48',
-		stats:{crit_chance:8, crit_degats:13, crit_comp_chance:8, crit_comp_degats:13, sante:10, vitesse_deplacement:0.15}
+		id:			'dragon',
+		name:		'Rune du Dragon',
+		color:	'#e35f48',
+		stats:	{crit_chance:8, crit_degats:13, crit_comp_chance:8, crit_comp_degats:13, sante:10, vitesse_deplacement:0.15}
+	},
+	{
+		id:			'kazor',
+		name:		'Rune de Kazor',
+		color:	'#45a076',
+		stats:	{maitrise_bloc:5, puissance_bloc:2.5, soin_bonus:2, sante:10},
+		buff:		{esprit:1},
 	},
 ];
 

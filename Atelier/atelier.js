@@ -435,16 +435,17 @@ function loadAccessoriesForClass(classId) {
 		val.value = caracterPoints[car.id];
 		val.min = 0;
 		val.addEventListener('change', function() {
-		const avail   = getAvailablePoints();
-		const current = caracterPoints[car.id] || 0;
-		const requested = parseInt(this.value) || 0;
-		const delta = requested - current;
-		const clamped = delta > 0 ? current + Math.min(delta, avail) : Math.max(0, requested);
-		caracterPoints[car.id] = clamped;
-		this.value = clamped;
-		updateLevelUI();
-		renderStats();
-		saveToStorage();
+    const avail    = getAvailablePoints();
+    const bonus    = getBuffBonus(car.id);
+    const current  = caracterPoints[car.id] || 0;
+    const requested = (parseInt(this.value) || 0) - bonus; // ← soustraire le buff
+    const delta    = requested - current;
+    const clamped  = delta > 0 ? current + Math.min(delta, avail) : Math.max(0, requested);
+    caracterPoints[car.id] = clamped;
+    this.value = clamped + bonus; // ← réafficher le total
+    updateLevelUI();
+    renderStats();
+    saveToStorage();	
 		});
 
       const btnPlus = document.createElement('button');
@@ -455,7 +456,10 @@ function loadAccessoriesForClass(classId) {
 
       controls.appendChild(btnMinus);
       controls.appendChild(val);
-      controls.appendChild(btnPlus);
+      const buffSpan = document.createElement('span');
+			controls.appendChild(buffSpan);
+
+			controls.appendChild(btnPlus);
 
       row.appendChild(icon);
       row.appendChild(label);
@@ -496,10 +500,10 @@ function loadAccessoriesForClass(classId) {
       }
     }
 
-    CARACTERISTIQUES.forEach(car => {
-		const valEl = document.getElementById('car-val-' + car.id);
-		if (valEl) valEl.value = caracterPoints[car.id];
-	});
+    CARACTERISTIQUES.forEach(function(car) {
+    const valEl = document.getElementById('car-val-' + car.id);
+    if (valEl) valEl.value = caracterPoints[car.id] + getBuffBonus(car.id)
+		});
   }
 
   function changeLevelBy(delta) {
@@ -846,18 +850,34 @@ function loadAccessoriesForClass(classId) {
       name.textContent = rune.name;
 
       const stats = document.createElement('div');
-		stats.className = 'rune-picker-stats';
-		stats.innerHTML = Object.entries(rune.stats).map(function(e) {
-		const statDef = ALL_STATS.find(function(s) { return s.id === e[0]; });
-		const icon  = statDef ? statDef.icon  : '◈';
-		const label = statDef ? statDef.label : e[0];
-		const unit  = statDef ? statDef.unit  : '';
-		return '<div style="display:flex;align-items:center;gap:8px;padding:2px 0">' +
-			'<span style="font-size:11px;width:15px;text-align:center;flex-shrink:0">' + icon + '</span>' +
-			'<span style="flex:1;color:rgba(255,255,255,.55);font-size:10.5px">' + label + '</span>' +
-			'<span style="font-weight:700;color:rgba(255,255,255,.9)">' + '+' + e[1] + unit + '</span>' +
-			'</div>';
-		}).join('');
+			stats.className = 'rune-picker-stats';
+
+			const statsLines = Object.entries(rune.stats).map(function(e) {
+					const statDef = ALL_STATS.find(function(s) { return s.id === e[0]; });
+					const icon  = statDef ? statDef.icon  : '◈';
+					const label = statDef ? statDef.label : e[0];
+					const unit  = statDef ? statDef.unit  : '';
+					return '<div style="display:flex;align-items:center;gap:8px;padding:2px 0">' +
+							'<span style="font-size:11px;width:15px;text-align:center;flex-shrink:0">' + icon + '</span>' +
+							'<span style="flex:1;color:rgba(255,255,255,.55);font-size:10.5px">' + label + '</span>' +
+							'<span style="font-weight:700;color:rgba(255,255,255,.9)">+' + e[1] + unit + '</span>' +
+							'</div>';
+			}).join('');
+
+					const buffLines = rune.buff ? Object.entries(rune.buff).map(function(e) {
+					const carDef = CARACTERISTIQUES.find(function(c) { return c.id === e[0]; });
+					const icon  = carDef ? carDef.icon  : '◈';
+					const label = carDef ? carDef.label : e[0];
+					const color = carDef ? carDef.color : '#aaa';
+					return '<div style="display:flex;align-items:center;gap:8px;padding:2px 0">' +
+							'<span style="font-size:11px;width:15px;text-align:center;flex-shrink:0">' + icon + '</span>' +
+							'<span style="flex:1;font-size:10.5px;color:' + color + '">' + label + '</span>' +
+							'<span style="font-weight:700;color:' + color + '">+' + e[1] + ' pt</span>' +
+							'</div>';
+			}).join('') : '';
+
+stats.innerHTML = statsLines +
+    (buffLines ? '<div style="border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:4px">' + buffLines + '</div>' : '');
 
       item.appendChild(pip);
       item.appendChild(name);
@@ -1040,18 +1060,30 @@ function loadAccessoriesForClass(classId) {
     });
 
     /* ── Bonus des caractéristiques ── */
-    CARACTERISTIQUES.forEach(function(car) {
-      if (!car.stats) return;
-      const pts = caracterPoints[car.id] || 0;
-      if (pts <= 0) return;
-      Object.entries(car.stats).forEach(function(entry) {
-        const sid      = entry[0];
-        const perPoint = entry[1];
-        if (!(sid in mins)) return;
-        mins[sid] += pts * perPoint;
-        maxs[sid] += pts * perPoint;
-      });
-    });
+		CARACTERISTIQUES.forEach(function(car) {
+				if (!car.stats) return;
+				
+				// Points alloués manuellement
+				let pts = caracterPoints[car.id] || 0;
+				
+				// ← Ajouter les buffs de tous les items équipés (non bloqués)
+				Object.entries(equipped).forEach(function(entry) {
+						const slotId = entry[0];
+						const item   = entry[1];
+						if (blockedSlots.has(slotId)) return;
+						if (!item || !item.buff) return;
+						pts += item.buff[car.id] || 0;
+				});
+				
+				if (pts <= 0) return;
+				Object.entries(car.stats).forEach(function(entry) {
+						const sid      = entry[0];
+						const perPoint = entry[1];
+						if (!(sid in mins)) return;
+						mins[sid] += pts * perPoint;
+						maxs[sid] += pts * perPoint;
+				});
+		});
 
     return { mins, maxs, setCounts };
   }
@@ -1174,6 +1206,7 @@ function loadAccessoriesForClass(classId) {
   }
 
   function renderStats() {
+		updateLevelUI();
     const result = computeStats();
     const mins = result.mins; const maxs = result.maxs;
     renderSetBonuses(result.setCounts);
@@ -1336,36 +1369,52 @@ function loadAccessoriesForClass(classId) {
     return val + unit;
   }
 
-  function buildItemStatsHTML(item) {
-   	const entries = Object.entries(item.stats || {}).filter(function(e) {
-		const v = Array.isArray(e[1]) ? e[1][1] : e[1];
-		return v !== 0;
-	});
-    if (!entries.length) return '';
+	function buildItemStatsHTML(item) {
+			const entries = Object.entries(item.stats || {}).filter(function(e) {
+					const v = Array.isArray(e[1]) ? e[1][1] : e[1];
+					return v !== 0;
+			});
 
-    const lines = entries.map(function(e) {
-      const key = e[0]; const val = e[1];
-      if (key === 'Emplacement de Runes') {
-        return '<div class="istat-row">' +
-               '<span class="istat-icon">💎</span>' +
-               '<span class="istat-label">Emplacement de Runes</span>' +
-               '<span class="istat-val">' + val + '</span>' +
-               '</div>';
-      }
-      const statDef = ALL_STATS.find(function(s) { return s.id === key; });
-      const label = statDef ? statDef.label : key;
-      const unit  = statDef ? statDef.unit  : '';
-      const icon  = statDef ? statDef.icon  : '';
-	  const isNeg = Array.isArray(val) ? val[1] < 0 : val < 0;
-	  return '<div class="istat-row">' +
-		'<span class="istat-icon">' + icon + '</span>' +
-		'<span class="istat-label">' + label + '</span>' +
-		'<span class="istat-val"' + (isNeg ? ' style="color:#d9614a"' : '') + '>' + formatStatValue(val, unit) + '</span>' +
-		'</div>';
-    }).join('');
+			const lines = entries.map(function(e) {
+					const key = e[0]; const val = e[1];
+					if (key === 'Emplacement de Runes') {
+							return '<div class="istat-row">' +
+									'<span class="istat-icon">💎</span>' +
+									'<span class="istat-label">Emplacement de Runes</span>' +
+									'<span class="istat-val">' + val + '</span>' +
+									'</div>';
+					}
+					const statDef = ALL_STATS.find(function(s) { return s.id === key; });
+					const label = statDef ? statDef.label : key;
+					const unit  = statDef ? statDef.unit  : '';
+					const icon  = statDef ? statDef.icon  : '';
+					const isNeg = Array.isArray(val) ? val[1] < 0 : val < 0;
+					return '<div class="istat-row">' +
+							'<span class="istat-icon">' + icon + '</span>' +
+							'<span class="istat-label">' + label + '</span>' +
+							'<span class="istat-val"' + (isNeg ? ' style="color:#d9614a"' : '') + '>' + formatStatValue(val, unit) + '</span>' +
+							'</div>';
+			}).join('');
 
-    return '<div class="istat-block">' + lines + '</div>';
-  }
+			// ── Buffs de caractéristiques ──
+			const buffEntries = Object.entries(item.buff || {});
+			const buffLines = buffEntries.map(function(e) {
+					const carDef = CARACTERISTIQUES.find(function(c) { return c.id === e[0]; });
+					const label = carDef ? carDef.label : e[0];
+					const icon  = carDef ? carDef.icon  : '◈';
+					const color = carDef ? carDef.color : '#aaa';
+					return '<div class="istat-row">' +
+							'<span class="istat-icon">' + icon + '</span>' +
+							'<span class="istat-label" style="color:' + color + '">' + label + '</span>' +
+							'<span class="istat-val" style="color:' + color + '">+' + e[1] + ' pt</span>' +
+							'</div>';
+			}).join('');
+
+			if (!lines && !buffLines) return '';
+
+			return (lines ? '<div class="istat-block">' + lines + '</div>' : '') +
+						(buffLines ? '<div class="istat-block" style="border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:4px">' + buffLines + '</div>' : '');
+	}
 
   function buildClassBadgesHTML(item) {
     if (!item.classes || item.classes.length === 0) return '';
@@ -1384,6 +1433,30 @@ function loadAccessoriesForClass(classId) {
     return '<span class="item-lvl-badge" style="color:' + color + ';border-color:' + color + '50">' +
            (allowed ? '' : '⚠ ') + 'Niv. ' + lvl + '</span>';
   }
+
+	function getBuffBonus(carId) {
+			const blockedSlots = getBlockedSlots();
+			let bonus = 0;
+
+			// Buffs des items équipés
+			Object.entries(equipped).forEach(function(entry) {
+					if (blockedSlots.has(entry[0])) return;
+					const item = entry[1];
+					if (item && item.buff) bonus += item.buff[carId] || 0;
+			});
+
+			// Buffs des runes équipées
+			Object.entries(equippedRunes).forEach(function(entry) {
+					const runeKey = entry[0];
+					const runeId  = entry[1];
+					const slotId = runeKey.split('_rune_')[0];
+					if (blockedSlots.has(slotId)) return;
+					const rune = RUNES.find(function(r) { return r.id === runeId; });
+					if (rune && rune.buff) bonus += rune.buff[carId] || 0;
+			});
+
+			return bonus;
+	}
 
   function renderItemList() {
     const list = document.getElementById('items-list');
