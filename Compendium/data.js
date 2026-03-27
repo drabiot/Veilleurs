@@ -534,7 +534,6 @@ const CATEGORIES = {
   armure:          { label: 'Armures',            emoji: '🛡️' },
   accessoire:      { label: 'Accessoires',        emoji: '💍' },
   outils:          { label: 'Outils',             emoji: '🛠️' },
-  clef:            { label: 'Clefs',              emoji: '🗝️' },
   rune:            { label: 'Runes',              emoji: '🔮' },
 	donjon:          { label: 'Donjon',             emoji: '🏰' },
 };
@@ -2906,6 +2905,20 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Pur, situé dans les grottes de la Faille au Sud-Est du Palier 2"
 	},
   /* ══ Events ══ */
+	{
+		id:				'moufles_noel_grises',
+		name:			"Moufles de Noël Grises",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_blanc.png",
+		stats:		{defense:2, maitrise_bloc:10, puissance_bloc:3, sante:20},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "..."
+	},
   {
 		id:				'moufles_noel_vertes',
 		name:			"Moufles de Noël Vertes",
@@ -4803,6 +4816,94 @@ const ITEMS = [
 	/* ══ Items ══ */
 	/* ══ Runes ══ */
 	/* ══ Palier 1 ══ */
+	{
+    id:       'rune_vitalite_1',
+    name:     "Rune de Vitalité I",
+    rarity:   'commun',
+    category: 'rune',
+    palier:   1,
+    image:    "../img/compendium/textures/items/rune_rouge.png", //NULL
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable en finissant la Quête Journalière de la Vitalite de la Ville de Départ"
+  },
+	{
+    id:       'rune_sorcellerie_1',
+    name:     "Rune de Sorcellerie I",
+    rarity:   'commun',
+    category: 'rune',
+    palier:   1,
+    image:    "../img/compendium/textures/items/rune_violet.png", //NULL
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable en finissant la Quête Journalière de la Vitalite de la Ville de Départ"
+  },
+	{
+    id:       'rune_agilite_1',
+    name:     "Rune d'Agilité I",
+    rarity:   'commun',
+    category: 'rune',
+    palier:   1,
+    image:    "../img/compendium/textures/items/rune_vert.png", //NULL
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable en finissant la Quête Journalière de la Vitalite de la Ville de Départ"
+  },
+	{
+    id:       'rune_kazor',
+    name:     "Rune de Kazor",
+    rarity:   'legendaire',
+    category: 'rune',
+    palier:   1,
+    image:    "", //NULL
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+  },
+	{
+    id:       'rune_noel',
+    name:     "Rune de Noël",
+    rarity:   'event',
+    category: 'rune',
+    palier:   1,
+    image:    "../img/compendium/textures/items/rune_noel.png",
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+  },
+	{
+    id:       'rune_teddy',
+    name:     "Rune de Teddy Bear",
+    rarity:   'event',
+    category: 'rune',
+    palier:   1,
+    image:    "../img/compendium/textures/items/rune_teddy.png",
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'Event', 'Saint Valentin'],
+    obtain:   "Obtenable dans les lootboxs de l'Événement Saint Valentin"
+  },
+	{
+    id:       'rune_lunaire',
+    name:     "Rune Lunaire",
+    rarity:   'event',
+    category: 'rune',
+    palier:   1,
+    image:    "", //NULL
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
+    obtain:   "..."
+  },
+	{
+    id:       'rune_dragon',
+    name:     "Rune de Dragon",
+    rarity:   'event',
+    category: 'rune',
+    palier:   1,
+    image:    "", //NULL
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
+    obtain:   "..."
+  },
 	/* ══ Palier 2 ══ */
 	/* ══ Outils ══ */
 	/* ══ Palier 1 ══ */
@@ -4823,6 +4924,215 @@ const ITEMS = [
 	/* ══ Palier 2 ══ */
 	/* ══ Consommable ══ */
 	/* ══ Palier 1 ══ */
+	{
+    id:       'parchemin_changement',
+    name:     "Parchemin de Changement",
+    rarity:   'rare',
+    category: 'consommable',
+    palier:   1,
+    image:    "../img/compendium/textures/items/p_changement.png",
+    lore:     "Ce parchemin permet au joueur qui l'utilise de recevoir un point pour rénitialiser sa classe",
+    tags:     ['Consommable', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable par les Marchands d'Équipement"
+  },
+	{
+    id:       'parchemin_reallocation',
+    name:     "Parchemin de Réallocation",
+    rarity:   'rare',
+    category: 'consommable',
+    palier:   1,
+    image:    "../img/compendium/textures/items/p_reallocation.png",
+    lore:     "Ce parchemin permet au joueur qui l'utilise de recevoir un point poir rénitialiser ses points d'attribut",
+    tags:     ['Consommable', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable par les Marchands d'Équipement"
+  },
+	{
+    id:       'parchemin_maitrise',
+    name:     "Parchemin de Maîtrise",
+    rarity:   'rare',
+    category: 'consommable',
+    palier:   1,
+    image:    "../img/compendium/textures/items/p_maitrise.png",
+    lore:     "Ce parchemin permet au joueur qui l'utilise de recevoir un point poir rénitialiser ses points de compétence",
+    tags:     ['Consommable', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable par les Marchands d'Équipement"
+  },
+	{
+    id:       'potion_vie_1',
+    name:     "Potion de Vie I",
+    rarity:   'commun',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
+    tags:     ['Consommable', 'Palier 1', 'commun'],
+    obtain:   "Obtenable par les Marchands d'Équipement"
+  },
+	{
+    id:       'potion_vie_1_qualite',
+    name:     "[Qualité] Potion de Vie I",
+    rarity:   'commun',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
+    tags:     ['Consommable', 'Palier 1', 'commun'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'potion_vie_2_qualite',
+    name:     "[Qualité] Potion de Vie II",
+    rarity:   'commun',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
+    tags:     ['Consommable', 'Palier 1', 'commun'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'potion_vie_3_qualite',
+    name:     "[Qualité] Potion de Vie III",
+    rarity:   'rare',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
+    tags:     ['Consommable', 'Palier 1', 'rare'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'cristal_soin',
+    name:     "Cristal de Soin",
+    rarity:   'epique',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 30min de recharge sur tous les cristaux.",
+    tags:     ['Consommable', 'Palier 1', 'Épique'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'potion_mana_1',
+    name:     "Potion de Mana I",
+    rarity:   'commun',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de mana.",
+    tags:     ['Consommable', 'Palier 1', 'commun'],
+    obtain:   "Obtenable par les Marchands d'Équipement"
+  },
+	{
+    id:       'potion_mana_1_qualité',
+    name:     "[Qualité] Potion de Mana I",
+    rarity:   'commun',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de mana.",
+    tags:     ['Consommable', 'Palier 1', 'commun'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'potion_mana_2_qualité',
+    name:     "[Qualité] Potion de Mana II",
+    rarity:   'commun',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de mana.",
+    tags:     ['Consommable', 'Palier 1', 'commun'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'potion_mana_3_qualité',
+    name:     "[Qualité] Potion de Mana III",
+    rarity:   'rare',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de mana.",
+    tags:     ['Consommable', 'Palier 1', 'rare'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'cristal_mana',
+    name:     "Cristal de Mana",
+    rarity:   'epique',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 30min de recharge sur tous les cristaux.",
+    tags:     ['Consommable', 'Palier 1', 'Épique'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'potion_stamina_1',
+    name:     "Potion de Stamina I",
+    rarity:   'commun',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
+    tags:     ['Consommable', 'Palier 1', 'commun'],
+    obtain:   "Obtenable par les Marchands d'Équipement"
+  },
+	{
+    id:       'potion_stamina_1_qualite',
+    name:     "[Qualité] Potion de Stamina I",
+    rarity:   'commun',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
+    tags:     ['Consommable', 'Palier 1', 'commun'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'potion_stamina_2_qualite',
+    name:     "[Qualité] Potion de Stamina II",
+    rarity:   'commun',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
+    tags:     ['Consommable', 'Palier 1', 'commun'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'potion_stamina_3_qualite',
+    name:     "[Qualité] Potion de Stamina III",
+    rarity:   'rare',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
+    tags:     ['Consommable', 'Palier 1', 'rare'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'cristal_stamina',
+    name:     "Cristal de Stamina",
+    rarity:   'epique',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Vous rend des PV immédiatement et applique 30min de recharge sur tous les cristaux.",
+    tags:     ['Consommable', 'Palier 1', 'Épique'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
+	{
+    id:       'cristal_puissance',
+    name:     "Cristal de Puissance",
+    rarity:   'epique',
+    category: 'consommable',
+    palier:   1,
+    image:    null,
+    lore:     "Boost les Dégâts d'Armes de 10% et applique 30min de recharge sur tous les cristaux.",
+    tags:     ['Consommable', 'Palier 1', 'Épique'],
+    obtain:   "Fabricable aux Alchimistes"
+  },
 	/* ══ Palier 2 ══ */
 	/* ══ Matériaux ══ */
 	/* ══ Palier 1 ══ */
@@ -5134,16 +5444,82 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Soldat Déchu[20]\n- Guerrier Déchu[20]"
   },
+	{
+    id:       'lingot_métal_enchanté',
+    name:     "Lingot de Métal Enchanté",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   1,
+    image:    "../img/compendium/textures/items/lingot_de_metal_enchante.png",
+    lore:     "Lingot de Métal Enchanté fabriqué à partir de petite ferraille.",
+    tags:     ['Matériaux', 'Palier 1', 'Commun'],
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
+  },
   {
     id:       'pièce_âme_métal',
     name:     "Pièce d'Âme de Métal",
-    rarity:   'rare',
+    rarity:   'commun',
     category: 'materiaux',
     palier:   1,
     image:    "../img/compendium/textures/items/piece_dame_de_metal.png",
     lore:     "Petite ferraille de métal, avec d'autres ingrédients il est possible d'en faire des Lingôts d'Âme de Métal.",
-    tags:     ['Matériaux', 'Palier 1', 'rare'],
+    tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Guerrier Déchu[25]"
+  },
+	{
+    id:       'lingot_âme_métal',
+    name:     "Lingot d'Âme de Métal",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   1,
+    image:    "../img/compendium/textures/items/lingot_dame_de_metal.png",
+    lore:     "Lingot d'Âme de Métal fabriqué à partir de petite ferraille.",
+    tags:     ['Matériaux', 'Palier 1', 'Commun'],
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
+  },
+	{
+    id:       'fagment_casse_rouge',
+    name:     "Fragment Cassé Rouge",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   1,
+    image:    "../img/compendium/textures/items/fragments_rouge.png",
+    lore:     "Fragment trouvé dans les coffres du labyrinthe des Chevaliers Jumeaux.",
+    tags:     ['Matériaux', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
+  },
+	{
+    id:       'fagment_casse_jaune',
+    name:     "Fragment Cassé Jaune",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   1,
+    image:    "../img/compendium/textures/items/fragments_casses_jaune.png",
+    lore:     "Fragment trouvé dans les coffres du labyrinthe des Chevaliers Jumeaux.",
+    tags:     ['Matériaux', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
+  },
+	{
+    id:       'fagment_casse_violet',
+    name:     "Fragment Cassé Violet",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   1,
+    image:    "../img/compendium/textures/items/fragments_casses_violet.png",
+    lore:     "Fragment trouvé dans les coffres du labyrinthe des Chevaliers Jumeaux.",
+    tags:     ['Matériaux', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
+  },
+	{
+    id:       'eclat_fusionne',
+    name:     "Éclat Fusionné",
+    rarity:   'epique',
+    category: 'materiaux',
+    palier:   1,
+    image:    "../img/compendium/textures/items/eclat_fusionne.png",
+    lore:     "Fusion délicate entre les Fragments Cassé Violet. Utile pour l'armure du Reaper.",
+    tags:     ['Matériaux', 'Palier 1', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armure à l'intérieur du Donjon du Labyrinthe des Déchus"
   },
   {
     id:       'âme_warden',
@@ -5385,7 +5761,7 @@ const ITEMS = [
     palier:   2,
     image:    "../img/compendium/textures/items/drop_plume_rouge.png",
     lore:     "Une plume incandescente, vibrant d'énergie magique. Utilisée par les artisans.",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Harpie de Feu[50]"
   },
   {
@@ -5396,7 +5772,7 @@ const ITEMS = [
     palier:   2,
     image:    "../img/compendium/textures/items/drop_plume_vert.png",
     lore:     "Une plume dense et résistante, imprégnée de force tellurique parfaite.",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Harpie de Terre[50]"
   },
   {
@@ -5407,7 +5783,7 @@ const ITEMS = [
     palier:   2,
     image:    "../img/compendium/textures/items/drop_plume_bleu.png",
     lore:     "Une plume souple et scintillante, gorgée d'essence aquatique.",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Harpie de Foudre[50]"
   },
   {
@@ -5418,7 +5794,7 @@ const ITEMS = [
     palier:   2,
     image:    null,
     lore:     "Un œuf provenant d'une harpie... Cache-t-il peut-être un nouveau-né ?",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Harpie de Foudre[25]"
   },
   {
@@ -5429,7 +5805,7 @@ const ITEMS = [
     palier:   2,
     image:    "../img/compendium/textures/items/mine_tablette.png",
     lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[5]\n- Squelette du Sanctuaire - Shaman[5]\n- Squelette du Sanctuaire - Guerrier[7]\n- Gardien du Sanctuaire[40]"
   },
   {
@@ -5440,7 +5816,7 @@ const ITEMS = [
     palier:   2,
     image:    null,
     lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[35]\n- Squelette du Sanctuaire - Shaman[35]\n- Squelette du Sanctuaire - Guerrier[30]"
   },
   {
@@ -5451,7 +5827,7 @@ const ITEMS = [
     palier:   2,
     image:    "../img/compendium/textures/items/drop_capuchon.png",
     lore:     "Un vêtement déchiré appartenant à un ancien humain, devenu squelette protégeant son domaine.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    tags:     ['Matériaux', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[30]\n- Squelette du Sanctuaire - Guerrier[30]"
   },
   {
@@ -5462,7 +5838,7 @@ const ITEMS = [
     palier:   2,
     image:    null,
     lore:     "Une belle poudre blanchâtre à l'odeur minérale, possiblement utilisé dans certains rituels.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    tags:     ['Matériaux', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Shaman[20]"
   },
   {
@@ -5473,7 +5849,7 @@ const ITEMS = [
     palier:   2,
     image:    null,
     lore:     "Morceau de feraille, solide malgré son état. Idéal pour expérimenter la forge ou tester des recettes alchimiques.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    tags:     ['Matériaux', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Golem de Pierre[40]"
   },
   {
@@ -5484,7 +5860,7 @@ const ITEMS = [
     palier:   2,
     image:    "../img/compendium/textures/items/mine_roche_noir.png",
     lore:     "Un fragment d'os dur et sombre, marqué par le temps et par la mort.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    tags:     ['Matériaux', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- ??\n- Morveth l'Écorcheur d'Âmes[100]"
   },
 	/* ══ Quêtes ══ */
@@ -5530,7 +5906,7 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/tissu_maudit.png",
     lore:     "Les forces obscures devorent ce tissu.",
-    tags:     ['Quête', 'Palier 1', 'commun'],
+    tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Mages[50]"
   },
   {
@@ -5574,8 +5950,19 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/coeur_de_leviathan.gif",
     lore:     "Encore brûlant et chargé de magie aquatique, ce cœur scintille d'une énergie ancienne.",
-    tags:     ['Matériaux', 'Palier 1', 'rare'],
+    tags:     ['Quête', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Nymbréa"
+  },
+	{
+    id:       'parchemin_sceau_kobold',
+    name:     "Parchemin de Sceau Complet",
+    rarity:   'godlike',
+    category: 'quete',
+    palier:   1,
+    image:    "../img/compendium/textures/items/rune_water.png",
+    lore:     "Enchanté, ce parchemin peut débloquer la barrière du roi Kobold Illfang.",
+    tags:     ['Quête', 'Palier 1', 'Godlike'],
+    obtain:   "Récupérable au cours de la Quête Principale:\n- «28 - Donjon: Le Kobold»"
   },
 	/* ══ Palier 2 ══ */
 	{
@@ -5586,14 +5973,66 @@ const ITEMS = [
     palier:   2,
     image:    null,
     lore:     "Une des trois écorces utilisées comme offrande à l'un des dieux présents au Palier 2 !",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    tags:     ['Quête', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Poisson Fulgurant[40]"
   },
-	/* ══ Clefs ══ */
-	/* ══ Palier 1 ══ */
-	/* ══ Palier 2 ══ */
+	{
+    id:       'artefcat_yaa',
+    name:     "Artefact de Yaa",
+    rarity:   'epique',
+    category: 'quete',
+    palier:   2,
+    image:    "../img/compendium/textures/items/yaa.png",
+    lore:     "Artefact du Protecteur Yaa, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
+    tags:     ['Quête', 'Palier 2', 'Épique'],
+    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
+  },
+	{
+    id:       'artefcat_bia',
+    name:     "Artefact de Bia",
+    rarity:   'epique',
+    category: 'quete',
+    palier:   2,
+    image:    "../img/compendium/textures/items/bia.png",
+    lore:     "Artefact du Protecteur Bia, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
+    tags:     ['Quête', 'Palier 2', 'Épique'],
+    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
+  },
+	{
+    id:       'artefcat_tano',
+    name:     "Artefact de Tano",
+    rarity:   'epique',
+    category: 'quete',
+    palier:   2,
+    image:    "../img/compendium/textures/items/tano.png",
+    lore:     "Artefact du Protecteur Tano, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
+    tags:     ['Quête', 'Palier 2', 'Épique'],
+    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
+  },
+	{
+    id:       'parchemin_sceau_taurus',
+    name:     "Parchemin de Sceau Complet",
+    rarity:   'godlike',
+    category: 'quete',
+    palier:   2,
+    image:    "../img/compendium/textures/items/rune_fire.png",
+    lore:     "Enchanté, ce parchemin peut débloquer la barrière du roi Taurus Asterius.",
+    tags:     ['Quête', 'Palier 2', 'Godlike'],
+    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
+  },
 	/* ══ Donjon ══ */
 	/* ══ Palier 1 ══ */
+	{
+    id:       'cle_dechu',
+    name:     "Clé des Déchus",
+    rarity:   'rare',
+    category: 'donjon',
+    palier:   2,
+    image:    "../img/compendium/textures/items/key_laby.png",
+    lore:     "Peut accéder au donjon : Labyrinthe des Déchus.",
+    tags:     ['Donjon', 'Labyrinthe des Déchus', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable au Fabricant de Clé devant le Donjon Labyrinthe des Déchus"
+  },
 	{
     id:       'artefact_fallen',
     name:     "Artéfact des Fallen",
@@ -5602,7 +6041,7 @@ const ITEMS = [
     palier:   1,
     image:    null,
     lore:     "Fragment arraché à l'un des 3 Fallens du Donjon très utile pour accéder à la salle de boss des Chevaliers Jumeaux",
-    tags:     ['Objets de Quête', 'Palier 1', 'Épique'],
+    tags:     ['Donjon', 'Labyrinthe des Déchus', 'Palier 1', 'Épique'],
     obtain:   "Obtenable en tuant:\n- Gardien Déchu\n- Héraut Déchu\n- Faucheuse Déchu"
   },
 	/* ══ Palier 2 ══ */
