@@ -735,7 +735,14 @@ function loadAccessoriesForClass(classId) {
   function drawSlot(el, slotDef) {
     const item = equipped[slotDef.id];
     el.innerHTML = '';
-    el.classList.remove('filled', 'active');
+    el.classList.remove('filled', 'active', 'slot-blocked');
+    if (getBlockedSlots().has(slotDef.id)) {
+			el.classList.add('slot-blocked');
+			el.innerHTML =
+				'<div class="slot-icon">' + slotDef.ico + '</div>' +
+				'<div class="slot-label" style="color:#d9614a;font-size:9px">Arme 2 mains</div>';
+			return;
+		}
     if (slotDef.id === activeSlot) el.classList.add('active');
 
     const btnDel = document.createElement('button');
@@ -857,13 +864,17 @@ function loadAccessoriesForClass(classId) {
       item.appendChild(stats);
 
       item.addEventListener('click', function(e) {
-        e.stopPropagation();
-        equippedRunes[runeKey] = rune.id;
-        popup.remove();
-        redrawSlot(slotId);
-        renderStats();
-        saveToStorage();
-      });
+			e.stopPropagation();
+			if (equippedRunes[runeKey] === rune.id) {
+				delete equippedRunes[runeKey];   // déjà sélectionnée → on l'enlève
+			} else {
+				equippedRunes[runeKey] = rune.id;
+			}
+			popup.remove();
+			redrawSlot(slotId);
+			renderStats();
+			saveToStorage();
+			});
 
       popup.appendChild(item);
     });
@@ -953,12 +964,16 @@ function loadAccessoriesForClass(classId) {
 
   function computeSetCounts() {
     const counts = {};
-    Object.values(equipped).forEach(function(item) {
-      if (!item || !item.set) return;
-      counts[item.set] = (counts[item.set] || 0) + 1;
+    const blockedSlots = getBlockedSlots();
+    Object.entries(equipped).forEach(function(entry) {
+        const slotId = entry[0];
+        const item   = entry[1];
+        if (blockedSlots.has(slotId)) return;
+        if (!item || !item.set) return;
+        counts[item.set] = (counts[item.set] || 0) + 1;
     });
     return counts;
-  }
+	}
 
   function computeSetBonuses(setCounts) {
     const bonusMins = {};
@@ -989,15 +1004,19 @@ function loadAccessoriesForClass(classId) {
     ALL_STATS.forEach(s => { mins[s.id] = 0; maxs[s.id] = 0; });
 
     /* ── Items équipés ── */
-    Object.values(equipped).forEach(item => {
-      if (!item || !item.stats) return;
-      Object.entries(item.stats).forEach(function(entry) {
-        const key = entry[0]; const val = entry[1];
-        if (!(key in mins)) return;
-        mins[key] += getMin(val);
-        maxs[key] += getMax(val);
-      });
-    });
+    const blockedSlots = getBlockedSlots();
+		Object.entries(equipped).forEach(function(entry) {
+				const slotId = entry[0];
+				const item   = entry[1];
+				if (blockedSlots.has(slotId)) return;
+				if (!item || !item.stats) return;
+				Object.entries(item.stats).forEach(function(e) {
+						const key = e[0]; const val = e[1];
+						if (!(key in mins)) return;
+						mins[key] += getMin(val);
+						maxs[key] += getMax(val);
+				});
+		});
 
     /* ── Bonus de panoplies ── */
     const setCounts = computeSetCounts();
@@ -1188,7 +1207,27 @@ function loadAccessoriesForClass(classId) {
   }
 
   /* ══ SÉLECTION DE SLOT ══ */
+	function findOffhandSlotId(item) {
+    if (!item || !item.twoHanded) return null;
+    const offCat = TWO_HANDED_PAIRS[item.cat];
+    if (!offCat) return null;
+    const offSlot = ALL_SLOTS.find(function(s) {
+        return s.id === offCat || (s.cats && s.cats.includes(offCat));
+    });
+    return offSlot ? offSlot.id : null;
+	}
+
+	function getBlockedSlots() {
+    const blocked = new Set();
+    Object.values(equipped).forEach(function(item) {
+        const offSlotId = findOffhandSlotId(item);
+        if (offSlotId) blocked.add(offSlotId);
+    });
+    return blocked;
+	}
+
   function selectSlot(slotId) {
+		if (getBlockedSlots().has(slotId)) return;
     activeSlot = slotId;
     document.querySelectorAll('.slot').forEach(function(el) {
       el.classList.toggle('active', el.dataset.slotId === slotId);
@@ -1209,14 +1248,22 @@ function loadAccessoriesForClass(classId) {
       '<div class="psi-name">' + s.ico + ' ' + s.label + '</div>';
   }
 
-  function clearSlot(slotId) {
+	function clearSlot(slotId) {
+    const removedItem = equipped[slotId];
     delete equipped[slotId];
     clearRunesForSlot(slotId);
     saveToStorage();
     redrawSlot(slotId);
+
+    const offSlotId = findOffhandSlotId(removedItem);
+    if (offSlotId) {
+        redrawSlot(offSlotId);
+        if (activeSlot === offSlotId) renderItemList();
+    }
+
     renderStats();
     if (activeSlot === slotId) renderItemList();
-  }
+	}
 
   /* ══ PICKER — FILTRES ══ */
   function buildFilters() {
@@ -1391,22 +1438,38 @@ function loadAccessoriesForClass(classId) {
 		buildThresholdHTML(item) +
         '</div>';
 
-      if (!isLocked) {
-        row.addEventListener('click', function() {
-		if (equipped[activeSlot] && equipped[activeSlot].id === item.id) {
-			clearSlot(activeSlot);
-		} else {
-			row.title = !levelOk
-				? 'Niveau ' + (item.lvl || 1) + ' requis'
-				: 'Caractéristiques insuffisantes';
-			clearRunesForSlot(activeSlot);
-			equipped[activeSlot] = item;
-			saveToStorage();
-			redrawSlot(activeSlot);
-			renderStats();
-			renderItemList();
-		}
-		});
+    	if (!isLocked) {
+			row.addEventListener('click', function() {
+				if (equipped[activeSlot] && equipped[activeSlot].id === item.id) {
+    				clearSlot(activeSlot);
+					} else {
+						clearRunesForSlot(activeSlot);
+
+						// ← Vérifier si l'ancien item était 2 mains avant de le remplacer
+						const previousItem = equipped[activeSlot];
+						const prevOffSlotId = findOffhandSlotId(previousItem);
+
+						equipped[activeSlot] = item;
+
+						// Offhand du nouvel item (2 mains → bloquer)
+						const offSlotId = findOffhandSlotId(item);
+						if (offSlotId) {
+								delete equipped[offSlotId];
+								clearRunesForSlot(offSlotId);
+								redrawSlot(offSlotId);
+						}
+
+						// Offhand de l'ancien item (2 mains → débloquer si le nouveau est 1 main)
+						if (prevOffSlotId && prevOffSlotId !== offSlotId) {
+								redrawSlot(prevOffSlotId);
+						}
+
+						saveToStorage();
+						redrawSlot(activeSlot);
+						renderStats();
+						renderItemList();
+				}
+			});
       } else {
         row.title = 'Niveau ' + (item.lvl || 1) + ' requis';
       }

@@ -959,4 +959,10 @@ html, body {
   color: var(--gold);
 }
 
-
+.slot.slot-blocked {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #d9614a40;
+  background: rgba(217, 97, 74, 0.05);
+  pointer-events: none;
+}
