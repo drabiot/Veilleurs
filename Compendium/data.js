@@ -948,7 +948,7 @@ const ITEMS = [
 		palier:		1,
 		lvl:			10,
 		img:			"../img/compendium/textures/weapons/hache_de_illfang.png",
-		stats:		{degats:75, vitesse_attaque:0.7, crit_degats:5},
+		stats:		{degats:70, vitesse_attaque:0.7, crit_degats:5},
 		classes:	['guerrier'],
 		lore:     "Longue et lourde hache du puissant boss palier : Illfang the Kobold Lord !",
     tags:     ['Arme', 'Hache', 'Deux Mains', 'Guerrier', 'Palier 1', 'Légendaire'],
