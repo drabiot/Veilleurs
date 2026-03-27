@@ -672,7 +672,6 @@ function showItem(id) {
   function mediaTypeLabel(m) {
     if (!m) return '';
     if (typeof m === 'object' && m.model) return '<span class="media-type-badge">3D</span>';
-    if (typeof m === 'string' && m.endsWith('.gif')) return '<span class="media-type-badge">GIF</span>';
     return '';
   }
 

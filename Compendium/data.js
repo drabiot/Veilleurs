@@ -466,14 +466,6 @@ const CARACTERISTIQUES = [
 		  desc:'Augmente les Dégâts physiques infligés.',
 		  stats:{ degats: 1, crit_degats:0.75 }
 	  },
-	  {
-		  id:'intelligence',
-		  label:'Intelligence',
-		  icon:'📖',
-		  color:'#9a5de8',
-		  desc:'Amplifie la puissance des sorts et des compétences magiques',
-		  stats:{ degats_magique: 1, crit_comp_chance:0.75 }
-		},
 		{
 			id:'dexterite',
 			label:'Dextérité',
@@ -481,6 +473,14 @@ const CARACTERISTIQUES = [
 			color:'#e0c840',
 			desc:'Améliore l\'Agilité et les chances de coups critique',
 			stats:{ crit_chance: 0.75, esquive: 0.3 }
+		},
+	  {
+		  id:'intelligence',
+		  label:'Intelligence',
+		  icon:'📖',
+		  color:'#9a5de8',
+		  desc:'Amplifie la puissance des sorts et des compétences magiques',
+		  stats:{ degats_magique: 1, crit_comp_chance:0.75 }
 		},
 		{
 			id:'esprit',
@@ -491,22 +491,22 @@ const CARACTERISTIQUES = [
 			stats:{ regen_sante: 0.15, regen_mana: 0.1, regen_stamina: 0.05 }
 		},
 		{
-		  id:'vitalite',
-		  label:'Vitalité',
-		  icon:'❤️',
-		  color:'#e05555',
-		  desc:'Augmente la Santé maximale',
-		  stats:{ sante: 3 }
-		},
-		{
-		  id:'defense_car',
+			id:'defense_car',
 		  label:'Défense',
 		  icon:'🛡️',
 		  color:'#5588e0',
 		  desc:'Réduit les dégâts subis en augmentant la Défense',
 		  stats:{ defense: 0.4 }
 		},
-];
+		{
+			id:'vitalite',
+			label:'Vitalité',
+			icon:'❤️',
+			color:'#e05555',
+			desc:'Augmente la Santé maximale',
+			stats:{ sante: 3 }
+		},
+	];
 	
 /* Niveau actuel et points alloués */
 let buildLevel = 1;
@@ -2709,6 +2709,20 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Pur, situé dans les grottes de la Faille au Sud-Est du Palier 2"
 	},
   /* ══ Events ══ */
+	{
+		id:				'collier_givremar',
+		name:			"Collier de Givremar",
+		rarity:		'event',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/collier_givremar.png",
+		stats:		{defense:1.5, sante:5, regen_mana:0.3, regen_stamina:0.3},
+    lore:     "Une pierre taillé, solide comme la glace, incrustée dans un collier faisant référence à Grivremar, un bastion qui fut oublié depuis longtemps.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "..."
+	},
   {
 		id:				'collier_amour',
 		name:			"Collier d'Amour",
@@ -2717,7 +2731,7 @@ const ITEMS = [
 		category:	'accessoire',
 		palier:		1,
 		lvl:			10,
-		img:			"",
+		img:			"../img/compendium/textures/trinkets/Valentin/collier_amour.png",
 		stats:		{sante:5, mana:5, stamina:5},
     lore:     "Un collier fin orné d'un pendentif, brillant d'un éclat doux et romantique.",
     tags:     ['Accessoire', 'Amulette', 'Palier 1', 'Event', 'Saint Valentin'],
@@ -3476,7 +3490,7 @@ const ITEMS = [
 		category:	'accessoire',
 		palier:		1,
 		lvl:			10,
-		img:			"",
+		img:			"../img/compendium/textures/trinkets/Christmas/bracelet_rafales.png",
 		stats:		{esquive:2.5, sante:5, mana:5, stamina:5, vitesse_deplacement:0.5},
     lore:     "Un bracelet ancien dont les inscriptions ondulent légèrement, comme agitées par un vent invisible.",
     tags:     ['Accessoire', 'Artefact', 'Masque', 'Secret', 'Palier 1', 'Event', 'Noël'],
@@ -3490,7 +3504,7 @@ const ITEMS = [
 		category:	'accessoire',
 		palier:		1,
 		lvl:			10,
-		img:			"",
+		img:			"../img/compendium/textures/trinkets/Christmas/couronne_sol.png",
 		stats:		{hate:5, mana:5, stamina:2.5},
     lore:     "Une couronne finement ouvragée, mêlant motifs solaires et hivernaux, symbole de l'équilibre entre les saisons.",
     tags:     ['Accessoire', 'Artefact', 'Couronne', 'Palier 1', 'Event', 'Noël'],
@@ -4822,10 +4836,21 @@ const ITEMS = [
     rarity:   'commun',
     category: 'rune',
     palier:   1,
-    image:    "../img/compendium/textures/items/rune_rouge.png", //NULL
+    image:    "../img/compendium/textures/items/Runes/vitality_1.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en finissant la Quête Journalière de la Vitalite de la Ville de Départ"
+    obtain:   "Obtenable en finissant la Quête Journalière de la Vitalite au Maître des runes dans la Ville de Départ"
+  },
+	{
+    id:       'rune_precision_1',
+    name:     "Rune de Précision I",
+    rarity:   'commun',
+    category: 'rune',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Runes/precision_1.png",
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable en finissant la Quête Journalière de la Précision au Maître des runes dans la Ville de Départ"
   },
 	{
     id:       'rune_sorcellerie_1',
@@ -4833,10 +4858,10 @@ const ITEMS = [
     rarity:   'commun',
     category: 'rune',
     palier:   1,
-    image:    "../img/compendium/textures/items/rune_violet.png", //NULL
+    image:    "../img/compendium/textures/items/Runes/sorcery_1.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en finissant la Quête Journalière de la Vitalite de la Ville de Départ"
+    obtain:   "Obtenable en finissant la Quête Journalière de la Sorcellerie au Maître des runes dans la Ville de Départ"
   },
 	{
     id:       'rune_agilite_1',
@@ -4844,10 +4869,21 @@ const ITEMS = [
     rarity:   'commun',
     category: 'rune',
     palier:   1,
-    image:    "../img/compendium/textures/items/rune_vert.png", //NULL
+    image:    "../img/compendium/textures/items/Runes/agility_1.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en finissant la Quête Journalière de la Vitalite de la Ville de Départ"
+    obtain:   "Obtenable en finissant la Quête Journalière de l'Agilité au Maître des runes dans la Ville de Départ"
+  },
+	{
+    id:       'rune_temps_1',
+    name:     "Rune Temps I",
+    rarity:   'commun',
+    category: 'rune',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Runes/time_1.png",
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable en finissant la Quête Journalière du Temps au Maître des runes dans la Ville de Départ"
   },
 	{
     id:       'rune_kazor',
@@ -4855,7 +4891,7 @@ const ITEMS = [
     rarity:   'legendaire',
     category: 'rune',
     palier:   1,
-    image:    "", //NULL
+    image:    "../img/compendium/textures/items/Runes/rune_kazor.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
@@ -4866,7 +4902,7 @@ const ITEMS = [
     rarity:   'event',
     category: 'rune',
     palier:   1,
-    image:    "../img/compendium/textures/items/rune_noel.png",
+    image:    "../img/compendium/textures/items/Runes/rune_noel.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Event', 'Noël'],
     obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
@@ -4877,7 +4913,7 @@ const ITEMS = [
     rarity:   'event',
     category: 'rune',
     palier:   1,
-    image:    "../img/compendium/textures/items/rune_teddy.png",
+    image:    "../img/compendium/textures/items/Runes/rune_teddy.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Event', 'Saint Valentin'],
     obtain:   "Obtenable dans les lootboxs de l'Événement Saint Valentin"
@@ -4916,7 +4952,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'nourriture',
     palier:   1,
-    image:    "../img/compendium/textures/items/viande_de_sanglier.png",
+    image:    "../img/compendium/textures/items/Nourriture/viande_de_sanglier.png",
     lore:     "Cette belle viande de sanglier, bien juteuse, peut vous donner encore plus envie de manger !",
     tags:     ['Nourriture', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[100]\n- Pumba[100]"
@@ -4930,7 +4966,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'consommable',
     palier:   1,
-    image:    "../img/compendium/textures/items/p_changement.png",
+    image:    "../img/compendium/textures/items/Consommable/p_changement.png",
     lore:     "Ce parchemin permet au joueur qui l'utilise de recevoir un point pour rénitialiser sa classe",
     tags:     ['Consommable', 'Palier 1', 'Rare'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -4941,7 +4977,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'consommable',
     palier:   1,
-    image:    "../img/compendium/textures/items/p_reallocation.png",
+    image:    "../img/compendium/textures/items/Consommable/p_reallocation.png",
     lore:     "Ce parchemin permet au joueur qui l'utilise de recevoir un point poir rénitialiser ses points d'attribut",
     tags:     ['Consommable', 'Palier 1', 'Rare'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -4952,7 +4988,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'consommable',
     palier:   1,
-    image:    "../img/compendium/textures/items/p_maitrise.png",
+    image:    "../img/compendium/textures/items/Consommable/p_maitrise.png",
     lore:     "Ce parchemin permet au joueur qui l'utilise de recevoir un point poir rénitialiser ses points de compétence",
     tags:     ['Consommable', 'Palier 1', 'Rare'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -4963,7 +4999,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Consommable/strengthpot_1.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -4974,7 +5010,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Consommable/strengthpot_1.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
     obtain:   "Fabricable aux Alchimistes"
@@ -4985,7 +5021,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Consommable/strengthpot_2.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
     obtain:   "Fabricable aux Alchimistes"
@@ -4996,7 +5032,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Consommable/strengthpot_3.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
     tags:     ['Consommable', 'Palier 1', 'rare'],
     obtain:   "Fabricable aux Alchimistes"
@@ -5007,7 +5043,7 @@ const ITEMS = [
     rarity:   'epique',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Consommable/green_crystal.png",
     lore:     "Vous rend des PV immédiatement et applique 30min de recharge sur tous les cristaux.",
     tags:     ['Consommable', 'Palier 1', 'Épique'],
     obtain:   "Fabricable aux Alchimistes"
@@ -5018,7 +5054,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:     "../img/compendium/textures/items/Consommable/critpot_1.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de mana.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -5029,7 +5065,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:     "../img/compendium/textures/items/Consommable/critpot_1.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de mana.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
     obtain:   "Fabricable aux Alchimistes"
@@ -5040,7 +5076,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:     "../img/compendium/textures/items/Consommable/critpot_2.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de mana.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
     obtain:   "Fabricable aux Alchimistes"
@@ -5051,7 +5087,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:     "../img/compendium/textures/items/Consommable/critpot_3.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de mana.",
     tags:     ['Consommable', 'Palier 1', 'rare'],
     obtain:   "Fabricable aux Alchimistes"
@@ -5062,7 +5098,7 @@ const ITEMS = [
     rarity:   'epique',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Consommable/blue_crystal.png",
     lore:     "Vous rend des PV immédiatement et applique 30min de recharge sur tous les cristaux.",
     tags:     ['Consommable', 'Palier 1', 'Épique'],
     obtain:   "Fabricable aux Alchimistes"
@@ -5073,7 +5109,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:     "../img/compendium/textures/items/Consommable/endurepot_1.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
     obtain:   "Obtenable par les Marchands d'Équipement"
@@ -5084,7 +5120,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:     "../img/compendium/textures/items/Consommable/endurepot_1.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
     obtain:   "Fabricable aux Alchimistes"
@@ -5095,7 +5131,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:     "../img/compendium/textures/items/Consommable/endurepot_2.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
     obtain:   "Fabricable aux Alchimistes"
@@ -5106,7 +5142,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:     "../img/compendium/textures/items/Consommable/endurepot_3.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
     tags:     ['Consommable', 'Palier 1', 'rare'],
     obtain:   "Fabricable aux Alchimistes"
@@ -5117,7 +5153,7 @@ const ITEMS = [
     rarity:   'epique',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Consommable/yellow_crystal.png",
     lore:     "Vous rend des PV immédiatement et applique 30min de recharge sur tous les cristaux.",
     tags:     ['Consommable', 'Palier 1', 'Épique'],
     obtain:   "Fabricable aux Alchimistes"
@@ -5128,7 +5164,7 @@ const ITEMS = [
     rarity:   'epique',
     category: 'consommable',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Consommable/red_crystal.png",
     lore:     "Boost les Dégâts d'Armes de 10% et applique 30min de recharge sur tous les cristaux.",
     tags:     ['Consommable', 'Palier 1', 'Épique'],
     obtain:   "Fabricable aux Alchimistes"
@@ -5142,7 +5178,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/peau_de_sanglier.png",
+    image:    "../img/compendium/textures/items/Material/P1/peau_de_sanglier.png",
     lore:     "Utilisable pour de la tannerie basique.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[60]\n- Pumba[100]"
@@ -5153,7 +5189,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/fourrure_de_loup.png",
+    image:    "../img/compendium/textures/items/Material/P1/fourrure_de_loup.png",
     lore:     "Une fourrure souple et légère, utilisée pour fabriquer des armures.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)[60]\n- Albal[100]"
@@ -5164,7 +5200,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/crocs_de_loup.png",
+    image:    "../img/compendium/textures/items/Material/P1/crocs_de_loup.png",
     lore:     "Une dent longue et acérée, prisée de certains artisans.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)[30]\n- Albal[70]"
@@ -5175,7 +5211,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/crocs_de_albal.gif",
+    image:    "../img/compendium/textures/items/Material/P1/crocs_de_albal.gif",
     lore:     "Un croc massif imprégné de sa rage sauvage. Son essence est utilisée pour concoter des potions de force redoutable.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Albal[20]"
@@ -5186,7 +5222,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/fragment_de_feuille.png",
+    image:    "../img/compendium/textures/items/Material/P1/fragment_de_feuille.png",
     lore:     "Des restes végétaux porteurs d'une étrange énergie naturelle.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Nephentes[45]"
@@ -5197,7 +5233,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/pousse_de_sylve.png",
+    image:    "../img/compendium/textures/items/Material/P1/pousse_de_sylve.png",
     lore:     "Petite pousse dans un bol très utile dans la confection de potion de vie.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Minis Tréants[40]"
@@ -5208,7 +5244,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/eclat_de_bois_magique.png",
+    image:    "../img/compendium/textures/items/Material/P1/eclat_de_bois_magique.png",
     lore:     "Fragment d'un ancien Tréant. Même détaché de celui-ci il conserve encore de la magie à l'intérieur.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Minis Tréants[30]"
@@ -5219,7 +5255,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/ecorce_de_titan.png",
+    image:    "../img/compendium/textures/items/Material/P1/ecorce_de_titan.png",
     lore:     "Ressource très dure presque incassable, les Guerriers pourront se protéger avec.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Guerriers Tréants[35]"
@@ -5230,7 +5266,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/racine_ancestrale.gif",
     lore:     "Un loot assez rare du Guerrier Tréant. Utile si vous avez besoin de fabriquer des potions.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Guerriers Tréants[10]"
@@ -5241,7 +5277,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/ecorce_sylvestre.png",
     lore:     "Matériau de la nature, utilisé principalement pour des armures légères et rapides.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Tréants d'Élites[40]"
@@ -5252,7 +5288,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/corde_darc_sylvestre.png",
+    image:    "../img/compendium/textures/items/Material/P1/corde_darc_sylvestre.png",
     lore:     "Longue et tendue, cette corde robuste est idéale pour confectionner un nouvel arc.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Tréants d'Élites[25]"
@@ -5263,7 +5299,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/brindille_enchantee.png",
+    image:    "../img/compendium/textures/items/Material/P1/brindille_enchantee.png",
     lore:     "Brindille du Mage Sylvestre, ce bâton peutêtre utilisé comme basepour une arme magique.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres[30]"
@@ -5274,7 +5310,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/coeur_de_bois.png",
+    image:    "../img/compendium/textures/items/Material/P1/coeur_de_bois.png",
     lore:     "Cœur imprégné de magie, si vous l'utilisez avec précaution une arme très redoutable peut être créée.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres[20]"
@@ -5285,7 +5321,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/tissu_spectral.png",
+    image:    "../img/compendium/textures/items/Material/P1/tissu_spectral.png",
     lore:     "Un tissu imprégné de magie noire et de malédictions.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres[30]"
@@ -5296,7 +5332,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/mycelium_magique.png",
+    image:    "../img/compendium/textures/items/Material/P1/mycelium_magique.png",
     lore:     "Ingrédient assez rare pour de la haute alchimie ou pour autre chose ?",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Gardiens Colossaux[20]"
@@ -5307,7 +5343,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/gelee_slime.png",
     lore:     "Une petite et belle gelée gluante qui colle à vos mains pendant longtemps.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Petits Slimes[30]\n- Guerriers Slimes[30]\n- Slimes Soigneurs[30]\n- Slimes Magiciens[30]\n- Gorbel[30]"
@@ -5318,7 +5354,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/noyau_de_slime.png",
+    image:    "../img/compendium/textures/items/Material/P1/noyau_de_slime.png",
     lore:     "Noyau imprégné de la magie des slimes. Utilisé dasn la confection d'accessoires magiques.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Slimes Soigneurs[5]\n- Slimes Magiciens[5]\n- Gorbel[5]"
@@ -5329,7 +5365,7 @@ const ITEMS = [
     rarity:   'epique',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/essence_de_gorbel.png",
+    image:    "../img/compendium/textures/items/Material/P1/essence_de_gorbel.png",
     lore:     "Essence d'un slime qui a atteint son plus haut potentiel.",
     tags:     ['Matériaux', 'Palier 1', 'Épique'],
     obtain:   "Obtenable en tuant:\n- Gorbel[5]"
@@ -5340,7 +5376,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/os_de_squelette.png",
+    image:    "../img/compendium/textures/items/Material/P1/os_de_squelette.png",
     lore:     "Petit os que l'on trouve sur des squelettes de bas rang. Sûrement utile pour certaines confections.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[45]\n- Guerriers Squelettes[40]\n- Squelettes Hallebardiers[45]\n- Squelettes Mages[40]"
@@ -5351,7 +5387,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/poussiere_os.png",
     lore:     "Résidu d'os réduit en poudre. Sert de catalyseur pour des potions de vie.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[35]\n- Guerriers Squelettes[30]\n- Squelettes Hallebardiers[35]\n- Archers Squelettes[20]\n- Tanks Squelettes[30]\n- Squelettes Mages[30]"
@@ -5362,7 +5398,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/os_renforce.png",
     lore:     "Contrairement au petit os, ces os sont plus résistants et sûrement utiles aussi dans certaines confections.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Hallebardiers[35]\n- Archers Squelettes[30]\n- Tanks Squelettes[40]"
@@ -5373,7 +5409,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/ames_des_ruines.png",
+    image:    "../img/compendium/textures/items/Material/P1/ames_des_ruines.png",
     lore:     "Âme de squelette abreuvé de corruption.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[40]\n- Guerriers Squelettes[40]\n- Squelettes Hallebardiers[40]\n- Archers Squelettes[40]"
@@ -5384,7 +5420,7 @@ const ITEMS = [
     rarity:   'legendaire',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/morceau_de_criniere_spectrale.png",
+    image:    "../img/compendium/textures/items/Material/P1/morceau_de_criniere_spectrale.png",
     lore:     "Une mèche de crinière éthérée, arrachée a une monture spectrale. Elle palpite encore d'une énergie rapide.",
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
     obtain:   "Obtenable en tuant:\n- Nasgul[2.5]"
@@ -5395,7 +5431,7 @@ const ITEMS = [
     rarity:   'legendaire',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/eclat_du_sabot_maudit.png",
+    image:    "../img/compendium/textures/items/Material/P1/eclat_du_sabot_maudit.png",
     lore:     "Fragment arraché au sabot d'une créature maudite. Il renferme une énergie sombre qui confère à son porteur une vitesse surnaturelle.",
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
     obtain:   "Obtenable en tuant:\n- Nasgul[1]"
@@ -5406,7 +5442,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/cuir_use.png",
+    image:    "../img/compendium/textures/items/Material/P1/cuir_use.png",
     lore:     "Un morceau de cuir abîmé autrefois portépar des Bandits. Il reste utilisable.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Bandits Archer[40]\n- Bandits Assassins[30]\n- Bandits Robustes[80]"
@@ -5439,7 +5475,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/piece_de_metal_enchante.png",
+    image:    "../img/compendium/textures/items/Material/P1/piece_de_metal_enchante.png",
     lore:     "Petite ferraille de métal, avec d'autres ingrédients il est possible d'en faire des Lingôts de Métal Enchanté.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Soldat Déchu[20]\n- Guerrier Déchu[20]"
@@ -5450,7 +5486,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/lingot_de_metal_enchante.png",
+    image:    "../img/compendium/textures/items/Material/P1/lingot_de_metal_enchante.png",
     lore:     "Lingot de Métal Enchanté fabriqué à partir de petite ferraille.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
@@ -5461,7 +5497,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/piece_dame_de_metal.png",
+    image:    "../img/compendium/textures/items/Material/P1/piece_dame_de_metal.png",
     lore:     "Petite ferraille de métal, avec d'autres ingrédients il est possible d'en faire des Lingôts d'Âme de Métal.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Guerrier Déchu[25]"
@@ -5472,7 +5508,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/lingot_dame_de_metal.png",
+    image:    "../img/compendium/textures/items/Material/P1/lingot_dame_de_metal.png",
     lore:     "Lingot d'Âme de Métal fabriqué à partir de petite ferraille.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
@@ -5483,7 +5519,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/fragments_rouge.png",
+    image:    "../img/compendium/textures/items/Material/P1/fragments_rouge.png",
     lore:     "Fragment trouvé dans les coffres du labyrinthe des Chevaliers Jumeaux.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
@@ -5494,7 +5530,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/fragments_casses_jaune.png",
+    image:    "../img/compendium/textures/items/Material/P1/fragments_casses_jaune.png",
     lore:     "Fragment trouvé dans les coffres du labyrinthe des Chevaliers Jumeaux.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
@@ -5505,7 +5541,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/fragments_casses_violet.png",
+    image:    "../img/compendium/textures/items/Material/P1/fragments_casses_violet.png",
     lore:     "Fragment trouvé dans les coffres du labyrinthe des Chevaliers Jumeaux.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
@@ -5516,7 +5552,7 @@ const ITEMS = [
     rarity:   'epique',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/eclat_fusionne.png",
+    image:    "../img/compendium/textures/items/Material/P1/eclats_fusionnes.png",
     lore:     "Fusion délicate entre les Fragments Cassé Violet. Utile pour l'armure du Reaper.",
     tags:     ['Matériaux', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armure à l'intérieur du Donjon du Labyrinthe des Déchus"
@@ -5527,7 +5563,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/ame_du_warden.png",
+    image:    "../img/compendium/textures/items/Material/P1/ame_du_warden.png",
     lore:     "Une âme est contenue dans cet objet. Il peut être obtenu en tuant son possesseur ou en le fabriquant au forgeron.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
     obtain:   "Obtenable en tuant:\n- Gardien Déchu[30]"
@@ -5538,7 +5574,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/ame_de_herald.png",
+    image:    "../img/compendium/textures/items/Material/P1/ame_de_herald.png",
     lore:     "Une âme est contenue dans cet objet. Il peut être obtenu en tuant son possesseur ou en le fabriquant au forgeron.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
     obtain:   "Obtenable en tuant:\n- Héraut Déchu[30]"
@@ -5549,7 +5585,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/ame_du_reaper.png",
+    image:    "../img/compendium/textures/items/Material/P1/ame_du_reaper.png",
     lore:     "Une âme est contenue dans cet objet. Il peut être obtenu en tuant son possesseur ou en le fabriquant au forgeron.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
     obtain:   "Obtenable en tuant:\n- Faucheuse Déchue[30]"
@@ -5560,7 +5596,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/tissu_daraignee.png",
+    image:    "../img/compendium/textures/items/Material/P1/tissu_daraignee.png",
     lore:     "Un tissu fin, mais incroyablement résistant. Idéal pour des équipements légers ou enchantés.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Araignée des Forêts[40]"
@@ -5571,7 +5607,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    "../img/compendium/textures/items/fil_daraignee.png",
+    image:    "../img/compendium/textures/items/Material/P1/fil_daraignee.png",
     lore:     "Petit fil très fragile il peut se casser à tout moment.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
     obtain:   "Obtenable en tuant:\n- Araignée des Forêts[50]"
@@ -5582,7 +5618,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/cerf_cuir.png",
     lore:     "Un morceau de peau épaisse, rigide, utile pour des armures robustes.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Cerf des Montagnes[45]"
@@ -5593,7 +5629,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/peau_dur_glacial.png",
     lore:     "Une plaque de givre solidifiée, aussi dur que de la pierre.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Golem de Glace[30]"
@@ -5604,7 +5640,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:   "../img/compendium/textures/items/poussiere_de_givre.gif",
+    image:   "../img/compendium/textures/items/Material/P1/poussiere_de_givre.gif",
     lore:     "Une fine poudre glaciale récoltée sur des créatures de glace.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Golem de Glace[40]\n- Spirite de Glace[45]\n- Ours de Glace[80]"
@@ -5626,7 +5662,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/ame_ours.gif",
     lore:     "L'âme de l'Ours repose dans ce fragment. Utilisez-le avec sagesse, car son pouvoir est colossal.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
     obtain:   "Obtenable en tuant:\n- Ours de Glace[5]"
@@ -5637,7 +5673,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/ecaille_requin.png",
     lore:     "Une plaque de carapace très dure, arrachée à un poisson-requin. Solide et résistante parfaite pour une certaine armure lourdre.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Poisson Requin[40]"
@@ -5649,7 +5685,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/cuir_epais.png",
     lore:     "Une peau robuste et résistante, capable d'absorber de lourds impacts.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
     obtain:   "Obtenable en tuant:\n- Taureau Monstrueux[40]"
@@ -5660,7 +5696,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/corne_taureau.png",
     lore:     "Solide et acérée, cette corne témoigne de la force brutale de l'animal.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
     obtain:   "Obtenable en tuant:\n- Taureau[40]"
@@ -5671,7 +5707,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/peau_ours.png",
     lore:     "Une épaisse fourrure tannée, capable de résister aux assauts et d'offrir une chaleur inégalée.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
     obtain:   "Obtenable en tuant:\n- Ours de la Forêt[50]"
@@ -5682,7 +5718,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/griffe_ours.png",
     lore:     "Tranchante et recourbée, elle témoigne de la férocité et de la force d'un prédateur redoutable.",
     tags:     ['Matériaux', 'Palier 2','commun'],
     obtain:   "Obtenable en tuant:\n- Ours de la Forêt[45]"
@@ -5693,7 +5729,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/graisse_ours.png",
     lore:     "Utilisée pour l'entretien du cuir ou comme combustible, cette graisse dégage une forte odeur sauvage.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
     obtain:   "Obtenable en tuant:\n- Ours de la Forêt[5]"
@@ -5704,7 +5740,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/residu_miel.png",
     lore:     "Restes collants et sucrés, souvent imprégnés de pollen et de senteurs florales.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
     obtain:   "Obtenable en tuant:\n- Ours de la Forêt[60]"
@@ -5715,7 +5751,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/fourrure_de_loup.png",
     lore:     "Chaud et souple, ce pelage protège efficacement du froid. Parfait pour créer des armures légères.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
     obtain:   "Obtenable en tuant:\n- Loups des Montagnes[40]\n- Loups des Savanes[50]"
@@ -5737,7 +5773,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/miel.png",
     lore:     "Doux mais étonnement visqueux, ce miel concentré est utilisé pour enduire certaines armures.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
     obtain:   "Obtenable en tuant:\n- Ouvrière[30]\n- Melisara, Souveraine de la Ruche[100]"
@@ -5748,7 +5784,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/carapace_abeille.png",
     lore:     "Épaisse et segmentée, cette carapace protège efficacement contre les assauts. Parfaite pour façonner des équipements.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
     obtain:   "Obtenable en tuant:\n- Dardroyal[30]\n- Melisara, Souveraine de la Ruche[80]"
@@ -5759,7 +5795,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   2,
-    image:    "../img/compendium/textures/items/drop_plume_rouge.png",
+    image:    "../img/compendium/textures/items/Material/P2/drop_plume_rouge.png",
     lore:     "Une plume incandescente, vibrant d'énergie magique. Utilisée par les artisans.",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Harpie de Feu[50]"
@@ -5770,7 +5806,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   2,
-    image:    "../img/compendium/textures/items/drop_plume_vert.png",
+    image:    "../img/compendium/textures/items/Material/P2/drop_plume_vert.png",
     lore:     "Une plume dense et résistante, imprégnée de force tellurique parfaite.",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Harpie de Terre[50]"
@@ -5781,7 +5817,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   2,
-    image:    "../img/compendium/textures/items/drop_plume_bleu.png",
+    image:    "../img/compendium/textures/items/Material/P2/drop_plume_bleu.png",
     lore:     "Une plume souple et scintillante, gorgée d'essence aquatique.",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Harpie de Foudre[50]"
@@ -5803,7 +5839,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   2,
-    image:    "../img/compendium/textures/items/mine_tablette.png",
+    image:    "../img/compendium/textures/items/Material/P2/mine_tablette.png",
     lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[5]\n- Squelette du Sanctuaire - Shaman[5]\n- Squelette du Sanctuaire - Guerrier[7]\n- Gardien du Sanctuaire[40]"
@@ -5814,7 +5850,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/chaine_spectral.png",
     lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[35]\n- Squelette du Sanctuaire - Shaman[35]\n- Squelette du Sanctuaire - Guerrier[30]"
@@ -5825,7 +5861,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   2,
-    image:    "../img/compendium/textures/items/drop_capuchon.png",
+    image:    "../img/compendium/textures/items/Material/P2/drop_capuchon.png",
     lore:     "Un vêtement déchiré appartenant à un ancien humain, devenu squelette protégeant son domaine.",
     tags:     ['Matériaux', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[30]\n- Squelette du Sanctuaire - Guerrier[30]"
@@ -5836,7 +5872,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/poudre_moelle.png",
     lore:     "Une belle poudre blanchâtre à l'odeur minérale, possiblement utilisé dans certains rituels.",
     tags:     ['Matériaux', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Shaman[20]"
@@ -5847,7 +5883,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/ferraille.png",
     lore:     "Morceau de feraille, solide malgré son état. Idéal pour expérimenter la forge ou tester des recettes alchimiques.",
     tags:     ['Matériaux', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Golem de Pierre[40]"
@@ -5858,7 +5894,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'materiaux',
     palier:   2,
-    image:    "../img/compendium/textures/items/mine_roche_noir.png",
+    image:    "../img/compendium/textures/items/Material/P2/mine_roche_noir.png",
     lore:     "Un fragment d'os dur et sombre, marqué par le temps et par la mort.",
     tags:     ['Matériaux', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- ??\n- Morveth l'Écorcheur d'Âmes[100]"
@@ -5871,7 +5907,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    "../img/compendium/textures/items/cristal_corrompu.png",
+    image:    "../img/compendium/textures/items/Quest/cristal_corrompu.png",
     lore:     "Des traces de corruptions émanent de cet objet.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[50]\n- Pumba[100]"
@@ -5882,7 +5918,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:   "../img/compendium/textures/items/gem.png",
+    image:   "../img/compendium/textures/items/Quest/gem.png",
     lore:     "Cette rune semble ancienne.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Récupérable en réalisant la Quête Principale:\n- «La Corruption»"
@@ -5893,7 +5929,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    "../img/compendium/textures/items/spore_corrompu.png",
+    image:    "../img/compendium/textures/items/Quest/spore_corrompu.png",
     lore:     "Un spore étrange imprégné de corruption...",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Nephentes[50]"
@@ -5904,7 +5940,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    "../img/compendium/textures/items/tissu_maudit.png",
+    image:    "../img/compendium/textures/items/Quest/tissu_maudit.png",
     lore:     "Les forces obscures devorent ce tissu.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Mages[50]"
@@ -5915,7 +5951,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'quete',
     palier:   1,
-    image:    "../img/compendium/textures/items/coeur_putrefie.png",
+    image:    "../img/compendium/textures/items/Quest/coeur_putrefie.png",
     lore:     "La putréfaction ronge peu à peu ce cœur.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit[70]"
@@ -5926,7 +5962,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'quete',
     palier:   1,
-    images:   ["../img/compendium/textures/items/hautdroitsceau.png", "../img/compendium/textures/items/hautgauchesceau.png", "../img/compendium/textures/items/bassceau.png"],
+    images:   ["../img/compendium/textures/items/Quest/hautdroitsceau.png", "../img/compendium/textures/items/Quest/hautgauchesceau.png", "../img/compendium/textures/items/Quest/bassceau.png"],
     lore:     "La puissance des anciens se fait ressentir à travers ce fragment.",
     tags:     ['Quête', 'Palier 1', 'Rare'],
     obtain:   "Récupérable en réalisant les Quêtes Principales:\n- «Nasgul: Protecteur Maudit»\n- «Donjon: Mine de Geldorak»\n- «Gorbel: Slime Imposant»"
@@ -5937,7 +5973,7 @@ const ITEMS = [
     rarity:   'legendaire',
     category: 'quete',
     palier:   1,
-    image:   "../img/compendium/textures/items/sceau.png",
+    image:   "../img/compendium/textures/items/Quest/sceau.png",
     lore:     "Le Sceau des anciens dans sa forme originel.",
     tags:     ['Quête', 'Palier 1', 'Légendaire'],
     obtain:   "Récupérable en réalisant la Quête Principale:\n- «Le Sceau des anciens»"
@@ -5948,7 +5984,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'quete',
     palier:   1,
-    image:    "../img/compendium/textures/items/coeur_de_leviathan.gif",
+    image:    "../img/compendium/textures/items/Quest/coeur_de_leviathan.gif",
     lore:     "Encore brûlant et chargé de magie aquatique, ce cœur scintille d'une énergie ancienne.",
     tags:     ['Quête', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Nymbréa"
@@ -5959,7 +5995,7 @@ const ITEMS = [
     rarity:   'godlike',
     category: 'quete',
     palier:   1,
-    image:    "../img/compendium/textures/items/rune_water.png",
+    image:    "../img/compendium/textures/items/Quest/rune_water.gif",
     lore:     "Enchanté, ce parchemin peut débloquer la barrière du roi Kobold Illfang.",
     tags:     ['Quête', 'Palier 1', 'Godlike'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «28 - Donjon: Le Kobold»"
@@ -5971,7 +6007,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'quete',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Quest/ecaille_foudre.png",
     lore:     "Une des trois écorces utilisées comme offrande à l'un des dieux présents au Palier 2 !",
     tags:     ['Quête', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Poisson Fulgurant[40]"
@@ -5982,7 +6018,7 @@ const ITEMS = [
     rarity:   'epique',
     category: 'quete',
     palier:   2,
-    image:    "../img/compendium/textures/items/yaa.png",
+    image:    "../img/compendium/textures/items/Quest/yaa.png",
     lore:     "Artefact du Protecteur Yaa, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
     tags:     ['Quête', 'Palier 2', 'Épique'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
@@ -5993,7 +6029,7 @@ const ITEMS = [
     rarity:   'epique',
     category: 'quete',
     palier:   2,
-    image:    "../img/compendium/textures/items/bia.png",
+    image:    "../img/compendium/textures/items/Quest/bia.png",
     lore:     "Artefact du Protecteur Bia, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
     tags:     ['Quête', 'Palier 2', 'Épique'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
@@ -6004,7 +6040,7 @@ const ITEMS = [
     rarity:   'epique',
     category: 'quete',
     palier:   2,
-    image:    "../img/compendium/textures/items/tano.png",
+    image:    "../img/compendium/textures/items/Quest/tano.png",
     lore:     "Artefact du Protecteur Tano, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
     tags:     ['Quête', 'Palier 2', 'Épique'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
@@ -6015,7 +6051,7 @@ const ITEMS = [
     rarity:   'godlike',
     category: 'quete',
     palier:   2,
-    image:    "../img/compendium/textures/items/rune_fire.png",
+    image:    "../img/compendium/textures/items/Quest/rune_fire.gif",
     lore:     "Enchanté, ce parchemin peut débloquer la barrière du roi Taurus Asterius.",
     tags:     ['Quête', 'Palier 2', 'Godlike'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
@@ -6023,15 +6059,37 @@ const ITEMS = [
 	/* ══ Donjon ══ */
 	/* ══ Palier 1 ══ */
 	{
+    id:       'cle_foret',
+    name:     "Clé de la Forêt",
+    rarity:   'rare',
+    category: 'donjon',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Donjon/key_geldo.png",
+    lore:     "Peut être utilisé pour accéder au donjon : Mine de Geldorak.",
+    tags:     ['Donjon', 'Mine de Geldorak', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable:\n- Fabricant de Clé devant le Donjon Mine de Geldorak\n- Fabricant de Clé dans la Ville de Départ"
+  },
+	{
     id:       'cle_dechu',
     name:     "Clé des Déchus",
     rarity:   'rare',
     category: 'donjon',
     palier:   1,
-    image:    "../img/compendium/textures/items/key_laby.png",
-    lore:     "Peut accéder au donjon : Labyrinthe des Déchus.",
+    image:    "../img/compendium/textures/items/Donjon/key_laby.png",
+    lore:     "Peut être utilisé pour accéder au donjon : Labyrinthe des Déchus.",
     tags:     ['Donjon', 'Labyrinthe des Déchus', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Fabricant de Clé devant le Donjon Labyrinthe des Déchus"
+  },
+	{
+    id:       'cle_xal',
+    name:     "Clé de Xal'Zirith",
+    rarity:   'rare',
+    category: 'donjon',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Donjon/key_xal.png",
+    lore:     "Peut être utilisé pour accéder au donjon : Le Sanctuaire de Xal'Zirith.",
+    tags:     ['Donjon', 'Sanctuaire de Xal\'Zirith', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable:\n- Fabricant de Clé devant le Donjon Sanctuaire de Xal'Zirith\n- Fabricant de Clé à Candelia"
   },
 	{
     id:       'artefact_fallen',
