@@ -650,19 +650,24 @@ function loadAccessoriesForClass(classId) {
       });
 
       function applyClassChange() {
-        activeClass = newClass;
-        wrap.querySelectorAll('.class-btn').forEach(function(b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        itemsAtRisk.forEach(function(slotId) {
-          delete equipped[slotId];
-          clearRunesForSlot(slotId);
-          redrawSlot(slotId);
-        });
-        renderStats();
-        renderItemList();
-        saveToStorage();
-		updateSkinClass();
-      }
+				activeClass = newClass;
+				wrap.querySelectorAll('.class-btn').forEach(function(b) { b.classList.remove('active'); });
+				btn.classList.add('active');
+				itemsAtRisk.forEach(function(slotId) {
+						const removedItem = equipped[slotId]; // ← capturer avant delete
+						delete equipped[slotId];
+						clearRunesForSlot(slotId);
+						redrawSlot(slotId);
+
+						// ← Débloquer l'offhand si c'était une 2 mains
+						const offSlotId = findOffhandSlotId(removedItem);
+						if (offSlotId) redrawSlot(offSlotId);
+				});
+				renderStats();
+				renderItemList();
+				saveToStorage();
+				updateSkinClass();
+			}
 
       if (!itemsAtRisk.length) { applyClassChange(); return; }
 
