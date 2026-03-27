@@ -838,13 +838,19 @@ function loadAccessoriesForClass(classId) {
       name.className = 'rune-picker-name';
       name.textContent = rune.name;
 
-      const statsStr = Object.entries(rune.stats).map(function(e) {
-        const statDef = ALL_STATS.find(function(s) { return s.id === e[0]; });
-        return '+' + e[1] + '\u202f' + (statDef ? statDef.label : e[0]);
-      }).join(' · ');
-      const stats = document.createElement('span');
-      stats.className = 'rune-picker-stats';
-      stats.textContent = statsStr;
+      const stats = document.createElement('div');
+		stats.className = 'rune-picker-stats';
+		stats.innerHTML = Object.entries(rune.stats).map(function(e) {
+		const statDef = ALL_STATS.find(function(s) { return s.id === e[0]; });
+		const icon  = statDef ? statDef.icon  : '◈';
+		const label = statDef ? statDef.label : e[0];
+		const unit  = statDef ? statDef.unit  : '';
+		return '<div style="display:flex;align-items:center;gap:8px;padding:2px 0">' +
+			'<span style="font-size:11px;width:15px;text-align:center;flex-shrink:0">' + icon + '</span>' +
+			'<span style="flex:1;color:rgba(255,255,255,.55);font-size:10.5px">' + label + '</span>' +
+			'<span style="font-weight:700;color:rgba(255,255,255,.9)">' + '+' + e[1] + unit + '</span>' +
+			'</div>';
+		}).join('');
 
       item.appendChild(pip);
       item.appendChild(name);
