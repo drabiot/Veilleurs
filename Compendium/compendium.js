@@ -66,7 +66,7 @@ function buildSidebarAlpha(items) {
     const color = rarityColor(item.rarity);
     link.innerHTML = `
       <span class="sidebar-item-dot" style="background:${color}"></span>
-      ${item.name}`;
+      ${item.name}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
     link.addEventListener('click', (e) => {
       e.preventDefault();
       showItem(item.id);
@@ -252,8 +252,8 @@ function buildSidebar(items, expandAll = false) {
 
           const color = rarityColor(item.rarity);
           link.innerHTML = `
-            <span class="sidebar-item-dot" style="background:${color}"></span>
-            ${item.name}`;
+          <span class="sidebar-item-dot" style="background:${color}"></span>
+          ${item.name}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
 
           link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -633,6 +633,121 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
 }
 
 /* ══════════════════════════════════
+   RENDU CRAFT
+══════════════════════════════════ */
+function renderCraft(craftList) {
+  if (!craftList || craftList.length === 0) return '';
+
+  // Normalise : accepte à plat [{qty,id},...] ou imbriqué [[...],[...]]
+  const isNested = Array.isArray(craftList[0]);
+  const recettes = isNested ? craftList : [craftList];
+
+  function renderRows(items) {
+  return items.map(entry => {
+    // ── Monnaie détectée
+    const currency = CURRENCIES[entry.id];
+    if (currency) {
+      return `
+        <div class="craft-ingredient-row">
+          <span class="craft-ingredient-qty">×${entry.qty}</span>
+          <span class="craft-ingredient-visual">
+            <span class="craft-ingredient-emoji">${currency.emoji}</span>
+          </span>
+          <span class="craft-ingredient-name craft-currency-name" style="color:${currency.color};">
+            ${currency.label}
+          </span>
+        </div>`;
+    }
+
+    // ── Item normal (inchangé)
+    const ingredient = ITEMS.find(i => i.id === entry.id);
+
+    let imgHtml;
+    if (ingredient) {
+      const imgSrc = ingredient.image || ingredient.img || null;
+      imgHtml = imgSrc
+        ? `<img class="craft-ingredient-img" src="${imgSrc}" alt="${ingredient.name}">`
+        : `<span class="craft-ingredient-emoji">${catData(ingredient.category).emoji}</span>`;
+    } else {
+      imgHtml = `<span class="craft-ingredient-emoji">❓</span>`;
+    }
+
+    const name  = ingredient ? ingredient.name : `<em style="color:#888">${entry.id}</em>`;
+    const color = ingredient ? rarityColor(ingredient.rarity) : '#666';
+
+    const nameHtml = ingredient
+      ? `<a class="craft-ingredient-name" href="#${entry.id}" style="color:${color}" data-id="${entry.id}">${name}</a>`
+      : `<span class="craft-ingredient-name" style="color:#888">${name}</span>`;
+
+    return `
+      <div class="craft-ingredient-row">
+        <span class="craft-ingredient-qty">×${entry.qty}</span>
+        <span class="craft-ingredient-visual">${imgHtml}</span>
+        ${nameHtml}
+      </div>`;
+  }).join('');
+}
+
+  // Cas simple : une seule recette, pas d'onglets
+  if (recettes.length === 1) {
+    return `
+      <div class="item-craft">
+        <div class="item-section-title">Craft</div>
+        <div class="item-obtain">
+          <div class="craft-list">${renderRows(recettes[0])}</div>
+        </div>
+      </div>`;
+  }
+
+  // Plusieurs recettes : onglets
+  const tabsHtml = recettes.map((_, i) => `
+    <button class="craft-tab${i === 0 ? ' active' : ''}" data-tab="${i}">
+      Recette ${i + 1}
+    </button>`).join('');
+
+  const panelsHtml = recettes.map((items, i) => `
+    <div class="craft-panel${i === 0 ? ' active' : ''}" data-panel="${i}">
+      <div class="craft-list">${renderRows(items)}</div>
+    </div>`).join('');
+
+  return `
+    <div class="item-craft">
+      <div class="item-section-title">Craft</div>
+      <div class="item-obtain craft-tabbed">
+        <div class="craft-tabs">${tabsHtml}</div>
+        <div class="craft-panels">${panelsHtml}</div>
+      </div>
+    </div>`;
+}
+
+/* ══════════════════════════════════
+   AFFICHAGE FICHE ITEM
+══════════════════════════════════ */
+
+function bindCraftLinks() {
+  document.querySelectorAll('.craft-ingredient-name[data-id]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = link.dataset.id;
+      showItem(targetId);
+      history.pushState({ item: targetId }, '', `#${targetId}`);
+    });
+  });
+}
+
+function bindCraftTabs() {
+  document.querySelectorAll('.craft-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const idx = tab.dataset.tab;
+      document.querySelectorAll('.craft-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.craft-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelector(`.craft-panel[data-panel="${idx}"]`)?.classList.add('active');
+    });
+  });
+}
+
+/* ══════════════════════════════════
    AFFICHAGE FICHE ITEM
 ══════════════════════════════════ */
 function showItem(id) {
@@ -641,12 +756,31 @@ function showItem(id) {
 
   stopSlideshow();
   stopWebGL();
-
   placeholder.style.display = 'none';
 
   document.querySelectorAll('.sidebar-item').forEach(el => {
     el.classList.toggle('active', el.dataset.id === id);
   });
+
+  // ── État du toggle (false = Normal, true = Qualité)
+  let qualityMode = false;
+
+  // ── Données selon le mode actif
+  function getVariant() {
+    if (qualityMode && item.quality) {
+      return {
+        lore:   item.quality.lore   ?? item.lore,
+        obtain: item.quality.obtain ?? item.obtain,
+      };
+    }
+    return { lore: item.lore, obtain: item.obtain };
+  }
+
+  // ── Craft selon le mode actif
+  function getCraft() {
+    if (qualityMode && item.quality) return item.quality.craft ?? item.craft ?? null;
+    return item.craft ?? null;
+  }
 
   const color  = rarityColor(item.rarity);
   const rlabel = rarityLabel(item.rarity);
@@ -657,6 +791,7 @@ function showItem(id) {
   _slidePaused = false;
 
   const hasSlideshow = _slideMedia.length > 1;
+  const hasQuality   = !!item.quality;
 
   const slideshowControls = hasSlideshow ? `
     <div class="slideshow-controls">
@@ -675,11 +810,19 @@ function showItem(id) {
     return '';
   }
 
+  const qualityToggle = hasQuality ? `
+    <div class="quality-toggle" id="quality-toggle">
+      <span class="quality-toggle-label" id="qt-normal">Normal</span>
+      <button class="qt-switch" id="qt-switch" title="Basculer vers la version Qualité" aria-pressed="false">
+        <span class="qt-thumb"></span>
+      </button>
+      <span class="quality-toggle-label" id="qt-quality">✦ Qualité</span>
+    </div>` : '';
+
+  // ── Injection HTML complète
   itemDisplay.innerHTML = `
     <div class="item-sheet">
       <div class="item-header">
-
-        <!-- Cadre média -->
         <div class="item-image-wrap" style="color:${color}; border-color:${color};">
           <div class="item-image-bg" style="background:${color};"></div>
           <div class="item-image-border" style="border-color:${color};"></div>
@@ -689,29 +832,63 @@ function showItem(id) {
           ${mediaTypeLabel(_slideMedia[0])}
           ${slideshowControls}
         </div>
-
-        <!-- Infos -->
         <div class="item-info">
           <h2 class="item-name">${item.name}</h2>
           <div class="item-rarity-badge" style="color:${color}; border-color:${color};">
             <span class="item-rarity-dot" style="background:${color};"></span>
             ${rlabel}
           </div>
-          <blockquote class="item-lore">${parseText(item.lore)}</blockquote>
+          ${qualityToggle}
+          <blockquote class="item-lore" id="item-lore-text">${parseText(item.lore)}</blockquote>
         </div>
-
       </div>
 
       <div class="item-sep"></div>
       <div class="item-section-title">Comment obtenir cet item</div>
-      <div class="item-obtain">${parseText(item.obtain)}</div>
+      <div class="item-obtain" id="item-obtain-text">${parseText(item.obtain)}</div>
+      <div id="item-craft-wrap">${renderCraft(item.craft ?? null)}</div>
       <div class="item-sep"></div>
+
       <div class="item-tags">
         ${(item.tags || []).map(t => `<span class="item-tag">${t}</span>`).join('')}
       </div>
+    </div>`;
 
-    </div>`
+  // ── Bind les liens craft initiaux
+  bindCraftLinks();
+  bindCraftTabs();
 
+  // ── Logique toggle Normal / Qualité
+  if (hasQuality) {
+    const switchBtn = document.getElementById('qt-switch');
+    const loreEl    = document.getElementById('item-lore-text');
+    const obtainEl  = document.getElementById('item-obtain-text');
+    const craftWrap = document.getElementById('item-craft-wrap');
+    const labelNorm = document.getElementById('qt-normal');
+    const labelQual = document.getElementById('qt-quality');
+
+    switchBtn.addEventListener('click', () => {
+      qualityMode = !qualityMode;
+      switchBtn.classList.toggle('active', qualityMode);
+      switchBtn.setAttribute('aria-pressed', qualityMode);
+      labelNorm.classList.toggle('qt-active', !qualityMode);
+      labelQual.classList.toggle('qt-active',  qualityMode);
+
+      const v = getVariant();
+      loreEl.innerHTML   = parseText(v.lore);
+      obtainEl.innerHTML = parseText(v.obtain);
+
+      // ── Mise à jour du craft selon la version
+      craftWrap.innerHTML = renderCraft(getCraft());
+      bindCraftLinks();
+      bindCraftTabs();
+    });
+
+    // État initial : Normal actif
+    labelNorm.classList.add('qt-active');
+  }
+
+  // ── Média & slideshow
   if (_slideMedia.length > 0) {
     renderMedia(_slideMedia[0], color, item.name);
   }

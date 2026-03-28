@@ -453,6 +453,10 @@ const RUNES = [
 	},
 ];
 
+const CURRENCIES = {
+  cols: { label: 'Cols', emoji: '🪙', color: '#c9a84c' },
+};
+
 /* ══ SYSTÈME DE NIVEAU ══ */
 const MAX_LEVEL = 14;
 
@@ -527,7 +531,7 @@ function getMax(val) { return Array.isArray(val) ? val[1] : val; }
 const CATEGORIES = {
   materiaux:       { label: 'Matériaux',          emoji: '🧱' },
   quete:           { label: 'Objets de Quête',    emoji: '📜' },
-  minerais:        { label: 'Minerais',           emoji: '⛏️' },
+  ressources:      { label: 'Ressources',         emoji: '⛏️' },
   nourriture:      { label: 'Nourriture',         emoji: '🍖' },
   consommable:     { label: 'Consommables',       emoji: '🧪' },
   arme:            { label: 'Armes',              emoji: '⚔️' },
@@ -570,7 +574,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Petite épée un peu rouillée parfaite pour s'entraîner ou pour démarrer son aventure.",
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Équipement"
+    obtain:   "Obtenable par les Marchands d'Équipement",
+		craft:		[{qty:75, id:'cols'}]
 	},	
   {
 		id:				'epee_fer',
@@ -585,7 +590,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Épée en fer créée grâce aux loups de la vallée et avec un autre ingrédient.",
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
+    obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
+		craft:		[{qty:5, id:'crocs_de_loup'}, {qty:10, id:'lingot_cuivre'}, {qty:8, id:'chene'}]
 	},
   {
 		id:				'epee_osseuse',
@@ -615,7 +621,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Épée dont la magie a été imprégnée des monstres de la citadelle des neiges.",
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
+    obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
+		craft:		[{qty:18, id:'carapace_requin'}, {qty:24, id:'peau_dur_glacial'}]
 	},
   {
 		id:				'epee_gardien',
@@ -630,7 +637,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Tout juste sortie de la forge, cette lame incarne l'idéal du protecteur.",
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
+		craft:		[{qty:25, id:'lingot_metal_enchante'}, {qty:30, id:'fragment_casse_jaune'}, {qty:1, id:'ame_herald'}]
 	},
   {
 		id:				'nodachi',
@@ -660,7 +668,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Lame tranchante, percante, et puissante comme le dard d'une abeille en colère.",
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron du Donjon Melliona"
+    obtain:   "Fabricable au Forgeron du Donjon Melliona",
+		craft:		[{qty:36, id:'ambre_mielleux'}, {qty:24, id:'dard'}]
 	},
   {
 		id:				'epee_necromancien',
@@ -675,7 +684,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Lame tranchante, percante, et puissante comme le sort d'un nécromancien en colère.",
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necro'}]
 	},
 	{
 		id:				'epee_dechue',
@@ -690,7 +700,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Lame vide d'âme, tranchante et capable d'absorber la vie des defunts.",
 		tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
-		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
+		craft:		[{qty:2, id:'piece_kazor'}]
 	},
 	{
 		id:				'claymore_hivernale',
@@ -736,7 +747,8 @@ const ITEMS = [
 		classes:['guerrier'],
 		lore:     "Un vieux bouclier. Il bloque encore à peu près.",
     tags:     ['Arme', 'Bouclier', 'Rondache', 'Guerrier', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Équipement"
+    obtain:   "Obtenable par les Marchands d'Équipement",
+		craft:		[{qty:25, id:'cols'}]
 	},
   {
 		id:				'bouclier_ika',
@@ -751,7 +763,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Forgé dans la carapace des tortues d'Ika. Idéal pour encaisser sans broncher.",
     tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
+    obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
+		craft:		[{qty:12, id:'carapace_dika'}, {qty:7, id:'ecorce_de_titan'}]
 	},
   {
 		id:				'bouclier_pointu_bois',
@@ -766,7 +779,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Ce bouclier fait de bois possède une pointe en son centre. Il peut encaisser quelques coups aussi.",
     tags:     ['Arme', 'Bouclier', 'Rondache', 'Guerrier', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
+    obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
+		craft:		[{qty:8, id:'lingot_cuivre'}, {qty:7, id:'ecorce_de_titan'}]
 	},
   {
 		id:				'bouclier_sylestre',
@@ -796,7 +810,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Le bouclier le plus résistant que Tolbana puisse offrir.",
     tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
+    obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
+		craft:		[{qty:24, id:'carapace_requin'}, {qty:30, id:'peau_dur_glacial'}]
 	},
   {
 		id:				'bouclier_puissant_tolbana',
@@ -811,7 +826,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "La version équilibrée parmi tous les boucliers de Tolbana.",
     tags:     ['Arme', 'Bouclier', 'Rondache', 'Guerrier', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
+    obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
+		craft:		[{qty:24, id:'carapace_requin'}, {qty:30, id:'peau_dur_glacial'}]
 	},
   {
 		id:				'bouclier_illfang',
@@ -841,7 +857,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Solide et résistant, il protège la malédiction qui pèse sur son porteur, ainsi absorbant les assauts.",
     tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:32, id:'pierre_osseuse_noire'}, {qty:8, id:'poudre_necro'}]
 	},
 	{
 		id:				'bouclier_hivernal',
@@ -888,7 +905,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Double hache en fer créée grâce aux loups de la vallée et avec un autre ingrédient.",
     tags:     ['Arme', 'Hache Double', 'Deux Mains', 'Guerrier', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ"
+    obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
+		craft:		[{qty:5, id:'crocs_de_loup'}, {qty:10, id:'lingot_cuivre'}, {qty:8, id:'chene'}]
 	},
   {
 		id:				'marteau_colosse',
@@ -920,7 +938,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Marteau dont la magie a été imprégnée des monstres de la citadelle des neiges.",
     tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armes de Tolbana"
+    obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
+		craft:		[{qty:18, id:'carapace_requin'}, {qty:24, id:'peau_dur_glacial'}]
 	},
   {
 		id:				'hallebarde_royale',
@@ -968,7 +987,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Poids écrasant, frappant, assommant comme le dard d'une abeille en colère.",
     tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron du Donjon Melliona"
+    obtain:   "Fabricable au Forgeron du Donjon Melliona",
+		craft:		[{qty:36, id:'ambre_mielleux'}, {qty:24, id:'dard'}]
 	},
   {
 		id:				'marteau_necromancien',
@@ -984,7 +1004,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Poids écrasant, frappant, assommant comme le sort d'un nécromancien en colère.",
     tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien"
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necro'}]
 	},
 	{
 		id:				'hache_double_dechue',
@@ -1000,7 +1021,8 @@ const ITEMS = [
 		classes:	['guerrier'],
 		lore:     "Poids d'une guerre sans âme, terrifiante et tranchant toute forme de vie.",
 		tags:     ['Arme', 'Hache Double', 'Guerrier', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
-		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1"
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
+		craft:		[{qty:2, id:'piece_kazor'}]
 	},
 	{
 		id:				'marteau_hivernal',
@@ -5072,7 +5094,11 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/strengthpot_1.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
-    obtain:   "Obtenable par les Marchands d'Équipement"
+    obtain:   "Obtenable par les Marchands d'Équipement",
+		quality: {
+    lore:   "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
+    obtain: "Fabricable aux Alchimistes"
+  }
   },
 	{
     id:       'potion_vie_1_qualite',
@@ -5320,7 +5346,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Minis Tréants[30]"
   },
   {
-    id:       'écorce_de_titan',
+    id:       'ecorce_de_titan',
     name:     "Écorce de Titan",
     rarity:   'commun',
     category: 'materiaux',
@@ -5540,7 +5566,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Ika[80]"
   },
   {
-    id:       'pièce_métal_enchanté',
+    id:       'piece_metal_enchante',
     name:     "Pièce de Métal Enchanté",
     rarity:   'commun',
     category: 'materiaux',
@@ -5551,7 +5577,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Soldat Déchu[20]\n- Guerrier Déchu[20]"
   },
 	{
-    id:       'lingot_métal_enchanté',
+    id:       'lingot_metal_enchante',
     name:     "Lingot de Métal Enchanté",
     rarity:   'commun',
     category: 'materiaux',
@@ -5562,7 +5588,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
   },
   {
-    id:       'pièce_âme_métal',
+    id:       'piece_ame_metal',
     name:     "Pièce d'Âme de Métal",
     rarity:   'commun',
     category: 'materiaux',
@@ -5573,7 +5599,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Guerrier Déchu[25]"
   },
 	{
-    id:       'lingot_âme_métal',
+    id:       'lingot_ame_metal',
     name:     "Lingot d'Âme de Métal",
     rarity:   'commun',
     category: 'materiaux',
@@ -5584,7 +5610,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus"
   },
 	{
-    id:       'fagment_casse_rouge',
+    id:       'fragment_casse_rouge',
     name:     "Fragment Cassé Rouge",
     rarity:   'commun',
     category: 'materiaux',
@@ -5595,7 +5621,7 @@ const ITEMS = [
     obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
   },
 	{
-    id:       'fagment_casse_jaune',
+    id:       'fragment_casse_jaune',
     name:     "Fragment Cassé Jaune",
     rarity:   'commun',
     category: 'materiaux',
@@ -5606,7 +5632,7 @@ const ITEMS = [
     obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
   },
 	{
-    id:       'fagment_casse_violet',
+    id:       'fragment_casse_violet',
     name:     "Fragment Cassé Violet",
     rarity:   'commun',
     category: 'materiaux',
@@ -5628,7 +5654,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armure à l'intérieur du Donjon du Labyrinthe des Déchus"
   },
   {
-    id:       'âme_warden',
+    id:       'ame_warden',
     name:     "Âme du Warden",
     rarity:   'rare',
     category: 'materiaux',
@@ -5639,7 +5665,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Gardien Déchu[30]"
   },
   {
-    id:       'âme_herald',
+    id:       'ame_herald',
     name:     "Âme de l'Herald",
     rarity:   'rare',
     category: 'materiaux',
@@ -5650,7 +5676,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Héraut Déchu[30]"
   },
   {
-    id:       'âme_reaper',
+    id:       'ame_reaper',
     name:     "Âme du Reaper",
     rarity:   'rare',
     category: 'materiaux',
@@ -5661,7 +5687,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Faucheuse Déchue[30]"
   },
   {
-    id:       'tissu_araignée',
+    id:       'tissu_araignee',
     name:     "Tissu d'Araignée",
     rarity:   'commun',
     category: 'materiaux',
@@ -6173,9 +6199,169 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Gardien Déchu\n- Héraut Déchu\n- Faucheuse Déchu"
   },
 	/* ══ Palier 2 ══ */
-	/* ══ Minerais ══ */
+	/* ══ Ressources ══ */
 	/* ══ Palier 1 ══ */
+	{
+    id:       'charbon',
+    name:     "Minerais de Charbon",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Ressources/charbon.png",
+    lore:     "Une Roche sombre contenant des traces de charbon brut.",
+    tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
+    obtain:   "Récupérable dans les des deux mines du Palier 1"
+  },
+	{
+    id:       'cuivre',
+    name:     "Minerais de Cuivre",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Ressources/copper.png",
+    lore:     "Minerais de basse qualité, utile pour les débuts d'aventure au débutants.",
+    tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
+    obtain:   "Récupérable dans les des deux mines du Palier 1"
+  },
+	{
+    id:       'lingot_cuivre',
+    name:     "Lingot de Cuivre",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Ressources/bar_copper.png",
+    lore:     "Lingot raffiné à partir de minerai de cuivre. Utilisé en forge, pour certaines confections.",
+    tags:     ['Ressource', 'Minerais', 'Lingot', 'Palier 1', 'Commun'],
+    obtain:   "Fabricable:\n- Forgeron d'Armures de la Ville de Départ\n- Forgeron de Lingots au Sud du Quartier OG",
+		craft:	 [{id:'cuivre', qty:3}, {id:'charbon', qty:2}]
+  },
+	{
+    id:       'fer',
+    name:     "Minerais de Fer",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   1,
+    image:    null,
+    lore:     "Une roche marquée par des veines de métal brut.",
+    tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
+    obtain:   "Récupérable dans les des deux mines du Palier 1"
+  },
+	{
+    id:       'lingot_fer',
+    name:     "Lingot de Fer",
+    rarity:   'rare',
+    category: 'ressources',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Ressources/bar_iron.png",
+    lore:     "Lingot forgé à haute température. Un matériau essentiel et polyvalent. Utilisé par les artisans.",
+    tags:     ['Ressource', 'Minerais', 'Lingot', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable au Forgeron de Lingots au Sud du Quartier OG",
+		craft:	 [{id:'fer', qty:4}, {id:'charbon', qty:2}]
+  },
+	{
+    id:       'allium',
+    name:     "Fleur d'Allium",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Ressources/allium.png",
+    lore:     "Belle fleur violette très utilisée par beaucoup d'alchimistes pour des potions de vitalité.",
+    tags:     ['Ressource', 'Plante', 'Fleur', 'Palier 1', 'Commun'],
+    obtain:   "Récupérable dans les Champs au Sud du Quartier OG"
+  },
+	{
+    id:       'blé',
+    name:     "Blé",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Ressources/wheat.png",
+    lore:     "Une céréale simple poussant dans les champs abandonnés.",
+    tags:     ['Ressource', 'Plante', 'Céréale', 'Palier 1', 'Commun'],
+    obtain:   "Récupérable dans les Champs au Sud du Quartier OG"
+  },
+	{
+    id:       'chene',
+    name:     "Buche de Chêne",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Ressources/buche_chene.png",
+    lore:     "Solide, fiable, parfait pour les fabrications basiques.",
+    tags:     ['Ressource', 'Bois', 'Buche', 'Palier 1', 'Commun'],
+    obtain:   "Récupérable:\n- Forêt à l'Est de la Ville de Départ\n- Forêt aux alentours de Mizunari"
+  },
+	{
+    id:       'planche_chene',
+    name:     "Planche de Chêne",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Ressources/planche_chene.png",
+    lore:     "Planche travaillé dans une scierie, parfait pour certaines fabrications.",
+    tags:     ['Ressource', 'Bois', 'Planche', 'Palier 1', 'Commun'],
+    obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
+		craft:		[{id:'chene', qty:2}]
+  },
+	{
+    id:       'bouleau',
+    name:     "Buche de Bouleau",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Ressources/buche_bouleau.png",
+    lore:     "Solide, fiable, parfait pour les fabrications basiques.",
+    tags:     ['Ressource', 'Bois', 'Buche', 'Palier 1', 'Commun'],
+    obtain:   "Récupérable dans la Forêt au Nord de Virelune"
+  },
+	{
+    id:       'planche_bouleau',
+    name:     "Planche de Bouleau",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Ressources/planche_bouleau.png",
+    lore:     "Planche travaillé dans une scierie, parfait pour certaines fabrications.",
+    tags:     ['Ressource', 'Bois', 'Planche', 'Palier 1', 'Commun'],
+    obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
+		craft:		[{id:'bouleau', qty:2}]
+  },
+	{
+    id:       'poudre_bois',
+    name:     "Poudre de Bois",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Ressources/poussiere_bois.png",
+    lore:     "Petite poudre de bois fabriquée à l'aide de n'importe quel bois.",
+    tags:     ['Ressource', 'Bois', 'Poudre', 'Palier 1', 'Commun'],
+    obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
+		craft:		[[{id:'planche_chene', qty:2}], [{id:'planche_bouleau', qty:2}], [{id:'planche_acacia', qty:2}]]
+  },
 	/* ══ Palier 2 ══ */
+	{
+    id:       'acacia',
+    name:     "Buche d'Acacia",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Ressources/buche_acacia.png",
+    lore:     "Solide, fiable, parfait pour les fabrications basiques.",
+    tags:     ['Ressource', 'Bois', 'Buche', 'Palier 2', 'Commun'],
+    obtain:   "Récupérable dans la Forêt au Nord de Virelune"
+  },
+	{
+    id:       'planche_acacia',
+    name:     "Planche d'Acacia",
+    rarity:   'commun',
+    category: 'ressources',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Ressources/planche_acacia.png",
+    lore:     "Planche travaillé dans une scierie, parfait pour certaines fabrications.",
+    tags:     ['Ressource', 'Bois', 'Planche', 'Palier 2', 'Commun'],
+    obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
+		craft:		[{id:'acacia', qty:2}]
+  },
 
 ];
 
