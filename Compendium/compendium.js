@@ -638,68 +638,58 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
 function renderCraft(craftList) {
   if (!craftList || craftList.length === 0) return '';
 
-  // Normalise : accepte à plat [{qty,id},...] ou imbriqué [[...],[...]]
   const isNested = Array.isArray(craftList[0]);
   const recettes = isNested ? craftList : [craftList];
 
   function renderRows(items) {
-  return items.map(entry => {
-    // ── Monnaie détectée
-    const currency = CURRENCIES[entry.id];
-    if (currency) {
+    return items.map(entry => {
+      const currency = CURRENCIES[entry.id];
+      if (currency) {
+        return `
+          <div class="craft-ingredient-row">
+            <span class="craft-ingredient-qty">×${entry.qty}</span>
+            <span class="craft-ingredient-visual">
+              <span class="craft-ingredient-emoji">${currency.emoji}</span>
+            </span>
+            <span class="craft-ingredient-name craft-currency-name" style="color:${currency.color};">
+              ${currency.label}
+            </span>
+          </div>`;
+      }
+
+      const ingredient = ITEMS.find(i => i.id === entry.id);
+      let imgHtml;
+      if (ingredient) {
+        const imgSrc = ingredient.image || ingredient.img || null;
+        imgHtml = imgSrc
+          ? `<img class="craft-ingredient-img" src="${imgSrc}" alt="${ingredient.name}">`
+          : `<span class="craft-ingredient-emoji">${catData(ingredient.category).emoji}</span>`;
+      } else {
+        imgHtml = `<span class="craft-ingredient-emoji">❓</span>`;
+      }
+
+      const name  = ingredient ? ingredient.name : `<em style="color:#888">${entry.id}</em>`;
+      const color = ingredient ? rarityColor(ingredient.rarity) : '#666';
+      const nameHtml = ingredient
+        ? `<a class="craft-ingredient-name" href="#${entry.id}" style="color:${color}" data-id="${entry.id}">${name}</a>`
+        : `<span class="craft-ingredient-name" style="color:#888">${name}</span>`;
+
       return `
         <div class="craft-ingredient-row">
           <span class="craft-ingredient-qty">×${entry.qty}</span>
-          <span class="craft-ingredient-visual">
-            <span class="craft-ingredient-emoji">${currency.emoji}</span>
-          </span>
-          <span class="craft-ingredient-name craft-currency-name" style="color:${currency.color};">
-            ${currency.label}
-          </span>
+          <span class="craft-ingredient-visual">${imgHtml}</span>
+          ${nameHtml}
         </div>`;
-    }
+    }).join('');
+  }
 
-    // ── Item normal (inchangé)
-    const ingredient = ITEMS.find(i => i.id === entry.id);
-
-    let imgHtml;
-    if (ingredient) {
-      const imgSrc = ingredient.image || ingredient.img || null;
-      imgHtml = imgSrc
-        ? `<img class="craft-ingredient-img" src="${imgSrc}" alt="${ingredient.name}">`
-        : `<span class="craft-ingredient-emoji">${catData(ingredient.category).emoji}</span>`;
-    } else {
-      imgHtml = `<span class="craft-ingredient-emoji">❓</span>`;
-    }
-
-    const name  = ingredient ? ingredient.name : `<em style="color:#888">${entry.id}</em>`;
-    const color = ingredient ? rarityColor(ingredient.rarity) : '#666';
-
-    const nameHtml = ingredient
-      ? `<a class="craft-ingredient-name" href="#${entry.id}" style="color:${color}" data-id="${entry.id}">${name}</a>`
-      : `<span class="craft-ingredient-name" style="color:#888">${name}</span>`;
-
-    return `
-      <div class="craft-ingredient-row">
-        <span class="craft-ingredient-qty">×${entry.qty}</span>
-        <span class="craft-ingredient-visual">${imgHtml}</span>
-        ${nameHtml}
-      </div>`;
-  }).join('');
-}
-
-  // Cas simple : une seule recette, pas d'onglets
   if (recettes.length === 1) {
     return `
-      <div class="item-craft">
-        <div class="item-section-title">Craft</div>
-        <div class="item-obtain">
-          <div class="craft-list">${renderRows(recettes[0])}</div>
-        </div>
+      <div class="item-obtain">
+        <div class="craft-list">${renderRows(recettes[0])}</div>
       </div>`;
   }
 
-  // Plusieurs recettes : onglets
   const tabsHtml = recettes.map((_, i) => `
     <button class="craft-tab${i === 0 ? ' active' : ''}" data-tab="${i}">
       Recette ${i + 1}
@@ -711,12 +701,9 @@ function renderCraft(craftList) {
     </div>`).join('');
 
   return `
-    <div class="item-craft">
-      <div class="item-section-title">Craft</div>
-      <div class="item-obtain craft-tabbed">
-        <div class="craft-tabs">${tabsHtml}</div>
-        <div class="craft-panels">${panelsHtml}</div>
-      </div>
+    <div class="item-obtain craft-tabbed">
+      <div class="craft-tabs">${tabsHtml}</div>
+      <div class="craft-panels">${panelsHtml}</div>
     </div>`;
 }
 
@@ -724,6 +711,33 @@ function renderCraft(craftList) {
    AFFICHAGE FICHE ITEM
 ══════════════════════════════════ */
 
+function renderEffects(effectsList) {
+  if (!effectsList || effectsList.length === 0) return '';
+
+  const rows = effectsList.map(eff => {
+    const meta    = EFFECT_META[eff.type] || { icon: '◆', color: '#aaa', label: eff.type, prefix: '' };
+    const color   = eff.color  || meta.color;
+    const icon    = eff.icon   || meta.icon;
+    const label   = eff.label  || meta.label;
+    const prefix  = eff.prefix ?? meta.prefix;
+    const valueStr = `${prefix}${eff.value}${eff.unit ? ' ' + eff.unit : ''}`;
+    const duration = eff.instant          ? 'Instantané'
+                   : eff.type === 'cooldown' ? 'Cooldown'
+                   : eff.duration            ? `${eff.duration} s`
+                   : '';
+    return `
+      <div class="effect-row">
+        <div class="effect-icon" style="color:${color};">${icon}</div>
+        <div class="effect-body">
+          <div class="effect-label">${label}</div>
+          <div class="effect-value" style="color:${color};">${valueStr}</div>
+        </div>
+        ${duration ? `<div class="effect-duration">${duration}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  return `<div class="item-obtain effects-panel">${rows}</div>`;
+}
 function bindCraftLinks() {
   document.querySelectorAll('.craft-ingredient-name[data-id]').forEach(link => {
     link.addEventListener('click', (e) => {
@@ -747,9 +761,6 @@ function bindCraftTabs() {
   });
 }
 
-/* ══════════════════════════════════
-   AFFICHAGE FICHE ITEM
-══════════════════════════════════ */
 function showItem(id) {
   const item = ITEMS.find(i => i.id === id);
   if (!item) return;
@@ -846,7 +857,15 @@ function showItem(id) {
       <div class="item-sep"></div>
       <div class="item-section-title">Comment obtenir cet item</div>
       <div class="item-obtain" id="item-obtain-text">${parseText(item.obtain)}</div>
-      <div id="item-craft-wrap">${renderCraft(item.craft ?? null)}</div>
+      ${(item.craft || item.effects) ? `
+      <div class="effects-craft-titles" id="effects-craft-titles">
+        <div class="item-section-title">${item.craft ? 'Craft' : ''}</div>
+        <div class="item-section-title">${item.effects ? 'Effets' : ''}</div>
+      </div>
+      <div class="effects-craft-row">
+        <div id="item-craft-wrap">${renderCraft(item.craft ?? null)}</div>
+        <div id="item-effects-wrap">${renderEffects(item.effects ?? null)}</div>
+      </div>` : ''}
       <div class="item-sep"></div>
 
       <div class="item-tags">
@@ -880,6 +899,11 @@ function showItem(id) {
 
       // ── Mise à jour du craft selon la version
       craftWrap.innerHTML = renderCraft(getCraft());
+      const effectsWrap = document.getElementById('item-effects-wrap');
+        if (effectsWrap) {
+          const qualEffects = qualityMode && item.quality?.effects ? item.quality.effects : item.effects;
+          effectsWrap.innerHTML = renderEffects(qualEffects ?? null);
+        }
       bindCraftLinks();
       bindCraftTabs();
     });
