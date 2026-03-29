@@ -142,9 +142,14 @@ function initSkinViewer(W, colH) {
   });
 
   window.__skinViewer.autoRotate  = false;
-  window.__skinViewer.zoom        = 0.85;
+  window.__skinViewer.zoom        = 0.70;
   window.__skinViewer.globalLight = 3;
   window.__skinViewer.cameraLight = 1;
+
+  canvas.addEventListener('wheel', function(e) {
+    e.stopPropagation();
+    e.preventDefault();
+  }, { passive: false, capture: true });
 
   // La bonne API pour cette version
   const walk = new skinview3d.WalkingAnimation();
