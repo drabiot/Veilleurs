@@ -390,6 +390,8 @@ const STAT_GROUPS = [
       { id:'regen_sante',         label:'Régénération Santé',              icon:'💓',  unit:'/s', max:200  },
       { id:'regen_mana',          label:'Régénération Mana',               icon:'💦',  unit:'/s', max:200  },
       { id:'regen_stamina',       label:'Régénération Stamina',            icon:'👟',  unit:'/s', max:200  },
+			{ id:'cout_mana',          	label:'Coût Mana',               				 icon:'🌊',  unit:'', 	max:50  },
+      { id:'cout_stamina',       	label:'Coût Stamina',            				 icon:'🏃',  unit:'', 	max:50  },
     ]
   },
 ];
@@ -697,7 +699,7 @@ const ITEMS = [
 		lore:     "Lame tranchante, percante, et puissante comme le sort d'un nécromancien en colère.",
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necro'}]
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
 	{
 		id:				'epee_dechue',
@@ -870,7 +872,7 @@ const ITEMS = [
 		lore:     "Solide et résistant, il protège la malédiction qui pèse sur son porteur, ainsi absorbant les assauts.",
     tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:32, id:'pierre_osseuse_noire'}, {qty:8, id:'poudre_necro'}]
+		craft:		[{qty:64, id:'os_sombre'}, {qty:32, id:'pierre_osseuse_noire'}, {qty:8, id:'poudre_necromancien'}]
 	},
 	{
 		id:				'bouclier_hivernal',
@@ -1017,7 +1019,7 @@ const ITEMS = [
 		lore:     "Poids écrasant, frappant, assommant comme le sort d'un nécromancien en colère.",
     tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necro'}]
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
 	{
 		id:				'hache_double_dechue',
@@ -1228,7 +1230,7 @@ const ITEMS = [
     lore:     "Une Serpe sombre aux gravures funéraires, dont la lame courbe semble liée aux arts interdits..",
     tags:     ['Armes', 'Serpe', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necro'}]
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
   {
 		id:				'faux_necromancienne',
@@ -1245,7 +1247,7 @@ const ITEMS = [
     lore:     "Une faux austère aux runes sépulcrales dont la lame noire évoque les rites anciens et les forces d'outre-tombe.",
     tags:     ['Armes', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necro'}]
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
 	{
 		id:				'dague_dechue',
@@ -1453,7 +1455,7 @@ const ITEMS = [
     lore:     "Un arc sombre aux gravures funéraires, dont les branches semblent façonnées par une magie d'outre-tombe.",
     tags:     ['Arme', 'Arc', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necro'}]
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
 	{
 		id:				'arc_dechue',
@@ -1563,7 +1565,7 @@ const ITEMS = [
     lore:     "Une arbalète austère aux ornements sépulcraux, imprégnée d'une présence silencieuse venue d'outre-tombe.",
     tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necro'}]
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
 	{
 		id:				'arbalete_dechue',
@@ -2411,7 +2413,7 @@ const ITEMS = [
 		category:	'accessoire',
 		palier:		2,
 		lvl:			13,
-		img:			"", //NULL
+		img:			"../img/compendium/textures/trinkets/P2/anneau_aventurier.png", //NULL
 		stats:		{vitesse_attaque:0.1, crit_comp_degats:1, defense:1, soin_bonus:1, sante:1, mana:1, stamina:1, regen_sante:0.1, regen_mana:0.1, regen_stamina:0.1},
     lore:     "Forgé il y a longtemps, cet anneau porte la marque des plus grands aventuriers du royaume.",
     tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],
@@ -3138,7 +3140,7 @@ const ITEMS = [
 		palier:		1,
 		lvl:			10,
 		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_rose.png",
-		stats:		{},
+		stats:		{sante:15, mana:30, stamina:15},
     lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
     tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
     obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
@@ -3153,7 +3155,7 @@ const ITEMS = [
 		palier:		1,
 		lvl:			10,
 		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_bleu.png",
-		stats:		{},
+		stats:		{degats_competence:5, vampirisme:2.5, hate:5, cout_mana:-5, cout_stamina:-2},
     lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
     tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
     obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
@@ -3747,7 +3749,7 @@ const ITEMS = [
 		palier:		1,
 		lvl:			10,
 		img:			"../img/compendium/textures/trinkets/Christmas/couronne_sol.png",
-		stats:		{hate:5, mana:5, stamina:2.5},
+		stats:		{hate:5, mana:5, stamina:2.5, cout_mana:-2, cout_stamina:-1},
     lore:     "Une couronne finement ouvragée, mêlant motifs solaires et hivernaux, symbole de l'équilibre entre les saisons.",
     tags:     ['Accessoire', 'Artefact', 'Couronne', 'Palier 1', 'Event', 'Noël'],
     obtain:   "Finir la Quête d'Événement de Noël 2025"
@@ -4072,7 +4074,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Casque', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necro'}, {qty:8, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'plastron_necro_guerrier',
@@ -4089,7 +4091,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Plastron', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necro'}, {qty:16, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
 		
 	},
   {
@@ -4107,7 +4109,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Jambières', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necro'}, {qty:12, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'bottes_necro_guerrier',
@@ -4124,7 +4126,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Bottes', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necro'}, {qty:8, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
   /* ══ Assassin - Archer ══ */
   /* ══ Palier 1 ══ */
@@ -4434,7 +4436,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Casque', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necro'}, {qty:8, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'plastron_necro_assassin',
@@ -4451,7 +4453,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Plastron', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necro'}, {qty:16, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'jambieres_necro_assassin',
@@ -4468,7 +4470,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Jambières', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necro'}, {qty:12, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'bottes_necro_assassin',
@@ -4485,7 +4487,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Bottes', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necro'}, {qty:8, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'casque_chasseuse',
@@ -4570,7 +4572,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Casque', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necro'}, {qty:8, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'plastron_necro_archer',
@@ -4587,7 +4589,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Plastron', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necro'}, {qty:16, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'jambieres_necro_archer',
@@ -4604,7 +4606,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Jambières', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necro'}, {qty:12, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'bottes_necro_archer',
@@ -4621,7 +4623,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Bottes', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necro'}, {qty:8, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
   /* ══ Mage - Shaman ══ */
   /* ══ Palier 1 ══ */
@@ -4931,7 +4933,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Casque', 'Mage', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necro'}, {qty:8, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'plastron_necro_mage',
@@ -4948,7 +4950,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Plastron', 'Mage', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necro'}, {qty:16, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'jambieres_necro_mage',
@@ -4965,7 +4967,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Jambières', 'Mage', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necro'}, {qty:12, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'bottes_necro_mage',
@@ -4982,7 +4984,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Bottes', 'Mage', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necro'}, {qty:8, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'casque_miel_myysticisé',
@@ -5067,7 +5069,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Casque', 'Shaman', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necro'}, {qty:8, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'plastron_necro_shaman',
@@ -5084,7 +5086,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Plastron', 'Shaman', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necro'}, {qty:16, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'jambieres_necro_shaman',
@@ -5101,7 +5103,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Jambières', 'Shaman', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necro'}, {qty:12, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
 	},
   {
 		id:				'bottes_necro_shaman',
@@ -5118,7 +5120,7 @@ const ITEMS = [
     lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
     tags:     ['Armure', 'Bottes', 'Shaman', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necro'}, {qty:8, id:'pierre_osseuse_noire'}]
+		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
   /* ══ Other ══ */
   {
@@ -5648,6 +5650,40 @@ const ITEMS = [
 		effects: [
 				{ type: 'level',     value: 10,  unit: '', label: 'Niveau requis pour utiliser le cristal' },
 				{ type: 'buff',     value: 10,  unit: '% Dégâts d\'Armes',    duration: 600 },
+				{ type: 'cooldown', value: 1800,  unit: 's',     label: 'Recharge cristaux' },
+				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
+		],
+  },
+	{
+    id:       'potion_albal',
+    name:     "Potion d'Albal",
+    rarity:   'rare',
+    category: 'consommable',
+    palier:   1,
+    image:    "",
+    lore:     "Cette petite potion de force issue des crocs d'Albal, produit des effets particuliers sur vous.",
+    tags:     ['Consommable', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable en récompense du Donjon Mine de Geldorak",
+		effects: [
+				{ type: 'level',     value: 5,  unit: '', label: 'Niveau requis pour utiliser la potion' },
+				{ type: 'buff',     value: 15,  unit: '% Dégâts d\'Armes',    duration: 60 },
+				{ type: 'cooldown', value: 600,  unit: 's',     label: 'Recharge potions d\'Albal' },
+				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
+		],
+  },
+	{
+    id:       'cristal_illfang',
+    name:     "Cristal d'Illfang",
+    rarity:   'mythique',
+    category: 'consommable',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Consommable/red_crystal.png",
+    lore:     "Un cristal rouge parcourur de veines violacées, dégageant une aura inquiétante rappelant la férocité du redoutable seingeur Kobold.",
+    tags:     ['Consommable', 'Palier 1', 'Mythique'],
+    obtain:   "Obtenable en récompense du Donjon Tour du Kobold",
+		effects: [
+				{ type: 'level',     value: 10,  unit: '', label: 'Niveau requis pour utiliser le cristal' },
+				{ type: 'buff',     value: 30,  unit: '% Dégâts d\'Armes',    duration: 600 },
 				{ type: 'cooldown', value: 1800,  unit: 's',     label: 'Recharge cristaux' },
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
@@ -6315,7 +6351,7 @@ const ITEMS = [
     lore:     "Une ficelle robuste tressé à partir d'un alliage de ferraille, et mélangée à des fils d'araignées.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
     obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
-		craft:		[{id: 'fer', qty: 1}, {id: 'ferraille', qty: 1}, {id: 'fil_araignee', qty: 4}]
+		craft:		[{id: 'fer', qty: 1}, {id: 'morceau_ferraille', qty: 1}, {id: 'fil_araignee', qty: 4}]
   },
 	{
     id:       'ficelle_bauxite',
@@ -6508,7 +6544,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- ??"
   },
 	{
-    id:       'poudre_necro',
+    id:       'poudre_necromancien',
     name:     "Poudre de Nécromancien",
     rarity:   'epique',
     category: 'materiaux',
