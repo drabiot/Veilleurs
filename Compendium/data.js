@@ -2976,6 +2976,7 @@ const ITEMS = [
   {
 		id:				'gants_ours',
 		name:			"Gants des Ours",
+		set:			'ours',
 		rarity:		'rare',    	
 		cat:			'gants',
 		category:	'accessoire',
@@ -6490,7 +6491,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   2,
-    image:    "",
+    image:    "../img/compendium/textures/items/Material/P2/os_sombre.png",
     lore:     "Un os noirci et résistant, vestige d'un squelette ancien et corrompu.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
     obtain:   "Obtenable en tuant:\n- ??"
@@ -6788,7 +6789,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'ressources',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Ressources/iron.png",
     lore:     "Une roche marquée par des veines de métal brut.",
     tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les des deux mines du Palier 1"
