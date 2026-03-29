@@ -2426,7 +2426,7 @@ const ITEMS = [
 		palier:		2,
 		lvl:			13,
 		img:			"../img/compendium/textures/trinkets/P2/Anneau de la Harpie Enflammée.png",
-		stats:		{degat_arme:7.5, vol_vie:2, sante:15},
+		stats:		{degats_arme:7.5, vol_vie:2, sante:15},
     lore:     "La légende raconte que cet anneau est encore imprégné de la soif de sang de la Harpie dont il provient.",
     tags:     ['Accessoire', 'Anneau', 'Secret', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Accessoires Secret du Nid de Brasier",
