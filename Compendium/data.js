@@ -5660,7 +5660,7 @@ const ITEMS = [
     rarity:   'rare',
     category: 'consommable',
     palier:   1,
-    image:    "",
+    image:    "../img/compendium/textures/items/Consommable/potion_albal.png",
     lore:     "Cette petite potion de force issue des crocs d'Albal, produit des effets particuliers sur vous.",
     tags:     ['Consommable', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en récompense du Donjon Mine de Geldorak",
