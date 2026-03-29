@@ -6625,7 +6625,7 @@ const ITEMS = [
     category: 'quete',
     palier:   1,
     image:    "../img/compendium/textures/items/Quest/venin_daraignee.gif",
-    lore:     "Un venin mortel, issu d'une araignée corrompue.",
+    lore:     "Un liquide sombre et visqueux, extrait de la reine des araignées.",
     tags:     ['Quête', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en récompense du Donjon Sanctuaire de Xal'Zirith"
   },
