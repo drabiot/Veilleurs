@@ -2754,7 +2754,7 @@ const ITEMS = [
   {
 		id:				'collier_tricolore',
 		name:			"Collier Tricolore",
-		rarity:		'rare',
+		rarity:		'epique',
 		cat:			'amulette',
 		category:	'accessoire',
 		palier:		2,
@@ -2762,7 +2762,7 @@ const ITEMS = [
 		img:			"../img/compendium/textures/trinkets/P2/Collier Tricolore.png",
 		stats:		{degats_arme:10, degats_competence:5, vol_vie:1, omnivamp:2, defense:1, maitrise_bloc:2.5, puissance_bloc:0.5, sante:5, mana:5, stamina:2.5},
     lore:     "Un collier tricolore, inspirant la terreur des harpies.",
-    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Rare'],
+    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
 		craft:		[{qty:32, id:'plume_enflammee'},{qty:32, id:'plume_terreuse'}, {qty:32, id:'plume_ondoyante'},  {qty:8, id:'lingot_fer'}]
 	},
