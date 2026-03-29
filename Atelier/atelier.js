@@ -1079,6 +1079,15 @@ stats.innerHTML = statsLines +
 						if (!item || !item.buff) return;
 						pts += item.buff[car.id] || 0;
 				});
+
+        Object.entries(equippedRunes).forEach(function(entry) {
+            const runeKey = entry[0];
+            const runeId  = entry[1];
+            const slotId  = runeKey.split('_rune_')[0];
+            if (blockedSlots.has(slotId)) return;
+            const rune = RUNES.find(function(r) { return r.id === runeId; });
+            if (rune && rune.buff) pts += rune.buff[car.id] || 0;
+        });
 				
 				if (pts <= 0) return;
 				Object.entries(car.stats).forEach(function(entry) {
