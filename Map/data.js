@@ -242,11 +242,11 @@ const FLOOR_ZONES = {
       monsters: [
         { name: 'Taureau', level: 10, difficulty: '⭐', emoji: '🐃', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lac-des-taureaux/taureau' },
         { name: 'Taureau Monstrueux', level: 10, difficulty: '⭐', emoji: '🐃', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lac-des-taureaux/taureau_monstrueux' },
-        ],
-        points: [
-          { gx: 151, gy: -135 }, { gx: 200, gy: -81 }, { gx: 175, gy: -9 },
-          { gx: 92, gy: 4 }, { gx: 20, gy: -75 }, { gx: 36, gy: -118 },
-        ]
+      ],
+      points: [
+        { gx: 151, gy: -135 }, { gx: 200, gy: -81 }, { gx: 175, gy: -9 },
+        { gx: 92, gy: 4 },     { gx: 20, gy: -75 },  { gx: 36, gy: -118 },
+      ],
     },
     {
       id: 'm2z2',
@@ -257,11 +257,11 @@ const FLOOR_ZONES = {
       monsters: [
         { name: 'Ours de la Forêt', level: 11, difficulty: '⭐', emoji: '🐻', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lforêt-sucrée/ours-de-la-foret' },
         { name: 'Winnie', level: 11, difficulty: '⭐⭐⭐', emoji: '🐻', link: '' },
-        ],
-        points: [
-          { gx: 294, gy: -625 }, { gx: 334, gy: -709 }, { gx: 541, gy: -719 },
-          { gx: 561, gy: -560 }, { gx: 455, gy: -544 }, { gx: 386, gy: -584 }, { gx: 332, gy: -563 },
-        ]
+      ],
+      points: [
+        { gx: 324, gy: -665 }, { gx: 364, gy: -749 }, { gx: 571, gy: -759 },
+        { gx: 591, gy: -600 }, { gx: 485, gy: -584 }, { gx: 416, gy: -624 }, { gx: 362, gy: -603 },
+      ],
     },
     {
       id: 'm2z3',
@@ -274,23 +274,23 @@ const FLOOR_ZONES = {
         { name: 'Loups des Savanes', level: 10, difficulty: '⭐⭐', emoji: '🐺', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/desert-des-crocs-argentes/loups-des-savanes' },
       ],
       points: [
-        { gx: -207, gy: -593 }, { gx: -263, gy: -481 }, { gx: -528, gy: -395 },
-        { gx: -561, gy: -476 }, { gx: -529, gy: -542 }, { gx: -372, gy: -568 },
-      ]
+        { gx: -207, gy: -643 }, { gx: -263, gy: -531 }, { gx: -528, gy: -445 },
+        { gx: -561, gy: -526 }, { gx: -529, gy: -592 }, { gx: -372, gy: -618 },
+      ],
     },
     {
       id: 'm2z4',
-      name: 'Forêt des Ailes d\'Émeraude',
-      regionName: 'Forêt des Ailes d\'Émeraude',
+      name: "Forêt des Ailes d'Émeraude",
+      regionName: "Forêt des Ailes d'Émeraude",
       color: '#53cb38',
       emoji: '🍃',
       monsters: [
         { name: 'Harpie de Terre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/foret-des-ailes-demeraude/harpie-de-terre' },
-        ],
-        points: [
-          { gx: -583, gy: 385 }, { gx: -568, gy: 374 }, { gx: -531, gy: 410 },
-          { gx: -494, gy: 394 }, { gx: -476, gy: 472 }, { gx: -515, gy: 528 }, { gx: -553, gy: 501 }, { gx: -538, gy: 451 }, { gx: -551, gy: 421 },
-        ]
+      ],
+      points: [
+        { gx: -633, gy: 405 }, { gx: -618, gy: 394 }, { gx: -581, gy: 430 },
+        { gx: -544, gy: 414 }, { gx: -526, gy: 492 }, { gx: -565, gy: 548 }, { gx: -603, gy: 521 }, { gx: -588, gy: 471 }, { gx: -601, gy: 441 },
+      ],
     },
     {
       id: 'm2z5',
@@ -301,11 +301,11 @@ const FLOOR_ZONES = {
       monsters: [
         { name: 'Harpie de Foudre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/baie-des-monstres-ondoyante/harpie-de-foudre' },
         { name: 'Poisson Fulgurant', level: 12, difficulty: '⭐', emoji: '🐟', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/baie-des-monstres-ondoyante/poisson-fulgurant' },
-        ],
-        points: [
-          { gx: -519, gy: -48 }, { gx: -452, gy: 76 }, { gx: -533, gy: 193 },
-          { gx: -721, gy: 220 }, { gx: -766, gy: 266 }, { gx: -839, gy: 211 }, { gx: -754, gy: 48 }, { gx: -675, gy: 54 },
-        ]
+      ],
+      points: [
+        { gx: -559, gy: -48 }, { gx: -492, gy: 76 },  { gx: -573, gy: 193 },
+        { gx: -761, gy: 220 }, { gx: -806, gy: 266 }, { gx: -879, gy: 211 }, { gx: -794, gy: 48 }, { gx: -715, gy: 54 },
+      ],
     },
     {
       id: 'm2z6',
@@ -317,13 +317,13 @@ const FLOOR_ZONES = {
         { name: 'Squelette du Sanctuaire - Archer', level: 13, difficulty: '⭐⭐', emoji: '🏹', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/squelette-du-sanctuaire-archer' },
         { name: 'Squelette du Sanctuaire - Shaman', level: 13, difficulty: '⭐⭐', emoji: '🌿', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/squelette-du-sanctuaire-shaman' },
         { name: 'Squelette du Sanctuaire - Guerrier', level: 13, difficulty: '⭐⭐⭐', emoji: '⚔️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/squelette-du-sanctuaire-guerrier' },
-        { name: 'Gardien du Sanctuaire', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '☠️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/gardien-du-sanctuaire'},
-        { name: 'Minion du Gardien', level: 13, difficulty: '⭐', emoji: '🦴', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/minion-du-gardien'},
-        ],
-        points: [
-          { gx: -18, gy: 123 }, { gx: 14, gy: 127 }, { gx: 36, gy: 172 },
-          { gx: 36, gy: 200 }, { gx: -23, gy: 223 }, { gx: -47, gy: 218 }, { gx: -47, gy: 191 },
-        ]
+        { name: 'Gardien du Sanctuaire', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '☠️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/gardien-du-sanctuaire' },
+        { name: 'Minion du Gardien', level: 13, difficulty: '⭐', emoji: '🦴', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/minion-du-gardien' },
+      ],
+      points: [
+        { gx: -18, gy: 133 }, { gx: 14, gy: 137 }, { gx: 36, gy: 182 },
+        { gx: 36, gy: 210 },  { gx: -23, gy: 233 }, { gx: -47, gy: 228 }, { gx: -47, gy: 201 },
+      ],
     },
     {
       id: 'm2z7',
@@ -332,12 +332,12 @@ const FLOOR_ZONES = {
       color: '#98f8f9',
       emoji: '🏝️',
       monsters: [
-        { name: 'Velindra la Tisseuse', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🧙‍♀️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/oasis-secret/velindrala-tisseuse'},
-        ],
-        points: [
-          { gx: 754, gy: 301 }, { gx: 766, gy: 248 }, { gx: 816, gy: 225 },
-          { gx: 833, gy: 260 }, { gx: 795, gy: 284 },
-        ]
+        { name: 'Velindra la Tisseuse', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🧙‍♀️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/oasis-secret/velindrala-tisseuse' },
+      ],
+      points: [
+        { gx: 754, gy: 351 }, { gx: 766, gy: 298 }, { gx: 816, gy: 275 },
+        { gx: 833, gy: 310 }, { gx: 795, gy: 334 },
+      ],
     },
   ],
 };
@@ -354,8 +354,8 @@ const FLOOR_ZONES_UNDERGROUND = {
         { name: 'Harpie de Feu', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/nid-de-brasier/harpie-de-feu' },
       ],
       points: [
-        { gx: -431, gy: 192 }, { gx: -506, gy: 317 }, { gx: -649, gy: 232 },
-        { gx: -680, gy: 231 }, { gx: -687, gy: 221 }, { gx: -677, gy: 208 }, { gx: -626, gy: 179 }, { gx: -538, gy: 152 }
+        { gx: -461, gy: 217 }, { gx: -536, gy: 342 }, { gx: -679, gy: 257 },
+        { gx: -710, gy: 256 }, { gx: -717, gy: 246 }, { gx: -707, gy: 233 }, { gx: -656, gy: 204 }, { gx: -568, gy: 177 },
       ],
     },
     {
@@ -369,8 +369,8 @@ const FLOOR_ZONES_UNDERGROUND = {
         { name: 'Magnus, Colosse des Veines', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🛡️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/les-veines-de-sablemor/magnus-colosse-des-veines' },
       ],
       points: [
-        { gx: 226, gy: 341 }, { gx: 166, gy: 327 }, { gx: 154, gy: 298 },
-        { gx: 156, gy: 269 }, { gx: 181, gy: 234 }, { gx: 238, gy: 234 }, { gx: 267, gy: 267 }, { gx: 256, gy: 326 }
+        { gx: 246, gy: 366 }, { gx: 186, gy: 352 }, { gx: 174, gy: 323 },
+        { gx: 176, gy: 294 }, { gx: 201, gy: 259 }, { gx: 258, gy: 259 }, { gx: 287, gy: 292 }, { gx: 276, gy: 351 },
       ],
     },
   ],
@@ -547,110 +547,110 @@ const FLOOR_MARKERS = {
   
   ],
   2: [
-    { id: 'm2d1',  type: 'donjon',  gx: 473, gy: -669, name: 'Donjon Ruche de Melliona',                  desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/donjons/donjon-ruche-de-melliona' },
+    { id: 'm2d1',  type: 'donjon',  gx: 506, gy: -724, name: 'Donjon Ruche de Melliona',                  desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/donjons/donjon-ruche-de-melliona' },
 
     { id: 'm2r1',  type: 'région',  gx: 118, gy: -68, name: 'Lac des Taureaux',                           desc: "Un lac asséché, dont le sol craquelé est parcouru des taureaux errants", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lac-des-taureaux' },
     { id: 'm2r2',  type: 'région',  gx: 64, gy: -348, name: 'Urbus',                                      desc: "Ville marchande prospère, garde l'entrée du palier avec ses étals animés", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/urbus' },
-    { id: 'm2r3',  type: 'région',  gx: -545, gy: -245, name: 'Kaelor',                                   desc: "Ville fortifié, imprenable et dévouée au Dieu de la Guerre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/kaelor' },
-    { id: 'm2r4',  type: 'région',  gx: -389, gy: -493, name: 'Désert des Crocs Argentés',                desc: "Un désert impitoyable où rodent des loups aux crocs argentés", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/desert_des_crocs_argentes' },
-    { id: 'm2r5',  type: 'région',  gx: 445, gy: -611, name: 'Forêt Sucrée',                              desc: "Une forêt parfumée de miel, habitée par des ours et le bourdonnement des abeilles", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/foret-sucree' },
-    { id: 'm2r6',  type: 'région',  gx: 473, gy: -669, name: 'Ruche de Melliona',                         desc: "Une ruche géante et bourdonnante, royaume de Melliona et ses abeilles", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/ruche-de-melliona' },
-    { id: 'm2r7',  type: 'région',  gx: -525, gy: 444, name: 'Forêt des Ailes d\'Émeraude',               desc: "Une forêt luxuriante, refuge des harpies aux ailes vertes émeraude", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/foret-des-ailes-demeraude' },
+    { id: 'm2r3',  type: 'région',  gx: -583, gy: -264, name: 'Kaelor',                                   desc: "Ville fortifié, imprenable et dévouée au Dieu de la Guerre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/kaelor' },
+    { id: 'm2r4',  type: 'région',  gx: -372, gy: -556, name: 'Désert des Crocs Argentés',                desc: "Un désert impitoyable où rodent des loups aux crocs argentés", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/desert_des_crocs_argentes' },
+    { id: 'm2r5',  type: 'région',  gx: 484, gy: -665, name: 'Forêt Sucrée',                              desc: "Une forêt parfumée de miel, habitée par des ours et le bourdonnement des abeilles", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/foret-sucree' },
+    { id: 'm2r6',  type: 'région',  gx: 506, gy: -724, name: 'Ruche de Melliona',                         desc: "Une ruche géante et bourdonnante, royaume de Melliona et ses abeilles", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/ruche-de-melliona' },
+    { id: 'm2r7',  type: 'région',  gx: -550, gy: 476, name: 'Forêt des Ailes d\'Émeraude',               desc: "Une forêt luxuriante, refuge des harpies aux ailes vertes émeraude", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/foret-des-ailes-demeraude' },
     { id: 'm2r8',  type: 'région',  gx: -780, gy: 171, name: 'Baie des Monstres Ondoyante',               desc: "Un marais tourbillonnant habité par des harpies de foudre aux cris perçants", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/baie-des-monstres-ondoyante' },
     { id: 'm2r9',  type: 'région',  gx: -6, gy: 181, name: 'Sanctuaire de Khesûn',                        desc: "Un sanctuaire abandonné dans le désert, peuplé de squelettes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/sanctuaire-de-khesun' },
     { id: 'm2r10',  type: 'région',  gx: 798, gy: 253, name: 'Oasis Secret',                              desc: "Une oasis secrète où des pécheurs vivent au rythme de l'eau et du silence", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/oasis-secret' },
     { id: 'm2r11',  type: 'région',  gx: -88, gy: -92, name: 'Baobab Millénaire',                         desc: "Un baobab millénaire aux racines géantes, gardien silencieux du temps et des légendes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/baobab-millenaire' },
-    { id: 'm2r12',  type: 'région',  gx: 524, gy: -435, name: 'Autel des Deux Lunes',                     desc: "Personne ne détient d'information liée à ce lieu. Simplement deux autels ^portant une lune chacune...", link: 'http://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/autel-des-deux-lunes' },
-    { id: 'm2r13',  type: 'région',  gx: -397, gy: 256, name: 'Taran',                                    desc: "Ville abandonné dans un caillou", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/taran' },
-    { id: 'm2r14',  type: 'région',  gx: 671, gy: -255, name: 'Marome',                                   desc: "Petit village de marchands autosuffisant, uni par les prières à la déesse maternelle", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/marome' },
-    { id: 'm2r15',  type: 'région',  gx: -390, gy: -400, name: 'Maisons des Ngangas',                     desc: "Maisons de Kwabeno et Kwabena, deux ermites perdus des montagnes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/maisons-des-ngangas' },
-    { id: 'm2r16',  type: 'région',  gx: -150, gy: 740, name: 'Tour de Taurus',                           desc: "Une tour massive où résonnent les pas de Taurus, le Roi taureau redoutable", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/tour-de-taurus' },
+    { id: 'm2r12',  type: 'région',  gx: 570, gy: -470, name: 'Autel des Deux Lunes',                     desc: "Personne ne détient d'information liée à ce lieu. Simplement deux autels ^portant une lune chacune...", link: 'http://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/autel-des-deux-lunes' },
+    { id: 'm2r13',  type: 'région',  gx: -427, gy: 272, name: 'Taran',                                    desc: "Ville abandonné dans un caillou", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/taran' },
+    { id: 'm2r14',  type: 'région',  gx: 721, gy: -281, name: 'Marome',                                   desc: "Petit village de marchands autosuffisant, uni par les prières à la déesse maternelle", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/marome' },
+    { id: 'm2r15',  type: 'région',  gx: -430, gy: -428, name: 'Maisons des Ngangas',                     desc: "Maisons de Kwabeno et Kwabena, deux ermites perdus des montagnes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/maisons-des-ngangas' },
+    { id: 'm2r16',  type: 'région',  gx: -160, gy: 795, name: 'Tour de Taurus',                           desc: "Une tour massive où résonnent les pas de Taurus, le Roi taureau redoutable", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/tour-de-taurus' },
 
     { id: 'm2t1',  type: 'ressource', emoji: '🌳', gx: -88, gy: -92, name: 'Acacia',                      desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/bucheron#acacia' },
     { id: 'm2t2',  type: 'ressource', emoji: '🌾', gx: -432, gy: 308, name: 'Sépal d\'Ambre',             desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#sepal-dambre' },
-    { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: -432, gy: 308, name: 'Épine d\'Oracile',           desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
+    { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: -462, gy: 322, name: 'Épine d\'Oracile',           desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
     { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: 84, gy: 248, name: 'Épine d\'Oracile',             desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
     { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: 491, gy: -97, name: 'Épine d\'Oracile',            desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
 
-    { id: 'm2b1',  type: 'repreneur_butin', gx: 64, gy: -321, name: 'Repreneur des Ressources aux abords de Urbus',          desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#urbus' },
-    { id: 'm2b2',  type: 'repreneur_butin', gx: -530, gy: -239, name: 'Repreneur des Ressources des Harpies',                desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#kaelor' },
-    { id: 'm2b3',  type: 'repreneur_butin', gx: 665, gy: -256, name: 'Repreneur des Ressources du Sanctuaire de Khesûn',     desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#marome' },
+    { id: 'm2b1',  type: 'repreneur_butin', gx: 68, gy: -344, name: 'Repreneur des Ressources aux abords de Urbus',          desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#urbus' },
+    { id: 'm2b2',  type: 'repreneur_butin', gx: -570, gy: -250, name: 'Repreneur des Ressources des Harpies',                desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#kaelor' },
+    { id: 'm2b3',  type: 'repreneur_butin', gx: 708, gy: -277, name: 'Repreneur des Ressources du Sanctuaire de Khesûn',     desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#marome' },
 
-    { id: 'm2c1', type: 'clef', emoji: '🗝️', gx: 150, gy: -290,  name: "Clef du Donjon Ruche de Melliona",                  desc: "Clef permettant d'ouvrir la porte du Donjon Ruche de Melliona",                link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#urbus-melliona' },
-    { id: 'm2c1', type: 'clef', emoji: '🗝️', gx: 150, gy: -290,  name: "Clef du Donjon Tombeau du Nécromancien",            desc: "Clef permettant d'ouvrir la porte du Donjon Tombeau du Nécromancien",                link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#urbus-tombeau-du-necromancien' },
-    { id: 'm2c3', type: 'clef', emoji: '💍', gx: 72, gy: -45, name: "Fabricant Secret des Taureaux",                         desc: "Permet la confection Secrète du Talisman Féroce",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#lac-des-taureaux' },
-    { id: 'm2c4', type: 'clef', emoji: '💍', gx: -761, gy: 88, name: "Fabricant Secret de la Harpie Noyé",                   desc: "Permet la confection Secrète de l'Anneau de la Harpie Noyée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#baie-des-monstres-ondoyante' },
-    { id: 'm2c5', type: 'clef', emoji: '💍', gx: -571, gy: 480, name: "Fabricant Secret de la Harpie Écrasée",               desc: "Permet la confection Secrète de l'Anneau de la Harpie Écrasée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#foret-des-ailes-demeraude' },
-    { id: 'm2c5', type: 'clef', emoji: '💍', gx: -43, gy: 188, name: "Fabricant Secret du Sanctuaire",                       desc: "Permet la confection Secrète du Collier Runique",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#sanctuaire-de-khesun' },
-	{ id: 'm2c6', type: 'clef', emoji: '💍', gx: -662, gy: -84, name: "Fabricant Secret de la Corruption",                    desc: "Permet la confection Secrète du très puissant Masque Corrompu",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/~/changes/107/carte/personnages/fabricants-clefs-et-secrets#corruption' },
+    { id: 'm2c1', type: 'clef', emoji: '🗝️', gx: 162, gy: -315,  name: "Clef du Donjon Ruche de Melliona",                  desc: "Clef permettant d'ouvrir la porte du Donjon Ruche de Melliona",                link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#urbus-melliona' },
+    { id: 'm2c1', type: 'clef', emoji: '🗝️', gx: 159, gy: -312,  name: "Clef du Donjon Tombeau du Nécromancien",            desc: "Clef permettant d'ouvrir la porte du Donjon Tombeau du Nécromancien",                link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#urbus-tombeau-du-necromancien' },
+    { id: 'm2c3', type: 'clef', emoji: '💍', gx: 78, gy: -71, name: "Fabricant Secret des Taureaux",                         desc: "Permet la confection Secrète du Talisman Féroce",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#lac-des-taureaux' },
+    { id: 'm2c4', type: 'clef', emoji: '💍', gx: -818, gy: 98, name: "Fabricant Secret de la Harpie Noyé",                   desc: "Permet la confection Secrète de l'Anneau de la Harpie Noyée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#baie-des-monstres-ondoyante' },
+    { id: 'm2c5', type: 'clef', emoji: '💍', gx: -618, gy: 529, name: "Fabricant Secret de la Harpie Écrasée",               desc: "Permet la confection Secrète de l'Anneau de la Harpie Écrasée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#foret-des-ailes-demeraude' },
+    { id: 'm2c5', type: 'clef', emoji: '💍', gx: -37, gy: 199, name: "Fabricant Secret du Sanctuaire",                       desc: "Permet la confection Secrète du Collier Runique",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#sanctuaire-de-khesun' },
+	{ id: 'm2c6', type: 'clef', emoji: '💍', gx: -713, gy: -92, name: "Fabricant Secret de la Corruption",                    desc: "Permet la confection Secrète du très puissant Masque Corrompu",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/~/changes/107/carte/personnages/fabricants-clefs-et-secrets#corruption' },
 
-    { id: 'm2m1',  type: 'marchand', gx: -538, gy: -262, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/marchands#kaelor' },
-    { id: 'm2m2',  type: 'marchand', gx: -527, gy: -262, name: "Marchand d'Accessoires",   desc: "Vends des Accessoires de la faune du Palier 2", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/marchands#kaelor-1' },
-    { id: 'm2m3',  type: 'marchand', gx: -543, gy: -258, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/marchands#kaelor-2' },
+    { id: 'm2m1',  type: 'marchand', gx: -573, gy: -287, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/marchands#kaelor' },
+    { id: 'm2m2',  type: 'marchand', gx: -570, gy: -287, name: "Marchand d'Accessoires",   desc: "Vends des Accessoires de la faune du Palier 2", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/marchands#kaelor-1' },
+    { id: 'm2m3',  type: 'marchand', gx: -583, gy: -284, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/marchands#kaelor-2' },
 
-    { id: 'm2a1', type: 'artisant',  gx: -527, gy: -274, name: 'Alchimiste',               desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/alchimistes#kaelor' },
-    { id: 'm2a2', type: 'artisant',  gx: -538, gy: -274, name: 'Bucheron',                 desc: "Bucheron permettant la Réalisation de Planches", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/bucherons#kaelor' },
-    { id: 'm2a3', type: 'artisant',  gx: 2,    gy: -332, name: 'Refaçonneur',              desc: "Permet la fabrication de ficelle en tout genre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/refaconneurs#urbus' },
-    { id: 'm2a4', type: 'artisant',  gx: 107,  gy: -387, name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires puissant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#urbus-accessoires' },
-    { id: 'm2a5', type: 'artisant',  gx: 117,  gy: -358, name: 'Forgeron de Lingots',      desc: "Permet la fabrication de lingots de Bauxite et d'Onyx Impur", link: '' },
-    { id: 'm2a6', type: 'artisant',  gx: 807, gy: -271, name: 'Forgeron de Lingots',      desc: "Permet la fabrication de lingots d'Onyx Pur", link: '' },
-    { id: 'm2a7', type: 'artisant',  gx: -559, gy: -265, name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires des Ours et du Taureau", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#kaelor-accessoires' },
-    { id: 'm2a8', type: 'artisant',  gx: -722, gy: 20,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Feraille", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#accessoires-ferraile' },
-    { id: 'm2a9', type: 'artisant',  gx: -184, gy: 23,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Bauxite", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#accessoires-bauxite' },
-    { id: 'm2a10',type: 'artisant',  gx: -464, gy: 313,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires d'Onyx Impur", link: '' },
+    { id: 'm2a1', type: 'artisant',  gx: -570, gy: -293, name: 'Alchimiste',               desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/alchimistes#kaelor' },
+    { id: 'm2a2', type: 'artisant',  gx: -573, gy: -294, name: 'Bucheron',                 desc: "Bucheron permettant la Réalisation de Planches", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/bucherons#kaelor' },
+    { id: 'm2a3', type: 'artisant',  gx: 2,    gy: -357, name: 'Refaçonneur',              desc: "Permet la fabrication de ficelle en tout genre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/refaconneurs#urbus' },
+    { id: 'm2a4', type: 'artisant',  gx: 115,  gy: -415, name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires puissant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#urbus-accessoires' },
+    { id: 'm2a5', type: 'artisant',  gx: 124,  gy: -385, name: 'Forgeron de Lingots',      desc: "Permet la fabrication de lingots de Bauxite et d'Onyx Impur", link: '' },
+    { id: 'm2a6', type: 'artisant',  gx: 867, gy: -293, name: 'Forgeron de Lingots',      desc: "Permet la fabrication de lingots d'Onyx Pur", link: '' },
+    { id: 'm2a7', type: 'artisant',  gx: -602, gy: -284, name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires des Ours et du Taureau", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#kaelor-accessoires' },
+    { id: 'm2a8', type: 'artisant',  gx: -776, gy: 18,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Feraille", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#accessoires-ferraile' },
+    { id: 'm2a9', type: 'artisant',  gx: -194, gy: 20,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Bauxite", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#accessoires-bauxite' },
+    { id: 'm2a10',type: 'artisant',  gx: -602, gy: -284,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires d'Onyx Impur", link: '' },
 
-    { id: 'm2s1',  type: 'quête_secondaire',  gx: 106, gy: -364, name: "L'Art des Plumes",                         desc: "Ramenez 4 plumes de chaque Harpies à Ifa", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lart-des-plumes' },
-    { id: 'm2s2',  type: 'quête_secondaire',  gx: 96, gy: -355, name: "L'Art des Plumes",                         desc: "Ramenez différentes peaux de monstres à Ife", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lart-des-peaux' },
-    { id: 'm2s3',  type: 'quête_secondaire',  gx: 107, gy: -283, name: "Ma première Arme",                         desc: "Ramenez de quoi confectionner une épée à Charles", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/ma-premiere-arme' },
-    { id: 'm2s4',  type: 'quête_secondaire',  gx: -188, gy: -640, name: "L'Épreuve du Chasseur",                         desc: "Montrer à Typpe de quoi vous êtres capable et défaire tout les Boss du Palier 2", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lepreuve-du-chasseur' },
-    { id: 'm2s5',  type: 'quête_secondaire',  gx: -514, gy: -245, name: "Le chat Relax",                         desc: "Retrouver le chat Relax et donnez le à Itami", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/le-chat-relax' },
-    { id: 'm2s6',  type: 'quête_secondaire',  gx: -566, gy: -231, name: "Aider Yûko",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/aider-yuko' },
-    { id: 'm2s7',  type: 'quête_secondaire',  gx: -521, gy: -237, name: "Aider à la Cuisine",                         desc: "Aidez Mansa pour sa cuisine", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/aide-a-la-cuisine' },
-    { id: 'm2s8',  type: 'quête_secondaire',  gx: -544, gy: -228, name: "Le Clocher de la Sombre Messagère",                         desc: "Aidez Nora", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/le-clocher-de-la-sombre-messagere' },
-    { id: 'm2s9',  type: 'quête_secondaire',  gx: -536, gy: -237, name: "Ça pique, mais ça fait du bien",                         desc: "Ramenez du Miel à Baraka", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/ca-pique-mais-ca-fait-du-bien' },
-    { id: 'm2s10', type: 'quête_secondaire',  gx: 594, gy: -244, name: "Les Bases d'une Cabane",                         desc: "Ramenez de quoi commencer la cabane de Bronn", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/marome/les-bases-dune-cabane' },
-    { id: 'm2s11', type: 'quête_secondaire',  gx: 594, gy: -244, name: "Les Murs d'une Cabane",                         desc: "Ramenez de quoi continuer la cabane de Bronn", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/marome/les-murs-dune-cabane' },
-    { id: 'm2s12', type: 'quête_secondaire',  gx: 594, gy: -244, name: "Le Toit d'une Cabane",                         desc: "Ramenez de quoi finir la cabane de Bronn", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/marome/le-toit-dune-cabane' },
-    { id: 'm2s13', type: 'quête_secondaire',  gx: 648, gy: -260, name: "Non, c'est de la Sape!",                         desc: "Aidez Minutaire à confectionner des vêtements", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/marome/non-cest-de-la-sape' },
-    { id: 'm2s14', type: 'quête_secondaire',  gx: 672, gy: -279, name: "L'Onyx du Savoir",                         desc: "Aidez Shii à faire sa potion", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/marome/lonyx-du-savoir' },
-    { id: 'm2s15', type: 'quête_secondaire',  gx: 396, gy: -518, name: "L'empreinte des Seas",                         desc: "Aidez Elyenn à retrouvez ses affaires", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/autel-des-deux-lunes/lempreinte-des-seas' },
-    { id: 'm2s16', type: 'quête_secondaire',  gx: -149, gy: 9, name: "Un bon petit Repas",                         desc: "Aidez Havca à cuisiner un ragoût parfumé", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/sanctuaire-de-khesun/un-bon-petit-repas' },
-    { id: 'm2s17', type: 'quête_secondaire',  gx: -34, gy: 188, name: "La Philosophie de Bushi",                         desc: "Aidez SamaelTVS à vaincre des Squelettes du Sanctuaire", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/sanctuaire-de-khesun/la-philosophie-de-bushi' },
-    { id: 'm2s18', type: 'quête_secondaire',  gx: -34, gy: 188, name: "Un peu de chaque",                         desc: "Aidez Frank à vaincre les 3 types de Harpie", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/taran/un-peu-de-chaque' },
-    { id: 'm2s19', type: 'quête_secondaire',  gx: -400, gy: 262, name: "Hater du Vert",                         desc: "Aidez Proris à vainbcre des Harpies de Terre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/taran/hater-du-vert' },
-    { id: 'm2s20', type: 'quête_secondaire',  gx: -403, gy: 252, name: "Nettoyer les cieux de Taran",                         desc: "Aidez Sissou à vaincre des Harpies de Feu ou de Foudre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/taran/nettoyer-les-cieux-de-taran' },
+    { id: 'm2s1',  type: 'quête_secondaire',  gx: 112, gy: -391, name: "L'Art des Plumes",                         desc: "Ramenez 4 plumes de chaque Harpies à Ifa", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lart-des-plumes' },
+    { id: 'm2s2',  type: 'quête_secondaire',  gx: 105, gy: -392, name: "L'Art des Peaux",                         desc: "Ramenez différentes peaux de monstres à Ife", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lart-des-peaux' },
+    { id: 'm2s3',  type: 'quête_secondaire',  gx: 16, gy: -305, name: "Ma première Arme",                         desc: "Ramenez de quoi confectionner une épée à Charles", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/ma-premiere-arme' },
+    { id: 'm2s4',  type: 'quête_secondaire',  gx: -202, gy: -688, name: "L'Épreuve du Chasseur",                         desc: "Montrer à Typpe de quoi vous êtres capable et défaire tout les Boss du Palier 2", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lepreuve-du-chasseur' },
+    { id: 'm2s5',  type: 'quête_secondaire',  gx: -553, gy: -264, name: "Le chat Relax",                         desc: "Retrouver le chat Relax et donnez le à Itami", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/le-chat-relax' },
+    { id: 'm2s6',  type: 'quête_secondaire',  gx: -610, gy: -245, name: "Aider Yûko",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/aider-yuko' },
+    { id: 'm2s7',  type: 'quête_secondaire',  gx: -563, gy: -255, name: "Aider à la Cuisine",                         desc: "Aidez Mansa pour sa cuisine", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/aide-a-la-cuisine' },
+    { id: 'm2s8',  type: 'quête_secondaire',  gx: -585, gy: -245, name: "Le Clocher de la Sombre Messagère",                         desc: "Aidez Nora", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/le-clocher-de-la-sombre-messagere' },
+    { id: 'm2s9',  type: 'quête_secondaire',  gx: -577, gy: -256, name: "Ça pique, mais ça fait du bien",                         desc: "Ramenez du Miel à Baraka", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/ca-pique-mais-ca-fait-du-bien' },
+    { id: 'm2s10', type: 'quête_secondaire',  gx: 639, gy: -263, name: "Les Bases d'une Cabane",                         desc: "Ramenez de quoi commencer la cabane de Bronn", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/marome/les-bases-dune-cabane' },
+    { id: 'm2s11', type: 'quête_secondaire',  gx: 639, gy: -263, name: "Les Murs d'une Cabane",                         desc: "Ramenez de quoi continuer la cabane de Bronn", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/marome/les-murs-dune-cabane' },
+    { id: 'm2s12', type: 'quête_secondaire',  gx: 639, gy: -263, name: "Le Toit d'une Cabane",                         desc: "Ramenez de quoi finir la cabane de Bronn", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/marome/le-toit-dune-cabane' },
+    { id: 'm2s13', type: 'quête_secondaire',  gx: 696, gy: -277, name: "Non, c'est de la Sape!",                         desc: "Aidez Minutaire à confectionner des vêtements", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/marome/non-cest-de-la-sape' },
+    { id: 'm2s14', type: 'quête_secondaire',  gx: 724, gy: -301, name: "L'Onyx du Savoir",                         desc: "Aidez Shii à faire sa potion", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/marome/lonyx-du-savoir' },
+    { id: 'm2s15', type: 'quête_secondaire',  gx: 620, gy: -567, name: "L'empreinte des Seas",                         desc: "Aidez Elyenn à retrouvez ses affaires", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/autel-des-deux-lunes/lempreinte-des-seas' },
+    { id: 'm2s16', type: 'quête_secondaire',  gx: -159, gy: 10, name: "Un bon petit Repas",                         desc: "Aidez Havca à cuisiner un ragoût parfumé", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/sanctuaire-de-khesun/un-bon-petit-repas' },
+    { id: 'm2s17', type: 'quête_secondaire',  gx: -41, gy: 205, name: "La Philosophie de Bushi",                         desc: "Aidez SamaelTVS à vaincre des Squelettes du Sanctuaire", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/sanctuaire-de-khesun/la-philosophie-de-bushi' },
+    { id: 'm2s18', type: 'quête_secondaire',  gx: -448, gy: 267, name: "Un peu de chaque",                         desc: "Aidez Frank à vaincre les 3 types de Harpie", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/taran/un-peu-de-chaque' },
+    { id: 'm2s19', type: 'quête_secondaire',  gx: -431, gy: 279, name: "Hater du Vert",                         desc: "Aidez Proris à vainbcre des Harpies de Terre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/taran/hater-du-vert' },
+    { id: 'm2s20', type: 'quête_secondaire',  gx: -432, gy: 272, name: "Nettoyer les cieux de Taran",                         desc: "Aidez Sissou à vaincre des Harpies de Feu ou de Foudre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/taran/nettoyer-les-cieux-de-taran' },
 
-    { id: 'm2p1',  type: 'quête_principale', gx: -17,  gy: -786, name: "1 - Le Pallier 2...",             desc: "Parlez au Maître d'Armes et Sautez dans le lac", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-palier-2...' },
-    { id: 'm2p2',  type: 'quête_principale', gx: 10,  gy: -612, name: "2 - Parler à la femme étrange",             desc: "Parlez à la femme étrange au bord du Lac", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/parler-a-la-femme-etrange' },
-    { id: 'm2p3',  type: 'quête_principale', gx: 128,  gy: -348, name: "3 - Chemin vers Urbus",             desc: "Trouvez Arteron afin de parler de la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/chemin-vers-urbus' },
-    { id: 'm2p4',  type: 'quête_principale', gx: -544,  gy: -238, name: "4 - À la recherche des Ngangas",             desc: "Parler à Bantu", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/a-la-recherche-des-ngangas' },
-	{ id: 'm2p5',  type: 'quête_principale', gx: -390, gy: -400, name: "5 - Un joueur doit faire ses preuves",             desc: "Allez à la rencontre des Ngangas", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/un-joueur-doit-faire-ses-preuves' },
-	{ id: 'm2p6',  type: 'quête_principale', gx: 698, gy: -217, name: "6 - Communication avec Yaa",             desc: "Communiquer avec une des 3 statues Divine du Palier 2 pour qu'elle vous aide a luter contre la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/communication-avec-yaa' },
-	{ id: 'm2p7',  type: 'quête_principale', gx: 150, gy: -290, name: "7 - Façonneur de Clé I",             desc: "Réalisez le Donjon Ruche de Melliona", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/faconneur-de-cle-i' },
-	{ id: 'm2p8',  type: 'quête_principale', gx: 62, gy: -397, name: "8 - Retour a Urbus",             desc: "Allez à la rencontre de la deuxième statue divine après avoir informer le Maître Épéiste de votre avancé", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/retour-a-urbus' },
-	{ id: 'm2p9',  type: 'quête_principale', gx: 150, gy: -290, name: "9 - Donjon: Le Tombeau Oublié",             desc: "Réalisez le Donjon Tombeau du Nécromancien", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/donjon-le-tombeau-oublie' },
-	{ id: 'm2p10', type: 'quête_principale', gx: -586, gy: -280, name: "10 - Le Tribut avant le Verdict",             desc: "Convoquez la dernière statue divine afin qu'elle vous aide", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-tribut-avant-le-verdict' },
-	{ id: 'm2p11', type: 'quête_principale', gx: 62, gy: -397, name: "11 - La Facette de la Réalité",             desc: "Faites votre rapport au Maître Épéiste sur la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/la-facette-de-la-realite' },
-	{ id: 'm2p12', type: 'quête_principale', gx: -472, gy: -57, name: "12 - Le Rituel de Purification",             desc: "C'est le grand moment, invoquez les 3 statues divine afin qu'elle vous donne de quoi affronter le puissant Astérius!", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-rituel-de-purification' },
+    { id: 'm2p1',  type: 'quête_principale', gx: -28,  gy: -886, name: "1 - Le Pallier 2...",             desc: "Parlez au Maître d'Armes et Sautez dans le lac", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-palier-2...' },
+    { id: 'm2p2',  type: 'quête_principale', gx: 13,  gy: -665, name: "2 - Parler à la femme étrange",             desc: "Parlez à la femme étrange au bord du Lac", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/parler-a-la-femme-etrange' },
+    { id: 'm2p3',  type: 'quête_principale', gx: 135,  gy: -374, name: "3 - Chemin vers Urbus",             desc: "Trouvez Arteron afin de parler de la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/chemin-vers-urbus' },
+    { id: 'm2p4',  type: 'quête_principale', gx: -585,  gy: -255, name: "4 - À la recherche des Ngangas",             desc: "Parler à Bantu", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/a-la-recherche-des-ngangas' },
+	{ id: 'm2p5',  type: 'quête_principale', gx: -436, gy: -442, name: "5 - Un joueur doit faire ses preuves",             desc: "Allez à la rencontre des Ngangas", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/un-joueur-doit-faire-ses-preuves' },
+	{ id: 'm2p6',  type: 'quête_principale', gx: 743, gy: -257, name: "6 - Communication avec Yaa",             desc: "Communiquer avec une des 3 statues Divine du Palier 2 pour qu'elle vous aide a luter contre la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/communication-avec-yaa' },
+	{ id: 'm2p7',  type: 'quête_principale', gx: 162, gy: -316, name: "7 - Façonneur de Clé I",             desc: "Réalisez le Donjon Ruche de Melliona", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/faconneur-de-cle-i' },
+	{ id: 'm2p8',  type: 'quête_principale', gx: 62, gy: -428, name: "8 - Retour a Urbus",             desc: "Allez à la rencontre de la deuxième statue divine après avoir informer le Maître Épéiste de votre avancé", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/retour-a-urbus' },
+	{ id: 'm2p9',  type: 'quête_principale', gx: 162, gy: -316, name: "9 - Donjon: Le Tombeau Oublié",             desc: "Réalisez le Donjon Tombeau du Nécromancien", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/donjon-le-tombeau-oublie' },
+	{ id: 'm2p10', type: 'quête_principale', gx: -629, gy: -296, name: "10 - Le Tribut avant le Verdict",             desc: "Convoquez la dernière statue divine afin qu'elle vous aide", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-tribut-avant-le-verdict' },
+	{ id: 'm2p11', type: 'quête_principale', gx: 62, gy: -428, name: "11 - La Facette de la Réalité",             desc: "Faites votre rapport au Maître Épéiste sur la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/la-facette-de-la-realite' },
+	{ id: 'm2p12', type: 'quête_principale', gx: -509, gy: -58, name: "12 - Le Rituel de Purification",             desc: "C'est le grand moment, invoquez les 3 statues divine afin qu'elle vous donne de quoi affronter le puissant Astérius!", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-rituel-de-purification' },
   ],
   
 };
 
 const FLOOR_MARKERS_UNDERGROUND = {
   2: [
-    { id: 'm2d1u1',  type: 'donjon',  gx: 673, gy: 227, name: 'Donjon Tombeau du Nécromancien',           desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/donjons/donjon-tombeau-du-necromancien' },
+    { id: 'm2d1u1',  type: 'donjon',  gx: 721, gy: 244, name: 'Donjon Tombeau du Nécromancien',           desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/donjons/donjon-tombeau-du-necromancien' },
 
-    { id: 'm2r1u1',  type: 'région',  gx: -540, gy: 226, name: 'Nid de Brasier',                          desc: "Un nid enflammé, refuge des harpies de feu au cœur de terres brûlantes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/nid-de-brasier' },
-    { id: 'm2r2u1',  type: 'région',  gx: 210, gy: 288, name: 'Les Veines de Sablemor',                   desc: "Des veines de sable profondes, sombres et étroites, cachant Magnus, le redoutable boss", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/les-veines-de-sablemor' },
-    { id: 'm2r3u1',  type: 'région',  gx: -296, gy: -79, name: 'Grotte de Taran',                         desc: "Grotte remplie de minéraux impressionnants et de mystères", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/grotte-de-taran' },
-    { id: 'm2r4u1',  type: 'région',  gx: 673, gy: 227, name: 'Tombeau du Nécromancien',                  desc: "Un nécromancien repose dans un tombeau secret, enfoui au cœur d'un labyrinthe désertique", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/tombeau-du-necromancien' },
+    { id: 'm2r1u1',  type: 'région',  gx: -581, gy: 234, name: 'Nid de Brasier',                          desc: "Un nid enflammé, refuge des harpies de feu au cœur de terres brûlantes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/nid-de-brasier' },
+    { id: 'm2r2u1',  type: 'région',  gx: 225, gy: 295, name: 'Les Veines de Sablemor',                   desc: "Des veines de sable profondes, sombres et étroites, cachant Magnus, le redoutable boss", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/les-veines-de-sablemor' },
+    { id: 'm2r3u1',  type: 'région',  gx: -316, gy: -94, name: 'Grotte de Taran',                         desc: "Grotte remplie de minéraux impressionnants et de mystères", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/grotte-de-taran' },
+    { id: 'm2r4u1',  type: 'région',  gx: 721, gy: 244, name: 'Tombeau du Nécromancien',                  desc: "Un nécromancien repose dans un tombeau secret, enfoui au cœur d'un labyrinthe désertique", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/tombeau-du-necromancien' },
 
-    { id: 'm2t1u1', type: 'ressource', emoji: '⛏️', gx: -362,  gy: -30, name: 'Onyx',                     desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/mineur#onyx' },
+    { id: 'm2t1u1', type: 'ressource', emoji: '⛏️', gx: -388,  gy: -35, name: 'Onyx',                     desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/mineur#onyx' },
     { id: 'm2t2u1', type: 'ressource', emoji: '⛏️', gx: -206,  gy: -185, name: 'Bauxite',                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/mineur#bauxite' },
 
-    { id: 'm2c1u1', type: 'clef', emoji: '💍', gx: -645, gy: 179, name: "Fabricant Secret de la Harpie Enflammée",                     desc: "Permet la confection Secrète de l'Anneau de la Harpie Enflammée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#nid-de-brasier' },
+    { id: 'm2c1u1', type: 'clef', emoji: '💍', gx: -694, gy: 205, name: "Fabricant Secret de la Harpie Enflammée",                     desc: "Permet la confection Secrète de l'Anneau de la Harpie Enflammée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#nid-de-brasier' },
 
-    { id: 'm1a1u1',type: 'artisant',  gx: 304, gy: 464,   name: 'Forgeron d\'Accessoires',                 desc: "Permet la fabrication d'Accessoires d'Onyx Pur", link: '' },
+    { id: 'm1a1u1',type: 'artisant',  gx: 339, gy: 509,   name: 'Forgeron d\'Accessoires',                 desc: "Permet la fabrication d'Accessoires d'Onyx Pur", link: '' },
   ],
 };
 
@@ -662,9 +662,9 @@ const MAP_CALIBRATION = {
     radiusGame:  2498.1,
   },
   2: {
-    centerPixel: { x: 450, y: 450 },
-    centerGame:  { x: 0,   y: 0   },
-    radiusPixel: 450,
-    radiusGame:  1000,
-  }
+  centerPixel: { x: 450,  y: 450 },
+  centerGame:  { x: -1.3, y: 0.8 },
+  radiusPixel: 450,
+  radiusGame:  1072.5,
+},
 };
