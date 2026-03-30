@@ -557,8 +557,8 @@ const EFFECT_META = {
 };
 
 const ITEMS = [
-/* ── PALIER 1 ── */
 	/* ══ Armes ══ */
+	/* ══ Palier 1 ══ */
   {
 		id:				'dague_entrainement',
 		name:			"Dague d'Entrainement",
@@ -668,38 +668,6 @@ const ITEMS = [
 		lore:     "Longue épée ayant appartenu à Illfang the Kobold Lord. Ce n'est toutefois qu'une relique mythique.",
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]",
-	},
-  {
-		id:				'epee_dard_tranchant',
-		name:			"Épée du Dard Tranchant",
-		rarity:		'rare',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/weapons/epee_dard_tranchant.png",
-		stats:		{degats:[26.01,29.99], vitesse_attaque:1.2},
-		classes:	['guerrier'],
-		lore:     "Lame tranchante, percante, et puissante comme le dard d'une abeille en colère.",
-    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron du Donjon Melliona",
-		craft:		[{qty:36, id:'ambre_mielleux'}, {qty:24, id:'dard'}]
-	},
-  {
-		id:				'epee_necromancien',
-		name:			"Épée du Nécromancien",
-		rarity:		'epique',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/weapons/epee_necromancien.png",
-		stats:		{degats:[30,35], vitesse_attaque:1.2, crit_chance:[10,15]},
-		classes:	['guerrier'],
-		lore:     "Lame tranchante, percante, et puissante comme le sort d'un nécromancien en colère.",
-    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
 	{
 		id:				'epee_dechue',
@@ -858,22 +826,6 @@ const ITEMS = [
     tags:     ['Arme', 'Bouclier', 'Rondache', 'Guerrier', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
-  {
-		id:				'bouclier_maudit',
-		name:			"Bouclier Maudit",
-		rarity:		'epique',
-		cat:			'arme_s',
-		category:	'arme',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/weapons/bouclier_maudit.png",
-		stats:		{sante:[25.71,34.29], defense:[3,4]},
-		classes:	['guerrier'],
-		lore:     "Solide et résistant, il protège la malédiction qui pèse sur son porteur, ainsi absorbant les assauts.",
-    tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:32, id:'pierre_osseuse_noire'}, {qty:8, id:'poudre_necromancien'}]
-	},
 	{
 		id:				'bouclier_hivernal',
 		name:			"Bouclier Hivernal",
@@ -986,40 +938,6 @@ const ITEMS = [
 		lore:     "Longue et lourde hache du puissant boss palier : Illfang the Kobold Lord !",
     tags:     ['Arme', 'Hache', 'Deux Mains', 'Guerrier', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
-	},
-  {
-		id:				'marteau_dard_ecrasant',
-		name:			"Marteau du Dard Écrasant",
-		rarity:		'rare',
-		cat:			'arme_p',
-		twoHanded: true,
-		category:	'arme',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/weapons/marteau_dard_ecrasant.png",
-		stats:		{degats:[44,50], vitesse_attaque:0.7}, //NULL
-		classes:	['guerrier'],
-		lore:     "Poids écrasant, frappant, assommant comme le dard d'une abeille en colère.",
-    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron du Donjon Melliona",
-		craft:		[{qty:36, id:'ambre_mielleux'}, {qty:24, id:'dard'}]
-	},
-  {
-		id:				'marteau_necromancien',
-		name:			"Marteau du Nécromancien",
-		rarity:		'epique',
-		cat:			'arme_p',
-		twoHanded: true,
-		category:	'arme',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/weapons/marteau_necromancien.png",
-		stats:		{degats:[56.7,69], vitesse_attaque:0.7, crit_degats:1.5},
-		classes:	['guerrier'],
-		lore:     "Poids écrasant, frappant, assommant comme le sort d'un nécromancien en colère.",
-    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
 	{
 		id:				'hache_double_dechue',
@@ -1182,72 +1100,6 @@ const ITEMS = [
     lore:     "Une belle dague forgée à l'aide de fragments de véritable Nodachi. Ce n'est toutefois plus qu'une relique pour le moment.",
     tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
-	},
-  {
-		id:				'serpe_assassine',
-		name:			"Serpe Assassine",
-		rarity:		'rare',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/weapons/serpe_assassine.png",
-		stats:		{degats:[34,38], vitesse_attaque:[1.4,1.5]},
-		classes:	['assassin'],
-    lore:     "Une Serpe fine aux teintes dorées et noires, dont la lame effilée évoque le dard mortel d'une abeille.",
-    tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron du Donjon Melliona",
-		craft:		[{qty:24, id:'ambre_mielleux'}, {qty:24, id:'dard'}, {qty:32, id:'miel'}]
-	},
-  {
-		id:				'faux_assassine',
-		name:			"Faux Assassine",
-		rarity:		'rare',
-		cat:			'arme_p',
-		twoHanded: true,
-		category:	'arme',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/weapons/faux_assassine.png",
-		stats:		{degats:[46,50], vitesse_attaque:0.8}, //NULL
-		classes:	['assassin'],
-    lore:     "Une faux fine aux lignes acérées, décorée de motifs d'alvéoles, évoquant la précision et la menace d'un insecte prédateur.",
-    tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron du Donjon Melliona",
-		craft:		[{qty:24, id:'ambre_mielleux'}, {qty:24, id:'dard'}, {qty:32, id:'miel'}]
-	},
-  {
-		id:				'serpe_necromancienne',
-		name:			"Serpe Nécromancienne",
-		rarity:		'epique',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/weapons/serpe_necromancienne.png",
-		stats:		{degats:[39,43.99], vitesse_attaque:[1.4,1.5]},
-		classes:	['assassin'],
-    lore:     "Une Serpe sombre aux gravures funéraires, dont la lame courbe semble liée aux arts interdits..",
-    tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
-	},
-  {
-		id:				'faux_necromancienne',
-		name:			"Faux Nécromancienne",
-		rarity:		'epique',
-		cat:			'arme_p',
-		twoHanded: true,
-		category:	'arme',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/weapons/faux_necromancienne.png",
-		stats:		{degats:[51,57], vitesse_attaque:0.8, crit_comp_chance:4.5, stamina:4.5},
-		classes:	['assassin'],
-    lore:     "Une faux austère aux runes sépulcrales dont la lame noire évoque les rites anciens et les forces d'outre-tombe.",
-    tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
 	{
 		id:				'dague_dechue',
@@ -1425,38 +1277,6 @@ const ITEMS = [
     tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
-  {
-		id:				'arc_abeille_traqueuse',
-		name:			"Arc de l'Abeille Traqueuse",
-		rarity:		'rare',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/weapons/arc_abeille_traqueuse.png",
-		stats:		{degats:[17,19], vitesse_attaque:[1,1.2]},
-		classes:	['archer'],
-    lore:     "Arc agile, conçu pour les chasseurs patients et mortels.",
-    tags:     ['Arme', 'Arc', 'Archer', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron du Donjon Melliona",
-		craft:		[{qty:24, id:'dard'}, {qty:64, id:'miel'}]
-	},
-  {
-		id:				'arc_necropole',
-		name:			"Arc de la Nécropole",
-		rarity:		'epique',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/weapons/arc_necropole.png",
-		stats:		{degats:[20,22], vitesse_attaque:[1,1.3]},
-		classes:	['archer'],
-    lore:     "Un arc sombre aux gravures funéraires, dont les branches semblent façonnées par une magie d'outre-tombe.",
-    tags:     ['Arme', 'Arc', 'Archer', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
-	},
 	{
 		id:				'arc_dechue',
 		name:			"Arc Déchue",
@@ -1534,38 +1354,6 @@ const ITEMS = [
     lore:     "Forgé dans les ruines d'un ancien fort de guerre, elle tremble encore de ces anciens combats.",
     tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en récompense du Donjon Labyrinthe des Déchus[1]"
-	},
-  {
-		id:				'arbalete_abeille_fer',
-		name:			"Arbalète de l'Abeille de fer",
-		rarity:		'rare',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/weapons/arbalete_de_labeille_de_fer.png",
-		stats:		{degats:[23.5,25.26], vitesse_attaque:[0.7,0.8]}, //NULL
-		classes:	['archer'],
-    lore:     "Une arme fiable pour frapper même les ennemis les plus résistants.",
-    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron du Donjon Melliona",
-		craft:		[{qty:24, id:'dard'}, {qty:64, id:'miel'}]
-	},
-  {
-		id:				'arbalete_necropole',
-		name:			"Arbalète de la Nécropole",
-		rarity:		'epique',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/weapons/arbalete_necropole.png",
-		stats:		{degats:[27,29], vitesse_attaque:[0.7,0.8], crit_comp_chance:4, stamina:4},
-		classes:	['archer'],
-    lore:     "Une arbalète austère aux ornements sépulcraux, imprégnée d'une présence silencieuse venue d'outre-tombe.",
-    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
 	{
 		id:				'arbalete_dechue',
@@ -2135,7 +1923,232 @@ const ITEMS = [
 		tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Event', 'Noël'],
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
-  
+  /* ══ Palier 2 ══ */
+	/* ══ Guerrier ══ */
+  /* ══ Épées ══ */
+  {
+		id:				'epee_dard_tranchant',
+		name:			"Épée du Dard Tranchant",
+		rarity:		'rare',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/weapons/epee_dard_tranchant.png",
+		stats:		{degats:[26.01,29.99], vitesse_attaque:1.2},
+		classes:	['guerrier'],
+		lore:     "Lame tranchante, percante, et puissante comme le dard d'une abeille en colère.",
+    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron du Donjon Melliona",
+		craft:		[{qty:36, id:'ambre_mielleux'}, {qty:24, id:'dard'}]
+	},
+  {
+		id:				'epee_necromancien',
+		name:			"Épée du Nécromancien",
+		rarity:		'epique',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/weapons/epee_necromancien.png",
+		stats:		{degats:[30,35], vitesse_attaque:1.2, crit_chance:[10,15]},
+		classes:	['guerrier'],
+		lore:     "Lame tranchante, percante, et puissante comme le sort d'un nécromancien en colère.",
+    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
+	},
+  /* ══ Boucliers ══ */
+  {
+		id:				'bouclier_maudit',
+		name:			"Bouclier Maudit",
+		rarity:		'epique',
+		cat:			'arme_s',
+		category:	'arme',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/weapons/bouclier_maudit.png",
+		stats:		{sante:[25.71,34.29], defense:[3,4]},
+		classes:	['guerrier'],
+		lore:     "Solide et résistant, il protège la malédiction qui pèse sur son porteur, ainsi absorbant les assauts.",
+    tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:32, id:'pierre_osseuse_noire'}, {qty:8, id:'poudre_necromancien'}]
+	},
+  /* ══ Hast ══ */
+  {
+		id:				'marteau_dard_ecrasant',
+		name:			"Marteau du Dard Écrasant",
+		rarity:		'rare',
+		cat:			'arme_p',
+		twoHanded: true,
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/weapons/marteau_dard_ecrasant.png",
+		stats:		{degats:[44,50], vitesse_attaque:0.7}, //NULL
+		classes:	['guerrier'],
+		lore:     "Poids écrasant, frappant, assommant comme le dard d'une abeille en colère.",
+    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron du Donjon Melliona",
+		craft:		[{qty:36, id:'ambre_mielleux'}, {qty:24, id:'dard'}]
+	},
+  {
+		id:				'marteau_necromancien',
+		name:			"Marteau du Nécromancien",
+		rarity:		'epique',
+		cat:			'arme_p',
+		twoHanded: true,
+		category:	'arme',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/weapons/marteau_necromancien.png",
+		stats:		{degats:[56.7,69], vitesse_attaque:0.7, crit_degats:1.5},
+		classes:	['guerrier'],
+		lore:     "Poids écrasant, frappant, assommant comme le sort d'un nécromancien en colère.",
+    tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
+	},
+  /* ══ Assassin ══ */
+  {
+		id:				'serpe_assassine',
+		name:			"Serpe Assassine",
+		rarity:		'rare',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/weapons/serpe_assassine.png",
+		stats:		{degats:[34,38], vitesse_attaque:[1.4,1.5]},
+		classes:	['assassin'],
+    lore:     "Une Serpe fine aux teintes dorées et noires, dont la lame effilée évoque le dard mortel d'une abeille.",
+    tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron du Donjon Melliona",
+		craft:		[{qty:24, id:'ambre_mielleux'}, {qty:24, id:'dard'}, {qty:32, id:'miel'}]
+	},
+  {
+		id:				'faux_assassine',
+		name:			"Faux Assassine",
+		rarity:		'rare',
+		cat:			'arme_p',
+		twoHanded: true,
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/weapons/faux_assassine.png",
+		stats:		{degats:[46,50], vitesse_attaque:0.8}, //NULL
+		classes:	['assassin'],
+    lore:     "Une faux fine aux lignes acérées, décorée de motifs d'alvéoles, évoquant la précision et la menace d'un insecte prédateur.",
+    tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron du Donjon Melliona",
+		craft:		[{qty:24, id:'ambre_mielleux'}, {qty:24, id:'dard'}, {qty:32, id:'miel'}]
+	},
+  {
+		id:				'serpe_necromancienne',
+		name:			"Serpe Nécromancienne",
+		rarity:		'epique',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/weapons/serpe_necromancienne.png",
+		stats:		{degats:[39,43.99], vitesse_attaque:[1.4,1.5]},
+		classes:	['assassin'],
+    lore:     "Une Serpe sombre aux gravures funéraires, dont la lame courbe semble liée aux arts interdits..",
+    tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
+	},
+  {
+		id:				'faux_necromancienne',
+		name:			"Faux Nécromancienne",
+		rarity:		'epique',
+		cat:			'arme_p',
+		twoHanded: true,
+		category:	'arme',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/weapons/faux_necromancienne.png",
+		stats:		{degats:[51,57], vitesse_attaque:0.8, crit_comp_chance:4.5, stamina:4.5},
+		classes:	['assassin'],
+    lore:     "Une faux austère aux runes sépulcrales dont la lame noire évoque les rites anciens et les forces d'outre-tombe.",
+    tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
+	},
+  /* ══ Archer ══ */
+  /* ══ Arcs ══ */
+  {
+		id:				'arc_abeille_traqueuse',
+		name:			"Arc de l'Abeille Traqueuse",
+		rarity:		'rare',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/weapons/arc_abeille_traqueuse.png",
+		stats:		{degats:[17,19], vitesse_attaque:[1,1.2]},
+		classes:	['archer'],
+    lore:     "Arc agile, conçu pour les chasseurs patients et mortels.",
+    tags:     ['Arme', 'Arc', 'Archer', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron du Donjon Melliona",
+		craft:		[{qty:24, id:'dard'}, {qty:64, id:'miel'}]
+	},
+  {
+		id:				'arc_necropole',
+		name:			"Arc de la Nécropole",
+		rarity:		'epique',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/weapons/arc_necropole.png",
+		stats:		{degats:[20,22], vitesse_attaque:[1,1.3]},
+		classes:	['archer'],
+    lore:     "Un arc sombre aux gravures funéraires, dont les branches semblent façonnées par une magie d'outre-tombe.",
+    tags:     ['Arme', 'Arc', 'Archer', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
+	},
+  /* ══ Arbalètes ══ */
+  {
+		id:				'arbalete_abeille_fer',
+		name:			"Arbalète de l'Abeille de fer",
+		rarity:		'rare',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/weapons/arbalete_de_labeille_de_fer.png",
+		stats:		{degats:[23.5,25.26], vitesse_attaque:[0.7,0.8]}, //NULL
+		classes:	['archer'],
+    lore:     "Une arme fiable pour frapper même les ennemis les plus résistants.",
+    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron du Donjon Melliona",
+		craft:		[{qty:24, id:'dard'}, {qty:64, id:'miel'}]
+	},
+  {
+		id:				'arbalete_necropole',
+		name:			"Arbalète de la Nécropole",
+		rarity:		'epique',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/weapons/arbalete_necropole.png",
+		stats:		{degats:[27,29], vitesse_attaque:[0.7,0.8], crit_comp_chance:4, stamina:4},
+		classes:	['archer'],
+    lore:     "Une arbalète austère aux ornements sépulcraux, imprégnée d'une présence silencieuse venue d'outre-tombe.",
+    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
+	},
+  /* ══ Mage - Shaman ══ */
+  /* ══ Bâtons ══ */
+	/* ══ Catalyseurs ══ */
+
+
   /* ══ Accessoires ══ */
   /* ══ Anneaux ══ */
   /* ══ Palier 1 ══ */
