@@ -546,14 +546,14 @@ const CATEGORIES = {
 
 const EFFECT_META = {
   heal:     { icon: '❤️',  	color: '#e05252', label: 'Points de vie',    prefix: '+' },
-  mana:     { icon: '💧', 	 color: '#5b8dee', label: 'Mana',             prefix: '+' },
+  mana:     { icon: '💧', 	color: '#5b8dee', label: 'Mana',             prefix: '+' },
   stamina:  { icon: '👟', 	color: '#f4d745', label: 'Stamina',          prefix: '+' },
   buff:     { icon: '💪',  	color: '#d4a017', label: 'Bonus',            prefix: '+' },
 	feed:     { icon: '🍖',  	color: '#8d520b', label: 'Nourriture',       prefix: 'Restaure ' },
   debuff:   { icon: '☠️',  	color: '#9b59b6', label: 'Malus',            prefix: ''  }, 
   cooldown: { icon: '⏱️',  	color: '#888888', label: 'Cooldown',         prefix: ''  },
 	use: 			{ icon: '🧪',  	color: '#7db0ca', label: 'Utilisations',     prefix: ''  },
-	level: 		{ icon: '❓',  	color: '#c43c28', label: 'Niveau Requis',     prefix: 'Niveau '  }
+	level: 		{ icon: '❓',   color: '#c43c28', label: 'Niveau Requis',    prefix: 'Niveau ' }
 };
 
 const ITEMS = [
