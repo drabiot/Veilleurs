@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
+  <title>[VCL] - Bestiaire</title>
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="bestiaire.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+</head>
+<body class="bestiaire-page">
+
+  <!-- Fond ambiant -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="moon"></div>
+    <div class="fog fog-1"></div>
+    <div class="fog fog-2"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <!-- ══════ HEADER ══════ -->
+  <header class="site-header">
+    <div class="header-top">
+      <div class="header-left">
+        <div class="traffic-lights">
+          <span class="tl tl-red"></span>
+          <span class="tl tl-yellow"></span>
+          <span class="tl tl-green"></span>
+        </div>
+        <span class="header-sep">─────</span>
+        <a href="../index.html" class="header-logo">Veilleurs au Clair de Lune</a>
+      </div>
+      <div class="header-right"></div>
+    </div>
+    <nav class="header-nav">
+      <a href="../index.html" class="nav-link">
+        <span class="nav-icon">📜</span><span class="nav-label">Patchnotes</span>
+      </a>
+      <a href="../Map/map.html" class="nav-link">
+        <span class="nav-icon">🗺️</span><span class="nav-label">Carte</span>
+      </a>
+      <a href="../Compendium/compendium.html" class="nav-link">
+        <span class="nav-icon">📖</span><span class="nav-label">Compendium</span>
+      </a>
+      <a href="bestiaire.html" class="nav-link active">
+        <span class="nav-icon">💀</span><span class="nav-label">Bestiaire</span>
+      </a>
+      <a href="../Atelier/atelier.html" class="nav-link">
+        <span class="nav-icon">🔨</span><span class="nav-label">Atelier</span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- ══════ LAYOUT ══════ -->
+  <div class="bestiaire-layout">
+
+    <!-- ══ SIDEBAR ══ -->
+    <aside class="bestiaire-sidebar">
+
+      <!-- Recherche -->
+      <div class="sidebar-search">
+        <input type="text" id="sidebar-search" placeholder="🔍  Rechercher…" autocomplete="off" />
+      </div>
+
+      <!-- Onglets Monstres / Personnages -->
+      <div class="sidebar-sort-bar">
+        <button class="sort-btn active" data-tab="monstres">💀 Monstres</button>
+        <button class="sort-btn" data-tab="personnages">🧑 PNJ</button>
+      </div>
+
+      <!-- Zone scrollable -->
+      <div id="sidebar-scroll" class="sidebar-scroll">
+
+        <!-- ─ Paliers ─ -->
+        <div class="filter-block" id="palier-block">
+          <div class="filter-block-header open" id="palier-block-header">
+            <span class="palier-label">⬡ Palier</span>
+            <span class="palier-arrow">▶</span>
+          </div>
+          <div class="filter-block-body open" id="palier-block-body">
+            <div id="palier-filters"></div>
+          </div>
+        </div>
+
+        <!-- ─ Type (Boss / Monstre / Sbire) ─ -->
+        <div class="filter-block" id="type-block">
+          <div class="filter-block-header open" id="type-block-header">
+            <span class="palier-label">◈ Type</span>
+            <span class="palier-arrow">▶</span>
+          </div>
+          <div class="filter-block-body open" id="type-block-body">
+            <div class="bfilter-list" id="type-filters">
+              <label class="bfilter-row">
+                <input type="checkbox" class="type-filter-cb" value="boss" checked />
+                <span class="bfilter-dot bfilter-boss"></span>
+                <span class="bfilter-label">Boss</span>
+                <span class="bfilter-count" id="count-boss"></span>
+              </label>
+              <label class="bfilter-row">
+                <input type="checkbox" class="type-filter-cb" value="monstre" checked />
+                <span class="bfilter-dot bfilter-monstre"></span>
+                <span class="bfilter-label">Monstre</span>
+                <span class="bfilter-count" id="count-monstre"></span>
+              </label>
+              <label class="bfilter-row">
+                <input type="checkbox" class="type-filter-cb" value="sbire" checked />
+                <span class="bfilter-dot bfilter-sbire"></span>
+                <span class="bfilter-label">Sbire</span>
+                <span class="bfilter-count" id="count-sbire"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─ Le filtre Comportement a été retiré ─ -->
+
+      </div><!-- /sidebar-scroll -->
+    </aside>
+
+    <!-- ══ ZONE PRINCIPALE ══ -->
+    <main class="bestiaire-main">
+      <div class="bestiaire-main-header">
+        <div>
+          <h1 class="bestiaire-title" id="main-title">Bestiaire</h1>
+          <p class="bestiaire-subtitle" id="main-subtitle">// MONSTRES · VEILLEURS AU CLAIR DE LUNE</p>
+        </div>
+        <span id="result-count" class="result-count"></span>
+      </div>
+
+      <div id="entity-grid" class="entity-grid"></div>
+
+      <div id="grid-empty" class="grid-empty" style="display:none;">
+        <div class="grid-empty-icon">🐗</div>
+        <div class="grid-empty-text">Aucun résultat</div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ══════ MODAL ══════ -->
+  <div class="mob-modal-overlay" id="mob-modal-overlay">
+    <div class="mob-modal" id="mob-modal" role="dialog" aria-modal="true">
+      <button class="modal-close-btn" id="modal-close-btn" title="Fermer (Échap)">✕</button>
+      <div id="mob-modal-content"></div>
+    </div>
+  </div>
+
+  <script src="../Compendium/data.js"></script>
+  <script src="bestiaire.js"></script>
+</body>
+</html>
