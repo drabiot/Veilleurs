@@ -619,7 +619,7 @@ const ITEMS = [
 		stats:		{degats:17.5, vitesse_attaque:1},
 		classes:	['guerrier'],
 		lore:     "Taillé dans les os d'un ancien guerrier tombé en disgrâce.",
-    tags:     ['Armes', 'Épée', 'Guerrier', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[5]\n- Guerriers Squelettes[7]"
 	},
   {
@@ -1099,7 +1099,7 @@ const ITEMS = [
 		stats:		{degats:25, vitesse_attaque:1.2},
 		classes:	['assassin'],
     lore:     "Dague émoussé d'un bandit après tous ces combats sanglants.",
-    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Bandits Assassins"
 	},
   {
@@ -1114,7 +1114,7 @@ const ITEMS = [
 		stats:		{degats:[27,31], vitesse_attaque:1.2},
 		classes:	['assassin'],
     lore:     "Petite dague Sombre, forgé avec des éclats magiques et d'autres loot. Elle en devient redoutable.",
-    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'tissu_araignee'}]
 	},
@@ -1131,7 +1131,7 @@ const ITEMS = [
 		stats:		{degats:[37,42], vitesse_attaque:[0.8,0.9], crit_comp_chance:3, stamina:3},
 		classes:	['assassin'],
     lore:     "Une longue dague Sombre, forgé avec des éclats magiques et d'autres loot. Elle en devient redoutable.",
-    tags:     ['Armes', 'Longue Dague', 'Deux Mains', 'Assassin', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Longue Dague', 'Deux Mains', 'Assassin', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'tissu_araignee'}]
 	},
@@ -1147,7 +1147,7 @@ const ITEMS = [
 		stats:		{degats:[31,35], vitesse_attaque:[1.3,1.5]},
 		classes:	['assassin'],
     lore:     "Dague très puissante fait à partir de métal enchanté et d'âme, légère et facile à manier.",
-    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Épique'],
+    tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:25, id:'lingot_metal_enchante'}, {qty:21, id:'fragment_casse_violet'}, {qty:5, id:'lingot_ame_metal'}]
 	},
@@ -1164,7 +1164,7 @@ const ITEMS = [
 		stats:		{degats:[42,47], vitesse_attaque:[0.7,0.9], crit_comp_chance:3, stamina:3},
 		classes:	['assassin'],
     lore:     "Katana très puissant fait à partir de métal enchanté et d'âme, tranchant et facile à manier.",
-    tags:     ['Armes', 'Katana', 'Deux Mains', 'Assassin', 'Palier 1', 'Épique'],
+    tags:     ['Arme', 'Katana', 'Deux Mains', 'Assassin', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:25, id:'lingot_metal_enchante'}, {qty:21, id:'fragment_casse_violet'}, {qty:5, id:'lingot_ame_metal'}]
 	},
@@ -1180,7 +1180,7 @@ const ITEMS = [
 		stats:		{degats:55, vitesse_attaque:1.8, vol_vie:3.5, vitesse_deplacement:1},
 		classes:	['assassin'],
     lore:     "Une belle dague forgée à l'aide de fragments de véritable Nodachi. Ce n'est toutefois plus qu'une relique pour le moment.",
-    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Mythique'],
+    tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
   {
@@ -1195,7 +1195,7 @@ const ITEMS = [
 		stats:		{degats:[34,38], vitesse_attaque:[1.4,1.5]},
 		classes:	['assassin'],
     lore:     "Une Serpe fine aux teintes dorées et noires, dont la lame effilée évoque le dard mortel d'une abeille.",
-    tags:     ['Armes', 'Serpe', 'Assassin', 'Palier 2', 'Rare'],
+    tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona",
 		craft:		[{qty:24, id:'ambre_mielleux'}, {qty:24, id:'dard'}, {qty:32, id:'miel'}]
 	},
@@ -1212,7 +1212,7 @@ const ITEMS = [
 		stats:		{degats:[46,50], vitesse_attaque:0.8}, //NULL
 		classes:	['assassin'],
     lore:     "Une faux fine aux lignes acérées, décorée de motifs d'alvéoles, évoquant la précision et la menace d'un insecte prédateur.",
-    tags:     ['Armes', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Rare'],
+    tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona",
 		craft:		[{qty:24, id:'ambre_mielleux'}, {qty:24, id:'dard'}, {qty:32, id:'miel'}]
 	},
@@ -1228,7 +1228,7 @@ const ITEMS = [
 		stats:		{degats:[39,43.99], vitesse_attaque:[1.4,1.5]},
 		classes:	['assassin'],
     lore:     "Une Serpe sombre aux gravures funéraires, dont la lame courbe semble liée aux arts interdits..",
-    tags:     ['Armes', 'Serpe', 'Assassin', 'Palier 2', 'Épique'],
+    tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
@@ -1245,7 +1245,7 @@ const ITEMS = [
 		stats:		{degats:[51,57], vitesse_attaque:0.8, crit_comp_chance:4.5, stamina:4.5},
 		classes:	['assassin'],
     lore:     "Une faux austère aux runes sépulcrales dont la lame noire évoque les rites anciens et les forces d'outre-tombe.",
-    tags:     ['Armes', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Épique'],
+    tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
@@ -1501,7 +1501,7 @@ const ITEMS = [
 		stats:		{degats:12, vitesse_attaque:0.7, crit_comp_chance:2, stamina:2},
 		classes:	['archer'],
     lore:     "Arbalète d'un bandit qui devient presque inutilisable après tous ces combats.",
-    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Bandits Archer"
 	},
   {
@@ -1516,7 +1516,7 @@ const ITEMS = [
 		stats:		{degats:[15,19], vitesse_attaque:0.7, crit_comp_chance:3, stamina:3},
 		classes:	['archer'],
     lore:     "Arbalète pour chasser les puissants monstres du Palier 1.",
-    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'carapace_requin'}, {qty:24, id:'peau_dur_glacial'}]
 	},
@@ -1532,7 +1532,7 @@ const ITEMS = [
 		stats:		{degats:23.5, vitesse_attaque:0.7, crit_comp_chance:3, stamina:3},
 		classes:	['archer'],
     lore:     "Forgé dans les ruines d'un ancien fort de guerre, elle tremble encore de ces anciens combats.",
-    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 1', 'Légendaire'],
+    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en récompense du Donjon Labyrinthe des Déchus[1]"
 	},
   {
@@ -1547,7 +1547,7 @@ const ITEMS = [
 		stats:		{degats:[23.5,25.26], vitesse_attaque:[0.7,0.8]}, //NULL
 		classes:	['archer'],
     lore:     "Une arme fiable pour frapper même les ennemis les plus résistants.",
-    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 2', 'Rare'],
+    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona",
 		craft:		[{qty:24, id:'dard'}, {qty:64, id:'miel'}]
 	},
@@ -1563,7 +1563,7 @@ const ITEMS = [
 		stats:		{degats:[27,29], vitesse_attaque:[0.7,0.8], crit_comp_chance:4, stamina:4},
 		classes:	['archer'],
     lore:     "Une arbalète austère aux ornements sépulcraux, imprégnée d'une présence silencieuse venue d'outre-tombe.",
-    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 2', 'Épique'],
+    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
@@ -1676,7 +1676,7 @@ const ITEMS = [
 		stats:		{degats:15, vitesse_attaque:1},
 		classes:	['mage'],
     lore:     "Bâton ancien des ruines maudites, encore vivant de la flamme des morts.",
-    tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelettes Mages"
 	},
   {
@@ -1691,7 +1691,7 @@ const ITEMS = [
 		stats:		{degats:12, vitesse_attaque:1, soin_bonus:2.5},
 		classes:	['shaman'],
     lore:     "Bâton ancien des ruines maudites, encore vivant de la flamme des morts.",
-    tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelettes Mages"
 	},
   {
@@ -1706,7 +1706,7 @@ const ITEMS = [
 		stats:		{degats:18, vitesse_attaque:1.1, degats_competence:2.5, sante:-10, mana:-5},
 		classes:	['mage'],
     lore:     "Bâton encore imprégné de sa magie après la mort de son propriétaire.",
-    tags:     ['Armes', 'Bâton Puissant', 'Mage', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Bâton Puissant', 'Mage', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit"
 	},
   {
@@ -1721,7 +1721,7 @@ const ITEMS = [
 		stats:		{degats:14, vitesse_attaque:1.1, soin_bonus:3.5, regen_mana:0.2, sante:-20},
 		classes:	['shaman'],
     lore:     "Bâton encore imprégné de sa magie après la mort de son propriétaire.",
-    tags:     ['Armes', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit"
 	},
   {
@@ -1736,7 +1736,7 @@ const ITEMS = [
 		stats:		{degats:[18,21], vitesse_attaque:1},
 		classes:	['mage'],
     lore:     "Forgé au cœur d'un orage silencieux. Ce bâton vibre d'une énergie céleste et puissante.",
-    tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'peau_dur_glacial'}]
 	},
@@ -1752,7 +1752,7 @@ const ITEMS = [
 		stats:		{degats:[16,18], vitesse_attaque:1, soin_bonus:[2.5,3.5]},
 		classes:	['shaman'],
     lore:     "Forgé au cœur d'un orage silencieux. Ce bâton vibre d'une énergie céleste et puissante.",
-    tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'peau_dur_glacial'}]
 	},
@@ -1768,7 +1768,7 @@ const ITEMS = [
 		stats:		{degats:[20,22], vitesse_attaque:1.1, degats_competence:3, sante:-15, mana:-10},
 		classes:	['mage'],
     lore:     "Ce bâton est une version puissante et concentrée d'énergie, contrairement à l'autre, plus sûre et moins puissante.",
-    tags:     ['Armes', 'Bâton Puissant', 'Mage', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Bâton Puissant', 'Mage', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'peau_dur_glacial'}]
 	},
@@ -1784,7 +1784,7 @@ const ITEMS = [
 		stats:		{degats:[18,20], vitesse_attaque:1.1, soin_bonus:[3.5,4.5], regen_mana:0.2, sante:-30},
 		classes:	['shaman'],
     lore:     "Ce bâton est une version puissante et concentrée d'énergie, contrairement à l'autre, plus sûre et moins puissante.",
-    tags:     ['Armes', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Rare'],
+    tags:     ['Arme', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'peau_dur_glacial'}]
 	},
@@ -1800,7 +1800,7 @@ const ITEMS = [
 		stats:		{degats:[21.5,24.5], vitesse_attaque:1},
 		classes:	['mage'],
     lore:     "Bâton fait à partir d'enchantements et de métaux. Parfait pour infliger d'incroyables dégâts.",
-    tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Épique'],
+    tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
 	},
@@ -1816,7 +1816,7 @@ const ITEMS = [
 		stats:		{degats:[19,22], vitesse_attaque:1, soin_bonus:[3,4]},
 		classes:	['shaman'],
     lore:     "Bâton fait à partir d'enchantements et de métaux. Parfait pour infliger d'incroyables dégâts.",
-    tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Épique'],
+    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
 	},
@@ -1832,7 +1832,7 @@ const ITEMS = [
 		stats:		{degats:[23,27], vitesse_attaque:1.1, degats_competence:4, sante:-20, mana:-15},
 		classes:	['mage'],
     lore:     "Bâton fait à partir d'enchantements et de métaux. Parfait pour infliger d'incroyables dégâts.",
-    tags:     ['Armes', 'Bâton Puissant', 'Mage', 'Palier 1', 'Épique'],
+    tags:     ['Arme', 'Bâton Puissant', 'Mage', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
 	},
@@ -1848,7 +1848,7 @@ const ITEMS = [
 		stats:		{degats:[21,22], vitesse_attaque:1.1, soin_bonus:[4.5,5.5], regen_mana:0.3, sante:-40},
 		classes:	['shaman'],
     lore:     "Bâton fait à partir d'enchantements et de métaux. Parfait pour infliger d'incroyables dégâts.",
-    tags:     ['Armes', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Épique'],
+    tags:     ['Arme', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
 	},
@@ -1864,7 +1864,7 @@ const ITEMS = [
 		stats:		{degats:50, vitesse_attaque:1.2, crit_comp_chance:15},
 		classes:	['mage'],
     lore:     "Bâton très puissant, forgé grâce à la puissance d'Illfang et à des minerais rares. Ce n'est toutefois plus qu'une relique pour le moment.",
-    tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Mythique'],
+    tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
   {
@@ -1879,7 +1879,7 @@ const ITEMS = [
 		stats:		{degats:35, vitesse_attaque:1.2, soin_bonus:10, regen_sante:0.3, regen_mana:0.3},
 		classes:	['shaman'],
     lore:     "Bâton très puissant, forgé grâce à la puissance d'Illfang et à des minerais rares. Ce n'est toutefois plus qu'une relique pour le moment.",
-    tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Mythique'],
+    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
 	{
@@ -1958,7 +1958,7 @@ const ITEMS = [
 		stats:		{degats:30, vitesse_attaque:1},
 		classes:	['mage'],
 		lore:     "Déborde d'une énergie hivernale qui gèle l'air ambiant. Quiconque le porte est condamné à offrir le bonheur aux enfants.",
-		tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Event', 'Noël'],
+		tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'Event', 'Noël'],
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
 	{
@@ -1973,7 +1973,7 @@ const ITEMS = [
 		stats:		{degats:25, vitesse_attaque:1, soin_bonus:6},
 		classes:	['shaman'],
 		lore:     "Déborde d'une énergie hivernale qui gèle l'air ambiant. Quiconque le porte est condamné à offrir le bonheur aux enfants.",
-		tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Event', 'Noël'],
+		tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Event', 'Noël'],
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
 	/* ══ Catalyseurs ══ */
@@ -2117,7 +2117,7 @@ const ITEMS = [
 		stats:		{degats_magique:5, mana:15},
 		classes:	['mage'],
 		lore:     "Elle porte le poids du bonheur de tout les enfants, et de l'odeur des petits gâteaux.",
-		tags:     ['Armes', 'Catalyseur', 'Grimoire', 'Mage', 'Palier 1', 'Event', 'Noël'],
+		tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Mage', 'Palier 1', 'Event', 'Noël'],
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
 	{
@@ -2132,7 +2132,7 @@ const ITEMS = [
 		stats:		{regen_mana:0.4, mana:15},
 		classes:	['shaman'],
 		lore:     "Elle porte le poids du bonheur de tout les enfants, et de l'odeur des petits gâteaux.",
-		tags:     ['Armes', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Event', 'Noël'],
+		tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Event', 'Noël'],
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
   
@@ -6793,7 +6793,7 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/Ressources/charbon.png",
     lore:     "Une Roche sombre contenant des traces de charbon brut.",
-    tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
+    tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les des deux mines du Palier 1"
   },
 	{
@@ -6804,7 +6804,7 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/Ressources/copper.png",
     lore:     "Minerais de basse qualité, utile pour les débuts d'aventure au débutants.",
-    tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
+    tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les des deux mines du Palier 1"
   },
 	{
@@ -6815,7 +6815,7 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/Ressources/bar_copper.png",
     lore:     "Lingot raffiné à partir de minerai de cuivre. Utilisé en forge, pour certaines confections.",
-    tags:     ['Ressource', 'Minerais', 'Lingot', 'Palier 1', 'Commun'],
+    tags:     ['Ressource', 'Minerai', 'Lingot', 'Palier 1', 'Commun'],
     obtain:   "Fabricable:\n- Forgeron d'Armures de la Ville de Départ\n- Forgeron de Lingots au Sud du Quartier OG",
 		craft:	 [{id:'cuivre', qty:3}, {id:'charbon', qty:2}]
   },
@@ -6827,7 +6827,7 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/Ressources/iron.png",
     lore:     "Une roche marquée par des veines de métal brut.",
-    tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
+    tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les des deux mines du Palier 1"
   },
 	{
@@ -6838,7 +6838,7 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/Ressources/bar_iron.png",
     lore:     "Lingot forgé à haute température. Un matériau essentiel et polyvalent. Utilisé par les artisans.",
-    tags:     ['Ressource', 'Minerais', 'Lingot', 'Palier 1', 'Rare'],
+    tags:     ['Ressource', 'Minerai', 'Lingot', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron de Lingots au Sud du Quartier OG",
 		craft:	 [{id:'fer', qty:4}, {id:'charbon', qty:2}]
   },
