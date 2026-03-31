@@ -765,7 +765,7 @@ const ITEMS = [
 		craft:		[{qty:8, id:'lingot_cuivre'}, {qty:7, id:'ecorce_de_titan'}]
 	},
   {
-		id:				'bouclier_sylestre',
+		id:				'bouclier_sylvestre',
 		name:			"Bouclier Sylvestre",
 		rarity:		'rare',
 		cat:			'arme_s',
@@ -1389,7 +1389,7 @@ const ITEMS = [
   /* ══ Mage - Shaman ══ */
   /* ══ Bâtons ══ */
   {
-		id:				'baton_mediocre_mag',
+		id:				'baton_mediocre_mage',
 		name:			"Bâton Médiocre Mage",
 		rarity:		'commun',
 		cat:			'arme_p',
@@ -1405,7 +1405,7 @@ const ITEMS = [
 		craft:		[{qty:75, id:'cols'}]
 	},
   {
-		id:				'baton_mediocre_sha',
+		id:				'baton_mediocre_shaman',
 		name:			"Bâton Médiocre Shaman",
 		rarity:		'commun',
 		cat:			'arme_p',
@@ -1421,7 +1421,7 @@ const ITEMS = [
 		craft:		[{qty:75, id:'cols'}]
 	},
   {
-		id:				'baton_sylvestre_mag',
+		id:				'baton_sylvestre_mage',
 		name:			"Bâton Sylvestre Mage",
 		rarity:		'commun',
 		cat:			'arme_p',
@@ -1437,7 +1437,7 @@ const ITEMS = [
 		craft:		[{qty:15, id:'brindille_enchantee'}, {qty:1, id:'coeur_de_bois'}]
 	},
   {
-		id:				'baton_sylvestre_sha',
+		id:				'baton_sylvestre_shaman',
 		name:			"Bâton Sylvestre Shaman",
 		rarity:		'commun',
 		cat:			'arme_p',
@@ -1453,7 +1453,7 @@ const ITEMS = [
 		craft:		[{qty:15, id:'brindille_enchantee'}, {qty:1, id:'coeur_de_bois'}]
 	},
   {
-		id:				'baton_squelette_mag',
+		id:				'baton_squelette_mage',
 		name:			"Bâton de Squelette Mage",
 		rarity:		'rare',
 		cat:			'arme_p',
@@ -1468,7 +1468,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Squelettes Mages"
 	},
   {
-		id:				'baton_squelette_sha',
+		id:				'baton_squelette_shaman',
 		name:			"Bâton de Squelette Shaman",
 		rarity:		'rare',
 		cat:			'arme_p',
@@ -1483,7 +1483,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Squelettes Mages"
 	},
   {
-		id:				'baton_squelette_maudit_mag',
+		id:				'baton_squelette_maudit_mage',
 		name:			"Bâton Squelette Maudit",
 		rarity:		'rare',
 		cat:			'arme_p',
@@ -1498,7 +1498,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit"
 	},
   {
-		id:				'baton_squelette_maudit_sha',
+		id:				'baton_squelette_maudit_shaman',
 		name:			"Bâton Squelette Maudit",
 		rarity:		'rare',
 		cat:			'arme_p',category:
@@ -1577,7 +1577,7 @@ const ITEMS = [
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'peau_dur_glacial'}]
 	},
   {
-		id:				'baton_obscur_mag',
+		id:				'baton_obscur_mage',
 		name:			"Bâton Obscur Mage",
 		rarity:		'epique',
 		cat:			'arme_p',
@@ -1593,7 +1593,7 @@ const ITEMS = [
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
 	},
   {
-		id:				'baton_obscur_sha',
+		id:				'baton_obscur_shaman',
 		name:			"Bâton Obscur Shaman",
 		rarity:		'epique',
 		cat:			'arme_p',
@@ -1609,7 +1609,7 @@ const ITEMS = [
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
 	},
   {
-		id:				'baton_obscur_puissant_mag',
+		id:				'baton_obscur_puissant_mage',
 		name:			"Bâton Obscur Puissant Mage",
 		rarity:		'epique',
 		cat:			'arme_p',
@@ -1625,7 +1625,7 @@ const ITEMS = [
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
 	},
   {
-		id:				'baton_obscur_puissant_sha',
+		id:				'baton_obscur_puissant_shaman',
 		name:			"Bâton Obscur Puissant Shaman",
 		rarity:		'epique',
 		cat:			'arme_p',
@@ -1641,7 +1641,7 @@ const ITEMS = [
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
 	},
   {
-		id:				'baton_nodachi_mag',
+		id:				'baton_nodachi_mage',
 		name:			"Bâton Nodachi Mage",
 		rarity:		'mythique',
 		cat:			'arme_p',
@@ -1656,7 +1656,7 @@ const ITEMS = [
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
   {
-		id:				'baton_nodachi_sha',
+		id:				'baton_nodachi_shaman',
 		name:			"Bâton Nodachi Shaman",
 		rarity:		'mythique',
 		cat:			'arme_p',
@@ -1735,7 +1735,7 @@ const ITEMS = [
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
 	{
-		id:				'scpectre_hivernal_mag',
+		id:				'scpectre_hivernal_mage',
 		name:			"Scpetre Hivernal Mage",
 		rarity:		'event',
 		cat:			'arme_p',
@@ -1750,7 +1750,7 @@ const ITEMS = [
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
 	{
-		id:				'scpectre_hivernal_sha',
+		id:				'scpectre_hivernal_shaman',
 		name:			"Scpetre Hivernal Shaman",
 		rarity:		'event',
 		cat:			'arme_p',
@@ -6625,7 +6625,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Squelettes Mages[50]"
   },
   {
-    id:       'coeur_putréfié',
+    id:       'coeur_putrefie',
     name:     "Cœur Putréfié",
     rarity:   'commun',
     category: 'quete',
