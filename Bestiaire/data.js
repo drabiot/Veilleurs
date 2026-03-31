@@ -454,6 +454,9 @@ const MOBS = [
     loot: [
       { id: 'os_de_squelette_renforce', chance: 40 },
 	  { id: 'poussiere_dos', chance: 30 },
+	  { id: 'tissu_maudit', chance: 50 },
+	  { id: 'baton_squelette_mage' },
+	  { id: 'baton_squelette_shaman' },
     ],
   },
   {
