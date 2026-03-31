@@ -13,11 +13,10 @@ body.bestiaire-page {
   left: 0;
   right: 0;
   bottom: 0;
-  /* top est injecté par JS */
   display: grid;
   grid-template-columns: 240px 1fr;
   overflow: hidden;
-  z-index: 1;
+  z-index: 1;	
 }
 
 /* ══════════════════════════════════
@@ -202,6 +201,7 @@ body.bestiaire-page {
 .bfilter-row:has(input:checked) .bfilter-dot { opacity: 1; }
 
 .bfilter-boss    { background: #e05555; box-shadow: 0 0 5px #e0555566; }
+.bfilter-mini_boss    { background: #d86f6f; box-shadow: 0 0 5px #e0555566; }
 .bfilter-monstre { background: #e09050; box-shadow: 0 0 5px #e0905066; }
 .bfilter-sbire   { background: #8090c0; box-shadow: 0 0 5px #8090c066; }
 
@@ -293,7 +293,29 @@ body.bestiaire-page {
   animation: card-in .2s ease both;
   display: flex;
   flex-direction: column;
+  user-select: none;
+  -webkit-user-select: none;
 }
+.entity-card * {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.card-codex-badge {
+  position: absolute;
+  bottom: 5px; right: 5px;
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.45;
+  transition: opacity .15s;
+  filter: drop-shadow(0 0 4px #4e96e8aa);
+}
+
+.entity-card:hover .card-codex-badge {
+  opacity: 0.85;
+}
+
 .entity-card:hover {
   border-color: var(--gold-dim);
   background: linear-gradient(160deg, rgba(30,25,18,.98) 0%, rgba(18,15,11,.95) 100%);
@@ -355,6 +377,7 @@ body.bestiaire-page {
   text-transform: uppercase;
 }
 .badge-boss    { background: rgba(180,40,40,.85);  color: #ffc8c8; border: 1px solid #c0404055; }
+.badge-mini_boss    { background: rgba(212, 80, 57, 0.85);  color: #ffc8c8; border: 1px solid #c0404055; }
 .badge-monstre { background: rgba(160,80,20,.85);  color: #ffd9a0; border: 1px solid #c06c2055; }
 .badge-sbire   { background: rgba(50,50,70,.85);   color: #b0b8d0; border: 1px solid #5055a055; }
 .badge-pnj     { background: rgba(100,80,30,.85);  color: #ffd9a0; border: 1px solid #c06c2055; }
@@ -433,19 +456,27 @@ body.bestiaire-page {
 ══════════════════════════════════ */
 .mob-modal-overlay {
   position: fixed;
-  inset: 0;
-  z-index: 200;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,.18);
+  background: rgba(0, 0, 0, 0 	);
   padding: 24px;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
   transition: opacity .2s ease;
 }
 .mob-modal-overlay.open {
   opacity: 1;
+  visibility: visible;
+  pointer-events: none;
+}
+.mob-modal-overlay.open .mob-modal {
   pointer-events: all;
 }
 
@@ -462,7 +493,7 @@ body.bestiaire-page {
   background: linear-gradient(160deg, rgba(22,18,14,.99) 0%, rgba(12,10,8,.99) 100%);
   border: 1px solid var(--rim2);
   overflow-y: auto;
-  animation: modal-in .22s ease both;
+  animation: none;
   box-shadow: 0 0 80px rgba(0,0,0,.85), 0 0 0 1px rgba(224,172,96,.07);
 }
 .mob-modal::-webkit-scrollbar { width: 4px; }
@@ -526,7 +557,6 @@ body.bestiaire-page {
   align-items: start;
   margin-bottom: 24px;
   padding-bottom: 20px;
-  border-bottom: 1px solid var(--rim);
 }
 .mob-image-wrap {
   width: 140px; height: 140px;
