@@ -371,10 +371,10 @@ function renderMobSheet(mob) {
             </div>
             <div class="mob-meta-item">
               <span class="mob-meta-key">Difficulté</span>
-              <span class="mob-meta-val">
-                <span class="difficulty-stars">${diffStarsHTML(mob.difficulty)}</span>
-                <span style="font-size:9px;color:var(--muted);margin-left:6px;letter-spacing:.08em">${DIFF_LABELS[mob.difficulty]||''}</span>
-              </span>
+              <span class="mob-meta-val" style="display:flex;align-items:center;gap:6px;">
+				<span class="difficulty-stars">${diffStarsHTML(mob.difficulty)}</span>
+				<span style="font-size:9px;color:var(--muted);letter-spacing:.08em">${DIFF_LABELS[mob.difficulty]||''}</span>
+			  </span>
             </div>
             ${mob.region ? `
             <div class="mob-meta-item">
