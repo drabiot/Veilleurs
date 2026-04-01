@@ -11,7 +11,7 @@ const MOBS = [
     palier: 1,
     difficulty: 1,
     region: 'Zone des Sangliers',
-    regionId: 'zone_sanglier',
+    regionId: 'm1z2',
     img: '../img/mobs/P1/sanglier_corrompu.png',
     lore: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive.",
     attacks: [
@@ -32,7 +32,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Zone des Sangliers',
-    regionId: 'zone_sanglier',
+    regionId: 'm1z2',
     img: '../img/mobs/P1/sanglier_corrompu.png',
     lore: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive.",
     attacks: [
@@ -54,7 +54,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 1,
     region: 'Vallée des Loups',
-    regionId: 'vallee_loup',
+    regionId: 'm1z1',
     img: '../img/mobs/P1/loup_sinistre_blanc.png',
     lore: "Gardiens de la Vallée des Loups. Leurs hurlements glacent le sang et donnent des frissons.",
     attacks: [
@@ -74,7 +74,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 1,
     region: 'Vallée des Loups',
-    regionId: 'vallee_loup',
+    regionId: 'm1z1',
     img: '../img/mobs/P1/loup_sinistre_noir.png',
     lore: "Gardiens de la Vallée des Loups. Leurs hurlements glacent le sang et donnent des frissons.",
     attacks: [
@@ -94,7 +94,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Vallée des Loups',
-    regionId: 'vallee_loup',
+    regionId: 'm1z1',
     img: '../img/mobs/P1/albal.png',
     lore: "Un loup solitaire aux yeux d'argent glacés. Son passage laisse une brume et le silence.",
     attacks: [
@@ -114,7 +114,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Champs de Mizunari',
-    regionId: 'champs_mizunari',
+    regionId: 'm1z3',
     img: '../img/mobs/P1/nephentes.png',
     lore: "Cette plante carnivore géante se nourrit de chair et de sang. Ses lianes s'enroulent sans bruit, avant de refermer son piège mortel. Même les aventuriers aguerris évitent ses racines traînantes.",
     attacks: [
@@ -133,7 +133,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 1,
     region: 'Maréage Putride',
-    regionId: 'marecage_putride',
+    regionId: 'm1z4',
     img: '../img/mobs/P1/mini_treant.png',
     lore: "Petit gardien de la forêt, il défend les lieux sacrés avec hargne. Sous ses racines courtes dort une volonté de fer.",
     attacks: [
@@ -153,7 +153,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Maréage Putride',
-    regionId: 'marecage_putride',
+    regionId: 'm1z4',
     img: '../img/mobs/P1/guerrier_treant.png',
     lore: "Forgé dans l'écorce et la magie, ce tréant veille sur les bois sacrés. Il frappe avec la force d'un vieux chêne, et la colère de la forêt.",
     attacks: [
@@ -175,7 +175,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Maréage Putride',
-    regionId: 'marecage_putride',
+    regionId: 'm1z4',
     img: '../img/mobs/P1/treant_elite.png',
     lore: "Ancien protecteur des forêts oubliées, ce tréant détient une puissance redoutable.",
     attacks: [
@@ -197,7 +197,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Maréage Putride',
-    regionId: 'marecage_putride',
+    regionId: 'm1z4',
     img: '../img/mobs/P1/mage_sylvestre.png',
     lore: "Il canalise la magie des arbres anciens. Ses enchantements font fleurir ou pourrir tout ce qu'il touche.",
     attacks: [
@@ -220,7 +220,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Maréage Putride',
-    regionId: 'marecage_putride',
+    regionId: 'm1z4',
     img: '../img/mobs/P1/gardien_colossal.png',
     lore: "Forgé dans la pierre et éveillé par la magie ancienne, il garde les terres oubliées contre toute intrusion. Ses pas seuls font trembler la forêt...",
     attacks: [
@@ -240,7 +240,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 1,
     region: 'Vallhat',
-    regionId: 'vallhat',
+    regionId: 'm1z5',
     img: '../img/mobs/P1/petit_slime.png',
     lore: "Malgré sa petite taille, il bondit sans peur. Inoffensif en apparence, mais têtu comme pas deux. Certains disent qu'il garde un secret au cœur mou.",
     attacks: [
@@ -259,7 +259,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Vallhat',
-    regionId: 'vallhat',
+    regionId: 'm1z5',
     img: '../img/mobs/P1/guerrier_slime.png',
     lore: "Né d'un amas magique de gelée ancienne, il a appris à manier l'arme comme un vrai guerrier. Il défend son territoire avec une rage inattendue.",
     attacks: [
@@ -278,7 +278,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Vallhat',
-    regionId: 'vallhat',
+    regionId: 'm1z5',
     img: '../img/mobs/P1/slime_soigneur.png',
     lore: "Ce slime irradie une énergie apaisante. Blessures mineures se referment à son passage. Il fuit le combat, mais sauve les siens dans l'ombre.",
     attacks: [
@@ -298,7 +298,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Vallhat',
-    regionId: 'vallhat',
+    regionId: 'm1z5',
     img: '../img/mobs/P1/slime_magicien.png',
     lore: "Un slime imprégné d'énergies arcaniques anciennes. Ses attaques lancent des sorts chaotiques et imprévisibles.",
     attacks: [
@@ -317,7 +317,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Vallhat',
-    regionId: 'vallhat',
+    regionId: 'm1z5',
     img: '../img/mobs/P1/gorbel.png',
     lore: "Un colosse gélatineux, maître des essaims de slimes. Il écrase tout sur son passage, lentement mais sûrement.",
     attacks: [
@@ -339,7 +339,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Ruines Maudites',
-    regionId: 'ruines_maudites',
+    regionId: 'm1z6',
     img: '../img/mobs/P1/squelette_epeiste.png',
     lore: "Un guerrier tombé jadis au champ d'honneur… Ranimé par magie, il défend éternellement sa lame.",
     attacks: [
@@ -361,7 +361,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Ruines Maudites',
-    regionId: 'ruines_maudites',
+    regionId: 'm1z6',
     img: '../img/mobs/P1/guerrier_squelette.png',
     lore: "Ancien soldat revenu d'entre les morts… Il marche sans repos, guidé par une volonté oubliée.",
     attacks: [
@@ -383,7 +383,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Ruines Maudites',
-    regionId: 'ruines_maudites',
+    regionId: 'm1z6',
     img: '../img/mobs/P1/squelette_hallebardier.png',
     lore: "Un serviteur osseux maniant la hallebarde avec précision. Il garde l'accès à d'anciennes cryptes oubliées.",
     attacks: [
@@ -404,7 +404,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Donjon Squelette',
-    regionId: 'donjon_squelette',
+    regionId: 'm1d2',
     img: '../img/mobs/P1/archer_squelette.png',
     lore: "Un squelette agile, archer silencieux des couloirs hantés. Ses flèches sifflent dans l'ombre, prêtes à faucher les intrus.",
     attacks: [
@@ -425,7 +425,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Donjon Squelette',
-    regionId: 'donjon_squelette',
+    regionId: 'm1d2',
     img: '../img/mobs/P1/tank_squelette.png',
     lore: "Un colosse d'os armé d'un bouclier cabossé. Il avance lentement, mais rien ne semble pouvoir l'arrêter.",
     attacks: [
@@ -444,7 +444,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Donjon Squelette',
-    regionId: 'donjon_squelette',
+    regionId: 'm1d2',
     img: '../img/mobs/P1/squelette_mage.png',
     lore: "Un revenant rachitique, mais animé par une magie ancienne et instable. Ses os craquent à chaque incantation, libérant une énergie spectrale dangereuse.",
     attacks: [
@@ -468,7 +468,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Squelette',
-    regionId: 'donjon_squelette',
+    regionId: 'm1d2',
     img: '../img/mobs/P1/narax.png',
     lore: "Ancien général d'une armée déchue, Narax fut ressuscité par une magie interdite. Son armure brisée résonne encore de ses exploits d'antan, hantant les terres maudites. On dit que son regard vide perce jusqu'à l'âme.",
     attacks: [
@@ -488,7 +488,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Squelette',
-    regionId: 'donjon_squelette',
+    regionId: 'm1d2',
     img: '../img/mobs/P1/nasgul.png',
     lore: "Entité maudite surgie des ténèbres anciennes, il rôde, invisible, prêt à déchirer l'âme des vivants.",
     attacks: [
@@ -509,7 +509,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Mine de Geldorak',
-    regionId: 'mine_geldorak',
+    regionId: 'm1z7',
     img: '../img/mobs/P1/bandit_archer.png',
     lore: "Un hors-la-loi habile qui préfère frapper de loin.",
     attacks: [
@@ -530,7 +530,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Mine de Geldorak',
-    regionId: 'mine_geldorak',
+    regionId: 'm1z7',
     img: '../img/mobs/P1/bandit_assassin.png',
     lore: "Maître de l'ombre et des lames silencieuses, il ne laisse derrière lui que le vide… et une cible tombée.",
     attacks: [
@@ -551,7 +551,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Mine de Geldorak',
-    regionId: 'mine_geldorak',
+    regionId: 'm1z7',
     img: '../img/mobs/P1/bandit_robuste.png',
     lore: "Ce bandit à la carrure massive bloque les chemins isolés, utilisant sa force brute pour dépouiller les voyageurs.",
     attacks: [
@@ -571,7 +571,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'donjon_mine_geldorak',
+    regionId: 'm1d3',
     img: '../img/mobs/P1/treant_foret.png',
     lore: "Gardien séculaire enraciné au cœur de la mine de Geldorak. N'approchez qu'en paix, ou affrontez sa colère sylvestre.",
     attacks: [
@@ -586,7 +586,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'donjon_mine_geldorak',
+    regionId: 'm1d3',
     img: '../img/mobs/P1/treant_mal_foret.png',
     lore: "Gardien séculaire enraciné au cœur de la mine de Geldorak. N'approchez qu'en paix, ou affrontez sa colère sylvestre.",
     attacks: [
@@ -601,7 +601,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'donjon_mine_geldorak',
+    regionId: 'm1d3',
     img: '../img/mobs/P1/plante_devoreuse.png',
     lore: "Discrète sous ses feuilles luxuriantes, le danger rôde au moindre faux pas... Ses racines enserrent ses proies, lentement, avant de les engloutir sans laisser de trace.",
     attacks: [
@@ -616,7 +616,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'donjon_mine_geldorak',
+    regionId: 'm1d3',
     img: '../img/mobs/P1/vyrmos.png',
     lore: "Entité rampante née des mines de Geldorak, Vyrmos s'imprègne des spores et de la terre humide. Sa peau est couverte de mousse vivante, et son souffle corrompt tout ce qu'il touche.",
     attacks: [
@@ -631,7 +631,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'donjon_mine_geldorak',
+    regionId: 'm1d3',
     img: '../img/mobs/P1/brute_foret.png',	
     lore: "Massive et sauvage, cette créature veille sur la forêt. Elle repousse les intrus à coups de poings dévastateurs. Aucune parole, seulement la force brute de la nature.",
     attacks: [
@@ -646,7 +646,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'donjon_mine_geldorak',
+    regionId: 'm1d3',
     img: '../img/mobs/P1/tornak.png',
     lore: "Massive et sauvage, cette créature veille sur la forêt. Elle repousse les intrus à coups de poings dévastateurs. Aucune parole, seulement la force brute de la nature.",
     attacks: [
@@ -661,7 +661,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Mine de Geldorak',
-    regionId: 'mine_geldorak',
+    regionId: 'm1z7',
     img: '../img/mobs/P1/ika.png',
     lore: "Cette tortue ancienne erre lentement dans les recoins oubliés du monde. Sa carapace recèle les secrets d'âges passés.",
     attacks: [
@@ -680,7 +680,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Donjon Labyrinthe des Déchus',
-    regionId: 'donjon_labyrinthe_dechus',
+    regionId: 'm1d4',
     img: '../img/mobs/P1/soldat_dechu.png',
     lore: "Ancien guerrier tombé dans l'oubli, il erre désormais sans but, consumé par la haine. Son armure rouillée résonne au rythme des ses regrets.",
     attacks: [
@@ -699,7 +699,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Labyrinthe des Déchus',
-    regionId: 'donjon_labyrinthe_dechus',
+    regionId: 'm1d4',
     img: '../img/mobs/P1/guerrier_dechu.png',
     lore: "Combattant redoutable autrefois honoré, il fut trahi par les siens et maudit pour l'éternité. Sa lame résonne encore des cris de la trahison.",
     attacks: [
@@ -720,7 +720,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Labyrinthe des Déchus',
-    regionId: 'donjon_labyrinthe_dechus',
+    regionId: 'm1d4',
     img: '../img/mobs/P1/gardien_dechu.png',
     lore: "Gardien d'un sanctuaire oublié, il a succombé à une force impie corrompant sa volonté. Aujourd'hui, il veille encore... mais pour de mauvaises raisons.",
     attacks: [
@@ -739,7 +739,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Labyrinthe des Déchus',
-    regionId: 'donjon_labyrinthe_dechus',
+    regionId: 'm1d4',
     img: '../img/mobs/P1/heraut_dechu.png',
     lore: "Il proclamait jadis les messages des rois et des dieux. Mais les mots sacrés ont disparu, remplacés par des murmures impies. Le Héraut Déchu annonce désormais l'effondrement des empires.",
     attacks: [
@@ -758,7 +758,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Labyrinthe des Déchus',
-    regionId: 'donjon_labyrinthe_dechus',
+    regionId: 'm1d4',
     img: '../img/mobs/P1/faucheuse_dechu.png',
     lore: "Messagère de la fin, jadis au service des anciens dieux, elle fut rejetée pour avoir défié l'ordre naturel. Désormais, elle erre entre les mondes, incomplète... affamée.",
     attacks: [
@@ -778,7 +778,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Labyrinthe des Déchus',
-    regionId: 'donjon_labyrinthe_dechus',
+    regionId: 'm1d4',
     img: '../img/mobs/P1/ornstein.png',
     lore: "Il semait le chaos sur les champs de guerre, jusqu'à ce que son appétit de destruction consume son âme. Désormais vidé de tout but, il dévaste sans raison... ni fin.",
     attacks: [
@@ -796,7 +796,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Labyrinthe des Déchus',
-    regionId: 'donjon_labyrinthe_dechus',
+    regionId: 'm1d4',
     img: '../img/mobs/P1/smough.png',
     lore: "Chevalier brutal à la force inégalée, Smough écrasait les ennemis au nom d'un empire disparu.",
     attacks: [
@@ -814,7 +814,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Arakh\'Nol',
-    regionId: 'arakh\'nol',
+    regionId: 'm1z9',
     img: '../img/mobs/P1/araignee_foret.png',
     lore: "Tapie entre les feuillages épais et les racines noueuses, elle guette silencieusement les voyageurs imprudents. Nombreux sont ceux qui ont senti son souffle... trop tard.",
     attacks: [
@@ -833,7 +833,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'donjon_sanctuaire_xal\'zirith',
+    regionId: 'm1d5',
     img: '../img/mobs/P1/araignee_chasse.png',
     lore: "Plus petite que ses congénères, mais bien plus agile, l'Araignée de Chasse bondit sur ses proies sans avertissements. Son poison est discret... mais mortellement précis.",
     attacks: [
@@ -850,7 +850,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'donjon_sanctuaire_xal\'zirith',
+    regionId: 'm1d5',
     img: '../img/mobs/P1/araignee_venimeuse.png',
     lore: "Nichée dans l'obscurité, elle injecte son venin avant même qu'on ne sente ses crochets. Les rares survivants parlent d'une brûlure lente... et d'un regard vide.",
     attacks: [
@@ -867,7 +867,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'donjon_sanctuaire_xal\'zirith',
+    regionId: 'm1d5',
     img: '../img/mobs/P1/araignee_etrangleuse.png',
     lore: "Elle ne chasse pas... elle attend. Ses pattes glissent dans l'ombre en silence, et quand vous sentez son emprise, il est déjà trop tard.",
     attacks: [
@@ -884,7 +884,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'donjon_sanctuaire_xal\'zirith',
+    regionId: 'm1d5',
     img: '../img/mobs/P1/pricilia.png',
     lore: "Créature ancienne et rusée, Pricilia tisse ses toiles dans les recoins oubliés des forêts les plus sombre. Ses proies ne voient jamais la mort... seulement ses yeux luisants.",
     attacks: [
@@ -901,7 +901,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'donjon_sanctuaire_xal\'zirith',
+    regionId: 'm1d5',
     img: '../img/mobs/P1/yula.png',
     lore: "Tapis dans l'obscurité humide du donjon, Yula est une araignée redoutée par les aventuriers. Ses pattes tranchantes et ses yeux luisants inspirent la terreur à quiconque croise son chemin.",
     attacks: [
@@ -918,7 +918,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'donjon_sanctuaire_xal\'zirith',
+    regionId: 'm1d5',
     img: '../img/mobs/P1/jira.png',
     lore: "Créature silencieuse tapie entre les toiles, Jira surveille chaque recoin du donjon. Plus rapide que l'éclair, elle frappe sans prévenir, ne laissant derrière elle que le silence... et des toiles sanglantes.",
     attacks: [
@@ -935,7 +935,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'donjon_sanctuaire_xal\'zirith',
+    regionId: 'm1d5',
     img: '../img/mobs/P1/kamilia.png',
     lore: "Silencieuse au cœur du donjon, Kamilia tisse des pièges invisibles dans l'ombre. Sa morsure injecte un venin paralysant, laissant ses proies conscientes, mais incapables de fuir.",
     attacks: [
@@ -952,7 +952,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Montagnes de Tolbana',
-    regionId: 'montagne_tolbana',
+    regionId: 'm1z10',
     img: '../img/mobs/P1/cerf_montagnes.png',
     lore: "Majestueux et insaisissable, le Cerf des Montagnes habite les hauteurs glacées et les forêts enneigées. On raconte qu'il apparaît aux âmes pures, guidant les voyageurs égarés vers la sécurité.",
     attacks: [
@@ -970,7 +970,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Citadelle des Neiges',
-    regionId: 'citadelle_neige',
+    regionId: 'm1z11',
     img: '../img/mobs/P1/golem_glace.png',
     lore: "Forgé dans les profondeurs d'un glacier ancien, le Golem de Glace est une sentinelle implacable. Son corps de cristal givré repousse toute chaleur, et ses coups peuvent figer le sang en un instant.",
     attacks: [
@@ -989,7 +989,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Citadelle des Neiges',
-    regionId: 'citadelle_neige',
+    regionId: 'm1z11',
     img: '../img/mobs/P1/spirite_glace.png',
     lore: "Âme ancienne née des tempêtes hivernales, la Spirite de Glace veille sur les terres gelées. Elle murmure aux vents et glace les intrus, protégeant les secrets oubliés du givre éternel.",
     attacks: [
@@ -1008,7 +1008,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 3,
     region: 'Citadelle des Neiges',
-    regionId: 'citadelle_neige',
+    regionId: 'm1z11',
     img: '../img/mobs/P1/ours_glace.png',
     lore: "Né dans les cavernes les plus froides des montagnes, l'Ours de Glace incarne la force brute du Nord. Son rugissement fait frissonner l'air, et son souffle glacé fige tout sur son passage.",
     attacks: [
@@ -1027,7 +1027,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 2,
     region: 'Lac de Virelune',
-    regionId: 'lac_virelune',
+    regionId: 'm1z12',
     img: '../img/mobs/P1/poisson_requin.png',
     lore: "Prédateur implacable des eaux profondes, le Poisson Requin traque silencieusement ses proies. Ses dents acérées peuvent trancher l'acier, et son instinct ne connaît ni pitié ni repos.",
     attacks: [
@@ -1045,7 +1045,7 @@ const MOBS = [
 	palier: 1,
     difficulty: 4,
     region: 'Antre de Aepep',
-    regionId: 'antre_aepep	',
+    regionId: 'm1z12',
     img: '../img/mobs/P1/nymbrea.png',
     lore: "Serpent mythique glissant entre les courants profonds, Nymbréa incarne la grâce et la traîtrise des eaux calmes. Ses écailles scintillent comme des perles maudites, et son regard hypnotique attire les imprudents vers les abysses.",
     attacks: [
@@ -1059,32 +1059,566 @@ const MOBS = [
 /* ══════════════════════════════════
    DONNÉES — PERSONNAGES
 ══════════════════════════════════ */
+
 const PERSONNAGES = [
+  //#region Ville de Départ
   {
-    id: 'marchand_equipement',
+    id: 'repreneur_butin_vdp',
+    name: "Repreneur de Butin",
+    tag: 'repreneur_butin',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1b1',
+    img: '',
+    lore: "Reprends des ingrédient basique trouvable aux abbords de la Ville de Départ, ainsi que des bourses d'argent.",
+    sells: [
+      { id: 'viande_de_sanglier',  price: 0.1 },
+      { id: 'peau_de_sanglier', price: 2.5 },
+	  	{ id: 'cristal_corrompu', price: 1.5 },
+	  	{ id: 'fourrure_de_loup', price: 3 },
+	  	{ id: 'crocs_de_loup', price: 4 },
+	  	{ id: 'petite_bourse', price: 5 },
+    ],
+  },
+  {
+    id: 'repreneur_equipement_vdp',
     name: "Marchand d'Équipement",
     tag: 'marchand_equipement',
     palier: 1,
     region: 'Ville de Départ',
+    regionId: 'm1m1',
     img: '',
-    lore: "Tient la boutique principale de la Ville de Départ. Il vend les équipements de base aux aventuriers débutants.",
+    lore: "Vends des Armes et des Consommables pour les nouveaux arrivants.",
     sells: [
-      { id: 'epee_entrainement',  price: 75 },
-      { id: 'dague_entrainement', price: 50 },
+      { id: 'epee_entrainement',  buy: 75, price: 4 },
+			{ id: 'bouclier_pacotille',  buy: 75, price: 4 },
+			{ id: 'arc_courbe',  buy: 100, price: 4 },
+			{ id: 'dague_delabree',  buy: 100, price: 4 },
+			{ id: 'baton_mediocre_mage',  buy: 75, price: 4 },
+			{ id: 'grimoire_delie',  buy: 25, price: 4 },
+			{ id: 'baton_mediocre_shaman',  buy: 75, price: 4 },
+			{ id: 'grimoire_sauvage',  buy: 25, price: 4 },
+			{ id: 'potion_vie_1',  buy: 20 },
+			{ id: 'potion_mana_1',  buy: 20 },
+			{ id: 'potion_stamina_1',  buy: 20 },
+			{ id: 'viande_de_sanglier',  buy: 0.1 },
+			{ id: 'parchemin_changement',  buy: 1500 },
+			{ id: 'parchemin_reallocation',  buy: 750 },
+			{ id: 'parchemin_maitrise',  buy: 750 },
     ],
   },
   {
-    id: 'forgeron_armes',
-    name: "Forgeron d'Armes",
-    tag: 'forgeron_armes',
+    id: 'marchand_etrange_vdp',
+    name: "Marchand Étrange",
+    tag: 'marchand_accessoires',
+    palier: 1,
+    region: 'Tolbana',
+    regionId: 'm1a4',
+    img: '',
+    lore: "Échange un étrange manteau contre quelques petites bourses.",
+    craft: [
+			{ 
+				id: 'manteau_vole',
+				ingredients: [
+					{ id: 'petite_bourse', qty: 128 },
+				]
+			}
+		]
+  },
+	{
+    id: 'marchand_outils_vdp',
+    name: "Marchand d'Outils",
+    tag: 'marchand_outils',
     palier: 1,
     region: 'Ville de Départ',
+    regionId: 'm1m5',
     img: '',
-    lore: "Maître forgeron installé dans la forge du centre-ville. Fabrique des armes sur commande moyennant les bons matériaux.",
+    lore: "Vends des Outils pour que les Aventuriers récoltent des ressources pour leur aventure.",
     sells: [
-      { id: 'epee_fer', price: null },
+      { id: 'pioche_felee',  buy: 20, price: 4 },
+			{ id: 'hache_ebrechee',  buy: 20, price: 4 },
+			{ id: 'serpe_tordue',  buy: 20, price: 4 },
+			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
     ],
   },
+	{
+    id: 'alchimiste_vdp',
+    name: "Alchimiste",
+    tag: 'alchimiste',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1a14',
+    img: '',
+    lore: "Concocte des Potions et des Cristaux.",
+    craft: [
+      { id: 'potion_vie_1', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 6 },
+					{ id: 'poudre_bois', qty: 4 },
+					{ id: 'pousse_de_sylve', qty: 4 },
+				]
+			},
+			{ id: 'potion_vie_2', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 8 },
+					{ id: 'pousse_de_sylve', qty: 7 },
+					{ id: 'poussiere_dos', qty: 4 },
+					{ id: 'eclat_de_bois_magique', qty: 5 },
+				]
+			},
+			{ id: 'potion_vie_3', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 10 },
+					{ id: 'poussiere_dos', qty: 7 },
+					{ id: 'racine_ancestrale', qty: 3 },
+				]
+			},
+			{ id: 'cristal_soin',
+				ingredients: [
+					{ id: 'essence_de_gorbel', qty: 1 },
+					{ id: 'racine_ancestrale', qty: 10 },
+					{ id: 'eclat_de_bois_magique', qty: 25 },
+					{ id: 'mycelium_magique', qty: 10 },
+				]
+			},
+			{ id: 'potion_mana_1', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 6 },
+					{ id: 'poudre_bois', qty: 4 },
+					{ id: 'pousse_de_sylve', qty: 4 },
+				]
+			},
+			{ id: 'potion_mana_2', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 8 },
+					{ id: 'pousse_de_sylve', qty: 7 },
+					{ id: 'poussiere_dos', qty: 4 },
+					{ id: 'eclat_de_bois_magique', qty: 5 },
+				]
+			},
+			{ id: 'potion_mana_3', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 10 },
+					{ id: 'poussiere_dos', qty: 7 },
+					{ id: 'racine_ancestrale', qty: 3 },
+				]
+			},
+			{ id: 'cristal_mana',
+				ingredients: [
+					{ id: 'essence_de_gorbel', qty: 1 },
+					{ id: 'racine_ancestrale', qty: 10 },
+					{ id: 'eclat_de_bois_magique', qty: 25 },
+					{ id: 'mycelium_magique', qty: 10 },
+				]
+			},
+			{ id: 'potion_stamina_1', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 6 },
+					{ id: 'poudre_bois', qty: 4 },
+					{ id: 'pousse_de_sylve', qty: 4 },
+				]
+			},
+			{ id: 'potion_stamina_2', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 8 },
+					{ id: 'pousse_de_sylve', qty: 7 },
+					{ id: 'poussiere_dos', qty: 4 },
+					{ id: 'eclat_de_bois_magique', qty: 5 },
+				]
+			},
+			{ id: 'potion_stamina_3', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 10 },
+					{ id: 'poussiere_dos', qty: 7 },
+					{ id: 'racine_ancestrale', qty: 3 },
+				]
+			},
+			{ id: 'cristal_stamina',
+				ingredients: [
+					{ id: 'essence_de_gorbel', qty: 1 },
+					{ id: 'racine_ancestrale', qty: 10 },
+					{ id: 'eclat_de_bois_magique', qty: 25 },
+					{ id: 'mycelium_magique', qty: 10 },
+				]
+			},
+			{ id: 'cristal_puissance',
+				ingredients: [
+					{ id: 'essence_de_gorbel', qty: 1 },
+					{ id: 'racine_ancestrale', qty: 10 },
+					{ id: 'eclat_de_bois_magique', qty: 25 },
+					{ id: 'mycelium_magique', qty: 10 },
+				]
+			},
+    ],
+  },
+	//#endregion Ville de Départ
+	//#region Hanaka
+  {
+    id: 'repreneur_butin_hanaka',
+    name: "Repreneur de Butin",
+    tag: 'repreneur_butin',
+    palier: 1,
+    region: 'Hanaka',
+    regionId: 'm1b2',
+    img: '',
+    lore: "Reprends des ingrédient forêstié trouvable aux abbords de Hanaka, dans les Marécages Putrides.",
+    sells: [
+      { id: 'pousse_de_sylve',  price: 3 },
+      { id: 'eclat_de_bois_magique', price: 4 },
+			{ id: 'racine_ancestrale', price: 150 },
+			{ id: 'ecorce_de_titan', price: 5 },
+			{ id: 'ecorce_sylvestre', price: 4 },
+			{ id: 'corde_darc_sylvestre', price: 5 },
+			{ id: 'brindille_enchantee', price: 4 },
+			{ id: 'coeur_de_bois', price: 10 },
+			{ id: 'tissu_spectral', price: 4 },
+			{ id: 'mycelium_magique', price: 300 },
+    ],
+  },
+  {
+    id: 'repreneur_equipement_hanaka',
+    name: "Marchand d'Équipement",
+    tag: 'marchand_equipement',
+    palier: 1,
+    region: 'Hanaka',
+    regionId: 'm1m2',
+    img: '',
+    lore: "Vends des Armes et des Consommables pour les nouveaux arrivants.",
+    sells: [
+      { id: 'epee_entrainement',  buy: 75, price: 4 },
+			{ id: 'bouclier_pacotille',  buy: 75, price: 4 },
+			{ id: 'arc_courbe',  buy: 100, price: 4 },
+			{ id: 'dague_delabree',  buy: 100, price: 4 },
+			{ id: 'baton_mediocre_mage',  buy: 75, price: 4 },
+			{ id: 'grimoire_delie',  buy: 25, price: 4 },
+			{ id: 'baton_mediocre_shaman',  buy: 75, price: 4 },
+			{ id: 'grimoire_sauvage',  buy: 25, price: 4 },
+			{ id: 'potion_vie_1',  buy: 20 },
+			{ id: 'potion_mana_1',  buy: 20 },
+			{ id: 'potion_stamina_1',  buy: 20 },
+			{ id: 'viande_de_sanglier',  buy: 0.1 },
+			{ id: 'parchemin_changement',  buy: 1500 },
+			{ id: 'parchemin_reallocation',  buy: 750 },
+			{ id: 'parchemin_maitrise',  buy: 750 },
+    ],
+  },
+  {
+    id: 'repreneur_arme_hanaka',
+    name: "Repreneur d'Armes Niveau 5",
+    tag: 'repreneur_butin',
+    palier: 1,
+    region: 'Hanaka',
+    regionId: 'm1b8',
+    img: '',
+    lore: "Reprends les Armes de Niveau 5 obtenable sur les monstres du Palier 1.",
+    sells: [
+      { id: 'bouclier_sylvestre',  price: 50 },
+			{ id: 'marteau_colosse', price: 150 },
+			{ id: 'epee_osseuse', price: 50 },
+			{ id: 'dague_bandit', price: 50 },
+			{ id: 'arbalete_bandit', price: 50 },
+			{ id: 'baton_squelette_mage', price: 50 },
+			{ id: 'baton_squelette_shaman', price: 50 },
+			{ id: 'baton_squelette_maudit_mage', price: 150 },
+			{ id: 'baton_squelette_maudit_shaman', price: 150 },
+    ],
+  },
+	//#endregion Hanaka
+	//#region Mizunari
+  {
+    id: 'repreneur_butin_mizunari',
+    name: "Repreneur de Butin",
+    tag: 'repreneur_butin',
+    palier: 1,
+    region: 'Mizunari',
+		regionId: 'm1b3',
+    img: '',
+    lore: "Reprends des ingrédient champêtre trouvable dans les champs à l'Est de Mizunari.",
+    sells: [
+      { id: 'cuir_use',  price: 5 },
+      { id: 'carapace_dika', price: 6 },
+			{ id: 'spore_corrompu', price: 5 },
+			{ id: 'fragment_de_feuille', price: 6 },
+    ],
+  },
+	//#endregion Mizunari
+	//#region Vallhat
+  {
+    id: 'repreneur_butin_vallhat',
+    name: "Repreneur de Butin",
+    tag: 'repreneur_butin',
+    palier: 1,
+    region: 'Vallhat',
+		regionId: 'm1b4',
+    img: '',
+    lore: "Reprends des ingrédient gluant trouvable dans les marécages en bas de Vallhat.",
+    sells: [
+      { id: 'potion_vie_1',  buy: 20 },
+			{ id: 'potion_mana_1',  buy: 10 },
+			{ id: 'potion_stamina_1',  buy: 10 },
+      { id: 'pousse_de_sylve',  price: 3 },
+      { id: 'eclat_de_bois_magique', price: 4 },
+			{ id: 'racine_ancestrale', price: 150 },
+			{ id: 'ecorce_de_titan', price: 5 },
+			{ id: 'ecorce_sylvestre', price: 4 },
+			{ id: 'corde_darc_sylvestre', price: 5 },
+			{ id: 'brindille_enchantee', price: 4 },
+			{ id: 'coeur_de_bois', price: 10 },
+			{ id: 'tissu_spectral', price: 4 },
+			{ id: 'mycelium_magique', price: 300 },
+			{ id: 'gelee_de_slime', price: 5 },
+			{ id: 'noyau_de_slime', price: 100 },
+			{ id: 'essence_de_gorbel', price: 1500 },
+    ],
+  },
+  {
+    id: 'marchand_accessoire_vallhat',
+    name: "Marchand d'Accessoires",
+    tag: 'marchand_accessoires',
+    palier: 1,
+    region: 'Vallhat',
+    regionId: 'm1m3',
+    img: '',
+    lore: "Vends des Accessoires à base de slime de Vallhat.",
+    sells: [
+      { id: 'bague_gluante',  price: 1000 },
+      { id: 'amulette_gluante', price: 1000 },
+    ],
+  },
+	//#endregion Vallhat
+	//#region Chateau Abandonne
+  {
+    id: 'repreneur_butin_chateau_abandonne',
+    name: "Repreneur de Butin",
+    tag: 'repreneur_butin',
+    palier: 1,
+    region: 'Château Abandonné',
+		regionId: 'm1b5',
+    img: '',
+    lore: "Reprends des ingrédient des Squelettes trouvable dans les Ruines Maudites et son Donjon.",
+    sells: [
+      { id: 'os_de_squelette',  price: 4.5 },
+      { id: 'poussiere_dos', price: 4 },
+			{ id: 'os_de_squelette_renforce', price: 5 },
+			{ id: 'tissu_maudit', price: 6 },
+			{ id: 'morceau_de_criniere_spectrale', price: 5000 },
+			{ id: 'coeur_putrefie', price: 50 },
+    ],
+  },
+	//#endregion Chateau Abandonne
+	//#region Virelune
+  {
+    id: 'repreneur_butin_virelune',
+    name: "Repreneur de Butin",
+    tag: 'repreneur_butin',
+    palier: 1,
+    region: 'Virelune',
+		regionId: 'm1b6',
+    img: '',
+    lore: "Reprends des ingrédient d'Arachnides et du Lac environant.",
+    sells: [
+      { id: 'fil_araignee',  price: 7 },
+      { id: 'tissu_araignee', price: 6 },
+			{ id: 'carapace_requin', price: 6.5 },
+			{ id: 'coeur_nymbrea', price: 500 },
+			{ id: 'venin_araignee' },
+    ],
+  },
+	//#endregion Virelune
+	//#region Tolbana
+  {
+    id: 'repreneur_butin_tolbana',
+    name: "Repreneur de Butin",
+    tag: 'repreneur_butin',
+    palier: 1,
+    region: 'Tolbana',
+		regionId: 'm1b7',
+    img: '',
+    lore: "Reprends des gelés et de la faune locale.",
+    sells: [
+      { id: 'peau_dur_glacial',  price: 10 },
+      { id: 'eclat_magique_glacial', price: 8 },
+			{ id: 'poussiere_givre', price: 6 },
+			{ id: 'carapace_requin', price: 6.5 },
+			{ id: 'fil_araignee', price: 6 },
+			{ id: 'tissu_araignee', price: 7 },
+			{ id: 'peau_cerf_montagnes', price: 6 },
+			{ id: 'fragment_ame_ours', price: 3500 },
+    ],
+  },
+  {
+    id: 'repreneur_equipement_tolbana',
+    name: "Marchand d'Équipement",
+    tag: 'marchand_equipement',
+    palier: 1,
+    region: 'Tolbana',
+    regionId: 'm1m9',
+    img: '',
+    lore: "Vends des Armes et des Consommables pour les nouveaux arrivants.",
+    sells: [
+      { id: 'epee_entrainement',  buy: 75, price: 4 },
+			{ id: 'bouclier_pacotille',  buy: 75, price: 4 },
+			{ id: 'arc_courbe',  buy: 100, price: 4 },
+			{ id: 'dague_delabree',  buy: 100, price: 4 },
+			{ id: 'baton_mediocre_mage',  buy: 75, price: 4 },
+			{ id: 'grimoire_delie',  buy: 25, price: 4 },
+			{ id: 'baton_mediocre_shaman',  buy: 75, price: 4 },
+			{ id: 'grimoire_sauvage',  buy: 25, price: 4 },
+			{ id: 'potion_vie_1',  buy: 20 },
+			{ id: 'potion_mana_1',  buy: 20 },
+			{ id: 'potion_stamina_1',  buy: 20 },
+			{ id: 'viande_de_sanglier',  buy: 0.1 },
+			{ id: 'parchemin_changement',  buy: 1500 },
+			{ id: 'parchemin_reallocation',  buy: 750 },
+			{ id: 'parchemin_maitrise',  buy: 750 },
+    ],
+  },
+  {
+    id: 'marchand_accessoire_tolbana',
+    name: "Marchand d'Accessoires",
+    tag: 'marchand_accessoires',
+    palier: 1,
+    region: 'Tolbana',
+    regionId: 'm1m4',
+    img: '',
+    lore: "Vends des Accessoires pour aventuriers agguéris.",
+    sells: [
+      { id: 'bague_squelette',  price: 1000 },
+      { id: 'bracelet_cerf', price: 2500 },
+    ],
+  },
+	{
+    id: 'marchand_consommable_tolbana',
+    name: "Marchand de Consommable",
+    tag: 'marchand_consommable',
+    palier: 1,
+    region: 'Tolbana',
+    regionId: 'm1m4',
+    img: '',
+    lore: "Vends des Consommable pour Aventuriers.",
+    sells: [
+      { id: 'potion_vie_1',  price: 20 },
+      { id: 'potion_vie_2',  price: 40 },
+			{ id: 'potion_mana_1',  price: 20 },
+      { id: 'potion_mana_2',  price: 40 },
+			{ id: 'potion_stamina_1',  price: 20 },
+      { id: 'potion_stamina_2',  price: 40 },
+			{ id: 'parchemin_changement',  price: 1500 },
+			{ id: 'parchemin_reallocation',  price: 750 },
+			{ id: 'parchemin_maitrise',  price: 750 },
+    ],
+  },
+		{
+    id: 'alchimiste_tolbana',
+    name: "Alchimiste",
+    tag: 'alchimiste',
+    palier: 1,
+    region: 'Tolbana',
+    regionId: 'm1a15',
+    img: '',
+    lore: "Concocte des Potions et des Cristaux.",
+    craft: [
+      { id: 'potion_vie_1', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 6 },
+					{ id: 'poudre_bois', qty: 4 },
+					{ id: 'pousse_de_sylve', qty: 4 },
+				]
+			},
+			{ id: 'potion_vie_2', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 8 },
+					{ id: 'pousse_de_sylve', qty: 7 },
+					{ id: 'poussiere_dos', qty: 4 },
+					{ id: 'eclat_de_bois_magique', qty: 5 },
+				]
+			},
+			{ id: 'potion_vie_3', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 10 },
+					{ id: 'poussiere_dos', qty: 7 },
+					{ id: 'racine_ancestrale', qty: 3 },
+				]
+			},
+			{ id: 'cristal_soin',
+				ingredients: [
+					{ id: 'essence_de_gorbel', qty: 1 },
+					{ id: 'racine_ancestrale', qty: 10 },
+					{ id: 'eclat_de_bois_magique', qty: 25 },
+					{ id: 'mycelium_magique', qty: 10 },
+				]
+			},
+			{ id: 'potion_mana_1', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 6 },
+					{ id: 'poudre_bois', qty: 4 },
+					{ id: 'pousse_de_sylve', qty: 4 },
+				]
+			},
+			{ id: 'potion_mana_2', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 8 },
+					{ id: 'pousse_de_sylve', qty: 7 },
+					{ id: 'poussiere_dos', qty: 4 },
+					{ id: 'eclat_de_bois_magique', qty: 5 },
+				]
+			},
+			{ id: 'potion_mana_3', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 10 },
+					{ id: 'poussiere_dos', qty: 7 },
+					{ id: 'racine_ancestrale', qty: 3 },
+				]
+			},
+			{ id: 'cristal_mana',
+				ingredients: [
+					{ id: 'essence_de_gorbel', qty: 1 },
+					{ id: 'racine_ancestrale', qty: 10 },
+					{ id: 'eclat_de_bois_magique', qty: 25 },
+					{ id: 'mycelium_magique', qty: 10 },
+				]
+			},
+			{ id: 'potion_stamina_1', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 6 },
+					{ id: 'poudre_bois', qty: 4 },
+					{ id: 'pousse_de_sylve', qty: 4 },
+				]
+			},
+			{ id: 'potion_stamina_2', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 8 },
+					{ id: 'pousse_de_sylve', qty: 7 },
+					{ id: 'poussiere_dos', qty: 4 },
+					{ id: 'eclat_de_bois_magique', qty: 5 },
+				]
+			},
+			{ id: 'potion_stamina_3', quality:true,
+				ingredients: [
+					{ id: 'allium', qty: 10 },
+					{ id: 'poussiere_dos', qty: 7 },
+					{ id: 'racine_ancestrale', qty: 3 },
+				]
+			},
+			{ id: 'cristal_stamina',
+				ingredients: [
+					{ id: 'essence_de_gorbel', qty: 1 },
+					{ id: 'racine_ancestrale', qty: 10 },
+					{ id: 'eclat_de_bois_magique', qty: 25 },
+					{ id: 'mycelium_magique', qty: 10 },
+				]
+			},
+			{ id: 'cristal_puissance',
+				ingredients: [
+					{ id: 'essence_de_gorbel', qty: 1 },
+					{ id: 'racine_ancestrale', qty: 10 },
+					{ id: 'eclat_de_bois_magique', qty: 25 },
+					{ id: 'mycelium_magique', qty: 10 },
+				]
+			},
+    ],
+  },
+	//#endregion Tolbana
 ];
 
 /* ══════════════════════════════════
@@ -1095,10 +1629,14 @@ const PNJ_TAG_LABELS = {
   forgeron_armures:     "Forgeron d'Armures",
   forgeron_accessoires: "Forgeron d'Accessoires",
   forgeron_lingots:     "Forgeron de Lingots",
+  forgeron_cles:        "Forgeron de Clés",
+  forgeron_secrets:     "Forgeron d'Items Secrets",
+  refaconneur:          "Refaçonneur",
   marchand_equipement:  "Marchand d'Équipement",
   marchand_consommable: "Marchand de Consommable",
   marchand_outils:      "Marchand d'Outils",
   marchand_accessoires: "Marchand d'Accessoires",
+  repreneur_butin:      "Repreneur de Butin",
   bucheron:             "Bûcheron",
   alchimiste:           "Alchimiste",
   quetes:               "Quêtes",
@@ -1106,13 +1644,17 @@ const PNJ_TAG_LABELS = {
 };
 const PNJ_TAG_COLORS = {
   forgeron_armes:       '#c8783c',
-  forgeron_armures:     '#c8783c',
-  forgeron_accessoires: '#c8783c',
-  forgeron_lingots:     '#c8783c',
+  forgeron_armures:     '#f15e1a',
+  forgeron_accessoires: '#f1b586',
+  forgeron_lingots:     '#eed4a4',
+  forgeron_cles:        '#f5ac4d',
+  forgeron_secrets:     '#6e3e19',
+  refaconneur:          '#6e543f',
   marchand_equipement:  '#c9a84c',
-  marchand_consommable: '#c9a84c',
-  marchand_outils:      '#c9a84c',
-  marchand_accessoires: '#c9a84c',
+  marchand_consommable: '#b19b5f',
+  marchand_outils:      '#a09472',
+  marchand_accessoires: '#a8b34c',
+  repreneur_butin:      '#8eb155',
   bucheron:             '#5aad64',
   alchimiste:           '#9b6bc9',
   quetes:               '#5899e0',

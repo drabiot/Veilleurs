@@ -6154,7 +6154,7 @@ const ITEMS = [
   },
 {
     id:       'carapace_dika',
-    name:     "Carapace de d'Ika",
+    name:     "Carapace d'Ika",
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
@@ -7157,76 +7157,6 @@ const ITEMS = [
     lore:     "Enchanté, ce parchemin peut débloquer la barrière du roi Taurus Asterius.",
     tags:     ['Quête', 'Palier 2', 'Godlike'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
-  },
-
-//#endregion Items > P2 > Quêtes
-//#region Items > P2 > Donjon
-//#endregion Items > P2 > Donjon
-//#endregion Items > Palier 2
-//#endregion Items
-//#region Draco
-//#region Draco > Armes
-//#region Draco > Armes > Palier 1
-//#endregion Draco > Armes > Palier 1
-//#region Draco > Armes > Palier 2
-{
-		id:				'lance_dard_percant',
-		name:			"Lance du Dard Perçant",
-		rarity:		'legendaire',
-		twoHanded: true,
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		2,
-		lvl:			11,
-		img:			null,
-		stats:		{degats:50, vitesse_attaque:1},
-		classes:	['guerrier'],
-		lore:     "Pointe tranchante, perçante, et puissante comme le dard d'une abeille en colère.",
-    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en récompense du Donjon Ruche de Melliona [3]",
-	},
-{
-		id:				'bouclier_imprenable',
-		name:			"Bouclier Imprenable",
-		rarity:		'rare',
-		cat:			'arme_s',
-		category:	'arme',
-		palier:		2,
-		lvl:			11,
-		img:			null,
-		stats:		{defense:[2.5,2.9], sante:[20,24.99]},
-		classes:	['guerrier'],
-		lore:     "Solide et résistant, il protège comme une ruche qui défend ses larves, ainsi absorbant les assauts les plus puissants.",
-		tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 2', 'Rare'],
-		obtain:   "Fabricable au Forgeron d'Armes de ???",
-		craft:		[{qty:48, id:'ambre_mielleux'}, {qty:24, id:'carapace_abeille'}]
-	},
-
-//#endregion Draco > Armes > Palier 2
-//#endregion Draco > Armes
-//#region Draco > Accessoires
-//#region Draco > Accessoires > Palier 1
-//#endregion Draco > Accessoires > Palier 1
-//#region Draco > Accessoires > Palier 2
-//#endregion Draco > Accessoires > Palier 2
-//#endregion Draco > Accessoires
-//#region Draco > Armures
-//#region Draco > Armures > Palier 1
-//#endregion Draco > Armures > Palier 1
-//#region Draco > Armures > Palier 2
-{
-    id:       'masque_nécromancien',
-    name:     "Masque du Nécromancien",
-    rarity:   'legendaire',
-	cat:	  'artefact',
-    category: 'accessoire',
-	lvl:	  14,
-    palier:   2,
-    image:    null,
-	stats:    {crit_comp_chance:5, crit_comp_degats:5, defense:5, sante:60},
-    lore:     "Masque puissant et imprégné de magie noire. Il confère une protection exceptionnelle et une puissance accrue pour les nécromanciens les plus aguerris.",
-    tags:     ['Accessoire', 'Masque', 'Palier 2', 'Légendaire'],
-    obtain:   "Obtenable en tuant : Morveth l'Écorcheur d'Âmes [3]"
   },
 ];
 

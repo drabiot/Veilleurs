@@ -232,11 +232,44 @@ function goToLayer(layer) {
    HASH PARSING
 ══════════════════════════════════ */
 function parseHash(hash) {
-  const m = (hash || window.location.hash).match(/#floor-(\d+)(?:-(surface|underground))?/);
+  const raw = hash || window.location.hash;
+  // Format bestiaire : #m1z3, #m1r1, #m1d2, #m2z1u1…
+  const zm = raw.match(/#(m(\d+)[a-z]\w*)/);
+  if (zm) {
+    const floor = parseInt(zm[2]);
+    const id    = zm[1];
+    const underground = /u\d+$/.test(id);
+    return { floor, layer: underground ? 'underground' : 'surface', focusId: id };
+  }
+  const m = raw.match(/#floor-(\d+)(?:-(surface|underground))?/);
   return {
     floor: m ? parseInt(m[1]) : 1,
     layer: (m && m[2]) ? m[2] : 'surface',
   };
+}
+
+function navigateToMapId(id) {
+  const zones   = getFloorZones(currentFloor);
+  const zone    = zones.find(z => z.id === id);
+  if (zone) {
+    const cx  = zone.points.reduce((s, p) => s + p.gx, 0) / zone.points.length;
+    const cy  = zone.points.reduce((s, p) => s + p.gy, 0) / zone.points.length;
+    const img = gameToPixel(cx, cy);
+    panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
+    panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
+    applyTransform();
+    return;
+  }
+  const markers = getFloorMarkers(currentFloor);
+  const marker  = markers.find(m => m.id === id);
+  if (marker) {
+    const img   = gameToPixel(marker.gx, marker.gy);
+    panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
+    panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
+    _searchFocusId = marker.id;
+    applyTransform();
+    showTooltip(marker);
+  }
 }
 
 /* ══════════════════════════════════
@@ -1351,7 +1384,7 @@ searchInput.addEventListener('keydown', (e) => {
 ══════════════════════════════════ */
 updateVpBounds();
 
-/* Parse le hash initial : #floor-3-underground ou #floor-2 (rétrocompat) */
+/* Parse le hash initial : #floor-3-underground, #floor-2 ou #m1z1, #m1r1… */
 const _initHash = parseHash(window.location.hash);
 currentLayer = _initHash.layer;
 buildLayerSwitcher();
@@ -1360,6 +1393,9 @@ buildWheel();
 requestAnimationFrame(() => {
   updateVpBounds();
   goToFloor(_initHash.floor);
+  if (_initHash.focusId) {
+    requestAnimationFrame(() => navigateToMapId(_initHash.focusId));
+  }
 });
 
 window.addEventListener('popstate', (e) => {
@@ -1372,4 +1408,7 @@ window.addEventListener('popstate', (e) => {
     updateGhostOverlay();
   }
   goToFloor(floor);
+  if (state.focusId) {
+    requestAnimationFrame(() => navigateToMapId(state.focusId));
+  }
 });

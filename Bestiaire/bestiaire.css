@@ -547,17 +547,24 @@ body.bestiaire-page {
 .mob-modal {
   position: relative;
   width: 100%;
-  max-width: 700px;
+  max-width: 600px;
   max-height: 86vh;
   background: linear-gradient(160deg, rgba(22,18,14,.99) 0%, rgba(12,10,8,.99) 100%);
   border: 1px solid var(--rim2);
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   animation: none;
   box-shadow: 0 0 80px rgba(0,0,0,.85), 0 0 0 1px rgba(224,172,96,.07);
 }
-.mob-modal::-webkit-scrollbar { width: 4px; }
-.mob-modal::-webkit-scrollbar-track { background: transparent; }
-.mob-modal::-webkit-scrollbar-thumb { background: var(--rim2); border-radius: 2px; }
+.mob-modal-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+}
+.mob-modal-scroll::-webkit-scrollbar { width: 4px; }
+.mob-modal-scroll::-webkit-scrollbar-track { background: transparent; }
+.mob-modal-scroll::-webkit-scrollbar-thumb { background: var(--rim2); border-radius: 2px; }
 
 .mob-modal::before, .mob-modal::after {
   content: '';
@@ -573,10 +580,9 @@ body.bestiaire-page {
 .mob-modal::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 
 .modal-close-btn {
-  position: sticky;
+  position: absolute;
   top: 12px;
-  float: right;
-  margin: 12px 14px 0 0;
+  right: 14px;
   z-index: 10;
   background: rgba(255,255,255,.06);
   border: 1px solid var(--rim2);
@@ -588,6 +594,7 @@ body.bestiaire-page {
   cursor: pointer;
   transition: color .15s, border-color .15s, background .15s;
   line-height: 1;
+  flex-shrink: 0;
 }
 .modal-close-btn:hover {
   color: var(--bright);
@@ -604,9 +611,8 @@ body.bestiaire-page {
 }
 
 .mob-sheet {
-  padding: 20px 28px 32px;
+  padding: 52px 28px 32px;
   animation: sheet-in .18s ease both;
-  clear: both;
 }
 
 .mob-header {
@@ -748,6 +754,8 @@ body.bestiaire-page {
 }
 
 .mob-loot-list { display: flex; flex-direction: column; }
+.loot-row-wrap { display: flex; flex-direction: column; }
+.loot-row-wrap:last-child > .loot-row { border-bottom: none; }
 .loot-row {
   display: flex; align-items: center; gap: 8px;
   padding: 5px 6px;
@@ -756,6 +764,30 @@ body.bestiaire-page {
 }
 .loot-row:hover { background: rgba(255,255,255,.04); }
 .loot-row:last-child { border-bottom: none; }
+.loot-row-quality { border-left: 2px solid #d4a84088; }
+.loot-row-quality:hover { background: rgba(212,168,64,.06); }
+.loot-quality-badge {
+  font-size: 9px; color: #d4a840;
+  vertical-align: middle; margin-left: 3px;
+}
+
+.craft-toggle {
+  background: none; border: none; cursor: pointer;
+  font-size: 12px; padding: 0 2px; flex-shrink: 0;
+  opacity: .5; transition: opacity .15s;
+  line-height: 1;
+}
+.craft-toggle:hover,
+.craft-toggle.active { opacity: 1; }
+
+.craft-panel {
+  display: none; flex-direction: column;
+  padding: 2px 0 2px 28px;
+  background: rgba(200,120,60,.06);
+  border-left: 2px solid #c8783c44;
+}
+.craft-panel.open { display: flex; }
+.craft-ingredient-row { opacity: .85; }
 .loot-img-wrap {
   width: 22px; height: 22px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
@@ -781,6 +813,64 @@ body.bestiaire-page {
 }
 
 /* ══════════════════════════════════
+   PNJ — COLONNE VENTE / ACHAT
+══════════════════════════════════ */
+.pnj-sells-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px 6px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.pnj-col-hdr {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  width: 78px; text-align: center; flex-shrink: 0;
+}
+.pnj-col-hdr-vente { color: #c9a84c; }
+.pnj-col-hdr-achat { color: #e07c45; }
+
+.pnj-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; padding: 1px 6px; border: 1px solid;
+  width: 78px; text-align: center; flex-shrink: 0; box-sizing: border-box;
+}
+.pnj-val-vente       { color: #c9a84c; border-color: #c9a84c33; }
+.pnj-val-achat       { color: #e07c45; border-color: #e07c4533; }
+.pnj-val-empty       { color: rgba(255,255,255,.15); border-color: transparent; }
+
+/* ══════════════════════════════════
+   PNJ — ÉCHANGE (craft)
+══════════════════════════════════ */
+.craft-recipe-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--rim);
+  align-items: stretch;
+}
+.craft-recipe-row:last-child { border-bottom: none; }
+
+.craft-result-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-right: 1px solid var(--rim);
+  text-decoration: none;
+  transition: background .12s;
+}
+.craft-result-cell:hover { background: rgba(255,255,255,.04); }
+
+.craft-ings-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.craft-ings-col .loot-row { border-bottom: 1px solid rgba(255,255,255,.04); }
+.craft-ings-col .loot-row:last-child { border-bottom: none; }
+
+/* ══════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════ */
 @media (max-width: 860px) {
@@ -789,7 +879,7 @@ body.bestiaire-page {
     border-right: none;
     border-bottom: 1px solid var(--rim);
   }
-  .mob-modal { max-width: 98vw; max-height: 92vh; }
+  .mob-modal { max-width: 98vw; max-height: 92vh; overflow: hidden; }
   .mob-header { grid-template-columns: 1fr; }
   .mob-body-grid { grid-template-columns: 1fr; }
   .mob-section.full-width { grid-column: 1; }

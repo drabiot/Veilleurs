@@ -27,6 +27,10 @@ const modalCloseBtn = document.getElementById('modal-close-btn');
 const typeSection   = document.getElementById('type-block');
 const pnjTagSection = document.getElementById('pnj-tag-block');
 
+function getMapZone(entity) {
+  return entity.mapZone || entity.regionId || null;
+}
+
 /* ══════════════════════════════════
    HELPERS
 ══════════════════════════════════ */
@@ -148,9 +152,10 @@ function updateCounts() {
       const el = document.getElementById(`count-${tag}`);
       if (el) el.textContent = filtered.filter(e => e.tag === tag).length;
     });
+    const groupExtras = { forgeron: ['refaconneur'], marchand: ['repreneur_butin'] };
     ['forgeron', 'marchand'].forEach(cat => {
       const el = document.getElementById(`group-count-${cat}`);
-      if (el) el.textContent = filtered.filter(e => e.tag && e.tag.startsWith(cat)).length;
+      if (el) el.textContent = filtered.filter(e => e.tag && (e.tag.startsWith(cat) || (groupExtras[cat]||[]).includes(e.tag))).length;
     });
   }
 }
@@ -288,10 +293,23 @@ function buildGrid() {
  * @param {object}  entity
  * @param {boolean} pushHistory
  */
+function attachModalHandlers() {
+  modalContent.querySelectorAll('.craft-toggle').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const panel = btn.closest('.loot-row-wrap')?.querySelector('.craft-panel');
+      if (panel) panel.classList.toggle('open');
+      btn.classList.toggle('active');
+    });
+  });
+}
+
 function openModal(entity, pushHistory = true) {
   modalContent.innerHTML = '';
   if (activeTab === 'monstres') renderMobSheet(entity);
   else                          renderPNJSheet(entity);
+  attachModalHandlers();
 
   modalOverlay.style.top = '0';
   modalOverlay.classList.add('open');
@@ -321,6 +339,11 @@ modalOverlay.addEventListener('click', e => {
   modalOverlay.style.pointerEvents = '';
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// Ferme la modal au clic sur zone non-interactive
+document.getElementById('mob-modal-content').addEventListener('click', e => {
+  if (!e.target.closest('a, button')) closeModal();
+});
 
 /* ── Fiche Monstre ── */
 function renderMobSheet(mob) {
@@ -357,13 +380,33 @@ function renderMobSheet(mob) {
       const imgPart = img
         ? `<div class="loot-img-wrap"><img src="${img}" alt="${name}" onerror="this.style.display='none'"></div>`
         : `<span class="loot-dot" style="background:${color}"></span>`;
-      return `
-        <a class="loot-row" href="${href}" ${!item?'style="pointer-events:none"':''}>
-          ${imgPart}
-          <span class="loot-name" style="color:${color}">${name}</span>
-          ${l.qty ? `<span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${l.qty}</span>` : ''}
-          <span class="loot-drop-rate" style="color:${rc};border-color:${rc}33">${l.chance ?? '?'}%</span>
+      const hasCraft = item?.craft && item.craft.length > 0;
+      const craftIngredients = hasCraft ? item.craft.map(c => {
+        const ing      = findItem(c.id);
+        const ingName  = ing ? ing.name : c.id;
+        const ingColor = ing ? getRarityColor(ing.rarity) : '#8c8c8c';
+        const ingImg   = ing?.img || '';
+        const ingHref  = ing ? `../Compendium/compendium.html#${ing.id}` : '#';
+        const ingImgPart = ingImg
+          ? `<div class="loot-img-wrap"><img src="${ingImg}" alt="${ingName}" onerror="this.style.display='none'"></div>`
+          : `<span class="loot-dot" style="background:${ingColor}"></span>`;
+        return `<a class="loot-row craft-ingredient-row" href="${ingHref}">
+          ${ingImgPart}
+          <span class="loot-name" style="color:${ingColor}">${ingName}</span>
+          <span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${c.qty}</span>
         </a>`;
+      }).join('') : '';
+      return `
+        <div class="loot-row-wrap">
+          <a class="loot-row" href="${href}">
+            ${imgPart}
+            <span class="loot-name" style="color:${color}">${name}</span>
+            ${l.qty ? `<span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${l.qty}</span>` : ''}
+            <span class="loot-drop-rate" style="color:${rc};border-color:${rc}33">${l.chance ?? '?'}%</span>
+            ${hasCraft ? `<button class="craft-toggle" title="Voir les ingrédients de craft">⚒️</button>` : ''}
+          </a>
+          ${hasCraft ? `<div class="craft-panel">${craftIngredients}</div>` : ''}
+        </div>`;
     }).join('');
     lootHTML = `
       <div class="mob-section">
@@ -411,7 +454,7 @@ function renderMobSheet(mob) {
               <span class="mob-meta-key">Région</span>
               <span class="mob-meta-val">
                 ${mob.region}
-                ${mob.regionId ? `<a class="region-link" href="../Map/map.html#${mob.regionId}">→ Carte</a>` : ''}
+                ${getMapZone(mob) ? `<a class="region-link" href="../Map/map.html#${getMapZone(mob)}">→ Carte</a>` : ''}
               </span>
             </div>` : ''}
           </div>
@@ -429,26 +472,96 @@ function renderMobSheet(mob) {
 function renderPNJSheet(pnj) {
   let sellsHTML = '';
   if (pnj.sells && pnj.sells.length > 0) {
+    const hasPriceCol = pnj.sells.some(s => s.price != null);
+    const hasBuyCol   = pnj.sells.some(s => s.buy   != null);
+
     const rows = pnj.sells.map(s => {
       const item  = findItem(s.id);
       const name  = item ? item.name : s.id;
       const color = item ? getRarityColor(item.rarity) : '#8c8c8c';
       const img   = item?.img || item?.image || '';
-      const href  = item ? `../Compendium/compendium.html#${item.id}` : '#';
+      const href  = item ? `../Compendium/compendium.html#${item.id}${s.quality ? '-quality' : ''}` : '#';
       const imgPart = img
         ? `<div class="loot-img-wrap"><img src="${img}" alt="${name}" onerror="this.style.display='none'"></div>`
         : `<span class="loot-dot" style="background:${color}"></span>`;
+      const priceVal = hasPriceCol
+        ? `<span class="pnj-val pnj-val-vente${s.price == null ? ' pnj-val-empty' : ''}">${s.price != null ? `${s.price} cols` : '—'}</span>`
+        : '';
+      const buyVal = hasBuyCol
+        ? `<span class="pnj-val pnj-val-achat${s.buy == null ? ' pnj-val-empty' : ''}">${s.buy != null ? `${s.buy} cols` : '—'}</span>`
+        : '';
+      const qualityBadge = s.quality ? ' <span class="loot-quality-badge">✦</span>' : '';
       return `
-        <a class="loot-row" href="${href}">
+        <a class="loot-row${s.quality ? ' loot-row-quality' : ''}" href="${href}">
           ${imgPart}
-          <span class="loot-name" style="color:${color}">${name}</span>
-          ${s.price ? `<span class="loot-drop-rate" style="color:#c9a84c;border-color:#c9a84c33">${s.price} cols</span>`
-                    : `<span class="loot-drop-rate" style="color:#888;border-color:#88888833">Craft</span>`}
+          <span class="loot-name" style="color:${color}">${name}${qualityBadge}</span>
+          ${priceVal}${buyVal}
         </a>`;
     }).join('');
+
+    const hdrRow = `
+      <div class="pnj-sells-hdr">
+        <div style="width:22px;flex-shrink:0"></div>
+        <div style="flex:1"></div>
+        ${hasPriceCol ? '<span class="pnj-col-hdr pnj-col-hdr-vente">Vente</span>' : ''}
+        ${hasBuyCol   ? '<span class="pnj-col-hdr pnj-col-hdr-achat">Achat</span>' : ''}
+      </div>`;
+
     sellsHTML = `
       <div class="mob-section full-width">
-        <div class="mob-section-title">Vend</div>
+        <div class="mob-section-title">Marchande</div>
+        <div class="mob-loot-list">
+          ${hdrRow}
+          ${rows}
+        </div>
+      </div>`;
+  }
+
+  let craftHTML = '';
+  if (pnj.craft && pnj.craft.length > 0) {
+    const rows = pnj.craft.map(recipe => {
+      const result      = findItem(recipe.id);
+      const resultName  = result ? result.name : recipe.id;
+      const resultColor = result ? getRarityColor(result.rarity) : '#8c8c8c';
+      const resultImg   = result?.img || result?.image || '';
+      const resultHref  = result ? `../Compendium/compendium.html#${result.id}${recipe.quality ? '-quality' : ''}` : '#';
+      const resultImgPart = resultImg
+        ? `<div class="loot-img-wrap"><img src="${resultImg}" alt="${resultName}" onerror="this.style.display='none'"></div>`
+        : `<span class="loot-dot" style="background:${resultColor}"></span>`;
+      const qualityBadge = recipe.quality ? ' <span class="loot-quality-badge">✦</span>' : '';
+
+      const ingsHTML = (recipe.ingredients || []).map(c => {
+        const ing      = findItem(c.id);
+        const ingName  = ing ? ing.name : c.id;
+        const ingColor = ing ? getRarityColor(ing.rarity) : '#8c8c8c';
+        const ingImg   = ing?.img || ing?.image || '';
+        const ingHref  = ing ? `../Compendium/compendium.html#${ing.id}` : '#';
+        const ingImgPart = ingImg
+          ? `<div class="loot-img-wrap"><img src="${ingImg}" alt="${ingName}" onerror="this.style.display='none'"></div>`
+          : `<span class="loot-dot" style="background:${ingColor}"></span>`;
+        return `
+          <a class="loot-row" href="${ingHref}">
+            ${ingImgPart}
+            <span class="loot-name" style="color:${ingColor}">${ingName}</span>
+            <span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${c.qty}</span>
+          </a>`;
+      }).join('');
+
+      return `
+        <div class="craft-recipe-row">
+          <a class="craft-result-cell${recipe.quality ? ' loot-row-quality' : ''}" href="${resultHref}">
+            ${resultImgPart}
+            <span class="loot-name" style="color:${resultColor}">${resultName}${qualityBadge}</span>
+          </a>
+          <div class="craft-ings-col">
+            ${ingsHTML}
+          </div>
+        </div>`;
+    }).join('');
+
+    craftHTML = `
+      <div class="mob-section full-width">
+        <div class="mob-section-title">Fabrique</div>
         <div class="mob-loot-list">${rows}</div>
       </div>`;
   }
@@ -482,13 +595,17 @@ function renderPNJSheet(pnj) {
             ${pnj.region ? `
             <div class="mob-meta-item">
               <span class="mob-meta-key">Région</span>
-              <span class="mob-meta-val">${pnj.region}</span>
+              <span class="mob-meta-val">
+                ${pnj.region}
+                ${getMapZone(pnj) ? `<a class="region-link" href="../Map/map.html#${getMapZone(pnj)}">→ Carte</a>` : ''}
+              </span>
             </div>` : ''}
           </div>
         </div>
       </div>
       <div class="mob-body-grid">
         ${sellsHTML}
+		${craftHTML}
         ${loreHTML}
       </div>
     </div>`;

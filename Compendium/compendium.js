@@ -761,7 +761,7 @@ function bindCraftTabs() {
   });
 }
 
-function showItem(id) {
+function showItem(id, initialQuality = false) {
   const item = ITEMS.find(i => i.id === id);
   if (!item) return;
 
@@ -774,7 +774,7 @@ function showItem(id) {
   });
 
   // ── État du toggle (false = Normal, true = Qualité)
-  let qualityMode = false;
+  let qualityMode = initialQuality && !!item.quality;
 
   // ── Données selon le mode actif
   function getVariant() {
@@ -892,6 +892,7 @@ function showItem(id) {
       switchBtn.setAttribute('aria-pressed', qualityMode);
       labelNorm.classList.toggle('qt-active', !qualityMode);
       labelQual.classList.toggle('qt-active',  qualityMode);
+      history.replaceState({ item: id, quality: qualityMode }, '', qualityMode ? `#${id}-quality` : `#${id}`);
 
       const v = getVariant();
       loreEl.innerHTML   = parseText(v.lore);
@@ -908,8 +909,22 @@ function showItem(id) {
       bindCraftTabs();
     });
 
-    // État initial : Normal actif
-    labelNorm.classList.add('qt-active');
+    // État initial
+    if (qualityMode) {
+      switchBtn.classList.add('active');
+      switchBtn.setAttribute('aria-pressed', 'true');
+      labelQual.classList.add('qt-active');
+      const v = getVariant();
+      loreEl.innerHTML   = parseText(v.lore);
+      obtainEl.innerHTML = parseText(v.obtain);
+      craftWrap.innerHTML = renderCraft(getCraft());
+      const effectsWrap = document.getElementById('item-effects-wrap');
+      if (effectsWrap) effectsWrap.innerHTML = renderEffects(item.quality?.effects ?? item.effects ?? null);
+      bindCraftLinks();
+      bindCraftTabs();
+    } else {
+      labelNorm.classList.add('qt-active');
+    }
   }
 
   // ── Média & slideshow
@@ -953,9 +968,15 @@ searchInput.addEventListener('input', () => {
 /* ══════════════════════════════════
    NAVIGATION PAR HASH
 ══════════════════════════════════ */
+function parseHash(hash) {
+  const raw = hash.replace('#', '');
+  if (raw.endsWith('-quality')) return { id: raw.slice(0, -8), quality: true };
+  return { id: raw, quality: false };
+}
+
 window.addEventListener('popstate', () => {
-  const id = window.location.hash.replace('#', '');
-  if (id) showItem(id);
+  const { id, quality } = parseHash(window.location.hash);
+  if (id) showItem(id, quality);
   else {
     placeholder.style.display = '';
     itemDisplay.innerHTML = '';
@@ -968,7 +989,7 @@ window.addEventListener('popstate', () => {
 ══════════════════════════════════ */
 buildSidebar(ITEMS);
 
-const initId = window.location.hash.replace('#', '');
+const { id: initId, quality: initQuality } = parseHash(window.location.hash);
 if (initId) {
   const target = ITEMS.find(i => i.id === initId);
   if (target) {
@@ -982,7 +1003,7 @@ if (initId) {
         link.closest('.categorie-body')?.classList.add('open');
         link.closest('.categorie-body')?.previousElementSibling?.classList.add('open');
       }
-      showItem(initId);
+      showItem(initId, initQuality);
     });
   }
 }

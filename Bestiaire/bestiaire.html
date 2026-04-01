@@ -159,6 +159,21 @@
                     <span class="bfilter-label">de Lingots</span>
                     <span class="bfilter-count" id="count-forgeron_lingots"></span>
                   </label>
+                  <label class="bfilter-row bfilter-sub">
+                    <input type="checkbox" class="pnj-tag-filter-cb" value="forgeron_cles" checked />
+                    <span class="bfilter-label">de Clés</span>
+                    <span class="bfilter-count" id="count-forgeron_cles"></span>
+                  </label>
+                  <label class="bfilter-row bfilter-sub">
+                    <input type="checkbox" class="pnj-tag-filter-cb" value="forgeron_secrets" checked />
+                    <span class="bfilter-label">d'Items Secrets</span>
+                    <span class="bfilter-count" id="count-forgeron_secrets"></span>
+                  </label>
+                  <label class="bfilter-row bfilter-sub">
+                    <input type="checkbox" class="pnj-tag-filter-cb" value="refaconneur" checked />
+                    <span class="bfilter-label">Refaçonneur</span>
+                    <span class="bfilter-count" id="count-refaconneur"></span>
+                  </label>
                 </div>
               </div>
 
@@ -190,6 +205,11 @@
                     <input type="checkbox" class="pnj-tag-filter-cb" value="marchand_accessoires" checked />
                     <span class="bfilter-label">d'Accessoires</span>
                     <span class="bfilter-count" id="count-marchand_accessoires"></span>
+                  </label>
+                  <label class="bfilter-row bfilter-sub">
+                    <input type="checkbox" class="pnj-tag-filter-cb" value="repreneur_butin" checked />
+                    <span class="bfilter-label">Repreneur de Butin</span>
+                    <span class="bfilter-count" id="count-repreneur_butin"></span>
                   </label>
                 </div>
               </div>
@@ -253,7 +273,9 @@
   <div class="mob-modal-overlay" id="mob-modal-overlay">
     <div class="mob-modal" id="mob-modal" role="dialog" aria-modal="true">
       <button class="modal-close-btn" id="modal-close-btn" title="Fermer (Échap)">✕</button>
-      <div id="mob-modal-content"></div>
+      <div class="mob-modal-scroll">
+        <div id="mob-modal-content"></div>
+      </div>
     </div>
   </div>
 
