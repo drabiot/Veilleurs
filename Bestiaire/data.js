@@ -1069,7 +1069,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1b1',
-    img: '',
+    img: '../img/compendium/textures/items/Nourriture/viande_de_sanglier.png',
     lore: "Reprends des ingrédient basique trouvable aux abbords de la Ville de Départ, ainsi que des bourses d'argent.",
     sells: [
       { id: 'viande_de_sanglier',  price: 0.1 },
@@ -1087,7 +1087,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1m1',
-    img: '',
+    img: '../img/compendium/textures/weapons/epee_dentrainement.png',
     lore: "Vends des Armes et des Consommables pour les nouveaux arrivants.",
     sells: [
       { id: 'epee_entrainement',  buy: 75, price: 4 },
@@ -1112,13 +1112,13 @@ const PERSONNAGES = [
     name: "Marchand Étrange",
     tag: 'marchand_accessoires',
     palier: 1,
-    region: 'Tolbana',
+    region: 'Ville de Départ',
     regionId: 'm1a4',
-    img: '',
+    img: '../img/compendium/textures/trinkets/P1/Manteau Volé.png',
     lore: "Échange un étrange manteau contre quelques petites bourses.",
     craft: [
 			{ 
-				id: 'manteau_vole',
+				id: 'manteau_vole', time: '10m',
 				ingredients: [
 					{ id: 'petite_bourse', qty: 128 },
 				]
@@ -1132,7 +1132,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1m5',
-    img: '',
+    img: '../img/compendium/textures/gears/pioche_felee.png',
     lore: "Vends des Outils pour que les Aventuriers récoltent des ressources pour leur aventure.",
     sells: [
       { id: 'pioche_felee',  buy: 20, price: 4 },
@@ -1148,17 +1148,17 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1a14',
-    img: '',
+    img: '../img/compendium/textures/items/Consommable/strengthpot_3.png',
     lore: "Concocte des Potions et des Cristaux.",
     craft: [
-      { id: 'potion_vie_1', quality:true,
+      { id: 'potion_vie_1', time: '10s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 6 },
 					{ id: 'poudre_bois', qty: 4 },
 					{ id: 'pousse_de_sylve', qty: 4 },
 				]
 			},
-			{ id: 'potion_vie_2', quality:true,
+			{ id: 'potion_vie_2', time: '15s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 8 },
 					{ id: 'pousse_de_sylve', qty: 7 },
@@ -1166,14 +1166,14 @@ const PERSONNAGES = [
 					{ id: 'eclat_de_bois_magique', qty: 5 },
 				]
 			},
-			{ id: 'potion_vie_3', quality:true,
+			{ id: 'potion_vie_3', time: '20s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 10 },
 					{ id: 'poussiere_dos', qty: 7 },
 					{ id: 'racine_ancestrale', qty: 3 },
 				]
 			},
-			{ id: 'cristal_soin',
+			{ id: 'cristal_soin', time: '1m',
 				ingredients: [
 					{ id: 'essence_de_gorbel', qty: 1 },
 					{ id: 'racine_ancestrale', qty: 10 },
@@ -1181,14 +1181,14 @@ const PERSONNAGES = [
 					{ id: 'mycelium_magique', qty: 10 },
 				]
 			},
-			{ id: 'potion_mana_1', quality:true,
+			{ id: 'potion_mana_1', time: '10s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 6 },
 					{ id: 'poudre_bois', qty: 4 },
 					{ id: 'pousse_de_sylve', qty: 4 },
 				]
 			},
-			{ id: 'potion_mana_2', quality:true,
+			{ id: 'potion_mana_2', time: '15s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 8 },
 					{ id: 'pousse_de_sylve', qty: 7 },
@@ -1196,14 +1196,14 @@ const PERSONNAGES = [
 					{ id: 'eclat_de_bois_magique', qty: 5 },
 				]
 			},
-			{ id: 'potion_mana_3', quality:true,
+			{ id: 'potion_mana_3', time: '20s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 10 },
 					{ id: 'poussiere_dos', qty: 7 },
 					{ id: 'racine_ancestrale', qty: 3 },
 				]
 			},
-			{ id: 'cristal_mana',
+			{ id: 'cristal_mana', time: '1m',
 				ingredients: [
 					{ id: 'essence_de_gorbel', qty: 1 },
 					{ id: 'racine_ancestrale', qty: 10 },
@@ -1211,14 +1211,14 @@ const PERSONNAGES = [
 					{ id: 'mycelium_magique', qty: 10 },
 				]
 			},
-			{ id: 'potion_stamina_1', quality:true,
+			{ id: 'potion_stamina_1', time: '10s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 6 },
 					{ id: 'poudre_bois', qty: 4 },
 					{ id: 'pousse_de_sylve', qty: 4 },
 				]
 			},
-			{ id: 'potion_stamina_2', quality:true,
+			{ id: 'potion_stamina_2', time: '15s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 8 },
 					{ id: 'pousse_de_sylve', qty: 7 },
@@ -1226,14 +1226,14 @@ const PERSONNAGES = [
 					{ id: 'eclat_de_bois_magique', qty: 5 },
 				]
 			},
-			{ id: 'potion_stamina_3', quality:true,
+			{ id: 'potion_stamina_3', time: '20s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 10 },
 					{ id: 'poussiere_dos', qty: 7 },
 					{ id: 'racine_ancestrale', qty: 3 },
 				]
 			},
-			{ id: 'cristal_stamina',
+			{ id: 'cristal_stamina', time: '1m',
 				ingredients: [
 					{ id: 'essence_de_gorbel', qty: 1 },
 					{ id: 'racine_ancestrale', qty: 10 },
@@ -1241,7 +1241,7 @@ const PERSONNAGES = [
 					{ id: 'mycelium_magique', qty: 10 },
 				]
 			},
-			{ id: 'cristal_puissance',
+			{ id: 'cristal_puissance', time: '1m',
 				ingredients: [
 					{ id: 'essence_de_gorbel', qty: 1 },
 					{ id: 'racine_ancestrale', qty: 10 },
@@ -1250,6 +1250,505 @@ const PERSONNAGES = [
 				]
 			},
     ],
+  },
+	{
+    id: 'bucheron_vdp',
+    name: "Bucheron",
+    tag: 'bucheron',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1a13',
+    img: '../img/compendium/textures/items/Ressources/planche_chene.png',
+    lore: "Réalise des Planches de Bois et de la Poudre de Bois.",
+    craft: [
+      { id: 'planche_chene', time: '15s',
+				ingredients: [
+					{ id: 'chene', qty: 2 },
+				]
+			},
+			{ id: 'planche_bouleau', time: '15s',
+				ingredients: [
+					{ id: 'bouleau', qty: 2 },
+				]
+			},
+			{ id: 'planche_acacia', time: '15s',
+				ingredients: [
+					{ id: 'acacia', qty: 2 },
+				]
+			},
+			{ id: 'planche_sapin', time: '15s',
+				ingredients: [
+					{ id: 'sapin', qty: 2 },
+				]
+			},
+			{ id: 'poudre_bois', time: '15s',
+				ingredients: [
+					{ id: 'planche_chene', qty: 2 },
+				]
+			},
+			{ id: 'poudre_bois', time: '15s',
+				ingredients: [
+					{ id: 'planche_bouleau', qty: 2 },
+				]
+			},
+			{ id: 'poudre_bois', time: '15s',
+				ingredients: [
+					{ id: 'planche_acacia', qty: 2 },
+				]
+			},
+			{ id: 'poudre_bois', time: '15s',
+				ingredients: [
+					{ id: 'planche_sapin', qty: 2 },
+				]
+			},
+		]
+  },
+	{
+    id: 'refaconneur_vdp',
+    name: "Refaçonneur",
+    tag: 'refaconneur',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1a7',
+    img: '../img/compendium/textures/items/Material/P1/string_cuivre.png',
+    lore: "Transforme des Ressources et des Fils d'Araignées pour réaliser des ficelles utile dans la confection d'Accessoires.",
+    craft: [
+			{ 
+				id: 'ficelle_chene', time: '1m',
+				ingredients: [
+					{ id: 'chene', qty: 4 },
+					{ id: 'fil_araignee', qty: 4 },
+				]
+			},
+			{ 
+				id: 'ficelle_bouleau', time: '1m',
+				ingredients: [
+					{ id: 'bouleau', qty: 4 },
+					{ id: 'fil_araignee', qty: 4 },
+				]
+			},
+			{ 
+				id: 'ficelle_cuivre', time: '1m',
+				ingredients: [
+					{ id: 'cuivre', qty: 4 },
+					{ id: 'fil_araignee', qty: 4 },
+				]
+			}
+		]
+  },
+	{
+    id: 'forgeron_armes_vdp',
+    name: "Forgeron d'Armes",
+    tag: 'forgeron_armes',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1a1',
+    img: '../img/compendium/textures/weapons/hache_double_en_fer.png',
+    lore: "Permet le fabrication d'armes rudimentaires pour les novices.",
+    craft: [
+			{ 
+				id: 'epee_fer', time: '10s',
+				ingredients: [
+					{ id: 'crocs_de_loup', qty: 5 },
+					{ id: 'lingot_cuivre', qty: 10 },
+					{ id: 'chene', qty: 8 },
+				]
+			},
+			{ 
+				id: 'bouclier_ika', time: '10s',
+				ingredients: [
+					{ id: 'carapace_dika', qty: 12 },
+					{ id: 'ecorce_de_titan', qty: 7 },
+				]
+			},
+			{ 
+				id: 'hache_double_fer', time: '10s',
+				ingredients: [
+					{ id: 'crocs_de_loup', qty: 5 },
+					{ id: 'lingot_cuivre', qty: 10 },
+					{ id: 'chene', qty: 8 },
+				]
+			},
+			{ 
+				id: 'bouclier_pointu_bois', time: '10s',
+				ingredients: [
+					{ id: 'lingot_cuivre', qty: 8 },
+					{ id: 'ecorce_de_titan', qty: 7 },
+				]
+			},
+			{ 
+				id: 'arc_sylvestre', time: '10s',
+				ingredients: [
+					{ id: 'corde_darc_sylvestre', qty: 12 },
+					{ id: 'chene', qty: 8 },
+				]
+			},
+			{ 
+				id: 'dague_intermediaire', time: '10s',
+				ingredients: [
+					{ id: 'crocs_de_loup', qty: 8 },
+					{ id: 'lingot_cuivre', qty: 12 },
+				]
+			},
+			{ 
+				id: 'poing_ika', time: '10s',
+				ingredients: [
+					{ id: 'carapace_dika', qty: 999 },
+					{ id: 'brindille_enchantee', qty: 999 },
+				]
+			},
+			{ 
+				id: 'baton_sylvestre_mage', time: '10s',
+				ingredients: [
+					{ id: 'brindille_enchantee', qty: 15 },
+					{ id: 'coeur_de_bois', qty: 1 },
+				]
+			},
+			{ 
+				id: 'grimoire_sylvestre', time: '10s',
+				ingredients: [
+					{ id: 'brindille_enchantee', qty: 4 },
+					{ id: 'fourrure_de_loup', qty: 12 },
+				]
+			},
+			{ 
+				id: 'baton_sylvestre_shaman', time: '10s',
+				ingredients: [
+					{ id: 'brindille_enchantee', qty: 15 },
+					{ id: 'coeur_de_bois', qty: 1 },
+				]
+			},
+			{ 
+				id: 'grimoire_bestial', time: '10s',
+				ingredients: [
+					{ id: 'brindille_enchantee', qty: 4 },
+					{ id: 'fourrure_de_loup', qty: 12 },
+				]
+			}
+		]
+  },
+	{
+    id: 'forgeron_armures_vdp',
+    name: "Forgeron d'Armures",
+    tag: 'forgeron_armures',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1a2',
+    img: '../img/compendium/textures/armors/chestplate_tactique.png',
+    lore: "Permet le fabrication d'armures rudimentaires pour les novices.",
+    craft: [
+			{ 
+				id: 'lingot_cuivre', time: '10s',
+				ingredients: [
+					{ id: 'cuivre', qty: 3 },
+					{ id: 'charbon', qty: 2 },
+				]
+			},
+			{ 
+				id: 'tunique_debutant', time: '10s',
+				ingredients: [
+					{ id: 'peau_de_sanglier', qty: 12 },
+					{ id: 'lingot_cuivre', qty: 4 },
+				]
+			},
+			{ 
+				id: 'jambieres_debutant', time: '10s',
+				ingredients: [
+					{ id: 'peau_de_sanglier', qty: 8 },
+					{ id: 'lingot_cuivre', qty: 4 },
+				]
+			},
+			{ 
+				id: 'bottes_debutant', time: '10s',
+				ingredients: [
+					{ id: 'peau_de_sanglier', qty: 5 },
+					{ id: 'lingot_cuivre', qty: 2 },
+				]
+			},
+			{ 
+				id: 'tunique_tactique', time: '10s',
+				ingredients: [
+					{ id: 'fourrure_de_loup', qty: 18 },
+					{ id: 'ecorce_sylvestre', qty: 10 },
+				]
+			},
+			{ 
+				id: 'jambieres_tactique', time: '10s',
+				ingredients: [
+					{ id: 'fourrure_de_loup', qty: 15 },
+					{ id: 'ecorce_sylvestre', qty: 8 },
+				]
+			},
+			{ 
+				id: 'bottes_tactique', time: '10s',
+				ingredients: [
+					{ id: 'fourrure_de_loup', qty: 10 },
+					{ id: 'ecorce_sylvestre', qty: 5 },
+				]
+			},
+			{ 
+				id: 'tunique_spectral', time: '10s',
+				ingredients: [
+					{ id: 'cuir_use', qty: 18 },
+					{ id: 'tissu_spectral', qty: 10 },
+				]
+			},
+			{ 
+				id: 'jambieres_spectral', time: '10s',
+				ingredients: [
+					{ id: 'cuir_use', qty: 15 },
+					{ id: 'tissu_spectral', qty: 8 },
+				]
+			},
+			{ 
+				id: 'bottes_spectral', time: '10s',
+				ingredients: [
+					{ id: 'cuir_use', qty: 10 },
+					{ id: 'tissu_spectral', qty: 5 },
+				]
+			},
+			{ 
+				id: 'tunique_ika', time: '10s',
+				ingredients: [
+					{ id: 'carapace_dika', qty: 18 },
+					{ id: 'gelee_de_slime', qty: 10 },
+				]
+			},
+			{ 
+				id: 'jambieres_ika', time: '10s',
+				ingredients: [
+					{ id: 'carapace_dika', qty: 15 },
+					{ id: 'gelee_de_slime', qty: 8 },
+				]
+			},
+			{ 
+				id: 'bottes_ika', time: '10s',
+				ingredients: [
+					{ id: 'carapace_dika', qty: 10 },
+					{ id: 'gelee_de_slime', qty: 5 },
+				]
+			},
+			{ 
+				id: 'bottes_revenant', time: '10s',
+				ingredients: [
+					{ id: 'eclat_du_sabot_maudit', qty: 1 },
+					{ id: 'carapace_dika', qty: 64 },
+					{ id: 'cuir_use', qty: 64 },
+					{ id: 'fourrure_de_loup', qty: 64 },
+				]
+			},
+		]
+  },
+	{
+    id: 'forgeron_accessoires_vdp',
+    name: "Forgeron d'Accessoires de Base",
+    tag: 'forgeron_accessoires',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1a3',
+    img: '../img/compendium/textures/trinkets/P1/Set Loup Faiblard/Collier d\'Albal.png',
+    lore: "Permet le fabrication d'accessoires de base.",
+    craft: [
+			{ 
+				id: 'anneau_cuivre', time: '1m',
+				ingredients: [
+					{ id: 'lingot_cuivre', qty: 16 },
+				]
+			},
+			{ 
+				id: 'anneau_fer', time: '1m',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 16 },
+				]
+			},
+			{ 
+				id: 'collier_albal', time: '1m',
+				ingredients: [
+					{ id: 'fourrure_de_loup', qty: 96 },
+					{ id: 'crocs_de_albal', qty: 5 },
+				]
+			},
+			{ 
+				id: 'amulette_bois', time: '1m',
+				ingredients: [
+					{ id: 'coeur_de_bois', qty: 32 },
+					{ id: 'bouleau', qty: 64 },
+				]
+			},
+			{ 
+				id: 'gants_bandit', time: '1m',
+				ingredients: [
+					{ id: 'cuir_use', qty: 96 },
+					{ id: 'racine_ancestrale', qty: 8 },
+				]
+			},
+			{ 
+				id: 'gants_osseux', time: '1m',
+				ingredients: [
+					{ id: 'poussiere_dos', qty: 64 },
+					{ id: 'os_de_squelette', qty: 64 },
+					{ id: 'os_de_squelette_renforce', qty: 32 },
+				]
+			},
+			{ 
+				id: 'bracelet_sylvestre', time: '1m',
+				ingredients: [
+					{ id: 'ecorce_de_titan', qty: 64 },
+					{ id: 'brindille_enchantee', qty: 64 },
+				]
+			},
+			{ 
+				id: 'bracelet_araignee', time: '1m',
+				ingredients: [
+					{ id: 'tissu_araignee', qty: 64 },
+					{ id: 'spore_corrompu', qty: 64 },
+				]
+			},
+			{ 
+				id: 'gants_cerfs', time: '1m',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 32 },
+				]
+			},
+			{ 
+				id: 'bracelet_gluant', time: '1m',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 8 },
+					{ id: 'gelee_de_slime', qty: 64 },
+					{ id: 'noyau_de_slime', qty: 8 },
+				]
+			}
+		]
+  },
+	{
+    id: 'forgeron_accessoires_cuivre_vdp',
+    name: "Forgeron d'Accessoires de Cuivre",
+    tag: 'forgeron_accessoires',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1a5',
+    img: '../img/compendium/textures/trinkets/P1/Set de Cuivre/Anneau de Cuivre.png',
+    lore: "Permet le fabrication d'accessoires en Cuivre.",
+    craft: [
+			{ 
+				id: 'anneau_cuivre', time: '2m30s',
+				ingredients: [
+					{ id: 'lingot_cuivre', qty: 16 },
+				]
+			},
+			{ 
+				id: 'bracelet_cuivre', time: '2m30s',
+				ingredients: [
+					{ id: 'lingot_cuivre', qty: 24 },
+				]
+			},
+			{ 
+				id: 'gants_cuivre', time: '2m30s',
+				ingredients: [
+					{ id: 'lingot_cuivre', qty: 24 },
+				]
+			},
+			{ 
+				id: 'amulette_cuivre', time: '2m30s',
+				ingredients: [
+					{ id: 'lingot_cuivre', qty: 16 },
+				]
+			},
+			{ 
+				id: 'piece_cuivre', time: '2m30s',
+				ingredients: [
+					{ id: 'lingot_cuivre', qty: 24 },
+				]
+			},
+		]
+  },
+	{
+    id: 'forgeron_accessoires_fer_vdp',
+    name: "Forgeron d'Accessoires de Fer",
+    tag: 'forgeron_accessoires',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1a6',
+    img: '../img/compendium/textures/trinkets/P1/Set de Fer/Anneau de Fer.png',
+    lore: "Permet le fabrication d'accessoires en Fer.",
+    craft: [
+			{ 
+				id: 'anneau_fer', time: '2m30s',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 12 },
+				]
+			},
+			{ 
+				id: 'bracelet_fer', time: '2m30s',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 18 },
+				]
+			},
+			{ 
+				id: 'gants_fer', time: '2m30s',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 18 },
+				]
+			},
+			{ 
+				id: 'amulette_fer', time: '2m30s',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 12 },
+				]
+			},
+			{ 
+				id: 'piece_fer', time: '2m30s',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 18 },
+				]
+			},
+		]
+  },
+	{
+    id: 'forgeron_lingot_vdp',
+    name: "Forgeron de Lingots de Cuivre & de Fer",
+    tag: 'forgeron_lingots',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1a8',
+    img: '../img/compendium/textures/items/Ressources/bar_iron.png',
+    lore: "Permet le fabrication de Lingots de Cuivre et de Lingots de Fer.",
+    craft: [
+			{ 
+				id: 'lingot_cuivre', time: '10s',
+				ingredients: [
+					{ id: 'cuivre', qty: 3 },
+					{ id: 'charbon', qty: 2 },
+				]
+			},
+			{ 
+				id: 'lingot_fer', time: '15s',
+				ingredients: [
+					{ id: 'fer', qty: 4 },
+					{ id: 'charbon', qty: 2 },
+				]
+			}
+		]
+  },
+	{
+    id: 'cle_vdp',
+    name: "Fabicant de Clef du Donjon Mine de Geldorak",
+    tag: 'fabricant_cles',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1c1',
+    img: '../img/compendium/textures/items/Donjon/key_geldo.png',
+    lore: "Permet le fabrication d'une clef menant au Donjon Mine de Geldorak.",
+    craft: [
+			{ 
+				id: 'cle_foret', time: '3m',
+				ingredients: [
+					{ id: 'ecorce_sylvestre', qty: 15 },
+					{ id: 'coeur_de_bois', qty: 4 },
+					{ id: 'mycelium_magique', qty: 1 },
+				]
+			}
+		]
   },
 	//#endregion Ville de Départ
 	//#region Hanaka
@@ -1260,7 +1759,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Hanaka',
     regionId: 'm1b2',
-    img: '',
+    img: '../img/compendium/textures/items/Material/P1/brindille_enchantee.png',
     lore: "Reprends des ingrédient forêstié trouvable aux abbords de Hanaka, dans les Marécages Putrides.",
     sells: [
       { id: 'pousse_de_sylve',  price: 3 },
@@ -1276,13 +1775,13 @@ const PERSONNAGES = [
     ],
   },
   {
-    id: 'repreneur_equipement_hanaka',
+    id: 'marchand_equipement_hanaka',
     name: "Marchand d'Équipement",
     tag: 'marchand_equipement',
     palier: 1,
     region: 'Hanaka',
     regionId: 'm1m2',
-    img: '',
+    img: '../img/compendium/textures/weapons/epee_dentrainement.png',
     lore: "Vends des Armes et des Consommables pour les nouveaux arrivants.",
     sells: [
       { id: 'epee_entrainement',  buy: 75, price: 4 },
@@ -1309,7 +1808,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Hanaka',
     regionId: 'm1b8',
-    img: '',
+    img: '../img/compendium/textures/weapons/bouclier_sylvestre.png',
     lore: "Reprends les Armes de Niveau 5 obtenable sur les monstres du Palier 1.",
     sells: [
       { id: 'bouclier_sylvestre',  price: 50 },
@@ -1332,7 +1831,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Mizunari',
 		regionId: 'm1b3',
-    img: '',
+    img: '../img/compendium/textures/items/Material/P1/fragment_de_feuille.png',
     lore: "Reprends des ingrédient champêtre trouvable dans les champs à l'Est de Mizunari.",
     sells: [
       { id: 'cuir_use',  price: 5 },
@@ -1341,7 +1840,45 @@ const PERSONNAGES = [
 			{ id: 'fragment_de_feuille', price: 6 },
     ],
   },
+	{
+    id: 'marchand_outils_mizunari',
+    name: "Marchand d'Outils",
+    tag: 'marchand_outils',
+    palier: 1,
+    region: 'Mizunari',
+    regionId: 'm1m11',
+    img: '../img/compendium/textures/gears/pioche_felee.png',
+    lore: "Vends des Outils pour que les Aventuriers récoltent des ressources pour leur aventure.",
+    sells: [
+      { id: 'pioche_felee',  buy: 20, price: 4 },
+			{ id: 'hache_ebrechee',  buy: 20, price: 4 },
+			{ id: 'serpe_tordue',  buy: 20, price: 4 },
+			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
+    ],
+  },
 	//#endregion Mizunari
+	//#region Mine de Geldorak
+	{
+    id: 'cle_mine_geldorak',
+    name: "Fabicant de Clef du Donjon Mine de Geldorak",
+    tag: 'fabricant_cles',
+    palier: 1,
+    region: 'Mine de Geldorak',
+    regionId: 'm1c2',
+    img: '../img/compendium/textures/items/Donjon/key_geldo.png',
+    lore: "Permet le fabrication d'une clef menant au Donjon Mine de Geldorak.",
+    craft: [
+			{ 
+				id: 'cle_foret', time: '3m',
+				ingredients: [
+					{ id: 'ecorce_sylvestre', qty: 15 },
+					{ id: 'coeur_de_bois', qty: 4 },
+					{ id: 'mycelium_magique', qty: 1 },
+				]
+			}
+		]
+  },
+	//#endregion Mine de Geldorak
 	//#region Vallhat
   {
     id: 'repreneur_butin_vallhat',
@@ -1350,7 +1887,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Vallhat',
 		regionId: 'm1b4',
-    img: '',
+    img: '../img/compendium/textures/items/Material/P1/gelee_slime.png',
     lore: "Reprends des ingrédient gluant trouvable dans les marécages en bas de Vallhat.",
     sells: [
       { id: 'potion_vie_1',  buy: 20 },
@@ -1378,12 +1915,32 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Vallhat',
     regionId: 'm1m3',
-    img: '',
+    img: '../img/compendium/textures/trinkets/P1/Set des Slimes Gélatineux/Bague Gluante.png',
     lore: "Vends des Accessoires à base de slime de Vallhat.",
     sells: [
       { id: 'bague_gluante',  price: 1000 },
       { id: 'amulette_gluante', price: 1000 },
     ],
+  },
+	{
+    id: 'secret_vallaht',
+    name: "Fabicant de l'Anneau Gluant",
+    tag: 'fabricant_secrets',
+    palier: 1,
+    region: 'Vallhat',
+    regionId: 'm1c8',
+    img: '../img/compendium/textures/trinkets/P1/Set des Slimes Gélatineux/Anneau Gluant.png',
+    lore: "Permet le fabrication de l'Accessoires Anneau Gluant.",
+    craft: [
+			{ 
+				id: 'anneau_gluant', time: '30m',
+				ingredients: [
+					{ id: 'gelee_de_slime', qty: 40 },
+					{ id: 'noyau_de_slime', qty: 32 },
+					{ id: 'essence_de_gorbel', qty: 1 },
+				]
+			}
+		]
   },
 	//#endregion Vallhat
 	//#region Chateau Abandonne
@@ -1394,7 +1951,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Château Abandonné',
 		regionId: 'm1b5',
-    img: '',
+    img: '../img/compendium/textures/items/Material/P1/os_de_squelette.png',
     lore: "Reprends des ingrédient des Squelettes trouvable dans les Ruines Maudites et son Donjon.",
     sells: [
       { id: 'os_de_squelette',  price: 4.5 },
@@ -1414,7 +1971,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Virelune',
 		regionId: 'm1b6',
-    img: '',
+    img: '../img/compendium/textures/items/Material/P1/ecaille_requin.png',
     lore: "Reprends des ingrédient d'Arachnides et du Lac environant.",
     sells: [
       { id: 'fil_araignee',  price: 7 },
@@ -1423,6 +1980,41 @@ const PERSONNAGES = [
 			{ id: 'coeur_nymbrea', price: 500 },
 			{ id: 'venin_araignee' },
     ],
+  },
+	{
+    id: 'marchand_outils_virelune',
+    name: "Marchand d'Outils",
+    tag: 'marchand_outils',
+    palier: 1,
+    region: 'Virelune',
+    regionId: 'm1m6',
+    img: '../img/compendium/textures/gears/pioche_felee.png',
+    lore: "Vends des Outils pour que les Aventuriers récoltent des ressources pour leur aventure.",
+    sells: [
+      { id: 'pioche_felee',  buy: 20, price: 4 },
+			{ id: 'hache_ebrechee',  buy: 20, price: 4 },
+			{ id: 'serpe_tordue',  buy: 20, price: 4 },
+			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
+    ],
+  },
+	{
+    id: 'secret_antre_aepep',
+    name: "Fabicant de l'Anneau de Léviathan",
+    tag: 'fabricant_secrets',
+    palier: 1,
+    region: 'Antre de Aepep',
+    regionId: 'm1c7',
+    img: '../img/compendium/textures/trinkets/P1/Anneau de Léviathan.png',
+    lore: "Permet le fabrication de l'Accessoires Anneau de Léviathan.",
+    craft: [
+			{ 
+				id: 'anneau_leviathan', time: '30m',
+				ingredients: [
+					{ id: 'carapace_requin', qty: 96 },
+					{ id: 'coeur_nymbrea', qty: 5 },
+				]
+			}
+		]
   },
 	//#endregion Virelune
 	//#region Tolbana
@@ -1433,7 +2025,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Tolbana',
 		regionId: 'm1b7',
-    img: '',
+    img: '../img/compendium/textures/items/Material/P1/peau_dur_glacial.png',
     lore: "Reprends des gelés et de la faune locale.",
     sells: [
       { id: 'peau_dur_glacial',  price: 10 },
@@ -1447,13 +2039,13 @@ const PERSONNAGES = [
     ],
   },
   {
-    id: 'repreneur_equipement_tolbana',
+    id: 'marchand_equipement_tolbana',
     name: "Marchand d'Équipement",
     tag: 'marchand_equipement',
     palier: 1,
     region: 'Tolbana',
     regionId: 'm1m9',
-    img: '',
+    img: '../img/compendium/textures/weapons/epee_dentrainement.png',
     lore: "Vends des Armes et des Consommables pour les nouveaux arrivants.",
     sells: [
       { id: 'epee_entrainement',  buy: 75, price: 4 },
@@ -1480,7 +2072,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Tolbana',
     regionId: 'm1m4',
-    img: '',
+    img: '../img/compendium/textures/trinkets/P1/Set Squelette Poussiéreux/Bague de Squelette.png',
     lore: "Vends des Accessoires pour aventuriers agguéris.",
     sells: [
       { id: 'bague_squelette',  price: 1000 },
@@ -1494,7 +2086,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Tolbana',
     regionId: 'm1m4',
-    img: '',
+    img: '../img/compendium/textures/items/Consommable/strengthpot_1.png',
     lore: "Vends des Consommable pour Aventuriers.",
     sells: [
       { id: 'potion_vie_1',  price: 20 },
@@ -1508,24 +2100,24 @@ const PERSONNAGES = [
 			{ id: 'parchemin_maitrise',  price: 750 },
     ],
   },
-		{
+	{
     id: 'alchimiste_tolbana',
     name: "Alchimiste",
     tag: 'alchimiste',
     palier: 1,
     region: 'Tolbana',
     regionId: 'm1a15',
-    img: '',
+    img: '../img/compendium/textures/items/Consommable/strengthpot_3.png',
     lore: "Concocte des Potions et des Cristaux.",
     craft: [
-      { id: 'potion_vie_1', quality:true,
+      { id: 'potion_vie_1', time: '10s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 6 },
 					{ id: 'poudre_bois', qty: 4 },
 					{ id: 'pousse_de_sylve', qty: 4 },
 				]
 			},
-			{ id: 'potion_vie_2', quality:true,
+			{ id: 'potion_vie_2', time: '15s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 8 },
 					{ id: 'pousse_de_sylve', qty: 7 },
@@ -1533,14 +2125,14 @@ const PERSONNAGES = [
 					{ id: 'eclat_de_bois_magique', qty: 5 },
 				]
 			},
-			{ id: 'potion_vie_3', quality:true,
+			{ id: 'potion_vie_3', time: '20s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 10 },
 					{ id: 'poussiere_dos', qty: 7 },
 					{ id: 'racine_ancestrale', qty: 3 },
 				]
 			},
-			{ id: 'cristal_soin',
+			{ id: 'cristal_soin', time: '1m',
 				ingredients: [
 					{ id: 'essence_de_gorbel', qty: 1 },
 					{ id: 'racine_ancestrale', qty: 10 },
@@ -1548,14 +2140,14 @@ const PERSONNAGES = [
 					{ id: 'mycelium_magique', qty: 10 },
 				]
 			},
-			{ id: 'potion_mana_1', quality:true,
+			{ id: 'potion_mana_1', time: '10s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 6 },
 					{ id: 'poudre_bois', qty: 4 },
 					{ id: 'pousse_de_sylve', qty: 4 },
 				]
 			},
-			{ id: 'potion_mana_2', quality:true,
+			{ id: 'potion_mana_2', time: '15s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 8 },
 					{ id: 'pousse_de_sylve', qty: 7 },
@@ -1563,14 +2155,14 @@ const PERSONNAGES = [
 					{ id: 'eclat_de_bois_magique', qty: 5 },
 				]
 			},
-			{ id: 'potion_mana_3', quality:true,
+			{ id: 'potion_mana_3', time: '20s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 10 },
 					{ id: 'poussiere_dos', qty: 7 },
 					{ id: 'racine_ancestrale', qty: 3 },
 				]
 			},
-			{ id: 'cristal_mana',
+			{ id: 'cristal_mana', time: '1m',
 				ingredients: [
 					{ id: 'essence_de_gorbel', qty: 1 },
 					{ id: 'racine_ancestrale', qty: 10 },
@@ -1578,14 +2170,14 @@ const PERSONNAGES = [
 					{ id: 'mycelium_magique', qty: 10 },
 				]
 			},
-			{ id: 'potion_stamina_1', quality:true,
+			{ id: 'potion_stamina_1', time: '10s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 6 },
 					{ id: 'poudre_bois', qty: 4 },
 					{ id: 'pousse_de_sylve', qty: 4 },
 				]
 			},
-			{ id: 'potion_stamina_2', quality:true,
+			{ id: 'potion_stamina_2', time: '15s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 8 },
 					{ id: 'pousse_de_sylve', qty: 7 },
@@ -1593,14 +2185,14 @@ const PERSONNAGES = [
 					{ id: 'eclat_de_bois_magique', qty: 5 },
 				]
 			},
-			{ id: 'potion_stamina_3', quality:true,
+			{ id: 'potion_stamina_3', time: '20s', quality:true,
 				ingredients: [
 					{ id: 'allium', qty: 10 },
 					{ id: 'poussiere_dos', qty: 7 },
 					{ id: 'racine_ancestrale', qty: 3 },
 				]
 			},
-			{ id: 'cristal_stamina',
+			{ id: 'cristal_stamina', time: '1m',
 				ingredients: [
 					{ id: 'essence_de_gorbel', qty: 1 },
 					{ id: 'racine_ancestrale', qty: 10 },
@@ -1608,7 +2200,7 @@ const PERSONNAGES = [
 					{ id: 'mycelium_magique', qty: 10 },
 				]
 			},
-			{ id: 'cristal_puissance',
+			{ id: 'cristal_puissance', time: '1m',
 				ingredients: [
 					{ id: 'essence_de_gorbel', qty: 1 },
 					{ id: 'racine_ancestrale', qty: 10 },
@@ -1618,7 +2210,587 @@ const PERSONNAGES = [
 			},
     ],
   },
+	{
+    id: 'marchand_outils_tolbana',
+    name: "Marchand d'Outils",
+    tag: 'marchand_outils',
+    palier: 1,
+    region: 'Tolbana',
+    regionId: 'm1m7',
+    img: '../img/compendium/textures/gears/pioche_felee.png',
+    lore: "Vends des Outils pour que les Aventuriers récoltent des ressources pour leur aventure.",
+    sells: [
+      { id: 'pioche_felee',  buy: 20, price: 4 },
+			{ id: 'hache_ebrechee',  buy: 20, price: 4 },
+			{ id: 'serpe_tordue',  buy: 20, price: 4 },
+			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
+    ],
+  },
+	{
+    id: 'forgeron_armes_tolbana',
+    name: "Forgeron d'Armes de Tolbana",
+    tag: 'forgeron_armes',
+    palier: 1,
+    region: 'Tolbana',
+    regionId: 'm1a9',
+    img: '../img/compendium/textures/weapons/marteau_magique.png',
+    lore: "Permet le fabrication d'armes pour les aventuriers aggueris.",
+    craft: [
+      { id: 'epee_magique', time: '10s',
+				ingredients: [
+					{ id: 'carapace_requin', qty: 18 },
+					{ id: 'peau_dur_glacial', qty: 24 },
+				]
+			},
+			{ id: 'marteau_magique', time: '10s',
+				ingredients: [
+					{ id: 'carapace_requin', qty: 18 },
+					{ id: 'peau_dur_glacial', qty: 24 },
+				]
+			},
+			{ id: 'bouclier_resistant_tolbana', time: '10s',
+				ingredients: [
+					{ id: 'carapace_requin', qty: 24 },
+					{ id: 'peau_dur_glacial', qty: 30 },
+				]
+			},
+			{ id: 'bouclier_puissant_tolbana', time: '10s',
+				ingredients: [
+					{ id: 'carapace_requin', qty: 24 },
+					{ id: 'peau_dur_glacial', qty: 30 },
+				]
+			},
+			{ id: 'dague_sombre', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'tissu_araignee', qty: 24 },
+				]
+			},
+			{ id: 'longue_dague_sombre', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'tissu_araignee', qty: 24 },
+				]
+			},
+			{ id: 'arc_chasse', time: '10s',
+				ingredients: [
+					{ id: 'carapace_requin', qty: 18 },
+					{ id: 'peau_dur_glacial', qty: 24 },
+				]
+			},
+			{ id: 'arbalete_chasse', time: '10s',
+				ingredients: [
+					{ id: 'carapace_requin', qty: 18 },
+					{ id: 'peau_dur_glacial', qty: 24 },
+				]
+			},
+			{ id: 'baton_magicien', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'eclat_magique_glacial', qty: 24 },
+				]
+			},
+			{ id: 'baton_magicien_puissant', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'eclat_magique_glacial', qty: 24 },
+				]
+			},
+			{ id: 'grimoire_magicien', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 20 },
+					{ id: 'poussiere_givre', qty: 20 },
+				]
+			},
+			{ id: 'baton_sorcier', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'eclat_magique_glacial', qty: 24 },
+				]
+			},
+			{ id: 'baton_sorcier_puissant', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'eclat_magique_glacial', qty: 24 },
+				]
+			},
+			{ id: 'grimoire_sorcier', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 20 },
+					{ id: 'poussiere_givre', qty: 20 },
+				]
+			},
+    ],
+  },
+	{
+    id: 'forgeron_armures_tolbana',
+    name: "Forgeron d'Armures de Tolbana",
+    tag: 'forgeron_armures',
+    palier: 1,
+    region: 'Tolbana',
+    regionId: 'm1a10',
+    img: '../img/compendium/textures/armors/helmet_titan.png',
+    lore: "Permet le fabrication d'armures pour les aventuriers aggueris.",
+    craft: [
+      { id: 'tunique_chasseur', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'eclat_magique_glacial', qty: 20 },
+				]
+			},
+			{ id: 'jambieres_chasseur', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'eclat_magique_glacial', qty: 15 },
+				]
+			},
+			{ id: 'bottes_chasseur', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'eclat_magique_glacial', qty: 12 },
+				]
+			},
+			{ id: 'robe_sorcier', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'tissu_araignee', qty: 20 },
+				]
+			},
+			{ id: 'pantalon_sorcier', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'tissu_araignee', qty: 15 },
+				]
+			},
+			{ id: 'sandales_sorcier', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'tissu_araignee', qty: 12 },
+				]
+			},
+			{ id: 'casque_titan', time: '10s',
+				ingredients: [
+					{ id: 'carapace_requin', qty: 15 },
+					{ id: 'peau_dur_glacial', qty: 25 },
+				]
+			},
+			{ id: 'plastron_titan', time: '10s',
+				ingredients: [
+					{ id: 'carapace_requin', qty: 18 },
+					{ id: 'peau_dur_glacial', qty: 20 },
+				]
+			},
+			{ id: 'jambieres_titan', time: '10s',
+				ingredients: [
+					{ id: 'carapace_requin', qty: 18 },
+					{ id: 'peau_dur_glacial', qty: 15 },
+				]
+			},
+			{ id: 'bottes_titan', time: '10s',
+				ingredients: [
+					{ id: 'carapace_requin', qty: 18 },
+					{ id: 'peau_dur_glacial', qty: 12 },
+				]
+			},
+			{ id: 'robe_magicien', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'tissu_araignee', qty: 20 },
+				]
+			},
+			{ id: 'pantalon_magicien', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'tissu_araignee', qty: 15 },
+				]
+			},
+			{ id: 'sandales_magicien', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'tissu_araignee', qty: 12 },
+				]
+			},
+			{ id: 'tunique_ninja', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'eclat_magique_glacial', qty: 20 },
+				]
+			},
+			{ id: 'jambieres_ninja', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'eclat_magique_glacial', qty: 15 },
+				]
+			},
+			{ id: 'bottes_ninja', time: '10s',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 18 },
+					{ id: 'eclat_magique_glacial', qty: 12 },
+				]
+			},
+    ],
+  },
 	//#endregion Tolbana
+	//#region Candelia
+	{
+    id: 'marchand_outils_candelia',
+    name: "Marchand d'Outils",
+    tag: 'marchand_outils',
+    palier: 1,
+    region: 'Candelia',
+    regionId: 'm1m10',
+    img: '../img/compendium/textures/gears/pioche_felee.png',
+    lore: "Vends des Outils pour que les Aventuriers récoltent des ressources pour leur aventure.",
+    sells: [
+      { id: 'pioche_felee',  buy: 20, price: 4 },
+			{ id: 'hache_ebrechee',  buy: 20, price: 4 },
+			{ id: 'serpe_tordue',  buy: 20, price: 4 },
+			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
+    ],
+  },
+	{
+    id: 'cle_candelia',
+    name: "Fabicant de Clef du Donjon Sanctuaire de Xal'Zirith",
+    tag: 'fabricant_cles',
+    palier: 1,
+    region: 'Candelia',
+    regionId: 'm1c5',
+    img: '../img/compendium/textures/items/Donjon/key_xal.png',
+    lore: "Permet le fabrication d'une clef menant au Donjon Sanctuaire de Xal'Zirtih.",
+    craft: [
+			{ 
+				id: 'cle_xal', time: '3m',
+				ingredients: [
+					{ id: 'tissu_araignee', qty: 20 },
+					{ id: 'fil_araignee', qty: 25 },
+				]
+			}
+		]
+  },
+	{
+    id: 'cle_xal',
+    name: "Fabicant de Clef du Donjon Sanctuaire de Xal'Zirith",
+    tag: 'fabricant_cles',
+    palier: 1,
+    region: 'Sanctuaire de Xal\'Zirith',
+    regionId: 'm1c4',
+    img: '../img/compendium/textures/items/Donjon/key_xal.png',
+    lore: "Permet le fabrication d'une clef menant au Donjon Sanctuaire de Xal'Zirtih.",
+    craft: [
+			{ 
+				id: 'cle_xal', time: '3m',
+				ingredients: [
+					{ id: 'tissu_araignee', qty: 20 },
+					{ id: 'fil_araignee', qty: 25 },
+				]
+			}
+		]
+  },
+	{
+    id: 'secret_citadelle_neiges',
+    name: "Fabricant du Bracelet de Glace",
+    tag: 'fabricant_secrets',
+    palier: 1,
+    region: 'Citdelle des Neiges',
+    regionId: 'm1c6',
+    img: '../img/compendium/textures/trinkets/P1/Bracelet de Glace.png',
+    lore: "Permet le fabrication de l'Accessoires Bracelet de Glace.",
+    craft: [
+			{ 
+				id: 'bracelet_glace', time: '30m',
+				ingredients: [
+					{ id: 'poussiere_givre', qty: 32 },
+					{ id: 'eclat_magique_glacial', qty: 32 },
+					{ id: 'peau_dur_glacial', qty: 32 },
+					{ id: 'fragment_ame_ours', qty: 1 },
+				]
+			}
+		]
+  },
+	{
+    id: 'secret_arakh\'nol',
+    name: "Fabicant du Collier d'Aragorn",
+    tag: 'fabricant_secrets',
+    palier: 1,
+    region: 'Forêt d\'Arakh\'Nol',
+    regionId: 'm1c9',
+    img: '../img/compendium/textures/trinkets/P1/Collier de Aragorn.png',
+    lore: "Permet le fabrication de l'Accessoires Bracelet de Glace.",
+    craft: [
+			{ 
+				id: 'collier_aragorn', time: '30m',
+				ingredients: [
+					{ id: 'fil_araignee', qty: 64 },
+					{ id: 'fil_araignee_renforce', qty: 32 },
+					{ id: 'venin_araignee', qty: 1 },
+				]
+			}
+		]
+  },
+	//#endregion Candelia
+	//#region Labyrinthe des Déchus
+	{
+    id: 'forgeron_armes_labyrinthe',
+    name: "Forgeron d'Armes du Labyrinthe",
+    tag: 'forgeron_armes',
+    palier: 1,
+    region: 'Donjon Labyrinthe des Déchus',
+    regionId: 'm1a11',
+    img: '../img/compendium/textures/weapons/epee_du_gardien.png',
+    lore: "Permet le fabrication d'armes pour les aventuriers expérimentés.",
+    craft: [
+      { id: 'lingot_ame_metal', time: '10s',
+				ingredients: [
+					{ id: 'piece_ame_metal', qty: 10 },
+					{ id: 'fer', qty: 5 },
+					{ id: 'charbon', qty: 3 },
+				]
+			},
+			{ id: 'lingot_metal_enchante', time: '10s',
+				ingredients: [
+					{ id: 'piece_metal_enchante', qty: 10 },
+					{ id: 'fer', qty: 5 },
+					{ id: 'charbon', qty: 3 },
+				]
+			},
+			{ id: 'fil_araignee_renforce', time: '10s',
+				ingredients: [
+					{ id: 'fil_araignee', qty: 3 },
+					{ id: 'piece_metal_enchante', qty: 6 },
+				]
+			},
+			{ id: 'ame_reaper', time: '3m',
+				ingredients: [
+					{ id: 'eclat_fusionne', qty: 3 },
+					{ id: 'charbon', qty: 32 },
+				]
+			},
+			{ id: 'ame_warden', time: '3m',
+				ingredients: [
+					{ id: 'fragment_casse_rouge', qty: 25 },
+					{ id: 'charbon', qty: 32 },
+				]
+			},
+			{ id: 'ame_herald', time: '3m',
+				ingredients: [
+					{ id: 'fragment_casse_jaune', qty: 25 },
+					{ id: 'charbon', qty: 32 },
+				]
+			},
+			{ id: 'pioche_metal', time: '5m',
+				ingredients: [
+					{ id: 'lingot_metal_enchante', qty: 25 },
+					{ id: 'brindille_enchantee', qty: 10 },
+				]
+			},
+			{ id: 'hache_metal', time: '5m',
+				ingredients: [
+					{ id: 'lingot_metal_enchante', qty: 22 },
+					{ id: 'brindille_enchantee', qty: 10 },
+				]
+			},
+			{ id: 'houe_metal', time: '5m',
+				ingredients: [
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'brindille_enchantee', qty: 10 },
+				]
+			},
+			{ id: 'epee_gardien', time: '5m',
+				ingredients: [
+					{ id: 'lingot_metal_enchante', qty: 25 },
+					{ id: 'fragment_casse_jaune', qty: 30 },
+					{ id: 'ame_herald', qty: 1 },
+				]
+			},
+			{ id: 'dague_heroique', time: '5m',
+				ingredients: [
+					{ id: 'lingot_metal_enchante', qty: 25 },
+					{ id: 'fragment_casse_violet', qty: 21 },
+					{ id: 'lingot_ame_metal', qty: 5 },
+				]
+			},
+			{ id: 'katana_heroique', time: '5m',
+				ingredients: [
+					{ id: 'lingot_metal_enchante', qty: 25 },
+					{ id: 'fragment_casse_violet', qty: 21 },
+					{ id: 'lingot_ame_metal', qty: 5 },
+				]
+			},
+			{ id: 'arc_fallen', time: '5m',
+				ingredients: [
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'fragment_casse_jaune', qty: 12 },
+					{ id: 'fil_araignee_renforce', qty: 7 },
+				]
+			},
+			{ id: 'baton_obscur_mage', time: '5m',
+				ingredients: [
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'fragment_casse_violet', qty: 26 },
+					{ id: 'brindille_enchantee', qty: 6 },
+				]
+			},
+			{ id: 'baton_obscur_puissant_mage', time: '5m',
+				ingredients: [
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'fragment_casse_violet', qty: 26 },
+					{ id: 'brindille_enchantee', qty: 6 },
+				]
+			},
+			{ id: 'grimoire_obscur', time: '5m',
+				ingredients: [
+					{ id: 'cuir_use', qty: 64 },
+					{ id: 'fragment_casse_violet', qty: 12 },
+					{ id: 'brindille_enchantee', qty: 16 },
+				]
+			},
+			{ id: 'baton_obscur_shaman', time: '5m',
+				ingredients: [
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'fragment_casse_violet', qty: 26 },
+					{ id: 'brindille_enchantee', qty: 6 },
+				]
+			},
+			{ id: 'baton_obscur_puissant_shaman', time: '5m',
+				ingredients: [
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'fragment_casse_violet', qty: 26 },
+					{ id: 'brindille_enchantee', qty: 6 },
+				]
+			},
+			{ id: 'grimoire_fantomatique', time: '5m',
+				ingredients: [
+					{ id: 'cuir_use', qty: 64 },
+					{ id: 'fragment_casse_violet', qty: 12 },
+					{ id: 'brindille_enchantee', qty: 16 },
+				]
+			},
+    ],
+  },
+	{
+    id: 'forgeron_armures_labyrinthe',
+    name: "Forgeron d'Armures du Labyrinthe",
+    tag: 'forgeron_armures',
+    palier: 1,
+    region: 'Donjon Labyrinthe des Déchus',
+    regionId: 'm1a12',
+    img: '../img/compendium/textures/armors/helmet_gardien.png',
+    lore: "Permet le fabrication d'armures pour les aventuriers expérimentés.",
+    craft: [
+			{ id: 'eclat_fusionne', time: '10s',
+				ingredients: [
+					{ id: 'fragment_casse_violet', qty: 5 },
+				]
+			},
+			{ id: 'casque_gardien', time: '10s',
+				ingredients: [
+					{ id: 'ame_warden', qty: 1 },
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'fragment_casse_rouge', qty: 10 },
+				]
+			},
+			{ id: 'plastron_gardien', time: '10s',
+				ingredients: [
+					{ id: 'ame_warden', qty: 1 },
+					{ id: 'lingot_metal_enchante', qty: 24 },
+					{ id: 'fragment_casse_rouge', qty: 14 },
+				]
+			},
+      { id: 'jambieres_gardien', time: '10s',
+				ingredients: [
+					{ id: 'ame_warden', qty: 1 },
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'fragment_casse_rouge', qty: 10 },
+				]
+			},
+			{ id: 'bottes_gardien', time: '10s',
+				ingredients: [
+					{ id: 'ame_warden', qty: 1 },
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'fragment_casse_rouge', qty: 9 },
+				]
+			},
+
+			{ id: 'casque_heraut', time: '10s',
+				ingredients: [
+					{ id: 'ame_herald', qty: 1 },
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'fragment_casse_jaune', qty: 10 },
+				]
+			},
+			{ id: 'plastron_heraut', time: '10s',
+				ingredients: [
+					{ id: 'ame_herald', qty: 1 },
+					{ id: 'lingot_metal_enchante', qty: 24 },
+					{ id: 'fragment_casse_jaune', qty: 14 },
+				]
+			},
+      { id: 'jambieres_heraut', time: '10s',
+				ingredients: [
+					{ id: 'ame_herald', qty: 1 },
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'fragment_casse_jaune', qty: 10 },
+				]
+			},
+			{ id: 'bottes_heraut', time: '10s',
+				ingredients: [
+					{ id: 'ame_herald', qty: 1 },
+					{ id: 'lingot_metal_enchante', qty: 20 },
+					{ id: 'fragment_casse_jaune', qty: 9 },
+				]
+			},
+
+			{ id: 'casque_faucheuse', time: '10s',
+				ingredients: [
+					{ id: 'ame_reaper', qty: 1 },
+					{ id: 'lingot_ame_metal', qty: 20 },
+					{ id: 'eclat_fusionne', qty: 3 },
+				]
+			},
+			{ id: 'plastron_faucheuse', time: '10s',
+				ingredients: [
+					{ id: 'ame_reaper', qty: 1 },
+					{ id: 'lingot_ame_metal', qty: 24 },
+					{ id: 'eclat_fusionne', qty: 6 },
+				]
+			},
+      { id: 'jambieres_faucheuse', time: '10s',
+				ingredients: [
+					{ id: 'ame_reaper', qty: 1 },
+					{ id: 'lingot_ame_metal', qty: 20 },
+					{ id: 'eclat_fusionne', qty: 4 },
+				]
+			},
+			{ id: 'bottes_faucheuse', time: '10s',
+				ingredients: [
+					{ id: 'ame_reaper', qty: 1 },
+					{ id: 'lingot_ame_metal', qty: 20 },
+					{ id: 'eclat_fusionne', qty: 5 },
+				]
+			},
+    ],
+  },
+	{
+    id: 'cle_labyrinthe',
+    name: "Fabicant de Clef du Donjon Labyrinthe des Déchus",
+    tag: 'fabricant_cles',
+    palier: 1,
+    region: 'Labyrinthe des Déchus',
+    regionId: 'm1c3',
+    img: '../img/compendium/textures/items/Donjon/key_laby.png',
+    lore: "Permet le fabrication d'une clef menant au Donjon Labyrinthe des Déchus.",
+    craft: [
+			{ 
+				id: 'cle_dechu', time: '3m',
+				ingredients: [
+					{ id: 'fragment_de_feuille', qty: 20 },
+					{ id: 'tissu_maudit', qty: 15 },
+					{ id: 'ames_des_ruines', qty: 10 },
+				]
+			}
+		]
+  },
+	//#endregion Labyrinthe des Déchus
 ];
 
 /* ══════════════════════════════════
@@ -1629,8 +2801,8 @@ const PNJ_TAG_LABELS = {
   forgeron_armures:     "Forgeron d'Armures",
   forgeron_accessoires: "Forgeron d'Accessoires",
   forgeron_lingots:     "Forgeron de Lingots",
-  forgeron_cles:        "Forgeron de Clés",
-  forgeron_secrets:     "Forgeron d'Items Secrets",
+  fabricant_cles:       "Fabricant de Clés",
+  fabricant_secrets:    "Fabricant Secrets",
   refaconneur:          "Refaçonneur",
   marchand_equipement:  "Marchand d'Équipement",
   marchand_consommable: "Marchand de Consommable",
@@ -1647,8 +2819,8 @@ const PNJ_TAG_COLORS = {
   forgeron_armures:     '#f15e1a',
   forgeron_accessoires: '#f1b586',
   forgeron_lingots:     '#eed4a4',
-  forgeron_cles:        '#f5ac4d',
-  forgeron_secrets:     '#6e3e19',
+  fabricant_cles:       '#f5ac4d',
+  fabricant_secrets:    '#8b3c00',
   refaconneur:          '#6e543f',
   marchand_equipement:  '#c9a84c',
   marchand_consommable: '#b19b5f',

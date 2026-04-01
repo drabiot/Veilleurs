@@ -152,7 +152,7 @@ function updateCounts() {
       const el = document.getElementById(`count-${tag}`);
       if (el) el.textContent = filtered.filter(e => e.tag === tag).length;
     });
-    const groupExtras = { forgeron: ['refaconneur'], marchand: ['repreneur_butin'] };
+    const groupExtras = { forgeron: ['refaconneur', 'fabricant_cles', 'fabricant_secrets'], marchand: ['repreneur_butin'] };
     ['forgeron', 'marchand'].forEach(cat => {
       const el = document.getElementById(`group-count-${cat}`);
       if (el) el.textContent = filtered.filter(e => e.tag && (e.tag.startsWith(cat) || (groupExtras[cat]||[]).includes(e.tag))).length;
@@ -340,10 +340,6 @@ modalOverlay.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-// Ferme la modal au clic sur zone non-interactive
-document.getElementById('mob-modal-content').addEventListener('click', e => {
-  if (!e.target.closest('a, button')) closeModal();
-});
 
 /* ── Fiche Monstre ── */
 function renderMobSheet(mob) {
@@ -552,6 +548,7 @@ function renderPNJSheet(pnj) {
           <a class="craft-result-cell${recipe.quality ? ' loot-row-quality' : ''}" href="${resultHref}">
             ${resultImgPart}
             <span class="loot-name" style="color:${resultColor}">${resultName}${qualityBadge}</span>
+            ${recipe.time ? `<span class="craft-timer">⏱ ${recipe.time}</span>` : ''}
           </a>
           <div class="craft-ings-col">
             ${ingsHTML}

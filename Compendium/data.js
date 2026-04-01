@@ -926,7 +926,7 @@ const ITEMS = [
 		craft:		[{qty:100, id:'cols'}]
 	},
 {
-		id:				'dague_intermedaire',
+		id:				'dague_intermediaire',
 		name:			"Dague Intermédiaire",
 		rarity:		'commun',
 		cat:			'arme_p',
@@ -5335,6 +5335,94 @@ const ITEMS = [
 //#endregion Armures
 //#region Items
 //#region Items > Palier 1
+//#region Items > P1 > Outils
+{
+    id:       'pioche_felee',
+    name:     "Pioche Fêlée",
+    rarity:   'commun',
+    category: 'outils',
+    palier:   1,
+    image:    "../img/compendium/textures/gears/pioche_felee.png",
+    lore:     "...",
+    tags:     ['Outils', 'Pioche', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable par les Marchands d'Outils",
+		craft:		[{qty:20, id:'cols'}]
+  },
+{
+    id:       'hache_ebrechee',
+    name:     "Hache Ébréchée",
+    rarity:   'commun',
+    category: 'outils',
+    palier:   1,
+    image:    "../img/compendium/textures/gears/hache_ebrechee.png",
+    lore:     "...",
+    tags:     ['Outils', 'Hache', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable par les Marchands d'Outils",
+		craft:		[{qty:20, id:'cols'}]
+  },
+{
+    id:       'serpe_tordue',
+    name:     "Serpe Tordue",
+    rarity:   'commun',
+    category: 'outils',
+    palier:   1,
+    image:    "../img/compendium/textures/gears/serpe_tordue.png",
+    lore:     "...",
+    tags:     ['Outils', 'Houe', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable par les Marchands d'Outils",
+		craft:		[{qty:20, id:'cols'}]
+  },
+{
+    id:       'canne_a_peche_en_bois',
+    name:     "Canne à Pêche en Bois",
+    rarity:   'commun',
+    category: 'outils',
+    palier:   1,
+    image:    "../img/compendium/textures/gears/canne_a_peche_en_bois.png",
+    lore:     "...",
+    tags:     ['Outils', 'Canne à Pêche', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable par les Marchands d'Outils",
+		craft:		[{qty:20, id:'cols'}]
+  },
+{
+    id:       'pioche_metal',
+    name:     "Pioche en Métal",
+    rarity:   'rare',
+    category: 'outils',
+    palier:   1,
+    image:    "../img/compendium/textures/gears/pioche_metal.png",
+    lore:     "...",
+    tags:     ['Outils', 'Pioche', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable par les Marchands d'Outils",
+		craft:		[{qty:25, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
+  },
+{
+    id:       'hache_metal',
+    name:     "Hache en Métal",
+    rarity:   'rare',
+    category: 'outils',
+    palier:   1,
+    image:    "../img/compendium/textures/gears/hache_metal.png",
+    lore:     "...",
+    tags:     ['Outils', 'Hache', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable par les Marchands d'Outils",
+		craft:		[{qty:22, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
+  },
+{
+    id:       'houe_metal',
+    name:     "Houe en Métal",
+    rarity:   'rare',
+    category: 'outils',
+    palier:   1,
+    image:    "../img/compendium/textures/gears/houe_metal.png",
+    lore:     "...",
+    tags:     ['Outils', 'Houe', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable par les Marchands d'Outils",
+		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
+  },
+//#endregion Items > P1 > Outils
+//#region Items > P2 > Outils
+//#endregion Items > P2 > Outils
 //#region Items > P1 > Runes
 {
     id:       'rune_vitalite_1',

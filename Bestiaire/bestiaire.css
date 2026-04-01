@@ -862,6 +862,13 @@ body.bestiaire-page {
 }
 .craft-result-cell:hover { background: rgba(255,255,255,.04); }
 
+.craft-result-cell .loot-name {
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+  min-width: 0;
+}
+
 .craft-ings-col {
   display: flex;
   flex-direction: column;
@@ -869,6 +876,18 @@ body.bestiaire-page {
 }
 .craft-ings-col .loot-row { border-bottom: 1px solid rgba(255,255,255,.04); }
 .craft-ings-col .loot-row:last-child { border-bottom: none; }
+
+.craft-timer {
+  margin-left: auto;
+  font-size: 11px;
+  color: #aaa;
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
 /* ══════════════════════════════════
    RESPONSIVE
