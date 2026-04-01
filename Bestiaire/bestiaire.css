@@ -200,10 +200,69 @@ body.bestiaire-page {
 }
 .bfilter-row:has(input:checked) .bfilter-dot { opacity: 1; }
 
-.bfilter-boss    { background: #e05555; box-shadow: 0 0 5px #e0555566; }
-.bfilter-mini_boss    { background: #d86f6f; box-shadow: 0 0 5px #e0555566; }
-.bfilter-monstre { background: #e09050; box-shadow: 0 0 5px #e0905066; }
-.bfilter-sbire   { background: #8090c0; box-shadow: 0 0 5px #8090c066; }
+.bfilter-boss      { background: #e05555; box-shadow: 0 0 5px #e0555566; }
+.bfilter-mini_boss { background: #d86f6f; box-shadow: 0 0 5px #e0555566; }
+.bfilter-monstre   { background: #e09050; box-shadow: 0 0 5px #e0905066; }
+.bfilter-sbire     { background: #8090c0; box-shadow: 0 0 5px #8090c066; }
+
+.bfilter-forgeron  { background: #c8783c; box-shadow: 0 0 5px #c8783c66; }
+.bfilter-marchand  { background: #c9a84c; box-shadow: 0 0 5px #c9a84c66; }
+.bfilter-bucheron  { background: #5aad64; box-shadow: 0 0 5px #5aad6466; }
+.bfilter-alchimiste{ background: #9b6bc9; box-shadow: 0 0 5px #9b6bc966; }
+.bfilter-quetes    { background: #5899e0; box-shadow: 0 0 5px #5899e066; }
+.bfilter-autre     { background: #7888a0; box-shadow: 0 0 5px #7888a066; }
+
+/* ── Groupes catégorie PNJ ── */
+.pnj-cat-group {
+  margin: 4px 0 2px;
+}
+
+.pnj-cat-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 14px 6px 14px;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  transition: background .12s;
+}
+.pnj-cat-header:hover { background: rgba(255,255,255,.04); }
+
+.pnj-cat-arrow {
+  font-size: 7px;
+  color: var(--muted);
+  transition: transform .2s;
+  flex-shrink: 0;
+}
+.pnj-cat-arrow.open { transform: rotate(90deg); }
+
+.pnj-cat-title {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  color: var(--text);
+}
+
+.pnj-cat-body {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height .22s ease;
+  margin-left: 16px;
+  border-left: 2px solid transparent;
+  padding-left: 4px;
+}
+.pnj-cat-body.open { max-height: 200px; }
+
+.pnj-cat-forgeron { border-left-color: #c8783c66; }
+.pnj-cat-marchand { border-left-color: #c9a84c66; }
+
+.bfilter-sub {
+  padding-left: 18px;
+}
+.bfilter-sub .bfilter-label { font-size: 10.5px; }
 
 .bfilter-label {
   flex: 1;

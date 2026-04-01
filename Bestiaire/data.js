@@ -1063,7 +1063,7 @@ const PERSONNAGES = [
   {
     id: 'marchand_equipement',
     name: "Marchand d'Équipement",
-    role: 'Vendeur',
+    tag: 'marchand_equipement',
     palier: 1,
     region: 'Ville de Départ',
     img: '',
@@ -1076,7 +1076,7 @@ const PERSONNAGES = [
   {
     id: 'forgeron_armes',
     name: "Forgeron d'Armes",
-    role: 'Artisan',
+    tag: 'forgeron_armes',
     palier: 1,
     region: 'Ville de Départ',
     img: '',
@@ -1090,6 +1090,35 @@ const PERSONNAGES = [
 /* ══════════════════════════════════
    CONSTANTES D'AFFICHAGE
 ══════════════════════════════════ */
+const PNJ_TAG_LABELS = {
+  forgeron_armes:       "Forgeron d'Armes",
+  forgeron_armures:     "Forgeron d'Armures",
+  forgeron_accessoires: "Forgeron d'Accessoires",
+  forgeron_lingots:     "Forgeron de Lingots",
+  marchand_equipement:  "Marchand d'Équipement",
+  marchand_consommable: "Marchand de Consommable",
+  marchand_outils:      "Marchand d'Outils",
+  marchand_accessoires: "Marchand d'Accessoires",
+  bucheron:             "Bûcheron",
+  alchimiste:           "Alchimiste",
+  quetes:               "Quêtes",
+  autre:                "Autre",
+};
+const PNJ_TAG_COLORS = {
+  forgeron_armes:       '#c8783c',
+  forgeron_armures:     '#c8783c',
+  forgeron_accessoires: '#c8783c',
+  forgeron_lingots:     '#c8783c',
+  marchand_equipement:  '#c9a84c',
+  marchand_consommable: '#c9a84c',
+  marchand_outils:      '#c9a84c',
+  marchand_accessoires: '#c9a84c',
+  bucheron:             '#5aad64',
+  alchimiste:           '#9b6bc9',
+  quetes:               '#5899e0',
+  autre:                '#7888a0',
+};
+
 const TYPE_LABELS     = { boss: 'Boss', mini_boss: 'Mini-Boss', monstre: 'Monstre', sbire: 'Sbire' };
 const BEHAVIOR_LABELS = { passif: 'Passif', neutre: 'Neutre', agressif: 'Agressif' };
 const DIFF_LABELS     = ['', 'Très facile', 'Facile', 'Moyen', 'Difficile', 'Très difficile'];

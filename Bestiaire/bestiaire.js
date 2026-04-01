@@ -5,10 +5,11 @@
 /* ══════════════════════════════════
    ÉTAT
 ══════════════════════════════════ */
-let activeTab    = 'monstres';
-let activePalier = 'all';
-let activeTypes  = new Set(['boss', 'mini_boss', 'monstre', 'sbire']);
-let searchQuery  = '';
+let activeTab      = 'monstres';
+let activePalier   = 'all';
+let activeTypes    = new Set(['boss', 'mini_boss', 'monstre', 'sbire']);
+let activePnjTags  = new Set(Object.keys(typeof PNJ_TAG_LABELS !== 'undefined' ? PNJ_TAG_LABELS : {}));
+let searchQuery    = '';
 
 /* ══════════════════════════════════
    DOM
@@ -24,6 +25,7 @@ const modalOverlay  = document.getElementById('mob-modal-overlay');
 const modalContent  = document.getElementById('mob-modal-content');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 const typeSection   = document.getElementById('type-block');
+const pnjTagSection = document.getElementById('pnj-tag-block');
 
 /* ══════════════════════════════════
    HELPERS
@@ -115,6 +117,8 @@ function getFiltered() {
     if (activePalier !== 'all' && e.palier !== activePalier) return false;
     if (activeTab === 'monstres') {
       if (!activeTypes.has(e.type)) return false;
+    } else {
+      if (e.tag && !activePnjTags.has(e.tag)) return false;
     }
     return true;
   });
@@ -124,18 +128,31 @@ function getFiltered() {
    COMPTEURS SIDEBAR
 ══════════════════════════════════ */
 function updateCounts() {
-  if (activeTab !== 'monstres') return;
-
-  const list = MOBS.filter(e => activePalier === 'all' || e.palier === activePalier);
-  const q    = normalize(searchQuery);
-  const filtered = q ? list.filter(e =>
-    normalize(e.name).includes(q) || normalize(e.region||'').includes(q)
-  ) : list;
-
-  ['boss','mini_boss','monstre','sbire'].forEach(t => {
-    const el = document.getElementById(`count-${t}`);
-    if (el) el.textContent = filtered.filter(e => e.type === t).length;
-  });
+  if (activeTab === 'monstres') {
+    const list = MOBS.filter(e => activePalier === 'all' || e.palier === activePalier);
+    const q    = normalize(searchQuery);
+    const filtered = q ? list.filter(e =>
+      normalize(e.name).includes(q) || normalize(e.region||'').includes(q)
+    ) : list;
+    ['boss','mini_boss','monstre','sbire'].forEach(t => {
+      const el = document.getElementById(`count-${t}`);
+      if (el) el.textContent = filtered.filter(e => e.type === t).length;
+    });
+  } else {
+    const list = PERSONNAGES.filter(e => activePalier === 'all' || e.palier === activePalier);
+    const q    = normalize(searchQuery);
+    const filtered = q ? list.filter(e =>
+      normalize(e.name).includes(q) || normalize(e.region||'').includes(q)
+    ) : list;
+    Object.keys(PNJ_TAG_LABELS).forEach(tag => {
+      const el = document.getElementById(`count-${tag}`);
+      if (el) el.textContent = filtered.filter(e => e.tag === tag).length;
+    });
+    ['forgeron', 'marchand'].forEach(cat => {
+      const el = document.getElementById(`group-count-${cat}`);
+      if (el) el.textContent = filtered.filter(e => e.tag && e.tag.startsWith(cat)).length;
+    });
+  }
 }
 
 /* ══════════════════════════════════
@@ -150,8 +167,20 @@ function initCollapsible(headerId, bodyId) {
     body.classList.toggle('open');
   });
 }
-initCollapsible('palier-block-header', 'palier-block-body');
-initCollapsible('type-block-header',   'type-block-body');
+initCollapsible('palier-block-header',   'palier-block-body');
+initCollapsible('type-block-header',     'type-block-body');
+initCollapsible('pnj-tag-block-header',  'pnj-tag-block-body');
+
+document.querySelectorAll('.pnj-cat-header').forEach(header => {
+  header.addEventListener('click', () => {
+    const cat  = header.dataset.cat;
+    const body  = document.getElementById(`group-body-${cat}`);
+    const arrow = header.querySelector('.pnj-cat-arrow');
+    if (!body) return;
+    const isOpen = body.classList.toggle('open');
+    if (arrow) arrow.classList.toggle('open', isOpen);
+  });
+});
 
 /* ══════════════════════════════════
    CONSTRUCTION FILTRES PALIER
@@ -178,7 +207,8 @@ function buildPalierFilters() {
 }
 
 function updateSidebarSections() {
-  typeSection.style.display = activeTab === 'monstres' ? '' : 'none';
+  typeSection.style.display    = activeTab === 'monstres'   ? '' : 'none';
+  pnjTagSection.style.display  = activeTab === 'personnages' ? '' : 'none';
 }
 
 /* ══════════════════════════════════
@@ -212,9 +242,9 @@ function buildGrid() {
     const phStyle = e.img ? 'style="display:none"' : '';
     const ph = `<span class="card-img-placeholder" ${phStyle}>${isMob ? '👾' : '🧑'}</span>`;
 
-    const typeKey   = isMob ? e.type : 'pnj';
-    const typeLabel = isMob ? (TYPE_LABELS[e.type]||e.type) : (e.role||'PNJ');
-    const typeBadge = `<span class="card-type-badge badge-${typeKey}">${typeLabel}</span>`;
+    const typeKey   = isMob ? e.type : (e.tag || 'pnj');
+    const typeLabel = isMob ? (TYPE_LABELS[e.type]||e.type) : (PNJ_TAG_LABELS[e.tag]||e.tag||'PNJ');
+    const typeBadge = `<span class="card-type-badge badge-${typeKey}" style="${!isMob && e.tag ? `background:${PNJ_TAG_COLORS[e.tag]}22;color:${PNJ_TAG_COLORS[e.tag]};border-color:${PNJ_TAG_COLORS[e.tag]}55` : ''}">${typeLabel}</span>`;
     const palierBadge = `<span class="card-palier-badge">P${e.palier}</span>`;
 	const codexBadge = (isMob && e.inCodex) ? `<span class="card-codex-badge">📖</span>` : '';
 
@@ -332,7 +362,7 @@ function renderMobSheet(mob) {
           ${imgPart}
           <span class="loot-name" style="color:${color}">${name}</span>
           ${l.qty ? `<span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${l.qty}</span>` : ''}
-          <span class="loot-drop-rate" style="color:${rc};border-color:${rc}33">${l.chance}%</span>
+          <span class="loot-drop-rate" style="color:${rc};border-color:${rc}33">${l.chance ?? '?'}%</span>
         </a>`;
     }).join('');
     lootHTML = `
@@ -442,7 +472,7 @@ function renderPNJSheet(pnj) {
         <div class="mob-header-info">
           <div class="mob-name">${pnj.name}</div>
           <div class="mob-badge-row">
-            <span class="mob-type-badge" style="background:rgba(100,80,30,.85);color:#ffd9a0;border:1px solid #c06c2055;">${pnj.role||'PNJ'}</span>
+            <span class="mob-type-badge" style="background:${pnj.tag ? PNJ_TAG_COLORS[pnj.tag]+'22' : 'rgba(100,80,30,.85)'};color:${pnj.tag ? PNJ_TAG_COLORS[pnj.tag] : '#ffd9a0'};border:1px solid ${pnj.tag ? PNJ_TAG_COLORS[pnj.tag]+'55' : '#c06c2055'};">${PNJ_TAG_LABELS[pnj.tag]||pnj.tag||'PNJ'}</span>
           </div>
           <div class="mob-meta-row">
             <div class="mob-meta-item">
@@ -514,6 +544,15 @@ document.querySelectorAll('.type-filter-cb').forEach(cb => {
   cb.addEventListener('change', () => {
     if (cb.checked) activeTypes.add(cb.value);
     else            activeTypes.delete(cb.value);
+    updateCounts();
+    buildGrid();
+  });
+});
+
+document.querySelectorAll('.pnj-tag-filter-cb').forEach(cb => {
+  cb.addEventListener('change', () => {
+    if (cb.checked) activePnjTags.add(cb.value);
+    else            activePnjTags.delete(cb.value);
     updateCounts();
     buildGrid();
   });

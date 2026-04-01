@@ -1,6 +1,4 @@
-/* ══════════════════════════════════
-   CONFIGURATION — RARETÉS
-══════════════════════════════════ */
+//#region RARITIES
 const RARITIES = {
   'commun':     { label: 'Commun',      color: '#59d059' },
   'rare':       { label: 'Rare',        color: '#2a5fa8' },
@@ -11,7 +9,8 @@ const RARITIES = {
 	'event':    	{ label: 'Event',     	color: '#ebebeb' },
 };
 
-/* ══ CLASSES ══ */
+//#endregion RARITIES
+//#region CLASSES
 const CLASSES = [
   { id:'guerrier', label:'Guerrier', ico:'⚔️'  },
   { id:'assassin', label:'Assassin', ico:'🗡️'  },
@@ -20,7 +19,8 @@ const CLASSES = [
   { id:'shaman',   label:'Shaman',   ico:'🌿'  },
 ];
 
-/* ══ PANOPLIES ══ */
+//#endregion CLASSES
+//#region SETS — Panoplies
 const SETS = {
   cuivre: {
     label: 'Set de Cuivre',
@@ -340,7 +340,8 @@ const SETS = {
 };
 
 
-/* ══ DÉFINITION DES STATS ══ */
+//#endregion SETS — Panoplies
+//#region STAT_GROUPS
 const STAT_GROUPS = [
   {
     label: 'Offensif',
@@ -390,8 +391,6 @@ const STAT_GROUPS = [
       { id:'regen_sante',         label:'Régénération Santé',              icon:'💓',  unit:'/s', max:200  },
       { id:'regen_mana',          label:'Régénération Mana',               icon:'💦',  unit:'/s', max:200  },
       { id:'regen_stamina',       label:'Régénération Stamina',            icon:'👟',  unit:'/s', max:200  },
-			{ id:'cout_mana',          	label:'Coût Mana',               				 icon:'🌊',  unit:'', 	max:50  },
-      { id:'cout_stamina',       	label:'Coût Stamina',            				 icon:'🏃',  unit:'', 	max:50  },
     ]
   },
 ];
@@ -400,9 +399,12 @@ const TWO_HANDED_PAIRS = {
   'arme_p': 'arme_s'
 };
 
+//#endregion STAT_GROUPS
+//#region TWO_HANDED_PAIRS
 const ALL_STATS = STAT_GROUPS.flatMap(g => g.stats);
 
-/* ══ RUNES ══ */
+//#endregion TWO_HANDED_PAIRS
+//#region RUNES
 const RUNES = [
 	{
 		id:			'vitalite_1',
@@ -455,14 +457,18 @@ const RUNES = [
 	},
 ];
 
+//#endregion RUNES
+//#region CURRENCIES
 const CURRENCIES = {
   cols: { label: 'Cols', emoji: '🪙', color: '#c9a84c' },
 };
 
-/* ══ SYSTÈME DE NIVEAU ══ */
+//#endregion CURRENCIES
+//#region MAX_LEVEL
 const MAX_LEVEL = 14;
 
-/* ══ CARACTÉRISTIQUES ══ */
+//#endregion MAX_LEVEL
+//#region CARACTERISTIQUES
 const CARACTERISTIQUES = [
 	  {
 		  id:'force',
@@ -523,13 +529,11 @@ function getAvailablePoints() {
 	return buildLevel - spent;
 }
 
-/* ══ HELPERS FOURCHETTES ══ */
 function getMin(val) { return Array.isArray(val) ? val[0] : val; }
 function getMax(val) { return Array.isArray(val) ? val[1] : val; }
 
-/* ══════════════════════════════════
-   CONFIGURATION — CATÉGORIES
-══════════════════════════════════ */
+//#endregion CARACTERISTIQUES
+//#region CATEGORIES
 const CATEGORIES = {
   materiaux:       { label: 'Matériaux',          emoji: '🧱' },
   quete:           { label: 'Objets de Quête',    emoji: '📜' },
@@ -544,22 +548,26 @@ const CATEGORIES = {
 	donjon:          { label: 'Donjon',             emoji: '🏰' },
 };
 
+//#endregion CATEGORIES
+//#region EFFECT_META
 const EFFECT_META = {
   heal:     { icon: '❤️',  	color: '#e05252', label: 'Points de vie',    prefix: '+' },
-  mana:     { icon: '💧', 	color: '#5b8dee', label: 'Mana',             prefix: '+' },
+  mana:     { icon: '💧', 	 color: '#5b8dee', label: 'Mana',             prefix: '+' },
   stamina:  { icon: '👟', 	color: '#f4d745', label: 'Stamina',          prefix: '+' },
   buff:     { icon: '💪',  	color: '#d4a017', label: 'Bonus',            prefix: '+' },
 	feed:     { icon: '🍖',  	color: '#8d520b', label: 'Nourriture',       prefix: 'Restaure ' },
   debuff:   { icon: '☠️',  	color: '#9b59b6', label: 'Malus',            prefix: ''  }, 
   cooldown: { icon: '⏱️',  	color: '#888888', label: 'Cooldown',         prefix: ''  },
 	use: 			{ icon: '🧪',  	color: '#7db0ca', label: 'Utilisations',     prefix: ''  },
-	level: 		{ icon: '❓',   color: '#c43c28', label: 'Niveau Requis',    prefix: 'Niveau ' }
+	level: 		{ icon: '❓',  	color: '#c43c28', label: 'Niveau Requis',     prefix: 'Niveau '  }
 };
 
+//#endregion EFFECT_META
+
 const ITEMS = [
-	/* ══ Armes ══ */
-	/* ══ Palier 1 ══ */
-  {
+//#region Armes
+//#region Armes > Palier 1
+{
 		id:				'dague_entrainement',
 		name:			"Dague d'Entrainement",
 		rarity:		'commun',
@@ -573,9 +581,9 @@ const ITEMS = [
     tags:     ['Arme', 'Dague', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans le tutoriel"
 	},
-  /* ══ Guerrier ══ */
-  /* ══ Épées ══ */
-  {
+//#region Armes > P1 > Guerrier
+//#region Armes > P1 > Guerrier > Épées
+{
 		id:				'epee_entrainement',
 		name:			"Épée d'Entrainement",
 		rarity:		'commun',
@@ -590,8 +598,8 @@ const ITEMS = [
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Équipement",
 		craft:		[{qty:75, id:'cols'}]
-	},	
-  {
+	},
+{
 		id:				'epee_fer',
 		name:			"Épée en Fer",
 		rarity:		'commun',
@@ -607,7 +615,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
 		craft:		[{qty:5, id:'crocs_de_loup'}, {qty:10, id:'lingot_cuivre'}, {qty:8, id:'chene'}]
 	},
-  {
+{
 		id:				'epee_osseuse',
 		name:			"Épée Osseuse",
 		rarity:		'rare',
@@ -619,10 +627,10 @@ const ITEMS = [
 		stats:		{degats:17.5, vitesse_attaque:1},
 		classes:	['guerrier'],
 		lore:     "Taillé dans les os d'un ancien guerrier tombé en disgrâce.",
-    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Épée', 'Guerrier', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[5]\n- Guerriers Squelettes[7]"
 	},
-  {
+{
 		id:				'epee_magique',
 		name:			"Épée Magique",
 		rarity:		'rare',
@@ -638,7 +646,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'carapace_requin'}, {qty:24, id:'peau_dur_glacial'}]
 	},
-  {
+{
 		id:				'epee_gardien',
 		name:			"Épée du Gardien",
 		rarity:		'epique',
@@ -654,7 +662,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:25, id:'lingot_metal_enchante'}, {qty:30, id:'fragment_casse_jaune'}, {qty:1, id:'ame_herald'}]
 	},
-  {
+{
 		id:				'nodachi',
 		name:			"Nodachi",
 		rarity:		'mythique',
@@ -669,7 +677,7 @@ const ITEMS = [
     tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]",
 	},
-	{
+{
 		id:				'epee_dechue',
 		name:			"Épée Déchu",
 		rarity:		'legendaire',
@@ -685,38 +693,9 @@ const ITEMS = [
 		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
-		id:				'claymore_hivernale',
-		name:			"Claymore Hivernale",
-		rarity:		'event',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/sword_christmas.png",
-		stats:		{degats:28, vitesse_attaque:1.2, crit_chance:15},
-		classes:	['guerrier'],
-		lore:     "Une lourde épée recouverte de motifs glacés dont la lame semble toujours froide.",
-		tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Event', 'Noël'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
-	},
-	{
-		id:				'claymore_crepusculaire',
-		name:			"Claymore Crépusculaire",
-		rarity:		'event',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/greatsword_halloween.png",
-		stats:		{degats:28, vitesse_attaque:1.2, crit_chance:15},
-		classes:	['guerrier'],
-		lore:     "Sa taille massive symbolise le poids du jugement porté sur les vivants.",
-		tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Event', 'Halloween'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
-	},
-  /* ══ Boucliers ══ */
-  {
+//#endregion Armes > P1 > Guerrier > Épées
+//#region Armes > P1 > Guerrier > Boucliers
+{
 		id:				'bouclier_pacotille',
 		name:			"Bouclier de Pacotille",
 		rarity:		'commun',
@@ -732,7 +711,7 @@ const ITEMS = [
     obtain:   "Obtenable par les Marchands d'Équipement",
 		craft:		[{qty:25, id:'cols'}]
 	},
-  {
+{
 		id:				'bouclier_ika',
 		name:			"Bouclier d'Ika",
 		rarity:		'commun',
@@ -748,7 +727,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
 		craft:		[{qty:12, id:'carapace_dika'}, {qty:7, id:'ecorce_de_titan'}]
 	},
-  {
+{
 		id:				'bouclier_pointu_bois',
 		name:			"Bouclier Pointu Bois",
 		rarity:		'commun',
@@ -764,7 +743,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
 		craft:		[{qty:8, id:'lingot_cuivre'}, {qty:7, id:'ecorce_de_titan'}]
 	},
-  {
+{
 		id:				'bouclier_sylvestre',
 		name:			"Bouclier Sylvestre",
 		rarity:		'rare',
@@ -779,7 +758,7 @@ const ITEMS = [
     tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Guerriers Tréants[3]"
 	},
-  {
+{
 		id:				'bouclier_resistant_tolbana',
 		name:			"Bouclier Résistant de Tolbana",
 		rarity:		'rare',
@@ -795,7 +774,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:24, id:'carapace_requin'}, {qty:30, id:'peau_dur_glacial'}]
 	},
-  {
+{
 		id:				'bouclier_puissant_tolbana',
 		name:			"Bouclier Puissant de Tolbana",
 		rarity:		'rare',
@@ -811,7 +790,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:24, id:'carapace_requin'}, {qty:30, id:'peau_dur_glacial'}]
 	},
-  {
+{
 		id:				'bouclier_illfang',
 		name:			"Bouclier de Illfang",
 		rarity:		'mythique',
@@ -826,38 +805,9 @@ const ITEMS = [
     tags:     ['Arme', 'Bouclier', 'Rondache', 'Guerrier', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
-	{
-		id:				'bouclier_hivernal',
-		name:			"Bouclier Hivernal",
-		rarity:		'event',
-		cat:			'arme_s',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/shield_christmas.png",
-		stats:		{defense:3.5, sante:30},
-		classes:	['guerrier'],
-		lore:     "Un bouclier massif décoré de symboles hivernaux, couvert de cadeaux.",
-		tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Event', 'Noël'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
-	},
-	{
-		id:				'bouclier_putride',
-		name:			"Bouclier Putride",
-		rarity:		'event',
-		cat:			'arme_s',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/shield_halloween.png",
-		stats:		{defense:3.5, sante:30},
-		classes:	['guerrier'],
-		lore:     "Assemblage de chair et de métal rouillé trouvé dans un tombeau profané. Chaque impact libère une puanteur écœurante qui trouble les assaillants.",
-		tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Event', 'Halloween'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
-	},
-  /* ══ Hast ══ */
-  {
+//#endregion Armes > P1 > Guerrier > Boucliers
+//#region Armes > P1 > Guerrier > Hast
+{
 		id:				'hache_double_fer',
 		name:			"Hache Double en Fer",
 		rarity:		'commun',
@@ -874,7 +824,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
 		craft:		[{qty:5, id:'crocs_de_loup'}, {qty:10, id:'lingot_cuivre'}, {qty:8, id:'chene'}]
 	},
-  {
+{
 		id:				'marteau_colosse',
 		name:			"Marteau du Colosse",
 		rarity:		'rare',
@@ -890,7 +840,7 @@ const ITEMS = [
     tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Gardiens Colossaux"
 	},
-  {
+{
 		id:				'marteau_magique',
 		name:			"Marteau Magique",
 		rarity:		'rare',
@@ -907,7 +857,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'carapace_requin'}, {qty:24, id:'peau_dur_glacial'}]
 	},
-  {
+{
 		id:				'hallebarde_royale',
 		name:			"Hallebarde Royale",
 		rarity:		'legendaire',
@@ -923,7 +873,7 @@ const ITEMS = [
     tags:     ['Arme', 'Hallebarde', 'Deux Mains', 'Guerrier', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en tuant:\n- Smough, Dévastateur Déchu[1]"
 	},
-  {
+{
 		id:				'hache_illfang',
 		name:			"Hache de Illfang",
 		rarity:		'legendaire',
@@ -939,7 +889,7 @@ const ITEMS = [
     tags:     ['Arme', 'Hache', 'Deux Mains', 'Guerrier', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
-	{
+{
 		id:				'hache_double_dechue',
 		name:			"Hache Double Déchue",
 		rarity:		'legendaire',
@@ -956,24 +906,10 @@ const ITEMS = [
 		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
-		id:				'marteau_hivernal',
-		name:			"Marteau Hivernal",
-		rarity:		'event',
-		cat:			'arme_p',
-		twoHanded: true,
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/hammer_christmas.png",
-		stats:		{degats:50, vitesse_attaque:0.7},
-		classes:	['guerrier'],
-		lore:     "Un marteau imposant à la tête hivernale semblant taillé dans les cadeaux des enfants.",
-		tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 1', 'Event', 'Noël'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
-	},
-  /* ══ Assassin ══ */
-  {
+//#endregion Armes > P1 > Guerrier > Hast
+//#endregion Armes > P1 > Guerrier
+//#region Armes > P1 > Assassin
+{
 		id:				'dague_delabree',
 		name:			"Dague Délabrée",
 		rarity:		'commun',
@@ -989,7 +925,7 @@ const ITEMS = [
     obtain:   "Obtenable par les Marchands d'Équipement",
 		craft:		[{qty:100, id:'cols'}]
 	},
-  {
+{
 		id:				'dague_intermedaire',
 		name:			"Dague Intermédiaire",
 		rarity:		'commun',
@@ -1005,7 +941,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
 		craft:		[{qty:8, id:'crocs_de_loup'}, {qty:12, id:'lingot_cuivre'}]
 	},
-  {
+{
 		id:				'dague_bandit',
 		name:			"Dague de Bandit",
 		rarity:		'rare',
@@ -1017,10 +953,10 @@ const ITEMS = [
 		stats:		{degats:25, vitesse_attaque:1.2},
 		classes:	['assassin'],
     lore:     "Dague émoussé d'un bandit après tous ces combats sanglants.",
-    tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Bandits Assassins"
 	},
-  {
+{
 		id:				'dague_sombre',
 		name:			"Dague Sombre",
 		rarity:		'rare',
@@ -1032,11 +968,11 @@ const ITEMS = [
 		stats:		{degats:[27,31], vitesse_attaque:1.2},
 		classes:	['assassin'],
     lore:     "Petite dague Sombre, forgé avec des éclats magiques et d'autres loot. Elle en devient redoutable.",
-    tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'tissu_araignee'}]
 	},
-  {
+{
 		id:				'longue_dague_sombre',
 		name:			"Longue Dague Sombre",
 		rarity:		'rare',
@@ -1049,11 +985,11 @@ const ITEMS = [
 		stats:		{degats:[37,42], vitesse_attaque:[0.8,0.9], crit_comp_chance:3, stamina:3},
 		classes:	['assassin'],
     lore:     "Une longue dague Sombre, forgé avec des éclats magiques et d'autres loot. Elle en devient redoutable.",
-    tags:     ['Arme', 'Longue Dague', 'Deux Mains', 'Assassin', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Longue Dague', 'Deux Mains', 'Assassin', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'tissu_araignee'}]
 	},
-  {
+{
 		id:				'dague_heroique',
 		name:			"Dague Héroïque",
 		rarity:		'epique',
@@ -1065,11 +1001,11 @@ const ITEMS = [
 		stats:		{degats:[31,35], vitesse_attaque:[1.3,1.5]},
 		classes:	['assassin'],
     lore:     "Dague très puissante fait à partir de métal enchanté et d'âme, légère et facile à manier.",
-    tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'Épique'],
+    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:25, id:'lingot_metal_enchante'}, {qty:21, id:'fragment_casse_violet'}, {qty:5, id:'lingot_ame_metal'}]
 	},
-  {
+{
 		id:				'katana_heroique',
 		name:			"Katana Héroïque",
 		rarity:		'epique',
@@ -1082,11 +1018,11 @@ const ITEMS = [
 		stats:		{degats:[42,47], vitesse_attaque:[0.7,0.9], crit_comp_chance:3, stamina:3},
 		classes:	['assassin'],
     lore:     "Katana très puissant fait à partir de métal enchanté et d'âme, tranchant et facile à manier.",
-    tags:     ['Arme', 'Katana', 'Deux Mains', 'Assassin', 'Palier 1', 'Épique'],
+    tags:     ['Armes', 'Katana', 'Deux Mains', 'Assassin', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:25, id:'lingot_metal_enchante'}, {qty:21, id:'fragment_casse_violet'}, {qty:5, id:'lingot_ame_metal'}]
 	},
-  {
+{
 		id:				'dague_nodachi',
 		name:			"Dague Nodachi",
 		rarity:		'mythique',
@@ -1098,10 +1034,10 @@ const ITEMS = [
 		stats:		{degats:55, vitesse_attaque:1.8, vol_vie:3.5, vitesse_deplacement:1},
 		classes:	['assassin'],
     lore:     "Une belle dague forgée à l'aide de fragments de véritable Nodachi. Ce n'est toutefois plus qu'une relique pour le moment.",
-    tags:     ['Arme', 'Dague', 'Assassin', 'Palier 1', 'Mythique'],
+    tags:     ['Armes', 'Dague', 'Assassin', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
-	{
+{
 		id:				'dague_dechue',
 		name:			"Dague Déchue",
 		rarity:		'legendaire',
@@ -1117,7 +1053,7 @@ const ITEMS = [
 		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
+{
 		id:				'faux_dechue',
 		name:			"Faux Déchue",
 		rarity:		'legendaire',
@@ -1134,71 +1070,10 @@ const ITEMS = [
 		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
-		id:				'serpe_hivernale',
-		name:			"Serpe Hivernale",
-		rarity:		'event',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/hoe_christmas.png",
-		stats:		{degats:40, vitesse_attaque:1.5},
-		classes:	['assassin'],
-		lore:     "Sa taille massive symbolise le poids du jugement porté sur les vivants.",
-		tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 1', 'Event', 'Noël'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
-	},
-	{
-		id:				'faux_hivernale',
-		name:			"Faux Hivernale",
-		rarity:		'event',
-		cat:			'arme_p',
-		twoHanded: true,
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/scythe_christmas.png",
-		stats:		{degats:50, vitesse_attaque:0.8},
-		classes:	['assassin'],
-		lore:     "Sa taille massive symbolise le poids du jugement porté sur les vivants.",
-		tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 1', 'Event', 'Noël'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
-	},
-	{
-		id:				'serpe_macabre',
-		name:			"serpe macabre",
-		rarity:		'event',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/hoe_halloween.png",
-		stats:		{degats:40, vitesse_attaque:1.5},
-		classes:	['assassin'],
-		lore:     "Lame tordue forgée dans les cauchemars d'une nuit d'épouvante. Elle fauche les esprits errants et récolte les âmes perdues.",
-		tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 1', 'Event', 'Halloween'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
-	},
-	{
-		id:				'faux_macabre',
-		name:			"Faux macabre",
-		rarity:		'event',
-		cat:			'arme_p',
-		twoHanded: true,
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/scythe_halloween.png",
-		stats:		{degats:50, vitesse_attaque:0.8},
-		classes:	['assassin'],
-		lore:     "Lame tordue forgée dans les cauchemars d'une nuit d'épouvante. Elle fauche les esprits errants et récolte les âmes perdues.",
-		tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 1', 'Event', 'Halloween'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
-	},
-  /* ══ Archer ══ */
-  /* ══ Arcs ══ */
-  {
+//#endregion Armes > P1 > Assassin
+//#region Armes > P1 > Archer
+//#region Armes > P1 > Archer > Arcs
+{
 		id:				'arc_courbe',
 		name:			"Arc Courbé",
 		rarity:		'commun',
@@ -1214,7 +1089,7 @@ const ITEMS = [
     obtain:   "Obtenable par les Marchands d'Équipement",
 		craft:		[{qty:100, id:'cols'}]
 	},
-  {
+{
 		id:				'arc_sylvestre',
 		name:			"Arc Sylvestre",
 		rarity:		'commun',
@@ -1230,7 +1105,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Tréants d'Élites[2]\nFabricable au Forgeron d'Armes de la Ville de Départ",
 		craft:		[{qty:12, id:'corde_darc_sylvestre'}, {qty:8, id:'chene'}]
 	},
-  {
+{
 		id:				'arc_chasse',
 		name:			"Arc de Chasse",
 		rarity:		'rare',
@@ -1246,7 +1121,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'carapace_requin'}, {qty:24, id:'peau_dur_glacial'}]
 	},
-  {
+{
 		id:				'arc_fallen',
 		name:			"Arc du Fallen",
 		rarity:		'epique',
@@ -1262,7 +1137,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:12, id:'fragment_casse_jaune'}, {qty:7, id:'fil_araignee_renforce'}]
 	},
-  {
+{
 		id:				'arc_nodachi',
 		name:			"Arc Nodachi",
 		rarity:		'mythique',
@@ -1277,7 +1152,7 @@ const ITEMS = [
     tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
-	{
+{
 		id:				'arc_dechue',
 		name:			"Arc Déchue",
 		rarity:		'legendaire',
@@ -1293,23 +1168,9 @@ const ITEMS = [
 		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
-		id:				'arc_hivernal',
-		name:			"Arc Hivernal",
-		rarity:		'event',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/bow_christmas.png",
-		stats:		{degats:18.5, vitesse_attaque:1.2},
-		classes:	['archer'],
-		lore:     "Un arc sculpté dans un bois hivernal et lié aux bonheurs des enfants durant les fêtes hivernales.",
-		tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Event', 'Noël'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
-	},
-  /* ══ Arbalètes ══ */
-  {
+//#endregion Armes > P1 > Archer > Arcs
+//#region Armes > P1 > Archer > Arbalètes
+{
 		id:				'arbalete_bandit',
 		name:			"Arbalète de Bandit",
 		rarity:		'rare',
@@ -1321,10 +1182,10 @@ const ITEMS = [
 		stats:		{degats:12, vitesse_attaque:0.7, crit_comp_chance:2, stamina:2},
 		classes:	['archer'],
     lore:     "Arbalète d'un bandit qui devient presque inutilisable après tous ces combats.",
-    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Bandits Archer"
 	},
-  {
+{
 		id:				'arbalete_chasse',
 		name:			"Arbalète de Chasse",
 		rarity:		'rare',
@@ -1336,11 +1197,11 @@ const ITEMS = [
 		stats:		{degats:[15,19], vitesse_attaque:0.7, crit_comp_chance:3, stamina:3},
 		classes:	['archer'],
     lore:     "Arbalète pour chasser les puissants monstres du Palier 1.",
-    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'carapace_requin'}, {qty:24, id:'peau_dur_glacial'}]
 	},
-  {
+{
 		id:				'arbalete_cendre',
 		name:			"Arbalète de Cendre",
 		rarity:		'legendaire',
@@ -1352,10 +1213,10 @@ const ITEMS = [
 		stats:		{degats:23.5, vitesse_attaque:0.7, crit_comp_chance:3, stamina:3},
 		classes:	['archer'],
     lore:     "Forgé dans les ruines d'un ancien fort de guerre, elle tremble encore de ces anciens combats.",
-    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 1', 'Légendaire'],
+    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en récompense du Donjon Labyrinthe des Déchus[1]"
 	},
-	{
+{
 		id:				'arbalete_dechue',
 		name:			"Arbalète Déchue",
 		rarity:		'legendaire',
@@ -1371,24 +1232,11 @@ const ITEMS = [
 		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
-		id:				'arbalete_hurlante',
-		name:			"Arbalète Hurlante",
-		rarity:		'event',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/crossbow_christmas.png",
-		stats:		{degats:25, vitesse_attaque:0.7, crit_comp_chance:3, stamina:3},
-		classes:	['archer'],
-		lore:     "Chaque carreau libère un souffle glaçant qui refroidit le cœur des cibles.",
-		tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 1', 'Event', 'Noël'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
-	},
-  /* ══ Mage - Shaman ══ */
-  /* ══ Bâtons ══ */
-  {
+//#endregion Armes > P1 > Archer > Arbalètes
+//#endregion Armes > P1 > Archer
+//#region Armes > P1 > Mage-Shaman
+//#region Armes > P1 > Mage-Shaman > Bâtons
+{
 		id:				'baton_mediocre_mage',
 		name:			"Bâton Médiocre Mage",
 		rarity:		'commun',
@@ -1404,23 +1252,7 @@ const ITEMS = [
     obtain:   "Obtenable par les Marchands d'Équipement",
 		craft:		[{qty:75, id:'cols'}]
 	},
-  {
-		id:				'baton_mediocre_shaman',
-		name:			"Bâton Médiocre Shaman",
-		rarity:		'commun',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			1,
-		img:			"../img/compendium/textures/weapons/baton_mediocre_shaman.png",
-		stats:		{degats:6.2, vitesse_attaque:1, soin_bonus:1},
-		classes:	['shaman'],
-    lore:     "Un bâton d'apprentissage magique inoffensif, mais porteur d'énergie.",
-    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Équipement",
-		craft:		[{qty:75, id:'cols'}]
-	},
-  {
+{
 		id:				'baton_sylvestre_mage',
 		name:			"Bâton Sylvestre Mage",
 		rarity:		'commun',
@@ -1436,23 +1268,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres[2]\nFabricable au Forgeron d'Armes de la Ville de Départ",
 		craft:		[{qty:15, id:'brindille_enchantee'}, {qty:1, id:'coeur_de_bois'}]
 	},
-  {
-		id:				'baton_sylvestre_shaman',
-		name:			"Bâton Sylvestre Shaman",
-		rarity:		'commun',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			3,
-		img:			"../img/compendium/textures/weapons/baton_sylvestre_shaman.png",
-		stats:		{degats:[8,10], vitesse_attaque:1, soin_bonus:[1,2]},
-		classes:	['shaman'],
-    lore:     "Grâce aux Cœurs de Bois et à des Brindilles Enchantées, un bâton est né.",
-    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Mages Sylvestres[2]\nFabricable au Forgeron d'Armes de la Ville de Départ",
-		craft:		[{qty:15, id:'brindille_enchantee'}, {qty:1, id:'coeur_de_bois'}]
-	},
-  {
+{
 		id:				'baton_squelette_mage',
 		name:			"Bâton de Squelette Mage",
 		rarity:		'rare',
@@ -1464,25 +1280,10 @@ const ITEMS = [
 		stats:		{degats:15, vitesse_attaque:1},
 		classes:	['mage'],
     lore:     "Bâton ancien des ruines maudites, encore vivant de la flamme des morts.",
-    tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Squelettes Mages"
 	},
-  {
-		id:				'baton_squelette_shaman',
-		name:			"Bâton de Squelette Shaman",
-		rarity:		'rare',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			5,
-		img:			"../img/compendium/textures/weapons/baton_squelettique.png",
-		stats:		{degats:12, vitesse_attaque:1, soin_bonus:2.5},
-		classes:	['shaman'],
-    lore:     "Bâton ancien des ruines maudites, encore vivant de la flamme des morts.",
-    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Mages"
-	},
-  {
+{
 		id:				'baton_squelette_maudit_mage',
 		name:			"Bâton Squelette Maudit",
 		rarity:		'rare',
@@ -1494,25 +1295,10 @@ const ITEMS = [
 		stats:		{degats:18, vitesse_attaque:1.1, degats_competence:2.5, sante:-10, mana:-5},
 		classes:	['mage'],
     lore:     "Bâton encore imprégné de sa magie après la mort de son propriétaire.",
-    tags:     ['Arme', 'Bâton Puissant', 'Mage', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Bâton Puissant', 'Mage', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit"
 	},
-  {
-		id:				'baton_squelette_maudit_shaman',
-		name:			"Bâton Squelette Maudit",
-		rarity:		'rare',
-		cat:			'arme_p',category:
-		'arme',
-		palier:		1,
-		lvl:			5,
-		img:			"../img/compendium/textures/weapons/baton_de_squelette_maudit_shaman.png",
-		stats:		{degats:14, vitesse_attaque:1.1, soin_bonus:3.5, regen_mana:0.2, sante:-20},
-		classes:	['shaman'],
-    lore:     "Bâton encore imprégné de sa magie après la mort de son propriétaire.",
-    tags:     ['Arme', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit"
-	},
-  {
+{
 		id:				'baton_magicien',
 		name:			"Bâton du Magicien",
 		rarity:		'rare',
@@ -1524,27 +1310,11 @@ const ITEMS = [
 		stats:		{degats:[18,21], vitesse_attaque:1},
 		classes:	['mage'],
     lore:     "Forgé au cœur d'un orage silencieux. Ce bâton vibre d'une énergie céleste et puissante.",
-    tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'peau_dur_glacial'}]
 	},
-  {
-		id:				'baton_sorcier',
-		name:			"Bâton du Sorcier",
-		rarity:		'rare',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			7,
-		img:			"../img/compendium/textures/weapons/baton_tolbana.png",
-		stats:		{degats:[16,18], vitesse_attaque:1, soin_bonus:[2.5,3.5]},
-		classes:	['shaman'],
-    lore:     "Forgé au cœur d'un orage silencieux. Ce bâton vibre d'une énergie céleste et puissante.",
-    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
-		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'peau_dur_glacial'}]
-	},
-  {
+{
 		id:				'baton_magicien_puissant',
 		name:			"Bâton du Magicien Puissant",
 		rarity:		'rare',
@@ -1556,27 +1326,11 @@ const ITEMS = [
 		stats:		{degats:[20,22], vitesse_attaque:1.1, degats_competence:3, sante:-15, mana:-10},
 		classes:	['mage'],
     lore:     "Ce bâton est une version puissante et concentrée d'énergie, contrairement à l'autre, plus sûre et moins puissante.",
-    tags:     ['Arme', 'Bâton Puissant', 'Mage', 'Palier 1', 'Rare'],
+    tags:     ['Armes', 'Bâton Puissant', 'Mage', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'peau_dur_glacial'}]
 	},
-  {
-		id:				'baton_sorcier_puissant',
-		name:			"Bâton du Sorcier Puissant",
-		rarity:		'rare',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			7,
-		img:			"../img/compendium/textures/weapons/baton_tolbana_puissant.png",
-		stats:		{degats:[18,20], vitesse_attaque:1.1, soin_bonus:[3.5,4.5], regen_mana:0.2, sante:-30},
-		classes:	['shaman'],
-    lore:     "Ce bâton est une version puissante et concentrée d'énergie, contrairement à l'autre, plus sûre et moins puissante.",
-    tags:     ['Arme', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
-		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'peau_dur_glacial'}]
-	},
-  {
+{
 		id:				'baton_obscur_mage',
 		name:			"Bâton Obscur Mage",
 		rarity:		'epique',
@@ -1588,27 +1342,11 @@ const ITEMS = [
 		stats:		{degats:[21.5,24.5], vitesse_attaque:1},
 		classes:	['mage'],
     lore:     "Bâton fait à partir d'enchantements et de métaux. Parfait pour infliger d'incroyables dégâts.",
-    tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'Épique'],
+    tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
 	},
-  {
-		id:				'baton_obscur_shaman',
-		name:			"Bâton Obscur Shaman",
-		rarity:		'epique',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			9,
-		img:			"../img/compendium/textures/weapons/baton_obscur_shaman.png",
-		stats:		{degats:[19,22], vitesse_attaque:1, soin_bonus:[3,4]},
-		classes:	['shaman'],
-    lore:     "Bâton fait à partir d'enchantements et de métaux. Parfait pour infliger d'incroyables dégâts.",
-    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
-		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
-	},
-  {
+{
 		id:				'baton_obscur_puissant_mage',
 		name:			"Bâton Obscur Puissant Mage",
 		rarity:		'epique',
@@ -1620,27 +1358,11 @@ const ITEMS = [
 		stats:		{degats:[23,27], vitesse_attaque:1.1, degats_competence:4, sante:-20, mana:-15},
 		classes:	['mage'],
     lore:     "Bâton fait à partir d'enchantements et de métaux. Parfait pour infliger d'incroyables dégâts.",
-    tags:     ['Arme', 'Bâton Puissant', 'Mage', 'Palier 1', 'Épique'],
+    tags:     ['Armes', 'Bâton Puissant', 'Mage', 'Palier 1', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
 	},
-  {
-		id:				'baton_obscur_puissant_shaman',
-		name:			"Bâton Obscur Puissant Shaman",
-		rarity:		'epique',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			9,
-		img:			"../img/compendium/textures/weapons/baton_obscur_shaman.png",
-		stats:		{degats:[21,22], vitesse_attaque:1.1, soin_bonus:[4.5,5.5], regen_mana:0.3, sante:-40},
-		classes:	['shaman'],
-    lore:     "Bâton fait à partir d'enchantements et de métaux. Parfait pour infliger d'incroyables dégâts.",
-    tags:     ['Arme', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
-		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
-	},
-  {
+{
 		id:				'baton_nodachi_mage',
 		name:			"Bâton Nodachi Mage",
 		rarity:		'mythique',
@@ -1652,25 +1374,10 @@ const ITEMS = [
 		stats:		{degats:50, vitesse_attaque:1.2, crit_comp_chance:15},
 		classes:	['mage'],
     lore:     "Bâton très puissant, forgé grâce à la puissance d'Illfang et à des minerais rares. Ce n'est toutefois plus qu'une relique pour le moment.",
-    tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'Mythique'],
+    tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
-  {
-		id:				'baton_nodachi_shaman',
-		name:			"Bâton Nodachi Shaman",
-		rarity:		'mythique',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/baton_nodachi.png",
-		stats:		{degats:35, vitesse_attaque:1.2, soin_bonus:10, regen_sante:0.3, regen_mana:0.3},
-		classes:	['shaman'],
-    lore:     "Bâton très puissant, forgé grâce à la puissance d'Illfang et à des minerais rares. Ce n'est toutefois plus qu'une relique pour le moment.",
-    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Mythique'],
-    obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
-	},
-	{
+{
 		id:				'baton_magiquement_dechu',
 		name:			"Bâton Magiquement Déchu",
 		rarity:		'legendaire',
@@ -1686,23 +1393,7 @@ const ITEMS = [
 		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
-		id:				'baton_sauvagement_dechu',
-		name:			"Bâton Sauvagement Déchu",
-		rarity:		'legendaire',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/staff_shaman_kazor.png",
-		stats:		{degats:24, vitesse_attaque:1, hate:2.5, soin_bonus:4.5, mana:5},
-		classes:	['shaman'],
-		lore:     "Une orbe vivante, soignant toute âme de manière intense et profonde, au bout d'un vieux bâton.",
-		tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
-		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
-		craft:		[{qty:2, id:'piece_kazor'}]
-	},
-	{
+{
 		id:				'baton_magiquement_dechu_puissant',
 		name:			"Bâton Magiquement Déchu Puissant",
 		rarity:		'legendaire',
@@ -1718,7 +1409,164 @@ const ITEMS = [
 		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
+{
+		id:				'baton_mediocre_shaman',
+		name:			"Bâton Médiocre Shaman",
+		rarity:		'commun',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			1,
+		img:			"../img/compendium/textures/weapons/baton_mediocre_shaman.png",
+		stats:		{degats:6.2, vitesse_attaque:1, soin_bonus:1},
+		classes:	['shaman'],
+    lore:     "Un bâton d'apprentissage magique inoffensif, mais porteur d'énergie.",
+    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable par les Marchands d'Équipement",
+		craft:		[{qty:75, id:'cols'}]
+	},
+{
+		id:				'baton_sylvestre_shaman',
+		name:			"Bâton Sylvestre Shaman",
+		rarity:		'commun',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			3,
+		img:			"../img/compendium/textures/weapons/baton_sylvestre_shaman.png",
+		stats:		{degats:[8,10], vitesse_attaque:1, soin_bonus:[1,2]},
+		classes:	['shaman'],
+    lore:     "Grâce aux Cœurs de Bois et à des Brindilles Enchantées, un bâton est né.",
+    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Mages Sylvestres[2]\nFabricable au Forgeron d'Armes de la Ville de Départ",
+		craft:		[{qty:15, id:'brindille_enchantee'}, {qty:1, id:'coeur_de_bois'}]
+	},
+{
+		id:				'baton_squelette_shaman',
+		name:			"Bâton de Squelette Shaman",
+		rarity:		'rare',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			5,
+		img:			"../img/compendium/textures/weapons/baton_squelettique.png",
+		stats:		{degats:12, vitesse_attaque:1, soin_bonus:2.5},
+		classes:	['shaman'],
+    lore:     "Bâton ancien des ruines maudites, encore vivant de la flamme des morts.",
+    tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable en tuant:\n- Squelettes Mages"
+	},
+{
+		id:				'baton_squelette_maudit_shaman',
+		name:			"Bâton Squelette Maudit",
+		rarity:		'rare',
+		cat:			'arme_p',category:
+		'arme',
+		palier:		1,
+		lvl:			5,
+		img:			"../img/compendium/textures/weapons/baton_de_squelette_maudit_shaman.png",
+		stats:		{degats:14, vitesse_attaque:1.1, soin_bonus:3.5, regen_mana:0.2, sante:-20},
+		classes:	['shaman'],
+    lore:     "Bâton encore imprégné de sa magie après la mort de son propriétaire.",
+    tags:     ['Armes', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit"
+	},
+{
+		id:				'baton_sorcier',
+		name:			"Bâton du Sorcier",
+		rarity:		'rare',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			7,
+		img:			"../img/compendium/textures/weapons/baton_tolbana.png",
+		stats:		{degats:[16,18], vitesse_attaque:1, soin_bonus:[2.5,3.5]},
+		classes:	['shaman'],
+    lore:     "Forgé au cœur d'un orage silencieux. Ce bâton vibre d'une énergie céleste et puissante.",
+    tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
+		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'peau_dur_glacial'}]
+	},
+{
+		id:				'baton_sorcier_puissant',
+		name:			"Bâton du Sorcier Puissant",
+		rarity:		'rare',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			7,
+		img:			"../img/compendium/textures/weapons/baton_tolbana_puissant.png",
+		stats:		{degats:[18,20], vitesse_attaque:1.1, soin_bonus:[3.5,4.5], regen_mana:0.2, sante:-30},
+		classes:	['shaman'],
+    lore:     "Ce bâton est une version puissante et concentrée d'énergie, contrairement à l'autre, plus sûre et moins puissante.",
+    tags:     ['Armes', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
+		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:24, id:'peau_dur_glacial'}]
+	},
+{
+		id:				'baton_obscur_shaman',
+		name:			"Bâton Obscur Shaman",
+		rarity:		'epique',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			9,
+		img:			"../img/compendium/textures/weapons/baton_obscur_shaman.png",
+		stats:		{degats:[19,22], vitesse_attaque:1, soin_bonus:[3,4]},
+		classes:	['shaman'],
+    lore:     "Bâton fait à partir d'enchantements et de métaux. Parfait pour infliger d'incroyables dégâts.",
+    tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
+		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
+	},
+{
+		id:				'baton_obscur_puissant_shaman',
+		name:			"Bâton Obscur Puissant Shaman",
+		rarity:		'epique',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			9,
+		img:			"../img/compendium/textures/weapons/baton_obscur_shaman.png",
+		stats:		{degats:[21,22], vitesse_attaque:1.1, soin_bonus:[4.5,5.5], regen_mana:0.3, sante:-40},
+		classes:	['shaman'],
+    lore:     "Bâton fait à partir d'enchantements et de métaux. Parfait pour infliger d'incroyables dégâts.",
+    tags:     ['Armes', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
+		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:26, id:'fragment_casse_violet'}, {qty:6, id:'brindille_enchantee'}]
+	},
+{
+		id:				'baton_nodachi_shaman',
+		name:			"Bâton Nodachi Shaman",
+		rarity:		'mythique',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/baton_nodachi.png",
+		stats:		{degats:35, vitesse_attaque:1.2, soin_bonus:10, regen_sante:0.3, regen_mana:0.3},
+		classes:	['shaman'],
+    lore:     "Bâton très puissant, forgé grâce à la puissance d'Illfang et à des minerais rares. Ce n'est toutefois plus qu'une relique pour le moment.",
+    tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Mythique'],
+    obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
+	},
+{
+		id:				'baton_sauvagement_dechu',
+		name:			"Bâton Sauvagement Déchu",
+		rarity:		'legendaire',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/staff_shaman_kazor.png",
+		stats:		{degats:24, vitesse_attaque:1, hate:2.5, soin_bonus:4.5, mana:5},
+		classes:	['shaman'],
+		lore:     "Une orbe vivante, soignant toute âme de manière intense et profonde, au bout d'un vieux bâton.",
+		tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
+		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
+		craft:		[{qty:2, id:'piece_kazor'}]
+	},
+{
 		id:				'baton_sauvagement_dechu_puissant',
 		name:			"Bâton Sauvagement Déchu Puissant",
 		rarity:		'legendaire',
@@ -1734,40 +1582,11 @@ const ITEMS = [
 		obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
-		id:				'scpectre_hivernal_mage',
-		name:			"Scpetre Hivernal Mage",
-		rarity:		'event',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/staff_christmas.png",
-		stats:		{degats:30, vitesse_attaque:1},
-		classes:	['mage'],
-		lore:     "Déborde d'une énergie hivernale qui gèle l'air ambiant. Quiconque le porte est condamné à offrir le bonheur aux enfants.",
-		tags:     ['Arme', 'Bâton', 'Mage', 'Palier 1', 'Event', 'Noël'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
-	},
-	{
-		id:				'scpectre_hivernal_shaman',
-		name:			"Scpetre Hivernal Shaman",
-		rarity:		'event',
-		cat:			'arme_p',
-		category:	'arme',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/weapons/events/staff_christmas.png",
-		stats:		{degats:25, vitesse_attaque:1, soin_bonus:6},
-		classes:	['shaman'],
-		lore:     "Déborde d'une énergie hivernale qui gèle l'air ambiant. Quiconque le porte est condamné à offrir le bonheur aux enfants.",
-		tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 1', 'Event', 'Noël'],
-		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
-	},
-	/* ══ Catalyseurs ══ */
-  {
+//#endregion Armes > P1 > Mage-Shaman > Bâtons
+//#region Armes > P1 > Mage-Shaman > Catalyseurs
+{
 		id:				'grimoire_delie',
-		name:			"Grimoire Delié",
+		name:			"Grimoire Délié",
 		rarity:		'commun',
 		cat:			'arme_s',
 		category:	'arme',
@@ -1781,23 +1600,7 @@ const ITEMS = [
     obtain:   "Obtenable par les Marchands d'Équipement",
 		craft:		[{qty:25, id:'cols'}]
 	},
-  {
-		id:				'grimoire_sauvage',
-		name:			"Grimoire Sauvage",
-		rarity:		'commun',
-		cat:			'arme_s',
-		category:	'arme',
-		palier:		1,
-		lvl:			1,
-		img:			"../img/compendium/textures/weapons/grimoire_delie-sauvage.png",
-		stats:		{regen_mana:0.1, mana:5},
-		classes:	['shaman'],
-    lore:     "Un livre incomplet débordant de magie.",
-    tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Équipement",
-		craft:		[{qty:25, id:'cols'}]
-	},
-  {
+{
 		id:				'grimoire_sylvestre',
 		name:			"Grimoire Sylvestre",
 		rarity:		'commun',
@@ -1813,23 +1616,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
 		craft:		[{qty:4, id:'brindille_enchantee'}, {qty:12, id:'fourrure_de_loup'}]
 	},
-  {
-		id:				'grimoire_bestial',
-		name:			"Grimoire Bestial",
-		rarity:		'commun',
-		cat:			'arme_s',
-		category:	'arme',
-		palier:		1,
-		lvl:			3,
-		img:			"../img/compendium/textures/weapons/grimoire_bestial.png",
-		stats:		{regen_mana:0.15, mana:7.5},
-		classes:	['shaman'],
-    lore:     "Un livre forgé par des matériaux venant d'un marécage putride et ancien. Il renferme une magie bestiale.",
-    tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
-		craft:		[{qty:4, id:'brindille_enchantee'}, {qty:12, id:'fourrure_de_loup'}]
-	},
-  {
+{
 		id:				'grimoire_magicien',
 		name:			"Grimoire du Magicien",
 		rarity:		'rare',
@@ -1845,23 +1632,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
 		craft:		[{qty:20, id:'peau_cerf_montagnes'}, {qty:24, id:'poussiere_givre'}]
 	},
-  {
-		id:				'grimoire_sorcier',
-		name:			"Grimoire du Sorcier",
-		rarity:		'rare',
-		cat:			'arme_s',
-		category:	'arme',
-		palier:		1,
-		lvl:			7,
-		img:			"../img/compendium/textures/weapons/grimoire_du_sorcier.png",
-		stats:		{regen_mana:0.25, mana:10},
-		classes:	['shaman'],
-    lore:     "Ce livre a été forgé par le biais de puissants matériaux du Palier 1. Il incarne la puissance d'un sorcier.",
-    tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
-		craft:		[{qty:20, id:'peau_cerf_montagnes'}, {qty:24, id:'poussiere_givre'}]
-	},
-  {
+{
 		id:				'grimoire_obscur',
 		name:			"Grimoire Obscur",
 		rarity:		'epique',
@@ -1877,7 +1648,55 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:62, id:'cuir_use'}, {qty:12, id:'fragment_casse_violet'}, {qty:16, id:'brindille_enchantee'}]
 	},
-  {
+{
+		id:				'grimoire_sauvage',
+		name:			"Grimoire Sauvage",
+		rarity:		'commun',
+		cat:			'arme_s',
+		category:	'arme',
+		palier:		1,
+		lvl:			1,
+		img:			"../img/compendium/textures/weapons/grimoire_delie-sauvage.png",
+		stats:		{regen_mana:0.1, mana:5},
+		classes:	['shaman'],
+    lore:     "Un livre incomplet débordant de magie.",
+    tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable par les Marchands d'Équipement",
+		craft:		[{qty:25, id:'cols'}]
+	},
+{
+		id:				'grimoire_bestial',
+		name:			"Grimoire Bestial",
+		rarity:		'commun',
+		cat:			'arme_s',
+		category:	'arme',
+		palier:		1,
+		lvl:			3,
+		img:			"../img/compendium/textures/weapons/grimoire_bestial.png",
+		stats:		{regen_mana:0.15, mana:7.5},
+		classes:	['shaman'],
+    lore:     "Un livre forgé par des matériaux venant d'un marécage putride et ancien. Il renferme une magie bestiale.",
+    tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Commun'],
+    obtain:   "Fabricable au Forgeron d'Armes de la Ville de Départ",
+		craft:		[{qty:4, id:'brindille_enchantee'}, {qty:12, id:'fourrure_de_loup'}]
+	},
+{
+		id:				'grimoire_sorcier',
+		name:			"Grimoire du Sorcier",
+		rarity:		'rare',
+		cat:			'arme_s',
+		category:	'arme',
+		palier:		1,
+		lvl:			7,
+		img:			"../img/compendium/textures/weapons/grimoire_du_sorcier.png",
+		stats:		{regen_mana:0.25, mana:10},
+		classes:	['shaman'],
+    lore:     "Ce livre a été forgé par le biais de puissants matériaux du Palier 1. Il incarne la puissance d'un sorcier.",
+    tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armes de Tolbana",
+		craft:		[{qty:20, id:'peau_cerf_montagnes'}, {qty:24, id:'poussiere_givre'}]
+	},
+{
 		id:				'grimoire_fantomatique',
 		name:			"Grimoire Fantomatique",
 		rarity:		'epique',
@@ -1893,7 +1712,193 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:62, id:'cuir_use'}, {qty:12, id:'fragment_casse_violet'}, {qty:16, id:'brindille_enchantee'}]
 	},
-	{
+//#endregion Armes > P1 > Mage-Shaman > Catalyseurs
+//#endregion Armes > P1 > Mage-Shaman
+//#region Armes > P1 > Events
+{
+		id:				'claymore_hivernale',
+		name:			"Claymore Hivernale",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/sword_christmas.png",
+		stats:		{degats:28, vitesse_attaque:1.2, crit_chance:15},
+		classes:	['guerrier'],
+		lore:     "Une lourde épée recouverte de motifs glacés dont la lame semble toujours froide.",
+		tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+{
+		id:				'claymore_crepusculaire',
+		name:			"Claymore Crépusculaire",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/greatsword_halloween.png",
+		stats:		{degats:28, vitesse_attaque:1.2, crit_chance:15},
+		classes:	['guerrier'],
+		lore:     "Sa taille massive symbolise le poids du jugement porté sur les vivants.",
+		tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 1', 'Event', 'Halloween'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
+	},
+{
+		id:				'bouclier_hivernal',
+		name:			"Bouclier Hivernal",
+		rarity:		'event',
+		cat:			'arme_s',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/shield_christmas.png",
+		stats:		{defense:3.5, sante:30},
+		classes:	['guerrier'],
+		lore:     "Un bouclier massif décoré de symboles hivernaux, couvert de cadeaux.",
+		tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+{
+		id:				'bouclier_putride',
+		name:			"Bouclier Putride",
+		rarity:		'event',
+		cat:			'arme_s',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/shield_halloween.png",
+		stats:		{defense:3.5, sante:30},
+		classes:	['guerrier'],
+		lore:     "Assemblage de chair et de métal rouillé trouvé dans un tombeau profané. Chaque impact libère une puanteur écœurante qui trouble les assaillants.",
+		tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 1', 'Event', 'Halloween'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
+	},
+{
+		id:				'marteau_hivernal',
+		name:			"Marteau Hivernal",
+		rarity:		'event',
+		cat:			'arme_p',
+		twoHanded: true,
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/hammer_christmas.png",
+		stats:		{degats:50, vitesse_attaque:0.7},
+		classes:	['guerrier'],
+		lore:     "Un marteau imposant à la tête hivernale semblant taillé dans les cadeaux des enfants.",
+		tags:     ['Arme', 'Marteau', 'Deux Mains', 'Guerrier', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+{
+		id:				'serpe_hivernale',
+		name:			"Serpe Hivernale",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/hoe_christmas.png",
+		stats:		{degats:40, vitesse_attaque:1.5},
+		classes:	['assassin'],
+		lore:     "Sa taille massive symbolise le poids du jugement porté sur les vivants.",
+		tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+{
+		id:				'faux_hivernale',
+		name:			"Faux Hivernale",
+		rarity:		'event',
+		cat:			'arme_p',
+		twoHanded: true,
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/scythe_christmas.png",
+		stats:		{degats:50, vitesse_attaque:0.8},
+		classes:	['assassin'],
+		lore:     "Sa taille massive symbolise le poids du jugement porté sur les vivants.",
+		tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+{
+		id:				'serpe_macabre',
+		name:			"serpe macabre",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/hoe_halloween.png",
+		stats:		{degats:40, vitesse_attaque:1.5},
+		classes:	['assassin'],
+		lore:     "Lame tordue forgée dans les cauchemars d'une nuit d'épouvante. Elle fauche les esprits errants et récolte les âmes perdues.",
+		tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 1', 'Event', 'Halloween'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
+	},
+{
+		id:				'faux_macabre',
+		name:			"Faux macabre",
+		rarity:		'event',
+		cat:			'arme_p',
+		twoHanded: true,
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/scythe_halloween.png",
+		stats:		{degats:50, vitesse_attaque:0.8},
+		classes:	['assassin'],
+		lore:     "Lame tordue forgée dans les cauchemars d'une nuit d'épouvante. Elle fauche les esprits errants et récolte les âmes perdues.",
+		tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 1', 'Event', 'Halloween'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Halloween"
+	},
+{
+		id:				'arc_hivernal',
+		name:			"Arc Hivernal",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/bow_christmas.png",
+		stats:		{degats:18.5, vitesse_attaque:1.2},
+		classes:	['archer'],
+		lore:     "Un arc sculpté dans un bois hivernal et lié aux bonheurs des enfants durant les fêtes hivernales.",
+		tags:     ['Arme', 'Arc', 'Archer', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+{
+		id:				'arbalete_hurlante',
+		name:			"Arbalète Hurlante",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/crossbow_christmas.png",
+		stats:		{degats:25, vitesse_attaque:0.7, crit_comp_chance:3, stamina:3},
+		classes:	['archer'],
+		lore:     "Chaque carreau libère un souffle glaçant qui refroidit le cœur des cibles.",
+		tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+{
+		id:				'scpectre_hivernal_mag',
+		name:			"Scpetre Hivernal Mage",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/staff_christmas.png",
+		stats:		{degats:30, vitesse_attaque:1},
+		classes:	['mage'],
+		lore:     "Déborde d'une énergie hivernale qui gèle l'air ambiant. Quiconque le porte est condamné à offrir le bonheur aux enfants.",
+		tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+{
 		id:				'catalyseur_hivernal_mag',
 		name:			"Catalyseur Hivernal Mage",
 		rarity:		'event',
@@ -1905,10 +1910,25 @@ const ITEMS = [
 		stats:		{degats_magique:5, mana:15},
 		classes:	['mage'],
 		lore:     "Elle porte le poids du bonheur de tout les enfants, et de l'odeur des petits gâteaux.",
-		tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Mage', 'Palier 1', 'Event', 'Noël'],
+		tags:     ['Armes', 'Catalyseur', 'Grimoire', 'Mage', 'Palier 1', 'Event', 'Noël'],
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
-	{
+{
+		id:				'scpectre_hivernal_sha',
+		name:			"Scpetre Hivernal Shaman",
+		rarity:		'event',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/weapons/events/staff_christmas.png",
+		stats:		{degats:25, vitesse_attaque:1, soin_bonus:6},
+		classes:	['shaman'],
+		lore:     "Déborde d'une énergie hivernale qui gèle l'air ambiant. Quiconque le porte est condamné à offrir le bonheur aux enfants.",
+		tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Event', 'Noël'],
+		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+{
 		id:				'catalyseur_hivernal_sha',
 		name:			"Catalyseur Hivernal Shaman",
 		rarity:		'event',
@@ -1920,13 +1940,15 @@ const ITEMS = [
 		stats:		{regen_mana:0.4, mana:15},
 		classes:	['shaman'],
 		lore:     "Elle porte le poids du bonheur de tout les enfants, et de l'odeur des petits gâteaux.",
-		tags:     ['Arme', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Event', 'Noël'],
+		tags:     ['Armes', 'Catalyseur', 'Grimoire', 'Shaman', 'Palier 1', 'Event', 'Noël'],
 		obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
 	},
-  /* ══ Palier 2 ══ */
-	/* ══ Guerrier ══ */
-  /* ══ Épées ══ */
-  {
+//#endregion Armes > P1 > Events
+//#endregion Armes > Palier 1
+//#region Armes > Palier 2
+//#region Armes > P2 > Guerrier
+//#region Armes > P2 > Guerrier > Épées
+{
 		id:				'epee_dard_tranchant',
 		name:			"Épée du Dard Tranchant",
 		rarity:		'rare',
@@ -1942,7 +1964,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron du Donjon Melliona",
 		craft:		[{qty:36, id:'ambre_mielleux'}, {qty:24, id:'dard'}]
 	},
-  {
+{
 		id:				'epee_necromancien',
 		name:			"Épée du Nécromancien",
 		rarity:		'epique',
@@ -1958,8 +1980,9 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
-  /* ══ Boucliers ══ */
-  {
+//#endregion Armes > P2 > Guerrier > Épées
+//#region Armes > P2 > Guerrier > Boucliers
+{
 		id:				'bouclier_maudit',
 		name:			"Bouclier Maudit",
 		rarity:		'epique',
@@ -1975,8 +1998,9 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:64, id:'os_sombre'}, {qty:32, id:'pierre_osseuse_noire'}, {qty:8, id:'poudre_necromancien'}]
 	},
-  /* ══ Hast ══ */
-  {
+//#endregion Armes > P2 > Guerrier > Boucliers
+//#region Armes > P2 > Guerrier > Hast
+{
 		id:				'marteau_dard_ecrasant',
 		name:			"Marteau du Dard Écrasant",
 		rarity:		'rare',
@@ -1993,7 +2017,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron du Donjon Melliona",
 		craft:		[{qty:36, id:'ambre_mielleux'}, {qty:24, id:'dard'}]
 	},
-  {
+{
 		id:				'marteau_necromancien',
 		name:			"Marteau du Nécromancien",
 		rarity:		'epique',
@@ -2010,8 +2034,10 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
-  /* ══ Assassin ══ */
-  {
+//#endregion Armes > P2 > Guerrier > Hast
+//#endregion Armes > P2 > Guerrier
+//#region Armes > P2 > Assassin
+{
 		id:				'serpe_assassine',
 		name:			"Serpe Assassine",
 		rarity:		'rare',
@@ -2023,11 +2049,11 @@ const ITEMS = [
 		stats:		{degats:[34,38], vitesse_attaque:[1.4,1.5]},
 		classes:	['assassin'],
     lore:     "Une Serpe fine aux teintes dorées et noires, dont la lame effilée évoque le dard mortel d'une abeille.",
-    tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 2', 'Rare'],
+    tags:     ['Armes', 'Serpe', 'Assassin', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona",
 		craft:		[{qty:24, id:'ambre_mielleux'}, {qty:24, id:'dard'}, {qty:32, id:'miel'}]
 	},
-  {
+{
 		id:				'faux_assassine',
 		name:			"Faux Assassine",
 		rarity:		'rare',
@@ -2040,11 +2066,11 @@ const ITEMS = [
 		stats:		{degats:[46,50], vitesse_attaque:0.8}, //NULL
 		classes:	['assassin'],
     lore:     "Une faux fine aux lignes acérées, décorée de motifs d'alvéoles, évoquant la précision et la menace d'un insecte prédateur.",
-    tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Rare'],
+    tags:     ['Armes', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona",
 		craft:		[{qty:24, id:'ambre_mielleux'}, {qty:24, id:'dard'}, {qty:32, id:'miel'}]
 	},
-  {
+{
 		id:				'serpe_necromancienne',
 		name:			"Serpe Nécromancienne",
 		rarity:		'epique',
@@ -2056,11 +2082,11 @@ const ITEMS = [
 		stats:		{degats:[39,43.99], vitesse_attaque:[1.4,1.5]},
 		classes:	['assassin'],
     lore:     "Une Serpe sombre aux gravures funéraires, dont la lame courbe semble liée aux arts interdits..",
-    tags:     ['Arme', 'Serpe', 'Assassin', 'Palier 2', 'Épique'],
+    tags:     ['Armes', 'Serpe', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
-  {
+{
 		id:				'faux_necromancienne',
 		name:			"Faux Nécromancienne",
 		rarity:		'epique',
@@ -2073,13 +2099,14 @@ const ITEMS = [
 		stats:		{degats:[51,57], vitesse_attaque:0.8, crit_comp_chance:4.5, stamina:4.5},
 		classes:	['assassin'],
     lore:     "Une faux austère aux runes sépulcrales dont la lame noire évoque les rites anciens et les forces d'outre-tombe.",
-    tags:     ['Arme', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Épique'],
+    tags:     ['Armes', 'Faux', 'Deux Mains', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
-  /* ══ Archer ══ */
-  /* ══ Arcs ══ */
-  {
+//#endregion Armes > P2 > Assassin
+//#region Armes > P2 > Archer
+//#region Armes > P2 > Archer > Arcs
+{
 		id:				'arc_abeille_traqueuse',
 		name:			"Arc de l'Abeille Traqueuse",
 		rarity:		'rare',
@@ -2095,7 +2122,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron du Donjon Melliona",
 		craft:		[{qty:24, id:'dard'}, {qty:64, id:'miel'}]
 	},
-  {
+{
 		id:				'arc_necropole',
 		name:			"Arc de la Nécropole",
 		rarity:		'epique',
@@ -2111,8 +2138,9 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
-  /* ══ Arbalètes ══ */
-  {
+//#endregion Armes > P2 > Archer > Arcs
+//#region Armes > P2 > Archer > Arbalètes
+{
 		id:				'arbalete_abeille_fer',
 		name:			"Arbalète de l'Abeille de fer",
 		rarity:		'rare',
@@ -2124,11 +2152,11 @@ const ITEMS = [
 		stats:		{degats:[23.5,25.26], vitesse_attaque:[0.7,0.8]}, //NULL
 		classes:	['archer'],
     lore:     "Une arme fiable pour frapper même les ennemis les plus résistants.",
-    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 2', 'Rare'],
+    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au Forgeron du Donjon Melliona",
 		craft:		[{qty:24, id:'dard'}, {qty:64, id:'miel'}]
 	},
-  {
+{
 		id:				'arbalete_necropole',
 		name:			"Arbalète de la Nécropole",
 		rarity:		'epique',
@@ -2140,19 +2168,139 @@ const ITEMS = [
 		stats:		{degats:[27,29], vitesse_attaque:[0.7,0.8], crit_comp_chance:4, stamina:4},
 		classes:	['archer'],
     lore:     "Une arbalète austère aux ornements sépulcraux, imprégnée d'une présence silencieuse venue d'outre-tombe.",
-    tags:     ['Arme', 'Arbalète', 'Archer', 'Palier 2', 'Épique'],
+    tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:64, id:'os_sombre'}, {qty:64, id:'poudre_noire'}, {qty:16, id:'poudre_necromancien'}]
 	},
-  /* ══ Mage - Shaman ══ */
-  /* ══ Bâtons ══ */
-	/* ══ Catalyseurs ══ */
+//#endregion Armes > P2 > Archer > Arbalètes
+//#endregion Armes > P2 > Archer
+//#region Armes > P2 > Mage-Shaman
+//#region Armes > P2 > Mage-Shaman > Bâtons
+{
+		id:				'baton_necromancien_puissant_mage',
+		name:			"Bâton Nécromancien Puissante Mage",
+		rarity:		'epique',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			13,
+		img:			null,
+		stats:		{degats:[34,40.96], vitesse_attaque:1.1, crit_comp_chance:1.5, degats_competence:5, sante:-30, mana:-25},
+		classes:	['mage'],
+		lore:     "Un bâton sombre serti d'un orbe obscur, gravé de symboles funéraires liés aux arts interdits.",
+    tags:     ['Arme', 'Bâton Puissant', 'Mage', 'Palier 2', 'Épique'],
+	    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:32, id:'pierre_osseuse_noire'}, {qty:8, id:'poudre_necromancien'}]
+	},
+	{
+		id:				'baton_necromancien_puissant_shaman',
+		name:			"Bâton Nécromancien Puissante Shaman",
+		rarity:		'epique',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			13,
+		img:			null,
+		stats:		{degats:[30,34], vitesse_attaque:1.2, soin_bonus:7, sante:-60, regen_mana:0.4},
+		classes:	['shaman'],
+		lore:     "Un bâton sombre serti d'un orbe obscur, gravé de symboles funéraires liés aux arts interdits.",
+    tags:     ['Arme', 'Bâton Puissant', 'Shaman', 'Palier 2', 'Épique'],
+	    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:32, id:'pierre_osseuse_noire'}, {qty:8, id:'poudre_necromancien'}]
+	},
+	{
+		id:				'baton_necromancien_shaman',
+		name:			"Bâton Nécromancien Shaman",
+		rarity:		'epique',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			13,
+		img:			null,
+		stats:		{degats:[27,91], vitesse_attaque:1, soin_bonus:[4.5,5.5]},
+		classes:	['shaman'],
+		lore:     "Un bâton sombre serti d'un orbe obscur, gravé de symboles funéraires liés aux arts interdits.",
+    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 2', 'Épique'],
+	    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:64, id:'os_sombre'}, {qty:32, id:'pierre_osseuse_noire'}, {qty:8, id:'poudre_necromancien'}]
+	},
+	{
+		id:				'baton_reine_mystique_puissant_shaman',
+		name:			"Bâton de la Reine Mystique Puissant Shaman",
+		rarity:		'rare',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			null,
+		stats:		{degats:[28,31], vitesse_attaque:1.1, soin_bonus:6, sante:-50, regen_mana:0.35},
+		classes:	['shaman'],
+		lore:     "Bâton imprégné de nectar magique, amplifiant le pouvoir du porteur.",
+    tags:     ['Arme', 'Bâton Puissant', 'Shaman', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:24, id:'dard'}, {qty:12, id:'carapace_abeille'}, {qty:48, id:'miel'}]
+	},
+	{
+		id:				'baton_reine_mystique_shaman',
+		name:			"Bâton de la Reine Mystique Shaman",
+		rarity:		'rare',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			null,
+		stats:		{degats:[23,25.99], vitesse_attaque:1, soin_bonus:[4,5]},
+		classes:	['shaman'],
+		lore:     "Bâton imprégné de nectar magique, amplifiant le pouvoir du porteur.",
+    tags:     ['Arme', 'Bâton', 'Shaman', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:24, id:'dard'}, {qty:12, id:'carapace_abeille'}, {qty:48, id:'miel'}]
+	},
+	{
+		id:				'baton_reine_mystique_puissant_mage',
+		name:			"Bâton de la Reine Mystique Puissant Mage",
+		rarity:		'rare',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			null,
+		stats:		{degats:[26,31], vitesse_attaque:1.1, degats_competence:4.5, sante:-25, mana:-20},
+		classes:	['mage'],
+		lore:     "Bâton imprégné de nectar magique, amplifiant le pouvoir du porteur.",
+    tags:     ['Arme', 'Bâton Puissant', 'Mage', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:24, id:'dard'}, {qty:24, id:'carapace_abeille'}, {qty:24, id:'miel'}]
+	},
+	{
+		id:				'baton_reine_mystique_mage',
+		name:			"Bâton de la Reine Mystique Mage",
+		rarity:		'rare',
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			null,
+		stats:		{degats:[24,28], vitesse_attaque:1},
+		classes:	['mage'],
+		lore:     "Bâton imprégné de nectar magique, amplifiant le pouvoir du porteur.",
+    tags:     ['Arme', 'Bâton', 'Mage', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:24, id:'dard'}, {qty:24, id:'carapace_abeille'}, {qty:24, id:'miel'}]
+	},
 
-
-  /* ══ Accessoires ══ */
-  /* ══ Anneaux ══ */
-  /* ══ Palier 1 ══ */
-  {
+//#endregion Armes > P2 > Mage-Shaman > Bâtons
+//#region Armes > P2 > Mage-Shaman > Catalyseurs
+//#endregion Armes > P2 > Mage-Shaman > Catalyseurs
+//#endregion Armes > P2 > Mage-Shaman
+//#region Armes > P2 > Events
+//#endregion Armes > P2 > Events
+//#endregion Armes > Palier 2
+//#endregion Armes
+//#region Accessoires
+//#region Accessoires > Palier 1
+//#region Accessoires > P1 > Anneaux
+{
 		id:				'anneau_cuivre',
 		name:			"Anneau de Cuivre",
 		set:			'cuivre',
@@ -2168,7 +2316,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ\nFabricable au Forgeron d'Accessoires de Cuivre de la Ville de Départ, au Sud, derrière la Cathédrale",
 		craft:		[{qty:16, id:'lingot_cuivre'}]
 	},
-  {
+{
 		id:				'anneau_pumba',
 		name:			"Anneau de Pumba",
 		rarity:		'legendaire',
@@ -2182,7 +2330,7 @@ const ITEMS = [
     tags:     ['Accessoire', 'Anneau', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en tuant:\n- Pumba"
 	},
-  {
+{
 		id:				'anneau_fer',
 		name:			"Anneau de Fer",
 		set:			'fer',
@@ -2198,7 +2346,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ\nFabricable au Forgeron d'Accessoires de Fer de la Ville de Départ, au Sud, derrière la Cathédrale",
 		craft:		[[{qty:16, id:'lingot_fer'}],[{qty:12, id:'lingot_fer'}]]
 	},
-  {
+{
 		id:				'bague_gluante',
 		name:			"Bague Gluante",
 		set:			'slime',
@@ -2214,7 +2362,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand d'Accessoires de Vallhat",
 		craft:		[{qty:1000, id:'cols'}]
 	},
-  {
+{
 		id:				'bague_squelette',
 		name:			"Bague de Squelette",
 		set:			'squelette',
@@ -2230,7 +2378,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand d'Accessoires de Tolbana",
 		craft:		[{qty:1000, id:'cols'}]
 	},
-  {
+{
 		id:				'anneau_sylvestre',
 		name:			"Anneau Sylvestre",
 		set:			'sylve',
@@ -2246,7 +2394,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ",
 		craft:		[{qty:16, id:'coeur_de_bois'}, {qty:32, id:'eclat_de_bois_magique'}, {qty:32, id:'bouleau'}]
 	},
-  {
+{
 		id:				'anneau_gluant',
 		name:			"Anneau Gluant",
 		set:			'slime',
@@ -2262,7 +2410,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires Secret de Vallhat",
 		craft:		[{qty:40, id:'gelee_de_slime'}, {qty:32, id:'noyau_de_slime'}, {qty:1, id:'essence_de_gorbel'}]
 	},
-  {
+{
 		id:				'anneau_leviathan',
 		name:			"Anneau de Léviathan",
 		rarity:		'epique',
@@ -2277,7 +2425,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires Secret de l'Antre d'Aepep, à côté de Virelune",
 		craft:		[{qty:96, id:'carapace_requin'}, {qty:5, id:'coeur_nymbrea'}]
 	},
-	{
+{
     id:       'anneau_faucheuse',
     name:     "Anneau de la Faucheuse",
 		set:			'anneau_dechu',
@@ -2292,7 +2440,7 @@ const ITEMS = [
     tags:     ['Accessoire', 'Anneau', 'Palier 1', "Légendaire"],
     obtain:   "Obtenable en tuant : Faucheuse Déchue"
   },
-	{
+{
 		id:				'anneau_dechu_druide',
 		name:			"Anneau Déchu du Druide",
 		rarity:		'legendaire',
@@ -2308,241 +2456,9 @@ const ITEMS = [
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-  /* ══ Palier 2 ══ */
-  {
-		id:				'bague_bouleau',
-		name:			"Bague de Bouleau",
-		rarity:		'rare',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Bague de Bouleau.png",
-		stats:		{defense:1, sante:10},
-    lore:     "Une bague façonnée dans un bois de bouleau clair, serti d'une pierre de fer brute au cœur sombre et métallique.",
-    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
-		craft:		[{qty:16, id:'lingot_fer'}, {qty:32, id:'bouleau'}]
-	},
-  {
-		id:				'anneau_acacia',
-		name:			"Anneau d'Acacia",
-		rarity:		'rare',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Anneau d'Acacia.png",
-		stats:		{degats:2, crit_chance:2.5, sante:5},
-    lore:     "Un anneau sculpté dans le bois chaud d'acacia, orné d'une pierre de cuivre aux reflets rougeoyants.",
-    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
-		craft:		[{qty:32, id:'lingot_cuivre'}, {qty:32, id:'acacia'}]
-	},
-  {
-		id:				'anneau_mielleux',
-		name:			"Anneau Mielleux",
-		rarity:		'commun',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Anneau Mielleux.png",
-		stats:		{soin_bonus:1, sante:10},
-    lore:     "Un anneau doré aux reflets ambrés, dont la surface lisse rappelle l'éclat du miel fraîchement coulé.",
-    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Commun'],
-    obtain:   "Achetable au Marchand d'Accessoires de Kaelor",
-		craft:		[{qty:5000, id:'cols'}]
-	},
-  {
-		id:				'anneau_taureau',
-		name:			"Anneau du Taureau",
-		set:			'taureau',
-		rarity:		'commun',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Set des Taureaux/Anneau du Taureau.png",
-		stats:		{degats:2, sante:10},
-    lore:     "Forgé dans un métal lourd et brut, il porte la marque du taureau sauvage. Force brute et résistance sans faille.",
-    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Kaelor",
-		craft:		[{qty:16, id:'corne_taureau'}, {qty:16, id:'peau_epaisse'}]
-	},
-  {
-		id:				'anneau_ours',
-		name:			"Anneau de l'Ours",
-		set:			'ours',
-		rarity:		'commun',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Set des Ours/Anneau de l'Ours.png",
-		stats:		{crit_comp_degats:1, defense:0.5, sante:5},
-    lore:     "Forgé dans un métal lourd et brut, il porte la marque de l'ours sauvage. Force brute et résistance sans faille.",
-    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Kaelor",
-		craft:		[{qty:24, id:'peau_ours'}, {qty:4, id:'graisse_ours'}, {qty:8, id:'griffe_ours'}]
-	},
-  {
-		id:				'anneau_ferraille',
-		name:			"Anneau de Ferraille",
-		set:			'ferraille',
-		rarity:		'commun',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Set de Ferraille/Anneau de Ferraille.png",
-		stats:		{defense:0.5, sante:10},
-    lore:     "Forgé dans une ferraille rustique, cet anneau se distingue par sa couleur clair et sa solidité.",
-    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Ferraille, au Nord-Est de la Baie des Monstres Ondoyante",
-		craft:		[{qty:4, id:'lingot_fer'}, {qty:24, id:'morceau_ferraille'}]
-	},
-  {
-		id:				'anneau_bauxite',
-		name:			"Anneau de Bauxite",
-		set:			'bauxite',
-		rarity:		'rare',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			12,
-		img:			"../img/compendium/textures/trinkets/P2/Set de Bauxite/Anneau de Bauxite.png",
-		stats:		{defense:1, sante:10},
-    lore:     "Forgé dans de la bauxite éclatant, cet anneau se distingue par puissance, sa couleur claire et sa solidité.",
-    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Bauxite, au Sud du Baobab Millénaire",
-		craft:		[{qty:16, id:'lingot_bauxite'}]
-	},
-  {
-		id:				'anneau_aventurier',
-		name:			"Anneau de l'Aventurier",
-		rarity:		'rare',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/trinkets/P2/anneau_aventurier.png", //NULL
-		stats:		{vitesse_attaque:0.1, crit_comp_degats:1, defense:1, soin_bonus:1, sante:1, mana:1, stamina:1, regen_sante:0.1, regen_mana:0.1, regen_stamina:0.1},
-    lore:     "Forgé il y a longtemps, cet anneau porte la marque des plus grands aventuriers du royaume.",
-    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],
-    obtain:   "Récupérable une fois fini la Quête Secondaire «L'Épreuve du Chasseur», donné par Typpe"
-	},
-  {
-		id:				'anneau_harpie_enflammee',
-		name:			"Anneau de la Harpie Enflammée",
-		rarity:		'epique',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/trinkets/P2/Anneau de la Harpie Enflammée.png",
-		stats:		{degats_arme:7.5, vol_vie:2, sante:15},
-    lore:     "La légende raconte que cet anneau est encore imprégné de la soif de sang de la Harpie dont il provient.",
-    tags:     ['Accessoire', 'Anneau', 'Secret', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Accessoires Secret du Nid de Brasier",
-		craft:		[{qty:32, id:'peau_cerf_montagnes'}, {qty:64, id:'morceau_ferraille'}, {qty:64, id:'plume_enflammee'}]
-	},
-  {
-		id:				'anneau_harpie_ecrasee',
-		name:			"Anneau de la Harpie Écrasée",
-		rarity:		'epique',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/trinkets/P2/Anneau de la Harpie Écrasée.png",
-		stats:		{defense:2.5, reduction_degats:2.5, maitrise_bloc:5, puissance_bloc:1},
-    lore:     "Un anneau léger sculpté dans une serre de Harpie des Forêts. Sa couleur verte semble se fondre parfaitement dans le feuillage.",
-    tags:     ['Accessoire', 'Anneau', 'Secret', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Accessoires Secret de la Forêt des Ailes d'Émeraude",
-		craft:		[{qty:16, id:'racine_ancestrale'}, {qty:64, id:'morceau_ferraille'}, {qty:64, id:'plume_terreuse'}]
-	},
-  {
-		id:				'anneau_harpie_noyee',
-		name:			"Anneau de la Harpie Noyée",
-		rarity:		'epique',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/trinkets/P2/Anneau de la Harpie Noyée.png",
-		stats:		{degats_competence:7.5, omnivamp:1.5, mana:10, stamina:5},
-    lore:     "Une griffe de harpie parcourue de courants électrique haute tension. Elle ne blesse pas le porteur, mais canalise son flux magique vers ses extrémités.",
-    tags:     ['Accessoire', 'Anneau', 'Secret', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Accessoires Secret de la Baie des Monstres Ondoyante",
-		craft:		[{qty:32, id:'eclat_magique_glacial'}, {qty:64, id:'morceau_ferraille'}, {qty:64, id:'plume_ondoyante'}]
-	},
-  {
-		id:				'anneau_onyx_impur',
-		name:			"Anneau d'Onyx Impur",
-		set:			'onyx_impur',
-		rarity:		'epique',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Impur/Anneau d'Onyx Impur.png",
-		stats:		{crit_chance:1, defense:1.5, sante:10},
-    lore:     "Forgé grâce à de l'onyx impur cet anneau est incomplet mais semble très puissant malgré tout.",
-    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Impur, au Sud de Taran",
-		craft:		[{qty:16, id:'lingot_onyx_impur'}]
-	},
-  {
-		id:				'anneau_winnie',
-		name:			"Anneau de Winnie",
-		set:			'ours',
-		rarity:		'mythique',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/trinkets/P2/Set des Ours/Bague de Winnie.png",
-		stats:		{crit_chance:5, crit_comp_chance:5, reduction_degats:2.5, sante:10},
-    lore:     "Une fine bague aux reflets bronzés, ornée d'un petit cristal jaune lumineux rappelant la chaleur et la bienveillance de son ancienne propriétaire.",
-    tags:     ['Accessoire', 'Anneau', 'Secret', 'Palier 2', 'Mythique'],
-    obtain:   "Fabricable au Forgeron d'Accessoires Secret de la Forêt Sucrée, dans l'Antre du Boss Winnie",
-		craft:		[{qty:32, id:'lingot_cuivre'}, {qty:64, id:'peau_ours'}, {qty:64, id:'residu_miel'}, {qty:64, id:'miel'}, {qty:32, id:'graisse_ours'}]
-	},
-  {
-		id:				'anneau_onyx_pur',
-		name:			"Anneau d'Onyx Pur",
-		set:			'onyx_pur',
-		rarity:		'legendaire',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			14,
-		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Pur/Anneau d'Onyx Pur.png",
-		stats:		{crit_chance:2, crit_degats:1, defense:1, sante:20},
-    lore:     "Forgé grâce à de l'onyx pur cet anneau est complet et est très puissant.",
-    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Légendaire'],
-    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Pur, situé dans les grottes de la Faille au Sud-Est du Palier 2",
-		craft:		[{qty:8, id:'lingot_onyx_pur'}]
-	},
-  /* ══ Events ══ */
-  {
-		id:				'anneau_amour',
-		name:			"Anneau d'Amour",
-		rarity:		'event',
-		cat:			'anneau',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Valentin/Anneau d'Amour.png",
-		stats:		{crit_chance:5, crit_degats:5, crit_comp_chance:5, crit_comp_degats:5, sante:15},
-    lore:     "Un anneau délicatement gravé aux reflets chalereux, symbole d'un lien précieux.",
-    tags:     ['Accessoire', 'Anneau', 'Palier 1', 'Event', 'Saint Valentin'],
-    obtain:   "..."
-	},
-  /* ══ Amulettes ══ */
-  /* ══ Palier 1 ══ */
-  {
+//#endregion Accessoires > P1 > Anneaux
+//#region Accessoires > P1 > Amulettes
+{
 		id:				'amulette_cuivre',
 		name:			"Amulette de Cuivre",
 		set:			'cuivre',
@@ -2558,7 +2474,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Cuivre de la Ville de Départ, au Sud, derrière la Cathédrale",
 		craft:		[{qty:16, id:'lingot_cuivre'}]
 	},
-  {
+{
 		id:				'amulette_bois',
 		name:			"Amulette des Bois",
 		set:			'sylve',
@@ -2574,7 +2490,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ",
 		craft:		[{qty:32, id:'coeur_de_bois'}, {qty:64, id:'bouleau'}]
 	},
-  {
+{
 		id:				'collier_albal',
 		name:			"Collier de Albal",
 		set:			'loup',
@@ -2590,7 +2506,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ",
 		craft:		[{qty:96, id:'fourrure_de_loup'}, {qty:5, id:'crocs_de_albal'}]
 	},
-  {
+{
 		id:				'amulette_gluante',
 		name:			"Amulette Gluante",
 		set:			'slime',
@@ -2606,7 +2522,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand d'Accessoires de Vallhat",
 		craft:		[{qty:1000, id:'cols'}]
 	},
-  {
+{
 		id:				'amulette_fer',
 		name:			"Amulette de Fer",
 		set:			'fer',
@@ -2622,7 +2538,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Fer de la Ville de Départ, au Sud, derrière la Cathédrale",
 		craft:		[{qty:12, id:'lingot_fer'}]
 	},
-  {
+{
 		id:				'amulette_squelletique',
 		name:			"Amulette Squelettique",
 		set:			'squelette',
@@ -2638,7 +2554,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ",
 		craft:		[{qty:16, id:'poussiere_dos'}, {qty:32, id:'os_de_squelette'}, {qty:16, id:'ames_des_ruines'}, {qty:16, id:'os_de_squelette_renforce'}, ]
 	},
-	{
+{
 		id:				'collier_dechu_soldat',
 		name:			"Collier Déchu du Soldat",
 		rarity:		'legendaire',
@@ -2654,7 +2570,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
+{
 		id:				'pendentif_dechu_voleur',
 		name:			"Pendentif Déchu du Voleur",
 		rarity:		'legendaire',
@@ -2670,7 +2586,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
+{
 		id:				'amulette_dechue_chasseur',
 		name:			"Amulette Déchue du Chasseur",
 		rarity:		'legendaire',
@@ -2686,7 +2602,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
+{
 		id:				'pendentif_dechu_sorcier',
 		name:			"Pendentif Déchu du Sorcier",
 		rarity:		'legendaire',
@@ -2702,7 +2618,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
+{
 		id:				'amulette_dechue_druide',
 		name:			"Amulette Déchue du Druide",
 		rarity:		'legendaire',
@@ -2718,165 +2634,9 @@ const ITEMS = [
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-  /* ══ Palier 2 ══ */
-  {
-		id:				'collier_acamiel',
-		name:			"Collier Acamiel",
-		rarity:		'rare',
-		cat:			'amulette',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Collier Acamiel.png",
-		stats:		{vitesse_attaque:0.1, soin_bonus:1},
-    lore:     "Un collier orange, avec un noyau pur de miel.",
-    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
-		craft:		[{qty:16, id:'residu_miel'}, {qty:32, id:'planche_acacia'}, {qty:8, id:'ficelle_ferraille'}]
-	},
-  {
-		id:				'amulette_ferraille',
-		name:			"Amulette de Ferraille",
-		set:			'ferraille',
-		rarity:		'commun',
-		cat:			'amulette',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Set de Ferraille/Amulette de Ferraille.png",
-		stats:		{defense:1, sante:10},
-    lore:     "Une amulette rudimentaire, forgée avec un mélange de ferraille. Rien de magique, juste de la robustesse.",
-    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Ferraille, au Nord-Est de la Baie des Monstres Ondoyante",
-		craft:		[{qty:4, id:'lingot_fer'}, {qty:32, id:'morceau_ferraille'}]
-	},
-  {
-		id:				'amulette_bauxite',
-		name:			"Amulette de Bauxite",
-		set:			'bauxite',
-		rarity:		'rare',
-		cat:			'amulette',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			12,
-		img:			"../img/compendium/textures/trinkets/P2/Set de Bauxite/Amulette de Bauxite.png",
-		stats:		{defense:1.5, sante:10},
-    lore:     "Une amulette efficace, forgée avec de la bauxite. Une étrange énergie s'en dégage.",
-    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Bauxite, au Sud du Baobab Millénaire",
-		craft:		[{qty:16, id:'lingot_bauxite'}]
-	},
-  {
-		id:				'collier_tricolore',
-		name:			"Collier Tricolore",
-		rarity:		'epique',
-		cat:			'amulette',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			12,
-		img:			"../img/compendium/textures/trinkets/P2/Collier Tricolore.png",
-		stats:		{degats_arme:10, degats_competence:5, vol_vie:1, omnivamp:2, defense:1, maitrise_bloc:2.5, puissance_bloc:0.5, sante:5, mana:5, stamina:2.5},
-    lore:     "Un collier tricolore, inspirant la terreur des harpies.",
-    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
-		craft:		[{qty:32, id:'plume_enflammee'},{qty:32, id:'plume_terreuse'}, {qty:32, id:'plume_ondoyante'},  {qty:8, id:'lingot_fer'}]
-	},
-  {
-		id:				'collier_taureaux',
-		name:			"Collier des Taureaux",
-		set:			'taureau',
-		rarity:		'rare',
-		cat:			'amulette',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			12,
-		img:			"../img/compendium/textures/trinkets/P2/Set des Taureaux/Collier des Taureaux.png",
-		stats:		{crit_chance:2.5, degats_physique:2.5, sante:5},
-    lore:     "Collier fabriqué par des ficelles de chêne et des cornes de taureaux.",
-    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Kaelor",
-		craft:		[{qty:12, id:'corne_taureau'}, {qty:12, id:'peau_epaisse'}, {qty:6, id:'ficelle_bouleau'}]
-	},
-  {
-		id:				'collier_runique',
-		name:			"Collier Runique",
-		set:			'squelette',
-		rarity:		'epique',
-		cat:			'amulette',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			12,
-		img:			"../img/compendium/textures/trinkets/P2/Collier Runique.png",
-		stats:		{defense:3.5, sante:20},
-    lore:     "Collier fabriqué par d'ancien matériaux poussiéreux, mais drôlement résistant.",
-    tags:     ['Accessoire', 'Amulette', 'Secret', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Accessoires Secret du Sanctaire de Khesûn",
-		craft:		[{qty:36, id:'poussiere_dos'}, {qty:64, id:'chaine_spectrale'}, {qty:32, id:'pierre_runique'}]
-	},
-  {
-		id:				'amulette_onyx_impur',
-		name:			"Amulette d'Onyx Impur",
-		set:			'onyx_impur',
-		rarity:		'epique',
-		cat:			'amulette',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Impur/Amulette d'Onyx Impur.png",
-		stats:		{defense:2, sante:15},
-    lore:     "Une amulette puissant, forgée avec de l'onyx impur.",
-    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Impur, au Sud de Taran",
-		craft:		[{qty:16, id:'lingot_onyx_impur'}, {qty:8, id:'ficelle_acacia'}]
-	},
-  {
-		id:				'amulette_onyx_pur',
-		name:			"Amulette d'Onyx Pur",
-		set:			'onyx_pur',
-		rarity:		'legendaire',
-		cat:			'amulette',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			14,
-		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Pur/Amulette d'Onyx Pur.png",
-		stats:		{defense:2, sante:20},
-    lore:     "Une amulette éclatante, forgée avec de l'onyx pur.",
-    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Légendaire'],
-    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Pur, situé dans les grottes de la Faille au Sud-Est du Palier 2",
-		craft:		[{qty:8, id:'lingot_onyx_pur'}, {qty:8, id:'ficelle_bouleau'}]
-	},
-  /* ══ Events ══ */
-	{
-		id:				'collier_givremar',
-		name:			"Collier de Givremar",
-		rarity:		'event',
-		cat:			'amulette',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Christmas/collier_givremar.png",
-		stats:		{defense:1.5, sante:5, regen_mana:0.3, regen_stamina:0.3},
-    lore:     "Une pierre taillé, solide comme la glace, incrustée dans un collier faisant référence à Grivremar, un bastion qui fut oublié depuis longtemps.",
-    tags:     ['Accessoire', 'Amulette', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "..."
-	},
-  {
-		id:				'collier_amour',
-		name:			"Collier d'Amour",
-		rarity:		'event',
-		cat:			'amulette',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Valentin/collier_amour.png",
-		stats:		{sante:5, mana:5, stamina:5},
-    lore:     "Un collier fin orné d'un pendentif, brillant d'un éclat doux et romantique.",
-    tags:     ['Accessoire', 'Amulette', 'Palier 1', 'Event', 'Saint Valentin'],
-    obtain:   "..."
-	},
-  /* ══ Gants ══ */
-  /* ══ Palier 1 ══ */
-  {
+//#endregion Accessoires > P1 > Amulettes
+//#region Accessoires > P1 > Gants
+{
 		id:				'gants_cuivre',
 		name:			"Gants de Cuivre",
 		set:			'cuivre',
@@ -2892,7 +2652,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Cuivre de la Ville de Départ, au Sud, derrière la Cathédrale",
 		craft:		[{qty:24, id:'lingot_cuivre'}]
 	},
-  {
+{
 		id:				'gants_cerfs',
 		name:			"Gants des Cerfs",
 		set:			'cerf',
@@ -2908,7 +2668,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ",
 		craft:		[{qty:32, id:'peau_cerf_montagnes'}]
 	},
-  {
+{
 		id:				'gants_bandit',
 		name:			"Gants de Bandit",
 		rarity:		'commun',    
@@ -2923,7 +2683,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ",
 		craft:		[{qty:96, id:'cuir_use'}, {qty:8, id:'racine_ancestrale'}]
 	},
-  {
+{
 		id:				'gants_osseux',
 		name:			"Gants Osseux",
 		set:			'squelette',
@@ -2939,7 +2699,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ",
 		craft:		[{qty:64, id:'poussiere_dos'}, {qty:64, id:'os_de_squelette'}, {qty:32, id:'os_de_squelette_renforce'}, ]
 	},
-  {
+{
 		id:				'gants_fer',  
 		name:			"Gants de Fer",
 		set:			'fer',
@@ -2955,7 +2715,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Fer de la Ville de Départ, au Sud, derrière la Cathédrale",
 		craft:		[{qty:18, id:'lingot_fer'}]
 	},
-	{
+{
 		id:				'gants_dechus_chasseur',
 		name:			"Gants Déchus du Chasseur",
 		rarity:		'legendaire',
@@ -2971,212 +2731,9 @@ const ITEMS = [
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-  /* ══ Palier 2 ══ */
-  {
-		id:				'gants_taureaux',
-		name:			"Gants des Taureaux",
-		set:			'taureau',
-		rarity:		'commun',    
-		cat:			'gants',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Set des Taureaux/Gants des Taureaux.png",
-		stats:		{degats_physique:1.5, defense:0.5, mana:5, stamina:2.5},
-    lore:     "Une paire de gants faits à partir de la peau des taureaux, situés au palier 2",
-    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Commun'],
-    obtain:   "Achetable au Marchand d'Accessoires de Kaelor",
-		craft:		[{qty:5000, id:'cols'}]
-	},
-  {
-		id:				'gants_ours',
-		name:			"Gants des Ours",
-		set:			'ours',
-		rarity:		'rare',    	
-		cat:			'gants',
-		category:	'accessoire',
-		palier:2,
-		lvl:11,		
-		img:			"../img/compendium/textures/trinkets/P2/Set des Ours/Gants des Ours.png",
-		stats:		{defense:1, regen_mana:0.6, regen_stamina:0.3},
-    lore:     "Une paire de gants faits à partir de la peau des ours, situés au palier 2",
-    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
-		craft:		[{qty:48, id:'peau_ours'}, {qty:16, id:'graisse_ours'}]
-	},
-  {		
-		id:				'gants_ferraille',
-		name:			"Gants de Ferraille",
-		set:			'ferraille',
-		rarity:		'commun',   	
-		cat:			'gants',
-		category:	'accessoire',
-		palier:2,
-		lvl:11,		
-		img:			"../img/compendium/textures/trinkets/P2/Set de Ferraille/Gants de Ferraille.png",
-		stats:		{degats:2, crit_chance:2.5},
-    lore:     "Une paire de gants faits à base de ferraille, rustique et à l'aspect solide",
-    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Ferraille, au Nord-Est de la Baie des Monstres Ondoyante",
-		craft:		[{qty:8, id:'lingot_fer'}, {qty:32, id:'morceau_ferraille'}]
-	},
-  {		
-		id:				'gants_bauxite',
-		name:			"Gants de Bauxite",
-		set:			'bauxite',
-		rarity:		'rare',   	
-		cat:			'gants',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			12,
-		img:			"../img/compendium/textures/trinkets/P2/Set de Bauxite/Gants de Bauxite.png",
-		stats:		{degats:2.5, crit_chance:3, defense:1},
-    lore:     "Une paire de gants faits à base de bauxite, éclatant et à l'aspect solide comme un rubis",
-    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Bauxite, au Sud du Baobab Millénaire",
-		craft:		[{qty:24, id:'lingot_bauxite'}]
-	},
-  {
-		id:				'gants_onyx_impur',
-		name:			"Gants d'Onyx Impur",
-		set:			'onyx_impur',
-		rarity:		'epique',   	
-		cat:			'gants',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Impur/Gants d'Onyx Impur.png",
-		stats:		{degats:2.5, crit_chance:3, defense:1},
-    lore:     "Une paire de gants fait à base d'onyx impur, incomplet et à l'aspect puissant comme une lame",
-    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Impur, au Sud de Taran",
-		craft:		[{qty:24, id:'lingot_onyx_impur'}]
-	},
-  {
-		id:				'gants_onyx_pur',
-		name:			"Gants d'Onyx Pur",
-		set:			'onyx_pur',
-		rarity:		'legendaire',
-		cat:			'gants',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			14,
-		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Pur/Gants d'Onyx Pur.png",
-		stats:		{degats:2.5, crit_chance:3, defense:1},
-    lore:     "Une paire de gants fait à base d'onyx pur, éclatant et à l'aspect angélique",
-    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Légendaire'],
-    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Pur, situé dans les grottes de la Faille au Sud-Est du Palier 2",
-		craft:		[{qty:12, id:'lingot_onyx_pur'}]
-	},
-  /* ══ Events ══ */
-	{
-		id:				'moufles_noel_rouges',
-		name:			"Moufles de Noël Rouges",
-		rarity:		'event',   	 	
-		cat:			'gants',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_rouge.png",
-		stats:		{},
-    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
-    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
-	},
-	{
-		id:				'moufles_noel_grises',
-		name:			"Moufles de Noël Grises",
-		rarity:		'event',   	 	
-		cat:			'gants',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_blanc.png",
-		stats:		{defense:2, maitrise_bloc:10, puissance_bloc:3, sante:20},
-    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
-    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
-		craft:		[{qty:1, id:'moufles_noel_rouges'}]
-	},
-  {
-		id:				'moufles_noel_vertes',
-		name:			"Moufles de Noël Vertes",
-		rarity:		'event',   	 	
-		cat:			'gants',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_vert.png",
-		stats:		{esquive:10, soin_bonus:5, sante:5, regen_sante:0.3, regen_mana:0.4, regen_stamina:0.2},
-    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
-    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
-		craft:		[{qty:1, id:'moufles_noel_rouges'}]
-	},
-	{
-		id:				'moufles_noel_jaunes',
-		name:			"Moufles de Noël Jaunes",
-		rarity:		'event',   	 	
-		cat:			'gants',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_jaune.png",
-		stats:		{crit_chance:5, crit_degats:10, crit_comp_chance:10, crit_comp_degats:5, vitesse_deplacement:1.5},
-    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
-    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
-		craft:		[{qty:1, id:'moufles_noel_rouges'}]
-	},
-	{
-		id:				'moufles_noel_oranges',
-		name:			"Moufles de Noël Oranges",
-		rarity:		'event',   	 	
-		cat:			'gants',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_orange.png",
-		stats:		{degats:5, vitesse_attaque:0.2, vol_vie:5, vitesse_deplacement:0.5},
-		stats:		{},
-    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
-    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
-		craft:		[{qty:1, id:'moufles_noel_rouges'}]
-	},
-	{
-		id:				'moufles_noel_roses',
-		name:			"Moufles de Noël Roses",
-		rarity:		'event',   	 	
-		cat:			'gants',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_rose.png",
-		stats:		{sante:15, mana:30, stamina:15},
-    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
-    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
-		craft:		[{qty:1, id:'moufles_noel_rouges'}]
-	},
-	{
-		id:				'moufles_noel_bleues',
-		name:			"Moufles de Noël Bleues",
-		rarity:		'event',   	 	
-		cat:			'gants',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_bleu.png",
-		stats:		{degats_competence:5, vampirisme:2.5, hate:5, cout_mana:-5, cout_stamina:-2},
-    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
-    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
-		craft:		[{qty:1, id:'moufles_noel_rouges'}]
-	},
-  /* ══ Bracelets ══ */
-  /* ══ Palier 1 ══ */
-  {
+//#endregion Accessoires > P1 > Gants
+//#region Accessoires > P1 > Bracelets
+{
 		id:				'bracelet_cuivre',
 		name:			"Bracelet de Cuivre",
 		set:			'cuivre',
@@ -3192,7 +2749,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Cuivre de la Ville de Départ, au Sud, derrière la Cathédrale",
 		craft:		[{qty:24, id:'lingot_cuivre'}]
 	},
-  {
+{
 		id:				'bracelet_fer',
 		name:			"Bracelet de Fer",
 		set:			'fer',
@@ -3208,7 +2765,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Fer de la Ville de Départ, au Sud, derrière la Cathédrale",
 		craft:		[{qty:18, id:'lingot_fer'}]
 	},
-  {
+{
 		id:				'bracelet_sylvestre',
 		name:			"Bracelet Sylvestre",
 		set:			'sylve',
@@ -3224,7 +2781,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ",
 		craft:		[{qty:64, id:'ecorce_de_titan'}, {qty:64, id:'brindille_enchantee'}]
 	},
-  {
+{
 		id:				'bracelet_araignee',
 		name:			"Bracelet d'Araignée",
 		rarity:		'rare',
@@ -3239,7 +2796,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ",
 		craft:		[{qty:64, id:'tissu_araignee'}, {qty:64, id:'spore_corrompu'}]
 	},
-  {
+{
 		id:				'bracelet_gluant',
 		name:			"Bracelet Gluant",
 		set:			'slime',
@@ -3255,7 +2812,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de la Ville de Départ",
 		craft:		[{qty:8, id:'lingot_fer'}, {qty:64, id:'gelee_de_slime'}, {qty:32, id:'noyau_de_slime'}]
 	},
-  {
+{
 		id:				'bracelet_cerf',
 		name:			"Bracelet des Cerfs",
 		set:			'cerf',
@@ -3271,7 +2828,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand d'Accessoires de Tolbana",
 		craft:		[{qty:2500, id:'cols'}]
 	},
-  {
+{
 		id:				'bracelet_glace',
 		name:			"Bracelet de Glace",
 		rarity:		'epique',
@@ -3286,134 +2843,9 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires Secret de la Citadelle des Neiges, en remontant la Cascade la plus à l'Est du Lac",
 		craft:		[{qty:64, id:'poussiere_givre'}, {qty:32, id:'eclat_magique_glacial'}, {qty:32, id:'peau_dur_glacial'}, {qty:1, id:'fragment_ame_ours'}]
 	},
-  /* ══ Palier 2 ══ */
-  {
-		id:				'bracelet_loups',
-		name:			"Bracelet des Loups",
-		set:			'loup',
-		rarity:		'commun',
-		cat:			'bracelet',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Set Loup Faiblard/Bracelet des Loups.png",
-		stats:		{degats:2, vitesse_attaque:0.1, defense:0.5},
-    lore:     "Forgé avec des peaux de multiples loups, il empeste de leur odeur.",
-    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Commun'],
-    obtain:   "Achetable au Marchand d'Accessoires de Kaelor",
-		craft:		[{qty:5000, id:'cols'}]
-	},
-  {
-		id:				'bracelet_mielleux',
-		name:			"Bracelet Mielleux",
-		rarity:		'rare',
-		cat:			'bracelet',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Bracelet Mielleux.png",
-		stats:		{hate:2.5, soin_bonus:2, sante:5, mana:2.5},
-    lore:     "Forgé avec de nombreux matériaux obtenu des abeilles.",
-    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
-		craft:		[{qty:64, id:'residu_miel'}, {qty:16, id:'carapace_abeille'}]
-	},
-  {
-		id:				'bracelet_runimiel',
-		name:			"Bracelet Runimiel",
-		rarity:		'rare',
-		cat:			'bracelet',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Bracelet Runimiel.png",
-		stats:		{soin_bonus:5, sante:-10, mana:-10},
-    lore:     "Forgé avec des pierres runiques et des matériaux obtenu des abeilles.",
-    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
-		craft:		[{qty:48, id:'residu_miel'}, {qty:16, id:'lingot_fer'}]
-	},
-  {
-		id:				'bracelet_ferraille',
-		name:			"Bracelet de Ferraille",
-		set:			'ferraille',
-		rarity:		'commun',
-		cat:			'bracelet',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/trinkets/P2/Set de Ferraille/Bracelet de Ferraille.png",
-		stats:		{defense:1, sante:10},
-    lore:     "Forgé avec la ferraille que l'on récolte sur le palier 2.",
-    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Ferraille, au Nord-Est de la Baie des Monstres Ondoyante",
-		craft:		[{qty:8, id:'lingot_fer'}, {qty:32, id:'morceau_ferraille'}]
-	},
-  {
-		id:				'bracelet_bauxite',
-		name:			"Bracelet de Bauxite",
-		set:			'bauxite',
-		rarity:		'rare',
-		cat:			'bracelet',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			12,
-		img:			"../img/compendium/textures/trinkets/P2/Set de Bauxite/Bracelet de Bauxite.png",
-		stats:		{defense:2, sante:10},
-    lore:     "Forgé avec la bauxite que l'on forge sur le palier 2.",
-    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Accessoires de Bauxite, au Sud du Baobab Millénaire",
-		craft:		[{qty:24, id:'lingot_bauxite'}]
-	},
-  {
-		id:				'bracelet_onyx_impur',
-		name:			"Bracelet d'Onyx Impur",
-		set:			'onyx_impur',
-		rarity:		'epique',
-		cat:			'bracelet',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Impur/Bracelet d'Onyx Impur.png",
-		stats:		{defense:2, sante:15, regen_sante:0.1},
-    lore:     "Forgé avec de l'onyx impur, un fragment incomplet du palier 2.",
-    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Impur, au Sud de Taran",
-		craft:		[{qty:24, id:'lingot_onyx_impur'}]
-	},
-  {
-		id:				'bracelet_onyx_pur',
-		name:			"Bracelet d'Onyx Pur",
-		set:			'onyx_pur',
-		rarity:		'legendaire',
-		cat:			'bracelet',
-		category:	'accessoire',
-		palier:		2,
-		lvl:			14,
-		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Pur/Bracelet d'Onyx Pur.png",
-		stats:		{defense:2, sante:20, regen_sante:0.2},
-    lore:     "Forgé avec de l'onyx pur, un fragment brillant du palier 2.",
-    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Légendaire'],
-    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Pur, situé dans les grottes de la Faille au Sud-Est du Palier 2",
-		craft:		[{qty:12, id:'lingot_onyx_pur'}]
-	},
-  /* ══ Events ══ */
-  {
-		id:				'bracelet_yuleck',
-		name:			"Bracelet de Yuleck",
-		rarity:		'event',
-		cat:			'bracelet',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Christmas/bracelet_yuleck.png",
-		stats:		{soin_bonus:2, sante:7, regen_sante:0.3, vitesse_deplacement:-0.5},
-    lore:     "Bracelet du maudit gardien de la forêt des brumes bleues. Il brille comme un sapin.",
-    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "..."
-	},
-  /* ══ Artefacts ══ */
-  {
+//#endregion Accessoires > P1 > Bracelets
+//#region Accessoires > P1 > Artefacts
+{
 		id:				'manteau_vole',
 		name:			"Manteau Volé",
 		rarity:		'commun',
@@ -3428,7 +2860,7 @@ const ITEMS = [
     obtain:   "Échangeable contre 128 bourse au Marchand Étrange au Sud de la Cathédrale dans la Ville de Départ",
 		craft:		[{qty:128, id:'petite_bourse'}]
 	},
-  {
+{
 		id:				'lien_sylve',
 		name:			"Lien de la Sylve",
 		set:			'sylve',
@@ -3443,7 +2875,7 @@ const ITEMS = [
     tags:     ['Accessoire', 'Artefact', 'Collier', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en récompense du Donjon Mine de Geldorak"
 	},
-  {
+{
 		id:				'piece_cuivre',
 		name:			"Pièce de Cuivre",
 		set:			'cuivre',
@@ -3459,7 +2891,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Cuivre de la Ville de Départ, au Sud, derrière la Cathédrale",
 		craft:		[{qty:24, id:'lingot_cuivre'}]
 	},
-  {
+{
 		id:				'piece_fer',
 		name:			"Pièce de Fer",
 		set:			'fer',
@@ -3475,7 +2907,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Fer de la Ville de Départ, au Sud, derrière la Cathédrale",
 		craft:		[{qty:18, id:'lingot_fer'}]
 	},
-  {
+{
 		id:				'collier_aragorn',
 		name:			"Collier d'Aragorn",
 		rarity:		'epique',
@@ -3490,7 +2922,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires Secret d'Arakh'Nol",
 		craft:		[{qty:64, id:'fil_araignee'}, {qty:32, id:'fil_araignee_renforce'}, {qty:1, id:'venin_araignee'}]
 	},
-  {
+{
 		id:				'manteau_minuit',
 		name:			"Manteau de Minuit",
 		rarity:		'godlike',
@@ -3504,7 +2936,7 @@ const ITEMS = [
     tags:     ['Accessoire', 'Artefact', 'Manteau', 'Palier 1', 'Godlike'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold"
 	},
-	{
+{
 		id:				'heaume_dechu_soldat',
 		name:			"Heaume Déchu du Soldat",
 		rarity:		'legendaire',
@@ -3520,7 +2952,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
+{
 		id:				'bottes_dechues_voleur',
 		name:			"Bottes Déchues du Voleur",
 		rarity:		'legendaire',
@@ -3536,7 +2968,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-	{
+{
 		id:				'grimoire_dechu_sorcier',
 		name:			"Grimoire Déchu du Sorcier",
 		rarity:		'legendaire',
@@ -3552,8 +2984,758 @@ const ITEMS = [
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:		[{qty:2, id:'piece_kazor'}]
 	},
-  /* ══ Palier 2 ══ */
-  {
+//#endregion Accessoires > P1 > Artefacts
+//#region Accessoires > P1 > Events
+{
+		id:				'anneau_amour',
+		name:			"Anneau d'Amour",
+		rarity:		'event',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Valentin/Anneau d'Amour.png",
+		stats:		{crit_chance:5, crit_degats:5, crit_comp_chance:5, crit_comp_degats:5, sante:15},
+    lore:     "Un anneau délicatement gravé aux reflets chalereux, symbole d'un lien précieux.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 1', 'Event', 'Saint Valentin'],
+    obtain:   "..."
+	},
+{
+		id:				'collier_givremar',
+		name:			"Collier de Givremar",
+		rarity:		'event',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/collier_givremar.png",
+		stats:		{defense:1.5, sante:5, regen_mana:0.3, regen_stamina:0.3},
+    lore:     "Une pierre taillé, solide comme la glace, incrustée dans un collier faisant référence à Grivremar, un bastion qui fut oublié depuis longtemps.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "..."
+	},
+{
+		id:				'collier_amour',
+		name:			"Collier d'Amour",
+		rarity:		'event',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Valentin/collier_amour.png",
+		stats:		{sante:5, mana:5, stamina:5},
+    lore:     "Un collier fin orné d'un pendentif, brillant d'un éclat doux et romantique.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 1', 'Event', 'Saint Valentin'],
+    obtain:   "..."
+	},
+{
+		id:				'moufles_noel_rouges',
+		name:			"Moufles de Noël Rouges",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_rouge.png",
+		stats:		{},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
+	},
+{
+		id:				'moufles_noel_grises',
+		name:			"Moufles de Noël Grises",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_blanc.png",
+		stats:		{defense:2, maitrise_bloc:10, puissance_bloc:3, sante:20},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
+		craft:		[{qty:1, id:'moufles_noel_rouges'}]
+	},
+{
+		id:				'moufles_noel_vertes',
+		name:			"Moufles de Noël Vertes",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_vert.png",
+		stats:		{esquive:10, soin_bonus:5, sante:5, regen_sante:0.3, regen_mana:0.4, regen_stamina:0.2},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
+		craft:		[{qty:1, id:'moufles_noel_rouges'}]
+	},
+{
+		id:				'moufles_noel_jaunes',
+		name:			"Moufles de Noël Jaunes",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_jaune.png",
+		stats:		{crit_chance:5, crit_degats:10, crit_comp_chance:10, crit_comp_degats:5, vitesse_deplacement:1.5},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
+		craft:		[{qty:1, id:'moufles_noel_rouges'}]
+	},
+{
+		id:				'moufles_noel_oranges',
+		name:			"Moufles de Noël Oranges",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_orange.png",
+		stats:		{degats:5, vitesse_attaque:0.2, vol_vie:5, vitesse_deplacement:0.5},
+		stats:		{},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
+		craft:		[{qty:1, id:'moufles_noel_rouges'}]
+	},
+{
+		id:				'moufles_noel_roses',
+		name:			"Moufles de Noël Roses",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_rose.png",
+		stats:		{},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
+		craft:		[{qty:1, id:'moufles_noel_rouges'}]
+	},
+{
+		id:				'moufles_noel_bleues',
+		name:			"Moufles de Noël Bleues",
+		rarity:		'event',   	 	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_bleu.png",
+		stats:		{},
+    lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
+		craft:		[{qty:1, id:'moufles_noel_rouges'}]
+	},
+{
+		id:				'bracelet_yuleck',
+		name:			"Bracelet de Yuleck",
+		rarity:		'event',
+		cat:			'bracelet',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/bracelet_yuleck.png",
+		stats:		{soin_bonus:2, sante:7, regen_sante:0.3, vitesse_deplacement:-0.5},
+    lore:     "Bracelet du maudit gardien de la forêt des brumes bleues. Il brille comme un sapin.",
+    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "..."
+	},
+{
+		id:				'bracelet_rafales',
+		name:			"Bracelet des Rafales",
+		rarity:		'event',
+		cat:			'artefact',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/bracelet_rafales.png",
+		stats:		{esquive:2.5, sante:5, mana:5, stamina:5, vitesse_deplacement:0.5},
+    lore:     "Un bracelet ancien dont les inscriptions ondulent légèrement, comme agitées par un vent invisible.",
+    tags:     ['Accessoire', 'Artefact', 'Masque', 'Secret', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "..."
+	},
+{
+		id:				'couronne_solstice',
+		name:			"Couronne du Solstice",
+		rarity:		'event',
+		cat:			'artefact',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			10,
+		img:			"../img/compendium/textures/trinkets/Christmas/couronne_sol.png",
+		stats:		{hate:5, mana:5, stamina:2.5},
+    lore:     "Une couronne finement ouvragée, mêlant motifs solaires et hivernaux, symbole de l'équilibre entre les saisons.",
+    tags:     ['Accessoire', 'Artefact', 'Couronne', 'Palier 1', 'Event', 'Noël'],
+    obtain:   "Finir la Quête d'Événement de Noël 2025"
+	},
+//#endregion Accessoires > P1 > Events
+//#endregion Accessoires > Palier 1
+//#region Accessoires > Palier 2
+//#region Accessoires > P2 > Anneaux
+{
+		id:				'bague_bouleau',
+		name:			"Bague de Bouleau",
+		rarity:		'rare',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Bague de Bouleau.png",
+		stats:		{defense:1, sante:10},
+    lore:     "Une bague façonnée dans un bois de bouleau clair, serti d'une pierre de fer brute au cœur sombre et métallique.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
+		craft:		[{qty:16, id:'lingot_fer'}, {qty:32, id:'bouleau'}]
+	},
+{
+		id:				'anneau_acacia',
+		name:			"Anneau d'Acacia",
+		rarity:		'rare',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Anneau d'Acacia.png",
+		stats:		{degats:2, crit_chance:2.5, sante:5},
+    lore:     "Un anneau sculpté dans le bois chaud d'acacia, orné d'une pierre de cuivre aux reflets rougeoyants.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
+		craft:		[{qty:32, id:'lingot_cuivre'}, {qty:32, id:'acacia'}]
+	},
+{
+		id:				'anneau_mielleux',
+		name:			"Anneau Mielleux",
+		rarity:		'commun',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Anneau Mielleux.png",
+		stats:		{soin_bonus:1, sante:10},
+    lore:     "Un anneau doré aux reflets ambrés, dont la surface lisse rappelle l'éclat du miel fraîchement coulé.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Commun'],
+    obtain:   "Achetable au Marchand d'Accessoires de Kaelor",
+		craft:		[{qty:5000, id:'cols'}]
+	},
+{
+		id:				'anneau_taureau',
+		name:			"Anneau du Taureau",
+		set:			'taureau',
+		rarity:		'commun',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Set des Taureaux/Anneau du Taureau.png",
+		stats:		{degats:2, sante:10},
+    lore:     "Forgé dans un métal lourd et brut, il porte la marque du taureau sauvage. Force brute et résistance sans faille.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Commun'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Kaelor",
+		craft:		[{qty:16, id:'corne_taureau'}, {qty:16, id:'peau_epaisse'}]
+	},
+{
+		id:				'anneau_ours',
+		name:			"Anneau de l'Ours",
+		set:			'ours',
+		rarity:		'commun',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Set des Ours/Anneau de l'Ours.png",
+		stats:		{crit_comp_degats:1, defense:0.5, sante:5},
+    lore:     "Forgé dans un métal lourd et brut, il porte la marque de l'ours sauvage. Force brute et résistance sans faille.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Commun'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Kaelor",
+		craft:		[{qty:24, id:'peau_ours'}, {qty:4, id:'graisse_ours'}, {qty:8, id:'griffe_ours'}]
+	},
+{
+		id:				'anneau_ferraille',
+		name:			"Anneau de Ferraille",
+		set:			'ferraille',
+		rarity:		'commun',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Set de Ferraille/Anneau de Ferraille.png",
+		stats:		{defense:0.5, sante:10},
+    lore:     "Forgé dans une ferraille rustique, cet anneau se distingue par sa couleur clair et sa solidité.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Commun'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Ferraille, au Nord-Est de la Baie des Monstres Ondoyante",
+		craft:		[{qty:4, id:'lingot_fer'}, {qty:24, id:'morceau_ferraille'}]
+	},
+{
+		id:				'anneau_bauxite',
+		name:			"Anneau de Bauxite",
+		set:			'bauxite',
+		rarity:		'rare',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			12,
+		img:			"../img/compendium/textures/trinkets/P2/Set de Bauxite/Anneau de Bauxite.png",
+		stats:		{defense:1, sante:10},
+    lore:     "Forgé dans de la bauxite éclatant, cet anneau se distingue par puissance, sa couleur claire et sa solidité.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Bauxite, au Sud du Baobab Millénaire",
+		craft:		[{qty:16, id:'lingot_bauxite'}]
+	},
+{
+		id:				'anneau_aventurier',
+		name:			"Anneau de l'Aventurier",
+		rarity:		'rare',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			13,
+		img:			"", //NULL
+		stats:		{vitesse_attaque:0.1, crit_comp_degats:1, defense:1, soin_bonus:1, sante:1, mana:1, stamina:1, regen_sante:0.1, regen_mana:0.1, regen_stamina:0.1},
+    lore:     "Forgé il y a longtemps, cet anneau porte la marque des plus grands aventuriers du royaume.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],
+    obtain:   "Récupérable une fois fini la Quête Secondaire «L'Épreuve du Chasseur», donné par Typpe"
+	},
+{
+		id:				'anneau_harpie_enflammee',
+		name:			"Anneau de la Harpie Enflammée",
+		rarity:		'epique',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/trinkets/P2/Anneau de la Harpie Enflammée.png",
+		stats:		{degats_arme:7.5, vol_vie:2, sante:15},
+    lore:     "La légende raconte que cet anneau est encore imprégné de la soif de sang de la Harpie dont il provient.",
+    tags:     ['Accessoire', 'Anneau', 'Secret', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires Secret du Nid de Brasier",
+		craft:		[{qty:32, id:'peau_cerf_montagnes'}, {qty:64, id:'morceau_ferraille'}, {qty:64, id:'plume_enflammee'}]
+	},
+{
+		id:				'anneau_harpie_ecrasee',
+		name:			"Anneau de la Harpie Écrasée",
+		rarity:		'epique',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/trinkets/P2/Anneau de la Harpie Écrasée.png",
+		stats:		{defense:2.5, reduction_degats:2.5, maitrise_bloc:5, puissance_bloc:1},
+    lore:     "Un anneau léger sculpté dans une serre de Harpie des Forêts. Sa couleur verte semble se fondre parfaitement dans le feuillage.",
+    tags:     ['Accessoire', 'Anneau', 'Secret', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires Secret de la Forêt des Ailes d'Émeraude",
+		craft:		[{qty:16, id:'racine_ancestrale'}, {qty:64, id:'morceau_ferraille'}, {qty:64, id:'plume_terreuse'}]
+	},
+{
+		id:				'anneau_harpie_noyee',
+		name:			"Anneau de la Harpie Noyée",
+		rarity:		'epique',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/trinkets/P2/Anneau de la Harpie Noyée.png",
+		stats:		{degats_competence:7.5, omnivamp:1.5, mana:10, stamina:5},
+    lore:     "Une griffe de harpie parcourue de courants électrique haute tension. Elle ne blesse pas le porteur, mais canalise son flux magique vers ses extrémités.",
+    tags:     ['Accessoire', 'Anneau', 'Secret', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires Secret de la Baie des Monstres Ondoyante",
+		craft:		[{qty:32, id:'eclat_magique_glacial'}, {qty:64, id:'morceau_ferraille'}, {qty:64, id:'plume_ondoyante'}]
+	},
+{
+		id:				'anneau_onyx_impur',
+		name:			"Anneau d'Onyx Impur",
+		set:			'onyx_impur',
+		rarity:		'epique',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Impur/Anneau d'Onyx Impur.png",
+		stats:		{crit_chance:1, defense:1.5, sante:10},
+    lore:     "Forgé grâce à de l'onyx impur cet anneau est incomplet mais semble très puissant malgré tout.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Impur, au Sud de Taran",
+		craft:		[{qty:16, id:'lingot_onyx_impur'}]
+	},
+{
+		id:				'anneau_winnie',
+		name:			"Anneau de Winnie",
+		set:			'ours',
+		rarity:		'mythique',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/trinkets/P2/Set des Ours/Bague de Winnie.png",
+		stats:		{crit_chance:5, crit_comp_chance:5, reduction_degats:2.5, sante:10},
+    lore:     "Une fine bague aux reflets bronzés, ornée d'un petit cristal jaune lumineux rappelant la chaleur et la bienveillance de son ancienne propriétaire.",
+    tags:     ['Accessoire', 'Anneau', 'Secret', 'Palier 2', 'Mythique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires Secret de la Forêt Sucrée, dans l'Antre du Boss Winnie",
+		craft:		[{qty:32, id:'lingot_cuivre'}, {qty:64, id:'peau_ours'}, {qty:64, id:'residu_miel'}, {qty:64, id:'miel'}, {qty:32, id:'graisse_ours'}]
+	},
+{
+		id:				'anneau_onyx_pur',
+		name:			"Anneau d'Onyx Pur",
+		set:			'onyx_pur',
+		rarity:		'legendaire',
+		cat:			'anneau',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			14,
+		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Pur/Anneau d'Onyx Pur.png",
+		stats:		{crit_chance:2, crit_degats:1, defense:1, sante:20},
+    lore:     "Forgé grâce à de l'onyx pur cet anneau est complet et est très puissant.",
+    tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Légendaire'],
+    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Pur, situé dans les grottes de la Faille au Sud-Est du Palier 2",
+		craft:		[{qty:8, id:'lingot_onyx_pur'}]
+	},
+//#endregion Accessoires > P2 > Anneaux
+//#region Accessoires > P2 > Amulettes
+{
+		id:				'collier_acamiel',
+		name:			"Collier Acamiel",
+		rarity:		'rare',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Collier Acamiel.png",
+		stats:		{vitesse_attaque:0.1, soin_bonus:1},
+    lore:     "Un collier orange, avec un noyau pur de miel.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
+		craft:		[{qty:16, id:'residu_miel'}, {qty:32, id:'planche_acacia'}, {qty:8, id:'ficelle_ferraille'}]
+	},
+{
+		id:				'amulette_ferraille',
+		name:			"Amulette de Ferraille",
+		set:			'ferraille',
+		rarity:		'commun',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Set de Ferraille/Amulette de Ferraille.png",
+		stats:		{defense:1, sante:10},
+    lore:     "Une amulette rudimentaire, forgée avec un mélange de ferraille. Rien de magique, juste de la robustesse.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Commun'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Ferraille, au Nord-Est de la Baie des Monstres Ondoyante",
+		craft:		[{qty:4, id:'lingot_fer'}, {qty:32, id:'morceau_ferraille'}]
+	},
+{
+		id:				'amulette_bauxite',
+		name:			"Amulette de Bauxite",
+		set:			'bauxite',
+		rarity:		'rare',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			12,
+		img:			"../img/compendium/textures/trinkets/P2/Set de Bauxite/Amulette de Bauxite.png",
+		stats:		{defense:1.5, sante:10},
+    lore:     "Une amulette efficace, forgée avec de la bauxite. Une étrange énergie s'en dégage.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Bauxite, au Sud du Baobab Millénaire",
+		craft:		[{qty:16, id:'lingot_bauxite'}]
+	},
+{
+		id:				'collier_tricolore',
+		name:			"Collier Tricolore",
+		rarity:		'epique',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			12,
+		img:			"../img/compendium/textures/trinkets/P2/Collier Tricolore.png",
+		stats:		{degats_arme:10, degats_competence:5, vol_vie:1, omnivamp:2, defense:1, maitrise_bloc:2.5, puissance_bloc:0.5, sante:5, mana:5, stamina:2.5},
+    lore:     "Un collier tricolore, inspirant la terreur des harpies.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
+		craft:		[{qty:32, id:'plume_enflammee'},{qty:32, id:'plume_terreuse'}, {qty:32, id:'plume_ondoyante'},  {qty:8, id:'lingot_fer'}]
+	},
+{
+		id:				'collier_taureaux',
+		name:			"Collier des Taureaux",
+		set:			'taureau',
+		rarity:		'rare',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			12,
+		img:			"../img/compendium/textures/trinkets/P2/Set des Taureaux/Collier des Taureaux.png",
+		stats:		{crit_chance:2.5, degats_physique:2.5, sante:5},
+    lore:     "Collier fabriqué par des ficelles de chêne et des cornes de taureaux.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Kaelor",
+		craft:		[{qty:12, id:'corne_taureau'}, {qty:12, id:'peau_epaisse'}, {qty:6, id:'ficelle_bouleau'}]
+	},
+{
+		id:				'collier_runique',
+		name:			"Collier Runique",
+		set:			'squelette',
+		rarity:		'epique',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			12,
+		img:			"../img/compendium/textures/trinkets/P2/Collier Runique.png",
+		stats:		{defense:3.5, sante:20},
+    lore:     "Collier fabriqué par d'ancien matériaux poussiéreux, mais drôlement résistant.",
+    tags:     ['Accessoire', 'Amulette', 'Secret', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires Secret du Sanctaire de Khesûn",
+		craft:		[{qty:36, id:'poussiere_dos'}, {qty:64, id:'chaine_spectrale'}, {qty:32, id:'pierre_runique'}]
+	},
+{
+		id:				'amulette_onyx_impur',
+		name:			"Amulette d'Onyx Impur",
+		set:			'onyx_impur',
+		rarity:		'epique',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Impur/Amulette d'Onyx Impur.png",
+		stats:		{defense:2, sante:15},
+    lore:     "Une amulette puissant, forgée avec de l'onyx impur.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Impur, au Sud de Taran",
+		craft:		[{qty:16, id:'lingot_onyx_impur'}, {qty:8, id:'ficelle_acacia'}]
+	},
+{
+		id:				'amulette_onyx_pur',
+		name:			"Amulette d'Onyx Pur",
+		set:			'onyx_pur',
+		rarity:		'legendaire',
+		cat:			'amulette',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			14,
+		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Pur/Amulette d'Onyx Pur.png",
+		stats:		{defense:2, sante:20},
+    lore:     "Une amulette éclatante, forgée avec de l'onyx pur.",
+    tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Légendaire'],
+    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Pur, situé dans les grottes de la Faille au Sud-Est du Palier 2",
+		craft:		[{qty:8, id:'lingot_onyx_pur'}, {qty:8, id:'ficelle_bouleau'}]
+	},
+//#endregion Accessoires > P2 > Amulettes
+//#region Accessoires > P2 > Gants
+{
+		id:				'gants_taureaux',
+		name:			"Gants des Taureaux",
+		set:			'taureau',
+		rarity:		'commun',    
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Set des Taureaux/Gants des Taureaux.png",
+		stats:		{degats_physique:1.5, defense:0.5, mana:5, stamina:2.5},
+    lore:     "Une paire de gants faits à partir de la peau des taureaux, situés au palier 2",
+    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Commun'],
+    obtain:   "Achetable au Marchand d'Accessoires de Kaelor",
+		craft:		[{qty:5000, id:'cols'}]
+	},
+{
+		id:				'gants_ours',
+		name:			"Gants des Ours",
+		set:			'ours',
+		rarity:		'rare',    	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:2,
+		lvl:11,		
+		img:			"../img/compendium/textures/trinkets/P2/Set des Ours/Gants des Ours.png",
+		stats:		{defense:1, regen_mana:0.6, regen_stamina:0.3},
+    lore:     "Une paire de gants faits à partir de la peau des ours, situés au palier 2",
+    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
+		craft:		[{qty:48, id:'peau_ours'}, {qty:16, id:'graisse_ours'}]
+	},
+{		
+		id:				'gants_ferraille',
+		name:			"Gants de Ferraille",
+		set:			'ferraille',
+		rarity:		'commun',   	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:2,
+		lvl:11,		
+		img:			"../img/compendium/textures/trinkets/P2/Set de Ferraille/Gants de Ferraille.png",
+		stats:		{degats:2, crit_chance:2.5},
+    lore:     "Une paire de gants faits à base de ferraille, rustique et à l'aspect solide",
+    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Commun'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Ferraille, au Nord-Est de la Baie des Monstres Ondoyante",
+		craft:		[{qty:8, id:'lingot_fer'}, {qty:32, id:'morceau_ferraille'}]
+	},
+{		
+		id:				'gants_bauxite',
+		name:			"Gants de Bauxite",
+		set:			'bauxite',
+		rarity:		'rare',   	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			12,
+		img:			"../img/compendium/textures/trinkets/P2/Set de Bauxite/Gants de Bauxite.png",
+		stats:		{degats:2.5, crit_chance:3, defense:1},
+    lore:     "Une paire de gants faits à base de bauxite, éclatant et à l'aspect solide comme un rubis",
+    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Bauxite, au Sud du Baobab Millénaire",
+		craft:		[{qty:24, id:'lingot_bauxite'}]
+	},
+{
+		id:				'gants_onyx_impur',
+		name:			"Gants d'Onyx Impur",
+		set:			'onyx_impur',
+		rarity:		'epique',   	
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Impur/Gants d'Onyx Impur.png",
+		stats:		{degats:2.5, crit_chance:3, defense:1},
+    lore:     "Une paire de gants fait à base d'onyx impur, incomplet et à l'aspect puissant comme une lame",
+    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Impur, au Sud de Taran",
+		craft:		[{qty:24, id:'lingot_onyx_impur'}]
+	},
+{
+		id:				'gants_onyx_pur',
+		name:			"Gants d'Onyx Pur",
+		set:			'onyx_pur',
+		rarity:		'legendaire',
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			14,
+		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Pur/Gants d'Onyx Pur.png",
+		stats:		{degats:2.5, crit_chance:3, defense:1},
+    lore:     "Une paire de gants fait à base d'onyx pur, éclatant et à l'aspect angélique",
+    tags:     ['Accessoire', 'Gants', 'Palier 2', 'Légendaire'],
+    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Pur, situé dans les grottes de la Faille au Sud-Est du Palier 2",
+		craft:		[{qty:12, id:'lingot_onyx_pur'}]
+	},
+//#endregion Accessoires > P2 > Gants
+//#region Accessoires > P2 > Bracelets
+{
+		id:				'bracelet_loups',
+		name:			"Bracelet des Loups",
+		set:			'loup',
+		rarity:		'commun',
+		cat:			'bracelet',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Set Loup Faiblard/Bracelet des Loups.png",
+		stats:		{degats:2, vitesse_attaque:0.1, defense:0.5},
+    lore:     "Forgé avec des peaux de multiples loups, il empeste de leur odeur.",
+    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Commun'],
+    obtain:   "Achetable au Marchand d'Accessoires de Kaelor",
+		craft:		[{qty:5000, id:'cols'}]
+	},
+{
+		id:				'bracelet_mielleux',
+		name:			"Bracelet Mielleux",
+		rarity:		'rare',
+		cat:			'bracelet',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Bracelet Mielleux.png",
+		stats:		{hate:2.5, soin_bonus:2, sante:5, mana:2.5},
+    lore:     "Forgé avec de nombreux matériaux obtenu des abeilles.",
+    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
+		craft:		[{qty:64, id:'residu_miel'}, {qty:16, id:'carapace_abeille'}]
+	},
+{
+		id:				'bracelet_runimiel',
+		name:			"Bracelet Runimiel",
+		rarity:		'rare',
+		cat:			'bracelet',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Bracelet Runimiel.png",
+		stats:		{soin_bonus:5, sante:-10, mana:-10},
+    lore:     "Forgé avec des pierres runiques et des matériaux obtenu des abeilles.",
+    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Urbus",
+		craft:		[{qty:48, id:'residu_miel'}, {qty:16, id:'lingot_fer'}]
+	},
+{
+		id:				'bracelet_ferraille',
+		name:			"Bracelet de Ferraille",
+		set:			'ferraille',
+		rarity:		'commun',
+		cat:			'bracelet',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/trinkets/P2/Set de Ferraille/Bracelet de Ferraille.png",
+		stats:		{defense:1, sante:10},
+    lore:     "Forgé avec la ferraille que l'on récolte sur le palier 2.",
+    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Commun'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Ferraille, au Nord-Est de la Baie des Monstres Ondoyante",
+		craft:		[{qty:8, id:'lingot_fer'}, {qty:32, id:'morceau_ferraille'}]
+	},
+{
+		id:				'bracelet_bauxite',
+		name:			"Bracelet de Bauxite",
+		set:			'bauxite',
+		rarity:		'rare',
+		cat:			'bracelet',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			12,
+		img:			"../img/compendium/textures/trinkets/P2/Set de Bauxite/Bracelet de Bauxite.png",
+		stats:		{defense:2, sante:10},
+    lore:     "Forgé avec la bauxite que l'on forge sur le palier 2.",
+    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Accessoires de Bauxite, au Sud du Baobab Millénaire",
+		craft:		[{qty:24, id:'lingot_bauxite'}]
+	},
+{
+		id:				'bracelet_onyx_impur',
+		name:			"Bracelet d'Onyx Impur",
+		set:			'onyx_impur',
+		rarity:		'epique',
+		cat:			'bracelet',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Impur/Bracelet d'Onyx Impur.png",
+		stats:		{defense:2, sante:15, regen_sante:0.1},
+    lore:     "Forgé avec de l'onyx impur, un fragment incomplet du palier 2.",
+    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Impur, au Sud de Taran",
+		craft:		[{qty:24, id:'lingot_onyx_impur'}]
+	},
+{
+		id:				'bracelet_onyx_pur',
+		name:			"Bracelet d'Onyx Pur",
+		set:			'onyx_pur',
+		rarity:		'legendaire',
+		cat:			'bracelet',
+		category:	'accessoire',
+		palier:		2,
+		lvl:			14,
+		img:			"../img/compendium/textures/trinkets/P2/Set d'Onyx Pur/Bracelet d'Onyx Pur.png",
+		stats:		{defense:2, sante:20, regen_sante:0.2},
+    lore:     "Forgé avec de l'onyx pur, un fragment brillant du palier 2.",
+    tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Légendaire'],
+    obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Pur, situé dans les grottes de la Faille au Sud-Est du Palier 2",
+		craft:		[{qty:12, id:'lingot_onyx_pur'}]
+	},
+//#endregion Accessoires > P2 > Bracelets
+//#region Accessoires > P2 > Artefacts
+{
 		id:				'simple_ceinture',
 		name:			"Simple Ceinture",
 		rarity:		'commun',
@@ -3568,7 +3750,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand d'Accessoires de Kaelor",
 		craft:		[{qty:5000, id:'cols'}]
 	},
-  {
+{
 		id:				'ceinture_taureau',
 		name:			"Ceinture du Taureau",
 		set:			'taureau',
@@ -3584,7 +3766,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Kaelor",
 		craft:		[{qty:8, id:'corne_taureau'}, {qty:24, id:'peau_epaisse'}]
 	},
-  {
+{
 		id:				'ceinture_ours',
 		name:			"Ceinture de l'Ours",
 		set:			'ours',
@@ -3600,7 +3782,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Kaelor",
 		craft:		[{qty:48, id:'peau_ours'}, {qty:16, id:'graisse_ours'}]
 	},
-  {
+{
 		id:				'piece_ferraille',
 		name:			"Pièce de Ferraille",
 		set:			'ferraille',
@@ -3616,7 +3798,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Ferraille, au Nord-Est de la Baie des Monstres Ondoyante",
 		craft:		[{qty:8, id:'lingot_fer'}, {qty:32, id:'morceau_ferraille'}]
 	},
-  {
+{
 		id:				'plume_flamboyante',
 		name:			"Plume Flamboyante",
 		rarity:		'rare',
@@ -3630,7 +3812,7 @@ const ITEMS = [
     tags:     ['Accessoire', 'Artefact', 'Plume', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Harpie de Feu"
 	},
-  {
+{
 		id:				'plume_ecarlate',
 		name:			"Plume Écarlate",
 		rarity:		'rare',
@@ -3644,7 +3826,7 @@ const ITEMS = [
     tags:     ['Accessoire', 'Artefact', 'Plume', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Harpie de Terre"
 	},
-  {
+{
 		id:				'plume_azur',
 		name:			"Plume Azur",
 		rarity:		'rare',
@@ -3658,7 +3840,7 @@ const ITEMS = [
     tags:     ['Accessoire', 'Artefact', 'Plume', 'Palier 2', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Harpie de Foudre"
 	},
-  {
+{
 		id:				'piece_bauxite',
 		name:			"Pièce de Bauxite",
 		set:			'bauxite',
@@ -3674,7 +3856,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires de Bauxite, au Sud du Baobab Millénaire",
 		craft:		[{qty:24, id:'lingot_bauxite'}]
 	},
-  {
+{
 		id:				'piece_onyx_impur',
 		name:			"Pièce d'Onyx Impur",
 		set:			'onyx_impur',
@@ -3690,7 +3872,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Impur, au Sud de Taran",
 		craft:		[{qty:24, id:'lingot_onyx_impur'}]
 	},
-  {
+{
 		id:				'talisman_feroce',
 		name:			"Talisman Féroce",
 		set:			'taureau',
@@ -3706,7 +3888,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires Secret du Lac des Taureaux",
 		craft:		[{qty:128, id:'peau_de_sanglier'}, {qty:64, id:'corne_taureau'}, {qty:64, id:'peau_epaisse'}]
 	},
-  {
+{
 		id:				'piece_onyx_pur',
 		name:			"Pièce d'Onyx Pur",
 		set:			'onyx_pur',
@@ -3722,7 +3904,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires d'Onyx Pur, situé dans les grottes de la Faille au Sud-Est du Palier 2",
 		craft:		[{qty:12, id:'lingot_onyx_pur'}]
 	},
-  {
+{
 		id:				'masque_corrompu',
 		name:			"Masque Corrompu",
 		set:			'faible_corruption',
@@ -3738,38 +3920,16 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Accessoires Secret de la Corruption au Palier 2",
 		craft:		[{qty:64, id:'ames_des_ruines'}, {qty:128, id:'cristal_corrompu'}, {qty:64, id:'tissu_spectral'}, {qty:1, id:'morceau_de_criniere_spectrale'}, {qty:3, id:'lingot_onyx_pur'}]
 	},
-  /* ══ Events ══ */
-  {
-		id:				'bracelet_rafales',
-		name:			"Bracelet des Rafales",
-		rarity:		'event',
-		cat:			'artefact',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Christmas/bracelet_rafales.png",
-		stats:		{esquive:2.5, sante:5, mana:5, stamina:5, vitesse_deplacement:0.5},
-    lore:     "Un bracelet ancien dont les inscriptions ondulent légèrement, comme agitées par un vent invisible.",
-    tags:     ['Accessoire', 'Artefact', 'Masque', 'Secret', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "..."
-	},
-  {
-		id:				'couronne_solstice',
-		name:			"Couronne du Solstice",
-		rarity:		'event',
-		cat:			'artefact',
-		category:	'accessoire',
-		palier:		1,
-		lvl:			10,
-		img:			"../img/compendium/textures/trinkets/Christmas/couronne_sol.png",
-		stats:		{hate:5, mana:5, stamina:2.5, cout_mana:-2, cout_stamina:-1},
-    lore:     "Une couronne finement ouvragée, mêlant motifs solaires et hivernaux, symbole de l'équilibre entre les saisons.",
-    tags:     ['Accessoire', 'Artefact', 'Couronne', 'Palier 1', 'Event', 'Noël'],
-    obtain:   "Finir la Quête d'Événement de Noël 2025"
-	},
 
-  /* ══ Armures ══ */
-  {
+//#endregion Accessoires > P2 > Artefacts
+//#region Accessoires > P2 > Events
+//#endregion Accessoires > P2 > Events
+//#endregion Accessoires > Palier 2
+//#endregion Accessoires
+//#region Armures
+//#region Armures > Palier 1
+//#region Armures > P1 > Génériques
+{
 		id:				'tunique_debutant',
 		name:			"Tunique du Débutant",
 		rarity:		'commun',
@@ -3784,7 +3944,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:12, id:'peau_de_sanglier'}, {qty:4, id:'lingot_cuivre'}]
 	},
-  {
+{
 		id:				'jambieres_debutant',
 		name:			"Jambières du Débutant",
 		rarity:		'commun',
@@ -3799,7 +3959,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:8, id:'peau_de_sanglier'}, {qty:4, id:'lingot_cuivre'}]
 	},
-  {
+{
 		id:				'bottes_debutant',
 		name:			"Bottes du Débutant",
 		rarity:		'commun',
@@ -3814,9 +3974,38 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:5, id:'peau_de_sanglier'}, {qty:2, id:'lingot_cuivre'}]
 	},
-  /* ══ Guerrier ══ */
-  /* ══ Palier 1 ══ */
-  {
+{
+		id:				'bottes_revenant',
+		name:			"Bottes du Revenant",
+		rarity:		'legendaire',
+		cat:			'bottes',
+		category:	'armure',
+		palier:		1,
+		lvl:			5,
+		img:			"../img/compendium/textures/armors/bottes_du_revenant.png",
+		stats:		{vitesse_deplacement:5},
+    lore:     "Imprégnées de la vitesse d'un cheval maudit, elles confèrent à leur porteur une très grande vitesse.",
+    tags:     ['Armure', 'Bottes', 'Palier 1', 'Légendaire'],
+    obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
+		craft:    [{qty:1, id:'eclat_du_sabot_maudit'}, {qty:64, id:'carapace_dika'}, {qty:64, id:'cuir_use'}, {qty:64, id:'fourrure_de_loup'}]
+	},
+{
+		id:				'bottes_ecume',
+		name:			"Bottes de l'Écume",
+		rarity:		'legendaire',
+		cat:			'bottes',
+		category:	'armure',
+		palier:		1,
+		lvl:			5,
+		img:			"../img/compendium/textures/armors/bottes_decume.png",
+		stats:		{'Agilité Aquatique':10},
+    lore:     "Petites paires de bottes faites à partir de magie de l'au-delà et de composants assez rares.",
+    tags:     ['Armure', 'Bottes', 'Palier 1', 'Légendaire'],
+    obtain:   "Récupérable une fois fini la Quête Principale «22 - Chasse aux Poissons Requin», donné par Malrik"
+	},
+//#endregion Armures > P1 > Génériques
+//#region Armures > P1 > Guerrier
+{
 		id:				'tunique_ika',
 		name:			"Tunique d'Ika",
 		set:			'ika',
@@ -3833,7 +4022,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:18, id:'carapace_dika'}, {qty:10, id:'gelee_de_slime'}]
 	},
-  {
+{
 		id:				'jambieres_ika',
 		name:			"Jambières d'Ika",
 		set:			'ika',
@@ -3850,7 +4039,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:15, id:'carapace_dika'}, {qty:8, id:'gelee_de_slime'}]
 	},
-  {
+{
 		id:				'bottes_ika',
 		name:			"Bottes d'Ika",
 		set:			'ika',
@@ -3867,7 +4056,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:10, id:'carapace_dika'}, {qty:5, id:'gelee_de_slime'}]
 	},
-  {
+{
 		id:				'casque_titan',
 		name:			"Casque du Titan",
 		set:			'titan',
@@ -3884,7 +4073,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:15, id:'carapace_requin'}, {qty:25, id:'peau_dur_glacial'}]
 	},
-  {
+{
 		id:				'plastron_titan',
 		name:			"Plastron du Titan",
 		set:			'titan',
@@ -3901,7 +4090,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'carapace_requin'}, {qty:20, id:'peau_dur_glacial'}]
 	},
-  {
+{
 		id:				'jambieres_titan',
 		name:			"Jambières du Titan",
 		set:			'titan',
@@ -3918,7 +4107,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'carapace_requin'}, {qty:15, id:'peau_dur_glacial'}]
 	},
-  {
+{
 		id:				'bottes_titan',
 		name:			"Bottes du Titan",
 		set:			'titan',
@@ -3935,7 +4124,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'carapace_requin'}, {qty:12, id:'peau_dur_glacial'}]
 	},
-  {
+{
 		id:				'casque_gardien',
 		name:			"Casque du Gardien",
 		set:			'gardien',
@@ -3952,7 +4141,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_warden'}, {qty:20, id:'lingot_metal_enchante'}, {qty:10, id:'fragment_casse_rouge'}]
 	},
-  {
+{
 		id:				'plastron_gardien',
 		name:			"Plastron du Gardien",
 		set:			'gardien',
@@ -3969,7 +4158,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_warden'}, {qty:24, id:'lingot_metal_enchante'}, {qty:14, id:'fragment_casse_rouge'}]
 	},
-  {
+{
 		id:				'jambieres_gardien',
 		name:			"Jambières du Gardien",
 		set:			'gardien',
@@ -3986,7 +4175,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_warden'}, {qty:20, id:'lingot_metal_enchante'}, {qty:10, id:'fragment_casse_rouge'}]
 	},
-  {
+{
 		id:				'bottes_gardien',
 		name:			"Bottes du Gardien",
 		set:			'gardien',
@@ -4003,147 +4192,9 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_warden'}, {qty:12, id:'lingot_metal_enchante'}, {qty:9, id:'fragment_casse_rouge'}]
 	},
-  /* ══ Palier 2 ══ */
-  {
-		id:				'casque_ruche',
-		name:			"Casque de la Ruche",
-		set:			'abeille_guer',
-		rarity:		'rare',
-		cat:			'casque',
-		category:	'armure',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/armors/helmet_abeille.png",
-		stats:		{sante:[35,41], defense:[3,3.5]},
-		classes:	['guerrier'],
-    lore:     "Forgée à partir de carapaces, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Casque', 'Guerrier', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:32, id:'miel'}, {qty:24, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {	
-		id:				'plastron_ruche',
-		name:			"Plastron de la Ruche",
-		set:			'abeille_guer',
-		rarity:		'rare',
-		cat:			'plastron',
-		category:	'armure',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/armors/chestplate_abeille.png",
-		stats:		{sante:[40.01,49.99], defense:[4,5], 'Emplacement de Runes':1},
-		classes:	['guerrier'],
-    lore:     "Forgée à partir de carapaces, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Plastron', 'Guerrier', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:64, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {
-		id:				'jambieres_ruche',
-		name:			"Jambières de la Ruche",
-		set:			'abeille_guer',
-		rarity:		'rare',
-		cat:			'jambières',
-		category:	'armure',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/armors/leggings_abeille.png",
-		stats:		{sante:[37,45], defense:[3.5,3.9]},
-		classes:	['guerrier'],
-    lore:     "Forgée à partir de carapaces, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Jambières', 'Guerrier', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:42, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {
-		id:				'bottes_ruche',
-		name:			"Bottes de la Ruche",
-		set:			'abeille_guer',
-		rarity:		'rare',
-		cat:			'bottes',
-		category:	'armure',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/armors/boots_abeille.png",
-		stats:		{sante:[33,38.99], defense:[2,2.5]},
-		classes:	['guerrier'],
-    lore:     "Forgée à partir de carapaces, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Bottes', 'Guerrier', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {
-		id:				'casque_necro_guerrier',
-		name:			"Casque du Nécromancien",
-		set:			'necro_guer',
-		rarity:		'epique',
-		cat:			'casque',
-		category:	'armure',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/armors/helmet_necromancien.png",
-		stats:		{sante:[43,50], defense:[4,4.5]},
-		classes:	['guerrier'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Casque', 'Guerrier', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
-  {
-		id:				'plastron_necro_guerrier',
-		name:			"Plastron du Nécromancien",
-		set:			'necro_guer',
-		rarity:		'epique',
-		cat:			'plastron',
-		category:	'armure',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/armors/chestplate_necromancien.png",
-		stats:		{sante:[47,57], defense:[6,7], 'Emplacement de Runes':2},
-		classes:	['guerrier'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Plastron', 'Guerrier', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
-		
-	},
-  {
-		id:				'jambieres_necro_guerrier',
-		name:			"Jambières du Nécromancien",
-		set:			'necro_guer',
-		rarity:		'epique',
-		cat:			'jambières',
-		category:	'armure',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/armors/leggings_necromancien.png",
-		stats:		{sante:[45,51.98], defense:[4.5,5]},
-		classes:	['guerrier'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Jambières', 'Guerrier', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
-	},
-  {
-		id:				'bottes_necro_guerrier',
-		name:			"Bottes du Nécromancien",
-		set:			'necro_guer',
-		rarity:		'epique',
-		cat:			'bottes',
-		category:	'armure',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/armors/boots_necromancien.png",
-		stats:		{sante:[41.01,46.99], defense:[3,3.5]},
-		classes:	['guerrier'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Bottes', 'Guerrier', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
-  /* ══ Assassin - Archer ══ */
-  /* ══ Palier 1 ══ */
-  {
+//#endregion Armures > P1 > Guerrier
+//#region Armures > P1 > Assassin-Archer
+{
 		id:				'tunique_tactique',
 		name:			"Tunique Tactique",
 		set:			'tactique',
@@ -4160,7 +4211,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:18, id:'fourrure_de_loup'}, {qty:10, id:'ecorce_sylvestre'}]
 	},
-  {
+{
 		id:				'jambieres_tactique',
 		name:			"Jambières Tactique",
 		set:			'tactique',
@@ -4177,7 +4228,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:15, id:'fourrure_de_loup'}, {qty:8, id:'ecorce_sylvestre'}]
 	},
-  {
+{
 		id:				'bottes_tactique',
 		name:			"Bottes Tactique",
 		set:			'tactique',
@@ -4194,7 +4245,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:10, id:'fourrure_de_loup'}, {qty:5, id:'ecorce_sylvestre'}]
 	},
-  {
+{
 		id:				'tunique_ninja',
 		name:			"Tunique du Ninja",
 		set:			'ninja',
@@ -4211,7 +4262,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:20, id:'eclat_magique_glacial'}]
 	},
-  {
+{
 		id:				'jambieres_ninja',
 		name:			"Jambières du Ninja",
 		set:			'ninja',
@@ -4228,7 +4279,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:15, id:'eclat_magique_glacial'}]
 	},
-  {
+{
 		id:				'bottes_ninja',
 		name:			"Bottines du Ninja",
 		set:			'ninja',
@@ -4245,7 +4296,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:12, id:'eclat_magique_glacial'}]
 	},
-  {
+{
 		id:				'tunique_chasseur',
 		name:			"Plastron du Chasseur",
 		set:			'chasseur',
@@ -4262,7 +4313,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:20, id:'eclat_magique_glacial'}]
 	},
-  {
+{
 		id:				'jambieres_chasseur',
 		name:			"Jambières du Chasseur",
 		set:			'chasseur',
@@ -4279,7 +4330,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:15, id:'eclat_magique_glacial'}]
 	},
-  {
+{
 		id:				'bottes_chasseur',
 		name:			"Bottines du Chasseur",
 		set:			'chasseur',
@@ -4296,7 +4347,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:12, id:'eclat_magique_glacial'}]
 	},
-  {
+{
 		id:				'casque_heraut',
 		name:			"Casque du Héraut",
 		set:			'heraut',
@@ -4313,7 +4364,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_herald'}, {qty:20, id:'lingot_metal_enchante'}, {qty:10, id:'fragment_casse_jaune'}]
 	},
-  {
+{
 		id:				'plastron_heraut',
 		name:			"Plastron du Héraut",
 		set:			'heraut',
@@ -4330,7 +4381,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_herald'}, {qty:24, id:'lingot_metal_enchante'}, {qty:14, id:'fragment_casse_jaune'}]
 	},
-  {
+{
 		id:				'jambieres_heraut',
 		name:			"Jambières du Héraut",
 		set:			'heraut',
@@ -4347,7 +4398,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_herald'}, {qty:20, id:'lingot_metal_enchante'}, {qty:10, id:'fragment_casse_jaune'}]
 	},
-  {
+{
 		id:				'bottes_heraut',
 		name:			"Bottes du Héraut",
 		set:			'heraut',
@@ -4364,283 +4415,9 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_herald'}, {qty:12, id:'lingot_metal_enchante'}, {qty:9, id:'fragment_casse_jaune'}]
 	},
-  /* ══ Palier 2 ══ */
-  {
-		id:				'casque_assassin',
-		name:			"Casque de l'Assassin",
-		set:			'abeille_assa',
-		rarity:		'rare',
-		cat:			'casque',
-		category:	'armure',
-		palier:2,
-		lvl:11,		
-		img:			"../img/compendium/textures/armors/helmet_abeille.png",
-		stats:		{sante:[26,31], defense:[3.3,3.6]}, 
-		classes:	['assassin'],
-    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les assassins.",
-    tags:     ['Armure', 'Casque', 'Assassin', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {
-		id:				'plastron_assassin',
-		name:			"Plastron de l'Assassin",
-		set:			'abeille_assa',
-		rarity:		'rare',
-		cat:			'plastron',
-		category:	'armure',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/armors/chestplate_abeille.png",
-		stats:		{sante:[37,42], defense:[4.3,4.7], 'Emplacement de Runes':1},
-		classes:	['assassin'],
-    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les assassins.",
-    tags:     ['Armure', 'Plastron', 'Assassin', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:32, id:'miel'}, {qty:64, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {
-		id:				'jambieres_assassin',
-		name:			"Jambières de l'Assassin",
-		set:			'abeille_assa',
-		rarity:		'rare',
-		cat:			'jambières',
-		category:	'armure',
-		palier:		2,
-		lvl:			11, 
-		img:			"../img/compendium/textures/armors/leggings_abeille.png",
-		stats:		{sante:[27,31.06], defense:[3.4,3.7]},
-		classes:	['assassin'],
-    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les assassins.",
-    tags:     ['Armure', 'Jambières', 'Assassin', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:32, id:'miel'}, {qty:42, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {
-		id:				'bottes_assassin',
-		name:			"Bottes de l'Assassin",
-		set:			'abeille_assa',
-		rarity:		'rare',
-		cat:			'bottes',
-		category:	'armure',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/armors/boots_abeille.png",
-		stats:		{sante:[23.01,38.99],
-		defense:	[3,3.4]},
-		classes:	['assassin'],
-    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les assassins.",
-    tags:     ['Armure', 'Bottes', 'Assassin', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {
-		id:				'casque_necro_assassin',
-		name:			"Casque du Nécromancien",
-		set:			'necro_assa',
-		rarity:		'epique',
-		cat:			'casque',
-		category:	'armure',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/armors/helmet_necromancien.png",
-		stats:		{sante:[32,37], defense:[3.7,4]},
-		classes:	['assassin'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Casque', 'Assassin', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
-  {
-		id:				'plastron_necro_assassin',
-		name:			"Plastron du Nécromancien",
-		set:			'necro_assa',
-		rarity:		'epique',
-		cat:			'plastron',
-		category:	'armure',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/armors/chestplate_necromancien.png",
-		stats:		{sante:[35,41.15], defense:[4.27,4.5], 'Emplacement de Runes':2},
-		classes:	['assassin'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Plastron', 'Assassin', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
-	},
-  {
-		id:				'jambieres_necro_assassin',
-		name:			"Jambières du Nécromancien",
-		set:			'necro_assa',
-		rarity:		'epique',
-		cat:			'jambières',
-		category:	'armure',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/armors/leggings_necromancien.png",
-		stats:		{sante:[33,37.2], defense:[3.8,4.2]},
-		classes:	['assassin'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Jambières', 'Assassin', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
-	},
-  {
-		id:				'bottes_necro_assassin',
-		name:			"Bottes du Nécromancien",
-		set:			'necro_assa',
-		rarity:		'epique',
-		cat:			'bottes',
-		category:	'armure',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/armors/boots_necromancien.png",
-		stats:		{sante:[30,35.42], defense:3.5},
-		classes:	['assassin'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Bottes', 'Assassin', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
-  {
-		id:				'casque_chasseuse',
-		name:			"Casque de la chasseuse",
-		set:			'abeille_arch',
-		rarity:		'rare',
-		cat:			'casque',
-		category:	'armure',
-		palier:		2,
-		lvl:			11,		
-		img:			"../img/compendium/textures/armors/helmet_abeille.png",
-		stats			:{sante:[26,31], defense:[3.2,3.5]},
-		classes:	['archer'],
-    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les chasseurs.",
-    tags:     ['Armure', 'Casque', 'Archer', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {
-		id:				'plastron_chasseuse',
-		name:			"Plastron de la chasseuse",
-		set:			'abeille_arch',
-		rarity:		'rare',
-		cat:			'plastron',
-		category:	'armure',
-		palier:		2,
-		lvl:			11,		
-		img:			"../img/compendium/textures/armors/chestplate_abeille.png",
-		stats			:{sante:[35,40], defense:[4.1,4.5], 'Emplacement de Runes':1},
-		classes:	['archer'],
-    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les chasseurs.",
-    tags:     ['Armure', 'Plastron', 'Archer', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:32, id:'miel'}, {qty:64, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {
-		id:				'jambieres_chasseuse',
-		name:			"Jambières de la chasseuse",
-		set:			'abeille_arch',
-		rarity:		'rare',
-		cat:			'jambières',
-		category:	'armure',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/armors/leggings_abeille.png",
-		stats:		{sante:[26.01,29.99], defense:[3.2,3.5]},
-		classes:	['archer'],
-    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les chasseurs.",
-    tags:     ['Armure', 'Jambières', 'Archer', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:32, id:'miel'}, {qty:42, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {
-		id:				'bottes_chasseuse',
-		name:			"Bottes de la chasseuse",
-		set:			'abeille_arch',
-		rarity:		'rare',
-		cat:			'bottes',
-		category:	'armure',
-		palier:		2,
-		lvl:			11,
-		img:			"../img/compendium/textures/armors/boots_abeille.png",
-		stats:		{sante:[21,27], defense:[2.8,3.2]},
-		classes:	['archer'],
-    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les chasseurs.",
-    tags:     ['Armure', 'Bottes', 'Archer', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
-		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
-  {
-		id:				'casque_necro_archer',
-		name:			"Casque du Nécromancien",
-		set:			'necro_arch',
-		rarity:		'epique',
-		cat:			'casque',
-		category:	'armure',
-		palier:2,
-		lvl:13,		
-		img:			"../img/compendium/textures/armors/helmet_necromancien.png",
-		stats:		{sante:[29,32], defense:[3.13,3.37]},
-		classes:	['archer'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Casque', 'Archer', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
-  {
-		id:				'plastron_necro_archer',
-		name:			"Plastron du Nécromancien",
-		set:			'necro_arch',
-		rarity:		'epique',
-		cat:			'plastron',
-		category:	'armure',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/armors/chestplate_necromancien.png",
-		stats:		{sante:[41,44], defense:[4.6,5.06], 'Emplacement de Runes':2},
-		classes:	['archer'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Plastron', 'Archer', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
-	},
-  {
-		id:				'jambieres_necro_archer',
-		name:			"Jambières du Nécromancien",
-		set:			'necro_arch',
-		rarity:		'epique',
-		cat:			'jambières',
-		category:	'armure',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/armors/leggings_necromancien.png",
-		stats:		{sante:[31,34], defense:[3.6,3.9]},
-		classes:	['archer'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Jambières', 'Archer', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
-	},
-  {
-		id:				'bottes_necro_archer',
-		name:			"Bottes du Nécromancien",
-		set:			'necro_arch',
-		rarity:		'epique',
-		cat:			'bottes',
-		category:	'armure',
-		palier:		2,
-		lvl:			13,
-		img:			"../img/compendium/textures/armors/boots_necromancien.png",
-		stats:		{sante:[28,31], defense:[3.3,3.6]},
-		classes:	['archer'],
-    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
-    tags:     ['Armure', 'Bottes', 'Archer', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
-		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
-  /* ══ Mage - Shaman ══ */
-  /* ══ Palier 1 ══ */
-  {
+//#endregion Armures > P1 > Assassin-Archer
+//#region Armures > P1 > Mage-Shaman
+{
 		id:				'tunique_spectral',
 		name:			"Tunique Spectral",
 		set:			'spectral',
@@ -4657,7 +4434,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:18, id:'cuir_use'}, {qty:10, id:'tissu_spectral'}]
 	},
-  {	
+{	
 		id:				'jambieres_spectral',
 		name:			"Jambières Spectral",
 		set:			'spectral',
@@ -4674,7 +4451,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:15, id:'cuir_use'}, {qty:8, id:'tissu_spectral'}]
 	},
-  {
+{
 		id:				'bottes_spectral',
 		name:			"Bottes Spectral",
 		set:			'spectral',
@@ -4691,7 +4468,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
 		craft:		[{qty:10, id:'cuir_use'}, {qty:5, id:'tissu_spectral'}]
 	},
-  {
+{
 		id:				'robe_sorcier',
 		name:			"Robe du Sorcier",
 		set:			'sorcier',
@@ -4709,7 +4486,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:20, id:'tissu_araignee'}]
 	},
-  {
+{
 		id:				'pantalon_sorcier',
 		name:			"Pantalon du Sorcier",
 		set:			'sorcier',
@@ -4726,7 +4503,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:15, id:'tissu_araignee'}]
 	},
-  {
+{
 		id:				'sandales_sorcier',
 		name:			"Sandales du Sorcier",
 		set:			'sorcier',
@@ -4743,7 +4520,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:12, id:'tissu_araignee'}]
 	},
-  {
+{
 		id:				'robe_magicien',
 		name:			"Robe du Magicien",
 		set:			'magicien',
@@ -4760,7 +4537,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:20, id:'tissu_araignee'}]
 	},
-  {
+{
 		id:				'pantalon_magicien',
 		name:			"Pantalon du Magicien",
 		set:			'magicien',
@@ -4777,7 +4554,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:15, id:'tissu_araignee'}]
 	},
-  {
+{
 		id:				'sandales_magicien',
 		name:			"Sandales du Magicien",
 		set:			'magicien',
@@ -4794,7 +4571,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures de Tolbana",
 		craft:		[{qty:18, id:'peau_cerf_montagnes'}, {qty:12, id:'tissu_araignee'}]
 	},
-  {
+{
 		id:				'casque_faucheuse',
 		name:			"Casque de la Faucheuse",
 		set:			'faucheuse',
@@ -4811,7 +4588,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_reaper'}, {qty:20, id:'lingot_ame_metal'}, {qty:3, id:'eclat_fusionne'}]
 	},
-  {
+{
 		id:				'plastron_faucheuse',
 		name:			"Plastron de la Faucheuse",
 		set:			'faucheuse',
@@ -4828,7 +4605,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_reaper'}, {qty:24, id:'lingot_ame_metal'}, {qty:6, id:'eclat_fusionne'}]
 	},
-  {
+{
 		id:				'jambieres_faucheuse',
 		name:			"Jambières de la Faucheuse",
 		set:			'faucheuse',
@@ -4845,7 +4622,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_reaper'}, {qty:20, id:'lingot_ame_metal'}, {qty:4, id:'eclat_fusionne'}]
 	},
-  {
+{
 		id:				'bottes_faucheuse',
 		name:			"Bottes de la Faucheuse",
 		set:			'faucheuse',
@@ -4862,8 +4639,425 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Labyrinthe des Déchus",
 		craft:		[{qty:1, id:'ame_reaper'}, {qty:12, id:'lingot_ame_metal'}, {qty:5, id:'eclat_fusionne'}]
 	},
-  /* ══ Palier 2 ══ */
-  {
+//#endregion Armures > P1 > Mage-Shaman
+//#endregion Armures > Palier 1
+//#region Armures > Palier 2
+//#region Armures > P2 > Guerrier
+{
+		id:				'casque_ruche',
+		name:			"Casque de la Ruche",
+		set:			'abeille_guer',
+		rarity:		'rare',
+		cat:			'casque',
+		category:	'armure',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/armors/helmet_abeille.png",
+		stats:		{sante:[35,41], defense:[3,3.5]},
+		classes:	['guerrier'],
+    lore:     "Forgée à partir de carapaces, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Casque', 'Guerrier', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:32, id:'miel'}, {qty:24, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{	
+		id:				'plastron_ruche',
+		name:			"Plastron de la Ruche",
+		set:			'abeille_guer',
+		rarity:		'rare',
+		cat:			'plastron',
+		category:	'armure',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/armors/chestplate_abeille.png",
+		stats:		{sante:[40.01,49.99], defense:[4,5], 'Emplacement de Runes':1},
+		classes:	['guerrier'],
+    lore:     "Forgée à partir de carapaces, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Plastron', 'Guerrier', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:64, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{
+		id:				'jambieres_ruche',
+		name:			"Jambières de la Ruche",
+		set:			'abeille_guer',
+		rarity:		'rare',
+		cat:			'jambières',
+		category:	'armure',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/armors/leggings_abeille.png",
+		stats:		{sante:[37,45], defense:[3.5,3.9]},
+		classes:	['guerrier'],
+    lore:     "Forgée à partir de carapaces, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Jambières', 'Guerrier', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:42, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{
+		id:				'bottes_ruche',
+		name:			"Bottes de la Ruche",
+		set:			'abeille_guer',
+		rarity:		'rare',
+		cat:			'bottes',
+		category:	'armure',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/armors/boots_abeille.png",
+		stats:		{sante:[33,38.99], defense:[2,2.5]},
+		classes:	['guerrier'],
+    lore:     "Forgée à partir de carapaces, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Bottes', 'Guerrier', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{
+		id:				'casque_necro_guerrier',
+		name:			"Casque du Nécromancien",
+		set:			'necro_guer',
+		rarity:		'epique',
+		cat:			'casque',
+		category:	'armure',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/armors/helmet_necromancien.png",
+		stats:		{sante:[43,50], defense:[4,4.5]},
+		classes:	['guerrier'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Casque', 'Guerrier', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
+	},
+{
+		id:				'plastron_necro_guerrier',
+		name:			"Plastron du Nécromancien",
+		set:			'necro_guer',
+		rarity:		'epique',
+		cat:			'plastron',
+		category:	'armure',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/armors/chestplate_necromancien.png",
+		stats:		{sante:[47,57], defense:[6,7], 'Emplacement de Runes':2},
+		classes:	['guerrier'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Plastron', 'Guerrier', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
+		
+	},
+{
+		id:				'jambieres_necro_guerrier',
+		name:			"Jambières du Nécromancien",
+		set:			'necro_guer',
+		rarity:		'epique',
+		cat:			'jambières',
+		category:	'armure',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/armors/leggings_necromancien.png",
+		stats:		{sante:[45,51.98], defense:[4.5,5]},
+		classes:	['guerrier'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Jambières', 'Guerrier', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
+	},
+{
+		id:				'bottes_necro_guerrier',
+		name:			"Bottes du Nécromancien",
+		set:			'necro_guer',
+		rarity:		'epique',
+		cat:			'bottes',
+		category:	'armure',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/armors/boots_necromancien.png",
+		stats:		{sante:[41.01,46.99], defense:[3,3.5]},
+		classes:	['guerrier'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Bottes', 'Guerrier', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
+	},
+//#endregion Armures > P2 > Guerrier
+//#region Armures > P2 > Assassin-Archer
+{
+		id:				'casque_assassin',
+		name:			"Casque de l'Assassin",
+		set:			'abeille_assa',
+		rarity:		'rare',
+		cat:			'casque',
+		category:	'armure',
+		palier:2,
+		lvl:11,		
+		img:			"../img/compendium/textures/armors/helmet_abeille.png",
+		stats:		{sante:[26,31], defense:[3.3,3.6]}, 
+		classes:	['assassin'],
+    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les assassins.",
+    tags:     ['Armure', 'Casque', 'Assassin', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{
+		id:				'plastron_assassin',
+		name:			"Plastron de l'Assassin",
+		set:			'abeille_assa',
+		rarity:		'rare',
+		cat:			'plastron',
+		category:	'armure',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/armors/chestplate_abeille.png",
+		stats:		{sante:[37,42], defense:[4.3,4.7], 'Emplacement de Runes':1},
+		classes:	['assassin'],
+    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les assassins.",
+    tags:     ['Armure', 'Plastron', 'Assassin', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:32, id:'miel'}, {qty:64, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{
+		id:				'jambieres_assassin',
+		name:			"Jambières de l'Assassin",
+		set:			'abeille_assa',
+		rarity:		'rare',
+		cat:			'jambières',
+		category:	'armure',
+		palier:		2,
+		lvl:			11, 
+		img:			"../img/compendium/textures/armors/leggings_abeille.png",
+		stats:		{sante:[27,31.06], defense:[3.4,3.7]},
+		classes:	['assassin'],
+    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les assassins.",
+    tags:     ['Armure', 'Jambières', 'Assassin', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:32, id:'miel'}, {qty:42, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{
+		id:				'bottes_assassin',
+		name:			"Bottes de l'Assassin",
+		set:			'abeille_assa',
+		rarity:		'rare',
+		cat:			'bottes',
+		category:	'armure',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/armors/boots_abeille.png",
+		stats:		{sante:[23.01,38.99],
+		defense:	[3,3.4]},
+		classes:	['assassin'],
+    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les assassins.",
+    tags:     ['Armure', 'Bottes', 'Assassin', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{
+		id:				'casque_necro_assassin',
+		name:			"Casque du Nécromancien",
+		set:			'necro_assa',
+		rarity:		'epique',
+		cat:			'casque',
+		category:	'armure',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/armors/helmet_necromancien.png",
+		stats:		{sante:[32,37], defense:[3.7,4]},
+		classes:	['assassin'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Casque', 'Assassin', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
+	},
+{
+		id:				'plastron_necro_assassin',
+		name:			"Plastron du Nécromancien",
+		set:			'necro_assa',
+		rarity:		'epique',
+		cat:			'plastron',
+		category:	'armure',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/armors/chestplate_necromancien.png",
+		stats:		{sante:[35,41.15], defense:[4.27,4.5], 'Emplacement de Runes':2},
+		classes:	['assassin'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Plastron', 'Assassin', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
+	},
+{
+		id:				'jambieres_necro_assassin',
+		name:			"Jambières du Nécromancien",
+		set:			'necro_assa',
+		rarity:		'epique',
+		cat:			'jambières',
+		category:	'armure',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/armors/leggings_necromancien.png",
+		stats:		{sante:[33,37.2], defense:[3.8,4.2]},
+		classes:	['assassin'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Jambières', 'Assassin', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
+	},
+{
+		id:				'bottes_necro_assassin',
+		name:			"Bottes du Nécromancien",
+		set:			'necro_assa',
+		rarity:		'epique',
+		cat:			'bottes',
+		category:	'armure',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/armors/boots_necromancien.png",
+		stats:		{sante:[30,35.42], defense:3.5},
+		classes:	['assassin'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Bottes', 'Assassin', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
+	},
+{
+		id:				'casque_chasseuse',
+		name:			"Casque de la chasseuse",
+		set:			'abeille_arch',
+		rarity:		'rare',
+		cat:			'casque',
+		category:	'armure',
+		palier:		2,
+		lvl:			11,		
+		img:			"../img/compendium/textures/armors/helmet_abeille.png",
+		stats			:{sante:[26,31], defense:[3.2,3.5]},
+		classes:	['archer'],
+    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les chasseurs.",
+    tags:     ['Armure', 'Casque', 'Archer', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{
+		id:				'plastron_chasseuse',
+		name:			"Plastron de la chasseuse",
+		set:			'abeille_arch',
+		rarity:		'rare',
+		cat:			'plastron',
+		category:	'armure',
+		palier:		2,
+		lvl:			11,		
+		img:			"../img/compendium/textures/armors/chestplate_abeille.png",
+		stats			:{sante:[35,40], defense:[4.1,4.5], 'Emplacement de Runes':1},
+		classes:	['archer'],
+    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les chasseurs.",
+    tags:     ['Armure', 'Plastron', 'Archer', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:32, id:'miel'}, {qty:64, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{
+		id:				'jambieres_chasseuse',
+		name:			"Jambières de la chasseuse",
+		set:			'abeille_arch',
+		rarity:		'rare',
+		cat:			'jambières',
+		category:	'armure',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/armors/leggings_abeille.png",
+		stats:		{sante:[26.01,29.99], defense:[3.2,3.5]},
+		classes:	['archer'],
+    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les chasseurs.",
+    tags:     ['Armure', 'Jambières', 'Archer', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:32, id:'miel'}, {qty:42, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{
+		id:				'bottes_chasseuse',
+		name:			"Bottes de la chasseuse",
+		set:			'abeille_arch',
+		rarity:		'rare',
+		cat:			'bottes',
+		category:	'armure',
+		palier:		2,
+		lvl:			11,
+		img:			"../img/compendium/textures/armors/boots_abeille.png",
+		stats:		{sante:[21,27], defense:[2.8,3.2]},
+		classes:	['archer'],
+    lore:     "Légère et souple, cette armure inspirée de l'abeille permet rapidité et précision, idéale pour les chasseurs.",
+    tags:     ['Armure', 'Bottes', 'Archer', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
+		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
+	},
+{
+		id:				'casque_necro_archer',
+		name:			"Casque du Nécromancien",
+		set:			'necro_arch',
+		rarity:		'epique',
+		cat:			'casque',
+		category:	'armure',
+		palier:2,
+		lvl:13,		
+		img:			"../img/compendium/textures/armors/helmet_necromancien.png",
+		stats:		{sante:[29,32], defense:[3.13,3.37]},
+		classes:	['archer'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Casque', 'Archer', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
+	},
+{
+		id:				'plastron_necro_archer',
+		name:			"Plastron du Nécromancien",
+		set:			'necro_arch',
+		rarity:		'epique',
+		cat:			'plastron',
+		category:	'armure',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/armors/chestplate_necromancien.png",
+		stats:		{sante:[41,44], defense:[4.6,5.06], 'Emplacement de Runes':2},
+		classes:	['archer'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Plastron', 'Archer', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
+	},
+{
+		id:				'jambieres_necro_archer',
+		name:			"Jambières du Nécromancien",
+		set:			'necro_arch',
+		rarity:		'epique',
+		cat:			'jambières',
+		category:	'armure',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/armors/leggings_necromancien.png",
+		stats:		{sante:[31,34], defense:[3.6,3.9]},
+		classes:	['archer'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Jambières', 'Archer', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
+	},
+{
+		id:				'bottes_necro_archer',
+		name:			"Bottes du Nécromancien",
+		set:			'necro_arch',
+		rarity:		'epique',
+		cat:			'bottes',
+		category:	'armure',
+		palier:		2,
+		lvl:			13,
+		img:			"../img/compendium/textures/armors/boots_necromancien.png",
+		stats:		{sante:[28,31], defense:[3.3,3.6]},
+		classes:	['archer'],
+    lore:     "Forgée à partir d'os et de magie noire, cette armure confère robustesse et protection.",
+    tags:     ['Armure', 'Bottes', 'Archer', 'Palier 2', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
+		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
+	},
+//#endregion Armures > P2 > Assassin-Archer
+//#region Armures > P2 > Mage-Shaman
+{
 		id:				'casque_miel_cristallisé',
 		name:			"Casque en Miel Cristallisé",
 		set:			'abeille_mage',
@@ -4880,7 +5074,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
 	},
-  {
+{
 		id:				'plastron_miel_cristallisé',
 		name:			"Plastron en Miel Cristallisé",
 		set:			'abeille_mage',
@@ -4897,7 +5091,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
 		craft:		[{qty:32, id:'miel'}, {qty:64, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
 	},
-  {
+{
 		id:				'jambieres_miel_cristallisé',
 		name:			"Jambières en Miel Cristallisé",
 		set:			'abeille_mage',
@@ -4914,7 +5108,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
 		craft:		[{qty:32, id:'miel'}, {qty:42, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
 	},
-  {
+{
 		id:				'bottes_miel_cristallisé', 
 		name:			"Bottes en Miel Cristallisé",
 		set:			'abeille_mage',
@@ -4931,7 +5125,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
 	},
-  {
+{
 		id:				'casque_necro_mage',
 		name:			"Casque du Nécromancien",
 		set:			'necro_mage',
@@ -4948,7 +5142,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
-  {
+{
 		id:				'plastron_necro_mage',
 		name:			"Plastron du Nécromancien",
 		set:			'necro_mage',
@@ -4965,7 +5159,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
 	},
-  {
+{
 		id:				'jambieres_necro_mage',
 		name:			"Jambières du Nécromancien",
 		set:			'necro_mage',
@@ -4982,7 +5176,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
 	},
-  {
+{
 		id:				'bottes_necro_mage',
 		name:			"Bottes du Nécromancien",
 		set:			'necro_mage',
@@ -4999,7 +5193,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
-  {
+{
 		id:				'casque_miel_myysticisé',
 		name:			"Casque de la Miel Mysticisé",
 		set:			'abeille_sham',
@@ -5016,7 +5210,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
 	},
-  {
+{
 		id:				'plastron_miel_myysticisé',
 		name:			"Plastron de la Miel Mysticisé",
 		set:			'abeille_sham',
@@ -5033,7 +5227,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
 		craft:		[{qty:32, id:'miel'}, {qty:64, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
 	},
-  	{
+{
 		id:				'jambieres_miel_myysticisé',
 		name:			"Jambières de la Miel Mysticisé", 
 		set:			'abeille_sham',
@@ -5050,7 +5244,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
 		craft:		[{qty:32, id:'miel'}, {qty:42, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
 	},
-  {
+{
 		id:				'bottes_miel_myysticisé',
 		name:			"Bottes de la Miel Mysticisé",
 		set:			'abeille_sham',
@@ -5067,7 +5261,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'intérieur du Donjon Ruche de Melliona",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
 	},
-  {
+{
 		id:				'casque_necro_shaman',
 		name:			"Casque du Nécromancien",
 		set:			'necro_sham',
@@ -5084,7 +5278,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
-  {
+{
 		id:				'plastron_necro_shaman',
 		name:			"Plastron du Nécromancien",
 		set:			'necro_sham',
@@ -5101,7 +5295,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
 	},
-  {
+{
 		id:				'jambieres_necro_shaman',
 		name:			"Jambières du Nécromancien", 
 		set:			'necro_sham',
@@ -5118,7 +5312,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
 	},
-  {
+{
 		id:				'bottes_necro_shaman',
 		name:			"Bottes du Nécromancien",
 		set:			'necro_sham',
@@ -5135,41 +5329,14 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien",
 		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
 	},
-  /* ══ Other ══ */
-  {
-		id:				'bottes_revenant',
-		name:			"Bottes du Revenant",
-		rarity:		'legendaire',
-		cat:			'bottes',
-		category:	'armure',
-		palier:		1,
-		lvl:			5,
-		img:			"../img/compendium/textures/armors/bottes_du_revenant.png",
-		stats:		{vitesse_deplacement:5},
-    lore:     "Imprégnées de la vitesse d'un cheval maudit, elles confèrent à leur porteur une très grande vitesse.",
-    tags:     ['Armure', 'Bottes', 'Palier 1', 'Légendaire'],
-    obtain:   "Fabricable au Forgeron d'Armures de la Ville de Départ",
-		craft:    [{qty:1, id:'eclat_du_sabot_maudit'}, {qty:64, id:'carapace_dika'}, {qty:64, id:'cuir_use'}, {qty:64, id:'fourrure_de_loup'}]
-	},
-  {
-		id:				'bottes_ecume',
-		name:			"Bottes de l'Écume",
-		rarity:		'legendaire',
-		cat:			'bottes',
-		category:	'armure',
-		palier:		1,
-		lvl:			5,
-		img:			"../img/compendium/textures/armors/bottes_decume.png",
-		stats:		{'Agilité Aquatique':10},
-    lore:     "Petites paires de bottes faites à partir de magie de l'au-delà et de composants assez rares.",
-    tags:     ['Armure', 'Bottes', 'Palier 1', 'Légendaire'],
-    obtain:   "Récupérable une fois fini la Quête Principale «22 - Chasse aux Poissons Requin», donné par Malrik"
-	},
 
-	/* ══ Items ══ */
-	/* ══ Runes ══ */
-	/* ══ Palier 1 ══ */
-	{
+//#endregion Armures > P2 > Mage-Shaman
+//#endregion Armures > Palier 2
+//#endregion Armures
+//#region Items
+//#region Items > Palier 1
+//#region Items > P1 > Runes
+{
     id:       'rune_vitalite_1',
     name:     "Rune de Vitalité I",
     rarity:   'commun',
@@ -5180,7 +5347,7 @@ const ITEMS = [
     tags:     ['Rune', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en finissant la Quête Journalière de la Vitalite au Maître des runes dans la Ville de Départ"
   },
-	{
+{
     id:       'rune_precision_1',
     name:     "Rune de Précision I",
     rarity:   'commun',
@@ -5191,7 +5358,7 @@ const ITEMS = [
     tags:     ['Rune', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en finissant la Quête Journalière de la Précision au Maître des runes dans la Ville de Départ"
   },
-	{
+{
     id:       'rune_sorcellerie_1',
     name:     "Rune de Sorcellerie I",
     rarity:   'commun',
@@ -5202,7 +5369,7 @@ const ITEMS = [
     tags:     ['Rune', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en finissant la Quête Journalière de la Sorcellerie au Maître des runes dans la Ville de Départ"
   },
-	{
+{
     id:       'rune_agilite_1',
     name:     "Rune d'Agilité I",
     rarity:   'commun',
@@ -5213,7 +5380,7 @@ const ITEMS = [
     tags:     ['Rune', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en finissant la Quête Journalière de l'Agilité au Maître des runes dans la Ville de Départ"
   },
-	{
+{
     id:       'rune_temps_1',
     name:     "Rune Temps I",
     rarity:   'commun',
@@ -5224,7 +5391,7 @@ const ITEMS = [
     tags:     ['Rune', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en finissant la Quête Journalière du Temps au Maître des runes dans la Ville de Départ"
   },
-	{
+{
     id:       'rune_kazor',
     name:     "Rune de Kazor",
     rarity:   'legendaire',
@@ -5236,7 +5403,7 @@ const ITEMS = [
     obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
 		craft:    [{qty:1, id:'piece_kazor'}]
   },
-	{
+{
     id:       'rune_noel',
     name:     "Rune de Noël",
     rarity:   'event',
@@ -5247,7 +5414,7 @@ const ITEMS = [
     tags:     ['Rune', 'Palier 1', 'Event', 'Noël'],
     obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
   },
-	{
+{
     id:       'rune_teddy',
     name:     "Rune de Teddy Bear",
     rarity:   'event',
@@ -5258,7 +5425,7 @@ const ITEMS = [
     tags:     ['Rune', 'Palier 1', 'Event', 'Saint Valentin'],
     obtain:   "Obtenable dans les lootboxs de l'Événement Saint Valentin"
   },
-	{
+{
     id:       'rune_lunaire',
     name:     "Rune Lunaire",
     rarity:   'event',
@@ -5269,7 +5436,7 @@ const ITEMS = [
     tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
     obtain:   "..."
   },
-	{
+{
     id:       'rune_dragon',
     name:     "Rune de Dragon",
     rarity:   'event',
@@ -5280,33 +5447,9 @@ const ITEMS = [
     tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
     obtain:   "..."
   },
-	/* ══ Palier 2 ══ */
-	/* ══ Outils ══ */
-	/* ══ Palier 1 ══ */
-	/* ══ Palier 2 ══ */
-	/* ══ Nourritures ══ */
-	/* ══ Palier 1 ══ */
-  {
-    id:       'viande_de_sanglier',
-    name:     "Viande de Sanglier",
-    rarity:   'commun',
-    category: 'nourriture',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Nourriture/viande_de_sanglier.png",
-    lore:     "Cette belle viande de sanglier, bien juteuse, peut vous donner encore plus envie de manger !",
-    tags:     ['Nourriture', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[100]\n- Pumba[100]",
-		effects: [
-				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la nourriture' },
-				{ type: 'feed',     value: 5,  unit: 'Nourriture',    instant: true },
-				{ type: 'cooldown', value: 1,  unit: 's',     label: 'Recharge nourriture' },
-				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
-		],
-  },
-	/* ══ Palier 2 ══ */
-	/* ══ Consommable ══ */
-	/* ══ Palier 1 ══ */
-	{
+//#endregion Items > P1 > Runes
+//#region Items > P1 > Consommables
+{
     id:       'parchemin_changement',
     name:     "Parchemin de Changement",
     rarity:   'rare',
@@ -5317,7 +5460,7 @@ const ITEMS = [
     tags:     ['Consommable', 'Palier 1', 'Rare'],
     obtain:   "Obtenable par les Marchands d'Équipement"
   },
-	{
+{
     id:       'parchemin_reallocation',
     name:     "Parchemin de Réallocation",
     rarity:   'rare',
@@ -5328,7 +5471,7 @@ const ITEMS = [
     tags:     ['Consommable', 'Palier 1', 'Rare'],
     obtain:   "Obtenable par les Marchands d'Équipement"
   },
-	{
+{
     id:       'parchemin_maitrise',
     name:     "Parchemin de Maîtrise",
     rarity:   'rare',
@@ -5339,7 +5482,7 @@ const ITEMS = [
     tags:     ['Consommable', 'Palier 1', 'Rare'],
     obtain:   "Obtenable par les Marchands d'Équipement"
   },
-	{
+{
     id:       'potion_vie_1',
     name:     "Potion de Vie I",
     rarity:   'commun',
@@ -5368,7 +5511,7 @@ const ITEMS = [
 			],
 		}
   },
-	{
+{
     id:       'potion_vie_2',
     name:     "Potion de Vie II",
     rarity:   'commun',
@@ -5396,7 +5539,7 @@ const ITEMS = [
 			],
 		}
   },
-	{
+{
     id:       'potion_vie_3',
     name:     "Potion de Vie III",
     rarity:   'rare',
@@ -5424,7 +5567,7 @@ const ITEMS = [
 			],
 		}
   },
-	{
+{
     id:       'cristal_soin',
     name:     "Cristal de Soin",
     rarity:   'epique',
@@ -5442,7 +5585,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
   },
-	{
+{
     id:       'potion_mana_1',
     name:     "Potion de Mana I",
     rarity:   'commun',
@@ -5471,8 +5614,7 @@ const ITEMS = [
 			],
 		}
   },
-
-	{
+{
     id:       'potion_mana_2',
     name:     "Potion de Mana II",
     rarity:   'commun',
@@ -5500,7 +5642,7 @@ const ITEMS = [
 			],
 		}
   },
-	{
+{
     id:       'potion_mana_3',
     name:     "Potion de Mana III",
     rarity:   'rare',
@@ -5528,7 +5670,7 @@ const ITEMS = [
 			],
 		}
   },
-	{
+{
     id:       'cristal_mana',
     name:     "Cristal de Mana",
     rarity:   'epique',
@@ -5546,7 +5688,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 			],
   },
-	{
+{
     id:       'potion_stamina_1',
     name:     "Potion de Stamina I",
     rarity:   'commun',
@@ -5575,7 +5717,7 @@ const ITEMS = [
 			],
 		}
   },
-	{
+{
     id:       'potion_stamina_2',
     name:     "Potion de Stamina II",
     rarity:   'commun',
@@ -5603,7 +5745,7 @@ const ITEMS = [
 			],
 		}
   },
-	{
+{
     id:       'potion_stamina_3',
     name:     "Potion de Stamina III",
     rarity:   'rare',
@@ -5631,7 +5773,7 @@ const ITEMS = [
 			],
 		}
   },
-	{
+{
     id:       'cristal_stamina',
     name:     "Cristal de Stamina",
     rarity:   'epique',
@@ -5649,7 +5791,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
   },
-	{
+{
     id:       'cristal_puissance',
     name:     "Cristal de Puissance",
     rarity:   'epique',
@@ -5667,44 +5809,28 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
   },
-	{
-    id:       'potion_albal',
-    name:     "Potion d'Albal",
-    rarity:   'rare',
-    category: 'consommable',
+//#endregion Items > P1 > Consommables
+//#region Items > P1 > Nourritures
+{
+    id:       'viande_de_sanglier',
+    name:     "Viande de Sanglier",
+    rarity:   'commun',
+    category: 'nourriture',
     palier:   1,
-    image:    "../img/compendium/textures/items/Consommable/potion_albal.png",
-    lore:     "Cette petite potion de force issue des crocs d'Albal, produit des effets particuliers sur vous.",
-    tags:     ['Consommable', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en récompense du Donjon Mine de Geldorak",
+    image:    "../img/compendium/textures/items/Nourriture/viande_de_sanglier.png",
+    lore:     "Cette belle viande de sanglier, bien juteuse, peut vous donner encore plus envie de manger !",
+    tags:     ['Nourriture', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[100]\n- Pumba[100]",
 		effects: [
-				{ type: 'level',     value: 5,  unit: '', label: 'Niveau requis pour utiliser la potion' },
-				{ type: 'buff',     value: 15,  unit: '% Dégâts d\'Armes',    duration: 60 },
-				{ type: 'cooldown', value: 600,  unit: 's',     label: 'Recharge potions d\'Albal' },
+				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la nourriture' },
+				{ type: 'feed',     value: 5,  unit: 'Nourriture',    instant: true },
+				{ type: 'cooldown', value: 1,  unit: 's',     label: 'Recharge nourriture' },
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
   },
-	{
-    id:       'cristal_illfang',
-    name:     "Cristal d'Illfang",
-    rarity:   'mythique',
-    category: 'consommable',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Consommable/red_crystal.png",
-    lore:     "Un cristal rouge parcourur de veines violacées, dégageant une aura inquiétante rappelant la férocité du redoutable seingeur Kobold.",
-    tags:     ['Consommable', 'Palier 1', 'Mythique'],
-    obtain:   "Obtenable en récompense du Donjon Tour du Kobold",
-		effects: [
-				{ type: 'level',     value: 10,  unit: '', label: 'Niveau requis pour utiliser le cristal' },
-				{ type: 'buff',     value: 30,  unit: '% Dégâts d\'Armes',    duration: 600 },
-				{ type: 'cooldown', value: 1800,  unit: 's',     label: 'Recharge cristaux' },
-				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
-		],
-  },
-	/* ══ Palier 2 ══ */
-	/* ══ Matériaux ══ */
-	/* ══ Palier 1 ══ */
-  {
+//#endregion Items > P1 > Nourritures
+//#region Items > P1 > Matériaux
+{
     id:       'peau_de_sanglier',
     name:     "Peau de Sanglier",
     rarity:   'commun',
@@ -5715,7 +5841,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[60]\n- Pumba[100]"
   },
-  {
+{
     id:       'fourrure_de_loup',
     name:     "Fourrure de Loup",
     rarity:   'commun',
@@ -5726,7 +5852,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)[60]\n- Albal[100]"
   },
-  {
+{
     id:       'crocs_de_loup',
     name:     "Crocs de Loup",
     rarity:   'commun',
@@ -5737,7 +5863,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)[30]\n- Albal[70]"
   },
-  {
+{
     id:       'crocs_de_albal',
     name:     "Crocs de Albal",
     rarity:   'rare',
@@ -5748,7 +5874,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Albal[20]"
   },
-  {
+{
     id:       'fragment_de_feuille',
     name:     "Fragment de Feuille",
     rarity:   'commun',
@@ -5759,7 +5885,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Nephentes[45]"
   },
-  {
+{
     id:       'pousse_de_sylve',
     name:     "Pousse de Sylve",
     rarity:   'commun',
@@ -5770,7 +5896,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Minis Tréants[40]"
   },
-  {
+{
     id:       'eclat_de_bois_magique',
     name:     "Éclat de Bois Magique",
     rarity:   'commun',
@@ -5781,7 +5907,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Minis Tréants[30]"
   },
-  {
+{
     id:       'ecorce_de_titan',
     name:     "Écorce de Titan",
     rarity:   'commun',
@@ -5792,7 +5918,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Guerriers Tréants[35]"
   },
-  {
+{
     id:       'racine_ancestrale',
     name:     "Racine Ancestrale",
     rarity:   'rare',
@@ -5803,7 +5929,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Guerriers Tréants[10]"
   },
-  {
+{
     id:       'ecorce_sylvestre',
     name:     "Écorce Sylvestre",
     rarity:   'commun',
@@ -5814,7 +5940,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Tréants d'Élites[40]"
   },
-  {
+{
     id:       'corde_darc_sylvestre',
     name:     "Corde d'Arc Sylvestre",
     rarity:   'commun',
@@ -5825,7 +5951,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Tréants d'Élites[25]"
   },
-  {
+{
     id:       'brindille_enchantee',
     name:     "Brindille Enchantée",
     rarity:   'commun',
@@ -5836,7 +5962,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres[30]"
   },
-  {
+{
     id:       'coeur_de_bois',
     name:     "Cœur de Bois",
     rarity:   'rare',
@@ -5847,7 +5973,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres[20]"
   },
-  {
+{
     id:       'tissu_spectral',
     name:     "Tissu Spectral",
     rarity:   'commun',
@@ -5858,7 +5984,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Mages Sylvestres[30]"
   },
-  {
+{
     id:       'mycelium_magique',
     name:     "Mycélium Magique",
     rarity:   'rare',
@@ -5869,7 +5995,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Gardiens Colossaux[20]"
   },
-	{
+{
     id:       'ficelle_chene',
     name:     "Ficelle de Chêne",
     rarity:   'commun',
@@ -5881,7 +6007,7 @@ const ITEMS = [
     obtain:   "Fabricable au Refaçonneur de Matériaux au Sud de la Cathédrale dans la Ville de Départ",
 		craft:		[{id: 'chene', qty: 4}, {id: 'fil_araignee', qty: 4}]
   },
-	{
+{
     id:       'ficelle_bouleau',
     name:     "Ficelle de Bouleau",
     rarity:   'rare',
@@ -5893,7 +6019,7 @@ const ITEMS = [
     obtain:   "Fabricable au Refaçonneur de Matériaux au Sud de la Cathédrale dans la Ville de Départ",
 		craft:		[{id: 'bouleau', qty: 4}, {id: 'fil_araignee', qty: 4}]
   },
-	{
+{
     id:       'ficelle_cuivre',
     name:     "Ficelle de Cuivre",
     rarity:   'commun',
@@ -5905,7 +6031,7 @@ const ITEMS = [
     obtain:   "Fabricable au Refaçonneur de Matériaux au Sud de la Cathédrale dans la Ville de Départ",
 		craft:		[{id: 'cuivre', qty: 4}, {id: 'fil_araignee', qty: 4}]
   },
-  {
+{
     id:       'gelee_de_slime',
     name:     "Gelée de Slime",
     rarity:   'commun',
@@ -5916,7 +6042,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Petits Slimes[30]\n- Guerriers Slimes[30]\n- Slimes Soigneurs[30]\n- Slimes Magiciens[30]\n- Gorbel[30]"
   },
-  {
+{
     id:       'noyau_de_slime',
     name:     "Noyau de Slime",
     rarity:   'rare',
@@ -5927,7 +6053,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Slimes Soigneurs[5]\n- Slimes Magiciens[5]\n- Gorbel[5]"
   },
-  {
+{
     id:       'essence_de_gorbel',
     name:     "Essence de Gorbel",
     rarity:   'epique',
@@ -5938,7 +6064,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Épique'],
     obtain:   "Obtenable en tuant:\n- Gorbel[5]"
   },
-  {
+{
     id:       'os_de_squelette',
     name:     "Os de Squelette",
     rarity:   'commun',
@@ -5949,7 +6075,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[45]\n- Guerriers Squelettes[40]\n- Squelettes Hallebardiers[45]\n- Squelettes Mages[40]"
   },
-  {
+{
     id:       'poussiere_dos',
     name:     "Poussière d'Os",
     rarity:   'commun',
@@ -5960,7 +6086,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[35]\n- Guerriers Squelettes[30]\n- Squelettes Hallebardiers[35]\n- Archers Squelettes[20]\n- Tanks Squelettes[30]\n- Squelettes Mages[30]"
   },
-  {
+{
     id:       'os_de_squelette_renforce',
     name:     "Os de Squelette Renforcé",
     rarity:   'commun',
@@ -5971,7 +6097,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Hallebardiers[35]\n- Archers Squelettes[30]\n- Tanks Squelettes[40]"
   },
-  {
+{
     id:       'ames_des_ruines',
     name:     "Âmes des Ruines",
     rarity:   'commun',
@@ -5982,7 +6108,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[40]\n- Guerriers Squelettes[40]\n- Squelettes Hallebardiers[40]\n- Archers Squelettes[40]"
   },
-  {
+{
     id:       'morceau_de_criniere_spectrale',
     name:     "Morceau de Crinière Spectrale",
     rarity:   'legendaire',
@@ -5993,7 +6119,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
     obtain:   "Obtenable en tuant:\n- Nasgul[2.5]"
   },
-  {
+{
     id:       'eclat_du_sabot_maudit',
     name:     "Éclat du Sabot Maudit",
     rarity:   'legendaire',
@@ -6004,7 +6130,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
     obtain:   "Obtenable en tuant:\n- Nasgul[1]"
   },
-  {
+{
     id:       'cuir_use',
     name:     "Cuir Usé",
     rarity:   'commun',
@@ -6015,7 +6141,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Bandits Archer[40]\n- Bandits Assassins[30]\n- Bandits Robustes[80]"
   },
-  {
+{
     id:       'petite_bourse',
     name:     "Petite Bourse",
     rarity:   'commun',
@@ -6026,7 +6152,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Bandits Archer[25]\n- Bandits Assassins[35]\n- Bandits Robustes[40]"
   },
-  {
+{
     id:       'carapace_dika',
     name:     "Carapace de d'Ika",
     rarity:   'commun',
@@ -6037,7 +6163,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Ika[80]"
   },
-  {
+{
     id:       'piece_metal_enchante',
     name:     "Pièce de Métal Enchanté",
     rarity:   'commun',
@@ -6048,7 +6174,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Soldat Déchu[20]\n- Guerrier Déchu[20]"
   },
-	{
+{
     id:       'lingot_metal_enchante',
     name:     "Lingot de Métal Enchanté",
     rarity:   'commun',
@@ -6060,7 +6186,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{id: 'piece_metal_enchante', qty: 10}, {id: 'fer', qty: 5}, {id: 'charbon', qty: 3}]
   },
-  {
+{
     id:       'piece_ame_metal',
     name:     "Pièce d'Âme de Métal",
     rarity:   'rare',
@@ -6071,7 +6197,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en tuant:\n- Guerrier Déchu[25]"
   },
-	{
+{
     id:       'lingot_ame_metal',
     name:     "Lingot d'Âme de Métal",
     rarity:   'commun',
@@ -6083,7 +6209,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{id: 'piece_ame_metal', qty: 10}, {id: 'fer', qty: 5}, {id: 'charbon', qty: 3}]
   },
-	{
+{
     id:       'fil_araignee_renforce',
     name:     "Fil d'Araignée Renforcé",
     rarity:   'epique',
@@ -6095,7 +6221,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{id: 'fil_araignee', qty: 3}, {id: 'fer', qty: 6}]
   },
-	{
+{
     id:       'fragment_casse_rouge',
     name:     "Fragment Cassé Rouge",
     rarity:   'commun',
@@ -6106,7 +6232,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
   },
-	{
+{
     id:       'fragment_casse_jaune',
     name:     "Fragment Cassé Jaune",
     rarity:   'commun',
@@ -6117,7 +6243,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
   },
-	{
+{
     id:       'fragment_casse_violet',
     name:     "Fragment Cassé Violet",
     rarity:   'commun',
@@ -6128,7 +6254,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
   },
-	{
+{
     id:       'eclat_fusionne',
     name:     "Éclat Fusionné",
     rarity:   'epique',
@@ -6140,7 +6266,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron d'Armure à l'intérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{id: 'fragment_casse_violet', qty: 5}]
   },
-  {
+{
     id:       'ame_warden',
     name:     "Âme du Warden",
     rarity:   'rare',
@@ -6152,7 +6278,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Gardien Déchu[30]\nFabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{id: 'fragment_casse_rouge', qty: 25}, {id: 'charbon', qty: 32}]
   },
-  {
+{
     id:       'ame_herald',
     name:     "Âme de l'Herald",
     rarity:   'rare',
@@ -6164,7 +6290,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Héraut Déchu[30]\nFabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{id: 'fragment_casse_jaune', qty: 25}, {id: 'charbon', qty: 32}]
   },
-  {
+{
     id:       'ame_reaper',
     name:     "Âme du Reaper",
     rarity:   'rare',
@@ -6176,7 +6302,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Faucheuse Déchue[30]\nFabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{id: 'eclat_fusionne', qty: 3}, {id: 'charbon', qty: 32}]
   },
-  {
+{
     id:       'tissu_araignee',
     name:     "Tissu d'Araignée",
     rarity:   'commun',
@@ -6187,7 +6313,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Araignée des Forêts[40]"
   },
-  {
+{
     id:       'fil_araignee',
     name:     "Fil d'Araignée",
     rarity:   'rare',
@@ -6198,7 +6324,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'rare'],
     obtain:   "Obtenable en tuant:\n- Araignée des Forêts[50]"
   },
-  {
+{
     id:       'peau_cerf_montagnes',
     name:     "Peau de Cerf des Montagnes",
     rarity:   'commun',
@@ -6209,7 +6335,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Cerf des Montagnes[45]"
   },
-  {
+{
     id:       'peau_dur_glacial',
     name:     "Peau Dur Glacial",
     rarity:   'commun',
@@ -6220,7 +6346,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Golem de Glace[30]"
   },
-  {
+{
     id:       'poussiere_givre',
     name:     "Poussière de Givre",
     rarity:   'commun',
@@ -6231,7 +6357,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Golem de Glace[40]\n- Spirite de Glace[45]\n- Ours de Glace[80]"
   },
-  {
+{
     id:       'eclat_magique_glacial',
     name:     "Éclat Magique Glacial",
     rarity:   'commun',
@@ -6242,7 +6368,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Spirite de Glace[35]"
   },
-  {
+{
     id:       'fragment_ame_ours',
     name:     "Fragment de l'Âme de l'Ours",
     rarity:   'rare',
@@ -6253,7 +6379,7 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'rare'],
     obtain:   "Obtenable en tuant:\n- Ours de Glace[5]"
   },
-  {
+{
     id:       'carapace_requin',
     name:     "Carapace de Requin",
     rarity:   'commun',
@@ -6264,541 +6390,9 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Poisson Requin[40]"
   },
-	/* ══ Palier 2 ══ */
-  {
-    id:       'peau_epaisse',
-    name:     "Peau Épaisse",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/cuir_epais.png",
-    lore:     "Une peau robuste et résistante, capable d'absorber de lourds impacts.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Taureau Monstrueux[40]"
-  },
-  {
-    id:       'corne_taureau',
-    name:     "Corne de Taureau",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/corne_taureau.png",
-    lore:     "Solide et acérée, cette corne témoigne de la force brutale de l'animal.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Taureau[40]"
-  },
-  {
-    id:       'peau_ours',
-    name:     "Peau d'Ours",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/peau_ours.png",
-    lore:     "Une épaisse fourrure tannée, capable de résister aux assauts et d'offrir une chaleur inégalée.",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[50]"
-  },
-  {
-    id:       'griffe_ours',
-    name:     "Griffe d'Ours",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/griffe_ours.png",
-    lore:     "Tranchante et recourbée, elle témoigne de la férocité et de la force d'un prédateur redoutable.",
-    tags:     ['Matériaux', 'Palier 2','commun'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[45]"
-  },
-  {
-    id:       'graisse_ours',
-    name:     "Graisse d'Ours",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/graisse_ours.png",
-    lore:     "Utilisée pour l'entretien du cuir ou comme combustible, cette graisse dégage une forte odeur sauvage.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[5]"
-  },
-  {
-    id:       'residu_miel',
-    name:     "Résidu de Miel",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/residu_miel.png",
-    lore:     "Restes collants et sucrés, souvent imprégnés de pollen et de senteurs florales.",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[60]"
-  },
-  {
-    id:       'fourrure_loup_2',
-    name:     "Fourrure de Loup",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P1/fourrure_de_loup.png",
-    lore:     "Chaud et souple, ce pelage protège efficacement du froid. Parfait pour créer des armures légères.",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Loups des Montagnes[40]\n- Loups des Savanes[50]"
-  },
-	{
-    id:       'ficelle_acacia',
-    name:     "Ficelle d'Acacia",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/string_acacia.png",
-    lore:     "Une ficelle robuste tressé à partir de fibres d'acacia, et mélangée à des fils d'araignées.",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
-		craft:		[{id: 'acacia', qty: 4}, {id: 'fil_araignee', qty: 4}]
-  },
-	{
-    id:       'ficelle_ferraille',
-    name:     "Ficelle de Ferraille",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/string_ferraille.png",
-    lore:     "Une ficelle robuste tressé à partir d'un alliage de ferraille, et mélangée à des fils d'araignées.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
-		craft:		[{id: 'fer', qty: 1}, {id: 'morceau_ferraille', qty: 1}, {id: 'fil_araignee', qty: 4}]
-  },
-	{
-    id:       'ficelle_bauxite',
-    name:     "Ficelle de Bauxite",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/string_bauxite.png",
-    lore:     "Une ficelle robuste tressé à partir d'un alliage de bauxite, et mélangée à des fils d'araignées.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
-		craft:		[{id: 'bauxite', qty: 1}, {id: 'fil_araignee', qty: 4}]
-  },
-	{
-    id:       'ficelle_onyx_impur',
-    name:     "Ficelle d'Onyx Impur",
-    rarity:   'epique',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/string_onyx_impure.png",
-    lore:     "Une ficelle robuste tressé à partir d'un alliage d'onyx impur, et mélangée à des fils d'araignées.",
-    tags:     ['Matériaux', 'Palier 2', 'epique'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
-		craft:		[{id: 'onyx_impur', qty: 2}, {id: 'fil_araignee', qty: 8}]
-  },
-	{
-    id:       'ficelle_onyx_pur',
-    name:     "Ficelle d'Onyx Pur",
-    rarity:   'legendaire',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/string_onyx_pure.png",
-    lore:     "Une ficelle robuste tressé à partir d'un alliage d'onyx pur, et mélangée à des fils d'araignées.",
-    tags:     ['Matériaux', 'Palier 2', 'légendaire'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
-		craft:		[{id: 'onyx_pur', qty: 2}, {id: 'fil_araignee', qty: 8}]
-  },
-  {
-    id:       'dard',
-    name:     "Dard",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/dard_abeille.png",
-    lore:     "Pointu et redoutable, ce dard d'abeille géante est un matériau de choix pour fabriquer des équipements perforants.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Ouvrière[30]\n- Dardroyal[35]\n- Melisara, Souveraine de la Ruche[90]"
-  },
-  {
-    id:       'miel',
-    name:     "Miel",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/miel.png",
-    lore:     "Doux mais étonnement visqueux, ce miel concentré est utilisé pour enduire certaines armures.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Ouvrière[30]\n- Melisara, Souveraine de la Ruche[100]"
-  },
-  {
-    id:       'carapace_abeille',
-    name:     "Carapace d'Abeille",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/carapace_abeille.png",
-    lore:     "Épaisse et segmentée, cette carapace protège efficacement contre les assauts. Parfaite pour façonner des équipements.",
-    tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Dardroyal[30]\n- Melisara, Souveraine de la Ruche[80]"
-  },
-  {
-    id:       'plume_enflammee',
-    name:     "Plume Enflammée",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/drop_plume_rouge.png",
-    lore:     "Une plume incandescente, vibrant d'énergie magique. Utilisée par les artisans.",
-    tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Feu[50]"
-  },
-  {
-    id:       'plume_terreuse',
-    name:     "Plume Terreuse",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/drop_plume_vert.png",
-    lore:     "Une plume dense et résistante, imprégnée de force tellurique parfaite.",
-    tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Terre[50]"
-  },
-  {
-    id:       'plume_ondoyante',
-    name:     "Plume Ondoyante",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/drop_plume_bleu.png",
-    lore:     "Une plume souple et scintillante, gorgée d'essence aquatique.",
-    tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Foudre[50]"
-  },
-  {
-    id:       'oeuf_harpie_eau',
-    name:     "Œuf de Harpie d'Eau",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    null,
-    lore:     "Un œuf provenant d'une harpie... Cache-t-il peut-être un nouveau-né ?",
-    tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Foudre[25]"
-  },
-  {
-    id:       'pierre_runique',
-    name:     "Pierre Runique",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/mine_tablette.png",
-    lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
-    tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[5]\n- Squelette du Sanctuaire - Shaman[5]\n- Squelette du Sanctuaire - Guerrier[7]\n- Gardien du Sanctuaire[40]"
-  },
-  {
-    id:       'chaine_spectrale',
-    name:     "Chaîne Spectrale",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/chaine_spectral.png",
-    lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
-    tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[35]\n- Squelette du Sanctuaire - Shaman[35]\n- Squelette du Sanctuaire - Guerrier[30]"
-  },
-  {
-    id:       'vetement_dechire',
-    name:     "Vêtement Déchiré",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/drop_capuchon.png",
-    lore:     "Un vêtement déchiré appartenant à un ancien humain, devenu squelette protégeant son domaine.",
-    tags:     ['Matériaux', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[30]\n- Squelette du Sanctuaire - Guerrier[30]"
-  },
-  {
-    id:       'poudre_moelle',
-    name:     "Poudre de Moelle",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/poudre_moelle.png",
-    lore:     "Une belle poudre blanchâtre à l'odeur minérale, possiblement utilisé dans certains rituels.",
-    tags:     ['Matériaux', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Shaman[20]"
-  },
-  {
-    id:       'morceau_ferraille',
-    name:     "Morceau de Ferraille",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/ferraille.png",
-    lore:     "Morceau de feraille, solide malgré son état. Idéal pour expérimenter la forge ou tester des recettes alchimiques.",
-    tags:     ['Matériaux', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Golem de Pierre[40]"
-  },
-	{
-    id:       'os_sombre',
-    name:     "Os Sombre",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/os_sombre.png",
-    lore:     "Un os noirci et résistant, vestige d'un squelette ancien et corrompu.",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- ??"
-  },
-	{
-    id:       'poudre_noire',
-    name:     "Poudre Noire",
-    rarity:   'commun',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/poudre_noire.png",
-    lore:     "Une fine poudre sombre, issue d'anciens os broyés, imprégnée d'une aura sinistre.",
-    tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- ??"
-  },
-	{
-    id:       'poudre_necromancien',
-    name:     "Poudre de Nécromancien",
-    rarity:   'epique',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/poudre_necro.png",
-    lore:     "Une poudre sombre et mystérieuse, chargé d'une énergie	interdite.",
-    tags:     ['Matériaux', 'Palier 2', 'Épique'],
-    obtain:   "Obtenable en tuant:\n- ??"
-  },
-  {
-    id:       'pierre_osseuse_noire',
-    name:     "Pierre Osseuse Noire",
-    rarity:   'rare',
-    category: 'materiaux',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Material/P2/mine_roche_noir.png",
-    lore:     "Un fragment d'os dur et sombre, marqué par le temps et par la mort.",
-    tags:     ['Matériaux', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- ??\n- Morveth l'Écorcheur d'Âmes[100]"
-  },
-	/* ══ Quêtes ══ */
-	/* ══ Palier 1 ══ */
-	{
-    id:       'cristal_corrompu',
-    name:     "Cristal Corrompu",
-    rarity:   'commun',
-    category: 'quete',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Quest/cristal_corrompu.png",
-    lore:     "Des traces de corruptions émanent de cet objet.",
-    tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[50]\n- Pumba[100]"
-  },
-	{
-    id:       'rune_etrange',
-    name:     "Rune Étrange",
-    rarity:   'commun',
-    category: 'quete',
-    palier:   1,
-    image:   "../img/compendium/textures/items/Quest/gem.png",
-    lore:     "Cette rune semble ancienne.",
-    tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Récupérable en réalisant la Quête Principale:\n- «La Corruption»"
-  },
-	{
-    id:       'spore_corrompu',
-    name:     "Spore Corrompu",
-    rarity:   'commun',
-    category: 'quete',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Quest/spore_corrompu.png",
-    lore:     "Un spore étrange imprégné de corruption...",
-    tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Nephentes[50]"
-  },
-	{
-    id:       'tissu_maudit',
-    name:     "Tissu Maudit",
-    rarity:   'commun',
-    category: 'quete',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Quest/tissu_maudit.png",
-    lore:     "Les forces obscures devorent ce tissu.",
-    tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Mages[50]"
-  },
-  {
-    id:       'coeur_putrefie',
-    name:     "Cœur Putréfié",
-    rarity:   'commun',
-    category: 'quete',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Quest/coeur_putrefie.png",
-    lore:     "La putréfaction ronge peu à peu ce cœur.",
-    tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit[70]"
-  },
-	{
-    id:       'fragment_ancien',
-    name:     "Fragment des Anciens",
-    rarity:   'rare',
-    category: 'quete',
-    palier:   1,
-    images:   ["../img/compendium/textures/items/Quest/hautdroitsceau.png", "../img/compendium/textures/items/Quest/hautgauchesceau.png", "../img/compendium/textures/items/Quest/bassceau.png"],
-    lore:     "La puissance des anciens se fait ressentir à travers ce fragment.",
-    tags:     ['Quête', 'Palier 1', 'Rare'],
-    obtain:   "Récupérable en réalisant les Quêtes Principales:\n- «Nasgul: Protecteur Maudit»\n- «Donjon: Mine de Geldorak»\n- «Gorbel: Slime Imposant»"
-  },
-	{
-    id:       'sceau',
-    name:     "Sceau",
-    rarity:   'legendaire',
-    category: 'quete',
-    palier:   1,
-    image:   "../img/compendium/textures/items/Quest/sceau.png",
-    lore:     "Le Sceau des anciens dans sa forme originel.",
-    tags:     ['Quête', 'Palier 1', 'Légendaire'],
-    obtain:   "Récupérable en réalisant la Quête Principale:\n- «Le Sceau des anciens»"
-  },
-  {
-    id:       'coeur_nymbrea',
-    name:     "Cœur de Nymbréa",
-    rarity:   'rare',
-    category: 'quete',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Quest/coeur_de_leviathan.gif",
-    lore:     "Encore brûlant et chargé de magie aquatique, ce cœur scintille d'une énergie ancienne.",
-    tags:     ['Quête', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Nymbréa"
-  },
-	{
-    id:       'venin_araignee',
-    name:     "Venin d'Araignée",
-    rarity:   'rare',
-    category: 'quete',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Quest/venin_daraignee.gif",
-    lore:     "Un liquide sombre et visqueux, extrait de la reine des araignées.",
-    tags:     ['Quête', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en récompense du Donjon Sanctuaire de Xal'Zirith"
-  },
-	{
-    id:       'parchemin_sceau_kobold',
-    name:     "Parchemin de Sceau Complet",
-    rarity:   'godlike',
-    category: 'quete',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Quest/rune_water.gif",
-    lore:     "Enchanté, ce parchemin peut débloquer la barrière du roi Kobold Illfang.",
-    tags:     ['Quête', 'Palier 1', 'Godlike'],
-    obtain:   "Récupérable au cours de la Quête Principale:\n- «28 - Donjon: Le Kobold»"
-  },
-	/* ══ Palier 2 ══ */
-	{
-    id:       'écaille_fulgurante',
-    name:     "Écaille Fulgurante",
-    rarity:   'rare',
-    category: 'quete',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Quest/ecaille_foudre.png",
-    lore:     "Une des trois écorces utilisées comme offrande à l'un des dieux présents au Palier 2 !",
-    tags:     ['Quête', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Poisson Fulgurant[40]"
-  },
-	{
-    id:       'artefact_yaa',
-    name:     "Artefact de Yaa",
-    rarity:   'epique',
-    category: 'quete',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Quest/yaa.png",
-    lore:     "Artefact du Protecteur Yaa, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
-    tags:     ['Quête', 'Palier 2', 'Épique'],
-    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
-  },
-	{
-    id:       'artefact_bia',
-    name:     "Artefact de Bia",
-    rarity:   'epique',
-    category: 'quete',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Quest/bia.png",
-    lore:     "Artefact du Protecteur Bia, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
-    tags:     ['Quête', 'Palier 2', 'Épique'],
-    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
-  },
-	{
-    id:       'artefact_tano',
-    name:     "Artefact de Tano",
-    rarity:   'epique',
-    category: 'quete',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Quest/tano.png",
-    lore:     "Artefact du Protecteur Tano, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
-    tags:     ['Quête', 'Palier 2', 'Épique'],
-    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
-  },
-	{
-    id:       'parchemin_sceau_taurus',
-    name:     "Parchemin de Sceau Complet",
-    rarity:   'godlike',
-    category: 'quete',
-    palier:   2,
-    image:    "../img/compendium/textures/items/Quest/rune_fire.gif",
-    lore:     "Enchanté, ce parchemin peut débloquer la barrière du roi Taurus Asterius.",
-    tags:     ['Quête', 'Palier 2', 'Godlike'],
-    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
-  },
-	/* ══ Donjon ══ */
-	/* ══ Palier 1 ══ */
-	{
-    id:       'cle_foret',
-    name:     "Clé de la Forêt",
-    rarity:   'rare',
-    category: 'donjon',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Donjon/key_geldo.png",
-    lore:     "Peut être utilisé pour accéder au donjon : Mine de Geldorak.",
-    tags:     ['Donjon', 'Mine de Geldorak', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable:\n- Fabricant de Clé devant le Donjon Mine de Geldorak\n- Fabricant de Clé dans la Ville de Départ",
-		craft:	 	[{id:'ecorce_sylvestre', qty:15}, {id:'coeur_de_bois', qty:4}, {id:'mycelium_magique', qty:1}]
-  },
-	{
-    id:       'cle_dechu',
-    name:     "Clé des Déchus",
-    rarity:   'rare',
-    category: 'donjon',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Donjon/key_laby.png",
-    lore:     "Peut être utilisé pour accéder au donjon : Labyrinthe des Déchus.",
-    tags:     ['Donjon', 'Labyrinthe des Déchus', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Fabricant de Clé devant le Donjon Labyrinthe des Déchus",
-		craft:	 	[{id:'fragment_de_feuille', qty:20}, {id:'tissu_maudit', qty:15}, {id:'ames_des_ruines', qty:10}]
-  },
-	{
-    id:       'cle_xal',
-    name:     "Clé de Xal'Zirith",
-    rarity:   'rare',
-    category: 'donjon',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Donjon/key_xal.png",
-    lore:     "Peut être utilisé pour accéder au donjon : Le Sanctuaire de Xal'Zirith.",
-    tags:     ['Donjon', 'Sanctuaire de Xal\'Zirith', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable:\n- Fabricant de Clé devant le Donjon Sanctuaire de Xal'Zirith\n- Fabricant de Clé à Candelia",
-		craft:	 	[{id:'tissu_araignee', qty:20}, {id:'fil_araignee', qty:25}]
-  },
-	{
-    id:       'artefact_fallen',
-    name:     "Artéfact des Fallen",
-    rarity:   'epique',
-    category: 'donjon',
-    palier:   1,
-    image:    null,
-    lore:     "Fragment arraché à l'un des 3 Fallens du Donjon très utile pour accéder à la salle de boss des Chevaliers Jumeaux",
-    tags:     ['Donjon', 'Labyrinthe des Déchus', 'Palier 1', 'Épique'],
-    obtain:   "Obtenable en tuant:\n- Gardien Déchu\n- Héraut Déchu\n- Faucheuse Déchu"
-  },
-	/* ══ Palier 2 ══ */
-	/* ══ Ressources ══ */
-	/* ══ Palier 1 ══ */
-	{
+//#endregion Items > P1 > Matériaux
+//#region Items > P1 > Ressources
+{
     id:       'charbon',
     name:     "Minerais de Charbon",
     rarity:   'commun',
@@ -6806,10 +6400,10 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/Ressources/charbon.png",
     lore:     "Une Roche sombre contenant des traces de charbon brut.",
-    tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 1', 'Commun'],
+    tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les des deux mines du Palier 1"
   },
-	{
+{
     id:       'cuivre',
     name:     "Minerais de Cuivre",
     rarity:   'commun',
@@ -6817,10 +6411,10 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/Ressources/copper.png",
     lore:     "Minerais de basse qualité, utile pour les débuts d'aventure au débutants.",
-    tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 1', 'Commun'],
+    tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les des deux mines du Palier 1"
   },
-	{
+{
     id:       'lingot_cuivre',
     name:     "Lingot de Cuivre",
     rarity:   'commun',
@@ -6828,11 +6422,11 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/Ressources/bar_copper.png",
     lore:     "Lingot raffiné à partir de minerai de cuivre. Utilisé en forge, pour certaines confections.",
-    tags:     ['Ressource', 'Minerai', 'Lingot', 'Palier 1', 'Commun'],
+    tags:     ['Ressource', 'Minerais', 'Lingot', 'Palier 1', 'Commun'],
     obtain:   "Fabricable:\n- Forgeron d'Armures de la Ville de Départ\n- Forgeron de Lingots au Sud du Quartier OG",
 		craft:	 [{id:'cuivre', qty:3}, {id:'charbon', qty:2}]
   },
-	{
+{
     id:       'fer',
     name:     "Minerais de Fer",
     rarity:   'commun',
@@ -6840,10 +6434,10 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/Ressources/iron.png",
     lore:     "Une roche marquée par des veines de métal brut.",
-    tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 1', 'Commun'],
+    tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les des deux mines du Palier 1"
   },
-	{
+{
     id:       'lingot_fer',
     name:     "Lingot de Fer",
     rarity:   'rare',
@@ -6851,11 +6445,11 @@ const ITEMS = [
     palier:   1,
     image:    "../img/compendium/textures/items/Ressources/bar_iron.png",
     lore:     "Lingot forgé à haute température. Un matériau essentiel et polyvalent. Utilisé par les artisans.",
-    tags:     ['Ressource', 'Minerai', 'Lingot', 'Palier 1', 'Rare'],
+    tags:     ['Ressource', 'Minerais', 'Lingot', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron de Lingots au Sud du Quartier OG",
 		craft:	 [{id:'fer', qty:4}, {id:'charbon', qty:2}]
   },
-	{
+{
     id:       'allium',
     name:     "Fleur d'Allium",
     rarity:   'commun',
@@ -6866,7 +6460,7 @@ const ITEMS = [
     tags:     ['Ressource', 'Plante', 'Fleur', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les Champs au Sud du Quartier OG"
   },
-	{
+{
     id:       'blé',
     name:     "Blé",
     rarity:   'commun',
@@ -6877,7 +6471,7 @@ const ITEMS = [
     tags:     ['Ressource', 'Plante', 'Céréale', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les Champs au Sud du Quartier OG"
   },
-	{
+{
     id:       'chene',
     name:     "Buche de Chêne",
     rarity:   'commun',
@@ -6888,7 +6482,7 @@ const ITEMS = [
     tags:     ['Ressource', 'Bois', 'Buche', 'Palier 1', 'Commun'],
     obtain:   "Récupérable:\n- Forêt à l'Est de la Ville de Départ\n- Forêt aux alentours de Mizunari"
   },
-	{
+{
     id:       'planche_chene',
     name:     "Planche de Chêne",
     rarity:   'commun',
@@ -6900,7 +6494,7 @@ const ITEMS = [
     obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
 		craft:		[{id:'chene', qty:2}]
   },
-	{
+{
     id:       'bouleau',
     name:     "Buche de Bouleau",
     rarity:   'commun',
@@ -6911,7 +6505,7 @@ const ITEMS = [
     tags:     ['Ressource', 'Bois', 'Buche', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans la Forêt au Nord de Virelune"
   },
-	{
+{
     id:       'planche_bouleau',
     name:     "Planche de Bouleau",
     rarity:   'commun',
@@ -6923,7 +6517,7 @@ const ITEMS = [
     obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
 		craft:		[{id:'bouleau', qty:2}]
   },
-	{
+{
     id:       'poudre_bois',
     name:     "Poudre de Bois",
     rarity:   'commun',
@@ -6935,8 +6529,487 @@ const ITEMS = [
     obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
 		craft:		[[{id:'planche_chene', qty:2}], [{id:'planche_bouleau', qty:2}], [{id:'planche_acacia', qty:2}]]
   },
-	/* ══ Palier 2 ══ */
-	{
+//#endregion Items > P1 > Ressources
+//#region Items > P1 > Quêtes
+{
+    id:       'cristal_corrompu',
+    name:     "Cristal Corrompu",
+    rarity:   'commun',
+    category: 'quete',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Quest/cristal_corrompu.png",
+    lore:     "Des traces de corruptions émanent de cet objet.",
+    tags:     ['Quête', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[50]\n- Pumba[100]"
+  },
+{
+    id:       'rune_etrange',
+    name:     "Rune Étrange",
+    rarity:   'commun',
+    category: 'quete',
+    palier:   1,
+    image:   "../img/compendium/textures/items/Quest/gem.png",
+    lore:     "Cette rune semble ancienne.",
+    tags:     ['Quête', 'Palier 1', 'Commun'],
+    obtain:   "Récupérable en réalisant la Quête Principale:\n- «La Corruption»"
+  },
+{
+    id:       'spore_corrompu',
+    name:     "Spore Corrompu",
+    rarity:   'commun',
+    category: 'quete',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Quest/spore_corrompu.png",
+    lore:     "Un spore étrange imprégné de corruption...",
+    tags:     ['Quête', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Nephentes[50]"
+  },
+{
+    id:       'tissu_maudit',
+    name:     "Tissu Maudit",
+    rarity:   'commun',
+    category: 'quete',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Quest/tissu_maudit.png",
+    lore:     "Les forces obscures devorent ce tissu.",
+    tags:     ['Quête', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Squelettes Mages[50]"
+  },
+{
+    id:       'coeur_putrefie',
+    name:     "Cœur Putréfié",
+    rarity:   'commun',
+    category: 'quete',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Quest/coeur_putrefie.png",
+    lore:     "La putréfaction ronge peu à peu ce cœur.",
+    tags:     ['Quête', 'Palier 1', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit[70]"
+  },
+{
+    id:       'fragment_ancien',
+    name:     "Fragment des Anciens",
+    rarity:   'rare',
+    category: 'quete',
+    palier:   1,
+    images:   ["../img/compendium/textures/items/Quest/hautdroitsceau.png", "../img/compendium/textures/items/Quest/hautgauchesceau.png", "../img/compendium/textures/items/Quest/bassceau.png"],
+    lore:     "La puissance des anciens se fait ressentir à travers ce fragment.",
+    tags:     ['Quête', 'Palier 1', 'Rare'],
+    obtain:   "Récupérable en réalisant les Quêtes Principales:\n- «Nasgul: Protecteur Maudit»\n- «Donjon: Mine de Geldorak»\n- «Gorbel: Slime Imposant»"
+  },
+{
+    id:       'sceau',
+    name:     "Sceau",
+    rarity:   'legendaire',
+    category: 'quete',
+    palier:   1,
+    image:   "../img/compendium/textures/items/Quest/sceau.png",
+    lore:     "Le Sceau des anciens dans sa forme originel.",
+    tags:     ['Quête', 'Palier 1', 'Légendaire'],
+    obtain:   "Récupérable en réalisant la Quête Principale:\n- «Le Sceau des anciens»"
+  },
+{
+    id:       'coeur_nymbrea',
+    name:     "Cœur de Nymbréa",
+    rarity:   'rare',
+    category: 'quete',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Quest/coeur_de_leviathan.gif",
+    lore:     "Encore brûlant et chargé de magie aquatique, ce cœur scintille d'une énergie ancienne.",
+    tags:     ['Quête', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable en tuant:\n- Nymbréa"
+  },
+{
+    id:       'venin_araignee',
+    name:     "Venin d'Araignée",
+    rarity:   'rare',
+    category: 'quete',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Quest/venin_daraignee.gif",
+    lore:     "Un liquide sombre et visqueux, extrait de la reine des araignées.",
+    tags:     ['Quête', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable en récompense du Donjon Sanctuaire de Xal'Zirith"
+  },
+{
+    id:       'parchemin_sceau_kobold',
+    name:     "Parchemin de Sceau Complet",
+    rarity:   'godlike',
+    category: 'quete',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Quest/rune_water.gif",
+    lore:     "Enchanté, ce parchemin peut débloquer la barrière du roi Kobold Illfang.",
+    tags:     ['Quête', 'Palier 1', 'Godlike'],
+    obtain:   "Récupérable au cours de la Quête Principale:\n- «28 - Donjon: Le Kobold»"
+  },
+//#endregion Items > P1 > Quêtes
+//#region Items > P1 > Donjon
+{
+    id:       'cle_foret',
+    name:     "Clé de la Forêt",
+    rarity:   'rare',
+    category: 'donjon',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Donjon/key_geldo.png",
+    lore:     "Peut être utilisé pour accéder au donjon : Mine de Geldorak.",
+    tags:     ['Donjon', 'Mine de Geldorak', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable:\n- Fabricant de Clé devant le Donjon Mine de Geldorak\n- Fabricant de Clé dans la Ville de Départ",
+		craft:	 	[{id:'ecorce_sylvestre', qty:15}, {id:'coeur_de_bois', qty:4}, {id:'mycelium_magique', qty:1}]
+  },
+{
+    id:       'cle_dechu',
+    name:     "Clé des Déchus",
+    rarity:   'rare',
+    category: 'donjon',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Donjon/key_laby.png",
+    lore:     "Peut être utilisé pour accéder au donjon : Labyrinthe des Déchus.",
+    tags:     ['Donjon', 'Labyrinthe des Déchus', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable au Fabricant de Clé devant le Donjon Labyrinthe des Déchus",
+		craft:	 	[{id:'fragment_de_feuille', qty:20}, {id:'tissu_maudit', qty:15}, {id:'ames_des_ruines', qty:10}]
+  },
+{
+    id:       'cle_xal',
+    name:     "Clé de Xal'Zirith",
+    rarity:   'rare',
+    category: 'donjon',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Donjon/key_xal.png",
+    lore:     "Peut être utilisé pour accéder au donjon : Le Sanctuaire de Xal'Zirith.",
+    tags:     ['Donjon', 'Sanctuaire de Xal\'Zirith', 'Palier 1', 'Rare'],
+    obtain:   "Fabricable:\n- Fabricant de Clé devant le Donjon Sanctuaire de Xal'Zirith\n- Fabricant de Clé à Candelia",
+		craft:	 	[{id:'tissu_araignee', qty:20}, {id:'fil_araignee', qty:25}]
+  },
+{
+    id:       'artefact_fallen',
+    name:     "Artéfact des Fallen",
+    rarity:   'epique',
+    category: 'donjon',
+    palier:   1,
+    image:    null,
+    lore:     "Fragment arraché à l'un des 3 Fallens du Donjon très utile pour accéder à la salle de boss des Chevaliers Jumeaux",
+    tags:     ['Donjon', 'Labyrinthe des Déchus', 'Palier 1', 'Épique'],
+    obtain:   "Obtenable en tuant:\n- Gardien Déchu\n- Héraut Déchu\n- Faucheuse Déchu"
+  },
+//#endregion Items > P1 > Donjon
+//#endregion Items > Palier 1
+//#region Items > Palier 2
+//#region Items > P2 > Matériaux
+{
+    id:       'peau_epaisse',
+    name:     "Peau Épaisse",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/cuir_epais.png",
+    lore:     "Une peau robuste et résistante, capable d'absorber de lourds impacts.",
+    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    obtain:   "Obtenable en tuant:\n- Taureau Monstrueux[40]"
+  },
+{
+    id:       'corne_taureau',
+    name:     "Corne de Taureau",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/corne_taureau.png",
+    lore:     "Solide et acérée, cette corne témoigne de la force brutale de l'animal.",
+    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    obtain:   "Obtenable en tuant:\n- Taureau[40]"
+  },
+{
+    id:       'peau_ours',
+    name:     "Peau d'Ours",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/peau_ours.png",
+    lore:     "Une épaisse fourrure tannée, capable de résister aux assauts et d'offrir une chaleur inégalée.",
+    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[50]"
+  },
+{
+    id:       'griffe_ours',
+    name:     "Griffe d'Ours",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/griffe_ours.png",
+    lore:     "Tranchante et recourbée, elle témoigne de la férocité et de la force d'un prédateur redoutable.",
+    tags:     ['Matériaux', 'Palier 2','commun'],
+    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[45]"
+  },
+{
+    id:       'graisse_ours',
+    name:     "Graisse d'Ours",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/graisse_ours.png",
+    lore:     "Utilisée pour l'entretien du cuir ou comme combustible, cette graisse dégage une forte odeur sauvage.",
+    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[5]"
+  },
+{
+    id:       'residu_miel',
+    name:     "Résidu de Miel",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/residu_miel.png",
+    lore:     "Restes collants et sucrés, souvent imprégnés de pollen et de senteurs florales.",
+    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[60]"
+  },
+{
+    id:       'fourrure_loup_2',
+    name:     "Fourrure de Loup",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P1/fourrure_de_loup.png",
+    lore:     "Chaud et souple, ce pelage protège efficacement du froid. Parfait pour créer des armures légères.",
+    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    obtain:   "Obtenable en tuant:\n- Loups des Montagnes[40]\n- Loups des Savanes[50]"
+  },
+{
+    id:       'ficelle_acacia',
+    name:     "Ficelle d'Acacia",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/string_acacia.png",
+    lore:     "Une ficelle robuste tressé à partir de fibres d'acacia, et mélangée à des fils d'araignées.",
+    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
+		craft:		[{id: 'acacia', qty: 4}, {id: 'fil_araignee', qty: 4}]
+  },
+{
+    id:       'ficelle_ferraille',
+    name:     "Ficelle de Ferraille",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/string_ferraille.png",
+    lore:     "Une ficelle robuste tressé à partir d'un alliage de ferraille, et mélangée à des fils d'araignées.",
+    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
+		craft:		[{id: 'fer', qty: 1}, {id: 'ferraille', qty: 1}, {id: 'fil_araignee', qty: 4}]
+  },
+{
+    id:       'ficelle_bauxite',
+    name:     "Ficelle de Bauxite",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/string_bauxite.png",
+    lore:     "Une ficelle robuste tressé à partir d'un alliage de bauxite, et mélangée à des fils d'araignées.",
+    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
+		craft:		[{id: 'bauxite', qty: 1}, {id: 'fil_araignee', qty: 4}]
+  },
+{
+    id:       'ficelle_onyx_impur',
+    name:     "Ficelle d'Onyx Impur",
+    rarity:   'epique',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/string_onyx_impure.png",
+    lore:     "Une ficelle robuste tressé à partir d'un alliage d'onyx impur, et mélangée à des fils d'araignées.",
+    tags:     ['Matériaux', 'Palier 2', 'epique'],
+    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
+		craft:		[{id: 'onyx_impur', qty: 2}, {id: 'fil_araignee', qty: 8}]
+  },
+{
+    id:       'ficelle_onyx_pur',
+    name:     "Ficelle d'Onyx Pur",
+    rarity:   'legendaire',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/string_onyx_pure.png",
+    lore:     "Une ficelle robuste tressé à partir d'un alliage d'onyx pur, et mélangée à des fils d'araignées.",
+    tags:     ['Matériaux', 'Palier 2', 'légendaire'],
+    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
+		craft:		[{id: 'onyx_pur', qty: 2}, {id: 'fil_araignee', qty: 8}]
+  },
+{
+    id:       'dard',
+    name:     "Dard",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/dard_abeille.png",
+    lore:     "Pointu et redoutable, ce dard d'abeille géante est un matériau de choix pour fabriquer des équipements perforants.",
+    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    obtain:   "Obtenable en tuant:\n- Ouvrière[30]\n- Dardroyal[35]\n- Melisara, Souveraine de la Ruche[90]"
+  },
+{
+    id:       'miel',
+    name:     "Miel",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/miel.png",
+    lore:     "Doux mais étonnement visqueux, ce miel concentré est utilisé pour enduire certaines armures.",
+    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    obtain:   "Obtenable en tuant:\n- Ouvrière[30]\n- Melisara, Souveraine de la Ruche[100]"
+  },
+{
+    id:       'carapace_abeille',
+    name:     "Carapace d'Abeille",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/carapace_abeille.png",
+    lore:     "Épaisse et segmentée, cette carapace protège efficacement contre les assauts. Parfaite pour façonner des équipements.",
+    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    obtain:   "Obtenable en tuant:\n- Dardroyal[30]\n- Melisara, Souveraine de la Ruche[80]"
+  },
+{
+    id:       'plume_enflammee',
+    name:     "Plume Enflammée",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/drop_plume_rouge.png",
+    lore:     "Une plume incandescente, vibrant d'énergie magique. Utilisée par les artisans.",
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Harpie de Feu[50]"
+  },
+{
+    id:       'plume_terreuse',
+    name:     "Plume Terreuse",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/drop_plume_vert.png",
+    lore:     "Une plume dense et résistante, imprégnée de force tellurique parfaite.",
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Harpie de Terre[50]"
+  },
+{
+    id:       'plume_ondoyante',
+    name:     "Plume Ondoyante",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/drop_plume_bleu.png",
+    lore:     "Une plume souple et scintillante, gorgée d'essence aquatique.",
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Harpie de Foudre[50]"
+  },
+{
+    id:       'oeuf_harpie_eau',
+    name:     "Œuf de Harpie d'Eau",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    null,
+    lore:     "Un œuf provenant d'une harpie... Cache-t-il peut-être un nouveau-né ?",
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Harpie de Foudre[25]"
+  },
+{
+    id:       'pierre_runique',
+    name:     "Pierre Runique",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/mine_tablette.png",
+    lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[5]\n- Squelette du Sanctuaire - Shaman[5]\n- Squelette du Sanctuaire - Guerrier[7]\n- Gardien du Sanctuaire[40]"
+  },
+{
+    id:       'chaine_spectrale',
+    name:     "Chaîne Spectrale",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/chaine_spectral.png",
+    lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
+    tags:     ['Matériaux', 'Palier 2', 'Commun'],
+    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[35]\n- Squelette du Sanctuaire - Shaman[35]\n- Squelette du Sanctuaire - Guerrier[30]"
+  },
+{
+    id:       'vetement_dechire',
+    name:     "Vêtement Déchiré",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/drop_capuchon.png",
+    lore:     "Un vêtement déchiré appartenant à un ancien humain, devenu squelette protégeant son domaine.",
+    tags:     ['Matériaux', 'Palier 2', 'Rare'],
+    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[30]\n- Squelette du Sanctuaire - Guerrier[30]"
+  },
+{
+    id:       'poudre_moelle',
+    name:     "Poudre de Moelle",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/poudre_moelle.png",
+    lore:     "Une belle poudre blanchâtre à l'odeur minérale, possiblement utilisé dans certains rituels.",
+    tags:     ['Matériaux', 'Palier 2', 'Rare'],
+    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Shaman[20]"
+  },
+{
+    id:       'morceau_ferraille',
+    name:     "Morceau de Ferraille",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/ferraille.png",
+    lore:     "Morceau de feraille, solide malgré son état. Idéal pour expérimenter la forge ou tester des recettes alchimiques.",
+    tags:     ['Matériaux', 'Palier 2', 'Rare'],
+    obtain:   "Obtenable en tuant:\n- Golem de Pierre[40]"
+  },
+{
+    id:       'os_sombre',
+    name:     "Os Sombre",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/os_sombre.png",
+    lore:     "Un os noirci et résistant, vestige d'un squelette ancien et corrompu.",
+    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    obtain:   "Obtenable en tuant:\n- ??"
+  },
+{
+    id:       'poudre_noire',
+    name:     "Poudre Noire",
+    rarity:   'commun',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/poudre_noire.png",
+    lore:     "Une fine poudre sombre, issue d'anciens os broyés, imprégnée d'une aura sinistre.",
+    tags:     ['Matériaux', 'Palier 2', 'commun'],
+    obtain:   "Obtenable en tuant:\n- ??"
+  },
+{
+    id:       'poudre_necromancien',
+    name:     "Poudre de Nécromancien",
+    rarity:   'epique',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/poudre_necro.png",
+    lore:     "Une poudre sombre et mystérieuse, chargé d'une énergie	interdite.",
+    tags:     ['Matériaux', 'Palier 2', 'Épique'],
+    obtain:   "Obtenable en tuant:\n- ??"
+  },
+{
+    id:       'pierre_osseuse_noire',
+    name:     "Pierre Osseuse Noire",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/mine_roche_noir.png",
+    lore:     "Un fragment d'os dur et sombre, marqué par le temps et par la mort.",
+    tags:     ['Matériaux', 'Palier 2', 'Rare'],
+    obtain:   "Obtenable en tuant:\n- ??\n- Morveth l'Écorcheur d'Âmes[100]"
+  },
+//#endregion Items > P2 > Matériaux
+//#region Items > P2 > Ressources
+{
     id:       'bauxite',
     name:     "Minerais de Bauxite",
     rarity:   'commun',
@@ -6947,7 +7020,7 @@ const ITEMS = [
     tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 2', 'Commun'],
     obtain:   "Récupérable dans la Mine de la Grotte de Taran"
   },
-	{
+{
     id:       'lingot_bauxite',
     name:     "Lingot de Bauxite",
     rarity:   'rare',
@@ -6959,7 +7032,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron de Lingots à Urbus",
 		craft:		[{id:'bauxite', qty:4}, {id:'charbon', qty:3}]
   },
-	{
+{
     id:       'onyx_impur',
     name:     "Minerais d'Onyx Impur",
     rarity:   'rare',
@@ -6970,7 +7043,7 @@ const ITEMS = [
     tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 2', 'Rare'],
     obtain:   "Récupérable dans la Mine de la Grotte de Taran"
   },
-	{
+{
     id:       'lingot_onyx_impur',
     name:     "Lingot d'Onyx Impur",
     rarity:   'epique',
@@ -6982,7 +7055,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron de Lingots à Urbus",
 		craft:		[{id:'onyx_impur', qty:10}, {id:'charbon', qty:5}]
   },
-	{
+{
     id:       'onyx_pur',
     name:     "Minerais d'Onyx Pur",
     rarity:   'epique',
@@ -6993,7 +7066,7 @@ const ITEMS = [
     tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 2', 'Épique'],
     obtain:   "Récupérable dans la Mine de la Grotte de Taran"
   },
-	{
+{
     id:       'lingot_onyx_pur',
     name:     "Lingot d'Onyx Pur",
     rarity:   'legendaire',
@@ -7005,7 +7078,7 @@ const ITEMS = [
     obtain:   "Fabricable au Forgeron de Lingots à Urbus",
 		craft:		[{id:'onyx_pur', qty:10}, {id:'charbon', qty:5}]
   },
-	{
+{
     id:       'acacia',
     name:     "Buche d'Acacia",
     rarity:   'commun',
@@ -7016,7 +7089,7 @@ const ITEMS = [
     tags:     ['Ressource', 'Bois', 'Buche', 'Palier 2', 'Commun'],
     obtain:   "Récupérable dans la Forêt au Nord de Virelune"
   },
-	{
+{
     id:       'planche_acacia',
     name:     "Planche d'Acacia",
     rarity:   'commun',
@@ -7028,10 +7101,136 @@ const ITEMS = [
     obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
 		craft:		[{id:'acacia', qty:2}]
   },
+//#endregion Items > P2 > Ressources
+//#region Items > P2 > Quêtes
+{
+    id:       'écaille_fulgurante',
+    name:     "Écaille Fulgurante",
+    rarity:   'rare',
+    category: 'quete',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Quest/ecaille_foudre.png",
+    lore:     "Une des trois écorces utilisées comme offrande à l'un des dieux présents au Palier 2 !",
+    tags:     ['Quête', 'Palier 2', 'Rare'],
+    obtain:   "Obtenable en tuant:\n- Poisson Fulgurant[40]"
+  },
+{
+    id:       'artefact_yaa',
+    name:     "Artefact de Yaa",
+    rarity:   'epique',
+    category: 'quete',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Quest/yaa.png",
+    lore:     "Artefact du Protecteur Yaa, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
+    tags:     ['Quête', 'Palier 2', 'Épique'],
+    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
+  },
+{
+    id:       'artefact_bia',
+    name:     "Artefact de Bia",
+    rarity:   'epique',
+    category: 'quete',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Quest/bia.png",
+    lore:     "Artefact du Protecteur Bia, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
+    tags:     ['Quête', 'Palier 2', 'Épique'],
+    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
+  },
+{
+    id:       'artefact_tano',
+    name:     "Artefact de Tano",
+    rarity:   'epique',
+    category: 'quete',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Quest/tano.png",
+    lore:     "Artefact du Protecteur Tano, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
+    tags:     ['Quête', 'Palier 2', 'Épique'],
+    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
+  },
+{
+    id:       'parchemin_sceau_taurus',
+    name:     "Parchemin de Sceau Complet",
+    rarity:   'godlike',
+    category: 'quete',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Quest/rune_fire.gif",
+    lore:     "Enchanté, ce parchemin peut débloquer la barrière du roi Taurus Asterius.",
+    tags:     ['Quête', 'Palier 2', 'Godlike'],
+    obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
+  },
 
+//#endregion Items > P2 > Quêtes
+//#region Items > P2 > Donjon
+//#endregion Items > P2 > Donjon
+//#endregion Items > Palier 2
+//#endregion Items
+//#region Draco
+//#region Draco > Armes
+//#region Draco > Armes > Palier 1
+//#endregion Draco > Armes > Palier 1
+//#region Draco > Armes > Palier 2
+{
+		id:				'lance_dard_percant',
+		name:			"Lance du Dard Perçant",
+		rarity:		'legendaire',
+		twoHanded: true,
+		cat:			'arme_p',
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			null,
+		stats:		{degats:50, vitesse_attaque:1},
+		classes:	['guerrier'],
+		lore:     "Pointe tranchante, perçante, et puissante comme le dard d'une abeille en colère.",
+    tags:     ['Arme', 'Épée', 'Guerrier', 'Palier 2', 'Rare'],
+    obtain:   "Obtenable en récompense du Donjon Ruche de Melliona [3]",
+	},
+{
+		id:				'bouclier_imprenable',
+		name:			"Bouclier Imprenable",
+		rarity:		'rare',
+		cat:			'arme_s',
+		category:	'arme',
+		palier:		2,
+		lvl:			11,
+		img:			null,
+		stats:		{defense:[2.5,2.9], sante:[20,24.99]},
+		classes:	['guerrier'],
+		lore:     "Solide et résistant, il protège comme une ruche qui défend ses larves, ainsi absorbant les assauts les plus puissants.",
+		tags:     ['Arme', 'Bouclier', 'Pavois', 'Guerrier', 'Palier 2', 'Rare'],
+		obtain:   "Fabricable au Forgeron d'Armes de ???",
+		craft:		[{qty:48, id:'ambre_mielleux'}, {qty:24, id:'carapace_abeille'}]
+	},
+
+//#endregion Draco > Armes > Palier 2
+//#endregion Draco > Armes
+//#region Draco > Accessoires
+//#region Draco > Accessoires > Palier 1
+//#endregion Draco > Accessoires > Palier 1
+//#region Draco > Accessoires > Palier 2
+//#endregion Draco > Accessoires > Palier 2
+//#endregion Draco > Accessoires
+//#region Draco > Armures
+//#region Draco > Armures > Palier 1
+//#endregion Draco > Armures > Palier 1
+//#region Draco > Armures > Palier 2
+{
+    id:       'masque_nécromancien',
+    name:     "Masque du Nécromancien",
+    rarity:   'legendaire',
+	cat:	  'artefact',
+    category: 'accessoire',
+	lvl:	  14,
+    palier:   2,
+    image:    null,
+	stats:    {crit_comp_chance:5, crit_comp_degats:5, defense:5, sante:60},
+    lore:     "Masque puissant et imprégné de magie noire. Il confère une protection exceptionnelle et une puissance accrue pour les nécromanciens les plus aguerris.",
+    tags:     ['Accessoire', 'Masque', 'Palier 2', 'Légendaire'],
+    obtain:   "Obtenable en tuant : Morveth l'Écorcheur d'Âmes [3]"
+  },
 ];
 
-/* ══ SLOTS ══ */
+//#region SLOTS
 const SLOTS_LEFT = [
   { id:'amulette',  label:'Amulette',        	ico:'📿', cats:['amulette'] },
   { id:'anneau1',   label:'Anneau I',         ico:'💍', cats:['anneau'] },
@@ -7053,3 +7252,4 @@ const SLOTS_BOT = [
   { id:'arme_sec',  label:'Arme Secondaire',  ico:'🛡️', cats:['arme_s'] },
 ];
 const ALL_SLOTS = [...SLOTS_LEFT, ...SLOTS_RIGHT, ...SLOTS_BOT];
+//#endregion SLOTS
