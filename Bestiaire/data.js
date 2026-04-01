@@ -1711,7 +1711,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1a8',
-    img: '../img/compendium/textures/items/Ressources/bar_iron.png',
+    img: '../img/compendium/montages/lingots.png',
     lore: "Permet le fabrication de Lingots de Cuivre et de Lingots de Fer.",
     craft: [
 			{ 
