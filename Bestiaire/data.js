@@ -1812,7 +1812,7 @@ const PERSONNAGES = [
     lore: "Reprends les Armes de Niveau 5 obtenable sur les monstres du Palier 1.",
     sells: [
       { id: 'bouclier_sylvestre',  price: 50 },
-			{ id: 'marteau_colosse', price: 150 },
+			{ id: 'marteau_colosse', price: 50 },
 			{ id: 'epee_osseuse', price: 50 },
 			{ id: 'dague_bandit', price: 50 },
 			{ id: 'arbalete_bandit', price: 50 },
@@ -1978,7 +1978,7 @@ const PERSONNAGES = [
       { id: 'tissu_araignee', price: 6 },
 			{ id: 'carapace_requin', price: 6.5 },
 			{ id: 'coeur_nymbrea', price: 500 },
-			{ id: 'venin_araignee' },
+			{ id: 'venin_araignee', price: 750 },
     ],
   },
 	{
