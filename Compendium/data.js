@@ -6849,7 +6849,7 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Ours de la Forêt[60]"
   },
 {
-    id:       'fourrure_loup_2',
+    id:       'fourrure_loup_p2',
     name:     "Fourrure de Loup",
     rarity:   'commun',
     category: 'materiaux',
@@ -7192,7 +7192,7 @@ const ITEMS = [
 //#endregion Items > P2 > Ressources
 //#region Items > P2 > Quêtes
 {
-    id:       'écaille_fulgurante',
+    id:       'ecaille_fulgurante',
     name:     "Écaille Fulgurante",
     rarity:   'rare',
     category: 'quete',
