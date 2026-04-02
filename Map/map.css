@@ -311,6 +311,7 @@
 .marker[data-type="artisant"]              .marker-icon { background: #6a4daa; color: #a07de0; box-shadow: 0 2px 12px rgba(160,125,224,.5); }
 .marker[data-type="repreneur_butin"]       .marker-icon { background: #0d2430; color: #0d2430; box-shadow: 0 2px 12px rgba(21, 55, 76, 0.5); }
 .marker[data-type="clef"]                  .marker-icon { background: #ebbc58; color: #ebbc58; box-shadow: 0 2px 12px rgba(212, 161, 49, 0.5); }
+.marker[data-type="boss"]                  .marker-icon { background: #6b1a1a; color: #e05050; box-shadow: 0 2px 12px rgba(224,80,80,.6); }
 
 .marker.hidden-marker { display: none; }
 .marker.marker-dimmed { opacity: 0.15; pointer-events: none; transition: opacity .2s; }

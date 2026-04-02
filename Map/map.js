@@ -46,6 +46,20 @@ function getFloorMarkers(floor) {
   return (src && src[floor]) || [];
 }
 
+/* Expanse les markers boss (qui ont un tableau coords) en markers plats avec gx/gy */
+function getFlatFloorMarkers(floor) {
+  const raw = getFloorMarkers(floor);
+  const flat = [];
+  for (const m of raw) {
+    if (m.coords && Array.isArray(m.coords)) {
+      m.coords.forEach(c => flat.push({ ...m, gx: c.gx, gy: c.gy, coords: undefined }));
+    } else {
+      flat.push(m);
+    }
+  }
+  return flat;
+}
+
 function getFloorZones(floor) {
   if (currentLayer === 'underground') {
     const src = (typeof FLOOR_ZONES_UNDERGROUND !== 'undefined') ? FLOOR_ZONES_UNDERGROUND : null;
@@ -260,15 +274,17 @@ function navigateToMapId(id) {
     applyTransform();
     return;
   }
-  const markers = getFloorMarkers(currentFloor);
-  const marker  = markers.find(m => m.id === id);
-  if (marker) {
-    const img   = gameToPixel(marker.gx, marker.gy);
+  const markers = getFlatFloorMarkers(currentFloor);
+  const matched = markers.filter(m => m.id === id);
+  if (matched.length > 0) {
+    const cx = matched.reduce((s, m) => s + m.gx, 0) / matched.length;
+    const cy = matched.reduce((s, m) => s + m.gy, 0) / matched.length;
+    const img   = gameToPixel(cx, cy);
     panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
     panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
-    _searchFocusId = marker.id;
+    _searchFocusId = id;
     applyTransform();
-    showTooltip(marker);
+    showTooltip(matched[0]);
   }
 }
 
@@ -822,11 +838,12 @@ function renderMarkers() {
   markersLayer.innerHTML = '';
   document.querySelectorAll('.cluster-expanded').forEach(n => n.remove());
 
-  const markers = getFloorMarkers(currentFloor);
-  const focused = _searchFocusId ? markers.find(m => m.id === _searchFocusId) : null;
+  const markers = getFlatFloorMarkers(currentFloor);
+  const focusedList = _searchFocusId ? markers.filter(m => m.id === _searchFocusId) : [];
+  const isMultiFocus = focusedList.length > 1;
 
   const visible = markers.filter(m => {
-    if (m.id === _searchFocusId) return false;
+    if (m.id === _searchFocusId && !isMultiFocus) return false;
     const cb = document.querySelector(`.marker-filter[data-type="${m.type}"]`);
     return !cb || cb.checked;
   });
@@ -839,12 +856,18 @@ function renderMarkers() {
   if (_searchFocusId) {
     markersLayer.querySelectorAll('.marker').forEach(el => el.classList.add('marker-dimmed'));
   }
-  if (focused) {
+
+  if (focusedList.length === 1) {
+    const focused = focusedList[0];
     const img = gameToPixel(focused.gx, focused.gy);
     const s   = imageToScreen(img.x, img.y);
     renderSingleMarker({ ...focused, sx: s.x, sy: s.y });
     const el = markersLayer.querySelector(`.marker[data-id="${focused.id}"]`);
     if (el) el.classList.remove('marker-dimmed');
+  } else if (isMultiFocus) {
+    markersLayer.querySelectorAll(`.marker[data-id="${_searchFocusId}"]`).forEach(el => {
+      el.classList.remove('marker-dimmed');
+    });
   }
 
   renderZones();
@@ -1117,6 +1140,7 @@ const TYPE_LABELS = {
   quête_secondaire: 'Quête Secondaire',
   clef:             'Clef',
   obj_special:      'Objet Spécial',
+  boss:             'Boss',
 };
 
 let _pinnedTooltip    = false;
@@ -1302,6 +1326,7 @@ const searchResults = document.getElementById('search-results');
 
 function getAllMarkers() {
   const all = [];
+  const seen = new Set();
   let src;
   if (currentLayer === 'underground') {
     src = (typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined') ? FLOOR_MARKERS_UNDERGROUND : null;
@@ -1311,7 +1336,12 @@ function getAllMarkers() {
       : (typeof FLOOR_MARKERS !== 'undefined' ? FLOOR_MARKERS : null);
   }
   Object.entries(src || {}).forEach(([floor, markers]) => {
-    markers.forEach(m => all.push({ ...m, floor: parseInt(floor) }));
+    markers.forEach(m => {
+      if (seen.has(m.id)) return;
+      seen.add(m.id);
+      const flat = m.coords ? { ...m, gx: m.coords[0].gx, gy: m.coords[0].gy } : m;
+      all.push({ ...flat, floor: parseInt(floor) });
+    });
   });
   return all;
 }
@@ -1346,7 +1376,14 @@ searchInput.addEventListener('input', () => {
         </div>`;
       item.addEventListener('click', () => {
         if (m.floor !== currentFloor) goToFloor(m.floor);
-        const img = gameToPixel(m.gx, m.gy);
+        const allFlat = getFlatFloorMarkers(currentFloor);
+        const bossMatches = allFlat.filter(bm => bm.id === m.id);
+        let cx = m.gx, cy = m.gy;
+        if (bossMatches.length > 1) {
+          cx = bossMatches.reduce((s, bm) => s + bm.gx, 0) / bossMatches.length;
+          cy = bossMatches.reduce((s, bm) => s + bm.gy, 0) / bossMatches.length;
+        }
+        const img = gameToPixel(cx, cy);
         panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
         panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
         _searchFocusId = m.id;

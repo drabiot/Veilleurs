@@ -544,7 +544,31 @@ const FLOOR_MARKERS = {
     { id: 'm1p26', type: 'quête_principale', gx: 3203,  gy: 1455, name: "26 - Le Parchemin de Sceau",        desc: "Retournez voir Méphisto", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/le-parchemin-de-sceau' },
     { id: 'm1p27', type: 'quête_principale', gx: 3260,  gy: 1389, name: "27 - Le Tombeau des Harald",        desc: "Allez voir le Roi de Tolbana, afin qu'il vous donne accès à la tombe de ses ancêtres et bénissent votre Parchemin pour ouvrir les Portes de la Tour du Kobold", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/e-tombeau-des-harald' },
     { id: 'm1p28', type: 'quête_principale', gx: 3260,  gy: 1389, name: "28 - Donjon: Le Kobold",            desc: "Retournez voir le roi Harald et menez une expédition punitive, afin de défaire le roi Kobold: Illfang", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/donjon-le-kobold' },
-  
+
+	{ id: 'm1boss1', type: 'boss', emoji: '🐗', name: "Pumba Corrompu", desc: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/pumba_corrompu', coords: [
+		{ gx: 1760, gy: 3525 },
+		{ gx: 1925, gy: 3525 },
+		{ gx: 1985, gy: 3635 },
+	]},
+	{ id: 'm1boss2', type: 'boss', emoji: '🐺', name: "Albal", desc: "Un loup solitaire aux yeux d'argent glacés. Son passage laisse une brume et le silence", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/albal', coords: [
+		{ gx: 2617, gy: 3836 },
+		{ gx: 2388, gy: 3834 },
+		{ gx: 2510, gy: 3964 },
+	]},
+	{ id: 'm1boss3', type: 'boss', emoji: '🌳', name: "Gardien Colossal", desc: "Forgé dans la pierre et éveillé par la magie ancienne, il garde les terres oubliées contre toute intrusion. Ses pas seuls font trembler la forêt...", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gardien_colossal', coords: [
+		{ gx: 1288, gy: 3157 },
+		{ gx: 1069, gy: 3252 },
+		{ gx: 1246, gy: 2974 },
+	]},
+	{ id: 'm1boss4', type: 'boss', emoji: '👑', name: "Gorbel", desc: "Un colosse gélatineux, maître des essaims de slimes. Il écrase tout sur son passage, lentement mais sûrement", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gorbel', coords: [
+		{ gx: 300, gy: 3200 },
+	]},
+	{ id: 'm1boss5', type: 'boss', emoji: '🐻', name: "Ours de Glace", desc: "Né dans les cavernes les plus froides des montagnes, l'Ours de Glace incarne la force brute du Nord. Son rugissement fait frissonner l'air, et son souffle glacé fige tout sur son passage", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ours_glace', coords: [
+		{ gx: 4000, gy: 2010 },
+	]},
+	{ id: 'm1boss6', type: 'boss', emoji: '🐟', name: "Nymbréa", desc: "Serpent mythique glissant entre les courants profonds, Nymbréa incarne la grâce et la traîtrise des eaux calmes. Ses écailles scintillent comme des perles maudites, et son regard hypnotique attire les imprudents vers les abysses", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nymbrea', coords: [
+		{ gx: 1410, gy: 2140 },
+	]},
   ],
   2: [
     { id: 'm2d1',  type: 'donjon',  gx: 506, gy: -724, name: 'Donjon Ruche de Melliona',                  desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/donjons/donjon-ruche-de-melliona' },

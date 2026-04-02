@@ -12,7 +12,7 @@ const MOBS = [
     palier: 1,
     difficulty: 1,
     region: 'Zone des Sangliers',
-    regionId: 'm1z2',
+    regionId: 'm1boss1',
     img: '../img/mobs/P1/sanglier_corrompu.png',
     lore: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive.",
     attacks: [
@@ -95,7 +95,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Vallée des Loups',
-    regionId: 'm1z1',
+    regionId: 'm1boss2',
     img: '../img/mobs/P1/albal.png',
     lore: "Un loup solitaire aux yeux d'argent glacés. Son passage laisse une brume et le silence.",
     attacks: [
@@ -221,7 +221,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Maréage Putride',
-    regionId: 'm1z4',
+    regionId: 'm1boss3',
     img: '../img/mobs/P1/gardien_colossal.png',
     lore: "Forgé dans la pierre et éveillé par la magie ancienne, il garde les terres oubliées contre toute intrusion. Ses pas seuls font trembler la forêt...",
     attacks: [
@@ -318,7 +318,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 3,
     region: 'Vallhat',
-    regionId: 'm1z5',
+    regionId: 'm1boss4',
     img: '../img/mobs/P1/gorbel.png',
     lore: "Un colosse gélatineux, maître des essaims de slimes. Il écrase tout sur son passage, lentement mais sûrement.",
     attacks: [
@@ -1009,7 +1009,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 3,
     region: 'Citadelle des Neiges',
-    regionId: 'm1z11',
+    regionId: 'm1boss5',
     img: '../img/mobs/P1/ours_glace.png',
     lore: "Né dans les cavernes les plus froides des montagnes, l'Ours de Glace incarne la force brute du Nord. Son rugissement fait frissonner l'air, et son souffle glacé fige tout sur son passage.",
     attacks: [
@@ -1046,7 +1046,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 4,
     region: 'Antre de Aepep',
-    regionId: 'm1z12',
+    regionId: 'm1boss6',
     img: '../img/mobs/P1/nymbrea.png',
     lore: "Serpent mythique glissant entre les courants profonds, Nymbréa incarne la grâce et la traîtrise des eaux calmes. Ses écailles scintillent comme des perles maudites, et son regard hypnotique attire les imprudents vers les abysses.",
     attacks: [
@@ -1431,7 +1431,7 @@ const MOBS = [
     img: '',
     lore: ".",
     attacks: [
-			{ name: 'Pour Démacia',   desc: 'Donne un violent coup de pied, suivis d\'un coup d\'épée.', dmg:'?' },
+			{ name: 'Pour Démacia',   desc: 'Donne un violent coup de pied, suivi d\'un coup d\'épée.', dmg:'?' },
 			{ name: 'Démacia marche comme un seul Homme',   desc: 'Se protège avec son immense Bouclier contre toutes attaques frontales.'},
 			{ name: 'Spin to Win',   desc: 'Tourne sur lui même, épée en main afin d\'asséner des coups dévastateurs.', dmg:'?' },
 			{ name: 'Justice de Démacia',   desc: 'Se propulse en l\'air après avoir scintillé et s\'écrase sur sa cible.', dmg:'?' },
