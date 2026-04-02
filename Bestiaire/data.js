@@ -1069,7 +1069,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1b1',
-    img: '../img/compendium/textures/items/Nourriture/viande_de_sanglier.png',
+    img: '../img/compendium/montages/butin_vdp.png',
     lore: "Reprends des ingrédient basique trouvable aux abbords de la Ville de Départ, ainsi que des bourses d'argent.",
     sells: [
       { id: 'viande_de_sanglier',  price: 0.1 },
@@ -1087,7 +1087,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1m1',
-    img: '../img/compendium/textures/weapons/epee_dentrainement.png',
+    img: '../img/compendium/montages/equipement.png',
     lore: "Vends des Armes et des Consommables pour les nouveaux arrivants.",
     sells: [
       { id: 'epee_entrainement',  buy: 75, price: 4 },
@@ -1132,7 +1132,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1m5',
-    img: '../img/compendium/textures/gears/pioche_felee.png',
+    img: '../img/compendium/montages/outils_p1.png',
     lore: "Vends des Outils pour que les Aventuriers récoltent des ressources pour leur aventure.",
     sells: [
       { id: 'pioche_felee',  buy: 20, price: 4 },
@@ -1310,7 +1310,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1a7',
-    img: '../img/compendium/textures/items/Material/P1/string_cuivre.png',
+    img: '../img/compendium/montages/refaconneur_vdp.png',
     lore: "Transforme des Ressources et des Fils d'Araignées pour réaliser des ficelles utile dans la confection d'Accessoires.",
     craft: [
 			{ 
@@ -1343,7 +1343,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1a1',
-    img: '../img/compendium/textures/weapons/hache_double_en_fer.png',
+    img: '../img/compendium/montages/armes_vdp.png',
     lore: "Permet le fabrication d'armes rudimentaires pour les novices.",
     craft: [
 			{ 
@@ -1759,7 +1759,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Hanaka',
     regionId: 'm1b2',
-    img: '../img/compendium/textures/items/Material/P1/brindille_enchantee.png',
+    img: '../img/compendium/montages/butin_hanaka.png',
     lore: "Reprends des ingrédient forêstié trouvable aux abbords de Hanaka, dans les Marécages Putrides.",
     sells: [
       { id: 'pousse_de_sylve',  price: 3 },
@@ -1781,7 +1781,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Hanaka',
     regionId: 'm1m2',
-    img: '../img/compendium/textures/weapons/epee_dentrainement.png',
+    img: '../img/compendium/montages/equipement.png',
     lore: "Vends des Armes et des Consommables pour les nouveaux arrivants.",
     sells: [
       { id: 'epee_entrainement',  buy: 75, price: 4 },
@@ -1808,7 +1808,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Hanaka',
     regionId: 'm1b8',
-    img: '../img/compendium/textures/weapons/bouclier_sylvestre.png',
+    img: '../img/compendium/montages/revendeur_armes_hanaka.png',
     lore: "Reprends les Armes de Niveau 5 obtenable sur les monstres du Palier 1.",
     sells: [
       { id: 'bouclier_sylvestre',  price: 50 },
@@ -1831,7 +1831,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Mizunari',
 		regionId: 'm1b3',
-    img: '../img/compendium/textures/items/Material/P1/fragment_de_feuille.png',
+    img: '../img/compendium/montages/butin_mizunari.png',
     lore: "Reprends des ingrédient champêtre trouvable dans les champs à l'Est de Mizunari.",
     sells: [
       { id: 'cuir_use',  price: 5 },
@@ -1847,7 +1847,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Mizunari',
     regionId: 'm1m11',
-    img: '../img/compendium/textures/gears/pioche_felee.png',
+    img: '../img/compendium/montages/outils_p1.png',
     lore: "Vends des Outils pour que les Aventuriers récoltent des ressources pour leur aventure.",
     sells: [
       { id: 'pioche_felee',  buy: 20, price: 4 },
@@ -1887,7 +1887,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Vallhat',
 		regionId: 'm1b4',
-    img: '../img/compendium/textures/items/Material/P1/gelee_slime.png',
+    img: '../img/compendium/montages/butin_vallhat.png',
     lore: "Reprends des ingrédient gluant trouvable dans les marécages en bas de Vallhat.",
     sells: [
       { id: 'potion_vie_1',  buy: 20 },
@@ -1915,7 +1915,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Vallhat',
     regionId: 'm1m3',
-    img: '../img/compendium/textures/trinkets/P1/Set des Slimes Gélatineux/Bague Gluante.png',
+    img: '../img/compendium/montages/accessoires_vallhat.png',
     lore: "Vends des Accessoires à base de slime de Vallhat.",
     sells: [
       { id: 'bague_gluante',  price: 1000 },
@@ -1951,7 +1951,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Château Abandonné',
 		regionId: 'm1b5',
-    img: '../img/compendium/textures/items/Material/P1/os_de_squelette.png',
+    img: '../img/compendium/montages/butin_chateau.png',
     lore: "Reprends des ingrédient des Squelettes trouvable dans les Ruines Maudites et son Donjon.",
     sells: [
       { id: 'os_de_squelette',  price: 4.5 },
@@ -1971,7 +1971,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Virelune',
 		regionId: 'm1b6',
-    img: '../img/compendium/textures/items/Material/P1/ecaille_requin.png',
+    img: '../img/compendium/montages/butin_virelune.png',
     lore: "Reprends des ingrédient d'Arachnides et du Lac environant.",
     sells: [
       { id: 'fil_araignee',  price: 7 },
@@ -1988,7 +1988,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Virelune',
     regionId: 'm1m6',
-    img: '../img/compendium/textures/gears/pioche_felee.png',
+    img: '../img/compendium/montages/outils_p1.png',
     lore: "Vends des Outils pour que les Aventuriers récoltent des ressources pour leur aventure.",
     sells: [
       { id: 'pioche_felee',  buy: 20, price: 4 },
@@ -2025,7 +2025,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Tolbana',
 		regionId: 'm1b7',
-    img: '../img/compendium/textures/items/Material/P1/peau_dur_glacial.png',
+    img: '../img/compendium/montages/butin_tolbana.png',
     lore: "Reprends des gelés et de la faune locale.",
     sells: [
       { id: 'peau_dur_glacial',  price: 10 },
@@ -2045,7 +2045,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Tolbana',
     regionId: 'm1m9',
-    img: '../img/compendium/textures/weapons/epee_dentrainement.png',
+    img: '../img/compendium/montages/equipement.png',
     lore: "Vends des Armes et des Consommables pour les nouveaux arrivants.",
     sells: [
       { id: 'epee_entrainement',  buy: 75, price: 4 },
@@ -2072,7 +2072,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Tolbana',
     regionId: 'm1m4',
-    img: '../img/compendium/textures/trinkets/P1/Set Squelette Poussiéreux/Bague de Squelette.png',
+    img: '../img/compendium/montages/accessoires_tolbana.png',
     lore: "Vends des Accessoires pour aventuriers agguéris.",
     sells: [
       { id: 'bague_squelette',  price: 1000 },
@@ -2217,7 +2217,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Tolbana',
     regionId: 'm1m7',
-    img: '../img/compendium/textures/gears/pioche_felee.png',
+    img: '../img/compendium/montages/outils_p1.png',
     lore: "Vends des Outils pour que les Aventuriers récoltent des ressources pour leur aventure.",
     sells: [
       { id: 'pioche_felee',  buy: 20, price: 4 },
@@ -2233,7 +2233,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Tolbana',
     regionId: 'm1a9',
-    img: '../img/compendium/textures/weapons/marteau_magique.png',
+    img: '../img/compendium/montages/armes_tolbana.png',
     lore: "Permet le fabrication d'armes pour les aventuriers aggueris.",
     craft: [
       { id: 'epee_magique', time: '10s',
@@ -2439,7 +2439,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Candelia',
     regionId: 'm1m10',
-    img: '../img/compendium/textures/gears/pioche_felee.png',
+    img: '../img/compendium/montages/outils_p1.png',
     lore: "Vends des Outils pour que les Aventuriers récoltent des ressources pour leur aventure.",
     sells: [
       { id: 'pioche_felee',  buy: 20, price: 4 },
@@ -2536,7 +2536,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Donjon Labyrinthe des Déchus',
     regionId: 'm1a11',
-    img: '../img/compendium/textures/weapons/epee_du_gardien.png',
+    img: '../img/compendium/montages/armes_labyrinthe.png',
     lore: "Permet le fabrication d'armes pour les aventuriers expérimentés.",
     craft: [
       { id: 'lingot_ame_metal', time: '10s',
