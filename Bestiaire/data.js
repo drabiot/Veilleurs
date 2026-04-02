@@ -12,7 +12,7 @@ const MOBS = [
     palier: 1,
     difficulty: 1,
     region: 'Zone des Sangliers',
-    regionId: 'm1boss1',
+    regionId: 'm1z2',
     img: '../img/mobs/P1/sanglier_corrompu.png',
     lore: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive.",
     attacks: [
@@ -33,8 +33,9 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Zone des Sangliers',
-    regionId: 'm1z2',
+    regionId: 'm1boss1',
     img: '../img/mobs/P1/sanglier_corrompu.png',
+    spawnTime: null,
     lore: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive.",
     attacks: [
       { name: 'Charge du Sanglier',   desc: 'Fonce sur la cible et les pousse.', dmg: '?' },
@@ -45,6 +46,7 @@ const MOBS = [
       { id: 'cristal_corrompu', chance: 100 },
 	  { id: 'anneau_pumba'},
     ],
+		spawnTime: '1m 30s'
   },
   {
     id: 'loup_sinistre_blanc',
@@ -97,6 +99,7 @@ const MOBS = [
     region: 'Vallée des Loups',
     regionId: 'm1boss2',
     img: '../img/mobs/P1/albal.png',
+    spawnTime: null,
     lore: "Un loup solitaire aux yeux d'argent glacés. Son passage laisse une brume et le silence.",
     attacks: [
     ],
@@ -105,6 +108,7 @@ const MOBS = [
       { id: 'crocs_de_loup', chance: 70 },
 	  { id: 'crocs_de_albal', chance: 20 },
     ],
+		spawnTime: '4m'
   },
   {
     id: 'nephentes',
@@ -231,6 +235,7 @@ const MOBS = [
       { id: 'mycelium_magique', chance: 20 },
       { id: 'marteau_colosse' },
     ],
+		spawnTime: '3m'
   },
   {
     id: 'petit_slime',
@@ -330,6 +335,7 @@ const MOBS = [
 	  { id: 'noyau_de_slime', chance: 5 },
 	  { id: 'essence_de_gorbel', chance: 5 },
     ],
+		spawnTime: '10m'
   },
   {
     id: 'squelette_epeiste',
@@ -1018,6 +1024,7 @@ const MOBS = [
 	  { id: 'fragment_ame_ours', chance: 5 },
 	  { id: 'poussiere_givre', chance: 80, qty:'1-3' },
     ],
+		spawnTime: '5m'
   },
   {
     id: 'poisson_requin',
@@ -1054,6 +1061,7 @@ const MOBS = [
     loot: [
 	  { id: 'coeur_nymbrea' },
     ],
+		spawnTime: '10m'
   },
 	//#endregion Palier 1
 	//#region Palier 2

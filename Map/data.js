@@ -32,9 +32,9 @@ const FLOOR_ZONES = {
       color: '#e0ac60',
       emoji: '🐺',
       monsters: [
-        { name: 'Loup Sinitre Blanc', level: 2, difficulty: '⭐',   emoji: '🐺', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/vallee-des-loups/loups-sinistres' },
-        { name: 'Loup Sinitre Noir',  level: 2, difficulty: '⭐',   emoji: '🐺', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/vallee-des-loups/loups-sinistres' },
-        { name: 'Albal',              level: 2, difficulty: '⭐⭐', emoji: '🐺', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/vallee-des-loups/albal' },
+        { name: 'Loup Sinitre Blanc', level: 2, difficulty: '⭐',   emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/loup_sinistre_blanc' },
+        { name: 'Loup Sinitre Noir',  level: 2, difficulty: '⭐',   emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/loup_sinistre_noir' },
+        { name: 'Albal',              level: 2, difficulty: '⭐⭐', emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/albal' },
       ],
       points: [
         { gx: 2430, gy: 4026 }, { gx: 2344, gy: 3943 }, { gx: 2380, gy: 3784 },
@@ -49,8 +49,8 @@ const FLOOR_ZONES = {
       color: '#644d58',
       emoji: '🐗',
       monsters: [
-        { name: 'Sanglier Corrompu', level: 2, difficulty: '⭐',   emoji: '🐗', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/zone-sanglier/sanglier-corrompu' },
-        { name: 'Pumba',             level: 2, difficulty: '⭐⭐', emoji: '🐗', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/zone-sanglier/pumba' },
+        { name: 'Sanglier Corrompu', level: 2, difficulty: '⭐',   emoji: '🐗', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/sanglier_corrompu' },
+        { name: 'Pumba',             level: 2, difficulty: '⭐⭐', emoji: '🐗', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/pumba_corrompu' },
       ],
       points: [
         { gx: 1611, gy: 3620 }, { gx: 1781, gy: 3344 }, { gx: 1986, gy: 3339 },
@@ -63,7 +63,7 @@ const FLOOR_ZONES = {
       color: '#82e753',
       emoji: '🌾',
       monsters: [
-        { name: 'Nephentes', level: 4, difficulty: '⭐⭐', emoji: '🥬', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/mizunari/nephentes' },
+        { name: 'Nephentes', level: 4, difficulty: '⭐⭐', emoji: '🥬', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nephentes' },
       ],
       points: [
         { gx: 3306, gy: 3731 }, { gx: 3360, gy: 3708 }, { gx: 3423, gy: 3771 },
@@ -77,11 +77,11 @@ const FLOOR_ZONES = {
       color: '#ee7560',
       emoji: '🍄',
       monsters: [
-        { name: 'Mini Tréant',       level: 3, difficulty: '⭐⭐',   emoji: '🌿', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/hanaka/mini-treant' },
-        { name: 'Guerrier Tréant',   level: 3, difficulty: '⭐⭐',   emoji: '🛡️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/hanaka/guerrier-treant' },
-        { name: "Tréant d'Élite",    level: 3, difficulty: '⭐⭐',   emoji: '🏹', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/hanaka/treant-elite' },
-        { name: 'Mage Sylvestre',    level: 3, difficulty: '⭐⭐',   emoji: '🧙', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/hanaka/mage-sylvestre' },
-        { name: 'Gardien Colossal',  level: 3, difficulty: '⭐⭐⭐', emoji: '🌳', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/hanaka/gardien-colossal' },
+        { name: 'Mini Tréant',       level: 3, difficulty: '⭐⭐',   emoji: '🌿', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/mini_treant' },
+        { name: 'Guerrier Tréant',   level: 3, difficulty: '⭐⭐',   emoji: '🛡️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/guerrier_treant' },
+        { name: "Tréant d'Élite",    level: 3, difficulty: '⭐⭐',   emoji: '🏹', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/treant_elite' },
+        { name: 'Mage Sylvestre',    level: 3, difficulty: '⭐⭐',   emoji: '🧙', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/mage_sylvestre' },
+        { name: 'Gardien Colossal',  level: 3, difficulty: '⭐⭐⭐', emoji: '🌳', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gardien_colossal' },
       ],
       points: [
         { gx: 1663, gy: 3261 }, { gx: 1506, gy: 3269 }, { gx: 1063, gy: 3272 },
@@ -96,11 +96,11 @@ const FLOOR_ZONES = {
       color: '#74ce50',
       emoji: '🌳',
       monsters: [
-        { name: 'Petit Slime',      level: 3, difficulty: '⭐⭐',    emoji: '🟢', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/vallhat/petit-slime' },
-        { name: 'Guerrier Slime',   level: 3, difficulty: '⭐⭐',    emoji: '⚔️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/vallhat/guerrier-slime' },
-        { name: 'Slime Soigneur',   level: 3, difficulty: '⭐⭐⭐',  emoji: '⛑️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/vallhat/slime-soigneur' },
-        { name: 'Slime Magicien',   level: 3, difficulty: '⭐⭐⭐',  emoji: '🧙', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/vallhat/slime-magicien' },
-        { name: 'Gorbel',           level: 3, difficulty: '⭐⭐⭐⭐',emoji: '👑', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/vallhat/gorbel' },
+        { name: 'Petit Slime',      level: 3, difficulty: '⭐⭐',    emoji: '🟢', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/petit_slime' },
+        { name: 'Guerrier Slime',   level: 3, difficulty: '⭐⭐',    emoji: '⚔️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/guerrier_slime' },
+        { name: 'Slime Soigneur',   level: 3, difficulty: '⭐⭐⭐',  emoji: '⛑️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/slime_soigneur' },
+        { name: 'Slime Magicien',   level: 3, difficulty: '⭐⭐⭐',  emoji: '🧙', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/slime_magicien' },
+        { name: 'Gorbel',           level: 3, difficulty: '⭐⭐⭐⭐',emoji: '👑', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gorbel' },
       ],
       points: [
         { gx: 589, gy: 3184 }, { gx: 461, gy: 3378 }, { gx: 312, gy: 3398 },
@@ -114,9 +114,9 @@ const FLOOR_ZONES = {
       color: '#eecf21',
       emoji: '💀',
       monsters: [
-        { name: 'Squelette Épéiste',      level: 3, difficulty: '⭐⭐',   emoji: '💀', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/ruines-maudites/squelette-epeiste' },
-        { name: 'Guerrier Squelette',     level: 3, difficulty: '⭐⭐⭐', emoji: '⚔️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/ruines-maudites/guerrier-squelette' },
-        { name: 'Squelette Hallebardier', level: 3, difficulty: '⭐⭐⭐', emoji: '🔨', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/ruines-maudites/squelette-hallbardier' },
+        { name: 'Squelette Épéiste',      level: 3, difficulty: '⭐⭐',   emoji: '💀', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_epeiste' },
+        { name: 'Guerrier Squelette',     level: 3, difficulty: '⭐⭐⭐', emoji: '⚔️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/guerrier_squelette' },
+        { name: 'Squelette Hallebardier', level: 3, difficulty: '⭐⭐⭐', emoji: '🔨', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_hallebardier' },
       ],
       points: [
         { gx: 2766, gy: 4371 }, { gx: 2831, gy: 4375 }, { gx: 2889, gy: 4427 },
@@ -130,9 +130,9 @@ const FLOOR_ZONES = {
       color: '#75bdcf',
       emoji: '⛰️',
       monsters: [
-        { name: 'Bandit Archer',   level: 3, difficulty: '⭐⭐', emoji: '🏹', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/mine-de-geldorak/bandit-archer' },
-        { name: 'Bandit Assassin', level: 3, difficulty: '⭐⭐', emoji: '🗡️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/mine-de-geldorak/bandit-assassin' },
-        { name: 'Bandit Robuste',  level: 3, difficulty: '⭐⭐', emoji: '💪', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/mine-de-geldorak/bandit-robuste' },
+        { name: 'Bandit Archer',   level: 3, difficulty: '⭐⭐', emoji: '🏹', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/bandit_archer' },
+        { name: 'Bandit Assassin', level: 3, difficulty: '⭐⭐', emoji: '🗡️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/bandit_assassin' },
+        { name: 'Bandit Robuste',  level: 3, difficulty: '⭐⭐', emoji: '💪', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/bandit_robuste' },
       ],
       points: [
         { gx: 3996, gy: 3824 }, { gx: 4155, gy: 3834 }, { gx: 4275, gy: 3880 },
@@ -147,7 +147,7 @@ const FLOOR_ZONES = {
       color: '#3e9db4',
       emoji: '🏝️',
       monsters: [
-        { name: 'Ika', level: 3, difficulty: '⭐⭐⭐', emoji: '🐢', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/archipel-dika/ika' },
+        { name: 'Ika', level: 3, difficulty: '⭐⭐⭐', emoji: '🐢', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ika' },
       ],
       points: [
         { gx: 3204, gy: 4055 }, { gx: 3237, gy: 4008 }, { gx: 3317, gy: 4010 },
@@ -162,7 +162,7 @@ const FLOOR_ZONES = {
       color: '#8bbeca',
       emoji: '🕸️',
       monsters: [
-        { name: 'Araignée des Forêts', level: 7, difficulty: '⭐⭐⭐⭐', emoji: '🕷️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-nord/arakhnol/araignees-des-forets' },
+        { name: 'Araignée des Forêts', level: 7, difficulty: '⭐⭐⭐⭐', emoji: '🕷️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/araignee_foret' },
       ],
       points: [
         { gx: 1468, gy: 1186 }, { gx: 1546, gy: 1451 }, { gx: 1432, gy: 1489 },
@@ -178,7 +178,7 @@ const FLOOR_ZONES = {
       color: '#ddb04e',
       emoji: '🏔️',
       monsters: [
-        { name: 'Cerf des Montagnes', level: 7, difficulty: '⭐⭐⭐', emoji: '🦌', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-nord/tolbana/cerf-des-montagnes' },
+        { name: 'Cerf des Montagnes', level: 7, difficulty: '⭐⭐⭐', emoji: '🦌', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/cerf_montagnes' },
       ],
       points: [
         { gx: 4019, gy: 1203 }, { gx: 4101, gy: 1066 }, { gx: 4261, gy: 1082 },
@@ -192,9 +192,9 @@ const FLOOR_ZONES = {
       color: '#224ba5',
       emoji: '❄️',
       monsters: [
-        { name: 'Golem de Glace',   level: 7, difficulty: '⭐⭐⭐',    emoji: '🧊', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-nord/citadelle-des-neiges/golem-de-glace' },
-        { name: 'Spirite de Glace', level: 7, difficulty: '⭐⭐⭐',    emoji: '🦋', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-nord/citadelle-des-neiges/spirite-de-glace' },
-        { name: 'Ours de Glace',    level: 7, difficulty: '⭐⭐⭐⭐⭐',emoji: '🐻', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-nord/citadelle-des-neiges/ours-de-glace' },
+        { name: 'Golem de Glace',   level: 7, difficulty: '⭐⭐⭐',    emoji: '🧊', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/golem_glace' },
+        { name: 'Spirite de Glace', level: 7, difficulty: '⭐⭐⭐',    emoji: '🦋', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/spirite_glace' },
+        { name: 'Ours de Glace',    level: 7, difficulty: '⭐⭐⭐⭐⭐',emoji: '🐻', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ours_glace' },
       ],
       points: [
         { gx: 4043, gy: 2013 }, { gx: 4041, gy: 2039 }, { gx: 4017, gy: 2048 },
@@ -209,8 +209,8 @@ const FLOOR_ZONES = {
       color: '#bde3f1',
       emoji: '🎣',
       monsters: [
-        { name: 'Poisson Requin', level: 7, difficulty: '⭐⭐⭐',    emoji: '🦈', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-nord/virelune/poisson-requin' },
-        { name: 'Nymbréa',        level: 7, difficulty: '⭐⭐⭐⭐⭐',emoji: '🐟', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-nord/virelune/nymbrea' },
+        { name: 'Poisson Requin', level: 7, difficulty: '⭐⭐⭐',    emoji: '🦈', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/poisson_requin' },
+        { name: 'Nymbréa',        level: 7, difficulty: '⭐⭐⭐⭐⭐',emoji: '🐟', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nymbrea' },
       ],
       points: [
         { gx: 1473, gy: 2022 }, { gx: 1471, gy: 2105 }, { gx: 1410, gy: 2141 },
@@ -224,7 +224,7 @@ const FLOOR_ZONES = {
       color: '#644d58',
       emoji: '🐗',
       monsters: [
-        { name: 'Sanglier Corrompu', level: 2, difficulty: '⭐', emoji: '🐗', link: 'https://guilde-sao.gitbook.io/watchers/paliers/monstres/carte-du-sud/zone-sanglier/sanglier-corrompu' },
+        { name: 'Sanglier Corrompu', level: 2, difficulty: '⭐', emoji: '🐗', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/sanglier_corrompu' },
       ],
       points: [
         { gx: 2684, gy: 2304 }, { gx: 2566, gy: 2220 }, { gx: 2595, gy: 2015 },
@@ -240,8 +240,8 @@ const FLOOR_ZONES = {
       color: '#39494e',
       emoji: '🐂',
       monsters: [
-        { name: 'Taureau', level: 10, difficulty: '⭐', emoji: '🐃', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lac-des-taureaux/taureau' },
-        { name: 'Taureau Monstrueux', level: 10, difficulty: '⭐', emoji: '🐃', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lac-des-taureaux/taureau_monstrueux' },
+        { name: 'Taureau', level: 10, difficulty: '⭐', emoji: '🐃', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/taureau' },
+        { name: 'Taureau Monstrueux', level: 10, difficulty: '⭐', emoji: '🐃', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/taureau_monstrueux' },
       ],
       points: [
         { gx: 151, gy: -135 }, { gx: 200, gy: -81 }, { gx: 175, gy: -9 },
@@ -255,8 +255,8 @@ const FLOOR_ZONES = {
       color: '#53cb38',
       emoji: '🍯',
       monsters: [
-        { name: 'Ours de la Forêt', level: 11, difficulty: '⭐', emoji: '🐻', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lforêt-sucrée/ours-de-la-foret' },
-        { name: 'Winnie', level: 11, difficulty: '⭐⭐⭐', emoji: '🐻', link: '' },
+        { name: 'Ours de la Forêt', level: 11, difficulty: '⭐', emoji: '🐻', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ours_foret' },
+        { name: 'Winnie', level: 11, difficulty: '⭐⭐⭐', emoji: '🐻', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/winnie' },
       ],
       points: [
         { gx: 324, gy: -665 }, { gx: 364, gy: -749 }, { gx: 571, gy: -759 },
@@ -270,8 +270,8 @@ const FLOOR_ZONES = {
       color: '#f3c26f',
       emoji: '🐺',
       monsters: [
-        { name: 'Loups des Montagnes', level: 10, difficulty: '⭐⭐', emoji: '🐺', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/desert-des-crocs-argentes/loups-des-montagnes' },
-        { name: 'Loups des Savanes', level: 10, difficulty: '⭐⭐', emoji: '🐺', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/desert-des-crocs-argentes/loups-des-savanes' },
+        { name: 'Loups des Montagnes', level: 10, difficulty: '⭐⭐', emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/loup_montagnes' },
+        { name: 'Loups des Savanes', level: 10, difficulty: '⭐⭐', emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/loup_savanes' },
       ],
       points: [
         { gx: -207, gy: -643 }, { gx: -263, gy: -531 }, { gx: -528, gy: -445 },
@@ -285,7 +285,7 @@ const FLOOR_ZONES = {
       color: '#53cb38',
       emoji: '🍃',
       monsters: [
-        { name: 'Harpie de Terre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/foret-des-ailes-demeraude/harpie-de-terre' },
+        { name: 'Harpie de Terre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/harpie_terre' },
       ],
       points: [
         { gx: -633, gy: 405 }, { gx: -618, gy: 394 }, { gx: -581, gy: 430 },
@@ -299,8 +299,8 @@ const FLOOR_ZONES = {
       color: '#6363d7',
       emoji: '🌊',
       monsters: [
-        { name: 'Harpie de Foudre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/baie-des-monstres-ondoyante/harpie-de-foudre' },
-        { name: 'Poisson Fulgurant', level: 12, difficulty: '⭐', emoji: '🐟', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/baie-des-monstres-ondoyante/poisson-fulgurant' },
+        { name: 'Harpie de Foudre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/harpie_foudre' },
+        { name: 'Poisson Fulgurant', level: 12, difficulty: '⭐', emoji: '🐟', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/poisson_fulgurant' },
       ],
       points: [
         { gx: -559, gy: -48 }, { gx: -492, gy: 76 },  { gx: -573, gy: 193 },
@@ -314,11 +314,11 @@ const FLOOR_ZONES = {
       color: '#e0e02c',
       emoji: '🛕',
       monsters: [
-        { name: 'Squelette du Sanctuaire - Archer', level: 13, difficulty: '⭐⭐', emoji: '🏹', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/squelette-du-sanctuaire-archer' },
-        { name: 'Squelette du Sanctuaire - Shaman', level: 13, difficulty: '⭐⭐', emoji: '🌿', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/squelette-du-sanctuaire-shaman' },
-        { name: 'Squelette du Sanctuaire - Guerrier', level: 13, difficulty: '⭐⭐⭐', emoji: '⚔️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/squelette-du-sanctuaire-guerrier' },
-        { name: 'Gardien du Sanctuaire', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '☠️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/gardien-du-sanctuaire' },
-        { name: 'Minion du Gardien', level: 13, difficulty: '⭐', emoji: '🦴', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/sanctuaire-de-khesun/minion-du-gardien' },
+        { name: 'Squelette du Sanctuaire - Archer', level: 13, difficulty: '⭐⭐', emoji: '🏹', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_archer' },
+        { name: 'Squelette du Sanctuaire - Shaman', level: 13, difficulty: '⭐⭐', emoji: '🌿', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_shaman' },
+        { name: 'Squelette du Sanctuaire - Guerrier', level: 13, difficulty: '⭐⭐⭐', emoji: '⚔️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_guerrier' },
+        { name: 'Gardien du Sanctuaire', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '☠️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gardien_sanctuaire' },
+        { name: 'Minion du Gardien', level: 13, difficulty: '⭐', emoji: '🦴', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/minion_gardien' },
       ],
       points: [
         { gx: -18, gy: 133 }, { gx: 14, gy: 137 }, { gx: 36, gy: 182 },
@@ -332,7 +332,7 @@ const FLOOR_ZONES = {
       color: '#98f8f9',
       emoji: '🏝️',
       monsters: [
-        { name: 'Velindra la Tisseuse', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🧙‍♀️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/oasis-secret/velindrala-tisseuse' },
+        { name: 'Velindra la Tisseuse', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🧙‍♀️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/velindra' },
       ],
       points: [
         { gx: 754, gy: 351 }, { gx: 766, gy: 298 }, { gx: 816, gy: 275 },
@@ -351,7 +351,7 @@ const FLOOR_ZONES_UNDERGROUND = {
       color: '#df6c42',
       emoji: '🔥',
       monsters: [
-        { name: 'Harpie de Feu', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/nid-de-brasier/harpie-de-feu' },
+        { name: 'Harpie de Feu', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/harpie_feu' },
       ],
       points: [
         { gx: -461, gy: 217 }, { gx: -536, gy: 342 }, { gx: -679, gy: 257 },
@@ -365,8 +365,8 @@ const FLOOR_ZONES_UNDERGROUND = {
       color: '#ded26b',
       emoji: '🕳️',
       monsters: [
-        { name: 'Golem de Pierre', level: 13, difficulty: '⭐⭐⭐', emoji: '🗿', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/les-veines-de-sablemor/golem-de-pierre' },
-        { name: 'Magnus, Colosse des Veines', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🛡️', link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/les-veines-de-sablemor/magnus-colosse-des-veines' },
+        { name: 'Golem de Pierre', level: 13, difficulty: '⭐⭐⭐', emoji: '🗿', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/golem_pierre' },
+        { name: 'Magnus, Colosse des Veines', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🛡️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/magnus' },
       ],
       points: [
         { gx: 246, gy: 366 }, { gx: 186, gy: 352 }, { gx: 174, gy: 323 },

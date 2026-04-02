@@ -303,6 +303,7 @@ function attachModalHandlers() {
       btn.classList.toggle('active');
     });
   });
+
 }
 
 function openModal(entity, pushHistory = true) {
@@ -419,6 +420,13 @@ function renderMobSheet(mob) {
 
   const bcolor = BEHAVIOR_COLORS[mob.behavior] || '#888';
 
+  const spawnBadgeHTML = (() => {
+    if (!mob.spawnTime) return '';
+    const st = mob.spawnTime;
+    const label = typeof st === 'string' ? st : (st.max ? `${st.min}–${st.max} min` : `${st.min} min`);
+    return `<div class="mob-spawn-badge">⏱ ${label}</div>`;
+  })();
+
   modalContent.innerHTML = `
     <div class="mob-sheet">
       <div class="mob-header">
@@ -428,7 +436,10 @@ function renderMobSheet(mob) {
           <div class="mob-image-inner">${imgContent}</div>
         </div>
         <div class="mob-header-info">
-          <div class="mob-name">${mob.name}</div>
+          <div class="mob-name-row">
+            <div class="mob-name">${mob.name}</div>
+            ${spawnBadgeHTML}
+          </div>
           <div class="mob-badge-row">
             <span class="mob-type-badge" style="background:${tc.bg};color:${tc.text};border:1px solid ${tc.border};">${TYPE_LABELS[mob.type]||mob.type}</span>
             <span class="mob-behavior-badge" style="color:${bcolor};border-color:${bcolor}44;">${BEHAVIOR_LABELS[mob.behavior]||mob.behavior}</span>

@@ -266,12 +266,29 @@ function navigateToMapId(id) {
   const zones   = getFloorZones(currentFloor);
   const zone    = zones.find(z => z.id === id);
   if (zone) {
-    const cx  = zone.points.reduce((s, p) => s + p.gx, 0) / zone.points.length;
-    const cy  = zone.points.reduce((s, p) => s + p.gy, 0) / zone.points.length;
-    const img = gameToPixel(cx, cy);
+    updateVpBounds();
+    const minGx = Math.min(...zone.points.map(p => p.gx));
+    const maxGx = Math.max(...zone.points.map(p => p.gx));
+    const cx    = (minGx + maxGx) / 2;
+    const cy    = zone.points.reduce((s, p) => s + p.gy, 0) / zone.points.length;
+
+    const leftPx  = gameToPixel(minGx, cy).x;
+    const rightPx = gameToPixel(maxGx, cy).x;
+    const zoneImgW = rightPx - leftPx;
+
+    if (zoneImgW > 0) {
+      const padding = 48;
+      zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, (_vpW - padding * 2) / zoneImgW));
+    }
+
+    const img   = gameToPixel(cx, cy);
     panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
     panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
     applyTransform();
+    if (zone._activate) {
+      window._activeZoneId = zone.id;
+      zone._activate();
+    }
     return;
   }
   const markers = getFlatFloorMarkers(currentFloor);
@@ -843,7 +860,7 @@ function renderMarkers() {
   const isMultiFocus = focusedList.length > 1;
 
   const visible = markers.filter(m => {
-    if (m.id === _searchFocusId && !isMultiFocus) return false;
+    if (m.id === _searchFocusId) return false;
     const cb = document.querySelector(`.marker-filter[data-type="${m.type}"]`);
     return !cb || cb.checked;
   });
@@ -865,6 +882,11 @@ function renderMarkers() {
     const el = markersLayer.querySelector(`.marker[data-id="${focused.id}"]`);
     if (el) el.classList.remove('marker-dimmed');
   } else if (isMultiFocus) {
+    focusedList.forEach(focused => {
+      const img = gameToPixel(focused.gx, focused.gy);
+      const s   = imageToScreen(img.x, img.y);
+      renderSingleMarker({ ...focused, sx: s.x, sy: s.y });
+    });
     markersLayer.querySelectorAll(`.marker[data-id="${_searchFocusId}"]`).forEach(el => {
       el.classList.remove('marker-dimmed');
     });
@@ -1029,8 +1051,15 @@ function renderSingleMarker(m) {
   });
   el.addEventListener('click', (e) => {
     e.stopPropagation();
-    pinTooltip(m);
-    if (m.link) window.open(m.link, '_blank');
+    const siblings = getFlatFloorMarkers(currentFloor).filter(f => f.id === m.id);
+    if (siblings.length > 1 && _searchFocusId !== m.id) {
+      _searchFocusId = m.id;
+      renderMarkers();
+      pinTooltip(m);
+    } else {
+      pinTooltip(m);
+      if (m.link) window.open(m.link, '_blank');
+    }
   });
   markersLayer.appendChild(el);
 }
