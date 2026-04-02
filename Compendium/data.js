@@ -6991,7 +6991,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   2,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P2/oeuf_harpie.png",
     lore:     "Un œuf provenant d'une harpie... Cache-t-il peut-être un nouveau-né ?",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Harpie de Foudre[25]"
