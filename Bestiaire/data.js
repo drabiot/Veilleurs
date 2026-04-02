@@ -548,6 +548,24 @@ const MOBS = [
 	  { id: 'petite_bourse', chance: 35 },
 	  { id: 'dague_bandit' },
     ],
+    morceaux: [
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_a1/head.json',
+      position: [0, 0, 0],     // offset X Y Z par rapport à l'origine
+      rotation: [0, 0, 0],     // rotation en radians sur X Y Z
+      scale: 1                  // échelle globale du morceau
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_a1/hip.json',
+      position: [0, 0, 0],     // offset X Y Z par rapport à l'origine
+      rotation: [0, 0, 0],     // rotation en radians sur X Y Z
+      scale: 1                  // échelle globale du morceau
+    },
+  ],
+  camera: {
+    distance: 4,   // distance de la caméra (plus grand = plus loin)
+    hauteur: 0.5   // hauteur du point de regard (0 = centre, + = plus haut)
+  }
   },
   {
     id: 'bandit_robuste',
