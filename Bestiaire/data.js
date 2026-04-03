@@ -538,7 +538,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Mine de Geldorak',
     regionId: 'm1z7',
-    img: '../img/mobs/P1/bandit_assassin.png',
+    //img: '../img/mobs/P1/bandit_assassin.png',
     lore: "Maître de l'ombre et des lames silencieuses, il ne laisse derrière lui que le vide… et une cible tombée.",
     attacks: [
 		{ name: 'Dague Fourbe',   desc: 'Utilise sa dague pour assassiner ses proies dans le dos.', dmg:'?' },
@@ -551,20 +551,44 @@ const MOBS = [
     morceaux: [
     {
       fichier: '../img/compendium/modelengine/models/em_bandit_a1/head.json',
-      position: [0, 0, 0],     // offset X Y Z par rapport à l'origine
-      rotation: [0, 0, 0],     // rotation en radians sur X Y Z
-      scale: 1                  // échelle globale du morceau
+      position: [0.5, 1.1, 0.5],
+      rotation: [0, 3.1416, 0],
+      scale: 1
     },
     {
       fichier: '../img/compendium/modelengine/models/em_bandit_a1/hip.json',
-      position: [0, 0, 0],     // offset X Y Z par rapport à l'origine
-      rotation: [0, 0, 0],     // rotation en radians sur X Y Z
-      scale: 1                  // échelle globale du morceau
+      position: [0.5, 0.5, 0.5],
+      rotation: [0, 3.1416, 0],
+      scale: 1
     },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_a1/left_arm.json',
+      position: [0.8735, 0.836, -0.0633],
+      rotation: [0.7767, 3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_a1/right_arm.json',
+      position: [0.0357, 1.525, 0.7681],
+      rotation: [-0.9774, 3.1416, 0.3578],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_a1/left_leg.json',
+      position: [0.343, 0.4, 0.5015],
+      rotation: [0, 3.1416, 0.0524],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_a1/right_leg.json',
+      position: [0.7388, 0.4, 0.3966],
+      rotation: [0.2618, 3.1416, -0.1571],
+      scale: 1
+    }
   ],
   camera: {
-    distance: 4,   // distance de la caméra (plus grand = plus loin)
-    hauteur: 0.5   // hauteur du point de regard (0 = centre, + = plus haut)
+    distance: 3,   // distance de la caméra (plus grand = plus loin)
+    hauteur: 0   // hauteur du point de regard (0 = centre, + = plus haut)
   }
   },
   {

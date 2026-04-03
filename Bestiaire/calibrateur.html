@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>[VCL] Calibrateur de Modèles</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0a12;
+      --surface: #10101e;
+      --border:  #2a2a44;
+      --accent:  #7b5ea7;
+      --accent2: #4ea87b;
+      --text:    #d0cce8;
+      --muted:   #666680;
+      --danger:  #c05050;
+      --font:    'JetBrains Mono', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 12px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .calib-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 8px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .calib-header h1 {
+      font-size: 13px;
+      letter-spacing: .12em;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .calib-header select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      font-family: var(--font);
+      font-size: 12px;
+      border-radius: 3px;
+      min-width: 200px;
+    }
+    .calib-header select:focus { outline: 1px solid var(--accent); }
+
+    .header-hint {
+      color: var(--muted);
+      font-size: 10px;
+      margin-left: auto;
+    }
+
+    /* ── Layout ── */
+    .calib-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar gauche — liste des pièces ── */
+    .calib-sidebar {
+      width: 180px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-title {
+      padding: 8px 12px;
+      font-size: 10px;
+      letter-spacing: .1em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+    }
+    #piece-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 0;
+    }
+    .piece-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 11px;
+      padding: 6px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-left: 2px solid transparent;
+      transition: background .1s;
+    }
+    .piece-btn:hover   { background: rgba(123,94,167,.15); }
+    .piece-btn.active  {
+      background: rgba(123,94,167,.2);
+      border-left-color: var(--accent);
+      color: #b8a8d8;
+    }
+
+    /* camera config at bottom of sidebar */
+    .camera-section {
+      border-top: 1px solid var(--border);
+      padding: 8px 12px;
+    }
+    .camera-section .sidebar-title {
+      padding: 0 0 6px 0;
+      border-bottom: none;
+    }
+    .cam-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+    .cam-row label { color: var(--muted); width: 52px; flex-shrink: 0; font-size: 10px; }
+    .cam-row input[type=range] { flex: 1; min-width: 0; accent-color: var(--accent2); }
+    .cam-row input[type=number] {
+      width: 46px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 10px;
+      padding: 2px 4px;
+      border-radius: 2px;
+    }
+
+    /* ── Viewport 3D ── */
+    #calib-viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+      background: #0a0a18;
+    }
+    #calib-viewport:active { cursor: grabbing; }
+    #calib-viewport canvas { display: block; width: 100% !important; height: 100% !important; }
+
+    /* overlay axes legend */
+    .axes-legend {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      font-size: 10px;
+      color: var(--muted);
+      pointer-events: none;
+      line-height: 1.7;
+    }
+    .axes-legend span { font-weight: bold; }
+    .ax-x { color: #ff5555; }
+    .ax-y { color: #55ff55; }
+    .ax-z { color: #5588ff; }
+
+    /* ── Panneau contrôles ── */
+    .calib-controls {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .ctrl-header {
+      padding: 8px 12px;
+      font-size: 10px;
+      letter-spacing: .1em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ctrl-header span { flex: 1; }
+    .btn-sm {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--font);
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: .12s;
+    }
+    .btn-sm:hover { border-color: var(--accent); color: var(--text); }
+    .btn-sm.danger:hover { border-color: var(--danger); color: var(--danger); }
+
+    #ctrl-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0;
+    }
+    .ctrl-hint {
+      padding: 16px 14px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .ctrl-group-title {
+      padding: 6px 12px 2px;
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .ctrl-row {
+      display: grid;
+      grid-template-columns: 80px 1fr 50px;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 12px;
+    }
+    .ctrl-row label {
+      font-size: 10px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .ctrl-row input[type=range] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    .ctrl-row input[type=range].green { accent-color: var(--accent2); }
+    .ctrl-row input[type=number] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 10px;
+      padding: 2px 4px;
+      border-radius: 2px;
+      text-align: right;
+    }
+    .ctrl-row input[type=number]:focus { outline: 1px solid var(--accent); }
+    .ctrl-separator { height: 1px; background: var(--border); margin: 6px 12px; }
+
+    /* ── Export ── */
+    .calib-export {
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      height: 80px;
+    }
+    .export-label {
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    #json-output {
+      flex: 1;
+      background: var(--bg);
+      border: none;
+      color: #88c0a0;
+      font-family: var(--font);
+      font-size: 10px;
+      padding: 8px 12px;
+      resize: none;
+      outline: none;
+      overflow-y: auto;
+    }
+    .export-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px 12px;
+      border-left: 1px solid var(--border);
+      justify-content: center;
+    }
+    .btn-export {
+      background: none;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--font);
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: .12s;
+    }
+    .btn-export:hover { background: rgba(123,94,167,.2); }
+    .btn-export.success { border-color: var(--accent2); color: var(--accent2); }
+
+    /* ── Aperçu (overlay CSS sur le canvas) ── */
+    #preview-overlay {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 180px;
+      height: 220px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      pointer-events: none;
+    }
+    .preview-label {
+      position: absolute;
+      top: 5px;
+      left: 8px;
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    /* ── Hint drag en haut du viewport ── */
+    #drag-hint {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      color: var(--muted);
+      pointer-events: none;
+      white-space: nowrap;
+      letter-spacing: .05em;
+    }
+
+    /* scrollbars */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <div class="calib-header">
+    <h1>⬡ CALIBRATEUR DE MODÈLES</h1>
+    <select id="monster-select">
+      <option value="">— Choisir un monstre —</option>
+    </select>
+    <span class="header-hint">Clic pièce : sélectionner &amp; déplacer (XZ) · Shift+glisser : déplacer (Y) · Espace vide : orbite · Scroll : zoom</span>
+  </div>
+
+  <div class="calib-body">
+
+    <!-- Sidebar gauche -->
+    <aside class="calib-sidebar">
+      <div class="sidebar-title">Morceaux</div>
+      <div id="piece-list"></div>
+
+      <div class="camera-section">
+        <div class="sidebar-title">Camera</div>
+        <div class="cam-row">
+          <label>Distance</label>
+          <input type="range" id="cam-dist" min="0.2" max="8" step="0.05" value="2.5" />
+          <input type="number" id="cam-dist-num" min="0.2" max="8" step="0.05" value="2.5" />
+        </div>
+        <div class="cam-row">
+          <label>Hauteur</label>
+          <input type="range" id="cam-haut" min="-1" max="2" step="0.05" value="0.5" />
+          <input type="number" id="cam-haut-num" min="-1" max="2" step="0.05" value="0.5" />
+        </div>
+      </div>
+    </aside>
+
+    <!-- Viewport 3D -->
+    <div id="calib-viewport">
+      <div class="axes-legend">
+        <span class="ax-x">■ X</span> &nbsp;
+        <span class="ax-y">■ Y</span> &nbsp;
+        <span class="ax-z">■ Z</span>
+      </div>
+      <div id="drag-hint">Glisser pièce : déplace (XZ) &nbsp;·&nbsp; Shift+glisser : déplace (Y)</div>
+      <div id="preview-overlay">
+        <span class="preview-label">Aperçu caméra</span>
+      </div>
+    </div>
+
+    <!-- Contrôles -->
+    <aside class="calib-controls">
+      <div class="ctrl-header">
+        <span id="ctrl-title">Aucune pièce</span>
+        <button class="btn-sm danger" id="reset-btn" title="Remettre à zéro">↺ Reset</button>
+      </div>
+      <div id="ctrl-panel">
+        <p class="ctrl-hint">← Sélectionne un morceau dans la liste</p>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Export JSON -->
+  <div class="calib-export">
+    <div class="export-label">morceaux [ ]</div>
+    <textarea id="json-output" readonly spellcheck="false"></textarea>
+    <div class="export-actions">
+      <button class="btn-export" id="copy-btn">📋 Copier</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="../Compendium/data.js"></script>
+  <script src="data.js"></script>
+  <script src="calibrateur.js"></script>
+</body>
+</html>

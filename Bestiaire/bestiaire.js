@@ -6,6 +6,39 @@
    ÉTAT
 ══════════════════════════════════ */
 let activeTab      = 'monstres';
+let _activeViewer  = null;
+
+/* ── Queue de capture 3D pour les cartes ── */
+const _captureQueue = [];
+let   _captureRunning = false;
+
+function _queueCapture(card, mob) {
+  _captureQueue.push({ card, mob });
+  if (!_captureRunning) _runCaptureQueue();
+}
+
+async function _runCaptureQueue() {
+  _captureRunning = true;
+  while (_captureQueue.length > 0) {
+    const { card, mob } = _captureQueue.shift();
+    if (!card.isConnected) continue;
+    try {
+      const url = await MonstreViewer3D.captureStatic(mob, 200);
+      if (!card.isConnected) continue;
+      const wrap = card.querySelector('.card-img-wrap');
+      if (!wrap) continue;
+      wrap.querySelector('img')?.remove();
+      wrap.querySelector('.card-img-placeholder')?.remove();
+      const snap = document.createElement('img');
+      snap.src = url;
+      snap.alt = mob.name;
+      wrap.insertBefore(snap, wrap.firstChild);
+    } catch(e) {
+      console.warn('[capture3D]', mob.id, e);
+    }
+  }
+  _captureRunning = false;
+}
 let activePalier   = 'all';
 let activeTypes    = new Set(['boss', 'mini_boss', 'monstre', 'sbire']);
 let activePnjTags  = new Set(Object.keys(typeof PNJ_TAG_LABELS !== 'undefined' ? PNJ_TAG_LABELS : {}));
@@ -280,8 +313,12 @@ function buildGrid() {
 		</div>`;
 
     card.addEventListener('mousedown', (ev) => ev.preventDefault());
-	card.addEventListener('click', () => openModal(e));
+    card.addEventListener('click', () => openModal(e));
     entityGrid.appendChild(card);
+
+    if (e.morceaux && e.morceaux.length > 0 && typeof MonstreViewer3D !== 'undefined') {
+      _queueCapture(card, e);
+    }
   });
 }
 
@@ -307,6 +344,7 @@ function attachModalHandlers() {
 }
 
 function openModal(entity, pushHistory = true) {
+  if (_activeViewer) { _activeViewer.destroy(); _activeViewer = null; }
   modalContent.innerHTML = '';
   if (activeTab === 'monstres') renderMobSheet(entity);
   else                          renderPNJSheet(entity);
@@ -321,6 +359,7 @@ function openModal(entity, pushHistory = true) {
 }
 
 function _closeModalDOM() {
+  if (_activeViewer) { _activeViewer.destroy(); _activeViewer = null; }
   modalOverlay.classList.remove('open');
 }
 
@@ -346,9 +385,12 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal()
 function renderMobSheet(mob) {
   const tc = TYPE_COLORS[mob.type] || { bg:'#333', text:'#aaa', border:'#44444455' };
 
-  const imgContent = mob.img
-    ? `<img src="${mob.img}" alt="${mob.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mob-img-placeholder" style="display:none">👾</span>`
-    : `<span class="mob-img-placeholder">👾</span>`;
+  const has3D = mob.morceaux && mob.morceaux.length > 0;
+  const imgContent = has3D
+    ? `<div id="mob-3d-container" class="mob-3d-container"></div>`
+    : mob.img
+      ? `<img src="${mob.img}" alt="${mob.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mob-img-placeholder" style="display:none">👾</span>`
+      : `<span class="mob-img-placeholder">👾</span>`;
 
   let attacksHTML = '';
   if (mob.attacks && mob.attacks.length > 0) {
@@ -473,6 +515,14 @@ function renderMobSheet(mob) {
         ${loreHTML}
       </div>
     </div>`;
+
+  if (has3D) {
+    const container = document.getElementById('mob-3d-container');
+    if (container && typeof MonstreViewer3D !== 'undefined') {
+      _activeViewer = new MonstreViewer3D(container, { autoRotate: false });
+      _activeViewer.chargerDepuisData(mob);
+    }
+  }
 }
 
 /* ── Fiche PNJ ── */
