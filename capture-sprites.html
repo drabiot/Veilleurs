@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Capture Sprites — Veilleurs au Clair de Lune</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --bg:      #07080f;
+    --surface: #0d0f1c;
+    --border:  #1e2240;
+    --accent:  #4f6ef7;
+    --accent2: #c084fc;
+    --text:    #c8cde8;
+    --muted:   #4a5080;
+    --ok:      #34d399;
+    --warn:    #fbbf24;
+    --err:     #f87171;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header { text-align: center; margin-bottom: 1.5rem; }
+  header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    letter-spacing: .12em;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header p { color: var(--muted); font-size: .75rem; margin-top: .35rem; }
+
+  .info-box {
+    width: 100%;
+    max-width: 860px;
+    background: #0d1020;
+    border: 1px solid #2a3060;
+    border-radius: 6px;
+    padding: .7rem 1rem;
+    font-size: .72rem;
+    color: #8898cc;
+    margin-bottom: 1.5rem;
+    line-height: 1.8;
+  }
+  .info-box strong { color: var(--warn); }
+  .info-box code { background: #151830; padding: .1em .35em; border-radius: 3px; color: #a5b4fc; }
+
+  .stats {
+    display: flex;
+    gap: 1.5rem;
+    font-size: .72rem;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+  }
+  .stats span { color: var(--text); }
+
+  .controls {
+    display: flex;
+    gap: .8rem;
+    margin-bottom: 1.8rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  button {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .8rem;
+    letter-spacing: .06em;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: .55rem 1.3rem;
+    cursor: pointer;
+    transition: all .18s;
+  }
+  .btn-primary  { background: linear-gradient(135deg, var(--accent), #6366f1); color: #fff; border-color: transparent; }
+  .btn-primary:hover { filter: brightness(1.15); }
+  .btn-secondary { background: var(--surface); color: var(--text); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .35; cursor: not-allowed; filter: none; }
+
+  #progress-wrap { width: 100%; max-width: 860px; margin-bottom: 1.5rem; display: none; }
+  #progress-wrap.visible { display: block; }
+  #progress-bar-bg {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    height: 6px;
+    overflow: hidden;
+    margin-bottom: .4rem;
+  }
+  #progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .3s ease; }
+  #progress-label { font-size: .72rem; color: var(--muted); }
+
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 1rem;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color .2s;
+  }
+  .card:hover { border-color: var(--accent); }
+
+  .card-preview {
+    width: 100%;
+    aspect-ratio: 1;
+    background:
+      repeating-conic-gradient(#13152a 0% 25%, #0c0e1e 0% 50%)
+      0 0 / 16px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: var(--muted);
+    position: relative;
+  }
+  .card-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    position: absolute;
+    inset: 0;
+  }
+
+  .card-body { padding: .55rem .7rem; display: flex; flex-direction: column; gap: .3rem; }
+  .card-name {
+    font-family: 'Cinzel', serif;
+    font-size: .74rem;
+    letter-spacing: .05em;
+    color: #dde2ff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-path { font-size: .58rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-status { font-size: .65rem; color: var(--muted); min-height: .85rem; }
+  .card-status.ok  { color: var(--ok); }
+  .card-status.err { color: var(--err); }
+
+  .card-dl {
+    display: none;
+    width: 100%;
+    padding: .38rem;
+    font-size: .68rem;
+    background: #0d1f1a;
+    color: var(--ok);
+    border: 1px solid #1e3a30;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'Share Tech Mono', monospace;
+    transition: background .15s;
+    text-align: center;
+  }
+  .card-dl:hover { background: #0a2018; }
+  .card-dl.ready { display: block; }
+
+  #log {
+    width: 100%;
+    max-width: 1100px;
+    margin-top: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: .8rem 1rem;
+    font-size: .66rem;
+    color: var(--muted);
+    max-height: 160px;
+    overflow-y: auto;
+    line-height: 1.7;
+  }
+  #log .l-ok  { color: var(--ok); }
+  #log .l-err { color: var(--err); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚗ Capture Sprites 3D</h1>
+  <p>Veilleurs au Clair de Lune — Générateur de PNG monstres</p>
+</header>
+
+<div class="info-box">
+  📁 <strong>Emplacement :</strong> ce fichier est à la <strong>racine du projet</strong>, au même niveau que <code>img/</code> et <code>Bestiaire/</code>.<br>
+  🌐 <strong>Ouvrez via un serveur HTTP</strong> : Live Server (VS Code), <code>npx serve .</code>, ou GitHub Pages.<br>
+  💾 <strong>ZIP</strong> = tous les PNG dans leur arborescence <code>img/mobs/...</code> — extrayez à la racine pour écraser les images existantes.
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div class="controls">
+  <button class="btn-primary"   id="btn-render">▶ Générer tous les sprites</button>
+  <button class="btn-secondary" id="btn-zip"    disabled>⬇ Télécharger ZIP</button>
+</div>
+
+<div id="progress-wrap">
+  <div id="progress-bar-bg"><div id="progress-bar"></div></div>
+  <div id="progress-label">0 / 0</div>
+</div>
+
+<div id="grid"></div>
+<div id="log"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   MONSTRES — tous ceux qui ont des morceaux 3D définis
+   Chemins adaptés pour la racine du projet (sans "../")
+   ══════════════════════════════════════════════════════════════ */
+const MONSTRES = [
+  {
+    id: 'petit_slime',
+    name: 'Petit Slime',
+    img: 'img/mobs/P1/petit_slime.png',
+    morceaux: [
+      { fichier: 'img/compendium/modelengine/models/slime_common/head.json', position:[0.5013,-0.4313,0.6805], rotation:[0,-3.1416,0], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/slime_common/body.json', position:[0.5,   -0.3871,0.5   ], rotation:[0, 3.1416,0], scale:1 },
+    ],
+    camera: { distance:3, hauteur:0 },
+  },
+  {
+    id: 'guerrier_slime',
+    name: 'Guerrier Slime',
+    img: 'img/mobs/P1/guerrier_slime.png',
+    morceaux: [
+      { fichier: 'img/compendium/modelengine/models/slime_warrior/head.json', position:[0.5013,-0.4313,0.6805], rotation:[0,-3.1416,0], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/slime_warrior/body.json', position:[0.5,   -0.3871,0.5   ], rotation:[0, 3.1416,0], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/slime_warrior/arm.json',  position:[0.0323,-0.1952,0.4807], rotation:[0, 3.1416,0], scale:1 },
+    ],
+    camera: { distance:3, hauteur:0 },
+  },
+  {
+    id: 'slime_soigneur',
+    name: 'Slime Soigneur',
+    img: 'img/mobs/P1/slime_soigneur.png',
+    morceaux: [
+      { fichier: 'img/compendium/modelengine/models/slime_healer/head.json', position:[0.5013,-0.4313,0.6805], rotation:[0,-3.1416,0], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/slime_healer/body.json', position:[0.5,   -0.3871,0.5   ], rotation:[0, 3.1416,0], scale:1 },
+    ],
+    camera: { distance:3, hauteur:0 },
+  },
+  {
+    id: 'slime_magicien',
+    name: 'Slime Magicien',
+    img: 'img/mobs/P1/slime_magicien.png',
+    morceaux: [
+      { fichier: 'img/compendium/modelengine/models/slime_mage/head.json', position:[0.5013,-0.4313,0.6805], rotation:[0,-3.1416,0], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/slime_mage/body.json', position:[0.5,   -0.3871,0.5   ], rotation:[0, 3.1416,0], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/slime_mage/arm.json',  position:[0.0323,-0.1952,0.4807], rotation:[0, 3.1416,0], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/slime_mage/hat.json',  position:[0.4925, 0.1361,0.428 ], rotation:[0, 3.1416,0], scale:1 },
+    ],
+    camera: { distance:3, hauteur:0 },
+  },
+  {
+    id: 'gorbel',
+    name: 'Gorbel',
+    img: 'img/mobs/P1/gorbel.png',
+    morceaux: [
+      { fichier: 'img/compendium/modelengine/models/slime_king/head.json',    position:[0.5216, 0.491, 0.5821], rotation:[0,-3.1416,0], scale:1    },
+      { fichier: 'img/compendium/modelengine/models/slime_king/body.json',    position:[0.5,   -0.3871,0.5   ], rotation:[0, 3.1416,0], scale:1    },
+      { fichier: 'img/compendium/modelengine/models/slime_king/crown.json',   position:[0.2757, 1.6533,0.3466], rotation:[0, 3.1416,0], scale:0.44 },
+      { fichier: 'img/compendium/modelengine/models/slime_king/stomach.json', position:[0.5,   -0.2815,0.5   ], rotation:[0, 3.1416,0], scale:1    },
+    ],
+    camera: { distance:4.2, hauteur:0 },
+  },
+  {
+    id: 'bandit_assassin',
+    name: 'Bandit Assassin',
+    img: 'img/mobs/P1/bandit_assassin.png',
+    morceaux: [
+      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/head.json',      position:[0.3533,1.131, 0.6397], rotation:[0,      2.8362, 0      ], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/hip.json',       position:[0.5,   0.5,   0.5   ], rotation:[0,      3.1416, 0      ], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/left_arm.json',  position:[0.8735,0.836,-0.0633], rotation:[0.7767, 3.1416, 0      ], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/right_arm.json', position:[0.0357,1.525, 0.7681], rotation:[-0.9774,3.1416, 0.3578 ], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/left_leg.json',  position:[0.343, 0.4,   0.5015], rotation:[0,      3.1416, 0.0524 ], scale:1 },
+      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/right_leg.json', position:[0.7388,0.4,   0.3966], rotation:[0.2618, 3.1416,-0.1571 ], scale:1 },
+    ],
+    camera: { distance:3, hauteur:0 },
+  },
+  {
+    id: 'bandit_robuste',
+    name: 'Bandit Robuste',
+    img: 'img/mobs/P1/bandit_robuste.png',
+    morceaux: [
+      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/head.json',      position:[0.5246,1.2403,0.4275], rotation:[0,      -3.1416, 0      ], scale:1    },
+      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/hip.json',       position:[0.5,   0.5,   0.5   ], rotation:[0,       3.1416, 0      ], scale:1    },
+      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/left_arm.json',  position:[1.0468,1.9124,0.4455], rotation:[-1.0821, 3.1416,-0.2618 ], scale:1    },
+      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/right_arm.json', position:[0.4816,0.3294,0.2813], rotation:[-0.2618,-1.8064, 0.672  ], scale:1.93 },
+      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/left_leg.json',  position:[0.2226,0.4734,0.647 ], rotation:[-0.1571, 3.1416, 0.1571 ], scale:1    },
+      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/right_leg.json', position:[0.7242,0.4,   0.3878], rotation:[0.2618,  3.1416,-0.1571 ], scale:1    },
+    ],
+    camera: { distance:3.3, hauteur:0 },
+  },
+];
+
+/* Note : les monstres sans morceaux (sanglier, loups, squelettes, etc.)
+   utilisent déjà des images PNG statiques → pas besoin de les capturer */
+
+const SPRITE_SIZE = 256;
+
+/* ── Stats ── */
+document.getElementById('stats').innerHTML =
+  `Monstres avec modèle 3D : <span>${MONSTRES.length}</span> &nbsp;|&nbsp; Taille sprite : <span>${SPRITE_SIZE}×${SPRITE_SIZE}px</span>`;
+
+/* ── Log ── */
+const logEl = document.getElementById('log');
+function log(msg, cls='') {
+  const d = document.createElement('div');
+  if (cls) d.className = 'l-' + cls;
+  d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+/* ── Renderer partagé ── */
+let sR, sS, sC;
+function getRig(size) {
+  if (!sR) {
+    sR = new THREE.WebGLRenderer({ antialias:true, alpha:true, preserveDrawingBuffer:true });
+    sR.setPixelRatio(1);
+    sS = new THREE.Scene();
+    sS.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const key = new THREE.DirectionalLight(0xffe8c0,1.2); key.position.set(4,8,5); sS.add(key);
+    const fil = new THREE.DirectionalLight(0x8090ff,0.5); fil.position.set(-5,2,-4); sS.add(fil);
+    sC = new THREE.PerspectiveCamera(45,1,0.01,200);
+  }
+  sR.setSize(size, size);
+  return { renderer:sR, scene:sS, camera:sC };
+}
+
+/* ── Parser block model ── */
+function resolveTex(json) {
+  for (const v of Object.values(json.textures||{})) {
+    if (v && !v.startsWith('#')) {
+      const c = v.indexOf(':');
+      if (c < 0) return v;
+      return `img/compendium/${v.slice(0,c)}/textures/${v.slice(c+1)}.png`;
+    }
+  }
+  return null;
+}
+
+function parseModel(json, texP) {
+  const g = new THREE.Group();
+  const src = resolveTex(json);
+  let mat;
+  if (src) {
+    texP.push(new Promise((res,rej) => {
+      new THREE.TextureLoader().load(src, tex=>{
+        tex.magFilter=tex.minFilter=THREE.NearestFilter;
+        mat.map=tex; mat.needsUpdate=true; res(tex);
+      }, undefined, err=>{ console.warn('tex?',src); rej(err); });
+    }));
+    mat = new THREE.MeshLambertMaterial({side:THREE.DoubleSide,transparent:true,alphaTest:.1});
+  } else {
+    mat = new THREE.MeshLambertMaterial({color:0x888888,side:THREE.DoubleSide});
+  }
+  const S=1/16;
+  for (const el of (json.elements||[])) {
+    const [x1,y1,z1]=el.from.map(v=>v*S),[x2,y2,z2]=el.to.map(v=>v*S);
+    const fd={
+      north:[x1,y2,z1,x2,y2,z1,x2,y1,z1,x1,y1,z1],south:[x2,y2,z2,x1,y2,z2,x1,y1,z2,x2,y1,z2],
+      east:[x2,y2,z2,x2,y2,z1,x2,y1,z1,x2,y1,z2],  west:[x1,y2,z1,x1,y2,z2,x1,y1,z2,x1,y1,z1],
+      up:[x1,y2,z1,x2,y2,z1,x2,y2,z2,x1,y2,z2],    down:[x1,y1,z2,x2,y1,z2,x2,y1,z1,x1,y1,z1],
+    };
+    const pos=[],uvs=[],idx=[]; let vi=0;
+    for (const [fn,fi] of Object.entries(el.faces||{})) {
+      const v=fd[fn]; if(!v) continue;
+      for(let i=0;i<12;i++) pos.push(v[i]);
+      const [u1,v1,u2,v2]=fi.uv,r=fi.rotation||0;
+      let fu=[u1/16,1-v1/16,u2/16,1-v1/16,u2/16,1-v2/16,u1/16,1-v2/16];
+      if(r===90)  fu=[fu[6],fu[7],fu[0],fu[1],fu[2],fu[3],fu[4],fu[5]];
+      if(r===180) fu=[fu[4],fu[5],fu[6],fu[7],fu[0],fu[1],fu[2],fu[3]];
+      if(r===270) fu=[fu[2],fu[3],fu[4],fu[5],fu[6],fu[7],fu[0],fu[1]];
+      for(let i=0;i<8;i++) uvs.push(fu[i]);
+      idx.push(vi,vi+1,vi+2,vi,vi+2,vi+3); vi+=4;
+    }
+    const geo=new THREE.BufferGeometry();
+    geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+    geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+    geo.setIndex(idx); geo.computeVertexNormals();
+    const mesh=new THREE.Mesh(geo,mat);
+    if(el.rotation){
+      const{origin,angle,axis}=el.rotation,[ox,oy,oz]=origin.map(v=>v*S);
+      const piv=new THREE.Object3D();
+      piv.position.set(ox,oy,oz); piv.rotation[axis]=THREE.MathUtils.degToRad(angle);
+      mesh.position.set(-ox,-oy,-oz); piv.add(mesh); g.add(piv);
+    } else { g.add(mesh); }
+  }
+  return g;
+}
+
+/* ── Capture ── */
+async function capture(mob, size) {
+  const {renderer,scene,camera}=getRig(size);
+  const pieces=[],texP=[];
+  const cam=mob.camera||{}, d=cam.distance||4, h=cam.hauteur||0;
+  camera.aspect=1; camera.updateProjectionMatrix();
+  camera.position.set(0, d*Math.cos(Math.PI/2)+h, d*Math.sin(Math.PI/2));
+  camera.lookAt(0,h,0);
+
+  for (const cfg of mob.morceaux) {
+    try {
+      const json=await fetch(cfg.fichier).then(r=>r.json());
+      const obj=parseModel(json,texP);
+      if(cfg.position) obj.position.set(...cfg.position);
+      if(cfg.rotation) obj.rotation.set(...cfg.rotation);
+      if(cfg.scale!==undefined) obj.scale.setScalar(cfg.scale);
+      scene.add(obj); pieces.push(obj);
+    } catch(e){ console.warn('raté',cfg.fichier,e); }
+  }
+
+  await Promise.allSettled(texP);
+
+  const box=new THREE.Box3();
+  pieces.forEach(p=>box.expandByObject(p));
+  if(!box.isEmpty()){
+    const c=box.getCenter(new THREE.Vector3());
+    pieces.forEach(p=>{p.position.y-=c.y;});
+  }
+
+  renderer.render(scene,camera);
+  const url=renderer.domElement.toDataURL('image/png');
+  pieces.forEach(p=>{ scene.remove(p); p.traverse(c=>{if(c.isMesh)c.geometry.dispose();}); });
+  return url;
+}
+
+/* ── UI ── */
+const grid=document.getElementById('grid');
+const btnRender=document.getElementById('btn-render');
+const btnZip=document.getElementById('btn-zip');
+const progWrap=document.getElementById('progress-wrap');
+const progBar=document.getElementById('progress-bar');
+const progLabel=document.getElementById('progress-label');
+const results={};
+
+MONSTRES.forEach(mob => {
+  const card=document.createElement('div');
+  card.className='card';
+  card.innerHTML=`
+    <div class="card-preview" id="prev-${mob.id}">🐾</div>
+    <div class="card-body">
+      <div class="card-name">${mob.name}</div>
+      <div class="card-path">→ ${mob.img}</div>
+      <div class="card-status" id="st-${mob.id}">en attente…</div>
+      <button class="card-dl" id="dl-${mob.id}">⬇ Télécharger</button>
+    </div>`;
+  grid.appendChild(card);
+
+  document.getElementById('dl-'+mob.id).addEventListener('click',()=>{
+    const r=results[mob.id]; if(!r) return;
+    const a=document.createElement('a');
+    a.href=r.dataUrl; a.download=mob.img.split('/').pop(); a.click();
+  });
+});
+
+function setSt(id,msg,cls=''){
+  const el=document.getElementById('st-'+id);
+  el.textContent=msg; el.className='card-status'+(cls?' '+cls:'');
+}
+
+btnRender.addEventListener('click', async()=>{
+  btnRender.disabled=true; btnZip.disabled=true;
+  progWrap.classList.add('visible');
+  const total=MONSTRES.length; let done=0;
+  log('Démarrage — '+total+' monstre(s) avec modèle 3D.');
+
+  for (const mob of MONSTRES) {
+    setSt(mob.id,'⟳ rendu…');
+    log('Capture : '+mob.name);
+    try {
+      const dataUrl=await capture(mob,SPRITE_SIZE);
+      const prev=document.getElementById('prev-'+mob.id);
+      prev.innerHTML='';
+      const img=document.createElement('img'); img.src=dataUrl;
+      prev.appendChild(img);
+      results[mob.id]={dataUrl, imgPath:mob.img};
+      document.getElementById('dl-'+mob.id).classList.add('ready');
+      setSt(mob.id,'✓ prêt','ok');
+      log('✓ '+mob.name,'ok');
+    } catch(e){
+      setSt(mob.id,'✗ erreur','err');
+      log('✗ '+mob.name+' — '+e.message,'err');
+    }
+    done++;
+    progBar.style.width=(done/total*100)+'%';
+    progLabel.textContent=done+' / '+total;
+  }
+  btnRender.disabled=false;
+  if(Object.keys(results).length>0) btnZip.disabled=false;
+  log('Terminé — '+Object.keys(results).length+'/'+total+' sprites OK.','ok');
+});
+
+/* ── ZIP avec arborescence img/mobs/... ── */
+btnZip.addEventListener('click', async()=>{
+  btnZip.disabled=true;
+  log('Création du ZIP…');
+  const zip=new JSZip();
+  for(const{dataUrl,imgPath}of Object.values(results)){
+    zip.file(imgPath, dataUrl.split(',')[1], {base64:true});
+  }
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='sprites_monstres.zip'; a.click();
+  URL.revokeObjectURL(a.href);
+  btnZip.disabled=false;
+  log('ZIP prêt — extrayez à la racine du projet pour écraser les images.','ok');
+});
+</script>
+</body>
+</html>
