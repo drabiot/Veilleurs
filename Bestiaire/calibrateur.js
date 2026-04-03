@@ -254,13 +254,29 @@ function animate() {
 
   previewCamera.aspect = PW / PH;
   previewCamera.updateProjectionMatrix();
-  const pTarget = new THREE.Vector3(0, camHauteur, 0);
-  previewCamera.position.set(
-    pTarget.x + camDistance * Math.sin(1.2) * Math.sin(0.4),
-    pTarget.y + camDistance * Math.cos(1.2),
-    pTarget.z + camDistance * Math.sin(1.2) * Math.cos(0.4)
-  );
-  previewCamera.lookAt(pTarget);
+
+  /* Calcul dynamique du centre et de la distance depuis la bounding box réelle */
+  let previewCenterY = camHauteur;
+  let previewDist    = camDistance;
+
+  if (pieces.length > 0) {
+    const box = new THREE.Box3();
+    pieces.forEach(p => box.expandByObject(p.outerGroup));
+    if (!box.isEmpty()) {
+      previewCenterY = (box.min.y + box.max.y) / 2;
+      const sizeY  = box.max.y - box.min.y;
+      const sizeX  = box.max.x - box.min.x;
+      const fovRad = previewCamera.fov * Math.PI / 180;
+      /* Distance pour que le modèle tienne dans le cadre, avec marge 20% */
+      previewDist  = Math.max(sizeY / (2 * Math.tan(fovRad / 2)),
+                              sizeX / (2 * Math.tan(fovRad * previewCamera.aspect / 2))) * 1.2;
+    }
+  }
+
+  /* Vue de face exacte : caméra sur l'axe Z+, regarde vers l'origine */
+  previewCamera.position.set(0, previewCenterY, previewDist);
+  previewCamera.lookAt(0, previewCenterY, 0);
+
   renderer.render(scene, previewCamera);
 
   renderer.setScissorTest(false);

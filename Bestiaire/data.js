@@ -1784,6 +1784,7 @@ const PERSONNAGES = [
 			{ id: 'hache_ebrechee',  buy: 20, price: 4 },
 			{ id: 'serpe_tordue',  buy: 20, price: 4 },
 			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
+			{ id: 'torche',  buy: 2500 },
     ],
   },
 	{
@@ -2499,6 +2500,7 @@ const PERSONNAGES = [
 			{ id: 'hache_ebrechee',  buy: 20, price: 4 },
 			{ id: 'serpe_tordue',  buy: 20, price: 4 },
 			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
+			{ id: 'torche',  buy: 2500 },
     ],
   },
 	//#endregion Mizunari
@@ -2640,6 +2642,7 @@ const PERSONNAGES = [
 			{ id: 'hache_ebrechee',  buy: 20, price: 4 },
 			{ id: 'serpe_tordue',  buy: 20, price: 4 },
 			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
+			{ id: 'torche',  buy: 2500 },
     ],
   },
 	{
@@ -2869,6 +2872,7 @@ const PERSONNAGES = [
 			{ id: 'hache_ebrechee',  buy: 20, price: 4 },
 			{ id: 'serpe_tordue',  buy: 20, price: 4 },
 			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
+			{ id: 'torche',  buy: 2500 },
     ],
   },
 	{
@@ -3091,6 +3095,7 @@ const PERSONNAGES = [
 			{ id: 'hache_ebrechee',  buy: 20, price: 4 },
 			{ id: 'serpe_tordue',  buy: 20, price: 4 },
 			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
+			{ id: 'torche',  buy: 2500 },
     ],
   },
 	{

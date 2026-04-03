@@ -2716,6 +2716,21 @@ const ITEMS = [
 		craft:		[{qty:18, id:'lingot_fer'}]
 	},
 {
+		id:				'gants_loups',
+		name:			"Gants des Loups",
+		set:			'loup',
+		rarity:		'epique',
+		cat:			'gants',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			5,
+		img:			"../img/compendium/textures/trinkets/P1/Set Loup Faiblard/Gants des Loups.png",
+		stats:		{degats:2, vitesse_attaque:0.1, vol_vie:1.5, vitesse_deplacement:0.15},
+    lore:     "Une paire de gants en peau de loup, à l'aura néfaste qui inspire la soif de sang.",
+    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Épique'],
+    obtain:   "...",
+	},
+{
 		id:				'gants_dechus_chasseur',
 		name:			"Gants Déchus du Chasseur",
 		rarity:		'legendaire',
@@ -2874,6 +2889,21 @@ const ITEMS = [
     lore:     "Ce collier est tressé à partir de lianes vivantes. On dit qu'il réagit aux battements du cœur de la forêt.",
     tags:     ['Accessoire', 'Artefact', 'Collier', 'Palier 1', 'Légendaire'],
     obtain:   "Obtenable en récompense du Donjon Mine de Geldorak"
+	},
+{
+		id:				'ceinture_cerfs',
+		name:			"Ceinture des Cerfs",
+		set:			'cerf',
+		rarity:		'epique',
+		cat:			'artefact',
+		category:	'accessoire',
+		palier:		1,
+		lvl:			5,
+		img:			"../img/compendium/textures/trinkets/P1/Set des Cerfs Paisibles/Ceinture des Cerfs.png",
+		stats:		{crit_comp_degats:3.5, sante:10},
+    lore:     "Une ceinture faite à base de peaux de cerfs.",
+    tags:     ['Accessoire', 'Artefact', 'Ceinture', 'Palier 1', 'Épique'],
+    obtain:   "...",
 	},
 {
 		id:				'piece_cuivre',
@@ -5345,7 +5375,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/pioche_felee.png",
     lore:     "...",
     tags:     ['Outils', 'Pioche', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Outils",
+    obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
 		craft:		[{qty:20, id:'cols'}]
   },
 {
@@ -5357,7 +5387,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/hache_ebrechee.png",
     lore:     "...",
     tags:     ['Outils', 'Hache', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Outils",
+    obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
 		craft:		[{qty:20, id:'cols'}]
   },
 {
@@ -5369,7 +5399,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/serpe_tordue.png",
     lore:     "...",
     tags:     ['Outils', 'Houe', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Outils",
+    obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
 		craft:		[{qty:20, id:'cols'}]
   },
 {
@@ -5381,43 +5411,55 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/canne_a_peche_en_bois.png",
     lore:     "...",
     tags:     ['Outils', 'Canne à Pêche', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Outils",
+    obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
 		craft:		[{qty:20, id:'cols'}]
   },
 {
+    id:       'torche',
+    name:     "Torche",
+    rarity:   'rare',
+    category: 'outils',
+    palier:   1,
+    image:    "../img/compendium/textures/gears/torche.png",
+    lore:     "Une torche rudimentaire, mais suffisante pour éclairer",
+    tags:     ['Outils', 'Torche', 'Palier 1', 'Rare'],
+    obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
+		craft:		[{qty:2500, id:'cols'}]
+  },
+{
     id:       'pioche_metal',
-    name:     "Pioche en Métal",
+    name:     "Pioche de Métal",
     rarity:   'rare',
     category: 'outils',
     palier:   1,
     image:    "../img/compendium/textures/gears/pioche_metal.png",
-    lore:     "...",
+    lore:     "Une pioche très solide, parfaite pour miner des minerais plus solide.",
     tags:     ['Outils', 'Pioche', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable par les Marchands d'Outils",
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:25, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
   },
 {
     id:       'hache_metal',
-    name:     "Hache en Métal",
+    name:     "Hache de Métal",
     rarity:   'rare',
     category: 'outils',
     palier:   1,
     image:    "../img/compendium/textures/gears/hache_metal.png",
     lore:     "...",
     tags:     ['Outils', 'Hache', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable par les Marchands d'Outils",
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:22, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
   },
 {
     id:       'houe_metal',
-    name:     "Houe en Métal",
+    name:     "Houe de Métal",
     rarity:   'rare',
     category: 'outils',
     palier:   1,
     image:    "../img/compendium/textures/gears/houe_metal.png",
     lore:     "...",
     tags:     ['Outils', 'Houe', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable par les Marchands d'Outils",
+    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
   },
 //#endregion Items > P1 > Outils
