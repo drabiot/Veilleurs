@@ -1374,7 +1374,7 @@ const ITEMS = [
 		stats:		{degats:50, vitesse_attaque:1.2, crit_comp_chance:15},
 		classes:	['mage'],
     lore:     "Bâton très puissant, forgé grâce à la puissance d'Illfang et à des minerais rares. Ce n'est toutefois plus qu'une relique pour le moment.",
-    tags:     ['Armes', 'Bâton', 'Mage', 'Palier 1', 'Mythique'],
+    tags:     ['Armes', 'Bâton Puissant', 'Mage', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
 {
@@ -1547,7 +1547,7 @@ const ITEMS = [
 		stats:		{degats:35, vitesse_attaque:1.2, soin_bonus:10, regen_sante:0.3, regen_mana:0.3},
 		classes:	['shaman'],
     lore:     "Bâton très puissant, forgé grâce à la puissance d'Illfang et à des minerais rares. Ce n'est toutefois plus qu'une relique pour le moment.",
-    tags:     ['Armes', 'Bâton', 'Shaman', 'Palier 1', 'Mythique'],
+    tags:     ['Armes', 'Bâton Puissant', 'Shaman', 'Palier 1', 'Mythique'],
     obtain:   "Obtenable en récompense du Donjon Tour du Kobold[1]"
 	},
 {
@@ -3142,7 +3142,7 @@ const ITEMS = [
 		palier:		1,
 		lvl:			10,
 		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_rose.png",
-		stats:		{},
+		stats:		{degats_competence:5, vampirisme_competence:3, hate:5, vitesse_deplacement:-0.5},
     lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
     tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
     obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
@@ -3157,7 +3157,7 @@ const ITEMS = [
 		palier:		1,
 		lvl:			10,
 		img:			"../img/compendium/textures/trinkets/Christmas/gants_noel_bleu.png",
-		stats:		{},
+		stats:		{sante:15, mana:30, stamina:15},
     lore:     "Une paire de moufles décorées d'un motif hivernal et conçues pour garder les mains au chaud même dans les zones froides",
     tags:     ['Accessoire', 'Gants', 'Palier 1', 'Event', 'Noël'],
     obtain:   "Obtenable en échange de Moufles de Noël Rouge durant l'Événement de Noël 2025",
@@ -3200,7 +3200,7 @@ const ITEMS = [
 		palier:		1,
 		lvl:			10,
 		img:			"../img/compendium/textures/trinkets/Christmas/couronne_sol.png",
-		stats:		{hate:5, mana:5, stamina:2.5},
+		stats:		{degats_magique:3, sante:10, hate:5},
     lore:     "Une couronne finement ouvragée, mêlant motifs solaires et hivernaux, symbole de l'équilibre entre les saisons.",
     tags:     ['Accessoire', 'Artefact', 'Couronne', 'Palier 1', 'Event', 'Noël'],
     obtain:   "Finir la Quête d'Événement de Noël 2025"
