@@ -394,7 +394,7 @@ const MOBS = [
     },
     {
       fichier: '../img/compendium/modelengine/models/slime_mage/hat.json',
-      position: [0.5, 0.1508, 0.5],
+      position: [0.4925, 0.1361, 0.428],
       rotation: [0, 3.1416, 0],
       scale: 1
     }
