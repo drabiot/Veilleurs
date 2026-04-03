@@ -255,6 +255,24 @@ const MOBS = [
     loot: [
       { id: 'gelee_de_slime', chance: 30 },
     ],
+		morceaux: [
+    {
+      fichier: '../img/compendium/modelengine/models/slime_common/head.json',
+      position: [0.5013, -0.4313, 0.6805],
+      rotation: [0, -3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/slime_common/body.json',
+      position: [0.5, -0.3871, 0.5],
+      rotation: [0, 3.1416, 0],
+      scale: 1
+    }
+  ],
+  camera: {
+    distance: 3,   // distance de la caméra (plus grand = plus loin)
+    hauteur: 0   // hauteur du point de regard (0 = centre, + = plus haut)
+  }
   },
   {
     id: 'guerrier_slime',
@@ -274,6 +292,30 @@ const MOBS = [
     loot: [
       { id: 'gelee_de_slime', chance: 30 },
     ],
+		morceaux: [
+    {
+      fichier: '../img/compendium/modelengine/models/slime_warrior/head.json',
+      position: [0.5013, -0.4313, 0.6805],
+      rotation: [0, -3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/slime_warrior/body.json',
+      position: [0.5, -0.3871, 0.5],
+      rotation: [0, 3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/slime_warrior/arm.json',
+      position: [0.0323, -0.1952, 0.4807],
+      rotation: [0, 3.1416, 0],
+      scale: 1
+    }
+  ],
+  camera: {
+    distance: 3,   // distance de la caméra (plus grand = plus loin)
+    hauteur: 0   // hauteur du point de regard (0 = centre, + = plus haut)
+  }
   },
   {
     id: 'slime_soigneur',
@@ -294,6 +336,24 @@ const MOBS = [
       { id: 'gelee_de_slime', chance: 30 },
 	  { id: 'noyau_de_slime', chance: 5 },
     ],
+		morceaux: [
+    {
+      fichier: '../img/compendium/modelengine/models/slime_healer/head.json',
+      position: [0.5013, -0.4313, 0.6805],
+      rotation: [0, -3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/slime_healer/body.json',
+      position: [0.5, -0.3871, 0.5],
+      rotation: [0, 3.1416, 0],
+      scale: 1
+    }
+  ],
+  camera: {
+    distance: 3,   // distance de la caméra (plus grand = plus loin)
+    hauteur: 0   // hauteur du point de regard (0 = centre, + = plus haut)
+  }
   },
   {
     id: 'slime_magicien',
@@ -313,6 +373,36 @@ const MOBS = [
       { id: 'gelee_de_slime', chance: 30 },
 	  { id: 'noyau_de_slime', chance: 5 },
     ],
+		morceaux: [
+    {
+      fichier: '../img/compendium/modelengine/models/slime_mage/head.json',
+      position: [0.5013, -0.4313, 0.6805],
+      rotation: [0, -3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/slime_mage/body.json',
+      position: [0.5, -0.3871, 0.5],
+      rotation: [0, 3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/slime_mage/arm.json',
+      position: [0.0323, -0.1952, 0.4807],
+      rotation: [0, 3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/slime_mage/hat.json',
+      position: [0.5, 0.1508, 0.5],
+      rotation: [0, 3.1416, 0],
+      scale: 1
+    }
+  ],
+  camera: {
+    distance: 3,   // distance de la caméra (plus grand = plus loin)
+    hauteur: 0   // hauteur du point de regard (0 = centre, + = plus haut)
+  }
   },
   {
     id: 'gorbel',
@@ -335,7 +425,37 @@ const MOBS = [
 	  { id: 'noyau_de_slime', chance: 5 },
 	  { id: 'essence_de_gorbel', chance: 5 },
     ],
-		spawnTime: '10m'
+		spawnTime: '10m',
+		morceaux: [
+    {
+      fichier: '../img/compendium/modelengine/models/slime_king/head.json',
+      position: [0.5216, 0.491, 0.5821],
+      rotation: [0, -3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/slime_king/body.json',
+      position: [0.5, -0.3871, 0.5],
+      rotation: [0, 3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/slime_king/crown.json',
+      position: [0.2757, 1.6533, 0.3466],
+      rotation: [0, 3.1416, 0],
+      scale: 0.44
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/slime_king/stomach.json',
+      position: [0.5, -0.2815, 0.5],
+      rotation: [0, 3.1416, 0],
+      scale: 1
+    }
+  ],
+  camera: {
+    distance: 4.2,   // distance de la caméra (plus grand = plus loin)
+    hauteur: 0   // hauteur du point de regard (0 = centre, + = plus haut)
+  }
   },
   {
     id: 'squelette_epeiste',
@@ -527,6 +647,48 @@ const MOBS = [
 	  { id: 'petite_bourse', chance: 25 },
 	  { id: 'arbalete_bandit' },
     ],
+		/*morceaux: [
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_c1/head.json',
+      position: [0.5246, 1.2403, 0.4275],
+      rotation: [0, -3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_c1/hip.json',
+      position: [0.5, 0.5, 0.5],
+      rotation: [0, 3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_c1/left_arm3.json',
+      position: [1.0468, 1.9124, 0.4455],
+      rotation: [-1.0821, 3.1416, -0.2618],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_c1/right_arm_1.json',
+      position: [0.4816, 0.3294, 0.2813],
+      rotation: [-0.2618, -1.8064, 0.672],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_c1/left_leg1.json',
+      position: [0.2226, 0.4734, 0.647],
+      rotation: [-0.1571, 3.1416, 0.1571],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_c1/right_leg.json',
+      position: [0.7242, 0.4, 0.3878],
+      rotation: [0.2618, 3.1416, -0.1571],
+      scale: 1
+    }
+  ],
+  camera: {
+    distance: 3.3,   // distance de la caméra (plus grand = plus loin)
+    hauteur: 0   // hauteur du point de regard (0 = centre, + = plus haut)
+  }*/
   },
   {
     id: 'bandit_assassin',
@@ -538,7 +700,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Mine de Geldorak',
     regionId: 'm1z7',
-    //img: '../img/mobs/P1/bandit_assassin.png',
+    img: '../img/mobs/P1/bandit_assassin.png',
     lore: "Maître de l'ombre et des lames silencieuses, il ne laisse derrière lui que le vide… et une cible tombée.",
     attacks: [
 		{ name: 'Dague Fourbe',   desc: 'Utilise sa dague pour assassiner ses proies dans le dos.', dmg:'?' },
@@ -610,6 +772,48 @@ const MOBS = [
       { id: 'cuir_use', chance: 80 },
 	  { id: 'petite_bourse', chance: 40 },
     ],
+		morceaux: [
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_b1/head.json',
+      position: [0.5246, 1.2403, 0.4275],
+      rotation: [0, -3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_b1/hip.json',
+      position: [0.5, 0.5, 0.5],
+      rotation: [0, 3.1416, 0],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_b1/left_arm.json',
+      position: [1.0468, 1.9124, 0.4455],
+      rotation: [-1.0821, 3.1416, -0.2618],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_b1/right_arm.json',
+      position: [0.4816, 0.3294, 0.2813],
+      rotation: [-0.2618, -1.8064, 0.672],
+      scale: 1.93
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_b1/left_leg.json',
+      position: [0.2226, 0.4734, 0.647],
+      rotation: [-0.1571, 3.1416, 0.1571],
+      scale: 1
+    },
+    {
+      fichier: '../img/compendium/modelengine/models/em_bandit_b1/right_leg.json',
+      position: [0.7242, 0.4, 0.3878],
+      rotation: [0.2618, 3.1416, -0.1571],
+      scale: 1
+    }
+  ],
+  camera: {
+    distance: 3.3,   // distance de la caméra (plus grand = plus loin)
+    hauteur: 0   // hauteur du point de regard (0 = centre, + = plus haut)
+  }
   },
   {
     id: 'treant_foret',
