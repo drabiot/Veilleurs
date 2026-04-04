@@ -1802,6 +1802,8 @@ stats.innerHTML = statsLines +
     const page   = document.querySelector('.page');
     if (!header || !page) return;
 
+    document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+  
     page.style.height = 'calc(100vh - ' + header.offsetHeight + 'px)';
 
     const wrap = document.querySelector('.mannequin-col');
@@ -1909,6 +1911,378 @@ stats.innerHTML = statsLines +
     if (window.ResizeObserver) {
       new ResizeObserver(fitGrid).observe(document.querySelector('.site-header'));
     }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+
+/* checklist-drawer.js
+   Tiroir checklist de craft pour l'Atelier VCL.
+   - Lit automatiquement les items équipés ayant un craft[]
+   - Affiche les matériaux groupés par item équipé
+   - Aucune sélection manuelle d'items
+   - State persistant (localStorage), reset auto si data.js change
+   ─────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+
+  /* ══ STORAGE ══ */
+  const SIG        = '🌙VCL_DRAWER_v2';
+  const STORAGE_KEY = 'vcl_craft_drawer_v2';
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const p = JSON.parse(raw);
+      return p.sig === SIG ? p : null;
+    } catch (e) { return null; }
+  }
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        sig:     SIG,
+        checked: checkedKeys,
+        qty:     haveQty,
+      }));
+    } catch (e) {}
+  }
+
+  /* ══ ÉTAT ══ */
+  let checkedKeys = {}; // { "slotId::matId": true }
+  let haveQty     = {}; // { "slotId::matId": number }
+
+  /* ══ LIRE LES ITEMS ÉQUIPÉS AVEC CRAFT ══
+     On lit la variable `equipped` exposée par atelier.js.
+     Elle est dans la closure — on passe par window ou on
+     interroge le DOM. La façon la plus simple : écouter
+     l'objet `equipped` via un getter sur window, ou simplement
+     relire les slots dessinés dans le DOM.
+     → On utilise une approche propre : atelier.js expose déjà
+       les données via localStorage sous `vcl_atelier`.
+       On lit ce storage pour avoir les ids équipés.
+  ══ */
+  function getEquippedCraftItems() {
+    if (typeof ITEMS === 'undefined') return [];
+    const results = [];
+
+    /* Lire l'état courant depuis le localStorage de l'atelier */
+    try {
+      const raw = localStorage.getItem('vcl_atelier');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.slots) return [];
+
+      Object.entries(parsed.slots).forEach(function (entry) {
+        const slotId = entry[0];
+        const itemId = entry[1];
+        const item = ITEMS.find(function (i) { return i.id === itemId; });
+        if (!item) return;
+        if (!item.craft || !Array.isArray(item.craft) || !item.craft.length) return;
+        results.push({ slotId: slotId, item: item });
+      });
+    } catch (e) {}
+
+    return results;
+  }
+
+  /* ══ CALCUL MATÉRIAUX ══ */
+  function computeAll() {
+    /* Retourne tableau de { slotId, item, mats: [{matId, qty}] } */
+    return getEquippedCraftItems().map(function (entry) {
+      const mats = [];
+      entry.item.craft.forEach(function (c) {
+        if (!c || !c.id) return;
+        mats.push({ matId: c.id, qty: c.qty || 1 });
+      });
+      return { slotId: entry.slotId, item: entry.item, mats: mats };
+    });
+  }
+
+  /* Clé unique pour checkedKeys / haveQty */
+  function key(slotId, matId) { return slotId + '::' + matId; }
+
+  function isMatDone(slotId, matId, need) {
+    const k = key(slotId, matId);
+    if (checkedKeys[k]) return true;
+    return (parseInt(haveQty[k] || 0)) >= need;
+  }
+
+  /* ══ DOM ══ */
+  const drawer    = document.getElementById('craft-drawer');
+  const tab       = document.getElementById('craft-drawer-tab');
+  const closeBtn  = document.getElementById('craft-drawer-close');
+  const badge     = document.getElementById('cdt-badge');
+  const checklist = document.getElementById('cdp-checklist');
+  const progFill  = document.getElementById('cdp-prog-fill');
+  const progLabel = document.getElementById('cdp-prog-label');
+
+  /* ══ OPEN / CLOSE ══ */
+  tab.addEventListener('click', function () {
+    drawer.classList.toggle('open');
+    if (drawer.classList.contains('open')) refresh();
+  });
+  closeBtn.addEventListener('click', function () {
+    drawer.classList.remove('open');
+  });
+
+  /* ══ BADGE ══ */
+function updateBadge(groups) {
+  /* badge désactivé */
+}
+
+  /* ══ PROGRESS ══ */
+  function updateProgress(groups) {
+    let total = 0, done = 0;
+    groups.forEach(function (g) {
+      g.mats.forEach(function (m) {
+        total++;
+        if (isMatDone(g.slotId, m.matId, m.qty)) done++;
+      });
+    });
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    progFill.style.width  = pct + '%';
+    progLabel.textContent = done + ' / ' + total;
+  }
+
+  /* ══ RENDER ══ */
+  function refresh() {
+    const groups = computeAll();
+    updateBadge(groups);
+    updateProgress(groups);
+    buildChecklist(groups);
+  }
+
+  function buildChecklist(groups) {
+    checklist.innerHTML = '';
+
+    if (!groups.length) {
+      checklist.innerHTML =
+        '<div class="cdp-empty">' +
+        '<span class="cdp-empty-icon">🧰</span>' +
+        'Aucun item équipé avec un craft.<br>Équipez des items craftables dans l\'Atelier.' +
+        '</div>';
+      return;
+    }
+
+    groups.forEach(function (g) {
+      const item    = g.item;
+      const slotId  = g.slotId;
+      const rarCol  = (typeof RARITIES !== 'undefined' && RARITIES[item.rarity])
+        ? RARITIES[item.rarity].color : '#888';
+
+      /* ── En-tête du groupe ── */
+      const group = document.createElement('div');
+      group.className = 'cdp-group';
+
+      const header = document.createElement('div');
+      header.className = 'cdp-group-header';
+
+      /* Dot couleur rareté */
+      const dot = document.createElement('span');
+      dot.className = 'cdp-group-dot';
+      dot.style.background = rarCol;
+
+      /* Image item */
+      const imgWrap = document.createElement('div');
+      imgWrap.className = 'cdp-group-img';
+      if (item.img || item.image) {
+        imgWrap.innerHTML = '<img src="' + (item.img || item.image) + '" alt="">';
+      } else {
+        imgWrap.innerHTML = '<span style="font-size:13px">📦</span>';
+      }
+
+      /* Nom */
+      const nameEl = document.createElement('span');
+      nameEl.className = 'cdp-group-name';
+      nameEl.style.color = rarCol;
+      nameEl.textContent = item.name;
+
+      /* Slot label */
+      const slotEl = document.createElement('span');
+      slotEl.className = 'cdp-group-slot';
+      if (typeof ALL_SLOTS !== 'undefined') {
+        const slotDef = ALL_SLOTS.find(function (s) { return s.id === slotId; });
+        slotEl.textContent = slotDef ? slotDef.ico + ' ' + slotDef.label : slotId;
+      }
+
+      header.appendChild(dot);
+      header.appendChild(imgWrap);
+      header.appendChild(nameEl);
+      header.appendChild(slotEl);
+      group.appendChild(header);
+
+      /* ── Lignes matériaux ── */
+      g.mats.forEach(function (m) {
+        group.appendChild(buildMatRow(slotId, m.matId, m.qty, group, groups));
+      });
+
+      checklist.appendChild(group);
+    });
+  }
+
+  function buildMatRow(slotId, matId, need, groupEl, groups) {
+    const matItem = (typeof ITEMS !== 'undefined') ? ITEMS.find(function (i) { return i.id === matId; }) : null;
+    const have    = parseInt(haveQty[key(slotId, matId)] || 0);
+    const done    = isMatDone(slotId, matId, need);
+    const qtyOk   = have >= need;
+
+    const row = document.createElement('div');
+    row.className = 'cdp-mat-row' + (done ? ' mat-done' : '') + (qtyOk ? ' qty-ok' : '');
+
+    /* Checkbox */
+    const box = document.createElement('div');
+    box.className = 'cdp-mat-checkbox';
+    box.textContent = done ? '✓' : '';
+
+    /* Image matériau */
+    const imgW = document.createElement('div');
+    imgW.className = 'cdp-mat-img';
+    if (matItem && (matItem.img || matItem.image)) {
+      imgW.innerHTML = '<img src="' + (matItem.img || matItem.image) + '" alt="">';
+    } else {
+      imgW.innerHTML = '<span class="cdp-fallback">📦</span>';
+    }
+
+    /* Info */
+    const info = document.createElement('div');
+    info.className = 'cdp-mat-info';
+    const matName = matItem ? matItem.name : matId;
+    info.innerHTML = '<div class="cdp-mat-name">' + matName + '</div>';
+
+    /* Quantité */
+    const qtyWrap = document.createElement('div');
+    qtyWrap.className = 'cdp-qty-wrap';
+
+    const haveInput = document.createElement('input');
+    haveInput.type        = 'number';
+    haveInput.className   = 'cdp-qty-have';
+    haveInput.min         = 0;
+    haveInput.placeholder = '0';
+    haveInput.value       = have > 0 ? have : '';
+    haveInput.title       = 'Quantité possédée';
+
+    haveInput.addEventListener('click', function (e) { e.stopPropagation(); });
+    haveInput.addEventListener('input', function (e) {
+      e.stopPropagation();
+      const v = Math.max(0, parseInt(haveInput.value) || 0);
+      haveQty[key(slotId, matId)] = v;
+      saveState();
+      const newDone  = v >= need || !!checkedKeys[key(slotId, matId)];
+      const newQtyOk = v >= need;
+      row.classList.toggle('mat-done', newDone);
+      row.classList.toggle('qty-ok',   newQtyOk);
+      box.textContent = newDone ? '✓' : '';
+      updateProgress(computeAll());
+    });
+
+    const sep = document.createElement('span');
+    sep.className   = 'cdp-qty-sep';
+    sep.textContent = '/';
+
+    const needSpan = document.createElement('span');
+    needSpan.className   = 'cdp-qty-need';
+    needSpan.textContent = need;
+
+    qtyWrap.appendChild(haveInput);
+    qtyWrap.appendChild(sep);
+    qtyWrap.appendChild(needSpan);
+
+    /* Clic ligne = toggle manuel */
+    row.addEventListener('click', function (e) {
+      if (e.target === haveInput) return;
+      const k = key(slotId, matId);
+      checkedKeys[k] = !checkedKeys[k];
+      if (!checkedKeys[k]) delete checkedKeys[k];
+      saveState();
+      const have2   = parseInt(haveQty[k] || 0);
+      const newDone = !!checkedKeys[k] || have2 >= need;
+      row.classList.toggle('mat-done', newDone);
+      box.textContent = newDone ? '✓' : '';
+      updateProgress(computeAll());
+    });
+
+    row.appendChild(box);
+    row.appendChild(imgW);
+    row.appendChild(info);
+    row.appendChild(qtyWrap);
+    return row;
+  }
+
+  /* ══ CONTRÔLES ══ */
+  document.getElementById('cdp-check-all').addEventListener('click', function () {
+    const groups = computeAll();
+    groups.forEach(function (g) {
+      g.mats.forEach(function (m) { checkedKeys[key(g.slotId, m.matId)] = true; });
+    });
+    saveState(); refresh();
+  });
+
+  document.getElementById('cdp-uncheck-all').addEventListener('click', function () {
+    checkedKeys = {}; saveState(); refresh();
+  });
+
+  document.getElementById('cdp-reset-qty').addEventListener('click', function () {
+    haveQty = {}; saveState(); refresh();
+  });
+
+  document.getElementById('cdp-reset-all').addEventListener('click', function () {
+    checkedKeys = {}; haveQty = {}; saveState(); refresh();
+  });
+
+  /* ══ OBSERVER : se met à jour quand l'équipement change ══
+     atelier.js appelle saveToStorage() à chaque modification.
+     On écoute l'événement storage pour détecter les changements.
+  ══ */
+  window.addEventListener('storage', function (e) {
+    if (e.key === 'vcl_atelier') {
+      /* Petit délai pour laisser atelier.js finir son render */
+      setTimeout(function () {
+        const groups = computeAll();
+        updateBadge(groups);
+        if (drawer.classList.contains('open')) {
+          updateProgress(groups);
+          buildChecklist(groups);
+        }
+      }, 80);
+    }
+  });
+
+  /* Patch : intercepter saveToStorage dans la même page
+     (l'event storage ne se déclenche que sur les AUTRES onglets).
+     On patche localStorage.setItem pour détecter les sauvegardes
+     de l'atelier dans le même onglet. */
+  const _origSetItem = localStorage.setItem.bind(localStorage);
+  localStorage.setItem = function (k, v) {
+    _origSetItem(k, v);
+    if (k === 'vcl_atelier') {
+      setTimeout(function () {
+        const groups = computeAll();
+        updateBadge(groups);
+        if (drawer.classList.contains('open')) {
+          updateProgress(groups);
+          buildChecklist(groups);
+        }
+      }, 50);
+    }
+  };
+
+  /* ══ INIT ══ */
+  function init() {
+    const saved = loadState();
+    if (saved) {
+      checkedKeys = saved.checked || {};
+      haveQty     = saved.qty    || {};
+    }
+
+    /* Premier render du badge (sans ouvrir le tiroir) */
+    const groups = computeAll();
+    updateBadge(groups);
   }
 
   if (document.readyState === 'loading') {

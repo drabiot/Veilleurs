@@ -3326,7 +3326,7 @@ const ITEMS = [
 		category:	'accessoire',
 		palier:		2,
 		lvl:			13,
-		img:			"", //NULL
+		img:			"../img/compendium/textures/trinkets/P2/anneau_aventurier.png",
 		stats:		{vitesse_attaque:0.1, crit_comp_degats:1, defense:1, soin_bonus:1, sante:1, mana:1, stamina:1, regen_sante:0.1, regen_mana:0.1, regen_stamina:0.1},
     lore:     "Forgé il y a longtemps, cet anneau porte la marque des plus grands aventuriers du royaume.",
     tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],

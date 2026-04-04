@@ -6,22 +6,20 @@
   <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
   <title>[VCL] - Atelier</title>
   <link rel="stylesheet" href="atelier.css" />
+  <link rel="stylesheet" href="checklist-drawer.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/skinview3d@3.0.0/bundles/skinview3d.bundle.js"></script>
-  <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-1ZEKMF3QVS"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
     gtag('config', 'G-1ZEKMF3QVS');
   </script>
 </head>
 <body>
-
 
   <div class="ambient-bg" aria-hidden="true">
     <div class="moon"></div>
@@ -44,18 +42,61 @@
       <div class="header-right"></div>
     </div>
     <nav class="header-nav">
-      <a href="../index.html"         class="nav-link"><span class="nav-icon">📜</span><span class="nav-label">Patchnotes</span></a>
-      <a href="../Map/map.html"           class="nav-link"><span class="nav-icon">🗺️</span><span class="nav-label">Carte</span></a>
+      <a href="../index.html"                    class="nav-link"><span class="nav-icon">📜</span><span class="nav-label">Patchnotes</span></a>
+      <a href="../Map/map.html"                  class="nav-link"><span class="nav-icon">🗺️</span><span class="nav-label">Carte</span></a>
       <a href="../Compendium/compendium.html"    class="nav-link"><span class="nav-icon">📖</span><span class="nav-label">Compendium</span></a>
-	  <a href="../Bestiaire/bestiaire.html" class="nav-link">
-        <span class="nav-icon">💀</span><span class="nav-label">Bestiaire</span>
-      </a>
-      <a href="atelier.html" class="nav-link active"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
+      <a href="../Bestiaire/bestiaire.html"      class="nav-link"><span class="nav-icon">💀</span><span class="nav-label">Bestiaire</span></a>
+      <a href="atelier.html"                     class="nav-link active"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
     </nav>
   </header>
 
   <div class="page">
     <div class="body">
+
+      <!-- ══ TIROIR CHECKLIST ══
+           Positionné au bord droit de la sidebar gauche (left: 210px via CSS).
+           S'ouvre vers la droite, par-dessus le centre. -->
+      <div class="craft-drawer" id="craft-drawer">
+
+        <!-- Onglet vertical -->
+        <button class="craft-drawer-tab" id="craft-drawer-tab" title="Checklist de craft">
+          <span class="cdt-label">Craft</span>
+          <span class="cdt-badge" id="cdt-badge" style="display:none"></span>
+        </button>
+
+        <!-- Panneau -->
+        <div class="craft-drawer-panel" id="craft-drawer-panel">
+
+          <div class="cdp-head">
+            <span class="cdp-title">⬡ Craft — Matériaux</span>
+            <button class="cdp-close" id="craft-drawer-close">✕</button>
+          </div>
+
+          <div class="cdp-prog-row">
+            <span class="cdp-prog-lbl">Progression</span>
+            <div class="cdp-progress-bar">
+              <div class="cdp-progress-fill" id="cdp-prog-fill" style="width:0%"></div>
+            </div>
+            <span class="cdp-progress-label" id="cdp-prog-label">0 / 0</span>
+          </div>
+
+          <div class="cdp-controls">
+            <button class="cdp-ctrl-btn" id="cdp-check-all">✓ Tout cocher</button>
+            <button class="cdp-ctrl-btn" id="cdp-uncheck-all">○ Tout décocher</button>
+            <button class="cdp-ctrl-btn" id="cdp-reset-qty">⟳ Qté</button>
+            <button class="cdp-ctrl-btn cdp-ctrl-danger" id="cdp-reset-all">✕ Reset</button>
+          </div>
+
+          <div class="cdp-checklist" id="cdp-checklist">
+            <div class="cdp-empty">
+              <span class="cdp-empty-icon">🧰</span>
+              Équipez des items craftables<br>pour voir les matériaux nécessaires.
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <!-- FIN TIROIR -->
 
       <!-- ── Gauche : classe + niveau + actions ── -->
       <aside class="sidebar sidebar-left">
@@ -83,28 +124,24 @@
         </div>
 
         <div class="center-body">
-
-          <!-- Mannequin -->
           <div class="mannequin-col">
             <div class="mq">
               <div class="mq-main-row">
                 <div class="mq-col-left"  id="col-left"></div>
                 <div class="mq-skin" id="mq-skin">
-					<span class="sk-c"></span>
-					<canvas id="mq-skin-canvas"></canvas>
-				</div>
+                  <span class="sk-c"></span>
+                  <canvas id="mq-skin-canvas"></canvas>
+                </div>
                 <div class="mq-col-right" id="col-right"></div>
               </div>
               <div class="mq-row-bot" id="row-bot"></div>
             </div>
           </div>
 
-          <!-- Stats -->
           <div class="stats-col">
             <div class="set-bonuses" id="set-bonuses" style="display:none"></div>
-            <div class="stats-list" id="stats-list"></div>
+            <div class="stats-list"  id="stats-list"></div>
           </div>
-
         </div>
       </main>
 
@@ -118,8 +155,8 @@
           <input id="inp-search" class="picker-search-input" type="text" placeholder="🔍  Filtrer les items…" autocomplete="off" />
         </div>
         <div class="picker-filters-wrap" id="filters-wrap"></div>
-		<div id="tier-wrap" class="tier-wrap picker-filters-wrap"></div>
-        <div class="picker-items-list"   id="items-list">
+        <div id="tier-wrap" class="tier-wrap picker-filters-wrap"></div>
+        <div class="picker-items-list" id="items-list">
           <div class="picker-empty-msg">Sélectionnez un emplacement pour voir les items</div>
         </div>
       </aside>
@@ -127,67 +164,46 @@
     </div>
   </div>
 
-  
   <!-- ══ MODALE UNIFIÉE ══ -->
   <div class="modal-backdrop" id="modal">
     <div class="modal-box">
-      
       <button class="modal-close-btn" id="btn-modal-close">✕</button>
       <div class="modal-title" id="modal-title">Atelier</div>
-      
-      <!-- ── Zone EXPORT ── -->
+
       <div id="modal-zone-export" style="display:none; flex-direction:column; gap:12px">
         <p class="modal-hint">Copiez ce JSON pour sauvegarder ou partager votre build. Vous pourrez le réimporter à tout moment.</p>
         <textarea class="modal-ta" id="modal-ta-export" readonly></textarea>
-        <div class="modal-foot">
-          <button id="btn-copy" class="action-btn primary">◈ Copier</button>
-        </div>
+        <div class="modal-foot"><button id="btn-copy" class="action-btn primary">◈ Copier</button></div>
       </div>
-      
-      <!-- ── Zone IMPORT ── -->
+
       <div id="modal-zone-import" style="display:none; flex-direction:column; gap:12px">
         <p class="modal-hint">Collez le JSON d'un build exporté ci-dessous. L'équipement actuel sera remplacé.</p>
         <textarea class="modal-ta" id="modal-ta-import" placeholder='Collez votre JSON ici…'></textarea>
         <div id="modal-error" class="modal-error" style="display:none"></div>
-        <div class="modal-foot">
-          <button id="btn-confirm-import" class="action-btn primary">↑ Importer</button>
-        </div>
-      </div>
-      
-      <!-- ── Zone RESET ── -->
-      <div id="modal-zone-reset" style="display:none; flex-direction:column; gap:20px; align-items:center; text-align:center; padding: 8px 0">
-        <p class="modal-hint" style="font-size:.95rem">
-          Réinitialiser tout l'équipement ?<br>
-          <span style="opacity:.5; font-size:.82rem">Cette action ne peut pas être annulée.</span>
-        </p>
-        <div class="modal-foot">
-          <button id="btn-confirm-reset" class="action-btn danger">✕ Confirmer la réinitialisation</button>
-        </div>
-      </div>
-      
-      <!-- ── Zone CONFIRM-CLASS ── -->
-      <div id="modal-zone-confirm-class" style="display:none; flex-direction:column; gap:20px; align-items:center; text-align:center; padding: 8px 0">
-        <p class="modal-hint" id="modal-class-hint" style="font-size:.9rem; text-align:left; width:100%"></p>
-        <div id="modal-class-items" style="width:100%; display:flex; flex-direction:column; gap:4px;"></div>
-        <div class="modal-foot" style="width:100%; justify-content:flex-end;">
-          <button id="btn-confirm-class" class="action-btn danger">✕ Changer quand même</button>
-        </div>
+        <div class="modal-foot"><button id="btn-confirm-import" class="action-btn primary">↑ Importer</button></div>
       </div>
 
-      <!-- ── Zone CONFIRM-LEVEL ── -->
-      <div id="modal-zone-confirm-level" style="display:none; flex-direction:column; gap:20px; align-items:center; text-align:center; padding: 8px 0">
+      <div id="modal-zone-reset" style="display:none; flex-direction:column; gap:20px; align-items:center; text-align:center; padding:8px 0">
+        <p class="modal-hint" style="font-size:.95rem">Réinitialiser tout l'équipement ?<br><span style="opacity:.5; font-size:.82rem">Cette action ne peut pas être annulée.</span></p>
+        <div class="modal-foot"><button id="btn-confirm-reset" class="action-btn danger">✕ Confirmer la réinitialisation</button></div>
+      </div>
+
+      <div id="modal-zone-confirm-class" style="display:none; flex-direction:column; gap:20px; align-items:center; text-align:center; padding:8px 0">
+        <p class="modal-hint" id="modal-class-hint" style="font-size:.9rem; text-align:left; width:100%"></p>
+        <div id="modal-class-items" style="width:100%; display:flex; flex-direction:column; gap:4px;"></div>
+        <div class="modal-foot" style="width:100%; justify-content:flex-end;"><button id="btn-confirm-class" class="action-btn danger">✕ Changer quand même</button></div>
+      </div>
+
+      <div id="modal-zone-confirm-level" style="display:none; flex-direction:column; gap:20px; align-items:center; text-align:center; padding:8px 0">
         <p class="modal-hint" id="modal-level-hint" style="font-size:.9rem; text-align:left; width:100%"></p>
         <div id="modal-level-items" style="width:100%; display:flex; flex-direction:column; gap:4px;"></div>
-        <div class="modal-foot" style="width:100%; justify-content:flex-end;">
-          <button id="btn-confirm-level" class="action-btn danger">✕ Confirmer le changement</button>
-        </div>
+        <div class="modal-foot" style="width:100%; justify-content:flex-end;"><button id="btn-confirm-level" class="action-btn danger">✕ Confirmer le changement</button></div>
       </div>
-      
     </div>
   </div>
-  
 
   <script src="../Compendium/data.js"></script>
   <script src="atelier.js"></script>
+  <script src="checklist-drawer.js"></script>
 </body>
 </html>
