@@ -552,6 +552,7 @@ const CATEGORIES = {
   outils:          { label: 'Outils',             emoji: '🛠️' },
   rune:            { label: 'Runes',              emoji: '🔮' },
 	donjon:          { label: 'Donjon',             emoji: '🏰' },
+	monnaie:         { label: 'Monnaie',            emoji: '🪙' },
 };
 
 //#endregion CATEGORIES
@@ -1217,7 +1218,7 @@ const ITEMS = [
 		palier:		1,
 		lvl:			10,
 		img:			"../img/compendium/textures/weapons/arbalete_de_cendre.png",
-		stats:		{degats:23.5, vitesse_attaque:0.7, crit_comp_chance:3, stamina:3},
+		stats:		{degats:23.5, vitesse_attaque:0.8, crit_comp_chance:3.5, stamina:3.5},
 		classes:	['archer'],
     lore:     "Forgé dans les ruines d'un ancien fort de guerre, elle tremble encore de ces anciens combats.",
     tags:     ['Armes', 'Arbalète', 'Archer', 'Palier 1', 'Légendaire'],
@@ -6594,17 +6595,6 @@ const ITEMS = [
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Poisson Requin[40]"
   },
-{
-    id:       'piece_kazor',
-    name:     "Pièce de Kazor",
-    rarity:   'legendaire',
-    category: 'materiaux',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Material/P1/piece_kazor.png",
-    lore:     "...",
-    tags:     ['Matériaux', 'Palier 1', 'World Boss', 'Kazor', 'Legendaire' ],
-    obtain:   "Obtenable :\n- en récompense du World Boss Kazor\n- en atteignant le seuil de 500 dégâts sur Kazor"
-  },
 //#endregion Items > P1 > Matériaux
 //#region Items > P1 > Ressources
 {
@@ -6906,6 +6896,19 @@ const ITEMS = [
     obtain:   "Obtenable en tuant:\n- Gardien Déchu\n- Héraut Déchu\n- Faucheuse Déchu"
   },
 //#endregion Items > P1 > Donjon
+//#region Items > P1 > Monnaie
+{
+    id:       'piece_kazor',
+    name:     "Pièce de Kazor",
+    rarity:   'legendaire',
+    category: 'monnaie',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Material/P1/piece_kazor.png",
+    lore:     "Monnaie provenant de Kazor.",
+    tags:     ['Matériaux', 'Palier 1', 'World Boss', 'Kazor', 'Legendaire' ],
+    obtain:   "Obtenable :\n- en récompense du World Boss Kazor\n- en atteignant le seuil de 500 dégâts sur Kazor"
+  },
+//#endregion Items > P1 > Monnaie
 //#endregion Items > Palier 1
 //#region Items > Palier 2
 
