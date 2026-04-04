@@ -380,6 +380,91 @@ modalOverlay.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
+let _fullscreenViewer = null;
+
+function _openFullscreen3D(mob) {
+  const existing = document.getElementById('mob-3d-fullscreen-overlay');
+  if (existing) existing.remove();
+  if (_fullscreenViewer) { _fullscreenViewer.destroy(); _fullscreenViewer = null; }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'mob-3d-fullscreen-overlay';
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 99999;
+    background: rgba(0,0,0,.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  `;
+
+  const inner = document.createElement('div');
+  inner.style.cssText = `
+    position: relative;
+    width: calc(100% - 80px);
+    height: calc(100% - 80px);
+    background: rgba(13,13,26,.95);
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 0 80px rgba(0,0,0,.85), 0 0 0 1px rgba(224,172,96,.07);
+  `;
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.style.cssText = `
+    position: absolute;
+    top: 10px; right: 12px;
+    z-index: 10;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.15);
+    color: rgba(255,255,255,.5);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+  `;
+
+  const container = document.createElement('div');
+  container.style.cssText = `width: 100%; height: 100%;`;
+
+  const hint = document.createElement('p');
+  hint.textContent = 'Clic + glisser pour tourner · Échap pour fermer';
+  hint.style.cssText = `
+    margin-top: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(255,255,255,.3);
+    letter-spacing: .08em;
+  `;
+
+  inner.appendChild(closeBtn);
+  inner.appendChild(container);
+  overlay.appendChild(inner);
+  overlay.appendChild(hint);
+  document.body.appendChild(overlay);
+
+  // Lancer le viewer après que le DOM soit rendu
+  requestAnimationFrame(() => {
+    _fullscreenViewer = new MonstreViewer3D(container, { autoRotate: true });
+    _fullscreenViewer.chargerDepuisData(mob);
+  });
+
+  const close = () => {
+    if (_fullscreenViewer) { _fullscreenViewer.destroy(); _fullscreenViewer = null; }
+    overlay.remove();
+    document.removeEventListener('keydown', onKey);
+  };
+
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', onKey);
+}
 
 /* ── Fiche Monstre ── */
 function renderMobSheet(mob) {
@@ -387,7 +472,9 @@ function renderMobSheet(mob) {
 
   const has3D = mob.morceaux && mob.morceaux.length > 0;
   const imgContent = has3D
-    ? `<div id="mob-3d-container" class="mob-3d-container"></div>`
+    ? `<div id="mob-3d-container" class="mob-3d-container" style="position:relative;">
+        <button class="btn-expand-3d" id="btn-expand-3d" title="Agrandir le modèle 3D">⛶</button>
+      </div>`
     : mob.img
       ? `<img src="${mob.img}" alt="${mob.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mob-img-placeholder" style="display:none">👾</span>`
       : `<span class="mob-img-placeholder">👾</span>`;
@@ -522,6 +609,13 @@ function renderMobSheet(mob) {
       _activeViewer = new MonstreViewer3D(container, { autoRotate: false });
       _activeViewer.chargerDepuisData(mob);
     }
+  }
+  const expandBtn = document.getElementById('btn-expand-3d');
+  if (expandBtn) {
+    expandBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _openFullscreen3D(mob);
+    });
   }
 }
 
