@@ -209,8 +209,8 @@ const FLOOR_ZONES = {
       color: '#bde3f1',
       emoji: '🎣',
       monsters: [
-        { name: 'Poisson Requin', level: 7, difficulty: '⭐⭐⭐',    emoji: '🦈', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/poisson_requin' },
-        { name: 'Nymbréa',        level: 7, difficulty: '⭐⭐⭐⭐⭐',emoji: '🐟', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nymbrea' },
+        { name: 'Poisson Requin', level: 7, difficulty: '⭐⭐⭐',    emoji: '🐟', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/poisson_requin' },
+        { name: 'Nymbréa',        level: 7, difficulty: '⭐⭐⭐⭐⭐',emoji: '🦈', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nymbrea' },
       ],
       points: [
         { gx: 1473, gy: 2022 }, { gx: 1471, gy: 2105 }, { gx: 1410, gy: 2141 },
@@ -382,7 +382,7 @@ const FLOOR_MARKERS = {
     { id: 'm1d3',  type: 'donjon',  gx: 4274, gy: 3890, name: 'Donjon Mine de Geldorak',            desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-geldorak' },
     { id: 'm1d4',  type: 'donjon',  gx: 2383, gy: 2410, name: "Donjon Labyrinthe des Déchus",       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-labyrinthe-des-dechus' },
     { id: 'm1d5',  type: 'donjon',  gx: 1008,  gy: 1184, name: "Donjon Xal'Zirith",                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-xalzirith' },
-	{ id: 'm1d6', type: 'région',  gx: 3412, gy: 953, name: 'Tour du Kobold',  					desc: "", link: '' },
+	{ id: 'm1d6', type: 'donjon',  gx: 3412, gy: 953, name: 'Tour du Kobold',  					desc: "", link: '' },
 
     { id: 'm1r1',  type: 'région',  gx: 1801, gy: 4284, name: 'Ville de Départ',                    desc: "La ville de départ est un havre paisible dans un monde virtuel encore inconnu. C'est ici que chaque aventure commence", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/ville-de-depart' },
     { id: 'm1r2',  type: 'région',  gx: 1542, gy: 3432, name: 'Hanaka',                             desc: "Un hameau boisé niché entre les collines où les sangliers rôdent à la lisière. Berceau des premiers affrontements", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/hanaka' },
@@ -567,7 +567,7 @@ const FLOOR_MARKERS = {
 	{ id: 'm1boss5', type: 'boss', emoji: '🐻', name: "Ours de Glace", desc: "Né dans les cavernes les plus froides des montagnes, l'Ours de Glace incarne la force brute du Nord. Son rugissement fait frissonner l'air, et son souffle glacé fige tout sur son passage", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ours_glace', coords: [
 		{ gx: 4000, gy: 2010 },
 	]},
-	{ id: 'm1boss6', type: 'boss', emoji: '🐟', name: "Nymbréa", desc: "Serpent mythique glissant entre les courants profonds, Nymbréa incarne la grâce et la traîtrise des eaux calmes. Ses écailles scintillent comme des perles maudites, et son regard hypnotique attire les imprudents vers les abysses", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nymbrea', coords: [
+	{ id: 'm1boss6', type: 'boss', emoji: '🦈', name: "Nymbréa", desc: "Serpent mythique glissant entre les courants profonds, Nymbréa incarne la grâce et la traîtrise des eaux calmes. Ses écailles scintillent comme des perles maudites, et son regard hypnotique attire les imprudents vers les abysses", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nymbrea', coords: [
 		{ gx: 1410, gy: 2140 },
 	]},
   ],
