@@ -1,0 +1,1 @@
+{"textures":{"1":"modelengine:entity/mob_ent_sage","particle":"#1"},"elements":[{"from":[2.5,8.0,2.5],"to":[13.5,8.0,13.5],"faces":{"up":{"uv":[2.875,3.25,1.5,1.875],"tintindex":0,"rotation":0,"texture":"#1"},"down":{"uv":[2.875,1.875,1.5,3.25],"tintindex":0,"rotation":0,"texture":"#1"}}}],"display":{"gui":{"rotation":[-150.0,-45.0,180.0]}},"gui_light":"front"}

@@ -47,7 +47,6 @@ function getMouseNDC(clientX, clientY) {
 function setupDragPlane(pieceIdx, hitPoint, shiftKey) {
   const pos = pieces[pieceIdx].outerGroup.position;
   if (shiftKey) {
-    /* Plan vertical face à la caméra → déplacement Y */
     const camDir = new THREE.Vector3();
     camera.getWorldDirection(camDir);
     camDir.y = 0;
@@ -55,7 +54,6 @@ function setupDragPlane(pieceIdx, hitPoint, shiftKey) {
     camDir.normalize();
     dragPlane.setFromNormalAndCoplanarPoint(camDir, pos);
   } else {
-    /* Plan horizontal XZ */
     dragPlane.setFromNormalAndCoplanarPoint(new THREE.Vector3(0, 1, 0), pos);
   }
   dragOffset.copy(pos).sub(hitPoint);
@@ -119,7 +117,6 @@ function initScene() {
 
   scene = new THREE.Scene();
 
-  /* Lumières */
   scene.add(new THREE.AmbientLight(0xffffff, 0.9));
   const key = new THREE.DirectionalLight(0xffe8c0, 1.2);
   key.position.set(4, 8, 5);
@@ -128,18 +125,13 @@ function initScene() {
   fill.position.set(-5, 2, -4);
   scene.add(fill);
 
-  /* Helpers visuels */
   scene.add(new THREE.AxesHelper(0.5));
   const grid = new THREE.GridHelper(3, 30, 0x2a2a50, 0x1e1e3a);
   scene.add(grid);
 
-  /* Caméra principale */
   camera = new THREE.PerspectiveCamera(45, viewport.clientWidth / viewport.clientHeight, 0.001, 200);
-
-  /* Caméra aperçu */
   previewCamera = new THREE.PerspectiveCamera(45, 180 / 220, 0.001, 200);
 
-  /* ─── Contrôles souris ─── */
   const el = renderer.domElement;
 
   el.addEventListener('mousedown', e => {
@@ -148,7 +140,6 @@ function initScene() {
     isDragging = false;
     dragShift  = e.shiftKey;
 
-    /* Raycast contre toutes les pièces */
     const allMeshes = [...meshToPiece.keys()];
     if (allMeshes.length > 0) {
       raycaster.setFromCamera(getMouseNDC(e.clientX, e.clientY), camera);
@@ -164,7 +155,6 @@ function initScene() {
         }
       }
     }
-    /* Rien touché → orbite */
     orbiting = true;
     lastMouse = { x: e.clientX, y: e.clientY };
   });
@@ -232,17 +222,14 @@ function animate() {
   const W   = Math.floor(viewport.clientWidth  * dpr);
   const H   = Math.floor(viewport.clientHeight * dpr);
 
-  /* Effacement complet du buffer */
   renderer.setScissorTest(false);
   renderer.clear();
   renderer.setScissorTest(true);
 
-  /* ── Vue principale ── */
   renderer.setViewport(0, 0, W, H);
   renderer.setScissor(0, 0, W, H);
   renderer.render(scene, camera);
 
-  /* ── Aperçu (180×220 CSS px, coin bas-droite, marge 10 px) ── */
   const PW = Math.floor(180 * dpr);
   const PH = Math.floor(220 * dpr);
   const PX = W - PW - Math.floor(10 * dpr);
@@ -255,7 +242,6 @@ function animate() {
   previewCamera.aspect = PW / PH;
   previewCamera.updateProjectionMatrix();
 
-  /* Calcul dynamique du centre et de la distance depuis la bounding box réelle */
   let previewCenterY = camHauteur;
   let previewDist    = camDistance;
 
@@ -267,98 +253,178 @@ function animate() {
       const sizeY  = box.max.y - box.min.y;
       const sizeX  = box.max.x - box.min.x;
       const fovRad = previewCamera.fov * Math.PI / 180;
-      /* Distance pour que le modèle tienne dans le cadre, avec marge 20% */
       previewDist  = Math.max(sizeY / (2 * Math.tan(fovRad / 2)),
                               sizeX / (2 * Math.tan(fovRad * previewCamera.aspect / 2))) * 1.2;
     }
   }
 
-  /* Vue de face exacte : caméra sur l'axe Z+, regarde vers l'origine */
   previewCamera.position.set(0, previewCenterY, previewDist);
   previewCamera.lookAt(0, previewCenterY, 0);
 
   renderer.render(scene, previewCamera);
-
   renderer.setScissorTest(false);
 }
 
 /* ─── Parser Minecraft block model ─── */
 
-function resolveTexture(json) {
-  for (const val of Object.values(json.textures || {})) {
-    if (val && !val.startsWith('#')) {
-      const colon = val.indexOf(':');
-      if (colon < 0) return val;
-      return `../img/compendium/${val.slice(0, colon)}/textures/${val.slice(colon + 1)}.png`;
-    }
+/**
+ * Résout une valeur de texture (potentiellement une référence #key) vers une URL.
+ * Déréférence les alias chaînés (#body → #skin → "minecraft:entity/zombie").
+ */
+function resolveTextureValue(textures, value) {
+  if (!value) return null;
+
+  let current = value;
+  const seen  = new Set();
+  while (current.startsWith('#')) {
+    const key = current.slice(1);
+    if (seen.has(key)) break;
+    seen.add(key);
+    current = textures[key] || '';
   }
-  return null;
+
+  if (!current || current.startsWith('#')) return null;
+
+  const colon = current.indexOf(':');
+  if (colon < 0) return current;
+  const namespace = current.slice(0, colon);
+  const path      = current.slice(colon + 1);
+  return `../img/compendium/${namespace}/textures/${path}.png`;
+}
+
+/**
+ * Construit un Map<clé|url, MeshLambertMaterial> pour toutes les textures du modèle.
+ * Un seul matériau est créé par URL distincte.
+ */
+function buildMaterialMap(json) {
+  const textures    = json.textures || {};
+  const materialMap = new Map();
+
+  for (const [key, rawValue] of Object.entries(textures)) {
+    const url = resolveTextureValue(textures, rawValue);
+    if (!url) continue;
+
+    if (materialMap.has(url)) {
+      materialMap.set(key, materialMap.get(url));
+      continue;
+    }
+
+    const tex = new THREE.TextureLoader().load(url);
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+
+    const mat = new THREE.MeshLambertMaterial({
+      map:         tex,
+      side:        THREE.DoubleSide,
+      transparent: true,
+      alphaTest:   0.1,
+    });
+
+    materialMap.set(key, mat);
+    materialMap.set(url, mat);
+  }
+
+  return materialMap;
+}
+
+/**
+ * Retourne le matériau correspondant à la texture d'une face.
+ */
+function materialForFace(materialMap, textures, faceTexture, fallback) {
+  if (!faceTexture) return fallback;
+
+  const key = faceTexture.startsWith('#') ? faceTexture.slice(1) : faceTexture;
+  if (materialMap.has(key)) return materialMap.get(key);
+
+  const url = resolveTextureValue(textures, faceTexture);
+  if (url && materialMap.has(url)) return materialMap.get(url);
+
+  return fallback;
 }
 
 function parseMinecraftModel(json) {
-  const group = new THREE.Group();
-  const texSrc = resolveTexture(json);
+  const group    = new THREE.Group();
+  const textures = json.textures || {};
+  const fallback = new THREE.MeshLambertMaterial({ color: 0x8888aa, side: THREE.DoubleSide });
 
-  let mat;
-  if (texSrc) {
-    const tex = new THREE.TextureLoader().load(texSrc);
-    tex.magFilter = THREE.NearestFilter;
-    tex.minFilter = THREE.NearestFilter;
-    mat = new THREE.MeshLambertMaterial({ map: tex, side: THREE.DoubleSide, transparent: true, alphaTest: 0.1 });
-  } else {
-    mat = new THREE.MeshLambertMaterial({ color: 0x8888aa, side: THREE.DoubleSide });
-  }
+  // Un matériau par texture distincte
+  const materialMap = buildMaterialMap(json);
 
   const S = 1 / 16;
   for (const elem of (json.elements || [])) {
-    const [x1,y1,z1] = elem.from.map(v => v * S);
-    const [x2,y2,z2] = elem.to.map(v => v * S);
+    const [x1, y1, z1] = elem.from.map(v => v * S);
+    const [x2, y2, z2] = elem.to.map(v => v * S);
 
     const faceDefs = {
-      north: [x1,y2,z1, x2,y2,z1, x2,y1,z1, x1,y1,z1],
-      south: [x2,y2,z2, x1,y2,z2, x1,y1,z2, x2,y1,z2],
-      east:  [x2,y2,z2, x2,y2,z1, x2,y1,z1, x2,y1,z2],
-      west:  [x1,y2,z1, x1,y2,z2, x1,y1,z2, x1,y1,z1],
-      up:    [x1,y2,z1, x2,y2,z1, x2,y2,z2, x1,y2,z2],
-      down:  [x1,y1,z2, x2,y1,z2, x2,y1,z1, x1,y1,z1],
+      north: [x1, y2, z1, x2, y2, z1, x2, y1, z1, x1, y1, z1],
+      south: [x2, y2, z2, x1, y2, z2, x1, y1, z2, x2, y1, z2],
+      east:  [x2, y2, z2, x2, y2, z1, x2, y1, z1, x2, y1, z2],
+      west:  [x1, y2, z1, x1, y2, z2, x1, y1, z2, x1, y1, z1],
+      up:    [x1, y2, z1, x2, y2, z1, x2, y2, z2, x1, y2, z2],
+      down:  [x1, y1, z2, x2, y1, z2, x2, y1, z1, x1, y1, z1],
     };
 
-    const positions = [], uvs = [], indices = [];
-    let vi = 0;
+    // Regrouper les faces par matériau pour minimiser le nombre de Mesh
+    const byMaterial = new Map();
+    const slot = mat => {
+      if (!byMaterial.has(mat)) byMaterial.set(mat, { positions: [], uvs: [], indices: [], vi: 0 });
+      return byMaterial.get(mat);
+    };
+
     for (const [faceName, fi] of Object.entries(elem.faces || {})) {
       const verts = faceDefs[faceName];
       if (!verts) continue;
-      for (let i = 0; i < 12; i++) positions.push(verts[i]);
-      const [u1,v1,u2,v2] = fi.uv;
-      const rot = fi.rotation || 0;
-      let fu = [u1/16,1-v1/16, u2/16,1-v1/16, u2/16,1-v2/16, u1/16,1-v2/16];
-      if (rot === 90)  fu = [fu[6],fu[7], fu[0],fu[1], fu[2],fu[3], fu[4],fu[5]];
-      if (rot === 180) fu = [fu[4],fu[5], fu[6],fu[7], fu[0],fu[1], fu[2],fu[3]];
-      if (rot === 270) fu = [fu[2],fu[3], fu[4],fu[5], fu[6],fu[7], fu[0],fu[1]];
-      for (let i = 0; i < 8; i++) uvs.push(fu[i]);
-      indices.push(vi,vi+1,vi+2, vi,vi+2,vi+3);
-      vi += 4;
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geo.setAttribute('uv',       new THREE.Float32BufferAttribute(uvs, 2));
-    geo.setIndex(indices);
-    geo.computeVertexNormals();
-    const mesh = new THREE.Mesh(geo, mat);
 
+      const mat = materialForFace(materialMap, textures, fi.texture, fallback);
+      const s   = slot(mat);
+
+      for (let i = 0; i < 12; i++) s.positions.push(verts[i]);
+
+      const [u1, v1, u2, v2] = fi.uv;
+      const rot = fi.rotation || 0;
+      let fu = [u1/16, 1-v1/16, u2/16, 1-v1/16, u2/16, 1-v2/16, u1/16, 1-v2/16];
+      if (rot === 90)  fu = [fu[6], fu[7], fu[0], fu[1], fu[2], fu[3], fu[4], fu[5]];
+      if (rot === 180) fu = [fu[4], fu[5], fu[6], fu[7], fu[0], fu[1], fu[2], fu[3]];
+      if (rot === 270) fu = [fu[2], fu[3], fu[4], fu[5], fu[6], fu[7], fu[0], fu[1]];
+      for (let i = 0; i < 8; i++) s.uvs.push(fu[i]);
+
+      const vi = s.vi;
+      s.indices.push(vi, vi+1, vi+2, vi, vi+2, vi+3);
+      s.vi += 4;
+    }
+
+    // Pivot de rotation de l'élément
+    let pivotObj    = null;
+    let pivotOffset = null;
     if (elem.rotation) {
       const { origin, angle, axis } = elem.rotation;
-      const [ox,oy,oz] = origin.map(v => v * S);
-      const pivot = new THREE.Object3D();
-      pivot.position.set(ox, oy, oz);
-      pivot.rotation[axis] = THREE.MathUtils.degToRad(angle);
-      mesh.position.set(-ox, -oy, -oz);
-      pivot.add(mesh);
-      group.add(pivot);
-    } else {
-      group.add(mesh);
+      const [ox, oy, oz] = origin.map(v => v * S);
+      pivotObj = new THREE.Object3D();
+      pivotObj.position.set(ox, oy, oz);
+      pivotObj.rotation[axis] = THREE.MathUtils.degToRad(angle);
+      pivotOffset = new THREE.Vector3(-ox, -oy, -oz);
     }
+
+    for (const [mat, s] of byMaterial) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(s.positions, 3));
+      geo.setAttribute('uv',       new THREE.Float32BufferAttribute(s.uvs, 2));
+      geo.setIndex(s.indices);
+      geo.computeVertexNormals();
+
+      const mesh = new THREE.Mesh(geo, mat);
+
+      if (pivotObj) {
+        mesh.position.copy(pivotOffset);
+        pivotObj.add(mesh);
+      } else {
+        group.add(mesh);
+      }
+    }
+
+    if (pivotObj) group.add(pivotObj);
   }
+
   return group;
 }
 
@@ -468,9 +534,9 @@ function buildControls(index) {
   const cfg   = piece.cfg;
 
   const fields = [
-    { group: 'Position',    label: 'X', key: 'position', axis: 0, min: -3,   max: 3,   step: 0.001 },
-    { group: null,          label: 'Y', key: 'position', axis: 1, min: -3,   max: 3,   step: 0.001 },
-    { group: null,          label: 'Z', key: 'position', axis: 2, min: -3,   max: 3,   step: 0.001 },
+    { group: 'Position',     label: 'X', key: 'position', axis: 0, min: -3,   max: 3,   step: 0.001 },
+    { group: null,           label: 'Y', key: 'position', axis: 1, min: -3,   max: 3,   step: 0.001 },
+    { group: null,           label: 'Z', key: 'position', axis: 2, min: -3,   max: 3,   step: 0.001 },
     { group: 'Rotation (°)', label: 'X', key: 'rotation', axis: 0, min: -180, max: 180, step: 0.5, isDeg: true },
     { group: null,           label: 'Y', key: 'rotation', axis: 1, min: -180, max: 180, step: 0.5, isDeg: true },
     { group: null,           label: 'Z', key: 'rotation', axis: 2, min: -180, max: 180, step: 0.5, isDeg: true },

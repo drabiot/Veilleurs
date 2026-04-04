@@ -11,6 +11,11 @@
  *   - Les textures sont attendues (Promise) avant toute capture
  *   - captureStatic utilise un renderer WebGL partagé (évite l'épuisement des contextes)
  *   - Les captures sont sérialisées pour éviter les race conditions
+ *
+ * Correctifs v3 :
+ *   - _parseMinecraftModel gère les modèles avec plusieurs textures distinctes
+ *     (un matériau par clé de texture, résolution des références #key)
+ *   - camera.capture optionnel dans monstres.json pour choisir l'angle des miniatures
  */
 
 class MonstreViewer3D {
@@ -28,7 +33,7 @@ class MonstreViewer3D {
     this._pieces       = [];
     this._selected     = null;
     this._animId       = null;
-    this._texPromises  = [];   // promesses de chargement de textures
+    this._texPromises  = [];
 
     this._initScene();
     this._initControls();
@@ -150,7 +155,7 @@ class MonstreViewer3D {
 
   async _loadConfig() {
     try {
-      const r    = await fetch(this.opts.configPath);
+      const r      = await fetch(this.opts.configPath);
       this._config = await r.json();
     } catch (e) {
       console.warn('[MonstreViewer3D] Impossible de charger monstres.json :', e);
@@ -158,10 +163,6 @@ class MonstreViewer3D {
     }
   }
 
-  /**
-   * Charge et affiche un monstre par son id.
-   * @param {string} monsterId  - correspond au champ "id" dans monstres.json
-   */
   async charger(monsterId) {
     if (!this._config) {
       await new Promise(res => setTimeout(res, 300));
@@ -188,11 +189,6 @@ class MonstreViewer3D {
     this._centrerVerticalement();
   }
 
-  /**
-   * Charge et affiche un monstre directement depuis un objet de données.
-   * Attend que toutes les textures soient chargées avant de résoudre.
-   * @param {object} mobData  - objet monstre avec morceaux[] et camera
-   */
   async chargerDepuisData(mobData) {
     this._vider();
 
@@ -203,17 +199,10 @@ class MonstreViewer3D {
     this._camHauteur = cam.hauteur || 0;
 
     await Promise.all(mobData.morceaux.map(m => this._chargerMorceauDirect(m)));
-
-    // ← CORRECTIF 1 : attendre que toutes les textures soient prêtes
     await this._attendreTextures();
-
     this._centrerVerticalement();
   }
 
-  /**
-   * Attend que toutes les TextureLoader promises lancées par _parseMinecraftModel
-   * soient résolues (ou rejetées), puis vide la liste.
-   */
   async _attendreTextures() {
     if (this._texPromises.length === 0) return;
     await Promise.allSettled(this._texPromises);
@@ -233,7 +222,7 @@ class MonstreViewer3D {
     try {
       const r    = await fetch(cfg.fichier);
       const json = await r.json();
-      const obj  = this._parseMinecraftModel(json);  // enregistre les texPromises
+      const obj  = this._parseMinecraftModel(json);
 
       if (cfg.position) obj.position.set(...cfg.position);
       if (cfg.rotation) obj.rotation.set(...cfg.rotation);
@@ -252,55 +241,105 @@ class MonstreViewer3D {
 
   /* ─── Parser Minecraft block model (format ModelEngine) ─────────────── */
 
-  _resolveTexture(json) {
-    const textures = json.textures || {};
-    for (const val of Object.values(textures)) {
-      if (val && !val.startsWith('#')) {
-        const colon     = val.indexOf(':');
-        if (colon < 0) return val;
-        const namespace = val.slice(0, colon);
-        const path      = val.slice(colon + 1);
-        return `../img/compendium/${namespace}/textures/${path}.png`;
-      }
+  /**
+   * Résout une valeur de texture (potentiellement une référence #key) vers une URL.
+   * Déréférence les alias chaînés (#body → #skin → "minecraft:entity/zombie").
+   */
+  _resolveTextureValue(textures, value) {
+    if (!value) return null;
+
+    let current = value;
+    const seen  = new Set();
+    while (current.startsWith('#')) {
+      const key = current.slice(1);
+      if (seen.has(key)) break;
+      seen.add(key);
+      current = textures[key] || '';
     }
-    return null;
+
+    if (!current || current.startsWith('#')) return null;
+
+    const colon = current.indexOf(':');
+    if (colon < 0) return current;
+    const namespace = current.slice(0, colon);
+    const path      = current.slice(colon + 1);
+    return `../img/compendium/${namespace}/textures/${path}.png`;
   }
 
-  _parseMinecraftModel(json) {
-    const group  = new THREE.Group();
-    const texSrc = this._resolveTexture(json);
-    let material;
+  /**
+   * Construit un Map<clé|url, MeshLambertMaterial> pour toutes les textures du modèle.
+   * Un seul matériau est créé par URL distincte (les alias qui pointent vers la même
+   * texture partagent donc le même objet Material).
+   */
+  _buildMaterialMap(json) {
+    const textures    = json.textures || {};
+    const materialMap = new Map(); // clé ou URL → matériau
 
-    if (texSrc) {
-      // ← CORRECTIF 1 : on crée une Promise par texture et on la stocke
+    for (const [key, rawValue] of Object.entries(textures)) {
+      const url = this._resolveTextureValue(textures, rawValue);
+      if (!url) continue;
+
+      // Réutiliser le matériau si l'URL a déjà été traitée
+      if (materialMap.has(url)) {
+        materialMap.set(key, materialMap.get(url));
+        continue;
+      }
+
+      const mat = new THREE.MeshLambertMaterial({
+        side:        THREE.DoubleSide,
+        transparent: true,
+        alphaTest:   0.1,
+      });
+
       const texPromise = new Promise((resolve, reject) => {
         new THREE.TextureLoader().load(
-          texSrc,
+          url,
           tex => {
-            tex.magFilter = THREE.NearestFilter;
-            tex.minFilter = THREE.NearestFilter;
-            // Affecter la texture sur le matériau une fois chargée
-            material.map = tex;
-            material.needsUpdate = true;
+            tex.magFilter   = THREE.NearestFilter;
+            tex.minFilter   = THREE.NearestFilter;
+            mat.map         = tex;
+            mat.needsUpdate = true;
             resolve(tex);
           },
           undefined,
           err => {
-            console.warn('[MonstreViewer3D] Texture introuvable :', texSrc, err);
+            console.warn('[MonstreViewer3D] Texture introuvable :', url, err);
             reject(err);
           },
         );
       });
       this._texPromises.push(texPromise);
 
-      material = new THREE.MeshLambertMaterial({
-        side:        THREE.DoubleSide,
-        transparent: true,
-        alphaTest:   0.1,
-      });
-    } else {
-      material = new THREE.MeshLambertMaterial({ color: 0x888888, side: THREE.DoubleSide });
+      materialMap.set(key, mat);
+      materialMap.set(url, mat);
     }
+
+    return materialMap;
+  }
+
+  /**
+   * Retourne le matériau correspondant à la texture d'une face.
+   * Cherche d'abord par clé directe, puis par URL résolue, sinon fallback.
+   */
+  _materialForFace(materialMap, textures, faceTexture, fallback) {
+    if (!faceTexture) return fallback;
+
+    const key = faceTexture.startsWith('#') ? faceTexture.slice(1) : faceTexture;
+    if (materialMap.has(key)) return materialMap.get(key);
+
+    const url = this._resolveTextureValue(textures, faceTexture);
+    if (url && materialMap.has(url)) return materialMap.get(url);
+
+    return fallback;
+  }
+
+  _parseMinecraftModel(json) {
+    const group    = new THREE.Group();
+    const textures = json.textures || {};
+    const fallback = new THREE.MeshLambertMaterial({ color: 0x888888, side: THREE.DoubleSide });
+
+    // Un matériau par texture distincte
+    const materialMap = this._buildMaterialMap(json);
 
     const S = 1 / 16;
 
@@ -317,16 +356,21 @@ class MonstreViewer3D {
         down:  [x1, y1, z2, x2, y1, z2, x2, y1, z1, x1, y1, z1],
       };
 
-      const positions = [];
-      const uvs       = [];
-      const indices   = [];
-      let vi = 0;
+      // Regrouper les faces par matériau pour minimiser le nombre de Mesh
+      const byMaterial = new Map();
+      const _slot = mat => {
+        if (!byMaterial.has(mat)) byMaterial.set(mat, { positions: [], uvs: [], indices: [], vi: 0 });
+        return byMaterial.get(mat);
+      };
 
       for (const [faceName, faceInfo] of Object.entries(elem.faces || {})) {
         const verts = faceDefs[faceName];
         if (!verts) continue;
 
-        for (let i = 0; i < 12; i++) positions.push(verts[i]);
+        const mat  = this._materialForFace(materialMap, textures, faceInfo.texture, fallback);
+        const slot = _slot(mat);
+
+        for (let i = 0; i < 12; i++) slot.positions.push(verts[i]);
 
         const [u1, v1, u2, v2] = faceInfo.uv;
         const rot = faceInfo.rotation || 0;
@@ -342,33 +386,43 @@ class MonstreViewer3D {
         if (rot === 180) fu = [fu[4], fu[5], fu[6], fu[7], fu[0], fu[1], fu[2], fu[3]];
         if (rot === 270) fu = [fu[2], fu[3], fu[4], fu[5], fu[6], fu[7], fu[0], fu[1]];
 
-        for (let i = 0; i < 8; i++) uvs.push(fu[i]);
+        for (let i = 0; i < 8; i++) slot.uvs.push(fu[i]);
 
-        indices.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
-        vi += 4;
+        const vi = slot.vi;
+        slot.indices.push(vi, vi + 1, vi + 2, vi, vi + 2, vi + 3);
+        slot.vi += 4;
       }
 
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      geo.setAttribute('uv',       new THREE.Float32BufferAttribute(uvs, 2));
-      geo.setIndex(indices);
-      geo.computeVertexNormals();
-
-      const mesh = new THREE.Mesh(geo, material);
-
+      // Pivot de rotation de l'élément (si présent)
+      let pivotObj   = null;
+      let pivotOffset = null;
       if (elem.rotation) {
         const { origin, angle, axis } = elem.rotation;
         const [ox, oy, oz] = origin.map(v => v * S);
-        const rad   = THREE.MathUtils.degToRad(angle);
-        const pivot = new THREE.Object3D();
-        pivot.position.set(ox, oy, oz);
-        pivot.rotation[axis] = rad;
-        mesh.position.set(-ox, -oy, -oz);
-        pivot.add(mesh);
-        group.add(pivot);
-      } else {
-        group.add(mesh);
+        pivotObj = new THREE.Object3D();
+        pivotObj.position.set(ox, oy, oz);
+        pivotObj.rotation[axis] = THREE.MathUtils.degToRad(angle);
+        pivotOffset = new THREE.Vector3(-ox, -oy, -oz);
       }
+
+      for (const [mat, slot] of byMaterial) {
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(slot.positions, 3));
+        geo.setAttribute('uv',       new THREE.Float32BufferAttribute(slot.uvs, 2));
+        geo.setIndex(slot.indices);
+        geo.computeVertexNormals();
+
+        const mesh = new THREE.Mesh(geo, mat);
+
+        if (pivotObj) {
+          mesh.position.copy(pivotOffset);
+          pivotObj.add(mesh);
+        } else {
+          group.add(mesh);
+        }
+      }
+
+      if (pivotObj) group.add(pivotObj);
     }
 
     return group;
@@ -376,7 +430,7 @@ class MonstreViewer3D {
 
   async _chargerMorceau(loader, baseUrl, cfg) {
     try {
-      const r   = await fetch(baseUrl + cfg.fichier);
+      const r    = await fetch(baseUrl + cfg.fichier);
       const json = await r.json();
       const obj  = loader.parse(json);
 
@@ -431,23 +485,18 @@ class MonstreViewer3D {
 
   /* ─── Capture statique (renderer partagé + file sérialisée) ─────────── */
 
-  /**
-   * CORRECTIF 2 : renderer WebGL partagé entre toutes les captures statiques.
-   * Évite l'épuisement des contextes GPU quand on génère N miniatures d'un coup.
-   */
-  static _sharedRenderer   = null;
-  static _sharedScene      = null;
-  static _sharedCamera     = null;
+  static _sharedRenderer = null;
+  static _sharedScene    = null;
+  static _sharedCamera   = null;
 
   static _getSharedRig(size) {
     if (!MonstreViewer3D._sharedRenderer) {
       const renderer = new THREE.WebGLRenderer({
-        antialias:            true,
-        alpha:                true,
+        antialias:             true,
+        alpha:                 true,
         preserveDrawingBuffer: true,
       });
       renderer.setPixelRatio(1);
-      // Hors-document : pas besoin de l'ajouter au DOM
       MonstreViewer3D._sharedRenderer = renderer;
 
       const scene = new THREE.Scene();
@@ -472,15 +521,11 @@ class MonstreViewer3D {
     };
   }
 
-  /**
-   * CORRECTIF 3 : file d'attente sérialisée.
-   * Les appels concurrents (ex. grille de monstres) sont exécutés l'un après l'autre,
-   * jamais en parallèle, ce qui évite les race conditions sur le renderer partagé.
-   */
   static _captureQueue = Promise.resolve();
 
   /**
    * Génère une capture PNG statique du modèle.
+   * L'angle de vue peut être personnalisé via camera.capture dans les données du monstre.
    * @param {object} mobData  - objet monstre avec morceaux[] et camera
    * @param {number} size     - taille en px du canvas de capture
    * @returns {Promise<string>} Data URL PNG
@@ -498,24 +543,33 @@ class MonstreViewer3D {
   static async _doCapture(mobData, size) {
     const { renderer, scene, camera } = MonstreViewer3D._getSharedRig(size);
 
-    // Vider la scène partagée des pièces du monstre précédent
-    const pieces = [];
+    const pieces      = [];
     const texPromises = [];
 
-    const cam = mobData.camera || {};
+    const cam     = mobData.camera || {};
     const dist    = cam.distance || 4;
     const hauteur = cam.hauteur  || 0;
 
+    // Angle de capture : optionnel via camera.capture, sinon vue de face
+    const captureCfg = cam.capture || {};
+    const theta = captureCfg.theta !== undefined ? captureCfg.theta : 0;
+    const phi   = captureCfg.phi   !== undefined ? captureCfg.phi   : Math.PI / 2;
+
     camera.aspect = 1;
     camera.updateProjectionMatrix();
-    camera.position.set(0, dist * Math.cos(Math.PI / 2) + hauteur, dist * Math.sin(Math.PI / 2));
+    camera.position.set(
+      dist * Math.sin(phi) * Math.sin(theta),
+      dist * Math.cos(phi) + hauteur,
+      dist * Math.sin(phi) * Math.cos(theta),
+    );
     camera.lookAt(0, hauteur, 0);
 
-    // Viewer temporaire minimaliste pour parser les morceaux
-    // (on réutilise le parser sans créer de vrai renderer)
+    // Viewer temporaire pour réutiliser le parser sans créer de renderer
     const tmpViewer = Object.create(MonstreViewer3D.prototype);
-    tmpViewer._texPromises = texPromises;
-    tmpViewer._resolveTexture = MonstreViewer3D.prototype._resolveTexture;
+    tmpViewer._texPromises         = texPromises;
+    tmpViewer._resolveTextureValue = MonstreViewer3D.prototype._resolveTextureValue;
+    tmpViewer._buildMaterialMap    = MonstreViewer3D.prototype._buildMaterialMap;
+    tmpViewer._materialForFace     = MonstreViewer3D.prototype._materialForFace;
     tmpViewer._parseMinecraftModel = MonstreViewer3D.prototype._parseMinecraftModel;
 
     for (const cfg of mobData.morceaux) {
@@ -535,7 +589,6 @@ class MonstreViewer3D {
       }
     }
 
-    // ← CORRECTIF 1 : attendre toutes les textures avant de capturer
     if (texPromises.length > 0) {
       await Promise.allSettled(texPromises);
     }
@@ -548,11 +601,9 @@ class MonstreViewer3D {
       pieces.forEach(p => { p.position.y -= center.y; });
     }
 
-    // Render final
     renderer.render(scene, camera);
     const dataUrl = renderer.domElement.toDataURL('image/png');
 
-    // Nettoyage : retirer les pièces de la scène partagée
     pieces.forEach(p => {
       scene.remove(p);
       p.traverse(c => { if (c.isMesh) { c.geometry.dispose(); } });
