@@ -2584,7 +2584,7 @@ const MOBS = [
     region: 'Veines de Sablemor',
     regionId: 'm2z2u1',
     img: '',
-    lore: ".",
+    lore: "Titan antique sculpté par la sédimentation et la pression du temps. Ses coups fracturent la garde et projettent des nuées de poussière.",
     attacks: [
 			{ name: 'Pour Démacia',   desc: 'Donne un violent coup de pied, suivi d\'un coup d\'épée.', dmg:'?' },
 			{ name: 'Démacia marche comme un seul Homme',   desc: 'Se protège avec son immense Bouclier contre toutes attaques frontales.'},
@@ -2605,10 +2605,11 @@ const MOBS = [
     region: 'Oasis Secret',
     regionId: 'm2z7',
     img: '',
-    lore: ".",
+    lore: "Enchanteresse perfide tissant maléfices et toiles alchimiques. Empoisonne, affaiblit puis s'achève d'un éclat de rire.",
     attacks: [
     ],
     loot: [
+      { id: 'potion_sorciere', chance:15},
     ],
   },
 	{
@@ -2797,10 +2798,11 @@ const MOBS = [
     region: 'Tour de Taurus',
     regionId: '',
     img: '',
-    lore: ".",
+    lore: "Seigneur du labyrinthe, hurle avant de charger pour briser les rangs. Frappe en arcs larges et repouse violemment ses adversaires.",
     attacks: [
     ],
     loot: [
+      { id: 'corne_rugiboeuf' },
     ],
   },
 	//#endregion Palier 2

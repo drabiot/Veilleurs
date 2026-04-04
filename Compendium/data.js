@@ -413,6 +413,12 @@ const RUNES = [
 		stats:	{sante:5},
 	},
 	{
+		id:			'precision_1',
+		name:		'Rune de Precision I',
+		color:	'#62f2f4',
+		stats:	{crit_chance:2.5},
+	},
+	{
 		id:			'sorcellerie_1',
 		name:		'Rune de Sorcellerie I',
 		color:	'#b856c5',
@@ -552,6 +558,7 @@ const CATEGORIES = {
 //#region EFFECT_META
 const EFFECT_META = {
   heal:     { icon: '❤️',  	color: '#e05252', label: 'Points de vie',    prefix: '+' },
+	regen:     { icon: '💓',  	color: '#ce7b7b', label: 'Régénération',    prefix: 'Régénération ' },
   mana:     { icon: '💧', 	 color: '#5b8dee', label: 'Mana',             prefix: '+' },
   stamina:  { icon: '👟', 	color: '#f4d745', label: 'Stamina',          prefix: '+' },
   buff:     { icon: '💪',  	color: '#d4a017', label: 'Bonus',            prefix: '+' },
@@ -5373,7 +5380,7 @@ const ITEMS = [
     category: 'outils',
     palier:   1,
     image:    "../img/compendium/textures/gears/pioche_felee.png",
-    lore:     "...",
+    lore:     "Une pioche rudimentaire, fragile mais suffisante pour débuter.",
     tags:     ['Outils', 'Pioche', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
 		craft:		[{qty:20, id:'cols'}]
@@ -5385,7 +5392,7 @@ const ITEMS = [
     category: 'outils',
     palier:   1,
     image:    "../img/compendium/textures/gears/hache_ebrechee.png",
-    lore:     "...",
+    lore:     "Lame fendue, manche bancal, mais toujours apte à couper du bois.",
     tags:     ['Outils', 'Hache', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
 		craft:		[{qty:20, id:'cols'}]
@@ -5397,7 +5404,7 @@ const ITEMS = [
     category: 'outils',
     palier:   1,
     image:    "../img/compendium/textures/gears/serpe_tordue.png",
-    lore:     "...",
+    lore:     "Un outil rudimentaire pour les herbes et plantes.",
     tags:     ['Outils', 'Houe', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
 		craft:		[{qty:20, id:'cols'}]
@@ -5409,7 +5416,7 @@ const ITEMS = [
     category: 'outils',
     palier:   1,
     image:    "../img/compendium/textures/gears/canne_a_peche_en_bois.png",
-    lore:     "...",
+    lore:     "Une canne à pêche bancale et délabrée, mais apte à pêcher !",
     tags:     ['Outils', 'Canne à Pêche', 'Palier 1', 'Commun'],
     obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
 		craft:		[{qty:20, id:'cols'}]
@@ -5561,7 +5568,7 @@ const ITEMS = [
     rarity:   'event',
     category: 'rune',
     palier:   1,
-    image:    "", //NULL
+    image:    "../img/compendium/textures/items/Runes/rune_lunaire.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
     obtain:   "..."
@@ -5572,7 +5579,7 @@ const ITEMS = [
     rarity:   'event',
     category: 'rune',
     palier:   1,
-    image:    "", //NULL
+    image:    "../img/compendium/textures/items/Runes/rune_dragon.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
     obtain:   "..."
@@ -5939,6 +5946,35 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
   },
+	{
+    id:       'rune_remover_1',
+    name:     "Rune Remover I",
+    rarity:   'rare',
+    category: 'consommable',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Consommable/rune_remover.png",
+    lore:     "Permet de retirer une rune au hasard en faisant clique droit sur l'item de votre choix.",
+    tags:     ['Consommable', 'Palier 1', 'rare'],
+    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
+		craft:    [{qty:1, id:'piece_kazor'}],
+		effects: [
+				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
+		],
+  },
+	{
+    id:       'rune_remover_2',
+    name:     "Rune Remover II",
+    rarity:   'epique',
+    category: 'consommable',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Consommable/rune_remover.png",
+    lore:     "Permet de retirer deux runes au hasard en faisant clique droit sur l'item de votre choix.",
+    tags:     ['Consommable', 'Palier 1', 'Épique'],
+    obtain:   "...",
+		effects: [
+				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
+		],
+  },
 //#endregion Items > P1 > Consommables
 //#region Items > P1 > Nourritures
 {
@@ -5950,13 +5986,51 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Nourriture/viande_de_sanglier.png",
     lore:     "Cette belle viande de sanglier, bien juteuse, peut vous donner encore plus envie de manger !",
     tags:     ['Nourriture', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[100]\n- Pumba[100]",
+    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[100]\n- Pumba[100]\nAchetable aux Marchands d'Équipements",
 		effects: [
 				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la nourriture' },
 				{ type: 'feed',     value: 5,  unit: 'Nourriture',    instant: true },
 				{ type: 'cooldown', value: 1,  unit: 's',     label: 'Recharge nourriture' },
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
+		craft:    [{qty:0.1, id:'cols'}],
+  },
+{
+    id:       'bouillon_sanglier',
+    name:     "Bouillon de Sanglier",
+    rarity:   'rare',
+    category: 'nourriture',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Nourriture/bouillon_sanglier.png",
+    lore:     "Ce bouillon, fait à base de viande et d'autres ingrédients, est parfait pour manger à sa faim !",
+    tags:     ['Nourriture', 'Palier 1', 'Rare'],
+    obtain:   "Achetable aux Marchands Itinérants",
+		effects: [
+				{ type: 'level',     value: 3,  unit: '', label: 'Niveau requis pour utiliser la nourriture' },
+				{ type: 'feed',     value: 10,  unit: 'Nourriture',    instant: true },
+				{ type: 'cooldown', value: 15,  unit: 's',     label: 'Recharge nourriture' },
+				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
+		],
+		craft:    [{qty:15, id:'cols'}],
+  },
+{
+    id:       'sandwich_nephentes',
+    name:     "Sandwich de Néphentes",
+    rarity:   'rare',
+    category: 'nourriture',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Nourriture/sandwich_nephentes.png",
+    lore:     "Ce sandwich, tout droit sorti du monde moderne et fait à base de néphentes concassé, ravivera vos souvenirs !",
+    tags:     ['Nourriture', 'Palier 1', 'Rare'],
+    obtain:   "Achetable aux Marchands Itinérants",
+		effects: [
+				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la nourriture' },
+				{ type: 'feed',     value: 10,  unit: 'Nourriture',    instant: true },
+				{ type: 'cooldown', value: 15,  unit: 's',     label: 'Recharge nourriture' },
+				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
+				{ type: 'regen',     value: 1,  unit: '',    duration: 5 },
+		],
+		craft:    [{qty:35, id:'cols'}],
   },
 //#endregion Items > P1 > Nourritures
 //#region Items > P1 > Matériaux
@@ -6277,7 +6351,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/petite_bourse.png",
     lore:     "Un petit sac en tissu, parfait pour y glisser des pièces.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Bandits Archer[25]\n- Bandits Assassins[35]\n- Bandits Robustes[40]"
@@ -6519,6 +6593,17 @@ const ITEMS = [
     lore:     "Une plaque de carapace très dure, arrachée à un poisson-requin. Solide et résistante parfaite pour une certaine armure lourdre.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- Poisson Requin[40]"
+  },
+{
+    id:       'piece_kazor',
+    name:     "Pièce de Kazor",
+    rarity:   'legendaire',
+    category: 'materiaux',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Material/P1/piece_kazor.png",
+    lore:     "...",
+    tags:     ['Matériaux', 'Palier 1', 'World Boss', 'Kazor', 'Legendaire' ],
+    obtain:   "Obtenable :\n- en récompense du World Boss Kazor\n- en atteignant le seuil de 500 dégâts sur Kazor"
   },
 //#endregion Items > P1 > Matériaux
 //#region Items > P1 > Ressources
@@ -6823,6 +6908,23 @@ const ITEMS = [
 //#endregion Items > P1 > Donjon
 //#endregion Items > Palier 1
 //#region Items > Palier 2
+
+//#region Items > P2 > Consommables
+{
+    id:       'recette_cuisine_ragout_parfume',
+    name:     "Recette de cuisine",
+    rarity:   'legendaire',
+    category: 'consommable',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Consommable/recette_cuisine.png",
+    lore:     "Permet d'apprendre la recette : [Ragoût Parfumé].",
+    tags:     ['Consommable', 'Palier 2', 'Légendaire'],
+    obtain:   "...",
+		effects: [
+				{ type: 'level',     value: 5,   unit: '', label: 'Niveau requis pour utiliser la recette' },
+		],
+  },
+//#endregion Items > P2 > Consommables
 //#region Items > P2 > Matériaux
 {
     id:       'peau_epaisse',
@@ -6993,6 +7095,17 @@ const ITEMS = [
     lore:     "Épaisse et segmentée, cette carapace protège efficacement contre les assauts. Parfaite pour façonner des équipements.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
     obtain:   "Obtenable en tuant:\n- Dardroyal[30]\n- Melisara, Souveraine de la Ruche[80]"
+  },
+	{
+    id:       'pollen_concentre',
+    name:     "Pollen Concentré",
+    rarity:   'rare',
+    category: 'materiaux',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Material/P2/pollen_concentre.png",
+    lore:     "Ce pollen épais et doré vibre entre vos doigts. Il est la clé pour ouvrir des portes.",
+    tags:     ['Matériaux', 'Palier 2', 'rare'],
+    obtain:   "Objet propre au Donjon de la Ruche de Melliona, il est récupérable en fouillant des fleurs"
   },
 {
     id:       'plume_enflammee',
