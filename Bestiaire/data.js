@@ -693,6 +693,48 @@ const PERSONNAGES = [
 			}
 		]
   },
+	{
+    id: 'marchand_itinerant_vdp',
+    name: "Marchand Itinérant",
+    tag: 'marchand_itinerant',
+    palier: 1,
+    region: 'Ville de Départ',
+    regionId: 'm1m18',
+    img: '',
+    lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
+    sells: [
+      { id: 'petite_bourse',  buy: 10,price: 7.5 },
+      { id: 'peau_de_sanglier', buy: 5,price: 3.75 },
+			{ id: 'cristal_corrompu', buy: 3,price: 2.25 },
+			{ id: 'fourrure_de_loup', buy: 6,price: 4.5 },
+			{ id: 'crocs_de_loup', buy: 8,price: 6 },
+			{ id: 'bouillon_sanglier',  buy: 15 },
+			{ id: 'sandwich_nephentes',  buy: 35 },
+			{ id: 'potion_vie_1',  buy: 30, quality:true },
+			{ id: 'potion_vie_2',  buy: 55, quality:true },
+			{ id: 'potion_vie_3',  buy: 85, quality:true },
+    ],
+  },
+	{
+    id: 'secret_loups',
+    name: "Fabicant des Gants des Loups",
+    tag: 'fabricant_secrets',
+    palier: 1,
+    region: 'Vallée des Loups',
+    regionId: 'm1c11',
+    img: '../img/compendium/textures/trinkets/P1/Set Loup Faiblard/Gants des Loups.png',
+    lore: "Permet le fabrication de l'Accessoires Gants des Loups.",
+    craft: [
+			{
+				id: 'gants_loups', time: '30m',
+				ingredients: [
+					{qty:128, id:'fourrure_de_loup'},
+					{qty:5, id:'crocs_de_albal'},
+					{qty:8, id:'lingot_fer'}
+				]
+			}
+		]
+  },
 	//#endregion Ville de Départ
 	//#region Hanaka
   {
@@ -765,6 +807,53 @@ const PERSONNAGES = [
 			{ id: 'baton_squelette_maudit_shaman', price: 150 },
     ],
   },
+	{
+    id: 'marchand_itinerant_hanaka',
+    name: "Marchand Itinérant",
+    tag: 'marchand_itinerant',
+    palier: 1,
+    region: 'Hanaka',
+    regionId: 'm1m15',
+    img: '',
+    lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
+    sells: [
+      { id: 'pousse_de_sylve',  buy: 6, price: 5 },
+			{ id: 'eclat_de_bois_magique',  buy: 8, price: 6 },
+			{ id: 'ecorce_sylvestre',  buy: 8, price: 6 },
+			{ id: 'corde_darc_sylvestre',  buy: 10, price: 8 },
+			{ id: 'brindille_enchantee',  buy: 8, price: 6 },
+			{ id: 'coeur_de_bois',  buy: 20, price: 15 },
+			{ id: 'ecorce_de_titan',  buy: 10, price: 8 },
+			{ id: 'mycelium_magique',  buy: 600, price: 450 },
+			{ id: 'racine_ancestrale',  buy: 300, price: 225 },
+			{ id: 'tissu_spectral',  buy: 8, price: 6 },
+			{ id: 'bouillon_sanglier',  buy: 15 },
+			{ id: 'sandwich_nephentes',  buy: 35 },
+			{ id: 'potion_vie_1',  buy: 30, quality:true },
+			{ id: 'potion_vie_2',  buy: 55, quality:true },
+			{ id: 'potion_vie_3',  buy: 85, quality:true },
+    ],
+  },
+	{
+    id: 'secret_cyclorim',
+    name: "Fabicant du Crâne de Squelette",
+    tag: 'fabricant_secrets',
+    palier: 1,
+    region: 'Cyclorim',
+    regionId: 'm1c12',
+    img: '../img/compendium/textures/trinkets/P1/Set Squelette Poussiéreux/Crane de Squelette.png',
+    lore: "Permet le fabrication de l'Accessoires Crâne de Squelette.",
+    craft: [
+			{
+				id: 'crane_squelette', time: '30m',
+				ingredients: [
+					{qty:64, id:'ames_des_ruines'},
+					{qty:5, id:'coeur_putrefie'},
+					{qty:32, id:'os_de_squelette'}
+				]
+			}
+		]
+  },
 	//#endregion Hanaka
 	//#region Mizunari
   {
@@ -798,6 +887,27 @@ const PERSONNAGES = [
 			{ id: 'serpe_tordue',  buy: 20, price: 4 },
 			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
 			{ id: 'torche',  buy: 2500 },
+    ],
+  },
+	{
+    id: 'marchand_itinerant_mizunari',
+    name: "Marchand Itinérant",
+    tag: 'marchand_itinerant',
+    palier: 1,
+    region: 'Mizunari',
+    regionId: 'm1m14',
+    img: '',
+    lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
+    sells: [
+      { id: 'cuir_use',  buy: 10, price: 7.5 },
+			{ id: 'carapace_dika',  buy: 12, price: 9 },
+			{ id: 'spore_corrompu',  buy: 10, price: 7.5 },
+			{ id: 'fragment_de_feuille',  buy: 12, price: 9 },
+			{ id: 'bouillon_sanglier',  buy: 15 },
+			{ id: 'sandwich_nephentes',  buy: 35 },
+			{ id: 'potion_vie_1',  buy: 30, quality:true },
+			{ id: 'potion_vie_2',  buy: 55, quality:true },
+			{ id: 'potion_vie_3',  buy: 85, quality:true },
     ],
   },
 	//#endregion Mizunari
@@ -886,6 +996,35 @@ const PERSONNAGES = [
 			}
 		]
   },
+	{
+    id: 'marchand_itinerant_vallhat',
+    name: "Marchand Itinérant",
+    tag: 'marchand_itinerant',
+    palier: 1,
+    region: 'Vallhat',
+    regionId: 'm1m16',
+    img: '',
+    lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
+    sells: [
+      { id: 'pousse_de_sylve',  buy: 6,price: 4.5 },
+      { id: 'eclat_de_bois_magique', buy: 8,price: 6 },
+			{ id: 'ecorce_sylvestre', buy: 8,price: 6 },
+			{ id: 'corde_darc_sylvestre', buy: 10,price: 7.5 },
+			{ id: 'coeur_de_bois', buy: 20,price: 15 },
+			{ id: 'ecorce_de_titan', buy: 10,price: 7.5 },
+			{ id: 'brindille_enchantee', buy: 8,price: 6 },
+			{ id: 'racine_ancestrale', buy: 300,price: 225 },
+			{ id: 'mycelium_magique', price: 450 },
+			{ id: 'gelee_de_slime', buy: 10,price: 7.5 },
+			{ id: 'noyau_de_slime', buy: 200,price: 150 },
+			{ id: 'essence_de_gorbel', price: 2250 },
+			{ id: 'bouillon_sanglier',  buy: 15 },
+			{ id: 'sandwich_nephentes',  buy: 35 },
+			{ id: 'potion_vie_1',  buy: 30, quality:true },
+			{ id: 'potion_vie_2',  buy: 55, quality:true },
+			{ id: 'potion_vie_3',  buy: 85, quality:true },
+    ],
+  },
 	//#endregion Vallhat
 	//#region Chateau Abandonne
   {
@@ -960,6 +1099,27 @@ const PERSONNAGES = [
 				]
 			}
 		]
+  },
+	{
+    id: 'marchand_itinerant_virelune',
+    name: "Marchand Itinérant",
+    tag: 'marchand_itinerant',
+    palier: 1,
+    region: 'Virelune',
+    regionId: 'm1m17',
+    img: '',
+    lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
+    sells: [
+      { id: 'tissu_araignee',  buy: 12,price: 9 },
+      { id: 'fil_araignee', buy: 14,price: 10.5 },
+			{ id: 'carapace_requin', buy: 13,price: 9.75 },
+			{ id: 'coeur_nymbrea', price: 750 },
+			{ id: 'bouillon_sanglier',  buy: 15 },
+			{ id: 'sandwich_nephentes',  buy: 35 },
+			{ id: 'potion_vie_1',  buy: 30, quality:true },
+			{ id: 'potion_vie_2',  buy: 55, quality:true },
+			{ id: 'potion_vie_3',  buy: 85, quality:true },
+    ],
   },
 	//#endregion Virelune
 	//#region Tolbana
@@ -1171,6 +1331,49 @@ const PERSONNAGES = [
 			{ id: 'canne_a_peche_en_bois',  buy: 20, price: 4 },
 			{ id: 'torche',  buy: 2500 },
     ],
+  },
+	{
+    id: 'marchand_itinerant_tolbana',
+    name: "Marchand Itinérant",
+    tag: 'marchand_itinerant',
+    palier: 1,
+    region: 'Tolbana',
+    regionId: 'm1m13',
+    img: '',
+    lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
+    sells: [
+      { id: 'peau_dur_glacial',  buy: 20, price: 15 },
+			{ id: 'eclat_magique_glacial',  buy: 16, price: 12 },
+			{ id: 'poussiere_givre',  buy: 12, price: 9 },
+			{ id: 'fragment_ame_ours',  price: 5250 },
+			{ id: 'peau_cerf_montagnes',  buy: 12, price: 9 },
+			{ id: 'tissu_araignee',  buy: 14, price: 10.5 },
+			{ id: 'fil_araignee',  buy: 12, price: 9 },
+			{ id: 'carapace_requin',  buy: 13, price: 9.75 },
+			{ id: 'bouillon_sanglier',  buy: 15 },
+			{ id: 'sandwich_nephentes',  buy: 35 },
+			{ id: 'potion_vie_1',  buy: 30, quality:true },
+			{ id: 'potion_vie_2',  buy: 55, quality:true },
+			{ id: 'potion_vie_3',  buy: 85, quality:true },
+    ],
+  },
+	{
+    id: 'secret_cerfs',
+    name: "Fabricant de la Ceinture des Cerfs",
+    tag: 'fabricant_secrets',
+    palier: 1,
+    region: 'Tolbana',
+    regionId: 'm1c10',
+    img: '../img/compendium/textures/trinkets/P1/Set des Cerfs Paisibles/Ceinture des Cerfs.png',
+    lore: "Permet le fabrication de l'Accessoires Ceinture des Cerfs.",
+    craft: [
+			{ 
+				id: 'ceinture_cerfs', time: '30m',
+				ingredients: [
+					{ id: 'peau_cerf_montagnes', qty: 96 },
+				]
+			}
+		]
   },
 	{
     id: 'forgeron_armes_tolbana',
@@ -1398,12 +1601,12 @@ const PERSONNAGES = [
   {
     id: 'marchand_itinerant_candelia',
     name: "Marchand Itinérant",
-    tag: 'autre',
+    tag: 'marchand_itinerant',
     palier: 1,
     region: 'Forêt d\'Arakh\'Nol',
     regionId: 'm1m11',
     img: '',
-    lore: "Vends & Achète nombreux objets rares du Palier 1",
+    lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
     sells: [
       { id: 'tissu_araignee',  buy: 12, price: 9 },
 			{ id: 'fil_araignee',  buy: 14, price: 10.5 },
@@ -1776,6 +1979,7 @@ const PNJ_TAG_LABELS = {
   marchand_consommable: "Marchand de Consommable",
   marchand_outils:      "Marchand d'Outils",
   marchand_accessoires: "Marchand d'Accessoires",
+	marchand_itinerant: 	"Marchand Itinérant",
   repreneur_butin:      "Repreneur de Butin",
   bucheron:             "Bûcheron",
   alchimiste:           "Alchimiste",
@@ -1794,6 +1998,7 @@ const PNJ_TAG_COLORS = {
   marchand_consommable: '#b19b5f',
   marchand_outils:      '#a09472',
   marchand_accessoires: '#a8b34c',
+	marchand_itinerant: 	'#1b4d1f',
   repreneur_butin:      '#8eb155',
   bucheron:             '#5aad64',
   alchimiste:           '#9b6bc9',

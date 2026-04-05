@@ -2767,8 +2767,9 @@ const ITEMS = [
 		img:			"../img/compendium/textures/trinkets/P1/Set Loup Faiblard/Gants des Loups.png",
 		stats:		{degats:2, vitesse_attaque:0.1, vol_vie:1.5, vitesse_deplacement:0.15},
     lore:     "Une paire de gants en peau de loup, à l'aura néfaste qui inspire la soif de sang.",
-    tags:     ['Accessoire', 'Gants', 'Palier 1', 'Épique'],
-    obtain:   "...",
+    tags:     ['Accessoire', 'Gants', 'Évolutif', 'Palier 1', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires Secret dans la Vallée des Loups",
+		craft:		[{qty:128, id:'fourrure_de_loup'}, {qty:5, id:'crocs_de_albal'}, {qty:8, id:'lingot_fer'}]
 	},
 {
 		id:				'gants_dechus_chasseur',
@@ -2946,7 +2947,8 @@ const ITEMS = [
 		stats:		{crit_comp_degats:3.5, sante:10},
     lore:     "Une ceinture faite à base de peaux de cerfs.",
     tags:     ['Accessoire', 'Artefact', 'Ceinture', 'Palier 1', 'Épique'],
-    obtain:   "...",
+    obtain:   "Fabricable au Forgeron d'Accessoires Secret à l'entrée du Tunnel vers les Montagnes des Cerfs de Tolbana",
+		craft:		[{qty:96, id:'peau_cerf_montagnes'}]
 	},
 {
 		id:				'piece_cuivre',
@@ -2964,6 +2966,23 @@ const ITEMS = [
     tags:     ['Accessoire', 'Artefact', 'Pièce', 'Palier 1', 'Commun'],
     obtain:   "Fabricable au Forgeron d'Accessoires de Cuivre de la Ville de Départ, au Sud, derrière la Cathédrale",
 		craft:		[{qty:24, id:'lingot_cuivre'}]
+	},
+{
+		id:				'crane_squelette',
+		name:			"Crâne de Squelette",
+		set:			'squelette',
+		rarity:		'epique',
+		cat:			'artefact',
+		category:	'accessoire',
+		unique:		true,
+		palier:		1,
+		lvl:			7,
+		img:			"../img/compendium/textures/trinkets/P1/Set Squelette Poussiéreux/Crane de Squelette.png",
+		stats:		{degats_competence:2.5, defense:1.5},
+    lore:     "Ce crâne froid semble conserver l'écho silencieux d'un mort.",
+    tags:     ['Accessoire', 'Artefact', 'Crâne', 'Palier 1', 'Épique'],
+    obtain:   "Fabricable au Forgeron d'Accessoires Secret de la Crypte de Cyclorim",
+		craft:		[{qty:64, id:'ames_des_ruines'}, {qty:5, id:'coeur_putrefie'}, {qty:32, id:'os_de_squelette'}]
 	},
 {
 		id:				'piece_fer',
