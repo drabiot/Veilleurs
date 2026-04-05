@@ -4954,7 +4954,7 @@ const ITEMS = [
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
 		
-	},
+},
 {
 		id:				'jambieres_necro_guerrier',
 		name:			"Jambières du Nécromancien",
@@ -4971,7 +4971,7 @@ const ITEMS = [
     tags:     ['Armure', 'Jambières', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'bottes_necro_guerrier',
 		name:			"Bottes du Nécromancien",
@@ -4988,7 +4988,7 @@ const ITEMS = [
     tags:     ['Armure', 'Bottes', 'Guerrier', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
+},
 //#endregion Armures > P2 > Guerrier
 //#region Armures > P2 > Assassin-Archer
 {
@@ -5007,7 +5007,7 @@ const ITEMS = [
     tags:     ['Armure', 'Casque', 'Assassin', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'plastron_assassin',
 		name:			"Plastron de l'Assassin",
@@ -5024,7 +5024,7 @@ const ITEMS = [
     tags:     ['Armure', 'Plastron', 'Assassin', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:64, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'jambieres_assassin',
 		name:			"Jambières de l'Assassin",
@@ -5041,7 +5041,7 @@ const ITEMS = [
     tags:     ['Armure', 'Jambières', 'Assassin', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:42, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'bottes_assassin',
 		name:			"Bottes de l'Assassin",
@@ -5059,7 +5059,7 @@ const ITEMS = [
     tags:     ['Armure', 'Bottes', 'Assassin', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'casque_necro_assassin',
 		name:			"Casque du Nécromancien",
@@ -5076,7 +5076,7 @@ const ITEMS = [
     tags:     ['Armure', 'Casque', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'plastron_necro_assassin',
 		name:			"Plastron du Nécromancien",
@@ -5093,7 +5093,7 @@ const ITEMS = [
     tags:     ['Armure', 'Plastron', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'jambieres_necro_assassin',
 		name:			"Jambières du Nécromancien",
@@ -5110,7 +5110,7 @@ const ITEMS = [
     tags:     ['Armure', 'Jambières', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'bottes_necro_assassin',
 		name:			"Bottes du Nécromancien",
@@ -5127,7 +5127,7 @@ const ITEMS = [
     tags:     ['Armure', 'Bottes', 'Assassin', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'casque_chasseuse',
 		name:			"Casque de la chasseuse",
@@ -5144,7 +5144,7 @@ const ITEMS = [
     tags:     ['Armure', 'Casque', 'Archer', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'plastron_chasseuse',
 		name:			"Plastron de la chasseuse",
@@ -5161,7 +5161,7 @@ const ITEMS = [
     tags:     ['Armure', 'Plastron', 'Archer', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:64, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'jambieres_chasseuse',
 		name:			"Jambières de la chasseuse",
@@ -5178,7 +5178,7 @@ const ITEMS = [
     tags:     ['Armure', 'Jambières', 'Archer', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:42, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'bottes_chasseuse',
 		name:			"Bottes de la chasseuse",
@@ -5195,7 +5195,7 @@ const ITEMS = [
     tags:     ['Armure', 'Bottes', 'Archer', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'casque_necro_archer',
 		name:			"Casque du Nécromancien",
@@ -5212,7 +5212,7 @@ const ITEMS = [
     tags:     ['Armure', 'Casque', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'plastron_necro_archer',
 		name:			"Plastron du Nécromancien",
@@ -5229,7 +5229,7 @@ const ITEMS = [
     tags:     ['Armure', 'Plastron', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'jambieres_necro_archer',
 		name:			"Jambières du Nécromancien",
@@ -5246,7 +5246,7 @@ const ITEMS = [
     tags:     ['Armure', 'Jambières', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'bottes_necro_archer',
 		name:			"Bottes du Nécromancien",
@@ -5263,7 +5263,7 @@ const ITEMS = [
     tags:     ['Armure', 'Bottes', 'Archer', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
+},
 //#endregion Armures > P2 > Assassin-Archer
 //#region Armures > P2 > Mage-Shaman
 {
@@ -5282,7 +5282,7 @@ const ITEMS = [
     tags:     ['Armure', 'Casque', 'Mage', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'plastron_miel_cristallisé',
 		name:			"Plastron en Miel Cristallisé",
@@ -5299,7 +5299,7 @@ const ITEMS = [
     tags:     ['Armure', 'Plastron', 'Mage', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:64, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'jambieres_miel_cristallisé',
 		name:			"Jambières en Miel Cristallisé",
@@ -5316,7 +5316,7 @@ const ITEMS = [
     tags:     ['Armure', 'Jambières', 'Mage', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:42, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'bottes_miel_cristallisé', 
 		name:			"Bottes en Miel Cristallisé",
@@ -5333,7 +5333,7 @@ const ITEMS = [
     tags:     ['Armure', 'Bottes', 'Mage', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'casque_necro_mage',
 		name:			"Casque du Nécromancien",
@@ -5350,7 +5350,7 @@ const ITEMS = [
     tags:     ['Armure', 'Casque', 'Mage', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'plastron_necro_mage',
 		name:			"Plastron du Nécromancien",
@@ -5367,7 +5367,7 @@ const ITEMS = [
     tags:     ['Armure', 'Plastron', 'Mage', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'jambieres_necro_mage',
 		name:			"Jambières du Nécromancien",
@@ -5384,7 +5384,7 @@ const ITEMS = [
     tags:     ['Armure', 'Jambières', 'Mage', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'bottes_necro_mage',
 		name:			"Bottes du Nécromancien",
@@ -5401,7 +5401,7 @@ const ITEMS = [
     tags:     ['Armure', 'Bottes', 'Mage', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'casque_miel_myysticisé',
 		name:			"Casque de la Miel Mysticisé",
@@ -5418,7 +5418,7 @@ const ITEMS = [
     tags:     ['Armure', 'Casque', 'Shaman', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'plastron_miel_myysticisé',
 		name:			"Plastron de la Miel Mysticisé",
@@ -5435,7 +5435,7 @@ const ITEMS = [
     tags:     ['Armure', 'Plastron', 'Shaman', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:64, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'jambieres_miel_myysticisé',
 		name:			"Jambières de la Miel Mysticisé", 
@@ -5452,7 +5452,7 @@ const ITEMS = [
     tags:     ['Armure', 'Jambières', 'Shaman', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:42, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'bottes_miel_myysticisé',
 		name:			"Bottes de la Miel Mysticisé",
@@ -5469,7 +5469,7 @@ const ITEMS = [
     tags:     ['Armure', 'Bottes', 'Shaman', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_armures_melliona|Forgeron d'Armures dans la Forêt Sucrée]",
 		craft:		[{qty:32, id:'miel'}, {qty:32, id:'ambre_mielleux'}, {qty:32, id:'carapace_abeille'}]
-	},
+},
 {
 		id:				'casque_necro_shaman',
 		name:			"Casque du Nécromancien",
@@ -5486,7 +5486,7 @@ const ITEMS = [
     tags:     ['Armure', 'Casque', 'Shaman', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:24, id:'os_sombre'}, {qty:24, id:'poudre_noire'}, {qty:6, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'plastron_necro_shaman',
 		name:			"Plastron du Nécromancien",
@@ -5503,7 +5503,7 @@ const ITEMS = [
     tags:     ['Armure', 'Plastron', 'Shaman', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:46, id:'os_sombre'}, {qty:46, id:'poudre_noire'}, {qty:12, id:'poudre_necromancien'}, {qty:16, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'jambieres_necro_shaman',
 		name:			"Jambières du Nécromancien", 
@@ -5520,7 +5520,7 @@ const ITEMS = [
     tags:     ['Armure', 'Jambières', 'Shaman', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:32, id:'os_sombre'}, {qty:32, id:'poudre_noire'}, {qty:8, id:'poudre_necromancien'}, {qty:12, id:'pierre_osseuse_noire'}]
-	},
+},
 {
 		id:				'bottes_necro_shaman',
 		name:			"Bottes du Nécromancien",
@@ -5537,7 +5537,7 @@ const ITEMS = [
     tags:     ['Armure', 'Bottes', 'Shaman', 'Palier 2', 'Épique'],
     obtain:   "Fabricable au [npc:forgeron_armures_necromancien|Forgeron d'Armures à l'extérieur du Donjon Tombeau du Nécromancien]",
 		craft:		[{qty:16, id:'os_sombre'}, {qty:16, id:'poudre_noire'}, {qty:4, id:'poudre_necromancien'}, {qty:8, id:'pierre_osseuse_noire'}]
-	},
+},
 
 //#endregion Armures > P2 > Mage-Shaman
 //#endregion Armures > Palier 2
@@ -6560,7 +6560,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/carapace_ika.png",
     lore:     "Un morceau épais de carapace issu d'une tortue d'Ika abattue.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- [mob:ika|Ika][80]\n\nAchetable au [npc:marchand_itinerant_mizunari|Marchand Itinérant de Mizunari]",
@@ -6771,7 +6771,7 @@ const ITEMS = [
     rarity:   'commun',
     category: 'materiaux',
     palier:   1,
-    image:    null,
+    image:    "../img/compendium/textures/items/Material/P1/eclat_magique_glacial.png",
     lore:     "Un fragment cristallin baigné de magie ancienne. Il est prisé pour forger des armures mystiques.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable en tuant:\n- [mob:esprit_glace|Spirite de Glace][35]\n\nAchetable au [npc:marchand_itinerant_tolbana|Marchand Itinérant de Tolbana]",
