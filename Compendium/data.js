@@ -414,7 +414,7 @@ const RUNES = [
 	},
 	{
 		id:			'precision_1',
-		name:		'Rune de Precision I',
+		name:		'Rune de Précision I',
 		color:	'#62f2f4',
 		stats:	{crit_chance:2.5},
 	},
@@ -429,6 +429,12 @@ const RUNES = [
 		name:		'Rune d\'Agilité I',
 		color:	'#3fa147',
 		stats:	{vitesse_deplacement:1}
+	},
+	{
+		id:			'temporelle_1',
+		name:		'Rune Temporelle I',
+		color:	'#33b380',
+		stats:	{hate:2.5}
 	},
   {
 		id:			'noel',

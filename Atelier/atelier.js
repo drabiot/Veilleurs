@@ -2292,3 +2292,15 @@ function updateBadge(groups) {
   }
 
 })();
+
+/* Tiroir stats */
+const statsDrawer  = document.getElementById('stats-drawer');
+const statsTab     = document.getElementById('stats-drawer-tab');
+const statsClose   = document.getElementById('stats-drawer-close');
+
+statsTab.addEventListener('click', function() {
+  statsDrawer.classList.toggle('open');
+});
+statsClose.addEventListener('click', function() {
+  statsDrawer.classList.remove('open');
+});

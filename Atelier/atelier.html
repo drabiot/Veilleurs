@@ -122,7 +122,6 @@
           <div class="center-title">Atelier</div>
           <div class="center-sub">// CONSTRUCTEUR D'ÉQUIPEMENT · VEILLEURS AU CLAIR DE LUNE</div>
         </div>
-
         <div class="center-body">
           <div class="mannequin-col">
             <div class="mq">
@@ -137,16 +136,28 @@
               <div class="mq-row-bot" id="row-bot"></div>
             </div>
           </div>
-
-          <div class="stats-col">
-            <div class="set-bonuses" id="set-bonuses" style="display:none"></div>
-            <div class="stats-list"  id="stats-list"></div>
-          </div>
         </div>
       </main>
 
+      
       <!-- ── Droite : picker ── -->
       <aside class="sidebar sidebar-right">
+
+          <div class="stats-drawer" id="stats-drawer">
+            <button class="stats-drawer-tab" id="stats-drawer-tab" title="Statistiques">
+              <span class="sdt-label">Stats</span>
+            </button>
+            <div class="stats-drawer-panel" id="stats-drawer-panel">
+              <div class="sdp-head">
+                <span class="sdp-title">◈ Statistiques</span>
+                <button class="sdp-close" id="stats-drawer-close">✕</button>
+              </div>
+              <div class="sdp-content">
+                <div class="set-bonuses" id="set-bonuses" style="display:none"></div>
+                <div class="stats-list" id="stats-list"></div>
+              </div>
+            </div>
+          </div>
         <div class="sidebar-head">⬡ Choisir un Item</div>
         <div class="picker-slot-info" id="picker-info">
           <div class="psi-hint">Cliquez sur un emplacement</div>
@@ -204,6 +215,5 @@
 
   <script src="../Compendium/data.js"></script>
   <script src="atelier.js"></script>
-  <script src="checklist-drawer.js"></script>
 </body>
 </html>
