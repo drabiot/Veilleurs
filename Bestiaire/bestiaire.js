@@ -529,7 +529,6 @@ function renderMobSheet(mob) {
             <span class="loot-name" style="color:${color}">${name}</span>
             ${l.qty ? `<span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${l.qty}</span>` : ''}
             <span class="loot-drop-rate" style="color:${rc};border-color:${rc}33">${l.chance ?? '?'}%</span>
-            ${hasCraft ? `<button class="craft-toggle" title="Voir les ingrédients de craft">⚒️</button>` : ''}
           </a>
           ${hasCraft ? `<div class="craft-panel">${craftIngredients}</div>` : ''}
         </div>`;

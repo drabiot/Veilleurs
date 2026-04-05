@@ -5528,7 +5528,7 @@ const ITEMS = [
     category: 'outils',
     palier:   1,
     image:    "../img/compendium/textures/gears/hache_metal.png",
-    lore:     "...",
+    lore:     "Une hache très solide, parfaite pour casser des bûches plus résistantes.",
     tags:     ['Outils', 'Hache', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:22, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
@@ -5540,7 +5540,7 @@ const ITEMS = [
     category: 'outils',
     palier:   1,
     image:    "../img/compendium/textures/gears/houe_metal.png",
-    lore:     "...",
+    lore:     "Cette nouvelle houeest parfaitepour vous aider à récolter des fleurs... plus rares.",
     tags:     ['Outils', 'Houe', 'Palier 1', 'Rare'],
     obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
@@ -5556,8 +5556,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Runes/vitality_1.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en finissant la Quête Journalière de la Vitalite au Maître des runes dans la Ville de Départ"
-  },
+    obtain:   "Obtenable en finissant la Quête Journalière de la Vitalite au [npc:maitre_runes|Maître des runes] dans la Ville de Départ"
+},
 {
     id:       'rune_precision_1',
     name:     "Rune de Précision I",
@@ -5567,8 +5567,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Runes/precision_1.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en finissant la Quête Journalière de la Précision au Maître des runes dans la Ville de Départ"
-  },
+    obtain:   "Obtenable en finissant la Quête Journalière de la Précision au [npc:maitre_runes|Maître des runes] dans la Ville de Départ"
+},
 {
     id:       'rune_sorcellerie_1',
     name:     "Rune de Sorcellerie I",
@@ -5578,8 +5578,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Runes/sorcery_1.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en finissant la Quête Journalière de la Sorcellerie au Maître des runes dans la Ville de Départ"
-  },
+    obtain:   "Obtenable en finissant la Quête Journalière de la Sorcellerie au [npc:maitre_runes|Maître des runes] dans la Ville de Départ"
+},
 {
     id:       'rune_agilite_1',
     name:     "Rune d'Agilité I",
@@ -5589,8 +5589,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Runes/agility_1.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en finissant la Quête Journalière de l'Agilité au Maître des runes dans la Ville de Départ"
-  },
+    obtain:   "Obtenable en finissant la Quête Journalière de l'Agilité au [npc:maitre_runes|Maître des runes] dans la Ville de Départ"
+},
 {
     id:       'rune_temps_1',
     name:     "Rune Temporelle I",
@@ -5600,8 +5600,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Runes/time_1.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en finissant la Quête Journalière du Temps au Maître des runes dans la Ville de Départ"
-  },
+    obtain:   "Obtenable en finissant la Quête Journalière du Temps au [npc:maitre_runes|Maître des runes] dans la Ville de Départ"
+},
 {
     id:       'rune_kazor',
     name:     "Rune de Kazor",
@@ -5611,9 +5611,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Runes/rune_kazor.png",
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'World Boss', 'Kazor', 'Légendaire'],
-    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
+    obtain:   "Achetable au [npc:marchand_kazor|Marchand devant l'Arène du World Boss Kazor] au Palier 1",
 		craft:    [{qty:1, id:'piece_kazor'}]
-  },
+},
 {
     id:       'rune_noel',
     name:     "Rune de Noël",
@@ -5624,7 +5624,7 @@ const ITEMS = [
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Event', 'Noël'],
     obtain:   "Obtenable dans les lootboxs de l'Événement Noël"
-  },
+},
 {
     id:       'rune_teddy',
     name:     "Rune de Teddy Bear",
@@ -5635,7 +5635,7 @@ const ITEMS = [
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Event', 'Saint Valentin'],
     obtain:   "Obtenable dans les lootboxs de l'Événement Saint Valentin"
-  },
+},
 {
     id:       'rune_lunaire',
     name:     "Rune Lunaire",
@@ -5646,7 +5646,7 @@ const ITEMS = [
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
     obtain:   "..."
-  },
+},
 {
     id:       'rune_dragon',
     name:     "Rune de Dragon",
@@ -5657,7 +5657,7 @@ const ITEMS = [
     lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
     tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
     obtain:   "..."
-  },
+},
 //#endregion Items > P1 > Runes
 //#region Items > P1 > Consommables
 {
@@ -5669,8 +5669,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/p_changement.png",
     lore:     "Ce parchemin permet au joueur qui l'utilise de recevoir un point pour rénitialiser sa classe",
     tags:     ['Consommable', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable par les Marchands d'Équipement"
-  },
+    obtain:   "Achetable:\n- [npc:marchand_equipements_vdp|Marchands d'Équipement]\n- [npc:marchand_consommable_tolbana|Marchands de Consommables]"
+},
 {
     id:       'parchemin_reallocation',
     name:     "Parchemin de Réallocation",
@@ -5680,8 +5680,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/p_reallocation.png",
     lore:     "Ce parchemin permet au joueur qui l'utilise de recevoir un point poir rénitialiser ses points d'attribut",
     tags:     ['Consommable', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable par les Marchands d'Équipement"
-  },
+    obtain:   "Achetable:\n- [npc:marchand_equipements_vdp|Marchands d'Équipement]\n- [npc:marchand_consommable_tolbana|Marchands de Consommables]"
+},
 {
     id:       'parchemin_maitrise',
     name:     "Parchemin de Maîtrise",
@@ -5691,8 +5691,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/p_maitrise.png",
     lore:     "Ce parchemin permet au joueur qui l'utilise de recevoir un point poir rénitialiser ses points de compétence",
     tags:     ['Consommable', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable par les Marchands d'Équipement"
-  },
+    obtain:   "Achetable:\n- [npc:marchand_equipements_vdp|Marchands d'Équipement]\n- [npc:marchand_consommable_tolbana|Marchands de Consommables]"
+},
 {
     id:       'potion_vie_1',
     name:     "Potion de Vie I",
@@ -5702,8 +5702,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/strengthpot_1.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
-    obtain:   "Obtenable par les Marchands d'Équipement ou Fabricable aux Alchimistes",
-		craft:    [[{qty:6, id:'allium'}, {qty:4, id:'poudre_bois'}, {qty:4, id:'pousse_de_sylve'}], [{qty:20, id:'cols'}]],
+    obtain:   "Achetable:\n- [npc:marchand_consommable_tolbana|Marchands de Consommables]\n- [npc:marchand_equipements_vdp|Marchands d'Équipement]\n- [npc:repreneur_butin_vallhat|Repreneur de Butin de Vallhat]\n- [npc:alchimiste_kaelor|Alchimiste de Kaelor]",
+		craft:    [{name: "Marchand d'Équipements et de Consommables", items: [{qty:20, id:'cols'}]}, {name: "Fabrication à l'Alchimiste de Kaelor", items: [{qty:6, id:'allium'}, {qty:4, id:'poudre_bois'}, {qty:4, id:'pousse_de_sylve'}]}],
 		effects: [
 				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'heal',     value: 10,  unit: 'PV',    instant: true },
@@ -5713,7 +5713,8 @@ const ITEMS = [
 		],
 		quality: {
 			lore:   "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
-			obtain: "Fabricable aux Alchimistes",
+			obtain: "Achetable:\n- [npc:alchimiste_vdp|Alchimistes du Palier 1]\n- [npc:marchand_itinerant_vdp|Marchands Itinérants]",
+			craft:    [{name: "Marchand Itinérants", items: [{qty:30, id:'cols'}]}, {name: "Fabrication aux Alchimistes du Palier 1", items: [{qty:6, id:'allium'}, {qty:4, id:'poudre_bois'}, {qty:4, id:'pousse_de_sylve'}]}],
 			effects: [
 				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'heal',     value: 20,  unit: 'PV',    instant: true },
@@ -5721,7 +5722,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 			],
 		}
-  },
+},
 {
     id:       'potion_vie_2',
     name:     "Potion de Vie II",
@@ -5731,8 +5732,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/strengthpot_2.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
-    obtain:   "Fabricable aux Alchimistes",
-		craft:    [{qty:8, id:'allium'}, {qty:7, id:'pousse_de_sylve'}, {qty:4, id:'poussiere_dos'}, {qty:5, id:'eclat_de_bois_magique'}],
+    obtain:   "Achetable:\n- [npc:marchand_consommable_tolbana|Marchands de Consommables]\n- [npc:alchimiste_kaelor|Alchimiste de Kaelor]",
+		craft:    [{name: "Marchand de Consommables", items: [{qty:40, id:'cols'}]}, {name: "Alchimiste de Kaelor", items: [{qty:8, id:'allium'}, {qty:7, id:'pousse_de_sylve'}, {qty:4, id:'poussiere_dos'}, {qty:5, id:'eclat_de_bois_magique'}]}],
 		effects: [
 				{ type: 'level',     value: 5,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'heal',     value: 25,  unit: 'PV',    instant: true },
@@ -5741,7 +5742,8 @@ const ITEMS = [
 		],
 		quality: {
 			lore:   "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
-			obtain: "Fabricable aux Alchimistes",
+			obtain: "Achetable:\n- [npc:alchimiste_vdp|Alchimistes du Palier 1]\n- [npc:marchand_itinerant_vdp|Marchands Itinérants]",
+			craft:    [{name: "Marchand Itinérants", items: [{qty:55, id:'cols'}]}, {name: "Fabrication aux Alchimistes du Palier 1", items: [{qty:8, id:'allium'}, {qty:7, id:'pousse_de_sylve'}, {qty:4, id:'poussiere_dos'}, {qty:5, id:'eclat_de_bois_magique'}]}],
 			effects: [
 				{ type: 'level',     value: 5,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'heal',     value: 35,  unit: 'PV',    instant: true },
@@ -5749,7 +5751,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 			],
 		}
-  },
+},
 {
     id:       'potion_vie_3',
     name:     "Potion de Vie III",
@@ -5759,7 +5761,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/strengthpot_3.png",
     lore:     "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
     tags:     ['Consommable', 'Palier 1', 'rare'],
-    obtain:   "Fabricable aux Alchimistes",
+    obtain:   "Fabricable à l'[npc:alchimiste_kaelor|Alchimiste de Kaelor]",
 		craft:    [{qty:10, id:'allium'}, {qty:7, id:'poussiere_dos'}, {qty:3, id:'racine_ancestrale'}],
 		effects: [
 				{ type: 'level',     value: 8,  unit: '', label: 'Niveau requis pour utiliser la potion' },
@@ -5769,7 +5771,8 @@ const ITEMS = [
 		],
 		quality: {
 			lore:   "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de soin.",
-			obtain: "Fabricable aux Alchimistes",
+			obtain: "Achetable:\n- [npc:alchimiste_vdp|Alchimistes du Palier 1]\n- [npc:marchand_itinerant_vdp|Marchands Itinérants]",
+			craft:    [{name: "Marchand Itinérants", items: [{qty:85, id:'cols'}]}, {name: "Fabrication aux Alchimistes du Palier 1", items: [{qty:10, id:'allium'}, {qty:7, id:'poussiere_dos'}, {qty:3, id:'racine_ancestrale'}]}],
 			effects: [
 				{ type: 'level',     value: 8,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'heal',     value: 55,  unit: 'PV',    instant: true },
@@ -5777,7 +5780,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 			],
 		}
-  },
+},
 {
     id:       'cristal_soin',
     name:     "Cristal de Soin",
@@ -5787,7 +5790,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/green_crystal.png",
     lore:     "Vous rend des PV immédiatement et applique 30min de recharge sur tous les cristaux.",
     tags:     ['Consommable', 'Palier 1', 'Épique'],
-    obtain:   "Fabricable aux Alchimistes",
+    obtain:   "Fabricable aux [npc:alchimiste_vdp|Alchimistes]",
 		craft:    [{qty:1, id:'essence_de_gorbel'}, {qty:10, id:'racine_ancestrale'}, {qty:25, id:'eclat_de_bois_magique'}, {qty:1, id:'mycelium_magique'}],
 		effects: [
 				{ type: 'level',     value: 10,  unit: '', label: 'Niveau requis pour utiliser le cristal' },
@@ -5795,7 +5798,7 @@ const ITEMS = [
 				{ type: 'cooldown', value: 1800,  unit: 's',     label: 'Recharge cristaux' },
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
-  },
+},
 {
     id:       'potion_mana_1',
     name:     "Potion de Mana I",
@@ -5805,8 +5808,8 @@ const ITEMS = [
     image:     "../img/compendium/textures/items/Consommable/critpot_1.png",
     lore:     "Vous rend du Mana immédiatement et applique 15s de recharge sur toutes les potions de mana.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
-    obtain:   "Obtenable par les Marchands d'Équipement ou Fabricable aux Alchimistes",
-		craft:    [[{qty:6, id:'allium'}, {qty:4, id:'poudre_bois'}, {qty:4, id:'pousse_de_sylve'}], [{qty:20, id:'cols'}]],
+   	obtain:   "Achetable:\n- [npc:marchand_consommable_tolbana|Marchands de Consommables]\n- [npc:marchand_equipements_vdp|Marchands d'Équipement]\n- [npc:repreneur_butin_vallhat|Repreneur de Butin de Vallhat]\n- [npc:alchimiste_kaelor|Alchimiste de Kaelor]",
+		craft:    [{name: "Marchand d'Équipements et de Consommables", items: [{qty:20, id:'cols'}]}, {name: "Repreneur de Butin de Vallhat", items: [{qty:10, id:'cols'}]},{name: "Fabrication à l'Alchimiste de Kaelor", items: [{qty:6, id:'allium'}, {qty:4, id:'poudre_bois'}, {qty:4, id:'pousse_de_sylve'}]}],
 		effects: [
 				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'mana',     value: 10,  unit: 'Mana',    instant: true },
@@ -5816,7 +5819,8 @@ const ITEMS = [
 		],
 		quality: {
 			lore:   "Vous rend du Mana immédiatement et applique 15s de recharge sur toutes les potions de mana.",
-			obtain: "Fabricable aux Alchimistes",
+			obtain: "Fabricable aux [npc:alchimiste_vdp|Alchimistes du Palier 1]",
+			craft:    [{name: "Fabrication aux Alchimistes du Palier 1", items: [{qty:6, id:'allium'}, {qty:4, id:'poudre_bois'}, {qty:4, id:'pousse_de_sylve'}]}],
 			effects: [
 				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'mana',     value: 20,  unit: 'Mana',    instant: true },
@@ -5824,7 +5828,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 			],
 		}
-  },
+},
 {
     id:       'potion_mana_2',
     name:     "Potion de Mana II",
@@ -5834,8 +5838,8 @@ const ITEMS = [
     image:     "../img/compendium/textures/items/Consommable/critpot_2.png",
     lore:     "Vous rend du Mana immédiatement et applique 15s de recharge sur toutes les potions de mana.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
-    obtain:   "Fabricable aux Alchimistes",
-		craft:    [{qty:8, id:'allium'}, {qty:7, id:'pousse_de_sylve'}, {qty:4, id:'poussiere_dos'}, {qty:5, id:'eclat_de_bois_magique'}],
+    obtain:   "Achetable:\n- [npc:marchand_consommable_tolbana|Marchands de Consommables]\n- [npc:alchimiste_kaelor|Alchimiste de Kaelor]",
+		craft:    [{name: "Marchand de Consommables", items: [{qty:40, id:'cols'}]}, {name: "Alchimiste de Kaelor", items: [{qty:8, id:'allium'}, {qty:7, id:'pousse_de_sylve'}, {qty:4, id:'poussiere_dos'}, {qty:5, id:'eclat_de_bois_magique'}]}],
 		effects: [
 				{ type: 'level',     value: 5,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'mana',     value: 25,  unit: 'Mana',    instant: true },
@@ -5844,7 +5848,8 @@ const ITEMS = [
 		],
 		quality: {
 			lore:   "Vous rend du Mana immédiatement et applique 15s de recharge sur toutes les potions de mana.",
-			obtain: "Fabricable aux Alchimistes",
+			obtain: "Fabricable aux [npc:alchimiste_vdp|Alchimistes du Palier 1]",
+			craft:   [{name: "Fabrication aux Alchimistes du Palier 1", items: [{qty:8, id:'allium'}, {qty:7, id:'pousse_de_sylve'}, {qty:4, id:'poussiere_dos'}, {qty:5, id:'eclat_de_bois_magique'}]}],
 			effects: [
 				{ type: 'level',     value: 5,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'mana',     value: 35,  unit: 'Mana',    instant: true },
@@ -5852,7 +5857,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 			],
 		}
-  },
+},
 {
     id:       'potion_mana_3',
     name:     "Potion de Mana III",
@@ -5862,7 +5867,7 @@ const ITEMS = [
     image:     "../img/compendium/textures/items/Consommable/critpot_3.png",
     lore:     "Vous rend du Mana immédiatement et applique 15s de recharge sur toutes les potions de mana.",
     tags:     ['Consommable', 'Palier 1', 'rare'],
-    obtain:   "Fabricable aux Alchimistes",
+    obtain:   "Fabricable à l'[npc:alchimiste_kaelor|Alchimiste de Kaelor]",
 		craft:    [{qty:10, id:'allium'}, {qty:7, id:'poussiere_dos'}, {qty:3, id:'racine_ancestrale'}],
 		effects: [
 				{ type: 'level',     value: 8,  unit: '', label: 'Niveau requis pour utiliser la potion' },
@@ -5872,7 +5877,8 @@ const ITEMS = [
 		],
 		quality: {
 			lore:   "Vous rend du Mana immédiatement et applique 15s de recharge sur toutes les potions de mana.",
-			obtain: "Fabricable aux Alchimistes",
+			obtain: "Fabricable aux [npc:alchimiste_vdp|Alchimistes du Palier 1]",
+			craft:    [{name: "Fabrication aux Alchimistes du Palier 1", items: [{qty:10, id:'allium'}, {qty:7, id:'poussiere_dos'}, {qty:3, id:'racine_ancestrale'}]}],
 			effects: [
 				{ type: 'level',     value: 8,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'mana',     value: 55,  unit: 'Mana',    instant: true },
@@ -5880,7 +5886,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 			],
 		}
-  },
+},
 {
     id:       'cristal_mana',
     name:     "Cristal de Mana",
@@ -5890,7 +5896,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/blue_crystal.png",
     lore:     "Vous rend du Mana immédiatement et applique 30min de recharge sur tous les cristaux.",
     tags:     ['Consommable', 'Palier 1', 'Épique'],
-    obtain:   "Fabricable aux Alchimistes",
+    obtain:   "Fabricable aux [npc:alchimiste_vdp|Alchimistes du Palier 1]",
 		craft:    [{qty:1, id:'essence_de_gorbel'}, {qty:10, id:'racine_ancestrale'}, {qty:25, id:'eclat_de_bois_magique'}, {qty:1, id:'mycelium_magique'}],
 		effects: [
 				{ type: 'level',     value: 10,  unit: '', label: 'Niveau requis pour utiliser le cristal' },
@@ -5898,7 +5904,7 @@ const ITEMS = [
 				{ type: 'cooldown', value: 1800,  unit: 's',     label: 'Recharge cristaux' },
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 			],
-  },
+},
 {
     id:       'potion_stamina_1',
     name:     "Potion de Stamina I",
@@ -5908,8 +5914,8 @@ const ITEMS = [
     image:     "../img/compendium/textures/items/Consommable/endurepot_1.png",
     lore:     "Vous rend de la Stamina immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
-    obtain:   "Obtenable par les Marchands d'Équipement ou Fabricable aux Alchimistes",
-		craft:    [[{qty:6, id:'allium'}, {qty:4, id:'poudre_bois'}, {qty:4, id:'pousse_de_sylve'}], [{qty:20, id:'cols'}]],
+    obtain:   "Achetable:\n- [npc:marchand_consommable_tolbana|Marchands de Consommables]\n- [npc:marchand_equipements_vdp|Marchands d'Équipement]\n- [npc:repreneur_butin_vallhat|Repreneur de Butin de Vallhat]\n- [npc:alchimiste_kaelor|Alchimiste de Kaelor]",
+		craft:    [{name: "Marchand d'Équipements et de Consommables", items: [{qty:20, id:'cols'}]}, {name: "Repreneur de Butin de Vallhat", items: [{qty:10, id:'cols'}]},{name: "Fabrication à l'Alchimiste de Kaelor", items: [{qty:6, id:'allium'}, {qty:4, id:'poudre_bois'}, {qty:4, id:'pousse_de_sylve'}]}],
 		effects: [
 				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'stamina',     value: 5,  unit: 'Stamina',    instant: true },
@@ -5919,7 +5925,8 @@ const ITEMS = [
 		],
 		quality: {
 			lore:   "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
-			obtain: "Fabricable aux Alchimistes",
+			obtain: "Achetable aux [npc:alchimiste_vdp|Alchimistes du Palier 1]",
+			craft:    [{name: "Fabrication aux Alchimistes du Palier 1", items: [{qty:6, id:'allium'}, {qty:4, id:'poudre_bois'}, {qty:4, id:'pousse_de_sylve'}]}],
 			effects: [
 				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'stamina',     value: 8,  unit: 'Stamina',    instant: true },
@@ -5927,7 +5934,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 			],
 		}
-  },
+},
 {
     id:       'potion_stamina_2',
     name:     "Potion de Stamina II",
@@ -5937,8 +5944,8 @@ const ITEMS = [
     image:     "../img/compendium/textures/items/Consommable/endurepot_2.png",
     lore:     "Vous rend de la Stamina immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
     tags:     ['Consommable', 'Palier 1', 'commun'],
-    obtain:   "Fabricable aux Alchimistes",
-		craft:    [{qty:8, id:'allium'}, {qty:7, id:'pousse_de_sylve'}, {qty:4, id:'poussiere_dos'}, {qty:5, id:'eclat_de_bois_magique'}],
+    obtain:   "Achetable:\n- [npc:marchand_consommable_tolbana|Marchands de Consommables]\n- [npc:alchimiste_kaelor|Alchimiste de Kaelor]",
+		craft:    [{name: "Marchand de Consommables", items: [{qty:40, id:'cols'}]}, {name: "Alchimiste de Kaelor", items: [{qty:8, id:'allium'}, {qty:7, id:'pousse_de_sylve'}, {qty:4, id:'poussiere_dos'}, {qty:5, id:'eclat_de_bois_magique'}]}],
 		effects: [
 				{ type: 'level',     value: 5,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'stamina',     value: 10,  unit: 'Stamina',    instant: true },
@@ -5947,7 +5954,8 @@ const ITEMS = [
 		],
 		quality: {
 			lore:   "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
-			obtain: "Fabricable aux Alchimistes",
+			obtain: "Fabricable aux [npc:alchimiste_vdp|Alchimistes du Palier 1]",
+			craft:   [{name: "Fabrication aux Alchimistes du Palier 1", items: [{qty:8, id:'allium'}, {qty:7, id:'pousse_de_sylve'}, {qty:4, id:'poussiere_dos'}, {qty:5, id:'eclat_de_bois_magique'}]}],
 			effects: [
 				{ type: 'level',     value: 5,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'stamina',     value: 15,  unit: 'Stamina',    instant: true },
@@ -5955,7 +5963,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 			],
 		}
-  },
+},
 {
     id:       'potion_stamina_3',
     name:     "Potion de Stamina III",
@@ -5965,7 +5973,7 @@ const ITEMS = [
     image:     "../img/compendium/textures/items/Consommable/endurepot_3.png",
     lore:     "Vous rend de la Stamina immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
     tags:     ['Consommable', 'Palier 1', 'rare'],
-    obtain:   "Fabricable aux Alchimistes",
+    obtain:   "Fabricable à l'[npc:alchimiste_kaelor|Alchimiste de Kaelor]",
 		craft:    [{qty:10, id:'allium'}, {qty:7, id:'poussiere_dos'}, {qty:3, id:'racine_ancestrale'}],
 		effects: [
 				{ type: 'level',     value: 8,  unit: '', label: 'Niveau requis pour utiliser la potion' },
@@ -5975,7 +5983,8 @@ const ITEMS = [
 		],
 		quality: {
 			lore:   "Vous rend des PV immédiatement et applique 15s de recharge sur toutes les potions de stamina.",
-			obtain: "Fabricable aux Alchimistes",
+			obtain: "Fabricable aux [npc:alchimiste_vdp|Alchimistes du Palier 1]",
+			craft:    [{name: "Fabrication aux Alchimistes du Palier 1", items: [{qty:10, id:'allium'}, {qty:7, id:'poussiere_dos'}, {qty:3, id:'racine_ancestrale'}]}],
 			effects: [
 				{ type: 'level',     value: 8,  unit: '', label: 'Niveau requis pour utiliser la potion' },
 				{ type: 'stamina',     value: 25,  unit: 'Stamina',    instant: true },
@@ -5983,7 +5992,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 			],
 		}
-  },
+},
 {
     id:       'cristal_stamina',
     name:     "Cristal de Stamina",
@@ -5993,7 +6002,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/yellow_crystal.png",
     lore:     "Vous rend des PV immédiatement et applique 30min de recharge sur tous les cristaux.",
     tags:     ['Consommable', 'Palier 1', 'Épique'],
-    obtain:   "Fabricable aux Alchimistes",
+    obtain:   "Fabricable aux [npc:alchimiste_vdp|Alchimistes du Palier 1]",
 		craft:    [{qty:1, id:'essence_de_gorbel'}, {qty:10, id:'racine_ancestrale'}, {qty:25, id:'eclat_de_bois_magique'}, {qty:1, id:'mycelium_magique'}],
 		effects: [
 				{ type: 'level',     value: 10,  unit: '', label: 'Niveau requis pour utiliser le cristal' },
@@ -6001,7 +6010,7 @@ const ITEMS = [
 				{ type: 'cooldown', value: 1800,  unit: 's',     label: 'Recharge cristaux' },
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
-  },
+},
 {
     id:       'cristal_puissance',
     name:     "Cristal de Puissance",
@@ -6011,7 +6020,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/red_crystal.png",
     lore:     "Boost les Dégâts d'Armes de 10% et applique 30min de recharge sur tous les cristaux.",
     tags:     ['Consommable', 'Palier 1', 'Épique'],
-    obtain:   "Fabricable aux Alchimistes",
+    obtain:   "Fabricable aux [npc:alchimiste_vdp|Alchimistes du Palier 1]",
 		craft:    [{qty:1, id:'essence_de_gorbel'}, {qty:10, id:'racine_ancestrale'}, {qty:25, id:'eclat_de_bois_magique'}, {qty:1, id:'mycelium_magique'}],
 		effects: [
 				{ type: 'level',     value: 10,  unit: '', label: 'Niveau requis pour utiliser le cristal' },
@@ -6019,8 +6028,8 @@ const ITEMS = [
 				{ type: 'cooldown', value: 1800,  unit: 's',     label: 'Recharge cristaux' },
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
-  },
-	{
+},
+{
     id:       'rune_remover_1',
     name:     "Rune Remover I",
     rarity:   'rare',
@@ -6029,13 +6038,13 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Consommable/rune_remover.png",
     lore:     "Permet de retirer une rune au hasard en faisant clique droit sur l'item de votre choix.",
     tags:     ['Consommable', 'Palier 1', 'rare'],
-    obtain:   "Achetable au Marchand devant l'Arène du World Boss Kazor au Palier 1",
+    obtain:   "Achetable au [npc:marchand_kazor|Marchand devant l'Arène du World Boss Kazor] au Palier 1",
 		craft:    [{qty:1, id:'piece_kazor'}],
 		effects: [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
-  },
-	{
+},
+{
     id:       'rune_remover_2',
     name:     "Rune Remover II",
     rarity:   'epique',
@@ -6048,7 +6057,7 @@ const ITEMS = [
 		effects: [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
-  },
+},
 //#endregion Items > P1 > Consommables
 //#region Items > P1 > Nourritures
 {
@@ -6060,7 +6069,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Nourriture/viande_de_sanglier.png",
     lore:     "Cette belle viande de sanglier, bien juteuse, peut vous donner encore plus envie de manger !",
     tags:     ['Nourriture', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[100]\n- Pumba[100]\nAchetable aux Marchands d'Équipements",
+    obtain:   "Obtenable en tuant:\n- [mob:sanglier_corrompu|Sangliers Corrompus][100]\n- [mob:pumba_corrompu|Pumba Corrompu][100]\n\nAchetable aux [npc:marchand_equipements_vdp|Marchands d'Équipements]",
 		effects: [
 				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la nourriture' },
 				{ type: 'feed',     value: 5,  unit: 'Nourriture',    instant: true },
@@ -6068,7 +6077,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
 		craft:    [{qty:0.1, id:'cols'}],
-  },
+},
 {
     id:       'bouillon_sanglier',
     name:     "Bouillon de Sanglier",
@@ -6078,7 +6087,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Nourriture/bouillon_sanglier.png",
     lore:     "Ce bouillon, fait à base de viande et d'autres ingrédients, est parfait pour manger à sa faim !",
     tags:     ['Nourriture', 'Palier 1', 'Rare'],
-    obtain:   "Achetable aux Marchands Itinérants",
+    obtain:   "Achetable aux [npc:marchand_itinerant_vdp|Marchands Itinérants]",
 		effects: [
 				{ type: 'level',     value: 3,  unit: '', label: 'Niveau requis pour utiliser la nourriture' },
 				{ type: 'feed',     value: 10,  unit: 'Nourriture',    instant: true },
@@ -6086,7 +6095,7 @@ const ITEMS = [
 				{ type: 'use',     value: 1,   unit: '', label: 'Utilisations Totales' },
 		],
 		craft:    [{qty:15, id:'cols'}],
-  },
+},
 {
     id:       'sandwich_nephentes',
     name:     "Sandwich de Néphentes",
@@ -6096,7 +6105,7 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Nourriture/sandwich_nephentes.png",
     lore:     "Ce sandwich, tout droit sorti du monde moderne et fait à base de néphentes concassé, ravivera vos souvenirs !",
     tags:     ['Nourriture', 'Palier 1', 'Rare'],
-    obtain:   "Achetable aux Marchands Itinérants",
+    obtain:   "Achetable aux [npc:marchand_itinerant_vdp|Marchands Itinérants]",
 		effects: [
 				{ type: 'level',     value: 1,  unit: '', label: 'Niveau requis pour utiliser la nourriture' },
 				{ type: 'feed',     value: 10,  unit: 'Nourriture',    instant: true },
@@ -6105,7 +6114,7 @@ const ITEMS = [
 				{ type: 'regen',     value: 1,  unit: '',    duration: 5 },
 		],
 		craft:    [{qty:35, id:'cols'}],
-  },
+},
 //#endregion Items > P1 > Nourritures
 //#region Items > P1 > Matériaux
 {
@@ -6117,8 +6126,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/peau_de_sanglier.png",
     lore:     "Utilisable pour de la tannerie basique.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[60]\n- Pumba[100]"
-  },
+    obtain:		"Obtenable en tuant:\n- [mob:sanglier_corrompu|Sanglier Corrompu][60]\n- [mob:pumba_corrompu|Pumba Corrompu][100]\n\nAchetable au [npc:marchand_itinerant_vdp|Marchand Itinérant de la Zone des Sangliers]",
+		craft: 		[{ name: "Marchand Itinérant Zone des Sangliers", npcSection: 'personnages', items: [{qty:5, id:'cols'}] }]
+},
 {
     id:       'fourrure_de_loup',
     name:     "Fourrure de Loup",
@@ -6128,8 +6138,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/fourrure_de_loup.png",
     lore:     "Une fourrure souple et légère, utilisée pour fabriquer des armures.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)[60]\n- Albal[100]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:loup_sinistre_blanc|Loup Sinistre Blanc][60]\n- [mob:loup_sinistre_noir|Loup Sinistre Noir][60]\n- [mob:albal|Albal][100]\n\nAchetable au [npc:marchand_itinerant_vdp|Marchand Itinérant de la Zone des Sangliers]",
+		craft:    [{ name: "Marchand Itinérant Zone des Sangliers", npcSection: 'personnages', items: [{qty:6, id:'cols'}] }]
+},
 {
     id:       'crocs_de_loup',
     name:     "Crocs de Loup",
@@ -6139,8 +6150,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/crocs_de_loup.png",
     lore:     "Une dent longue et acérée, prisée de certains artisans.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Loups Sinistre (Blancs & Noirs)[30]\n- Albal[70]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:loup_sinistre_blanc|Loup Sinistre Blanc][60]\n- [mob:loup_sinistre_noir|Loup Sinistre Noir][60]\n- [mob:albal|Albal][100]\n\nAchetable au [npc:marchand_itinerant_vdp|Marchand Itinérant de la Zone des Sangliers]",
+		craft:    [{ name: "Marchand Itinérant Zone des Sangliers", npcSection: 'personnages', items: [{qty:6, id:'cols'}] }]
+},
 {
     id:       'crocs_de_albal',
     name:     "Crocs de Albal",
@@ -6150,8 +6162,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/crocs_de_albal.gif",
     lore:     "Un croc massif imprégné de sa rage sauvage. Son essence est utilisée pour concoter des potions de force redoutable.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Albal[20]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:albal|Albal][20]"
+},
 {
     id:       'fragment_de_feuille',
     name:     "Fragment de Feuille",
@@ -6161,8 +6173,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/fragment_de_feuille.png",
     lore:     "Des restes végétaux porteurs d'une étrange énergie naturelle.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Nephentes[45]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:nephentes|Nephentes][45]\n\nAchetable au [npc:marchand_itinerant_mizunari|Marchand Itinérant de Mizunari]",
+		craft:    [{ name: "Marchand Itinérant Mizunari", npcSection: 'personnages', items: [{qty:12, id:'cols'}] }]
+},
 {
     id:       'pousse_de_sylve',
     name:     "Pousse de Sylve",
@@ -6172,8 +6185,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/pousse_de_sylve.png",
     lore:     "Petite pousse dans un bol très utile dans la confection de potion de vie.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Minis Tréants[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:mini_treant|Mini Tréant][40]\n\nAchetable:\n- [npc:marchand_itinerant_hanaka|Marchand Itinérant de Hanaka]\n- [npc:marchand_itinerant_vallhat|Marchand Itinérant de Vallhat]",
+		craft:    [{ name: "Marchand Itinérant Hanaka & Vallhat", npcSection: 'personnages', items: [{qty:6, id:'cols'}] }]
+},
 {
     id:       'eclat_de_bois_magique',
     name:     "Éclat de Bois Magique",
@@ -6183,8 +6197,10 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/eclat_de_bois_magique.png",
     lore:     "Fragment d'un ancien Tréant. Même détaché de celui-ci il conserve encore de la magie à l'intérieur.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Minis Tréants[30]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:mini_treant|Mini Tréant][40]\n\nAchetable:\n- [npc:marchand_itinerant_hanaka|Marchand Itinérant de Hanaka]\n- [npc:marchand_itinerant_vallhat|Marchand Itinérant de Vallhat]",
+		craft:    [{ name: "Marchand Itinérant Hanaka & Vallhat", npcSection: 'personnages', items: [{qty:8, id:'cols'}] }]
+
+},
 {
     id:       'ecorce_de_titan',
     name:     "Écorce de Titan",
@@ -6194,8 +6210,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/ecorce_de_titan.png",
     lore:     "Ressource très dure presque incassable, les Guerriers pourront se protéger avec.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Guerriers Tréants[35]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:guerrier_treant|Guerrier Tréant][35]\n\nAchetable:\n- [npc:marchand_itinerant_hanaka|Marchand Itinérant de Hanaka]\n- [npc:marchand_itinerant_vallhat|Marchand Itinérant de Vallhat]",
+		craft:    [{ name: "Marchand Itinérant Hanaka & Vallhat", npcSection: 'personnages', items: [{qty:10, id:'cols'}] }]
+},
 {
     id:       'racine_ancestrale',
     name:     "Racine Ancestrale",
@@ -6205,8 +6222,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/racine_ancestrale.gif",
     lore:     "Un loot assez rare du Guerrier Tréant. Utile si vous avez besoin de fabriquer des potions.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Guerriers Tréants[10]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:guerrier_treant|Guerrier Tréant][10]\n\nAchetable:\n- [npc:marchand_itinerant_hanaka|Marchand Itinérant de Hanaka]\n- [npc:marchand_itinerant_vallhat|Marchand Itinérant de Vallhat]",
+		craft:    [{ name: "Marchand Itinérant Hanaka & Vallhat", npcSection: 'personnages', items: [{qty:300, id:'cols'}] }]
+},
 {
     id:       'ecorce_sylvestre',
     name:     "Écorce Sylvestre",
@@ -6216,8 +6234,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/ecorce_sylvestre.png",
     lore:     "Matériau de la nature, utilisé principalement pour des armures légères et rapides.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Tréants d'Élites[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:treant_elite|Tréant d'Élite][40]\n\nAchetable:\n- [npc:marchand_itinerant_hanaka|Marchand Itinérant de Hanaka]\n- [npc:marchand_itinerant_vallhat|Marchand Itinérant de Vallhat]",
+		craft:    [{ name: "Marchand Itinérant Hanaka & Vallhat", npcSection: 'personnages', items: [{qty:8, id:'cols'}] }]
+},
 {
     id:       'corde_darc_sylvestre',
     name:     "Corde d'Arc Sylvestre",
@@ -6227,8 +6246,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/corde_darc_sylvestre.png",
     lore:     "Longue et tendue, cette corde robuste est idéale pour confectionner un nouvel arc.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Tréants d'Élites[25]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:treant_elite|Tréant d'Élite][25]\n\nAchetable:\n- [npc:marchand_itinerant_hanaka|Marchand Itinérant de Hanaka]\n- [npc:marchand_itinerant_vallhat|Marchand Itinérant de Vallhat]",
+		craft:    [{ name: "Marchand Itinérant Hanaka & Vallhat", npcSection: 'personnages', items: [{qty:10, id:'cols'}] }]
+},
 {
     id:       'brindille_enchantee',
     name:     "Brindille Enchantée",
@@ -6238,8 +6258,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/brindille_enchantee.png",
     lore:     "Brindille du Mage Sylvestre, ce bâton peutêtre utilisé comme basepour une arme magique.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Mages Sylvestres[30]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:mage_sylvestre|Mage Sylvestre][30]\n\nAchetable:\n- [npc:marchand_itinerant_hanaka|Marchand Itinérant de Hanaka]\n- [npc:marchand_itinerant_vallhat|Marchand Itinérant de Vallhat]",
+		craft:    [{ name: "Marchand Itinérant Hanaka & Vallhat", npcSection: 'personnages', items: [{qty:8, id:'cols'}] }]
+},
 {
     id:       'coeur_de_bois',
     name:     "Cœur de Bois",
@@ -6249,8 +6270,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/coeur_de_bois.png",
     lore:     "Cœur imprégné de magie, si vous l'utilisez avec précaution une arme très redoutable peut être créée.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Mages Sylvestres[20]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:mage_sylvestre|Mage Sylvestre][20]\n\nAchetable:\n- [npc:marchand_itinerant_hanaka|Marchand Itinérant de Hanaka]\n- [npc:marchand_itinerant_vallhat|Marchand Itinérant de Vallhat]",
+		craft:    [{ name: "Marchand Itinérant Hanaka & Vallhat", npcSection: 'personnages', items: [{qty:20, id:'cols'}] }]
+},
 {
     id:       'tissu_spectral',
     name:     "Tissu Spectral",
@@ -6260,8 +6282,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/tissu_spectral.png",
     lore:     "Un tissu imprégné de magie noire et de malédictions.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Mages Sylvestres[30]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:mage_sylvestre|Mage Sylvestre][30]\n\nAchetable au [npc:marchand_itinerant_hanaka|Marchand Itinérant de Hanaka]",
+		craft:    [{ name: "Marchand Itinérant Hanaka", npcSection: 'personnages', items: [{qty:8, id:'cols'}] }]
+},
 {
     id:       'mycelium_magique',
     name:     "Mycélium Magique",
@@ -6271,8 +6294,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/mycelium_magique.png",
     lore:     "Ingrédient assez rare pour de la haute alchimie ou pour autre chose ?",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Gardiens Colossaux[20]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:gardien_colossal|Gardien Colossal][20]\n\nAchetable au [npc:marchand_itinerant_hanaka|Marchand Itinérant de Hanaka]",
+		craft:    [{ name: "Marchand Itinérant Hanaka", npcSection: 'personnages', items: [{qty:600, id:'cols'}] }]
+},
 {
     id:       'ficelle_chene',
     name:     "Ficelle de Chêne",
@@ -6282,9 +6306,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/string_chene.png",
     lore:     "Une ficelle robuste ressée à partir de fibres de chêne, et mélangée à des fils d'araignées.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux au Sud de la Cathédrale dans la Ville de Départ",
-		craft:		[{id: 'chene', qty: 4}, {id: 'fil_araignee', qty: 4}]
-  },
+    obtain:   "Fabricable au [npc:refaconneur_vdp|Refaçonneur de Matériaux] au Sud de la Cathédrale dans la Ville de Départ",
+		craft:		[{ name: "Refaçonneur de la Ville de Départ", npcSection: 'personnages', items: [{id: 'chene', qty: 4}, {id: 'fil_araignee', qty: 4}]}]
+},
 {
     id:       'ficelle_bouleau',
     name:     "Ficelle de Bouleau",
@@ -6294,9 +6318,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/string_bouleau.png",
     lore:     "Une ficelle robuste ressée à partir de fibres de bouleau, et mélangée à des fils d'araignées.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux au Sud de la Cathédrale dans la Ville de Départ",
-		craft:		[{id: 'bouleau', qty: 4}, {id: 'fil_araignee', qty: 4}]
-  },
+    obtain:   "Fabricable au [npc:refaconneur_vdp|Refaçonneur de Matériaux] au Sud de la Cathédrale dans la Ville de Départ",
+		craft:		[{ name: "Refaçonneur de la Ville de Départ", npcSection: 'personnages', items: [{id: 'bouleau', qty: 4}, {id: 'fil_araignee', qty: 4}]}]
+},
 {
     id:       'ficelle_cuivre',
     name:     "Ficelle de Cuivre",
@@ -6306,9 +6330,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/string_cuivre.png",
     lore:     "Une ficelle robuste ressée à partir d'un alliage de cuivre, et mélangée à des fils d'araignées.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux au Sud de la Cathédrale dans la Ville de Départ",
-		craft:		[{id: 'cuivre', qty: 4}, {id: 'fil_araignee', qty: 4}]
-  },
+    obtain:   "Fabricable au [npc:refaconneur_vdp|Refaçonneur de Matériaux] au Sud de la Cathédrale dans la Ville de Départ",
+		craft:		[{ name: "Refaçonneur de la Ville de Départ", npcSection: 'personnages', items: [{id: 'cuivre', qty: 4}, {id: 'fil_araignee', qty: 4}]}]
+},
 {
     id:       'gelee_de_slime',
     name:     "Gelée de Slime",
@@ -6318,8 +6342,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/gelee_slime.png",
     lore:     "Une petite et belle gelée gluante qui colle à vos mains pendant longtemps.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Petits Slimes[30]\n- Guerriers Slimes[30]\n- Slimes Soigneurs[30]\n- Slimes Magiciens[30]\n- Gorbel[30]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:petit_slime|Petit Slime][30]\n- [mob:guerrier_slime|Guerrier Slime][30]\n- [mob:slime_soigneur|Slime Soigneur][30]\n- [mob:slime_magicien|Slime Magicien][30]\n- [mob:gorbel|Gorbel][30]\n\nAchetable au [npc:marchand_itinerant_vallhat|Marchand Itinérant de Vallhat]",
+		craft:    [{ name: "Marchand Itinérant Vallhat", npcSection: 'personnages', items: [{qty:10, id:'cols'}] }]
+},
 {
     id:       'noyau_de_slime',
     name:     "Noyau de Slime",
@@ -6329,8 +6354,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/noyau_de_slime.png",
     lore:     "Noyau imprégné de la magie des slimes. Utilisé dasn la confection d'accessoires magiques.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Slimes Soigneurs[5]\n- Slimes Magiciens[5]\n- Gorbel[5]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:slime_soigneur|Slime Soigneur][5]\n- [mob:slime_magicien|Slime Magicien][5]\n- [mob:gorbel|Gorbel][5]\n\nAchetable au [npc:marchand_itinerant_vallhat|Marchand Itinérant de Vallhat]",
+		craft:    [{ name: "Marchand Itinérant Vallhat", npcSection: 'personnages', items: [{qty:200, id:'cols'}] }]
+},
 {
     id:       'essence_de_gorbel',
     name:     "Essence de Gorbel",
@@ -6340,8 +6366,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/essence_de_gorbel.png",
     lore:     "Essence d'un slime qui a atteint son plus haut potentiel.",
     tags:     ['Matériaux', 'Palier 1', 'Épique'],
-    obtain:   "Obtenable en tuant:\n- Gorbel[5]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:gorbel|Gorbel][5]"
+},
 {
     id:       'os_de_squelette',
     name:     "Os de Squelette",
@@ -6351,8 +6377,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/os_de_squelette.png",
     lore:     "Petit os que l'on trouve sur des squelettes de bas rang. Sûrement utile pour certaines confections.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[45]\n- Guerriers Squelettes[40]\n- Squelettes Hallebardiers[45]\n- Squelettes Mages[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:squelette_epeiste|Squelette Épéiste][45]\n- [mob:guerrier_squelette|Guerrier Squelette][40]\n- [mob:squelette_hallebardier|Squelette Hallebardier][45]\n- [mob:squelette_mage|Squelette Mage][40]"
+},
 {
     id:       'poussiere_dos',
     name:     "Poussière d'Os",
@@ -6362,8 +6388,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/poussiere_os.png",
     lore:     "Résidu d'os réduit en poudre. Sert de catalyseur pour des potions de vie.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[35]\n- Guerriers Squelettes[30]\n- Squelettes Hallebardiers[35]\n- Archers Squelettes[20]\n- Tanks Squelettes[30]\n- Squelettes Mages[30]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:squelette_epeiste|Squelette Épéiste][35]\n- [mob:guerrier_squelette|Guerrier Squelette][30]\n- [mob:squelette_hallebardier|Squelette Hallebardier][35]\n- [mob:archer_squelette|Archer Squelette][20]\n- [mob:tank_squelette|Tank Squelette][30]\n- [mob:squelette_mage|Squelette Mage][30]"
+},
 {
     id:       'os_de_squelette_renforce',
     name:     "Os de Squelette Renforcé",
@@ -6373,8 +6399,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/os_renforce.png",
     lore:     "Contrairement au petit os, ces os sont plus résistants et sûrement utiles aussi dans certaines confections.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Hallebardiers[35]\n- Archers Squelettes[30]\n- Tanks Squelettes[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:squelette_hallebardier|Squelette Hallebardier][35]\n- [mob:archer_squelette|Archer Squelette][30]\n- [mob:tank_squelette|Tank Squelette][40]"
+},
 {
     id:       'ames_des_ruines',
     name:     "Âmes des Ruines",
@@ -6384,8 +6410,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/ames_des_ruines.png",
     lore:     "Âme de squelette abreuvé de corruption.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Épéiste[40]\n- Guerriers Squelettes[40]\n- Squelettes Hallebardiers[40]\n- Archers Squelettes[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:squelette_epeiste|Squelette Épéiste][40]\n- [mob:guerrier_squelette|Guerrier Squelette][40]\n- [mob:squelette_hallebardier|Squelette Hallebardier][40]\n- [mob:archer_squelette|Archer Squelette][40]"
+},
 {
     id:       'morceau_de_criniere_spectrale',
     name:     "Morceau de Crinière Spectrale",
@@ -6395,8 +6421,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/morceau_de_criniere_spectrale.png",
     lore:     "Une mèche de crinière éthérée, arrachée a une monture spectrale. Elle palpite encore d'une énergie rapide.",
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
-    obtain:   "Obtenable en tuant:\n- Nasgul[2.5]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:nasgul|Nasgul][2.5]"
+},
 {
     id:       'eclat_du_sabot_maudit',
     name:     "Éclat du Sabot Maudit",
@@ -6406,8 +6432,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/eclat_du_sabot_maudit.png",
     lore:     "Fragment arraché au sabot d'une créature maudite. Il renferme une énergie sombre qui confère à son porteur une vitesse surnaturelle.",
     tags:     ['Matériaux', 'Palier 1', 'Legendaire'],
-    obtain:   "Obtenable en tuant:\n- Nasgul[1]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:nasgul|Nasgul][1]"
+},
 {
     id:       'cuir_use',
     name:     "Cuir Usé",
@@ -6417,8 +6443,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/cuir_use.png",
     lore:     "Un morceau de cuir abîmé autrefois portépar des Bandits. Il reste utilisable.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Bandits Archer[40]\n- Bandits Assassins[30]\n- Bandits Robustes[80]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:bandit_archer|Bandit Archer][40]\n- [mob:bandit_assassin|Bandit Assassin][30]\n- [mob:bandit_robuste|Bandit Robuste][80]\n\nAchetable au [npc:marchand_itinerant_mizunari|Marchand Itinérant de Mizunari]",
+		craft:    [{ name: "Marchand Itinérant Mizunari", npcSection: 'personnages', items: [{qty:10, id:'cols'}] }]
+},
 {
     id:       'petite_bourse',
     name:     "Petite Bourse",
@@ -6428,8 +6455,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/petite_bourse.png",
     lore:     "Un petit sac en tissu, parfait pour y glisser des pièces.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Bandits Archer[25]\n- Bandits Assassins[35]\n- Bandits Robustes[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:bandit_archer|Bandit Archer][25]\n- [mob:bandit_assassin|Bandit Assassin][35]\n- [mob:bandit_robuste|Bandit Robuste][40]\n\nAchetable au [npc:marchand_itinerant_vdp|Marchand Itinérant de la Zone des Sangliers]",
+		craft:    [{ name: "Marchand Itinérant Zone des Sangliers", npcSection: 'personnages', items: [{qty:10, id:'cols'}] }]
+},
 {
     id:       'carapace_dika',
     name:     "Carapace d'Ika",
@@ -6439,8 +6467,9 @@ const ITEMS = [
     image:    null,
     lore:     "Un morceau épais de carapace issu d'une tortue d'Ika abattue.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Ika[80]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:ika|Ika][80]\n\nAchetable au [npc:marchand_itinerant_mizunari|Marchand Itinérant de Mizunari]",
+		craft:    [{ name: "Marchand Itinérant Mizunari", npcSection: 'personnages', items: [{qty:12, id:'cols'}] }]
+},
 {
     id:       'piece_metal_enchante',
     name:     "Pièce de Métal Enchanté",
@@ -6450,8 +6479,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/piece_de_metal_enchante.png",
     lore:     "Petite ferraille de métal, avec d'autres ingrédients il est possible d'en faire des Lingôts de Métal Enchanté.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Soldat Déchu[20]\n- Guerrier Déchu[20]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:soldat_dechu|Soldat Déchu][20]\n- [mob:guerrier_dechu|Guerrier Déchu][20]"
+},
 {
     id:       'lingot_metal_enchante',
     name:     "Lingot de Métal Enchanté",
@@ -6461,9 +6490,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/lingot_de_metal_enchante.png",
     lore:     "Lingot de Métal Enchanté fabriqué à partir de petite ferraille.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
-		craft:		[{id: 'piece_metal_enchante', qty: 10}, {id: 'fer', qty: 5}, {id: 'charbon', qty: 3}]
-  },
+    obtain:   "Fabricable au [npc:forgeron_armes_labyrinthe|Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus]",
+		craft:		[{name: "Forgeron d'Armes du Labyrinthe", npcSection: 'personnages', items: [{id: 'piece_metal_enchante', qty: 10}, {id: 'fer', qty: 5}, {id: 'charbon', qty: 3}]}]
+},
 {
     id:       'piece_ame_metal',
     name:     "Pièce d'Âme de Métal",
@@ -6473,8 +6502,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/piece_dame_de_metal.png",
     lore:     "Petite ferraille de métal, avec d'autres ingrédients il est possible d'en faire des Lingôts d'Âme de Métal.",
     tags:     ['Matériaux', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Guerrier Déchu[25]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:guerrier_dechu|Guerrier Déchu][25]"
+},
 {
     id:       'lingot_ame_metal',
     name:     "Lingot d'Âme de Métal",
@@ -6484,9 +6513,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/lingot_dame_de_metal.png",
     lore:     "Lingot d'Âme de Métal fabriqué à partir de petite ferraille.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
-		craft:		[{id: 'piece_ame_metal', qty: 10}, {id: 'fer', qty: 5}, {id: 'charbon', qty: 3}]
-  },
+    obtain:   "Fabricable au [npc:forgeron_armes_labyrinthe|Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus]",
+		craft:		[{name: "Forgeron d'Armes du Labyrinthe", npcSection: 'personnages', items: [{id: 'piece_ame_metal', qty: 10}, {id: 'fer', qty: 5}, {id: 'charbon', qty: 3}]}]
+},
 {
     id:       'fil_araignee_renforce',
     name:     "Fil d'Araignée Renforcé",
@@ -6496,9 +6525,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/fil_daraignee.png",
     lore:     "Fil de meilleur qualité qui peut être utilisé pour de meilleurs outils.",
     tags:     ['Matériaux', 'Palier 1', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
-		craft:		[{id: 'fil_araignee', qty: 3}, {id: 'fer', qty: 6}]
-  },
+    obtain:   "Fabricable au [npc:forgeron_armes_labyrinthe|Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus]",
+		craft:		[{name: "Forgeron d'Armes du Labyrinthe", npcSection: 'personnages', items: [{id: 'fil_araignee', qty: 3}, {id: 'fer', qty: 6}]}]
+},
 {
     id:       'fragment_casse_rouge',
     name:     "Fragment Cassé Rouge",
@@ -6509,7 +6538,7 @@ const ITEMS = [
     lore:     "Fragment trouvé dans les coffres du labyrinthe des Chevaliers Jumeaux.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
-  },
+},
 {
     id:       'fragment_casse_jaune',
     name:     "Fragment Cassé Jaune",
@@ -6520,7 +6549,7 @@ const ITEMS = [
     lore:     "Fragment trouvé dans les coffres du labyrinthe des Chevaliers Jumeaux.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
-  },
+},
 {
     id:       'fragment_casse_violet',
     name:     "Fragment Cassé Violet",
@@ -6531,7 +6560,7 @@ const ITEMS = [
     lore:     "Fragment trouvé dans les coffres du labyrinthe des Chevaliers Jumeaux.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
     obtain:   "Obtenable dans les Coffres dispersés du Donjon Labyrinthe des Déchus"
-  },
+},
 {
     id:       'eclat_fusionne',
     name:     "Éclat Fusionné",
@@ -6541,9 +6570,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/eclats_fusionnes.png",
     lore:     "Fusion délicate entre les Fragments Cassé Violet. Utile pour l'armure du Reaper.",
     tags:     ['Matériaux', 'Palier 1', 'Épique'],
-    obtain:   "Fabricable au Forgeron d'Armure à l'intérieur du Donjon du Labyrinthe des Déchus",
-		craft:		[{id: 'fragment_casse_violet', qty: 5}]
-  },
+    obtain:   "Fabricable au [npc:forgeron_armures_labyrinthe|Forgeron d'Armure à l'intérieur du Donjon du Labyrinthe des Déchus]",
+		craft:		[{name: "Forgeron d'Armures du Labyrinthe", npcSection: 'personnages', items: [{id: 'fragment_casse_violet', qty: 5}]}]
+},
 {
     id:       'ame_warden',
     name:     "Âme du Warden",
@@ -6553,9 +6582,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/ame_du_warden.png",
     lore:     "Une âme est contenue dans cet objet. Il peut être obtenu en tuant son possesseur ou en le fabriquant au forgeron.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Gardien Déchu[30]\nFabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
-		craft:		[{id: 'fragment_casse_rouge', qty: 25}, {id: 'charbon', qty: 32}]
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:gardien_dechu|Gardien Déchu][30]\n\nFabricable au [npc:forgeron_armes_labyrinthe|Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus]",
+		craft:		[{name: "Forgeron d'Armes du Labyrinthe", npcSection: 'personnages', items: [{id: 'fragment_casse_rouge', qty: 25}, {id: 'charbon', qty: 32}]}]
+},
 {
     id:       'ame_herald',
     name:     "Âme de l'Herald",
@@ -6565,9 +6594,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/ame_de_herald.png",
     lore:     "Une âme est contenue dans cet objet. Il peut être obtenu en tuant son possesseur ou en le fabriquant au forgeron.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Héraut Déchu[30]\nFabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
-		craft:		[{id: 'fragment_casse_jaune', qty: 25}, {id: 'charbon', qty: 32}]
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:heraut_dechu|Héraut Déchu][30]\n\nFabricable au [npc:forgeron_armes_labyrinthe|Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus]",
+		craft:		[{name: "Forgeron d'Armes du Labyrinthe", npcSection: 'personnages', items: [{id: 'fragment_casse_jaune', qty: 25}, {id: 'charbon', qty: 32}]}]
+},
 {
     id:       'ame_reaper',
     name:     "Âme du Reaper",
@@ -6577,9 +6606,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/ame_du_reaper.png",
     lore:     "Une âme est contenue dans cet objet. Il peut être obtenu en tuant son possesseur ou en le fabriquant au forgeron.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Faucheuse Déchue[30]\nFabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
-		craft:		[{id: 'eclat_fusionne', qty: 3}, {id: 'charbon', qty: 32}]
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:faucheuse_dechu|Faucheuse Déchue][30]\n\nFabricable au [npc:forgeron_armes_labyrinthe|Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus]",
+		craft:		[{name: "Forgeron d'Armes du Labyrinthe", npcSection: 'personnages', items: [{id: 'eclat_fusionne', qty: 3}, {id: 'charbon', qty: 32}]}]
+},
 {
     id:       'tissu_araignee',
     name:     "Tissu d'Araignée",
@@ -6589,8 +6618,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/tissu_daraignee.png",
     lore:     "Un tissu fin, mais incroyablement résistant. Idéal pour des équipements légers ou enchantés.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Araignée des Forêts[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:araignee_foret|Araignée des Forêts][40]\n\nAchetable:\n- [npc:marchand_itinerant_virelune|Marchand Itinérant de Virelune]\n- [npc:marchand_itinerant_tolbana|Marchand Itinérant de Tolbana]\n- [npc:marchand_itinerant_candelia|Marchand Itinérant d'Arakh'Nol]",
+		craft:    [{ name: "Marchand Itinérant de Virelune", npcSection: 'personnages', items: [{qty:12, id:'cols'}] }, { name: "Marchand Itinérant de Tolbana", npcSection: 'personnages', items: [{qty:14, id:'cols'}] }, { name: "Marchand Itinérant d'Arakh'Nol", npcSection: 'personnages', items: [{qty:12, id:'cols'}] }]
+},
 {
     id:       'fil_araignee',
     name:     "Fil d'Araignée",
@@ -6600,8 +6630,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/fil_daraignee.png",
     lore:     "Petit fil très fragile il peut se casser à tout moment.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Araignée des Forêts[50]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:araignee_foret|Araignée des Forêts][50]\n\nAchetable:\n- [npc:marchand_itinerant_virelune|Marchand Itinérant de Virelune]\n- [npc:marchand_itinerant_tolbana|Marchand Itinérant de Tolbana]\n- [npc:marchand_itinerant_candelia|Marchand Itinérant d'Arakh'Nol]",
+		craft:    [{ name: "Marchand Itinérant de Virelune", npcSection: 'personnages', items: [{qty:14, id:'cols'}] }, { name: "Marchand Itinérant de Tolbana", npcSection: 'personnages', items: [{qty:12, id:'cols'}] }, { name: "Marchand Itinérant d'Arakh'Nol", npcSection: 'personnages', items: [{qty:14, id:'cols'}] }]
+},
 {
     id:       'peau_cerf_montagnes',
     name:     "Peau de Cerf des Montagnes",
@@ -6611,8 +6642,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/cerf_cuir.png",
     lore:     "Un morceau de peau épaisse, rigide, utile pour des armures robustes.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Cerf des Montagnes[45]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:cerf_montagnes|Cerf des Montagnes][45]\n\nAchetable au [npc:marchand_itinerant_tolbana|Marchand Itinérant de Tolbana]",
+		craft:    [{ name: "Marchand Itinérant de Tolbana", npcSection: 'personnages', items: [{qty:12, id:'cols'}] }]
+},
 {
     id:       'peau_dur_glacial',
     name:     "Peau Dur Glacial",
@@ -6622,8 +6654,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/peau_dur_glacial.png",
     lore:     "Une plaque de givre solidifiée, aussi dur que de la pierre.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Golem de Glace[30]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:golem_glace|Golem de Glace][30]\n\nAchetable au [npc:marchand_itinerant_tolbana|Marchand Itinérant de Tolbana]",
+		craft:    [{ name: "Marchand Itinérant de Tolbana", npcSection: 'personnages', items: [{qty:20, id:'cols'}] }]
+},
 {
     id:       'poussiere_givre',
     name:     "Poussière de Givre",
@@ -6633,8 +6666,9 @@ const ITEMS = [
     image:   "../img/compendium/textures/items/Material/P1/poussiere_de_givre.gif",
     lore:     "Une fine poudre glaciale récoltée sur des créatures de glace.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Golem de Glace[40]\n- Spirite de Glace[45]\n- Ours de Glace[80]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:golem_glace|Golem de Glace][40]\n- [mob:esprit_glace|Spirite de Glace][45]\n- [mob:ours_glace|Ours de Glace][80]\n\nAchetable au [npc:marchand_itinerant_tolbana|Marchand Itinérant de Tolbana]",
+		craft:    [{ name: "Marchand Itinérant de Tolbana", npcSection: 'personnages', items: [{qty:12, id:'cols'}] }]
+},
 {
     id:       'eclat_magique_glacial',
     name:     "Éclat Magique Glacial",
@@ -6644,8 +6678,10 @@ const ITEMS = [
     image:    null,
     lore:     "Un fragment cristallin baigné de magie ancienne. Il est prisé pour forger des armures mystiques.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Spirite de Glace[35]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:esprit_glace|Spirite de Glace][35]\n\nAchetable au [npc:marchand_itinerant_tolbana|Marchand Itinérant de Tolbana]",
+		craft:    [{ name: "Marchand Itinérant de Tolbana", npcSection: 'personnages', items: [{qty:16, id:'cols'}] }]
+
+},
 {
     id:       'fragment_ame_ours',
     name:     "Fragment de l'Âme de l'Ours",
@@ -6655,8 +6691,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/ame_ours.gif",
     lore:     "L'âme de l'Ours repose dans ce fragment. Utilisez-le avec sagesse, car son pouvoir est colossal.",
     tags:     ['Matériaux', 'Palier 1', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Ours de Glace[5]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:ours_glace|Ours de Glace][5]",
+},
 {
     id:       'carapace_requin',
     name:     "Carapace de Requin",
@@ -6666,7 +6702,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/ecaille_requin.png",
     lore:     "Une plaque de carapace très dure, arrachée à un poisson-requin. Solide et résistante parfaite pour une certaine armure lourdre.",
     tags:     ['Matériaux', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Poisson Requin[40]"
+    obtain:   "Obtenable en tuant:\n- [mob:poisson_requin|Poisson Requin][40]\n\nAchetable:\n- [npc:marchand_itinerant_virelune|Marchand Itinérant de Virelune]\n- [npc:marchand_itinerant_candelia|Marchand Itinérant d'Arakh'Nol]",
+		craft:    [{ name: "Marchand Itinérant de Virelune", npcSection: 'personnages', items: [{qty:13, id:'cols'}] }]
   },
 //#endregion Items > P1 > Matériaux
 //#region Items > P1 > Ressources
@@ -6680,7 +6717,7 @@ const ITEMS = [
     lore:     "Une Roche sombre contenant des traces de charbon brut.",
     tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les des deux mines du Palier 1"
-  },
+},
 {
     id:       'cuivre',
     name:     "Minerais de Cuivre",
@@ -6691,7 +6728,7 @@ const ITEMS = [
     lore:     "Minerais de basse qualité, utile pour les débuts d'aventure au débutants.",
     tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les des deux mines du Palier 1"
-  },
+},
 {
     id:       'lingot_cuivre',
     name:     "Lingot de Cuivre",
@@ -6701,9 +6738,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Ressources/bar_copper.png",
     lore:     "Lingot raffiné à partir de minerai de cuivre. Utilisé en forge, pour certaines confections.",
     tags:     ['Ressource', 'Minerais', 'Lingot', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable:\n- Forgeron d'Armures de la Ville de Départ\n- Forgeron de Lingots au Sud du Quartier OG",
+    obtain:   "Fabricable:\n- [npc:forgeron_armures_vdp|Forgeron d'Armures de la Ville de Départ]\n- [npc:forgeron_lingot_vdp|Forgeron de Lingots au Sud du Quartier OG]",
 		craft:	 [{id:'cuivre', qty:3}, {id:'charbon', qty:2}]
-  },
+},
 {
     id:       'fer',
     name:     "Minerais de Fer",
@@ -6714,7 +6751,7 @@ const ITEMS = [
     lore:     "Une roche marquée par des veines de métal brut.",
     tags:     ['Ressource', 'Minerais', 'Brut', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les des deux mines du Palier 1"
-  },
+},
 {
     id:       'lingot_fer',
     name:     "Lingot de Fer",
@@ -6724,9 +6761,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Ressources/bar_iron.png",
     lore:     "Lingot forgé à haute température. Un matériau essentiel et polyvalent. Utilisé par les artisans.",
     tags:     ['Ressource', 'Minerais', 'Lingot', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron de Lingots au Sud du Quartier OG",
+    obtain:   "Fabricable au [npc:forgeron_lingot_vdp|Forgeron de Lingots au Sud du Quartier OG]",
 		craft:	 [{id:'fer', qty:4}, {id:'charbon', qty:2}]
-  },
+},
 {
     id:       'allium',
     name:     "Fleur d'Allium",
@@ -6737,7 +6774,7 @@ const ITEMS = [
     lore:     "Belle fleur violette très utilisée par beaucoup d'alchimistes pour des potions de vitalité.",
     tags:     ['Ressource', 'Plante', 'Fleur', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les Champs au Sud du Quartier OG"
-  },
+},
 {
     id:       'blé',
     name:     "Blé",
@@ -6748,7 +6785,7 @@ const ITEMS = [
     lore:     "Une céréale simple poussant dans les champs abandonnés.",
     tags:     ['Ressource', 'Plante', 'Céréale', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans les Champs au Sud du Quartier OG"
-  },
+},
 {
     id:       'chene',
     name:     "Buche de Chêne",
@@ -6759,7 +6796,7 @@ const ITEMS = [
     lore:     "Solide, fiable, parfait pour les fabrications basiques.",
     tags:     ['Ressource', 'Bois', 'Buche', 'Palier 1', 'Commun'],
     obtain:   "Récupérable:\n- Forêt à l'Est de la Ville de Départ\n- Forêt aux alentours de Mizunari"
-  },
+},
 {
     id:       'planche_chene',
     name:     "Planche de Chêne",
@@ -6769,9 +6806,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Ressources/planche_chene.png",
     lore:     "Planche travaillé dans une scierie, parfait pour certaines fabrications.",
     tags:     ['Ressource', 'Bois', 'Planche', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
+    obtain:   "Fabricable:\n- [npc:bucheron_vdp|Bucheron à l'Est de la Ville de Départ]\n- [npc:bucheron_kaelor|Bucheron Kaelor]",
 		craft:		[{id:'chene', qty:2}]
-  },
+},
 {
     id:       'bouleau',
     name:     "Buche de Bouleau",
@@ -6782,7 +6819,7 @@ const ITEMS = [
     lore:     "Solide, fiable, parfait pour les fabrications basiques.",
     tags:     ['Ressource', 'Bois', 'Buche', 'Palier 1', 'Commun'],
     obtain:   "Récupérable dans la Forêt au Nord de Virelune"
-  },
+},
 {
     id:       'planche_bouleau',
     name:     "Planche de Bouleau",
@@ -6792,9 +6829,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Ressources/planche_bouleau.png",
     lore:     "Planche travaillé dans une scierie, parfait pour certaines fabrications.",
     tags:     ['Ressource', 'Bois', 'Planche', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
+    obtain:   "Fabricable:\n- [npc:bucheron_vdp|Bucheron à l'Est de la Ville de Départ]\n- [npc:bucheron_kaelor|Bucheron Kaelor]",
 		craft:		[{id:'bouleau', qty:2}]
-  },
+},
 {
     id:       'poudre_bois',
     name:     "Poudre de Bois",
@@ -6804,9 +6841,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Ressources/poussiere_bois.png",
     lore:     "Petite poudre de bois fabriquée à l'aide de n'importe quel bois.",
     tags:     ['Ressource', 'Bois', 'Poudre', 'Palier 1', 'Commun'],
-    obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
-		craft:		[[{id:'planche_chene', qty:2}], [{id:'planche_bouleau', qty:2}], [{id:'planche_acacia', qty:2}]]
-  },
+    obtain:   "Fabricable:\n- [npc:bucheron_vdp|Bucheron à l'Est de la Ville de Départ]\n- [npc:bucheron_kaelor|Bucheron Kaelor]",
+		craft:		[[{id:'planche_chene', qty:2}], [{id:'planche_bouleau', qty:2}], [{id:'planche_acacia', qty:2}], [{id:'planche_sapin', qty:2}]]
+},
 //#endregion Items > P1 > Ressources
 //#region Items > P1 > Quêtes
 {
@@ -6818,8 +6855,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Quest/cristal_corrompu.png",
     lore:     "Des traces de corruptions émanent de cet objet.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Sangliers Corrompus[50]\n- Pumba[100]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:sanglier_corrompu|Sanglier Corrompu][50]\n- [mob:pumba_corrompu|Pumba Corrompu][100]\n\nAchetable au [npc:marchand_itinerant_vdp|Marchand Itinérant de la Zone des Sangliers]",
+		craft:    [[{qty:3, id:'cols'}]],
+},
 {
     id:       'rune_etrange',
     name:     "Rune Étrange",
@@ -6830,7 +6868,7 @@ const ITEMS = [
     lore:     "Cette rune semble ancienne.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
     obtain:   "Récupérable en réalisant la Quête Principale:\n- «La Corruption»"
-  },
+},
 {
     id:       'spore_corrompu',
     name:     "Spore Corrompu",
@@ -6840,8 +6878,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Quest/spore_corrompu.png",
     lore:     "Un spore étrange imprégné de corruption...",
     tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Nephentes[50]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:nephentes|Nephentes][50]\n\nAchetable au [npc:marchand_itinerant_mizunari|Marchand Itinérant de Mizunari]",
+		craft:    [[{qty:10, id:'cols'}]],
+},
 {
     id:       'tissu_maudit',
     name:     "Tissu Maudit",
@@ -6851,8 +6890,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Quest/tissu_maudit.png",
     lore:     "Les forces obscures devorent ce tissu.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelettes Mages[50]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:squelette_mage|Squelette Mage][50]"
+},
 {
     id:       'coeur_putrefie',
     name:     "Cœur Putréfié",
@@ -6862,8 +6901,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Quest/coeur_putrefie.png",
     lore:     "La putréfaction ronge peu à peu ce cœur.",
     tags:     ['Quête', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Narax Squelette Maudit[70]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:narax|Narax Squelette Maudit][70]"
+},
 {
     id:       'fragment_ancien',
     name:     "Fragment des Anciens",
@@ -6874,7 +6913,7 @@ const ITEMS = [
     lore:     "La puissance des anciens se fait ressentir à travers ce fragment.",
     tags:     ['Quête', 'Palier 1', 'Rare'],
     obtain:   "Récupérable en réalisant les Quêtes Principales:\n- «Nasgul: Protecteur Maudit»\n- «Donjon: Mine de Geldorak»\n- «Gorbel: Slime Imposant»"
-  },
+},
 {
     id:       'sceau',
     name:     "Sceau",
@@ -6885,7 +6924,7 @@ const ITEMS = [
     lore:     "Le Sceau des anciens dans sa forme originel.",
     tags:     ['Quête', 'Palier 1', 'Légendaire'],
     obtain:   "Récupérable en réalisant la Quête Principale:\n- «Le Sceau des anciens»"
-  },
+},
 {
     id:       'coeur_nymbrea',
     name:     "Cœur de Nymbréa",
@@ -6895,8 +6934,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Quest/coeur_de_leviathan.gif",
     lore:     "Encore brûlant et chargé de magie aquatique, ce cœur scintille d'une énergie ancienne.",
     tags:     ['Quête', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Nymbréa"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:nymbrea|Nymbréa]"
+},
 {
     id:       'venin_araignee',
     name:     "Venin d'Araignée",
@@ -6907,7 +6946,7 @@ const ITEMS = [
     lore:     "Un liquide sombre et visqueux, extrait de la reine des araignées.",
     tags:     ['Quête', 'Palier 1', 'Rare'],
     obtain:   "Obtenable en récompense du Donjon Sanctuaire de Xal'Zirith"
-  },
+},
 {
     id:       'parchemin_sceau_kobold',
     name:     "Parchemin de Sceau Complet",
@@ -6918,7 +6957,7 @@ const ITEMS = [
     lore:     "Enchanté, ce parchemin peut débloquer la barrière du roi Kobold Illfang.",
     tags:     ['Quête', 'Palier 1', 'Godlike'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «28 - Donjon: Le Kobold»"
-  },
+},
 //#endregion Items > P1 > Quêtes
 //#region Items > P1 > Donjon
 {
@@ -6930,9 +6969,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Donjon/key_geldo.png",
     lore:     "Peut être utilisé pour accéder au donjon : Mine de Geldorak.",
     tags:     ['Donjon', 'Mine de Geldorak', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable:\n- Fabricant de Clé devant le Donjon Mine de Geldorak\n- Fabricant de Clé dans la Ville de Départ",
+    obtain:   "Fabricable:\n- [npc:cle_mine_geldorak|Fabricant de Clé devant le Donjon Mine de Geldorak]\n- [npc:cle_vdp|Fabricant de Clé dans la Ville de Départ]",
 		craft:	 	[{id:'ecorce_sylvestre', qty:15}, {id:'coeur_de_bois', qty:4}, {id:'mycelium_magique', qty:1}]
-  },
+},
 {
     id:       'cle_dechu',
     name:     "Clé des Déchus",
@@ -6942,9 +6981,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Donjon/key_laby.png",
     lore:     "Peut être utilisé pour accéder au donjon : Labyrinthe des Déchus.",
     tags:     ['Donjon', 'Labyrinthe des Déchus', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Fabricant de Clé devant le Donjon Labyrinthe des Déchus",
+    obtain:   "Fabricable au [npc:cle_labyrinthe|Fabricant de Clé devant le Donjon Labyrinthe des Déchus]",
 		craft:	 	[{id:'fragment_de_feuille', qty:20}, {id:'tissu_maudit', qty:15}, {id:'ames_des_ruines', qty:10}]
-  },
+},
 {
     id:       'cle_xal',
     name:     "Clé de Xal'Zirith",
@@ -6954,9 +6993,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Donjon/key_xal.png",
     lore:     "Peut être utilisé pour accéder au donjon : Le Sanctuaire de Xal'Zirith.",
     tags:     ['Donjon', 'Sanctuaire de Xal\'Zirith', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable:\n- Fabricant de Clé devant le Donjon Sanctuaire de Xal'Zirith\n- Fabricant de Clé à Candelia",
+    obtain:   "Fabricable:\n- [npc:cle_xal|Fabricant de Clé devant le Donjon Sanctuaire de Xal'Zirith]\n- [npc:cle_candelia|Fabricant de Clé à Candelia]",
 		craft:	 	[{id:'tissu_araignee', qty:20}, {id:'fil_araignee', qty:25}]
-  },
+},
 {
     id:       'artefact_fallen',
     name:     "Artéfact des Fallen",
@@ -6966,8 +7005,8 @@ const ITEMS = [
     image:    null,
     lore:     "Fragment arraché à l'un des 3 Fallens du Donjon très utile pour accéder à la salle de boss des Chevaliers Jumeaux",
     tags:     ['Donjon', 'Labyrinthe des Déchus', 'Palier 1', 'Épique'],
-    obtain:   "Obtenable en tuant:\n- Gardien Déchu\n- Héraut Déchu\n- Faucheuse Déchu"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:gardien_dechu|Gardien Déchu][100]\n- [mob:heraut_dechu|Héraut Déchu][100]\n- [mob:faucheuse_dechu|Faucheuse Déchu][100]"
+},
 //#endregion Items > P1 > Donjon
 //#region Items > P1 > Monnaie
 {
@@ -6980,7 +7019,7 @@ const ITEMS = [
     lore:     "Monnaie provenant de Kazor.",
     tags:     ['Matériaux', 'Palier 1', 'World Boss', 'Kazor', 'Legendaire' ],
     obtain:   "Obtenable :\n- en récompense du World Boss Kazor\n- en atteignant le seuil de 500 dégâts sur Kazor"
-  },
+},
 //#endregion Items > P1 > Monnaie
 //#endregion Items > Palier 1
 //#region Items > Palier 2
@@ -6989,7 +7028,6 @@ const ITEMS = [
 //#region Items > P2 > Runes
 //#endregion Items > P2 > Runes
 //#region Items > P2 > Consommables
-
 {
     id:       'recette_cuisine_ragout_parfume',
     name:     "Recette de cuisine",
@@ -7003,7 +7041,7 @@ const ITEMS = [
 		effects: [
 				{ type: 'level',     value: 5,   unit: '', label: 'Niveau requis pour utiliser la recette' },
 		],
-  },
+},
 //#endregion Items > P2 > Consommables
 //#region Items > P2 > Nourritures
 //#endregion Items > P2 > Nourritures
@@ -7017,8 +7055,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/cuir_epais.png",
     lore:     "Une peau robuste et résistante, capable d'absorber de lourds impacts.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Taureau Monstrueux[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:taureau_monstrueux|Taureau Monstrueux][40]"
+},
 {
     id:       'corne_taureau',
     name:     "Corne de Taureau",
@@ -7028,8 +7066,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/corne_taureau.png",
     lore:     "Solide et acérée, cette corne témoigne de la force brutale de l'animal.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Taureau[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:taureau|Taureau][40]"
+},
 {
     id:       'peau_ours',
     name:     "Peau d'Ours",
@@ -7039,8 +7077,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/peau_ours.png",
     lore:     "Une épaisse fourrure tannée, capable de résister aux assauts et d'offrir une chaleur inégalée.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[50]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:ours_foret|Ours de la Forêt][50]\n- [mob:winnie|Winnie]"
+},
 {
     id:       'griffe_ours',
     name:     "Griffe d'Ours",
@@ -7050,8 +7088,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/griffe_ours.png",
     lore:     "Tranchante et recourbée, elle témoigne de la férocité et de la force d'un prédateur redoutable.",
     tags:     ['Matériaux', 'Palier 2','commun'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[45]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:ours_foret|Ours de la Forêt][45]\n- [mob:winnie|Winnie]"
+},
 {
     id:       'graisse_ours',
     name:     "Graisse d'Ours",
@@ -7061,8 +7099,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/graisse_ours.png",
     lore:     "Utilisée pour l'entretien du cuir ou comme combustible, cette graisse dégage une forte odeur sauvage.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[5]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:ours_foret|Ours de la Forêt][5]\n- [mob:winnie|Winnie]"
+},
 {
     id:       'residu_miel',
     name:     "Résidu de Miel",
@@ -7072,8 +7110,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/residu_miel.png",
     lore:     "Restes collants et sucrés, souvent imprégnés de pollen et de senteurs florales.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Ours de la Forêt[60]"
-  },
+    obtain:   "Obtenable en tuant:\n- [mob:ours_foret|Ours de la Forêt][60]\n- [mob:winnie|Winnie]"
+},
 {
     id:       'fourrure_loup_p2',
     name:     "Fourrure de Loup",
@@ -7083,8 +7121,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P1/fourrure_de_loup.png",
     lore:     "Chaud et souple, ce pelage protège efficacement du froid. Parfait pour créer des armures légères.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- Loups des Montagnes[40]\n- Loups des Savanes[50]"
-  },
+    obtain:   "Obtenable en tuant:\n- [loup_montagnes|Loups des Montagnes][40]\n- [loup_savanes|Loups des Savanes][50]"
+},
 {
     id:       'ficelle_acacia',
     name:     "Ficelle d'Acacia",
@@ -7094,9 +7132,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/string_acacia.png",
     lore:     "Une ficelle robuste tressé à partir de fibres d'acacia, et mélangée à des fils d'araignées.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
+    obtain:   "Fabricable au [npc:refaconneur_urbus|Refaçonneur de Matériaux à Urbus]",
 		craft:		[{id: 'acacia', qty: 4}, {id: 'fil_araignee', qty: 4}]
-  },
+},
 {
     id:       'ficelle_ferraille',
     name:     "Ficelle de Ferraille",
@@ -7106,9 +7144,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/string_ferraille.png",
     lore:     "Une ficelle robuste tressé à partir d'un alliage de ferraille, et mélangée à des fils d'araignées.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
-		craft:		[{id: 'fer', qty: 1}, {id: 'ferraille', qty: 1}, {id: 'fil_araignee', qty: 4}]
-  },
+    obtain:   "Fabricable au [npc:refaconneur_urbus|Refaçonneur de Matériaux à Urbus]",
+		craft:		[{id: 'fer', qty: 1}, {id: 'morceau_ferraille', qty: 1}, {id: 'fil_araignee', qty: 4}]
+},
 {
     id:       'ficelle_bauxite',
     name:     "Ficelle de Bauxite",
@@ -7118,9 +7156,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/string_bauxite.png",
     lore:     "Une ficelle robuste tressé à partir d'un alliage de bauxite, et mélangée à des fils d'araignées.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
+    obtain:   "Fabricable au [npc:refaconneur_urbus|Refaçonneur de Matériaux à Urbus]",
 		craft:		[{id: 'bauxite', qty: 1}, {id: 'fil_araignee', qty: 4}]
-  },
+},
 {
     id:       'ficelle_onyx_impur',
     name:     "Ficelle d'Onyx Impur",
@@ -7130,9 +7168,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/string_onyx_impure.png",
     lore:     "Une ficelle robuste tressé à partir d'un alliage d'onyx impur, et mélangée à des fils d'araignées.",
     tags:     ['Matériaux', 'Palier 2', 'epique'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
+    obtain:   "Fabricable au [npc:refaconneur_urbus|Refaçonneur de Matériaux à Urbus]",
 		craft:		[{id: 'onyx_impur', qty: 2}, {id: 'fil_araignee', qty: 8}]
-  },
+},
 {
     id:       'ficelle_onyx_pur',
     name:     "Ficelle d'Onyx Pur",
@@ -7142,9 +7180,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/string_onyx_pure.png",
     lore:     "Une ficelle robuste tressé à partir d'un alliage d'onyx pur, et mélangée à des fils d'araignées.",
     tags:     ['Matériaux', 'Palier 2', 'légendaire'],
-    obtain:   "Fabricable au Refaçonneur de Matériaux à Urbus",
+    obtain:   "Fabricable au [npc:refaconneur_urbus|Refaçonneur de Matériaux à Urbus]",
 		craft:		[{id: 'onyx_pur', qty: 2}, {id: 'fil_araignee', qty: 8}]
-  },
+},
 {
     id:       'dard',
     name:     "Dard",
@@ -7154,8 +7192,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/dard_abeille.png",
     lore:     "Pointu et redoutable, ce dard d'abeille géante est un matériau de choix pour fabriquer des équipements perforants.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Ouvrière[30]\n- Dardroyal[35]\n- Melisara, Souveraine de la Ruche[90]"
-  },
+    obtain:   "Obtenable en tuant:\n- [ouvriere|Ouvrière][30]\n- [dardroyal|Dardroyal][35]\n- [melisara|Melisara, Souveraine de la Ruche][90]"
+},
 {
     id:       'miel',
     name:     "Miel",
@@ -7165,8 +7203,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/miel.png",
     lore:     "Doux mais étonnement visqueux, ce miel concentré est utilisé pour enduire certaines armures.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Ouvrière[30]\n- Melisara, Souveraine de la Ruche[100]"
-  },
+    obtain:   "Obtenable en tuant:\n- [ouvriere|Ouvrière][30]\n- [melisara|Melisara, Souveraine de la Ruche][100]"
+},
 {
     id:       'carapace_abeille',
     name:     "Carapace d'Abeille",
@@ -7176,9 +7214,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/carapace_abeille.png",
     lore:     "Épaisse et segmentée, cette carapace protège efficacement contre les assauts. Parfaite pour façonner des équipements.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
-    obtain:   "Obtenable en tuant:\n- Dardroyal[30]\n- Melisara, Souveraine de la Ruche[80]"
-  },
-	{
+    obtain:   "Obtenable en tuant:\n- [dardroyal|Dardroyal][30]\n- [melisara|Melisara, Souveraine de la Ruche][80]"
+},
+{
     id:       'pollen_concentre',
     name:     "Pollen Concentré",
     rarity:   'rare',
@@ -7188,7 +7226,7 @@ const ITEMS = [
     lore:     "Ce pollen épais et doré vibre entre vos doigts. Il est la clé pour ouvrir des portes.",
     tags:     ['Matériaux', 'Palier 2', 'rare'],
     obtain:   "Objet propre au Donjon de la Ruche de Melliona, il est récupérable en fouillant des fleurs"
-  },
+},
 {
     id:       'plume_enflammee',
     name:     "Plume Enflammée",
@@ -7198,8 +7236,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/drop_plume_rouge.png",
     lore:     "Une plume incandescente, vibrant d'énergie magique. Utilisée par les artisans.",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Feu[50]"
-  },
+    obtain:   "Obtenable en tuant:\n- [harpie_feu|Harpie de Feu][50]"
+},
 {
     id:       'plume_terreuse',
     name:     "Plume Terreuse",
@@ -7209,8 +7247,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/drop_plume_vert.png",
     lore:     "Une plume dense et résistante, imprégnée de force tellurique parfaite.",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Terre[50]"
-  },
+    obtain:   "Obtenable en tuant:\n- [harpie_terre|Harpie de Terre][50]"
+},
 {
     id:       'plume_ondoyante',
     name:     "Plume Ondoyante",
@@ -7220,8 +7258,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/drop_plume_bleu.png",
     lore:     "Une plume souple et scintillante, gorgée d'essence aquatique.",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Foudre[50]"
-  },
+    obtain:   "Obtenable en tuant:\n- [harpie_foudre|Harpie de Foudre][50]"
+},
 {
     id:       'oeuf_harpie_eau',
     name:     "Œuf de Harpie d'Eau",
@@ -7231,8 +7269,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/oeuf_harpie.png",
     lore:     "Un œuf provenant d'une harpie... Cache-t-il peut-être un nouveau-né ?",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Harpie de Foudre[25]"
-  },
+    obtain:   "Obtenable en tuant:\n- [harpie_foudre|Harpie de Foudre][25]"
+},
 {
     id:       'pierre_runique',
     name:     "Pierre Runique",
@@ -7242,8 +7280,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/mine_tablette.png",
     lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[5]\n- Squelette du Sanctuaire - Shaman[5]\n- Squelette du Sanctuaire - Guerrier[7]\n- Gardien du Sanctuaire[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [squelette_sanctuaire_archer|Squelette du Sanctuaire - Archer][5]\n- [squelette_sanctuaire_shaman|Squelette du Sanctuaire - Shaman][5]\n- [squelette_sanctuaire_guerrier|Squelette du Sanctuaire - Guerrier][7]\n- [gardien_sanctuaire|Gardien du Sanctuaire][40]"
+},
 {
     id:       'chaine_spectrale',
     name:     "Chaîne Spectrale",
@@ -7253,8 +7291,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/chaine_spectral.png",
     lore:     "Gravée d'inscriptions anciennes, elle ne s'active qu'en présence d'un second composant.",
     tags:     ['Matériaux', 'Palier 2', 'Commun'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[35]\n- Squelette du Sanctuaire - Shaman[35]\n- Squelette du Sanctuaire - Guerrier[30]"
-  },
+    obtain:   "Obtenable en tuant:\n- [squelette_sanctuaire_archer|Squelette du Sanctuaire - Archer][35]\n- [squelette_sanctuaire_shaman|Squelette du Sanctuaire - Shaman][35]\n- [squelette_sanctuaire_guerrier|Squelette du Sanctuaire - Guerrier][30]"
+},
 {
     id:       'vetement_dechire',
     name:     "Vêtement Déchiré",
@@ -7264,8 +7302,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/drop_capuchon.png",
     lore:     "Un vêtement déchiré appartenant à un ancien humain, devenu squelette protégeant son domaine.",
     tags:     ['Matériaux', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Archer[30]\n- Squelette du Sanctuaire - Guerrier[30]"
-  },
+    obtain:   "Obtenable en tuant:\n- [squelette_sanctuaire_archer|Squelette du Sanctuaire - Archer][30]\n- [squelette_sanctuaire_guerrier|Squelette du Sanctuaire - Guerrier][30]"
+},
 {
     id:       'poudre_moelle',
     name:     "Poudre de Moelle",
@@ -7275,8 +7313,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/poudre_moelle.png",
     lore:     "Une belle poudre blanchâtre à l'odeur minérale, possiblement utilisé dans certains rituels.",
     tags:     ['Matériaux', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Squelette du Sanctuaire - Shaman[20]"
-  },
+    obtain:   "Obtenable en tuant:\n- [squelette_sanctuaire_shaman|Squelette du Sanctuaire - Shaman][20]"
+},
 {
     id:       'morceau_ferraille',
     name:     "Morceau de Ferraille",
@@ -7286,8 +7324,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/ferraille.png",
     lore:     "Morceau de feraille, solide malgré son état. Idéal pour expérimenter la forge ou tester des recettes alchimiques.",
     tags:     ['Matériaux', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Golem de Pierre[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [golem_pierre|Golem de Pierre][40]"
+},
 {
     id:       'os_sombre',
     name:     "Os Sombre",
@@ -7298,7 +7336,7 @@ const ITEMS = [
     lore:     "Un os noirci et résistant, vestige d'un squelette ancien et corrompu.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
     obtain:   "Obtenable en tuant:\n- ??"
-  },
+},
 {
     id:       'poudre_noire',
     name:     "Poudre Noire",
@@ -7309,7 +7347,7 @@ const ITEMS = [
     lore:     "Une fine poudre sombre, issue d'anciens os broyés, imprégnée d'une aura sinistre.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
     obtain:   "Obtenable en tuant:\n- ??"
-  },
+},
 {
     id:       'poudre_necromancien',
     name:     "Poudre de Nécromancien",
@@ -7320,7 +7358,7 @@ const ITEMS = [
     lore:     "Une poudre sombre et mystérieuse, chargé d'une énergie	interdite.",
     tags:     ['Matériaux', 'Palier 2', 'Épique'],
     obtain:   "Obtenable en tuant:\n- ??"
-  },
+},
 {
     id:       'pierre_osseuse_noire',
     name:     "Pierre Osseuse Noire",
@@ -7330,8 +7368,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Material/P2/mine_roche_noir.png",
     lore:     "Un fragment d'os dur et sombre, marqué par le temps et par la mort.",
     tags:     ['Matériaux', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- ??\n- Morveth l'Écorcheur d'Âmes[100]"
-  },
+    obtain:   "Obtenable en tuant:\n- ??\n- [morveth|Morveth l'Écorcheur d'Âmes][100]"
+},
 //#endregion Items > P2 > Matériaux
 //#region Items > P2 > Ressources
 {
@@ -7344,7 +7382,7 @@ const ITEMS = [
     lore:     "Minerai de bauxite, riche en alluminium. Parfait pour forger des outils légers et résistants.",
     tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 2', 'Commun'],
     obtain:   "Récupérable dans la Mine de la Grotte de Taran"
-  },
+},
 {
     id:       'lingot_bauxite',
     name:     "Lingot de Bauxite",
@@ -7354,9 +7392,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Ressources/bar_bauxite.png",
     lore:     "Lingot de bauxite pur, solide et léger. Idéal pour forger des armes maniables ou des outils durables.",
     tags:     ['Ressource', 'Minerai', 'Lingot', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au Forgeron de Lingots à Urbus",
+    obtain:   "Fabricable au [npcforgeron_lingot_urbus|Forgeron de Lingots à Urbus]",
 		craft:		[{id:'bauxite', qty:4}, {id:'charbon', qty:3}]
-  },
+},
 {
     id:       'onyx_impur',
     name:     "Minerais d'Onyx Impur",
@@ -7367,7 +7405,7 @@ const ITEMS = [
     lore:     "Un minerai issu d'une roche peu rare. Ce minerai peut servir à forger des bonnes armes, mais elles deviendront inutiles vite !",
     tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 2', 'Rare'],
     obtain:   "Récupérable dans la Mine de la Grotte de Taran"
-  },
+},
 {
     id:       'lingot_onyx_impur',
     name:     "Lingot d'Onyx Impur",
@@ -7377,9 +7415,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Ressources/bar_onyx_impur.png",
     lore:     "Lingot impur, contenant des inpuretés. Moins résistant, mais peut servir à des armes de fortune ou expérimentales !",
     tags:     ['Ressource', 'Minerai', 'Lingot', 'Palier 2', 'Épique'],
-    obtain:   "Fabricable au Forgeron de Lingots à Urbus",
+    obtain:   "[npc:forgeron_lingot_urbus|Forgeron de Lingots à Urbus]",
 		craft:		[{id:'onyx_impur', qty:10}, {id:'charbon', qty:5}]
-  },
+},
 {
     id:       'onyx_pur',
     name:     "Minerais d'Onyx Pur",
@@ -7390,7 +7428,7 @@ const ITEMS = [
     lore:     "Un véritable minerai d'onyx pur. Transformé en lingot, il permet de créer de grandes armes telles que personne n'en a encore vues !",
     tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 2', 'Épique'],
     obtain:   "Récupérable dans la Mine de la Grotte de Taran"
-  },
+},
 {
     id:       'lingot_onyx_pur',
     name:     "Lingot d'Onyx Pur",
@@ -7400,9 +7438,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Ressources/bar_onyx_pur.png",
     lore:     "Lingot d'exception, pur et solide. Incontournable pour les forges et les élixirs rares.",
     tags:     ['Ressource', 'Minerai', 'Lingot', 'Palier 2', 'Légendaire'],
-    obtain:   "Fabricable au Forgeron de Lingots à Urbus",
+    obtain:   "Fabricable au [npc:forgeron_lingot_marome|Forgeron de lingots à l'Est de Marome]",
 		craft:		[{id:'onyx_pur', qty:10}, {id:'charbon', qty:5}]
-  },
+},
 {
     id:       'acacia',
     name:     "Buche d'Acacia",
@@ -7413,7 +7451,7 @@ const ITEMS = [
     lore:     "Solide, fiable, parfait pour les fabrications basiques.",
     tags:     ['Ressource', 'Bois', 'Buche', 'Palier 2', 'Commun'],
     obtain:   "Récupérable dans la Forêt au Nord de Virelune"
-  },
+},
 {
     id:       'planche_acacia',
     name:     "Planche d'Acacia",
@@ -7423,9 +7461,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Ressources/planche_acacia.png",
     lore:     "Planche travaillé dans une scierie, parfait pour certaines fabrications.",
     tags:     ['Ressource', 'Bois', 'Planche', 'Palier 2', 'Commun'],
-    obtain:   "Fabricable:\n- Bucheron à l'Est de la Ville de Départ\n- Bucheron Kaelor",
+    obtain:   "Fabricable:\n- [npc:bucheron_vdp|Bucheron à l'Est de la Ville de Départ]\n- [npc:bucheron_kaelor|Bucheron Kaelor]",
 		craft:		[{id:'acacia', qty:2}]
-  },
+},
 //#endregion Items > P2 > Ressources
 //#region Items > P2 > Quêtes
 {
@@ -7437,8 +7475,8 @@ const ITEMS = [
     image:    "../img/compendium/textures/items/Quest/ecaille_foudre.png",
     lore:     "Une des trois écorces utilisées comme offrande à l'un des dieux présents au Palier 2 !",
     tags:     ['Quête', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- Poisson Fulgurant[40]"
-  },
+    obtain:   "Obtenable en tuant:\n- [poisson_fulgurant|Poisson Fulgurant][40]"
+},
 {
     id:       'artefact_yaa',
     name:     "Artefact de Yaa",
@@ -7449,7 +7487,7 @@ const ITEMS = [
     lore:     "Artefact du Protecteur Yaa, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
     tags:     ['Quête', 'Palier 2', 'Épique'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
-  },
+},
 {
     id:       'artefact_bia',
     name:     "Artefact de Bia",
@@ -7460,7 +7498,7 @@ const ITEMS = [
     lore:     "Artefact du Protecteur Bia, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
     tags:     ['Quête', 'Palier 2', 'Épique'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
-  },
+},
 {
     id:       'artefact_tano',
     name:     "Artefact de Tano",
@@ -7471,7 +7509,7 @@ const ITEMS = [
     lore:     "Artefact du Protecteur Tano, utilisé lors de rituels ouvrant l'accès au boss de Palier: Asterius !",
     tags:     ['Quête', 'Palier 2', 'Épique'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
-  },
+},
 {
     id:       'parchemin_sceau_taurus',
     name:     "Parchemin de Sceau Complet",
@@ -7482,7 +7520,7 @@ const ITEMS = [
     lore:     "Enchanté, ce parchemin peut débloquer la barrière du roi Taurus Asterius.",
     tags:     ['Quête', 'Palier 2', 'Godlike'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
-  },
+},
 //#endregion Items > P2 > Quêtes
 //#region Items > P2 > Donjon
 //#endregion Items > P2 > Donjon

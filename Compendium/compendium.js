@@ -102,6 +102,45 @@ function catData(categoryKey) {
   return CATEGORIES[categoryKey] || { label: categoryKey, emoji: '📦' };
 }
 
+function inlineLinks(str) {
+  // Syntaxe : [type:id|Nom affiché] ou [id|Nom affiché] (item par défaut)
+  // type peut être : mob, npc, item
+  return str.replace(/\[([^\]|]+)\|([^\]]+)\]/g, function(_, ref, label) {
+    // Détecter si ref contient un type explicite : "mob:sanglier_corrompu"
+    const colonIdx = ref.indexOf(':');
+    let type, id;
+    if (colonIdx !== -1) {
+      type = ref.slice(0, colonIdx);
+      id   = ref.slice(colonIdx + 1);
+    } else {
+      // Pas de type explicite → chercher dans ITEMS d'abord, puis MOBS
+      id   = ref;
+      type = null;
+    }
+
+    const inItems = (typeof ITEMS !== 'undefined') && ITEMS.find(i => i.id === id);
+
+    if (!type) {
+      type = inItems ? 'item' : 'mob';
+    }
+
+    if (type === 'item') {
+      const target = inItems;
+      if (!target) return `<span style="color:#888;border-bottom:1px dashed #555" title="Item introuvable: ${id}">${label}</span>`;
+      const color = rarityColor(target.rarity);
+      return `<a class="obtain-entity-link" href="compendium.html#${id}" data-id="${id}" data-type="item" style="color:${color}">${label}</a>`;
+    }
+
+    // Pour mobs et npc → bestiaire avec préfixe de section
+    const sectionPrefix = type === 'npc' ? 'personnages' : 'monstres';
+    const hash  = `${sectionPrefix}/${id}`;
+    const page  = `../Bestiaire/bestiaire.html#${hash}`;
+    const color = 'var(--gold)';
+
+    return `<a class="obtain-entity-link" href="${page}" data-id="${id}" data-type="${type}" data-hash="${hash}" style="color:${color}">${label}</a>`;
+  });
+}
+
 function parseText(str) {
   if (!str) return '';
 
@@ -174,7 +213,7 @@ function extractBadge(str, rank) {
 }
 
 function inlineMd(str) {
-  return str.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  return inlineLinks(str.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'));
 }
 
 /* Regroupe les items par palier puis par catégorie */
@@ -638,8 +677,21 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
 function renderCraft(craftList) {
   if (!craftList || craftList.length === 0) return '';
 
-  const isNested = Array.isArray(craftList[0]);
-  const recettes = isNested ? craftList : [craftList];
+  // Détection nouveau format : tableau d'objets {name?, npcId?, items:[]}
+  // vs ancien format : tableau de tableaux ou tableau plat d'entrées {qty, id}
+  const isNewFormat = craftList.length > 0 &&
+    !Array.isArray(craftList[0]) &&
+    craftList[0].items !== undefined;
+
+  let recettes;
+  if (isNewFormat) {
+    recettes = craftList; // [{name, npcId, items:[{qty,id}]}]
+  } else {
+    // Rétrocompatibilité ancien format
+    const isNested = Array.isArray(craftList[0]);
+    const raw = isNested ? craftList : [craftList];
+    recettes = raw.map((items, i) => ({ name: null, npcId: null, items }));
+  }
 
   function renderRows(items) {
     return items.map(entry => {
@@ -683,21 +735,48 @@ function renderCraft(craftList) {
     }).join('');
   }
 
+function renderNpcHeader(recette, index) {
+  const label = recette.name || ('Recette ' + (index + 1));
+  if (!recette.npcId) {
+    return `<div class="craft-npc-header craft-npc-header--plain">
+      <span class="craft-npc-label">${label}</span>
+    </div>`;
+  }
+
+  const section  = recette.npcSection || 'personnages'; // défaut : personnages
+  const npcItem  = (typeof ITEMS !== 'undefined') && ITEMS.find(i => i.id === recette.npcId);
+  const npcMob   = (typeof MOBS  !== 'undefined') && MOBS.find(m => m.id === recette.npcId);
+  const npc      = npcItem || npcMob;
+  const npcName  = npc ? (npc.name || label) : label;
+  const npcImg   = npc ? (npc.img || npc.image || null) : null;
+  const npcColor = npcItem ? rarityColor(npcItem.rarity) : 'var(--gold)';
+
+  const imgHtml = npcImg
+    ? `<img class="craft-npc-img" src="${npcImg}" alt="${npcName}">`
+    : `<span class="craft-npc-ico">⚒</span>`;
+
+  return `<div class="craft-npc-header" data-npc-id="${recette.npcId}" data-npc-section="${section}">
+    <span class="craft-npc-visual">${imgHtml}</span>
+    <span class="craft-npc-name" style="color:${npcColor}">${npcName}</span>
+    <span class="craft-npc-arrow">›</span>
+  </div>`;
+}
+
   if (recettes.length === 1) {
     return `
       <div class="item-obtain">
-        <div class="craft-list">${renderRows(recettes[0])}</div>
+        <div class="craft-list">${renderRows(recettes[0].items)}</div>
       </div>`;
   }
 
-  const tabsHtml = recettes.map((_, i) => `
-    <button class="craft-tab${i === 0 ? ' active' : ''}" data-tab="${i}">
-      Recette ${i + 1}
-    </button>`).join('');
+  const tabsHtml = recettes.map((r, i) => {
+    const label = r.name || ('Recette ' + (i + 1));
+    return `<button class="craft-tab${i === 0 ? ' active' : ''}" data-tab="${i}">${label}</button>`;
+  }).join('');
 
-  const panelsHtml = recettes.map((items, i) => `
+  const panelsHtml = recettes.map((r, i) => `
     <div class="craft-panel${i === 0 ? ' active' : ''}" data-panel="${i}">
-      <div class="craft-list">${renderRows(items)}</div>
+      <div class="craft-list">${renderRows(r.items)}</div>
     </div>`).join('');
 
   return `
@@ -757,6 +836,40 @@ function bindCraftTabs() {
       document.querySelectorAll('.craft-panel').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
       document.querySelector(`.craft-panel[data-panel="${idx}"]`)?.classList.add('active');
+    });
+  });
+}
+
+function bindEntityLinks() {
+  // Liens [id|Nom] dans obtain/lore → navigation sans rechargement
+  document.querySelectorAll('.obtain-entity-link').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const id   = link.dataset.id;
+      const type = link.dataset.type;
+      if (type === 'item') {
+        showItem(id);
+        history.pushState({ item: id }, '', `#${id}`);
+      } else {
+        // Redirige vers le bestiaire si c'est un mob
+        window.location.href = link.href;
+      }
+    });
+  });
+
+  // Liens NPC dans les headers craft
+  document.querySelectorAll('.craft-npc-header[data-npc-id]').forEach(header => {
+    header.style.cursor = 'pointer';
+    header.addEventListener('click', () => {
+      const id      = header.dataset.npcId;
+      const section = header.dataset.npcSection || 'personnages';
+      const inItems = (typeof ITEMS !== 'undefined') && ITEMS.find(i => i.id === id);
+      if (inItems) {
+        showItem(id);
+        history.pushState({ item: id }, '', `#${id}`);
+      } else {
+        window.location.href = `../Bestiaire/bestiaire.html#${section}/${id}`;
+      }
     });
   });
 }
@@ -876,6 +989,7 @@ function showItem(id, initialQuality = false) {
   // ── Bind les liens craft initiaux
   bindCraftLinks();
   bindCraftTabs();
+  bindEntityLinks();
 
   // ── Logique toggle Normal / Qualité
   if (hasQuality) {
@@ -907,6 +1021,7 @@ function showItem(id, initialQuality = false) {
         }
       bindCraftLinks();
       bindCraftTabs();
+      bindEntityLinks();
     });
 
     // État initial
@@ -922,6 +1037,7 @@ function showItem(id, initialQuality = false) {
       if (effectsWrap) effectsWrap.innerHTML = renderEffects(item.quality?.effects ?? item.effects ?? null);
       bindCraftLinks();
       bindCraftTabs();
+      bindEntityLinks();
     } else {
       labelNorm.classList.add('qt-active');
     }

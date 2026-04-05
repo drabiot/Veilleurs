@@ -887,3 +887,62 @@ a.craft-ingredient-name:hover {
   border: 1px solid var(--rim2);
   padding: 2px 7px;
 }
+
+/* ── Header NPC de recette ── */
+.craft-npc-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: rgba(255,255,255,.03);
+  border-bottom: 1px solid var(--rim);
+  transition: background .15s;
+}
+.craft-npc-header[data-npc-id]:hover {
+  background: rgba(255,255,255,.06);
+}
+.craft-npc-header--plain {
+  cursor: default;
+}
+.craft-npc-visual {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.craft-npc-img {
+  width: 20px; height: 20px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.craft-npc-ico {
+  font-size: 14px;
+  color: var(--muted);
+}
+.craft-npc-name {
+  flex: 1;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .05em;
+}
+.craft-npc-arrow {
+  font-size: 14px;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity .15s;
+}
+.craft-npc-header[data-npc-id]:hover .craft-npc-arrow {
+  opacity: 1;
+}
+
+/* ── Liens entités dans obtain/lore ── */
+.obtain-entity-link {
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+  opacity: .9;
+  transition: opacity .15s;
+}
+.obtain-entity-link:hover {
+  opacity: 1;
+  filter: brightness(1.25);
+}
