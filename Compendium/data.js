@@ -5458,9 +5458,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/pioche_felee.png",
     lore:     "Une pioche rudimentaire, fragile mais suffisante pour débuter.",
     tags:     ['Outils', 'Pioche', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
+    obtain:   "Achetable aux [npc:marchand_outils_vdp|Marchands d'Outils du Palier 1]",
 		craft:		[{qty:20, id:'cols'}]
-  },
+},
 {
     id:       'hache_ebrechee',
     name:     "Hache Ébréchée",
@@ -5470,9 +5470,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/hache_ebrechee.png",
     lore:     "Lame fendue, manche bancal, mais toujours apte à couper du bois.",
     tags:     ['Outils', 'Hache', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
+    obtain:   "Achetable aux [npc:marchand_outils_vdp|Marchands d'Outils du Palier 1]",
 		craft:		[{qty:20, id:'cols'}]
-  },
+},
 {
     id:       'serpe_tordue',
     name:     "Serpe Tordue",
@@ -5482,9 +5482,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/serpe_tordue.png",
     lore:     "Un outil rudimentaire pour les herbes et plantes.",
     tags:     ['Outils', 'Houe', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
+    obtain:   "Achetable aux [npc:marchand_outils_vdp|Marchands d'Outils du Palier 1]",
 		craft:		[{qty:20, id:'cols'}]
-  },
+},
 {
     id:       'canne_a_peche_en_bois',
     name:     "Canne à Pêche en Bois",
@@ -5494,9 +5494,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/canne_a_peche_en_bois.png",
     lore:     "Une canne à pêche bancale et délabrée, mais apte à pêcher !",
     tags:     ['Outils', 'Canne à Pêche', 'Palier 1', 'Commun'],
-    obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
+    obtain:   "Achetable aux [npc:marchand_outils_vdp|Marchands d'Outils du Palier 1]",
 		craft:		[{qty:20, id:'cols'}]
-  },
+},
 {
     id:       'torche',
     name:     "Torche",
@@ -5506,9 +5506,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/torche.png",
     lore:     "Une torche rudimentaire, mais suffisante pour éclairer",
     tags:     ['Outils', 'Torche', 'Palier 1', 'Rare'],
-    obtain:   "Obtenable par les Marchands d'Outils du Palier 1",
+    obtain:   "Achetable aux [npc:marchand_outils_vdp|Marchands d'Outils du Palier 1]",
 		craft:		[{qty:2500, id:'cols'}]
-  },
+},
 {
     id:       'pioche_metal',
     name:     "Pioche de Métal",
@@ -5518,9 +5518,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/pioche_metal.png",
     lore:     "Une pioche très solide, parfaite pour miner des minerais plus solide.",
     tags:     ['Outils', 'Pioche', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
+    obtain:   "Fabricable au [npc:forgeron_armes_labyrinthe|Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus]",
 		craft:		[{qty:25, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
-  },
+},
 {
     id:       'hache_metal',
     name:     "Hache de Métal",
@@ -5530,9 +5530,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/hache_metal.png",
     lore:     "Une hache très solide, parfaite pour casser des bûches plus résistantes.",
     tags:     ['Outils', 'Hache', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
+    obtain:   "Fabricable au [npc:forgeron_armes_labyrinthe|Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus]",
 		craft:		[{qty:22, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
-  },
+},
 {
     id:       'houe_metal',
     name:     "Houe de Métal",
@@ -5542,9 +5542,9 @@ const ITEMS = [
     image:    "../img/compendium/textures/gears/houe_metal.png",
     lore:     "Cette nouvelle houeest parfaitepour vous aider à récolter des fleurs... plus rares.",
     tags:     ['Outils', 'Houe', 'Palier 1', 'Rare'],
-    obtain:   "Fabricable au Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus",
+    obtain:   "Fabricable au [npc:forgeron_armes_labyrinthe|Forgeron d'Armes à l'extérieur du Donjon du Labyrinthe des Déchus]",
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
-  },
+},
 //#endregion Items > P1 > Outils
 //#region Items > P1 > Runes
 {
