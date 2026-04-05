@@ -1360,3 +1360,23 @@ html, body {
 .sdp-content::-webkit-scrollbar { width: 3px; }
 .sdp-content::-webkit-scrollbar-track { background: transparent; }
 .sdp-content::-webkit-scrollbar-thumb { background: var(--rim2); border-radius: 2px; }
+
+.item-badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 3px 0 2px;
+  align-items: center;
+}
+
+.item-class-badge,
+.item-set-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  white-space: nowrap;
+}

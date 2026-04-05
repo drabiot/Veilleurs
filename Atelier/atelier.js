@@ -1435,14 +1435,28 @@ stats.innerHTML = statsLines +
 						(buffLines ? '<div class="istat-block" style="border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:4px">' + buffLines + '</div>' : '');
 	}
 
-  function buildClassBadgesHTML(item) {
-    if (!item.classes || item.classes.length === 0) return '';
-    const badges = item.classes.map(function(cid) {
-      const cls = CLASSES.find(function(c) { return c.id === cid; });
-      if (!cls) return '';
-      return '<span class="item-class-badge">' + cls.ico + ' ' + cls.label + '</span>';
-    }).join('');
-    return '<div class="item-class-badges">' + badges + '</div>';
+  function buildBadgesHTML(item) {
+    let badges = '';
+
+    // Badges de classe
+    if (item.classes && item.classes.length > 0) {
+      item.classes.forEach(function(cid) {
+        const cls = CLASSES.find(function(c) { return c.id === cid; });
+        if (!cls) return;
+        badges += '<span class="item-class-badge" style="border-color:' + cls.color + '60;color:' + cls.color + '">' + cls.ico + ' ' + cls.label + '</span>';
+      });
+    }
+
+    // Badge de set
+    if (item.set) {
+      const setDef = SETS[item.set];
+      const color = setDef ? setDef.color : '#888';
+      const label = setDef ? setDef.label : item.set;
+      badges += '<span class="item-set-badge" style="border-color:' + color + '60;color:' + color + '">◈ ' + label + '</span>';
+    }
+
+    if (!badges) return '';
+    return '<div class="item-badges-row">' + badges + '</div>';
   }
 
   function buildItemLevelBadgeHTML(item) {
@@ -1487,19 +1501,26 @@ stats.innerHTML = statsLines +
     const norm = function(str) { return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
     const q    = norm(filterQ);
     const visible = ITEMS.filter(function(item) {
-		return slot.cats.includes(item.cat) &&
-				itemAllowedForClass(item, activeClass) &&
-				(!filterRar  || item.rarity === filterRar) &&
-				(filterTier === null || item.palier === filterTier) &&
-				(!q || norm(item.name).includes(q)) &&
-				(filterStats.size === 0 || [...filterStats].every(function(sid) {
-					if (!item.stats) return false;
-					const val = item.stats[sid];
-					if (val === undefined) return false;
-					const v = Array.isArray(val) ? val[1] : val;
-					return v !== 0;
-				})); 
-		});
+    // Unicité : si unique:true, vérifier qu'il n'est pas déjà équipé dans un autre slot
+    if (item.unique) {
+      const alreadyEquippedElsewhere = Object.entries(equipped).some(function(e) {
+        return e[1] && e[1].id === item.id && e[0] !== activeSlot;
+      });
+      if (alreadyEquippedElsewhere) return false;
+    }
+    return slot.cats.includes(item.cat) &&
+      itemAllowedForClass(item, activeClass) &&
+      (!filterRar  || item.rarity === filterRar) &&
+      (filterTier === null || item.palier === filterTier) &&
+      (!q || norm(item.name).includes(q)) &&
+      (filterStats.size === 0 || [...filterStats].every(function(sid) {
+        if (!item.stats) return false;
+        const val = item.stats[sid];
+        if (val === undefined) return false;
+        const v = Array.isArray(val) ? val[1] : val;
+        return v !== 0;
+      }));
+  });
     if (!visible.length) {
       list.innerHTML = '<div class="picker-empty-msg">Aucun item compatible</div>';
       return;
@@ -1525,9 +1546,9 @@ stats.innerHTML = statsLines +
             buildItemLevelBadgeHTML(item) +
           '</div>' +
         '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · Palier ' + item.palier + '</div>' +
-        buildClassBadgesHTML(item) +
+        buildBadgesHTML(item) +
         buildItemStatsHTML(item) +
-		buildThresholdHTML(item) +
+		    buildThresholdHTML(item) +
         '</div>';
 
     	if (!isLocked) {
