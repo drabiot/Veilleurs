@@ -1,3 +1,4 @@
+//#region CONSTANTES
 //#region RARITIES
 const RARITIES = {
   'commun':     { label: 'Commun',      color: '#59d059' },
@@ -577,8 +578,33 @@ const EFFECT_META = {
 };
 
 //#endregion EFFECT_META
+//#region SLOTS
+const SLOTS_LEFT = [
+  { id:'amulette',  label:'Amulette',        	ico:'📿', cats:['amulette'] },
+  { id:'anneau1',   label:'Anneau I',         ico:'💍', cats:['anneau'] },
+  { id:'anneau2',   label:'Anneau II',        ico:'💍', cats:['anneau'] },
+  { id:'bracelet',  label:'Bracelet',         ico:'⭕', cats:['bracelet'] },
+  { id:'gants',     label:'Gants',            ico:'🧤', cats:['gants'] },
+];
+const SLOTS_RIGHT = [
+  { id:'casque',    label:'Casque',           ico:'🧢', cats:['casque'] },
+  { id:'plastron',  label:'Plastron',         ico:'👔', cats:['plastron'] },
+  { id:'jambieres', label:'Jambières',        ico:'👖', cats:['jambières'] },
+  { id:'bottes',    label:'Bottes',           ico:'👢', cats:['bottes'] },
+  { id:'arme_pr',   label:'Arme Principale',  ico:'⚔️', cats:['arme_p'] },
+];
+const SLOTS_BOT = [
+  { id:'artefact1', label:'Artefact I',       ico:'🔮', cats:['artefact'] },
+  { id:'artefact2', label:'Artefact II',      ico:'🔮', cats:['artefact'] },
+  { id:'artefact3', label:'Artefact III',     ico:'🔮', cats:['artefact'] },
+  { id:'arme_sec',  label:'Arme Secondaire',  ico:'🛡️', cats:['arme_s'] },
+];
+const ALL_SLOTS = [...SLOTS_LEFT, ...SLOTS_RIGHT, ...SLOTS_BOT];
+//#endregion SLOTS
+//#endregion CONSTANTES
 
 const ITEMS = [
+//#region ITEMS
 //#region Armes
 //#region Armes > Palier 1
 {
@@ -5477,8 +5503,6 @@ const ITEMS = [
 		craft:		[{qty:20, id:'lingot_metal_enchante'}, {qty:10, id:'brindille_enchantee'}]
   },
 //#endregion Items > P1 > Outils
-//#region Items > P2 > Outils
-//#endregion Items > P2 > Outils
 //#region Items > P1 > Runes
 {
     id:       'rune_vitalite_1',
@@ -5526,7 +5550,7 @@ const ITEMS = [
   },
 {
     id:       'rune_temps_1',
-    name:     "Rune Temps I",
+    name:     "Rune Temporelle I",
     rarity:   'commun',
     category: 'rune',
     palier:   1,
@@ -6917,8 +6941,12 @@ const ITEMS = [
 //#endregion Items > P1 > Monnaie
 //#endregion Items > Palier 1
 //#region Items > Palier 2
-
+//#region Items > P2 > Outils
+//#endregion Items > P2 > Outils
+//#region Items > P2 > Runes
+//#endregion Items > P2 > Runes
 //#region Items > P2 > Consommables
+
 {
     id:       'recette_cuisine_ragout_parfume',
     name:     "Recette de cuisine",
@@ -6934,6 +6962,8 @@ const ITEMS = [
 		],
   },
 //#endregion Items > P2 > Consommables
+//#region Items > P2 > Nourritures
+//#endregion Items > P2 > Nourritures
 //#region Items > P2 > Matériaux
 {
     id:       'peau_epaisse',
@@ -7410,28 +7440,12 @@ const ITEMS = [
     tags:     ['Quête', 'Palier 2', 'Godlike'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «12 - Le Rituel de Purification»"
   },
+//#endregion Items > P2 > Quêtes
+//#region Items > P2 > Donjon
+//#endregion Items > P2 > Donjon
+//#region Items > P2 > Monnaie
+//#endregion Items > P2 > Monnaie
+//#endregion Items > Palier 2
+//#endregion Items
+//#endregion ITEMS
 ];
-
-//#region SLOTS
-const SLOTS_LEFT = [
-  { id:'amulette',  label:'Amulette',        	ico:'📿', cats:['amulette'] },
-  { id:'anneau1',   label:'Anneau I',         ico:'💍', cats:['anneau'] },
-  { id:'anneau2',   label:'Anneau II',        ico:'💍', cats:['anneau'] },
-  { id:'bracelet',  label:'Bracelet',         ico:'⭕', cats:['bracelet'] },
-  { id:'gants',     label:'Gants',            ico:'🧤', cats:['gants'] },
-];
-const SLOTS_RIGHT = [
-  { id:'casque',    label:'Casque',           ico:'🧢', cats:['casque'] },
-  { id:'plastron',  label:'Plastron',         ico:'👔', cats:['plastron'] },
-  { id:'jambieres', label:'Jambières',        ico:'👖', cats:['jambières'] },
-  { id:'bottes',    label:'Bottes',           ico:'👢', cats:['bottes'] },
-  { id:'arme_pr',   label:'Arme Principale',  ico:'⚔️', cats:['arme_p'] },
-];
-const SLOTS_BOT = [
-  { id:'artefact1', label:'Artefact I',       ico:'🔮', cats:['artefact'] },
-  { id:'artefact2', label:'Artefact II',      ico:'🔮', cats:['artefact'] },
-  { id:'artefact3', label:'Artefact III',     ico:'🔮', cats:['artefact'] },
-  { id:'arme_sec',  label:'Arme Secondaire',  ico:'🛡️', cats:['arme_s'] },
-];
-const ALL_SLOTS = [...SLOTS_LEFT, ...SLOTS_RIGHT, ...SLOTS_BOT];
-//#endregion SLOTS
