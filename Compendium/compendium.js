@@ -988,6 +988,8 @@ window.addEventListener('popstate', () => {
    INIT
 ══════════════════════════════════ */
 buildSidebar(ITEMS);
+document.querySelector('.glossary-subtitle').innerHTML =
+  '// BASE DE DONNÉES · VEILLEURS AU CLAIR DE LUNE &nbsp;·&nbsp; <span style="color:var(--gold);font-weight:600">' + ITEMS.length + '</span> items recensés';
 
 const { id: initId, quality: initQuality } = parseHash(window.location.hash);
 if (initId) {
