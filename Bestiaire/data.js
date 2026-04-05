@@ -4,7 +4,7 @@
 
 const PERSONNAGES = [
   //#region Ville de Départ
-  {
+	{
     id: 'repreneur_butin_vdp',
     name: "Repreneur de Butin",
     tag: 'repreneur_butin',
@@ -21,9 +21,9 @@ const PERSONNAGES = [
 	  	{ id: 'crocs_de_loup', price: 4 },
 	  	{ id: 'petite_bourse', price: 5 },
     ],
-  },
-  {
-    id: 'repreneur_equipement_vdp',
+	},
+	{
+    id: 'marchand_equipement_vdp',
     name: "Marchand d'Équipement",
     tag: 'marchand_equipement',
     palier: 1,
@@ -48,7 +48,7 @@ const PERSONNAGES = [
 			{ id: 'parchemin_reallocation',  buy: 750 },
 			{ id: 'parchemin_maitrise',  buy: 750 },
     ],
-  },
+	},
   {
     id: 'marchand_etrange_vdp',
     name: "Marchand Étrange",
@@ -977,7 +977,7 @@ const PERSONNAGES = [
     ],
   },
 	{
-    id: 'secret_vallaht',
+    id: 'secret_vallhat',
     name: "Fabicant de l'Anneau Gluant",
     tag: 'fabricant_secrets',
     palier: 1,
