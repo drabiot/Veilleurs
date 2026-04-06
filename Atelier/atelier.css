@@ -1116,16 +1116,15 @@ html, body {
 
 .cdt-label {
   font-family: 'Cinzel', serif;
-  font-size: 7px;
+  font-size: 6px;
   font-weight: 600;
-  letter-spacing: .22em;
+  letter-spacing: .18em;
   text-transform: uppercase;
   color: inherit;
-  text-align: center;
-  line-height: 2;
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  transform: rotate(180deg);
+  transform: rotate(0deg);
+  white-space: nowrap;
 }
 /* Contrôles */
 .cdp-controls {

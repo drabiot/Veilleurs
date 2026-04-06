@@ -4131,6 +4131,36 @@ ITEMS.push(
     obtain:   "Fabricable au [npc:secret_masque-corrompu|Forgeron d'Accessoires Secret de la Corruption au Palier 2]",
 		craft:		[{qty:64, id:'ames_des_ruines'}, {qty:128, id:'cristal_corrompu'}, {qty:64, id:'tissu_spectral'}, {qty:1, id:'morceau_de_criniere_spectrale'}, {qty:3, id:'lingot_onyx_pur'}]
 },
+{
+		id:				'piece_or',
+		name:			"Pièce d'Or",
+		rarity:		'event',
+		cat:			'artefact',
+		category:	'accessoire',
+		unique:		true,
+		palier:		2,
+		lvl:			12,
+		img:			"",
+		stats:		{defense:1.5, regen_sante:1.5, regen_mana:1, regen_stamina:0.5},
+    lore:     "Une pièce lumineuse de valeur, apportant chance et prospérité.",
+    tags:     ['Accessoire', 'Artefact', 'Pièce', 'Palier 2', 'Event', 'Nouvel An Lunaire'],
+    obtain:   "...",
+},
+{
+		id:				'lanterne_noire',
+		name:			"Lanterne Noire",
+		rarity:		'event',
+		cat:			'artefact',
+		category:	'accessoire',
+		unique:		true,
+		palier:		2,
+		lvl:			12,
+		img:			"",
+		stats:		{degats_competence:5, defense:3.5},
+    lore:     "Une petite lanterne lumineuse à l'aura mystérieuse et envoûtante.",
+    tags:     ['Accessoire', 'Lanterne', 'Pièce', 'Palier 2', 'Event', 'Nouvel An Lunaire'],
+    obtain:   "...",
+},
 
 //#endregion Accessoires > P2 > Artefacts
 //#region Accessoires > P2 > Events
@@ -5734,28 +5764,6 @@ ITEMS.push(
     tags:     ['Rune', 'Palier 1', 'Event', 'Saint Valentin'],
     obtain:   "Obtenable dans les lootboxs de l'Événement Saint Valentin"
 },
-{
-    id:       'rune_lunaire',
-    name:     "Rune Lunaire",
-    rarity:   'event',
-    category: 'rune',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Runes/rune_lunaire.png",
-    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
-    tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
-    obtain:   "..."
-},
-{
-    id:       'rune_dragon',
-    name:     "Rune de Dragon",
-    rarity:   'event',
-    category: 'rune',
-    palier:   1,
-    image:    "../img/compendium/textures/items/Runes/rune_dragon.png",
-    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
-    tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
-    obtain:   "..."
-},
 //#endregion Items > P1 > Runes
 //#region Items > P1 > Consommables
 {
@@ -7124,6 +7132,28 @@ ITEMS.push(
 //#region Items > P2 > Outils
 //#endregion Items > P2 > Outils
 //#region Items > P2 > Runes
+{
+    id:       'rune_lunaire',
+    name:     "Rune Lunaire",
+    rarity:   'event',
+    category: 'rune',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Runes/rune_lunaire.png",
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
+    obtain:   "..."
+},
+{
+    id:       'rune_dragon',
+    name:     "Rune de Dragon",
+    rarity:   'event',
+    category: 'rune',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Runes/rune_dragon.png",
+    lore:     "Cette rune appliquée permet à un equipement d'augmenter ses stats",
+    tags:     ['Rune', 'Palier 1', 'Event', 'Nouvel An Lunaire'],
+    obtain:   "..."
+},
 //#endregion Items > P2 > Runes
 //#region Items > P2 > Consommables
 {
@@ -7433,7 +7463,7 @@ ITEMS.push(
     image:    "../img/compendium/textures/items/Material/P2/os_sombre.png",
     lore:     "Un os noirci et résistant, vestige d'un squelette ancien et corrompu.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- ??"
+    obtain:   "Obtenable en tuant:\n- [squelette_feu|Squelette de Feu]\n- [squelette_epeiste_feu|Squelette Épéiste de Feu]\n- [squelette_lancier_feu|Squelette Lancier de Feu]\n- [squelette_tank_feu|Squelette Tank de Feu]\n- [squelette_sorcier_feu|Squelette Sorcier de Feu]\n- [squelette_archer_feu|Squelette Archer de Feu]"
 },
 {
     id:       'poudre_noire',
@@ -7444,7 +7474,7 @@ ITEMS.push(
     image:    "../img/compendium/textures/items/Material/P2/poudre_noire.png",
     lore:     "Une fine poudre sombre, issue d'anciens os broyés, imprégnée d'une aura sinistre.",
     tags:     ['Matériaux', 'Palier 2', 'commun'],
-    obtain:   "Obtenable en tuant:\n- ??"
+    obtain:   "Obtenable en tuant:\n- [squelette_feu|Squelette de Feu]\n- [squelette_epeiste_feu|Squelette Épéiste de Feu]\n- [squelette_lancier_feu|Squelette Lancier de Feu]\n- [squelette_tank_feu|Squelette Tank de Feu]\n- [squelette_sorcier_feu|Squelette Sorcier de Feu]"
 },
 {
     id:       'poudre_necromancien',
@@ -7455,7 +7485,7 @@ ITEMS.push(
     image:    "../img/compendium/textures/items/Material/P2/poudre_necro.png",
     lore:     "Une poudre sombre et mystérieuse, chargé d'une énergie	interdite.",
     tags:     ['Matériaux', 'Palier 2', 'Épique'],
-    obtain:   "Obtenable en tuant:\n- ??"
+    obtain:   "Obtenable en tuant:\n- [squelette_tank_feu|Squelette Tank de Feu]\n- [squelette_sorcier_feu|Squelette Sorcier de Feu]\n- [morveth|Morverth l'Écorcheur d'Âmes][100]"
 },
 {
     id:       'pierre_osseuse_noire',
@@ -7466,7 +7496,7 @@ ITEMS.push(
     image:    "../img/compendium/textures/items/Material/P2/mine_roche_noir.png",
     lore:     "Un fragment d'os dur et sombre, marqué par le temps et par la mort.",
     tags:     ['Matériaux', 'Palier 2', 'Rare'],
-    obtain:   "Obtenable en tuant:\n- ??\n- [morveth|Morveth l'Écorcheur d'Âmes][100]"
+    obtain:   "Obtenable en tuant:\n- [squelette_epeiste_feu|Squelette Épéiste de Feu]\n- [squelette_archer_feu|Squelette Archer de Feu]\n- [morveth|Morveth l'Écorcheur d'Âmes][100]"
 },
 //#endregion Items > P2 > Matériaux
 //#region Items > P2 > Ressources

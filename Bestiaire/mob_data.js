@@ -2627,6 +2627,8 @@ const MOBS = [
     attacks: [
     ],
     loot: [
+			{ id: 'os_sombre'},
+			{ id: 'pierre_osseuse_noire'}
     ],
   },
 	{
@@ -2644,6 +2646,9 @@ const MOBS = [
     attacks: [
     ],
     loot: [
+			{ id: 'os_sombre'},
+			{ id: 'poudre_noire'},
+			{ id: 'poudre_necromancien'}
     ],
   },
 	{
@@ -2661,6 +2666,9 @@ const MOBS = [
     attacks: [
     ],
     loot: [
+			{ id: 'os_sombre'},
+			{ id: 'poudre_noire'},
+			{ id: 'poudre_necromancien'}
     ],
   },
 	{
@@ -2678,6 +2686,8 @@ const MOBS = [
     attacks: [
     ],
     loot: [
+			{ id: 'os_sombre'},
+			{ id: 'poudre_noire'}
     ],
   },
 	{
@@ -2695,6 +2705,8 @@ const MOBS = [
     attacks: [
     ],
     loot: [
+			{ id: 'os_sombre'},
+			{ id: 'poudre_noire'}
     ],
   },
 	{
@@ -2712,6 +2724,9 @@ const MOBS = [
     attacks: [
     ],
     loot: [
+			{ id: 'os_sombre'},
+			{ id: 'poudre_noire'},
+			{ id: 'pierre_osseuse_noire'}
     ],
   },
 	{
@@ -2785,6 +2800,7 @@ const MOBS = [
     ],
     loot: [
 			{ id: 'pierre_osseuse_noire', chance:100, qty:'2' },
+			{ id: 'poudre_necromancien', chance:100, qty:'2' },
     ],
   },
 	{
