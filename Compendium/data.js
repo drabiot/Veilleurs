@@ -603,7 +603,9 @@ const ALL_SLOTS = [...SLOTS_LEFT, ...SLOTS_RIGHT, ...SLOTS_BOT];
 //#endregion SLOTS
 //#endregion CONSTANTES
 
-const ITEMS = [
+const ITEMS = [];
+
+ITEMS.push(
 //#region ITEMS
 //#region Armes
 //#region Armes > Palier 1
@@ -7649,4 +7651,4 @@ const ITEMS = [
 //#endregion Items > Palier 2
 //#endregion Items
 //#endregion ITEMS
-];
+);

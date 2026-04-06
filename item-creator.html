@@ -1,0 +1,2204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@900&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&display=swap">
+<title>Item Creator — Wiki Draco</title>
+<style>
+:root {
+  --bg: #0f0f14;
+  --surface: #1a1a24;
+  --surface2: #22222f;
+  --surface3: #2a2a3a;
+  --border: #2e2e42;
+  --accent: #7a5af8;
+  --accent2: #5b3fd4;
+  --text: #e8e8f0;
+  --muted: #7a7a90;
+  --success: #4ade80;
+  --danger: #f87171;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
+
+/* ── LAYOUT ── */
+header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 12px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 50;
+}
+header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
+header span { color: var(--muted); font-size: 12px; }
+header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+.layout { display: grid; grid-template-columns: 1fr 420px; height: calc(100vh - 49px); }
+
+/* ── FORM ── */
+.form-panel { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+/* ── OUTPUT ── */
+.out-panel {
+  background: var(--surface); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.out-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.out-header h2 { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing:.06em; }
+.out-code {
+  flex: 1; overflow-y: auto; padding: 14px;
+  font-family: 'Consolas','Courier New',monospace; font-size: 12px; line-height: 1.7;
+  white-space: pre; color: #c9d1d9; background: #0d1117;
+}
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px;
+  border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600;
+  transition: filter .15s, transform .1s;
+}
+.btn:hover { filter: brightness(1.15); }
+.btn:active { transform: scale(.97); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-success { background: #14532d; color: var(--success); border: 1px solid #14532d; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-icon { background: none; border: 1px solid var(--border); color: var(--danger); border-radius: 5px; cursor: pointer; padding: 4px 8px; font-size: 13px; line-height: 1; }
+.btn-icon:hover { background: #2a1010; }
+
+/* ── SECTION ── */
+.section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: visible; }
+.sec-head {
+  padding: 11px 14px; background: var(--surface2); border-radius: 10px 10px 0 0;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.06em; color: var(--muted);
+  display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
+}
+.sec-head .chev { margin-left: auto; font-size: 10px; transition: transform .2s; }
+.sec-head.collapsed .chev { transform: rotate(-90deg); }
+.sec-body { padding: 14px; display: flex; flex-direction: column; gap: 11px; }
+.sec-body.hidden { display: none; }
+
+/* ── FIELDS ── */
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.field input, .field select, .field textarea {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); padding: 8px 10px; font-size: 13px; font-family: inherit;
+  outline: none; transition: border-color .15s; width: 100%;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+.field textarea { resize: vertical; min-height: 62px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+/* ── RARITY BUTTONS ── */
+.rarity-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.r-btn {
+  padding: 5px 13px; border-radius: 20px; border: 2px solid transparent;
+  cursor: pointer; font-size: 12px; font-weight: 700; background: var(--surface2); color: var(--muted);
+  transition: all .15s;
+}
+.r-btn.active { color: #fff !important; }
+.r-btn[data-r="commun"]     { --c: #59d059; }
+.r-btn[data-r="rare"]       { --c: #2a5fa8; }
+.r-btn[data-r="epique"]     { --c: #6a3daa; }
+.r-btn[data-r="legendaire"] { --c: #d7af5f; }
+.r-btn[data-r="mythique"]   { --c: #f5b5e4; }
+.r-btn[data-r="godlike"]    { --c: #a83020; }
+.r-btn[data-r="event"]      { --c: #ebebeb; }
+.r-btn.active { background: var(--c); border-color: var(--c); }
+
+/* ── CLASS BUTTONS ── */
+.cls-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.cls-btn {
+  padding: 5px 13px; border-radius: 6px; border: 1px solid var(--border);
+  cursor: pointer; font-size: 12px; background: var(--surface2); color: var(--muted); transition: all .15s;
+}
+.cls-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── STATS ── */
+.stat-group-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding: 6px 0 2px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.stat-row {
+  display: grid; grid-template-columns: 1fr 78px 16px 78px;
+  gap: 6px; align-items: center; padding: 5px 8px; border-radius: 6px;
+  border: 1px solid transparent; transition: border-color .15s, background .15s;
+}
+.stat-row:hover { background: var(--surface2); }
+.stat-row.has-val { border-color: var(--accent); background: rgba(122,90,248,.07); }
+.stat-row label { font-size: 12px; color: var(--muted); cursor: default; }
+.stat-row.has-val label { color: var(--text); }
+.stat-row input {
+  background: var(--surface3); border: 1px solid var(--border); border-radius: 5px;
+  color: var(--text); padding: 4px 6px; font-size: 12px; text-align: center; outline: none; width: 100%;
+  transition: border-color .15s;
+}
+.stat-row input:focus { border-color: var(--accent); }
+.stat-sep { color: var(--muted); text-align: center; font-size: 11px; }
+.stat-range-hint { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+/* ── CRAFT ── */
+.craft-item {
+  display: grid; grid-template-columns: 62px 1fr auto;
+  gap: 6px; align-items: start;
+}
+.craft-item input[type=number] {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); padding: 8px 6px; font-size: 13px; text-align: center; outline: none; width: 100%;
+}
+.craft-item input[type=number]:focus { border-color: var(--accent); }
+
+/* Searchable dropdown */
+.search-drop-wrap { position: relative; }
+.search-drop-wrap input {
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); padding: 8px 10px; font-size: 13px; outline: none; width: 100%;
+  transition: border-color .15s;
+}
+.search-drop-wrap input:focus { border-color: var(--accent); }
+.search-drop-wrap input.selected-item { border-color: var(--accent); color: var(--success); }
+.drop-list {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  background: var(--surface); border: 1px solid var(--accent); border-radius: 8px;
+  max-height: 200px; overflow-y: auto; z-index: 100; display: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+}
+.drop-list.open { display: block; }
+.drop-item {
+  padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border);
+  font-size: 13px; display: flex; flex-direction: column; gap: 2px;
+}
+.drop-item:last-child { border-bottom: none; }
+.drop-item:hover, .drop-item.focused { background: var(--surface2); }
+.drop-item-name { color: var(--text); }
+.drop-item-id { color: var(--muted); font-size: 11px; font-family: monospace; }
+.drop-empty { padding: 10px 12px; color: var(--muted); font-size: 13px; font-style: italic; }
+
+/* ── TAGS ── */
+.preset-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; }
+.preset-group-label { font-size: 10px; color: var(--muted); width: 100%; font-weight: 700; text-transform: uppercase; letter-spacing:.04em; margin-top: 6px; }
+.p-tag {
+  padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border);
+  cursor: pointer; font-size: 12px; background: var(--surface2); color: var(--muted); transition: all .15s;
+}
+.p-tag.active { background: var(--accent2); color: #fff; border-color: var(--accent); }
+.tag-custom-area {
+  display: flex; flex-wrap: wrap; gap: 5px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; min-height: 38px; align-items: center; cursor: text;
+}
+.tag-chip { display: inline-flex; align-items: center; gap: 3px; padding: 3px 9px; border-radius: 12px; background: var(--accent2); color: #fff; font-size: 12px; }
+.tag-chip button { background: none; border: none; color: rgba(255,255,255,.6); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+.tag-text-input { background: transparent; border: none; color: var(--text); font-size: 13px; outline: none; min-width: 80px; flex: 1; }
+
+/* ── MISC ── */
+.copy-msg { font-size: 12px; color: var(--success); opacity: 0; transition: opacity .3s; }
+.copy-msg.show { opacity: 1; }
+.hint { font-size: 11px; color: var(--muted); }
+
+/* ── TABS ── */
+.out-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.out-tab { padding: 10px 16px; font-size: 11px; font-weight: 700; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; text-transform: uppercase; letter-spacing: .05em; transition: color .15s; white-space: nowrap; }
+.out-tab:hover { color: var(--text); }
+.out-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.out-pane { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.out-pane.active { display: flex; }
+
+/* ── ITEM PREVIEW ── */
+.preview-wrap { flex: 1; overflow-y: auto; padding: 20px; display: flex; justify-content: center; align-items: flex-start; background: #0d1117; }
+.item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; width: 100%; overflow: hidden; }
+.ic-header { display: grid; grid-template-columns: 72px 1fr; }
+.ic-img { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; background: var(--bg); font-size: 28px; flex-shrink: 0; }
+.ic-info { padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; justify-content: center; min-width: 0; }
+.ic-name { font-family: 'Cinzel', Georgia, serif; font-size: 15px; font-weight: 900; color: var(--text); line-height: 1.2; }
+.ic-rarity { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 10px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+.ic-rarity-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.ic-meta { font-size: 10px; color: var(--muted); }
+.ic-classes { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 2px; }
+.ic-class { font-size: 9px; padding: 1px 6px; border-radius: 8px; background: rgba(122,90,248,.15); border: 1px solid var(--accent); color: var(--accent); text-transform: capitalize; }
+.ic-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border); }
+.ic-section-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border); padding-bottom: 3px; margin-bottom: 3px; }
+.ic-stats { display: flex; flex-direction: column; gap: 1px; }
+.ic-stat { display: flex; justify-content: space-between; align-items: center; font-size: 11px; padding: 2px 0; }
+.ic-stat-label { color: var(--muted); }
+.ic-stat-val { color: var(--text); font-weight: 700; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 10px; }
+.ic-set { font-size: 11px; color: #d7af5f; font-style: italic; }
+.ic-lore { font-family: 'JetBrains Mono', Consolas, monospace; font-size: 10px; color: #c9a85c; border-left: 2px solid #d7af5f; padding-left: 8px; font-style: italic; line-height: 1.6; }
+.ic-obtain { font-size: 10px; color: var(--muted); line-height: 1.5; }
+.ic-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+.ic-tag { font-size: 9px; padding: 2px 7px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+.ic-empty { color: var(--muted); font-size: 13px; font-style: italic; text-align: center; padding: 40px 20px; }
+
+/* ── HISTORY ── */
+.hist-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; }
+.hist-item:hover { border-color: var(--accent); }
+.hist-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.hist-info { flex: 1; min-width: 0; }
+.hist-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-meta { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.hist-actions { display: flex; gap: 5px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚔️ Item Creator</h1>
+  <span>Génère le code JS pour data.js</span>
+  <div class="hbtns">
+    <a href="Compendium/compendium.html" class="btn btn-ghost">📖 Compendium</a>
+    <span id="file-indicator" style="font-size:11px;color:var(--muted);display:none;"></span>
+    <span class="copy-msg" id="copy-msg">✓ Copié !</span>
+    <button class="btn btn-ghost" id="write-file-btn" onclick="writeToDataJs()">💾 Écrire dans data.js</button>
+    <button class="btn btn-success" onclick="copyCode()">📋 Copier le code</button>
+    <button class="btn btn-ghost" onclick="resetForm()">🔄 Reset</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ═══ FORM ═══ -->
+  <div class="form-panel" id="formPanel">
+
+    <!-- ORPHELINS -->
+    <div class="section" id="orphan-section" style="border-color:#4ade80;display:none;">
+      <div class="sec-head" style="background:rgba(74,222,128,.08);color:#4ade80;" onclick="toggleSec(this)">
+        🔗 Items orphelins <span id="orphan-count" style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;"></span><span class="chev">▾</span>
+      </div>
+      <div class="sec-body">
+        <div class="hint" style="color:#4ade80;opacity:.8;">Ces IDs sont référencés dans les drops de mobs mais n'existent pas encore dans data.js.</div>
+        <div id="orphan-list" style="display:flex;flex-direction:column;gap:5px;margin-top:4px;"></div>
+      </div>
+    </div>
+
+    <!-- CHARGER UN ITEM -->
+    <div class="section" style="border-color:var(--accent);">
+      <div class="sec-head" style="background:rgba(122,90,248,.12);color:var(--accent);" onclick="toggleSec(this)">
+        📂 Charger / Éditer un item existant <span class="chev">▾</span>
+      </div>
+      <div class="sec-body">
+        <div class="hint">Charge un item existant dans le formulaire pour l'éditer, puis copie le résultat.</div>
+        <div id="load-item-search-wrap"></div>
+      </div>
+    </div>
+
+    <!-- BANNIÈRE ÉDITION -->
+    <div id="editing-banner" style="display:none;background:rgba(122,90,248,.15);border:1px solid var(--accent);border-radius:8px;padding:10px 14px;display:none;align-items:center;justify-content:space-between;gap:12px;">
+      <span style="font-size:13px;">✏️ Édition de <b id="editing-name" style="color:var(--accent)"></b></span>
+      <button class="btn btn-ghost btn-sm" onclick="clearEditingMode()">✕ Nouveau item</button>
+    </div>
+
+    <!-- IDENTITÉ -->
+    <div class="section">
+      <div class="sec-head" onclick="toggleSec(this)">📋 Identité <span class="chev">▾</span></div>
+      <div class="sec-body">
+        <div class="row2">
+          <div class="field">
+            <label>Nom affiché *</label>
+            <input type="text" id="f-name" placeholder="Épée du Dragon" oninput="onNameInput()">
+          </div>
+          <div class="field">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <label style="margin:0">ID généré</label>
+              <span id="id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant</span>
+              <span id="id-orphan-badge" style="display:none;font-size:11px;font-weight:700;color:var(--success);background:rgba(74,222,128,.1);border:1px solid var(--success);border-radius:10px;padding:1px 8px;cursor:default;" title="">✓ Drop orphelin</span>
+            </div>
+            <input type="text" id="f-id" placeholder="epee_du_dragon" oninput="idLocked=true;update()" style="color:var(--muted);font-family:monospace;font-size:12px;">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Rareté</label>
+          <div class="rarity-row">
+            <button class="r-btn" data-r="commun"     onclick="setRarity('commun')">Commun</button>
+            <button class="r-btn" data-r="rare"       onclick="setRarity('rare')">Rare</button>
+            <button class="r-btn" data-r="epique"     onclick="setRarity('epique')">Épique</button>
+            <button class="r-btn" data-r="legendaire" onclick="setRarity('legendaire')">Légendaire</button>
+            <button class="r-btn" data-r="mythique"   onclick="setRarity('mythique')">Mythique</button>
+            <button class="r-btn" data-r="godlike"    onclick="setRarity('godlike')">Godlike</button>
+            <button class="r-btn" data-r="event"      onclick="setRarity('event')">Event</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Item sensible</label>
+          <div>
+            <button id="sensible-btn" class="r-btn" style="--c:#f87171;" onclick="toggleSensible()">🔒 Sensible</button>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Catégorie *</label>
+            <select id="f-category" onchange="onCatChange()">
+              <option value="">— Choisir —</option>
+              <option value="arme">⚔️ Armes</option>
+              <option value="armure">🛡️ Armures</option>
+              <option value="accessoire">💍 Accessoires</option>
+              <option value="consommable">🧪 Consommables</option>
+              <option value="nourriture">🍖 Nourriture</option>
+              <option value="materiaux">🧱 Matériaux</option>
+              <option value="ressources">⛏️ Ressources</option>
+              <option value="outils">🛠️ Outils</option>
+              <option value="rune">🔮 Runes</option>
+              <option value="quete">📜 Objets de Quête</option>
+              <option value="donjon">🏰 Donjon</option>
+              <option value="monnaie">🪙 Monnaie</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Slot interne</label>
+            <select id="f-cat" onchange="onCatSlotChange()">
+              <option value="">— Aucun —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field" id="twohanded-field" style="display:none;">
+          <label>Type d'arme</label>
+          <button id="twohanded-btn" class="r-btn" style="--c:#f59e0b;width:fit-content;" onclick="toggleTwoHanded()">⚔️⚔️ Deux mains</button>
+        </div>
+
+        <div class="row3">
+          <div class="field">
+            <label>Palier</label>
+            <select id="f-palier" onchange="update()">
+              <option value="">—</option>
+              <option value="1">Palier 1</option>
+              <option value="2">Palier 2</option>
+              <option value="3">Palier 3</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Niveau requis</label>
+            <input type="number" id="f-lvl" placeholder="1" min="1" max="20" oninput="update()">
+          </div>
+          <div class="field" id="set-field">
+            <label>Set / Panoplie</label>
+            <div id="set-drop-container"></div>
+          </div>
+        </div>
+
+
+        <div class="field" id="classes-field">
+          <label>Classes (vide = toutes)</label>
+          <div class="cls-row">
+            <button class="cls-btn" data-c="guerrier" onclick="toggleCls(this)">⚔️ Guerrier</button>
+            <button class="cls-btn" data-c="assassin" onclick="toggleCls(this)">🗡️ Assassin</button>
+            <button class="cls-btn" data-c="archer"   onclick="toggleCls(this)">🏹 Archer</button>
+            <button class="cls-btn" data-c="mage"     onclick="toggleCls(this)">📖 Mage</button>
+            <button class="cls-btn" data-c="shaman"   onclick="toggleCls(this)">🌿 Shaman</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="section" id="stats-section">
+      <div class="sec-head" onclick="toggleSec(this)">
+        📊 Stats
+        <span style="margin-left:8px;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;">
+          Min seul = valeur fixe · Min + Max = plage aléatoire [min, max]
+        </span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="sec-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <input type="text" id="stat-search" placeholder="🔍 Rechercher une stat…" oninput="filterStats()" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+          <button class="btn btn-ghost btn-sm" onclick="clearStats()" style="white-space:nowrap;flex-shrink:0;">🗑 Vider</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 78px 16px 78px;gap:6px;padding:0 8px;margin-bottom:2px;">
+          <span style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;">Stat</span>
+          <span style="font-size:10px;color:var(--muted);font-weight:700;text-align:center;">Min</span>
+          <span></span>
+          <span style="font-size:10px;color:var(--muted);font-weight:700;text-align:center;">Max</span>
+        </div>
+        <div id="stats-container"></div>
+      </div>
+    </div>
+
+    <!-- EFFETS -->
+    <div class="section" id="effects-section" style="display:none">
+      <div class="sec-head" onclick="toggleSec(this)">✨ Effets (consommable) <span class="chev">▾</span></div>
+      <div class="sec-body">
+        <div style="margin-bottom:4px;">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Templates</div>
+          <div id="effect-templates" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+        </div>
+        <div class="hint">Chaque ligne = un effet quand l'item est utilisé.</div>
+        <div id="effects-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <button class="btn btn-ghost btn-sm" style="width:100%" onclick="addEffect()">+ Ajouter un effet</button>
+      </div>
+    </div>
+
+    <!-- CRAFT -->
+    <div class="section">
+      <div class="sec-head" onclick="toggleSec(this)">🔨 Craft <span class="chev">▾</span></div>
+      <div class="sec-body">
+        <div class="hint">Ingrédients pour fabriquer cet item. Recherche par nom dans tous les items existants.</div>
+        <div id="craft-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:4px" onclick="addCraft()">+ Ajouter un ingrédient</button>
+      </div>
+    </div>
+
+    <!-- LORE & OBTAIN -->
+    <div class="section">
+      <div class="sec-head" onclick="toggleSec(this)">📖 Lore & Obtention <span class="chev">▾</span></div>
+      <div class="sec-body">
+        <div class="field">
+          <label>Lore</label>
+          <textarea id="f-lore" placeholder="Description narrative / flavor text..." oninput="update()"></textarea>
+        </div>
+        <div class="field">
+          <label>Sources d'obtention</label>
+
+          <!-- Type + search row -->
+          <div style="display:grid;grid-template-columns:170px 1fr auto;gap:6px;align-items:start;margin-bottom:8px;">
+            <select id="obtain-type" onchange="onObtainTypeChange()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;height:38px;">
+              <option value="mob">🗡️ Drop de Mob</option>
+              <option value="donjon">🏰 Donjon</option>
+              <option value="artisant">🔨 Forgeron / Artisan</option>
+              <option value="marchand">🛒 Marchand</option>
+            </select>
+            <div id="obtain-search-container"></div>
+            <button class="btn btn-primary btn-sm" id="obtain-add-btn" onclick="addObtainSource()" disabled style="height:38px;white-space:nowrap;">+ Ajouter</button>
+          </div>
+
+          <!-- Loot picker (mob uniquement) -->
+          <div id="obtain-loot-picker" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Drops de ce mob — clique pour ajouter</div>
+            <div id="obtain-loot-entries" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+          </div>
+
+          <!-- Added sources -->
+          <div id="obtain-sources-list" style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px;"></div>
+
+          <!-- Generated text preview -->
+
+          <!-- Override texte brut (chargé depuis item existant) -->
+          <div id="obtain-override-wrap" style="display:none;margin-top:8px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <span style="font-size:10px;font-weight:700;color:#d7af5f;text-transform:uppercase;letter-spacing:.04em;">⚠️ Texte existant (prioritaire sur le builder)</span>
+              <button class="btn btn-ghost btn-sm" onclick="clearObtainOverride()">Utiliser le builder</button>
+            </div>
+            <textarea id="f-obtain-override" style="background:var(--surface2);border:1px solid #d7af5f;border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;width:100%;resize:vertical;min-height:62px;outline:none;" oninput="update()"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAGS -->
+    <div class="section">
+      <div class="sec-head" onclick="toggleSec(this)">🏷️ Tags <span class="chev">▾</span></div>
+      <div class="sec-body">
+        <div class="hint">Clique sur un tag pour l'ajouter/retirer. Tu peux aussi en taper un custom et appuyer sur Entrée.</div>
+
+        <div class="preset-tags" id="preset-tags-container"></div>
+
+        <div class="field" style="margin-top:6px">
+          <label>Tags personnalisés</label>
+          <div class="tag-custom-area" id="tag-area" onclick="document.getElementById('tag-input').focus()">
+            <input type="text" class="tag-text-input" id="tag-input" placeholder="Tag custom… (Entrée pour valider)" onkeydown="onTagKey(event)">
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ OUTPUT ═══ -->
+  <div class="out-panel">
+    <div class="out-tabs">
+      <div class="out-tab active" id="tab-js" onclick="switchTab('js')">⌨️ Code JS</div>
+      <div class="out-tab" id="tab-preview" onclick="switchTab('preview')">👁️ Preview</div>
+      <div class="out-tab" id="tab-history" onclick="switchTab('history')">📋 Historique <span id="history-count" style="display:none;background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;font-size:10px;margin-left:2px;"></span></div>
+    </div>
+    <!-- JS Pane -->
+    <div class="out-pane active" id="pane-js">
+      <div id="validation-panel" style="display:none;padding:10px 14px;border-bottom:1px solid var(--border);flex-direction:column;gap:5px;"></div>
+      <pre class="out-code" id="out-code">// Remplis le formulaire
+// pour générer le code ici.</pre>
+    </div>
+    <!-- Preview Pane -->
+    <div class="out-pane" id="pane-preview">
+      <div class="preview-wrap" id="preview-wrap">
+        <div class="ic-empty">Remplis le formulaire pour voir la preview.</div>
+      </div>
+    </div>
+    <!-- History Pane -->
+    <div class="out-pane" id="pane-history">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Items copiés cette session</span>
+        <button class="btn btn-ghost btn-sm" onclick="clearHistory()">🗑 Vider</button>
+      </div>
+      <div id="history-list" style="flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;">
+        <div class="ic-empty" style="padding:30px 10px;">Aucun item copié pour l'instant.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Données externes -->
+<script src="Bestiaire/mob_data.js"></script>
+<script src="Map/data.js"></script>
+<script src="Compendium/data.js"></script>
+<script>
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let selRarity    = '';
+let selClasses   = [];
+let craftEntries = [];
+let effectEntries= [];
+let activeTags   = new Set();
+let craftUid     = 0;
+let effectUid    = 0;
+
+// ═══════════════════════════════════════════════════
+// STATS CONFIG
+// ═══════════════════════════════════════════════════
+const STAT_DEFS = [
+  { group:'Offensif', stats:[
+    { id:'degats',             label:'Dégâts'                    },
+    { id:'degats_physique',    label:'Dégâts Physique %'         },
+    { id:'degats_arme',        label:"Dégâts d'Arme %"          },
+    { id:'degats_magique',     label:'Dégâts Magiques %'         },
+    { id:'degats_competence',  label:'Dégâts Compétence %'       },
+    { id:'degats_projectile',  label:'Dégâts Projectile %'       },
+    { id:'vitesse_attaque',    label:"Vitesse d'Attaque"         },
+    { id:'crit_chance',        label:'Crit Chance %'             },
+    { id:'crit_degats',        label:'Crit Dégâts %'             },
+    { id:'crit_comp_chance',   label:'Crit Compétence Chance %'  },
+    { id:'crit_comp_degats',   label:'Crit Compétence Dégâts %'  },
+  ]},
+  { group:'Défensif', stats:[
+    { id:'defense',            label:'Défense'                   },
+    { id:'maitrise_bloc',      label:'Maîtrise de Blocage %'     },
+    { id:'puissance_bloc',     label:'Puissance de Blocage %'    },
+    { id:'sante',              label:'Santé'                     },
+    { id:'esquive',            label:'Esquive %'                 },
+    { id:'reduction_degats',   label:'Réduction Dégâts %'        },
+    { id:'reduction_chutes',   label:'Réduction Chutes %'        },
+    { id:'tenacite',           label:'Ténacité %'                },
+    { id:'res_recul',          label:'Résistance Recul %'        },
+  ]},
+  { group:'Mobilité & Ressources', stats:[
+    { id:'hate',               label:'Hâte %'                   },
+    { id:'vitesse_deplacement',label:'Vitesse Déplacement /s'    },
+    { id:'mana',               label:'Mana'                      },
+    { id:'stamina',            label:'Stamina'                   },
+  ]},
+  { group:'Régénération & Soutien', stats:[
+    { id:'vol_vie',            label:'Vol de Vie %'              },
+    { id:'omnivamp',           label:'Omnivampirisme %'          },
+    { id:'soin_bonus',         label:'Soin Bonus'                },
+    { id:'regen_sante',        label:'Régén. Santé /s'          },
+    { id:'regen_mana',         label:'Régén. Mana /s'           },
+    { id:'regen_stamina',      label:'Régén. Stamina /s'        },
+  ]},
+];
+
+// ═══════════════════════════════════════════════════
+// AUTO-TAG MAPS
+// ═══════════════════════════════════════════════════
+const SLOT_OPTIONS = {
+  arme:       [['arme_p','Arme Principale'], ['arme_s','Arme Secondaire / Bouclier']],
+  armure:     [['casque','Casque'],['plastron','Plastron'],['jambières','Jambières'],['bottes','Bottes'],['gants','Gants']],
+  accessoire: [['anneau','Anneau'],['amulette','Amulette'],['bracelet','Bracelet'],['artefact','Artefact']]
+};
+
+const SLOT_TAG_MAP = {
+  anneau:'Anneau', amulette:'Amulette', bracelet:'Bracelet', artefact:'Artefact',
+  casque:'Casque', plastron:'Plastron', 'jambières':'Jambières', bottes:'Bottes', gants:'Gants',
+  arme_s:'Bouclier'
+};
+
+const CLS_TAG_MAP  = { guerrier:'Guerrier', assassin:'Assassin', archer:'Archer', mage:'Mage', shaman:'Shaman' };
+const RARITY_TAG_MAP = {
+  commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire',
+  mythique:'Mythique', godlike:'Godlike', event:'Event'
+};
+
+// ═══════════════════════════════════════════════════
+// PRESET TAGS
+// ═══════════════════════════════════════════════════
+const PRESET_TAG_GROUPS = [
+  { label:'Type', tags:['Arme','Épée','Dague','Hache','Lance','Marteau','Hallebarde','Arc','Bâton','Bouclier','Casque','Plastron','Jambières','Bottes','Gants','Anneau','Amulette','Bracelet','Artefact'] },
+  { label:'Classe', tags:['Guerrier','Assassin','Archer','Mage','Shaman'] },
+  { label:'Palier', tags:['Palier 1','Palier 2','Palier 3'] },
+  { label:'Rareté', tags:['Commun','Rare','Épique','Légendaire','Mythique','Godlike','Event'] },
+  { label:'Autre', tags:['Consommable','Nourriture','Matériau','Ressource','Outil','Rune','Donjon','Quête','Set','Boss','World Boss','Event'] },
+];
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  buildStatsUI();
+  buildPresetTags();
+  buildSetSelect();
+  initObtainData();
+  initLoadSearch();
+  buildOrphanSection();
+  buildEffectTemplates();
+  update();
+});
+
+function buildSetSelect() {
+  if (typeof SETS === 'undefined') return;
+  const sel = document.getElementById('f-set');
+  for (const [id, { label }] of Object.entries(SETS)) {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// BUILD STATS UI
+// ═══════════════════════════════════════════════════
+function buildStatsUI() {
+  const container = document.getElementById('stats-container');
+  for (const { group, stats } of STAT_DEFS) {
+    const glabel = document.createElement('div');
+    glabel.className = 'stat-group-label';
+    glabel.textContent = group;
+    container.appendChild(glabel);
+
+    for (const { id, label } of stats) {
+      const row = document.createElement('div');
+      row.className = 'stat-row';
+      row.id = `srow-${id}`;
+      row.innerHTML = `
+        <label title="${id}">${label}</label>
+        <input type="number" step="any" id="smin-${id}" placeholder="—" oninput="onStatInput('${id}')">
+        <span class="stat-sep">→</span>
+        <input type="number" step="any" id="smax-${id}" placeholder="max" oninput="onStatInput('${id}')">
+      `;
+      container.appendChild(row);
+    }
+  }
+}
+
+function onStatInput(id) {
+  const minV = document.getElementById(`smin-${id}`).value;
+  const maxV = document.getElementById(`smax-${id}`).value;
+  document.getElementById(`srow-${id}`).classList.toggle('has-val', minV !== '' && minV !== '0');
+  update();
+}
+
+function getStats() {
+  const out = {};
+  for (const { stats } of STAT_DEFS) {
+    for (const { id } of stats) {
+      const minEl = document.getElementById(`smin-${id}`);
+      const maxEl = document.getElementById(`smax-${id}`);
+      if (!minEl || minEl.value === '') continue;
+      const min = parseFloat(minEl.value);
+      if (isNaN(min)) continue;
+      const maxRaw = maxEl.value;
+      if (maxRaw !== '' && parseFloat(maxRaw) !== min) {
+        out[id] = [min, parseFloat(maxRaw)];
+      } else {
+        out[id] = min;
+      }
+    }
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════
+// AUTO ID FROM NAME
+// ═══════════════════════════════════════════════════
+function nameToId(name) {
+  return name
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // strip accents
+    .toLowerCase()
+    .replace(/['\u2019\u2018`]/g, '_')  // apostrophes → _
+    .replace(/\s+/g, '_')               // spaces → _
+    .replace(/[^a-z0-9_]/g, '')         // remove anything else
+    .replace(/_+/g, '_')                // no double __
+    .replace(/^_|_$/g, '');             // trim edges
+}
+
+let idLocked = false; // true = ID a été fixé manuellement, ne pas écraser depuis le nom
+
+function onNameInput() {
+  const name = document.getElementById('f-name').value;
+  if (!idLocked) document.getElementById('f-id').value = nameToId(name);
+  update();
+}
+
+// ═══════════════════════════════════════════════════
+// OBTAIN BUILDER
+// ═══════════════════════════════════════════════════
+let obtainSources  = [];
+let obtainUid      = 0;
+let obtainDrop     = null;
+
+let allMobs      = [];
+let allDonjons   = [];
+let allArtisans  = [];
+let allMarchands = [];
+
+function initObtainData() {
+  if (typeof MOBS !== 'undefined') {
+    allMobs = MOBS.map(m => ({
+      id: m.id, name: m.name, palier: m.palier, mobType: m.type,
+      loot: m.loot || [],
+      subtitle: (m.type === 'boss' ? '👑 Boss' : '👾 Monstre') + ' · Palier ' + (m.palier || '?') + (m.region ? ' · ' + m.region : ''),
+      search: (m.name + ' ' + m.id + ' ' + (m.region || '')).toLowerCase()
+    }));
+  }
+  if (typeof FLOOR_MARKERS !== 'undefined') {
+    const flat = Object.values(FLOOR_MARKERS).flat();
+    const toItem = m => ({
+      id: m.id, name: m.name, desc: m.desc || '',
+      subtitle: m.desc || m.id,
+      search: (m.name + ' ' + m.id + ' ' + (m.desc || '')).toLowerCase()
+    });
+    allDonjons   = flat.filter(m => m.type === 'donjon').map(toItem);
+    allArtisans  = flat.filter(m => m.type === 'artisant').map(toItem);
+    allMarchands = flat.filter(m => m.type === 'marchand').map(toItem);
+  }
+  onObtainTypeChange();
+}
+
+function obtainItemsForType(type) {
+  return { mob: allMobs, donjon: allDonjons, artisant: allArtisans, marchand: allMarchands }[type] || [];
+}
+
+const OBTAIN_PLACEHOLDERS = {
+  mob:      'Rechercher un mob…',
+  donjon:   'Rechercher un donjon…',
+  artisant: 'Rechercher un forgeron / artisan…',
+  marchand: 'Rechercher un marchand…',
+};
+
+function onObtainTypeChange() {
+  const type = document.getElementById('obtain-type').value;
+  const container = document.getElementById('obtain-search-container');
+  container.innerHTML = '';
+  hideLootPicker();
+
+  obtainDrop = makeSearchDrop(obtainItemsForType(type), OBTAIN_PLACEHOLDERS[type], (id) => {
+    if (type === 'mob') {
+      const mob = allMobs.find(m => m.id === id);
+      if (mob) showLootPicker(mob); else hideLootPicker();
+      document.getElementById('obtain-add-btn').disabled = true;
+    } else {
+      hideLootPicker();
+      document.getElementById('obtain-add-btn').disabled = !id;
+    }
+  });
+  container.appendChild(obtainDrop.element);
+  document.getElementById('obtain-add-btn').disabled = true;
+  // hide add btn for mobs (loot picker replaces it)
+  document.getElementById('obtain-add-btn').style.display = type === 'mob' ? 'none' : '';
+}
+
+function showLootPicker(mob) {
+  const picker  = document.getElementById('obtain-loot-picker');
+  const entries = document.getElementById('obtain-loot-entries');
+  entries.innerHTML = '';
+
+  if (!mob.loot || !mob.loot.length) {
+    entries.innerHTML = '<span style="color:var(--muted);font-size:12px;font-style:italic;">Aucun drop listé pour ce mob.</span>';
+    picker.style.display = '';
+    return;
+  }
+
+  for (const loot of mob.loot) {
+    const itemName = (typeof ITEMS !== 'undefined' && ITEMS.find(i => i.id === loot.id)?.name) || loot.id;
+    const alreadyAdded = obtainSources.some(s => s.type === 'mob' && s.mobId === mob.id && s.lootId === loot.id);
+
+    const btn = document.createElement('button');
+    btn.style.cssText = `padding:5px 12px;border-radius:20px;border:1px solid var(--border);cursor:pointer;font-size:12px;background:var(--surface);color:var(--text);transition:all .15s;${alreadyAdded ? 'opacity:.4;cursor:default;' : ''}`;
+    btn.innerHTML = `${itemName} <b style="color:var(--success)">${loot.chance}%</b>${loot.qty ? ' <span style="color:var(--muted)">×'+loot.qty+'</span>' : ''}`;
+    if (!alreadyAdded) {
+      btn.addEventListener('mouseenter', () => btn.style.background = 'var(--surface2)');
+      btn.addEventListener('mouseleave', () => btn.style.background = 'var(--surface)');
+      btn.addEventListener('click', () => {
+        addObtainMobSource(mob, loot, itemName);
+        showLootPicker(mob); // re-render to grey out added entry
+      });
+    }
+    entries.appendChild(btn);
+  }
+  picker.style.display = '';
+}
+
+function hideLootPicker() {
+  document.getElementById('obtain-loot-picker').style.display = 'none';
+  document.getElementById('obtain-loot-entries').innerHTML = '';
+}
+
+function addObtainMobSource(mob, loot, itemName) {
+  if (obtainSources.some(s => s.type === 'mob' && s.mobId === mob.id && s.lootId === loot.id)) return;
+  obtainSources.push({
+    uid: obtainUid++, type: 'mob',
+    id: mob.id, mobId: mob.id, lootId: loot.id,
+    name: mob.name, lootName: itemName,
+    palier: mob.palier, mobType: mob.mobType,
+    chance: loot.chance, qty: loot.qty ?? null
+  });
+  renderObtainSources();
+  update();
+}
+
+function addObtainSource() {
+  const type = document.getElementById('obtain-type').value;
+  if (type === 'mob') return; // handled by loot picker
+  const id = obtainDrop ? obtainDrop.getValue() : '';
+  if (!id) return;
+
+  const item = obtainItemsForType(type).find(it => it.id === id);
+  if (!item) return;
+  if (obtainSources.some(s => s.id === id && s.type === type)) return;
+
+  obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc });
+  obtainDrop.reset();
+  document.getElementById('obtain-add-btn').disabled = true;
+  renderObtainSources();
+  update();
+}
+
+function removeObtainSource(uid) {
+  obtainSources = obtainSources.filter(s => s.uid !== uid);
+  renderObtainSources();
+  // Rafraîchit le loot picker si un mob est sélectionné
+  if (document.getElementById('obtain-type').value === 'mob') {
+    const mobId = obtainDrop?.getValue();
+    if (mobId) { const mob = allMobs.find(m => m.id === mobId); if (mob) showLootPicker(mob); }
+  }
+  update();
+}
+
+const OBTAIN_ICONS = { mob:'🗡️', donjon:'🏰', artisant:'🔨', marchand:'🛒' };
+
+function renderObtainSources() {
+  const list = document.getElementById('obtain-sources-list');
+  list.innerHTML = '';
+  for (const s of obtainSources) {
+    const chip = document.createElement('div');
+    chip.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;';
+    let label = `${OBTAIN_ICONS[s.type] || ''} `;
+    if (s.type === 'mob') {
+      label += `<b>${s.lootName || s.name}</b> depuis <span style="color:var(--muted)">${s.name}</span>`;
+      if (s.palier) label += ` [P${s.palier}]`;
+      label += ` — <b style="color:var(--success)">${s.chance}%</b>`;
+      if (s.qty) label += ` <span style="color:var(--muted)">×${s.qty}</span>`;
+    } else {
+      label += `<b>${s.name}</b>`;
+      if (s.desc) label += ` <span style="color:var(--muted)">— ${s.desc}</span>`;
+    }
+    chip.innerHTML = `<span>${label}</span><button class="btn-icon" onclick="removeObtainSource(${s.uid})">✕</button>`;
+    list.appendChild(chip);
+  }
+}
+
+function buildObtainText() {
+  const override = document.getElementById('f-obtain-override')?.value?.trim();
+  if (override) return override;
+  const parts = [];
+  const mobs      = obtainSources.filter(s => s.type === 'mob');
+  const donjons   = obtainSources.filter(s => s.type === 'donjon');
+  const artisans  = obtainSources.filter(s => s.type === 'artisant');
+  const marchands = obtainSources.filter(s => s.type === 'marchand');
+
+  if (mobs.length) {
+    // Une ligne par mob : [mob_id|Nom Mob][chance]
+    const lines = mobs.map(s => {
+      const base = `[${s.mobId}|${s.name}]`;
+      return `- ${s.chance ? base + `[${s.chance}]` : base}`;
+    });
+    parts.push('Obtenable en tuant:\n' + lines.join('\n'));
+  }
+  for (const d of donjons)   parts.push(`Obtenable en récompense du [npc:${d.id}|${d.name}]`);
+  for (const a of artisans)  parts.push(`Fabricable au [npc:${a.id}|${a.name}]`);
+  for (const m of marchands) parts.push(`Achetable au [npc:${m.id}|${m.name}]`);
+  return parts.join('\n');
+}
+
+// ═══════════════════════════════════════════════════
+// RARITY
+// ═══════════════════════════════════════════════════
+function setRarity(r) {
+  // Remove old rarity tag
+  if (selRarity && RARITY_TAG_MAP[selRarity]) activeTags.delete(RARITY_TAG_MAP[selRarity]);
+  // Toggle off if same clicked again
+  selRarity = (selRarity === r) ? '' : r;
+  // Add new rarity tag
+  if (selRarity && RARITY_TAG_MAP[selRarity]) activeTags.add(RARITY_TAG_MAP[selRarity]);
+  document.querySelectorAll('.r-btn[data-r]').forEach(b => b.classList.toggle('active', b.dataset.r === selRarity));
+  syncPresetTagButtons();
+  renderCustomTags();
+  update();
+}
+
+// ═══════════════════════════════════════════════════
+// CLASSES
+// ═══════════════════════════════════════════════════
+function toggleCls(btn) {
+  const c = btn.dataset.c;
+  btn.classList.toggle('active');
+  if (btn.classList.contains('active')) {
+    if (!selClasses.includes(c)) selClasses.push(c);
+    if (CLS_TAG_MAP[c]) activeTags.add(CLS_TAG_MAP[c]);
+  } else {
+    selClasses = selClasses.filter(x => x !== c);
+    if (CLS_TAG_MAP[c]) activeTags.delete(CLS_TAG_MAP[c]);
+  }
+  syncPresetTagButtons();
+  renderCustomTags();
+  update();
+}
+
+// ═══════════════════════════════════════════════════
+// CATEGORY CHANGE
+// ═══════════════════════════════════════════════════
+function buildCatSlotOptions(cat) {
+  const sel = document.getElementById('f-cat');
+  sel.innerHTML = '<option value="">— Aucun —</option>';
+  for (const [val, label] of (SLOT_OPTIONS[cat] || [])) {
+    const opt = document.createElement('option');
+    opt.value = val; opt.textContent = label;
+    sel.appendChild(opt);
+  }
+}
+
+function syncPresetTagButtons() {
+  document.querySelectorAll('.p-tag[data-tag]').forEach(b => {
+    b.classList.toggle('active', activeTags.has(b.dataset.tag));
+  });
+}
+
+function onCatSlotChange() {
+  const slot = document.getElementById('f-cat').value;
+  // Remove all slot tags first
+  for (const tag of Object.values(SLOT_TAG_MAP)) activeTags.delete(tag);
+  // Add new one
+  if (slot && SLOT_TAG_MAP[slot]) activeTags.add(SLOT_TAG_MAP[slot]);
+  syncPresetTagButtons();
+  renderCustomTags();
+  update();
+}
+
+function onCatChange() {
+  const cat = document.getElementById('f-category').value;
+  const isEquip = ['arme','armure','accessoire'].includes(cat);
+  const isCons  = ['consommable','nourriture'].includes(cat);
+  const isArme  = cat === 'arme';
+  document.getElementById('stats-section').style.display    = isEquip ? '' : 'none';
+  document.getElementById('effects-section').style.display  = isCons  ? '' : 'none';
+  document.getElementById('classes-field').style.display    = isEquip ? '' : 'none';
+  document.getElementById('twohanded-field').style.display  = isArme  ? '' : 'none';
+  if (!isArme) { selTwoHanded = false; document.getElementById('twohanded-btn').classList.remove('active'); }
+  // Rebuild slot options and clear old slot tags
+  buildCatSlotOptions(cat);
+  for (const tag of Object.values(SLOT_TAG_MAP)) activeTags.delete(tag);
+  syncPresetTagButtons();
+  renderCustomTags();
+  update();
+}
+
+let selSensible  = false;
+let selTwoHanded = false;
+
+function toggleSensible() {
+  selSensible = !selSensible;
+  document.getElementById('sensible-btn').classList.toggle('active', selSensible);
+  update();
+}
+
+function toggleTwoHanded() {
+  selTwoHanded = !selTwoHanded;
+  document.getElementById('twohanded-btn').classList.toggle('active', selTwoHanded);
+  // Sync tag 'Deux Mains'
+  if (selTwoHanded) activeTags.add('Deux Mains');
+  else              activeTags.delete('Deux Mains');
+  renderCustomTags();
+  update();
+}
+
+// ═══════════════════════════════════════════════════
+// LOAD EXISTING ITEM
+// ═══════════════════════════════════════════════════
+let allItemsIndex = [];
+let loadDrop = null;
+
+function ensureAllItemsIndex() {
+  if (allItemsIndex.length || typeof ITEMS === 'undefined') return;
+  const rarityLabel = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+  allItemsIndex = ITEMS.map(it => ({
+    id: it.id,
+    name: it.name || it.id,
+    subtitle: [rarityLabel[it.rarity] || it.rarity, it.category, it.palier ? 'P'+it.palier : ''].filter(Boolean).join(' · '),
+    search: ((it.name || '') + ' ' + it.id + ' ' + (it.category || '')).toLowerCase(),
+    _raw: it
+  }));
+}
+
+function initLoadSearch() {
+  ensureAllItemsIndex();
+  loadDrop = makeSearchDrop(allItemsIndex, 'Rechercher un item à éditer…', (id) => {
+    if (!id) return;
+    const entry = allItemsIndex.find(it => it.id === id);
+    if (entry) loadItem(entry._raw);
+  });
+  document.getElementById('load-item-search-wrap').appendChild(loadDrop.element);
+}
+
+function loadItem(item) {
+  resetFormSilent();
+
+  // Bannière
+  document.getElementById('editing-name').textContent = item.name || item.id;
+  document.getElementById('editing-banner').style.display = 'flex';
+
+  // Identité
+  document.getElementById('f-name').value = item.name || '';
+  document.getElementById('f-id').value   = item.id   || '';
+  idLocked = !!(item.id);
+
+  if (item.rarity)   setRarity(item.rarity);
+
+  if (item.category) {
+    document.getElementById('f-category').value = item.category;
+    onCatChange();
+  }
+  if (item.cat)    document.getElementById('f-cat').value    = String(item.cat);
+  if (item.palier) document.getElementById('f-palier').value = String(item.palier);
+  if (item.lvl)    document.getElementById('f-lvl').value    = String(item.lvl);
+
+  // Set
+  if (item.set && setDrop && typeof SETS !== 'undefined' && SETS[item.set]) {
+    setDrop.setValue(item.set, SETS[item.set].label);
+  }
+
+  // Classes
+  // Sensible
+  if (item.sensible) {
+    selSensible = true;
+    document.getElementById('sensible-btn').classList.add('active');
+  }
+
+  // Two-handed
+  if (item.twoHanded) {
+    selTwoHanded = true;
+    document.getElementById('twohanded-btn').classList.add('active');
+  }
+
+  if (item.classes) {
+    selClasses = [...item.classes];
+    document.querySelectorAll('.cls-btn').forEach(b => b.classList.toggle('active', item.classes.includes(b.dataset.c)));
+  }
+
+  // Stats
+  if (item.stats) {
+    for (const [id, val] of Object.entries(item.stats)) {
+      const minEl = document.getElementById(`smin-${id}`);
+      const maxEl = document.getElementById(`smax-${id}`);
+      if (!minEl) continue;
+      if (Array.isArray(val)) { minEl.value = val[0]; maxEl.value = val[1]; }
+      else                    { minEl.value = val;    maxEl.value = '';     }
+      onStatInput(id);
+    }
+  }
+
+  // Craft
+  if (item.craft?.length) {
+    ensureItemIndex();
+    for (const { qty, id } of item.craft) {
+      addCraft();
+      const entry = craftEntries[craftEntries.length - 1];
+      entry.qty = qty || 1;
+      entry.itemId = id;
+      const row = document.getElementById(`craft-${entry.uid}`);
+      if (row) row.querySelector('input[type=number]').value = qty || 1;
+      const name = itemIndex.find(it => it.id === id)?.name || id;
+      entry.drop?.setValue(id, name);
+    }
+  }
+
+  // Effects
+  if (item.effects?.length) {
+    for (const eff of item.effects) {
+      addEffect();
+      const e = effectEntries[effectEntries.length - 1];
+      if (e._type)  e._type.value  = eff.type  || 'heal';
+      if (e._val)   e._val.value   = eff.value  ?? '';
+      if (e._unit)  e._unit.value  = eff.unit   || '';
+      if (e._label) e._label.value = eff.label  || '';
+    }
+  }
+
+  // Lore
+  if (item.lore) document.getElementById('f-lore').value = item.lore;
+
+  // Obtain — texte brut en override
+  if (item.obtain) {
+    document.getElementById('f-obtain-override').value = item.obtain;
+    document.getElementById('obtain-override-wrap').style.display = '';
+  }
+
+  // Tags
+  if (item.tags?.length) {
+    activeTags = new Set(item.tags);
+    document.querySelectorAll('.p-tag').forEach(b => b.classList.toggle('active', activeTags.has(b.dataset.tag)));
+    renderCustomTags();
+  }
+
+  loadDrop?.reset();
+  update();
+  // Scroll vers le formulaire
+  document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetFormSilent() {
+  document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel textarea').forEach(i => i.value = '');
+  document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
+  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; idLocked = false;
+  document.getElementById('sensible-btn').classList.remove('active');
+  document.getElementById('twohanded-btn').classList.remove('active');
+  activeTags = new Set();
+  obtainSources = [];
+  if (setDrop) setDrop.reset();
+  document.querySelectorAll('.r-btn, .cls-btn, .p-tag').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.stat-row').forEach(r => r.classList.remove('has-val'));
+  document.getElementById('craft-list').innerHTML    = '';
+  document.getElementById('effects-list').innerHTML  = '';
+  document.getElementById('obtain-override-wrap').style.display = 'none';
+  renderObtainSources();
+  onCatChange();
+}
+
+function clearEditingMode() {
+  document.getElementById('editing-banner').style.display = 'none';
+  resetFormSilent();
+  update();
+}
+
+function clearObtainOverride() {
+  document.getElementById('f-obtain-override').value = '';
+  document.getElementById('obtain-override-wrap').style.display = 'none';
+  update();
+}
+
+// ═══════════════════════════════════════════════════
+// SHARED SEARCHABLE DROPDOWN
+// items: [{ id, name, search }]
+// onSelect(id, name) appelé à chaque sélection / désélection
+// Retourne { mount(container), getValue, reset }
+// ═══════════════════════════════════════════════════
+function makeSearchDrop(items, placeholder, onSelect) {
+  let selectedId = '';
+  let focusedIdx = -1;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'search-drop-wrap';
+
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.placeholder = placeholder;
+
+  const list = document.createElement('div');
+  list.className = 'drop-list';
+
+  wrap.appendChild(inp);
+  wrap.appendChild(list);
+
+  function openDrop(q) {
+    q = q.toLowerCase();
+    const results = q.length < 1
+      ? []
+      : items.filter(it => it.search.includes(q)).slice(0, 40);
+    list.innerHTML = '';
+    focusedIdx = -1;
+    if (q.length >= 1 && !results.length) {
+      list.innerHTML = '<div class="drop-empty">Aucun résultat.</div>';
+    } else {
+      results.forEach(it => {
+        const di = document.createElement('div');
+        di.className = 'drop-item';
+        di.innerHTML = `<span class="drop-item-name">${it.name}</span><span class="drop-item-id">${it.subtitle || it.id}</span>`;
+        di.addEventListener('mousedown', ev => { ev.preventDefault(); pick(it); });
+        list.appendChild(di);
+      });
+    }
+    list.classList.toggle('open', q.length >= 1);
+  }
+
+  function pick(it) {
+    selectedId = it.id;
+    inp.value = it.name;
+    inp.classList.add('selected-item');
+    list.classList.remove('open');
+    onSelect(it.id, it.name);
+  }
+
+  inp.addEventListener('input', () => {
+    selectedId = '';
+    inp.classList.remove('selected-item');
+    openDrop(inp.value);
+    onSelect('', '');
+  });
+  inp.addEventListener('focus', () => {
+    if (!inp.classList.contains('selected-item')) openDrop(inp.value);
+  });
+  inp.addEventListener('blur', () => setTimeout(() => list.classList.remove('open'), 150));
+  inp.addEventListener('keydown', ev => {
+    const rows = list.querySelectorAll('.drop-item');
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); focusedIdx = Math.min(focusedIdx+1, rows.length-1); }
+    else if (ev.key === 'ArrowUp') { ev.preventDefault(); focusedIdx = Math.max(focusedIdx-1, 0); }
+    else if (ev.key === 'Enter' && focusedIdx >= 0) { ev.preventDefault(); rows[focusedIdx]?.dispatchEvent(new Event('mousedown')); return; }
+    else if (ev.key === 'Escape') { list.classList.remove('open'); return; }
+    rows.forEach((el, i) => el.classList.toggle('focused', i === focusedIdx));
+  });
+
+  return {
+    element: wrap,
+    getValue: () => selectedId,
+    setValue: (id, name) => { selectedId = id; inp.value = name || ''; inp.classList.toggle('selected-item', !!id); },
+    reset: () => { selectedId = ''; inp.value = ''; inp.classList.remove('selected-item'); list.classList.remove('open'); }
+  };
+}
+
+// ═══════════════════════════════════════════════════
+// SET SEARCH
+// ═══════════════════════════════════════════════════
+let setDrop = null;
+
+function buildSetSelect() {
+  if (typeof SETS === 'undefined') return;
+  const setItems = Object.entries(SETS).map(([id, { label }]) => ({
+    id, name: label, search: (label + ' ' + id).toLowerCase()
+  }));
+  setDrop = makeSearchDrop(setItems, 'Rechercher un set…', () => update());
+  document.getElementById('set-drop-container').appendChild(setDrop.element);
+}
+
+// ═══════════════════════════════════════════════════
+// CRAFT
+// ═══════════════════════════════════════════════════
+let itemIndex = [];
+const CRAFT_CATEGORIES = new Set(['materiaux','ressources','monnaie','donjon','quete']);
+
+function ensureItemIndex() {
+  if (itemIndex.length) return;
+  if (typeof ITEMS === 'undefined') return;
+  itemIndex = ITEMS
+    .filter(it => CRAFT_CATEGORIES.has(it.category))
+    .map(it => ({
+      id: it.id,
+      name: it.name || it.id,
+      search: ((it.name || '') + ' ' + it.id).toLowerCase()
+    }));
+}
+
+function addCraft() {
+  ensureItemIndex();
+  const uid = craftUid++;
+  const entry = { uid, itemId: '', qty: 1 };
+  craftEntries.push(entry);
+
+  const row = document.createElement('div');
+  row.className = 'craft-item';
+  row.id = `craft-${uid}`;
+
+  const qtyInp = document.createElement('input');
+  qtyInp.type = 'number'; qtyInp.min = '1'; qtyInp.value = '1'; qtyInp.placeholder = 'Qté';
+  qtyInp.addEventListener('input', () => { entry.qty = parseInt(qtyInp.value) || 1; update(); });
+
+  const drop = makeSearchDrop(itemIndex, 'Rechercher un ingrédient…', (id) => {
+    entry.itemId = id;
+    update();
+  });
+  entry.drop = drop;
+
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'btn-icon'; rmBtn.textContent = '✕';
+  rmBtn.addEventListener('click', () => { craftEntries = craftEntries.filter(e => e.uid !== uid); row.remove(); update(); });
+
+  row.appendChild(qtyInp);
+  row.appendChild(drop.element);
+  row.appendChild(rmBtn);
+  document.getElementById('craft-list').appendChild(row);
+}
+
+function getCraft() {
+  return craftEntries.filter(e => e.itemId).map(e => ({ qty: e.qty, id: e.itemId }));
+}
+
+// ═══════════════════════════════════════════════════
+// EFFECTS
+// ═══════════════════════════════════════════════════
+const EFFECT_TYPES = ['heal','mana','stamina','regen','buff','feed','debuff','cooldown','use','level'];
+
+const EFFECT_TEMPLATES = [
+  { label:'❤️ Soin',         effects:[{ type:'heal',    value:50  }] },
+  { label:'💧 Mana',         effects:[{ type:'mana',    value:30  }] },
+  { label:'👟 Stamina',      effects:[{ type:'stamina', value:40  }] },
+  { label:'🍖 Nourriture',   effects:[{ type:'feed',    value:30  }, { type:'regen', value:2, unit:'PV/s' }] },
+  { label:'💓 Régén. soin',  effects:[{ type:'regen',   value:5,  unit:'PV/s' }] },
+  { label:'💪 Buff force',   effects:[{ type:'buff',    value:10, unit:'% dégâts' }] },
+  { label:'☠️ Poison',       effects:[{ type:'debuff',  value:5,  unit:'dégâts/s' }] },
+  { label:'🧪 Plein soins',  effects:[{ type:'heal',    value:100 }, { type:'mana', value:50 }, { type:'stamina', value:50 }] },
+];
+
+function buildEffectTemplates() {
+  const container = document.getElementById('effect-templates');
+  container.innerHTML = '';
+  for (const tpl of EFFECT_TEMPLATES) {
+    const btn = document.createElement('button');
+    btn.className = 'p-tag';
+    btn.textContent = tpl.label;
+    btn.addEventListener('click', () => applyEffectTemplate(tpl));
+    container.appendChild(btn);
+  }
+}
+
+function applyEffectTemplate(tpl) {
+  // Clear existing effects
+  effectEntries = [];
+  document.getElementById('effects-list').innerHTML = '';
+  // Apply template effects
+  for (const eff of tpl.effects) {
+    addEffect();
+    const e = effectEntries[effectEntries.length - 1];
+    if (e._type)  e._type.value  = eff.type;
+    if (e._val)   e._val.value   = eff.value  ?? '';
+    if (e._unit)  e._unit.value  = eff.unit   || '';
+    if (e._label) e._label.value = eff.label  || '';
+  }
+  update();
+}
+
+function addEffect() {
+  const uid = effectUid++;
+  effectEntries.push({ uid });
+
+  const row = document.createElement('div');
+  row.id = `eff-${uid}`;
+  row.style.cssText = 'display:grid;grid-template-columns:110px 70px 70px 1fr auto;gap:6px;align-items:center;';
+
+  const makeInp = (placeholder, type='text', opts='') => {
+    const el = document.createElement('input');
+    el.type = type; el.placeholder = placeholder;
+    if (type === 'number') el.step = 'any';
+    el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;width:100%';
+    el.addEventListener('focus', () => el.style.borderColor = 'var(--accent)');
+    el.addEventListener('blur',  () => el.style.borderColor = 'var(--border)');
+    el.addEventListener('input', update);
+    return el;
+  };
+
+  const typeSel = document.createElement('select');
+  typeSel.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;width:100%';
+  typeSel.innerHTML = EFFECT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
+  typeSel.addEventListener('change', update);
+
+  const valInp   = makeInp('Valeur','number');
+  const unitInp  = makeInp('PV / s…');
+  const labelInp = makeInp('Label (optionnel)');
+
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'btn-icon';
+  rmBtn.textContent = '✕';
+  rmBtn.addEventListener('click', () => {
+    effectEntries = effectEntries.filter(e => e.uid !== uid);
+    row.remove();
+    update();
+  });
+
+  row.appendChild(typeSel);
+  row.appendChild(valInp);
+  row.appendChild(unitInp);
+  row.appendChild(labelInp);
+  row.appendChild(rmBtn);
+  document.getElementById('effects-list').appendChild(row);
+
+  // Store refs
+  const entry = effectEntries.find(e => e.uid === uid);
+  entry._type = typeSel; entry._val = valInp; entry._unit = unitInp; entry._label = labelInp;
+}
+
+function getEffects() {
+  return effectEntries.map(e => {
+    const obj = { type: e._type.value };
+    const v = parseFloat(e._val.value);
+    if (!isNaN(v)) obj.value = v;
+    const u = e._unit.value.trim(); if (u) obj.unit = u;
+    const l = e._label.value.trim(); if (l) obj.label = l;
+    return obj;
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// TAGS
+// ═══════════════════════════════════════════════════
+function buildPresetTags() {
+  const container = document.getElementById('preset-tags-container');
+  for (const { label, tags } of PRESET_TAG_GROUPS) {
+    const glabel = document.createElement('span');
+    glabel.className = 'preset-group-label';
+    glabel.textContent = label;
+    container.appendChild(glabel);
+
+    for (const tag of tags) {
+      const btn = document.createElement('button');
+      btn.className = 'p-tag';
+      btn.textContent = tag;
+      btn.dataset.tag = tag;
+      btn.addEventListener('click', () => {
+        if (activeTags.has(tag)) {
+          activeTags.delete(tag);
+          btn.classList.remove('active');
+        } else {
+          activeTags.add(tag);
+          btn.classList.add('active');
+        }
+        renderCustomTags();
+        update();
+      });
+      container.appendChild(btn);
+    }
+  }
+}
+
+function onTagKey(e) {
+  if ((e.key === 'Enter' || e.key === ',') && e.target.value.trim()) {
+    e.preventDefault();
+    addCustomTag(e.target.value.trim());
+    e.target.value = '';
+  } else if (e.key === 'Backspace' && !e.target.value) {
+    // remove last custom (non-preset) tag
+    const customTags = [...activeTags].filter(t => !isPresetTag(t));
+    if (customTags.length) {
+      activeTags.delete(customTags[customTags.length - 1]);
+      renderCustomTags();
+      update();
+    }
+  }
+}
+
+function isPresetTag(t) {
+  return PRESET_TAG_GROUPS.some(g => g.tags.includes(t));
+}
+
+function addCustomTag(val) {
+  activeTags.add(val);
+  renderCustomTags();
+  update();
+}
+
+function renderCustomTags() {
+  const area = document.getElementById('tag-area');
+  const input = document.getElementById('tag-input');
+  area.querySelectorAll('.tag-chip').forEach(c => c.remove());
+  // Only show custom (non-preset) tags as chips
+  for (const t of activeTags) {
+    if (isPresetTag(t)) continue;
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip';
+    chip.innerHTML = `${t} <button onclick="removeCustomTag('${t.replace(/'/g,"\\'")}')">×</button>`;
+    area.insertBefore(chip, input);
+  }
+}
+
+function removeCustomTag(t) {
+  activeTags.delete(t);
+  renderCustomTags();
+  update();
+}
+
+// ═══════════════════════════════════════════════════
+// SECTION TOGGLE
+// ═══════════════════════════════════════════════════
+function toggleSec(head) {
+  head.classList.toggle('collapsed');
+  head.nextElementSibling.classList.toggle('hidden');
+}
+
+// ═══════════════════════════════════════════════════
+// PREVIEW
+// ═══════════════════════════════════════════════════
+const RARITY_COLORS = {
+  commun:'#59d059', rare:'#2a5fa8', epique:'#6a3daa',
+  legendaire:'#d7af5f', mythique:'#f5b5e4', godlike:'#a83020', event:'#ebebeb'
+};
+const RARITY_LABELS = {
+  commun:'Commun', rare:'Rare', epique:'Épique',
+  legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event'
+};
+const CAT_ICONS = {
+  arme:'⚔️', armure:'🛡️', accessoire:'💍', consommable:'🧪',
+  nourriture:'🍖', materiaux:'🧱', ressources:'⛏️', outils:'🛠️',
+  rune:'🔮', quete:'📜', donjon:'🏰', monnaie:'🪙'
+};
+
+// Transforme le format obtain [npc:id|Name] / [mob_id|Name][chance] en HTML lisible
+function renderObtainHtml(text) {
+  if (!text) return '';
+  return escHtml(text)
+    // [npc:id|Nom] → badge violet
+    .replace(/\[npc:([^\]|]+)\|([^\]]+)\]/g,
+      (_, id, name) => `<span style="color:var(--accent);background:rgba(122,90,248,.12);border:1px solid rgba(122,90,248,.3);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name}</span>`)
+    // [mob_id|Nom][chance] → badge rouge avec %
+    .replace(/\[([^\]:]+)\|([^\]]+)\]\[(\d+(?:\.\d+)?)\]/g,
+      (_, id, name, chance) => `<span style="color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name} <b>${chance}%</b></span>`)
+    // [mob_id|Nom] sans chance
+    .replace(/\[([^\]:]+)\|([^\]]+)\]/g,
+      (_, id, name) => `<span style="color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name}</span>`)
+    .replace(/\n/g, '<br>');
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function switchTab(tab) {
+  ['js','preview','history'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
+    document.getElementById('pane-'+t).classList.toggle('active', t === tab);
+  });
+}
+
+function renderPreview() {
+  const wrap = document.getElementById('preview-wrap');
+  const obj  = buildObj();
+
+  if (!obj.id && !obj.name) {
+    wrap.innerHTML = '<div class="ic-empty">Remplis le formulaire pour voir la preview.</div>';
+    return;
+  }
+
+  const rc = RARITY_COLORS[obj.rarity] || '#7a7a90';
+  const rl = RARITY_LABELS[obj.rarity] || (obj.rarity || '');
+  const ci = CAT_ICONS[obj.category]   || '📦';
+
+  let h = `<div class="item-card">`;
+
+  // Header
+  h += `<div class="ic-header">`;
+  h += `<div class="ic-img">${ci}</div>`;
+  h += `<div class="ic-info">`;
+  if (obj.name)   h += `<div class="ic-name">${escHtml(obj.name)}</div>`;
+  if (obj.rarity) h += `<div class="ic-rarity" style="color:${rc}"><span class="ic-rarity-dot" style="background:${rc}"></span>${escHtml(rl)}</div>`;
+  const meta = [];
+  if (obj.category) meta.push(escHtml(obj.category));
+  if (obj.cat)      meta.push(escHtml(obj.cat));
+  if (obj.palier)   meta.push('Palier ' + obj.palier);
+  if (obj.lvl)      meta.push('Niv. ' + obj.lvl);
+  if (obj.twoHanded) meta.push('Deux mains');
+  if (meta.length)   h += `<div class="ic-meta">${meta.join(' · ')}</div>`;
+  if (selClasses.length) {
+    h += `<div class="ic-classes">`;
+    for (const c of selClasses) h += `<span class="ic-class">${escHtml(c)}</span>`;
+    h += `</div>`;
+  }
+  h += `</div></div>`;
+
+  // Body
+  h += `<div class="ic-body">`;
+
+  // Set
+  if (obj.set && typeof SETS !== 'undefined' && SETS[obj.set]) {
+    h += `<div class="ic-set">◆ ${escHtml(SETS[obj.set].label)}</div>`;
+  }
+
+  // Stats
+  if (obj.stats && Object.keys(obj.stats).length) {
+    h += `<div><div class="ic-section-label">Stats</div><div class="ic-stats">`;
+    for (const [sid, val] of Object.entries(obj.stats)) {
+      let slabel = sid;
+      for (const { stats } of STAT_DEFS) {
+        const s = stats.find(s => s.id === sid);
+        if (s) { slabel = s.label; break; }
+      }
+      const vs = Array.isArray(val) ? `${val[0]} – ${val[1]}` : String(val);
+      h += `<div class="ic-stat"><span class="ic-stat-label">${escHtml(slabel)}</span><span class="ic-stat-val">${escHtml(vs)}</span></div>`;
+    }
+    h += `</div></div>`;
+  }
+
+  // Effects
+  if (obj.effects?.length) {
+    h += `<div><div class="ic-section-label">Effets</div><div class="ic-stats">`;
+    for (const eff of obj.effects) {
+      const m     = (typeof EFFECT_META !== 'undefined' && EFFECT_META[eff.type]) || null;
+      const icon  = m?.icon  || '✨';
+      const color = m?.color || '#7a7a90';
+      const lbl   = m?.label || eff.type;
+      const pre   = m?.prefix ?? '';
+      const vs    = eff.value !== undefined ? `${pre}${eff.value}${eff.unit ? ' '+eff.unit : ''}` : lbl;
+      h += `<div class="ic-stat"><span class="ic-stat-label" style="color:${color}">${icon} ${escHtml(lbl)}</span><span class="ic-stat-val" style="color:${color}">${escHtml(vs)}</span></div>`;
+    }
+    h += `</div></div>`;
+  }
+
+  // Lore
+  if (obj.lore) {
+    h += `<div class="ic-lore">${escHtml(obj.lore).replace(/\n/g,'<br>')}</div>`;
+  }
+
+  // Obtain
+  if (obj.obtain) {
+    h += `<div><div class="ic-section-label">Obtention</div><div class="ic-obtain">${renderObtainHtml(obj.obtain)}</div></div>`;
+  }
+
+  // Craft
+  if (obj.craft?.length) {
+    h += `<div><div class="ic-section-label">Craft</div><div class="ic-stats">`;
+    for (const c of obj.craft) {
+      const cname = (typeof ITEMS !== 'undefined' && ITEMS.find(i => i.id === c.id)?.name) || c.id;
+      h += `<div class="ic-stat"><span class="ic-stat-label">${escHtml(cname)}</span><span class="ic-stat-val">×${c.qty}</span></div>`;
+    }
+    h += `</div></div>`;
+  }
+
+  // Tags
+  if (obj.tags?.length) {
+    h += `<div class="ic-tags">`;
+    for (const t of obj.tags) h += `<span class="ic-tag">${escHtml(t)}</span>`;
+    h += `</div>`;
+  }
+
+  h += `</div></div>`;
+  wrap.innerHTML = h;
+}
+
+function filterStats() {
+  const q = document.getElementById('stat-search').value.trim().toLowerCase();
+  const container = document.getElementById('stats-container');
+  const rows = container.querySelectorAll('.stat-row');
+  const labels = container.querySelectorAll('.stat-group-label');
+
+  rows.forEach(row => {
+    const text = (row.querySelector('label')?.textContent || '').toLowerCase();
+    row.style.display = (!q || text.includes(q)) ? '' : 'none';
+  });
+
+  // Hide group labels when all their rows are hidden
+  labels.forEach(glabel => {
+    let next = glabel.nextElementSibling;
+    let any = false;
+    while (next && !next.classList.contains('stat-group-label')) {
+      if (next.style.display !== 'none') any = true;
+      next = next.nextElementSibling;
+    }
+    glabel.style.display = any ? '' : 'none';
+  });
+}
+
+function clearStats() {
+  document.querySelectorAll('.stat-row').forEach(r => r.classList.remove('has-val'));
+  for (const { stats } of STAT_DEFS) {
+    for (const { id } of stats) {
+      const minEl = document.getElementById(`smin-${id}`);
+      const maxEl = document.getElementById(`smax-${id}`);
+      if (minEl) minEl.value = '';
+      if (maxEl) maxEl.value = '';
+    }
+  }
+  update();
+}
+
+// ═══════════════════════════════════════════════════
+// SESSION HISTORY
+// ═══════════════════════════════════════════════════
+let sessionHistory = []; // [{ ts, obj, code }]
+
+function addToHistory(obj, code) {
+  // Replace if same id already in history
+  const idx = sessionHistory.findIndex(h => h.obj.id === obj.id);
+  const entry = { ts: Date.now(), obj: JSON.parse(JSON.stringify(obj)), code };
+  if (idx >= 0) sessionHistory[idx] = entry;
+  else sessionHistory.unshift(entry);
+  renderHistory();
+}
+
+function clearHistory() {
+  if (!sessionHistory.length) return;
+  if (!confirm('Vider l\'historique de session ?')) return;
+  sessionHistory = [];
+  renderHistory();
+}
+
+function renderHistory() {
+  const list  = document.getElementById('history-list');
+  const badge = document.getElementById('history-count');
+  if (!sessionHistory.length) {
+    list.innerHTML = '<div class="ic-empty" style="padding:30px 10px;">Aucun item copié pour l\'instant.</div>';
+    badge.style.display = 'none';
+    return;
+  }
+  badge.style.display = '';
+  badge.textContent   = sessionHistory.length;
+  list.innerHTML      = '';
+  for (const entry of sessionHistory) {
+    const { obj, ts } = entry;
+    const color = RARITY_COLORS[obj.rarity] || '#7a7a90';
+    const rl    = RARITY_LABELS[obj.rarity] || (obj.rarity || '—');
+    const time  = new Date(ts).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+    const meta  = [rl, obj.category, obj.palier ? 'P'+obj.palier : ''].filter(Boolean).join(' · ');
+
+    const div = document.createElement('div');
+    div.className = 'hist-item';
+    div.innerHTML = `
+      <span class="hist-dot" style="background:${color}"></span>
+      <div class="hist-info">
+        <div class="hist-name">${escHtml(obj.name || obj.id || '—')}</div>
+        <div class="hist-meta">${escHtml(meta)} <span style="margin-left:6px;opacity:.5">${time}</span></div>
+      </div>
+      <div class="hist-actions">
+        <button class="btn btn-ghost btn-sm" title="Recharger dans le formulaire">↩ Charger</button>
+        <button class="btn-icon" title="Supprimer de l'historique">✕</button>
+      </div>`;
+    div.querySelector('.btn-ghost').addEventListener('click', () => {
+      loadItem(entry.obj);
+      switchTab('js');
+    });
+    div.querySelector('.btn-icon').addEventListener('click', () => {
+      sessionHistory = sessionHistory.filter(h => h !== entry);
+      renderHistory();
+    });
+    list.appendChild(div);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// BUILD & FORMAT OUTPUT
+// ═══════════════════════════════════════════════════
+function buildObj() {
+  const id       = document.getElementById('f-id').value.trim();
+  const name     = document.getElementById('f-name').value.trim();
+  const category = document.getElementById('f-category').value;
+  const cat      = document.getElementById('f-cat').value;
+  const palier   = document.getElementById('f-palier').value;
+  const lvl      = document.getElementById('f-lvl').value;
+  const set      = setDrop ? setDrop.getValue() : '';
+  const lore     = document.getElementById('f-lore').value.trim();
+  const obtain   = buildObtainText();
+  const stats    = getStats();
+  const craft    = getCraft();
+  const effects  = getEffects();
+  const tagsArr  = [...activeTags];
+
+  const obj = {};
+  if (id)                    obj.id       = id;
+  if (name)                  obj.name     = name;
+  if (set)                   obj.set      = set;
+  if (selRarity)             obj.rarity   = selRarity;
+  if (cat)                   obj.cat      = cat;
+  if (category)              obj.category = category;
+  if (palier)                obj.palier   = +palier;
+  if (lvl)                   obj.lvl      = +lvl;
+  obj.img = null;
+  if (selTwoHanded)              obj.twoHanded = true;
+  if (selSensible)               obj.sensible  = true;
+  if (Object.keys(stats).length)  obj.stats   = stats;
+  if (selClasses.length)     obj.classes  = [...selClasses];
+  if (effects.length)        obj.effects  = effects;
+  if (lore)                  obj.lore     = lore;
+  if (tagsArr.length)        obj.tags     = tagsArr;
+  if (obtain)                obj.obtain   = obtain;
+  if (craft.length)          obj.craft    = craft;
+  return obj;
+}
+
+function toJS(val, depth = 0) {
+  const T = '\t';
+  const pad  = T.repeat(depth);
+  const pad2 = T.repeat(depth + 1);
+
+  if (Array.isArray(val)) {
+    if (!val.length) return '[]';
+    // Simple arrays of primitives: inline
+    if (val.every(v => typeof v !== 'object' || v === null)) {
+      return '[' + val.map(v => JSON.stringify(v)).join(', ') + ']';
+    }
+    return '[\n' + val.map(v => pad2 + toJS(v, depth + 1)).join(',\n') + '\n' + pad + ']';
+  }
+
+  if (val !== null && typeof val === 'object') {
+    const entries = Object.entries(val);
+    if (!entries.length) return '{}';
+    // Small stat-like objects: inline
+    const allPrim = entries.every(([,v]) => typeof v !== 'object');
+    if (allPrim && entries.length <= 6 && depth > 0) {
+      return '{' + entries.map(([k,v]) => `${k}:${JSON.stringify(v)}`).join(', ') + '}';
+    }
+    return '{\n' + entries.map(([k,v]) => `${pad2}${k}:\t\t${toJS(v, depth+1)}`).join(',\n') + '\n' + pad + '}';
+  }
+
+  return JSON.stringify(val);
+}
+
+// ═══════════════════════════════════════════════════
+// VALIDATION
+// ═══════════════════════════════════════════════════
+function validateForm() {
+  const id       = document.getElementById('f-id').value.trim();
+  const name     = document.getElementById('f-name').value.trim();
+  const category = document.getElementById('f-category').value;
+  const cat      = document.getElementById('f-cat').value;
+  const palier   = document.getElementById('f-palier').value;
+  const lvl      = document.getElementById('f-lvl').value;
+  const isEquip  = ['arme','armure','accessoire'].includes(category);
+
+  const errors   = []; // bloquent la copie
+  const warnings = []; // n'empêchent pas la copie
+
+  const lore = document.getElementById('f-lore').value.trim();
+
+  if (!name)      errors.push({ field:'f-name',     msg:'Nom affiché manquant' });
+  if (!id)        errors.push({ field:'f-id',        msg:'ID manquant' });
+  if (!category)  errors.push({ field:'f-category',  msg:'Catégorie non sélectionnée' });
+  if (!selRarity) errors.push({ field:null,          msg:'Rareté non sélectionnée' });
+  if (!lore)      errors.push({ field:'f-lore',      msg:'Lore obligatoire' });
+  if (isEquip && !cat)    warnings.push({ field:'f-cat',    msg:'Slot (cat) non sélectionné' });
+  if (isEquip && !palier) warnings.push({ field:'f-palier', msg:'Palier non renseigné' });
+  if (isEquip && !lvl)    warnings.push({ field:'f-lvl',    msg:'Niveau requis non renseigné' });
+
+  return { errors, warnings };
+}
+
+function renderValidation() {
+  const { errors, warnings } = validateForm();
+  const panel = document.getElementById('validation-panel');
+
+  // Reset field highlights
+  document.querySelectorAll('.field input, .field select, .field textarea').forEach(el => {
+    el.style.borderColor = '';
+  });
+
+  if (!errors.length && !warnings.length) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = 'flex';
+  panel.innerHTML = '';
+
+  for (const { field, msg } of errors) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:12px;';
+    row.innerHTML = `<span style="color:var(--danger);font-weight:700;">✕</span> <span style="color:var(--danger);">${msg}</span>`;
+    panel.appendChild(row);
+    if (field) {
+      const el = document.getElementById(field);
+      if (el) el.style.borderColor = 'var(--danger)';
+    }
+  }
+
+  for (const { field, msg } of warnings) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:12px;';
+    row.innerHTML = `<span style="color:#d7af5f;font-weight:700;">⚠</span> <span style="color:#d7af5f;">${msg}</span>`;
+    panel.appendChild(row);
+    if (field) {
+      const el = document.getElementById(field);
+      if (el) el.style.borderColor = '#d7af5f';
+    }
+  }
+}
+
+function buildOrphanSection() {
+  if (typeof MOBS === 'undefined' || typeof ITEMS === 'undefined') return;
+  const itemIds = new Set(ITEMS.map(it => it.id));
+
+  // Collect all orphan loot IDs with which mobs reference them
+  const orphanMap = {}; // id → [{ mobName, chance, qty }]
+  for (const mob of MOBS) {
+    for (const loot of (mob.loot || [])) {
+      if (!itemIds.has(loot.id)) {
+        if (!orphanMap[loot.id]) orphanMap[loot.id] = [];
+        orphanMap[loot.id].push({ mobName: mob.name, chance: loot.chance, qty: loot.qty });
+      }
+    }
+  }
+
+  const ids = Object.keys(orphanMap);
+  const section = document.getElementById('orphan-section');
+  if (!ids.length) { section.style.display = 'none'; return; }
+
+  section.style.display = '';
+  document.getElementById('orphan-count').textContent = `— ${ids.length} item${ids.length > 1 ? 's' : ''}`;
+
+  const list = document.getElementById('orphan-list');
+  list.innerHTML = '';
+  for (const id of ids.sort()) {
+    const mobs = orphanMap[id];
+    const mobText = mobs.map(m => `${m.mobName} (${m.chance}%${m.qty ? ' ×'+m.qty : ''})`).join(', ');
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;';
+    row.innerHTML = `
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:monospace;font-size:11px;color:var(--success);font-weight:700;">${escHtml(id)}</div>
+        <div style="color:var(--muted);font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(mobText)}">${escHtml(mobText)}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="flex-shrink:0;">✏️ Créer</button>`;
+    row.querySelector('button').addEventListener('click', () => {
+      resetFormSilent();
+      document.getElementById('editing-banner').style.display = 'none';
+      document.getElementById('f-id').value = id;
+      idLocked = true;
+      // Pre-fill obtain from mob drops
+      for (const { mobName, chance, qty } of mobs) {
+        const mob = MOBS.find(m => m.name === mobName);
+        if (mob) {
+          const loot = mob.loot.find(l => l.id === id);
+          if (loot) addObtainMobSource(
+            { ...mob, subtitle:'', search:'', mobType: mob.type, palier: mob.palier },
+            loot, id
+          );
+        }
+      }
+      update();
+      document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
+      document.getElementById('f-name').focus();
+    });
+    list.appendChild(row);
+  }
+}
+
+// Retourne la liste des mobs qui drop cet id alors qu'il n'existe pas dans ITEMS
+function getOrphanMobs(id) {
+  if (!id || typeof MOBS === 'undefined' || typeof ITEMS === 'undefined') return [];
+  if (ITEMS.some(it => it.id === id)) return []; // existe déjà → pas orphelin
+  return MOBS.filter(m => m.loot?.some(l => l.id === id)).map(m => m.name);
+}
+
+function isDuplicate(id) {
+  if (!id || typeof ITEMS === 'undefined') return false;
+  // En mode édition, l'ID original est autorisé
+  const editingName = document.getElementById('editing-name').textContent;
+  if (editingName) {
+    const original = ITEMS.find(it => it.name === editingName);
+    if (original && original.id === id) return false;
+  }
+  return ITEMS.some(it => it.id === id);
+}
+
+function update() {
+  const obj = buildObj();
+  if (!obj.id && !obj.name) {
+    document.getElementById('out-code').textContent = '// Remplis le formulaire\n// pour générer le code ici.';
+    document.getElementById('id-duplicate-badge').style.display = 'none';
+    document.getElementById('validation-panel').style.display = 'none';
+    return;
+  }
+  const dup = isDuplicate(obj.id);
+  document.getElementById('id-duplicate-badge').style.display = dup ? '' : 'none';
+  const orphanMobs = getOrphanMobs(obj.id);
+  const orphanBadge = document.getElementById('id-orphan-badge');
+  orphanBadge.style.display = orphanMobs.length ? '' : 'none';
+  if (orphanMobs.length) orphanBadge.title = 'Cet ID est déjà attendu par : ' + orphanMobs.join(', ');
+  document.getElementById('out-code').textContent = toJS(obj, 0) + ',';
+  renderValidation();
+  renderPreview();
+  // Si doublon, le champ ID prend la couleur danger même si validation ne l'a pas mis
+  if (dup) document.getElementById('f-id').style.borderColor = 'var(--danger)';
+}
+
+function copyCode() {
+  const { errors } = validateForm();
+  if (errors.length) {
+    alert('⛔ Corrige les erreurs avant de copier :\n\n' + errors.map(e => '• ' + e.msg).join('\n'));
+    return;
+  }
+  const id = document.getElementById('f-id').value.trim();
+  if (isDuplicate(id)) {
+    if (!confirm(`⚠️ L'ID "${id}" existe déjà dans data.js.\n\nTu es en train d'écraser un item existant. Continuer ?`)) return;
+  }
+  const obj  = buildObj();
+  const code = document.getElementById('out-code').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const m = document.getElementById('copy-msg');
+    m.classList.add('show');
+    setTimeout(() => m.classList.remove('show'), 2000);
+  });
+  addToHistory(obj, code);
+}
+
+function resetForm() {
+  if (!confirm('Réinitialiser ?')) return;
+  document.getElementById('editing-banner').style.display = 'none';
+  resetFormSilent();
+  renderCustomTags();
+  update();
+}
+
+// ═══════════════════════════════════════════════════
+// ÉCRITURE DANS DATA.JS (File System Access API)
+// ═══════════════════════════════════════════════════
+let dataFileHandle = null;
+
+async function getOrPickDataFile() {
+  if (dataFileHandle) return dataFileHandle;
+  if (!window.showOpenFilePicker) {
+    alert('Ton navigateur ne supporte pas l\'API File System.\nUtilise Chrome ou Edge.');
+    return null;
+  }
+  try {
+    [dataFileHandle] = await window.showOpenFilePicker({
+      types: [{ description: 'JavaScript', accept: { 'text/javascript': ['.js'] } }]
+    });
+    updateFileIndicator();
+    return dataFileHandle;
+  } catch (e) {
+    if (e.name !== 'AbortError') console.error(e);
+    return null;
+  }
+}
+
+function updateFileIndicator() {
+  const ind = document.getElementById('file-indicator');
+  const btn = document.getElementById('write-file-btn');
+  if (dataFileHandle) {
+    ind.textContent = `✓ ${dataFileHandle.name} lié`;
+    ind.style.color = 'var(--success)';
+    ind.style.display = '';
+    btn.style.background = '#14532d';
+    btn.style.color = 'var(--success)';
+    btn.style.borderColor = '#14532d';
+  } else {
+    ind.style.display = 'none';
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }
+}
+
+function findTargetRegion(obj) {
+  const p  = `P${obj.palier || 1}`;
+
+  // Items sensibles → région Sensible
+  if (obj.sensible) {
+    if (obj.category === 'arme')       return `Sensible > Armes > Palier ${obj.palier || 1}`;
+    if (obj.category === 'accessoire') return `Sensible > Accessoires > Palier ${obj.palier || 1}`;
+    if (obj.category === 'armure')     return `Sensible > Armures > Palier ${obj.palier || 1}`;
+    return `Sensible > Items > Palier ${obj.palier || 1}`;
+  }
+  const tags    = obj.tags    || [];
+  const cls     = obj.classes || [];
+  const cat     = obj.cat     || '';
+  const rarity  = obj.rarity  || '';
+
+  if (obj.category === 'arme') {
+    if (rarity === 'event') return `Armes > ${p} > Events`;
+    if (cls.includes('guerrier')) {
+      if (cat === 'arme_s') return `Armes > ${p} > Guerrier > Boucliers`;
+      if (tags.some(t => ['Lance','Hallebarde','Hast','Pique'].includes(t))) return `Armes > ${p} > Guerrier > Hast`;
+      return `Armes > ${p} > Guerrier > Épées`;
+    }
+    if (cls.includes('assassin')) return `Armes > ${p} > Assassin`;
+    if (cls.includes('archer')) {
+      if (tags.some(t => ['Arbalète','Arbalète Lourde'].includes(t))) return `Armes > ${p} > Archer > Arbalètes`;
+      return `Armes > ${p} > Archer > Arcs`;
+    }
+    if (cls.includes('mage') || cls.includes('shaman')) {
+      if (tags.some(t => ['Catalyseur'].includes(t))) return `Armes > ${p} > Mage-Shaman > Catalyseurs`;
+      return `Armes > ${p} > Mage-Shaman > Bâtons`;
+    }
+    return `Armes > ${p} > Events`; // fallback
+  }
+
+  if (obj.category === 'accessoire') {
+    if (rarity === 'event') return `Accessoires > ${p} > Events`;
+    const sec = { anneau:'Anneaux', amulette:'Amulettes', gants:'Gants', bracelet:'Bracelets', artefact:'Artefacts' };
+    return `Accessoires > ${p} > ${sec[cat] || 'Artefacts'}`;
+  }
+
+  if (obj.category === 'armure') {
+    if (cls.includes('guerrier'))                                   return `Armures > ${p} > Guerrier`;
+    if (cls.includes('assassin') || cls.includes('archer'))         return `Armures > ${p} > Assassin-Archer`;
+    if (cls.includes('mage')     || cls.includes('shaman'))         return `Armures > ${p} > Mage-Shaman`;
+    return `Armures > ${p} > Génériques`;
+  }
+
+  const itemMap = {
+    outils:'Outils', rune:'Runes', consommable:'Consommables',
+    nourriture:'Nourritures', materiaux:'Matériaux', ressources:'Ressources',
+    quete:'Quêtes', donjon:'Donjon', monnaie:'Monnaie'
+  };
+  return `Items > ${p} > ${itemMap[obj.category] || 'Matériaux'}`;
+}
+
+function insertItemIntoContent(content, itemCode, regionName) {
+  const endTag = `//#endregion ${regionName}`;
+  const idx = content.indexOf(endTag);
+  if (idx === -1) return null;
+  const lineStart = content.lastIndexOf('\n', idx) + 1;
+  return content.slice(0, lineStart) + itemCode + '\n' + content.slice(lineStart);
+}
+
+async function writeToDataJs() {
+  const { errors } = validateForm();
+  if (errors.length) {
+    alert('⛔ Corrige les erreurs avant d\'écrire :\n\n' + errors.map(e => '• ' + e.msg).join('\n'));
+    return;
+  }
+
+  const obj    = buildObj();
+  const region = findTargetRegion(obj);
+  const code   = toJS(obj, 0) + ',\n';
+
+  const dup = isDuplicate(obj.id);
+  const dupMsg = dup ? `\n⚠️ L'ID "${obj.id}" existe déjà — il sera dupliqué dans le fichier.\n` : '';
+
+  if (!confirm(`Insérer dans la région :\n📁 ${region}${dupMsg}\nContinuer ?`)) return;
+
+  const handle = await getOrPickDataFile();
+  if (!handle) return;
+
+  try {
+    const file    = await handle.getFile();
+    const content = await file.text();
+
+    const updated = insertItemIntoContent(content, code, region);
+    if (!updated) {
+      alert(`⛔ Région introuvable : "${region}"\nVérifie que tu as sélectionné le bon fichier data.js.`);
+      return;
+    }
+
+    const writable = await handle.createWritable();
+    await writable.write(updated);
+    await writable.close();
+
+    // Mise à jour en mémoire
+    if (typeof ITEMS !== 'undefined') {
+      const idx = ITEMS.findIndex(it => it.id === obj.id);
+      if (idx >= 0) ITEMS[idx] = obj; else ITEMS.push(obj);
+      allItemsIndex = [];
+      ensureAllItemsIndex();
+      buildOrphanSection();
+    }
+
+    addToHistory(obj, code);
+
+    const m = document.getElementById('copy-msg');
+    m.textContent = '✓ Écrit dans data.js !';
+    m.classList.add('show');
+    setTimeout(() => { m.classList.remove('show'); m.textContent = '✓ Copié !'; }, 3000);
+
+  } catch (err) {
+    alert('⛔ Erreur d\'écriture : ' + err.message);
+    console.error(err);
+  }
+}
+
+// Close dropdowns on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-drop-wrap')) {
+    document.querySelectorAll('.drop-list').forEach(d => d.classList.remove('open'));
+  }
+});
+
+</script>
+</body>
+</html>
