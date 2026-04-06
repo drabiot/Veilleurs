@@ -1393,9 +1393,9 @@ const MOBS = [
 		morceaux: [
 			{
 				fichier: '../img/compendium/modelengine/models/em_bandit_c1/head.json',
-				position: [0.7034, 1.2403, 0.1781],
-				rotation: [0, -2.6965, 0],
-				scale: 1
+        position: [0.7034, 1.1852, 0.1781],
+        rotation: [0, -2.6965, 0],
+        scale: 1
 			},
 			{
 				fichier: '../img/compendium/modelengine/models/em_bandit_c1/hip.json',

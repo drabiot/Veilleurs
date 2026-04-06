@@ -361,34 +361,76 @@ function positionnerCamera(camera, cfg) {
 }
 
 /* ── Parser block model ── */
-function resolveTex(json) {
-  for (const v of Object.values(json.textures || {})) {
-    if (v && !v.startsWith('#')) {
-      const c = v.indexOf(':');
-      if (c < 0) return v;
-      return `img/compendium/${v.slice(0, c)}/textures/${v.slice(c + 1)}.png`;
-    }
+
+// Résout une clé de texture (ex: "#layer0") vers son chemin fichier
+// Retourne null si introuvable ou non résolvable
+function resolveTex(json, texKey) {
+  const textures = json.textures || {};
+
+  // Si on a une clé spécifique, on la résout (en suivant les redirections #ref)
+  let key = texKey;
+  if (key && key.startsWith('#')) key = key.slice(1);
+
+  const visited = new Set();
+  let val = key ? textures[key] : null;
+
+  // Pas de clé demandée → prendre la première valeur non-référence
+  if (!key) {
+    val = Object.values(textures).find(v => v && !v.startsWith('#')) || null;
   }
-  return null;
+
+  // Suivre les redirections (#ref → #autreRef → valeur finale)
+  while (val && val.startsWith('#')) {
+    const ref = val.slice(1);
+    if (visited.has(ref)) break;
+    visited.add(ref);
+    val = textures[ref] || null;
+  }
+
+  if (!val) return null;
+
+  // Convertir "namespace:path" → "img/compendium/namespace/textures/path.png"
+  const c = val.indexOf(':');
+  if (c >= 0) {
+    return `img/compendium/${val.slice(0, c)}/textures/${val.slice(c + 1)}.png`;
+  }
+  return val; // chemin direct
+}
+
+// Cache de textures partagé entre tous les fichiers JSON d'un même mob
+// clé = chemin résolu → THREE.Texture (ou promesse)
+const _texCache = new Map();
+
+function getOrLoadTex(src, texP) {
+  if (_texCache.has(src)) return _texCache.get(src);
+
+  const mat = new THREE.MeshLambertMaterial({
+    side: THREE.DoubleSide,
+    transparent: true,
+    alphaTest: .1
+  });
+
+  const p = new Promise((res, rej) => {
+    new THREE.TextureLoader().load(src, tex => {
+      tex.magFilter = tex.minFilter = THREE.NearestFilter;
+      mat.map = tex;
+      mat.needsUpdate = true;
+      res(mat);
+    }, undefined, err => {
+      console.warn('tex?', src, err);
+      rej(err);
+    });
+  });
+
+  texP.push(p);
+  _texCache.set(src, mat);
+  return mat;
 }
 
 function parseModel(json, texP) {
-  const g   = new THREE.Group();
-  const src = resolveTex(json);
-  let mat;
-  if (src) {
-    texP.push(new Promise((res, rej) => {
-      new THREE.TextureLoader().load(src, tex => {
-        tex.magFilter = tex.minFilter = THREE.NearestFilter;
-        mat.map = tex; mat.needsUpdate = true; res(tex);
-      }, undefined, err => { console.warn('tex?', src); rej(err); });
-    }));
-    mat = new THREE.MeshLambertMaterial({ side: THREE.DoubleSide, transparent: true, alphaTest: .1 });
-  } else {
-    mat = new THREE.MeshLambertMaterial({ color: 0x888888, side: THREE.DoubleSide });
-  }
-
+  const g = new THREE.Group();
   const S = 1 / 16;
+
   for (const el of (json.elements || [])) {
     const [x1, y1, z1] = el.from.map(v => v * S);
     const [x2, y2, z2] = el.to.map(v => v * S);
@@ -400,31 +442,62 @@ function parseModel(json, texP) {
       up:    [x1, y2, z1, x2, y2, z1, x2, y2, z2, x1, y2, z2],
       down:  [x1, y1, z2, x2, y1, z2, x2, y1, z1, x1, y1, z1],
     };
-    const pos = [], uvs = [], idx = []; let vi = 0;
+
+    // Chaque face peut avoir sa propre texture → on regroupe les faces par matériau
+    // pour minimiser le nombre de Mesh (une geo multi-matériaux par élément)
+    const facesByTex = new Map(); // srcTex → { positions, uvs, indices }
+
     for (const [fn, fi] of Object.entries(el.faces || {})) {
       const v = fd[fn]; if (!v) continue;
-      for (let i = 0; i < 12; i++) pos.push(v[i]);
+
+      // Résoudre la texture de cette face spécifiquement
+      const texKey = fi.texture || null; // ex: "#layer0", "#overlay", null
+      const src    = resolveTex(json, texKey);
+
+      if (!facesByTex.has(src)) facesByTex.set(src, { pos: [], uvs: [], idx: [], vi: 0 });
+      const bucket = facesByTex.get(src);
+
+      for (let i = 0; i < 12; i++) bucket.pos.push(v[i]);
+
       const [u1, v1, u2, v2] = fi.uv, r = fi.rotation || 0;
       let fu = [u1/16, 1-v1/16, u2/16, 1-v1/16, u2/16, 1-v2/16, u1/16, 1-v2/16];
       if (r === 90)  fu = [fu[6], fu[7], fu[0], fu[1], fu[2], fu[3], fu[4], fu[5]];
       if (r === 180) fu = [fu[4], fu[5], fu[6], fu[7], fu[0], fu[1], fu[2], fu[3]];
       if (r === 270) fu = [fu[2], fu[3], fu[4], fu[5], fu[6], fu[7], fu[0], fu[1]];
-      for (let i = 0; i < 8; i++) uvs.push(fu[i]);
-      idx.push(vi, vi+1, vi+2, vi, vi+2, vi+3); vi += 4;
+      for (let i = 0; i < 8; i++) bucket.uvs.push(fu[i]);
+
+      const vi = bucket.vi;
+      bucket.idx.push(vi, vi+1, vi+2, vi, vi+2, vi+3);
+      bucket.vi += 4;
     }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    geo.setAttribute('uv',       new THREE.Float32BufferAttribute(uvs, 2));
-    geo.setIndex(idx); geo.computeVertexNormals();
-    const mesh = new THREE.Mesh(geo, mat);
+
+    // Créer un Mesh par texture utilisée dans cet élément
+    const meshes = [];
+    for (const [src, bucket] of facesByTex) {
+      const mat = src
+        ? getOrLoadTex(src, texP)
+        : new THREE.MeshLambertMaterial({ color: 0x888888, side: THREE.DoubleSide });
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(bucket.pos, 3));
+      geo.setAttribute('uv',       new THREE.Float32BufferAttribute(bucket.uvs, 2));
+      geo.setIndex(bucket.idx);
+      geo.computeVertexNormals();
+      meshes.push(new THREE.Mesh(geo, mat));
+    }
+
+    // Appliquer la rotation de l'élément (pivot) à tous les meshes
     if (el.rotation) {
       const { origin, angle, axis } = el.rotation;
       const [ox, oy, oz] = origin.map(v => v * S);
       const piv = new THREE.Object3D();
       piv.position.set(ox, oy, oz);
       piv.rotation[axis] = THREE.MathUtils.degToRad(angle);
-      mesh.position.set(-ox, -oy, -oz); piv.add(mesh); g.add(piv);
-    } else { g.add(mesh); }
+      for (const mesh of meshes) { mesh.position.set(-ox, -oy, -oz); piv.add(mesh); }
+      g.add(piv);
+    } else {
+      for (const mesh of meshes) g.add(mesh);
+    }
   }
   return g;
 }
@@ -468,6 +541,9 @@ async function capture(mob, size) {
     scene.remove(p);
     p.traverse(c => { if (c.isMesh) c.geometry.dispose(); });
   });
+  // Libérer les textures GPU et vider le cache après chaque mob
+  _texCache.forEach(mat => { if (mat.map) mat.map.dispose(); mat.dispose(); });
+  _texCache.clear();
   return url;
 }
 
