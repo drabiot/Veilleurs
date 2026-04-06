@@ -13,7 +13,7 @@ const MOBS = [
     difficulty: 1,
     region: 'Zone des Sangliers',
     regionId: 'm1z2',
-    img: '',
+    img: '../img/mobs/P1/sanglier_corrompu.png',
     lore: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive.",
     attacks: [
       { name: 'Charge du Sanglier',   desc: 'Fonce sur la cible et les pousse.', dmg: '?' },
@@ -119,7 +119,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Zone des Sangliers',
     regionId: 'm1boss1',
-    img: '',
+    img: '../img/mobs/P1/pumba_corrompu.png',
     spawnTime: null,
     lore: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive.",
     attacks: [
@@ -228,7 +228,7 @@ const MOBS = [
     difficulty: 1,
     region: 'Vallée des Loups',
     regionId: 'm1z1',
-    img: '',
+    img: '../img/mobs/P1/loup_sinistre_blanc.png',
     lore: "Gardiens de la Vallée des Loups. Leurs hurlements glacent le sang et donnent des frissons.",
     attacks: [
       { name: 'Saut Lupin',   desc: 'Saute sur sa cible pour la mordre violemment.', dmg: '?' },
@@ -327,7 +327,7 @@ const MOBS = [
     difficulty: 1,
     region: 'Vallée des Loups',
     regionId: 'm1z1',
-    img: '',
+    img: '../img/mobs/P1/loup_sinistre_noir.png',
     lore: "Gardiens de la Vallée des Loups. Leurs hurlements glacent le sang et donnent des frissons.",
     attacks: [
       { name: 'Saut Lupin',   desc: 'Saute sur sa cible pour la mordre violemment.', dmg: '?' },
@@ -426,7 +426,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Vallée des Loups',
     regionId: 'm1boss2',
-    img: '',
+    img: '../img/mobs/P1/albal.png',
     spawnTime: null,
     lore: "Un loup solitaire aux yeux d'argent glacés. Son passage laisse une brume et le silence.",
     attacks: [
@@ -545,7 +545,7 @@ const MOBS = [
     difficulty: 1,
     region: 'Maréage Putride',
     regionId: 'm1z4',
-    img: '',
+    img: '../img/mobs/P1/mini_treant.png',
     lore: "Petit gardien de la forêt, il défend les lieux sacrés avec hargne. Sous ses racines courtes dort une volonté de fer.",
     attacks: [
       { name: 'Morsure Tréante',   desc: 'Mord violemment sa cible avec ses écorces.', dmg: '?' },
@@ -607,7 +607,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Maréage Putride',
     regionId: 'm1z4',
-    img: '',
+    img: '../img/mobs/P1/guerrier_treant.png',
     lore: "Forgé dans l'écorce et la magie, ce tréant veille sur les bois sacrés. Il frappe avec la force d'un vieux chêne, et la colère de la forêt.",
     attacks: [
       { name: 'Soin Sylvain',   desc: 'Se soigne pour chaque coup qu\'il se prends.' },
@@ -696,7 +696,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Maréage Putride',
     regionId: 'm1z4',
-    img: '',
+    img: '../img/mobs/P1/treant_elite.png',
     lore: "Ancien protecteur des forêts oubliées, ce tréant détient une puissance redoutable.",
     attacks: [
       { name: 'Pièges de Ronce',   desc: 'Pose des Pièges immobilisant sa cible si elle marche dessus.' },
@@ -892,7 +892,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Maréage Putride',
     regionId: 'm1boss3',
-    img: '',
+    img: '../img/mobs/P1/gardien_colossal.png',
     lore: "Forgé dans la pierre et éveillé par la magie ancienne, il garde les terres oubliées contre toute intrusion. Ses pas seuls font trembler la forêt...",
     attacks: [
       { name: 'Ruée de la Forêt',   desc: 'Fonce sur sa cible de toute ses forces.', dmg: '?' },
@@ -986,7 +986,7 @@ const MOBS = [
     difficulty: 1,
     region: 'Vallhat',
     regionId: 'm1z5',
-    img: '',
+    img: '../img/mobs/P1/petit_slime.png',
     lore: "Malgré sa petite taille, il bondit sans peur. Inoffensif en apparence, mais têtu comme pas deux. Certains disent qu'il garde un secret au cœur mou.",
     attacks: [
       { name: 'Bond Gluant',   desc: 'Bondit sur sa cible pour lui infliger des dégâts.', dmg: '?' },
@@ -1024,7 +1024,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Vallhat',
     regionId: 'm1z5',
-    img: '',
+    img: '../img/mobs/P1/guerrier_slime.png',
     lore: "Né d'un amas magique de gelée ancienne, il a appris à manier l'arme comme un vrai guerrier. Il défend son territoire avec une rage inattendue.",
     attacks: [
       { name: 'Bond Tranchant',   desc: 'Bondit sur sa cible pour lui infliger des dégâts avec son épée tranchante.', dmg: '?' },
@@ -1068,7 +1068,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Vallhat',
     regionId: 'm1z5',
-    img: '',
+    img: '../img/mobs/P1/slime_soigneur.png',
     lore: "Ce slime irradie une énergie apaisante. Blessures mineures se referment à son passage. Il fuit le combat, mais sauve les siens dans l'ombre.",
     attacks: [
       { name: 'Soint Gluant',   desc: 'Génère une zone de soin qui soigne les Slimes en zone.' },
@@ -1107,7 +1107,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Vallhat',
     regionId: 'm1z5',
-    img: '',
+    img: '../img/mobs/P1/slime_magicien.png',
     lore: "Un slime imprégné d'énergies arcaniques anciennes. Ses attaques lancent des sorts chaotiques et imprévisibles.",
     attacks: [
     ],
@@ -1157,7 +1157,7 @@ const MOBS = [
     difficulty: 3,
     region: 'Vallhat',
     regionId: 'm1boss4',
-    img: '',
+    img: '../img/mobs/P1/gorbel.png',
     lore: "Un colosse gélatineux, maître des essaims de slimes. Il écrase tout sur son passage, lentement mais sûrement.",
     attacks: [
 		{ name: 'Appétit de Rimuru',   desc: 'Mange sa cible et la rend inerte, tout en se déplaçant.' },
@@ -1443,7 +1443,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Mine de Geldorak',
     regionId: 'm1z7',
-    img: '',
+    img: '../img/mobs/P1/bandit_assassin.png',
     lore: "Maître de l'ombre et des lames silencieuses, il ne laisse derrière lui que le vide… et une cible tombée.",
     attacks: [
 			{ name: 'Dague Fourbe',   desc: 'Utilise sa dague pour assassiner ses proies dans le dos.', dmg:'?' },
@@ -2141,7 +2141,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Désert des Crocs Argentés',
     regionId: 'm2z3',
-    img: '',
+    img: '../img/mobs/P2/loup_montagnes.png',
     lore: "Prédateur vif qui arpente les dunes du Désert des Crocs Argenté. Ses meutes harcèlent puis achèvent leurs cibles.",
     attacks: [
     ],
@@ -2238,7 +2238,7 @@ const MOBS = [
     difficulty: 2,
     region: 'Désert des Crocs Argentés',
     regionId: 'm2z3',
-    img: '',
+    img: '../img/mobs/P2/loup_savanes.png',
     lore: "Chasseur rapide du Désert des Crocs Argentés, reconnaissable à son pelage roux. Frappe en meute et se replie aussitôt.",
     attacks: [
     ],

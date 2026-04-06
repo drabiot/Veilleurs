@@ -66,6 +66,8 @@
     font-size: .72rem;
     color: var(--muted);
     margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .stats span { color: var(--text); }
 
@@ -147,6 +149,29 @@
     inset: 0;
   }
 
+  .badge-palier {
+    position: absolute;
+    top: 6px; left: 6px;
+    font-size: .58rem;
+    padding: .15em .5em;
+    border-radius: 3px;
+    background: #1a1f3a;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    z-index: 1;
+  }
+  .badge-boss {
+    position: absolute;
+    top: 6px; right: 6px;
+    font-size: .58rem;
+    padding: .15em .5em;
+    border-radius: 3px;
+    background: #2a0a0a;
+    border: 1px solid #7f1d1d;
+    color: #f87171;
+    z-index: 1;
+  }
+
   .card-body { padding: .55rem .7rem; display: flex; flex-direction: column; gap: .3rem; }
   .card-name {
     font-family: 'Cinzel', serif;
@@ -207,10 +232,11 @@
 <div class="info-box">
   📁 <strong>Emplacement :</strong> ce fichier est à la <strong>racine du projet</strong>, au même niveau que <code>img/</code> et <code>Bestiaire/</code>.<br>
   🌐 <strong>Ouvrez via un serveur HTTP</strong> : Live Server (VS Code), <code>npx serve .</code>, ou GitHub Pages.<br>
-  💾 <strong>ZIP</strong> = tous les PNG dans leur arborescence <code>img/mobs/...</code> — extrayez à la racine pour écraser les images existantes.
+  💾 <strong>ZIP</strong> = tous les PNG dans leur arborescence <code>img/mobs/...</code> — extrayez à la racine pour écraser les images existantes.<br>
+  📐 <strong>Caméra :</strong> utilise <code>camera.capture.theta</code> et <code>camera.capture.phi</code> de <code>mob_data.js</code> pour l'angle exact.
 </div>
 
-<div class="stats" id="stats"></div>
+<div class="stats" id="stats">Chargement…</div>
 
 <div class="controls">
   <button class="btn-primary"   id="btn-render">▶ Générer tous les sprites</button>
@@ -229,103 +255,49 @@
 <script src="Bestiaire/mob_data.js"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════
-   MONSTRES — tous ceux qui ont des morceaux 3D définis
-   Chemins adaptés pour la racine du projet (sans "../")
+   LECTURE DE mob_data.js
+   - On ne garde que les mobs ayant morceaux.length > 0
+   - Les chemins dans mob_data.js commencent par "../img/" (relatif à Bestiaire/)
+     → on les normalise vers "img/" (racine du projet)
    ══════════════════════════════════════════════════════════════ */
-const MONSTRES = [
-  {
-    id: 'petit_slime',
-    name: 'Petit Slime',
-    img: 'img/mobs/P1/petit_slime.png',
-    morceaux: [
-      { fichier: 'img/compendium/modelengine/models/slime_common/head.json', position:[0.5013,-0.4313,0.6805], rotation:[0,-3.1416,0], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/slime_common/body.json', position:[0.5,   -0.3871,0.5   ], rotation:[0, 3.1416,0], scale:1 },
-    ],
-    camera: { distance:3, hauteur:0 },
-  },
-  {
-    id: 'guerrier_slime',
-    name: 'Guerrier Slime',
-    img: 'img/mobs/P1/guerrier_slime.png',
-    morceaux: [
-      { fichier: 'img/compendium/modelengine/models/slime_warrior/head.json', position:[0.5013,-0.4313,0.6805], rotation:[0,-3.1416,0], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/slime_warrior/body.json', position:[0.5,   -0.3871,0.5   ], rotation:[0, 3.1416,0], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/slime_warrior/arm.json',  position:[0.0323,-0.1952,0.4807], rotation:[0, 3.1416,0], scale:1 },
-    ],
-    camera: { distance:3, hauteur:0 },
-  },
-  {
-    id: 'slime_soigneur',
-    name: 'Slime Soigneur',
-    img: 'img/mobs/P1/slime_soigneur.png',
-    morceaux: [
-      { fichier: 'img/compendium/modelengine/models/slime_healer/head.json', position:[0.5013,-0.4313,0.6805], rotation:[0,-3.1416,0], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/slime_healer/body.json', position:[0.5,   -0.3871,0.5   ], rotation:[0, 3.1416,0], scale:1 },
-    ],
-    camera: { distance:3, hauteur:0 },
-  },
-  {
-    id: 'slime_magicien',
-    name: 'Slime Magicien',
-    img: 'img/mobs/P1/slime_magicien.png',
-    morceaux: [
-      { fichier: 'img/compendium/modelengine/models/slime_mage/head.json', position:[0.5013,-0.4313,0.6805], rotation:[0,-3.1416,0], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/slime_mage/body.json', position:[0.5,   -0.3871,0.5   ], rotation:[0, 3.1416,0], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/slime_mage/arm.json',  position:[0.0323,-0.1952,0.4807], rotation:[0, 3.1416,0], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/slime_mage/hat.json',  position:[0.4925, 0.1361,0.428 ], rotation:[0, 3.1416,0], scale:1 },
-    ],
-    camera: { distance:3, hauteur:0 },
-  },
-  {
-    id: 'gorbel',
-    name: 'Gorbel',
-    img: 'img/mobs/P1/gorbel.png',
-    morceaux: [
-      { fichier: 'img/compendium/modelengine/models/slime_king/head.json',    position:[0.5216, 0.491, 0.5821], rotation:[0,-3.1416,0], scale:1    },
-      { fichier: 'img/compendium/modelengine/models/slime_king/body.json',    position:[0.5,   -0.3871,0.5   ], rotation:[0, 3.1416,0], scale:1    },
-      { fichier: 'img/compendium/modelengine/models/slime_king/crown.json',   position:[0.2757, 1.6533,0.3466], rotation:[0, 3.1416,0], scale:0.44 },
-      { fichier: 'img/compendium/modelengine/models/slime_king/stomach.json', position:[0.5,   -0.2815,0.5   ], rotation:[0, 3.1416,0], scale:1    },
-    ],
-    camera: { distance:4.2, hauteur:0 },
-  },
-  {
-    id: 'bandit_assassin',
-    name: 'Bandit Assassin',
-    img: 'img/mobs/P1/bandit_assassin.png',
-    morceaux: [
-      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/head.json',      position:[0.3533,1.131, 0.6397], rotation:[0,      2.8362, 0      ], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/hip.json',       position:[0.5,   0.5,   0.5   ], rotation:[0,      3.1416, 0      ], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/left_arm.json',  position:[0.8735,0.836,-0.0633], rotation:[0.7767, 3.1416, 0      ], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/right_arm.json', position:[0.0357,1.525, 0.7681], rotation:[-0.9774,3.1416, 0.3578 ], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/left_leg.json',  position:[0.343, 0.4,   0.5015], rotation:[0,      3.1416, 0.0524 ], scale:1 },
-      { fichier: 'img/compendium/modelengine/models/em_bandit_a1/right_leg.json', position:[0.7388,0.4,   0.3966], rotation:[0.2618, 3.1416,-0.1571 ], scale:1 },
-    ],
-    camera: { distance:3, hauteur:0 },
-  },
-  {
-    id: 'bandit_robuste',
-    name: 'Bandit Robuste',
-    img: 'img/mobs/P1/bandit_robuste.png',
-    morceaux: [
-      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/head.json',      position:[0.5246,1.2403,0.4275], rotation:[0,      -3.1416, 0      ], scale:1    },
-      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/hip.json',       position:[0.5,   0.5,   0.5   ], rotation:[0,       3.1416, 0      ], scale:1    },
-      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/left_arm.json',  position:[1.0468,1.9124,0.4455], rotation:[-1.0821, 3.1416,-0.2618 ], scale:1    },
-      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/right_arm.json', position:[0.4816,0.3294,0.2813], rotation:[-0.2618,-1.8064, 0.672  ], scale:1.93 },
-      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/left_leg.json',  position:[0.2226,0.4734,0.647 ], rotation:[-0.1571, 3.1416, 0.1571 ], scale:1    },
-      { fichier: 'img/compendium/modelengine/models/em_bandit_b1/right_leg.json', position:[0.7242,0.4,   0.3878], rotation:[0.2618,  3.1416,-0.1571 ], scale:1    },
-    ],
-    camera: { distance:3.3, hauteur:0 },
-  },
-];
 
-/* Note : les monstres sans morceaux (sanglier, loups, squelettes, etc.)
-   utilisent déjà des images PNG statiques → pas besoin de les capturer */
+function normaliseChemin(chemin) {
+  // "../img/..." → "img/..."
+  return chemin.replace(/^\.\.\//, '');
+}
+
+// Déduction du chemin de sortie PNG :
+// Si mob.img est défini et non vide → on l'utilise (normalisé)
+// Sinon on génère automatiquement : img/mobs/P{palier}/{id}.png
+function cheminSortie(mob) {
+  if (mob.img && mob.img.trim() !== '') {
+    return normaliseChemin(mob.img);
+  }
+  return `img/mobs/P${mob.palier || 1}/${mob.id}.png`;
+}
+
+// Filtrer les mobs avec des morceaux 3D définis
+const MONSTRES = MOBS
+  .filter(m => m.morceaux && m.morceaux.length > 0)
+  .map(m => ({
+    ...m,
+    // Normaliser les chemins des morceaux
+    morceaux: m.morceaux.map(morceau => ({
+      ...morceau,
+      fichier: normaliseChemin(morceau.fichier)
+    })),
+    // Chemin de sortie calculé
+    imgOut: cheminSortie(m)
+  }));
 
 const SPRITE_SIZE = 256;
 
 /* ── Stats ── */
+const paliers = [...new Set(MONSTRES.map(m => m.palier || 1))].sort();
 document.getElementById('stats').innerHTML =
-  `Monstres avec modèle 3D : <span>${MONSTRES.length}</span> &nbsp;|&nbsp; Taille sprite : <span>${SPRITE_SIZE}×${SPRITE_SIZE}px</span>`;
+  `Mobs avec modèle 3D : <span>${MONSTRES.length}</span> &nbsp;|&nbsp; ` +
+  `Paliers : <span>${paliers.join(', ')}</span> &nbsp;|&nbsp; ` +
+  `Taille sprite : <span>${SPRITE_SIZE}×${SPRITE_SIZE}px</span>`;
 
 /* ── Log ── */
 const logEl = document.getElementById('log');
@@ -341,75 +313,117 @@ function log(msg, cls='') {
 let sR, sS, sC;
 function getRig(size) {
   if (!sR) {
-    sR = new THREE.WebGLRenderer({ antialias:true, alpha:true, preserveDrawingBuffer:true });
+    sR = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     sR.setPixelRatio(1);
     sS = new THREE.Scene();
     sS.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const key = new THREE.DirectionalLight(0xffe8c0,1.2); key.position.set(4,8,5); sS.add(key);
-    const fil = new THREE.DirectionalLight(0x8090ff,0.5); fil.position.set(-5,2,-4); sS.add(fil);
-    sC = new THREE.PerspectiveCamera(45,1,0.01,200);
+    const key = new THREE.DirectionalLight(0xffe8c0, 1.2); key.position.set(4, 8, 5); sS.add(key);
+    const fil = new THREE.DirectionalLight(0x8090ff, 0.5); fil.position.set(-5, 2, -4); sS.add(fil);
+    sC = new THREE.PerspectiveCamera(45, 1, 0.01, 200);
   }
   sR.setSize(size, size);
-  return { renderer:sR, scene:sS, camera:sC };
+  return { renderer: sR, scene: sS, camera: sC };
+}
+
+/* ── Positionnement caméra avec theta/phi ──
+   Convention sphérique :
+     theta = rotation horizontale (azimut)  — 0 = face avant
+     phi   = angle vertical (élévation)     — PI/2 = niveau horizon
+
+   Si camera.capture.theta/phi sont définis → on les utilise
+   Sinon → caméra frontale par défaut (theta=0, phi=PI/2)
+*/
+function positionnerCamera(camera, cfg) {
+  const d       = (cfg && cfg.distance) || 4;
+  const hauteur = (cfg && cfg.hauteur)  || 0;
+  const cap     = cfg && cfg.capture;
+
+  let theta, phi;
+
+  if (cap && cap.theta !== undefined && cap.phi !== undefined) {
+    // Utilisation des valeurs exactes de mob_data.js
+    theta = cap.theta;  // azimut (rotation Y)
+    phi   = cap.phi;    // élévation depuis le haut (PI/2 = horizon)
+  } else {
+    // Défaut : vue de face légèrement en hauteur
+    theta = 0;
+    phi   = Math.PI / 2;
+  }
+
+  // Conversion sphérique → cartésien
+  // theta=0 → regarde vers +Z (avant du modèle)
+  const x = d * Math.sin(phi) * Math.sin(theta);
+  const y = d * Math.cos(phi) + hauteur;
+  const z = d * Math.sin(phi) * Math.cos(theta);
+
+  camera.position.set(x, y, z);
+  camera.lookAt(0, hauteur, 0);
 }
 
 /* ── Parser block model ── */
 function resolveTex(json) {
-  for (const v of Object.values(json.textures||{})) {
+  for (const v of Object.values(json.textures || {})) {
     if (v && !v.startsWith('#')) {
       const c = v.indexOf(':');
       if (c < 0) return v;
-      return `img/compendium/${v.slice(0,c)}/textures/${v.slice(c+1)}.png`;
+      return `img/compendium/${v.slice(0, c)}/textures/${v.slice(c + 1)}.png`;
     }
   }
   return null;
 }
 
 function parseModel(json, texP) {
-  const g = new THREE.Group();
+  const g   = new THREE.Group();
   const src = resolveTex(json);
   let mat;
   if (src) {
-    texP.push(new Promise((res,rej) => {
-      new THREE.TextureLoader().load(src, tex=>{
-        tex.magFilter=tex.minFilter=THREE.NearestFilter;
-        mat.map=tex; mat.needsUpdate=true; res(tex);
-      }, undefined, err=>{ console.warn('tex?',src); rej(err); });
+    texP.push(new Promise((res, rej) => {
+      new THREE.TextureLoader().load(src, tex => {
+        tex.magFilter = tex.minFilter = THREE.NearestFilter;
+        mat.map = tex; mat.needsUpdate = true; res(tex);
+      }, undefined, err => { console.warn('tex?', src); rej(err); });
     }));
-    mat = new THREE.MeshLambertMaterial({side:THREE.DoubleSide,transparent:true,alphaTest:.1});
+    mat = new THREE.MeshLambertMaterial({ side: THREE.DoubleSide, transparent: true, alphaTest: .1 });
   } else {
-    mat = new THREE.MeshLambertMaterial({color:0x888888,side:THREE.DoubleSide});
+    mat = new THREE.MeshLambertMaterial({ color: 0x888888, side: THREE.DoubleSide });
   }
-  const S=1/16;
-  for (const el of (json.elements||[])) {
-    const [x1,y1,z1]=el.from.map(v=>v*S),[x2,y2,z2]=el.to.map(v=>v*S);
-    const fd={
-      north:[x1,y2,z1,x2,y2,z1,x2,y1,z1,x1,y1,z1],south:[x2,y2,z2,x1,y2,z2,x1,y1,z2,x2,y1,z2],
-      east:[x2,y2,z2,x2,y2,z1,x2,y1,z1,x2,y1,z2],  west:[x1,y2,z1,x1,y2,z2,x1,y1,z2,x1,y1,z1],
-      up:[x1,y2,z1,x2,y2,z1,x2,y2,z2,x1,y2,z2],    down:[x1,y1,z2,x2,y1,z2,x2,y1,z1,x1,y1,z1],
+
+  const S = 1 / 16;
+  for (const el of (json.elements || [])) {
+    const [x1, y1, z1] = el.from.map(v => v * S);
+    const [x2, y2, z2] = el.to.map(v => v * S);
+    const fd = {
+      north: [x1, y2, z1, x2, y2, z1, x2, y1, z1, x1, y1, z1],
+      south: [x2, y2, z2, x1, y2, z2, x1, y1, z2, x2, y1, z2],
+      east:  [x2, y2, z2, x2, y2, z1, x2, y1, z1, x2, y1, z2],
+      west:  [x1, y2, z1, x1, y2, z2, x1, y1, z2, x1, y1, z1],
+      up:    [x1, y2, z1, x2, y2, z1, x2, y2, z2, x1, y2, z2],
+      down:  [x1, y1, z2, x2, y1, z2, x2, y1, z1, x1, y1, z1],
     };
-    const pos=[],uvs=[],idx=[]; let vi=0;
-    for (const [fn,fi] of Object.entries(el.faces||{})) {
-      const v=fd[fn]; if(!v) continue;
-      for(let i=0;i<12;i++) pos.push(v[i]);
-      const [u1,v1,u2,v2]=fi.uv,r=fi.rotation||0;
-      let fu=[u1/16,1-v1/16,u2/16,1-v1/16,u2/16,1-v2/16,u1/16,1-v2/16];
-      if(r===90)  fu=[fu[6],fu[7],fu[0],fu[1],fu[2],fu[3],fu[4],fu[5]];
-      if(r===180) fu=[fu[4],fu[5],fu[6],fu[7],fu[0],fu[1],fu[2],fu[3]];
-      if(r===270) fu=[fu[2],fu[3],fu[4],fu[5],fu[6],fu[7],fu[0],fu[1]];
-      for(let i=0;i<8;i++) uvs.push(fu[i]);
-      idx.push(vi,vi+1,vi+2,vi,vi+2,vi+3); vi+=4;
+    const pos = [], uvs = [], idx = []; let vi = 0;
+    for (const [fn, fi] of Object.entries(el.faces || {})) {
+      const v = fd[fn]; if (!v) continue;
+      for (let i = 0; i < 12; i++) pos.push(v[i]);
+      const [u1, v1, u2, v2] = fi.uv, r = fi.rotation || 0;
+      let fu = [u1/16, 1-v1/16, u2/16, 1-v1/16, u2/16, 1-v2/16, u1/16, 1-v2/16];
+      if (r === 90)  fu = [fu[6], fu[7], fu[0], fu[1], fu[2], fu[3], fu[4], fu[5]];
+      if (r === 180) fu = [fu[4], fu[5], fu[6], fu[7], fu[0], fu[1], fu[2], fu[3]];
+      if (r === 270) fu = [fu[2], fu[3], fu[4], fu[5], fu[6], fu[7], fu[0], fu[1]];
+      for (let i = 0; i < 8; i++) uvs.push(fu[i]);
+      idx.push(vi, vi+1, vi+2, vi, vi+2, vi+3); vi += 4;
     }
-    const geo=new THREE.BufferGeometry();
-    geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
-    geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('uv',       new THREE.Float32BufferAttribute(uvs, 2));
     geo.setIndex(idx); geo.computeVertexNormals();
-    const mesh=new THREE.Mesh(geo,mat);
-    if(el.rotation){
-      const{origin,angle,axis}=el.rotation,[ox,oy,oz]=origin.map(v=>v*S);
-      const piv=new THREE.Object3D();
-      piv.position.set(ox,oy,oz); piv.rotation[axis]=THREE.MathUtils.degToRad(angle);
-      mesh.position.set(-ox,-oy,-oz); piv.add(mesh); g.add(piv);
+    const mesh = new THREE.Mesh(geo, mat);
+    if (el.rotation) {
+      const { origin, angle, axis } = el.rotation;
+      const [ox, oy, oz] = origin.map(v => v * S);
+      const piv = new THREE.Object3D();
+      piv.position.set(ox, oy, oz);
+      piv.rotation[axis] = THREE.MathUtils.degToRad(angle);
+      mesh.position.set(-ox, -oy, -oz); piv.add(mesh); g.add(piv);
     } else { g.add(mesh); }
   }
   return g;
@@ -417,119 +431,147 @@ function parseModel(json, texP) {
 
 /* ── Capture ── */
 async function capture(mob, size) {
-  const {renderer,scene,camera}=getRig(size);
-  const pieces=[],texP=[];
-  const cam=mob.camera||{}, d=cam.distance||4, h=cam.hauteur||0;
-  camera.aspect=1; camera.updateProjectionMatrix();
-  camera.position.set(0, d*Math.cos(Math.PI/2)+h, d*Math.sin(Math.PI/2));
-  camera.lookAt(0,h,0);
+  const { renderer, scene, camera } = getRig(size);
+  const pieces = [], texP = [];
+
+  camera.aspect = 1;
+  camera.updateProjectionMatrix();
+  positionnerCamera(camera, mob.camera);
 
   for (const cfg of mob.morceaux) {
     try {
-      const json=await fetch(cfg.fichier).then(r=>r.json());
-      const obj=parseModel(json,texP);
-      if(cfg.position) obj.position.set(...cfg.position);
-      if(cfg.rotation) obj.rotation.set(...cfg.rotation);
-      if(cfg.scale!==undefined) obj.scale.setScalar(cfg.scale);
+      const json = await fetch(cfg.fichier).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      });
+      const obj = parseModel(json, texP);
+      if (cfg.position) obj.position.set(...cfg.position);
+      if (cfg.rotation) obj.rotation.set(...cfg.rotation);
+      if (cfg.scale !== undefined) obj.scale.setScalar(cfg.scale);
       scene.add(obj); pieces.push(obj);
-    } catch(e){ console.warn('raté',cfg.fichier,e); }
+    } catch(e) { console.warn('raté', cfg.fichier, e); }
   }
 
   await Promise.allSettled(texP);
 
-  const box=new THREE.Box3();
-  pieces.forEach(p=>box.expandByObject(p));
-  if(!box.isEmpty()){
-    const c=box.getCenter(new THREE.Vector3());
-    pieces.forEach(p=>{p.position.y-=c.y;});
+  // Centrage vertical automatique
+  const box = new THREE.Box3();
+  pieces.forEach(p => box.expandByObject(p));
+  if (!box.isEmpty()) {
+    const c = box.getCenter(new THREE.Vector3());
+    pieces.forEach(p => { p.position.y -= c.y; });
   }
 
-  renderer.render(scene,camera);
-  const url=renderer.domElement.toDataURL('image/png');
-  pieces.forEach(p=>{ scene.remove(p); p.traverse(c=>{if(c.isMesh)c.geometry.dispose();}); });
+  renderer.render(scene, camera);
+  const url = renderer.domElement.toDataURL('image/png');
+  pieces.forEach(p => {
+    scene.remove(p);
+    p.traverse(c => { if (c.isMesh) c.geometry.dispose(); });
+  });
   return url;
 }
 
-/* ── UI ── */
-const grid=document.getElementById('grid');
-const btnRender=document.getElementById('btn-render');
-const btnZip=document.getElementById('btn-zip');
-const progWrap=document.getElementById('progress-wrap');
-const progBar=document.getElementById('progress-bar');
-const progLabel=document.getElementById('progress-label');
-const results={};
+/* ── Construction de la grille ── */
+const grid     = document.getElementById('grid');
+const btnRender = document.getElementById('btn-render');
+const btnZip    = document.getElementById('btn-zip');
+const progWrap  = document.getElementById('progress-wrap');
+const progBar   = document.getElementById('progress-bar');
+const progLabel = document.getElementById('progress-label');
+const results   = {};
 
 MONSTRES.forEach(mob => {
-  const card=document.createElement('div');
-  card.className='card';
-  card.innerHTML=`
-    <div class="card-preview" id="prev-${mob.id}">🐾</div>
+  const isBoss = mob.type === 'boss' || mob.type === 'mini_boss';
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="card-preview" id="prev-${mob.id}">
+      <span class="badge-palier">P${mob.palier || 1}</span>
+      ${isBoss ? `<span class="badge-boss">${mob.type === 'mini_boss' ? 'mini-boss' : 'boss'}</span>` : ''}
+      🐾
+    </div>
     <div class="card-body">
       <div class="card-name">${mob.name}</div>
-      <div class="card-path">→ ${mob.img}</div>
+      <div class="card-path">→ ${mob.imgOut}</div>
       <div class="card-status" id="st-${mob.id}">en attente…</div>
       <button class="card-dl" id="dl-${mob.id}">⬇ Télécharger</button>
     </div>`;
   grid.appendChild(card);
 
-  document.getElementById('dl-'+mob.id).addEventListener('click',()=>{
-    const r=results[mob.id]; if(!r) return;
-    const a=document.createElement('a');
-    a.href=r.dataUrl; a.download=mob.img.split('/').pop(); a.click();
+  document.getElementById('dl-' + mob.id).addEventListener('click', () => {
+    const r = results[mob.id]; if (!r) return;
+    const a = document.createElement('a');
+    a.href = r.dataUrl;
+    a.download = mob.imgOut.split('/').pop();
+    a.click();
   });
 });
 
-function setSt(id,msg,cls=''){
-  const el=document.getElementById('st-'+id);
-  el.textContent=msg; el.className='card-status'+(cls?' '+cls:'');
+function setSt(id, msg, cls = '') {
+  const el = document.getElementById('st-' + id);
+  el.textContent = msg;
+  el.className = 'card-status' + (cls ? ' ' + cls : '');
 }
 
-btnRender.addEventListener('click', async()=>{
-  btnRender.disabled=true; btnZip.disabled=true;
+/* ── Rendu de tous les sprites ── */
+btnRender.addEventListener('click', async () => {
+  btnRender.disabled = true; btnZip.disabled = true;
   progWrap.classList.add('visible');
-  const total=MONSTRES.length; let done=0;
-  log('Démarrage — '+total+' monstre(s) avec modèle 3D.');
+  const total = MONSTRES.length; let done = 0;
+  log(`Démarrage — ${total} monstre(s) avec modèle 3D.`);
 
   for (const mob of MONSTRES) {
-    setSt(mob.id,'⟳ rendu…');
-    log('Capture : '+mob.name);
+    setSt(mob.id, '⟳ rendu…');
+    const camInfo = mob.camera && mob.camera.capture
+      ? `θ=${mob.camera.capture.theta} φ=${mob.camera.capture.phi}`
+      : 'caméra par défaut';
+    log(`Capture : ${mob.name} [${camInfo}]`);
     try {
-      const dataUrl=await capture(mob,SPRITE_SIZE);
-      const prev=document.getElementById('prev-'+mob.id);
-      prev.innerHTML='';
-      const img=document.createElement('img'); img.src=dataUrl;
+      const dataUrl = await capture(mob, SPRITE_SIZE);
+      const prev = document.getElementById('prev-' + mob.id);
+      // Garder les badges, retirer l'emoji
+      prev.querySelectorAll(':not(.badge-palier):not(.badge-boss)').forEach(el => {
+        if (el.nodeType === Node.TEXT_NODE || el.tagName === undefined) return;
+        el.remove();
+      });
+      // Vider les textes directs
+      [...prev.childNodes].forEach(n => { if (n.nodeType === 3) n.remove(); });
+      const img = document.createElement('img'); img.src = dataUrl;
       prev.appendChild(img);
-      results[mob.id]={dataUrl, imgPath:mob.img};
-      document.getElementById('dl-'+mob.id).classList.add('ready');
-      setSt(mob.id,'✓ prêt','ok');
-      log('✓ '+mob.name,'ok');
-    } catch(e){
-      setSt(mob.id,'✗ erreur','err');
-      log('✗ '+mob.name+' — '+e.message,'err');
+      results[mob.id] = { dataUrl, imgPath: mob.imgOut };
+      document.getElementById('dl-' + mob.id).classList.add('ready');
+      setSt(mob.id, '✓ prêt', 'ok');
+      log(`✓ ${mob.name}`, 'ok');
+    } catch(e) {
+      setSt(mob.id, '✗ erreur', 'err');
+      log(`✗ ${mob.name} — ${e.message}`, 'err');
     }
     done++;
-    progBar.style.width=(done/total*100)+'%';
-    progLabel.textContent=done+' / '+total;
+    progBar.style.width = (done / total * 100) + '%';
+    progLabel.textContent = done + ' / ' + total;
   }
-  btnRender.disabled=false;
-  if(Object.keys(results).length>0) btnZip.disabled=false;
-  log('Terminé — '+Object.keys(results).length+'/'+total+' sprites OK.','ok');
+
+  btnRender.disabled = false;
+  if (Object.keys(results).length > 0) btnZip.disabled = false;
+  log(`Terminé — ${Object.keys(results).length}/${total} sprites OK.`, 'ok');
 });
 
-/* ── ZIP avec arborescence img/mobs/... ── */
-btnZip.addEventListener('click', async()=>{
-  btnZip.disabled=true;
+/* ── ZIP avec arborescence complète ── */
+btnZip.addEventListener('click', async () => {
+  btnZip.disabled = true;
   log('Création du ZIP…');
-  const zip=new JSZip();
-  for(const{dataUrl,imgPath}of Object.values(results)){
-    zip.file(imgPath, dataUrl.split(',')[1], {base64:true});
+  const zip = new JSZip();
+  for (const { dataUrl, imgPath } of Object.values(results)) {
+    zip.file(imgPath, dataUrl.split(',')[1], { base64: true });
   }
-  const blob=await zip.generateAsync({type:'blob'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download='sprites_monstres.zip'; a.click();
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sprites_monstres.zip';
+  a.click();
   URL.revokeObjectURL(a.href);
-  btnZip.disabled=false;
-  log('ZIP prêt — extrayez à la racine du projet pour écraser les images.','ok');
+  btnZip.disabled = false;
+  log('ZIP prêt — extrayez à la racine du projet pour écraser les images.', 'ok');
 });
 </script>
 </body>
