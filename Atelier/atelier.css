@@ -994,7 +994,7 @@ html, body {
 .craft-drawer.open .craft-drawer-tab {
   color: var(--gold);
   background: linear-gradient(180deg, rgba(40,28,14,.99) 0%, rgba(24,18,10,.99) 100%);
-  border-color: var(--rim2);    /* ← reste discret même au hover */
+  border-color: var(--rim2);
 }
 
 .cdt-label {

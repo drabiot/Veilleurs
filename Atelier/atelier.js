@@ -1942,19 +1942,19 @@ stats.innerHTML = statsLines +
 
 })();
 
-/* checklist-drawer.js
-   Tiroir checklist de craft pour l'Atelier VCL.
-   - Lit automatiquement les items équipés ayant un craft[]
-   - Affiche les matériaux groupés par item équipé
-   - Aucune sélection manuelle d'items
-   - State persistant (localStorage), reset auto si data.js change
-   ─────────────────────────────────────────────────────────── */
 (function () {
   'use strict';
 
-  /* ══ STORAGE ══ */
-  const SIG        = '🌙VCL_DRAWER_v2';
+  const SIG         = '🌙VCL_DRAWER_v2';
   const STORAGE_KEY = 'vcl_craft_drawer_v2';
+
+  /* ══ ORDRE D'AFFICHAGE DES SLOTS ══ */
+  const SLOT_ORDER = [
+    'casque', 'plastron', 'jambieres', 'bottes',
+    'arme_pr', 'arme_sec',
+    'anneau1', 'anneau2', 'amulette', 'bracelet', 'gants',
+    'artefact1', 'artefact2', 'artefact3',
+  ];
 
   function loadState() {
     try {
@@ -1974,32 +1974,26 @@ stats.innerHTML = statsLines +
     } catch (e) {}
   }
 
-  /* ══ ÉTAT ══ */
-  let checkedKeys = {}; // { "slotId::matId": true }
-  let haveQty     = {}; // { "slotId::matId": number }
+  let checkedKeys = {};
+  let haveQty     = {};
 
-  /* ══ LIRE LES ITEMS ÉQUIPÉS AVEC CRAFT ══
-     On lit la variable `equipped` exposée par atelier.js.
-     Elle est dans la closure — on passe par window ou on
-     interroge le DOM. La façon la plus simple : écouter
-     l'objet `equipped` via un getter sur window, ou simplement
-     relire les slots dessinés dans le DOM.
-     → On utilise une approche propre : atelier.js expose déjà
-       les données via localStorage sous `vcl_atelier`.
-       On lit ce storage pour avoir les ids équipés.
-  ══ */
   function getEquippedCraftItems() {
     if (typeof ITEMS === 'undefined') return [];
     const results = [];
-
-    /* Lire l'état courant depuis le localStorage de l'atelier */
     try {
       const raw = localStorage.getItem('vcl_atelier');
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       if (!parsed || !parsed.slots) return [];
 
-      Object.entries(parsed.slots).forEach(function (entry) {
+      /* Trier selon SLOT_ORDER */
+      const sortedEntries = Object.entries(parsed.slots).sort(function (a, b) {
+        const ia = SLOT_ORDER.indexOf(a[0]);
+        const ib = SLOT_ORDER.indexOf(b[0]);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      });
+
+      sortedEntries.forEach(function (entry) {
         const slotId = entry[0];
         const itemId = entry[1];
         const item = ITEMS.find(function (i) { return i.id === itemId; });
@@ -2008,13 +2002,10 @@ stats.innerHTML = statsLines +
         results.push({ slotId: slotId, item: item });
       });
     } catch (e) {}
-
     return results;
   }
 
-  /* ══ CALCUL MATÉRIAUX ══ */
   function computeAll() {
-    /* Retourne tableau de { slotId, item, mats: [{matId, qty}] } */
     return getEquippedCraftItems().map(function (entry) {
       const mats = [];
       entry.item.craft.forEach(function (c) {
@@ -2025,7 +2016,6 @@ stats.innerHTML = statsLines +
     });
   }
 
-  /* Clé unique pour checkedKeys / haveQty */
   function key(slotId, matId) { return slotId + '::' + matId; }
 
   function isMatDone(slotId, matId, need) {
@@ -2034,16 +2024,80 @@ stats.innerHTML = statsLines +
     return (parseInt(haveQty[k] || 0)) >= need;
   }
 
+  /* ══ RÉSUMÉ GLOBAL DES MATÉRIAUX (sans doublons) ══ */
+  function buildSummaryBlock(groups) {
+    /* Agrège toutes les quantités nécessaires par matId */
+    const totals = {};
+    groups.forEach(function (g) {
+      g.mats.forEach(function (m) {
+        totals[m.matId] = (totals[m.matId] || 0) + m.qty;
+      });
+    });
+
+    const entries = Object.entries(totals);
+    if (!entries.length) return null;
+
+    const block = document.createElement('div');
+    block.style.cssText = 'margin-bottom:10px;border:1px solid var(--rim);padding:6px 8px;';
+
+    const title = document.createElement('div');
+    title.style.cssText = 'font-family:"Cinzel",serif;font-size:7.5px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;border-bottom:1px solid var(--rim);padding-bottom:4px;';
+    title.textContent = '⬡ Résumé Global';
+    block.appendChild(title);
+
+    entries.forEach(function (e) {
+      const matId = e[0];
+      const need  = e[1];
+      const matItem = (typeof ITEMS !== 'undefined') ? ITEMS.find(function (i) { return i.id === matId; }) : null;
+      const matName = matItem ? matItem.name : matId;
+      const isCols  = matId === 'cols';
+
+      /* Quantité déjà possédée = somme des haveQty sur tous les slots pour ce matId */
+      let totalHave = 0;
+      groups.forEach(function (g) {
+        totalHave += parseInt(haveQty[key(g.slotId, matId)] || 0);
+      });
+      const done = totalHave >= need;
+
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 2px;' + (done ? 'opacity:.45;' : '');
+
+      /* Icône */
+      const imgW = document.createElement('div');
+      imgW.style.cssText = 'width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.03);border:1px solid var(--rim);';
+      if (isCols) {
+        imgW.innerHTML = '<span style="font-size:12px">🪙</span>';
+      } else if (matItem && (matItem.img || matItem.image)) {
+        imgW.innerHTML = '<img src="' + (matItem.img || matItem.image) + '" alt="" style="width:14px;height:14px;object-fit:contain;image-rendering:pixelated;">';
+      } else {
+        imgW.innerHTML = '<span style="font-size:10px">📦</span>';
+      }
+
+      const nameEl = document.createElement('span');
+      nameEl.style.cssText = 'flex:1;font-family:"JetBrains Mono",monospace;font-size:9px;color:var(--bright);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (done ? 'text-decoration:line-through;' : '');
+      nameEl.textContent = matName;
+
+      const qtyEl = document.createElement('span');
+      qtyEl.style.cssText = 'font-family:"Cinzel",serif;font-size:9px;font-weight:700;' + (done ? 'color:var(--muted);' : 'color:var(--gold);');
+      qtyEl.textContent = Math.min(totalHave, need) + ' / ' + need;
+
+      row.appendChild(imgW);
+      row.appendChild(nameEl);
+      row.appendChild(qtyEl);
+      block.appendChild(row);
+    });
+
+    return block;
+  }
+
   /* ══ DOM ══ */
   const drawer    = document.getElementById('craft-drawer');
   const tab       = document.getElementById('craft-drawer-tab');
   const closeBtn  = document.getElementById('craft-drawer-close');
-  const badge     = document.getElementById('cdt-badge');
   const checklist = document.getElementById('cdp-checklist');
   const progFill  = document.getElementById('cdp-prog-fill');
   const progLabel = document.getElementById('cdp-prog-label');
 
-  /* ══ OPEN / CLOSE ══ */
   tab.addEventListener('click', function () {
     drawer.classList.toggle('open');
     if (drawer.classList.contains('open')) refresh();
@@ -2052,12 +2106,8 @@ stats.innerHTML = statsLines +
     drawer.classList.remove('open');
   });
 
-  /* ══ BADGE ══ */
-function updateBadge(groups) {
-  /* badge désactivé */
-}
+  function updateBadge() { /* désactivé */ }
 
-  /* ══ PROGRESS ══ */
   function updateProgress(groups) {
     let total = 0, done = 0;
     groups.forEach(function (g) {
@@ -2071,15 +2121,13 @@ function updateBadge(groups) {
     progLabel.textContent = done + ' / ' + total;
   }
 
-  /* ══ RENDER ══ */
   function refresh() {
     const groups = computeAll();
-    updateBadge(groups);
     updateProgress(groups);
     buildChecklist(groups);
   }
 
-  function buildChecklist(groups) {
+ function buildChecklist(groups) {
     checklist.innerHTML = '';
 
     if (!groups.length) {
@@ -2091,25 +2139,100 @@ function updateBadge(groups) {
       return;
     }
 
+    const summaryBlock = buildSummaryBlock(groups);
+    if (summaryBlock) {
+      summaryBlock.dataset.summary = '1';
+      checklist.appendChild(summaryBlock);
+    }
+
     groups.forEach(function (g) {
-      const item    = g.item;
-      const slotId  = g.slotId;
-      const rarCol  = (typeof RARITIES !== 'undefined' && RARITIES[item.rarity])
+      const item   = g.item;
+      const slotId = g.slotId;
+      const rarCol = (typeof RARITIES !== 'undefined' && RARITIES[item.rarity])
         ? RARITIES[item.rarity].color : '#888';
 
-      /* ── En-tête du groupe ── */
+      /* État collapsed persisté en mémoire par clé slotId */
+      if (typeof buildChecklist._collapsed === 'undefined') buildChecklist._collapsed = {};
+      const isCollapsed = !!buildChecklist._collapsed[slotId];
+
       const group = document.createElement('div');
       group.className = 'cdp-group';
 
+      /* ── En-tête ── */
       const header = document.createElement('div');
       header.className = 'cdp-group-header';
+      header.style.cursor = 'pointer';
+      header.style.userSelect = 'none';
 
-      /* Dot couleur rareté */
+      /* Checkbox de groupe */
+      const groupCheckbox = document.createElement('div');
+      groupCheckbox.style.cssText = 'width:14px;height:14px;flex-shrink:0;border:1.5px solid var(--rim2);background:transparent;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent;cursor:pointer;transition:all .14s;';
+
+      function allGroupDone() {
+        return g.mats.every(function (m) { return isMatDone(slotId, m.matId, m.qty); });
+      }
+      function refreshGroupCheckbox() {
+        if (allGroupDone()) {
+          groupCheckbox.style.background  = 'rgba(89,208,89,.12)';
+          groupCheckbox.style.borderColor = 'rgba(89,208,89,.5)';
+          groupCheckbox.style.color       = '#59d059';
+          groupCheckbox.textContent       = '✓';
+        } else {
+          groupCheckbox.style.background  = 'transparent';
+          groupCheckbox.style.borderColor = 'var(--rim2)';
+          groupCheckbox.style.color       = 'transparent';
+          groupCheckbox.textContent       = '';
+        }
+      }
+      refreshGroupCheckbox();
+
+      groupCheckbox.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const nowDone = allGroupDone();
+        g.mats.forEach(function (m) {
+          const k = key(slotId, m.matId);
+          if (nowDone) {
+            delete checkedKeys[k];
+            haveQty[k] = 0;
+          } else {
+            checkedKeys[k] = true;
+            haveQty[k]     = m.qty;
+          }
+        });
+        saveState();
+        refresh();
+      });
+
+      /* Flèche collapse */
+      const arrow = document.createElement('span');
+      arrow.style.cssText = 'font-size:8px;color:var(--muted);flex-shrink:0;transition:transform .18s;margin-left:auto;padding-left:4px;';
+      arrow.textContent = '▲';
+      if (isCollapsed) arrow.style.transform = 'rotate(180deg)';
+
+      /* Compteur d'ingrédients quand replié */
+      const countBadge = document.createElement('span');
+      countBadge.style.cssText = 'font-family:"JetBrains Mono",monospace;font-size:7px;color:var(--muted);flex-shrink:0;padding-right:2px;';
+      const doneMats  = g.mats.filter(function (m) { return isMatDone(slotId, m.matId, m.qty); }).length;
+      countBadge.textContent = doneMats + '/' + g.mats.length;
+
+      /* Zone des lignes matériaux */
+      const matsWrap = document.createElement('div');
+      matsWrap.style.cssText = 'overflow:hidden;transition:max-height .22s ease;';
+      matsWrap.style.maxHeight = isCollapsed ? '0' : '1000px';
+
+      /* Toggle au clic sur le header (pas sur la checkbox) */
+      header.addEventListener('click', function (e) {
+        if (groupCheckbox.contains(e.target)) return;
+        buildChecklist._collapsed[slotId] = !buildChecklist._collapsed[slotId];
+        const nowCollapsed = buildChecklist._collapsed[slotId];
+        matsWrap.style.maxHeight = nowCollapsed ? '0' : '1000px';
+        arrow.style.transform = nowCollapsed ? 'rotate(180deg)' : 'rotate(0deg)';
+      });
+
       const dot = document.createElement('span');
       dot.className = 'cdp-group-dot';
       dot.style.background = rarCol;
 
-      /* Image item */
       const imgWrap = document.createElement('div');
       imgWrap.className = 'cdp-group-img';
       if (item.img || item.image) {
@@ -2118,13 +2241,11 @@ function updateBadge(groups) {
         imgWrap.innerHTML = '<span style="font-size:13px">📦</span>';
       }
 
-      /* Nom */
       const nameEl = document.createElement('span');
       nameEl.className = 'cdp-group-name';
       nameEl.style.color = rarCol;
       nameEl.textContent = item.name;
 
-      /* Slot label */
       const slotEl = document.createElement('span');
       slotEl.className = 'cdp-group-slot';
       if (typeof ALL_SLOTS !== 'undefined') {
@@ -2132,23 +2253,27 @@ function updateBadge(groups) {
         slotEl.textContent = slotDef ? slotDef.ico + ' ' + slotDef.label : slotId;
       }
 
+      header.appendChild(groupCheckbox);
       header.appendChild(dot);
       header.appendChild(imgWrap);
       header.appendChild(nameEl);
       header.appendChild(slotEl);
+      header.appendChild(countBadge);
+      header.appendChild(arrow);
       group.appendChild(header);
 
-      /* ── Lignes matériaux ── */
+      /* ── Lignes matériaux dans le wrapper ── */
       g.mats.forEach(function (m) {
-        group.appendChild(buildMatRow(slotId, m.matId, m.qty, group, groups));
+        matsWrap.appendChild(buildMatRow(slotId, m.matId, m.qty, group, groups, refreshGroupCheckbox));
       });
 
+      group.appendChild(matsWrap);
       checklist.appendChild(group);
     });
   }
-
-  function buildMatRow(slotId, matId, need, groupEl, groups) {
-    const matItem = (typeof ITEMS !== 'undefined') ? ITEMS.find(function (i) { return i.id === matId; }) : null;
+  function buildMatRow(slotId, matId, need, groupEl, groups, refreshGroupCheckboxFn) {
+    const isCols  = matId === 'cols';
+    const matItem = (!isCols && typeof ITEMS !== 'undefined') ? ITEMS.find(function (i) { return i.id === matId; }) : null;
     const have    = parseInt(haveQty[key(slotId, matId)] || 0);
     const done    = isMatDone(slotId, matId, need);
     const qtyOk   = have >= need;
@@ -2156,27 +2281,25 @@ function updateBadge(groups) {
     const row = document.createElement('div');
     row.className = 'cdp-mat-row' + (done ? ' mat-done' : '') + (qtyOk ? ' qty-ok' : '');
 
-    /* Checkbox */
     const box = document.createElement('div');
     box.className = 'cdp-mat-checkbox';
     box.textContent = done ? '✓' : '';
 
-    /* Image matériau */
     const imgW = document.createElement('div');
     imgW.className = 'cdp-mat-img';
-    if (matItem && (matItem.img || matItem.image)) {
+    if (isCols) {
+      imgW.innerHTML = '<span style="font-size:14px;line-height:1;">🪙</span>';
+    } else if (matItem && (matItem.img || matItem.image)) {
       imgW.innerHTML = '<img src="' + (matItem.img || matItem.image) + '" alt="">';
     } else {
       imgW.innerHTML = '<span class="cdp-fallback">📦</span>';
     }
 
-    /* Info */
     const info = document.createElement('div');
     info.className = 'cdp-mat-info';
-    const matName = matItem ? matItem.name : matId;
+    const matName = matItem ? matItem.name : (isCols ? 'Cols' : matId);
     info.innerHTML = '<div class="cdp-mat-name">' + matName + '</div>';
 
-    /* Quantité */
     const qtyWrap = document.createElement('div');
     qtyWrap.className = 'cdp-qty-wrap';
 
@@ -2184,22 +2307,33 @@ function updateBadge(groups) {
     haveInput.type        = 'number';
     haveInput.className   = 'cdp-qty-have';
     haveInput.min         = 0;
+    haveInput.max         = need;
     haveInput.placeholder = '0';
-    haveInput.value       = have > 0 ? have : '';
+    haveInput.value       = have > 0 ? Math.min(have, need) : '';
     haveInput.title       = 'Quantité possédée';
 
     haveInput.addEventListener('click', function (e) { e.stopPropagation(); });
     haveInput.addEventListener('input', function (e) {
       e.stopPropagation();
-      const v = Math.max(0, parseInt(haveInput.value) || 0);
+      let v = parseInt(haveInput.value) || 0;
+      if (v > need) { v = need; haveInput.value = need; }
+      if (v < 0)    { v = 0;    haveInput.value = 0; }
+
       haveQty[key(slotId, matId)] = v;
+      if (v >= need) {
+        checkedKeys[key(slotId, matId)] = true;
+      } else {
+        delete checkedKeys[key(slotId, matId)];
+      }
       saveState();
-      const newDone  = v >= need || !!checkedKeys[key(slotId, matId)];
-      const newQtyOk = v >= need;
+
+      const newDone = v >= need;
       row.classList.toggle('mat-done', newDone);
-      row.classList.toggle('qty-ok',   newQtyOk);
+      row.classList.toggle('qty-ok',   newDone);
       box.textContent = newDone ? '✓' : '';
+      if (refreshGroupCheckboxFn) refreshGroupCheckboxFn();
       updateProgress(computeAll());
+      _refreshSummary();
     });
 
     const sep = document.createElement('span');
@@ -2214,18 +2348,27 @@ function updateBadge(groups) {
     qtyWrap.appendChild(sep);
     qtyWrap.appendChild(needSpan);
 
-    /* Clic ligne = toggle manuel */
     row.addEventListener('click', function (e) {
       if (e.target === haveInput) return;
       const k = key(slotId, matId);
-      checkedKeys[k] = !checkedKeys[k];
-      if (!checkedKeys[k]) delete checkedKeys[k];
+      const wasDone = isMatDone(slotId, matId, need);
+      if (wasDone) {
+        delete checkedKeys[k];
+        haveQty[k]      = 0;
+        haveInput.value = '';
+      } else {
+        checkedKeys[k]  = true;
+        haveQty[k]      = need;
+        haveInput.value = need;
+      }
       saveState();
-      const have2   = parseInt(haveQty[k] || 0);
-      const newDone = !!checkedKeys[k] || have2 >= need;
+      const newDone = !wasDone;
       row.classList.toggle('mat-done', newDone);
+      row.classList.toggle('qty-ok',   newDone);
       box.textContent = newDone ? '✓' : '';
+      if (refreshGroupCheckboxFn) refreshGroupCheckboxFn();
       updateProgress(computeAll());
+      _refreshSummary();
     });
 
     row.appendChild(box);
@@ -2235,17 +2378,35 @@ function updateBadge(groups) {
     return row;
   }
 
+  /* Rafraîchit uniquement le bloc résumé sans tout reconstruire */
+  function _refreshSummary() {
+    const groups = computeAll();
+    const existing = checklist.querySelector('[data-summary]');
+    if (existing) existing.remove();
+    const block = buildSummaryBlock(groups);
+    if (block) {
+      block.dataset.summary = '1';
+      checklist.insertBefore(block, checklist.firstChild);
+    }
+  }
+
   /* ══ CONTRÔLES ══ */
   document.getElementById('cdp-check-all').addEventListener('click', function () {
     const groups = computeAll();
     groups.forEach(function (g) {
-      g.mats.forEach(function (m) { checkedKeys[key(g.slotId, m.matId)] = true; });
+      g.mats.forEach(function (m) {
+        checkedKeys[key(g.slotId, m.matId)] = true;
+        haveQty[key(g.slotId, m.matId)]     = m.qty;
+      });
     });
     saveState(); refresh();
   });
 
   document.getElementById('cdp-uncheck-all').addEventListener('click', function () {
-    checkedKeys = {}; saveState(); refresh();
+    checkedKeys = {};
+    /* Remettre toutes les quantités à 0 aussi */
+    Object.keys(haveQty).forEach(function (k) { haveQty[k] = 0; });
+    saveState(); refresh();
   });
 
   document.getElementById('cdp-reset-qty').addEventListener('click', function () {
@@ -2256,39 +2417,23 @@ function updateBadge(groups) {
     checkedKeys = {}; haveQty = {}; saveState(); refresh();
   });
 
-  /* ══ OBSERVER : se met à jour quand l'équipement change ══
-     atelier.js appelle saveToStorage() à chaque modification.
-     On écoute l'événement storage pour détecter les changements.
-  ══ */
+  /* ══ OBSERVER ══ */
   window.addEventListener('storage', function (e) {
     if (e.key === 'vcl_atelier') {
-      /* Petit délai pour laisser atelier.js finir son render */
       setTimeout(function () {
-        const groups = computeAll();
-        updateBadge(groups);
-        if (drawer.classList.contains('open')) {
-          updateProgress(groups);
-          buildChecklist(groups);
-        }
+        if (drawer.classList.contains('open')) refresh();
+        else updateProgress(computeAll());
       }, 80);
     }
   });
 
-  /* Patch : intercepter saveToStorage dans la même page
-     (l'event storage ne se déclenche que sur les AUTRES onglets).
-     On patche localStorage.setItem pour détecter les sauvegardes
-     de l'atelier dans le même onglet. */
   const _origSetItem = localStorage.setItem.bind(localStorage);
   localStorage.setItem = function (k, v) {
     _origSetItem(k, v);
     if (k === 'vcl_atelier') {
       setTimeout(function () {
-        const groups = computeAll();
-        updateBadge(groups);
-        if (drawer.classList.contains('open')) {
-          updateProgress(groups);
-          buildChecklist(groups);
-        }
+        if (drawer.classList.contains('open')) refresh();
+        else updateProgress(computeAll());
       }, 50);
     }
   };
@@ -2300,10 +2445,7 @@ function updateBadge(groups) {
       checkedKeys = saved.checked || {};
       haveQty     = saved.qty    || {};
     }
-
-    /* Premier render du badge (sans ouvrir le tiroir) */
-    const groups = computeAll();
-    updateBadge(groups);
+    updateProgress(computeAll());
   }
 
   if (document.readyState === 'loading') {
