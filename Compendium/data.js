@@ -2366,7 +2366,7 @@ const ITEMS = [
 {
 	id:				'catalyseur_abeille_mage',
 	name:			"Catalyseur Abeille Mage",
-	rarity:		'rare',
+	rarity:		'epique',
 	cat:			'arme_s',
 	category:	'arme',
 	palier:		2,
@@ -2375,14 +2375,14 @@ const ITEMS = [
 	stats:		{degats_magique:5, mana:16},
 	classes:	['mage'],
 	lore:     "Ce catalyseur est plus puissant qu'il n'en a l'air.",
-	tags:     ['Arme', 'Catalyseur', 'Sceptre', 'Mage', 'Palier 2', 'Rare'],
+	tags:     ['Arme', 'Catalyseur', 'Sceptre', 'Mage', 'Palier 2', 'Épique'],
 	obtain:   "Fabricable au [npc:forgeron_armes_melliona|Forgeron d'Armes de la Forêt Sucrée]",
 	craft:		[{qty:16, id:'dard'}, {qty:16, id:'carapace_abeille'}, {qty:32, id:'miel'}]
 },
 {
 	id:				'catalyseur_abeille_shaman',
 	name:			"Catalyseur Abeille Shaman",
-	rarity:		'rare',
+	rarity:		'epique',
 	cat:			'arme_s',
 	category:	'arme',
 	palier:		2,
@@ -2391,7 +2391,7 @@ const ITEMS = [
 	stats:		{mana:16, regen_mana:0.4},
 	classes:	['shaman'],
 	lore:     "Ce catalyseur est plus puissant qu'il n'en a l'air.",
-	tags:     ['Arme', 'Catalyseur', 'Sceptre', 'Shaman', 'Palier 2', 'Rare'],
+	tags:     ['Arme', 'Catalyseur', 'Sceptre', 'Shaman', 'Palier 2', 'Épique'],
 	obtain:   "Fabricable au [npc:forgeron_armes_melliona|Forgeron d'Armes de la Forêt Sucrée]",
 	craft:		[{qty:16, id:'dard'}, {qty:16, id:'carapace_abeille'}, {qty:32, id:'miel'}]
 },
@@ -7619,6 +7619,30 @@ const ITEMS = [
 },
 //#endregion Items > P2 > Quêtes
 //#region Items > P2 > Donjon
+{
+    id:       'cle_melliona',
+    name:     "Clé de Melliona",
+    rarity:   'rare',
+    category: 'donjon',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Donjon/key_ruche.png",
+    lore:     "Peut être utilisé pour accéder au donjon : Ruche de Melliona.",
+    tags:     ['Donjon', 'Ruche de Melliona', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au [npc:cle_melliona|Fabricant de Clé de Melliona à Urbus]",
+		craft:	 	[{id:'peau_ours', qty:16}, {id:'graisse_ours', qty:8}, {id:'residu_miel', qty:16}]
+},
+{
+    id:       'cle_necromancien',
+    name:     "Clé du Tombeau Oublié",
+    rarity:   'rare',
+    category: 'donjon',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Donjon/key_necro.png",
+    lore:     "Peut être utilisé pour accéder au donjon : Tombeau Oublié.",
+    tags:     ['Donjon', 'Tombeau Oublié', 'Palier 2', 'Rare'],
+    obtain:   "Fabricable au [npc:cle_necromancien|Fabricant de Clé du Tombeau à Urbus]",
+		craft:	 	[{id:'chaine_spectrale', qty:24}, {id:'pierre_runique', qty:8}]
+},
 //#endregion Items > P2 > Donjon
 //#region Items > P2 > Monnaie
 //#endregion Items > P2 > Monnaie
