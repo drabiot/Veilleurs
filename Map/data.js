@@ -19,11 +19,12 @@ const FLOOR_NAMES = {
 };
 
 const FLOOR_DATA = {
-  1: { hasUnderground: false  },
+  1: { hasUnderground: true  },
   2: { hasUnderground: true }
 };
 
 const FLOOR_ZONES = {
+	//#region P1 Zones
   1: [
     {
       id: 'm1z1',
@@ -34,7 +35,6 @@ const FLOOR_ZONES = {
       monsters: [
         { name: 'Loup Sinitre Blanc', level: 2, difficulty: '⭐',   emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/loup_sinistre_blanc' },
         { name: 'Loup Sinitre Noir',  level: 2, difficulty: '⭐',   emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/loup_sinistre_noir' },
-        { name: 'Albal',              level: 2, difficulty: '⭐⭐', emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/albal' },
       ],
       points: [
         { gx: 2430, gy: 4026 }, { gx: 2344, gy: 3943 }, { gx: 2380, gy: 3784 },
@@ -50,7 +50,6 @@ const FLOOR_ZONES = {
       emoji: '🐗',
       monsters: [
         { name: 'Sanglier Corrompu', level: 2, difficulty: '⭐',   emoji: '🐗', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/sanglier_corrompu' },
-        { name: 'Pumba',             level: 2, difficulty: '⭐⭐', emoji: '🐗', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/pumba_corrompu' },
       ],
       points: [
         { gx: 1611, gy: 3620 }, { gx: 1781, gy: 3344 }, { gx: 1986, gy: 3339 },
@@ -66,8 +65,8 @@ const FLOOR_ZONES = {
         { name: 'Nephentes', level: 4, difficulty: '⭐⭐', emoji: '🥬', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nephentes' },
       ],
       points: [
-        { gx: 3306, gy: 3731 }, { gx: 3360, gy: 3708 }, { gx: 3423, gy: 3771 },
-        { gx: 3366, gy: 3828 }, { gx: 3326, gy: 3786 },
+        { gx: 3306, gy: 3721 }, { gx: 3360, gy: 3698 }, { gx: 3423, gy: 3761 },
+        { gx: 3366, gy: 3818 }, { gx: 3326, gy: 3776 },
       ],
     },
     {
@@ -81,12 +80,11 @@ const FLOOR_ZONES = {
         { name: 'Guerrier Tréant',   level: 3, difficulty: '⭐⭐',   emoji: '🛡️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/guerrier_treant' },
         { name: "Tréant d'Élite",    level: 3, difficulty: '⭐⭐',   emoji: '🏹', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/treant_elite' },
         { name: 'Mage Sylvestre',    level: 3, difficulty: '⭐⭐',   emoji: '🧙', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/mage_sylvestre' },
-        { name: 'Gardien Colossal',  level: 3, difficulty: '⭐⭐⭐', emoji: '🌳', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gardien_colossal' },
       ],
       points: [
-        { gx: 1663, gy: 3261 }, { gx: 1506, gy: 3269 }, { gx: 1063, gy: 3272 },
-        { gx: 1028, gy: 3146 }, { gx: 1077, gy: 2934 }, { gx: 1402, gy: 2938 },
-        { gx: 1593, gy: 2831 }, { gx: 1742, gy: 3084 },
+        { gx: 1643, gy: 3261 }, { gx: 1486, gy: 3269 }, { gx: 1043, gy: 3272 },
+        { gx: 1008, gy: 3146 }, { gx: 1057, gy: 2934 }, { gx: 1382, gy: 2938 },
+        { gx: 1573, gy: 2831 }, { gx: 1722, gy: 3084 },
       ],
     },
     {
@@ -100,12 +98,11 @@ const FLOOR_ZONES = {
         { name: 'Guerrier Slime',   level: 3, difficulty: '⭐⭐',    emoji: '⚔️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/guerrier_slime' },
         { name: 'Slime Soigneur',   level: 3, difficulty: '⭐⭐⭐',  emoji: '⛑️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/slime_soigneur' },
         { name: 'Slime Magicien',   level: 3, difficulty: '⭐⭐⭐',  emoji: '🧙', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/slime_magicien' },
-        { name: 'Gorbel',           level: 3, difficulty: '⭐⭐⭐⭐',emoji: '👑', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gorbel' },
       ],
       points: [
-        { gx: 589, gy: 3184 }, { gx: 461, gy: 3378 }, { gx: 312, gy: 3398 },
-        { gx: 203, gy: 3104 }, { gx: 164, gy: 2795 }, { gx: 340, gy: 2693 },
-        { gx: 572, gy: 2796 }, { gx: 669, gy: 3025 },
+        { gx: 549, gy: 3154 }, { gx: 421, gy: 3348 }, { gx: 272, gy: 3368 },
+        { gx: 163, gy: 3074 }, { gx: 124, gy: 2765 }, { gx: 300, gy: 2663 },
+        { gx: 532, gy: 2766 }, { gx: 600, gy: 3195 },
       ],
     },
     {
@@ -135,9 +132,9 @@ const FLOOR_ZONES = {
         { name: 'Bandit Robuste',  level: 3, difficulty: '⭐⭐', emoji: '💪', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/bandit_robuste' },
       ],
       points: [
-        { gx: 3996, gy: 3824 }, { gx: 4155, gy: 3834 }, { gx: 4275, gy: 3880 },
-        { gx: 4157, gy: 3985 }, { gx: 4068, gy: 4036 }, { gx: 3990, gy: 3971 },
-        { gx: 3981, gy: 3887 },
+        { gx: 3996, gy: 3804 }, { gx: 4155, gy: 3814 }, { gx: 4275, gy: 3860 },
+        { gx: 4157, gy: 3965 }, { gx: 4068, gy: 4016 }, { gx: 3990, gy: 3951 },
+        { gx: 3981, gy: 3867 },
       ],
     },
     {
@@ -150,9 +147,9 @@ const FLOOR_ZONES = {
         { name: 'Ika', level: 3, difficulty: '⭐⭐⭐', emoji: '🐢', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ika' },
       ],
       points: [
-        { gx: 3204, gy: 4055 }, { gx: 3237, gy: 4008 }, { gx: 3317, gy: 4010 },
-        { gx: 3394, gy: 4084 }, { gx: 3395, gy: 4143 }, { gx: 3342, gy: 4185 },
-        { gx: 3216, gy: 4180 }, { gx: 3187, gy: 4084 },
+        { gx: 3204, gy: 4045 }, { gx: 3237, gy: 3998 }, { gx: 3317, gy: 4000 },
+        { gx: 3365, gy: 4021 }, { gx: 3394, gy: 4074 }, { gx: 3395, gy: 4133 }, 
+        { gx: 3342, gy: 4175 }, { gx: 3216, gy: 4170 }, { gx: 3187, gy: 4074 },
       ],
     },
     {
@@ -165,11 +162,10 @@ const FLOOR_ZONES = {
         { name: 'Araignée des Forêts', level: 7, difficulty: '⭐⭐⭐⭐', emoji: '🕷️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/araignee_foret' },
       ],
       points: [
-        { gx: 1468, gy: 1186 }, { gx: 1546, gy: 1451 }, { gx: 1432, gy: 1489 },
-        { gx: 1406, gy: 1581 }, { gx: 1226, gy: 1701 }, { gx: 1103, gy: 1743 },
-        { gx: 1064, gy: 1710 }, { gx: 1170, gy: 1512 }, { gx: 1159, gy: 1395 },
-        { gx: 1212, gy: 1309 }, { gx: 1063, gy: 1207 }, { gx: 1106, gy: 1146 },
-        { gx: 1321, gy: 1210 },
+        { gx: 1448, gy: 1146 }, { gx: 1526, gy: 1411 }, { gx: 1412, gy: 1449 },
+				{ gx: 1386, gy: 1541 }, { gx: 1206, gy: 1661 }, { gx: 1083, gy: 1703 },
+				{ gx: 1044, gy: 1670 }, { gx: 1150, gy: 1472 }, { gx: 1139, gy: 1355 },
+				{ gx: 1192, gy: 1269 }, { gx: 1043, gy: 1167 }, { gx: 1086, gy: 1106 }, { gx: 1301, gy: 1170 },
       ],
     },
     {
@@ -181,8 +177,8 @@ const FLOOR_ZONES = {
         { name: 'Cerf des Montagnes', level: 7, difficulty: '⭐⭐⭐', emoji: '🦌', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/cerf_montagnes' },
       ],
       points: [
-        { gx: 4019, gy: 1203 }, { gx: 4101, gy: 1066 }, { gx: 4261, gy: 1082 },
-        { gx: 4189, gy: 1196 }, { gx: 4193, gy: 1280 }, { gx: 4072, gy: 1261 },
+        { gx: 4019, gy: 1143 }, { gx: 4101, gy: 1026 }, { gx: 4261, gy: 1022 },
+        { gx: 4189, gy: 1136 }, { gx: 4193, gy: 1220 }, { gx: 4072, gy: 1201 },
       ],
     },
     {
@@ -194,12 +190,10 @@ const FLOOR_ZONES = {
       monsters: [
         { name: 'Golem de Glace',   level: 7, difficulty: '⭐⭐⭐',    emoji: '🧊', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/golem_glace' },
         { name: 'Spirite de Glace', level: 7, difficulty: '⭐⭐⭐',    emoji: '🦋', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/spirite_glace' },
-        { name: 'Ours de Glace',    level: 7, difficulty: '⭐⭐⭐⭐⭐',emoji: '🐻', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ours_glace' },
       ],
       points: [
-        { gx: 4043, gy: 2013 }, { gx: 4041, gy: 2039 }, { gx: 4017, gy: 2048 },
-        { gx: 3960, gy: 2045 }, { gx: 3960, gy: 2007 }, { gx: 3981, gy: 1998 },
-        { gx: 4019, gy: 1999 },
+        { gx: 4053, gy: 1988 }, { gx: 4051, gy: 2014 }, { gx: 4027, gy: 2023 },
+				{ gx: 3970, gy: 2020 }, { gx: 3970, gy: 1982 }, { gx: 3991, gy: 1973 }, { gx: 4029, gy: 1974 },
       ],
     },
     {
@@ -210,12 +204,11 @@ const FLOOR_ZONES = {
       emoji: '🎣',
       monsters: [
         { name: 'Poisson Requin', level: 7, difficulty: '⭐⭐⭐',    emoji: '🐟', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/poisson_requin' },
-        { name: 'Nymbréa',        level: 7, difficulty: '⭐⭐⭐⭐⭐',emoji: '🦈', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nymbrea' },
       ],
       points: [
-        { gx: 1473, gy: 2022 }, { gx: 1471, gy: 2105 }, { gx: 1410, gy: 2141 },
-        { gx: 1344, gy: 2106 }, { gx: 1330, gy: 2042 }, { gx: 1390, gy: 1986 },
-        { gx: 1443, gy: 1999 },
+        { gx: 1473, gy: 1992 }, { gx: 1471, gy: 2075 }, { gx: 1410, gy: 2111 },
+        { gx: 1324, gy: 2076 }, { gx: 1310, gy: 2012 }, { gx: 1370, gy: 1956 },
+        { gx: 1443, gy: 1969 },
       ],
     },
     {
@@ -227,12 +220,14 @@ const FLOOR_ZONES = {
         { name: 'Sanglier Corrompu', level: 2, difficulty: '⭐', emoji: '🐗', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/sanglier_corrompu' },
       ],
       points: [
-        { gx: 2684, gy: 2304 }, { gx: 2566, gy: 2220 }, { gx: 2595, gy: 2015 },
-        { gx: 2813, gy: 2117 }, { gx: 2724, gy: 2259 },
+        { gx: 2693, gy: 2133 }, { gx: 2566, gy: 2170 }, { gx: 2595, gy: 1965 },
+				{ gx: 2813, gy: 2067 }, { gx: 2724, gy: 2115 },
       ],
     },
   ],
-  2: [
+	//#endregion P1 Zones
+	//#region P2 Zones
+	2: [
     {
       id: 'm2z1',
       name: 'Lac des Taureaux',
@@ -340,9 +335,34 @@ const FLOOR_ZONES = {
       ],
     },
   ],
+	//#endregion P2 Zones
 };
 
 const FLOOR_ZONES_UNDERGROUND = {
+	//#region P1 Zones Underground
+	1: [
+		{
+				id: 'm1z15',
+				name: 'Donjon Squelette',
+				color: '#b86cbe',
+				emoji: '💀',
+				monsters: [
+					{ name: 'Archer Squelette', level: 2, difficulty: '⭐', emoji: '🏹', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/archer_squelette' },
+					{ name: 'Tank Squelette', level: 2, difficulty: '⭐⭐', emoji: '🛡️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/tank_squelette' },
+					{ name: 'Squelette Mage', level: 2, difficulty: '⭐⭐⭐', emoji: '🔮', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_mage' },
+				],
+				points: [
+					{ gx: 2780, gy: 4380 }, { gx: 2849, gy: 4380 }, { gx: 2849, gy: 4340 },
+					{ gx: 2874, gy: 4340 }, { gx: 2874, gy: 4361 }, { gx: 2937, gy: 4361 },
+					{ gx: 2937, gy: 4300 }, { gx: 2874, gy: 4300 }, { gx: 2874, gy: 4321 },
+					{ gx: 2849, gy: 4321 }, { gx: 2849, gy: 4204 }, { gx: 2778, gy: 4204 },
+					{ gx: 2778, gy: 4321 }, { gx: 2719, gy: 4301 }, { gx: 2694, gy: 4330 },
+					{ gx: 2720, gy: 4356 }, { gx: 2749, gy: 4337 }, { gx: 2780, gy: 4337 },
+				],
+			},
+		],
+	//#endregion P1 Zones Underground
+	//#region P2 Zones Underground
   2: [
     {
       id: 'm2z1u1',
@@ -374,16 +394,20 @@ const FLOOR_ZONES_UNDERGROUND = {
       ],
     },
   ],
+	//#endregion P2 Zones Underground
 };
 
 const FLOOR_MARKERS = {
+	//#region P1 Markers
   1: [
+		//#region P1 Markers > Donjon
     { id: 'm1d2',  type: 'donjon',  gx: 2785, gy: 4420, name: 'Sous-Donjon Nasgul',                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-squelette' },
     { id: 'm1d3',  type: 'donjon',  gx: 4274, gy: 3890, name: 'Donjon Mine de Geldorak',            desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-geldorak' },
     { id: 'm1d4',  type: 'donjon',  gx: 2383, gy: 2410, name: "Donjon Labyrinthe des Déchus",       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-labyrinthe-des-dechus' },
     { id: 'm1d5',  type: 'donjon',  gx: 1008,  gy: 1184, name: "Donjon Xal'Zirith",                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-xalzirith' },
-	{ id: 'm1d6', type: 'donjon',  gx: 3412, gy: 953, name: 'Tour du Kobold',  					desc: "", link: '' },
-
+		{ id: 'm1d6', type: 'donjon',  gx: 3412, gy: 953, name: 'Tour du Kobold',  					desc: "", link: '' },
+		//#endregion P1 Markers > Donjon
+		//#region P1 Markers > Régions
     { id: 'm1r1',  type: 'région',  gx: 1801, gy: 4284, name: 'Ville de Départ',                    desc: "La ville de départ est un havre paisible dans un monde virtuel encore inconnu. C'est ici que chaque aventure commence", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/ville-de-depart' },
     { id: 'm1r2',  type: 'région',  gx: 1542, gy: 3432, name: 'Hanaka',                             desc: "Un hameau boisé niché entre les collines où les sangliers rôdent à la lisière. Berceau des premiers affrontements", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/hanaka' },
     { id: 'm1r3',  type: 'région',  gx: 2550, gy: 3811, name: 'Vallée des Loups',                   desc: "Un vallon brumeux où résonnent encore les hurlements.", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/vallee-des-loups' },
@@ -402,7 +426,6 @@ const FLOOR_MARKERS = {
     { id: 'm1r16', type: 'région',  gx: 364,  gy: 2431, name: 'Jardin des Géants',                  desc: "Un lieu oublié où la nature a repris ses droits.", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/jardin-des-geants' },
     { id: 'm1r17', type: 'région',  gx: 2560, gy: 2811, name: 'Le Lac des Nénuphars',               desc: "Calme et mystère entourent ses eaux troubles...", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/le-lac-des-nenuphars' },
     { id: 'm1r18', type: 'région',  gx: 3314, gy: 1605, name: 'Tolbana',                            desc: "Érigé à flanc de montagne.", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/tolbana' },
-    { id: 'm1r19', type: 'région',  gx: 1388, gy: 2022, name: 'Antre de Aepep',                     desc: "Au cœur d'une caverne oubliée dort un serpent ancien.", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/antre-de-aepep' },
     { id: 'm1r20', type: 'région',  gx: 1571, gy: 1959, name: 'Virelune',                           desc: "Niché au bord d'un gouffre marin insondable.", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/virelune' },
     { id: 'm1r21', type: 'région',  gx: 2000, gy: 761,  name: 'Candelia',                           desc: "Blotti entre les pics abrupts.", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/candelia' },
     { id: 'm1r22', type: 'région',  gx: 3412, gy: 953, name: 'Tour du Kobold',                     desc: "Une ancienne tour en ruine.", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/tour-du-kobold' },
@@ -410,37 +433,30 @@ const FLOOR_MARKERS = {
     { id: 'm1r24', type: 'région',  gx: 3047, gy: 1174, name: 'Cristal de Tolbana',                 desc: "Des cristaux luminescents aux propriétés mystérieuses.", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/cristal-de-tolbana' },
     { id: 'm1r25', type: 'région',  gx: 1232, gy: 1400, name: "Arakh'Nol",                          desc: "Dans les profondeurs d'Arakh'Nol, la lumière peine à percer.", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/arakhnol' },
     { id: 'm1r26', type: 'région',  gx: 4771, gy: 2399, name: 'Guilde Marchande',                   desc: "Le Quartier général de la Guilde des Marchands.", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/guilde-marchande' },
-
+		//#endregion P1 Markers > Régions
+		//#region P1 Markers > Ressources
     { id: 'm1t1',  type: 'ressource', emoji: '🌾', gx: 2348, gy: 3686, name: 'Allium',              desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/herboriste#alliums' },
-	{ id: 'm1t1',  type: 'ressource', emoji: '🌾', gx: 2302, gy: 3679, name: 'Allium',              desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/herboriste#alliums' },
-	{ id: 'm1t1',  type: 'ressource', emoji: '🌾', gx: 2325, gy: 3618, name: 'Allium',              desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/herboriste#alliums' },
+		{ id: 'm1t1',  type: 'ressource', emoji: '🌾', gx: 2302, gy: 3679, name: 'Allium',              desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/herboriste#alliums' },
+		{ id: 'm1t1',  type: 'ressource', emoji: '🌾', gx: 2325, gy: 3618, name: 'Allium',              desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/herboriste#alliums' },
     { id: 'm1t2',  type: 'ressource', emoji: '🌾', gx: 2371, gy: 3633, name: 'Blé',                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/herboriste#ble' },
     { id: 'm1t3',  type: 'ressource', emoji: '🌳', gx: 2458, gy: 4289, name: 'Chêne de Forêt',      desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/bucheron#chene' },
     { id: 'm1t4',  type: 'ressource', emoji: '🌳', gx: 2997, gy: 3488, name: 'Chêne Proche',        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/bucheron#chene' },
     { id: 'm1t5',  type: 'ressource', emoji: '🌳', gx: 1794, gy: 1155, name: 'Bouleau',             desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/bucheron#bouleau' },
-    { id: 'm1t6',  type: 'ressource', emoji: '⛏️', gx: 2392, gy: 3463, name: 'Charbon Petite Cave', desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#charbon' },
-    { id: 'm1t7',  type: 'ressource', emoji: '⛏️', gx: 2392, gy: 3463, name: 'Cuivre Petite Cave',  desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#cuivre' },
-    { id: 'm1t8',  type: 'ressource', emoji: '⛏️', gx: 2392, gy: 3463, name: 'Fer Petite Cave',     desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#fer' },
-    { id: 'm1t9',  type: 'ressource', emoji: '⛏️', gx: 967,  gy: 3414, name: 'Charbon Grande Cave', desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#charbon' },
-    { id: 'm1t10', type: 'ressource', emoji: '⛏️', gx: 967,  gy: 3414, name: 'Cuivre Grande Cave',  desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#cuivre' },
-    { id: 'm1t11', type: 'ressource', emoji: '⛏️', gx: 967,  gy: 3414, name: 'Fer Grande Cave',     desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#fer' },
-
+		//#endregion P1 Markers > Ressources
+		//#region P1 Markers > Artisant
     { id: 'm1a1',  type: 'artisant', gx: 1772, gy: 4135, name: "Forgeron d'Armes",                  desc: "Forgeron des Armes pour Débutants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armes_vdp' },
     { id: 'm1a2',  type: 'artisant', gx: 1760, gy: 4145, name: "Forgeron d'Armures",                desc: "Forgeron des Armures pour Débutants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armures_vdp' },
     { id: 'm1a3',  type: 'artisant', gx: 1767, gy: 4126, name: "Forgeron d'Accessoires",            desc: "Forgeron des Accessoires pour Débutants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_vdp' },
     { id: 'm1a4',  type: 'artisant', gx: 1789, gy: 4609, name: 'Marchand Étrange',                  desc: "Marchand suspect trainant derrière la Cathédrale", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_etrange_vdp' },
     { id: 'm1a5',  type: 'artisant', gx: 1787, gy: 4697, name: "Forgeron d'Accessoires en Cuivre",  desc: "Forgeron des Accessoires en Cuivre pour Débutants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_cuivre_vdp' },
     { id: 'm1a6',  type: 'artisant', gx: 1776, gy: 4684, name: "Forgeron d'Accessoires en Fer",     desc: "Forgeron des Accessoires en Fer pour Débutants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_fer_vdp' },
-    { id: 'm1a7',  type: 'artisant', gx: 1776, gy: 4693, name: 'Refaçonneur',                       desc: "Permet la fabrication de ficelle en tout genre", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/refaconneur_vdp' },
-    { id: 'm1a8',  type: 'artisant', gx: 2397, gy: 3568, name: 'Forgeron de Lingots Cuivre & Fer',               desc: "Forgeron de Lingots de Cuivre et de Fer", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_lingot_vdp' },
-    { id: 'm1a9',  type: 'artisant', gx: 3235, gy: 1482, name: "Forgeron d'Armes",                  desc: "Forgeron des Armes pour Confirmés", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armes_tolbana' },
-    { id: 'm1a10', type: 'artisant', gx: 3237, gy: 1477, name: "Forgeron d'Armures",                desc: "Forgeron des Armures pour Confirmés", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armures_tolbana' },
-    { id: 'm1a11', type: 'artisant', gx: 2415, gy: 2373, name: "Forgeron d'Armes",                  desc: "Forgeron d'Armes du Donjon du Labyrinthe des Déchus", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armes_labyrinthe' },
-    { id: 'm1a12', type: 'artisant', gx: 2415, gy: 2373, name: "Forgeron d'Armures",                desc: "Forgeron d'Armures du Donjon du Labyrinthe des Déchus", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armures_labyrinthe' },
-    { id: 'm1a13', type: 'artisant', gx: 2467, gy: 4289, name: 'Bucheron',                          desc: "Bucheron permettant la Réalisation de Planches", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/bucheron_vdp' },
-    { id: 'm1a14', type: 'artisant', gx: 1771, gy: 4096, name: 'Alchimiste',                        desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/alchimiste_vdp' },
-    { id: 'm1a15', type: 'artisant', gx: 3335, gy: 1613, name: 'Alchimiste',                        desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/alchimiste_tolbana' },
-
+    { id: 'm1a7',  type: 'artisant', emoji: '🪛', gx: 1776, gy: 4693, name: 'Refaçonneur',                       desc: "Permet la fabrication de ficelle en tout genre", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/refaconneur_vdp' },
+    { id: 'm1a8',  type: 'artisant', gx: 2397, gy: 3568, name: 'Forgeron de Lingots Cuivre & Fer',  desc: "Forgeron de Lingots de Cuivre et de Fer", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_lingot_vdp' },
+    { id: 'm1a13', type: 'artisant', emoji: '🪓', gx: 2467, gy: 4289, name: 'Bucheron',                          desc: "Bucheron permettant la Réalisation de Planches", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/bucheron_vdp' },
+    { id: 'm1a14', type: 'artisant', emoji: '⚗️', gx: 1771, gy: 4096, name: 'Alchimiste',                        desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/alchimiste_vdp' },
+    { id: 'm1a15', type: 'artisant', emoji: '⚗️',  gx: 3335, gy: 1613, name: 'Alchimiste',                        desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/alchimiste_tolbana' },
+		//#endregion P1 Markers > Artisant
+		//#region P1 Markers > Repreneur Butin
     { id: 'm1b1',  type: 'repreneur_butin', gx: 1788, gy: 4179, name: 'Repreneur des Débutants',       desc: "Achète des ressources digne d'un Débutant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_vdp' },
     { id: 'm1b2',  type: 'repreneur_butin', gx: 1509, gy: 3415, name: 'Repreneur de la Forêt',         desc: "Achète des ressources de la Forêt", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_hanaka' },
     { id: 'm1b3',  type: 'repreneur_butin', gx: 3155, gy: 3690, name: 'Repreneur Champêtre',           desc: "Achète des ressources des Champs", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_mizunari' },
@@ -449,7 +465,8 @@ const FLOOR_MARKERS = {
     { id: 'm1b6',  type: 'repreneur_butin', gx: 2832, gy: 4709, name: 'Repreneur de Squelette',        desc: "Achète des ressources venant des Morts", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_chateau_abandonne' },
     { id: 'm1b7',  type: 'repreneur_butin', gx: 3295, gy: 1629, name: 'Repreneur Agguerie de Tolbana', desc: "Achète des ressources digne d'un Combattant Agguerie", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_tolbana' },
 	  { id: 'm1b8',  type: 'repreneur_butin', gx: 1488, gy: 3403, name: 'Repreneur d\'Armes', desc: "Achète des Armes de niveau 5", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_arme_hanaka' },
-
+		//#endregion P1 Markers > Repreneur Butin
+		//#region P1 Markers > Marchand
     { id: 'm1m1',  type: 'marchand', gx: 1788, gy: 4162, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_equipement_vdp' },
     { id: 'm1m2',  type: 'marchand', gx: 1503, gy: 3391, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_equipement_hanaka' },
     { id: 'm1m3',  type: 'marchand', gx: 485,  gy: 3058, name: "Marchand d'Accessoires Gluant",   desc: "Vends des Accessoires Gluants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_accessoire_vallhat' },
@@ -468,22 +485,20 @@ const FLOOR_MARKERS = {
     { id: 'm1m16', type: 'marchand', emoji: '💵', gx: 582, gy: 3189, name: "Marchand Itinérant",        desc: "Vends & Achète à Vallhat nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_vallhat' },
     { id: 'm1m17', type: 'marchand', emoji: '💵', gx: 1205, gy: 2100, name: "Marchand Itinérant",        desc: "Vends & Achète à Virelune nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_virelune' },
     { id: 'm1m18', type: 'marchand', emoji: '💵', gx: 2080, gy: 3765, name: "Marchand Itinérant",        desc: "Vends & Achète à la Zone des Sangliers nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_vdp' },
-
-
+		//#endregion P1 Markers > Marchand
+		//#region P1 Markers > Clé
     { id: 'm1c1', type: 'clef', emoji: '🗝️', gx: 1812, gy: 4180, name: 'Clef du Donjon Mine de Geldorak',      desc: "Clef permettant d'ouvrir la porte du Donjon des Mines de Geldorak",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/cle_vdp' },
     { id: 'm1c2', type: 'clef', emoji: '🗝️', gx: 4287, gy: 3893, name: 'Clef du Donjon Mine de Geldorak',      desc: "Clef permettant d'ouvrir la porte du Donjon des Mines de Geldorak",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/cle_mine_geldorak' },
     { id: 'm1c3', type: 'clef', emoji: '🗝️', gx: 2388, gy: 2421, name: 'Clef du Donjon Labyrinthe des Déchus', desc: "Clef permettant d'ouvrir la porte du Donjon du Labyrinthe des Déchus", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/cle_labyrinthe' },
     { id: 'm1c4', type: 'clef', emoji: '🗝️', gx: 1014,  gy: 1189, name: "Clef du Donjon Xal'Zirith",            desc: "Clef permettant d'ouvrir la porte du Donjon Xal'Zirith",                link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/cle_xal' },
     { id: 'm1c5', type: 'clef', emoji: '🗝️', gx: 1996, gy: 817,  name: "Clef du Donjon Xal'Zirith",            desc: "Clef permettant d'ouvrir la porte du Donjon Xal'Zirith",                link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/cle_candelia' },
     { id: 'm1c6', type: 'clef', emoji: '💍', gx: 4216, gy: 1801, name: "Fabricant Secret de l'Ours",           desc: "Permet la confection Secrète du Bracelet de Glace",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_citadelle_neiges' },
-    { id: 'm1c7', type: 'clef', emoji: '💍', gx: 1326, gy: 2107, name: 'Fabricant Secret du Léviathan',        desc: "Permet la confection Secrète de l'Anneau du Léviathan", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_antre_aepep' },
     { id: 'm1c8', type: 'clef', emoji: '💍', gx: 391,  gy: 3065, name: 'Fabricant Secret des Slimes',          desc: "Permet la confection Secrète de l'Anneau Gluant",       link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_vallaht' },
     { id: 'm1c9', type: 'clef', emoji: '💍', gx: 1114, gy: 1172, name: "Fabricant Secret des Araignées",       desc: "Permet la confection Secrète du Collier d'Aragorn",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_arakh\'nol' },
-    { id: 'm1c10', type: 'clef', emoji: '💍', gx: 3650, gy: 1331, name: "Fabricant Secret des Cerfs",       desc: "Permet la confection Secrète de la Ceinture des Cerfs",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_cerfs' },
     { id: 'm1c11', type: 'clef', emoji: '💍', gx: 2494, gy: 3701, name: "Fabricant Secret des Loups",       desc: "Permet la confection Secrète des Gants des Loups",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_loups' },
     { id: 'm1c12', type: 'clef', emoji: '💍', gx: 1160, gy: 3545, name: "Fabricant Secret des Squelettes",       desc: "Permet la confection Secrète du Crâne de Squelette",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_cyclorim' },
-    
-
+    //#endregion P1 Markers > Clé
+		//#region P1 Markers > Quête Secondaire
     { id: 'm1s1',  type: 'quête_secondaire',  gx: 1877, gy: 3991, name: "Tilda",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/tilda' },
     { id: 'm1s2',  type: 'quête_secondaire',  gx: 1885, gy: 4009, name: "Lila",                          desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/lila' },
     { id: 'm1s3',  type: 'quête_secondaire',  gx: 2069, gy: 4291, name: "Varn",                          desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/varn' },
@@ -527,7 +542,8 @@ const FLOOR_MARKERS = {
     { id: 'm1s41', type: 'quête_secondaire',  gx: 492,  gy: 3028, name: "Saya",                          desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/vallhat/saya' },
     { id: 'm1s42', type: 'quête_secondaire',  gx: 479,  gy: 3013, name: "Ayaka",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/vallhat/ayaka' },
     { id: 'm1s43', type: 'quête_secondaire',  gx: 429,  gy: 3046, name: "Daiki",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/vallhat/daiki' },
-
+		//#endregion P1 Markers > Quête Secondaire
+		//#region P1 Markers > Quête Principale
     { id: 'm1p1',  type: 'quête_principale', gx: 1808,  gy: 3650, name: "1 - Un nouveau départ",             desc: "Parlez à Abraham et éliminez des Sangliers corrompues", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/un-nouveau-depart' },
     { id: 'm1p2',  type: 'quête_principale', gx: 1562,  gy: 3410, name: "2 - La vieille Mara",               desc: "Parlez à Mara pour y entendre ses visions", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/la-vieille-mara' },
     { id: 'm1p3',  type: 'quête_principale', gx: 1421,  gy: 3091, name: "3 - La Corruption",                 desc: "Trouvez l'origine des visions de la Vielle Mara", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/la-corruption' },
@@ -556,35 +572,37 @@ const FLOOR_MARKERS = {
     { id: 'm1p26', type: 'quête_principale', gx: 3203,  gy: 1455, name: "26 - Le Parchemin de Sceau",        desc: "Retournez voir Méphisto", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/le-parchemin-de-sceau' },
     { id: 'm1p27', type: 'quête_principale', gx: 3260,  gy: 1389, name: "27 - Le Tombeau des Harald",        desc: "Allez voir le Roi de Tolbana, afin qu'il vous donne accès à la tombe de ses ancêtres et bénissent votre Parchemin pour ouvrir les Portes de la Tour du Kobold", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/e-tombeau-des-harald' },
     { id: 'm1p28', type: 'quête_principale', gx: 3260,  gy: 1389, name: "28 - Donjon: Le Kobold",            desc: "Retournez voir le roi Harald et menez une expédition punitive, afin de défaire le roi Kobold: Illfang", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/donjon-le-kobold' },
-
-	{ id: 'm1boss1', type: 'boss', emoji: '🐗', name: "Pumba Corrompu", desc: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/pumba_corrompu', coords: [
-		{ gx: 1760, gy: 3525 },
-		{ gx: 1925, gy: 3525 },
-		{ gx: 1985, gy: 3635 },
-	]},
-	{ id: 'm1boss2', type: 'boss', emoji: '🐺', name: "Albal", desc: "Un loup solitaire aux yeux d'argent glacés. Son passage laisse une brume et le silence", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/albal', coords: [
-		{ gx: 2617, gy: 3836 },
-		{ gx: 2388, gy: 3834 },
-		{ gx: 2510, gy: 3964 },
-	]},
-	{ id: 'm1boss3', type: 'boss', emoji: '🌳', name: "Gardien Colossal", desc: "Forgé dans la pierre et éveillé par la magie ancienne, il garde les terres oubliées contre toute intrusion. Ses pas seuls font trembler la forêt...", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gardien_colossal', coords: [
-		{ gx: 1288, gy: 3157 },
-		{ gx: 1069, gy: 3252 },
-		{ gx: 1246, gy: 2974 },
-	]},
-	{ id: 'm1boss4', type: 'boss', emoji: '👑', name: "Gorbel", desc: "Un colosse gélatineux, maître des essaims de slimes. Il écrase tout sur son passage, lentement mais sûrement", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gorbel', coords: [
-		{ gx: 300, gy: 3200 },
-	]},
-	{ id: 'm1boss5', type: 'boss', emoji: '🐻', name: "Ours de Glace", desc: "Né dans les cavernes les plus froides des montagnes, l'Ours de Glace incarne la force brute du Nord. Son rugissement fait frissonner l'air, et son souffle glacé fige tout sur son passage", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ours_glace', coords: [
-		{ gx: 4000, gy: 2010 },
-	]},
-	{ id: 'm1boss6', type: 'boss', emoji: '🦈', name: "Nymbréa", desc: "Serpent mythique glissant entre les courants profonds, Nymbréa incarne la grâce et la traîtrise des eaux calmes. Ses écailles scintillent comme des perles maudites, et son regard hypnotique attire les imprudents vers les abysses", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nymbrea', coords: [
-		{ gx: 1410, gy: 2140 },
-	]},
+		//#endregion P1 Markers > Quête Principale
+		//#region P1 Markers > Boss
+		{ id: 'm1boss1', type: 'boss', emoji: '🐗', name: "Pumba Corrompu", desc: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/pumba_corrompu', coords: [
+			{ gx: 1760, gy: 3525 },
+			{ gx: 1925, gy: 3525 },
+			{ gx: 1985, gy: 3635 },
+		]},
+		{ id: 'm1boss2', type: 'boss', emoji: '🐺', name: "Albal", desc: "Un loup solitaire aux yeux d'argent glacés. Son passage laisse une brume et le silence", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/albal', coords: [
+			{ gx: 2617, gy: 3836 },
+			{ gx: 2388, gy: 3834 },
+			{ gx: 2510, gy: 3964 },
+		]},
+		{ id: 'm1boss3', type: 'boss', emoji: '🌳', name: "Gardien Colossal", desc: "Forgé dans la pierre et éveillé par la magie ancienne, il garde les terres oubliées contre toute intrusion. Ses pas seuls font trembler la forêt...", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gardien_colossal', coords: [
+			{ gx: 1288, gy: 3157 },
+			{ gx: 1069, gy: 3252 },
+			{ gx: 1246, gy: 2974 },
+		]},
+		{ id: 'm1boss4', type: 'boss', emoji: '👑', name: "Gorbel", desc: "Un colosse gélatineux, maître des essaims de slimes. Il écrase tout sur son passage, lentement mais sûrement", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gorbel', coords: [
+			{ gx: 300, gy: 3200 },
+		]},
+		{ id: 'm1boss5', type: 'boss', emoji: '🐻', name: "Ours de Glace", desc: "Né dans les cavernes les plus froides des montagnes, l'Ours de Glace incarne la force brute du Nord. Son rugissement fait frissonner l'air, et son souffle glacé fige tout sur son passage", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ours_glace', coords: [
+			{ gx: 4000, gy: 2010 },
+		]},
+		//#endregion P1 Markers > Boss
   ],
+	//#endregion P1 Markers
   2: [
+		//#region P2 Markers > Donjon
     { id: 'm2d1',  type: 'donjon',  gx: 506, gy: -724, name: 'Donjon Ruche de Melliona',                  desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/donjons/donjon-ruche-de-melliona' },
-
+		//#endregion P2 Markers > Donjon
+		//#region P2 Markers > Régions
     { id: 'm2r1',  type: 'région',  gx: 118, gy: -68, name: 'Lac des Taureaux',                           desc: "Un lac asséché, dont le sol craquelé est parcouru des taureaux errants", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lac-des-taureaux' },
     { id: 'm2r2',  type: 'région',  gx: 64, gy: -348, name: 'Urbus',                                      desc: "Ville marchande prospère, garde l'entrée du palier avec ses étals animés", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/urbus' },
     { id: 'm2r3',  type: 'région',  gx: -583, gy: -264, name: 'Kaelor',                                   desc: "Ville fortifié, imprenable et dévouée au Dieu de la Guerre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/kaelor' },
@@ -601,32 +619,37 @@ const FLOOR_MARKERS = {
     { id: 'm2r14',  type: 'région',  gx: 721, gy: -281, name: 'Marome',                                   desc: "Petit village de marchands autosuffisant, uni par les prières à la déesse maternelle", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/marome' },
     { id: 'm2r15',  type: 'région',  gx: -430, gy: -428, name: 'Maisons des Ngangas',                     desc: "Maisons de Kwabeno et Kwabena, deux ermites perdus des montagnes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/maisons-des-ngangas' },
     { id: 'm2r16',  type: 'région',  gx: -160, gy: 795, name: 'Tour de Taurus',                           desc: "Une tour massive où résonnent les pas de Taurus, le Roi taureau redoutable", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/tour-de-taurus' },
-
+		//#endregion P2 Markers > Régions
+		//#region P2 Markers > Ressource
     { id: 'm2t1',  type: 'ressource', emoji: '🌳', gx: -88, gy: -92, name: 'Acacia',                      desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/bucheron#acacia' },
     { id: 'm2t2',  type: 'ressource', emoji: '🌾', gx: -432, gy: 308, name: 'Sépal d\'Ambre',             desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#sepal-dambre' },
     { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: -462, gy: 322, name: 'Épine d\'Oracile',           desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
     { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: 84, gy: 248, name: 'Épine d\'Oracile',             desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
     { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: 491, gy: -97, name: 'Épine d\'Oracile',            desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
-
+		//#endregion P2 Markers > Ressource
+		//#region P2 Markers > Repreneur Butin
     { id: 'm2b1',  type: 'repreneur_butin', gx: 68, gy: -344, name: 'Repreneur des Ressources aux abords de Urbus',          desc: "Achète des ressources digne d'un Débutant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_urbus' },
     { id: 'm2b2',  type: 'repreneur_butin', gx: -570, gy: -250, name: 'Repreneur des Ressources des Harpies',                desc: "Achète des ressources digne d'un Débutant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_kaelor' },
     { id: 'm2b3',  type: 'repreneur_butin', gx: 708, gy: -277, name: 'Repreneur des Ressources du Sanctuaire de Khesûn',     desc: "Achète des ressources digne d'un Débutant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_marome' },
-
+		//#endregion P2 Markers > Repreneur Butin
+		//#region P2 Markers > Clé
     { id: 'm2c1', type: 'clef', emoji: '🗝️', gx: 162, gy: -315,  name: "Clef du Donjon Ruche de Melliona",                  desc: "Clef permettant d'ouvrir la porte du Donjon Ruche de Melliona",                link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#urbus-melliona' },
     { id: 'm2c1', type: 'clef', emoji: '🗝️', gx: 159, gy: -312,  name: "Clef du Donjon Tombeau du Nécromancien",            desc: "Clef permettant d'ouvrir la porte du Donjon Tombeau du Nécromancien",                link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#urbus-tombeau-du-necromancien' },
     { id: 'm2c3', type: 'clef', emoji: '💍', gx: 78, gy: -71, name: "Fabricant Secret des Taureaux",                         desc: "Permet la confection Secrète du Talisman Féroce",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#lac-des-taureaux' },
     { id: 'm2c4', type: 'clef', emoji: '💍', gx: -818, gy: 98, name: "Fabricant Secret de la Harpie Noyé",                   desc: "Permet la confection Secrète de l'Anneau de la Harpie Noyée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#baie-des-monstres-ondoyante' },
     { id: 'm2c5', type: 'clef', emoji: '💍', gx: -618, gy: 529, name: "Fabricant Secret de la Harpie Écrasée",               desc: "Permet la confection Secrète de l'Anneau de la Harpie Écrasée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#foret-des-ailes-demeraude' },
     { id: 'm2c5', type: 'clef', emoji: '💍', gx: -37, gy: 199, name: "Fabricant Secret du Sanctuaire",                       desc: "Permet la confection Secrète du Collier Runique",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#sanctuaire-de-khesun' },
-	{ id: 'm2c6', type: 'clef', emoji: '💍', gx: -713, gy: -92, name: "Fabricant Secret de la Corruption",                    desc: "Permet la confection Secrète du très puissant Masque Corrompu",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/~/changes/107/carte/personnages/fabricants-clefs-et-secrets#corruption' },
-
+		{ id: 'm2c6', type: 'clef', emoji: '💍', gx: -713, gy: -92, name: "Fabricant Secret de la Corruption",                    desc: "Permet la confection Secrète du très puissant Masque Corrompu",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/~/changes/107/carte/personnages/fabricants-clefs-et-secrets#corruption' },
+		//#endregion P2 Markers > Clé
+		//#region P2 Markers > Marchand
     { id: 'm2m1',  type: 'marchand', gx: -573, gy: -287, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_equipement_kaelor' },
     { id: 'm2m2',  type: 'marchand', gx: -570, gy: -287, name: "Marchand d'Accessoires",   desc: "Vends des Accessoires de la faune du Palier 2", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_accessoires_kaelor' },
     { id: 'm2m3',  type: 'marchand', gx: -583, gy: -284, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_kaelor' },
-
-    { id: 'm2a1', type: 'artisant',  gx: -570, gy: -293, name: 'Alchimiste',               desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/alchimiste_kaelor' },
-    { id: 'm2a2', type: 'artisant',  gx: -573, gy: -294, name: 'Bucheron',                 desc: "Bucheron permettant la Réalisation de Planches", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/bucheron_kaelor' },
-    { id: 'm2a3', type: 'artisant',  gx: 2,    gy: -357, name: 'Refaçonneur',              desc: "Permet la fabrication de ficelle en tout genre", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/refaconneur_urbus' },
+		//#endregion P2 Markers > Marchand
+		//#region P2 Markers > Artisant
+    { id: 'm2a1', type: 'artisant', emoji: '⚗️',  gx: -570, gy: -293, name: 'Alchimiste',               desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/alchimiste_kaelor' },
+    { id: 'm2a2', type: 'artisant', emoji: '🪓',  gx: -573, gy: -294, name: 'Bucheron',                 desc: "Bucheron permettant la Réalisation de Planches", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/bucheron_kaelor' },
+    { id: 'm2a3', type: 'artisant', emoji: '🪛',   gx: 2,    gy: -357, name: 'Refaçonneur',              desc: "Permet la fabrication de ficelle en tout genre", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/refaconneur_urbus' },
     { id: 'm2a4', type: 'artisant',  gx: 115,  gy: -415, name: 'Forgeron d\'Accessoires Puissant',  desc: "Permet la fabrication d'Accessoires puissant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_urbus' },
     { id: 'm2a5', type: 'artisant',  gx: 124,  gy: -385, name: 'Forgeron de Lingots Bauxite & Onyx Impur',      desc: "Permet la fabrication de lingots de Bauxite et d'Onyx Impur", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_lingots_urbus' },
     { id: 'm2a6', type: 'artisant',  gx: 867, gy: -293, name: 'Forgeron de Lingots Onyx Pur',      desc: "Permet la fabrication de lingots d'Onyx Pur", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_lingots_marome' },
@@ -634,7 +657,8 @@ const FLOOR_MARKERS = {
     { id: 'm2a8', type: 'artisant',  gx: -776, gy: 18,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Feraille", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_ferraille' },
     { id: 'm2a9', type: 'artisant',  gx: -194, gy: 20,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Bauxite", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_bauxite' },
     { id: 'm2a10',type: 'artisant',  gx: -502, gy: 336,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires d'Onyx Impur", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_onyx_impur' },
-
+		//#endregion P2 Markers > Artisant
+		//#region P2 Markers > Quête Secondaire
     { id: 'm2s1',  type: 'quête_secondaire',  gx: 112, gy: -391, name: "L'Art des Plumes",                         desc: "Ramenez 4 plumes de chaque Harpies à Ifa", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lart-des-plumes' },
     { id: 'm2s2',  type: 'quête_secondaire',  gx: 105, gy: -392, name: "L'Art des Peaux",                         desc: "Ramenez différentes peaux de monstres à Ife", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lart-des-peaux' },
     { id: 'm2s3',  type: 'quête_secondaire',  gx: 16, gy: -305, name: "Ma première Arme",                         desc: "Ramenez de quoi confectionner une épée à Charles", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/ma-premiere-arme' },
@@ -655,39 +679,84 @@ const FLOOR_MARKERS = {
     { id: 'm2s18', type: 'quête_secondaire',  gx: -448, gy: 267, name: "Un peu de chaque",                         desc: "Aidez Frank à vaincre les 3 types de Harpie", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/taran/un-peu-de-chaque' },
     { id: 'm2s19', type: 'quête_secondaire',  gx: -431, gy: 279, name: "Hater du Vert",                         desc: "Aidez Proris à vainbcre des Harpies de Terre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/taran/hater-du-vert' },
     { id: 'm2s20', type: 'quête_secondaire',  gx: -432, gy: 272, name: "Nettoyer les cieux de Taran",                         desc: "Aidez Sissou à vaincre des Harpies de Feu ou de Foudre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/taran/nettoyer-les-cieux-de-taran' },
-
+		//#endregion P2 Markers > Quête Secondaire
+		//#region P2 Markers > Quête Principale
     { id: 'm2p1',  type: 'quête_principale', gx: -28,  gy: -886, name: "1 - Le Pallier 2...",             desc: "Parlez au Maître d'Armes et Sautez dans le lac", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-palier-2...' },
     { id: 'm2p2',  type: 'quête_principale', gx: 13,  gy: -665, name: "2 - Parler à la femme étrange",             desc: "Parlez à la femme étrange au bord du Lac", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/parler-a-la-femme-etrange' },
     { id: 'm2p3',  type: 'quête_principale', gx: 135,  gy: -374, name: "3 - Chemin vers Urbus",             desc: "Trouvez Arteron afin de parler de la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/chemin-vers-urbus' },
     { id: 'm2p4',  type: 'quête_principale', gx: -585,  gy: -255, name: "4 - À la recherche des Ngangas",             desc: "Parler à Bantu", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/a-la-recherche-des-ngangas' },
-	{ id: 'm2p5',  type: 'quête_principale', gx: -436, gy: -442, name: "5 - Un joueur doit faire ses preuves",             desc: "Allez à la rencontre des Ngangas", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/un-joueur-doit-faire-ses-preuves' },
-	{ id: 'm2p6',  type: 'quête_principale', gx: 743, gy: -257, name: "6 - Communication avec Yaa",             desc: "Communiquer avec une des 3 statues Divine du Palier 2 pour qu'elle vous aide a luter contre la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/communication-avec-yaa' },
-	{ id: 'm2p7',  type: 'quête_principale', gx: 162, gy: -316, name: "7 - Façonneur de Clé I",             desc: "Réalisez le Donjon Ruche de Melliona", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/faconneur-de-cle-i' },
-	{ id: 'm2p8',  type: 'quête_principale', gx: 62, gy: -428, name: "8 - Retour a Urbus",             desc: "Allez à la rencontre de la deuxième statue divine après avoir informer le Maître Épéiste de votre avancé", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/retour-a-urbus' },
-	{ id: 'm2p9',  type: 'quête_principale', gx: 162, gy: -316, name: "9 - Donjon: Le Tombeau Oublié",             desc: "Réalisez le Donjon Tombeau du Nécromancien", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/donjon-le-tombeau-oublie' },
-	{ id: 'm2p10', type: 'quête_principale', gx: -629, gy: -296, name: "10 - Le Tribut avant le Verdict",             desc: "Convoquez la dernière statue divine afin qu'elle vous aide", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-tribut-avant-le-verdict' },
-	{ id: 'm2p11', type: 'quête_principale', gx: 62, gy: -428, name: "11 - La Facette de la Réalité",             desc: "Faites votre rapport au Maître Épéiste sur la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/la-facette-de-la-realite' },
-	{ id: 'm2p12', type: 'quête_principale', gx: -509, gy: -58, name: "12 - Le Rituel de Purification",             desc: "C'est le grand moment, invoquez les 3 statues divine afin qu'elle vous donne de quoi affronter le puissant Astérius!", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-rituel-de-purification' },
-  ],
+		{ id: 'm2p5',  type: 'quête_principale', gx: -436, gy: -442, name: "5 - Un joueur doit faire ses preuves",             desc: "Allez à la rencontre des Ngangas", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/un-joueur-doit-faire-ses-preuves' },
+		{ id: 'm2p6',  type: 'quête_principale', gx: 743, gy: -257, name: "6 - Communication avec Yaa",             desc: "Communiquer avec une des 3 statues Divine du Palier 2 pour qu'elle vous aide a luter contre la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/communication-avec-yaa' },
+		{ id: 'm2p7',  type: 'quête_principale', gx: 162, gy: -316, name: "7 - Façonneur de Clé I",             desc: "Réalisez le Donjon Ruche de Melliona", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/faconneur-de-cle-i' },
+		{ id: 'm2p8',  type: 'quête_principale', gx: 62, gy: -428, name: "8 - Retour a Urbus",             desc: "Allez à la rencontre de la deuxième statue divine après avoir informer le Maître Épéiste de votre avancé", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/retour-a-urbus' },
+		{ id: 'm2p9',  type: 'quête_principale', gx: 162, gy: -316, name: "9 - Donjon: Le Tombeau Oublié",             desc: "Réalisez le Donjon Tombeau du Nécromancien", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/donjon-le-tombeau-oublie' },
+		{ id: 'm2p10', type: 'quête_principale', gx: -629, gy: -296, name: "10 - Le Tribut avant le Verdict",             desc: "Convoquez la dernière statue divine afin qu'elle vous aide", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-tribut-avant-le-verdict' },
+		{ id: 'm2p11', type: 'quête_principale', gx: 62, gy: -428, name: "11 - La Facette de la Réalité",             desc: "Faites votre rapport au Maître Épéiste sur la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/la-facette-de-la-realite' },
+		{ id: 'm2p12', type: 'quête_principale', gx: -509, gy: -58, name: "12 - Le Rituel de Purification",             desc: "C'est le grand moment, invoquez les 3 statues divine afin qu'elle vous donne de quoi affronter le puissant Astérius!", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-rituel-de-purification' },
+		//#endregion P2 Markers > Quête Principale
+	],
   
 };
 
 const FLOOR_MARKERS_UNDERGROUND = {
+	1: [
+		//#region P1 Markers Underground > Région
+		{ id: 'm1r19', type: 'région',  gx: 1388, gy: 2022, name: 'Antre de Aepep',                     desc: "Au cœur d'une caverne oubliée dort un serpent ancien.", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/antre-de-aepep' },
+		//#endregion P1 Markers Underground > Région
+		//#region P1 Markers Underground > Ressource
+		{ id: 'm1t6',  type: 'ressource', emoji: '⛏️', gx: 2412, gy: 3503, name: 'Charbon Petite Cave', desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#charbon' },
+    { id: 'm1t7',  type: 'ressource', emoji: '⛏️', gx: 2412, gy: 3503, name: 'Cuivre Petite Cave',  desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#cuivre' },
+    { id: 'm1t8',  type: 'ressource', emoji: '⛏️', gx: 2412, gy: 3503, name: 'Fer Petite Cave',     desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#fer' },
+    { id: 'm1t9',  type: 'ressource', emoji: '⛏️', gx: 910,  gy: 3516, name: 'Charbon Grande Cave', desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#charbon' },
+    { id: 'm1t10', type: 'ressource', emoji: '⛏️', gx: 910,  gy: 3516, name: 'Cuivre Grande Cave',  desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#cuivre' },
+    { id: 'm1t11', type: 'ressource', emoji: '⛏️', gx: 910,  gy: 3516, name: 'Fer Grande Cave',     desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#fer' },
+		//#endregion P1 Markers Underground > Ressource
+		//#region P1 Markers Underground > Clé
+		{ id: 'm1c7', type: 'clef', emoji: '💍', gx: 1326, gy: 2107, name: 'Fabricant Secret du Léviathan',        desc: "Permet la confection Secrète de l'Anneau du Léviathan", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_antre_aepep' },
+    { id: 'm1c10', type: 'clef', emoji: '💍', gx: 3650, gy: 1331, name: "Fabricant Secret des Cerfs",       desc: "Permet la confection Secrète de la Ceinture des Cerfs",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_cerfs' },
+		//#endregion P1 Markers Underground > Clé
+		//#region P1 Markers Underground > Artisant
+		{ id: 'm1a9',  type: 'artisant', gx: 3235, gy: 1482, name: "Forgeron d'Armes",                  desc: "Forgeron des Armes pour Confirmés", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armes_tolbana' },
+    { id: 'm1a10', type: 'artisant', gx: 3237, gy: 1477, name: "Forgeron d'Armures",                desc: "Forgeron des Armures pour Confirmés", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armures_tolbana' },
+    { id: 'm1a11', type: 'artisant', gx: 2415, gy: 2373, name: "Forgeron d'Armes",                  desc: "Forgeron d'Armes du Donjon du Labyrinthe des Déchus", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armes_labyrinthe' },
+    { id: 'm1a12', type: 'artisant', gx: 2415, gy: 2373, name: "Forgeron d'Armures",                desc: "Forgeron d'Armures du Donjon du Labyrinthe des Déchus", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armures_labyrinthe' },
+		//#endregion P1 Markers Underground > Artisant
+		//#region P1 Markers Underground > Repreneur Butin
+		{ id: 'm1b9',  type: 'repreneur_butin', gx: 2415, gy: 2373, name: 'Repreneur du Donjon des Déchus', desc: "Achète des ressources provenant du Donjon du Labyrinthe des Déchus", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_labyrinthe' },
+		//#endregion P1 Markers Underground > Repreneur Butin
+		//#region P1 Markers Underground > Boss
+		{ id: 'm1boss6', type: 'boss', emoji: '🦈', name: "Nymbréa", desc: "Serpent mythique glissant entre les courants profonds, Nymbréa incarne la grâce et la traîtrise des eaux calmes. Ses écailles scintillent comme des perles maudites, et son regard hypnotique attire les imprudents vers les abysses", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nymbrea', coords: [
+			{ gx: 1410, gy: 2140 },
+		]},
+		{ id: 'm1boss7', type: 'boss', emoji: '☠️', name: "Narax", desc: "Ancien général d'une armée déchue, Narax fut ressuscité par une magie interdite. Son armure brisée résonne encore de ses exploits d'antan, hantant les terres maudites. On dit que son regard vide perce jusqu'à l'âme", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/narax', coords: [
+			{ gx: 2721, gy: 4330 },
+		]},
+		{ id: 'm1boss8', type: 'boss', emoji: '🏇', name: "Nasgul", desc: "ntité maudite surgie des ténèbres anciennes, il rôde, invisible, prêt à déchirer l'âme des vivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nasgul', coords: [
+			{ gx: 2818, gy: 4234 },
+		]},
+		//#endregion P1 Markers Underground > Boss
+	],
   2: [
+		//#region P2 Markers Underground > Donjon
     { id: 'm2d1u1',  type: 'donjon',  gx: 721, gy: 244, name: 'Donjon Tombeau du Nécromancien',           desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/donjons/donjon-tombeau-du-necromancien' },
-
+		//#endregion P2 Markers Underground > Donjon
+		//#region P2 Markers Underground > Région
     { id: 'm2r1u1',  type: 'région',  gx: -581, gy: 234, name: 'Nid de Brasier',                          desc: "Un nid enflammé, refuge des harpies de feu au cœur de terres brûlantes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/nid-de-brasier' },
     { id: 'm2r2u1',  type: 'région',  gx: 225, gy: 295, name: 'Les Veines de Sablemor',                   desc: "Des veines de sable profondes, sombres et étroites, cachant Magnus, le redoutable boss", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/les-veines-de-sablemor' },
     { id: 'm2r3u1',  type: 'région',  gx: -316, gy: -94, name: 'Grotte de Taran',                         desc: "Grotte remplie de minéraux impressionnants et de mystères", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/grotte-de-taran' },
     { id: 'm2r4u1',  type: 'région',  gx: 721, gy: 244, name: 'Tombeau du Nécromancien',                  desc: "Un nécromancien repose dans un tombeau secret, enfoui au cœur d'un labyrinthe désertique", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/tombeau-du-necromancien' },
-
+		//#endregion P2 Markers Underground > Région
+		//#region P2 Markers Underground > Ressource
     { id: 'm2t1u1', type: 'ressource', emoji: '⛏️', gx: -388,  gy: -35, name: 'Onyx',                     desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/mineur#onyx' },
     { id: 'm2t2u1', type: 'ressource', emoji: '⛏️', gx: -206,  gy: -185, name: 'Bauxite',                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/mineur#bauxite' },
-
+		//#endregion P2 Markers Underground > Ressource
+		//#region P2 Markers Underground > Clé
     { id: 'm2c1u1', type: 'clef', emoji: '💍', gx: -694, gy: 205, name: "Fabricant Secret de la Harpie Enflammée",                     desc: "Permet la confection Secrète de l'Anneau de la Harpie Enflammée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#nid-de-brasier' },
-
+		//#endregion P2 Markers Underground > Clé
+		//#region P2 Markers Underground > Artisant
     { id: 'm2a1u1',type: 'artisant',  gx: 339, gy: 509,   name: 'Forgeron d\'Accessoires',                 desc: "Permet la fabrication d'Accessoires d'Onyx Pur", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_onyx_pur' },
-  ],
+		//#endregion P2 Markers Underground > Artisant
+	],
 };
 
 const MAP_CALIBRATION = {

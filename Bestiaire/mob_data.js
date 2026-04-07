@@ -1274,7 +1274,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Donjon Squelette',
-    regionId: 'm1d2',
+    regionId: 'm1z15',
     img: '../img/mobs/P1/archer_squelette.png',
     lore: "Un squelette agile, archer silencieux des couloirs hantés. Ses flèches sifflent dans l'ombre, prêtes à faucher les intrus.",
     attacks: [
@@ -1295,7 +1295,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Donjon Squelette',
-    regionId: 'm1d2',
+    regionId: 'm1z15',
     img: '../img/mobs/P1/tank_squelette.png',
     lore: "Un colosse d'os armé d'un bouclier cabossé. Il avance lentement, mais rien ne semble pouvoir l'arrêter.",
     attacks: [
@@ -1314,7 +1314,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Donjon Squelette',
-    regionId: 'm1d2',
+    regionId: 'm1z15',
     img: '../img/mobs/P1/squelette_mage.png',
     lore: "Un revenant rachitique, mais animé par une magie ancienne et instable. Ses os craquent à chaque incantation, libérant une énergie spectrale dangereuse.",
     attacks: [
@@ -1338,7 +1338,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 3,
     region: 'Donjon Squelette',
-    regionId: 'm1d2',
+    regionId: 'm1boss7',
     img: '../img/mobs/P1/narax.png',
     lore: "Ancien général d'une armée déchue, Narax fut ressuscité par une magie interdite. Son armure brisée résonne encore de ses exploits d'antan, hantant les terres maudites. On dit que son regard vide perce jusqu'à l'âme.",
     attacks: [
@@ -1358,7 +1358,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 3,
     region: 'Donjon Squelette',
-    regionId: 'm1d2',
+    regionId: 'm1boss8',
     img: '../img/mobs/P1/nasgul.png',
     lore: "Entité maudite surgie des ténèbres anciennes, il rôde, invisible, prêt à déchirer l'âme des vivants.",
     attacks: [
