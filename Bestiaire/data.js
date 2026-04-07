@@ -490,7 +490,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1a3',
-    img: '../img/compendium/textures/trinkets/P1/Set Loup Faiblard/Collier d\'Albal.png',
+    img: '../img/compendium/montages/forgeron_accessoires_vdp.png',
     lore: "Permet le fabrication d'accessoires de base.",
     craft: [
 			{ 
@@ -701,7 +701,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Ville de Départ',
     regionId: 'm1m18',
-    img: '',
+    img: '../img/compendium/montages/itinerant_vdp.png',
     lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
     sells: [
       { id: 'petite_bourse',  buy: 10,price: 7.5 },
@@ -815,7 +815,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Hanaka',
     regionId: 'm1m15',
-    img: '',
+    img: '../img/compendium/montages/itinerant_hanaka.png',
     lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
     sells: [
       { id: 'pousse_de_sylve',  buy: 6, price: 5 },
@@ -897,7 +897,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Mizunari',
     regionId: 'm1m14',
-    img: '',
+    img: '../img/compendium/montages/itinerant_mizunari.png',
     lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
     sells: [
       { id: 'cuir_use',  buy: 10, price: 7.5 },
@@ -1004,7 +1004,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Vallhat',
     regionId: 'm1m16',
-    img: '',
+    img: '../img/compendium/montages/itinerant_vallhat.png',
     lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
     sells: [
       { id: 'pousse_de_sylve',  buy: 6,price: 4.5 },
@@ -1108,7 +1108,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Virelune',
     regionId: 'm1m17',
-    img: '',
+    img: '../img/compendium/montages/itinerant_virelune.png',
     lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
     sells: [
       { id: 'tissu_araignee',  buy: 12,price: 9 },
@@ -1340,7 +1340,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Tolbana',
     regionId: 'm1m13',
-    img: '',
+    img: '../img/compendium/montages/itinerant_tolbana.png',
     lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
     sells: [
       { id: 'peau_dur_glacial',  buy: 20, price: 15 },
@@ -1606,7 +1606,7 @@ const PERSONNAGES = [
     palier: 1,
     region: 'Forêt d\'Arakh\'Nol',
     regionId: 'm1m11',
-    img: '',
+    img: '../img/compendium/montages/itinerant_virelune.png',
     lore: "Vends & Achète nombreux objets locaux et originaire du Palier 1",
     sells: [
       { id: 'tissu_araignee',  buy: 12, price: 9 },
@@ -1973,7 +1973,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Urbus',
 		regionId: 'm2b1',
-    img: '',
+    img: '../img/compendium/montages/butin_urbus.png',
     lore: "Reprends des objets de Taureaux et d'Ours.",
     sells: [
       { id: 'peau_epaisse',  price: 10 },
@@ -1991,7 +1991,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Urbus',
     regionId: 'm2a3',
-    img: '',
+    img: '../img/compendium/montages/refaconneur_urbus.png',
     lore: "Transforme des Ressources et des Fils d'Araignées pour réaliser des ficelles utile dans la confection d'Accessoires.",
     craft: [
 			{ 
@@ -2039,7 +2039,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Urbus',
     regionId: 'm2a4',
-    img: '',
+    img: '../img/compendium/montages/forgeron_accessoires_urbus.png',
     lore: "Permet la création d'Accessoires puissant.",
     craft: [
 			{ 
@@ -2103,7 +2103,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Urbus',
     regionId: 'm2a5',
-    img: '',
+    img: '../img/compendium/montages/lingots_urbus.png',
     lore: "Permet le fabrication de Lingots de Bauxite et de Lingots d'Onyx Impur.",
     craft: [
 			{ 
@@ -2131,7 +2131,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Kaelor',
 		regionId: 'm2b2',
-    img: '',
+    img: '../img/compendium/montages/butin_kaelor.png',
     lore: "Reprends des objets des Harpies et des Loups au Nord de Kaelor.",
     sells: [
       { id: 'plume_terreuse',  price: 9 },
@@ -2174,7 +2174,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Kaelor',
     regionId: 'm2m2',
-    img: '',
+    img: '../img/compendium/montages/marchand_accessoires_kaelor.png',
     lore: "Vends des Accessoires simple mais efficace pour commencer son aventure du Palier 2.",
     sells: [
       { id: 'bracelet_loups',  buy: 5000 },
@@ -2343,7 +2343,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Kaelor',
     regionId: 'm2a7',
-    img: '',
+    img: '../img/compendium/montages/forgeron_accessoires_kaelor.png',
     lore: "Permet le fabrication d'Accessoires à base de Taureaux & d'Ours.",
     craft: [
 			{ 
@@ -2392,7 +2392,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Baie des Monstres Ondoyante',
     regionId: 'm2a8',
-    img: '',
+    img: '../img/compendium/textures/trinkets/P2/Set de Ferraille/Anneau de Ferraille.png',
     lore: "Permet le fabrication d'Accessoires de Ferraille.",
     craft: [
 			{ 
@@ -2441,7 +2441,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Marome',
 		regionId: 'm2b3',
-    img: '',
+    img: '../img/compendium/montages/butin_marome.png',
     lore: "Reprends des objets du Sanctuaire de Khesûn.",
     sells: [
       { id: 'vetement_dechire',  price: 10 },
@@ -2479,7 +2479,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Baobab Millénaire',
     regionId: 'm2a9',
-    img: '',
+    img: '../img/compendium/textures/trinkets/P2/Set de Bauxite/Anneau de Bauxite.png',
     lore: "Permet le fabrication d'Accessoires de Bauxite.",
     craft: [
 			{ 
@@ -2521,7 +2521,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Taran',
     regionId: 'm2a10',
-    img: '',
+    img: '../img/compendium/textures/trinkets/P2/Set d\'Onyx Impur/Anneau d\'Onyx Impur.png',
     lore: "Permet le fabrication d'Accessoires d'Onyx Impur.",
     craft: [
 			{ 
@@ -2566,7 +2566,7 @@ const PERSONNAGES = [
     palier: 2,
     region: 'Grottes de la Faille du Sud-Est',
     regionId: 'm2a1u1',
-    img: '',
+    img: '../img/compendium/textures/trinkets/P2/Set d\'Onyx Pur/Anneau d\'Onyx Pur.png',
     lore: "Permet le fabrication d'Accessoires d'Onyx Pur.",
     craft: [
 			{ 
