@@ -3390,7 +3390,7 @@ ITEMS.push(
 		stats:		{defense:1, sante:10},
     lore:     "Une bague façonnée dans un bois de bouleau clair, serti d'une pierre de fer brute au cœur sombre et métallique.",
     tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],
-    obtain:   "npc:Fabricable au [forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
+    obtain:   "npc:Fabricable au [npc:forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
 		craft:		[{qty:16, id:'lingot_fer'}, {qty:32, id:'bouleau'}]
 },
 {
@@ -3405,7 +3405,7 @@ ITEMS.push(
 		stats:		{degats:2, crit_chance:2.5, sante:5},
     lore:     "Un anneau sculpté dans le bois chaud d'acacia, orné d'une pierre de cuivre aux reflets rougeoyants.",
     tags:     ['Accessoire', 'Anneau', 'Palier 2', 'Rare'],
-    obtain:   "npc:Fabricable au [forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
+    obtain:   "npc:Fabricable au [npc:forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
 		craft:		[{qty:32, id:'lingot_cuivre'}, {qty:32, id:'acacia'}]
 },
 {
@@ -3608,7 +3608,7 @@ ITEMS.push(
 		stats:		{vitesse_attaque:0.1, soin_bonus:1},
     lore:     "Un collier orange, avec un noyau pur de miel.",
     tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Rare'],
-    obtain:   "npc:Fabricable au [forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
+    obtain:   "npc:Fabricable au [npc:forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
 		craft:		[{qty:16, id:'residu_miel'}, {qty:32, id:'planche_acacia'}, {qty:8, id:'ficelle_ferraille'}]
 },
 {
@@ -3655,7 +3655,7 @@ ITEMS.push(
 		stats:		{degats_arme:10, degats_competence:5, vol_vie:1, omnivamp:2, defense:1, maitrise_bloc:2.5, puissance_bloc:0.5, sante:5, mana:5, stamina:2.5},
     lore:     "Un collier tricolore, inspirant la terreur des harpies.",
     tags:     ['Accessoire', 'Amulette', 'Palier 2', 'Épique'],
-    obtain:   "npc:Fabricable au [forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
+    obtain:   "npc:Fabricable au [npc:forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
 		craft:		[{qty:32, id:'plume_enflammee'},{qty:32, id:'plume_terreuse'}, {qty:32, id:'plume_ondoyante'},  {qty:8, id:'lingot_fer'}]
 },
 {
@@ -3753,7 +3753,7 @@ ITEMS.push(
 		stats:		{defense:1, regen_mana:0.6, regen_stamina:0.3},
     lore:     "Une paire de gants faits à partir de la peau des ours, situés au palier 2",
     tags:     ['Accessoire', 'Gants', 'Palier 2', 'Rare'],
-    obtain:   "npc:Fabricable au [forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
+    obtain:   "npc:Fabricable au [npc:forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
 		craft:		[{qty:48, id:'peau_ours'}, {qty:16, id:'graisse_ours'}]
 },
 {		
@@ -3850,7 +3850,7 @@ ITEMS.push(
 		stats:		{hate:2.5, soin_bonus:2, sante:5, mana:2.5},
     lore:     "Forgé avec de nombreux matériaux obtenu des abeilles.",
     tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Rare'],
-    obtain:   "npc:Fabricable au [forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
+    obtain:   "npc:Fabricable au [npc:forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
 		craft:		[{qty:64, id:'residu_miel'}, {qty:16, id:'carapace_abeille'}]
 },
 {
@@ -3865,7 +3865,7 @@ ITEMS.push(
 		stats:		{soin_bonus:5, sante:-10, mana:-10},
     lore:     "Forgé avec des pierres runiques et des matériaux obtenu des abeilles.",
     tags:     ['Accessoire', 'Bracelet', 'Palier 1', 'Rare'],
-    obtain:   "npc:Fabricable au [forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
+    obtain:   "npc:Fabricable au [npc:forgeron_accessoires_urbus|Forgeron d'Accessoires de Urbus]",
 		craft:		[{qty:48, id:'residu_miel'}, {qty:16, id:'lingot_fer'}]
 },
 {
@@ -7130,6 +7130,42 @@ ITEMS.push(
 //#endregion Items > Palier 1
 //#region Items > Palier 2
 //#region Items > P2 > Outils
+{
+    id:       'pioche_savane',
+    name:     "Pioche de la Savane",
+    rarity:   'rare',
+    category: 'outils',
+    palier:   2,
+    image:    "../img/compendium/textures/gears/pioche_savane.png",
+    lore:     ".",
+    tags:     ['Outils', 'Pioche', 'Palier 2', 'Rare'],
+    obtain:   "Achetable aux [npc:marchand_outils_kaelor|Marchands d'Outils du Palier 2]",
+		craft:		[{qty:250, id:'cols'}]
+},
+{
+    id:       'hache_savane',
+    name:     "Hache de la Savane",
+    rarity:   'rare',
+    category: 'outils',
+    palier:   2,
+    image:    "../img/compendium/textures/gears/hache_savane.png",
+    lore:     ".",
+    tags:     ['Outils', 'Hache', 'Palier 2', 'Rare'],
+    obtain:   "Achetable aux [npc:marchand_outils_kaelor|Marchands d'Outils du Palier 2]",
+		craft:		[{qty:250, id:'cols'}]
+},
+{
+    id:       'houe_savane',
+    name:     "Houe de la Savane",
+    rarity:   'rare',
+    category: 'outils',
+    palier:   2,
+    image:    "../img/compendium/textures/gears/houe_savane.png",
+    lore:     ".",
+    tags:     ['Outils', 'Houe', 'Palier 1', 'Rare'],
+    obtain:   "Achetable aux [npc:marchand_outils_kaelor|Marchands d'Outils du Palier 2]",
+		craft:		[{qty:250, id:'cols'}]
+},
 //#endregion Items > P2 > Outils
 //#region Items > P2 > Runes
 {
@@ -7520,7 +7556,7 @@ ITEMS.push(
     image:    "../img/compendium/textures/items/Ressources/bar_bauxite.png",
     lore:     "Lingot de bauxite pur, solide et léger. Idéal pour forger des armes maniables ou des outils durables.",
     tags:     ['Ressource', 'Minerai', 'Lingot', 'Palier 2', 'Rare'],
-    obtain:   "Fabricable au [npcforgeron_lingot_urbus|Forgeron de Lingots à Urbus]",
+    obtain:   "Fabricable au [npc:forgeron_lingots_urbus|Forgeron de Lingots à Urbus]",
 		craft:		[{id:'bauxite', qty:4}, {id:'charbon', qty:3}]
 },
 {
@@ -7543,7 +7579,7 @@ ITEMS.push(
     image:    "../img/compendium/textures/items/Ressources/bar_onyx_impur.png",
     lore:     "Lingot impur, contenant des inpuretés. Moins résistant, mais peut servir à des armes de fortune ou expérimentales !",
     tags:     ['Ressource', 'Minerai', 'Lingot', 'Palier 2', 'Épique'],
-    obtain:   "[npc:forgeron_lingot_urbus|Forgeron de Lingots à Urbus]",
+    obtain:   "Fabricable au [npc:forgeron_lingots_urbus|Forgeron de Lingots à Urbus]",
 		craft:		[{id:'onyx_impur', qty:10}, {id:'charbon', qty:5}]
 },
 {
@@ -7566,7 +7602,7 @@ ITEMS.push(
     image:    "../img/compendium/textures/items/Ressources/bar_onyx_pur.png",
     lore:     "Lingot d'exception, pur et solide. Incontournable pour les forges et les élixirs rares.",
     tags:     ['Ressource', 'Minerai', 'Lingot', 'Palier 2', 'Légendaire'],
-    obtain:   "Fabricable au [npc:forgeron_lingot_marome|Forgeron de lingots à l'Est de Marome]",
+    obtain:   "Fabricable au [npc:forgeron_lingots_marome|Forgeron de lingots à l'Est de Marome]",
 		craft:		[{id:'onyx_pur', qty:10}, {id:'charbon', qty:5}]
 },
 {

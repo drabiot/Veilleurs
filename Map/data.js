@@ -608,9 +608,9 @@ const FLOOR_MARKERS = {
     { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: 84, gy: 248, name: 'Épine d\'Oracile',             desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
     { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: 491, gy: -97, name: 'Épine d\'Oracile',            desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
 
-    { id: 'm2b1',  type: 'repreneur_butin', gx: 68, gy: -344, name: 'Repreneur des Ressources aux abords de Urbus',          desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#urbus' },
-    { id: 'm2b2',  type: 'repreneur_butin', gx: -570, gy: -250, name: 'Repreneur des Ressources des Harpies',                desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#kaelor' },
-    { id: 'm2b3',  type: 'repreneur_butin', gx: 708, gy: -277, name: 'Repreneur des Ressources du Sanctuaire de Khesûn',     desc: "Achète des ressources digne d'un Débutant", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/repreneurs-de-butins#marome' },
+    { id: 'm2b1',  type: 'repreneur_butin', gx: 68, gy: -344, name: 'Repreneur des Ressources aux abords de Urbus',          desc: "Achète des ressources digne d'un Débutant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_urbus' },
+    { id: 'm2b2',  type: 'repreneur_butin', gx: -570, gy: -250, name: 'Repreneur des Ressources des Harpies',                desc: "Achète des ressources digne d'un Débutant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_kaelor' },
+    { id: 'm2b3',  type: 'repreneur_butin', gx: 708, gy: -277, name: 'Repreneur des Ressources du Sanctuaire de Khesûn',     desc: "Achète des ressources digne d'un Débutant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_marome' },
 
     { id: 'm2c1', type: 'clef', emoji: '🗝️', gx: 162, gy: -315,  name: "Clef du Donjon Ruche de Melliona",                  desc: "Clef permettant d'ouvrir la porte du Donjon Ruche de Melliona",                link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#urbus-melliona' },
     { id: 'm2c1', type: 'clef', emoji: '🗝️', gx: 159, gy: -312,  name: "Clef du Donjon Tombeau du Nécromancien",            desc: "Clef permettant d'ouvrir la porte du Donjon Tombeau du Nécromancien",                link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#urbus-tombeau-du-necromancien' },
@@ -633,7 +633,7 @@ const FLOOR_MARKERS = {
     { id: 'm2a7', type: 'artisant',  gx: -602, gy: -284, name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires des Ours et du Taureau", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#kaelor-accessoires' },
     { id: 'm2a8', type: 'artisant',  gx: -776, gy: 18,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Feraille", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#accessoires-ferraile' },
     { id: 'm2a9', type: 'artisant',  gx: -194, gy: 20,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Bauxite", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/forgerons#accessoires-bauxite' },
-    { id: 'm2a10',type: 'artisant',  gx: -602, gy: -284,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires d'Onyx Impur", link: '' },
+    { id: 'm2a10',type: 'artisant',  gx: -502, gy: 336,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires d'Onyx Impur", link: '' },
 
     { id: 'm2s1',  type: 'quête_secondaire',  gx: 112, gy: -391, name: "L'Art des Plumes",                         desc: "Ramenez 4 plumes de chaque Harpies à Ifa", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lart-des-plumes' },
     { id: 'm2s2',  type: 'quête_secondaire',  gx: 105, gy: -392, name: "L'Art des Peaux",                         desc: "Ramenez différentes peaux de monstres à Ife", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lart-des-peaux' },
@@ -686,7 +686,7 @@ const FLOOR_MARKERS_UNDERGROUND = {
 
     { id: 'm2c1u1', type: 'clef', emoji: '💍', gx: -694, gy: 205, name: "Fabricant Secret de la Harpie Enflammée",                     desc: "Permet la confection Secrète de l'Anneau de la Harpie Enflammée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#nid-de-brasier' },
 
-    { id: 'm1a1u1',type: 'artisant',  gx: 339, gy: 509,   name: 'Forgeron d\'Accessoires',                 desc: "Permet la fabrication d'Accessoires d'Onyx Pur", link: '' },
+    { id: 'm2a1u1',type: 'artisant',  gx: 339, gy: 509,   name: 'Forgeron d\'Accessoires',                 desc: "Permet la fabrication d'Accessoires d'Onyx Pur", link: '' },
   ],
 };
 

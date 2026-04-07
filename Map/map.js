@@ -263,6 +263,17 @@ function parseHash(hash) {
 }
 
 function navigateToMapId(id) {
+  const undergroundSrc = typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined'
+		? FLOOR_MARKERS_UNDERGROUND : null;
+	if (undergroundSrc) {
+		const allUnderFloors = Object.values(undergroundSrc).flat();
+		const inUnder = allUnderFloors.some(m =>
+		m.id === id || (m.coords && m.coords.some(() => m.id === id))
+		);
+		if (inUnder && currentLayer !== 'underground') {
+		goToLayer('underground');
+		}
+	}
   const zones   = getFloorZones(currentFloor);
   const zone    = zones.find(z => z.id === id);
   if (zone) {
@@ -1354,24 +1365,30 @@ const searchInput   = document.getElementById('search-input');
 const searchResults = document.getElementById('search-results');
 
 function getAllMarkers() {
-  const all = [];
+  const all  = [];
   const seen = new Set();
-  let src;
-  if (currentLayer === 'underground') {
-    src = (typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined') ? FLOOR_MARKERS_UNDERGROUND : null;
-  } else {
-    src = (typeof FLOOR_MARKERS_SURFACE !== 'undefined')
-      ? FLOOR_MARKERS_SURFACE
-      : (typeof FLOOR_MARKERS !== 'undefined' ? FLOOR_MARKERS : null);
-  }
-  Object.entries(src || {}).forEach(([floor, markers]) => {
-    markers.forEach(m => {
-      if (seen.has(m.id)) return;
-      seen.add(m.id);
-      const flat = m.coords ? { ...m, gx: m.coords[0].gx, gy: m.coords[0].gy } : m;
-      all.push({ ...flat, floor: parseInt(floor) });
+
+  const sources = [
+    { layer: 'surface',     src: typeof FLOOR_MARKERS_SURFACE !== 'undefined'
+        ? FLOOR_MARKERS_SURFACE
+        : (typeof FLOOR_MARKERS !== 'undefined' ? FLOOR_MARKERS : null) },
+    { layer: 'underground', src: typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined'
+        ? FLOOR_MARKERS_UNDERGROUND : null },
+  ];
+
+  sources.forEach(({ layer, src }) => {
+    if (!src) return;
+    Object.entries(src).forEach(([floor, markers]) => {
+      markers.forEach(m => {
+        const key = `${layer}:${m.id}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        const flat = m.coords ? { ...m, gx: m.coords[0].gx, gy: m.coords[0].gy } : m;
+        all.push({ ...flat, floor: parseInt(floor), layer });
+      });
     });
   });
+
   return all;
 }
 
@@ -1405,6 +1422,9 @@ searchInput.addEventListener('input', () => {
         </div>`;
       item.addEventListener('click', () => {
         if (m.floor !== currentFloor) goToFloor(m.floor);
+		if (m.layer && m.layer !== currentLayer) {
+			goToLayer(m.layer);
+		}
         const allFlat = getFlatFloorMarkers(currentFloor);
         const bossMatches = allFlat.filter(bm => bm.id === m.id);
         let cx = m.gx, cy = m.gy;

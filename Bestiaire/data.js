@@ -3,6 +3,7 @@
 ══════════════════════════════════ */
 
 const PERSONNAGES = [
+	//#region Palier 1
   //#region Ville de Départ
 	{
     id: 'repreneur_butin_vdp',
@@ -1962,6 +1963,647 @@ const PERSONNAGES = [
 		]
   },
 	//#endregion Labyrinthe des Déchus
+	//#endregion Palier 1
+	//#region Palier 2
+	//#region Urbus
+	{
+    id: 'repreneur_butin_urbus',
+    name: "Repreneur de Butin",
+    tag: 'repreneur_butin',
+    palier: 2,
+    region: 'Urbus',
+		regionId: 'm2b1',
+    img: '',
+    lore: "Reprends des objets de Taureaux et d'Ours.",
+    sells: [
+      { id: 'peau_epaisse',  price: 10 },
+      { id: 'corne_taureau', price: 12 },
+			{ id: 'griffe_ours', price: 8 },
+			{ id: 'peau_ours', price: 8 },
+			{ id: 'residu_miel', price: 8 },
+			{ id: 'graisse_ours', price: 15 },
+    ],
+  },
+	{
+    id: 'refaconneur_urbus',
+    name: "Refaçonneur",
+    tag: 'refaconneur',
+    palier: 2,
+    region: 'Urbus',
+    regionId: 'm2a3',
+    img: '',
+    lore: "Transforme des Ressources et des Fils d'Araignées pour réaliser des ficelles utile dans la confection d'Accessoires.",
+    craft: [
+			{ 
+				id: 'ficelle_acacia', time: '1m',
+				ingredients: [
+					{ id: 'acacia', qty: 4 },
+					{ id: 'fil_araignee', qty: 4 },
+				]
+			},
+			{ 
+				id: 'ficelle_ferraille', time: '1m',
+				ingredients: [
+					{ id: 'fer', qty: 1 },
+					{ id: 'ferraille', qty: 1 },
+					{ id: 'fil_araignee', qty: 4 },
+				]
+			},
+			{ 
+				id: 'ficelle_bauxite', time: '1m',
+				ingredients: [
+					{ id: 'bauxite', qty: 1 },
+					{ id: 'fil_araignee', qty: 4 },
+				]
+			},
+			{ 
+				id: 'ficelle_onyx_impur', time: '1m',
+				ingredients: [
+					{ id: 'onyx_impur', qty: 2 },
+					{ id: 'fil_araignee', qty: 8 },
+				]
+			},
+			{ 
+				id: 'ficelle_onyx_pur', time: '1m',
+				ingredients: [
+					{ id: 'onyx_pur', qty: 2 },
+					{ id: 'fil_araignee', qty: 8 },
+				]
+			}
+		]
+  },
+	{
+    id: 'forgeron_accessoires_urbus',
+    name: "Forgeron d'Accessoires",
+    tag: 'forgeron_accessoires',
+    palier: 2,
+    region: 'Urbus',
+    regionId: 'm2a4',
+    img: '',
+    lore: "Permet la création d'Accessoires puissant.",
+    craft: [
+			{ 
+				id: 'bague_bouleau', time: '15m',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 16 },
+					{ id: 'bouleau', qty: 32 },
+				]
+			},
+			{ 
+				id: 'anneau_acacia', time: '15m',
+				ingredients: [
+					{ id: 'lingot_cuivre', qty: 32 },
+					{ id: 'planche_acacia', qty: 32 },
+				]
+			},
+			{ 
+				id: 'bracelet_mielleux', time: '15m',
+				ingredients: [
+					{ id: 'residu_miel', qty: 64 },
+					{ id: 'carapace_abeille', qty: 16 },
+				]
+			},
+			{ 
+				id: 'bracelet_runimiel', time: '15m',
+				ingredients: [
+					{ id: 'residu_miel', qty: 48 },
+					{ id: 'lingot_fer', qty: 16 },
+				]
+			},
+			{ 
+				id: 'collier_tricolore', time: '15m',
+				ingredients: [
+					{ id: 'plume_enflammee', qty: 32 },
+					{ id: 'plume_ondoyante', qty: 32 },
+					{ id: 'plume_terreuse', qty: 32 },
+					{ id: 'lingot_fer', qty: 8 },
+				]
+			},
+			{ 
+				id: 'collier_acamiel', time: '15m',
+				ingredients: [
+					{ id: 'residu_miel', qty: 16 },
+					{ id: 'planche_acacia', qty: 32 },
+					{ id: 'ficelle_ferraille', qty: 8 },
+				]
+			},
+			{ 
+				id: 'gants_ours', time: '15m',
+				ingredients: [
+					{ id: 'peau_ours', qty: 48 },
+					{ id: 'graisse_ours', qty: 16 },
+				]
+			}
+		]
+  },
+	{
+    id: 'forgeron_lingots_urbus',
+    name: "Forgeron de Lingots de Bauxite & d'Onyx Impur",
+    tag: 'forgeron_lingots',
+    palier: 2,
+    region: 'Urbus',
+    regionId: 'm2a5',
+    img: '',
+    lore: "Permet le fabrication de Lingots de Bauxite et de Lingots d'Onyx Impur.",
+    craft: [
+			{ 
+				id: 'lingot_bauxite', time: '15s',
+				ingredients: [
+					{ id: 'bauxite', qty: 4 },
+					{ id: 'charbon', qty: 3 },
+				]
+			},
+			{ 
+				id: 'lingot_onyx_impur', time: '30s',
+				ingredients: [
+					{ id: 'onyx_impur', qty: 10 },
+					{ id: 'charbon', qty: 5 },
+				]
+			},
+		]
+  },
+	//#endregion Urbus
+	//#region Kaelor
+	{
+    id: 'repreneur_butin_kaelor',
+    name: "Repreneur de Butin",
+    tag: 'repreneur_butin',
+    palier: 2,
+    region: 'Kaelor',
+		regionId: 'm2b2',
+    img: '',
+    lore: "Reprends des objets des Harpies et des Loups au Nord de Kaelor.",
+    sells: [
+      { id: 'plume_terreuse',  price: 9 },
+      { id: 'plume_enflammee', price: 9 },
+			{ id: 'plume_ondoyante', price: 9 },
+			{ id: 'oeuf_harpie_eau', price: 11 },
+			{ id: 'fourrure_loup_p2', price: 8 },
+			{ id: 'ecaille_fulgurante', price: 10 },
+    ],
+  },
+	{
+    id: 'marchand_equipement_kaelor',
+    name: "Marchand d'Équipement",
+    tag: 'marchand_equipement',
+    palier: 2,
+    region: 'Kaelor',
+    regionId: 'm2m1',
+    img: '../img/compendium/montages/equipement.png',
+    lore: "Vends des Armes et des Consommables pour les nouveaux arrivants.",
+    sells: [
+      { id: 'epee_entrainement',  buy: 75, price: 4 },
+			{ id: 'bouclier_pacotille',  buy: 75, price: 4 },
+			{ id: 'arc_courbe',  buy: 100, price: 4 },
+			{ id: 'baton_mediocre_mage',  buy: 75, price: 4 },
+			{ id: 'grimoire_delie',  buy: 25, price: 4 },
+			{ id: 'baton_mediocre_shaman',  buy: 75, price: 4 },
+			{ id: 'grimoire_sauvage',  buy: 25, price: 4 },
+			{ id: 'potion_vie_1',  buy: 20 },
+			{ id: 'potion_mana_1',  buy: 20 },
+			{ id: 'potion_stamina_1',  buy: 20 },
+			{ id: 'parchemin_changement',  buy: 1500 },
+			{ id: 'parchemin_reallocation',  buy: 750 },
+			{ id: 'parchemin_maitrise',  buy: 750 },
+    ],
+	},
+	{
+    id: 'marchand_accessoires_kaelor',
+    name: "Marchand d'Accessoires",
+    tag: 'marchand_accessoires',
+    palier: 2,
+    region: 'Kaelor',
+    regionId: 'm2m2',
+    img: '',
+    lore: "Vends des Accessoires simple mais efficace pour commencer son aventure du Palier 2.",
+    sells: [
+      { id: 'bracelet_loups',  buy: 5000 },
+			{ id: 'simple_ceinture',  buy: 5000 },
+			{ id: 'anneau_mielleux',  buy: 5000 },
+			{ id: 'gants_taureaux',  buy: 5000 },
+    ],
+	},
+	{
+    id: 'marchand_outils_kaelor',
+    name: "Marchand d'Outils",
+    tag: 'marchand_outils',
+    palier: 2,
+    region: 'Kaelor',
+    regionId: 'm2m3',
+    img: '',
+    lore: "Vends des Outils du Palier 2; outils de la Savane.",
+    sells: [
+      { id: 'pioche_savane',  buy: 250 },
+			{ id: 'hache_savane',  buy: 250 },
+			{ id: 'houe_savane',  buy: 250 },
+    ],
+	},
+	{
+    id: 'bucheron_kaelor',
+    name: "Bucheron",
+    tag: 'bucheron',
+    palier: 2,
+    region: 'Kaelor',
+    regionId: 'm2a2',
+    img: '../img/compendium/textures/items/Ressources/planche_acacia.png',
+    lore: "Réalise des Planches de Bois et de la Poudre de Bois.",
+    craft: [
+      { id: 'planche_chene', time: '15s',
+				ingredients: [
+					{ id: 'chene', qty: 2 },
+				]
+			},
+			{ id: 'planche_bouleau', time: '15s',
+				ingredients: [
+					{ id: 'bouleau', qty: 2 },
+				]
+			},
+			{ id: 'planche_acacia', time: '15s',
+				ingredients: [
+					{ id: 'acacia', qty: 2 },
+				]
+			},
+			{ id: 'planche_sapin', time: '15s',
+				ingredients: [
+					{ id: 'sapin', qty: 2 },
+				]
+			},
+			{ id: 'poudre_bois', time: '15s',
+				ingredients: [
+					{ id: 'planche_chene', qty: 2 },
+				]
+			},
+			{ id: 'poudre_bois', time: '15s',
+				ingredients: [
+					{ id: 'planche_bouleau', qty: 2 },
+				]
+			},
+			{ id: 'poudre_bois', time: '15s',
+				ingredients: [
+					{ id: 'planche_acacia', qty: 2 },
+				]
+			},
+			{ id: 'poudre_bois', time: '15s',
+				ingredients: [
+					{ id: 'planche_sapin', qty: 2 },
+				]
+			},
+		]
+  },
+	{
+    id: 'alchimiste_kaelor',
+    name: "Alchimiste",
+    tag: 'alchimiste',
+    palier: 2,
+    region: 'Kaelor',
+    regionId: 'm2a1',
+    img: '../img/compendium/textures/items/Consommable/strengthpot_3.png',
+    lore: "Concocte des Potions et des Cristaux.",
+    craft: [
+      { id: 'potion_vie_1', time: '10s',
+				ingredients: [
+					{ id: 'allium', qty: 6 },
+					{ id: 'poudre_bois', qty: 4 },
+					{ id: 'pousse_de_sylve', qty: 4 },
+				]
+			},
+			{ id: 'potion_vie_2', time: '15s',
+				ingredients: [
+					{ id: 'allium', qty: 8 },
+					{ id: 'pousse_de_sylve', qty: 7 },
+					{ id: 'poussiere_dos', qty: 4 },
+					{ id: 'eclat_de_bois_magique', qty: 5 },
+				]
+			},
+			{ id: 'potion_vie_3', time: '20s',
+				ingredients: [
+					{ id: 'allium', qty: 10 },
+					{ id: 'poussiere_dos', qty: 7 },
+					{ id: 'racine_ancestrale', qty: 3 },
+				]
+			},
+			{ id: 'potion_mana_1', time: '10s',
+				ingredients: [
+					{ id: 'allium', qty: 6 },
+					{ id: 'poudre_bois', qty: 4 },
+					{ id: 'pousse_de_sylve', qty: 4 },
+				]
+			},
+			{ id: 'potion_mana_2', time: '15s',
+				ingredients: [
+					{ id: 'allium', qty: 8 },
+					{ id: 'pousse_de_sylve', qty: 7 },
+					{ id: 'poussiere_dos', qty: 4 },
+					{ id: 'eclat_de_bois_magique', qty: 5 },
+				]
+			},
+			{ id: 'potion_mana_3', time: '20s',
+				ingredients: [
+					{ id: 'allium', qty: 10 },
+					{ id: 'poussiere_dos', qty: 7 },
+					{ id: 'racine_ancestrale', qty: 3 },
+				]
+			},
+			{ id: 'potion_stamina_1', time: '10s',
+				ingredients: [
+					{ id: 'allium', qty: 6 },
+					{ id: 'poudre_bois', qty: 4 },
+					{ id: 'pousse_de_sylve', qty: 4 },
+				]
+			},
+			{ id: 'potion_stamina_2', time: '15s',
+				ingredients: [
+					{ id: 'allium', qty: 8 },
+					{ id: 'pousse_de_sylve', qty: 7 },
+					{ id: 'poussiere_dos', qty: 4 },
+					{ id: 'eclat_de_bois_magique', qty: 5 },
+				]
+			},
+			{ id: 'potion_stamina_3', time: '20s',
+				ingredients: [
+					{ id: 'allium', qty: 10 },
+					{ id: 'poussiere_dos', qty: 7 },
+					{ id: 'racine_ancestrale', qty: 3 },
+				]
+			},
+			{ id: 'cristal_soin', time: '1m',
+				ingredients: [
+					{ id: 'essence_de_gorbel', qty: 1 },
+					{ id: 'racine_ancestrale', qty: 10 },
+					{ id: 'eclat_de_bois_magique', qty: 25 },
+					{ id: 'mycelium_magique', qty: 10 },
+				]
+			},
+    ],
+  },
+	{
+    id: 'forgeron_accessoires_kaelor',
+    name: "Forgeron d'Accessoires",
+    tag: 'forgeron_accessoires',
+    palier: 2,
+    region: 'Kaelor',
+    regionId: 'm2a7',
+    img: '',
+    lore: "Permet le fabrication d'Accessoires à base de Taureaux & d'Ours.",
+    craft: [
+			{ 
+				id: 'collier_taureaux', time: '15m',
+				ingredients: [
+					{ id: 'corne_taureau', qty: 12 },
+					{ id: 'peau_epaisse', qty: 12 },
+					{ id: 'ficelle_bouleau', qty: 6 },
+				]
+			},
+			{ 
+				id: 'anneau_taureau', time: '15m',
+				ingredients: [
+					{ id: 'corne_taureau', qty: 16 },
+					{ id: 'peau_epaisse', qty: 16 },
+				]
+			},
+			{ 
+				id: 'ceinture_taureau', time: '15m',
+				ingredients: [
+					{ id: 'corne_taureau', qty: 8 },
+					{ id: 'peau_epaisse', qty: 24 },
+				]
+			},
+			{ 
+				id: 'anneau_ours', time: '15m',
+				ingredients: [
+					{ id: 'peau_ours', qty: 24 },
+					{ id: 'graisse_ours', qty: 4 },
+					{ id: 'griffe_ours', qty: 8 },
+				]
+			},
+			{ 
+				id: 'ceinture_ours', time: '15m',
+				ingredients: [
+					{ id: 'peau_ours', qty: 48 },
+					{ id: 'graisse_ours', qty: 16 },
+				]
+			},
+		]
+  },
+	{
+    id: 'forgeron_accessoires_ferraille',
+    name: "Forgeron d'Accessoires de Ferraille",
+    tag: 'forgeron_accessoires',
+    palier: 2,
+    region: 'Baie des Monstres Ondoyante',
+    regionId: 'm2a8',
+    img: '',
+    lore: "Permet le fabrication d'Accessoires de Ferraille.",
+    craft: [
+			{ 
+				id: 'anneau_ferraille', time: '5m',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 4 },
+					{ id: 'morceau_ferraille', qty: 24 },
+				]
+			},
+			{ 
+				id: 'bracelet_ferraille', time: '5m',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 8 },
+					{ id: 'morceau_ferraille', qty: 32 },
+				]
+			},
+			{ 
+				id: 'gants_ferraille', time: '5m',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 8 },
+					{ id: 'morceau_ferraille', qty: 32 },
+				]
+			},
+			{ 
+				id: 'amulette_ferraille', time: '5m',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 4 },
+					{ id: 'morceau_ferraille', qty: 24 },
+				]
+			},
+			{ 
+				id: 'piece_ferraille', time: '5m',
+				ingredients: [
+					{ id: 'lingot_fer', qty: 8 },
+					{ id: 'morceau_ferraille', qty: 32 },
+				]
+			},
+		]
+  },
+	//#endregion Kaelor
+	//#region Marome
+	{
+    id: 'repreneur_butin_marome',
+    name: "Repreneur de Butin",
+    tag: 'repreneur_butin',
+    palier: 2,
+    region: 'Marome',
+		regionId: 'm2b3',
+    img: '',
+    lore: "Reprends des objets du Sanctuaire de Khesûn.",
+    sells: [
+      { id: 'vetement_dechire',  price: 10 },
+      { id: 'chaine_spectrale', price: 10 },
+			{ id: 'pierre_runique', price: 20 },
+			{ id: 'poudre_moelle', price: 9 },
+			{ id: 'morceau_ferraille', price: 10 },
+    ],
+  },
+	{
+    id: 'forgeron_lingots_marome',
+    name: "Forgeron de Lingots d'Onyx Pur",
+    tag: 'forgeron_lingots',
+    palier: 2,
+    region: 'Marome',
+    regionId: 'm2a6',
+    img: '../img/compendium/textures/items/Ressources/bar_onyx_pur.png',
+    lore: "Permet le fabrication de Lingots d'Onyx Pur.",
+    craft: [
+			{ 
+				id: 'lingot_onyx_impur', time: '1m',
+				ingredients: [
+					{ id: 'onyx_pur', qty: 10 },
+					{ id: 'charbon', qty: 5 },
+				]
+			},
+		]
+  },
+	//#endregion Marome
+	//#region Taran
+	{
+    id: 'forgeron_accessoires_bauxite',
+    name: "Forgeron d'Accessoires de Bauxite",
+    tag: 'forgeron_accessoires',
+    palier: 2,
+    region: 'Baobab Millénaire',
+    regionId: 'm2a9',
+    img: '',
+    lore: "Permet le fabrication d'Accessoires de Bauxite.",
+    craft: [
+			{ 
+				id: 'anneau_bauxite', time: '5m',
+				ingredients: [
+					{ id: 'lingot_bauxite', qty: 16 },
+				]
+			},
+			{ 
+				id: 'bracelet_bauxite', time: '5m',
+				ingredients: [
+					{ id: 'lingot_bauxite', qty: 24 },
+				]
+			},
+			{ 
+				id: 'gants_bauxite', time: '5m',
+				ingredients: [
+					{ id: 'lingot_bauxite', qty: 24 },
+				]
+			},
+			{ 
+				id: 'amulette_bauxite', time: '5m',
+				ingredients: [
+					{ id: 'lingot_bauxite', qty: 16 },
+				]
+			},
+			{ 
+				id: 'piece_bauxite', time: '5m',
+				ingredients: [
+					{ id: 'lingot_bauxite', qty: 24 },
+				]
+			},
+		]
+  },
+	{
+    id: 'forgeron_accessoires_onyx_impur',
+    name: "Forgeron d'Accessoires d'Onyx Impur",
+    tag: 'forgeron_accessoires',
+    palier: 2,
+    region: 'Taran',
+    regionId: 'm2a10',
+    img: '',
+    lore: "Permet le fabrication d'Accessoires d'Onyx Impur.",
+    craft: [
+			{ 
+				id: 'anneau_onyx_impur', time: '10m',
+				ingredients: [
+					{ id: 'lingot_onyx_impur', qty: 16 },
+				]
+			},
+			{ 
+				id: 'bracelet_onyx_impur', time: '10m',
+				ingredients: [
+					{ id: 'lingot_onyx_impur', qty: 24 },
+				]
+			},
+			{ 
+				id: 'gants_onyx_impur', time: '10m',
+				ingredients: [
+					{ id: 'lingot_onyx_impur', qty: 24 },
+				]
+			},
+			{ 
+				id: 'amulette_onyx_impur', time: '10m',
+				ingredients: [
+					{ id: 'lingot_onyx_impur', qty: 16 },
+					{ id: 'ficelle_acacia', qty: 8 },
+				]
+			},
+			{ 
+				id: 'piece_onyx_impur', time: '10m',
+				ingredients: [
+					{ id: 'lingot_onyx_impur', qty: 24 },
+				]
+			},
+		]
+  },
+	//#endregion Taran
+	//#region Faille
+	{
+    id: 'forgeron_accessoires_onyx_pur',
+    name: "Forgeron d'Accessoires d'Onyx Pur",
+    tag: 'forgeron_accessoires',
+    palier: 2,
+    region: 'Grottes de la Faille du Sud-Est',
+    regionId: 'm2a1u1',
+    img: '',
+    lore: "Permet le fabrication d'Accessoires d'Onyx Pur.",
+    craft: [
+			{ 
+				id: 'anneau_onyx_pur', time: '10m',
+				ingredients: [
+					{ id: 'lingot_onyx_pur', qty: 8 },
+				]
+			},
+			{ 
+				id: 'bracelet_onyx_pur', time: '10m',
+				ingredients: [
+					{ id: 'lingot_onyx_pur', qty: 12 },
+				]
+			},
+			{ 
+				id: 'gants_onyx_pur', time: '10m',
+				ingredients: [
+					{ id: 'lingot_onyx_pur', qty: 12 },
+				]
+			},
+			{ 
+				id: 'amulette_onyx_pur', time: '10m',
+				ingredients: [
+					{ id: 'lingot_onyx_pur', qty: 8 },
+					{ id: 'ficelle_bouleau', qty: 8 },
+				]
+			},
+			{ 
+				id: 'piece_onyx_pur', time: '10m',
+				ingredients: [
+					{ id: 'lingot_onyx_pur', qty: 12 },
+				]
+			},
+		]
+  },
+	//#endregion Faille
+	//#endregion Palier 2
 ];
 
 /* ══════════════════════════════════

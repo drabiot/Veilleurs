@@ -246,10 +246,10 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
   <span>Génère le code JS pour data.js</span>
   <div class="hbtns">
     <a href="Compendium/compendium.html" class="btn btn-ghost">📖 Compendium</a>
-    <span id="file-indicator" style="font-size:11px;color:var(--muted);display:none;"></span>
+    <input type="text" id="author-input" placeholder="👤 Ton pseudo…" oninput="saveAuthor()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;outline:none;width:130px;transition:border-color .15s;" title="Pseudo affiché dans la soumission Discord">
     <span class="copy-msg" id="copy-msg">✓ Copié !</span>
-    <button class="btn btn-ghost" id="write-file-btn" onclick="writeToDataJs()">💾 Écrire dans data.js</button>
     <button class="btn btn-success" onclick="copyCode()">📋 Copier le code</button>
+    <button class="btn btn-primary" onclick="submitToDiscord()">📨 Soumettre l'item</button>
     <button class="btn btn-ghost" onclick="resetForm()">🔄 Reset</button>
   </div>
 </header>
@@ -361,7 +361,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
         <div class="row3">
           <div class="field">
             <label>Palier</label>
-            <select id="f-palier" onchange="update()">
+            <select id="f-palier" onchange="onPalierChange()">
               <option value="">—</option>
               <option value="1">Palier 1</option>
               <option value="2">Palier 2</option>
@@ -465,8 +465,14 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 
           <!-- Loot picker (mob uniquement) -->
           <div id="obtain-loot-picker" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Drops de ce mob — clique pour ajouter</div>
-            <div id="obtain-loot-entries" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Drops de ce mob — clique pour ajouter</div>
+            <div id="obtain-loot-entries" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+            <!-- Ajout manuel (item sensible non dans le loot du mob) -->
+            <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;align-items:center;gap:6px;">
+              <span style="font-size:10px;color:var(--muted);white-space:nowrap;">Ajout manuel :</span>
+              <input type="number" id="obtain-manual-chance" min="0" max="100" step="0.1" placeholder="Chance %" style="background:var(--surface3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:12px;outline:none;width:100px;">
+              <button class="btn btn-ghost btn-sm" onclick="addObtainMobManual()" style="white-space:nowrap;">+ Ajouter ce mob</button>
+            </div>
           </div>
 
           <!-- Added sources -->
@@ -527,11 +533,11 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
     <!-- History Pane -->
     <div class="out-pane" id="pane-history">
       <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Items copiés cette session</span>
+        <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Items soumis cette session</span>
         <button class="btn btn-ghost btn-sm" onclick="clearHistory()">🗑 Vider</button>
       </div>
       <div id="history-list" style="flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;">
-        <div class="ic-empty" style="padding:30px 10px;">Aucun item copié pour l'instant.</div>
+        <div class="ic-empty" style="padding:30px 10px;">Aucun item soumis pour l'instant.</div>
       </div>
     </div>
   </div>
@@ -542,6 +548,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 <script src="Bestiaire/mob_data.js"></script>
 <script src="Map/data.js"></script>
 <script src="Compendium/data.js"></script>
+<script src="Compendium/data_sensible.js"></script>
 <script>
 
 // ═══════════════════════════════════════════════════
@@ -560,42 +567,42 @@ let effectUid    = 0;
 // ═══════════════════════════════════════════════════
 const STAT_DEFS = [
   { group:'Offensif', stats:[
-    { id:'degats',             label:'Dégâts'                    },
-    { id:'degats_physique',    label:'Dégâts Physique %'         },
-    { id:'degats_arme',        label:"Dégâts d'Arme %"          },
-    { id:'degats_magique',     label:'Dégâts Magiques %'         },
-    { id:'degats_competence',  label:'Dégâts Compétence %'       },
-    { id:'degats_projectile',  label:'Dégâts Projectile %'       },
-    { id:'vitesse_attaque',    label:"Vitesse d'Attaque"         },
-    { id:'crit_chance',        label:'Crit Chance %'             },
-    { id:'crit_degats',        label:'Crit Dégâts %'             },
-    { id:'crit_comp_chance',   label:'Crit Compétence Chance %'  },
-    { id:'crit_comp_degats',   label:'Crit Compétence Dégâts %'  },
+    { id:'degats',             label:'Dégâts',                   color:'#e0923a' },
+    { id:'degats_physique',    label:'Dégâts Physique %',         color:'#e0923a' },
+    { id:'degats_arme',        label:"Dégâts d'Arme %",          color:'#e0923a' },
+    { id:'degats_magique',     label:'Dégâts Magiques %',         color:'#e86ca0' },
+    { id:'degats_competence',  label:'Dégâts Compétence %',       color:'#a07ae8' },
+    { id:'degats_projectile',  label:'Dégâts Projectile %'                        },
+    { id:'vitesse_attaque',    label:"Vitesse d'Attaque",         color:'#a07ae8' },
+    { id:'crit_chance',        label:'Crit Chance %',             color:'#e8d44a' },
+    { id:'crit_degats',        label:'Crit Dégâts %',             color:'#e8d44a' },
+    { id:'crit_comp_chance',   label:'Crit Compétence Chance %',  color:'#a07ae8' },
+    { id:'crit_comp_degats',   label:'Crit Compétence Dégâts %',  color:'#a07ae8' },
   ]},
   { group:'Défensif', stats:[
-    { id:'defense',            label:'Défense'                   },
-    { id:'maitrise_bloc',      label:'Maîtrise de Blocage %'     },
-    { id:'puissance_bloc',     label:'Puissance de Blocage %'    },
-    { id:'sante',              label:'Santé'                     },
-    { id:'esquive',            label:'Esquive %'                 },
-    { id:'reduction_degats',   label:'Réduction Dégâts %'        },
-    { id:'reduction_chutes',   label:'Réduction Chutes %'        },
-    { id:'tenacite',           label:'Ténacité %'                },
-    { id:'res_recul',          label:'Résistance Recul %'        },
+    { id:'defense',            label:'Défense',                   color:'#9a9ab0' },
+    { id:'maitrise_bloc',      label:'Maîtrise de Blocage %',     color:'#b8b050' },
+    { id:'puissance_bloc',     label:'Puissance de Blocage %'                     },
+    { id:'sante',              label:'Santé',                     color:'#e85050' },
+    { id:'esquive',            label:'Esquive %',                 color:'#50b8c8' },
+    { id:'reduction_degats',   label:'Réduction Dégâts %',        color:'#9a9ab0' },
+    { id:'reduction_chutes',   label:'Réduction Chutes %'                         },
+    { id:'tenacite',           label:'Ténacité %',                color:'#50a8e8' },
+    { id:'res_recul',          label:'Résistance Recul %'                         },
   ]},
   { group:'Mobilité & Ressources', stats:[
-    { id:'hate',               label:'Hâte %'                   },
-    { id:'vitesse_deplacement',label:'Vitesse Déplacement /s'    },
-    { id:'mana',               label:'Mana'                      },
-    { id:'stamina',            label:'Stamina'                   },
+    { id:'hate',               label:'Hâte %',                   color:'#50a8e8' },
+    { id:'vitesse_deplacement',label:'Vitesse Déplacement /s',    color:'#e8d44a' },
+    { id:'mana',               label:'Mana',                      color:'#50d8e8' },
+    { id:'stamina',            label:'Stamina',                   color:'#e8c040' },
   ]},
   { group:'Régénération & Soutien', stats:[
-    { id:'vol_vie',            label:'Vol de Vie %'              },
-    { id:'omnivamp',           label:'Omnivampirisme %'          },
-    { id:'soin_bonus',         label:'Soin Bonus'                },
-    { id:'regen_sante',        label:'Régén. Santé /s'          },
-    { id:'regen_mana',         label:'Régén. Mana /s'           },
-    { id:'regen_stamina',      label:'Régén. Stamina /s'        },
+    { id:'vol_vie',            label:'Vol de Vie %',              color:'#a03030' },
+    { id:'omnivamp',           label:'Omnivampirisme %',          color:'#a03030' },
+    { id:'soin_bonus',         label:'Soin Bonus',                color:'#50e050' },
+    { id:'regen_sante',        label:'Régén. Santé /s',          color:'#e85050' },
+    { id:'regen_mana',         label:'Régén. Mana /s',           color:'#50d8e8' },
+    { id:'regen_stamina',      label:'Régén. Stamina /s',        color:'#e8a030' },
   ]},
 ];
 
@@ -635,6 +642,11 @@ const PRESET_TAG_GROUPS = [
 // INIT
 // ═══════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
+  // Afficher le bouton d'écriture seulement en mode éditeur
+  if (new URLSearchParams(location.search).has('edit')) {
+    document.getElementById('write-file-btn').style.display = '';
+  }
+
   buildStatsUI();
   buildPresetTags();
   buildSetSelect();
@@ -642,8 +654,133 @@ window.addEventListener('DOMContentLoaded', () => {
   initLoadSearch();
   buildOrphanSection();
   buildEffectTemplates();
-  update();
+
+  loadAuthor();
+  loadHistory();
+  restoreForm();
 });
+
+// ═══════════════════════════════════════════════════
+// AUTEUR
+// ═══════════════════════════════════════════════════
+function saveAuthor() {
+  const v = document.getElementById('author-input').value.trim();
+  if (v) localStorage.setItem('vcl_author', v);
+  else   localStorage.removeItem('vcl_author');
+}
+
+function loadAuthor() {
+  const v = localStorage.getItem('vcl_author');
+  if (v) document.getElementById('author-input').value = v;
+}
+
+function getAuthor() {
+  return document.getElementById('author-input').value.trim() || null;
+}
+
+// ═══════════════════════════════════════════════════
+// PERSISTANCE FORMULAIRE
+// ═══════════════════════════════════════════════════
+let _skipSave = false; // évite de sauvegarder pendant un reset
+
+function saveForm() {
+  if (_skipSave) return;
+  try {
+    const data = {
+      name:     document.getElementById('f-name').value,
+      id:       document.getElementById('f-id').value,
+      idLocked,
+      category: document.getElementById('f-category').value,
+      cat:      document.getElementById('f-cat').value,
+      palier:   document.getElementById('f-palier').value,
+      lvl:      document.getElementById('f-lvl').value,
+      lore:     document.getElementById('f-lore').value,
+      obtainOverride: document.getElementById('f-obtain-override').value,
+      selRarity, selClasses, selTwoHanded, selSensible,
+      activeTags: [...activeTags],
+      obtainSources,
+      stats: (() => {
+        const s = {};
+        for (const { stats } of STAT_DEFS) {
+          for (const { id } of stats) {
+            const mn = document.getElementById(`smin-${id}`)?.value;
+            const mx = document.getElementById(`smax-${id}`)?.value;
+            if (mn !== '') s[id] = { min: mn, max: mx };
+          }
+        }
+        return s;
+      })(),
+    };
+    localStorage.setItem('vcl_form', JSON.stringify(data));
+  } catch(e) {}
+}
+
+function restoreForm() {
+  try {
+    const raw = localStorage.getItem('vcl_form');
+    if (!raw) { update(); return; }
+    const d = JSON.parse(raw);
+
+    if (d.name)     document.getElementById('f-name').value     = d.name;
+    if (d.id)       document.getElementById('f-id').value       = d.id;
+    idLocked = !!d.idLocked;
+
+    if (d.category) {
+      document.getElementById('f-category').value = d.category;
+      onCatChange();
+    }
+    if (d.cat)    document.getElementById('f-cat').value    = d.cat;
+    if (d.palier) document.getElementById('f-palier').value = d.palier;
+    if (d.lvl)    document.getElementById('f-lvl').value    = d.lvl;
+    if (d.lore)   document.getElementById('f-lore').value   = d.lore;
+
+    if (d.obtainOverride) {
+      document.getElementById('f-obtain-override').value = d.obtainOverride;
+      document.getElementById('obtain-override-wrap').style.display = '';
+    }
+
+    if (d.selRarity) setRarity(d.selRarity);
+
+    if (d.selSensible) {
+      selSensible = true;
+      document.getElementById('sensible-btn').classList.add('active');
+    }
+    if (d.selTwoHanded) {
+      selTwoHanded = true;
+      document.getElementById('twohanded-btn').classList.add('active');
+    }
+
+    if (d.selClasses?.length) {
+      selClasses = d.selClasses;
+      document.querySelectorAll('.cls-btn').forEach(b => b.classList.toggle('active', d.selClasses.includes(b.dataset.c)));
+    }
+
+    if (d.activeTags?.length) {
+      activeTags = new Set(d.activeTags);
+      syncPresetTagButtons();
+      renderCustomTags();
+    }
+
+    if (d.obtainSources?.length) {
+      obtainSources = d.obtainSources;
+      renderObtainSources();
+    }
+
+    if (d.stats) {
+      for (const [id, { min, max }] of Object.entries(d.stats)) {
+        const minEl = document.getElementById(`smin-${id}`);
+        const maxEl = document.getElementById(`smax-${id}`);
+        if (minEl) { minEl.value = min; maxEl.value = max; onStatInput(id); }
+      }
+    }
+
+    update();
+  } catch(e) { update(); }
+}
+
+function clearSavedForm() {
+  localStorage.removeItem('vcl_form');
+}
 
 function buildSetSelect() {
   if (typeof SETS === 'undefined') return;
@@ -667,12 +804,13 @@ function buildStatsUI() {
     glabel.textContent = group;
     container.appendChild(glabel);
 
-    for (const { id, label } of stats) {
+    for (const { id, label, color } of stats) {
       const row = document.createElement('div');
       row.className = 'stat-row';
       row.id = `srow-${id}`;
+      const labelStyle = color ? `style="color:${color}"` : '';
       row.innerHTML = `
-        <label title="${id}">${label}</label>
+        <label title="${id}" ${labelStyle}>${label}</label>
         <input type="number" step="any" id="smin-${id}" placeholder="—" oninput="onStatInput('${id}')">
         <span class="stat-sep">→</span>
         <input type="number" step="any" id="smax-${id}" placeholder="max" oninput="onStatInput('${id}')">
@@ -835,6 +973,25 @@ function hideLootPicker() {
   document.getElementById('obtain-loot-entries').innerHTML = '';
 }
 
+function addObtainMobManual() {
+  const mob = obtainDrop ? allMobs.find(m => m.id === obtainDrop.getValue()) : null;
+  if (!mob) return;
+  const chanceRaw = document.getElementById('obtain-manual-chance').value;
+  const chance = chanceRaw !== '' ? parseFloat(chanceRaw) : null;
+  // Clé unique : mob + pas de lootId (manuel)
+  if (obtainSources.some(s => s.type === 'mob' && s.mobId === mob.id && !s.lootId)) return;
+  obtainSources.push({
+    uid: obtainUid++, type: 'mob',
+    id: mob.id, mobId: mob.id, lootId: null,
+    name: mob.name, lootName: null,
+    palier: mob.palier, mobType: mob.mobType,
+    chance, qty: null
+  });
+  document.getElementById('obtain-manual-chance').value = '';
+  renderObtainSources();
+  update();
+}
+
 function addObtainMobSource(mob, loot, itemName) {
   if (obtainSources.some(s => s.type === 'mob' && s.mobId === mob.id && s.lootId === loot.id)) return;
   obtainSources.push({
@@ -886,9 +1043,14 @@ function renderObtainSources() {
     chip.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;';
     let label = `${OBTAIN_ICONS[s.type] || ''} `;
     if (s.type === 'mob') {
-      label += `<b>${s.lootName || s.name}</b> depuis <span style="color:var(--muted)">${s.name}</span>`;
+      if (s.lootName) {
+        label += `<b>${s.lootName}</b> depuis <span style="color:var(--muted)">${s.name}</span>`;
+      } else {
+        label += `<span style="color:var(--muted)">Manuel ·</span> <b>${s.name}</b>`;
+      }
       if (s.palier) label += ` [P${s.palier}]`;
-      label += ` — <b style="color:var(--success)">${s.chance}%</b>`;
+      if (s.chance != null) label += ` — <b style="color:var(--success)">${s.chance}%</b>`;
+      else label += ` <span style="color:var(--muted)">— chance non définie</span>`;
       if (s.qty) label += ` <span style="color:var(--muted)">×${s.qty}</span>`;
     } else {
       label += `<b>${s.name}</b>`;
@@ -999,6 +1161,10 @@ function onCatChange() {
   // Rebuild slot options and clear old slot tags
   buildCatSlotOptions(cat);
   for (const tag of Object.values(SLOT_TAG_MAP)) activeTags.delete(tag);
+  // Auto-tag catégorie
+  const CAT_TAG_MAP = { materiaux:'Matériau', ressources:'Ressource', consommable:'Consommable', nourriture:'Nourriture', outils:'Outil', rune:'Rune', quete:'Quête', donjon:'Donjon' };
+  for (const t of Object.values(CAT_TAG_MAP)) activeTags.delete(t);
+  if (CAT_TAG_MAP[cat]) activeTags.add(CAT_TAG_MAP[cat]);
   syncPresetTagButtons();
   renderCustomTags();
   update();
@@ -1010,6 +1176,16 @@ let selTwoHanded = false;
 function toggleSensible() {
   selSensible = !selSensible;
   document.getElementById('sensible-btn').classList.toggle('active', selSensible);
+  update();
+}
+
+function onPalierChange() {
+  // Remove all palier tags
+  ['Palier 1','Palier 2','Palier 3'].forEach(t => activeTags.delete(t));
+  const p = document.getElementById('f-palier').value;
+  if (p) activeTags.add(`Palier ${p}`);
+  syncPresetTagButtons();
+  renderCustomTags();
   update();
 }
 
@@ -1158,6 +1334,7 @@ function loadItem(item) {
 }
 
 function resetFormSilent() {
+  _skipSave = true;
   document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel textarea').forEach(i => i.value = '');
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
   selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; idLocked = false;
@@ -1173,6 +1350,8 @@ function resetFormSilent() {
   document.getElementById('obtain-override-wrap').style.display = 'none';
   renderObtainSources();
   onCatChange();
+  _skipSave = false;
+  clearSavedForm();
 }
 
 function clearEditingMode() {
@@ -1361,9 +1540,6 @@ function buildEffectTemplates() {
 }
 
 function applyEffectTemplate(tpl) {
-  // Clear existing effects
-  effectEntries = [];
-  document.getElementById('effects-list').innerHTML = '';
   // Apply template effects
   for (const eff of tpl.effects) {
     addEffect();
@@ -1711,19 +1887,33 @@ function clearStats() {
 // ═══════════════════════════════════════════════════
 let sessionHistory = []; // [{ ts, obj, code }]
 
+function saveHistory() {
+  try { localStorage.setItem('vcl_history', JSON.stringify(sessionHistory)); } catch(e) {}
+}
+
+function loadHistory() {
+  try {
+    const raw = localStorage.getItem('vcl_history');
+    if (!raw) return;
+    sessionHistory = JSON.parse(raw);
+    renderHistory();
+  } catch(e) {}
+}
+
 function addToHistory(obj, code) {
-  // Replace if same id already in history
   const idx = sessionHistory.findIndex(h => h.obj.id === obj.id);
   const entry = { ts: Date.now(), obj: JSON.parse(JSON.stringify(obj)), code };
   if (idx >= 0) sessionHistory[idx] = entry;
   else sessionHistory.unshift(entry);
+  saveHistory();
   renderHistory();
 }
 
 function clearHistory() {
   if (!sessionHistory.length) return;
-  if (!confirm('Vider l\'historique de session ?')) return;
+  if (!confirm('Vider l\'historique ?')) return;
   sessionHistory = [];
+  saveHistory();
   renderHistory();
 }
 
@@ -1731,7 +1921,7 @@ function renderHistory() {
   const list  = document.getElementById('history-list');
   const badge = document.getElementById('history-count');
   if (!sessionHistory.length) {
-    list.innerHTML = '<div class="ic-empty" style="padding:30px 10px;">Aucun item copié pour l\'instant.</div>';
+    list.innerHTML = '<div class="ic-empty" style="padding:30px 10px;">Aucun item soumis pour l\'instant.</div>';
     badge.style.display = 'none';
     return;
   }
@@ -2001,8 +2191,8 @@ function update() {
   document.getElementById('out-code').textContent = toJS(obj, 0) + ',';
   renderValidation();
   renderPreview();
-  // Si doublon, le champ ID prend la couleur danger même si validation ne l'a pas mis
   if (dup) document.getElementById('f-id').style.borderColor = 'var(--danger)';
+  saveForm();
 }
 
 function copyCode() {
@@ -2022,7 +2212,6 @@ function copyCode() {
     m.classList.add('show');
     setTimeout(() => m.classList.remove('show'), 2000);
   });
-  addToHistory(obj, code);
 }
 
 function resetForm() {
@@ -2034,63 +2223,31 @@ function resetForm() {
 }
 
 // ═══════════════════════════════════════════════════
-// ÉCRITURE DANS DATA.JS (File System Access API)
+// SOUMISSION DISCORD
 // ═══════════════════════════════════════════════════
-let dataFileHandle = null;
+// SOUMISSION DISCORD
+// ═══════════════════════════════════════════════════
+const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1476647889920065549/1xPGdMDmpL7iswdaUNuwlnvmQPv9ED74Qn3ftPabthzX_TIMrYIPvLWfKirBwAMMyhFG';
 
-async function getOrPickDataFile() {
-  if (dataFileHandle) return dataFileHandle;
-  if (!window.showOpenFilePicker) {
-    alert('Ton navigateur ne supporte pas l\'API File System.\nUtilise Chrome ou Edge.');
-    return null;
-  }
-  try {
-    [dataFileHandle] = await window.showOpenFilePicker({
-      types: [{ description: 'JavaScript', accept: { 'text/javascript': ['.js'] } }]
-    });
-    updateFileIndicator();
-    return dataFileHandle;
-  } catch (e) {
-    if (e.name !== 'AbortError') console.error(e);
-    return null;
-  }
-}
-
-function updateFileIndicator() {
-  const ind = document.getElementById('file-indicator');
-  const btn = document.getElementById('write-file-btn');
-  if (dataFileHandle) {
-    ind.textContent = `✓ ${dataFileHandle.name} lié`;
-    ind.style.color = 'var(--success)';
-    ind.style.display = '';
-    btn.style.background = '#14532d';
-    btn.style.color = 'var(--success)';
-    btn.style.borderColor = '#14532d';
-  } else {
-    ind.style.display = 'none';
-    btn.style.background = '';
-    btn.style.color = '';
-    btn.style.borderColor = '';
-  }
-}
+const RARITY_COLORS_HEX = {
+  commun: 0x59d059, rare: 0x2a5fa8, epique: 0x6a3daa,
+  legendaire: 0xd7af5f, mythique: 0xf5b5e4, godlike: 0xa83020, event: 0xebebeb
+};
 
 function findTargetRegion(obj) {
-  const p  = `P${obj.palier || 1}`;
-
-  // Items sensibles → région Sensible
+  const p   = `P${obj.palier || 1}`;
   if (obj.sensible) {
     if (obj.category === 'arme')       return `Sensible > Armes > Palier ${obj.palier || 1}`;
     if (obj.category === 'accessoire') return `Sensible > Accessoires > Palier ${obj.palier || 1}`;
     if (obj.category === 'armure')     return `Sensible > Armures > Palier ${obj.palier || 1}`;
     return `Sensible > Items > Palier ${obj.palier || 1}`;
   }
-  const tags    = obj.tags    || [];
-  const cls     = obj.classes || [];
-  const cat     = obj.cat     || '';
-  const rarity  = obj.rarity  || '';
-
+  const tags = obj.tags    || [];
+  const cls  = obj.classes || [];
+  const cat  = obj.cat     || '';
+  const rar  = obj.rarity  || '';
   if (obj.category === 'arme') {
-    if (rarity === 'event') return `Armes > ${p} > Events`;
+    if (rar === 'event') return `Armes > ${p} > Events`;
     if (cls.includes('guerrier')) {
       if (cat === 'arme_s') return `Armes > ${p} > Guerrier > Boucliers`;
       if (tags.some(t => ['Lance','Hallebarde','Hast','Pique'].includes(t))) return `Armes > ${p} > Guerrier > Hast`;
@@ -2105,90 +2262,95 @@ function findTargetRegion(obj) {
       if (tags.some(t => ['Catalyseur'].includes(t))) return `Armes > ${p} > Mage-Shaman > Catalyseurs`;
       return `Armes > ${p} > Mage-Shaman > Bâtons`;
     }
-    return `Armes > ${p} > Events`; // fallback
+    return `Armes > ${p} > Events`;
   }
-
   if (obj.category === 'accessoire') {
-    if (rarity === 'event') return `Accessoires > ${p} > Events`;
+    if (rar === 'event') return `Accessoires > ${p} > Events`;
     const sec = { anneau:'Anneaux', amulette:'Amulettes', gants:'Gants', bracelet:'Bracelets', artefact:'Artefacts' };
     return `Accessoires > ${p} > ${sec[cat] || 'Artefacts'}`;
   }
-
   if (obj.category === 'armure') {
-    if (cls.includes('guerrier'))                                   return `Armures > ${p} > Guerrier`;
-    if (cls.includes('assassin') || cls.includes('archer'))         return `Armures > ${p} > Assassin-Archer`;
-    if (cls.includes('mage')     || cls.includes('shaman'))         return `Armures > ${p} > Mage-Shaman`;
+    if (cls.includes('guerrier'))                           return `Armures > ${p} > Guerrier`;
+    if (cls.includes('assassin') || cls.includes('archer')) return `Armures > ${p} > Assassin-Archer`;
+    if (cls.includes('mage')     || cls.includes('shaman')) return `Armures > ${p} > Mage-Shaman`;
     return `Armures > ${p} > Génériques`;
   }
-
-  const itemMap = {
-    outils:'Outils', rune:'Runes', consommable:'Consommables',
-    nourriture:'Nourritures', materiaux:'Matériaux', ressources:'Ressources',
-    quete:'Quêtes', donjon:'Donjon', monnaie:'Monnaie'
-  };
+  const itemMap = { outils:'Outils', rune:'Runes', consommable:'Consommables', nourriture:'Nourritures', materiaux:'Matériaux', ressources:'Ressources', quete:'Quêtes', donjon:'Donjon', monnaie:'Monnaie' };
   return `Items > ${p} > ${itemMap[obj.category] || 'Matériaux'}`;
 }
 
-function insertItemIntoContent(content, itemCode, regionName) {
-  const endTag = `//#endregion ${regionName}`;
-  const idx = content.indexOf(endTag);
-  if (idx === -1) return null;
-  const lineStart = content.lastIndexOf('\n', idx) + 1;
-  return content.slice(0, lineStart) + itemCode + '\n' + content.slice(lineStart);
-}
+async function submitToDiscord() {
+  // Pseudo obligatoire
+  if (!getAuthor()) {
+    const inp = document.getElementById('author-input');
+    inp.style.borderColor = 'var(--danger)';
+    inp.focus();
+    inp.placeholder = '⚠️ Pseudo requis !';
+    setTimeout(() => { inp.style.borderColor = ''; inp.placeholder = '👤 Ton pseudo…'; }, 3000);
+    return;
+  }
 
-async function writeToDataJs() {
   const { errors } = validateForm();
   if (errors.length) {
-    alert('⛔ Corrige les erreurs avant d\'écrire :\n\n' + errors.map(e => '• ' + e.msg).join('\n'));
+    alert('⛔ Corrige les erreurs avant de soumettre :\n\n' + errors.map(e => '• ' + e.msg).join('\n'));
     return;
   }
 
   const obj    = buildObj();
+  const code   = toJS(obj, 0) + ',';
   const region = findTargetRegion(obj);
-  const code   = toJS(obj, 0) + ',\n';
+  const isSens = !!obj.sensible;
 
-  const dup = isDuplicate(obj.id);
-  const dupMsg = dup ? `\n⚠️ L'ID "${obj.id}" existe déjà — il sera dupliqué dans le fichier.\n` : '';
+  const color     = RARITY_COLORS_HEX[obj.rarity] || 0x7a7a90;
+  const codeBlock = '```js\n' + code + '\n```';
 
-  if (!confirm(`Insérer dans la région :\n📁 ${region}${dupMsg}\nContinuer ?`)) return;
+  // Un seul embed : nom, sensible, région, puis JSON
+  const descLines = [
+    isSens ? '🔒 **Item sensible**' : '🔓 Item normal',
+    `📁 Région : \`${region}\``,
+    '',
+    codeBlock
+  ];
 
-  const handle = await getOrPickDataFile();
-  if (!handle) return;
+  // Limite embed description : 4096 chars
+  const description = descLines.join('\n').slice(0, 4096);
+
+  const embed = {
+    title: obj.name,
+    description,
+    color,
+    footer: { text: getAuthor() ? `Soumis par ${getAuthor()} · VCL Wiki` : 'Item Creator · VCL Wiki' },
+    timestamp: new Date().toISOString()
+  };
+
+  const btn = document.querySelector('button[onclick="submitToDiscord()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
 
   try {
-    const file    = await handle.getFile();
-    const content = await file.text();
-
-    const updated = insertItemIntoContent(content, code, region);
-    if (!updated) {
-      alert(`⛔ Région introuvable : "${region}"\nVérifie que tu as sélectionné le bon fichier data.js.`);
-      return;
-    }
-
-    const writable = await handle.createWritable();
-    await writable.write(updated);
-    await writable.close();
-
-    // Mise à jour en mémoire
-    if (typeof ITEMS !== 'undefined') {
-      const idx = ITEMS.findIndex(it => it.id === obj.id);
-      if (idx >= 0) ITEMS[idx] = obj; else ITEMS.push(obj);
-      allItemsIndex = [];
-      ensureAllItemsIndex();
-      buildOrphanSection();
-    }
+    const res1 = await fetch(DISCORD_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: `<@&1476739967387697194>`, embeds: [embed] })
+    });
+    if (!res1.ok) throw new Error(`HTTP ${res1.status}`);
 
     addToHistory(obj, code);
 
+    // Reset pour enchaîner un nouvel item
+    document.getElementById('editing-banner').style.display = 'none';
+    resetFormSilent();
+    renderCustomTags();
+
     const m = document.getElementById('copy-msg');
-    m.textContent = '✓ Écrit dans data.js !';
+    m.textContent = '✓ Soumis sur Discord !';
     m.classList.add('show');
     setTimeout(() => { m.classList.remove('show'); m.textContent = '✓ Copié !'; }, 3000);
+    update();
 
   } catch (err) {
-    alert('⛔ Erreur d\'écriture : ' + err.message);
-    console.error(err);
+    alert('⛔ Erreur d\'envoi Discord : ' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📨 Soumettre l\'item'; }
   }
 }
 
