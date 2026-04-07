@@ -19,7 +19,7 @@
     const runeIndex = parseInt(match[2]);
     const item      = equippedItems[slotId];
     if (!item || !item.stats) return false;
-    const slots = item.stats['Emplacement de Runes'];
+    const slots = item.rune_slots;
     if (!slots || slots <= 0) return false;
     return runeIndex < slots;
   }
@@ -781,7 +781,7 @@ function loadAccessoriesForClass(classId) {
       }
       appendDiv(el, 'slot-name', item.name);
 
-      const runeCount = item.stats && item.stats['Emplacement de Runes'];
+      const runeCount = item.rune_slots;
       if (runeCount && runeCount > 0) {
         const orbsRow = document.createElement('div');
         orbsRow.className = 'rune-orbs-row';
@@ -1394,15 +1394,16 @@ stats.innerHTML = statsLines +
 					return v !== 0;
 			});
 
+			const runeSlotLine = item.rune_slots > 0
+					? '<div class="istat-row">' +
+						'<span class="istat-icon">💎</span>' +
+						'<span class="istat-label">Emplacement de Runes</span>' +
+						'<span class="istat-val">' + item.rune_slots + '</span>' +
+						'</div>'
+					: '';
+
 			const lines = entries.map(function(e) {
 					const key = e[0]; const val = e[1];
-					if (key === 'Emplacement de Runes') {
-							return '<div class="istat-row">' +
-									'<span class="istat-icon">💎</span>' +
-									'<span class="istat-label">Emplacement de Runes</span>' +
-									'<span class="istat-val">' + val + '</span>' +
-									'</div>';
-					}
 					const statDef = ALL_STATS.find(function(s) { return s.id === key; });
 					const label = statDef ? statDef.label : key;
 					const unit  = statDef ? statDef.unit  : '';
@@ -1429,9 +1430,9 @@ stats.innerHTML = statsLines +
 							'</div>';
 			}).join('');
 
-			if (!lines && !buffLines) return '';
+			if (!lines && !buffLines && !runeSlotLine) return '';
 
-			return (lines ? '<div class="istat-block">' + lines + '</div>' : '') +
+			return (lines || runeSlotLine ? '<div class="istat-block">' + lines + runeSlotLine + '</div>' : '') +
 						(buffLines ? '<div class="istat-block" style="border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:4px">' + buffLines + '</div>' : '');
 	}
 

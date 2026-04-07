@@ -358,6 +358,11 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
           <button id="twohanded-btn" class="r-btn" style="--c:#f59e0b;width:fit-content;" onclick="toggleTwoHanded()">⚔️⚔️ Deux mains</button>
         </div>
 
+        <div class="field" id="rune-slots-field" style="display:none;">
+          <label>Emplacements de Runes</label>
+          <input type="number" id="f-rune-slots" min="0" max="10" step="1" placeholder="0" oninput="update()" style="width:80px;">
+        </div>
+
         <div class="row3">
           <div class="field">
             <label>Palier</label>
@@ -435,6 +440,10 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
       <div class="sec-head" onclick="toggleSec(this)">🔨 Craft <span class="chev">▾</span></div>
       <div class="sec-body">
         <div class="hint">Ingrédients pour fabriquer cet item. Recherche par nom dans tous les items existants.</div>
+        <div id="orphan-ids-bar" style="display:none;margin-bottom:8px;padding:7px 10px;background:#1e1a10;border:1px solid #4a3a10;border-radius:7px;">
+          <div style="font-size:10px;font-weight:700;color:#e8d44a;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;">⚠️ IDs orphelins — cliquer pour ajouter</div>
+          <div id="orphan-ids-list" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+        </div>
         <div id="craft-list" style="display:flex;flex-direction:column;gap:8px;"></div>
         <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:4px" onclick="addCraft()">+ Ajouter un ingrédient</button>
       </div>
@@ -488,6 +497,25 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
             </div>
             <textarea id="f-obtain-override" style="background:var(--surface2);border:1px solid #d7af5f;border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;width:100%;resize:vertical;min-height:62px;outline:none;" oninput="update()"></textarea>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMAGE FORUM (arme/armure/accessoire uniquement) -->
+    <div class="section" id="image-upload-section" style="display:none;">
+      <div class="sec-head" onclick="toggleSec(this)">🖼️ Image du post forum <span class="chev">▾</span></div>
+      <div class="sec-body">
+        <div class="field">
+          <label style="font-size:12px;color:var(--muted);">Optionnel · sera affichée dans le post Discord du forum</label>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
+            <label for="f-forum-image" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);transition:border-color .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+              📁 Choisir une image
+            </label>
+            <input type="file" id="f-forum-image" accept="image/*" style="display:none;" onchange="onForumImageChange()">
+            <span id="forum-image-name" style="font-size:12px;color:var(--muted);">Aucun fichier sélectionné</span>
+            <button class="btn btn-ghost btn-sm" id="forum-image-clear" onclick="clearForumImage()" style="display:none;">✕</button>
+          </div>
+          <img id="forum-image-preview" src="" alt="" style="display:none;margin-top:10px;max-height:120px;max-width:100%;border-radius:8px;border:1px solid var(--border);object-fit:contain;">
         </div>
       </div>
     </div>
@@ -611,8 +639,8 @@ const STAT_DEFS = [
 // ═══════════════════════════════════════════════════
 const SLOT_OPTIONS = {
   arme:       [['arme_p','Arme Principale'], ['arme_s','Arme Secondaire / Bouclier']],
-  armure:     [['casque','Casque'],['plastron','Plastron'],['jambières','Jambières'],['bottes','Bottes'],['gants','Gants']],
-  accessoire: [['anneau','Anneau'],['amulette','Amulette'],['bracelet','Bracelet'],['artefact','Artefact']]
+  armure:     [['casque','Casque'],['plastron','Plastron'],['jambières','Jambières'],['bottes','Bottes']],
+  accessoire: [['anneau','Anneau'],['amulette','Amulette'],['bracelet','Bracelet'],['artefact','Artefact'],['gants','Gants']]
 };
 
 const SLOT_TAG_MAP = {
@@ -1074,7 +1102,7 @@ function buildObtainText() {
     // Une ligne par mob : [mob_id|Nom Mob][chance]
     const lines = mobs.map(s => {
       const base = `[${s.mobId}|${s.name}]`;
-      return `- ${s.chance ? base + `[${s.chance}]` : base}`;
+      return `- ${base}[${s.chance != null ? s.chance : '?'}]`;
     });
     parts.push('Obtenable en tuant:\n' + lines.join('\n'));
   }
@@ -1156,8 +1184,11 @@ function onCatChange() {
   document.getElementById('stats-section').style.display    = isEquip ? '' : 'none';
   document.getElementById('effects-section').style.display  = isCons  ? '' : 'none';
   document.getElementById('classes-field').style.display    = isEquip ? '' : 'none';
-  document.getElementById('twohanded-field').style.display  = isArme  ? '' : 'none';
+  document.getElementById('twohanded-field').style.display      = isArme           ? '' : 'none';
+  document.getElementById('rune-slots-field').style.display     = cat === 'armure' ? '' : 'none';
+  document.getElementById('image-upload-section').style.display = isEquip          ? '' : 'none';
   if (!isArme) { selTwoHanded = false; document.getElementById('twohanded-btn').classList.remove('active'); }
+  if (cat !== 'armure') document.getElementById('f-rune-slots').value = '';
   // Rebuild slot options and clear old slot tags
   buildCatSlotOptions(cat);
   for (const tag of Object.values(SLOT_TAG_MAP)) activeTags.delete(tag);
@@ -1188,6 +1219,50 @@ function onPalierChange() {
   renderCustomTags();
   update();
 }
+
+function onForumImageChange() {
+  const file = document.getElementById('f-forum-image').files[0];
+  if (!file) return;
+  document.getElementById('forum-image-name').textContent = file.name;
+  document.getElementById('forum-image-clear').style.display = '';
+  const reader = new FileReader();
+  reader.onload = e => {
+    const prev = document.getElementById('forum-image-preview');
+    prev.src = e.target.result;
+    prev.style.display = '';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearForumImage() {
+  document.getElementById('f-forum-image').value = '';
+  document.getElementById('forum-image-name').textContent = 'Aucun fichier sélectionné';
+  document.getElementById('forum-image-clear').style.display = 'none';
+  document.getElementById('forum-image-preview').style.display = 'none';
+  document.getElementById('forum-image-preview').src = '';
+  _pastedImageFile = null;
+}
+
+// Coller une image depuis le presse-papier (Ctrl+V n'importe où sur la page)
+let _pastedImageFile = null;
+document.addEventListener('paste', e => {
+  const section = document.getElementById('image-upload-section');
+  if (!section || section.style.display === 'none') return;
+  const item = [...e.clipboardData.items].find(i => i.type.startsWith('image/'));
+  if (!item) return;
+  const file = item.getAsFile();
+  if (!file) return;
+  _pastedImageFile = file;
+  document.getElementById('forum-image-name').textContent = 'Image collée (' + file.type + ')';
+  document.getElementById('forum-image-clear').style.display = '';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const prev = document.getElementById('forum-image-preview');
+    prev.src = ev.target.result;
+    prev.style.display = '';
+  };
+  reader.readAsDataURL(file);
+});
 
 function toggleTwoHanded() {
   selTwoHanded = !selTwoHanded;
@@ -1266,6 +1341,9 @@ function loadItem(item) {
     selTwoHanded = true;
     document.getElementById('twohanded-btn').classList.add('active');
   }
+
+  // Rune slots
+  if (item.rune_slots) document.getElementById('f-rune-slots').value = item.rune_slots;
 
   if (item.classes) {
     selClasses = [...item.classes];
@@ -1349,6 +1427,7 @@ function resetFormSilent() {
   document.getElementById('effects-list').innerHTML  = '';
   document.getElementById('obtain-override-wrap').style.display = 'none';
   renderObtainSources();
+  clearForumImage();
   onCatChange();
   _skipSave = false;
   clearSavedForm();
@@ -1475,6 +1554,43 @@ function ensureItemIndex() {
       name: it.name || it.id,
       search: ((it.name || '') + ' ' + it.id).toLowerCase()
     }));
+
+  // Ajouter les IDs orphelins (référencés en craft mais absents de ITEMS)
+  const knownIds = new Set(ITEMS.map(i => i.id));
+  const orphanIds = [];
+  const seenOrphans = new Set();
+  for (const item of ITEMS) {
+    if (!item.craft) continue;
+    for (const c of item.craft) {
+      if (c.id && !knownIds.has(c.id) && !seenOrphans.has(c.id)) {
+        seenOrphans.add(c.id);
+        orphanIds.push(c.id);
+        itemIndex.push({ id: c.id, name: `${c.id} ⚠️`, search: c.id.toLowerCase() });
+      }
+    }
+  }
+
+  // Afficher la barre des orphelins
+  if (orphanIds.length) {
+    const bar  = document.getElementById('orphan-ids-bar');
+    const list = document.getElementById('orphan-ids-list');
+    if (bar && list) {
+      list.innerHTML = '';
+      orphanIds.forEach(id => {
+        const chip = document.createElement('button');
+        chip.className = 'btn btn-ghost btn-sm';
+        chip.style.cssText = 'font-size:11px;padding:3px 8px;border-color:#4a3a10;color:#e8d44a;';
+        chip.textContent = id;
+        chip.onclick = () => {
+          addCraftEntry(id, id);
+          chip.style.opacity = '0.4';
+          chip.disabled = true;
+        };
+        list.appendChild(chip);
+      });
+      bar.style.display = '';
+    }
+  }
 }
 
 function addCraft() {
@@ -1505,6 +1621,14 @@ function addCraft() {
   row.appendChild(drop.element);
   row.appendChild(rmBtn);
   document.getElementById('craft-list').appendChild(row);
+}
+
+function addCraftEntry(id, name) {
+  addCraft();
+  const entry = craftEntries[craftEntries.length - 1];
+  entry.itemId = id;
+  entry.drop?.setValue(id, name);
+  update();
 }
 
 function getCraft() {
@@ -1987,7 +2111,9 @@ function buildObj() {
   if (palier)                obj.palier   = +palier;
   if (lvl)                   obj.lvl      = +lvl;
   obj.img = null;
-  if (selTwoHanded)              obj.twoHanded = true;
+  if (selTwoHanded)              obj.twoHanded  = true;
+  const runeSlots = parseInt(document.getElementById('f-rune-slots').value);
+  if (runeSlots > 0)             obj.rune_slots = runeSlots;
   if (selSensible)               obj.sensible  = true;
   if (Object.keys(stats).length)  obj.stats   = stats;
   if (selClasses.length)     obj.classes  = [...selClasses];
@@ -2101,12 +2227,24 @@ function buildOrphanSection() {
   const itemIds = new Set(ITEMS.map(it => it.id));
 
   // Collect all orphan loot IDs with which mobs reference them
-  const orphanMap = {}; // id → [{ mobName, chance, qty }]
+  const orphanMap = {}; // id → [{ label }]
   for (const mob of MOBS) {
     for (const loot of (mob.loot || [])) {
       if (!itemIds.has(loot.id)) {
         if (!orphanMap[loot.id]) orphanMap[loot.id] = [];
-        orphanMap[loot.id].push({ mobName: mob.name, chance: loot.chance, qty: loot.qty });
+        const pct = loot.chance != null ? `${loot.chance}%` : '?%';
+        orphanMap[loot.id].push(`${mob.name} (${pct}${loot.qty ? ' ×'+loot.qty : ''})`);
+      }
+    }
+  }
+
+  // Collect orphan craft IDs (référencés dans craft mais absents de ITEMS)
+  for (const item of ITEMS) {
+    for (const c of (item.craft || [])) {
+      if (c.id && !itemIds.has(c.id)) {
+        if (!orphanMap[c.id]) orphanMap[c.id] = [];
+        const label = `Craft de ${item.name || item.id}`;
+        if (!orphanMap[c.id].includes(label)) orphanMap[c.id].push(label);
       }
     }
   }
@@ -2121,15 +2259,15 @@ function buildOrphanSection() {
   const list = document.getElementById('orphan-list');
   list.innerHTML = '';
   for (const id of ids.sort()) {
-    const mobs = orphanMap[id];
-    const mobText = mobs.map(m => `${m.mobName} (${m.chance}%${m.qty ? ' ×'+m.qty : ''})`).join(', ');
+    const labels  = orphanMap[id];
+    const subText = labels.join(', ');
 
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;';
     row.innerHTML = `
       <div style="flex:1;min-width:0;">
         <div style="font-family:monospace;font-size:11px;color:var(--success);font-weight:700;">${escHtml(id)}</div>
-        <div style="color:var(--muted);font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(mobText)}">${escHtml(mobText)}</div>
+        <div style="color:var(--muted);font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(subText)}">${escHtml(subText)}</div>
       </div>
       <button class="btn btn-ghost btn-sm" style="flex-shrink:0;">✏️ Créer</button>`;
     row.querySelector('button').addEventListener('click', () => {
@@ -2137,16 +2275,13 @@ function buildOrphanSection() {
       document.getElementById('editing-banner').style.display = 'none';
       document.getElementById('f-id').value = id;
       idLocked = true;
-      // Pre-fill obtain from mob drops
-      for (const { mobName, chance, qty } of mobs) {
-        const mob = MOBS.find(m => m.name === mobName);
-        if (mob) {
-          const loot = mob.loot.find(l => l.id === id);
-          if (loot) addObtainMobSource(
-            { ...mob, subtitle:'', search:'', mobType: mob.type, palier: mob.palier },
-            loot, id
-          );
-        }
+      // Pre-fill obtain from mob drops (labels qui viennent des mobs)
+      for (const mob of MOBS) {
+        const loot = mob.loot?.find(l => l.id === id);
+        if (loot) addObtainMobSource(
+          { ...mob, subtitle:'', search:'', mobType: mob.type, palier: mob.palier },
+          loot, id
+        );
       }
       update();
       document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
@@ -2228,6 +2363,96 @@ function resetForm() {
 // SOUMISSION DISCORD
 // ═══════════════════════════════════════════════════
 const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1476647889920065549/1xPGdMDmpL7iswdaUNuwlnvmQPv9ED74Qn3ftPabthzX_TIMrYIPvLWfKirBwAMMyhFG';
+
+// Webhooks forums Discord (arme/armure/accessoire × palier)
+const FORUM_WEBHOOKS = {
+  'arme_1':      'https://discord.com/api/webhooks/1491072737761038357/DXrNa-UEnhY_IYNWxsxTI4ztqt_-_6vhgf7p35Ia7AIZgjPya9sA4nTuT4IekyTM0Mek',
+  'arme_2':      'https://discord.com/api/webhooks/1491072819088588970/RAPDd0z4d5Aiy0SXP_li1xo2LuzrlMoIU0ALs0lCEwwisMhlB0aCVxTdkF-7g72PMWk8',
+  'armure_1':    'https://discord.com/api/webhooks/1491072872637272214/IK9fJGjMJ8up1jlyCNIjxVf_SBv1MRnh8QXY2Xndxca_W0YWImaFNttv47ZJZfsnJadk',
+  'armure_2':    'https://discord.com/api/webhooks/1491072932800368832/pukxiljqxIQCm6Fh8I1v1fXhF-G-_FyJ_iU_BMXcM5216MwOsbeUVLo7HRU6KqzEoFL1',
+  'accessoire_1':'https://discord.com/api/webhooks/1491072941985890386/RFNjfNRfGuRv7nmzEMmHdz4lhzxH9DzjX8rqpDLLKfLHkWS95xOgGMvPTFqRiQgqzNj1',
+  'accessoire_2':'https://discord.com/api/webhooks/1491073046759342081/b-b21JWzETX1zsTVfMtop5tJm0fr1ZhTV5oQmXEH_DVKVFdbatHPYg2LybvKtsqMmqBO',
+};
+
+function getForumWebhook(obj) {
+  const key = `${obj.category}_${obj.palier}`;
+  return FORUM_WEBHOOKS[key] || null;
+}
+
+function buildItemCardEmbed(obj, color, imageFilename) {
+  const RARITY_LABEL = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+  const RARITY_ICON  = { commun:'🟢', rare:'🔵', epique:'🟣', legendaire:'🟡', mythique:'🌸', godlike:'🔴', event:'⚪' };
+  const CAT_LABEL    = { arme:'⚔️ Arme', armure:'🛡️ Armure', accessoire:'💍 Accessoire', materiaux:'🧱 Matériau', ressources:'⛏️ Ressource', consommable:'🧪 Consommable', nourriture:'🍖 Nourriture', rune:'🔮 Rune', quete:'📜 Quête', donjon:'🏰 Donjon' };
+  const CLS_LABEL    = { guerrier:'⚔️ Guerrier', assassin:'🗡️ Assassin', archer:'🏹 Archer', mage:'📖 Mage', shaman:'🌿 Shaman' };
+
+  const rarIcon  = RARITY_ICON[obj.rarity]  || '▪️';
+  const rarLabel = RARITY_LABEL[obj.rarity] || obj.rarity;
+  const catLabel = CAT_LABEL[obj.category]  || obj.category;
+
+  // Description = lore en italique
+  const description = obj.lore ? `*${obj.lore.slice(0, 300)}*` : undefined;
+
+  const fields = [];
+
+  // Ligne 1 : Rareté · Catégorie · Palier · Niveau (tous inline)
+  fields.push({ name:'Rareté',    value:`${rarIcon} ${rarLabel}`, inline:true });
+  fields.push({ name:'Catégorie', value: catLabel,                inline:true });
+  if (obj.palier) fields.push({ name:'Palier', value:`Palier ${obj.palier}`, inline:true });
+  if (obj.lvl)    fields.push({ name:'Niveau requis', value:`≥ ${obj.lvl}`, inline:true });
+
+  // Séparateur visuel
+  fields.push({ name:'\u200b', value:'\u200b', inline:false });
+
+  // Classes
+  if (obj.classes?.length) {
+    fields.push({ name:'Classes', value: obj.classes.map(c => CLS_LABEL[c] || c).join('  ·  '), inline:false });
+  }
+
+  // Stats
+  const ALL_STAT_LABELS = {};
+  if (typeof ALL_STATS !== 'undefined') ALL_STATS.forEach(s => ALL_STAT_LABELS[s.id] = s.label + (s.unit ? ' ' + s.unit : ''));
+  const statEntries = obj.stats ? Object.entries(obj.stats) : [];
+  if (statEntries.length || obj.rune_slots) {
+    const lines = statEntries.map(([k, v]) => {
+      const label = ALL_STAT_LABELS[k] || k;
+      const val   = Array.isArray(v) ? `${v[0]} → ${v[1]}` : String(v);
+      return `> **${label}** \`${val}\``;
+    });
+    if (obj.rune_slots) lines.push(`> **Emplacements de Runes** \`${obj.rune_slots}\``);
+    fields.push({ name:'📊  Stats', value: lines.join('\n').slice(0, 1024), inline:false });
+  }
+
+  // Obtention
+  if (obj.obtain) {
+    const clean = obj.obtain
+      .replace(/\[npc:[\w]+\|([^\]]+)\]/g, '**$1**')
+      .replace(/\[[\w]+\|([^\]]+)\]/g, '**$1**')
+      .slice(0, 1024);
+    fields.push({ name:'📍  Obtention', value: clean, inline:false });
+  }
+
+  // Craft
+  if (obj.craft?.length) {
+    const lines = obj.craft.map(c => {
+      const found = (typeof ITEMS !== 'undefined') ? ITEMS.find(i => i.id === c.id) : null;
+      return `> \`${c.qty}×\`  ${found ? found.name : c.id}`;
+    });
+    fields.push({ name:'🔨  Craft', value: lines.join('\n').slice(0, 1024), inline:false });
+  }
+
+  const embed = {
+    title: obj.name,
+    description,
+    color,
+    fields,
+    footer: { text: `Soumis par ${getAuthor()}  ·  VCL Wiki` },
+    timestamp: new Date().toISOString()
+  };
+
+  if (imageFilename) embed.image = { url: `attachment://${imageFilename}` };
+
+  return embed;
+}
 
 const RARITY_COLORS_HEX = {
   commun: 0x59d059, rare: 0x2a5fa8, epique: 0x6a3daa,
@@ -2333,6 +2558,29 @@ async function submitToDiscord() {
       body: JSON.stringify({ content: `<@&1476739967387697194>`, embeds: [embed] })
     });
     if (!res1.ok) throw new Error(`HTTP ${res1.status}`);
+
+    // Post forum si catégorie équipement
+    const forumUrl = getForumWebhook(obj);
+    if (forumUrl) {
+      const imageFile = document.getElementById('f-forum-image').files[0] || _pastedImageFile || null;
+      const cardEmbed = buildItemCardEmbed(obj, color, imageFile ? imageFile.name : null);
+      const payload   = { thread_name: obj.name, embeds: [cardEmbed] };
+
+      let res2;
+      if (imageFile) {
+        const fd = new FormData();
+        fd.append('payload_json', JSON.stringify(payload));
+        fd.append('files[0]', imageFile, imageFile.name);
+        res2 = await fetch(forumUrl + '?wait=true', { method: 'POST', body: fd });
+      } else {
+        res2 = await fetch(forumUrl + '?wait=true', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+      if (!res2.ok) throw new Error(`Forum HTTP ${res2.status}`);
+    }
 
     addToHistory(obj, code);
 
