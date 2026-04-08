@@ -60,6 +60,28 @@ function getFlatFloorMarkers(floor) {
   return flat;
 }
 
+function getFlatOtherLayerMarkers(floor) {
+  const otherLayer = currentLayer === 'surface' ? 'underground' : 'surface';
+  const src =
+    otherLayer === 'underground'
+      ? (typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined' ? FLOOR_MARKERS_UNDERGROUND : null)
+      : (typeof FLOOR_MARKERS_SURFACE !== 'undefined'
+          ? FLOOR_MARKERS_SURFACE
+          : typeof FLOOR_MARKERS !== 'undefined' ? FLOOR_MARKERS : null);
+  const raw = (src && src[floor]) || [];
+  const flat = [];
+  for (const m of raw) {
+    if (m.coords && Array.isArray(m.coords)) {
+      m.coords.forEach(c =>
+        flat.push({ ...m, gx: c.gx, gy: c.gy, coords: undefined, _ghostLayer: otherLayer })
+      );
+    } else {
+      flat.push({ ...m, _ghostLayer: otherLayer });
+    }
+  }
+  return flat;
+}
+
 function getFloorZones(floor) {
   if (currentLayer === 'underground') {
     const src = (typeof FLOOR_ZONES_UNDERGROUND !== 'undefined') ? FLOOR_ZONES_UNDERGROUND : null;
@@ -119,39 +141,56 @@ function updateGhostOverlay() {
    LAYER SWITCHER — bouton toggle
 ══════════════════════════════════ */
 function buildLayerSwitcher() {
-  const btn = document.createElement('button');
-  btn.id        = 'layer-toggle-btn';
-  btn.title     = 'Changer de couche';
-  btn.innerHTML = getLayerBtnHTML();
-  btn.style.cssText = `
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 11px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.15);
-    background: rgba(255,255,255,0.07);
-    color: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
-    white-space: nowrap;
-    user-select: none;
-  `;
+  const container = document.createElement('div');
+  container.id = 'layer-switcher';
+  container.style.cssText = `
+		display: flex;
+		align-self: stretch;
+		border: 1px solid rgba(224,172,96,0.35);
+		border-radius: 0px;
+		overflow: hidden;
+		flex-shrink: 0;
+		box-shadow: 0 0 12px rgba(224,172,96,0.12), inset 0 1px 0 rgba(255,255,255,0.05);
+	`;
 
-  btn.addEventListener('mouseenter', () => {
-    btn.style.background   = 'rgba(255,255,255,0.13)';
-    btn.style.borderColor  = 'rgba(255,255,255,0.28)';
-  });
-  btn.addEventListener('mouseleave', () => {
-    btn.style.background   = 'rgba(255,255,255,0.07)';
-    btn.style.borderColor  = 'rgba(255,255,255,0.15)';
+  const tabs = [
+    { layer: 'surface',     label: 'Surface',   icon: '⛰️' },
+    { layer: 'underground', label: 'Sous-sol',   icon: '🕳️' },
+  ];
+
+  tabs.forEach(({ layer, label, icon }) => {
+    const btn = document.createElement('button');
+    btn.dataset.layer = layer;
+    btn.innerHTML = `<span style="font-size:13px;line-height:1">${icon}</span><span>${label}</span>`;
+    btn.style.cssText = `
+      display: flex;
+			
+      align-items: center;
+      gap: 6px;
+      padding: 0px 14px;
+			height: 100%;
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      border: none;
+      border-right: 1px solid rgba(224,172,96,0.2);
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+      user-select: none;
+    `;
+    if (layer === 'underground') btn.style.borderRight = 'none';
+    container.appendChild(btn);
   });
 
-  btn.addEventListener('click', () => {
-    goToLayer(currentLayer === 'surface' ? 'underground' : 'surface');
+  updateLayerTabStyles(container);
+
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-layer]');
+    if (!btn) return;
+    goToLayer(btn.dataset.layer);
+    updateLayerTabStyles(container);
   });
 
   const searchbar = document.querySelector('.map-searchbar');
@@ -159,37 +198,39 @@ function buildLayerSwitcher() {
     searchbar.style.display    = 'flex';
     searchbar.style.alignItems = 'center';
     searchbar.style.gap        = '8px';
-    searchbar.appendChild(btn);
+    searchbar.appendChild(container);
   }
 
   updateLayerBtnVisibility();
 }
 
-function getLayerBtnHTML() {
-  if (currentLayer === 'surface') {
-    return `<span style="font-size:14px;line-height:1">⬇️</span> Sous-sol`;
-  }
-  return `<span style="font-size:14px;line-height:1">⬆️</span> Surface`;
+function updateLayerTabStyles(container) {
+  container.querySelectorAll('button[data-layer]').forEach(btn => {
+    const active = btn.dataset.layer === currentLayer;
+    btn.style.background = active
+      ? 'linear-gradient(135deg, rgba(224,172,96,0.28) 0%, rgba(180,130,60,0.18) 100%)'
+      : 'rgba(14,12,10,0.6)';
+    btn.style.color = active ? '#E0AC60' : 'rgba(255,255,255,0.38)';
+    btn.style.boxShadow = active ? 'inset 0 -2px 0 #E0AC60' : 'none';
+  });
 }
 
+function getLayerBtnHTML() { return ''; } // plus utilisé
+
 function updateLayerBtn() {
-  const btn = document.getElementById('layer-toggle-btn');
-  if (btn) btn.innerHTML = getLayerBtnHTML();
+  const container = document.getElementById('layer-switcher');
+  if (container) updateLayerTabStyles(container);
 }
 
 function updateLayerBtnVisibility() {
-  const btn = document.getElementById('layer-toggle-btn');
-  if (!btn) return;
+  const container = document.getElementById('layer-switcher');
+  if (!container) return;
   const hasUnder = floorHasUnderground(currentFloor);
-  if (!hasUnder) {
-    btn.style.display = 'none';
-    if (currentLayer === 'underground') {
-      currentLayer = 'surface';
-      updateLayerBtn();
-      updateGhostOverlay();
-    }
-  } else {
-    btn.style.display = 'flex';
+  container.style.display = hasUnder ? 'flex' : 'none';
+  if (!hasUnder && currentLayer === 'underground') {
+    currentLayer = 'surface';
+    updateLayerBtn();
+    updateGhostOverlay();
   }
 }
 
@@ -867,6 +908,16 @@ function renderMarkers() {
   document.querySelectorAll('.cluster-expanded').forEach(n => n.remove());
 
   const markers = getFlatFloorMarkers(currentFloor);
+
+	const otherLayerMarkers = getFlatOtherLayerMarkers(currentFloor);
+  otherLayerMarkers.forEach(m => {
+    const cb = document.querySelector(`.marker-filter[data-type="${m.type}"]`);
+    if (cb && !cb.checked) return;
+    const img = gameToPixel(m.gx, m.gy);
+    const s   = imageToScreen(img.x, img.y);
+    renderGhostMarker({ ...m, sx: s.x, sy: s.y });
+  });
+
   const focusedList = _searchFocusId ? markers.filter(m => m.id === _searchFocusId) : [];
   const isMultiFocus = focusedList.length > 1;
 
@@ -1021,6 +1072,69 @@ function showQuestChain(hoveredMarker) {
     text.textContent = m.order;
     svg.appendChild(text);
   });
+}
+
+function renderGhostMarker(m) {
+  const el = document.createElement('div');
+  el.className    = 'marker marker-ghost';
+  el.dataset.type = m.type;
+  el.dataset.id   = m.id;
+  el.style.left   = m.sx + 'px';
+  el.style.top    = m.sy + 'px';
+  el.style.opacity = '0.65';
+	el.style.filter  = 'grayscale(25%) brightness(0.95)';
+  el.style.pointerEvents = 'auto';
+  el.style.zIndex        = '0';
+
+  const icon = document.createElement('div');
+  icon.className   = 'marker-icon';
+  icon.textContent = m.emoji || MARKER_EMOJI[m.type] || '📍';
+
+  /* Petit badge indiquant la layer d'origine */
+  const badge = document.createElement('span');
+  badge.style.cssText = `
+    position: absolute;
+    bottom: -4px; right: -4px;
+    font-size: 9px;
+    line-height: 1;
+    background: rgba(0,0,0,0.72);
+    color: #fff;
+    border-radius: 3px;
+    padding: 1px 3px;
+    pointer-events: none;
+    white-space: nowrap;
+    letter-spacing: 0.03em;
+  `;
+  badge.textContent = m._ghostLayer === 'underground' ? '🕳️' : '⛰️';
+  icon.style.position = 'relative';
+  icon.appendChild(badge);
+
+  el.appendChild(icon);
+
+  /* Tooltip au survol */
+  el.addEventListener('mouseenter', () => {
+    const layerLabel = m._ghostLayer === 'underground' ? 'Sous-sol' : 'Surface';
+    tooltipType.textContent = (TYPE_LABELS[m.type] || m.type) + ` · ${layerLabel}`;
+    tooltipName.textContent = m.name;
+    tooltipDesc.textContent = m.desc || '';
+    tooltipLink.classList.add('hidden');
+    tooltip.classList.remove('hidden');
+  });
+  el.addEventListener('mouseleave', hideTooltip);
+
+  /* Clic → bascule vers la bonne layer + centre la vue */
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    goToLayer(m._ghostLayer);
+    const img = gameToPixel(m.gx, m.gy);
+    panOffset.x    = -((img.x - MAP_SIZE / 2) * zoomLevel);
+    panOffset.y    = -((img.y - MAP_SIZE / 2) * zoomLevel);
+    _searchFocusId = m.id;
+    applyTransform();
+    showTooltip(m);
+  });
+
+  markersLayer.appendChild(el);
 }
 
 function renderSingleMarker(m) {

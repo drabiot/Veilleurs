@@ -312,6 +312,7 @@
 .marker[data-type="repreneur_butin"]       .marker-icon { background: #0d2430; color: #0d2430; box-shadow: 0 2px 12px rgba(21, 55, 76, 0.5); }
 .marker[data-type="clef"]                  .marker-icon { background: #ebbc58; color: #ebbc58; box-shadow: 0 2px 12px rgba(212, 161, 49, 0.5); }
 .marker[data-type="boss"]                  .marker-icon { background: #6b1a1a; color: #e05050; box-shadow: 0 2px 12px rgba(224,80,80,.6); }
+.marker[data-type="autre"]                 .marker-icon { background: #3edb29; color: #a2dd7b; box-shadow: 0 2px 12px rgba(17, 133, 33, 0.5); }
 
 .marker.hidden-marker { display: none; }
 .marker.marker-dimmed { opacity: 0.15; pointer-events: none; transition: opacity .2s; }
@@ -760,6 +761,14 @@
 .zone-tooltip-monster-name   { color: var(--bright); font-family: 'JetBrains Mono', monospace; }
 .zone-tooltip-monster-level  { color: var(--muted); font-size: 10px; white-space: nowrap; }
 .zone-tooltip-monster-diff   { font-size: 11px; letter-spacing: -1px; }
+
+.marker-ghost {
+  transition: opacity 0.2s, filter 0.2s;
+}
+.marker-ghost:hover {
+  opacity: 0.72 !important;        /* → */ opacity: 0.88 !important;
+  filter: grayscale(20%) brightness(1) !important;   /* → */ filter: none !important;
+}
 
 /* ══════════════════════════════════
    RESPONSIVE

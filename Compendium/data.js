@@ -7077,6 +7077,17 @@ ITEMS.push(
     tags:     ['Quête', 'Palier 1', 'Godlike'],
     obtain:   "Récupérable au cours de la Quête Principale:\n- «28 - Donjon: Le Kobold»"
 },
+{
+    id:       'cle_des_ames',
+    name:     "Clé des Âmes",
+    rarity:   'rare',
+    category: 'quete',
+    palier:   1,
+    image:    "../img/compendium/textures/items/Quest/cle_des_ames.png",
+    lore:     "Clef qui permet d'ouvrir le portail géant derrière le collisée.",
+    tags:     ['Quête', 'Palier 1', 'Rare', 'Event','Halloween'],
+    obtain:   "Obtenable durant l'Événement d'Halloween"
+},
 //#endregion Items > P1 > Quêtes
 //#region Items > P1 > Donjon
 {
@@ -7146,36 +7157,36 @@ ITEMS.push(
 {
     id:       'pioche_savane',
     name:     "Pioche de la Savane",
-    rarity:   'rare',
+    rarity:   'commun',
     category: 'outils',
     palier:   2,
     image:    "../img/compendium/textures/gears/pioche_savane.png",
-    lore:     ".",
-    tags:     ['Outils', 'Pioche', 'Palier 2', 'Rare'],
+    lore:     "Une pioche très solide, parfaite pour miner des minerais plus solides.",
+    tags:     ['Outils', 'Pioche', 'Palier 2', 'Commun'],
     obtain:   "Achetable aux [npc:marchand_outils_kaelor|Marchands d'Outils du Palier 2]",
 		craft:		[{qty:250, id:'cols'}]
 },
 {
     id:       'hache_savane',
     name:     "Hache de la Savane",
-    rarity:   'rare',
+    rarity:   'commun',
     category: 'outils',
     palier:   2,
     image:    "../img/compendium/textures/gears/hache_savane.png",
-    lore:     ".",
-    tags:     ['Outils', 'Hache', 'Palier 2', 'Rare'],
+    lore:     "Une hache très solide, parfaite pour casser des bûches plus résistantes.",
+    tags:     ['Outils', 'Hache', 'Palier 2', 'Commun'],
     obtain:   "Achetable aux [npc:marchand_outils_kaelor|Marchands d'Outils du Palier 2]",
 		craft:		[{qty:250, id:'cols'}]
 },
 {
     id:       'houe_savane',
     name:     "Houe de la Savane",
-    rarity:   'rare',
+    rarity:   'commun',
     category: 'outils',
     palier:   2,
     image:    "../img/compendium/textures/gears/houe_savane.png",
-    lore:     ".",
-    tags:     ['Outils', 'Houe', 'Palier 2', 'Rare'],
+    lore:     "Cette nouvelle houe est parfaite pour vous aider à récolter des fleurs... plus rares.",
+    tags:     ['Outils', 'Houe', 'Palier 2', 'Commun'],
     obtain:   "Achetable aux [npc:marchand_outils_kaelor|Marchands d'Outils du Palier 2]",
 		craft:		[{qty:250, id:'cols'}]
 },
@@ -7571,6 +7582,17 @@ ITEMS.push(
     tags:     ['Ressource', 'Minerai', 'Lingot', 'Palier 2', 'Rare'],
     obtain:   "Fabricable au [npc:forgeron_lingots_urbus|Forgeron de Lingots à Urbus]",
 		craft:		[{id:'bauxite', qty:4}, {id:'charbon', qty:3}]
+},
+{
+    id:       'ambre_mielleux',
+    name:     "Ambre Mielleux",
+    rarity:   'rare',
+    category: 'ressources',
+    palier:   2,
+    image:    "../img/compendium/textures/items/Ressources/ambre_mielleux.png",
+    lore:     "Une gemme dorée formée par la solidification d'un miel. Canalise une énergie douce mais persistante.",
+    tags:     ['Ressource', 'Minerai', 'Brut', 'Palier 2', 'Rare'],
+    obtain:   "Récupérable dans le Donjon Ruche de Melliona"
 },
 {
     id:       'onyx_impur',

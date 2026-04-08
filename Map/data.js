@@ -11,6 +11,7 @@ const MARKER_EMOJI = {
   clef:             '🗝️',
   ressource:        '🌿',
   donjon:           '⚔️',
+	autre:						'🦠',
 };
 
 const FLOOR_NAMES = {
@@ -342,7 +343,7 @@ const FLOOR_ZONES_UNDERGROUND = {
 	//#region P1 Zones Underground
 	1: [
 		{
-				id: 'm1z15',
+				id: 'm1z15',	
 				name: 'Donjon Squelette',
 				color: '#b86cbe',
 				emoji: '💀',
@@ -467,17 +468,17 @@ const FLOOR_MARKERS = {
 	  { id: 'm1b8',  type: 'repreneur_butin', gx: 1488, gy: 3403, name: 'Repreneur d\'Armes', desc: "Achète des Armes de niveau 5", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_arme_hanaka' },
 		//#endregion P1 Markers > Repreneur Butin
 		//#region P1 Markers > Marchand
-    { id: 'm1m1',  type: 'marchand', gx: 1788, gy: 4162, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_equipement_vdp' },
-    { id: 'm1m2',  type: 'marchand', gx: 1503, gy: 3391, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_equipement_hanaka' },
+    { id: 'm1m1',  type: 'marchand', emoji: '⚔️', gx: 1788, gy: 4162, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_equipement_vdp' },
+    { id: 'm1m2',  type: 'marchand', emoji: '⚔️', gx: 1503, gy: 3391, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_equipement_hanaka' },
     { id: 'm1m3',  type: 'marchand', gx: 485,  gy: 3058, name: "Marchand d'Accessoires Gluant",   desc: "Vends des Accessoires Gluants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_accessoire_vallhat' },
     { id: 'm1m4',  type: 'marchand', gx: 3320, gy: 1605, name: "Marchand d'Accessoires Tolbana",   desc: "Vends des Accessoires Résistants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_accessoire_tolbana' },
-    { id: 'm1m5',  type: 'marchand', gx: 1813, gy: 4162, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_vdp' },
-    { id: 'm1m6',  type: 'marchand', gx: 1587, gy: 1985, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_virelune' },
-    { id: 'm1m7',  type: 'marchand', gx: 3335, gy: 1621,  name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_tolbana' },
+    { id: 'm1m5',  type: 'marchand', emoji: '⛏️', gx: 1813, gy: 4162, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_vdp' },
+    { id: 'm1m6',  type: 'marchand', emoji: '⛏️', gx: 1587, gy: 1985, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_virelune' },
+    { id: 'm1m7',  type: 'marchand', emoji: '⛏️', gx: 3335, gy: 1621,  name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_tolbana' },
     { id: 'm1m8',  type: 'marchand', gx: 3309, gy: 1642, name: "Marchand de Consommables", desc: "Vends des Utilitaires comme des Potions ou des Parchemins", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_consommable_tolbana' },
-    { id: 'm1m9',  type: 'marchand', gx: 3316, gy: 1642, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_equipement_tolbana' },
-    { id: 'm1m10', type: 'marchand', gx: 2002, gy: 822, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_candelia' },
-    { id: 'm1m11', type: 'marchand', gx: 3150, gy: 3702, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_mizunari' },
+    { id: 'm1m9',  type: 'marchand', emoji: '⚔️', gx: 3316, gy: 1642, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_equipement_tolbana' },
+    { id: 'm1m10', type: 'marchand', emoji: '⛏️', gx: 2002, gy: 822, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_candelia' },
+    { id: 'm1m11', type: 'marchand', emoji: '⛏️', gx: 3150, gy: 3702, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_mizunari' },
 		{ id: 'm1m12', type: 'marchand', emoji: '💵', gx: 1457, gy: 1145, name: "Marchand Itinérant",        desc: "Vends & Achète à Arakh'Nol nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_candelia' },
     { id: 'm1m13', type: 'marchand', emoji: '💵', gx: 3484, gy: 1332, name: "Marchand Itinérant",        desc: "Vends & Achète à Tolbana nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_tolbana' },
     { id: 'm1m14', type: 'marchand', emoji: '💵', gx: 3600, gy: 3400, name: "Marchand Itinérant",        desc: "Vends & Achète à Mizunari nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_mizunari' },
@@ -485,6 +486,7 @@ const FLOOR_MARKERS = {
     { id: 'm1m16', type: 'marchand', emoji: '💵', gx: 582, gy: 3189, name: "Marchand Itinérant",        desc: "Vends & Achète à Vallhat nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_vallhat' },
     { id: 'm1m17', type: 'marchand', emoji: '💵', gx: 1205, gy: 2100, name: "Marchand Itinérant",        desc: "Vends & Achète à Virelune nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_virelune' },
     { id: 'm1m18', type: 'marchand', emoji: '💵', gx: 2080, gy: 3765, name: "Marchand Itinérant",        desc: "Vends & Achète à la Zone des Sangliers nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_vdp' },
+		{ id: 'm1m19', type: 'marchand', emoji: '👻', gx: 2391, gy: 989, name: "Marchand Kazor",       			 desc: "Vends des Armes, Accessoires & autre en échange de quelques Pièces de Kazor", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_kazor' },
 		//#endregion P1 Markers > Marchand
 		//#region P1 Markers > Clé
     { id: 'm1c1', type: 'clef', emoji: '🗝️', gx: 1812, gy: 4180, name: 'Clef du Donjon Mine de Geldorak',      desc: "Clef permettant d'ouvrir la porte du Donjon des Mines de Geldorak",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/cle_vdp' },
@@ -595,8 +597,15 @@ const FLOOR_MARKERS = {
 		{ id: 'm1boss5', type: 'boss', emoji: '🐻', name: "Ours de Glace", desc: "Né dans les cavernes les plus froides des montagnes, l'Ours de Glace incarne la force brute du Nord. Son rugissement fait frissonner l'air, et son souffle glacé fige tout sur son passage", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ours_glace', coords: [
 			{ gx: 4000, gy: 2010 },
 		]},
+		{ id: 'm1boss9', type: 'boss', emoji: '⛏️', name: "Kazor", desc: "Terrible World Boss du Palier 1 qui déverse le Labyrinthe des Déchus sur l'Étage", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/kazor', coords: [
+			{ gx: 2438, gy: 959 },
+		]},
 		//#endregion P1 Markers > Boss
-  ],
+		//#region P1 Markers > Autre
+		{ id: 'm1other1',  type: 'autre', emoji: '💎', gx: 1781, gy: 4138, name: "Maître des Runes",    desc: "Donne des Quêtes Quotidiennes permettant le gains de Cols & de Runes", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/maitre_des_runes' },
+		{ id: 'm1other2',  type: 'autre', gx: 1807, gy: 4295, name: "David Goodenough Palier 1",    desc: "Permet d'être au bon niveau suite à des Bugs de Gain d'Exp au Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/david_goodenough1' },
+		//#endregion P1 Markers > Autre
+	],
 	//#endregion P1 Markers
   2: [
 		//#region P2 Markers > Donjon
@@ -642,9 +651,9 @@ const FLOOR_MARKERS = {
 		{ id: 'm2c6', type: 'clef', emoji: '💍', gx: -713, gy: -92, name: "Fabricant Secret de la Corruption",                    desc: "Permet la confection Secrète du très puissant Masque Corrompu",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/~/changes/107/carte/personnages/fabricants-clefs-et-secrets#corruption' },
 		//#endregion P2 Markers > Clé
 		//#region P2 Markers > Marchand
-    { id: 'm2m1',  type: 'marchand', gx: -573, gy: -287, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_equipement_kaelor' },
+    { id: 'm2m1',  type: 'marchand', emoji: '⚔️', gx: -573, gy: -287, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_equipement_kaelor' },
     { id: 'm2m2',  type: 'marchand', gx: -570, gy: -287, name: "Marchand d'Accessoires",   desc: "Vends des Accessoires de la faune du Palier 2", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_accessoires_kaelor' },
-    { id: 'm2m3',  type: 'marchand', gx: -583, gy: -284, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_kaelor' },
+    { id: 'm2m3',  type: 'marchand', emoji: '⛏️', gx: -583, gy: -284, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_kaelor' },
 		//#endregion P2 Markers > Marchand
 		//#region P2 Markers > Artisant
     { id: 'm2a1', type: 'artisant', emoji: '⚗️',  gx: -570, gy: -293, name: 'Alchimiste',               desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/alchimiste_kaelor' },
