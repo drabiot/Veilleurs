@@ -35,6 +35,91 @@ const mapCanvas     = document.getElementById('map-canvas');
 const mapViewport   = document.getElementById('map-viewport');
 const zoomLevelEl   = document.getElementById('zoom-level');
 
+function showDungeonSpawn(marker) {
+  /*clearDungeonSpawn();
+
+  const spawnImg = gameToPixel(marker.spawnGx, marker.spawnGy);
+  const spawnS   = imageToScreen(spawnImg.x, spawnImg.y);
+  const entrImg  = gameToPixel(marker.gx, marker.gy);
+  const entrS    = imageToScreen(entrImg.x, entrImg.y);
+
+  // Ligne pointillée entrée → spawn
+  const svg = getQuestChainSvg(); // réutilise le même SVG overlay
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', entrS.x); line.setAttribute('y1', entrS.y);
+  line.setAttribute('x2', spawnS.x); line.setAttribute('y2', spawnS.y);
+  line.setAttribute('stroke', '#e6c924');
+  line.setAttribute('stroke-width', '3');
+  line.setAttribute('stroke-dasharray', '5 3');
+  line.style.opacity = '0.7';
+  svg.appendChild(line);
+  svg.dataset.dungeonLine = 'true';
+
+  // Pin spawn
+  const pin = document.createElement('div');
+  pin.id           = 'dungeon-spawn-pin';
+  pin.className    = 'marker';
+  pin.dataset.type = 'dungeon-spawn';
+  pin.style.left   = spawnS.x + 'px';
+  pin.style.top    = spawnS.y + 'px';
+  pin.style.zIndex = '20';
+
+  const icon = document.createElement('div');
+  icon.className        = 'marker-icon';
+  icon.textContent      = '⚔️';
+  icon.style.background = '#ebbc22';
+  icon.style.border     = '2px solid #e78428';
+  pin.appendChild(icon);
+
+  // Badge layer
+  if (marker.spawnLayer && marker.spawnLayer !== currentLayer) {
+    const badge = document.createElement('span');
+    badge.style.cssText = `
+      position:absolute; bottom:-4px; right:-4px;
+      font-size:9px; background:rgba(0,0,0,0.72);
+      color:#fff; border-radius:3px; padding:1px 3px;
+      pointer-events:none;
+    `;
+    badge.textContent = marker.spawnLayer === 'underground' ? '🕳️' : '⛰️';
+    icon.style.position = 'relative';
+    icon.appendChild(badge);
+  }
+
+  // Tooltip spawn
+  pin.addEventListener('mouseenter', () => showTooltip({
+    type: 'donjon',
+    name: marker.name + ' — Spawn',
+    desc: marker.spawnLayer === 'underground' ? 'Point d\'apparition · Sous-sol' : 'Point d\'apparition',
+    link: marker.link,
+  }));
+  pin.addEventListener('mouseleave', hideTooltip);
+
+  // Clic → bascule vers la layer du spawn
+  pin.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const targetLayer = marker.spawnLayer || currentLayer;
+    const targetFloor = marker.spawnFloor || currentFloor;
+    if (targetFloor !== currentFloor) goToFloor(targetFloor);
+    if (targetLayer !== currentLayer) goToLayer(targetLayer);
+    const img = gameToPixel(marker.spawnGx, marker.spawnGy);
+    panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
+    panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
+    applyTransform();
+  });
+
+  markersLayer.appendChild(pin);*/
+}
+
+function clearDungeonSpawn() {
+  const pin = document.getElementById('dungeon-spawn-pin');
+  if (pin) pin.remove();
+  const svg = document.getElementById('quest-chain-layer');
+  if (svg && svg.dataset.dungeonLine) {
+    svg.innerHTML = '';
+    delete svg.dataset.dungeonLine;
+  }
+}
+
 function getFloorMarkers(floor) {
   if (currentLayer === 'underground') {
     const src = (typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined') ? FLOOR_MARKERS_UNDERGROUND : null;
@@ -1169,10 +1254,12 @@ function renderSingleMarker(m) {
   el.addEventListener('mouseenter', () => {
     showTooltip(m);
     if (m.type === 'quête_principale') showQuestChain(m);
+	if (m.type === 'donjon' && m.spawnGx !== undefined) showDungeonSpawn(m);
   });
   el.addEventListener('mouseleave', () => {
     hideTooltip();
     if (m.type === 'quête_principale') clearQuestChain();
+	if (m.type === 'donjon') clearDungeonSpawn();
   });
   el.addEventListener('click', (e) => {
     e.stopPropagation();

@@ -37,7 +37,7 @@ from pathlib import Path
 # ── Option A : dossier parent contenant plusieurs sous-dossiers ──
 # Le script génère un PNG par sous-dossier trouvé.
 # Ex : r"C:\...\overworld"  →  traitera -2/, 0/, 3/, etc.
-PARENT_DIR = r"/home/tchartie/Downloads/swisstransfer_d576f372-f644-491a-9f93-0a552aeef853/Triggers_id_3072827480834159628/overworld"
+PARENT_DIR = r""
 
 # ── Option B : liste de dossiers explicites ──
 # Laisse vide [] si tu utilises PARENT_DIR ou TILES_DIR.

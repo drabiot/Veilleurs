@@ -1567,7 +1567,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'm1d3',
+    regionId: 'm1z16',
     img: '../img/mobs/P1/treant_foret.png',
     lore: "Gardien séculaire enraciné au cœur de la mine de Geldorak. N'approchez qu'en paix, ou affrontez sa colère sylvestre.",
     attacks: [
@@ -1582,7 +1582,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'm1d3',
+    regionId: 'm1z16',
     img: '../img/mobs/P1/treant_mal_foret.png',
     lore: "Gardien séculaire enraciné au cœur de la mine de Geldorak. N'approchez qu'en paix, ou affrontez sa colère sylvestre.",
     attacks: [
@@ -1597,7 +1597,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'm1d3',
+    regionId: 'm1z16',
     img: '../img/mobs/P1/plante_devoreuse.png',
     lore: "Discrète sous ses feuilles luxuriantes, le danger rôde au moindre faux pas... Ses racines enserrent ses proies, lentement, avant de les engloutir sans laisser de trace.",
     attacks: [
@@ -1612,7 +1612,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'm1d3',
+    regionId: 'm1boss9',
     img: '../img/mobs/P1/vyrmos.png',
     lore: "Entité rampante née des mines de Geldorak, Vyrmos s'imprègne des spores et de la terre humide. Sa peau est couverte de mousse vivante, et son souffle corrompt tout ce qu'il touche.",
     attacks: [
@@ -1627,7 +1627,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'm1d3',
+    regionId: 'm1z16',
     img: '../img/mobs/P1/brute_foret.png',	
     lore: "Massive et sauvage, cette créature veille sur la forêt. Elle repousse les intrus à coups de poings dévastateurs. Aucune parole, seulement la force brute de la nature.",
     attacks: [
@@ -1642,7 +1642,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 2,
     region: 'Donjon Mine de Geldorak',
-    regionId: 'm1d3',
+    regionId: 'm1boss10',
     img: '../img/mobs/P1/tornak.png',
     lore: "Massive et sauvage, cette créature veille sur la forêt. Elle repousse les intrus à coups de poings dévastateurs. Aucune parole, seulement la force brute de la nature.",
     attacks: [
@@ -1829,7 +1829,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'm1d5',
+    regionId: 'm1z17',
     img: '../img/mobs/P1/araignee_chasse.png',
     lore: "Plus petite que ses congénères, mais bien plus agile, l'Araignée de Chasse bondit sur ses proies sans avertissements. Son poison est discret... mais mortellement précis.",
     attacks: [
@@ -1846,7 +1846,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'm1d5',
+    regionId: 'm1z17',
     img: '../img/mobs/P1/araignee_venimeuse.png',
     lore: "Nichée dans l'obscurité, elle injecte son venin avant même qu'on ne sente ses crochets. Les rares survivants parlent d'une brûlure lente... et d'un regard vide.",
     attacks: [
@@ -1863,7 +1863,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'm1d5',
+    regionId: 'm1z17',
     img: '../img/mobs/P1/araignee_etrangleuse.png',
     lore: "Elle ne chasse pas... elle attend. Ses pattes glissent dans l'ombre en silence, et quand vous sentez son emprise, il est déjà trop tard.",
     attacks: [
@@ -1880,7 +1880,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'm1d5',
+    regionId: 'm1boss14',
     img: '../img/mobs/P1/pricilia.png',
     lore: "Créature ancienne et rusée, Pricilia tisse ses toiles dans les recoins oubliés des forêts les plus sombre. Ses proies ne voient jamais la mort... seulement ses yeux luisants.",
     attacks: [
@@ -1897,7 +1897,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'm1d5',
+    regionId: 'm1boss15',
     img: '../img/mobs/P1/yula.png',
     lore: "Tapis dans l'obscurité humide du donjon, Yula est une araignée redoutée par les aventuriers. Ses pattes tranchantes et ses yeux luisants inspirent la terreur à quiconque croise son chemin.",
     attacks: [
@@ -1914,7 +1914,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'm1d5',
+    regionId: 'm1boss13',
     img: '../img/mobs/P1/jira.png',
     lore: "Créature silencieuse tapie entre les toiles, Jira surveille chaque recoin du donjon. Plus rapide que l'éclair, elle frappe sans prévenir, ne laissant derrière elle que le silence... et des toiles sanglantes.",
     attacks: [
@@ -1931,7 +1931,7 @@ const MOBS = [
 		palier: 1,
     difficulty: 3,
     region: 'Donjon Sanctuaire de Xal\'Zirith',
-    regionId: 'm1d5',
+    regionId: 'm1boss12',
     img: '../img/mobs/P1/kamilia.png',
     lore: "Silencieuse au cœur du donjon, Kamilia tisse des pièges invisibles dans l'ombre. Sa morsure injecte un venin paralysant, laissant ses proies conscientes, mais incapables de fuir.",
     attacks: [

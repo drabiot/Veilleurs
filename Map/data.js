@@ -361,7 +361,56 @@ const FLOOR_ZONES_UNDERGROUND = {
 					{ gx: 2720, gy: 4356 }, { gx: 2749, gy: 4337 }, { gx: 2780, gy: 4337 },
 				],
 			},
+			{
+				id: 'm1z16',	
+				name: 'Donjon Mine de Geldorak',
+				color: '#84d840',
+				emoji: '⛏️',
+				monsters: [
+					{ name: 'Tréant de la Forêt', level: 4, difficulty: '⭐', emoji: '🪵', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/treant_foret' },
+					{ name: 'Tréant de la Forêt', level: 4, difficulty: '⭐', emoji: '🌲', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/treant_mal_foret' },
+					{ name: 'Plante Décoreuse', level: 4, difficulty: '⭐', emoji: '🌷', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/plante_devoreuse' },
+					{ name: 'Brute de la Forêt', level: 4, difficulty: '⭐⭐', emoji: '🌳', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/brute_foret' },
+				],
+				points: [
+					{ gx: 4349, gy: 3838 }, { gx: 4344, gy: 3904 }, { gx: 4306, gy: 3921 },
+					{ gx: 4326, gy: 3941 }, { gx: 4309, gy: 3984 }, { gx: 4309, gy: 4013 },
+					{ gx: 4333, gy: 4011 }, { gx: 4329, gy: 4032 }, { gx: 4307, gy: 4038 },
+					{ gx: 4325, gy: 4056 }, { gx: 4334, gy: 4058 }, { gx: 4334, gy: 4087 },
+					{ gx: 4311, gy: 4122 }, { gx: 4319, gy: 4133 }, { gx: 4320, gy: 4177 },
+					{ gx: 4291, gy: 4177 }, { gx: 4291, gy: 4120 }, { gx: 4276, gy: 4118 },
+					{ gx: 4276, gy: 4055 }, { gx: 4296, gy: 4057 }, { gx: 4296, gy: 4034 },
+					{ gx: 4277, gy: 4029 }, { gx: 4283, gy: 4013 }, { gx: 4295, gy: 4017 },
+					{ gx: 4297, gy: 3982 }, { gx: 4256, gy: 3944 }, { gx: 4269, gy: 3922 },
+					{ gx: 4223, gy: 3867 }, { gx: 4231, gy: 3838 }, { gx: 4302, gy: 3833 },
+				],
+			},
+			{
+				id: 'm1z17',	
+				name: 'Donjon Sanctuaire de Xal\'Zirith',
+				color: '#8750e0',
+				emoji: '🕷️',
+				monsters: [
+					{ name: 'Araignée de Chasse', level: 7, difficulty: '⭐⭐', emoji: '🕷️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/araignee_chasse' },
+					{ name: 'Araignée Venimeuse', level: 7, difficulty: '⭐⭐⭐', emoji: '🧪', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/araignee_venimeuse' },
+					{ name: 'Araignée Étrangleuse', level: 7, difficulty: '⭐⭐⭐', emoji: '🕸️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/araignee_etrangleuse' },
+				],
+				points: [
+					{ gx: 1002, gy: 1186 }, { gx: 1010, gy: 1150 }, { gx: 1076, gy: 1139 },
+					{ gx: 993,  gy: 1113 }, { gx: 989,  gy: 1070 }, { gx: 1023, gy: 1064 },
+					{ gx: 1076, gy: 1084 }, { gx: 1102, gy: 1133 }, { gx: 1126, gy: 1137 },
+					{ gx: 1126, gy: 1083 }, { gx: 1240, gy: 1082 }, { gx: 1275, gy: 1113 },
+					{ gx: 1364, gy: 1117 }, { gx: 1396, gy: 1166 }, { gx: 1383, gy: 1227 },
+					{ gx: 1311, gy: 1263 }, { gx: 1121, gy: 1197 }, { gx: 1116, gy: 1240 },
+					{ gx: 1113, gy: 1295 }, { gx: 1093, gy: 1340 }, { gx: 1167, gy: 1375 },
+					{ gx: 1211, gy: 1366 }, { gx: 1230, gy: 1386 }, { gx: 1218, gy: 1438 },
+					{ gx: 1156, gy: 1437 }, { gx: 1069, gy: 1358 }, { gx: 1047, gy: 1303 },
+					{ gx: 985,  gy: 1314 }, { gx: 954,  gy: 1236 }, { gx: 1019, gy: 1224 },
+					{ gx: 1025, gy: 1259 }, { gx: 1000, gy: 1288 }, { gx: 1066, gy: 1253 }, { gx: 1062, gy: 1202 },
+				],
+			},
 		],
+		
 	//#endregion P1 Zones Underground
 	//#region P2 Zones Underground
   2: [
@@ -402,8 +451,8 @@ const FLOOR_MARKERS = {
 	//#region P1 Markers
   1: [
 		//#region P1 Markers > Donjon
-    { id: 'm1d2',  type: 'donjon',  gx: 2785, gy: 4420, name: 'Sous-Donjon Nasgul',                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-squelette' },
-    { id: 'm1d3',  type: 'donjon',  gx: 4274, gy: 3890, name: 'Donjon Mine de Geldorak',            desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-geldorak' },
+    { id: 'm1d2',  type: 'donjon',  gx: 2785, gy: 4420, spawnGx: 2813, spawnGy: 4389, spawnLayer: 'underground', name: 'Sous-Donjon Nasgul',                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-squelette' },
+    { id: 'm1d3',  type: 'donjon',  gx: 4300, gy: 3890, name: 'Donjon Mine de Geldorak',            desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-geldorak' },
     { id: 'm1d4',  type: 'donjon',  gx: 2383, gy: 2410, name: "Donjon Labyrinthe des Déchus",       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-labyrinthe-des-dechus' },
     { id: 'm1d5',  type: 'donjon',  gx: 1008,  gy: 1184, name: "Donjon Xal'Zirith",                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-xalzirith' },
 		{ id: 'm1d6', type: 'donjon',  gx: 3412, gy: 953, name: 'Tour du Kobold',  					desc: "", link: '' },
@@ -597,7 +646,7 @@ const FLOOR_MARKERS = {
 		{ id: 'm1boss5', type: 'boss', emoji: '🐻', name: "Ours de Glace", desc: "Né dans les cavernes les plus froides des montagnes, l'Ours de Glace incarne la force brute du Nord. Son rugissement fait frissonner l'air, et son souffle glacé fige tout sur son passage", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ours_glace', coords: [
 			{ gx: 4000, gy: 2010 },
 		]},
-		{ id: 'm1boss9', type: 'boss', emoji: '⛏️', name: "Kazor", desc: "Terrible World Boss du Palier 1 qui déverse le Labyrinthe des Déchus sur l'Étage", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/kazor', coords: [
+		{ id: 'm1bosskazor', type: 'boss', emoji: '⛏️', name: "Kazor", desc: "Terrible World Boss du Palier 1 qui déverse le Labyrinthe des Déchus sur l'Étage", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/kazor', coords: [
 			{ gx: 2438, gy: 959 },
 		]},
 		//#endregion P1 Markers > Boss
@@ -740,8 +789,32 @@ const FLOOR_MARKERS_UNDERGROUND = {
 		{ id: 'm1boss7', type: 'boss', emoji: '☠️', name: "Narax", desc: "Ancien général d'une armée déchue, Narax fut ressuscité par une magie interdite. Son armure brisée résonne encore de ses exploits d'antan, hantant les terres maudites. On dit que son regard vide perce jusqu'à l'âme", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/narax', coords: [
 			{ gx: 2721, gy: 4330 },
 		]},
-		{ id: 'm1boss8', type: 'boss', emoji: '🏇', name: "Nasgul", desc: "ntité maudite surgie des ténèbres anciennes, il rôde, invisible, prêt à déchirer l'âme des vivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nasgul', coords: [
+		{ id: 'm1boss8', type: 'boss', emoji: '🏇', name: "Nasgul", desc: "Entité maudite surgie des ténèbres anciennes, il rôde, invisible, prêt à déchirer l'âme des vivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nasgul', coords: [
 			{ gx: 2818, gy: 4234 },
+		]},
+		{ id: 'm1boss9', type: 'boss', emoji: '🌺', name: "Vyrmos", desc: "Entité rampante née des mines de Geldorak, Vyrmos s'imprègne des spores et de la terre humide. Sa peau est couverte de mousse vivante, et son souffle corrompt tout ce qu'il touche", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/vyrmos', coords: [
+			{ gx: 4247, gy: 3852 },
+		]},
+		{ id: 'm1boss10', type: 'boss', emoji: '🪾', name: "Tornak", desc: "Massive et sauvage, cette créature veille sur la forêt. Elle repousse les intrus à coups de poings dévastateurs. Aucune parole, seulement la force brute de la nature", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/tornak', coords: [
+			{ gx: 4302, gy: 3969 },
+		]},
+		{ id: 'm1boss11', type: 'boss', emoji: '🛡️', name: "Déchu", desc: "", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/', coords: [
+			{ gx: 4305, gy: 4085 },
+		]},
+		{ id: 'm1boss12', type: 'boss', emoji: '🫧', name: "Kamila", desc: "Silencieuse au cœur du donjon, Kamilia tisse des pièges invisibles dans l'ombre. Sa morsure injecte un venin paralysant, laissant ses proies conscientes, mais incapables de fuir", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/kamila', coords: [
+			{ gx: 986, gy: 1245 },
+		]},
+		{ id: 'm1boss13', type: 'boss', emoji: '🧪', name: "Jira", desc: "Créature silencieuse tapie entre les toiles, Jira surveille chaque recoin du donjon. Plus rapide que l'éclair, elle frappe sans prévenir, ne laissant derrière elle que le silence... et des toiles sanglantes", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/kamila', coords: [
+			{ gx: 1190, gy: 1400 },
+		]},
+		{ id: 'm1boss14', type: 'boss', emoji: '🔥', name: "Pricilia", desc: "Créature ancienne et rusée, Pricilia tisse ses toiles dans les recoins oubliés des forêts les plus sombre. Ses proies ne voient jamais la mort... seulement ses yeux luisants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/pricilia', coords: [
+			{ gx: 1230, gy: 1100 },
+		]},
+		{ id: 'm1boss15', type: 'boss', emoji: '❄️', name: "Yula", desc: "Tapis dans l'obscurité humide du donjon, Yula est une araignée redoutée par les aventuriers. Ses pattes tranchantes et ses yeux luisants inspirent la terreur à quiconque croise son chemin", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/yula', coords: [
+			{ gx: 1100, gy: 1222 },
+		]},
+		{ id: 'm1boss16', type: 'boss', emoji: '🕷️', name: "Boss Xal", desc: "", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/', coords: [
+			{ gx: 1313, gy: 1183 },
 		]},
 		//#endregion P1 Markers Underground > Boss
 	],
