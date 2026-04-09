@@ -840,6 +840,8 @@ function setLayout() {
 setLayout();
 window.addEventListener('resize', setLayout);
 
-history.replaceState({ tab: activeTab, entityId: null }, '', location.hash || `#${activeTab}`);
-refreshAll();
-applyHash();
+window._pageInit = function () {
+  history.replaceState({ tab: activeTab, entityId: null }, '', location.hash || `#${activeTab}`);
+  refreshAll();
+  applyHash();
+};

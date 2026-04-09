@@ -56,7 +56,6 @@
 
 <!-- Charger les mêmes fichiers que le compendium -->
 <script src="Compendium/data.js"></script>
-<script src="Compendium/data_sensible.js"></script>
 <script src="Bestiaire/mob_data.js"></script>
 
 <script>
@@ -200,7 +199,6 @@ for (const item of ITEMS) {
   }
 
   // sensible:true dans data.js (heuristique: pas de sensible:true attendu dans data normal)
-  // On le signale comme info — seuls les items dans data_sensible.js devraient l'avoir
   // Comme les deux fichiers sont mergés, on ne peut pas distinguer la source,
   // mais on peut noter si sensible est false/absent pour un item dans data_sensible
   // (On skip cette vérification sans accès à la source)

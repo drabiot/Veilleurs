@@ -1103,25 +1103,27 @@ window.addEventListener('popstate', () => {
 /* ══════════════════════════════════
    INIT
 ══════════════════════════════════ */
-buildSidebar(ITEMS);
-document.querySelector('.glossary-subtitle').innerHTML =
-  '// BASE DE DONNÉES · VEILLEURS AU CLAIR DE LUNE &nbsp;·&nbsp; <span style="color:var(--gold);font-weight:600">' + ITEMS.length + '</span> items recensés';
+function initCompendium() {
+  buildSidebar(ITEMS);
+  document.querySelector('.glossary-subtitle').innerHTML =
+    '// BASE DE DONNÉES · VEILLEURS AU CLAIR DE LUNE &nbsp;·&nbsp; <span style="color:var(--gold);font-weight:600">' + ITEMS.length + '</span> items recensés';
 
-const { id: initId, quality: initQuality } = parseHash(window.location.hash);
-if (initId) {
-  const target = ITEMS.find(i => i.id === initId);
-  if (target) {
-
-    buildSidebar(ITEMS);
-    requestAnimationFrame(() => {
-      const link = sidebarTree.querySelector(`.sidebar-item[data-id="${initId}"]`);
-      if (link) {
-        link.closest('.palier-body')?.classList.add('open');
-        link.closest('.palier-body')?.previousElementSibling?.classList.add('open');
-        link.closest('.categorie-body')?.classList.add('open');
-        link.closest('.categorie-body')?.previousElementSibling?.classList.add('open');
-      }
-      showItem(initId, initQuality);
-    });
+  const { id: initId, quality: initQuality } = parseHash(window.location.hash);
+  if (initId) {
+    const target = ITEMS.find(i => i.id === initId);
+    if (target) {
+      buildSidebar(ITEMS);
+      requestAnimationFrame(() => {
+        const link = sidebarTree.querySelector(`.sidebar-item[data-id="${initId}"]`);
+        if (link) {
+          link.closest('.palier-body')?.classList.add('open');
+          link.closest('.palier-body')?.previousElementSibling?.classList.add('open');
+          link.closest('.categorie-body')?.classList.add('open');
+          link.closest('.categorie-body')?.previousElementSibling?.classList.add('open');
+        }
+        showItem(initId, initQuality);
+      });
+    }
   }
 }
+window._pageInit = initCompendium;

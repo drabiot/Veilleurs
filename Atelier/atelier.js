@@ -1935,11 +1935,7 @@ stats.innerHTML = statsLines +
     }
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  window._pageInit = init;
 
 })();
 
