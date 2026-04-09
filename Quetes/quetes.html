@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
+  <title>[VCL] - Quêtes</title>
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="quetes.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1ZEKMF3QVS"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-1ZEKMF3QVS');
+  </script>
+</head>
+<body class="quetes-page">
+
+  <!-- Fond ambiant -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="moon"></div>
+    <div class="fog fog-1"></div>
+    <div class="fog fog-2"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <!-- ══════ HEADER ══════ -->
+  <header class="site-header">
+    <div class="header-top">
+      <div class="header-left">
+        <div class="traffic-lights">
+          <span class="tl tl-red"></span>
+          <span class="tl tl-yellow"></span>
+          <span class="tl tl-green"></span>
+        </div>
+        <span class="header-sep">─────</span>
+        <a href="../index.html" class="header-logo">Veilleurs au Clair de Lune</a>
+      </div>
+      <div class="header-right"></div>
+    </div>
+    <nav class="header-nav">
+      <a href="../index.html" class="nav-link">
+        <span class="nav-icon">📜</span><span class="nav-label">Patchnotes</span>
+      </a>
+      <a href="../Map/map.html" class="nav-link">
+        <span class="nav-icon">🗺️</span><span class="nav-label">Carte</span>
+      </a>
+      <a href="../Compendium/compendium.html" class="nav-link">
+        <span class="nav-icon">📖</span><span class="nav-label">Compendium</span>
+      </a>
+      <a href="../Bestiaire/bestiaire.html" class="nav-link">
+        <span class="nav-icon">💀</span><span class="nav-label">Bestiaire</span>
+      </a>
+	  <a href="quetes.html" class="nav-link active">
+        <span class="nav-icon">📋</span><span class="nav-label">Quêtes</span>
+      </a>
+      <a href="../Atelier/atelier.html" class="nav-link">
+        <span class="nav-icon">🔨</span><span class="nav-label">Atelier</span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- ══════ LAYOUT ══════ -->
+  <div class="quetes-layout">
+
+    <!-- ══ SIDEBAR ══ -->
+    <aside class="quetes-sidebar">
+
+      <!-- Recherche -->
+      <div class="sidebar-search">
+        <input type="text" id="sidebar-search" placeholder="🔍  Rechercher…" autocomplete="off" />
+      </div>
+
+      <!-- Onglets type de quête -->
+      <div class="sidebar-sort-bar">
+        <button class="sort-btn active" data-tab="main">🔥 Principales</button>
+        <button class="sort-btn" data-tab="sec">💬 Secondaires</button>
+        <button class="sort-btn" data-tab="ter">❓ Tertiaires</button>
+      </div>
+
+      <!-- Zone scrollable -->
+      <div id="sidebar-scroll" class="sidebar-scroll">
+
+        <!-- ─ Paliers ─ -->
+        <div class="filter-block" id="palier-block">
+          <div class="filter-block-header open" id="palier-block-header">
+            <span class="palier-label">⬡ Palier</span>
+            <span class="palier-arrow">▶</span>
+          </div>
+          <div class="filter-block-body open" id="palier-block-body">
+            <div id="palier-filters"></div>
+          </div>
+        </div>
+
+        <!-- ─ Zone ─ -->
+        <div class="filter-block" id="zone-block">
+          <div class="filter-block-header open" id="zone-block-header">
+            <span class="palier-label">🗺 Zone</span>
+            <span class="palier-arrow">▶</span>
+          </div>
+          <div class="filter-block-body open" id="zone-block-body">
+            <div class="bfilter-list" id="zone-filters"></div>
+          </div>
+        </div>
+
+        <!-- ─ Statut ─ -->
+        <div class="filter-block" id="statut-block">
+          <div class="filter-block-header open" id="statut-block-header">
+            <span class="palier-label">✅ Statut</span>
+            <span class="palier-arrow">▶</span>
+          </div>
+          <div class="filter-block-body open" id="statut-block-body">
+            <div class="bfilter-list">
+              <label class="bfilter-row">
+                <input type="radio" name="statut-filter" value="all" checked />
+                <span class="bfilter-dot dot-all"></span>
+                <span class="bfilter-label">Toutes</span>
+                <span class="bfilter-count" id="cnt-all"></span>
+              </label>
+              <label class="bfilter-row">
+                <input type="radio" name="statut-filter" value="todo" />
+                <span class="bfilter-dot dot-todo"></span>
+                <span class="bfilter-label">À faire</span>
+                <span class="bfilter-count" id="cnt-todo"></span>
+              </label>
+              <label class="bfilter-row">
+                <input type="radio" name="statut-filter" value="done" />
+                <span class="bfilter-dot dot-done"></span>
+                <span class="bfilter-label">Terminées</span>
+                <span class="bfilter-count" id="cnt-done"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /sidebar-scroll -->
+    </aside>
+
+    <!-- ══ ZONE PRINCIPALE ══ -->
+    <main class="quetes-main">
+      <div class="quetes-main-header">
+        <div>
+          <h1 class="quetes-title" id="main-title">Quêtes Principales</h1>
+          <p class="quetes-subtitle" id="main-subtitle">// PRINCIPALES · VEILLEURS AU CLAIR DE LUNE</p>
+        </div>
+        <span id="result-count" class="result-count"></span>
+      </div>
+
+      <div id="quete-grid" class="quete-grid"></div>
+
+      <div id="grid-empty" class="grid-empty" style="display:none;">
+        <div class="grid-empty-icon">📋</div>
+        <div class="grid-empty-text">Aucun résultat</div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- ══════ MODAL ══════ -->
+  <div class="quest-modal-overlay" id="quest-modal-overlay">
+    <div class="quest-modal" id="quest-modal" role="dialog" aria-modal="true">
+      <button class="modal-close-btn" id="modal-close-btn" title="Fermer (Échap)">✕</button>
+      <div class="quest-modal-scroll">
+        <div id="quest-modal-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="quetes.js"></script>
+</body>
+</html>
