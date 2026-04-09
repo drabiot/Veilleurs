@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin()       { return isAuth() && userRole() == 'admin'; }
+    function isModo()        { return isAuth() && userRole() in ['modo', 'admin']; }
+    function isContrib()     { return isAuth() && userRole() in ['contributeur', 'modo', 'admin']; }
+    function isMembre()      { return isAuth() && userRole() in ['membre', 'contributeur', 'modo', 'admin']; }
+
+    match /items/{id} {
+      allow read:  if true;
+      allow write: if isContrib();
+    }
+
+    match /mobs/{id} {
+      allow read:  if true;
+      allow write: if isContrib();
+    }
+
+    match /personnages/{id} {
+      allow read:  if true;
+      allow write: if isContrib();
+    }
+
+    match /regions/{id} {
+      allow read:  if true;
+      allow write: if isContrib();
+    }
+
+    match /users/{uid} {
+      allow read:  if isAuth();
+      allow write: if isAdmin();
+    }
+
+    match /submissions/{id} {
+      // Tout user connecté peut soumettre
+      allow create: if isMembre();
+      // Seul le soumetteur peut lire sa propre soumission, ou les modo+
+      allow read:   if isAuth() && (resource.data.submittedBy == request.auth.uid || isModo());
+      // Seuls les modo/admin peuvent modifier (approuver/rejeter)
+      allow update: if isModo();
+      allow delete: if isAdmin();
+    }
+
+  }
+}

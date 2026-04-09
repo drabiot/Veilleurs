@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Migration → Firebase</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f0f14; color: #e8e8f0; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; padding: 24px; }
+h1 { font-size: 18px; font-weight: 700; color: #7a5af8; margin-bottom: 20px; }
+.card { background: #1a1a24; border: 1px solid #2e2e42; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.card h2 { font-size: 13px; font-weight: 700; color: #7a7a90; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: filter .15s; }
+.btn:hover { filter: brightness(1.15); }
+.btn:disabled { opacity: .4; cursor: default; filter: none; }
+.btn-primary { background: #7a5af8; color: #fff; }
+.btn-danger  { background: #7f1d1d; color: #fca5a5; border: 1px solid #7f1d1d; }
+.btn-ghost   { background: #22222f; color: #e8e8f0; border: 1px solid #2e2e42; }
+.log { background: #0d1117; border: 1px solid #2e2e42; border-radius: 8px; padding: 12px; font-family: 'Consolas', monospace; font-size: 12px; line-height: 1.8; max-height: 400px; overflow-y: auto; margin-top: 12px; white-space: pre-wrap; }
+.ok   { color: #4ade80; }
+.err  { color: #f87171; }
+.warn { color: #fbbf24; }
+.info { color: #60a5fa; }
+.progress { height: 6px; background: #2e2e42; border-radius: 3px; margin: 8px 0; overflow: hidden; }
+.progress-bar { height: 100%; background: #7a5af8; border-radius: 3px; transition: width .3s; width: 0%; }
+.collection-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #2e2e42; }
+.collection-row:last-child { border-bottom: none; }
+.col-name  { flex: 1; font-weight: 600; }
+.col-count { color: #7a7a90; font-size: 12px; font-family: monospace; }
+.col-status { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #22222f; color: #7a7a90; }
+.col-status.done { background: rgba(74,222,128,.1); color: #4ade80; }
+.col-status.error { background: rgba(248,113,113,.1); color: #f87171; }
+input { background: #22222f; border: 1px solid #2e2e42; border-radius: 6px; color: #e8e8f0; padding: 8px 12px; font-size: 13px; outline: none; transition: border-color .15s; width: 100%; }
+input:focus { border-color: #7a5af8; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+label { font-size: 11px; font-weight: 600; color: #7a7a90; text-transform: uppercase; letter-spacing: .04em; display: block; margin-bottom: 4px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+</style>
+</head>
+<body>
+
+<h1>🚀 Migration → Firebase Firestore</h1>
+
+<!-- AUTH -->
+<div class="card" id="auth-card">
+  <h2>🔐 Connexion Admin</h2>
+  <p style="font-size:12px;color:#7a7a90;margin-bottom:12px;">Connecte-toi avec le compte Firebase admin pour pouvoir écrire dans Firestore.</p>
+  <div class="row2" style="margin-bottom:10px;">
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="admin@example.com">
+    </div>
+    <div class="field">
+      <label>Mot de passe</label>
+      <input type="password" id="login-password" placeholder="••••••••">
+    </div>
+  </div>
+  <button class="btn btn-primary" id="btn-login" onclick="doLogin()">🔑 Connexion</button>
+  <div id="auth-status" style="margin-top:10px;font-size:12px;color:#7a7a90;"></div>
+</div>
+
+<!-- COLLECTIONS OVERVIEW -->
+<div class="card" id="session-card" style="display:none;flex-direction:row;align-items:center;justify-content:space-between;padding:12px 16px;">
+  <span id="session-email" style="font-size:13px;color:#7a7a90;"></span>
+  <button class="btn btn-ghost" onclick="doLogout()">🚪 Déconnexion</button>
+</div>
+
+<div class="card" id="overview-card" style="display:none;">
+  <h2>📦 Collections à migrer</h2>
+  <div id="collection-rows"></div>
+</div>
+
+<!-- MIGRATION -->
+<div class="card" id="migration-card" style="display:none;">
+  <h2>⚙️ Migration</h2>
+  <p style="font-size:12px;color:#7a7a90;margin-bottom:12px;">
+    ⚠️ La migration écrase les documents existants (upsert par ID).<br>
+    Lance une seule fois, ou relance après modifications de data.js.
+  </p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn btn-primary" id="btn-migrate-all" onclick="migrateAll()">▶ Tout migrer</button>
+    <button class="btn btn-ghost"   id="btn-migrate-items"   onclick="migrateCollection('items')">⚔️ Items</button>
+    <button class="btn btn-ghost"   id="btn-migrate-mobs"    onclick="migrateCollection('mobs')">💀 Mobs</button>
+    <button class="btn btn-ghost"   id="btn-migrate-pnj"     onclick="migrateCollection('pnj')">🧑 PNJ</button>
+    <button class="btn btn-ghost"   id="btn-migrate-regions" onclick="migrateCollection('regions')">📍 Régions</button>
+    <button class="btn btn-danger"  id="btn-nuke" onclick="nukeCollection()" style="margin-left:auto;">🗑 Vider une collection…</button>
+  </div>
+  <div class="progress" id="global-progress" style="display:none;"><div class="progress-bar" id="progress-bar"></div></div>
+  <div class="log" id="log">En attente…</div>
+</div>
+
+<!-- USER SETUP -->
+<div class="card" id="user-card" style="display:none;">
+  <h2>👤 Créer / modifier un utilisateur</h2>
+  <p style="font-size:12px;color:#7a7a90;margin-bottom:12px;">Assigne un rôle à un UID Firebase Auth. L'user doit déjà exister en Auth.</p>
+  <div class="row2" style="margin-bottom:10px;">
+    <div class="field">
+      <label>UID Firebase Auth</label>
+      <input type="text" id="user-uid" value="RSxiqgHlylY2KhLxj6OySzhOzL13">
+    </div>
+    <div class="field">
+      <label>Rôle</label>
+      <select id="user-role" style="background:#22222f;border:1px solid #2e2e42;border-radius:6px;color:#e8e8f0;padding:8px 12px;font-size:13px;outline:none;width:100%;">
+        <option value="membre">membre</option>
+        <option value="contributeur">contributeur</option>
+        <option value="modo">modo</option>
+        <option value="admin" selected>admin</option>
+      </select>
+    </div>
+  </div>
+  <button class="btn btn-primary" onclick="setUserRole()">💾 Enregistrer le rôle</button>
+  <div id="user-status" style="margin-top:8px;font-size:12px;color:#7a7a90;"></div>
+</div>
+
+<!-- Scripts data (chargés en defer pour être dispo dans window) -->
+<script src="Compendium/data.js"></script>
+<script src="Compendium/data_sensible.js"></script>
+<script src="Compendium/data_region.js"></script>
+<script src="Bestiaire/mob_data.js"></script>
+<script src="Bestiaire/data.js"></script>
+
+<script type="module">
+import { initializeApp }               from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, writeBatch, doc, collection, getDocs, deleteDoc }
+                                        from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+                                        from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0",
+  authDomain:        "veilleurs-a13b3.firebaseapp.com",
+  projectId:         "veilleurs-a13b3",
+  storageBucket:     "veilleurs-a13b3.firebasestorage.app",
+  messagingSenderId: "876055511485",
+  appId:             "1:876055511485:web:33d8c8dce684bec05692d4",
+};
+
+const app  = initializeApp(firebaseConfig);
+const db   = getFirestore(app);
+const auth = getAuth(app);
+
+// ── Expose globals pour les onclick ──
+window._db   = db;
+window._auth = auth;
+window._firestore = { writeBatch, doc, collection, getDocs, deleteDoc };
+
+// ── Auth ──
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById('auth-card').style.display     = 'none';
+    document.getElementById('session-card').style.display  = 'flex';
+    document.getElementById('session-email').textContent   = '👤 ' + user.email;
+    document.getElementById('overview-card').style.display  = '';
+    document.getElementById('migration-card').style.display = '';
+    document.getElementById('user-card').style.display      = '';
+    document.getElementById('auth-status').textContent = '';
+    buildOverview();
+  } else {
+    document.getElementById('auth-card').style.display     = '';
+    document.getElementById('session-card').style.display  = 'none';
+    document.getElementById('overview-card').style.display  = 'none';
+    document.getElementById('migration-card').style.display = 'none';
+    document.getElementById('user-card').style.display      = 'none';
+  }
+});
+
+window.doLogout = async () => {
+  await signOut(auth);
+};
+
+window.doLogin = async () => {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  const status = document.getElementById('auth-status');
+  const btn    = document.getElementById('btn-login');
+  btn.disabled = true; btn.textContent = '⏳ Connexion…';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch (e) {
+    status.innerHTML = `<span style="color:#f87171;">⛔ ${e.message}</span>`;
+    btn.disabled = false; btn.textContent = '🔑 Connexion';
+  }
+};
+
+// ── Données à migrer ──
+function getDataSources() {
+  return {
+    items:   typeof ITEMS       !== 'undefined' ? ITEMS       : [],
+    mobs:    typeof MOBS        !== 'undefined' ? MOBS        : [],
+    pnj:     typeof PERSONNAGES !== 'undefined' ? PERSONNAGES : [],
+    regions: typeof REGIONS     !== 'undefined' ? REGIONS     : [],
+  };
+}
+
+const COL_NAMES = {
+  items:   'items',
+  mobs:    'mobs',
+  pnj:     'personnages',
+  regions: 'regions',
+};
+
+function buildOverview() {
+  const sources = getDataSources();
+  const rows = document.getElementById('collection-rows');
+  rows.innerHTML = '';
+  for (const [key, arr] of Object.entries(sources)) {
+    const row = document.createElement('div');
+    row.className = 'collection-row';
+    row.id = `overview-${key}`;
+    row.innerHTML = `
+      <span class="col-name">${{ items:'⚔️ Items', mobs:'💀 Mobs', pnj:'🧑 PNJ', regions:'📍 Régions' }[key]}</span>
+      <span class="col-count">${arr.length} documents</span>
+      <span class="col-status" id="status-${key}">—</span>
+    `;
+    rows.appendChild(row);
+  }
+}
+
+// ── Sanitize : convertit les arrays imbriqués (ex: stats ranges [14,16])
+//    en objets {min,max} compatibles Firestore ──────────────────────────
+function sanitizeForFirestore(val, insideArray = false) {
+  if (Array.isArray(val)) {
+    // Array de deux nombres → range stat → {min, max}
+    if (val.length === 2 && val.every(v => typeof v === 'number')) {
+      return { min: val[0], max: val[1] };
+    }
+    // Array imbriqué dans un array → convertir en objet indexé
+    // ex: [[{id:'a'}], [{id:'b'}]] → {"0": [{id:'a'}], "1": [{id:'b'}]}
+    if (insideArray) {
+      const out = {};
+      val.forEach((v, i) => { out[String(i)] = sanitizeForFirestore(v, false); });
+      return out;
+    }
+    return val.map(v => sanitizeForFirestore(v, true));
+  }
+  if (val !== null && typeof val === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(val)) {
+      out[k] = sanitizeForFirestore(v, false);
+    }
+    return out;
+  }
+  return val;
+}
+
+// ── Logging ──
+function log(msg, type = 'info') {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = type;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setStatus(key, text, type) {
+  const el = document.getElementById(`status-${key}`);
+  if (!el) return;
+  el.textContent = text; el.className = `col-status ${type}`;
+}
+
+function setProgress(pct) {
+  document.getElementById('global-progress').style.display = '';
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+// ── Migration d'une collection ──
+// Firestore writeBatch est limité à 500 ops — on découpe.
+window.migrateCollection = async (key) => {
+  const sources = getDataSources();
+  const docs    = sources[key];
+  const colName = COL_NAMES[key];
+  if (!docs.length) { log(`⚠️ Aucune donnée pour "${key}"`, 'warn'); return; }
+
+  log(`\n▶ Migration "${colName}" — ${docs.length} documents…`, 'info');
+  setStatus(key, '⏳ …', '');
+
+  let done = 0, errors = 0;
+  const BATCH_SIZE = 499;
+
+  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+    const chunk = docs.slice(i, i + BATCH_SIZE);
+    const batch = writeBatch(db);
+
+    for (const item of chunk) {
+      if (!item.id) { log(`  ⚠️ Document sans ID ignoré : ${JSON.stringify(item).slice(0,60)}`, 'warn'); errors++; continue; }
+      const clean = sanitizeForFirestore(JSON.parse(JSON.stringify(item)));
+      const ref   = doc(db, colName, String(item.id));
+      batch.set(ref, clean);
+      done++;
+    }
+
+    try {
+      await batch.commit();
+      log(`  ✓ Batch ${Math.ceil(i/BATCH_SIZE)+1} — ${Math.min(i+BATCH_SIZE, docs.length)}/${docs.length}`, 'ok');
+    } catch (e) {
+      log(`  ✕ Erreur batch : ${e.message}`, 'err');
+      errors++;
+    }
+  }
+
+  if (errors) {
+    log(`⚠️ "${colName}" terminé avec ${errors} erreur(s)`, 'warn');
+    setStatus(key, `⚠️ ${errors} erreurs`, 'error');
+  } else {
+    log(`✓ "${colName}" — ${done} documents migrés.`, 'ok');
+    setStatus(key, `✓ ${done}`, 'done');
+  }
+};
+
+// ── Tout migrer ──
+window.migrateAll = async () => {
+  document.getElementById('log').innerHTML = '';
+  const keys = ['items', 'mobs', 'pnj', 'regions'];
+  const total = keys.length;
+  let done = 0;
+  for (const key of keys) {
+    await migrateCollection(key);
+    done++;
+    setProgress((done / total) * 100);
+  }
+  log('\n🎉 Migration complète !', 'ok');
+};
+
+// ── Vider une collection ──
+window.nukeCollection = async () => {
+  const key = prompt('Nom de la collection à vider (items / mobs / personnages / regions) :');
+  if (!key) return;
+  if (!confirm(`⚠️ Supprimer TOUS les documents de "${key}" ? Cette action est irréversible.`)) return;
+  log(`\n🗑 Suppression de "${key}"…`, 'warn');
+  const snap = await getDocs(collection(db, key));
+  let n = 0;
+  const BATCH_SIZE = 499;
+  const all = snap.docs;
+  for (let i = 0; i < all.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db);
+    all.slice(i, i + BATCH_SIZE).forEach(d => { batch.delete(d.ref); n++; });
+    await batch.commit();
+  }
+  log(`✓ ${n} documents supprimés de "${key}".`, 'ok');
+};
+
+// ── Set user role ──
+window.setUserRole = async () => {
+  const { writeBatch: wb, doc: d } = window._firestore;
+  const uid    = document.getElementById('user-uid').value.trim();
+  const role   = document.getElementById('user-role').value;
+  const status = document.getElementById('user-status');
+  if (!uid) { status.innerHTML = '<span style="color:#f87171;">UID manquant</span>'; return; }
+  try {
+    const { setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+    await setDoc(doc(db, 'users', uid), { role }, { merge: true });
+    status.innerHTML = `<span style="color:#4ade80;">✓ Rôle "${role}" attribué à ${uid}</span>`;
+  } catch(e) {
+    status.innerHTML = `<span style="color:#f87171;">✕ ${e.message}</span>`;
+  }
+};
+
+</script>
+</body>
+</html>
