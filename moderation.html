@@ -182,7 +182,7 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
   <main class="main" id="pnj-order-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <span style="font-size:15px;font-weight:700;">🧑 Ordre des PNJ</span>
-      <button class="btn btn-ghost" id="btn-save-pnj-order" onclick="savePnjOrder()" style="font-size:12px;">💾 Calculer &amp; sauvegarder</button>
+      <button class="btn btn-ghost" id="btn-save-pnj-order" onclick="savePnjOrder()" style="font-size:12px;" disabled>💾 Sauvegarder</button>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
       Glisse-dépose les <b>régions</b> pour changer leur ordre. Les PNJ d'une région sont triés alphabétiquement. La sauvegarde met à jour l'<code>ordre</code> des régions <b>et</b> des PNJ dans Firestore.
@@ -766,8 +766,30 @@ window.saveMobOrder = async () => {
 // ── Item order panel ──────────────────────────────────
 let _itemOrderData       = [];
 let _itemOrderDirty      = false;
-let _itemDragSrc         = null;
+let _itemDragSrc         = null;  // drag item
+let _itemCatDragSrc      = null;  // drag catégorie { palier, cat }
 let _itemPalierCollapsed = new Set();
+let _itemCatCollapsed    = new Set(); // clé : `${palier}:${cat}`
+
+const ITEM_CATEGORIES = {
+  materiaux:   { label: 'Matériaux',       emoji: '🧱' },
+  quete:       { label: 'Objets de Quête', emoji: '📜' },
+  ressources:  { label: 'Ressources',      emoji: '⛏️' },
+  nourriture:  { label: 'Nourriture',      emoji: '🍖' },
+  consommable: { label: 'Consommables',    emoji: '🧪' },
+  arme:        { label: 'Armes',           emoji: '⚔️' },
+  armure:      { label: 'Armures',         emoji: '🛡️' },
+  accessoire:  { label: 'Accessoires',     emoji: '💍' },
+  outils:      { label: 'Outils',          emoji: '🛠️' },
+  rune:        { label: 'Runes',           emoji: '🔮' },
+  donjon:      { label: 'Donjon',          emoji: '🏰' },
+  monnaie:     { label: 'Monnaie',         emoji: '🪙' },
+};
+
+function itemCatLabel(cat) {
+  const c = ITEM_CATEGORIES[cat];
+  return c ? `${c.emoji} ${c.label}` : cat || '—';
+}
 
 const RARITY_ORDER_MOD = ['commun','rare','epique','legendaire','mythique','godlike','event'];
 function itemTag(item) {
@@ -818,7 +840,7 @@ function renderItemOrder() {
                     .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   listEl.innerHTML = '';
 
-  // ── Mode recherche : liste plate ──
+  // ── Mode recherche : liste plate avec position globale ──
   if (searchQ) {
     const visible = _itemOrderData.filter(it =>
       (it.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(searchQ));
@@ -832,19 +854,19 @@ function renderItemOrder() {
         <span class="mob-order-handle" style="color:var(--border);">⠿</span>
         <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
         <span class="mob-order-name">${item.name||item.id}</span>
-        <span class="mob-order-tag">${itemTag(item)}</span>`;
+        <span class="mob-order-tag">${itemCatLabel(item.category)} · ${itemTag(item)}</span>`;
       listEl.appendChild(row);
     });
     return;
   }
 
-  // ── Mode normal : groupes par palier ──
+  // ── Mode normal : palier → catégorie → items ──
   const paliers = [...new Set(_itemOrderData.map(it => it.palier || 1))].sort((a,b) => a-b);
   if (!paliers.length) { listEl.innerHTML = '<div class="empty">Aucun item</div>'; return; }
 
   paliers.forEach(palier => {
-    const palierItems = _itemOrderData.filter(it => (it.palier||1) === palier);
-    const collapsed   = _itemPalierCollapsed.has(palier);
+    const palierItems    = _itemOrderData.filter(it => (it.palier||1) === palier);
+    const palierCollapsed = _itemPalierCollapsed.has(palier);
 
     const section = document.createElement('div');
     section.className = 'palier-section';
@@ -854,7 +876,7 @@ function renderItemOrder() {
     ph.innerHTML = `
       <span style="flex:1;">Palier ${palier}</span>
       <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierItems.length} item${palierItems.length>1?'s':''}</span>
-      <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
+      <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${palierCollapsed?'Dérouler':'Réduire'}">${palierCollapsed?'▶':'▼'}</button>`;
     ph.querySelector('[data-toggle]').addEventListener('click', () => {
       if (_itemPalierCollapsed.has(palier)) _itemPalierCollapsed.delete(palier);
       else _itemPalierCollapsed.add(palier);
@@ -862,64 +884,168 @@ function renderItemOrder() {
     });
     section.appendChild(ph);
 
-    const body = document.createElement('div');
-    body.className = 'palier-section-body';
-    body.style.display = collapsed ? 'none' : '';
+    const palierBody = document.createElement('div');
+    palierBody.className = 'palier-section-body';
+    palierBody.style.display = palierCollapsed ? 'none' : '';
 
-    palierItems.forEach(item => {
-      const palierIdx = palierItems.indexOf(item);
-      const row = document.createElement('div');
-      row.className  = 'mob-order-row';
-      row.draggable  = true;
-      row.dataset.id = item.id;
-      row.innerHTML  = `
-        <span class="mob-order-handle">⠿</span>
-        <input type="number" class="mob-order-index" value="${palierIdx+1}" min="1" max="${palierItems.length}" title="Position dans ce palier">
-        <span class="mob-order-name">${item.name||item.id}</span>
-        <span class="mob-order-tag">${itemTag(item)}</span>`;
+    // Catégories dans l'ordre d'apparition dans _itemOrderData (reflète l'ordre admin)
+    const cats = [...new Set(palierItems.map(it => it.category || ''))];
 
-      const indexInput = row.querySelector('.mob-order-index');
-      indexInput.addEventListener('click', e => e.stopPropagation());
-      indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
-      indexInput.addEventListener('change', () => {
-        let toPalierIdx = parseInt(indexInput.value, 10) - 1;
-        toPalierIdx = Math.max(0, Math.min(palierItems.length - 1, toPalierIdx));
-        if (toPalierIdx === palierIdx) { indexInput.value = palierIdx + 1; return; }
-        const fromGlobal = _itemOrderData.indexOf(item);
-        const [removed]  = _itemOrderData.splice(fromGlobal, 1);
-        const nowPalier  = _itemOrderData.filter(it => (it.palier||1) === palier);
-        const insertAt   = toPalierIdx < nowPalier.length
-          ? _itemOrderData.indexOf(nowPalier[toPalierIdx])
-          : (_itemOrderData.indexOf(nowPalier[nowPalier.length-1]) + 1 || _itemOrderData.length);
-        _itemOrderData.splice(insertAt, 0, removed);
+    cats.forEach(cat => {
+      const catItems     = palierItems.filter(it => (it.category||'') === cat);
+      const catKey       = `${palier}:${cat}`;
+      const catCollapsed = _itemCatCollapsed.has(catKey);
+
+      const catSection = document.createElement('div');
+      catSection.className  = 'mob-order-row';
+      catSection.draggable  = true;
+      catSection.dataset.cat    = cat;
+      catSection.dataset.palier = palier;
+      catSection.style.cssText  = 'flex-direction:column;align-items:stretch;padding:0;margin-bottom:4px;cursor:default;background:var(--surface2);';
+
+      // ── En-tête de catégorie (draggable) ──
+      const ch = document.createElement('div');
+      ch.style.cssText = `
+        display:flex;align-items:center;gap:8px;padding:6px 10px 6px 10px;
+        border-radius:6px 6px 0 0;cursor:grab;user-select:none;`;
+      ch.innerHTML = `
+        <span class="mob-order-handle" style="font-size:16px;">⠿</span>
+        <span style="flex:1;font-size:12px;font-weight:700;color:var(--text);">${itemCatLabel(cat)}</span>
+        <span style="font-size:11px;color:var(--muted);font-weight:400;">${catItems.length} item${catItems.length>1?'s':''}</span>
+        <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:0 4px;line-height:1;">${catCollapsed?'▶':'▼'}</button>`;
+
+      ch.querySelector('[data-toggle]').addEventListener('click', e => {
+        e.stopPropagation();
+        if (_itemCatCollapsed.has(catKey)) _itemCatCollapsed.delete(catKey);
+        else _itemCatCollapsed.add(catKey);
+        renderItemOrder();
+      });
+      catSection.appendChild(ch);
+
+      // ── Drag catégorie ──
+      catSection.addEventListener('dragstart', e => {
+        if (_itemDragSrc) return; // un item est déjà en cours de drag
+        _itemCatDragSrc = { palier, cat };
+        catSection.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.stopPropagation();
+      });
+      catSection.addEventListener('dragend', () => {
+        catSection.classList.remove('dragging');
+        _itemCatDragSrc = null;
+      });
+      catSection.addEventListener('dragover', e => {
+        if (!_itemCatDragSrc || _itemCatDragSrc.palier !== palier || _itemCatDragSrc.cat === cat) return;
+        e.preventDefault();
+        e.stopPropagation();
+        catSection.classList.add('drag-over');
+      });
+      catSection.addEventListener('dragleave', () => catSection.classList.remove('drag-over'));
+      catSection.addEventListener('drop', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        catSection.classList.remove('drag-over');
+        if (!_itemCatDragSrc || _itemCatDragSrc.palier !== palier || _itemCatDragSrc.cat === cat) return;
+
+        const srcCat   = _itemCatDragSrc.cat;
+        const srcItems = _itemOrderData.filter(it => (it.palier||1) === palier && (it.category||'') === srcCat);
+
+        // Retirer les items source de _itemOrderData
+        srcItems.forEach(it => {
+          const idx = _itemOrderData.indexOf(it);
+          if (idx !== -1) _itemOrderData.splice(idx, 1);
+        });
+
+        // Trouver le premier item de la catégorie cible (après suppression des sources)
+        const firstTargetIdx = _itemOrderData.findIndex(it => (it.palier||1) === palier && (it.category||'') === cat);
+        const insertAt = firstTargetIdx === -1 ? _itemOrderData.length : firstTargetIdx;
+
+        _itemOrderData.splice(insertAt, 0, ...srcItems);
         _itemOrderDirty = true;
         document.getElementById('btn-save-item-order').disabled = false;
+        _itemCatDragSrc = null;
         renderItemOrder();
       });
 
-      row.addEventListener('dragstart', e => { _itemDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
-      row.addEventListener('dragend',   () => row.classList.remove('dragging'));
-      row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
-      row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-      row.addEventListener('drop', e => {
-        e.preventDefault(); row.classList.remove('drag-over');
-        if (!_itemDragSrc || _itemDragSrc === row) return;
-        const fromItem = _itemOrderData.find(it => it.id === _itemDragSrc.dataset.id);
-        const toItem   = _itemOrderData.find(it => it.id === row.dataset.id);
-        if (!fromItem || !toItem || (fromItem.palier||1) !== (toItem.palier||1)) return;
-        const fromIdx = _itemOrderData.findIndex(it => it.id === _itemDragSrc.dataset.id);
-        const toIdx   = _itemOrderData.findIndex(it => it.id === row.dataset.id);
-        if (fromIdx === -1 || toIdx === -1) return;
-        const [moved] = _itemOrderData.splice(fromIdx, 1);
-        _itemOrderData.splice(toIdx, 0, moved);
-        _itemOrderDirty = true;
-        document.getElementById('btn-save-item-order').disabled = false;
-        renderItemOrder();
+      // ── Corps : items de la catégorie ──
+      const catBody = document.createElement('div');
+      catBody.style.cssText = `padding:0 4px 4px 8px;${catCollapsed ? 'display:none;' : ''}`;
+
+      catItems.forEach(item => {
+        const catIdx = catItems.indexOf(item);
+        const row = document.createElement('div');
+        row.className  = 'mob-order-row';
+        row.draggable  = true;
+        row.dataset.id = item.id;
+        row.style.cssText = 'margin-top:3px;';
+        row.innerHTML  = `
+          <span class="mob-order-handle">⠿</span>
+          <input type="number" class="mob-order-index" value="${catIdx+1}" min="1" max="${catItems.length}" title="Position dans cette catégorie">
+          <span class="mob-order-name">${item.name||item.id}</span>
+          <span class="mob-order-tag">${itemTag(item)}</span>`;
+
+        const indexInput = row.querySelector('.mob-order-index');
+        indexInput.addEventListener('click', e => e.stopPropagation());
+        indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+        indexInput.addEventListener('change', () => {
+          let toCatIdx = parseInt(indexInput.value, 10) - 1;
+          toCatIdx = Math.max(0, Math.min(catItems.length - 1, toCatIdx));
+          if (toCatIdx === catIdx) { indexInput.value = catIdx + 1; return; }
+          const fromGlobal = _itemOrderData.indexOf(item);
+          const [removed]  = _itemOrderData.splice(fromGlobal, 1);
+          const nowCat     = _itemOrderData.filter(it => (it.palier||1) === palier && (it.category||'') === cat);
+          const insertAt   = toCatIdx < nowCat.length
+            ? _itemOrderData.indexOf(nowCat[toCatIdx])
+            : (_itemOrderData.indexOf(nowCat[nowCat.length-1]) + 1 || _itemOrderData.length);
+          _itemOrderData.splice(insertAt, 0, removed);
+          _itemOrderDirty = true;
+          document.getElementById('btn-save-item-order').disabled = false;
+          renderItemOrder();
+        });
+
+        row.addEventListener('dragstart', e => {
+          if (_itemCatDragSrc) return;
+          _itemDragSrc = row;
+          row.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.stopPropagation();
+        });
+        row.addEventListener('dragend', () => { row.classList.remove('dragging'); _itemDragSrc = null; });
+        row.addEventListener('dragover', e => {
+          if (_itemCatDragSrc) return;
+          e.preventDefault();
+          e.stopPropagation();
+          row.classList.add('drag-over');
+        });
+        row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+        row.addEventListener('drop', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          row.classList.remove('drag-over');
+          if (_itemCatDragSrc || !_itemDragSrc || _itemDragSrc === row) return;
+          const fromItem = _itemOrderData.find(it => it.id === _itemDragSrc.dataset.id);
+          const toItem   = _itemOrderData.find(it => it.id === row.dataset.id);
+          if (!fromItem || !toItem) return;
+          if ((fromItem.palier||1) !== (toItem.palier||1)) return;
+          if ((fromItem.category||'') !== (toItem.category||'')) return;
+          const fromIdx = _itemOrderData.findIndex(it => it.id === _itemDragSrc.dataset.id);
+          const toIdx   = _itemOrderData.findIndex(it => it.id === row.dataset.id);
+          if (fromIdx === -1 || toIdx === -1) return;
+          const [moved] = _itemOrderData.splice(fromIdx, 1);
+          _itemOrderData.splice(toIdx, 0, moved);
+          _itemOrderDirty = true;
+          document.getElementById('btn-save-item-order').disabled = false;
+          renderItemOrder();
+        });
+
+        catBody.appendChild(row);
       });
 
-      body.appendChild(row);
+      catSection.appendChild(catBody);
+      palierBody.appendChild(catSection);
     });
-    section.appendChild(body);
+
+    section.appendChild(palierBody);
     listEl.appendChild(section);
   });
 }
@@ -948,10 +1074,11 @@ window.saveItemOrder = async () => {
 
 // ── PNJ order panel ───────────────────────────────────
 // _pnjRegions = [{id, name, pnjs:[{id,name,region,...},...]},...] dans l'ordre drag
-let _pnjRegions        = [];
-let _pnjDirty          = false;
-let _pnjDragSrc        = null;
-let _pnjCollapsed      = new Set(); // IDs de régions réduites
+let _pnjRegions         = [];
+let _pnjDirty           = false;
+let _pnjDragSrc         = null;  // drag région
+let _pnjItemDragSrc     = null;  // drag PNJ individuel
+let _pnjCollapsed       = new Set(); // IDs de régions réduites
 let _pnjPalierCollapsed = new Set(); // paliers réduits
 
 window.showPnjOrder = async () => {
@@ -985,8 +1112,14 @@ async function loadPnjOrder() {
       if (!byRegion[key]) byRegion[key] = [];
       byRegion[key].push(p);
     });
-    // Trier alphabétiquement dans chaque groupe
-    Object.values(byRegion).forEach(arr => arr.sort((a, b) => (a.name||'').localeCompare(b.name||'', 'fr')));
+    // Trier par ordre admin (champ `ordre`), puis alphabétiquement en fallback
+    Object.values(byRegion).forEach(arr => arr.sort((a, b) => {
+      const ao = a.ordre ?? null, bo = b.ordre ?? null;
+      if (ao !== null && bo !== null) return ao - bo;
+      if (ao !== null) return -1;
+      if (bo !== null) return 1;
+      return (a.name||'').localeCompare(b.name||'', 'fr');
+    }));
 
     // Régions connues depuis Firestore, triées par leur ordre actuel
     const regDocs = regSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -1021,7 +1154,7 @@ async function loadPnjOrder() {
   }
 }
 
-function _makePnjRegionGroup(group, gi, palierPnjs, globalPosMap) {
+function _makePnjRegionGroup(group, gi, palierPnjs, palier) {
   const collapsed = _pnjCollapsed.has(group.id);
   const groupEl   = document.createElement('div');
   groupEl.dataset.gi    = gi;
@@ -1047,13 +1180,27 @@ function _makePnjRegionGroup(group, gi, palierPnjs, globalPosMap) {
     else _pnjCollapsed.add(group.id);
     renderPnjOrder();
   });
-  header.addEventListener('dragstart', e => { _pnjDragSrc = groupEl; groupEl.style.opacity = '.35'; e.dataTransfer.effectAllowed = 'move'; });
-  header.addEventListener('dragend',   () => { groupEl.style.opacity = ''; document.querySelectorAll('#pnj-order-list [data-gi]').forEach(g => { g.style.outline = ''; }); });
-  header.addEventListener('dragover',  e => { e.preventDefault(); if (_pnjDragSrc && _pnjDragSrc !== groupEl) groupEl.style.outline = '2px solid var(--accent)'; });
+  header.addEventListener('dragstart', e => {
+    if (_pnjItemDragSrc) return;
+    _pnjDragSrc = groupEl; groupEl.style.opacity = '.35';
+    e.dataTransfer.effectAllowed = 'move';
+    e.stopPropagation();
+  });
+  header.addEventListener('dragend', () => {
+    groupEl.style.opacity = '';
+    document.querySelectorAll('#pnj-order-list [data-gi]').forEach(g => { g.style.outline = ''; });
+    _pnjDragSrc = null;
+  });
+  header.addEventListener('dragover', e => {
+    if (_pnjItemDragSrc || !_pnjDragSrc || _pnjDragSrc === groupEl) return;
+    e.preventDefault(); e.stopPropagation();
+    groupEl.style.outline = '2px solid var(--accent)';
+  });
   header.addEventListener('dragleave', () => { groupEl.style.outline = ''; });
   header.addEventListener('drop', e => {
-    e.preventDefault(); groupEl.style.outline = '';
-    if (!_pnjDragSrc || _pnjDragSrc === groupEl) return;
+    e.preventDefault(); e.stopPropagation();
+    groupEl.style.outline = '';
+    if (_pnjItemDragSrc || !_pnjDragSrc || _pnjDragSrc === groupEl) return;
     const fromGi = parseInt(_pnjDragSrc.dataset.gi, 10);
     const toGi   = parseInt(groupEl.dataset.gi, 10);
     if (isNaN(fromGi) || isNaN(toGi)) return;
@@ -1061,23 +1208,93 @@ function _makePnjRegionGroup(group, gi, palierPnjs, globalPosMap) {
     _pnjRegions.splice(toGi, 0, moved);
     _pnjDirty = true;
     document.getElementById('btn-save-pnj-order').disabled = false;
+    _pnjDragSrc = null;
     renderPnjOrder();
   });
 
   groupEl.appendChild(header);
 
   const pnjList = document.createElement('div');
-  pnjList.style.display = collapsed ? 'none' : '';
+  pnjList.style.cssText = `padding:0 4px 2px 8px;${collapsed ? 'display:none;' : ''}`;
+
   palierPnjs.forEach(pnj => {
+    const pnjIdx = palierPnjs.indexOf(pnj);
     const row = document.createElement('div');
-    row.className      = 'mob-order-row';
-    row.style.marginLeft = '18px';
+    row.className    = 'mob-order-row';
+    row.draggable    = true;
+    row.dataset.id   = pnj.id;
+    row.dataset.gi   = gi;
+    row.style.cssText = 'margin-top:3px;';
     row.innerHTML = `
-      <span class="mob-order-handle" style="color:var(--border);visibility:hidden;">⠿</span>
-      <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalPosMap.get(pnj.id)}</span>
+      <span class="mob-order-handle">⠿</span>
+      <input type="number" class="mob-order-index" value="${pnjIdx+1}" min="1" max="${palierPnjs.length}" title="Position dans cette région">
       <span class="mob-order-name">${pnj.name||pnj.id}</span>`;
+
+    const indexInput = row.querySelector('.mob-order-index');
+    indexInput.addEventListener('click', e => e.stopPropagation());
+    indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+    indexInput.addEventListener('change', () => {
+      let toIdx = parseInt(indexInput.value, 10) - 1;
+      toIdx = Math.max(0, Math.min(palierPnjs.length - 1, toIdx));
+      if (toIdx === pnjIdx) { indexInput.value = pnjIdx + 1; return; }
+      const fromIdx = group.pnjs.indexOf(pnj);
+      group.pnjs.splice(fromIdx, 1);
+      // palierPnjs est un sous-ensemble de group.pnjs pour ce palier
+      // recalculer la position globale dans group.pnjs
+      const nowPalierPnjs = group.pnjs.filter(p => (p.palier||1) === palier);
+      const insertBefore  = nowPalierPnjs[toIdx];
+      if (insertBefore) {
+        const insertAt = group.pnjs.indexOf(insertBefore);
+        group.pnjs.splice(insertAt, 0, pnj);
+      } else {
+        // insérer après le dernier du palier dans group.pnjs
+        const last = nowPalierPnjs[nowPalierPnjs.length - 1];
+        const insertAt = last ? group.pnjs.indexOf(last) + 1 : group.pnjs.length;
+        group.pnjs.splice(insertAt, 0, pnj);
+      }
+      _pnjDirty = true;
+      document.getElementById('btn-save-pnj-order').disabled = false;
+      renderPnjOrder();
+    });
+
+    row.addEventListener('dragstart', e => {
+      if (_pnjDragSrc) return;
+      _pnjItemDragSrc = row;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.stopPropagation();
+    });
+    row.addEventListener('dragend', () => { row.classList.remove('dragging'); _pnjItemDragSrc = null; });
+    row.addEventListener('dragover', e => {
+      if (_pnjDragSrc || !_pnjItemDragSrc || _pnjItemDragSrc === row) return;
+      // même région et même palier seulement
+      if (_pnjItemDragSrc.dataset.gi !== row.dataset.gi) return;
+      e.preventDefault(); e.stopPropagation();
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault(); e.stopPropagation();
+      row.classList.remove('drag-over');
+      if (_pnjDragSrc || !_pnjItemDragSrc || _pnjItemDragSrc === row) return;
+      if (_pnjItemDragSrc.dataset.gi !== row.dataset.gi) return;
+      const fromPnj = group.pnjs.find(p => p.id === _pnjItemDragSrc.dataset.id);
+      const toPnj   = group.pnjs.find(p => p.id === row.dataset.id);
+      if (!fromPnj || !toPnj) return;
+      const fromIdx = group.pnjs.indexOf(fromPnj);
+      const toIdx2  = group.pnjs.indexOf(toPnj);
+      if (fromIdx === -1 || toIdx2 === -1) return;
+      const [moved] = group.pnjs.splice(fromIdx, 1);
+      group.pnjs.splice(toIdx2, 0, moved);
+      _pnjDirty = true;
+      document.getElementById('btn-save-pnj-order').disabled = false;
+      _pnjItemDragSrc = null;
+      renderPnjOrder();
+    });
+
     pnjList.appendChild(row);
   });
+
   groupEl.appendChild(pnjList);
   return groupEl;
 }
@@ -1117,15 +1334,10 @@ function renderPnjOrder() {
 
   const paliers = [...new Set(allPnjs.map(p => p.palier||1))].sort((a,b) => a-b);
 
-  // Pré-calcul des positions globales : palier ascendant → ordre des régions → ordre alpha dans la région
-  const globalPosMap = new Map();
-  let pos = 1;
-  paliers.forEach(pal => _pnjRegions.forEach(g => g.pnjs.filter(p => (p.palier||1)===pal).forEach(p => globalPosMap.set(p.id, pos++))));
-
   paliers.forEach(palier => {
-    const totalCount    = allPnjs.filter(p => (p.palier||1) === palier).length;
+    const totalCount   = allPnjs.filter(p => (p.palier||1) === palier).length;
     if (!totalCount) return;
-    const palCollapsed  = _pnjPalierCollapsed.has(palier);
+    const palCollapsed = _pnjPalierCollapsed.has(palier);
 
     const palSection = document.createElement('div');
     palSection.className = 'palier-section';
@@ -1150,7 +1362,7 @@ function renderPnjOrder() {
     _pnjRegions.forEach((group, gi) => {
       const palierPnjs = group.pnjs.filter(p => (p.palier||1) === palier);
       if (!palierPnjs.length) return;
-      palBody.appendChild(_makePnjRegionGroup(group, gi, palierPnjs, globalPosMap));
+      palBody.appendChild(_makePnjRegionGroup(group, gi, palierPnjs, palier));
     });
 
     palSection.appendChild(palBody);
@@ -1192,11 +1404,9 @@ window.savePnjOrder = async () => {
   localStorage.removeItem('vcl_cache_meta_v2_personnages');
 
   _pnjDirty = false;
-  btn.disabled = false;
-  btn.textContent = '💾 Calculer & sauvegarder';
+  btn.disabled = true;
+  btn.textContent = '💾 Sauvegarder';
   alert(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Sauvegardé (${ok} documents mis à jour).`);
-  document.getElementById('pnj-order-search').value = '';
-  await loadPnjOrder();
 };
 
 // ── Delete ────────────────────────────────────────────

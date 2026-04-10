@@ -159,16 +159,13 @@ function getFiltered() {
     }
     return true;
   });
-  if (activeTab === 'monstres') {
-    filtered.sort((a, b) => {
-      if (a.palier !== b.palier) return a.palier - b.palier;
-      // Ordre défini par la modération uniquement, puis alphabétique en fallback
-      if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
-      if (a.ordre != null) return -1;
-      if (b.ordre != null) return 1;
-      return normalize(a.name).localeCompare(normalize(b.name));
-    });
-  }
+  filtered.sort((a, b) => {
+    if (a.palier !== b.palier) return a.palier - b.palier;
+    if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
+    if (a.ordre != null) return -1;
+    if (b.ordre != null) return 1;
+    return normalize(a.name).localeCompare(normalize(b.name));
+  });
   return filtered;
 }
 

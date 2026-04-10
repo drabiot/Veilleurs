@@ -234,10 +234,16 @@ function groupItems(items) {
     if (!grouped[p][item.category]) grouped[p][item.category] = [];
     grouped[p][item.category].push(item);
   });
-  // Trier chaque catégorie par rareté (commun → godlike → event)
+  // Trier chaque catégorie par ordre admin (champ `ordre`), puis par rareté en fallback
   for (const palier of Object.values(grouped)) {
     for (const cat of Object.keys(palier)) {
-      palier[cat].sort((a, b) => rarityRank(a.rarity) - rarityRank(b.rarity));
+      palier[cat].sort((a, b) => {
+        const ao = a.ordre ?? null, bo = b.ordre ?? null;
+        if (ao !== null && bo !== null) return ao - bo;
+        if (ao !== null) return -1;
+        if (bo !== null) return 1;
+        return rarityRank(a.rarity) - rarityRank(b.rarity);
+      });
     }
   }
   return grouped;
