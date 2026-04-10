@@ -204,9 +204,10 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 .mode-btn:hover:not(.active) { background:var(--surface3); color:var(--text); }
 
 /* ── FORM CONTAINERS ── */
-#item-form { display:flex; flex-direction:column; gap:16px; }
-#pnj-form  { display:none; flex-direction:column; gap:16px; }
+#item-form   { display:flex; flex-direction:column; gap:16px; }
+#pnj-form    { display:none; flex-direction:column; gap:16px; }
 #region-form { display:none; flex-direction:column; gap:16px; }
+#mob-form    { display:none; flex-direction:column; gap:16px; }
 
 /* ── PNJ CRAFT CARD ── */
 .pnj-craft-card { background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:10px; display:flex; flex-direction:column; gap:8px; }
@@ -274,7 +275,6 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
     <a href="Compendium/compendium.html" class="btn btn-ghost">📖 Compendium</a>
     <input type="text" id="author-input" placeholder="👤 Ton pseudo…" oninput="saveAuthor()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;outline:none;width:130px;transition:border-color .15s;" title="Pseudo affiché dans la soumission Discord">
     <span class="copy-msg" id="copy-msg">✓ Copié !</span>
-    <button class="btn btn-success" onclick="copyCode()">📋 Copier le code</button>
     <span id="auth-user-status" style="font-size:12px;color:var(--muted);display:none;"></span>
     <button class="btn btn-ghost" id="btn-login" onclick="openLoginModal()" style="display:none;font-size:12px;">🔑 Connexion</button>
     <button class="btn btn-ghost" id="btn-logout-hdr" onclick="doLogout()" style="display:none;font-size:12px;">🚪</button>
@@ -326,7 +326,8 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
     <!-- MODE SELECTOR -->
     <div class="mode-selector">
       <button class="mode-btn active" data-mode="item"   onclick="switchMode('item')">⚔️ Item</button>
-      <button class="mode-btn"        data-mode="pnj"    onclick="switchMode('pnj')">🧑 PNJ</button>
+      <button class="mode-btn"        data-mode="mob"    onclick="switchMode('mob')">👾 Mob</button>
+
       <button class="mode-btn"        data-mode="region" onclick="switchMode('region')">📍 Région</button>
     </div>
 
@@ -376,7 +377,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
               <span id="id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant</span>
               <span id="id-orphan-badge" style="display:none;font-size:11px;font-weight:700;color:var(--success);background:rgba(74,222,128,.1);border:1px solid var(--success);border-radius:10px;padding:1px 8px;cursor:default;" title="">✓ Drop orphelin</span>
             </div>
-            <input type="text" id="f-id" placeholder="epee_du_dragon" oninput="idLocked=true;update()" style="color:var(--muted);font-family:monospace;font-size:12px;">
+            <input type="text" id="f-id" placeholder="" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
           </div>
         </div>
 
@@ -629,7 +630,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
             </div>
             <div class="field">
               <label>ID généré</label>
-              <input type="text" id="pnj-id" placeholder="forgeron_armes_tolbana" oninput="pnjIdLocked=true;update()" style="color:var(--muted);font-family:monospace;font-size:12px;">
+              <input type="text" id="pnj-id" placeholder="forgeron_armes_tolbana" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
             </div>
           </div>
           <div class="row2">
@@ -735,12 +736,15 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
               <input type="text" id="reg-name" placeholder="Ville de Départ" oninput="onRegNameInput()">
             </div>
             <div class="field">
-              <label>ID généré</label>
-              <input type="text" id="reg-id" placeholder="ville_de_depart" oninput="regIdLocked=true;update()" style="color:var(--muted);font-family:monospace;font-size:12px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <label style="margin:0">ID généré</label>
+                <span id="reg-id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant</span>
+              </div>
+              <input type="text" id="reg-id" placeholder="ville_de_depart" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
             </div>
           </div>
           <div class="field" style="max-width:160px;">
-            <label>Palier</label>
+            <label>Palier *</label>
             <select id="reg-palier" onchange="update()">
               <option value="">—</option>
               <option value="1">Palier 1</option>
@@ -753,7 +757,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 
       <!-- Lore Région -->
       <div class="section">
-        <div class="sec-head" onclick="toggleSec(this)">📖 Lore <span class="chev">▾</span></div>
+        <div class="sec-head" onclick="toggleSec(this)">📖 Lore <span style="font-size:10px;color:var(--danger);font-weight:400;"> *</span> <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="field">
             <textarea id="reg-lore" placeholder="Description de la région…" oninput="update()"></textarea>
@@ -762,6 +766,122 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
       </div>
 
     </div><!-- /region-form -->
+
+    <!-- ═══════════════════════════════════════════
+         MOB FORM
+    ═══════════════════════════════════════════ -->
+    <div id="mob-form">
+
+      <!-- Identité Mob -->
+      <div class="section">
+        <div class="sec-head" onclick="toggleSec(this)">👾 Identité <span class="chev">▾</span></div>
+        <div class="sec-body">
+          <div class="row2">
+            <div class="field">
+              <label>Nom affiché *</label>
+              <input type="text" id="mob-name" placeholder="Albal" oninput="onMobNameInput()">
+            </div>
+            <div class="field">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <label style="margin:0">ID généré</label>
+                <span id="mob-id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant</span>
+              </div>
+              <input type="text" id="mob-id" placeholder="albal" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label>Type</label>
+              <select id="mob-type" onchange="onMobTypeChange()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;">
+                <option value="monstre">🐺 Monstre</option>
+                <option value="miniboss">⚔️ Mini-Boss</option>
+                <option value="boss">💀 Boss</option>
+                <option value="sbire">🗡️ Sbire</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Comportement</label>
+              <select id="mob-behavior" onchange="update()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;">
+                <option value="agressif">Agressif</option>
+                <option value="neutre">Neutre</option>
+              </select>
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label>Dans le Codex</label>
+              <div style="display:flex;gap:8px;margin-top:4px;">
+                <button id="mob-codex-yes" class="btn btn-ghost btn-sm" style="background:rgba(74,222,128,.15);color:var(--success);border-color:var(--success);" onclick="setMobCodex(true)">✓ Oui</button>
+                <button id="mob-codex-no"  class="btn btn-ghost btn-sm" onclick="setMobCodex(false)">✕ Non</button>
+              </div>
+            </div>
+            <div class="field" id="mob-spawntime-field" style="display:none;">
+              <label>Temps de spawn</label>
+              <input type="text" id="mob-spawntime" placeholder="4m" oninput="update()" style="font-family:monospace;font-size:13px;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Localisation Mob -->
+      <div class="section">
+        <div class="sec-head" onclick="toggleSec(this)">📍 Localisation <span class="chev">▾</span></div>
+        <div class="sec-body">
+          <div class="row2">
+            <div class="field">
+              <label>Palier</label>
+              <select id="mob-palier" onchange="onMobPalierChange()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;">
+                <option value="">—</option>
+                <option value="1">Palier 1</option>
+                <option value="2">Palier 2</option>
+                <option value="3">Palier 3</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Region ID <span style="color:var(--muted);font-weight:400;font-size:10px;">(auto)</span></label>
+              <input type="text" id="mob-regionid" placeholder="—" readonly style="font-family:monospace;font-size:12px;color:var(--muted);cursor:default;opacity:.7;">
+            </div>
+          </div>
+          <div class="field">
+            <label>Région</label>
+            <div style="position:relative;">
+              <input type="text" id="mob-region-search" placeholder="🔍 Rechercher une région…" autocomplete="off"
+                     oninput="filterMobRegionList()" onfocus="openMobRegionList()"
+                     onblur="setTimeout(closeMobRegionList,150)"
+                     style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;">
+              <div id="mob-region-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;max-height:220px;overflow-y:auto;background:var(--surface2);border:1px solid var(--accent);border-top:none;border-radius:0 0 6px 6px;box-shadow:0 4px 12px rgba(0,0,0,.4);"></div>
+            </div>
+            <input type="hidden" id="mob-region" value="">
+          </div>
+        </div>
+      </div>
+
+      <!-- Lore Mob -->
+      <div class="section">
+        <div class="sec-head" onclick="toggleSec(this)">📖 Lore <span id="mob-lore-badge" style="font-size:10px;color:var(--danger);font-weight:400;display:none;"> * requis si Codex</span> <span class="chev">▾</span></div>
+        <div class="sec-body">
+          <div class="field">
+            <textarea id="mob-lore" placeholder="Un loup solitaire aux yeux d'argent glacés…" oninput="update()" style="min-height:80px;"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loot Mob -->
+      <div class="section">
+        <div class="sec-head" onclick="toggleSec(this)">🎁 Loot <span class="chev">▾</span></div>
+        <div class="sec-body">
+          <div class="hint">Items droppés par ce mob. Chance en % (0–100). Les IDs non encore définis sont acceptés — ils apparaîtront dans le tracker d'IDs fantômes.</div>
+          <div style="display:grid;grid-template-columns:1fr 90px 28px;gap:6px;padding:0 2px;margin-top:8px;margin-bottom:4px;">
+            <span style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;">Item</span>
+            <span style="font-size:10px;color:var(--muted);font-weight:700;text-align:center;" title="Nombre entre 0 et 100, ou '?' si inconnu">Chance % <span style="opacity:.5;">/ ?</span></span>
+            <span></span>
+          </div>
+          <div id="mob-loot-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+          <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="addMobLoot()">+ Ajouter un drop</button>
+        </div>
+      </div>
+
+    </div><!-- /mob-form -->
 
   </div><!-- /formPanel -->
 
@@ -810,7 +930,7 @@ import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebase
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
          createUserWithEmailAndPassword }
                                         from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, setDoc }
+import { getFirestore, collection, getDocs, addDoc, serverTimestamp, getDoc, doc, setDoc }
                                         from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const cfg = {
@@ -828,6 +948,7 @@ const db   = getFirestore(app);
 window._vcl_auth            = auth;
 window._vcl_db              = db;
 window._vcl_addDoc          = addDoc;
+window._vcl_getDocs         = getDocs;
 window._vcl_collection      = collection;
 window._vcl_serverTimestamp = serverTimestamp;
 window._vcl_login     = (email, pw) => signInWithEmailAndPassword(auth, email, pw);
@@ -871,6 +992,9 @@ onAuthStateChanged(auth, async user => {
 <!-- Module 2 : Chargement des données (séparé pour ne pas bloquer l'auth) -->
 <script type="module">
 import { loadCollection } from './firebase.js';
+
+// Expose pour loadMobRegions() (appel depuis JS non-module)
+window._vcl_loadCollection = loadCollection;
 
 (async () => {
   try {
@@ -990,8 +1114,10 @@ const PRESET_TAG_GROUPS = [
 // INIT
 // ═══════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
+  const _params = new URLSearchParams(location.search);
+
   // Afficher le bouton d'écriture seulement en mode éditeur
-  if (new URLSearchParams(location.search).has('edit')) {
+  if (_params.has('edit')) {
     document.getElementById('write-file-btn').style.display = '';
   }
 
@@ -1006,6 +1132,20 @@ window.addEventListener('DOMContentLoaded', () => {
   loadAuthor();
   loadHistory();
   restoreForm();
+
+  // Pré-remplir depuis le tracker d'IDs fantômes (moderation.html)
+  if (_params.has('ghostid')) {
+    const ghostId   = _params.get('ghostid');
+    const ghostType = _params.get('ghosttype') || 'item'; // 'item' | 'mob'
+    if (ghostType === 'mob') {
+      switchMode('mob');
+      const el = document.getElementById('mob-id');
+      if (el) { el.value = ghostId; mobIdLocked = true; update(); }
+    } else {
+      const fId = document.getElementById('f-id');
+      if (fId) { fId.value = ghostId; idLocked = true; update(); }
+    }
+  }
 });
 
 // ═══════════════════════════════════════════════════
@@ -1145,9 +1285,16 @@ function restoreForm() {
     if (!raw) { update(); return; }
     const d = JSON.parse(raw);
 
-    if (d.name)     document.getElementById('f-name').value     = d.name;
-    if (d.id)       document.getElementById('f-id').value       = d.id;
-    idLocked = !!d.idLocked;
+    if (d.name) document.getElementById('f-name').value = d.name;
+    // Restaurer l'ID uniquement s'il était verrouillé intentionnellement (ghost ID / clone)
+    // Sinon toujours recalculer depuis le nom pour éviter les valeurs parasites
+    if (d.idLocked && d.id) {
+      document.getElementById('f-id').value = d.id;
+      idLocked = true;
+    } else {
+      document.getElementById('f-id').value = d.name ? nameToId(d.name) : '';
+      idLocked = false;
+    }
 
     if (d.category) {
       document.getElementById('f-category').value = d.category;
@@ -1870,7 +2017,7 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
         di.addEventListener('mousedown', ev => {
           ev.preventDefault();
           const originalName = inp.value;
-          addPendingOrphan(suggestedId, originalName, createEntityType);
+          if (createEntityType !== 'item') addPendingOrphan(suggestedId, originalName, createEntityType);
           selectedId = suggestedId;
           inp.value = originalName;
           inp.classList.remove('selected-item');
@@ -2674,16 +2821,6 @@ function buildOrphanSection() {
     }
   }
 
-  // Orphelins items créés manuellement dans le formulaire en cours
-  for (const [id, data] of pendingOrphans) {
-    if (data.entityType !== 'item') continue;
-    if (!itemIds.has(id)) {
-      if (!orphanMap[id]) orphanMap[id] = [];
-      const label = `📝 Formulaire en cours`;
-      if (!orphanMap[id].includes(label)) orphanMap[id].push(label);
-    }
-  }
-
   const ids = Object.keys(orphanMap);
   const mobOrphans = [...pendingOrphans.entries()].filter(([, d]) => d.entityType === 'mob');
   const section = document.getElementById('orphan-section');
@@ -2695,15 +2832,14 @@ function buildOrphanSection() {
   const list = document.getElementById('orphan-list');
   list.innerHTML = '';
   for (const id of ids.sort()) {
-    const isPending = pendingOrphans.has(id);
-    const labels    = orphanMap[id];
-    const subText   = labels.join(', ');
+    const labels  = orphanMap[id];
+    const subText = labels.join(', ');
 
     const row = document.createElement('div');
-    row.style.cssText = `display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid ${isPending ? '#d7af5f' : 'var(--border)'};border-radius:6px;font-size:12px;`;
+    row.style.cssText = `display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;`;
     row.innerHTML = `
       <div style="flex:1;min-width:0;">
-        <div style="font-family:monospace;font-size:11px;color:${isPending ? '#d7af5f' : 'var(--success)'};font-weight:700;">${escHtml(id)}</div>
+        <div style="font-family:monospace;font-size:11px;color:var(--success);font-weight:700;">${escHtml(id)}</div>
         <div style="color:var(--muted);font-size:10px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(subText)}">${escHtml(subText)}</div>
       </div>
       <button class="btn btn-ghost btn-sm" style="flex-shrink:0;">✏️ Créer</button>`;
@@ -2713,10 +2849,6 @@ function buildOrphanSection() {
       document.getElementById('editing-banner').style.display = 'none';
       document.getElementById('f-id').value = id;
       idLocked = true;
-      // Si orphelin du formulaire, pré-remplir le nom
-      if (isPending && pendingOrphans.has(id)) {
-        document.getElementById('f-name').value = pendingOrphans.get(id);
-      }
       // Pré-remplir les sources depuis les loot de mobs
       for (const mob of MOBS) {
         const loot = mob.loot?.find(l => l.id === id);
@@ -2751,7 +2883,44 @@ function isDuplicate(id) {
   return ITEMS.some(it => it.id === id);
 }
 
+function isMobDuplicate(id) {
+  if (!id || typeof MOBS === 'undefined') return false;
+  return MOBS.some(m => m.id === id || m._id === id);
+}
+
+let _regionsCache = null; // [{ id }] chargé une fois
+async function loadRegionsCache() {
+  if (_regionsCache) return;
+  const getDocs = window._vcl_getDocs;
+  const col     = window._vcl_collection;
+  const db      = window._vcl_db;
+  if (!getDocs || !col || !db) return;
+  try {
+    const snap = await getDocs(col(db, 'regions'));
+    _regionsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch {}
+}
+function isRegionDuplicate(id) {
+  if (!id || !_regionsCache) return false;
+  return _regionsCache.some(r => r.id === id || r._id === id);
+}
+
 function update() {
+  // ── Mob mode ──
+  if (creatorMode === 'mob') {
+    const obj   = buildMobObj();
+    const empty = !obj.id && !obj.name;
+    document.getElementById('out-code').textContent = empty
+      ? '// Remplis le formulaire\n// pour générer le code ici.'
+      : toJS(obj, 0) + ',';
+    document.getElementById('id-duplicate-badge').style.display = 'none';
+    document.getElementById('id-orphan-badge').style.display    = 'none';
+    document.getElementById('validation-panel').style.display   = 'none';
+    const dupBadge = document.getElementById('mob-id-duplicate-badge');
+    if (dupBadge) dupBadge.style.display = isMobDuplicate(obj.id) ? '' : 'none';
+    if (!empty) document.getElementById('preview-wrap').innerHTML = '<div class="ic-empty">Preview non disponible en mode Mob.</div>';
+    return;
+  }
   // ── PNJ mode ──
   if (creatorMode === 'pnj') {
     const obj   = buildPnjObj();
@@ -2775,6 +2944,8 @@ function update() {
     document.getElementById('id-duplicate-badge').style.display = 'none';
     document.getElementById('id-orphan-badge').style.display    = 'none';
     document.getElementById('validation-panel').style.display   = 'none';
+    const regDupBadge = document.getElementById('reg-id-duplicate-badge');
+    if (regDupBadge) regDupBadge.style.display = isRegionDuplicate(obj.id) ? '' : 'none';
     if (!empty) document.getElementById('preview-wrap').innerHTML = '<div class="ic-empty">Preview non disponible en mode Région.</div>';
     return;
   }
@@ -2830,7 +3001,9 @@ function copyCode() {
 
 function resetForm() {
   if (!confirm('Réinitialiser ?')) return;
-  if (creatorMode === 'pnj') {
+  if (creatorMode === 'mob') {
+    resetMobForm();
+  } else if (creatorMode === 'pnj') {
     resetPnjForm();
   } else if (creatorMode === 'region') {
     resetRegionForm();
@@ -2986,6 +3159,19 @@ async function submitToDiscord() {
     return;
   }
 
+  if (creatorMode === 'region') {
+    const regErrors = [];
+    if (!document.getElementById('reg-name').value.trim()) regErrors.push('Le nom est obligatoire.');
+    if (!document.getElementById('reg-palier').value)      regErrors.push('Le palier est obligatoire.');
+    if (!document.getElementById('reg-lore').value.trim()) regErrors.push('Le lore est obligatoire.');
+    if (regErrors.length) {
+      alert('⛔ Corrige les erreurs avant de soumettre :\n\n' + regErrors.map(e => '• ' + e).join('\n'));
+      return;
+    }
+    await submitToFirestore();
+    return;
+  }
+
   if (creatorMode !== 'item') {
     await submitToFirestore();
     return;
@@ -3087,6 +3273,11 @@ async function submitToFirestore() {
     if (errors.length) throw new Error('Formulaire invalide');
     type = 'item';
     data = buildObj();
+  } else if (creatorMode === 'mob') {
+    type = 'mob';
+    data = buildMobObj();
+    if (!data.id || !data.name) throw new Error('Nom et ID obligatoires');
+    if (data.inCodex && !data.lore) throw new Error('Le lore est obligatoire si le mob est dans le Codex');
   } else if (creatorMode === 'pnj') {
     type = 'pnj';
     data = buildPnjObj();
@@ -3095,6 +3286,7 @@ async function submitToFirestore() {
     type = 'region';
     data = buildRegionObj();
     if (!data.id || !data.name) throw new Error('Nom et ID obligatoires');
+    if (!data.lore) throw new Error('Le lore est obligatoire pour une région');
   }
 
   // Nettoyer pour Firestore
@@ -3119,6 +3311,8 @@ async function submitToFirestore() {
     document.getElementById('editing-banner').style.display = 'none';
     resetFormSilent();
     renderCustomTags();
+  } else if (creatorMode === 'mob') {
+    resetMobForm();
   } else if (creatorMode === 'pnj') {
     resetPnjForm();
   } else if (creatorMode === 'region') {
@@ -3140,6 +3334,231 @@ document.addEventListener('click', e => {
 });
 
 // ═══════════════════════════════════════════════════
+// MOB — STATE
+// ═══════════════════════════════════════════════════
+let mobIdLocked     = false;
+let mobInCodex      = true;
+let mobLootEntries  = [];
+let mobLootUid      = 0;
+
+function onMobNameInput() {
+  if (!mobIdLocked) document.getElementById('mob-id').value = nameToId(document.getElementById('mob-name').value);
+  update();
+}
+
+function onMobTypeChange() {
+  const type = document.getElementById('mob-type').value;
+  document.getElementById('mob-spawntime-field').style.display = (type === 'boss' || type === 'miniboss') ? '' : 'none';
+  update();
+}
+
+function setMobCodex(val) {
+  mobInCodex = val;
+  const yes = document.getElementById('mob-codex-yes');
+  const no  = document.getElementById('mob-codex-no');
+  yes.style.cssText = val
+    ? 'background:rgba(74,222,128,.15);color:var(--success);border-color:var(--success);'
+    : 'background:var(--surface2);color:var(--text);border-color:var(--border);';
+  no.style.cssText  = !val
+    ? 'background:rgba(248,113,113,.15);color:var(--danger);border-color:var(--danger);'
+    : 'background:var(--surface2);color:var(--text);border-color:var(--border);';
+  const badge = document.getElementById('mob-lore-badge');
+  if (badge) badge.style.display = val ? '' : 'none';
+  update();
+}
+
+// ═══════════════════════════════════════════════════
+// MOB — LOOT
+// ═══════════════════════════════════════════════════
+function addMobLoot() {
+  ensureItemIndex();
+  const uid = mobLootUid++;
+  const entry = { uid, itemId: '', chance: 100 };
+  mobLootEntries.push(entry);
+
+  const row = document.createElement('div');
+  row.id = `mob-loot-${uid}`;
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 90px 28px;gap:6px;align-items:start;';
+
+  const drop = makeSearchDrop(itemIndex, 'Item droppé…', (id) => { entry.itemId = id; update(); }, true);
+  entry.drop = drop;
+
+  // Chance : texte libre pour accepter "?" + nombres 0-100
+  const chanceEl = document.createElement('input');
+  chanceEl.type = 'text'; chanceEl.value = '100'; chanceEl.placeholder = '% ou ?';
+  chanceEl.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 6px;font-size:12px;text-align:center;outline:none;width:100%;transition:border-color .15s;font-family:monospace;';
+  chanceEl.addEventListener('focus', () => chanceEl.style.borderColor = 'var(--accent)');
+  chanceEl.addEventListener('blur',  () => {
+    chanceEl.style.borderColor = 'var(--border)';
+    // Nettoyer : garder "?" ou un nombre valide
+    const v = chanceEl.value.trim();
+    if (v !== '?' && (isNaN(+v) || +v < 0 || +v > 100)) chanceEl.value = '100';
+  });
+  chanceEl.addEventListener('input', () => {
+    const v = chanceEl.value.trim();
+    entry.chance = (v === '?' || v === '') ? '?' : (isNaN(+v) ? 100 : +v);
+    update();
+  });
+
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'btn-icon'; rmBtn.textContent = '✕';
+  rmBtn.addEventListener('click', () => { mobLootEntries = mobLootEntries.filter(e => e.uid !== uid); row.remove(); update(); });
+
+  row.appendChild(drop.element);
+  row.appendChild(chanceEl);
+  row.appendChild(rmBtn);
+  document.getElementById('mob-loot-list').appendChild(row);
+}
+
+function getMobLoot() {
+  return mobLootEntries
+    .filter(e => e.itemId)
+    .map(e => ({ id: e.itemId, chance: e.chance === '?' ? '?' : (isNaN(e.chance) ? 100 : e.chance) }));
+}
+
+// ═══════════════════════════════════════════════════
+// MOB — RÉGIONS
+// ═══════════════════════════════════════════════════
+let _allMobRegions = [];
+
+function onMobPalierChange() {
+  // Réinitialiser la région si elle ne correspond plus au nouveau palier
+  const palier = document.getElementById('mob-palier').value;
+  const currentId = document.getElementById('mob-region').value;
+  if (currentId && palier) {
+    const current = _allMobRegions.find(r => r.id === currentId);
+    if (current && String(current.palier||'') !== palier) {
+      document.getElementById('mob-region').value      = '';
+      document.getElementById('mob-regionid').value    = '';
+      document.getElementById('mob-region-search').value = '';
+    }
+  }
+  filterMobRegionList();
+  update();
+}
+
+function openMobRegionList() {
+  renderMobRegionDropdown();
+  document.getElementById('mob-region-dropdown').style.display = '';
+}
+
+function closeMobRegionList() {
+  document.getElementById('mob-region-dropdown').style.display = 'none';
+}
+
+function filterMobRegionList() {
+  renderMobRegionDropdown();
+  document.getElementById('mob-region-dropdown').style.display = '';
+}
+
+function renderMobRegionDropdown() {
+  const dropdown = document.getElementById('mob-region-dropdown');
+  if (!dropdown) return;
+  const q      = (document.getElementById('mob-region-search')?.value || '')
+                   .trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const palier = document.getElementById('mob-palier')?.value || '';
+
+  let filtered = _allMobRegions;
+  if (palier) filtered = filtered.filter(r => String(r.palier||'') === palier);
+  if (q)      filtered = filtered.filter(r =>
+    (r.name||r.id||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q));
+
+  dropdown.innerHTML = '';
+  if (!filtered.length) {
+    dropdown.innerHTML = '<div style="padding:8px 12px;color:var(--muted);font-size:12px;">Aucune région</div>';
+    return;
+  }
+  filtered.forEach(r => {
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:7px 12px;cursor:pointer;font-size:13px;color:var(--text);transition:background .1s;';
+    item.textContent = (r.name||r.id) + (r.palier ? ` — P${r.palier}` : '');
+    item.addEventListener('mousedown', e => { e.preventDefault(); selectMobRegion(r); });
+    item.addEventListener('mouseover', () => item.style.background = 'var(--surface3)');
+    item.addEventListener('mouseout',  () => item.style.background = '');
+    dropdown.appendChild(item);
+  });
+}
+
+function selectMobRegion(r) {
+  document.getElementById('mob-region-search').value = r.name || r.id;
+  document.getElementById('mob-region').value        = r.id;
+  document.getElementById('mob-regionid').value      = r.id;
+  document.getElementById('mob-region-dropdown').style.display = 'none';
+  update();
+}
+
+async function loadMobRegions() {
+  if (_allMobRegions.length) return;
+  const getDocs = window._vcl_getDocs;
+  const col     = window._vcl_collection;
+  const db      = window._vcl_db;
+  if (!getDocs || !col || !db) { setTimeout(loadMobRegions, 300); return; }
+  try {
+    const snap = await getDocs(col(db, 'regions'));
+    const regions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    regions.sort((a, b) => {
+      if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
+      if (a.ordre != null) return -1;
+      if (b.ordre != null) return 1;
+      if ((a.palier||1) !== (b.palier||1)) return (a.palier||1) - (b.palier||1);
+      return (a.name||a.id||'').localeCompare(b.name||b.id||'', 'fr');
+    });
+    _allMobRegions = regions;
+  } catch(e) { console.warn('[Mob] Régions non chargées:', e); }
+}
+
+// ═══════════════════════════════════════════════════
+// MOB — BUILD OBJECT
+// ═══════════════════════════════════════════════════
+function buildMobObj() {
+  const id        = document.getElementById('mob-id').value.trim();
+  const name      = document.getElementById('mob-name').value.trim();
+  const type      = document.getElementById('mob-type').value;
+  const behavior  = document.getElementById('mob-behavior').value;
+  const palier    = document.getElementById('mob-palier').value;
+  const lore      = document.getElementById('mob-lore').value.trim();
+  const spawnTime = document.getElementById('mob-spawntime').value.trim();
+  const regionId = document.getElementById('mob-region').value;
+
+  const obj = {};
+  if (id)       obj.id       = id;
+  if (name)     obj.name     = name;
+  obj.type     = type;
+  obj.behavior = behavior;
+  if (palier)   obj.palier   = +palier;
+  if (regionId) obj.region   = regionId;
+  obj.inCodex  = mobInCodex;
+  if (lore)     obj.lore     = lore;
+  if (spawnTime && (type === 'boss' || type === 'miniboss')) obj.spawnTime = spawnTime;
+  const loot = getMobLoot();
+  if (loot.length) obj.loot = loot;
+
+  return obj;
+}
+
+// ═══════════════════════════════════════════════════
+// MOB — RESET
+// ═══════════════════════════════════════════════════
+function resetMobForm() {
+  mobIdLocked = false; mobInCodex = true; mobLootEntries = [];
+  ['mob-name','mob-id','mob-lore','mob-spawntime','mob-regionid'].forEach(fid => {
+    const el = document.getElementById(fid); if (el) el.value = '';
+  });
+  document.getElementById('mob-type').selectedIndex     = 0;
+  document.getElementById('mob-behavior').selectedIndex = 0;
+  document.getElementById('mob-palier').selectedIndex   = 0;
+  document.getElementById('mob-region').value           = '';
+  document.getElementById('mob-regionid').value         = '';
+  document.getElementById('mob-region-search').value    = '';
+  document.getElementById('mob-spawntime-field').style.display = 'none';
+  document.getElementById('mob-loot-list').innerHTML    = '';
+  const dupBadge = document.getElementById('mob-id-duplicate-badge');
+  if (dupBadge) dupBadge.style.display = 'none';
+  setMobCodex(true);
+  update();
+}
+
+// ═══════════════════════════════════════════════════
 // CREATOR MODE
 // ═══════════════════════════════════════════════════
 let creatorMode  = 'item';
@@ -3148,23 +3567,27 @@ let regIdLocked  = false;
 
 const MODE_SUBTITLES = {
   item:   'Génère le code JS pour Compendium/data.js',
+  mob:    'Soumet un mob à la validation',
   pnj:    'Génère le code JS pour Bestiaire/data.js',
-  region: 'Génère le code JS pour Compendium/data_region.js',
+  region: 'Soumet une région codex à la validation',
 };
 
 function switchMode(mode) {
   creatorMode = mode;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.getElementById('item-form').style.display   = mode === 'item'   ? 'flex' : 'none';
+  document.getElementById('mob-form').style.display    = mode === 'mob'    ? 'flex' : 'none';
   document.getElementById('pnj-form').style.display    = mode === 'pnj'    ? 'flex' : 'none';
   document.getElementById('region-form').style.display = mode === 'region' ? 'flex' : 'none';
   document.getElementById('header-subtitle').textContent = MODE_SUBTITLES[mode] || '';
-  document.getElementById('btn-submit-discord').style.display = mode === 'item' ? '' : 'none';
+  document.getElementById('btn-submit-discord').style.display = '';
   // Reset output
   document.getElementById('out-code').textContent = '// Remplis le formulaire\n// pour générer le code ici.';
   document.getElementById('validation-panel').style.display = 'none';
   document.getElementById('id-duplicate-badge').style.display = 'none';
   document.getElementById('id-orphan-badge').style.display = 'none';
+  if (mode === 'mob')    loadMobRegions();
+  if (mode === 'region') loadRegionsCache();
   update();
 }
 

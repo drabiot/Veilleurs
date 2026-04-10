@@ -17,9 +17,10 @@ header { background: var(--surface); border-bottom: 1px solid var(--border); pad
 header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 
-.layout { display: grid; grid-template-columns: 220px 1fr; height: calc(100vh - 49px); }
-.sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
-.main { overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.layout { display: grid; grid-template-columns: 220px 1fr; align-items: start; }
+.layout > aside { grid-column: 1; grid-row: 1; position: sticky; top: 49px; max-height: calc(100vh - 49px); overflow-y: auto; }
+.sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; gap: 8px; min-height: 100vh; }
+.main { grid-column: 2; grid-row: 1; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 
 /* Sidebar filters */
 .filter-group { display: flex; flex-direction: column; gap: 4px; }
@@ -47,8 +48,12 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .sub-status.rejected { background: rgba(248,113,113,.12); color: var(--danger);  border: 1px solid rgba(248,113,113,.3); }
 
 .sub-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
-.sub-code { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-family: 'Consolas', monospace; font-size: 11px; color: #c9d1d9; white-space: pre; overflow-x: auto; max-height: 200px; overflow-y: auto; line-height: 1.6; }
+.sub-details { display: none; flex-direction: column; gap: 10px; }
+.sub-details.open { display: flex; }
+.sub-code { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-family: 'Consolas', monospace; font-size: 11px; color: #c9d1d9; white-space: pre; overflow-x: auto; line-height: 1.6; }
 .sub-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn-toggle { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; margin-left: auto; padding: 4px 8px; border-radius: 4px; transition: color .15s; }
+.btn-toggle:hover { color: var(--text); }
 .sub-comment { flex: 1; min-width: 200px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none; transition: border-color .15s; }
 .sub-comment:focus { border-color: var(--accent); }
 .review-comment { font-size: 12px; color: var(--muted); font-style: italic; padding: 6px 10px; background: var(--surface2); border-radius: 6px; border-left: 3px solid var(--border); }
@@ -69,7 +74,7 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .btn-copy    { background: var(--surface3); color: var(--muted); border: 1px solid var(--border); font-size: 11px; padding: 5px 10px; }
 
 /* Auth */
-.auth-wall { display: flex; align-items: center; justify-content: center; height: calc(100vh - 49px); flex-direction: column; gap: 16px; }
+.auth-wall { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 49px); flex-direction: column; gap: 16px; }
 .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 340px; display: flex; flex-direction: column; gap: 12px; }
 .auth-card h2 { font-size: 15px; font-weight: 700; color: var(--accent); }
 .field { display: flex; flex-direction: column; gap: 4px; }
@@ -94,6 +99,17 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .palier-section-header { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 6px; background: var(--surface3); border: 1px solid var(--border); user-select: none; font-size: 11px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
 .palier-section-header:hover { border-color: var(--accent); }
 .palier-section-body { }
+
+/* Ghost ID tracker */
+.ghost-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ghost-table th { text-align: left; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; padding: 6px 10px; border-bottom: 1px solid var(--border); font-weight: 700; }
+.ghost-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.ghost-table tbody tr:hover td { background: var(--surface2); }
+.ghost-id { font-family: 'Consolas', monospace; font-size: 12px; color: #fbbf24; font-weight: 700; }
+.ghost-refs { color: var(--muted); font-size: 11px; line-height: 1.6; }
+.ghost-type-craft      { color: var(--accent); }
+.ghost-type-drop       { color: var(--success); }
+.ghost-type-mob-obtain { color: var(--warn); }
 </style>
 </head>
 <body>
@@ -141,6 +157,8 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     <button class="filter-btn" id="btn-mob-order"  onclick="showMobOrder()">🔢 Ordre des mobs</button>
     <button class="filter-btn" id="btn-item-order" onclick="showItemOrder()">⚔️ Ordre des items</button>
     <button class="filter-btn" id="btn-pnj-order"  onclick="showPnjOrder()">🧑 Ordre des PNJ</button>
+    <button class="filter-btn" id="btn-region-order" onclick="showRegionOrder()">📍 Ordre des régions</button>
+    <button class="filter-btn" id="btn-ghost-ids"  onclick="showGhostIds()">🔗 IDs fantômes</button>
     <button class="btn btn-ghost" onclick="showSubmissions();loadSubmissions()" style="margin-top:auto;font-size:12px;">🔄 Rafraîchir</button>
   </aside>
 
@@ -178,6 +196,19 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     <div id="item-order-list"><div class="empty">Chargement…</div></div>
   </main>
 
+  <!-- Panneau IDs fantômes -->
+  <main class="main" id="ghost-id-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🔗 IDs fantômes</span>
+      <button class="btn btn-ghost" onclick="loadGhostIds()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      IDs référencés dans des crafts ou des drops de mobs, mais sans item défini dans la base Firestore.<br>
+      Cliquer <b>Créer</b> ouvre le creator avec l'ID pré-rempli.
+    </p>
+    <div id="ghost-id-list"><div class="empty">Chargement…</div></div>
+  </main>
+
   <!-- Panneau Ordre des PNJ -->
   <main class="main" id="pnj-order-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -191,6 +222,21 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
            oninput="filterPnjOrder()"
            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
     <div id="pnj-order-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Ordre des régions -->
+  <main class="main" id="region-order-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">📍 Ordre des régions</span>
+      <button class="btn btn-ghost" id="btn-save-region-order" onclick="saveRegionOrder()" style="font-size:12px;" disabled>💾 Sauvegarder</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+      Glisse-dépose les régions pour définir leur ordre d'apparition dans le jeu. L'ordre est utilisé dans le creator pour le choix de région.
+    </p>
+    <input type="search" id="region-order-search" placeholder="🔍 Rechercher une région…"
+           oninput="filterRegionOrder()"
+           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
+    <div id="region-order-list"><div class="empty">Chargement…</div></div>
   </main>
 </div>
 
@@ -409,12 +455,15 @@ function buildCard(sub) {
       <span class="sub-status ${sub.status}">${statusLabel}</span>
     </div>
     <div class="sub-body">
-      <div class="sub-code" id="code-${sub._id}">${escHtml(code)}</div>
-      ${editorHtml}
       <div class="sub-actions">
         ${actionsHtml}
         <button class="btn btn-copy" onclick="copyCode('${sub._id}')">📋 Copier</button>
-        ${sub.status !== 'pending' ? `<button class="btn btn-copy" onclick="deleteSub('${sub._id}')" style="color:var(--danger);border-color:var(--danger);">🗑️</button>` : ''}
+        <button class="btn btn-copy" onclick="deleteSub('${sub._id}')" style="color:var(--danger);border-color:var(--danger);">🗑️</button>
+        <button class="btn-toggle" onclick="toggleDetails('${sub._id}', this)">▾ Voir</button>
+      </div>
+      <div class="sub-details" id="details-${sub._id}">
+        <div class="sub-code" id="code-${sub._id}">${escHtml(code)}</div>
+        ${editorHtml}
       </div>
     </div>
   `;
@@ -431,8 +480,23 @@ window.copyCode = (id) => {
   navigator.clipboard.writeText(code);
 };
 
+// ── Toggle détails (code + éditeur) ──────────────────
+window.toggleDetails = (id, btn) => {
+  const details = document.getElementById(`details-${id}`);
+  if (!details) return;
+  const open = details.classList.toggle('open');
+  btn.textContent = open ? '▴ Masquer' : '▾ Voir';
+};
+
 // ── Toggle éditeur inline ─────────────────────────────
 window.toggleEdit = (id) => {
+  // S'assurer que les détails sont ouverts avant d'éditer
+  const details = document.getElementById(`details-${id}`);
+  const toggleBtn = document.querySelector(`#card-${id} .btn-toggle`);
+  if (details && !details.classList.contains('open')) {
+    details.classList.add('open');
+    if (toggleBtn) toggleBtn.textContent = '▴ Masquer';
+  }
   const sub     = allSubs.find(s => s._id === id);
   const editor  = document.getElementById(`editor-${id}`);
   const ta      = document.getElementById(`editor-ta-${id}`);
@@ -498,7 +562,7 @@ window.approve = async (id) => {
   if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
 
   try {
-    const colMap = { item: 'items', pnj: 'personnages', region: 'regions' };
+    const colMap = { item: 'items', mob: 'mobs', pnj: 'personnages', region: 'regions' };
     const target = colMap[sub.type];
     if (!target) throw new Error('Type inconnu : ' + sub.type);
 
@@ -573,23 +637,31 @@ function mobTag(mob) {
   return `P${mob.palier||1} ${TYPE_LABELS_MOD[mob.type]||mob.type}`;
 }
 
-function showSubmissions() {
+window.showSubmissions = function showSubmissions() {
   document.getElementById('submissions-list').style.display  = '';
   document.getElementById('mob-order-panel').style.display   = 'none';
   document.getElementById('item-order-panel').style.display  = 'none';
   document.getElementById('pnj-order-panel').style.display   = 'none';
+  document.getElementById('ghost-id-panel').style.display    = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
 }
 
 window.showMobOrder = async () => {
   document.getElementById('submissions-list').style.display  = 'none';
   document.getElementById('item-order-panel').style.display  = 'none';
   document.getElementById('pnj-order-panel').style.display   = 'none';
+  document.getElementById('ghost-id-panel').style.display    = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
   document.getElementById('mob-order-panel').style.display   = '';
   document.getElementById('btn-item-order').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-mob-order').classList.add('active');
   await loadMobOrder();
 };
@@ -801,9 +873,13 @@ window.showItemOrder = async () => {
   document.getElementById('submissions-list').style.display  = 'none';
   document.getElementById('mob-order-panel').style.display   = 'none';
   document.getElementById('pnj-order-panel').style.display   = 'none';
+  document.getElementById('ghost-id-panel').style.display    = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
   document.getElementById('item-order-panel').style.display  = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.add('active');
   await loadItemOrder();
 };
@@ -1085,9 +1161,13 @@ window.showPnjOrder = async () => {
   document.getElementById('submissions-list').style.display  = 'none';
   document.getElementById('mob-order-panel').style.display   = 'none';
   document.getElementById('item-order-panel').style.display  = 'none';
+  document.getElementById('ghost-id-panel').style.display    = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
   document.getElementById('pnj-order-panel').style.display   = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.add('active');
   await loadPnjOrder();
 };
@@ -1408,6 +1488,299 @@ window.savePnjOrder = async () => {
   btn.textContent = '💾 Sauvegarder';
   alert(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Sauvegardé (${ok} documents mis à jour).`);
 };
+
+// ── Region order panel ────────────────────────────────
+let _regionOrderData  = [];
+let _regionOrderDirty = false;
+let _regionDragSrc    = null;
+let _regionPalierCollapsed = new Set();
+
+window.showRegionOrder = async () => {
+  document.getElementById('submissions-list').style.display  = 'none';
+  document.getElementById('mob-order-panel').style.display   = 'none';
+  document.getElementById('item-order-panel').style.display  = 'none';
+  document.getElementById('pnj-order-panel').style.display   = 'none';
+  document.getElementById('ghost-id-panel').style.display    = 'none';
+  document.getElementById('region-order-panel').style.display = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.add('active');
+  await loadRegionOrder();
+};
+
+async function loadRegionOrder() {
+  const listEl = document.getElementById('region-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _regionOrderDirty = false;
+  document.getElementById('btn-save-region-order').disabled = true;
+  try {
+    const snap = await getDocs(collection(db, 'regions'));
+    const regions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    regions.sort((a, b) => {
+      if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
+      if (a.ordre != null) return -1;
+      if (b.ordre != null) return 1;
+      if ((a.palier||1) !== (b.palier||1)) return (a.palier||1) - (b.palier||1);
+      return (a.name||'').localeCompare(b.name||'', 'fr');
+    });
+    _regionOrderData = regions;
+    renderRegionOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+function renderRegionOrder() {
+  const listEl  = document.getElementById('region-order-list');
+  const searchQ = document.getElementById('region-order-search').value.trim().toLowerCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  listEl.innerHTML = '';
+
+  if (searchQ) {
+    const visible = _regionOrderData.filter(r =>
+      (r.name||r.id||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(searchQ));
+    if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
+    visible.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'mob-order-row';
+      row.dataset.id = r.id;
+      const globalIdx = _regionOrderData.indexOf(r) + 1;
+      row.innerHTML = `
+        <span class="mob-order-handle" style="color:var(--border);">⠿</span>
+        <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
+        <span class="mob-order-name">${r.name||r.id}</span>
+        <span class="mob-order-tag">P${r.palier||1}</span>`;
+      listEl.appendChild(row);
+    });
+    return;
+  }
+
+  const paliers = [...new Set(_regionOrderData.map(r => r.palier || 1))].sort((a,b) => a-b);
+  if (!paliers.length) { listEl.innerHTML = '<div class="empty">Aucune région</div>'; return; }
+
+  paliers.forEach(palier => {
+    const palierRegions = _regionOrderData.filter(r => (r.palier||1) === palier);
+    const collapsed     = _regionPalierCollapsed.has(palier);
+
+    const section = document.createElement('div');
+    section.className = 'palier-section';
+
+    const ph = document.createElement('div');
+    ph.className = 'palier-section-header';
+    ph.innerHTML = `
+      <span style="flex:1;">Palier ${palier}</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierRegions.length} région${palierRegions.length>1?'s':''}</span>
+      <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
+    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+      if (_regionPalierCollapsed.has(palier)) _regionPalierCollapsed.delete(palier);
+      else _regionPalierCollapsed.add(palier);
+      renderRegionOrder();
+    });
+    section.appendChild(ph);
+
+    const body = document.createElement('div');
+    body.className = 'palier-section-body';
+    body.style.display = collapsed ? 'none' : '';
+
+    palierRegions.forEach(r => {
+      const palierIdx = palierRegions.indexOf(r);
+      const row = document.createElement('div');
+      row.className  = 'mob-order-row';
+      row.draggable  = true;
+      row.dataset.id = r.id;
+      row.innerHTML  = `
+        <span class="mob-order-handle">⠿</span>
+        <input type="number" class="mob-order-index" value="${palierIdx+1}" min="1" max="${palierRegions.length}" title="Position dans ce palier">
+        <span class="mob-order-name">${r.name||r.id}</span>
+        <span class="mob-order-tag">P${r.palier||1}</span>`;
+
+      const indexInput = row.querySelector('.mob-order-index');
+      indexInput.addEventListener('click', e => e.stopPropagation());
+      indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+      indexInput.addEventListener('change', () => {
+        let toPalierIdx = parseInt(indexInput.value, 10) - 1;
+        toPalierIdx = Math.max(0, Math.min(palierRegions.length - 1, toPalierIdx));
+        if (toPalierIdx === palierIdx) { indexInput.value = palierIdx + 1; return; }
+        const fromGlobal = _regionOrderData.indexOf(r);
+        const [removed]  = _regionOrderData.splice(fromGlobal, 1);
+        const nowPalier  = _regionOrderData.filter(x => (x.palier||1) === palier);
+        const insertAt   = toPalierIdx < nowPalier.length
+          ? _regionOrderData.indexOf(nowPalier[toPalierIdx])
+          : (_regionOrderData.indexOf(nowPalier[nowPalier.length-1]) + 1 || _regionOrderData.length);
+        _regionOrderData.splice(insertAt, 0, removed);
+        _regionOrderDirty = true;
+        document.getElementById('btn-save-region-order').disabled = false;
+        renderRegionOrder();
+      });
+
+      row.addEventListener('dragstart', e => { _regionDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+      row.addEventListener('dragend',   () => { row.classList.remove('dragging'); _regionDragSrc = null; });
+      row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
+      row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+      row.addEventListener('drop', e => {
+        e.preventDefault(); row.classList.remove('drag-over');
+        if (!_regionDragSrc || _regionDragSrc === row) return;
+        const fromR = _regionOrderData.find(x => x.id === _regionDragSrc.dataset.id);
+        const toR   = _regionOrderData.find(x => x.id === row.dataset.id);
+        if (!fromR || !toR || (fromR.palier||1) !== (toR.palier||1)) return;
+        const fromIdx = _regionOrderData.findIndex(x => x.id === _regionDragSrc.dataset.id);
+        const toIdx   = _regionOrderData.findIndex(x => x.id === row.dataset.id);
+        if (fromIdx === -1 || toIdx === -1) return;
+        const [moved] = _regionOrderData.splice(fromIdx, 1);
+        _regionOrderData.splice(toIdx, 0, moved);
+        _regionOrderDirty = true;
+        document.getElementById('btn-save-region-order').disabled = false;
+        renderRegionOrder();
+      });
+
+      body.appendChild(row);
+    });
+    section.appendChild(body);
+    listEl.appendChild(section);
+  });
+}
+
+window.filterRegionOrder = () => renderRegionOrder();
+
+window.saveRegionOrder = async () => {
+  if (!_regionOrderDirty) return;
+  const btn = document.getElementById('btn-save-region-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  let ok = 0, err = 0;
+  for (let i = 0; i < _regionOrderData.length; i++) {
+    try {
+      await updateDoc(doc(db, 'regions', _regionOrderData[i].id), { ordre: i + 1 });
+      ok++;
+    } catch(e) { console.error(_regionOrderData[i].id, e); err++; }
+  }
+  localStorage.removeItem('vcl_cache_v2_regions');
+  localStorage.removeItem('vcl_cache_meta_v2_regions');
+  _regionOrderDirty = false;
+  btn.textContent = '💾 Sauvegarder';
+  alert(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Ordre sauvegardé (${ok} régions).`);
+  document.getElementById('region-order-search').value = '';
+  await loadRegionOrder();
+};
+
+// ── Ghost ID tracker ─────────────────────────────────
+window.showGhostIds = async () => {
+  document.getElementById('submissions-list').style.display  = 'none';
+  document.getElementById('mob-order-panel').style.display   = 'none';
+  document.getElementById('item-order-panel').style.display  = 'none';
+  document.getElementById('pnj-order-panel').style.display   = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('ghost-id-panel').style.display    = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.add('active');
+  await loadGhostIds();
+};
+
+async function loadGhostIds() {
+  const listEl = document.getElementById('ghost-id-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [itemsSnap, mobsSnap] = await Promise.all([
+      getDocs(collection(db, 'items')),
+      getDocs(collection(db, 'mobs')),
+    ]);
+    const items = itemsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const mobs  = mobsSnap.docs.map(d  => ({ id: d.id, ...d.data() }));
+    const definedItemIds = new Set(items.map(i => i.id));
+    const definedMobIds  = new Set(mobs.map(m => m.id));
+
+    // ghostId → [{ label, type }]
+    // type: 'craft' | 'drop' | 'mob-obtain'
+    const refs = {};
+
+    const EXCLUDED_IDS = new Set(['cols']); // IDs spéciaux (monnaie, etc.) jamais dans items
+
+    // 1. Ingrédients de craft référençant un item inexistant
+    for (const item of items) {
+      for (const c of (item.craft || [])) {
+        if (c.id && !definedItemIds.has(c.id) && !EXCLUDED_IDS.has(c.id)) {
+          (refs[c.id] ??= []).push({ label: `Craft : ${item.name || item.id}`, type: 'craft' });
+        }
+      }
+    }
+
+    // 2. Loot de mobs référençant un item inexistant
+    for (const mob of mobs) {
+      for (const loot of (mob.loot || [])) {
+        if (loot.id && !definedItemIds.has(loot.id) && !EXCLUDED_IDS.has(loot.id)) {
+          const pct = loot.chance != null ? `${loot.chance}%` : '?%';
+          (refs[loot.id] ??= []).push({ label: `Drop : ${mob.name || mob.id} (${pct})`, type: 'drop' });
+        }
+      }
+    }
+
+    // 3. Mobs référencés dans item.obtain mais absents de la collection mobs
+    // Format : [mobId|MobName][chance] — on exclut [npc:xxx|...] qui sont des PNJ
+    const reMobRef = /\[(?!npc:)([\w]+)\|[^\]]*\]\[/g;
+    for (const item of items) {
+      if (!item.obtain) continue;
+      let m;
+      reMobRef.lastIndex = 0;
+      while ((m = reMobRef.exec(item.obtain)) !== null) {
+        const mobId = m[1];
+        if (!definedMobIds.has(mobId)) {
+          (refs[mobId] ??= []).push({ label: `Obtain (mob) : ${item.name || item.id}`, type: 'mob-obtain' });
+        }
+      }
+    }
+
+    const ghostIds = Object.keys(refs).sort();
+    listEl.innerHTML = '';
+
+    if (!ghostIds.length) {
+      listEl.innerHTML = '<div class="empty">✓ Aucun ID fantôme — tout est défini.</div>';
+      return;
+    }
+
+    const summary = document.createElement('div');
+    summary.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:12px;';
+    summary.textContent = `${ghostIds.length} ID${ghostIds.length > 1 ? 's' : ''} fantôme${ghostIds.length > 1 ? 's' : ''} trouvé${ghostIds.length > 1 ? 's' : ''}`;
+    listEl.appendChild(summary);
+
+    const table = document.createElement('table');
+    table.className = 'ghost-table';
+    table.innerHTML = `<thead><tr><th>Type</th><th>ID fantôme</th><th>Référencé dans</th><th></th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+
+    for (const id of ghostIds) {
+      const entries = refs[id];
+      // Un ID est un mob fantôme si toutes ses références viennent de mob-obtain
+      const isMob = entries.every(e => e.type === 'mob-obtain');
+      const tr = document.createElement('tr');
+      const refsHtml = entries.map(e =>
+        `<span class="ghost-type-${e.type}">${escHtml(e.label)}</span>`
+      ).join('<br>');
+      const typeCell = isMob
+        ? `<span style="font-size:10px;font-weight:700;color:var(--warn);background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 7px;">Mob</span>`
+        : `<span style="font-size:10px;font-weight:700;color:var(--accent);background:rgba(122,90,248,.1);border:1px solid rgba(122,90,248,.3);border-radius:8px;padding:2px 7px;">Item</span>`;
+      const actionCell = isMob
+        ? `<a href="creator.html?ghostid=${encodeURIComponent(id)}&ghosttype=mob" target="_blank"
+             class="btn btn-ghost" style="font-size:11px;padding:4px 10px;text-decoration:none;">👾 Créer le mob</a>`
+        : `<a href="creator.html?ghostid=${encodeURIComponent(id)}" target="_blank"
+             class="btn btn-ghost" style="font-size:11px;padding:4px 10px;text-decoration:none;">✏️ Créer l'item</a>`;
+      tr.innerHTML = `
+        <td>${typeCell}</td>
+        <td><span class="ghost-id">${escHtml(id)}</span></td>
+        <td><span class="ghost-refs">${refsHtml}</span></td>
+        <td style="white-space:nowrap;">${actionCell}</td>`;
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    listEl.appendChild(table);
+
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty">Erreur : ${escHtml(e.message)}</div>`;
+  }
+}
 
 // ── Delete ────────────────────────────────────────────
 window.deleteSub = async (id) => {
