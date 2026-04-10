@@ -88,6 +88,12 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .mob-order-index:focus { border-color: var(--accent); color: var(--text); }
 .mob-order-name { flex: 1; font-size: 13px; }
 .mob-order-tag { font-size: 11px; color: var(--muted); background: var(--surface2); border-radius: 4px; padding: 2px 7px; flex-shrink: 0; }
+
+/* Palier sections */
+.palier-section { margin-bottom: 8px; }
+.palier-section-header { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 6px; background: var(--surface3); border: 1px solid var(--border); user-select: none; font-size: 11px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.palier-section-header:hover { border-color: var(--accent); }
+.palier-section-body { }
 </style>
 </head>
 <body>
@@ -132,7 +138,9 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     </div>
     <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">
     <div class="filter-label" style="margin-top:4px;">Admin</div>
-    <button class="filter-btn" id="btn-mob-order" onclick="showMobOrder()">🔢 Ordre des mobs</button>
+    <button class="filter-btn" id="btn-mob-order"  onclick="showMobOrder()">🔢 Ordre des mobs</button>
+    <button class="filter-btn" id="btn-item-order" onclick="showItemOrder()">⚔️ Ordre des items</button>
+    <button class="filter-btn" id="btn-pnj-order"  onclick="showPnjOrder()">🧑 Ordre des PNJ</button>
     <button class="btn btn-ghost" onclick="showSubmissions();loadSubmissions()" style="margin-top:auto;font-size:12px;">🔄 Rafraîchir</button>
   </aside>
 
@@ -154,13 +162,43 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
     <div id="mob-order-list"><div class="empty">Chargement…</div></div>
   </main>
+
+  <!-- Panneau Ordre des items -->
+  <main class="main" id="item-order-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">⚔️ Ordre des items</span>
+      <button class="btn btn-ghost" id="btn-save-item-order" onclick="saveItemOrder()" style="font-size:12px;" disabled>💾 Sauvegarder</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+      Assigne un numéro <code>ordre</code> à chaque item. Glisse-dépose ou entre un numéro de position. Les changements sont sauvegardés directement dans Firestore.
+    </p>
+    <input type="search" id="item-order-search" placeholder="🔍 Rechercher un item…"
+           oninput="filterItemOrder()"
+           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
+    <div id="item-order-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Ordre des PNJ -->
+  <main class="main" id="pnj-order-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🧑 Ordre des PNJ</span>
+      <button class="btn btn-ghost" id="btn-save-pnj-order" onclick="savePnjOrder()" style="font-size:12px;">💾 Calculer &amp; sauvegarder</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+      Glisse-dépose les <b>régions</b> pour changer leur ordre. Les PNJ d'une région sont triés alphabétiquement. La sauvegarde met à jour l'<code>ordre</code> des régions <b>et</b> des PNJ dans Firestore.
+    </p>
+    <input type="search" id="pnj-order-search" placeholder="🔍 Rechercher un PNJ…"
+           oninput="filterPnjOrder()"
+           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
+    <div id="pnj-order-list"><div class="empty">Chargement…</div></div>
+  </main>
 </div>
 
 <script type="module">
 import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
                              from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, collection, getDocs, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, orderBy, query }
+import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, orderBy, query }
                              from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const app  = initializeApp({
@@ -177,9 +215,10 @@ const db   = getFirestore(app);
 const ROLES = ['visiteur', 'membre', 'contributeur', 'modo', 'admin'];
 let currentUser = null;
 let currentRole = 'visiteur';
-let allSubs     = [];
+let allSubs      = [];
 let filterStatus = 'pending';
 let filterType   = 'all';
+const _userNames = new Map(); // uid → pseudo
 
 // ── Auth ──────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
@@ -190,7 +229,6 @@ onAuthStateChanged(auth, async user => {
   currentUser = user;
   // Lire le rôle
   try {
-    const { getDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
     const snap = await getDoc(doc(db, 'users', user.uid));
     currentRole = snap.exists() ? (snap.data().role || 'membre') : 'membre';
   } catch { currentRole = 'membre'; }
@@ -237,12 +275,44 @@ window.doLogout = async () => {
 };
 
 // ── Load submissions ──────────────────────────────────
+async function fetchUserNames(uids) {
+  await Promise.all(uids.map(async uid => {
+    if (_userNames.has(uid)) return;
+    try {
+      const snap = await getDoc(doc(db, 'users', uid));
+      _userNames.set(uid, snap.exists() ? (snap.data().pseudo || snap.data().displayName || null) : null);
+    } catch { _userNames.set(uid, null); }
+  }));
+}
+
+function userName(uid, fallback) {
+  if (!uid) return '—';
+  if (fallback) return fallback;
+  const name = _userNames.get(uid);
+  return name || uid.slice(0, 8) + '…';
+}
+
 window.loadSubmissions = async () => {
   document.getElementById('submissions-list').innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const q    = query(collection(db, 'submissions'), orderBy('submittedAt', 'desc'));
-    const snap = await getDocs(q);
+    let snap;
+    try {
+      const q = query(collection(db, 'submissions'), orderBy('submittedAt', 'desc'));
+      snap = await getDocs(q);
+    } catch {
+      // Fallback sans orderBy (en cas d'index manquant ou de docs sans submittedAt)
+      snap = await getDocs(collection(db, 'submissions'));
+    }
     allSubs = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    // Trier côté client par submittedAt desc (robuste si certains docs n'ont pas le champ)
+    allSubs.sort((a, b) => {
+      const ta = a.submittedAt?.toMillis?.() ?? a.submittedAt ?? 0;
+      const tb = b.submittedAt?.toMillis?.() ?? b.submittedAt ?? 0;
+      return tb - ta;
+    });
+    // Pré-charger les pseudos de tous les auteurs (non-bloquant)
+    const uids = [...new Set(allSubs.flatMap(s => [s.submittedBy, s.reviewedBy].filter(Boolean)))];
+    try { await fetchUserNames(uids); } catch {}
     updateCounts();
     renderSubs();
   } catch(e) {
@@ -335,7 +405,7 @@ function buildCard(sub) {
       <span class="sub-type">${typeLabels[sub.type] || sub.type}</span>
       <span class="sub-name">${escHtml(name)}</span>
       <span class="sub-meta">${ts}</span>
-      <span class="sub-meta">par <b>${escHtml(sub.submittedBy || '—')}</b></span>
+      <span class="sub-meta">par <b>${escHtml(userName(sub.submittedBy, sub.submitterName))}</b></span>
       <span class="sub-status ${sub.status}">${statusLabel}</span>
     </div>
     <div class="sub-body">
@@ -491,9 +561,10 @@ window.reject = async (id) => {
 };
 
 // ── Mob order panel ───────────────────────────────────
-let _mobOrderData  = []; // liste ordonnée après drag-drop
-let _mobOrderDirty = false;
-let _dragSrc       = null;
+let _mobOrderData       = [];
+let _mobOrderDirty      = false;
+let _dragSrc            = null;
+let _mobPalierCollapsed = new Set();
 
 const TYPE_ORDER_MOD  = { monstre: 0, sbire: 1, mini_boss: 2, boss: 3 };
 const TYPE_LABELS_MOD = { monstre: 'Monstre', sbire: 'Sbire', mini_boss: 'Mini-boss', boss: 'Boss' };
@@ -503,14 +574,22 @@ function mobTag(mob) {
 }
 
 function showSubmissions() {
-  document.getElementById('submissions-list').style.display = '';
-  document.getElementById('mob-order-panel').style.display  = 'none';
+  document.getElementById('submissions-list').style.display  = '';
+  document.getElementById('mob-order-panel').style.display   = 'none';
+  document.getElementById('item-order-panel').style.display  = 'none';
+  document.getElementById('pnj-order-panel').style.display   = 'none';
   document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
 }
 
 window.showMobOrder = async () => {
-  document.getElementById('submissions-list').style.display = 'none';
-  document.getElementById('mob-order-panel').style.display  = '';
+  document.getElementById('submissions-list').style.display  = 'none';
+  document.getElementById('item-order-panel').style.display  = 'none';
+  document.getElementById('pnj-order-panel').style.display   = 'none';
+  document.getElementById('mob-order-panel').style.display   = '';
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-mob-order').classList.add('active');
   await loadMobOrder();
 };
@@ -546,73 +625,109 @@ function renderMobOrder() {
                     .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   listEl.innerHTML = '';
 
-  const visible = searchQ
-    ? _mobOrderData.filter(m => (m.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(searchQ))
-    : _mobOrderData;
-
-  if (!visible.length) {
-    listEl.innerHTML = '<div class="empty">Aucun résultat</div>';
+  // ── Mode recherche : liste plate, positions globales, pas de drag ──
+  if (searchQ) {
+    const visible = _mobOrderData.filter(m =>
+      (m.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(searchQ));
+    if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
+    visible.forEach(mob => {
+      const row = document.createElement('div');
+      row.className = 'mob-order-row';
+      row.dataset.id = mob.id;
+      const globalIdx = _mobOrderData.indexOf(mob) + 1;
+      row.innerHTML = `
+        <span class="mob-order-handle" style="color:var(--border);">⠿</span>
+        <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
+        <span class="mob-order-name">${mob.name||mob.id}</span>
+        <span class="mob-order-tag">${mobTag(mob)}</span>`;
+      listEl.appendChild(row);
+    });
     return;
   }
 
-  visible.forEach((mob, i) => {
-    const row = document.createElement('div');
-    row.className    = 'mob-order-row';
-    row.draggable    = !searchQ; // drag désactivé pendant la recherche
-    row.dataset.id   = mob.id;
-    const realIdx = _mobOrderData.indexOf(mob) + 1;
-    row.innerHTML = `
-      <span class="mob-order-handle">⠿</span>
-      <input type="number" class="mob-order-index" value="${realIdx}" min="1" max="${_mobOrderData.length}" title="Changer la position">
-      <span class="mob-order-name">${mob.name||mob.id}</span>
-      <span class="mob-order-tag">${mobTag(mob)}</span>`;
+  // ── Mode normal : groupes par palier ──
+  const paliers = [...new Set(_mobOrderData.map(m => m.palier || 1))].sort((a,b) => a-b);
+  if (!paliers.length) { listEl.innerHTML = '<div class="empty">Aucun mob</div>'; return; }
 
-    // Changement de numéro
-    const indexInput = row.querySelector('.mob-order-index');
-    indexInput.addEventListener('click', e => e.stopPropagation());
-    indexInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); indexInput.blur(); } });
-    indexInput.addEventListener('change', () => {
-      const fromIdx = _mobOrderData.indexOf(mob);
-      let toIdx = parseInt(indexInput.value, 10) - 1;
-      toIdx = Math.max(0, Math.min(_mobOrderData.length - 1, toIdx));
-      if (toIdx === fromIdx) { indexInput.value = fromIdx + 1; return; }
-      const [moved] = _mobOrderData.splice(fromIdx, 1);
-      _mobOrderData.splice(toIdx, 0, moved);
-      _mobOrderDirty = true;
-      document.getElementById('btn-save-order').disabled = false;
+  paliers.forEach(palier => {
+    const palierMobs = _mobOrderData.filter(m => (m.palier||1) === palier);
+    const collapsed  = _mobPalierCollapsed.has(palier);
+
+    const section = document.createElement('div');
+    section.className = 'palier-section';
+
+    const ph = document.createElement('div');
+    ph.className = 'palier-section-header';
+    ph.innerHTML = `
+      <span style="flex:1;">Palier ${palier}</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierMobs.length} mob${palierMobs.length>1?'s':''}</span>
+      <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
+    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+      if (_mobPalierCollapsed.has(palier)) _mobPalierCollapsed.delete(palier);
+      else _mobPalierCollapsed.add(palier);
       renderMobOrder();
     });
+    section.appendChild(ph);
 
-    // Drag & drop
-    row.addEventListener('dragstart', e => {
-      _dragSrc = row;
-      row.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
+    const body = document.createElement('div');
+    body.className = 'palier-section-body';
+    body.style.display = collapsed ? 'none' : '';
+
+    palierMobs.forEach(mob => {
+      const palierIdx = palierMobs.indexOf(mob);
+      const row = document.createElement('div');
+      row.className  = 'mob-order-row';
+      row.draggable  = true;
+      row.dataset.id = mob.id;
+      row.innerHTML  = `
+        <span class="mob-order-handle">⠿</span>
+        <input type="number" class="mob-order-index" value="${palierIdx+1}" min="1" max="${palierMobs.length}" title="Position dans ce palier">
+        <span class="mob-order-name">${mob.name||mob.id}</span>
+        <span class="mob-order-tag">${mobTag(mob)}</span>`;
+
+      const indexInput = row.querySelector('.mob-order-index');
+      indexInput.addEventListener('click', e => e.stopPropagation());
+      indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+      indexInput.addEventListener('change', () => {
+        let toPalierIdx = parseInt(indexInput.value, 10) - 1;
+        toPalierIdx = Math.max(0, Math.min(palierMobs.length - 1, toPalierIdx));
+        if (toPalierIdx === palierIdx) { indexInput.value = palierIdx + 1; return; }
+        const fromGlobal = _mobOrderData.indexOf(mob);
+        const [removed]  = _mobOrderData.splice(fromGlobal, 1);
+        const nowPalier  = _mobOrderData.filter(m => (m.palier||1) === palier);
+        const insertAt   = toPalierIdx < nowPalier.length
+          ? _mobOrderData.indexOf(nowPalier[toPalierIdx])
+          : (_mobOrderData.indexOf(nowPalier[nowPalier.length-1]) + 1 || _mobOrderData.length);
+        _mobOrderData.splice(insertAt, 0, removed);
+        _mobOrderDirty = true;
+        document.getElementById('btn-save-order').disabled = false;
+        renderMobOrder();
+      });
+
+      row.addEventListener('dragstart', e => { _dragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+      row.addEventListener('dragend',   () => row.classList.remove('dragging'));
+      row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
+      row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+      row.addEventListener('drop', e => {
+        e.preventDefault(); row.classList.remove('drag-over');
+        if (!_dragSrc || _dragSrc === row) return;
+        const fromMob = _mobOrderData.find(m => m.id === _dragSrc.dataset.id);
+        const toMob   = _mobOrderData.find(m => m.id === row.dataset.id);
+        if (!fromMob || !toMob || (fromMob.palier||1) !== (toMob.palier||1)) return;
+        const fromIdx = _mobOrderData.findIndex(m => m.id === _dragSrc.dataset.id);
+        const toIdx   = _mobOrderData.findIndex(m => m.id === row.dataset.id);
+        if (fromIdx === -1 || toIdx === -1) return;
+        const [moved] = _mobOrderData.splice(fromIdx, 1);
+        _mobOrderData.splice(toIdx, 0, moved);
+        _mobOrderDirty = true;
+        document.getElementById('btn-save-order').disabled = false;
+        renderMobOrder();
+      });
+
+      body.appendChild(row);
     });
-    row.addEventListener('dragend', () => row.classList.remove('dragging'));
-    row.addEventListener('dragover', e => { e.preventDefault(); row.classList.add('drag-over'); });
-    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-    row.addEventListener('drop', e => {
-      e.preventDefault();
-      row.classList.remove('drag-over');
-      if (!_dragSrc || _dragSrc === row) return;
-
-      const fromId = _dragSrc.dataset.id;
-      const toId   = row.dataset.id;
-      const fromIdx = _mobOrderData.findIndex(m => m.id === fromId);
-      const toIdx   = _mobOrderData.findIndex(m => m.id === toId);
-      if (fromIdx === -1 || toIdx === -1) return;
-
-      // Réordonner le tableau
-      const [moved] = _mobOrderData.splice(fromIdx, 1);
-      _mobOrderData.splice(toIdx, 0, moved);
-
-      _mobOrderDirty = true;
-      document.getElementById('btn-save-order').disabled = false;
-      renderMobOrder();
-    });
-
-    listEl.appendChild(row);
+    section.appendChild(body);
+    listEl.appendChild(section);
   });
 }
 
@@ -646,6 +761,442 @@ window.saveMobOrder = async () => {
   alert(err ? `⚠️ Erreur lors de la sauvegarde.` : `✓ Ordre sauvegardé (${ok} mobs).`);
   document.getElementById('mob-order-search').value = '';
   await loadMobOrder();
+};
+
+// ── Item order panel ──────────────────────────────────
+let _itemOrderData       = [];
+let _itemOrderDirty      = false;
+let _itemDragSrc         = null;
+let _itemPalierCollapsed = new Set();
+
+const RARITY_ORDER_MOD = ['commun','rare','epique','legendaire','mythique','godlike','event'];
+function itemTag(item) {
+  const r = RARITY_ORDER_MOD.includes(item.rarity) ? item.rarity : (item.rarity || '');
+  return r ? r.charAt(0).toUpperCase() + r.slice(1) : (item.type || '—');
+}
+
+window.showItemOrder = async () => {
+  document.getElementById('submissions-list').style.display  = 'none';
+  document.getElementById('mob-order-panel').style.display   = 'none';
+  document.getElementById('pnj-order-panel').style.display   = 'none';
+  document.getElementById('item-order-panel').style.display  = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.add('active');
+  await loadItemOrder();
+};
+
+async function loadItemOrder() {
+  const listEl = document.getElementById('item-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _itemOrderDirty = false;
+  document.getElementById('btn-save-item-order').disabled = true;
+  try {
+    const snap  = await getDocs(collection(db, 'items'));
+    const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Tri initial : ordre existant → _order (timestamp approbation) → nom
+    items.sort((a, b) => {
+      const ao = a.ordre ?? null, bo = b.ordre ?? null;
+      if (ao !== null && bo !== null) return ao - bo;
+      if (ao !== null) return -1;
+      if (bo !== null) return 1;
+      // items sans ordre : par _order (timestamp), puis nom
+      const at = a._order ?? 0, bt = b._order ?? 0;
+      if (at !== bt) return at - bt;
+      return (a.name||'').localeCompare(b.name||'');
+    });
+    _itemOrderData = items;
+    renderItemOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+function renderItemOrder() {
+  const listEl  = document.getElementById('item-order-list');
+  const searchQ = document.getElementById('item-order-search').value.trim().toLowerCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  listEl.innerHTML = '';
+
+  // ── Mode recherche : liste plate ──
+  if (searchQ) {
+    const visible = _itemOrderData.filter(it =>
+      (it.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(searchQ));
+    if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
+    visible.forEach(item => {
+      const row = document.createElement('div');
+      row.className  = 'mob-order-row';
+      row.dataset.id = item.id;
+      const globalIdx = _itemOrderData.indexOf(item) + 1;
+      row.innerHTML = `
+        <span class="mob-order-handle" style="color:var(--border);">⠿</span>
+        <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
+        <span class="mob-order-name">${item.name||item.id}</span>
+        <span class="mob-order-tag">${itemTag(item)}</span>`;
+      listEl.appendChild(row);
+    });
+    return;
+  }
+
+  // ── Mode normal : groupes par palier ──
+  const paliers = [...new Set(_itemOrderData.map(it => it.palier || 1))].sort((a,b) => a-b);
+  if (!paliers.length) { listEl.innerHTML = '<div class="empty">Aucun item</div>'; return; }
+
+  paliers.forEach(palier => {
+    const palierItems = _itemOrderData.filter(it => (it.palier||1) === palier);
+    const collapsed   = _itemPalierCollapsed.has(palier);
+
+    const section = document.createElement('div');
+    section.className = 'palier-section';
+
+    const ph = document.createElement('div');
+    ph.className = 'palier-section-header';
+    ph.innerHTML = `
+      <span style="flex:1;">Palier ${palier}</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierItems.length} item${palierItems.length>1?'s':''}</span>
+      <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
+    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+      if (_itemPalierCollapsed.has(palier)) _itemPalierCollapsed.delete(palier);
+      else _itemPalierCollapsed.add(palier);
+      renderItemOrder();
+    });
+    section.appendChild(ph);
+
+    const body = document.createElement('div');
+    body.className = 'palier-section-body';
+    body.style.display = collapsed ? 'none' : '';
+
+    palierItems.forEach(item => {
+      const palierIdx = palierItems.indexOf(item);
+      const row = document.createElement('div');
+      row.className  = 'mob-order-row';
+      row.draggable  = true;
+      row.dataset.id = item.id;
+      row.innerHTML  = `
+        <span class="mob-order-handle">⠿</span>
+        <input type="number" class="mob-order-index" value="${palierIdx+1}" min="1" max="${palierItems.length}" title="Position dans ce palier">
+        <span class="mob-order-name">${item.name||item.id}</span>
+        <span class="mob-order-tag">${itemTag(item)}</span>`;
+
+      const indexInput = row.querySelector('.mob-order-index');
+      indexInput.addEventListener('click', e => e.stopPropagation());
+      indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+      indexInput.addEventListener('change', () => {
+        let toPalierIdx = parseInt(indexInput.value, 10) - 1;
+        toPalierIdx = Math.max(0, Math.min(palierItems.length - 1, toPalierIdx));
+        if (toPalierIdx === palierIdx) { indexInput.value = palierIdx + 1; return; }
+        const fromGlobal = _itemOrderData.indexOf(item);
+        const [removed]  = _itemOrderData.splice(fromGlobal, 1);
+        const nowPalier  = _itemOrderData.filter(it => (it.palier||1) === palier);
+        const insertAt   = toPalierIdx < nowPalier.length
+          ? _itemOrderData.indexOf(nowPalier[toPalierIdx])
+          : (_itemOrderData.indexOf(nowPalier[nowPalier.length-1]) + 1 || _itemOrderData.length);
+        _itemOrderData.splice(insertAt, 0, removed);
+        _itemOrderDirty = true;
+        document.getElementById('btn-save-item-order').disabled = false;
+        renderItemOrder();
+      });
+
+      row.addEventListener('dragstart', e => { _itemDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+      row.addEventListener('dragend',   () => row.classList.remove('dragging'));
+      row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
+      row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+      row.addEventListener('drop', e => {
+        e.preventDefault(); row.classList.remove('drag-over');
+        if (!_itemDragSrc || _itemDragSrc === row) return;
+        const fromItem = _itemOrderData.find(it => it.id === _itemDragSrc.dataset.id);
+        const toItem   = _itemOrderData.find(it => it.id === row.dataset.id);
+        if (!fromItem || !toItem || (fromItem.palier||1) !== (toItem.palier||1)) return;
+        const fromIdx = _itemOrderData.findIndex(it => it.id === _itemDragSrc.dataset.id);
+        const toIdx   = _itemOrderData.findIndex(it => it.id === row.dataset.id);
+        if (fromIdx === -1 || toIdx === -1) return;
+        const [moved] = _itemOrderData.splice(fromIdx, 1);
+        _itemOrderData.splice(toIdx, 0, moved);
+        _itemOrderDirty = true;
+        document.getElementById('btn-save-item-order').disabled = false;
+        renderItemOrder();
+      });
+
+      body.appendChild(row);
+    });
+    section.appendChild(body);
+    listEl.appendChild(section);
+  });
+}
+
+window.filterItemOrder = () => renderItemOrder();
+
+window.saveItemOrder = async () => {
+  if (!_itemOrderDirty) return;
+  const btn = document.getElementById('btn-save-item-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  let ok = 0, err = 0;
+  for (let i = 0; i < _itemOrderData.length; i++) {
+    try {
+      await updateDoc(doc(db, 'items', _itemOrderData[i].id), { ordre: i + 1 });
+      ok++;
+    } catch(e) { console.error(_itemOrderData[i].id, e); err++; }
+  }
+  localStorage.removeItem('vcl_cache_v2_items');
+  localStorage.removeItem('vcl_cache_meta_v2_items');
+  _itemOrderDirty = false;
+  btn.textContent = '💾 Sauvegarder';
+  alert(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Ordre sauvegardé (${ok} items).`);
+  document.getElementById('item-order-search').value = '';
+  await loadItemOrder();
+};
+
+// ── PNJ order panel ───────────────────────────────────
+// _pnjRegions = [{id, name, pnjs:[{id,name,region,...},...]},...] dans l'ordre drag
+let _pnjRegions        = [];
+let _pnjDirty          = false;
+let _pnjDragSrc        = null;
+let _pnjCollapsed      = new Set(); // IDs de régions réduites
+let _pnjPalierCollapsed = new Set(); // paliers réduits
+
+window.showPnjOrder = async () => {
+  document.getElementById('submissions-list').style.display  = 'none';
+  document.getElementById('mob-order-panel').style.display   = 'none';
+  document.getElementById('item-order-panel').style.display  = 'none';
+  document.getElementById('pnj-order-panel').style.display   = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.add('active');
+  await loadPnjOrder();
+};
+
+async function loadPnjOrder() {
+  const listEl = document.getElementById('pnj-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _pnjDirty = false;
+  document.getElementById('btn-save-pnj-order').disabled = true;
+  try {
+    const [pnjSnap, regSnap] = await Promise.all([
+      getDocs(collection(db, 'personnages')),
+      getDocs(collection(db, 'regions')),
+    ]);
+
+    const pnjs = pnjSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Grouper tous les PNJ par région (clé = p.region || '')
+    const byRegion = {};
+    pnjs.forEach(p => {
+      const key = p.region || '';
+      if (!byRegion[key]) byRegion[key] = [];
+      byRegion[key].push(p);
+    });
+    // Trier alphabétiquement dans chaque groupe
+    Object.values(byRegion).forEach(arr => arr.sort((a, b) => (a.name||'').localeCompare(b.name||'', 'fr')));
+
+    // Régions connues depuis Firestore, triées par leur ordre actuel
+    const regDocs = regSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    regDocs.sort((a, b) => (a.ordre ?? 9999) - (b.ordre ?? 9999));
+
+    // Construire _pnjRegions :
+    // 1. Régions connues (dans leur ordre), avec leurs PNJ
+    const knownNames = new Set();
+    _pnjRegions = regDocs.map(r => {
+      const name = r.name || r.id;
+      knownNames.add(name);
+      return { id: r.id, name, pnjs: byRegion[name] || [] };
+    });
+
+    // 2. Régions inconnues (présentes dans les PNJ mais pas dans la collection regions)
+    //    triées alphabétiquement, ajoutées à la fin
+    const unknownNames = Object.keys(byRegion)
+      .filter(k => k !== '' && !knownNames.has(k))
+      .sort((a, b) => a.localeCompare(b, 'fr'));
+    unknownNames.forEach(name => {
+      _pnjRegions.push({ id: '__unknown__' + name, name, pnjs: byRegion[name] });
+    });
+
+    // 3. PNJ sans région
+    if (byRegion['']?.length) {
+      _pnjRegions.push({ id: '__none__', name: '', pnjs: byRegion[''] });
+    }
+
+    renderPnjOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+function _makePnjRegionGroup(group, gi, palierPnjs, globalPosMap) {
+  const collapsed = _pnjCollapsed.has(group.id);
+  const groupEl   = document.createElement('div');
+  groupEl.dataset.gi    = gi;
+  groupEl.style.cssText = 'margin-bottom:4px;';
+
+  const header = document.createElement('div');
+  header.draggable = true;
+  header.style.cssText = `
+    display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;
+    background:var(--surface2);border:1px solid var(--border);
+    cursor:grab;user-select:none;margin-bottom:3px;
+    font-size:12px;font-weight:700;color:var(--accent);
+    transition:border-color .1s,background .1s;`;
+  header.innerHTML = `
+    <span style="font-size:15px;color:var(--muted);">⠿</span>
+    <span style="flex:1;">${group.name || '— Sans région —'}</span>
+    <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierPnjs.length} PNJ</span>
+    <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
+
+  header.querySelector('[data-toggle]').addEventListener('click', e => {
+    e.stopPropagation();
+    if (_pnjCollapsed.has(group.id)) _pnjCollapsed.delete(group.id);
+    else _pnjCollapsed.add(group.id);
+    renderPnjOrder();
+  });
+  header.addEventListener('dragstart', e => { _pnjDragSrc = groupEl; groupEl.style.opacity = '.35'; e.dataTransfer.effectAllowed = 'move'; });
+  header.addEventListener('dragend',   () => { groupEl.style.opacity = ''; document.querySelectorAll('#pnj-order-list [data-gi]').forEach(g => { g.style.outline = ''; }); });
+  header.addEventListener('dragover',  e => { e.preventDefault(); if (_pnjDragSrc && _pnjDragSrc !== groupEl) groupEl.style.outline = '2px solid var(--accent)'; });
+  header.addEventListener('dragleave', () => { groupEl.style.outline = ''; });
+  header.addEventListener('drop', e => {
+    e.preventDefault(); groupEl.style.outline = '';
+    if (!_pnjDragSrc || _pnjDragSrc === groupEl) return;
+    const fromGi = parseInt(_pnjDragSrc.dataset.gi, 10);
+    const toGi   = parseInt(groupEl.dataset.gi, 10);
+    if (isNaN(fromGi) || isNaN(toGi)) return;
+    const [moved] = _pnjRegions.splice(fromGi, 1);
+    _pnjRegions.splice(toGi, 0, moved);
+    _pnjDirty = true;
+    document.getElementById('btn-save-pnj-order').disabled = false;
+    renderPnjOrder();
+  });
+
+  groupEl.appendChild(header);
+
+  const pnjList = document.createElement('div');
+  pnjList.style.display = collapsed ? 'none' : '';
+  palierPnjs.forEach(pnj => {
+    const row = document.createElement('div');
+    row.className      = 'mob-order-row';
+    row.style.marginLeft = '18px';
+    row.innerHTML = `
+      <span class="mob-order-handle" style="color:var(--border);visibility:hidden;">⠿</span>
+      <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalPosMap.get(pnj.id)}</span>
+      <span class="mob-order-name">${pnj.name||pnj.id}</span>`;
+    pnjList.appendChild(row);
+  });
+  groupEl.appendChild(pnjList);
+  return groupEl;
+}
+
+function renderPnjOrder() {
+  const listEl  = document.getElementById('pnj-order-list');
+  const searchQ = document.getElementById('pnj-order-search').value.trim().toLowerCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  listEl.innerHTML = '';
+
+  // ── Mode recherche : liste plate ──
+  if (searchQ) {
+    const allPnjs = _pnjRegions.flatMap(g => g.pnjs);
+    // Calculer positions globales (palier → région → nom)
+    const paliers = [...new Set(allPnjs.map(p => p.palier||1))].sort((a,b) => a-b);
+    const posMap  = new Map();
+    let pos = 1;
+    paliers.forEach(pal => _pnjRegions.forEach(g => g.pnjs.filter(p => (p.palier||1)===pal).forEach(p => posMap.set(p.id, pos++))));
+    const results = allPnjs.filter(p => (p.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(searchQ));
+    if (!results.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
+    results.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'mob-order-row';
+      row.innerHTML = `
+        <span class="mob-order-handle" style="color:var(--border);">⠿</span>
+        <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${posMap.get(p.id)}</span>
+        <span class="mob-order-name">${p.name||p.id}</span>
+        <span class="mob-order-tag">${p.region||'—'}</span>`;
+      listEl.appendChild(row);
+    });
+    return;
+  }
+
+  // ── Mode normal : palier → régions ──
+  const allPnjs = _pnjRegions.flatMap(g => g.pnjs);
+  if (!allPnjs.length) { listEl.innerHTML = '<div class="empty">Aucun PNJ</div>'; return; }
+
+  const paliers = [...new Set(allPnjs.map(p => p.palier||1))].sort((a,b) => a-b);
+
+  // Pré-calcul des positions globales : palier ascendant → ordre des régions → ordre alpha dans la région
+  const globalPosMap = new Map();
+  let pos = 1;
+  paliers.forEach(pal => _pnjRegions.forEach(g => g.pnjs.filter(p => (p.palier||1)===pal).forEach(p => globalPosMap.set(p.id, pos++))));
+
+  paliers.forEach(palier => {
+    const totalCount    = allPnjs.filter(p => (p.palier||1) === palier).length;
+    if (!totalCount) return;
+    const palCollapsed  = _pnjPalierCollapsed.has(palier);
+
+    const palSection = document.createElement('div');
+    palSection.className = 'palier-section';
+
+    const ph = document.createElement('div');
+    ph.className = 'palier-section-header';
+    ph.innerHTML = `
+      <span style="flex:1;">Palier ${palier}</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:400;">${totalCount} PNJ</span>
+      <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${palCollapsed?'Dérouler':'Réduire'}">${palCollapsed?'▶':'▼'}</button>`;
+    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+      if (_pnjPalierCollapsed.has(palier)) _pnjPalierCollapsed.delete(palier);
+      else _pnjPalierCollapsed.add(palier);
+      renderPnjOrder();
+    });
+    palSection.appendChild(ph);
+
+    const palBody = document.createElement('div');
+    palBody.className    = 'palier-section-body';
+    palBody.style.display = palCollapsed ? 'none' : '';
+
+    _pnjRegions.forEach((group, gi) => {
+      const palierPnjs = group.pnjs.filter(p => (p.palier||1) === palier);
+      if (!palierPnjs.length) return;
+      palBody.appendChild(_makePnjRegionGroup(group, gi, palierPnjs, globalPosMap));
+    });
+
+    palSection.appendChild(palBody);
+    listEl.appendChild(palSection);
+  });
+}
+
+window.filterPnjOrder = () => renderPnjOrder();
+
+window.savePnjOrder = async () => {
+  const btn = document.getElementById('btn-save-pnj-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  let ok = 0, err = 0;
+
+  // 1. Mettre à jour l'ordre des régions connues uniquement
+  let regPos = 1;
+  for (const g of _pnjRegions) {
+    if (g.id.startsWith('__')) continue; // groupes synthétiques (sans région, région inconnue)
+    try {
+      await updateDoc(doc(db, 'regions', g.id), { ordre: regPos++ });
+      ok++;
+    } catch(e) { console.error(g.id, e); err++; }
+  }
+
+  // 2. Mettre à jour l'ordre des PNJ (ordre global = région + nom)
+  let pos = 1;
+  for (const g of _pnjRegions) {
+    for (const pnj of g.pnjs) {
+      try {
+        await updateDoc(doc(db, 'personnages', pnj.id), { ordre: pos++ });
+        ok++;
+      } catch(e) { console.error(pnj.id, e); err++; }
+    }
+  }
+
+  localStorage.removeItem('vcl_cache_v2_regions');
+  localStorage.removeItem('vcl_cache_meta_v2_regions');
+  localStorage.removeItem('vcl_cache_v2_personnages');
+  localStorage.removeItem('vcl_cache_meta_v2_personnages');
+
+  _pnjDirty = false;
+  btn.disabled = false;
+  btn.textContent = '💾 Calculer & sauvegarder';
+  alert(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Sauvegardé (${ok} documents mis à jour).`);
+  document.getElementById('pnj-order-search').value = '';
+  await loadPnjOrder();
 };
 
 // ── Delete ────────────────────────────────────────────

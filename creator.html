@@ -1206,17 +1206,6 @@ function clearSavedForm() {
   localStorage.removeItem('vcl_form');
 }
 
-function buildSetSelect() {
-  if (typeof SETS === 'undefined') return;
-  const sel = document.getElementById('f-set');
-  for (const [id, { label }] of Object.entries(SETS)) {
-    const opt = document.createElement('option');
-    opt.value = id;
-    opt.textContent = label;
-    sel.appendChild(opt);
-  }
-}
-
 // ═══════════════════════════════════════════════════
 // BUILD STATS UI
 // ═══════════════════════════════════════════════════
@@ -2856,8 +2845,6 @@ function resetForm() {
 // ═══════════════════════════════════════════════════
 // SOUMISSION DISCORD
 // ═══════════════════════════════════════════════════
-// SOUMISSION DISCORD
-// ═══════════════════════════════════════════════════
 const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1476647889920065549/1xPGdMDmpL7iswdaUNuwlnvmQPv9ED74Qn3ftPabthzX_TIMrYIPvLWfKirBwAMMyhFG';
 
 // Webhooks forums Discord (arme/armure/accessoire × palier)
@@ -2885,26 +2872,20 @@ function buildItemCardEmbed(obj, color, imageFilename) {
   const rarLabel = RARITY_LABEL[obj.rarity] || obj.rarity;
   const catLabel = CAT_LABEL[obj.category]  || obj.category;
 
-  // Description = lore en italique
   const description = obj.lore ? `*${obj.lore.slice(0, 300)}*` : undefined;
-
   const fields = [];
 
-  // Ligne 1 : Rareté · Catégorie · Palier · Niveau (tous inline)
   fields.push({ name:'Rareté',    value:`${rarIcon} ${rarLabel}`, inline:true });
   fields.push({ name:'Catégorie', value: catLabel,                inline:true });
   if (obj.palier) fields.push({ name:'Palier', value:`Palier ${obj.palier}`, inline:true });
   if (obj.lvl)    fields.push({ name:'Niveau requis', value:`≥ ${obj.lvl}`, inline:true });
 
-  // Séparateur visuel
   fields.push({ name:'\u200b', value:'\u200b', inline:false });
 
-  // Classes
   if (obj.classes?.length) {
     fields.push({ name:'Classes', value: obj.classes.map(c => CLS_LABEL[c] || c).join('  ·  '), inline:false });
   }
 
-  // Stats
   const ALL_STAT_LABELS = {};
   if (typeof ALL_STATS !== 'undefined') ALL_STATS.forEach(s => ALL_STAT_LABELS[s.id] = s.label + (s.unit ? ' ' + s.unit : ''));
   const statEntries = obj.stats ? Object.entries(obj.stats) : [];
@@ -2918,7 +2899,6 @@ function buildItemCardEmbed(obj, color, imageFilename) {
     fields.push({ name:'📊  Stats', value: lines.join('\n').slice(0, 1024), inline:false });
   }
 
-  // Obtention
   if (obj.obtain) {
     const clean = obj.obtain
       .replace(/\[npc:[\w]+\|([^\]]+)\]/g, '**$1**')
@@ -2927,7 +2907,6 @@ function buildItemCardEmbed(obj, color, imageFilename) {
     fields.push({ name:'📍  Obtention', value: clean, inline:false });
   }
 
-  // Craft
   if (obj.craft?.length) {
     const lines = obj.craft.map(c => {
       const found = (typeof ITEMS !== 'undefined') ? ITEMS.find(i => i.id === c.id) : null;
@@ -3026,7 +3005,6 @@ async function submitToDiscord() {
 
     // Notif Discord (best-effort, n'empêche pas la soumission si ça rate)
     const obj    = buildObj();
-    const code   = toJS(obj, 0) + ',';
     const region = findTargetRegion(obj);
     const color  = RARITY_COLORS_HEX[obj.rarity] || 0x7a7a90;
     const embed  = {
@@ -3122,15 +3100,16 @@ async function submitToFirestore() {
   // Nettoyer pour Firestore
   const clean = sanitizeForFirestore(JSON.parse(JSON.stringify(data)));
 
-  await addDoc(col(db, 'submissions'), {
+  const docRef = await addDoc(col(db, 'submissions'), {
     type,
-    status:      'pending',
-    data:        clean,
-    submittedBy: user.uid,
-    submittedAt: serverTimestamp(),
-    reviewedBy:  null,
-    reviewedAt:  null,
-    comment:     '',
+    status:        'pending',
+    data:          clean,
+    submittedBy:   user.uid,
+    submitterName: getAuthor() || user.displayName || user.email || null,
+    submittedAt:   serverTimestamp(),
+    reviewedBy:    null,
+    reviewedAt:    null,
+    comment:       '',
   });
 
   const code = creatorMode === 'item' ? toJS(data, 0) + ',' : toJS(data, 0) + ',';
