@@ -83,6 +83,15 @@ function buildSidebarAlpha(items) {
 }
 
 /* ══════════════════════════════════
+   ORDRE DE RARETÉ
+══════════════════════════════════ */
+const RARITY_ORDER = ['commun', 'rare', 'epique', 'legendaire', 'mythique', 'godlike', 'event'];
+function rarityRank(key) {
+  const i = RARITY_ORDER.indexOf(key);
+  return i === -1 ? RARITY_ORDER.length : i;
+}
+
+/* ══════════════════════════════════
    HELPERS
 ══════════════════════════════════ */
 function normalize(str) {
@@ -216,7 +225,7 @@ function inlineMd(str) {
   return inlineLinks(str.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'));
 }
 
-/* Regroupe les items par palier puis par catégorie */
+/* Regroupe les items par palier puis par catégorie, triés par rareté */
 function groupItems(items) {
   const grouped = {};
   items.forEach(item => {
@@ -225,6 +234,12 @@ function groupItems(items) {
     if (!grouped[p][item.category]) grouped[p][item.category] = [];
     grouped[p][item.category].push(item);
   });
+  // Trier chaque catégorie par rareté (commun → godlike → event)
+  for (const palier of Object.values(grouped)) {
+    for (const cat of Object.keys(palier)) {
+      palier[cat].sort((a, b) => rarityRank(a.rarity) - rarityRank(b.rarity));
+    }
+  }
   return grouped;
 }
 

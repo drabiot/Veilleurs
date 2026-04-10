@@ -280,9 +280,11 @@ window.migrateCollection = async (key) => {
     const chunk = docs.slice(i, i + BATCH_SIZE);
     const batch = writeBatch(db);
 
-    for (const item of chunk) {
+    for (let j = 0; j < chunk.length; j++) {
+      const item = chunk[j];
       if (!item.id) { log(`  ⚠️ Document sans ID ignoré : ${JSON.stringify(item).slice(0,60)}`, 'warn'); errors++; continue; }
       const clean = sanitizeForFirestore(JSON.parse(JSON.stringify(item)));
+      clean._order = i + j; // index d'insertion pour préserver l'ordre d'affichage
       const ref   = doc(db, colName, String(item.id));
       batch.set(ref, clean);
       done++;

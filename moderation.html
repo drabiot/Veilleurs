@@ -77,6 +77,17 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .field input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 8px 10px; font-size: 13px; outline: none; transition: border-color .15s; }
 .field input:focus { border-color: var(--accent); }
 .empty { color: var(--muted); font-size: 13px; font-style: italic; text-align: center; padding: 60px 20px; }
+
+/* Mob order panel */
+.mob-order-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); margin-bottom: 4px; cursor: grab; user-select: none; transition: background .1s, opacity .15s; }
+.mob-order-row:active { cursor: grabbing; }
+.mob-order-row.drag-over { border-color: var(--accent); background: rgba(122,90,248,.1); }
+.mob-order-row.dragging { opacity: .35; }
+.mob-order-handle { color: var(--muted); font-size: 14px; flex-shrink: 0; }
+.mob-order-index { font-size: 11px; color: var(--muted); font-family: monospace; width: 38px; text-align: center; flex-shrink: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; outline: none; transition: border-color .15s; }
+.mob-order-index:focus { border-color: var(--accent); color: var(--text); }
+.mob-order-name { flex: 1; font-size: 13px; }
+.mob-order-tag { font-size: 11px; color: var(--muted); background: var(--surface2); border-radius: 4px; padding: 2px 7px; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -119,11 +130,29 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
       <button class="filter-btn"        data-type="pnj"    onclick="setFilter('type','pnj')">🧑 PNJ</button>
       <button class="filter-btn"        data-type="region" onclick="setFilter('type','region')">📍 Régions</button>
     </div>
-    <button class="btn btn-ghost" onclick="loadSubmissions()" style="margin-top:auto;font-size:12px;">🔄 Rafraîchir</button>
+    <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">
+    <div class="filter-label" style="margin-top:4px;">Admin</div>
+    <button class="filter-btn" id="btn-mob-order" onclick="showMobOrder()">🔢 Ordre des mobs</button>
+    <button class="btn btn-ghost" onclick="showSubmissions();loadSubmissions()" style="margin-top:auto;font-size:12px;">🔄 Rafraîchir</button>
   </aside>
 
   <main class="main" id="submissions-list">
     <div class="empty">Chargement…</div>
+  </main>
+
+  <!-- Panneau Ordre des mobs -->
+  <main class="main" id="mob-order-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🔢 Ordre des mobs</span>
+      <button class="btn btn-ghost" id="btn-save-order" onclick="saveMobOrder()" style="font-size:12px;">💾 Sauvegarder</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+      Assigne un numéro <code>ordre</code> à chaque mob. Les mobs sans numéro s'affichent en dernier par ordre alphabétique. Les changements sont sauvegardés directement dans Firestore.
+    </p>
+    <input type="search" id="mob-order-search" placeholder="🔍 Rechercher un mob…"
+           oninput="filterMobOrder(this.value)"
+           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
+    <div id="mob-order-list"><div class="empty">Chargement…</div></div>
   </main>
 </div>
 
@@ -407,7 +436,9 @@ window.approve = async (id) => {
     if (!dataId) throw new Error('Pas d\'ID dans les données');
 
     // Écrire dans la vraie collection
-    await setDoc(doc(db, target, String(dataId)), sub.data);
+    // _order = timestamp → les nouveaux items s'ajoutent après les items migrés (qui ont de petits entiers)
+    const dataToWrite = { _order: Date.now(), ...sub.data };
+    await setDoc(doc(db, target, String(dataId)), dataToWrite);
 
     // Invalider le cache localStorage pour forcer un re-fetch sur les pages de lecture
     localStorage.removeItem(`vcl_cache_v2_${target}`);
@@ -457,6 +488,164 @@ window.reject = async (id) => {
     alert('⛔ Erreur : ' + e.message);
     if (btn) { btn.disabled = false; btn.textContent = '✕ Rejeter'; }
   }
+};
+
+// ── Mob order panel ───────────────────────────────────
+let _mobOrderData  = []; // liste ordonnée après drag-drop
+let _mobOrderDirty = false;
+let _dragSrc       = null;
+
+const TYPE_ORDER_MOD  = { monstre: 0, sbire: 1, mini_boss: 2, boss: 3 };
+const TYPE_LABELS_MOD = { monstre: 'Monstre', sbire: 'Sbire', mini_boss: 'Mini-boss', boss: 'Boss' };
+
+function mobTag(mob) {
+  return `P${mob.palier||1} ${TYPE_LABELS_MOD[mob.type]||mob.type}`;
+}
+
+function showSubmissions() {
+  document.getElementById('submissions-list').style.display = '';
+  document.getElementById('mob-order-panel').style.display  = 'none';
+  document.getElementById('btn-mob-order').classList.remove('active');
+}
+
+window.showMobOrder = async () => {
+  document.getElementById('submissions-list').style.display = 'none';
+  document.getElementById('mob-order-panel').style.display  = '';
+  document.getElementById('btn-mob-order').classList.add('active');
+  await loadMobOrder();
+};
+
+async function loadMobOrder() {
+  const listEl = document.getElementById('mob-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _mobOrderDirty = false;
+  document.getElementById('btn-save-order').disabled = true;
+  try {
+    const snap = await getDocs(collection(db, 'mobs'));
+    const mobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    // Tri initial : ordre existant → palier → type → nom
+    mobs.sort((a, b) => {
+      if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
+      if (a.ordre != null) return -1;
+      if (b.ordre != null) return 1;
+      if ((a.palier||1) !== (b.palier||1)) return (a.palier||1) - (b.palier||1);
+      const ta = TYPE_ORDER_MOD[a.type]??99, tb = TYPE_ORDER_MOD[b.type]??99;
+      if (ta !== tb) return ta - tb;
+      return (a.name||'').localeCompare(b.name||'');
+    });
+    _mobOrderData = mobs;
+    renderMobOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+function renderMobOrder() {
+  const listEl  = document.getElementById('mob-order-list');
+  const searchQ = document.getElementById('mob-order-search').value.trim().toLowerCase()
+                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  listEl.innerHTML = '';
+
+  const visible = searchQ
+    ? _mobOrderData.filter(m => (m.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(searchQ))
+    : _mobOrderData;
+
+  if (!visible.length) {
+    listEl.innerHTML = '<div class="empty">Aucun résultat</div>';
+    return;
+  }
+
+  visible.forEach((mob, i) => {
+    const row = document.createElement('div');
+    row.className    = 'mob-order-row';
+    row.draggable    = !searchQ; // drag désactivé pendant la recherche
+    row.dataset.id   = mob.id;
+    const realIdx = _mobOrderData.indexOf(mob) + 1;
+    row.innerHTML = `
+      <span class="mob-order-handle">⠿</span>
+      <input type="number" class="mob-order-index" value="${realIdx}" min="1" max="${_mobOrderData.length}" title="Changer la position">
+      <span class="mob-order-name">${mob.name||mob.id}</span>
+      <span class="mob-order-tag">${mobTag(mob)}</span>`;
+
+    // Changement de numéro
+    const indexInput = row.querySelector('.mob-order-index');
+    indexInput.addEventListener('click', e => e.stopPropagation());
+    indexInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); indexInput.blur(); } });
+    indexInput.addEventListener('change', () => {
+      const fromIdx = _mobOrderData.indexOf(mob);
+      let toIdx = parseInt(indexInput.value, 10) - 1;
+      toIdx = Math.max(0, Math.min(_mobOrderData.length - 1, toIdx));
+      if (toIdx === fromIdx) { indexInput.value = fromIdx + 1; return; }
+      const [moved] = _mobOrderData.splice(fromIdx, 1);
+      _mobOrderData.splice(toIdx, 0, moved);
+      _mobOrderDirty = true;
+      document.getElementById('btn-save-order').disabled = false;
+      renderMobOrder();
+    });
+
+    // Drag & drop
+    row.addEventListener('dragstart', e => {
+      _dragSrc = row;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', () => row.classList.remove('dragging'));
+    row.addEventListener('dragover', e => { e.preventDefault(); row.classList.add('drag-over'); });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if (!_dragSrc || _dragSrc === row) return;
+
+      const fromId = _dragSrc.dataset.id;
+      const toId   = row.dataset.id;
+      const fromIdx = _mobOrderData.findIndex(m => m.id === fromId);
+      const toIdx   = _mobOrderData.findIndex(m => m.id === toId);
+      if (fromIdx === -1 || toIdx === -1) return;
+
+      // Réordonner le tableau
+      const [moved] = _mobOrderData.splice(fromIdx, 1);
+      _mobOrderData.splice(toIdx, 0, moved);
+
+      _mobOrderDirty = true;
+      document.getElementById('btn-save-order').disabled = false;
+      renderMobOrder();
+    });
+
+    listEl.appendChild(row);
+  });
+}
+
+window.filterMobOrder = () => {
+  renderMobOrder();
+};
+
+window.saveMobOrder = async () => {
+  if (!_mobOrderDirty) return;
+  const btn = document.getElementById('btn-save-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+
+  // Écrire ordre = position (1-based) pour chaque mob dans l'ordre actuel
+  let ok = 0, err = 0;
+  for (let i = 0; i < _mobOrderData.length; i++) {
+    try {
+      await updateDoc(doc(db, 'mobs', _mobOrderData[i].id), { ordre: i + 1 });
+      ok++;
+    } catch(e) {
+      console.error(_mobOrderData[i].id, e);
+      err++;
+    }
+  }
+
+  // Invalider le cache localStorage du bestiaire
+  localStorage.removeItem('vcl_cache_v2_mobs');
+  localStorage.removeItem('vcl_cache_meta_v2_mobs');
+
+  _mobOrderDirty = false;
+  btn.textContent = '💾 Sauvegarder';
+  alert(err ? `⚠️ Erreur lors de la sauvegarde.` : `✓ Ordre sauvegardé (${ok} mobs).`);
+  document.getElementById('mob-order-search').value = '';
+  await loadMobOrder();
 };
 
 // ── Delete ────────────────────────────────────────────

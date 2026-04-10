@@ -149,7 +149,7 @@ function getList() { return activeTab === 'monstres' ? MOBS : PERSONNAGES; }
 
 function getFiltered() {
   const q = normalize(searchQuery);
-  return getList().filter(e => {
+  const filtered = getList().filter(e => {
     if (q && !normalize(e.name).includes(q) && !normalize(e.region||'').includes(q) && !normalize(e.lore||'').includes(q)) return false;
     if (activePalier !== 'all' && e.palier !== activePalier) return false;
     if (activeTab === 'monstres') {
@@ -159,6 +159,17 @@ function getFiltered() {
     }
     return true;
   });
+  if (activeTab === 'monstres') {
+    filtered.sort((a, b) => {
+      if (a.palier !== b.palier) return a.palier - b.palier;
+      // Ordre défini par la modération uniquement, puis alphabétique en fallback
+      if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
+      if (a.ordre != null) return -1;
+      if (b.ordre != null) return 1;
+      return normalize(a.name).localeCompare(normalize(b.name));
+    });
+  }
+  return filtered;
 }
 
 /* ══════════════════════════════════
