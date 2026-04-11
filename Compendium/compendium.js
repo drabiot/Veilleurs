@@ -37,12 +37,13 @@ function currentItems() {
 	});
   const filtered = q.length >= 1
     ? ITEMS.filter(item =>
-        normalize(String(item.name  || '')).includes(norm) ||
+        !item.sensible &&
+        (normalize(String(item.name  || '')).includes(norm) ||
         normalize(String(item.lore  || '')).includes(norm) ||
         normalize(catData(item.category).label || '').includes(norm) ||
-        (item.tags || []).some(t => t != null && normalize(String(t)).includes(norm))
+        (item.tags || []).some(t => t != null && normalize(String(t)).includes(norm)))
       )
-    : [...ITEMS];
+    : ITEMS.filter(item => !item.sensible);
   return filtered;
 }
 

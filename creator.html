@@ -96,8 +96,8 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 /* ── RARITY BUTTONS ── */
 .rarity-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .r-btn {
-  padding: 5px 13px; border-radius: 20px; border: 2px solid transparent;
-  cursor: pointer; font-size: 12px; font-weight: 700; background: var(--surface2); color: var(--muted);
+  padding: 6px 15px; border-radius: 20px; border: 2px solid transparent;
+  cursor: pointer; font-size: 13px; font-weight: 700; background: var(--surface2); color: var(--muted);
   transition: all .15s;
 }
 .r-btn.active { color: #fff !important; }
@@ -109,6 +109,52 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 .r-btn[data-r="godlike"]    { --c: #a83020; }
 .r-btn[data-r="event"]      { --c: #ebebeb; }
 .r-btn.active { background: var(--c); border-color: var(--c); }
+.r-btn[data-r="event"].active { color: #1a1a2e !important; } /* texte sombre sur fond clair */
+
+/* ── Behavior buttons — infobulle ── */
+.behavior-btn { font-size: 12px !important; padding: 6px 8px !important; }
+.behavior-btn.active { color: #fff !important; }
+.behavior-btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%);
+  background: #1a1a2e; color: #e8e8f0; font-size: 11px; font-weight: 500;
+  padding: 5px 9px; border-radius: 6px; white-space: nowrap; pointer-events: none;
+  border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,.5);
+  opacity: 0; transition: opacity .15s; z-index: 100;
+}
+.behavior-btn[data-tooltip]::before {
+  content: '';
+  position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: var(--border);
+  pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 100;
+}
+.behavior-btn[data-tooltip]:hover::after,
+.behavior-btn[data-tooltip]:hover::before { opacity: 1; }
+
+/* Rarity field — mise en évidence quand aucune rareté sélectionnée */
+.rarity-field {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  background: var(--surface2);
+  transition: border-color .2s, background .2s;
+}
+.rarity-field.unset {
+  border-color: #d7af5f;
+  background: rgba(215,175,95,.07);
+  animation: rarity-pulse 2s ease-in-out infinite;
+}
+.rarity-field .rarity-label {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.rarity-field.unset .rarity-label { color: #d7af5f; }
+.rarity-field .rarity-label .req { font-size: 10px; opacity: .7; }
+@keyframes rarity-pulse {
+  0%, 100% { border-color: #d7af5f; }
+  50%       { border-color: rgba(215,175,95,.35); }
+}
 
 /* ── CLASS BUTTONS ── */
 .cls-row { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -273,6 +319,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
   <span id="header-subtitle">Génère le code JS pour Compendium/data.js</span>
   <div class="hbtns">
     <a href="Compendium/compendium.html" class="btn btn-ghost">📖 Compendium</a>
+    <a href="moderation.html" id="btn-moderation" class="btn btn-ghost" style="display:none;">🛡️ Modération</a>
     <input type="text" id="author-input" placeholder="👤 Ton pseudo…" oninput="saveAuthor()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;outline:none;width:130px;transition:border-color .15s;" title="Pseudo affiché dans la soumission Discord">
     <span class="copy-msg" id="copy-msg">✓ Copié !</span>
     <span id="auth-user-status" style="font-size:12px;color:var(--muted);display:none;"></span>
@@ -381,8 +428,8 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
           </div>
         </div>
 
-        <div class="field">
-          <label>Rareté</label>
+        <div class="rarity-field unset" id="rarity-field">
+          <div class="rarity-label">Rareté <span class="req">— obligatoire</span></div>
           <div class="rarity-row">
             <button class="r-btn" data-r="commun"     onclick="setRarity('commun')">Commun</button>
             <button class="r-btn" data-r="rare"       onclick="setRarity('rare')">Rare</button>
@@ -752,12 +799,19 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
               <option value="3">Palier 3</option>
             </select>
           </div>
+          <div class="field" style="max-width:200px;">
+            <label>Dans le Codex</label>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <button id="reg-codex-yes" class="btn btn-ghost btn-sm" style="background:rgba(74,222,128,.15);color:var(--success);border-color:var(--success);" onclick="setRegCodex(true)">✓ Oui</button>
+              <button id="reg-codex-no"  class="btn btn-ghost btn-sm" onclick="setRegCodex(false)">✕ Non</button>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Lore Région -->
       <div class="section">
-        <div class="sec-head" onclick="toggleSec(this)">📖 Lore <span style="font-size:10px;color:var(--danger);font-weight:400;"> *</span> <span class="chev">▾</span></div>
+        <div class="sec-head" onclick="toggleSec(this)">📖 Lore <span id="reg-lore-badge" style="font-size:10px;color:var(--danger);font-weight:400;"> *</span> <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="field">
             <textarea id="reg-lore" placeholder="Description de la région…" oninput="update()"></textarea>
@@ -801,10 +855,15 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
             </div>
             <div class="field">
               <label>Comportement</label>
-              <select id="mob-behavior" onchange="update()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;">
-                <option value="agressif">Agressif</option>
-                <option value="neutre">Neutre</option>
-              </select>
+              <div style="display:flex;gap:6px;margin-top:4px;position:relative;">
+                <button class="r-btn behavior-btn active" id="beh-agressif" style="--c:#f87171;flex:1;position:relative;" onclick="setBehavior('agressif')"
+                  data-tooltip="Attaque le joueur à vue">⚔️ Agressif</button>
+                <button class="r-btn behavior-btn"        id="beh-neutre"   style="--c:#fbbf24;flex:1;position:relative;" onclick="setBehavior('neutre')"
+                  data-tooltip="Attaque si le joueur l'attaque en premier">⚖️ Neutre</button>
+                <button class="r-btn behavior-btn"        id="beh-passif"   style="--c:#4ade80;flex:1;position:relative;" onclick="setBehavior('passif')"
+                  data-tooltip="N'attaque jamais le joueur">🕊️ Passif</button>
+              </div>
+              <input type="hidden" id="mob-behavior" value="agressif">
             </div>
           </div>
           <div class="row2">
@@ -888,18 +947,17 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
   <!-- ═══ OUTPUT ═══ -->
   <div class="out-panel">
     <div class="out-tabs">
-      <div class="out-tab active" id="tab-js" onclick="switchTab('js')">⌨️ Code JS</div>
-      <div class="out-tab" id="tab-preview" onclick="switchTab('preview')">👁️ Preview</div>
+      <div class="out-tab active" id="tab-preview" onclick="switchTab('preview')">👁️ Preview</div>
       <div class="out-tab" id="tab-history" onclick="switchTab('history')">📋 Historique <span id="history-count" style="display:none;background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;font-size:10px;margin-left:2px;"></span></div>
     </div>
-    <!-- JS Pane -->
-    <div class="out-pane active" id="pane-js">
-      <div id="validation-panel" style="display:none;padding:10px 14px;border-bottom:1px solid var(--border);flex-direction:column;gap:5px;"></div>
+    <!-- JS Pane (caché, utilisé pour le clipboard/submit) -->
+    <div id="pane-js" style="display:none;">
       <pre class="out-code" id="out-code">// Remplis le formulaire
 // pour générer le code ici.</pre>
     </div>
     <!-- Preview Pane -->
-    <div class="out-pane" id="pane-preview">
+    <div class="out-pane active" id="pane-preview">
+      <div id="validation-panel" style="display:none;padding:10px 14px;border-bottom:1px solid var(--border);flex-direction:column;gap:5px;"></div>
       <div class="preview-wrap" id="preview-wrap">
         <div class="ic-empty">Remplis le formulaire pour voir la preview.</div>
       </div>
@@ -964,27 +1022,32 @@ onAuthStateChanged(auth, async user => {
   const status    = document.getElementById('auth-user-status');
   const loginBtn  = document.getElementById('btn-login');
   const logoutBtn = document.getElementById('btn-logout-hdr');
+  const authorInput = document.getElementById('author-input');
   if (user) {
     if (status)    { status.style.display = ''; status.textContent = user.email; }
     if (loginBtn)  loginBtn.style.display  = 'none';
     if (logoutBtn) logoutBtn.style.display = '';
     if (submitBtn) submitBtn.textContent   = '📨 Soumettre';
 
-    // Pré-remplir le pseudo depuis Firestore si l'input est vide
+    // Pré-remplir le pseudo et récupérer le rôle depuis Firestore
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
-      const pseudo = snap.exists() ? snap.data().pseudo : null;
-      const authorInput = document.getElementById('author-input');
-      if (pseudo && authorInput && !authorInput.value.trim()) {
-        authorInput.value = pseudo;
-        saveAuthor();
-      }
+      const data  = snap.exists() ? snap.data() : {};
+      const pseudo = data.pseudo || null;
+      const role   = data.role   || 'membre';
+      if (pseudo && authorInput) { authorInput.value = pseudo; saveAuthor(); }
+      const modBtn = document.getElementById('btn-moderation');
+      if (modBtn) modBtn.style.display = ['modo','admin'].includes(role) ? '' : 'none';
     } catch {}
+    if (authorInput) authorInput.style.display = 'none';
   } else {
     if (status)    status.style.display    = 'none';
     if (loginBtn)  loginBtn.style.display  = '';
     if (logoutBtn) logoutBtn.style.display = 'none';
-    if (submitBtn) submitBtn.textContent   = '🔒 Soumettre';
+    if (submitBtn) submitBtn.textContent   = '📨 Soumettre';
+    if (authorInput) authorInput.style.display = '';
+    const modBtn = document.getElementById('btn-moderation');
+    if (modBtn) modBtn.style.display = 'none';
   }
 });
 </script>
@@ -1202,12 +1265,23 @@ async function doRegister() {
 
   try {
     const cred = await window._vcl_register(email, pw);
-    // Sauvegarder le pseudo dans Firestore (l'utilisateur écrit son propre doc)
-    await window._vcl_setDoc(
-      window._vcl_doc(window._vcl_db, 'users', cred.user.uid),
-      { pseudo, role: 'membre' }
-    );
-    // Pré-remplir l'input pseudo
+    // Sauvegarder le pseudo dans Firestore — tentative avec retry si le token n'est pas encore propagé
+    const saveProfile = async () => {
+      await window._vcl_setDoc(
+        window._vcl_doc(window._vcl_db, 'users', cred.user.uid),
+        { pseudo, role: 'membre' }
+      );
+    };
+    try {
+      await saveProfile();
+    } catch {
+      // Retry après 1s (token auth pas encore reconnu par Firestore)
+      await new Promise(r => setTimeout(r, 1000));
+      try { await saveProfile(); } catch (e2) {
+        console.warn('Profil non sauvegardé :', e2.message);
+        // Non bloquant : l'account est créé, on continue
+      }
+    }
     const authorInput = document.getElementById('author-input');
     if (authorInput) { authorInput.value = pseudo; saveAuthor(); }
     closeLoginModal();
@@ -1655,6 +1729,8 @@ function setRarity(r) {
   // Add new rarity tag
   if (selRarity && RARITY_TAG_MAP[selRarity]) activeTags.add(RARITY_TAG_MAP[selRarity]);
   document.querySelectorAll('.r-btn[data-r]').forEach(b => b.classList.toggle('active', b.dataset.r === selRarity));
+  const rarityField = document.getElementById('rarity-field');
+  if (rarityField) rarityField.classList.toggle('unset', !selRarity);
   syncPresetTagButtons();
   renderCustomTags();
   update();
@@ -1703,6 +1779,14 @@ function onCatSlotChange() {
   for (const tag of Object.values(SLOT_TAG_MAP)) activeTags.delete(tag);
   // Add new one
   if (slot && SLOT_TAG_MAP[slot]) activeTags.add(SLOT_TAG_MAP[slot]);
+  // Deux mains impossible sur arme secondaire/bouclier
+  const twoHandedField = document.getElementById('twohanded-field');
+  if (slot === 'arme_s') {
+    if (twoHandedField) twoHandedField.style.display = 'none';
+    if (selTwoHanded) { selTwoHanded = false; document.getElementById('twohanded-btn').classList.remove('active'); activeTags.delete('Deux Mains'); }
+  } else if (document.getElementById('f-category').value === 'arme') {
+    if (twoHandedField) twoHandedField.style.display = '';
+  }
   syncPresetTagButtons();
   renderCustomTags();
   update();
@@ -1948,6 +2032,8 @@ function resetFormSilent() {
   document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel textarea').forEach(i => i.value = '');
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
   selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; idLocked = false;
+  const rarityField = document.getElementById('rarity-field');
+  if (rarityField) rarityField.classList.add('unset');
   document.getElementById('sensible-btn').classList.remove('active');
   document.getElementById('twohanded-btn').classList.remove('active');
   activeTags = new Set();
@@ -2133,7 +2219,7 @@ function ensureItemIndex() {
   for (const item of ITEMS) {
     if (!item.craft) continue;
     for (const c of item.craft) {
-      if (c.id && !knownIds.has(c.id) && !seenOrphans.has(c.id)) {
+      if (c.id && !knownIds.has(c.id) && !seenOrphans.has(c.id) && !CURRENCIES[c.id]) {
         seenOrphans.add(c.id);
         orphanIds.push(c.id);
         itemIndex.push({ id: c.id, name: `${c.id} ⚠️`, search: c.id.toLowerCase() });
@@ -2431,7 +2517,7 @@ function escHtml(str) {
 }
 
 function switchTab(tab) {
-  ['js','preview','history'].forEach(t => {
+  ['preview','history'].forEach(t => {
     document.getElementById('tab-'+t).classList.toggle('active', t === tab);
     document.getElementById('pane-'+t).classList.toggle('active', t === tab);
   });
@@ -2644,7 +2730,7 @@ function renderHistory() {
       </div>`;
     div.querySelector('.btn-ghost').addEventListener('click', () => {
       loadItem(entry.obj);
-      switchTab('js');
+      switchTab('preview');
     });
     div.querySelector('.btn-icon').addEventListener('click', () => {
       sessionHistory = sessionHistory.filter(h => h !== entry);
@@ -2802,7 +2888,7 @@ function buildOrphanSection() {
   // Orphelins depuis les loot de mobs
   for (const mob of MOBS) {
     for (const loot of (mob.loot || [])) {
-      if (!itemIds.has(loot.id)) {
+      if (!itemIds.has(loot.id) && !CURRENCIES[loot.id]) {
         if (!orphanMap[loot.id]) orphanMap[loot.id] = [];
         const pct = loot.chance != null ? `${loot.chance}%` : '?%';
         orphanMap[loot.id].push(`${mob.name} (${pct}${loot.qty ? ' ×'+loot.qty : ''})`);
@@ -2813,7 +2899,7 @@ function buildOrphanSection() {
   // Orphelins depuis les crafts d'items existants
   for (const item of ITEMS) {
     for (const c of (item.craft || [])) {
-      if (c.id && !itemIds.has(c.id)) {
+      if (c.id && !itemIds.has(c.id) && !CURRENCIES[c.id]) {
         if (!orphanMap[c.id]) orphanMap[c.id] = [];
         const label = `Craft de ${item.name || item.id}`;
         if (!orphanMap[c.id].includes(label)) orphanMap[c.id].push(label);
@@ -3153,17 +3239,22 @@ function findTargetRegion(obj) {
 }
 
 async function submitToDiscord() {
-  // Auth obligatoire
+  // Invités : pseudo obligatoire
   if (!window._vcl_user) {
-    openLoginModal();
-    return;
+    const pseudo = getAuthor();
+    if (!pseudo) {
+      const input = document.getElementById('author-input');
+      if (input) { input.style.borderColor = 'var(--danger)'; input.focus(); }
+      alert('⚠️ Entre ton pseudo avant de soumettre.');
+      return;
+    }
   }
 
   if (creatorMode === 'region') {
     const regErrors = [];
     if (!document.getElementById('reg-name').value.trim()) regErrors.push('Le nom est obligatoire.');
     if (!document.getElementById('reg-palier').value)      regErrors.push('Le palier est obligatoire.');
-    if (!document.getElementById('reg-lore').value.trim()) regErrors.push('Le lore est obligatoire.');
+    if (regInCodex && !document.getElementById('reg-lore').value.trim()) regErrors.push('Le lore est obligatoire pour une région Codex.');
     if (regErrors.length) {
       alert('⛔ Corrige les erreurs avant de soumettre :\n\n' + regErrors.map(e => '• ' + e).join('\n'));
       return;
@@ -3265,7 +3356,7 @@ async function submitToFirestore() {
   const serverTimestamp = window._vcl_serverTimestamp;
   const user            = window._vcl_user;
 
-  if (!db || !user) throw new Error('Firebase non initialisé ou non connecté');
+  if (!db) throw new Error('Firebase non initialisé');
 
   let type, data;
   if (creatorMode === 'item') {
@@ -3286,7 +3377,7 @@ async function submitToFirestore() {
     type = 'region';
     data = buildRegionObj();
     if (!data.id || !data.name) throw new Error('Nom et ID obligatoires');
-    if (!data.lore) throw new Error('Le lore est obligatoire pour une région');
+    if (data.inCodex && !data.lore) throw new Error('Le lore est obligatoire pour une région Codex');
   }
 
   // Nettoyer pour Firestore
@@ -3296,8 +3387,8 @@ async function submitToFirestore() {
     type,
     status:        'pending',
     data:          clean,
-    submittedBy:   user.uid,
-    submitterName: getAuthor() || user.displayName || user.email || null,
+    submittedBy:   user ? user.uid : null,
+    submitterName: getAuthor() || (user ? user.displayName || user.email : null) || null,
     submittedAt:   serverTimestamp(),
     reviewedBy:    null,
     reviewedAt:    null,
@@ -3334,6 +3425,22 @@ document.addEventListener('click', e => {
 });
 
 // ═══════════════════════════════════════════════════
+// RÉGION — STATE
+// ═══════════════════════════════════════════════════
+let regInCodex  = true;
+
+function setRegCodex(val) {
+  regInCodex = val;
+  const yes = document.getElementById('reg-codex-yes');
+  const no  = document.getElementById('reg-codex-no');
+  if (yes) { yes.style.background = val ? 'rgba(74,222,128,.15)' : ''; yes.style.color = val ? 'var(--success)' : ''; yes.style.borderColor = val ? 'var(--success)' : ''; }
+  if (no)  { no.style.background  = !val ? 'rgba(248,113,113,.15)' : ''; no.style.color  = !val ? 'var(--danger)'  : ''; no.style.borderColor  = !val ? 'var(--danger)'  : ''; }
+  const loreBadge = document.getElementById('reg-lore-badge');
+  if (loreBadge) loreBadge.style.display = val ? '' : 'none';
+  update();
+}
+
+// ═══════════════════════════════════════════════════
 // MOB — STATE
 // ═══════════════════════════════════════════════════
 let mobIdLocked     = false;
@@ -3349,6 +3456,14 @@ function onMobNameInput() {
 function onMobTypeChange() {
   const type = document.getElementById('mob-type').value;
   document.getElementById('mob-spawntime-field').style.display = (type === 'boss' || type === 'miniboss') ? '' : 'none';
+  update();
+}
+
+function setBehavior(val) {
+  document.getElementById('mob-behavior').value = val;
+  ['agressif','neutre','passif'].forEach(b => {
+    document.getElementById('beh-' + b).classList.toggle('active', b === val);
+  });
   update();
 }
 
@@ -3468,14 +3583,49 @@ function renderMobRegionDropdown() {
     dropdown.innerHTML = '<div style="padding:8px 12px;color:var(--muted);font-size:12px;">Aucune région</div>';
     return;
   }
+
+  // Grouper par palier puis codex/hors-codex
+  const groups = {};
   filtered.forEach(r => {
-    const item = document.createElement('div');
-    item.style.cssText = 'padding:7px 12px;cursor:pointer;font-size:13px;color:var(--text);transition:background .1s;';
-    item.textContent = (r.name||r.id) + (r.palier ? ` — P${r.palier}` : '');
-    item.addEventListener('mousedown', e => { e.preventDefault(); selectMobRegion(r); });
-    item.addEventListener('mouseover', () => item.style.background = 'var(--surface3)');
-    item.addEventListener('mouseout',  () => item.style.background = '');
-    dropdown.appendChild(item);
+    const p   = r.palier || '?';
+    const sub = r.inCodex === false ? 'Hors Codex' : 'Codex';
+    const key = `${p}__${sub}`;
+    if (!groups[key]) groups[key] = { palier: p, sub, items: [] };
+    groups[key].items.push(r);
+  });
+
+  // Trier : paliers croissants, puis Codex avant Hors Codex
+  const sorted = Object.values(groups).sort((a, b) => {
+    if (a.palier !== b.palier) return String(a.palier).localeCompare(String(b.palier), undefined, { numeric: true });
+    return a.sub === 'Codex' ? -1 : 1;
+  });
+
+  let lastPalier = null;
+  sorted.forEach(({ palier, sub, items }) => {
+    // En-tête palier (une seule fois par palier)
+    if (palier !== lastPalier) {
+      const ph = document.createElement('div');
+      ph.style.cssText = 'padding:6px 12px 2px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;border-top:' + (lastPalier !== null ? '1px solid var(--surface3)' : 'none');
+      ph.textContent = palier === '?' ? 'Palier inconnu' : `Palier ${palier}`;
+      dropdown.appendChild(ph);
+      lastPalier = palier;
+    }
+
+    // Sous-en-tête Codex / Hors Codex
+    const sh = document.createElement('div');
+    sh.style.cssText = 'padding:3px 18px;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;';
+    sh.textContent = sub;
+    dropdown.appendChild(sh);
+
+    items.forEach(r => {
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:6px 24px;cursor:pointer;font-size:13px;color:var(--text);transition:background .1s;';
+      item.textContent = r.name || r.id;
+      item.addEventListener('mousedown', e => { e.preventDefault(); selectMobRegion(r); });
+      item.addEventListener('mouseover', () => item.style.background = 'var(--surface3)');
+      item.addEventListener('mouseout',  () => item.style.background = '');
+      dropdown.appendChild(item);
+    });
   });
 }
 
@@ -3544,8 +3694,8 @@ function resetMobForm() {
   ['mob-name','mob-id','mob-lore','mob-spawntime','mob-regionid'].forEach(fid => {
     const el = document.getElementById(fid); if (el) el.value = '';
   });
-  document.getElementById('mob-type').selectedIndex     = 0;
-  document.getElementById('mob-behavior').selectedIndex = 0;
+  document.getElementById('mob-type').selectedIndex = 0;
+  setBehavior('agressif');
   document.getElementById('mob-palier').selectedIndex   = 0;
   document.getElementById('mob-region').value           = '';
   document.getElementById('mob-regionid').value         = '';
@@ -3569,7 +3719,7 @@ const MODE_SUBTITLES = {
   item:   'Génère le code JS pour Compendium/data.js',
   mob:    'Soumet un mob à la validation',
   pnj:    'Génère le code JS pour Bestiaire/data.js',
-  region: 'Soumet une région codex à la validation',
+  region: 'Soumet une région (codex ou non) à la validation',
 };
 
 function switchMode(mode) {
@@ -3816,11 +3966,12 @@ function buildRegionObj() {
   const lore   = document.getElementById('reg-lore').value.trim();
 
   const obj = {};
-  if (id)     obj.id     = id;
-  if (name)   obj.name   = name;
-  if (palier) obj.palier = +palier;
+  if (id)     obj.id      = id;
+  if (name)   obj.name    = name;
+  if (palier) obj.palier  = +palier;
+  obj.inCodex = regInCodex;
   obj.img = null;
-  if (lore)   obj.lore   = lore;
+  if (lore)   obj.lore    = lore;
 
   return obj;
 }
@@ -3844,6 +3995,7 @@ function resetRegionForm() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const p = document.getElementById('reg-palier'); if (p) p.selectedIndex = 0;
+  setRegCodex(true);
 }
 
 </script>

@@ -1514,6 +1514,7 @@ stats.innerHTML = statsLines +
       (!filterRar  || item.rarity === filterRar) &&
       (filterTier === null || item.palier === filterTier) &&
       (!q || norm(item.name).includes(q)) &&
+      (!item.sensible || (q && norm(item.name) === q)) &&
       (filterStats.size === 0 || [...filterStats].every(function(sid) {
         if (!item.stats) return false;
         const val = item.stats[sid];

@@ -36,18 +36,27 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read:  if isAuth();
-      allow write: if isAdmin();
+      allow read:   if isAuth();
+      // Création du propre profil à l'inscription (rôle forcé à 'membre', pas d'autres champs)
+      allow create: if isAuth()
+                    && request.auth.uid == uid
+                    && request.resource.data.role == 'membre'
+                    && request.resource.data.keys().hasOnly(['pseudo','role']);
+      // Seul un admin peut modifier (changer le rôle, etc.)
+      allow update, delete: if isAdmin();
     }
 
     match /submissions/{id} {
-      // Tout user connecté peut soumettre
-      allow create: if isMembre();
-      // Seul le soumetteur peut lire sa propre soumission, ou les modo+
-      allow read:   if isAuth() && (resource.data.submittedBy == request.auth.uid || isModo());
+      // Tout le monde peut soumettre (invités inclus) — pseudo et type obligatoires
+      allow create: if request.resource.data.submitterName is string
+                    && request.resource.data.submitterName.size() >= 2
+                    && request.resource.data.type in ['item','mob','pnj','region']
+                    && request.resource.data.status == 'pending';
+      // Les modo+ voient tout ; un user connecté voit ses propres soumissions
+      allow read:   if isModo() || (isAuth() && resource.data.submittedBy == request.auth.uid);
       // Seuls les modo/admin peuvent modifier (approuver/rejeter)
       allow update: if isModo();
-      allow delete: if isAdmin();
+      allow delete: if isModo();
     }
 
   }
