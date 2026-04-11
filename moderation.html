@@ -77,6 +77,30 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 .btn-copy    { background: var(--surface3); color: var(--muted); border: 1px solid var(--border); font-size: 11px; padding: 5px 10px; }
 
+/* Lightbox image */
+#img-lightbox {
+  display: none; position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,.85); align-items: center; justify-content: center; cursor: zoom-out;
+}
+#img-lightbox.open { display: flex; }
+#img-lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,.7); }
+
+/* Image soumission */
+.mod-img-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0 2px; }
+.mod-img-zone {
+  position: relative; border: 2px dashed var(--border); border-radius: 8px;
+  cursor: pointer; transition: border-color .2s, background .2s; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  min-width: 90px; min-height: 60px; overflow: hidden;
+}
+.mod-img-zone:hover, .mod-img-zone.drag-over { border-color: var(--accent); background: rgba(122,90,248,.06); }
+.mod-img-zone.has-img { border-style: solid; border-color: var(--accent); }
+.mod-img-preview { max-width: 160px; max-height: 120px; border-radius: 5px; display: block; cursor: zoom-in; }
+.mod-img-placeholder { font-size: 11px; color: var(--muted); padding: 10px; text-align: center; pointer-events: none; }
+.mod-img-actions { display: flex; flex-direction: column; gap: 5px; justify-content: center; }
+.mod-img-clear { background: rgba(248,113,113,.15); border: 1px solid rgba(248,113,113,.3); color: var(--danger); border-radius: 5px; cursor: pointer; padding: 4px 10px; font-size: 11px; font-weight: 600; }
+.mod-img-clear:hover { background: rgba(248,113,113,.3); }
+
 /* Auth */
 .auth-wall { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 49px); flex-direction: column; gap: 16px; }
 .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 340px; display: flex; flex-direction: column; gap: 12px; }
@@ -199,6 +223,8 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     <button class="filter-btn" id="btn-ghost-ids"  onclick="showGhostIds()">🔗 IDs fantômes</button>
     <button class="filter-btn" id="btn-region-orphans" onclick="showRegionOrphans()">🗺️ Régions orphelines</button>
     <button class="filter-btn" id="btn-mob-orphans"    onclick="showMobOrphans()">👾 Mobs orphelins</button>
+    <button class="filter-btn" id="btn-creator-controls" onclick="showCreatorControls()">🎛️ Contrôles Creator</button>
+    <button class="filter-btn" id="btn-discord-webhooks" onclick="showDiscordWebhooks()">🔔 Webhooks Discord</button>
   </aside>
 
   <main class="main" id="submissions-list">
@@ -300,6 +326,57 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
            oninput="filterRegionOrder()"
            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
     <div id="region-order-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Contrôles Creator -->
+  <main class="main" id="creator-controls-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🎛️ Contrôles Creator</span>
+      <button class="btn btn-ghost" onclick="loadCreatorConfig()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
+      Active ou désactive les outils visibles dans le Creator. Les changements sont appliqués en temps réel pour tous les contributeurs.
+    </p>
+    <div id="cc-loading" style="color:var(--muted);font-size:13px;">Chargement…</div>
+    <div id="cc-content" style="display:none;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;">Outils du Creator</div>
+      <div id="cc-tools-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;"></div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;">Sélection de Palier</div>
+      <div id="cc-palier-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+  </main>
+
+  <!-- Panneau Webhooks Discord -->
+  <main class="main" id="discord-webhooks-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🔔 Webhooks Discord</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="loadDiscordWebhooks()" style="font-size:12px;">🔄 Rafraîchir</button>
+        <button class="btn" id="dw-save-btn" onclick="saveDiscordWebhooks()" style="background:var(--accent);color:#fff;font-size:12px;">💾 Sauvegarder</button>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
+      Webhook Discord envoyé automatiquement lors de l'approbation d'un item <b>arme</b>, <b>armure</b> ou <b>accessoire</b>.
+      Un webhook par type et par palier. Laisser vide pour désactiver.
+    </p>
+    <div id="dw-loading" style="color:var(--muted);font-size:13px;">Chargement…</div>
+    <div id="dw-content" style="display:none;">
+      <div id="dw-list"></div>
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Message template</div>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+          Texte envoyé en accompagnement de l'embed lors de l'approbation. Laisser vide pour aucun message.<br>
+          Variables disponibles :
+          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{nom}</code>
+          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{categorie}</code>
+          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{rarete}</code>
+          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{palier}</code>
+          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{classes}</code>
+          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{niveau}</code>
+        </p>
+        <textarea id="dw-template" rows="4" placeholder="Ex : ✅ **{nom}** ({rarete} · {categorie} · Palier {palier}) vient d'être approuvé !" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;resize:vertical;transition:border-color .15s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+    </div>
   </main>
 
   <!-- Panneau Éditeur -->
@@ -545,12 +622,32 @@ function buildCard(sub) {
         <div class="sub-editor-err" id="editor-err-${sub._id}"></div>
       </div>
     `;
+    const hasImg = !!sub.forum_image;
     actionsHtml = `
       <input type="text" class="sub-comment" id="comment-${sub._id}" placeholder="Commentaire (optionnel)">
       <button class="btn btn-ghost"   id="btn-edit-${sub._id}" onclick="toggleEdit('${sub._id}')" style="font-size:12px;">✏️ Modifier</button>
       <button class="btn btn-approve" onclick="approve('${sub._id}')">✓ Approuver</button>
       <button class="btn btn-reject"  onclick="reject('${sub._id}')">✕ Rejeter</button>
     `;
+    if (sub.type === 'item') {
+      actionsHtml += `
+        <div class="mod-img-row">
+          <div class="mod-img-zone${hasImg ? ' has-img' : ''}" id="mod-img-zone-${sub._id}"
+               ondragover="event.preventDefault();this.classList.add('drag-over')"
+               ondragleave="this.classList.remove('drag-over')"
+               ondrop="modImgDrop('${sub._id}',event)">
+            <img class="mod-img-preview" id="mod-img-preview-${sub._id}" style="display:none" alt="">
+            <span class="mod-img-placeholder" id="mod-img-placeholder-${sub._id}"${hasImg ? ' style="display:none"' : ''}>🖼️ Glisse une image ici</span>
+          </div>
+          <div class="mod-img-actions">
+            <button class="btn btn-ghost btn-sm" onclick="modImgPaste('${sub._id}')" style="font-size:11px;">📋 Coller</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('mod-img-input-${sub._id}').click()" style="font-size:11px;">📁 Fichier</button>
+            <button class="mod-img-clear" id="mod-img-clear-${sub._id}" onclick="modImgClear('${sub._id}')"${hasImg ? '' : ' style="display:none"'}>✕ Supprimer</button>
+          </div>
+          <input type="file" id="mod-img-input-${sub._id}" accept="image/*" style="display:none" onchange="modImgFile('${sub._id}',this.files[0])">
+        </div>
+      `;
+    }
   } else if (sub.comment) {
     actionsHtml = `<div class="review-comment">💬 ${escHtml(sub.comment)}</div>`;
   }
@@ -576,12 +673,104 @@ function buildCard(sub) {
       </div>
     </div>
   `;
+
+  // Initialiser le preview image hors innerHTML (évite de mettre le base64 dans le template)
+  if (sub.forum_image && sub.type === 'item' && sub.status === 'pending') {
+    const img = card.querySelector(`#mod-img-preview-${sub._id}`);
+    if (img) {
+      img.src = sub.forum_image;
+      img.style.display = 'block';
+      img.onclick = e => { e.stopPropagation(); openLightbox(sub.forum_image); };
+    }
+  }
+
   return card;
 }
 
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ── Copier le code ────────────────────────────────────
+// ── Image soumission : voir / changer ─────────────────
+async function _applyModImage(id, file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const sub = allSubs.find(s => s._id === id);
+  if (!sub) return;
+
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = e => res(e.target.result);
+    r.onerror = () => rej();
+    r.readAsDataURL(file);
+  });
+
+  sub.forum_image = base64;
+
+  const zone        = document.getElementById(`mod-img-zone-${id}`);
+  const preview     = document.getElementById(`mod-img-preview-${id}`);
+  const placeholder = document.getElementById(`mod-img-placeholder-${id}`);
+  const clearBtn    = document.getElementById(`mod-img-clear-${id}`);
+  if (zone)        zone.classList.add('has-img');
+  if (preview)     {
+    preview.src = base64;
+    preview.style.display = 'block';
+    preview.onclick = e => { e.stopPropagation(); openLightbox(base64); };
+  }
+  if (placeholder) placeholder.style.display = 'none';
+  if (clearBtn)    clearBtn.style.display = '';
+}
+
+function openLightbox(src) {
+  const lb = document.getElementById('img-lightbox');
+  document.getElementById('img-lightbox-img').src = src;
+  lb.classList.add('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('img-lightbox')?.classList.remove('open');
+});
+
+window.modImgFile = (id, file) => _applyModImage(id, file);
+
+window.modImgDrop = (id, e) => {
+  e.preventDefault();
+  document.getElementById(`mod-img-zone-${id}`)?.classList.remove('drag-over');
+  const file = e.dataTransfer?.files?.[0];
+  if (file) _applyModImage(id, file);
+};
+
+window.modImgClear = (id) => {
+  const sub = allSubs.find(s => s._id === id);
+  if (sub) sub.forum_image = null;
+  const zone        = document.getElementById(`mod-img-zone-${id}`);
+  const preview     = document.getElementById(`mod-img-preview-${id}`);
+  const placeholder = document.getElementById(`mod-img-placeholder-${id}`);
+  const clearBtn    = document.getElementById(`mod-img-clear-${id}`);
+  const input       = document.getElementById(`mod-img-input-${id}`);
+  if (zone)        zone.classList.remove('has-img');
+  if (preview)     { preview.src = ''; preview.style.display = 'none'; }
+  if (placeholder) placeholder.style.display = '';
+  if (clearBtn)    clearBtn.style.display = 'none';
+  if (input)       input.value = '';
+};
+
+window.modImgPaste = async (id) => {
+  try {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const mime = item.types.find(t => t.startsWith('image/'));
+      if (mime) {
+        const blob = await item.getType(mime);
+        const ext  = { 'image/png':'png','image/jpeg':'jpg','image/gif':'gif','image/webp':'webp' }[mime] || 'png';
+        await _applyModImage(id, new File([blob], `image.${ext}`, { type: mime }));
+        return;
+      }
+    }
+    alert('Pas d\'image dans le presse-papiers.');
+  } catch(e) {
+    alert('Impossible de lire le presse-papiers.\nAutorise l\'accès si le navigateur le demande.\n\n' + e.message);
+  }
+};
+
 window.copyCode = (id) => {
   const sub  = allSubs.find(s => s._id === id);
   if (!sub) return;
@@ -700,6 +889,9 @@ window.approve = async (id) => {
     sub.reviewedBy = currentUser.uid;
     updateCounts();
     renderSubs();
+
+    // Webhook Discord (best-effort)
+    sendApprovalWebhook(sub).catch(() => {});
   } catch(e) {
     alert('⛔ Erreur : ' + e.message);
     if (btn) { btn.disabled = false; btn.textContent = '✓ Approuver'; }
@@ -756,6 +948,8 @@ window.showSubmissions = function showSubmissions() {
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
+  document.getElementById('creator-controls-panel').style.display = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.remove('active');
@@ -763,23 +957,29 @@ window.showSubmissions = function showSubmissions() {
   document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.remove('active');
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.querySelector('.sidebar').classList.remove('in-order-panel');
 }
 
 window.showMobOrder = async () => {
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
+  document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('mob-order-panel').style.display     = '';
   document.getElementById('btn-item-order').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-mob-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadMobOrder();
@@ -995,17 +1195,21 @@ function itemTag(item) {
 window.showItemOrder = async () => {
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
+  document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('item-order-panel').style.display    = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-item-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadItemOrder();
@@ -1292,17 +1496,21 @@ let _pnjPalierCollapsed = new Set(); // paliers réduits
 window.showPnjOrder = async () => {
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
+  document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('pnj-order-panel').style.display     = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadPnjOrder();
@@ -1637,11 +1845,14 @@ window.showRegionOrder = async () => {
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
+  document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('region-order-panel').style.display  = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -1649,6 +1860,7 @@ window.showRegionOrder = async () => {
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-region-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadRegionOrder();
@@ -1835,12 +2047,15 @@ window.saveRegionOrder = async () => {
 window.showGhostIds = async () => {
   document.getElementById('submissions-list').style.display   = 'none';
   document.getElementById('mob-order-panel').style.display    = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('item-order-panel').style.display   = 'none';
   document.getElementById('pnj-order-panel').style.display    = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
+  document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('ghost-id-panel').style.display      = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -1848,6 +2063,7 @@ window.showGhostIds = async () => {
   document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadGhostIds();
@@ -1859,12 +2075,15 @@ window.showGhostIds = async () => {
 window.showRegionOrphans = async () => {
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
+  document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('region-orphan-panel').style.display = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -1872,6 +2091,7 @@ window.showRegionOrphans = async () => {
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadRegionOrphans();
@@ -2033,12 +2253,15 @@ window.loadRegionOrphans = async function loadRegionOrphans() {
 window.showMobOrphans = async () => {
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
+  document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -2046,6 +2269,7 @@ window.showMobOrphans = async () => {
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadMobOrphans();
@@ -2487,6 +2711,54 @@ window.edDelGenRow = function(btn) {
   btn.closest('.ed-gen-row').remove();
 };
 
+// ── Region dropdown (éditeur) ────────────────────────
+window.edOpenRegions = function(input) {
+  const dd = input.closest('div[style*="position:relative"]').querySelector('[data-reg-dropdown]');
+  if (dd) { dd.style.display = ''; edFilterRegions(input); }
+};
+window.edCloseRegions = function(input) {
+  const wrap = input.closest('div[style*="position:relative"]');
+  if (!wrap) return;
+  const dd = wrap.querySelector('[data-reg-dropdown]');
+  if (dd) dd.style.display = 'none';
+  // Restaure le nom affiché depuis la valeur cachée
+  const hidden = wrap.querySelector('input[type="hidden"]');
+  if (hidden) {
+    const cached = (_cachedRegions || []).find(r => r.id === hidden.value);
+    input.value = cached ? (cached.name || cached.id) : (hidden.value || '');
+  }
+};
+window.edFilterRegions = function(input) {
+  const dd = input.closest('div[style*="position:relative"]').querySelector('[data-reg-dropdown]');
+  if (!dd) return;
+  dd.style.display = '';
+  const q = input.value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  let lastGroup = null;
+  Array.from(dd.children).forEach(el => {
+    if (el.hasAttribute('data-reg-group')) {
+      lastGroup = el; el.style.display = 'none'; return;
+    }
+    if (!el.hasAttribute('data-reg-id') && !el.hasAttribute('data-reg-name')) return;
+    const name = (el.dataset.regName || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const id   = (el.dataset.regId   || '').toLowerCase();
+    const show = !q || name.includes(q) || id.includes(q);
+    el.style.display = show ? '' : 'none';
+    if (show && lastGroup) { lastGroup.style.display = ''; lastGroup = null; }
+  });
+};
+window.edSelectRegion = function(e, el) {
+  e.preventDefault();
+  const wrap   = el.closest('div[style*="position:relative"]');
+  const textIn = wrap.querySelector('input[type="text"]');
+  const hidden = wrap.querySelector('input[type="hidden"]');
+  const id     = el.dataset.regId;
+  const name   = el.dataset.regName;
+  if (hidden) hidden.value = id;
+  if (textIn) textIn.value = name || '';
+  const dd = wrap.querySelector('[data-reg-dropdown]');
+  if (dd) dd.style.display = 'none';
+};
+
 window.edAddGenField = function() {
   const container = document.getElementById('ed-gen-fields');
   const row = document.createElement('div');
@@ -2546,6 +2818,7 @@ window.showEditor = async function(collection, id, data, origin) {
   document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.remove('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
 
   _editorCollection = collection;
@@ -2686,6 +2959,394 @@ window.deleteCurrentEntry = async function() {
   }
 };
 
+// ══════════════════════════════════════════════════════
+// CONTRÔLES CREATOR
+// ══════════════════════════════════════════════════════
+// ⚠️ Ajouter ici les nouveaux paliers quand ils sont créés dans le creator
+const CREATOR_PALIERS = [1, 2, 3];
+let _ccConfig = null;
+
+window.showCreatorControls = async () => {
+  document.getElementById('submissions-list').style.display    = 'none';
+  document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
+  document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('pnj-order-panel').style.display     = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+  document.getElementById('creator-controls-panel').style.display = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-region-orphans').classList.remove('active');
+  document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadCreatorConfig();
+};
+
+window.loadCreatorConfig = async function loadCreatorConfig() {
+  const loading = document.getElementById('cc-loading');
+  const content = document.getElementById('cc-content');
+  loading.style.display = '';
+  loading.textContent   = 'Chargement…';
+  content.style.display = 'none';
+  try {
+    const snap = await getDoc(doc(db, 'config', 'creator'));
+    _ccConfig = snap.exists() ? snap.data() : {};
+    _renderCreatorControls();
+    loading.style.display = 'none';
+    content.style.display = '';
+  } catch(e) {
+    loading.textContent = `Erreur : ${e.message}`;
+  }
+};
+
+function _renderCreatorControls() {
+  const tools = _ccConfig.tools || {};
+  const TOOLS = [
+    { id: 'item',   label: '⚔️ Items' },
+    { id: 'mob',    label: '👾 Mobs' },
+    { id: 'pnj',    label: '🧑 PNJ' },
+    { id: 'region', label: '📍 Régions' },
+  ];
+  const list = document.getElementById('cc-tools-list');
+  list.innerHTML = '';
+  for (const t of TOOLS) {
+    const on = tools[t.id] !== false;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);';
+    row.innerHTML = `
+      <span style="font-size:13px;font-weight:500;">${t.label}</span>
+      <button class="btn btn-sm btn-ghost" onclick="toggleCreatorTool('${t.id}')"
+        style="${on ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);' : 'color:var(--danger);border-color:rgba(248,113,113,.4);'}">
+        ${on ? '✓ Actif' : '✕ Désactivé'}
+      </button>`;
+    list.appendChild(row);
+  }
+  const hidden = new Set(_ccConfig.hiddenPaliers || []);
+  const palierList = document.getElementById('cc-palier-list');
+  palierList.innerHTML = '';
+  for (const p of CREATOR_PALIERS) {
+    const visible = !hidden.has(p);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);';
+    row.innerHTML = `
+      <span style="font-size:13px;font-weight:500;">Palier ${p}</span>
+      <button class="btn btn-sm btn-ghost" onclick="toggleCreatorPalier(${p})"
+        style="${visible ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);' : 'color:var(--danger);border-color:rgba(248,113,113,.4);'}">
+        ${visible ? '✓ Visible' : '✕ Masqué'}
+      </button>`;
+    palierList.appendChild(row);
+  }
+}
+
+window.toggleCreatorTool = async function(toolId) {
+  if (!_ccConfig) return;
+  _ccConfig.tools = _ccConfig.tools || {};
+  _ccConfig.tools[toolId] = _ccConfig.tools[toolId] === false ? true : false;
+  _renderCreatorControls();
+  await _saveCreatorConfig();
+};
+
+window.toggleCreatorPalier = async function(p) {
+  if (!_ccConfig) return;
+  const hidden = new Set(_ccConfig.hiddenPaliers || []);
+  if (hidden.has(p)) hidden.delete(p); else hidden.add(p);
+  _ccConfig.hiddenPaliers = [...hidden];
+  _renderCreatorControls();
+  await _saveCreatorConfig();
+};
+
+async function _saveCreatorConfig() {
+  try {
+    await setDoc(doc(db, 'config', 'creator'), _ccConfig);
+  } catch(e) {
+    alert(`⛔ Erreur sauvegarde config : ${e.message}`);
+  }
+}
+
+// ── Discord Webhooks ──────────────────────────────────
+let _dwConfig = null;
+const DW_CATEGORIES = [
+  { id: 'arme',       label: '⚔️ Arme' },
+  { id: 'armure',     label: '🛡️ Armure' },
+  { id: 'accessoire', label: '💍 Accessoire' },
+];
+
+window.showDiscordWebhooks = async () => {
+  document.getElementById('submissions-list').style.display    = 'none';
+  document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('pnj-order-panel').style.display     = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+  document.getElementById('creator-controls-panel').style.display = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-region-orphans').classList.remove('active');
+  document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.remove('active');
+  document.getElementById('btn-discord-webhooks').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadDiscordWebhooks();
+};
+
+window.loadDiscordWebhooks = async function loadDiscordWebhooks() {
+  const loading = document.getElementById('dw-loading');
+  const content = document.getElementById('dw-content');
+  loading.style.display = '';
+  loading.textContent   = 'Chargement…';
+  content.style.display = 'none';
+  try {
+    const snap = await getDoc(doc(db, 'config', 'discord_webhooks'));
+    _dwConfig = snap.exists() ? snap.data() : {};
+    _renderDiscordWebhooks();
+    document.getElementById('dw-template').value = _dwConfig.template || '';
+    loading.style.display = 'none';
+    content.style.display = '';
+  } catch(e) {
+    loading.textContent = `Erreur : ${e.message}`;
+  }
+};
+
+function _renderDiscordWebhooks() {
+  const list = document.getElementById('dw-list');
+  list.innerHTML = '';
+  for (const cat of DW_CATEGORIES) {
+    const section = document.createElement('div');
+    section.style.cssText = 'margin-bottom:20px;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;';
+    header.textContent = cat.label;
+    section.appendChild(header);
+
+    for (const p of CREATOR_PALIERS) {
+      const key = `${cat.id}_${p}`;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+      const input = document.createElement('input');
+      input.type        = 'text';
+      input.id          = `dw-${key}`;
+      input.placeholder = 'https://discord.com/api/webhooks/…';
+      input.value       = _dwConfig[key] || '';
+      input.style.cssText = 'flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:11px;outline:none;font-family:monospace;transition:border-color .15s;';
+      input.addEventListener('focus', () => { input.style.borderColor = 'var(--accent)'; });
+      input.addEventListener('blur',  () => { input.style.borderColor = 'var(--border)'; });
+
+      const label = document.createElement('span');
+      label.textContent = `Palier ${p}`;
+      label.style.cssText = 'font-size:12px;width:58px;flex-shrink:0;color:var(--text);';
+
+      const testBtn = document.createElement('button');
+      testBtn.className = 'btn btn-ghost';
+      testBtn.style.cssText = 'font-size:11px;padding:5px 10px;flex-shrink:0;';
+      testBtn.textContent = '🧪 Test';
+      testBtn.addEventListener('click', () => testDiscordWebhook(key));
+
+      row.appendChild(label);
+      row.appendChild(input);
+      row.appendChild(testBtn);
+      section.appendChild(row);
+    }
+    list.appendChild(section);
+  }
+}
+
+window.saveDiscordWebhooks = async function saveDiscordWebhooks() {
+  const btn = document.getElementById('dw-save-btn');
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const data = {};
+    for (const cat of DW_CATEGORIES) {
+      for (const p of CREATOR_PALIERS) {
+        const key = `${cat.id}_${p}`;
+        const val = document.getElementById(`dw-${key}`)?.value?.trim() || '';
+        if (val) data[key] = val;
+      }
+    }
+    const tpl = document.getElementById('dw-template')?.value?.trim() || '';
+    if (tpl) data.template = tpl;
+    await setDoc(doc(db, 'config', 'discord_webhooks'), data);
+    _dwConfig = data;
+    btn.textContent = '✓ Sauvegardé';
+    setTimeout(() => { btn.disabled = false; btn.textContent = '💾 Sauvegarder'; }, 2000);
+  } catch(e) {
+    alert(`⛔ Erreur sauvegarde webhooks : ${e.message}`);
+    btn.disabled = false; btn.textContent = '💾 Sauvegarder';
+  }
+};
+
+window.testDiscordWebhook = async function testDiscordWebhook(key) {
+  const url = document.getElementById(`dw-${key}`)?.value?.trim();
+  if (!url) { alert('⚠️ Aucun webhook configuré pour cette combinaison.'); return; }
+  const [catId, palier] = key.split('_');
+  const catLabel = DW_CATEGORIES.find(c => c.id === catId)?.label || catId;
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ thread_name: `🧪 Test · ${catLabel} · Palier ${palier}`, content: `🧪 **Test webhook** · ${catLabel} · Palier ${palier} · VCL Wiki Modération` })
+    });
+    if (resp.ok || resp.status === 204) {
+      alert('✓ Message de test envoyé !');
+    } else {
+      const text = await resp.text().catch(() => String(resp.status));
+      alert(`⛔ Erreur Discord ${resp.status} :\n${text.slice(0, 300)}`);
+    }
+  } catch(e) {
+    alert(`⛔ Erreur réseau : ${e.message}`);
+  }
+};
+
+async function sendApprovalWebhook(sub) {
+  if (sub.type !== 'item') return;
+  const cat = sub.data?.category;
+  if (!['arme', 'armure', 'accessoire'].includes(cat)) return;
+  const palier = sub.data?.palier;
+  if (!palier) return;
+  const key = `${cat}_${palier}`;
+
+  if (!_dwConfig) {
+    try {
+      const snap = await getDoc(doc(db, 'config', 'discord_webhooks'));
+      _dwConfig = snap.exists() ? snap.data() : {};
+    } catch { return; }
+  }
+
+  const url = _dwConfig[key];
+  if (!url) return;
+
+  // Image stockée en base64 dans la soumission
+  let imgBlob = null, imgFname = null;
+  if (sub.forum_image) {
+    try {
+      const dataUrl = sub.forum_image;
+      const mime    = dataUrl.match(/^data:([^;]+);/)?.[1] || 'image/png';
+      const extMap  = { 'image/png':'png','image/jpeg':'jpg','image/gif':'gif','image/webp':'webp' };
+      imgFname = `image.${extMap[mime] || 'png'}`;
+      const b64  = dataUrl.split(',')[1];
+      const bin  = atob(b64);
+      const arr  = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      imgBlob = new Blob([arr], { type: mime });
+    } catch { imgBlob = null; imgFname = null; }
+  }
+
+  const embed   = _buildApprovalEmbed(sub.data, imgFname);
+  const payload = { thread_name: sub.data.name, embeds: [embed] };
+  if (_dwConfig.template) {
+    const RARITY_LABEL = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+    const CAT_LABEL    = { arme:'Arme', armure:'Armure', accessoire:'Accessoire' };
+    const CLS_LABEL    = { guerrier:'Guerrier', assassin:'Assassin', archer:'Archer', mage:'Mage', shaman:'Shaman' };
+    payload.content = _dwConfig.template
+      .replace(/\{nom\}/g,       sub.data.name        || '')
+      .replace(/\{categorie\}/g, CAT_LABEL[sub.data.category]  || sub.data.category || '')
+      .replace(/\{rarete\}/g,    RARITY_LABEL[sub.data.rarity] || sub.data.rarity   || '')
+      .replace(/\{palier\}/g,    sub.data.palier       || '')
+      .replace(/\{niveau\}/g,    sub.data.lvl          || '')
+      .replace(/\{classes\}/g,   (sub.data.classes || []).map(c => CLS_LABEL[c] || c).join(', '));
+  }
+
+  if (imgBlob && imgFname) {
+    payload.attachments = [{ id: 0, filename: imgFname }];
+    const fd = new FormData();
+    fd.append('payload_json', JSON.stringify(payload));
+    fd.append('files[0]', imgBlob, imgFname);
+    await fetch(`${url}?wait=false`, { method: 'POST', body: fd });
+  } else {
+    await fetch(`${url}?wait=false`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  }
+}
+
+function _buildApprovalEmbed(obj, imageFilename) {
+  const RARITY_LABEL  = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+  const RARITY_ICON   = { commun:'🟢', rare:'🔵', epique:'🟣', legendaire:'🟡', mythique:'🌸', godlike:'🔴', event:'⚪' };
+  const RARITY_COLORS = { commun:0x59d059, rare:0x2a5fa8, epique:0x6a3daa, legendaire:0xd7af5f, mythique:0xf5b5e4, godlike:0xa83020, event:0xebebeb };
+  const CAT_LABEL     = { arme:'⚔️ Arme', armure:'🛡️ Armure', accessoire:'💍 Accessoire' };
+  const CLS_LABEL     = { guerrier:'⚔️ Guerrier', assassin:'🗡️ Assassin', archer:'🏹 Archer', mage:'📖 Mage', shaman:'🌿 Shaman' };
+  const STAT_LABELS   = {
+    pv:'PV', def:'Défense', atk:'Attaque', atk_magique:'Atk Magique',
+    atk_soin:'Atk Soin', vitesse:'Vitesse', critique:'Critique',
+    critique_bonus:'Bonus Critique', esquive:'Esquive', precision:'Précision',
+    resilience:'Résilience', armure:'Armure (stat)', puissance:'Puissance',
+    mana:'Mana', mana_regen:'Regen Mana',
+  };
+
+  const rarIcon  = RARITY_ICON[obj.rarity]  || '▪️';
+  const rarLabel = RARITY_LABEL[obj.rarity] || obj.rarity || '—';
+  const catLabel = CAT_LABEL[obj.category]  || obj.category || '—';
+  const color    = RARITY_COLORS[obj.rarity] || 0x7a7a90;
+
+  // Ligne d'identité compacte
+  const infoLine = [
+    `${rarIcon} **${rarLabel}**`,
+    catLabel,
+    obj.palier ? `Palier ${obj.palier}` : null,
+    obj.lvl    ? `Niveau ≥ ${obj.lvl}`  : null,
+  ].filter(Boolean).join('  ·  ');
+
+  const clsLine = obj.classes?.length
+    ? obj.classes.map(c => CLS_LABEL[c] || c).join('  ·  ')
+    : null;
+
+  const descParts = [infoLine];
+  if (clsLine) descParts.push(clsLine);
+  if (obj.lore) descParts.push(`\n*${obj.lore.slice(0, 280)}*`);
+
+  const fields = [];
+
+  const statEntries = obj.stats ? Object.entries(obj.stats) : [];
+  if (statEntries.length || obj.rune_slots) {
+    const lines = statEntries.map(([k, v]) => {
+      const label = STAT_LABELS[k] || k;
+      const val   = Array.isArray(v) ? `${v[0]} — ${v[1]}` : String(v);
+      return `**${label}** \`${val}\``;
+    });
+    if (obj.rune_slots) lines.push(`**Emplacements de Runes** \`${obj.rune_slots}\``);
+    fields.push({ name:'📊 Stats', value: lines.join('\n').slice(0, 1024), inline:false });
+  }
+
+  if (obj.obtain) {
+    const clean = obj.obtain.replace(/\[[\w:]+\|([^\]]+)\]/g, '**$1**').slice(0, 1024);
+    fields.push({ name:'📍 Obtention', value: clean, inline:false });
+  }
+
+  if (obj.craft?.length) {
+    const lines = obj.craft.map(c => `\`${c.qty}×\` ${c.id}`);
+    fields.push({ name:'🔨 Craft', value: lines.join('\n').slice(0, 1024), inline:false });
+  }
+
+  const embed = {
+    title: obj.name,
+    description: descParts.join('\n').slice(0, 4096),
+    color,
+    fields,
+  };
+
+  if (imageFilename) embed.image = { url: `attachment://${imageFilename}` };
+
+  return embed;
+}
+
 // ── Delete submission ─────────────────────────────────
 window.deleteSub = async (id) => {
   if (!confirm('Supprimer définitivement cette soumission ?')) return;
@@ -2699,5 +3360,8 @@ window.deleteSub = async (id) => {
   }
 };
 </script>
+<div id="img-lightbox" onclick="this.classList.remove('open')">
+  <img id="img-lightbox-img" src="" alt="">
+</div>
 </body>
 </html>

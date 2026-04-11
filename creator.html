@@ -269,7 +269,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 
 /* ── ITEM PREVIEW ── */
 .preview-wrap { flex: 1; overflow-y: auto; padding: 20px; display: flex; justify-content: center; align-items: flex-start; background: #0d1117; }
-.item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; width: 100%; overflow: hidden; }
+.item-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; width: 100%; overflow: hidden; overflow-wrap: break-word; word-break: break-word; }
 .ic-header { display: grid; grid-template-columns: 72px 1fr; }
 .ic-img { width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; background: var(--bg); font-size: 28px; flex-shrink: 0; }
 .ic-info { padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; justify-content: center; min-width: 0; }
@@ -291,6 +291,28 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 .ic-tags { display: flex; flex-wrap: wrap; gap: 3px; }
 .ic-tag { font-size: 9px; padding: 2px 7px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
 .ic-empty { color: var(--muted); font-size: 13px; font-style: italic; text-align: center; padding: 40px 20px; }
+#creator-disabled-msg {
+  display: none;
+  position: fixed; inset: 0;
+  z-index: 40;
+  background: var(--bg);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  pointer-events: none;
+}
+#creator-disabled-msg .cdm-icon  { font-size: 48px; line-height: 1; }
+#creator-disabled-msg .cdm-title { font-size: 20px; font-weight: 700; color: var(--text); }
+#creator-disabled-msg .cdm-sub   { font-size: 13px; color: var(--muted); max-width: 340px; text-align: center; line-height: 1.6; }
+
+/* ── MOB PREVIEW ── */
+.mob-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; width: 100%; overflow: hidden; overflow-wrap: break-word; word-break: break-word; }
+.mob-card-header { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.mob-card-name { font-family: 'Cinzel', Georgia, serif; font-size: 16px; font-weight: 900; color: var(--text); }
+.mob-card-meta { font-size: 11px; color: var(--muted); margin-top: 5px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.mob-card-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+.mob-card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
 
 /* ── HISTORY ── */
 .hist-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; }
@@ -300,6 +322,17 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 .hist-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hist-meta { font-size: 10px; color: var(--muted); margin-top: 1px; }
 .hist-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+/* ── FORUM IMAGE ── */
+.forum-img-zone {
+  border: 2px dashed var(--border); border-radius: 8px; padding: 14px 16px;
+  cursor: pointer; transition: border-color .2s, background .2s; text-align: center;
+  color: var(--muted); font-size: 12px; user-select: none;
+}
+.forum-img-zone:hover, .forum-img-zone.drag-over { border-color: var(--accent); background: rgba(122,90,248,.06); }
+.forum-img-zone.has-img { border-style: solid; border-color: var(--accent); padding: 10px; }
+.forum-img-preview { max-width: 100%; max-height: 180px; border-radius: 6px; display: block; margin: 0 auto; }
+.forum-img-clear { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.7); border: none; color: #fff; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 13px; line-height: 22px; text-align: center; }
 
 /* ── LOGIN MODAL ── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; display: flex; align-items: center; justify-content: center; }
@@ -316,7 +349,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 
 <header>
   <h1>⚙️ Creator</h1>
-  <span id="header-subtitle">Génère le code JS pour Compendium/data.js</span>
+  <span id="header-subtitle">Soumet un item</span>
   <div class="hbtns">
     <a href="Compendium/compendium.html" class="btn btn-ghost">📖 Compendium</a>
     <a href="moderation.html" id="btn-moderation" class="btn btn-ghost" style="display:none;">🛡️ Modération</a>
@@ -365,7 +398,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
   </div>
 </div>
 
-<div class="layout">
+<div class="layout" id="main-layout" style="visibility:hidden">
 
   <!-- ═══ FORM ═══ -->
   <div class="form-panel" id="formPanel">
@@ -374,7 +407,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
     <div class="mode-selector">
       <button class="mode-btn active" data-mode="item"   onclick="switchMode('item')">⚔️ Item</button>
       <button class="mode-btn"        data-mode="mob"    onclick="switchMode('mob')">👾 Mob</button>
-
+      <button class="mode-btn"        data-mode="pnj"    onclick="switchMode('pnj')">🧑 PNJ</button>
       <button class="mode-btn"        data-mode="region" onclick="switchMode('region')">📍 Région</button>
     </div>
 
@@ -623,24 +656,6 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
       </div>
     </div>
 
-    <!-- IMAGE FORUM (arme/armure/accessoire uniquement) -->
-    <div class="section" id="image-upload-section" style="display:none;">
-      <div class="sec-head" onclick="toggleSec(this)">🖼️ Image du post forum <span class="chev">▾</span></div>
-      <div class="sec-body">
-        <div class="field">
-          <label style="font-size:12px;color:var(--muted);">Optionnel · sera affichée dans le post Discord du forum</label>
-          <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
-            <label for="f-forum-image" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);transition:border-color .15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-              📁 Choisir une image
-            </label>
-            <input type="file" id="f-forum-image" accept="image/*" style="display:none;" onchange="onForumImageChange()">
-            <span id="forum-image-name" style="font-size:12px;color:var(--muted);">Aucun fichier sélectionné</span>
-            <button class="btn btn-ghost btn-sm" id="forum-image-clear" onclick="clearForumImage()" style="display:none;">✕</button>
-          </div>
-          <img id="forum-image-preview" src="" alt="" style="display:none;margin-top:10px;max-height:120px;max-width:100%;border-radius:8px;border:1px solid var(--border);object-fit:contain;">
-        </div>
-      </div>
-    </div>
 
     <!-- TAGS -->
     <div class="section">
@@ -656,6 +671,26 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
             <input type="text" class="tag-text-input" id="tag-input" placeholder="Tag custom… (Entrée pour valider)" onkeydown="onTagKey(event)">
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- IMAGE DISCORD -->
+    <div class="section" id="forum-img-section">
+      <div class="sec-head" onclick="toggleSec(this)">🖼️ Image Discord <span id="forum-img-badge" style="display:none;font-size:10px;font-weight:400;color:var(--accent);"> · 1 image</span> <span class="chev">▾</span></div>
+      <div class="sec-body">
+        <div class="hint">Colle une image (Ctrl+V) ou glisse-dépose. Elle sera jointe à la soumission Discord.</div>
+        <div style="position:relative;">
+          <div class="forum-img-zone" id="forum-img-zone"
+               onclick="document.getElementById('forum-img-input').click()"
+               ondragover="event.preventDefault();this.classList.add('drag-over')"
+               ondragleave="this.classList.remove('drag-over')"
+               ondrop="onForumImgDrop(event)">
+            <span id="forum-img-placeholder">📋 Colle une image ici ou clique pour en choisir une</span>
+            <img id="forum-img-preview" class="forum-img-preview" style="display:none;" alt="preview">
+          </div>
+          <button class="forum-img-clear" id="forum-img-clear-btn" style="display:none;" onclick="clearForumImage();event.stopPropagation()">✕</button>
+        </div>
+        <input type="file" id="forum-img-input" accept="image/*" style="display:none" onchange="onForumImgFile(this.files[0])">
       </div>
     </div>
 
@@ -720,16 +755,6 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
         </div>
       </div>
 
-      <!-- Image PNJ -->
-      <div class="section">
-        <div class="sec-head" onclick="toggleSec(this)">🖼️ Image <span class="chev">▾</span></div>
-        <div class="sec-body">
-          <div class="field">
-            <label>Chemin de l'image <span style="color:var(--muted);font-weight:400;">(null par défaut)</span></label>
-            <input type="text" id="pnj-img" placeholder="../img/compendium/…" oninput="update()">
-          </div>
-        </div>
-      </div>
 
       <!-- Lore PNJ -->
       <div class="section">
@@ -807,6 +832,13 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
             </div>
           </div>
         </div>
+        <div class="field">
+          <label>Téléportation possible</label>
+          <div style="display:flex;gap:6px;margin-top:4px;">
+            <button id="reg-tp-yes"  class="btn btn-ghost btn-sm" onclick="setRegCanTp(true)">✈️ Oui</button>
+            <button id="reg-tp-no"   class="btn btn-ghost btn-sm" onclick="setRegCanTp(false)">✕ Non</button>
+          </div>
+        </div>
       </div>
 
       <!-- Lore Région -->
@@ -846,12 +878,17 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
           <div class="row2">
             <div class="field">
               <label>Type</label>
-              <select id="mob-type" onchange="onMobTypeChange()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;">
-                <option value="monstre">🐺 Monstre</option>
-                <option value="miniboss">⚔️ Mini-Boss</option>
-                <option value="boss">💀 Boss</option>
-                <option value="sbire">🗡️ Sbire</option>
-              </select>
+              <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+                <button class="r-btn behavior-btn active" id="type-monstre"  style="--c:#7a7a90;flex:1;min-width:75px;position:relative;" onclick="setMobType('monstre')"
+                  data-tooltip="Ennemi standard du monde">🐺 Monstre</button>
+                <button class="r-btn behavior-btn"        id="type-miniboss" style="--c:#f59e0b;flex:1;min-width:75px;position:relative;" onclick="setMobType('miniboss')"
+                  data-tooltip="Ennemi puissant, temps de réapparition">⚔️ Mini-Boss</button>
+                <button class="r-btn behavior-btn"        id="type-boss"     style="--c:#f87171;flex:1;min-width:75px;position:relative;" onclick="setMobType('boss')"
+                  data-tooltip="Boss de zone, long temps de réapparition">💀 Boss</button>
+                <button class="r-btn behavior-btn"        id="type-sbire"    style="--c:#a07ae8;flex:1;min-width:75px;position:relative;" onclick="setMobType('sbire')"
+                  data-tooltip="Invoqué par un autre monstre">🗡️ Sbire</button>
+              </div>
+              <input type="hidden" id="mob-type" value="monstre">
             </div>
             <div class="field">
               <label>Comportement</label>
@@ -872,6 +909,12 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
               <div style="display:flex;gap:8px;margin-top:4px;">
                 <button id="mob-codex-yes" class="btn btn-ghost btn-sm" style="background:rgba(74,222,128,.15);color:var(--success);border-color:var(--success);" onclick="setMobCodex(true)">✓ Oui</button>
                 <button id="mob-codex-no"  class="btn btn-ghost btn-sm" onclick="setMobCodex(false)">✕ Non</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>Mob sensible</label>
+              <div style="margin-top:4px;">
+                <button id="mob-sensible-btn" class="r-btn" style="--c:#f87171;width:fit-content;" onclick="toggleMobSensible()">🔒 Sensible</button>
               </div>
             </div>
             <div class="field" id="mob-spawntime-field" style="display:none;">
@@ -959,7 +1002,6 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
     <div class="out-pane active" id="pane-preview">
       <div id="validation-panel" style="display:none;padding:10px 14px;border-bottom:1px solid var(--border);flex-direction:column;gap:5px;"></div>
       <div class="preview-wrap" id="preview-wrap">
-        <div class="ic-empty">Remplis le formulaire pour voir la preview.</div>
       </div>
     </div>
     <!-- History Pane -->
@@ -1014,6 +1056,7 @@ window._vcl_logout    = ()          => signOut(auth);
 window._vcl_register  = (email, pw) => createUserWithEmailAndPassword(auth, email, pw);
 window._vcl_setDoc    = setDoc;
 window._vcl_doc       = doc;
+window._vcl_getDoc    = getDoc;
 
 // Suivi de l'état auth — met à jour l'UI
 onAuthStateChanged(auth, async user => {
@@ -1035,12 +1078,18 @@ onAuthStateChanged(auth, async user => {
       const data  = snap.exists() ? snap.data() : {};
       const pseudo = data.pseudo || null;
       const role   = data.role   || 'membre';
+      window._vcl_role = role;
       if (pseudo && authorInput) { authorInput.value = pseudo; saveAuthor(); }
       const modBtn = document.getElementById('btn-moderation');
       if (modBtn) modBtn.style.display = ['modo','admin'].includes(role) ? '' : 'none';
+      // Re-appliquer la config maintenant qu'on connaît le rôle
+      if (window._vcl_lastCreatorConfig !== undefined && typeof applyCreatorConfig === 'function') {
+        applyCreatorConfig(window._vcl_lastCreatorConfig);
+      }
     } catch {}
     if (authorInput) authorInput.style.display = 'none';
   } else {
+    window._vcl_role = null;
     if (status)    status.style.display    = 'none';
     if (loginBtn)  loginBtn.style.display  = '';
     if (logoutBtn) logoutBtn.style.display = 'none';
@@ -1079,10 +1128,132 @@ window._vcl_loadCollection = loadCollection;
   } catch(e) {
     console.warn('[VCL Creator] Données indisponibles depuis Firestore.', e);
   }
+  // Charger la config creator (visibilité outils / paliers)
+  try {
+    const getDoc = window._vcl_getDoc;
+    const doc    = window._vcl_doc;
+    const db     = window._vcl_db;
+    if (getDoc && doc && db) {
+      const snap = await getDoc(doc(db, 'config', 'creator'));
+      if (snap.exists() && typeof applyCreatorConfig === 'function') applyCreatorConfig(snap.data());
+      else _revealLayout(); // pas de config = tout visible
+    } else {
+      _revealLayout();
+    }
+  } catch(e) {
+    console.warn('[VCL Creator] Config non chargée:', e);
+    _revealLayout(); // en cas d'erreur, on affiche quand même
+  }
 })();
 </script>
 
 <script>
+
+// ═══════════════════════════════════════════════════
+// IMAGE FORUM DISCORD
+// ═══════════════════════════════════════════════════
+let forumImageFile = null;
+
+function _setForumImage(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  forumImageFile = file;
+  const url = URL.createObjectURL(file);
+  const preview = document.getElementById('forum-img-preview');
+  const placeholder = document.getElementById('forum-img-placeholder');
+  const zone = document.getElementById('forum-img-zone');
+  const clearBtn = document.getElementById('forum-img-clear-btn');
+  const badge = document.getElementById('forum-img-badge');
+  preview.src = url;
+  preview.style.display = 'block';
+  placeholder.style.display = 'none';
+  zone.classList.add('has-img');
+  if (clearBtn) clearBtn.style.display = 'block';
+  if (badge) badge.style.display = '';
+}
+
+function clearForumImage() {
+  forumImageFile = null;
+  const preview = document.getElementById('forum-img-preview');
+  const placeholder = document.getElementById('forum-img-placeholder');
+  const zone = document.getElementById('forum-img-zone');
+  const clearBtn = document.getElementById('forum-img-clear-btn');
+  const badge = document.getElementById('forum-img-badge');
+  const input = document.getElementById('forum-img-input');
+  if (preview) { preview.src = ''; preview.style.display = 'none'; }
+  if (placeholder) placeholder.style.display = '';
+  if (zone) zone.classList.remove('has-img');
+  if (clearBtn) clearBtn.style.display = 'none';
+  if (badge) badge.style.display = 'none';
+  if (input) input.value = '';
+}
+
+function onForumImgFile(file) { _setForumImage(file); }
+
+function onForumImgDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const file = e.dataTransfer?.files?.[0];
+  if (file) _setForumImage(file);
+}
+
+// Coller depuis le presse-papiers (Ctrl+V global)
+document.addEventListener('paste', e => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      _setForumImage(item.getAsFile());
+      break;
+    }
+  }
+});
+
+// ═══════════════════════════════════════════════════
+// CREATOR CONFIG (visibilité outils / paliers)
+// ═══════════════════════════════════════════════════
+function applyCreatorConfig(cfg) {
+  if (!cfg) return;
+  window._vcl_lastCreatorConfig = cfg; // mémorisé pour re-apply après auth
+  // Les admins et modo voient toujours tout
+  if (['modo', 'admin'].includes(window._vcl_role || '')) {
+    document.querySelectorAll('.mode-btn').forEach(b => b.style.display = '');
+    for (const selId of ['f-palier', 'mob-palier', 'pnj-palier', 'reg-palier']) {
+      const sel = document.getElementById(selId);
+      if (sel) sel.querySelectorAll('option').forEach(o => o.hidden = false);
+    }
+    _setCreatorDisabled(false);
+    switchMode(creatorMode); // restaure le formulaire actif
+    return;
+  }
+  // Outils
+  const tools = cfg.tools || {};
+  const MODES = ['item', 'mob', 'pnj', 'region'];
+  for (const m of MODES) {
+    const enabled = tools[m] !== false;
+    const btn = document.querySelector(`.mode-btn[data-mode="${m}"]`);
+    if (btn) btn.style.display = enabled ? '' : 'none';
+  }
+  const first = MODES.find(m => tools[m] !== false);
+  if (!first) {
+    _setCreatorDisabled(true);
+  } else {
+    _setCreatorDisabled(false);
+    // Si le mode actif est désactivé, basculer vers le premier disponible
+    if (tools[creatorMode] === false) switchMode(first);
+  }
+  // Paliers masqués
+  const hiddenPaliers = new Set(cfg.hiddenPaliers || []);
+  for (const selId of ['f-palier', 'mob-palier', 'pnj-palier', 'reg-palier']) {
+    const sel = document.getElementById(selId);
+    if (!sel) continue;
+    for (const opt of sel.querySelectorAll('option[value]')) {
+      const v = parseInt(opt.value);
+      if (!v) continue;
+      opt.hidden = hiddenPaliers.has(v);
+      if (hiddenPaliers.has(v) && sel.value === String(v)) sel.value = '';
+    }
+  }
+}
 
 // ═══════════════════════════════════════════════════
 // STATE
@@ -1194,6 +1365,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
   loadAuthor();
   loadHistory();
+  // Effacer le brouillon si l'utilisateur force un rechargement (Ctrl+Shift+R)
+  if (performance.navigation.type === 1) localStorage.removeItem('vcl_form');
   restoreForm();
 
   // Pré-remplir depuis le tracker d'IDs fantômes (moderation.html)
@@ -1795,14 +1968,14 @@ function onCatSlotChange() {
 function onCatChange() {
   const cat = document.getElementById('f-category').value;
   const isEquip = ['arme','armure','accessoire'].includes(cat);
+  const hasStats = ['arme','armure','accessoire','rune'].includes(cat);
   const isCons  = ['consommable','nourriture'].includes(cat);
   const isArme  = cat === 'arme';
-  document.getElementById('stats-section').style.display    = isEquip ? '' : 'none';
+  document.getElementById('stats-section').style.display    = hasStats ? '' : 'none';
   document.getElementById('effects-section').style.display  = isCons  ? '' : 'none';
   document.getElementById('classes-field').style.display    = isEquip ? '' : 'none';
   document.getElementById('twohanded-field').style.display      = isArme           ? '' : 'none';
   document.getElementById('rune-slots-field').style.display     = cat === 'armure' ? '' : 'none';
-  document.getElementById('image-upload-section').style.display = isEquip          ? '' : 'none';
   if (!isArme) { selTwoHanded = false; document.getElementById('twohanded-btn').classList.remove('active'); }
   if (cat !== 'armure') document.getElementById('f-rune-slots').value = '';
   // Rebuild slot options and clear old slot tags
@@ -1836,49 +2009,6 @@ function onPalierChange() {
   update();
 }
 
-function onForumImageChange() {
-  const file = document.getElementById('f-forum-image').files[0];
-  if (!file) return;
-  document.getElementById('forum-image-name').textContent = file.name;
-  document.getElementById('forum-image-clear').style.display = '';
-  const reader = new FileReader();
-  reader.onload = e => {
-    const prev = document.getElementById('forum-image-preview');
-    prev.src = e.target.result;
-    prev.style.display = '';
-  };
-  reader.readAsDataURL(file);
-}
-
-function clearForumImage() {
-  document.getElementById('f-forum-image').value = '';
-  document.getElementById('forum-image-name').textContent = 'Aucun fichier sélectionné';
-  document.getElementById('forum-image-clear').style.display = 'none';
-  document.getElementById('forum-image-preview').style.display = 'none';
-  document.getElementById('forum-image-preview').src = '';
-  _pastedImageFile = null;
-}
-
-// Coller une image depuis le presse-papier (Ctrl+V n'importe où sur la page)
-let _pastedImageFile = null;
-document.addEventListener('paste', e => {
-  const section = document.getElementById('image-upload-section');
-  if (!section || section.style.display === 'none') return;
-  const item = [...e.clipboardData.items].find(i => i.type.startsWith('image/'));
-  if (!item) return;
-  const file = item.getAsFile();
-  if (!file) return;
-  _pastedImageFile = file;
-  document.getElementById('forum-image-name').textContent = 'Image collée (' + file.type + ')';
-  document.getElementById('forum-image-clear').style.display = '';
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const prev = document.getElementById('forum-image-preview');
-    prev.src = ev.target.result;
-    prev.style.display = '';
-  };
-  reader.readAsDataURL(file);
-});
 
 function toggleTwoHanded() {
   selTwoHanded = !selTwoHanded;
@@ -2265,7 +2395,15 @@ function addCraft() {
   qtyInp.addEventListener('input', () => { entry.qty = parseInt(qtyInp.value) || 1; update(); });
 
   const drop = makeSearchDrop(itemIndex, 'Rechercher un ingrédient…', (id) => {
+    const alreadyUsed = id && craftEntries.some(e => e.uid !== uid && e.itemId === id);
+    if (alreadyUsed) {
+      drop.setValue('', '');
+      entry.itemId = '';
+      return;
+    }
     entry.itemId = id;
+    const inp = drop?.element.querySelector('input');
+    if (inp) { inp.readOnly = !!id; inp.style.cursor = id ? 'default' : ''; }
     update();
   }, true);
   entry.drop = drop;
@@ -2281,6 +2419,7 @@ function addCraft() {
 }
 
 function addCraftEntry(id, name) {
+  if (craftEntries.some(e => e.itemId === id)) return;
   addCraft();
   const entry = craftEntries[craftEntries.length - 1];
   entry.itemId = id;
@@ -2528,7 +2667,7 @@ function renderPreview() {
   const obj  = buildObj();
 
   if (!obj.id && !obj.name) {
-    wrap.innerHTML = '<div class="ic-empty">Remplis le formulaire pour voir la preview.</div>';
+    wrap.innerHTML = '';
     return;
   }
 
@@ -2624,6 +2763,95 @@ function renderPreview() {
   }
 
   h += `</div></div>`;
+  wrap.innerHTML = h;
+}
+
+function renderMobPreview() {
+  const wrap = document.getElementById('preview-wrap');
+  const obj  = buildMobObj();
+
+  if (!obj.id && !obj.name) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  const TYPE_ICONS  = { monstre:'🐺', miniboss:'⚔️', boss:'💀', sbire:'🗡️' };
+  const TYPE_LABELS = { monstre:'Monstre', miniboss:'Mini-Boss', boss:'Boss', sbire:'Sbire' };
+  const TYPE_COLORS = { monstre:'#9a9ab0', miniboss:'#f59e0b', boss:'#f87171', sbire:'#a07ae8' };
+  const BEH_LABELS  = { agressif:'Agressif', neutre:'Neutre', passif:'Passif' };
+  const BEH_COLORS  = { agressif:'#f87171', neutre:'#fbbf24', passif:'#4ade80' };
+
+  const tc = TYPE_COLORS[obj.type] || '#9a9ab0';
+  const tl = TYPE_LABELS[obj.type] || obj.type || '';
+  const ti = TYPE_ICONS[obj.type]  || '👾';
+  const bc = BEH_COLORS[obj.behavior] || '#9a9ab0';
+  const bl = BEH_LABELS[obj.behavior] || obj.behavior || '';
+  const regionName = _allMobRegions.find(r => r.id === obj.region)?.name || obj.region || '';
+
+  let h = `<div class="mob-card">`;
+
+  // Header
+  h += `<div class="mob-card-header">`;
+  h += `<div class="mob-card-name">${ti} ${escHtml(obj.name || '')}</div>`;
+  h += `<div class="mob-card-meta">`;
+  h += `<span class="mob-card-badge" style="background:${tc}22;color:${tc};border:1px solid ${tc}55;">${tl}</span>`;
+  h += `<span class="mob-card-badge" style="background:${bc}22;color:${bc};border:1px solid ${bc}55;">${bl}</span>`;
+  if (obj.palier)   h += `<span style="color:var(--muted)">Palier ${obj.palier}</span>`;
+  if (regionName)   h += `<span style="color:var(--muted)">📍 ${escHtml(regionName)}</span>`;
+  if (obj.inCodex)  h += `<span class="mob-card-badge" style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.3);">Codex</span>`;
+  if (obj.sensible) h += `<span class="mob-card-badge" style="background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.3);">🔒 Sensible</span>`;
+  if (obj.spawnTime) h += `<span style="color:var(--muted)">⏱ ${escHtml(obj.spawnTime)}</span>`;
+  h += `</div></div>`;
+
+  // Body
+  h += `<div class="mob-card-body">`;
+  if (obj.lore) h += `<div class="ic-lore">${escHtml(obj.lore).replace(/\n/g,'<br>')}</div>`;
+
+  if (obj.loot?.length) {
+    h += `<div><div class="ic-section-label">Loot</div><div class="ic-stats">`;
+    for (const l of obj.loot) {
+      const iname = (typeof ITEMS !== 'undefined' && ITEMS.find(i => i.id === l.id)?.name) || l.id;
+      const ch    = l.chance === '?' ? '?' : l.chance + '%';
+      h += `<div class="ic-stat"><span class="ic-stat-label">${escHtml(iname)}</span><span class="ic-stat-val">${escHtml(String(ch))}</span></div>`;
+    }
+    h += `</div></div>`;
+  }
+
+  h += `</div></div>`;
+  wrap.innerHTML = h;
+}
+
+function renderRegionPreview() {
+  const wrap = document.getElementById('preview-wrap');
+  const obj  = buildRegionObj();
+
+  if (!obj.id && !obj.name) {
+    wrap.innerHTML = '';
+    return;
+  }
+
+  const PALIER_COLORS = { 1:'#4ade80', 2:'#f59e0b', 3:'#f87171' };
+  const pc = PALIER_COLORS[obj.palier] || '#9a9ab0';
+
+  let h = `<div class="mob-card">`;
+
+  // Header
+  h += `<div class="mob-card-header">`;
+  h += `<div class="mob-card-name">📍 ${escHtml(obj.name || '')}</div>`;
+  h += `<div class="mob-card-meta">`;
+  if (obj.palier) h += `<span class="mob-card-badge" style="background:${pc}22;color:${pc};border:1px solid ${pc}55;">Palier ${obj.palier}</span>`;
+  if (obj.inCodex) h += `<span class="mob-card-badge" style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.3);">📖 Codex</span>`;
+  if (obj.canTp === true)  h += `<span class="mob-card-badge" style="background:rgba(96,165,250,.1);color:#60a5fa;border:1px solid rgba(96,165,250,.3);">✈️ Téléportation</span>`;
+  if (obj.canTp === false) h += `<span class="mob-card-badge" style="background:rgba(156,163,175,.1);color:#9ca3af;border:1px solid rgba(156,163,175,.3);">🚫 Sans TP</span>`;
+  h += `</div>`;
+  if (obj.id) h += `<div style="font-size:10px;color:var(--muted);font-family:monospace;margin-top:4px;">${escHtml(obj.id)}</div>`;
+  h += `</div>`;
+
+  // Body
+  h += `<div class="mob-card-body">`;
+  if (obj.lore) h += `<div class="ic-lore">${escHtml(obj.lore).replace(/\n/g,'<br>')}</div>`;
+  h += `</div></div>`;
+
   wrap.innerHTML = h;
 }
 
@@ -3004,7 +3232,7 @@ function update() {
     document.getElementById('validation-panel').style.display   = 'none';
     const dupBadge = document.getElementById('mob-id-duplicate-badge');
     if (dupBadge) dupBadge.style.display = isMobDuplicate(obj.id) ? '' : 'none';
-    if (!empty) document.getElementById('preview-wrap').innerHTML = '<div class="ic-empty">Preview non disponible en mode Mob.</div>';
+    renderMobPreview();
     return;
   }
   // ── PNJ mode ──
@@ -3017,7 +3245,7 @@ function update() {
     document.getElementById('id-duplicate-badge').style.display = 'none';
     document.getElementById('id-orphan-badge').style.display    = 'none';
     document.getElementById('validation-panel').style.display   = 'none';
-    if (!empty) document.getElementById('preview-wrap').innerHTML = '<div class="ic-empty">Preview non disponible en mode PNJ.</div>';
+    document.getElementById('preview-wrap').innerHTML = empty ? '' : '<div class="ic-empty">Preview non disponible en mode PNJ.</div>';
     return;
   }
   // ── Région mode ──
@@ -3032,7 +3260,8 @@ function update() {
     document.getElementById('validation-panel').style.display   = 'none';
     const regDupBadge = document.getElementById('reg-id-duplicate-badge');
     if (regDupBadge) regDupBadge.style.display = isRegionDuplicate(obj.id) ? '' : 'none';
-    if (!empty) document.getElementById('preview-wrap').innerHTML = '<div class="ic-empty">Preview non disponible en mode Région.</div>';
+    if (empty) document.getElementById('preview-wrap').innerHTML = '';
+    else renderRegionPreview();
     return;
   }
   // ── Item mode (original) ──
@@ -3041,6 +3270,7 @@ function update() {
     document.getElementById('out-code').textContent = '// Remplis le formulaire\n// pour générer le code ici.';
     document.getElementById('id-duplicate-badge').style.display = 'none';
     document.getElementById('validation-panel').style.display = 'none';
+    document.getElementById('preview-wrap').innerHTML = '';
     return;
   }
   const dup = isDuplicate(obj.id);
@@ -3131,31 +3361,38 @@ function buildItemCardEmbed(obj, color, imageFilename) {
   const rarLabel = RARITY_LABEL[obj.rarity] || obj.rarity;
   const catLabel = CAT_LABEL[obj.category]  || obj.category;
 
-  const description = obj.lore ? `*${obj.lore.slice(0, 300)}*` : undefined;
+  // ── Ligne d'identité compacte dans la description ──
+  const infoLine = [
+    `${rarIcon} **${rarLabel}**`,
+    catLabel,
+    obj.palier  ? `Palier ${obj.palier}` : null,
+    obj.lvl     ? `Niveau ≥ ${obj.lvl}`  : null,
+  ].filter(Boolean).join('  ·  ');
+
+  const clsLine = obj.classes?.length
+    ? obj.classes.map(c => CLS_LABEL[c] || c).join('  ·  ')
+    : null;
+
+  const loreLine = obj.lore ? `\n*${obj.lore.slice(0, 280)}*` : '';
+
+  const descParts = [infoLine];
+  if (clsLine) descParts.push(clsLine);
+  if (loreLine) descParts.push(loreLine);
+
   const fields = [];
 
-  fields.push({ name:'Rareté',    value:`${rarIcon} ${rarLabel}`, inline:true });
-  fields.push({ name:'Catégorie', value: catLabel,                inline:true });
-  if (obj.palier) fields.push({ name:'Palier', value:`Palier ${obj.palier}`, inline:true });
-  if (obj.lvl)    fields.push({ name:'Niveau requis', value:`≥ ${obj.lvl}`, inline:true });
-
-  fields.push({ name:'\u200b', value:'\u200b', inline:false });
-
-  if (obj.classes?.length) {
-    fields.push({ name:'Classes', value: obj.classes.map(c => CLS_LABEL[c] || c).join('  ·  '), inline:false });
-  }
-
+  // Stats
   const ALL_STAT_LABELS = {};
   if (typeof ALL_STATS !== 'undefined') ALL_STATS.forEach(s => ALL_STAT_LABELS[s.id] = s.label + (s.unit ? ' ' + s.unit : ''));
   const statEntries = obj.stats ? Object.entries(obj.stats) : [];
   if (statEntries.length || obj.rune_slots) {
     const lines = statEntries.map(([k, v]) => {
       const label = ALL_STAT_LABELS[k] || k;
-      const val   = Array.isArray(v) ? `${v[0]} → ${v[1]}` : String(v);
-      return `> **${label}** \`${val}\``;
+      const val   = Array.isArray(v) ? `${v[0]} — ${v[1]}` : String(v);
+      return `**${label}** \`${val}\``;
     });
-    if (obj.rune_slots) lines.push(`> **Emplacements de Runes** \`${obj.rune_slots}\``);
-    fields.push({ name:'📊  Stats', value: lines.join('\n').slice(0, 1024), inline:false });
+    if (obj.rune_slots) lines.push(`**Emplacements de Runes** \`${obj.rune_slots}\``);
+    fields.push({ name:'📊 Stats', value: lines.join('\n').slice(0, 1024), inline: false });
   }
 
   if (obj.obtain) {
@@ -3163,24 +3400,22 @@ function buildItemCardEmbed(obj, color, imageFilename) {
       .replace(/\[npc:[\w]+\|([^\]]+)\]/g, '**$1**')
       .replace(/\[[\w]+\|([^\]]+)\]/g, '**$1**')
       .slice(0, 1024);
-    fields.push({ name:'📍  Obtention', value: clean, inline:false });
+    fields.push({ name:'📍 Obtention', value: clean, inline: false });
   }
 
   if (obj.craft?.length) {
     const lines = obj.craft.map(c => {
       const found = (typeof ITEMS !== 'undefined') ? ITEMS.find(i => i.id === c.id) : null;
-      return `> \`${c.qty}×\`  ${found ? found.name : c.id}`;
+      return `\`${c.qty}×\` ${found ? found.name : c.id}`;
     });
-    fields.push({ name:'🔨  Craft', value: lines.join('\n').slice(0, 1024), inline:false });
+    fields.push({ name:'🔨 Craft', value: lines.join('\n').slice(0, 1024), inline: false });
   }
 
   const embed = {
     title: obj.name,
-    description,
+    description: descParts.join('\n').slice(0, 4096),
     color,
     fields,
-    footer: { text: `Soumis par ${getAuthor()}  ·  VCL Wiki` },
-    timestamp: new Date().toISOString()
   };
 
   if (imageFilename) embed.image = { url: `attachment://${imageFilename}` };
@@ -3280,47 +3515,41 @@ async function submitToDiscord() {
   try {
     await submitToFirestore();
 
-    // Notif Discord (best-effort, n'empêche pas la soumission si ça rate)
-    const obj    = buildObj();
-    const region = findTargetRegion(obj);
-    const color  = RARITY_COLORS_HEX[obj.rarity] || 0x7a7a90;
-    const embed  = {
-      title: obj.name,
-      description: [
-        obj.sensible ? '🔒 **Item sensible**' : '🔓 Item normal',
-        `📁 Région : \`${region}\``,
-        `👤 Soumis par **${getAuthor() || window._vcl_user.email}**`,
-        '',
-        '```js\n' + (toJS(obj, 0) + ',').slice(0, 3800) + '\n```'
-      ].join('\n').slice(0, 4096),
-      color,
-      footer: { text: 'VCL Wiki · en attente de validation' },
-      timestamp: new Date().toISOString()
-    };
-    fetch(DISCORD_WEBHOOK, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: `<@&1476739967387697194>`, embeds: [embed] })
-    }).catch(() => {});
+    // Post forum Discord (best-effort, n'empêche pas la soumission si ça rate)
+    const obj   = buildObj();
+    const color = RARITY_COLORS_HEX[obj.rarity] || 0x7a7a90;
+    // Détermine le nom de fichier image (MIME → extension)
+    const _imgExt = forumImageFile
+      ? ({ 'image/png':'png','image/jpeg':'jpg','image/gif':'gif','image/webp':'webp' }[forumImageFile.type]
+         || forumImageFile.name?.split('.').pop() || 'png')
+      : null;
+    const _imgFname = _imgExt ? `image.${_imgExt}` : null;
 
-    // Post forum si équipement
-    const forumUrl = getForumWebhook(obj);
-    if (forumUrl) {
-      const imageFile = document.getElementById('f-forum-image').files[0] || _pastedImageFile || null;
-      const cardEmbed = buildItemCardEmbed(obj, color, imageFile ? imageFile.name : null);
-      const payload   = { thread_name: obj.name, embeds: [cardEmbed] };
-      if (imageFile) {
+    function _discordSend(url, payload, file, fname) {
+      if (file && fname) {
+        payload.attachments = [{ id: 0, filename: fname }];
         const fd = new FormData();
         fd.append('payload_json', JSON.stringify(payload));
-        fd.append('files[0]', imageFile, imageFile.name);
-        fetch(forumUrl + '?wait=true', { method: 'POST', body: fd }).catch(() => {});
+        fd.append('files[0]', file, fname);
+        fetch(url, { method: 'POST', body: fd }).catch(() => {});
       } else {
-        fetch(forumUrl + '?wait=true', {
+        fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         }).catch(() => {});
       }
+    }
+
+    // Post forum si équipement
+    const forumUrl = getForumWebhook(obj);
+    if (forumUrl) {
+      const cardEmbed = buildItemCardEmbed(obj, color, _imgFname);
+      _discordSend(
+        forumUrl + '?wait=true',
+        { thread_name: obj.name, embeds: [cardEmbed] },
+        forumImageFile, _imgFname
+      );
     }
 
   } catch (err) {
@@ -3358,6 +3587,14 @@ async function submitToFirestore() {
 
   if (!db) throw new Error('Firebase non initialisé');
 
+  // Vérifier que l'outil est activé (sauf pour les modo/admin)
+  if (!['modo', 'admin'].includes(window._vcl_role || '')) {
+    const cfg = window._vcl_lastCreatorConfig;
+    if (cfg?.tools?.[creatorMode] === false) {
+      throw new Error(`L'outil "${creatorMode}" est actuellement désactivé.`);
+    }
+  }
+
   let type, data;
   if (creatorMode === 'item') {
     const { errors } = validateForm();
@@ -3383,6 +3620,20 @@ async function submitToFirestore() {
   // Nettoyer pour Firestore
   const clean = sanitizeForFirestore(JSON.parse(JSON.stringify(data)));
 
+  // Lire l'image en base64 si présente (limite ~700KB pour rester sous le 1MB Firestore)
+  let forumImageData = null;
+  if (forumImageFile) {
+    try {
+      forumImageData = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload  = e => res(e.target.result);
+        r.onerror = () => rej(new Error('Lecture image échouée'));
+        r.readAsDataURL(forumImageFile);
+      });
+      if (forumImageData.length > 700_000) forumImageData = null; // trop grand
+    } catch { forumImageData = null; }
+  }
+
   const docRef = await addDoc(col(db, 'submissions'), {
     type,
     status:        'pending',
@@ -3393,6 +3644,7 @@ async function submitToFirestore() {
     reviewedBy:    null,
     reviewedAt:    null,
     comment:       '',
+    ...(forumImageData ? { forum_image: forumImageData } : {}),
   });
 
   const code = creatorMode === 'item' ? toJS(data, 0) + ',' : toJS(data, 0) + ',';
@@ -3428,6 +3680,16 @@ document.addEventListener('click', e => {
 // RÉGION — STATE
 // ═══════════════════════════════════════════════════
 let regInCodex  = true;
+let regCanTp    = null;
+
+function setRegCanTp(val) {
+  regCanTp = val;
+  const yes = document.getElementById('reg-tp-yes');
+  const no  = document.getElementById('reg-tp-no');
+  if (yes) { yes.style.background = val === true  ? 'rgba(74,222,128,.15)' : ''; yes.style.color = val === true  ? 'var(--success)' : ''; yes.style.borderColor = val === true  ? 'var(--success)' : ''; }
+  if (no)  { no.style.background  = val === false ? 'rgba(248,113,113,.15)' : ''; no.style.color  = val === false ? 'var(--danger)'  : ''; no.style.borderColor  = val === false ? 'var(--danger)'  : ''; }
+  update();
+}
 
 function setRegCodex(val) {
   regInCodex = val;
@@ -3445,6 +3707,7 @@ function setRegCodex(val) {
 // ═══════════════════════════════════════════════════
 let mobIdLocked     = false;
 let mobInCodex      = true;
+let mobSensible     = false;
 let mobLootEntries  = [];
 let mobLootUid      = 0;
 
@@ -3453,8 +3716,10 @@ function onMobNameInput() {
   update();
 }
 
-function onMobTypeChange() {
-  const type = document.getElementById('mob-type').value;
+function setMobType(type) {
+  document.getElementById('mob-type').value = type;
+  ['monstre','miniboss','boss','sbire'].forEach(t =>
+    document.getElementById('type-' + t).classList.toggle('active', t === type));
   document.getElementById('mob-spawntime-field').style.display = (type === 'boss' || type === 'miniboss') ? '' : 'none';
   update();
 }
@@ -3464,6 +3729,12 @@ function setBehavior(val) {
   ['agressif','neutre','passif'].forEach(b => {
     document.getElementById('beh-' + b).classList.toggle('active', b === val);
   });
+  update();
+}
+
+function toggleMobSensible() {
+  mobSensible = !mobSensible;
+  document.getElementById('mob-sensible-btn').classList.toggle('active', mobSensible);
   update();
 }
 
@@ -3548,7 +3819,8 @@ function onMobPalierChange() {
       document.getElementById('mob-region-search').value = '';
     }
   }
-  filterMobRegionList();
+  // Re-render sans ouvrir la liste (l'utilisateur l'ouvrira en cliquant sur le champ)
+  renderMobRegionDropdown();
   update();
 }
 
@@ -3678,6 +3950,7 @@ function buildMobObj() {
   if (palier)   obj.palier   = +palier;
   if (regionId) obj.region   = regionId;
   obj.inCodex  = mobInCodex;
+  if (mobSensible) obj.sensible = true;
   if (lore)     obj.lore     = lore;
   if (spawnTime && (type === 'boss' || type === 'miniboss')) obj.spawnTime = spawnTime;
   const loot = getMobLoot();
@@ -3690,11 +3963,12 @@ function buildMobObj() {
 // MOB — RESET
 // ═══════════════════════════════════════════════════
 function resetMobForm() {
-  mobIdLocked = false; mobInCodex = true; mobLootEntries = [];
+  mobIdLocked = false; mobInCodex = true; mobSensible = false; mobLootEntries = [];
+  const sensBtn = document.getElementById('mob-sensible-btn'); if (sensBtn) sensBtn.classList.remove('active');
   ['mob-name','mob-id','mob-lore','mob-spawntime','mob-regionid'].forEach(fid => {
     const el = document.getElementById(fid); if (el) el.value = '';
   });
-  document.getElementById('mob-type').selectedIndex = 0;
+  setMobType('monstre');
   setBehavior('agressif');
   document.getElementById('mob-palier').selectedIndex   = 0;
   document.getElementById('mob-region').value           = '';
@@ -3716,7 +3990,7 @@ let pnjIdLocked  = false;
 let regIdLocked  = false;
 
 const MODE_SUBTITLES = {
-  item:   'Génère le code JS pour Compendium/data.js',
+  item:   'Soumet un item',
   mob:    'Soumet un mob à la validation',
   pnj:    'Génère le code JS pour Bestiaire/data.js',
   region: 'Soumet une région (codex ou non) à la validation',
@@ -3922,7 +4196,6 @@ function buildPnjObj() {
   const palier   = document.getElementById('pnj-palier').value;
   const region   = document.getElementById('pnj-region').value.trim();
   const regionId = document.getElementById('pnj-regionId').value.trim();
-  const imgVal   = document.getElementById('pnj-img').value.trim();
   const lore     = document.getElementById('pnj-lore').value.trim();
 
   const obj = {};
@@ -3932,7 +4205,7 @@ function buildPnjObj() {
   if (palier)   obj.palier   = +palier;
   if (region)   obj.region   = region;
   if (regionId) obj.regionId = regionId;
-  obj.img = imgVal || null;
+  obj.img = null;
   if (lore)     obj.lore     = lore;
 
   const sells = pnjSells.filter(s => s.itemId).map(s => {
@@ -3970,7 +4243,8 @@ function buildRegionObj() {
   if (name)   obj.name    = name;
   if (palier) obj.palier  = +palier;
   obj.inCodex = regInCodex;
-  obj.img = null;
+  obj.img     = null;
+  if (regCanTp !== null) obj.canTp = regCanTp;
   if (lore)   obj.lore    = lore;
 
   return obj;
@@ -3981,7 +4255,7 @@ function buildRegionObj() {
 // ═══════════════════════════════════════════════════
 function resetPnjForm() {
   pnjSells = []; pnjCrafts = []; pnjIdLocked = false;
-  ['pnj-name','pnj-id','pnj-tag','pnj-region','pnj-regionId','pnj-img','pnj-lore'].forEach(id => {
+  ['pnj-name','pnj-id','pnj-tag','pnj-region','pnj-regionId','pnj-lore'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const p = document.getElementById('pnj-palier'); if (p) p.selectedIndex = 0;
@@ -3996,6 +4270,40 @@ function resetRegionForm() {
   });
   const p = document.getElementById('reg-palier'); if (p) p.selectedIndex = 0;
   setRegCodex(true);
+  setRegCanTp(null);
+}
+
+function _revealLayout() {
+  const layout = document.getElementById('main-layout');
+  if (layout) layout.style.visibility = '';
+}
+
+function _setCreatorDisabled(disabled) {
+  let msg = document.getElementById('creator-disabled-msg');
+  if (!msg) {
+    msg = document.createElement('div');
+    msg.id = 'creator-disabled-msg';
+    msg.innerHTML = `
+      <div class="cdm-icon">🔒</div>
+      <div class="cdm-title">Creator indisponible</div>
+      <div class="cdm-sub">Aucun outil de création n'est disponible pour le moment. Reviens plus tard !</div>`;
+    document.body.appendChild(msg);
+  }
+  const submitBtn   = document.getElementById('btn-submit-discord');
+  const resetBtn    = submitBtn?.nextElementSibling;
+  const subtitle    = document.getElementById('header-subtitle');
+  if (disabled) {
+    msg.style.display         = 'flex';
+    document.getElementById('main-layout').style.visibility = 'hidden';
+    if (submitBtn) submitBtn.style.display    = 'none';
+    if (resetBtn)  resetBtn.style.display     = 'none';
+    if (subtitle)  subtitle.textContent       = '';
+  } else {
+    _revealLayout();
+    msg.style.display         = 'none';
+    if (submitBtn) submitBtn.style.display    = '';
+    if (resetBtn)  resetBtn.style.display     = '';
+  }
 }
 
 </script>
