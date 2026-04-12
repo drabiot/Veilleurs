@@ -1,7 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
    QUÊTES — Veilleurs au Clair de Lune
    quetes.js
-   Dépend de : data.js (QUETES, DB_ITEMS, helpers)
 ══════════════════════════════════════════════════════════════ */
 
 (function injectCSSVars() {
@@ -90,83 +89,104 @@ function getFiltered() {
 }
 
 /* ══════════════════════════════════
-   RENDU ITEM — style compendium
-   Produit un <a> cliquable vers compendium.html#id
-   avec image, couleur rareté, quantité
+   RENDU RÉCOMPENSES
+   - exp   : { type:'exp',  xp:420 }        → "420 XP" auto
+   - cols  : { type:'cols', cols:50 }        → "50 Cols" auto
+   - items : { type:'items', itemId, qte, label? }
 ══════════════════════════════════ */
-function renderItemRow(itemId, qte) {
-  const item  = dbItem(itemId);
-  const color = item ? rarityColor(item.rarity) : '#888';
-  const name  = item ? item.name : itemId;
-  const imgSrc = item ? (item.img || item.image || null) : null;
 
-  const visual = imgSrc
-    ? `<img class="qi-img" src="${imgSrc}" alt="${name}">`
-    : `<span class="qi-emoji">📦</span>`;
-
-  const href = `../Compendium/compendium.html#${itemId}`;
-
-  return `
-    <a class="quest-item-row" href="${href}" target="_blank" title="Voir dans le Compendium" style="--item-color:${color}">
-      <span class="qi-visual">${visual}</span>
-      <span class="qi-name" style="color:${color}">${name}</span>
-      <span class="qi-qty">×${qte}</span>
-    </a>`;
+/* Label formaté automatiquement */
+function rewardLabel(r) {
+  if (r.type === 'exp')  return `${(r.xp  || 0).toLocaleString('fr-FR')} XP`;
+  if (r.type === 'cols') return `${(r.cols || 0).toLocaleString('fr-FR')} Cols`;
+  /* items */
+  const item = r.itemId ? dbItem(r.itemId) : null;
+  const name = item ? item.name : (r.label || '?');
+  return r.qte > 1 ? `${name} ×${r.qte}` : name;
 }
 
-/* Badge compact utilisé dans les objectifs (sur la même ligne que le texte) */
+/* Mini tag sur la carte */
+function rewardMiniTag(r) {
+  if (r.type === 'exp') {
+    return `<span class="rmt rmt-exp">✨ ${rewardLabel(r)}</span>`;
+  }
+  if (r.type === 'cols') {
+    return `<span class="rmt rmt-cols">🪙 ${rewardLabel(r)}</span>`;
+  }
+  /* items */
+  const item  = r.itemId ? dbItem(r.itemId) : null;
+  const color = item ? rarityColor(item.rarity) : '#c0a0dc';
+  const imgSrc = item ? (item.img || item.image || null) : null;
+  const visual = imgSrc
+    ? `<img class="rmt-item-img" src="${imgSrc}" alt="">`
+    : `<span class="rmt-item-icon">📦</span>`;
+  const label = rewardLabel(r);
+  return `<span class="rmt rmt-item" style="color:${color};border-color:${color}33;background:${color}0d">
+    <span class="rmt-visual">${visual}</span>${label}
+  </span>`;
+}
+
+/* Récompense complète dans le modal */
+function renderRewardFull(r) {
+  if (r.type === 'exp') {
+    return `<div class="reward-full reward-full-exp">
+      <span class="reward-full-icon">✨</span>
+      <div class="reward-full-body">
+        <span class="reward-full-val">${(r.xp || 0).toLocaleString('fr-FR')}</span>
+        <span class="reward-full-unit">XP</span>
+      </div>
+    </div>`;
+  }
+  if (r.type === 'cols') {
+    return `<div class="reward-full reward-full-cols">
+      <span class="reward-full-icon">🪙</span>
+      <div class="reward-full-body">
+        <span class="reward-full-val">${(r.cols || 0).toLocaleString('fr-FR')}</span>
+        <span class="reward-full-unit">Cols</span>
+      </div>
+    </div>`;
+  }
+  /* items */
+  const item   = r.itemId ? dbItem(r.itemId) : null;
+  const color  = item ? rarityColor(item.rarity) : '#c0a0dc';
+  const name   = item ? item.name : (r.label || r.itemId || '?');
+  const imgSrc = item ? (item.img || item.image || null) : null;
+  const visual = imgSrc
+    ? `<img class="reward-img" src="${imgSrc}" alt="${name}">`
+    : `<span class="reward-icon-fallback">📦</span>`;
+  const href = r.itemId ? `../Compendium/compendium.html#${r.itemId}` : null;
+  const tag  = href ? 'a' : 'div';
+  const attrs = href ? `href="${href}" target="_blank"` : '';
+  return `<${tag} class="reward-full reward-full-item" ${attrs} style="--item-color:${color};border-color:${color}33;background:${color}0d">
+    <span class="reward-full-img">${visual}</span>
+    <div class="reward-full-body">
+      <span class="reward-full-name" style="color:${color}">${name}</span>
+      ${r.qte > 1 ? `<span class="reward-full-qty">×${r.qte}</span>` : ''}
+    </div>
+  </${tag}>`;
+}
+
+/* ══════════════════════════════════
+   RENDU ITEM CHIP (dans objectifs)
+   Style identique craft-ingredient du compendium
+══════════════════════════════════ */
 function renderItemChip(itemId, qte) {
-  const item  = dbItem(itemId);
-  const color = item ? rarityColor(item.rarity) : '#888';
-  const name  = item ? item.name : itemId;
+  const item   = dbItem(itemId);
+  const color  = item ? rarityColor(item.rarity) : '#888';
+  const name   = item ? item.name : itemId;
   const imgSrc = item ? (item.img || item.image || null) : null;
 
   const visual = imgSrc
     ? `<img class="chip-img" src="${imgSrc}" alt="${name}">`
-    : `<span class="chip-emoji">📦</span>`;
+    : `<span class="chip-fallback">📦</span>`;
 
-  return `
-    <a class="item-chip" href="../Compendium/compendium.html#${itemId}" target="_blank"
-       style="--chip-color:${color}" title="${name}">
-      <span class="chip-visual">${visual}</span>
-      <span class="chip-name" style="color:${color}">${name}</span>
-      <span class="chip-qty">×${qte}</span>
-    </a>`;
-}
-
-/* Récompense item (dans la section récompenses du modal) */
-function renderRewardItem(r) {
-  if (r.type === 'exp')  return `<span class="reward-item reward-xp">✨ ${r.label}</span>`;
-  if (r.type === 'cols') return `<span class="reward-item reward-gold">🪙 ${r.label}</span>`;
-
-  /* type === 'items' */
-  if (!r.itemId) return `<span class="reward-item reward-item-r">📦 ${r.label}</span>`;
-
-  const item   = dbItem(r.itemId);
-  const color  = item ? rarityColor(item.rarity) : '#c0a0dc';
-  const name   = item ? item.name : r.label;
-  const imgSrc = item ? (item.img || item.image || null) : null;
-  const visual = imgSrc
-    ? `<img class="reward-img" src="${imgSrc}" alt="${name}">`
-    : `<span>📦</span>`;
-
-  return `
-    <a class="reward-item reward-item-linked" href="../Compendium/compendium.html#${r.itemId}"
-       target="_blank" style="--item-color:${color};border-color:${color}33;background:${color}0d">
-      <span class="reward-visual">${visual}</span>
-      <span class="reward-name" style="color:${color}">${r.label}</span>
-    </a>`;
-}
-
-/* Mini tag pour les cartes (exp / cols / items) */
-function rewardMiniTag(r) {
-  if (r.type === 'exp')  return `<span class="rmt rmt-exp">✨ ${r.label}</span>`;
-  if (r.type === 'cols') return `<span class="rmt rmt-cols">🪙 ${r.label}</span>`;
-  if (!r.itemId)         return `<span class="rmt rmt-item">📦 ${r.label}</span>`;
-
-  const item  = dbItem(r.itemId);
-  const color = item ? rarityColor(item.rarity) : '#c0a0dc';
-  return `<span class="rmt rmt-item" style="color:${color};border-color:${color}33;background:${color}0d">📦 ${r.label}</span>`;
+  const href = `../Compendium/compendium.html#${itemId}`;
+  return `<a class="item-chip" href="${href}" target="_blank"
+     style="--chip-color:${color}" title="Voir dans le Compendium — ${name}">
+    <span class="chip-visual">${visual}</span>
+    <span class="chip-name" style="color:${color}">${name}</span>
+    <span class="chip-qty">×${qte}</span>
+  </a>`;
 }
 
 /* ══════════════════════════════════
@@ -187,7 +207,7 @@ initCollapsible('inv-block-header',    'inv-block-body');
    FILTRES PALIER
 ══════════════════════════════════ */
 function buildPalierFilters() {
-  const list   = QUETES.filter(q => q.type === activeTab);
+  const list    = QUETES.filter(q => q.type === activeTab);
   const paliers = [...new Set(list.map(q => q.palier))].sort((a, b) => a - b);
   palierFilters.innerHTML = '';
 
@@ -248,13 +268,10 @@ function updateStatutCounts() {
 /* ══════════════════════════════════
    INVENTAIRE
 ══════════════════════════════════ */
-/* Collecte tous les item ids référencés dans les quêtes */
 function getAllQuestItemIds() {
   const ids = new Set();
   QUETES.forEach(q => {
-    q.objectifs.flat().forEach(o => {
-      if (o.items) o.items.forEach(it => ids.add(it.id));
-    });
+    q.objectifs.flat().forEach(o => { if (o.items) o.items.forEach(it => ids.add(it.id)); });
     q.recompenses.forEach(r => { if (r.itemId) ids.add(r.itemId); });
   });
   return [...ids];
@@ -289,8 +306,8 @@ function getFeasibleQuests() {
 function buildInventoryPanel() {
   const panel = document.getElementById('inv-panel');
   if (!panel) return;
-  const inv  = getInventory();
-  const ids  = getAllQuestItemIds();
+  const inv = getInventory();
+  const ids = getAllQuestItemIds();
   panel.innerHTML = '';
 
   ids.forEach(id => {
@@ -303,7 +320,9 @@ function buildInventoryPanel() {
     row.className = 'inv-row';
     row.innerHTML = `
       <span class="inv-visual">
-        ${imgSrc ? `<img class="inv-img" src="${imgSrc}" alt="${name}">` : `<span class="inv-emoji">📦</span>`}
+        ${imgSrc
+          ? `<img class="inv-img" src="${imgSrc}" alt="${name}">`
+          : `<span class="inv-emoji">📦</span>`}
       </span>
       <span class="inv-label" style="color:${color}">${name}</span>
       <input type="number" class="inv-input" min="0" value="${inv[id]}" data-id="${id}" />`;
@@ -340,12 +359,16 @@ function buildFeasiblePanel() {
   quests.forEach(q => {
     const div = document.createElement('div');
     div.className = `feasible-item feasible-${q.type}`;
-    const xp  = q.recompenses.find(r => r.type === 'exp')?.label  || '';
-    const col = q.recompenses.find(r => r.type === 'cols')?.label || '';
+    const xp  = q.recompenses.find(r => r.type === 'exp');
+    const col = q.recompenses.find(r => r.type === 'cols');
+    const rewStr = [
+      xp  ? `${xp.xp} XP` : '',
+      col ? `${col.cols} Cols` : '',
+    ].filter(Boolean).join(' · ');
     div.innerHTML = `
       <span class="feasible-dot" style="background:var(--quete-${q.type})"></span>
       <span class="feasible-name">${q.titre}</span>
-      <span class="feasible-rew">${xp}${col ? ' · ' + col : ''}</span>`;
+      <span class="feasible-rew">${rewStr}</span>`;
     div.addEventListener('click', () => openModal(q));
     fp.appendChild(div);
   });
@@ -386,8 +409,11 @@ function buildGrid() {
 
       const { done, total, pct } = getProgress(q);
       const effectiveDone = done === total && total > 0;
-      const zs = getZoneStyle(q.zone);
-      const mapUrl = ZONE_MAP_URLS[q.zone] || '#';
+      const zs     = getZoneStyle(q.zone);
+      const mapUrl = getMapUrl(q.mapId);
+
+      /* Footer récompenses — max 3 affichées */
+      const rewFooter = q.recompenses.slice(0, 3).map(r => rewardMiniTag(r)).join('');
 
       card.innerHTML = `
         <div class="type-stripe"></div>
@@ -398,23 +424,24 @@ function buildGrid() {
           </div>
           <div class="card-meta">
             <span class="ctag ctag-palier">P${q.palier}</span>
-            <a class="ctag ctag-zone" href="${mapUrl}"
-               style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}"
-               title="Voir sur la carte" onclick="event.stopPropagation()">🗺 ${q.zone}</a>
+            ${mapUrl
+              ? `<a class="ctag ctag-zone" href="${mapUrl}"
+                   style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}"
+                   title="Voir sur la carte" onclick="event.stopPropagation()">🗺 ${q.zone}</a>`
+              : `<span class="ctag ctag-zone" style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}">🗺 ${q.zone}</span>`
+            }
           </div>
           <p class="card-desc">${q.desc}</p>
-          <div class="card-rewards-mini">
-            ${q.recompenses.map(r => rewardMiniTag(r)).join('')}
-          </div>
         </div>
         <div class="card-footer">
-          <div class="card-progress">
-            <div class="progress-wrap">
-              <div class="progress-fill" style="width:${pct}%"></div>
+          <div class="card-rewards-footer">${rewFooter}</div>
+          <div class="card-progress-wrap">
+            <div class="card-progress">
+              <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
+              <span class="progress-lbl">${done}/${total}</span>
             </div>
-            <span class="progress-lbl">${done}/${total}</span>
+            <span class="card-npc">🧑 ${q.npc}</span>
           </div>
-          <span class="card-npc">🧑 ${q.npc}</span>
         </div>`;
 
       card.addEventListener('mousedown', e => e.preventDefault());
@@ -425,16 +452,73 @@ function buildGrid() {
 }
 
 /* ══════════════════════════════════
+   HASH ROUTING
+   quetes.html#quest_id
+   → active le bon tab, scrolle la card, ouvre le modal
+══════════════════════════════════ */
+function getQuestById(id) {
+  return QUETES.find(q => q.id === id) || null;
+}
+
+function navigateToQuest(id, { pushState = true } = {}) {
+  const q = getQuestById(id);
+  if (!q) return;
+
+  /* Changer d'onglet si nécessaire */
+  if (q.type !== activeTab) {
+    activeTab    = q.type;
+    activePalier = 'all';
+    activeStatut = 'all';
+    document.querySelector('input[name="statut-filter"][value="all"]').checked = true;
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+      btn.classList.remove('active-main', 'active-sec', 'active-ter');
+      if (btn.dataset.tab === q.type) btn.classList.add(`active-${q.type}`);
+    });
+    refreshAll();
+  }
+
+  /* Scroll vers la card */
+  requestAnimationFrame(() => {
+    const card = queteGrid.querySelector(`.quete-card[data-id="${id}"]`);
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    openModal(q);
+  });
+
+  if (pushState) history.pushState({ quest: id }, '', `#${id}`);
+}
+
+function handleHashOnLoad() {
+  const id = window.location.hash.replace('#', '');
+  if (id) navigateToQuest(id, { pushState: false });
+}
+
+window.addEventListener('popstate', () => {
+  const id = window.location.hash.replace('#', '');
+  if (id) navigateToQuest(id, { pushState: false });
+  else closeModal();
+});
+
+/* ══════════════════════════════════
    MODAL
 ══════════════════════════════════ */
 function openModal(q) {
+  window._currentModalQuest = q;
   modalContent.innerHTML = renderSheet(q);
   bindModalCheckboxes(q);
   modalOverlay.classList.add('open');
+  /* Met à jour le hash sans dupliquer */
+  if (window.location.hash !== `#${q.id}`) {
+    history.pushState({ quest: q.id }, '', `#${q.id}`);
+  }
 }
 
 function closeModal() {
   modalOverlay.classList.remove('open');
+  window._currentModalQuest = null;
+  /* Retire le hash */
+  if (window.location.hash) {
+    history.pushState(null, '', window.location.pathname + window.location.search);
+  }
 }
 
 modalCloseBtn.addEventListener('click', closeModal);
@@ -448,14 +532,13 @@ modalOverlay.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-/* ── Bind checkboxes dans le modal ── */
+/* ── Bind checkboxes ── */
 function bindModalCheckboxes(q) {
   modalContent.querySelectorAll('.obj-checkbox').forEach(cb => {
     cb.addEventListener('change', () => {
       const oi = parseInt(cb.dataset.oi);
       const si = cb.dataset.si !== undefined ? parseInt(cb.dataset.si) : undefined;
       setCk(q.id, oi, si, cb.checked);
-
       cb.closest('.obj-item')?.classList.toggle('done', cb.checked);
 
       const { done, total, pct } = getProgress(q);
@@ -469,16 +552,16 @@ function bindModalCheckboxes(q) {
         badge.className   = `quest-status-badge ${isDone ? 'badge-done' : 'badge-todo'}`;
         badge.textContent = isDone ? 'Terminée' : 'À faire';
       }
-
       buildGrid();
       updateStatutCounts();
     });
   });
 }
 
-/* ── Rendu fiche ── */
+/* ── Rendu fiche modal ── */
 function renderSheet(q) {
   const zs = getZoneStyle(q.zone);
+  const mapUrl = getMapUrl(q.mapId);
   const { done, total, pct } = getProgress(q);
   const isDone = done === total && total > 0;
 
@@ -486,85 +569,92 @@ function renderSheet(q) {
   const objsHTML = q.objectifs.map((o, i) => {
     if (Array.isArray(o)) {
       const subs = o.map((sub, j) => {
-        const ck = getCk(q.id, i, j);
+        const ck    = getCk(q.id, i, j);
         const chips = sub.items ? sub.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
-        return `
-          <div class="obj-item obj-sub ${ck ? 'done' : ''} obj-item-${q.type}">
-            <label class="obj-ck-label">
-              <input type="checkbox" class="obj-checkbox" data-oi="${i}" data-si="${j}" ${ck ? 'checked' : ''}/>
-              <span class="obj-checkmark"></span>
-            </label>
-            <span class="obj-text">${sub.texte}${chips}</span>
-          </div>`;
+        return `<div class="obj-item obj-sub ${ck ? 'done' : ''} obj-item-${q.type}">
+          <label class="obj-ck-label">
+            <input type="checkbox" class="obj-checkbox" data-oi="${i}" data-si="${j}" ${ck ? 'checked' : ''}/>
+            <span class="obj-checkmark"></span>
+          </label>
+          <span class="obj-text">${sub.texte}${chips}</span>
+        </div>`;
       }).join('');
       return `<div class="obj-group"><div class="obj-group-lbl">↳ Séquence</div>${subs}</div>`;
     } else {
-      const ck = getCk(q.id, i);
+      const ck    = getCk(q.id, i);
       const chips = o.items ? o.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
-      return `
-        <div class="obj-item ${ck ? 'done' : ''} obj-item-${q.type}">
-          <label class="obj-ck-label">
-            <input type="checkbox" class="obj-checkbox" data-oi="${i}" ${ck ? 'checked' : ''}/>
-            <span class="obj-checkmark"></span>
-          </label>
-          <span class="obj-text">${o.texte}${chips}</span>
-        </div>`;
+      return `<div class="obj-item ${ck ? 'done' : ''} obj-item-${q.type}">
+        <label class="obj-ck-label">
+          <input type="checkbox" class="obj-checkbox" data-oi="${i}" ${ck ? 'checked' : ''}/>
+          <span class="obj-checkmark"></span>
+        </label>
+        <span class="obj-text">${o.texte}${chips}</span>
+      </div>`;
     }
   }).join('');
 
   /* Récompenses */
-  const rewHTML = q.recompenses.map(r => renderRewardItem(r)).join('');
+  const rewHTML = q.recompenses.map(r => renderRewardFull(r)).join('');
 
-  return `
-    <div class="quest-sheet">
-      <div class="quest-sheet-header">
-        <div class="quest-type-icon qicon-${q.type}">${TYPE_ICONS[q.type]}</div>
-        <div class="quest-sheet-info">
-          <div class="quest-sheet-name">${q.titre}</div>
-          <div class="quest-badge-row">
-            <span class="quest-type-badge qbadge-${q.type}">${TYPE_LABELS[q.type]}</span>
-            <span class="quest-status-badge ${isDone ? 'badge-done' : 'badge-todo'}">${isDone ? 'Terminée' : 'À faire'}</span>
+  /* Zone link conditionnel */
+  const zoneEl = mapUrl
+    ? `<a class="quest-meta-val quest-zone-link" href="${mapUrl}"
+          style="color:${zs.color};text-shadow:0 0 8px ${zs.dim}" target="_blank">🗺 ${q.zone} ↗</a>`
+    : `<span class="quest-meta-val" style="color:${zs.color}">🗺 ${q.zone}</span>`;
+
+  /* Bouton "Copier le lien" */
+  const shareUrl = `${location.origin}${location.pathname}#${q.id}`;
+
+  return `<div class="quest-sheet">
+    <div class="quest-sheet-header">
+      <div class="quest-type-icon qicon-${q.type}">${TYPE_ICONS[q.type]}</div>
+      <div class="quest-sheet-info">
+        <div class="quest-sheet-name">${q.titre}</div>
+        <div class="quest-badge-row">
+          <span class="quest-type-badge qbadge-${q.type}">${TYPE_LABELS[q.type]}</span>
+          <span class="quest-status-badge ${isDone ? 'badge-done' : 'badge-todo'}">${isDone ? 'Terminée' : 'À faire'}</span>
+          <button class="quest-share-btn" title="Copier le lien de la quête" onclick="
+            navigator.clipboard.writeText('${shareUrl}');
+            this.textContent='✓ Copié';
+            setTimeout(()=>this.textContent='⇗ Lien',1500)">⇗ Lien</button>
+        </div>
+        <div class="quest-meta-row">
+          <div class="quest-meta-item">
+            <span class="quest-meta-key">Palier</span>
+            <span class="quest-meta-val">⬡ ${q.palier}</span>
           </div>
-          <div class="quest-meta-row">
-            <div class="quest-meta-item">
-              <span class="quest-meta-key">Palier</span>
-              <span class="quest-meta-val">⬡ ${q.palier}</span>
-            </div>
-            <div class="quest-meta-item">
-              <span class="quest-meta-key">Zone</span>
-              <a class="quest-meta-val quest-zone-link"
-                 href="${ZONE_MAP_URLS[q.zone] || '#'}"
-                 style="color:${zs.color};text-shadow:0 0 8px ${zs.dim}"
-                 target="_blank">🗺 ${q.zone} ↗</a>
-            </div>
-            <div class="quest-meta-item">
-              <span class="quest-meta-key">PNJ</span>
-              <span class="quest-meta-val">🧑 ${q.npc}</span>
-            </div>
+          <div class="quest-meta-item">
+            <span class="quest-meta-key">Zone</span>
+            ${zoneEl}
+          </div>
+          <div class="quest-meta-item">
+            <span class="quest-meta-key">PNJ</span>
+            <span class="quest-meta-val">🧑 ${q.npc}</span>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="modal-progress-bar">
-        <div class="modal-progress-fill" style="width:${pct}%"></div>
-        <span class="modal-progress-lbl">${done}/${total} objectifs</span>
-      </div>
+    <div class="modal-progress-bar">
+      <div class="modal-progress-fill" style="width:${pct}%"></div>
+      <span class="modal-progress-lbl">${done}/${total} objectifs</span>
+    </div>
 
-      <div class="quest-body">
-        <div class="quest-section">
-          <div class="quest-section-title">Description</div>
-          <blockquote class="quest-lore">${q.desc}</blockquote>
-        </div>
-        <div class="quest-section">
-          <div class="quest-section-title">Objectifs</div>
-          <div class="obj-list">${objsHTML}</div>
-        </div>
-        <div class="quest-section">
-          <div class="quest-section-title">Récompenses</div>
-          <div class="reward-list">${rewHTML}</div>
-        </div>
+    <div class="quest-body">
+      <div class="quest-section">
+        <div class="quest-section-title">Description</div>
+        <blockquote class="quest-lore">${q.desc}</blockquote>
       </div>
-    </div>`;
+      <div class="quest-section">
+        <div class="quest-section-title">Objectifs</div>
+        <div class="obj-list">${objsHTML}</div>
+      </div>
+      <div class="quest-section">
+        <div class="quest-section-title">Récompenses</div>
+        <div class="reward-list">${rewHTML}</div>
+      </div>
+    </div>
+  </div>`;
 }
 
 /* ══════════════════════════════════
@@ -577,7 +667,7 @@ const TITLES = {
 };
 function updateHeader() {
   const [t, s] = TITLES[activeTab];
-  mainTitle.textContent   = t;
+  mainTitle.textContent    = t;
   mainSubtitle.textContent = s;
 }
 
@@ -641,19 +731,50 @@ setLayout();
 window.addEventListener('resize', setLayout);
 
 /* ══════════════════════════════════
-   INIT — appelé par quetes-loader.js
-   après chargement Firestore
+   INIT
 ══════════════════════════════════ */
-function initQuetes() {
+
+/* Premier init : lancé dès que le DOM est prêt,
+   DB_ITEMS peut être vide (Firestore pas encore chargé).
+   La grille s'affiche sans les visuels items. */
+function initQuetesDOM() {
+  if (window._domInited) return;
+  window._domInited = true;
   document.querySelector('.sort-btn[data-tab="main"]')?.classList.add('active-main');
   refreshAll();
+  handleHashOnLoad();
+}
+
+/* Appelé par quetes-loader.js une fois DB_ITEMS peuplé.
+   On re-render tout maintenant qu'on a les données items.
+   Si le modal est ouvert on le re-render aussi. */
+function initQuetes() {
+  window._dbReady = true;
+
+  /* Si le DOM n'était pas encore init, on le fait maintenant */
+  if (!window._domInited) {
+    window._domInited = true;
+    document.querySelector('.sort-btn[data-tab="main"]')?.classList.add('active-main');
+  }
+
+  /* Re-render complet avec les vrais items */
+  refreshAll();
+
+  /* Si le modal est ouvert, on re-render la fiche avec les vrais items */
+  if (modalOverlay.classList.contains('open') && window._currentModalQuest) {
+    modalContent.innerHTML = renderSheet(window._currentModalQuest);
+    bindModalCheckboxes(window._currentModalQuest);
+  }
+
+  /* Hash routing (rejoué si items manquaient au premier passage) */
+  handleHashOnLoad();
 }
 
 window._initQuetes = initQuetes;
 
-/* Fallback si pas de loader (ouverture directe sans Firebase) */
+/* Lancement DOM immédiat (sans attendre Firestore) */
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => { if (!window._loaderRan) initQuetes(); });
+  document.addEventListener('DOMContentLoaded', initQuetesDOM);
 } else {
-  if (!window._loaderRan) initQuetes();
+  initQuetesDOM();
 }

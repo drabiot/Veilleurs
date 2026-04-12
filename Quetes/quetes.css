@@ -296,8 +296,9 @@ body.quetes-page { overflow: hidden; }
    CARTE — hauteur fixe
 ══════════════════════════════════ */
 .quete-card {
-  /* Hauteur fixe : toutes les cartes font la même taille */
-  height: 220px;
+  /* Hauteur fixe : toutes les cartes font la même taille
+     Footer = 2 lignes (récompenses ~28px + progress ~28px) + body */
+  height: 240px;
   background: linear-gradient(160deg, rgba(24,20,16,.95) 0%, rgba(14,12,10,.9) 100%);
   border: 1px solid var(--rim2);
   cursor: pointer;
@@ -384,29 +385,41 @@ body.quetes-page { overflow: hidden; }
   overflow: hidden; flex-shrink: 0;
 }
 
-/* Récompenses mini */
-.card-rewards-mini {
-  display: flex; flex-wrap: wrap; gap: 4px;
-  overflow: hidden; flex-shrink: 0;
-}
+/* Récompenses mini (sur les cartes) */
 .rmt {
+  display: inline-flex; align-items: center; gap: 4px;
   font-family: 'JetBrains Mono', monospace; font-size: 9px;
   padding: 2px 6px; border: 1px solid; white-space: nowrap;
-  /* tronque si trop long */
-  max-width: 130px; overflow: hidden; text-overflow: ellipsis;
+  max-width: 140px; overflow: hidden; text-overflow: ellipsis;
 }
 .rmt-exp  { color: #7aaedd; border-color: #7aaedd33; background: rgba(122,174,221,.06); }
 .rmt-cols { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow); }
 .rmt-item { color: #c0a0dc; border-color: #c0a0dc33; background: rgba(192,160,220,.06); }
+.rmt-visual { width: 14px; height: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.rmt-item-img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.rmt-item-icon { font-size: 11px; }
 
-/* Footer — fixé tout en bas, ne bouge jamais */
+/* Footer — 2 lignes : récompenses + progress/npc */
 .card-footer {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 6px 12px 7px 16px;
+  display: flex; flex-direction: column;
   border-top: 1px solid var(--rim);
-  gap: 8px;
   flex-shrink: 0;
   margin-top: auto;
+}
+
+/* Ligne 1 — récompenses */
+.card-rewards-footer {
+  display: flex; flex-wrap: wrap; gap: 3px;
+  padding: 5px 12px 5px 16px;
+  border-bottom: 1px solid var(--rim);
+  min-height: 28px;
+  align-items: center;
+}
+
+/* Ligne 2 — barre de progression + NPC */
+.card-progress-wrap {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 12px 6px 16px; gap: 8px;
 }
 .card-progress { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .progress-wrap { flex: 1; height: 2px; background: var(--rim2); overflow: hidden; }
@@ -418,7 +431,7 @@ body.quetes-page { overflow: hidden; }
 
 .card-npc {
   font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted);
-  opacity: .5; font-style: italic; white-space: nowrap;
+  opacity: .45; font-style: italic; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; max-width: 110px; flex-shrink: 0;
   transition: opacity .15s;
 }
@@ -499,9 +512,8 @@ body.quetes-page { overflow: hidden; }
 .quest-modal-overlay {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(0,0,0,.55); padding: 24px;
+  background: rgba(0,0,0,0); padding: 24px;
   opacity: 0; visibility: hidden; pointer-events: none;
-  transition: opacity .2s ease; backdrop-filter: blur(2px);
 }
 .quest-modal-overlay.open { opacity: 1; visibility: visible; pointer-events: none; }
 .quest-modal-overlay.open .quest-modal { pointer-events: all; }
@@ -674,30 +686,70 @@ body.quetes-page { overflow: hidden; }
 
 .obj-text { flex: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 
-/* ── Récompenses ── */
-.reward-list { display: flex; flex-wrap: wrap; gap: 6px; }
+/* ── Récompenses (modal) — style compendium ── */
+.reward-list { display: flex; flex-wrap: wrap; gap: 8px; }
 
-.reward-item {
-  font-family: 'JetBrains Mono', monospace; font-size: 10px;
-  padding: 4px 10px; border: 1px solid;
+.reward-full {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px;
+  border: 1px solid; min-width: 120px;
+  text-decoration: none;
+  transition: background .12s;
 }
-.reward-xp     { color: #7aaedd; border-color: #7aaedd33; background: rgba(122,174,221,.06); }
-.reward-gold   { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow); }
-.reward-item-r { color: #c0a0dc; border-color: #c0a0dc33; background: rgba(192,160,220,.06); }
 
-/* Récompense item avec lien compendium */
-.reward-item-linked {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 4px 10px; border: 1px solid;
-  text-decoration: none; transition: background .12s;
+.reward-full-exp {
+  color: #7aaedd; border-color: #7aaedd33; background: rgba(122,174,221,.06);
+}
+.reward-full-cols {
+  color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow);
+}
+.reward-full-item {
   cursor: pointer;
 }
-.reward-item-linked:hover {
+.reward-full-item:hover {
   background: color-mix(in srgb, var(--item-color, #c0a0dc) 12%, transparent) !important;
 }
-.reward-visual { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.reward-img    { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
-.reward-name   { font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+
+.reward-full-icon { font-size: 20px; flex-shrink: 0; }
+
+.reward-full-img {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.reward-img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+.reward-icon-fallback { font-size: 20px; }
+
+.reward-full-body {
+  display: flex; flex-direction: column; gap: 1px; min-width: 0;
+}
+.reward-full-val {
+  font-family: 'Cinzel', serif; font-size: 15px; font-weight: 700;
+  line-height: 1;
+}
+.reward-full-unit {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: .1em; text-transform: uppercase; opacity: .65;
+}
+.reward-full-name {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.reward-full-qty {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted);
+}
+
+/* Bouton partage lien */
+.quest-share-btn {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  padding: 2px 8px; border: 1px solid var(--rim2);
+  background: rgba(255,255,255,.04); color: var(--muted);
+  cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+  letter-spacing: .05em;
+}
+.quest-share-btn:hover {
+  color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow);
+}
 
 /* Lore */
 .quest-lore {

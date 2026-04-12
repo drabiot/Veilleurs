@@ -64,16 +64,16 @@
 
       <div class="sidebar-sort-bar">
         <button class="sort-btn active" data-tab="main">
-          <span class="sort-icon">🔥</span><span class="sort-label">Principales</span>
+          <span class="sort-icon">🔥</span><span class="sort-label">Princi.</span>
         </button>
         <button class="sort-btn" data-tab="sec">
-          <span class="sort-icon">💬</span><span class="sort-label">Secondaires</span>
+          <span class="sort-icon">💬</span><span class="sort-label">Second.</span>
         </button>
         <button class="sort-btn" data-tab="ter">
-          <span class="sort-icon">❓</span><span class="sort-label">Tertiaires</span>
+          <span class="sort-icon">❓</span><span class="sort-label">Terti.</span>
         </button>
         <button class="sort-btn" data-tab="inv" id="inv-tab-btn">
-          <span class="sort-icon">🎒</span><span class="sort-label">Inventaire</span>
+          <span class="sort-icon">🎒</span><span class="sort-label">Inv.</span>
         </button>
       </div>
 
@@ -205,11 +205,19 @@
     });
   </script>
 
-  <!--
-    Charge Firestore → peuple DB_ITEMS → appelle window._initQuetes()
-    Doit être type="module" pour utiliser les imports ES
-  -->
-  <script type="module" src="quetes-loader.js"></script>
+  <!-- Inline module : évite les problèmes MIME type avec Live Server -->
+  <script type="module">
+    import { loadCollection, COL } from '../firebase.js';
+    (async () => {
+      try {
+        const items = await loadCollection(COL.items);
+        DB_ITEMS.push(...items);
+      } catch (err) {
+        console.error('[Quêtes] Erreur chargement Firestore items :', err);
+      }
+      window._initQuetes?.();
+    })();
+  </script>
 
 </body>
 </html>
