@@ -229,26 +229,59 @@ function buildPalierFilters() {
 /* ══════════════════════════════════
    FILTRES ZONE
 ══════════════════════════════════ */
-function buildZoneFilters() {
-  const zf   = document.getElementById('zone-filters');
-  const list = QUETES.filter(q => q.type === activeTab);
-  const zones = [...new Set(list.map(q => q.zone))].sort();
-  activeZones = new Set(zones);
-  zf.innerHTML = '';
+function buildZoneFilters(resetChecked = false) {
+  const zf = document.getElementById('zone-filters');
 
+  /* Zones présentes dans les quêtes actuellement visibles
+     (tous filtres actifs sauf zone) */
+  const q = normalize(searchQuery);
+  const visible = QUETES.filter(e => {
+    if (e.type !== activeTab) return false;
+    if (activePalier !== 'all' && e.palier !== activePalier) return false;
+    const done = isQuestDone(e);
+    if (activeStatut === 'todo' && done)  return false;
+    if (activeStatut === 'done' && !done) return false;
+    if (q &&
+      !normalize(e.titre).includes(q) &&
+      !normalize(e.zone).includes(q)  &&
+      !normalize(e.npc).includes(q)   &&
+      !normalize(e.desc).includes(q)
+    ) return false;
+    return true;
+  });
+
+  const zones = [...new Set(visible.map(e => e.zone))].sort();
+
+  /* Mémoriser les zones manuellement décochées avant de rebuild */
+  const unchecked = new Set(
+    [...document.querySelectorAll('#zone-filters input[type=checkbox]')]
+      .filter(cb => !cb.checked)
+      .map(cb => cb.closest('.bfilter-row')?.querySelector('.bfilter-label')?.textContent?.trim())
+      .filter(Boolean)
+  );
+
+  /* Reset = tout coché (changement onglet/palier/statut) */
+  if (resetChecked) {
+    activeZones = new Set(zones);
+  } else {
+    /* Conserver décoches manuelles sur zones encore présentes */
+    activeZones = new Set(zones.filter(z => !unchecked.has(z)));
+    if (activeZones.size === 0) activeZones = new Set(zones);
+  }
+
+  zf.innerHTML = '';
   zones.forEach(z => {
-    const cnt = list.filter(q => q.zone === z).length;
+    const cnt = visible.filter(e => e.zone === z).length;
     const zs  = getZoneStyle(z);
     const lbl = document.createElement('label');
     lbl.className = 'bfilter-row';
     lbl.innerHTML = `
-      <input type="checkbox" checked />
+      <input type="checkbox" ${activeZones.has(z) ? 'checked' : ''} />
       <span class="bfilter-dot dot-zone" style="background:${zs.color};box-shadow:0 0 5px ${zs.dim}"></span>
       <span class="bfilter-label">${z}</span>
       <span class="bfilter-count">${cnt}</span>`;
-    const cb = lbl.querySelector('input');
-    cb.addEventListener('change', () => {
-      cb.checked ? activeZones.add(z) : activeZones.delete(z);
+    lbl.querySelector('input').addEventListener('change', cb => {
+      cb.target.checked ? activeZones.add(z) : activeZones.delete(z);
       buildGrid();
     });
     zf.appendChild(lbl);
@@ -269,10 +302,18 @@ function updateStatutCounts() {
    INVENTAIRE
 ══════════════════════════════════ */
 function getAllQuestItemIds() {
+  /* Seulement les items des quêtes non-terminées qui ont encore des objectifs à faire */
   const ids = new Set();
   QUETES.forEach(q => {
-    q.objectifs.flat().forEach(o => { if (o.items) o.items.forEach(it => ids.add(it.id)); });
-    q.recompenses.forEach(r => { if (r.itemId) ids.add(r.itemId); });
+    if (isQuestDone(q)) return; /* quête terminée : on skip */
+    q.objectifs.flat().forEach((o, flatIdx) => {
+      if (!o.items) return;
+      /* Vérifier si cet objectif est déjà coché */
+      /* On ne peut pas récupérer l'index original facilement ici, donc on inclut tous les items
+         des objectifs non-cochés en recalculant */
+      o.items.forEach(it => ids.add(it.id));
+    });
+    /* Récompenses items : on les garde pour le lookup mais pas dans l'inventaire */
   });
   return [...ids];
 }
@@ -412,8 +453,21 @@ function buildGrid() {
       const zs     = getZoneStyle(q.zone);
       const mapUrl = getMapUrl(q.mapId);
 
+      /* Dépendance : quête prérequise */
+      const reqQuest   = q.requires ? QUETES.find(r => r.id === q.requires) : null;
+      const isBlocked  = reqQuest && !isQuestDone(reqQuest);
+      if (isBlocked) card.classList.add('blocked');
+
       /* Footer récompenses — max 3 affichées */
       const rewFooter = q.recompenses.slice(0, 3).map(r => rewardMiniTag(r)).join('');
+
+      /* Indicateur prérequis */
+      const reqHTML = reqQuest ? `
+        <div class="card-requires">
+          <span class="card-requires-arrow">→</span>
+          <span class="card-requires-name">Suite de : ${reqQuest.titre}</span>
+          ${isBlocked ? '<span class="card-blocked-badge">⚠ Bloquée</span>' : ''}
+        </div>` : '';
 
       card.innerHTML = `
         <div class="type-stripe"></div>
@@ -422,6 +476,7 @@ function buildGrid() {
             <div class="card-title">${q.titre}</div>
             <span class="card-badge ${effectiveDone ? 'badge-done' : 'badge-todo'}">${effectiveDone ? 'Terminée' : 'À faire'}</span>
           </div>
+          ${reqHTML}
           <div class="card-meta">
             <span class="ctag ctag-palier">P${q.palier}</span>
             ${mapUrl
@@ -447,6 +502,21 @@ function buildGrid() {
       card.addEventListener('mousedown', e => e.preventDefault());
       card.addEventListener('click', () => openModal(q));
       queteGrid.appendChild(card);
+
+      /* Flèche SVG si une quête suivante est dans la liste et adjacent */
+      const nextQ = entities.find(e => e.requires === q.id);
+      if (nextQ) {
+        const arrow = document.createElement('div');
+        arrow.className = 'quest-chain-arrow';
+        arrow.dataset.from = q.id;
+        arrow.dataset.to   = nextQ.id;
+        arrow.innerHTML = `
+          <svg width="24" height="32" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="12" y1="0" x2="12" y2="22" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <polyline points="6,18 12,26 18,18" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+          </svg>`;
+        queteGrid.appendChild(arrow);
+      }
     });
   });
 }
@@ -506,9 +576,12 @@ function openModal(q) {
   modalContent.innerHTML = renderSheet(q);
   bindModalCheckboxes(q);
   modalOverlay.classList.add('open');
-  /* Met à jour le hash sans dupliquer */
   if (window.location.hash !== `#${q.id}`) {
     history.pushState({ quest: q.id }, '', `#${q.id}`);
+  }
+  /* Si DB pas encore prête, marquer pour re-render dès qu'elle l'est */
+  if (!window._dbReady) {
+    window._pendingModalQuest = q;
   }
 }
 
@@ -565,31 +638,47 @@ function renderSheet(q) {
   const { done, total, pct } = getProgress(q);
   const isDone = done === total && total > 0;
 
-  /* Objectifs */
+  /* Objectifs
+     next:true sur un objectif → flèche visuelle vers le suivant
+  */
+  const OBJ_ARROW = `<div class="obj-next-arrow">
+    <svg width="16" height="20" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="8" y1="0" x2="8" y2="13" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/>
+      <polyline points="3,10 8,17 13,10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+    </svg>
+  </div>`;
+
   const objsHTML = q.objectifs.map((o, i) => {
+    const isLast = i === q.objectifs.length - 1;
+
     if (Array.isArray(o)) {
+      /* Groupe séquentiel interne */
       const subs = o.map((sub, j) => {
         const ck    = getCk(q.id, i, j);
         const chips = sub.items ? sub.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
+        const isLastSub = j === o.length - 1;
         return `<div class="obj-item obj-sub ${ck ? 'done' : ''} obj-item-${q.type}">
           <label class="obj-ck-label">
             <input type="checkbox" class="obj-checkbox" data-oi="${i}" data-si="${j}" ${ck ? 'checked' : ''}/>
             <span class="obj-checkmark"></span>
           </label>
           <span class="obj-text">${sub.texte}${chips}</span>
-        </div>`;
+        </div>${!isLastSub ? OBJ_ARROW : ''}`;
       }).join('');
-      return `<div class="obj-group"><div class="obj-group-lbl">↳ Séquence</div>${subs}</div>`;
+      const arrow = (!isLast && o[o.length - 1]?.next !== false) ? OBJ_ARROW : '';
+      return `<div class="obj-group"><div class="obj-group-lbl">↳ Séquence</div>${subs}</div>${arrow}`;
     } else {
       const ck    = getCk(q.id, i);
       const chips = o.items ? o.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
+      /* Flèche si next:true sur cet objectif */
+      const arrow = o.next && !isLast ? OBJ_ARROW : '';
       return `<div class="obj-item ${ck ? 'done' : ''} obj-item-${q.type}">
         <label class="obj-ck-label">
           <input type="checkbox" class="obj-checkbox" data-oi="${i}" ${ck ? 'checked' : ''}/>
           <span class="obj-checkmark"></span>
         </label>
         <span class="obj-text">${o.texte}${chips}</span>
-      </div>`;
+      </div>${arrow}`;
     }
   }).join('');
 
@@ -692,7 +781,7 @@ function setActiveTab(tab) {
 function refreshAll() {
   updateHeader();
   buildPalierFilters();
-  buildZoneFilters();
+  buildZoneFilters(true); /* reset zones : tab/palier/statut a changé */
   updateStatutCounts();
   buildGrid();
   buildInventoryPanel();
@@ -709,12 +798,14 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
 
 searchInput.addEventListener('input', () => {
   searchQuery = searchInput.value.trim();
+  buildZoneFilters(false); /* zones dynamiques selon la recherche, décoches conservées */
   buildGrid();
 });
 
 document.querySelectorAll('input[name="statut-filter"]').forEach(rb => {
   rb.addEventListener('change', () => {
     activeStatut = rb.value;
+    buildZoneFilters(true);
     buildGrid();
   });
 });
@@ -760,10 +851,16 @@ function initQuetes() {
   /* Re-render complet avec les vrais items */
   refreshAll();
 
-  /* Si le modal est ouvert, on re-render la fiche avec les vrais items */
-  if (modalOverlay.classList.contains('open') && window._currentModalQuest) {
-    modalContent.innerHTML = renderSheet(window._currentModalQuest);
-    bindModalCheckboxes(window._currentModalQuest);
+  /* Re-render du modal si ouvert OU si une quête était en attente */
+  const toRerender = window._currentModalQuest || window._pendingModalQuest;
+  if (toRerender) {
+    window._pendingModalQuest = null;
+    modalContent.innerHTML = renderSheet(toRerender);
+    bindModalCheckboxes(toRerender);
+    /* Assurer que le modal est visible */
+    if (!modalOverlay.classList.contains('open')) {
+      modalOverlay.classList.add('open');
+    }
   }
 
   /* Hash routing (rejoué si items manquaient au premier passage) */

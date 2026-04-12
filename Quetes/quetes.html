@@ -64,16 +64,16 @@
 
       <div class="sidebar-sort-bar">
         <button class="sort-btn active" data-tab="main">
-          <span class="sort-icon">🔥</span><span class="sort-label">Princi.</span>
+          <span class="sort-icon">🔥</span><span class="sort-label">Principales</span>
         </button>
         <button class="sort-btn" data-tab="sec">
-          <span class="sort-icon">💬</span><span class="sort-label">Second.</span>
+          <span class="sort-icon">💬</span><span class="sort-label">Secondaires</span>
         </button>
         <button class="sort-btn" data-tab="ter">
-          <span class="sort-icon">❓</span><span class="sort-label">Terti.</span>
+          <span class="sort-icon">❓</span><span class="sort-label">Tertiaires</span>
         </button>
         <button class="sort-btn" data-tab="inv" id="inv-tab-btn">
-          <span class="sort-icon">🎒</span><span class="sort-label">Inv.</span>
+          <span class="sort-icon">🎒</span><span class="sort-label">Inventaire</span>
         </button>
       </div>
 
@@ -205,15 +205,19 @@
     });
   </script>
 
-  <!-- Inline module : évite les problèmes MIME type avec Live Server -->
+  <!-- Charge items + regions depuis Firestore puis lance l'init -->
   <script type="module">
     import { loadCollection, COL } from '../firebase.js';
     (async () => {
       try {
-        const items = await loadCollection(COL.items);
+        const [items, regions] = await Promise.all([
+          loadCollection(COL.items),
+          loadCollection(COL.regions),
+        ]);
         DB_ITEMS.push(...items);
+        DB_REGIONS.push(...regions);
       } catch (err) {
-        console.error('[Quêtes] Erreur chargement Firestore items :', err);
+        console.error('[Quêtes] Erreur chargement Firestore :', err);
       }
       window._initQuetes?.();
     })();
