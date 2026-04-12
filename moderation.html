@@ -199,7 +199,7 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 <!-- Main layout (visible une fois connecté) -->
 <div class="layout" id="main-layout" style="display:none;">
   <aside class="sidebar">
-    <button class="btn btn-ghost" onclick="showSubmissions();loadSubmissions()" style="width:100%;justify-content:center;font-size:12px;margin-bottom:8px;">🔄 Rafraîchir</button>
+    <button class="btn btn-ghost" onclick="window._modDoRefresh()" style="width:100%;justify-content:center;font-size:12px;margin-bottom:8px;">🔄 Rafraîchir</button>
     <div class="filter-group">
       <div class="filter-label">Statut</div>
       <button class="filter-btn active" data-status="pending"  onclick="setFilter('status','pending')">⏳ En attente  <span class="filter-count" id="count-pending">0</span></button>
@@ -216,10 +216,11 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     </div>
     <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">
     <div class="filter-label" style="margin-top:4px;">Admin</div>
-    <button class="filter-btn" id="btn-mob-order"  onclick="showMobOrder()">🔢 Ordre des mobs</button>
-    <button class="filter-btn" id="btn-item-order" onclick="showItemOrder()">⚔️ Ordre des items</button>
-    <button class="filter-btn" id="btn-pnj-order"  onclick="showPnjOrder()">🧑 Ordre des PNJ</button>
-    <button class="filter-btn" id="btn-region-order" onclick="showRegionOrder()">📍 Ordre des régions</button>
+    <button class="filter-btn" id="btn-mob-order"  onclick="showMobOrder()">🔢 Liste des mobs</button>
+    <button class="filter-btn" id="btn-item-order" onclick="showItemOrder()">⚔️ Liste des items</button>
+    <button class="filter-btn" id="btn-pnj-order"  onclick="showPnjOrder()">🧑 Liste des PNJ</button>
+    <button class="filter-btn" id="btn-region-order" onclick="showRegionOrder()">📍 Liste des régions</button>
+    <button class="filter-btn" id="btn-quest-order"  onclick="showQuestOrder()">📜 Liste des quêtes</button>
     <button class="filter-btn" id="btn-ghost-ids"  onclick="showGhostIds()">🔗 IDs fantômes</button>
     <button class="filter-btn" id="btn-region-orphans" onclick="showRegionOrphans()">🗺️ Régions orphelines</button>
     <button class="filter-btn" id="btn-mob-orphans"    onclick="showMobOrphans()">👾 Mobs orphelins</button>
@@ -234,7 +235,7 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
   <!-- Panneau Ordre des mobs -->
   <main class="main" id="mob-order-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:15px;font-weight:700;">🔢 Ordre des mobs</span>
+      <span style="font-size:15px;font-weight:700;">🔢 Liste des mobs</span>
       <button class="btn btn-ghost" id="btn-save-order" onclick="saveMobOrder()" style="font-size:12px;">💾 Sauvegarder</button>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
@@ -308,7 +309,7 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
       <button class="btn btn-ghost" onclick="loadMobOrphans()" style="font-size:12px;">🔄 Rafraîchir</button>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
-      Détecte les <b>mobs sans région</b> et les <b>mobs sans loot</b>.
+      Détecte les <b>mobs sans région</b>.
     </p>
     <div id="mob-orphan-list"><div class="empty">Chargement…</div></div>
   </main>
@@ -326,6 +327,20 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
            oninput="filterRegionOrder()"
            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
     <div id="region-order-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Liste des quêtes -->
+  <main class="main" id="quest-order-panel" style="display:none;">
+    <div style="margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">📜 Liste des quêtes</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+      Toutes les quêtes approuvées dans Firestore, groupées par type et palier.
+    </p>
+    <input type="search" id="quest-order-search" placeholder="🔍 Rechercher une quête…"
+           oninput="renderQuestOrder()"
+           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
+    <div id="quest-order-list"><div class="empty">Chargement…</div></div>
   </main>
 
   <!-- Panneau Contrôles Creator -->
@@ -458,7 +473,22 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('header-role').textContent   = currentRole;
   document.getElementById('btn-logout').style.display  = '';
 
+  const savedPanel = sessionStorage.getItem('modPanel');
+  sessionStorage.removeItem('modPanel');
+  const panelFns = {
+    mob:             showMobOrder,
+    item:            showItemOrder,
+    pnj:             showPnjOrder,
+    region:          showRegionOrder,
+    quest:           showQuestOrder,
+    'ghost-ids':     showGhostIds,
+    'region-orphans': showRegionOrphans,
+    'mob-orphans':   showMobOrphans,
+  };
   loadSubmissions();
+  if (savedPanel && panelFns[savedPanel]) {
+    panelFns[savedPanel]();
+  }
 });
 
 function showAuthWall(msg) {
@@ -606,8 +636,8 @@ function buildCard(sub) {
   card.className = `sub-card status-${sub.status}`;
   card.id = `card-${sub._id}`;
 
-  const typeLabels = { item:'⚔️ Item', pnj:'🧑 PNJ', region:'📍 Région' };
-  const name = sub.data?.name || sub._id;
+  const typeLabels = { item:'⚔️ Item', mob:'👾 Mob', pnj:'🧑 PNJ', region:'📍 Région', quest:'📜 Quête' };
+  const name = sub.data?.titre || sub.data?.name || sub._id;
   const ts   = sub.submittedAt?.toDate ? sub.submittedAt.toDate().toLocaleString('fr-FR') : '—';
   const code = toJSStr(sub.data || {}, 0) + ',';
 
@@ -860,7 +890,7 @@ window.approve = async (id) => {
   if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
 
   try {
-    const colMap = { item: 'items', mob: 'mobs', pnj: 'personnages', region: 'regions' };
+    const colMap = { item: 'items', mob: 'mobs', pnj: 'personnages', region: 'regions', quest: 'quetes' };
     const target = colMap[sub.type];
     if (!target) throw new Error('Type inconnu : ' + sub.type);
 
@@ -938,13 +968,33 @@ function mobTag(mob) {
   return `P${mob.palier||1} ${TYPE_LABELS_MOD[mob.type]||mob.type}`;
 }
 
+let _activePanel = 'submissions';
+window._modDoRefresh = () => { sessionStorage.setItem('modPanel', _activePanel); location.reload(); };
+
+function refreshCurrentPanel() {
+  const refreshMap = {
+    quest:          () => { delete _modCache['quetes'];      loadQuestOrder();    },
+    region:         () => { delete _modCache['regions'];     loadRegionOrder();   },
+    mob:            () => { delete _modCache['mobs'];        loadMobOrder();      },
+    item:           () => { delete _modCache['items'];       loadItemOrder();     },
+    pnj:            () => { delete _modCache['personnages']; loadPnjOrder();      },
+    'ghost-ids':    () => loadGhostIds(),
+    'region-orphans': () => loadRegionOrphans(),
+    'mob-orphans':  () => loadMobOrphans(),
+    submissions:    () => loadSubmissions(),
+  };
+  (refreshMap[_activePanel] || refreshMap.submissions)();
+}
+
 window.showSubmissions = function showSubmissions() {
+  _activePanel = 'submissions';
   document.getElementById('submissions-list').style.display    = '';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
@@ -955,6 +1005,7 @@ window.showSubmissions = function showSubmissions() {
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
@@ -963,6 +1014,7 @@ window.showSubmissions = function showSubmissions() {
 }
 
 window.showMobOrder = async () => {
+  _activePanel = 'mob';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
@@ -970,6 +1022,7 @@ window.showMobOrder = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
@@ -979,6 +1032,7 @@ window.showMobOrder = async () => {
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-mob-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -1193,6 +1247,7 @@ function itemTag(item) {
 }
 
 window.showItemOrder = async () => {
+  _activePanel = 'item';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
@@ -1200,6 +1255,7 @@ window.showItemOrder = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
@@ -1209,6 +1265,7 @@ window.showItemOrder = async () => {
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-item-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -1494,6 +1551,7 @@ let _pnjCollapsed       = new Set(); // IDs de régions réduites
 let _pnjPalierCollapsed = new Set(); // paliers réduits
 
 window.showPnjOrder = async () => {
+  _activePanel = 'pnj';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
@@ -1501,6 +1559,7 @@ window.showPnjOrder = async () => {
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
@@ -1510,6 +1569,7 @@ window.showPnjOrder = async () => {
   document.getElementById('btn-item-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -1842,6 +1902,7 @@ let _regionDragSrc    = null;
 let _regionPalierCollapsed = new Set();
 
 window.showRegionOrder = async () => {
+  _activePanel = 'region';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('item-order-panel').style.display    = 'none';
@@ -2045,6 +2106,7 @@ window.saveRegionOrder = async () => {
 
 // ── Ghost ID tracker ─────────────────────────────────
 window.showGhostIds = async () => {
+  _activePanel = 'ghost-ids';
   document.getElementById('submissions-list').style.display   = 'none';
   document.getElementById('mob-order-panel').style.display    = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
@@ -2052,6 +2114,7 @@ window.showGhostIds = async () => {
   document.getElementById('item-order-panel').style.display   = 'none';
   document.getElementById('pnj-order-panel').style.display    = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
@@ -2061,6 +2124,7 @@ window.showGhostIds = async () => {
   document.getElementById('btn-item-order').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
@@ -2073,6 +2137,7 @@ window.showGhostIds = async () => {
 // RÉGIONS ORPHELINES
 // ══════════════════════════════════════════════════════
 window.showRegionOrphans = async () => {
+  _activePanel = 'region-orphans';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
@@ -2081,6 +2146,7 @@ window.showRegionOrphans = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = 'none';
@@ -2090,6 +2156,7 @@ window.showRegionOrphans = async () => {
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.add('active');
@@ -2160,10 +2227,7 @@ window.loadRegionOrphans = async function loadRegionOrphans() {
     ]);
 
     const regionIds = new Set(regions.map(r => r.id));
-    // Seuls les mobs dont la région est un ID valide comptent comme "référencés"
-    const referencedRegions = new Set(mobs.filter(m => regionIds.has(m.region)).map(m => m.region));
     const mobsWithBadRegion = mobs.filter(m => m.region && !regionIds.has(m.region));
-    const emptyRegions      = regions.filter(r => !referencedRegions.has(r.id));
 
     listEl.innerHTML = '';
 
@@ -2175,14 +2239,60 @@ window.loadRegionOrphans = async function loadRegionOrphans() {
     if (!active1.length && !ignored1.length) {
       const ok = document.createElement('div'); ok.style.cssText='font-size:12px;color:var(--success);padding:6px 0;'; ok.textContent='✓ Aucun mob avec une région invalide.'; listEl.appendChild(ok);
     } else if (active1.length) {
+      // Map nom normalisé → ID de région (pour auto-correction)
+      const regionByName = new Map(regions.map(r => [r.name?.trim().toLowerCase(), r.id]));
+      const autoFixable = active1.filter(m => regionByName.has(m.region?.trim().toLowerCase()));
+
+      if (autoFixable.length) {
+        const autoBar = document.createElement('div');
+        autoBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;';
+        autoBar.innerHTML = `<span style="color:var(--success);">🔧 <b>${autoFixable.length}</b> mob${autoFixable.length>1?'s':''} peut être corrigé automatiquement (nom exact trouvé dans les régions)</span>`;
+        const autoBtn = document.createElement('button');
+        autoBtn.className = 'btn btn-ghost';
+        autoBtn.style.cssText = 'font-size:11px;padding:4px 12px;margin-left:auto;';
+        autoBtn.textContent = `🔧 Tout auto-corriger (${autoFixable.length})`;
+        autoBtn.addEventListener('click', async () => {
+          autoBtn.disabled = true; autoBtn.textContent = 'Correction en cours…';
+          let done = 0, failed = 0;
+          for (const mob of autoFixable) {
+            const rid = regionByName.get(mob.region?.trim().toLowerCase());
+            if (!rid) { failed++; continue; }
+            try {
+              await updateDoc(doc(db, 'mobs', mob.id), { region: rid });
+              invalidateModCache('mobs');
+              done++;
+            } catch(e) { failed++; }
+          }
+          autoBtn.textContent = `✓ ${done} corrigé${done>1?'s':''}${failed?` · ${failed} échec${failed>1?'s':''}` : ''}`;
+          setTimeout(() => loadRegionOrphans(), 800);
+        });
+        autoBar.appendChild(autoBtn);
+        listEl.appendChild(autoBar);
+      }
+
       const table = document.createElement('table'); table.className='ghost-table';
-      table.innerHTML=`<thead><tr><th>Mob</th><th>ID mob</th><th>Valeur région (texte libre)</th><th></th></tr></thead>`;
+      table.innerHTML=`<thead><tr><th>Mob</th><th>ID mob</th><th>Valeur région (texte libre)</th><th>→ Région détectée</th><th></th></tr></thead>`;
       const tbody = document.createElement('tbody');
       for (const mob of active1) {
+        const matchedId = regionByName.get(mob.region?.trim().toLowerCase());
+        const matchedRegion = matchedId ? regions.find(r => r.id === matchedId) : null;
+        const detectedCell = matchedRegion
+          ? `<span style="color:var(--success);font-family:monospace;font-size:12px;">${escHtml(matchedRegion.name)} <span style="opacity:.6;">(${escHtml(matchedId)})</span></span>`
+          : `<span style="color:var(--muted);font-size:11px;">—</span>`;
         const tr = document.createElement('tr');
-        tr.innerHTML=`<td>${escHtml(mob.name||mob.id)}</td><td><span class="ghost-id">${escHtml(mob.id)}</span></td><td><span style="color:var(--warn);font-family:monospace;font-size:12px;">${escHtml(mob.region)}</span></td><td style="white-space:nowrap;display:flex;gap:6px;"></td>`;
+        tr.innerHTML=`<td>${escHtml(mob.name||mob.id)}</td><td><span class="ghost-id">${escHtml(mob.id)}</span></td><td><span style="color:var(--warn);font-family:monospace;font-size:12px;">${escHtml(mob.region)}</span></td><td>${detectedCell}</td><td style="white-space:nowrap;display:flex;gap:6px;"></td>`;
         const td = tr.querySelector('td:last-child');
-        const editBtn = document.createElement('button'); editBtn.className='btn btn-ghost'; editBtn.style.cssText='font-size:11px;padding:4px 10px;'; editBtn.textContent='✏️ Corriger';
+        if (matchedId) {
+          const fixBtn = document.createElement('button'); fixBtn.className='btn btn-ghost'; fixBtn.style.cssText='font-size:11px;padding:4px 10px;color:var(--success);'; fixBtn.textContent='🔧 Corriger';
+          fixBtn.addEventListener('click', async () => {
+            fixBtn.disabled = true; fixBtn.textContent = '…';
+            await updateDoc(doc(db, 'mobs', mob.id), { region: matchedId });
+            invalidateModCache('mobs');
+            loadRegionOrphans();
+          });
+          td.appendChild(fixBtn);
+        }
+        const editBtn = document.createElement('button'); editBtn.className='btn btn-ghost'; editBtn.style.cssText='font-size:11px;padding:4px 10px;'; editBtn.textContent='✏️ Éditer';
         editBtn.addEventListener('click', () => showEditor('mobs', mob.id, mob, 'region-orphan'));
         const ignBtn = document.createElement('button'); ignBtn.className='btn btn-ghost'; ignBtn.style.cssText='font-size:11px;padding:4px 10px;opacity:.7;'; ignBtn.textContent='✓ C\'est normal';
         ignBtn.addEventListener('click', () => { _addIgnored('region-bad-mob', mob.id); loadRegionOrphans(); });
@@ -2204,44 +2314,6 @@ window.loadRegionOrphans = async function loadRegionOrphans() {
       _orphanIgnoredToggle(listEl, rows);
     }
 
-    // ── Section 2 : régions sans mobs ───────────────────
-    const active2  = emptyRegions.filter(r => !_isIgnored('region-empty', r.id)).sort((a,b)=>(a.palier||1)-(b.palier||1)||(a.name||'').localeCompare(b.name||'','fr'));
-    const ignored2 = emptyRegions.filter(r =>  _isIgnored('region-empty', r.id)).sort((a,b)=>(a.palier||1)-(b.palier||1)||(a.name||'').localeCompare(b.name||'','fr'));
-    listEl.appendChild(_orphanSubHead('🟡 Régions sans aucun mob', active2.length, ignored2.length));
-
-    if (!active2.length && !ignored2.length) {
-      const ok = document.createElement('div'); ok.style.cssText='font-size:12px;color:var(--success);padding:6px 0;'; ok.textContent='✓ Toutes les régions ont au moins un mob.'; listEl.appendChild(ok);
-    } else if (active2.length) {
-      const table = document.createElement('table'); table.className='ghost-table';
-      table.innerHTML=`<thead><tr><th>Région</th><th>ID</th><th>Palier</th><th></th></tr></thead>`;
-      const tbody = document.createElement('tbody');
-      for (const r of active2) {
-        const codexBadge = r.inCodex===false
-          ? `<span style="font-size:10px;font-weight:700;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:2px 7px;">Hors Codex</span>`
-          : `<span style="font-size:10px;font-weight:700;color:var(--accent);background:rgba(122,90,248,.1);border:1px solid rgba(122,90,248,.3);border-radius:8px;padding:2px 7px;">Codex</span>`;
-        const tr = document.createElement('tr');
-        tr.innerHTML=`<td>${escHtml(r.name||r.id)} ${codexBadge}</td><td><span class="ghost-id">${escHtml(r.id)}</span></td><td>P${r.palier||'?'}</td><td style="white-space:nowrap;display:flex;gap:6px;"></td>`;
-        const td = tr.querySelector('td:last-child');
-        const editBtn = document.createElement('button'); editBtn.className='btn btn-ghost'; editBtn.style.cssText='font-size:11px;padding:4px 10px;'; editBtn.textContent='✏️ Voir';
-        editBtn.addEventListener('click', () => showEditor('regions', r.id, r, 'region-orphan'));
-        const ignBtn = document.createElement('button'); ignBtn.className='btn btn-ghost'; ignBtn.style.cssText='font-size:11px;padding:4px 10px;opacity:.7;'; ignBtn.textContent='✓ C\'est normal';
-        ignBtn.addEventListener('click', () => { _addIgnored('region-empty', r.id); loadRegionOrphans(); });
-        td.appendChild(editBtn); td.appendChild(ignBtn);
-        tbody.appendChild(tr);
-      }
-      table.appendChild(tbody); listEl.appendChild(table);
-    }
-    if (ignored2.length) {
-      const rows = ignored2.map(r => {
-        const tr = document.createElement('tr'); tr.style.opacity='.5';
-        tr.innerHTML=`<td>${escHtml(r.name||r.id)}</td><td><span class="ghost-id">${escHtml(r.id)}</span></td><td>P${r.palier||'?'}</td><td></td>`;
-        const restBtn = document.createElement('button'); restBtn.className='btn btn-ghost'; restBtn.style.cssText='font-size:11px;padding:4px 10px;'; restBtn.textContent='↩ Restaurer';
-        restBtn.addEventListener('click', () => { _removeIgnored('region-empty', r.id); loadRegionOrphans(); });
-        tr.querySelector('td:last-child').appendChild(restBtn);
-        return { tr };
-      });
-      _orphanIgnoredToggle(listEl, rows);
-    }
   } catch(e) {
     listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
   }
@@ -2251,6 +2323,7 @@ window.loadRegionOrphans = async function loadRegionOrphans() {
 // MOBS ORPHELINS
 // ══════════════════════════════════════════════════════
 window.showMobOrphans = async () => {
+  _activePanel = 'mob-orphans';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
@@ -2259,6 +2332,7 @@ window.showMobOrphans = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = 'none';
@@ -2268,6 +2342,7 @@ window.showMobOrphans = async () => {
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.add('active');
@@ -2287,21 +2362,8 @@ window.loadMobOrphans = async function loadMobOrphans() {
 
     const regionIds = new Set(regions.map(r => r.id));
 
-    // Section 1 : région absente OU région texte libre (pas un ID valide)
-    const mobsNoValidRegion = mobs.filter(m => !m.region || !regionIds.has(m.region));
-
-    // Section 2 : mobs sans loot
-    const mobsNoLoot = mobs.filter(m => !m.loot || m.loot.length === 0);
-
-    // Section 3 : mobs non référencés dans item.obtain
-    const reMobRef = /\[(?!npc:)([\w]+)\|[^\]]*\]\[/g;
-    const referencedMobIds = new Set();
-    for (const item of items) {
-      if (!item.obtain) continue;
-      let match; reMobRef.lastIndex = 0;
-      while ((match = reMobRef.exec(item.obtain)) !== null) referencedMobIds.add(match[1]);
-    }
-    const mobsUnreferenced = mobs.filter(m => !referencedMobIds.has(m.id));
+    // Section 1 : mobs sans région du tout (les mobs avec région invalide sont dans "Région Orphelins")
+    const mobsNoValidRegion = mobs.filter(m => !m.region);
 
     listEl.innerHTML = '';
 
@@ -2351,12 +2413,10 @@ window.loadMobOrphans = async function loadMobOrphans() {
 
     makeMobSection(
       'mob-region',
-      '🔴 Mobs sans région valide',
+      '🔴 Mobs sans région',
       mobsNoValidRegion,
       { head: 'Valeur actuelle', val: m => m.region || '' }
     );
-    makeMobSection('mob-loot',   '🟡 Mobs sans loot',                   mobsNoLoot,        null);
-    makeMobSection('mob-obtain', '🔵 Mobs absents des champs obtain',   mobsUnreferenced,  null);
 
   } catch(e) {
     listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
@@ -2524,11 +2584,155 @@ function _typeLabel(t) {
 
 const _GEN_FIELD_ORDER = [
   'id','name','type','palier','rarity','category','cat','lvl','set','behavior','difficulty',
-  'region','regionId','tag','inCodex','sensible','twoHanded','rune_slots',
+  'region','regionId','tag','inCodex','color','sensible','twoHanded','rune_slots',
   'img','lore','obtain','respawnDelay','spawnTime',
   'stats','classes','tags','effects','craft','loot','sells','zones','drops','morceaux','camera','attacks',
   'ordre','_order'
 ];
+
+// ── Color Picker complet (HSV) ────────────────────
+let _cpState = {};   // { [pickerId]: { h, s, v } }
+let _cpDrag  = null; // { id, type: 'sv'|'hue' }
+
+function _cpHsvToRgb(h, s, v) {
+  s /= 100; v /= 100;
+  const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+  let r = 0, g = 0, b = 0;
+  if      (h <  60) { r=c; g=x; }
+  else if (h < 120) { r=x; g=c; }
+  else if (h < 180) {      g=c; b=x; }
+  else if (h < 240) {      g=x; b=c; }
+  else if (h < 300) { r=x;      b=c; }
+  else              { r=c;      b=x; }
+  return [Math.round((r+m)*255), Math.round((g+m)*255), Math.round((b+m)*255)];
+}
+function _cpRgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+  let h = 0;
+  if (d > 0) {
+    if      (max === r) h = ((g-b)/d + (g<b?6:0)) * 60;
+    else if (max === g) h = ((b-r)/d + 2) * 60;
+    else                h = ((r-g)/d + 4) * 60;
+  }
+  return [h, max===0 ? 0 : d/max*100, max*100];
+}
+function _cpHexToRgb(hex) {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+function _cpRgbToHex(r,g,b) {
+  return '#' + [r,g,b].map(v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+}
+function _makeColorObj(hex) {
+  const [r,g,b] = _cpHexToRgb(hex);
+  return { color: hex, dim: `rgba(${r},${g},${b},.35)`, glow: `rgba(${r},${g},${b},.08)` };
+}
+
+function _cpUpdate(id, h, s, v) {
+  h = ((h % 360) + 360) % 360;
+  s = Math.max(0, Math.min(100, s));
+  v = Math.max(0, Math.min(100, v));
+  _cpState[id] = { h, s, v };
+
+  const [r,g,b] = _cpHsvToRgb(h, s, v);
+  const hex     = _cpRgbToHex(r, g, b);
+  const wrap    = document.getElementById(id);
+  if (!wrap) return;
+
+  // Carré SV — couleur de fond = teinte pure
+  const pureHex = _cpRgbToHex(..._cpHsvToRgb(h, 100, 100));
+  const svBg = wrap.querySelector('.ed-cp-sv-bg');
+  if (svBg) svBg.style.background = pureHex;
+
+  // Curseur SV
+  const cur = wrap.querySelector('.ed-cp-cursor');
+  if (cur) { cur.style.left = s+'%'; cur.style.top = (100-v)+'%'; cur.style.background = hex; }
+
+  // Thumb teinte
+  const hThumb = wrap.querySelector('.ed-cp-hue-thumb');
+  if (hThumb) { hThumb.style.left = (h/360*100)+'%'; hThumb.style.background = pureHex; }
+
+  // Input hex
+  const hexIn = wrap.querySelector('.ed-cp-hex-in');
+  if (hexIn && document.activeElement !== hexIn) hexIn.value = hex;
+
+  // Inputs RGB
+  const rgbIns = wrap.querySelectorAll('.ed-cp-rgb-in');
+  if (rgbIns[0] && document.activeElement !== rgbIns[0]) rgbIns[0].value = r;
+  if (rgbIns[1] && document.activeElement !== rgbIns[1]) rgbIns[1].value = g;
+  if (rgbIns[2] && document.activeElement !== rgbIns[2]) rgbIns[2].value = b;
+
+  // Swatches + labels
+  const colorObj = _makeColorObj(hex);
+  const sw = wrap.querySelector('.ed-cp-swatch'), swd = wrap.querySelector('.ed-cp-swatch-dim');
+  if (sw)  sw.style.background  = hex;
+  if (swd) swd.style.background = colorObj.dim;
+  const hs = wrap.querySelector('.ed-cp-hex-lbl'), ds = wrap.querySelector('.ed-cp-dim-lbl'), gs = wrap.querySelector('.ed-cp-glow-lbl');
+  if (hs) hs.textContent = hex;
+  if (ds) ds.textContent = colorObj.dim;
+  if (gs) gs.textContent = colorObj.glow;
+
+  // Textarea JSON (valeur collectée par _collectGenericForm)
+  const ta = wrap.querySelector('[data-gf-type="json"]');
+  if (ta) ta.value = JSON.stringify(colorObj);
+
+  // Palette — marquer la pastille active
+  wrap.querySelectorAll('.ed-cp-preset').forEach(p => {
+    p.style.outline       = p.dataset.hex === hex ? '2px solid #fff' : 'none';
+    p.style.outlineOffset = '1px';
+  });
+}
+
+document.addEventListener('mousemove', e => {
+  if (!_cpDrag) return;
+  const wrap = document.getElementById(_cpDrag.id);
+  if (!wrap) { _cpDrag = null; return; }
+  const st = _cpState[_cpDrag.id] || { h:0, s:100, v:100 };
+  if (_cpDrag.type === 'sv') {
+    const rect = wrap.querySelector('.ed-cp-sv').getBoundingClientRect();
+    _cpUpdate(_cpDrag.id, st.h,
+      Math.max(0,Math.min(100,(e.clientX-rect.left)/rect.width*100)),
+      Math.max(0,Math.min(100,100-(e.clientY-rect.top)/rect.height*100)));
+  } else {
+    const rect = wrap.querySelector('.ed-cp-hue').getBoundingClientRect();
+    _cpUpdate(_cpDrag.id, Math.max(0,Math.min(360,(e.clientX-rect.left)/rect.width*360)), st.s, st.v);
+  }
+});
+document.addEventListener('mouseup', () => { _cpDrag = null; });
+
+window.cpSvDown = function(e, id) {
+  e.preventDefault(); _cpDrag = { id, type:'sv' };
+  const rect = e.currentTarget.getBoundingClientRect(), st = _cpState[id]||{h:0,s:100,v:100};
+  _cpUpdate(id, st.h,
+    Math.max(0,Math.min(100,(e.clientX-rect.left)/rect.width*100)),
+    Math.max(0,Math.min(100,100-(e.clientY-rect.top)/rect.height*100)));
+};
+window.cpHueDown = function(e, id) {
+  e.preventDefault(); _cpDrag = { id, type:'hue' };
+  const rect = e.currentTarget.getBoundingClientRect(), st = _cpState[id]||{h:0,s:100,v:100};
+  _cpUpdate(id, Math.max(0,Math.min(360,(e.clientX-rect.left)/rect.width*360)), st.s, st.v);
+};
+window.cpHexInput = function(input, id) {
+  const hex = input.value.trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+  const [r,g,b] = _cpHexToRgb(hex); const [h,s,v] = _cpRgbToHsv(r,g,b);
+  _cpUpdate(id, h, s, v);
+};
+window.cpRgbInput = function(input, id) {
+  const wrap = document.getElementById(id); if (!wrap) return;
+  const ins = wrap.querySelectorAll('.ed-cp-rgb-in');
+  const r = Math.max(0,Math.min(255,parseInt(ins[0]?.value)||0));
+  const g = Math.max(0,Math.min(255,parseInt(ins[1]?.value)||0));
+  const b = Math.max(0,Math.min(255,parseInt(ins[2]?.value)||0));
+  const [h,s,v] = _cpRgbToHsv(r,g,b);
+  _cpUpdate(id, h, s, v);
+};
+window.edPickPreset = function(swatch) {
+  const wrap = swatch.closest('.ed-color-picker'); if (!wrap) return;
+  const [r,g,b] = _cpHexToRgb(swatch.dataset.hex);
+  const [h,s,v] = _cpRgbToHsv(r,g,b);
+  _cpUpdate(wrap.id, h, s, v);
+};
 
 function _genValueHtml(key, val, col) {
   const t = _typeOf(val);
@@ -2549,6 +2753,82 @@ function _genValueHtml(key, val, col) {
 
   if (t === 'int' || t === 'float') {
     return `<input class="ed-input" type="number" step="${t === 'float' ? 'any' : '1'}" data-gf-type="number" value="${_ee(String(val ?? ''))}">`;
+  }
+
+  // Color picker complet pour le champ color des régions
+  if (key === 'color' && col === 'regions') {
+    const hex = (val && typeof val === 'object' && val.color) ? val.color : '#9a9ab0';
+    const obj = _makeColorObj(hex);
+    const CP  = 'ed-cp-reg';  // ID fixe (un seul éditeur ouvert à la fois)
+
+    const PRESETS = [
+      { label:'Naturel',  colors:['#4ade80','#22c55e','#86efac','#a3e635','#34d399'] },
+      { label:'Chaud',    colors:['#fbbf24','#f59e0b','#e0a050','#fb923c','#f97316'] },
+      { label:'Feu',      colors:['#f87171','#ef4444','#f43f5e','#fb7185','#dc2626'] },
+      { label:'Froid',    colors:['#60a5fa','#38bdf8','#7dd3fc','#a5f3fc','#818cf8'] },
+      { label:'Mystique', colors:['#c084fc','#a855f7','#e879f9','#f0abfc','#d946ef'] },
+      { label:'Neutre',   colors:['#9a9ab0','#94a3b8','#6b7280','#d4d4d8','#a1a1aa'] },
+    ];
+    const paletteHtml = PRESETS.map(g => `
+      <div style="display:contents;">
+        <span style="font-size:10px;color:var(--muted);grid-column:1;align-self:center;white-space:nowrap;">${_ee(g.label)}</span>
+        ${g.colors.map(c => `<div class="ed-cp-preset" data-hex="${_ee(c)}" onclick="edPickPreset(this)"
+          style="width:20px;height:20px;border-radius:4px;background:${_ee(c)};cursor:pointer;border:1px solid rgba(255,255,255,.15);transition:transform .12s;"
+          onmouseover="this.style.transform='scale(1.25)'" onmouseout="this.style.transform=''"></div>`).join('')}
+      </div>`).join('');
+
+    return `<div class="ed-color-picker" id="${_ee(CP)}" data-init-hex="${_ee(hex)}"
+      style="display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;max-width:320px;">
+
+      <!-- Carré Saturation / Valeur -->
+      <div class="ed-cp-sv" style="position:relative;width:100%;height:180px;border-radius:5px;cursor:crosshair;user-select:none;flex-shrink:0;"
+           onmousedown="cpSvDown(event,'${_ee(CP)}')">
+        <div class="ed-cp-sv-bg" style="position:absolute;inset:0;border-radius:5px;"></div>
+        <div style="position:absolute;inset:0;border-radius:5px;background:linear-gradient(to right,#fff,transparent);"></div>
+        <div style="position:absolute;inset:0;border-radius:5px;background:linear-gradient(to bottom,transparent,#000);"></div>
+        <div class="ed-cp-cursor" style="position:absolute;width:13px;height:13px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.6);transform:translate(-50%,-50%);pointer-events:none;"></div>
+      </div>
+
+      <!-- Slider Teinte -->
+      <div class="ed-cp-hue" style="position:relative;height:14px;border-radius:7px;cursor:pointer;user-select:none;
+           background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);"
+           onmousedown="cpHueDown(event,'${_ee(CP)}')">
+        <div class="ed-cp-hue-thumb" style="position:absolute;top:50%;width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.3),0 2px 4px rgba(0,0,0,.5);transform:translate(-50%,-50%);pointer-events:none;"></div>
+      </div>
+
+      <!-- Swatches + labels -->
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="ed-cp-swatch"     style="width:32px;height:32px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,.2);" title="color"></div>
+        <div class="ed-cp-swatch-dim" style="width:32px;height:32px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,.1);" title="dim (opacité 35%)"></div>
+        <div style="font-family:monospace;font-size:11px;display:flex;flex-direction:column;gap:1px;min-width:0;overflow:hidden;">
+          <span class="ed-cp-hex-lbl"  style="color:var(--text);font-weight:600;"></span>
+          <span class="ed-cp-dim-lbl"  style="color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+          <span class="ed-cp-glow-lbl" style="color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+        </div>
+      </div>
+
+      <!-- Inputs Hex + RGB -->
+      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--muted);width:20px;">#</span>
+        <input class="ed-input ed-cp-hex-in" type="text" maxlength="7"
+               style="font-family:monospace;width:76px;padding:4px 6px;font-size:13px;"
+               oninput="cpHexInput(this,'${_ee(CP)}')" spellcheck="false" autocomplete="off">
+        <span style="font-size:11px;color:var(--muted);">R</span>
+        <input class="ed-input ed-cp-rgb-in" type="number" min=0 max=255 style="width:44px;padding:4px;" oninput="cpRgbInput(this,'${_ee(CP)}')">
+        <span style="font-size:11px;color:var(--muted);">G</span>
+        <input class="ed-input ed-cp-rgb-in" type="number" min=0 max=255 style="width:44px;padding:4px;" oninput="cpRgbInput(this,'${_ee(CP)}')">
+        <span style="font-size:11px;color:var(--muted);">B</span>
+        <input class="ed-input ed-cp-rgb-in" type="number" min=0 max=255 style="width:44px;padding:4px;" oninput="cpRgbInput(this,'${_ee(CP)}')">
+      </div>
+
+      <!-- Palette de présélections -->
+      <div style="display:grid;grid-template-columns:52px repeat(5,20px);gap:4px 6px;align-items:center;padding-top:4px;border-top:1px solid var(--border);">
+        ${paletteHtml}
+      </div>
+
+      <!-- Valeur sérialisée (lue par _collectGenericForm) -->
+      <textarea class="ed-json-ta" data-gf-type="json" spellcheck="false" style="display:none;">${_ee(JSON.stringify(obj))}</textarea>
+    </div>`;
   }
 
   if (t === 'array' || t === 'map') {
@@ -2615,6 +2895,11 @@ function _genValueHtml(key, val, col) {
 }
 
 function _buildGenericForm(data, col) {
+  // Auto-injecter le champ color pour les régions qui n'en ont pas encore
+  if (col === 'regions' && !('color' in data)) {
+    data = { ...data, color: _makeColorObj('#9a9ab0') };
+  }
+
   _editorOrigData = { ...data };
 
   const entries = Object.entries(data).sort(([ak, av], [bk, bv]) => {
@@ -2808,6 +3093,7 @@ window.showEditor = async function(collection, id, data, origin) {
   document.getElementById('pnj-order-panel').style.display    = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = '';
@@ -2816,6 +3102,7 @@ window.showEditor = async function(collection, id, data, origin) {
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
@@ -2839,6 +3126,15 @@ window.showEditor = async function(collection, id, data, origin) {
 
   // Construire le formulaire générique
   document.getElementById('editor-form').innerHTML = _buildGenericForm(data, collection);
+
+  // Initialiser le color picker si présent (régions)
+  const cpEl = document.querySelector('#editor-form .ed-color-picker[data-init-hex]');
+  if (cpEl) {
+    const initHex    = cpEl.dataset.initHex || '#9a9ab0';
+    const [ir,ig,ib] = _cpHexToRgb(initHex);
+    const [ih,is,iv] = _cpRgbToHsv(ir, ig, ib);
+    _cpUpdate(cpEl.id, ih, is, iv);
+  }
 
   // Peupler la datalist des sets (items uniquement)
   if (collection === 'items') await _populateSetDatalist();
@@ -2864,6 +3160,7 @@ window.editorGoBack = function() {
   if (_editorOrigin === 'item')           { showItemOrder();      return; }
   if (_editorOrigin === 'pnj')            { showPnjOrder();       return; }
   if (_editorOrigin === 'region')         { showRegionOrder();    return; }
+  if (_editorOrigin === 'quest')          { showQuestOrder();     return; }
   if (_editorOrigin === 'region-orphan')  { showRegionOrphans(); return; }
   if (_editorOrigin === 'mob-orphan')     { showMobOrphans();    return; }
   showSubmissions();
@@ -2975,6 +3272,7 @@ window.showCreatorControls = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
@@ -2984,6 +3282,7 @@ window.showCreatorControls = async () => {
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.add('active');
@@ -3087,6 +3386,7 @@ window.showDiscordWebhooks = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
@@ -3097,6 +3397,7 @@ window.showDiscordWebhooks = async () => {
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
@@ -3359,6 +3660,144 @@ window.deleteSub = async (id) => {
     alert('⛔ Erreur : ' + e.message);
   }
 };
+
+// ═══════════════════════════════════════════════════
+// LISTE DES QUÊTES
+// ═══════════════════════════════════════════════════
+let _questOrderData = [];
+
+const QUEST_TYPE_ORDER  = ['main', 'secondary', 'tertiary'];
+const QUEST_TYPE_LABELS_MOD = { main: '⚔️ Principale', secondary: '🗺️ Secondaire', tertiary: '📋 Tertiaire' };
+const QUEST_TYPE_COLORS_MOD = { main: '#e07c50',        secondary: '#6aaad4',         tertiary: '#82c470' };
+
+window.showQuestOrder = async () => {
+  _activePanel = 'quest';
+  document.getElementById('submissions-list').style.display    = 'none';
+  document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
+  document.getElementById('pnj-order-panel').style.display     = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+  document.getElementById('creator-controls-panel').style.display = 'none';
+  document.getElementById('quest-order-panel').style.display   = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
+  document.getElementById('btn-region-orphans').classList.remove('active');
+  document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-creator-controls').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadQuestOrder();
+};
+
+async function loadQuestOrder() {
+  const listEl = document.getElementById('quest-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const quetes = [...(await cachedDocs('quetes'))];
+    quetes.sort((a, b) => {
+      const ti = QUEST_TYPE_ORDER.indexOf(a.type) - QUEST_TYPE_ORDER.indexOf(b.type);
+      if (ti !== 0) return ti;
+      if ((a.palier||1) !== (b.palier||1)) return (a.palier||1) - (b.palier||1);
+      return (a.titre||a.id||'').localeCompare(b.titre||b.id||'', 'fr');
+    });
+    _questOrderData = quetes;
+    renderQuestOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+window.renderQuestOrder = function renderQuestOrder() {
+  const listEl  = document.getElementById('quest-order-list');
+  if (!listEl) return;
+  const q = (document.getElementById('quest-order-search')?.value || '')
+              .trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  if (!_questOrderData.length) { listEl.innerHTML = '<div class="empty">Aucune quête</div>'; return; }
+
+  if (q) {
+    const visible = _questOrderData.filter(qt =>
+      (qt.titre||qt.id||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q) ||
+      (qt.zone||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q) ||
+      (qt.npc||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q)
+    );
+    listEl.innerHTML = '';
+    if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
+    visible.forEach(qt => listEl.appendChild(_buildQuestRow(qt)));
+    return;
+  }
+
+  listEl.innerHTML = '';
+  for (const type of QUEST_TYPE_ORDER) {
+    const group = _questOrderData.filter(qt => qt.type === type);
+    if (!group.length) continue;
+
+    const tc = QUEST_TYPE_COLORS_MOD[type] || '#9a9ab0';
+    const tl = QUEST_TYPE_LABELS_MOD[type] || type;
+
+    const section = document.createElement('div');
+    section.style.cssText = 'margin-bottom:16px;';
+
+    const gh = document.createElement('div');
+    gh.style.cssText = `padding:6px 10px;background:${tc}18;border-left:3px solid ${tc};border-radius:0 6px 6px 0;font-size:11px;font-weight:700;color:${tc};text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:8px;`;
+    gh.innerHTML = `<span>${tl}</span><span style="font-size:10px;font-weight:400;color:var(--muted);">${group.length} quête${group.length>1?'s':''}</span>`;
+    section.appendChild(gh);
+
+    const paliers = [...new Set(group.map(qt => qt.palier || 1))].sort((a,b) => a-b);
+    for (const palier of paliers) {
+      const palierGroup = group.filter(qt => (qt.palier||1) === palier);
+
+      const ph = document.createElement('div');
+      ph.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:4px 10px 2px;';
+      ph.textContent = `Palier ${palier}`;
+      section.appendChild(ph);
+
+      palierGroup.forEach(qt => section.appendChild(_buildQuestRow(qt)));
+    }
+    listEl.appendChild(section);
+  }
+
+  const untyped = _questOrderData.filter(qt => !qt.type);
+  if (untyped.length) {
+    const uh = document.createElement('div');
+    uh.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;';
+    uh.textContent = '— Sans type —';
+    listEl.appendChild(uh);
+    untyped.forEach(qt => listEl.appendChild(_buildQuestRow(qt)));
+  }
+};
+
+function _buildQuestRow(qt) {
+  const row = document.createElement('div');
+  row.className = 'mob-order-row';
+  row.dataset.id = qt.id;
+
+  const tc = QUEST_TYPE_COLORS_MOD[qt.type] || 'var(--muted)';
+  const zone = qt.zone ? `<span style="font-size:11px;color:var(--muted);">📍 ${escHtml(qt.zone)}</span>` : '';
+  const npc  = qt.npc  ? `<span style="font-size:11px;color:var(--muted);">🧑 ${escHtml(qt.npc)}</span>`  : '';
+
+  row.innerHTML = `
+    <span style="width:8px;height:8px;border-radius:50%;background:${tc};flex-shrink:0;display:inline-block;"></span>
+    <span class="mob-order-name" style="flex:1;min-width:0;">${escHtml(qt.titre || qt.id)}</span>
+    ${zone}${npc}
+    <button class="ed-edit-btn" title="Modifier">✏️</button>`;
+  row.querySelector('.ed-edit-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    showEditor('quetes', qt.id, qt, 'quest');
+  });
+  return row;
+}
 </script>
 <div id="img-lightbox" onclick="this.classList.remove('open')">
   <img id="img-lightbox-img" src="" alt="">
