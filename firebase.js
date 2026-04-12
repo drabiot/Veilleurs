@@ -7,7 +7,8 @@
 ══════════════════════════════════════════════════════ */
 
 import { initializeApp, getApps, getApp }          from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getFirestore, enableIndexedDbPersistence,
+import { initializeFirestore, getFirestore,
+         persistentLocalCache, persistentMultipleTabManager,
          doc, getDoc, collection, getDocs, onSnapshot,
          setDoc, addDoc, updateDoc, deleteDoc,
          query, where, orderBy }                  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -26,12 +27,22 @@ const firebaseConfig = {
 };
 
 // ── Init (guard contre la double initialisation) ─────
-const app  = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const db   = getFirestore(app);
-export const auth = getAuth(app);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// Cache offline — une visite déjà faite = 0 reads Firestore
-enableIndexedDbPersistence(db).catch(() => {});
+// Cache offline multi-onglets — API moderne (remplace enableIndexedDbPersistence dépréciée)
+// try/catch au cas où initializeFirestore est appelé deux fois (defensive)
+let _db;
+try {
+  _db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager(),
+    }),
+  });
+} catch {
+  _db = getFirestore(app);
+}
+export const db   = _db;
+export const auth = getAuth(app);
 
 // ── Collections ──────────────────────────────────────
 export const COL = {
@@ -40,6 +51,7 @@ export const COL = {
   pnj:      'personnages',
   regions:  'regions',
   users:    'users',      // profils + rôles
+  quetes:   'quetes',     // quêtes approuvées via modération
 };
 
 // ── Rôles ─────────────────────────────────────────────

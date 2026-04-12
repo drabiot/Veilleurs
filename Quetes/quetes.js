@@ -95,10 +95,16 @@ function getFiltered() {
    - items : { type:'items', itemId, qte, label? }
 ══════════════════════════════════ */
 
-/* Label formaté automatiquement */
+/* Label formaté automatiquement — gère les deux formats (xp/cols ou label hérité) */
 function rewardLabel(r) {
-  if (r.type === 'exp')  return `${(r.xp  || 0).toLocaleString('fr-FR')} XP`;
-  if (r.type === 'cols') return `${(r.cols || 0).toLocaleString('fr-FR')} Cols`;
+  if (r.type === 'exp') {
+    const val = r.xp != null ? r.xp : (parseInt(r.label) || 0);
+    return `${val.toLocaleString('fr-FR')} XP`;
+  }
+  if (r.type === 'cols') {
+    const val = r.cols != null ? r.cols : (parseInt(r.label) || 0);
+    return `${val.toLocaleString('fr-FR')} Cols`;
+  }
   /* items */
   const item = r.itemId ? dbItem(r.itemId) : null;
   const name = item ? item.name : (r.label || '?');
@@ -129,19 +135,21 @@ function rewardMiniTag(r) {
 /* Récompense complète dans le modal */
 function renderRewardFull(r) {
   if (r.type === 'exp') {
+    const val = r.xp != null ? r.xp : (parseInt(r.label) || 0);
     return `<div class="reward-full reward-full-exp">
       <span class="reward-full-icon">✨</span>
       <div class="reward-full-body">
-        <span class="reward-full-val">${(r.xp || 0).toLocaleString('fr-FR')}</span>
+        <span class="reward-full-val">${val.toLocaleString('fr-FR')}</span>
         <span class="reward-full-unit">XP</span>
       </div>
     </div>`;
   }
   if (r.type === 'cols') {
+    const val = r.cols != null ? r.cols : (parseInt(r.label) || 0);
     return `<div class="reward-full reward-full-cols">
       <span class="reward-full-icon">🪙</span>
       <div class="reward-full-body">
-        <span class="reward-full-val">${(r.cols || 0).toLocaleString('fr-FR')}</span>
+        <span class="reward-full-val">${val.toLocaleString('fr-FR')}</span>
         <span class="reward-full-unit">Cols</span>
       </div>
     </div>`;
@@ -229,59 +237,26 @@ function buildPalierFilters() {
 /* ══════════════════════════════════
    FILTRES ZONE
 ══════════════════════════════════ */
-function buildZoneFilters(resetChecked = false) {
-  const zf = document.getElementById('zone-filters');
-
-  /* Zones présentes dans les quêtes actuellement visibles
-     (tous filtres actifs sauf zone) */
-  const q = normalize(searchQuery);
-  const visible = QUETES.filter(e => {
-    if (e.type !== activeTab) return false;
-    if (activePalier !== 'all' && e.palier !== activePalier) return false;
-    const done = isQuestDone(e);
-    if (activeStatut === 'todo' && done)  return false;
-    if (activeStatut === 'done' && !done) return false;
-    if (q &&
-      !normalize(e.titre).includes(q) &&
-      !normalize(e.zone).includes(q)  &&
-      !normalize(e.npc).includes(q)   &&
-      !normalize(e.desc).includes(q)
-    ) return false;
-    return true;
-  });
-
-  const zones = [...new Set(visible.map(e => e.zone))].sort();
-
-  /* Mémoriser les zones manuellement décochées avant de rebuild */
-  const unchecked = new Set(
-    [...document.querySelectorAll('#zone-filters input[type=checkbox]')]
-      .filter(cb => !cb.checked)
-      .map(cb => cb.closest('.bfilter-row')?.querySelector('.bfilter-label')?.textContent?.trim())
-      .filter(Boolean)
-  );
-
-  /* Reset = tout coché (changement onglet/palier/statut) */
-  if (resetChecked) {
-    activeZones = new Set(zones);
-  } else {
-    /* Conserver décoches manuelles sur zones encore présentes */
-    activeZones = new Set(zones.filter(z => !unchecked.has(z)));
-    if (activeZones.size === 0) activeZones = new Set(zones);
-  }
-
+function buildZoneFilters() {
+  const zf   = document.getElementById('zone-filters');
+  const list = QUETES.filter(q => q.type === activeTab);
+  const zones = [...new Set(list.map(q => q.zone))].sort();
+  activeZones = new Set(zones);
   zf.innerHTML = '';
+
   zones.forEach(z => {
-    const cnt = visible.filter(e => e.zone === z).length;
+    const cnt = list.filter(q => q.zone === z).length;
     const zs  = getZoneStyle(z);
     const lbl = document.createElement('label');
     lbl.className = 'bfilter-row';
     lbl.innerHTML = `
-      <input type="checkbox" ${activeZones.has(z) ? 'checked' : ''} />
+      <input type="checkbox" checked />
       <span class="bfilter-dot dot-zone" style="background:${zs.color};box-shadow:0 0 5px ${zs.dim}"></span>
       <span class="bfilter-label">${z}</span>
       <span class="bfilter-count">${cnt}</span>`;
-    lbl.querySelector('input').addEventListener('change', cb => {
-      cb.target.checked ? activeZones.add(z) : activeZones.delete(z);
+    const cb = lbl.querySelector('input');
+    cb.addEventListener('change', () => {
+      cb.checked ? activeZones.add(z) : activeZones.delete(z);
       buildGrid();
     });
     zf.appendChild(lbl);
@@ -302,18 +277,10 @@ function updateStatutCounts() {
    INVENTAIRE
 ══════════════════════════════════ */
 function getAllQuestItemIds() {
-  /* Seulement les items des quêtes non-terminées qui ont encore des objectifs à faire */
   const ids = new Set();
   QUETES.forEach(q => {
-    if (isQuestDone(q)) return; /* quête terminée : on skip */
-    q.objectifs.flat().forEach((o, flatIdx) => {
-      if (!o.items) return;
-      /* Vérifier si cet objectif est déjà coché */
-      /* On ne peut pas récupérer l'index original facilement ici, donc on inclut tous les items
-         des objectifs non-cochés en recalculant */
-      o.items.forEach(it => ids.add(it.id));
-    });
-    /* Récompenses items : on les garde pour le lookup mais pas dans l'inventaire */
+    q.objectifs.flat().forEach(o => { if (o.items) o.items.forEach(it => ids.add(it.id)); });
+    q.recompenses.forEach(r => { if (r.itemId) ids.add(r.itemId); });
   });
   return [...ids];
 }
@@ -403,8 +370,8 @@ function buildFeasiblePanel() {
     const xp  = q.recompenses.find(r => r.type === 'exp');
     const col = q.recompenses.find(r => r.type === 'cols');
     const rewStr = [
-      xp  ? `${xp.xp} XP` : '',
-      col ? `${col.cols} Cols` : '',
+      xp  ? `${xp.xp  != null ? xp.xp  : (parseInt(xp.label)  || 0)} XP` : '',
+      col ? `${col.cols != null ? col.cols : (parseInt(col.label) || 0)} Cols` : '',
     ].filter(Boolean).join(' · ');
     div.innerHTML = `
       <span class="feasible-dot" style="background:var(--quete-${q.type})"></span>
@@ -441,7 +408,13 @@ function buildGrid() {
     heading.textContent = `⬡ Palier ${p}`;
     queteGrid.appendChild(heading);
 
-    entities.filter(q => q.palier === p).forEach(q => {
+    entities.filter(q => q.palier === p).sort((a, b) => {
+      const ao = a.ordre ?? null, bo = b.ordre ?? null;
+      if (ao !== null && bo !== null) return ao - bo;
+      if (ao !== null) return -1;
+      if (bo !== null) return 1;
+      return 0;
+    }).forEach(q => {
       const card = document.createElement('div');
       card.className = `quete-card ${q.type}`;
       card.dataset.id = q.id;
@@ -451,23 +424,10 @@ function buildGrid() {
       const { done, total, pct } = getProgress(q);
       const effectiveDone = done === total && total > 0;
       const zs     = getZoneStyle(q.zone);
-      const mapUrl = getMapUrl(q.mapId);
-
-      /* Dépendance : quête prérequise */
-      const reqQuest   = q.requires ? QUETES.find(r => r.id === q.requires) : null;
-      const isBlocked  = reqQuest && !isQuestDone(reqQuest);
-      if (isBlocked) card.classList.add('blocked');
+      const mapUrl = getMapUrl(q.mapId, q.zone);
 
       /* Footer récompenses — max 3 affichées */
       const rewFooter = q.recompenses.slice(0, 3).map(r => rewardMiniTag(r)).join('');
-
-      /* Indicateur prérequis */
-      const reqHTML = reqQuest ? `
-        <div class="card-requires">
-          <span class="card-requires-arrow">→</span>
-          <span class="card-requires-name">Suite de : ${reqQuest.titre}</span>
-          ${isBlocked ? '<span class="card-blocked-badge">⚠ Bloquée</span>' : ''}
-        </div>` : '';
 
       card.innerHTML = `
         <div class="type-stripe"></div>
@@ -476,7 +436,6 @@ function buildGrid() {
             <div class="card-title">${q.titre}</div>
             <span class="card-badge ${effectiveDone ? 'badge-done' : 'badge-todo'}">${effectiveDone ? 'Terminée' : 'À faire'}</span>
           </div>
-          ${reqHTML}
           <div class="card-meta">
             <span class="ctag ctag-palier">P${q.palier}</span>
             ${mapUrl
@@ -502,21 +461,6 @@ function buildGrid() {
       card.addEventListener('mousedown', e => e.preventDefault());
       card.addEventListener('click', () => openModal(q));
       queteGrid.appendChild(card);
-
-      /* Flèche SVG si une quête suivante est dans la liste et adjacent */
-      const nextQ = entities.find(e => e.requires === q.id);
-      if (nextQ) {
-        const arrow = document.createElement('div');
-        arrow.className = 'quest-chain-arrow';
-        arrow.dataset.from = q.id;
-        arrow.dataset.to   = nextQ.id;
-        arrow.innerHTML = `
-          <svg width="24" height="32" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <line x1="12" y1="0" x2="12" y2="22" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/>
-            <polyline points="6,18 12,26 18,18" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
-          </svg>`;
-        queteGrid.appendChild(arrow);
-      }
     });
   });
 }
@@ -576,12 +520,9 @@ function openModal(q) {
   modalContent.innerHTML = renderSheet(q);
   bindModalCheckboxes(q);
   modalOverlay.classList.add('open');
+  /* Met à jour le hash sans dupliquer */
   if (window.location.hash !== `#${q.id}`) {
     history.pushState({ quest: q.id }, '', `#${q.id}`);
-  }
-  /* Si DB pas encore prête, marquer pour re-render dès qu'elle l'est */
-  if (!window._dbReady) {
-    window._pendingModalQuest = q;
   }
 }
 
@@ -606,6 +547,27 @@ modalOverlay.addEventListener('click', e => {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 /* ── Bind checkboxes ── */
+function updateNextBlocking(q) {
+  q.objectifs.forEach((o, i) => {
+    if (Array.isArray(o)) return;
+    const prevO = i > 0 && !Array.isArray(q.objectifs[i - 1]) ? q.objectifs[i - 1] : null;
+    if (!prevO?.next) return;
+    const prevDone = getCk(q.id, i - 1);
+    const itemEl = modalContent.querySelector(`.obj-item[data-oi="${i}"]`);
+    const cb = itemEl?.querySelector('.obj-checkbox');
+    if (!itemEl || !cb) return;
+    const blocked = !prevDone;
+    cb.disabled = blocked;
+    itemEl.classList.toggle('obj-blocked', blocked);
+    // Si la case précédente est décochée, on force la décocher
+    if (blocked && cb.checked) {
+      cb.checked = false;
+      setCk(q.id, i, undefined, false);
+      itemEl.classList.remove('done');
+    }
+  });
+}
+
 function bindModalCheckboxes(q) {
   modalContent.querySelectorAll('.obj-checkbox').forEach(cb => {
     cb.addEventListener('change', () => {
@@ -613,6 +575,9 @@ function bindModalCheckboxes(q) {
       const si = cb.dataset.si !== undefined ? parseInt(cb.dataset.si) : undefined;
       setCk(q.id, oi, si, cb.checked);
       cb.closest('.obj-item')?.classList.toggle('done', cb.checked);
+
+      // Mettre à jour le blocage des étapes suivantes
+      updateNextBlocking(q);
 
       const { done, total, pct } = getProgress(q);
       const bar   = modalContent.querySelector('.modal-progress-fill');
@@ -634,51 +599,43 @@ function bindModalCheckboxes(q) {
 /* ── Rendu fiche modal ── */
 function renderSheet(q) {
   const zs = getZoneStyle(q.zone);
-  const mapUrl = getMapUrl(q.mapId);
+  const mapUrl = getMapUrl(q.mapId, q.zone);
   const { done, total, pct } = getProgress(q);
   const isDone = done === total && total > 0;
 
-  /* Objectifs
-     next:true sur un objectif → flèche visuelle vers le suivant
-  */
-  const OBJ_ARROW = `<div class="obj-next-arrow">
-    <svg width="16" height="20" viewBox="0 0 16 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <line x1="8" y1="0" x2="8" y2="13" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/>
-      <polyline points="3,10 8,17 13,10" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
-    </svg>
-  </div>`;
-
+  /* Objectifs */
   const objsHTML = q.objectifs.map((o, i) => {
-    const isLast = i === q.objectifs.length - 1;
-
     if (Array.isArray(o)) {
-      /* Groupe séquentiel interne */
+      // Héritage : tableau de sous-objectifs (ancien système phases)
       const subs = o.map((sub, j) => {
         const ck    = getCk(q.id, i, j);
         const chips = sub.items ? sub.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
-        const isLastSub = j === o.length - 1;
         return `<div class="obj-item obj-sub ${ck ? 'done' : ''} obj-item-${q.type}">
           <label class="obj-ck-label">
             <input type="checkbox" class="obj-checkbox" data-oi="${i}" data-si="${j}" ${ck ? 'checked' : ''}/>
             <span class="obj-checkmark"></span>
           </label>
           <span class="obj-text">${sub.texte}${chips}</span>
-        </div>${!isLastSub ? OBJ_ARROW : ''}`;
+        </div>`;
       }).join('');
-      const arrow = (!isLast && o[o.length - 1]?.next !== false) ? OBJ_ARROW : '';
-      return `<div class="obj-group"><div class="obj-group-lbl">↳ Séquence</div>${subs}</div>${arrow}`;
+      return `<div class="obj-group"><div class="obj-group-lbl">↳ Séquence</div>${subs}</div>`;
     } else {
       const ck    = getCk(q.id, i);
+      // Blocage : bloqué si l'objectif précédent a next:true et n'est pas coché
+      const prevO = i > 0 && !Array.isArray(q.objectifs[i - 1]) ? q.objectifs[i - 1] : null;
+      const blocked = prevO?.next && !getCk(q.id, i - 1);
       const chips = o.items ? o.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
-      /* Flèche si next:true sur cet objectif */
-      const arrow = o.next && !isLast ? OBJ_ARROW : '';
-      return `<div class="obj-item ${ck ? 'done' : ''} obj-item-${q.type}">
+      const objEl = `<div class="obj-item ${ck ? 'done' : ''} ${blocked ? 'obj-blocked' : ''} obj-item-${q.type}" data-oi="${i}">
         <label class="obj-ck-label">
-          <input type="checkbox" class="obj-checkbox" data-oi="${i}" ${ck ? 'checked' : ''}/>
+          <input type="checkbox" class="obj-checkbox" data-oi="${i}" ${ck ? 'checked' : ''} ${blocked ? 'disabled' : ''}/>
           <span class="obj-checkmark"></span>
         </label>
         <span class="obj-text">${o.texte}${chips}</span>
-      </div>${arrow}`;
+      </div>`;
+      const arrowEl = o.next && i < q.objectifs.length - 1
+        ? `<div class="obj-next-arrow">↓</div>`
+        : '';
+      return objEl + arrowEl;
     }
   }).join('');
 
@@ -781,7 +738,7 @@ function setActiveTab(tab) {
 function refreshAll() {
   updateHeader();
   buildPalierFilters();
-  buildZoneFilters(true); /* reset zones : tab/palier/statut a changé */
+  buildZoneFilters();
   updateStatutCounts();
   buildGrid();
   buildInventoryPanel();
@@ -798,14 +755,12 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
 
 searchInput.addEventListener('input', () => {
   searchQuery = searchInput.value.trim();
-  buildZoneFilters(false); /* zones dynamiques selon la recherche, décoches conservées */
   buildGrid();
 });
 
 document.querySelectorAll('input[name="statut-filter"]').forEach(rb => {
   rb.addEventListener('change', () => {
     activeStatut = rb.value;
-    buildZoneFilters(true);
     buildGrid();
   });
 });
@@ -851,16 +806,10 @@ function initQuetes() {
   /* Re-render complet avec les vrais items */
   refreshAll();
 
-  /* Re-render du modal si ouvert OU si une quête était en attente */
-  const toRerender = window._currentModalQuest || window._pendingModalQuest;
-  if (toRerender) {
-    window._pendingModalQuest = null;
-    modalContent.innerHTML = renderSheet(toRerender);
-    bindModalCheckboxes(toRerender);
-    /* Assurer que le modal est visible */
-    if (!modalOverlay.classList.contains('open')) {
-      modalOverlay.classList.add('open');
-    }
+  /* Si le modal est ouvert, on re-render la fiche avec les vrais items */
+  if (modalOverlay.classList.contains('open') && window._currentModalQuest) {
+    modalContent.innerHTML = renderSheet(window._currentModalQuest);
+    bindModalCheckboxes(window._currentModalQuest);
   }
 
   /* Hash routing (rejoué si items manquaient au premier passage) */

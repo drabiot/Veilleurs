@@ -216,6 +216,33 @@
   margin-bottom: 28px;
   padding-bottom: 18px;
   border-bottom: 1px solid var(--rim);
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.glossary-main-header > .glossary-title,
+.glossary-main-header > .glossary-subtitle {
+  flex: 1 1 auto;
+}
+.btn-add-item {
+  flex-shrink: 0;
+  display: inline-block;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--accent, #c8a96e);
+  color: var(--accent, #c8a96e);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .75rem;
+  letter-spacing: .08em;
+  text-decoration: none;
+  border-radius: 3px;
+  transition: background .2s, color .2s;
+  white-space: nowrap;
+}
+.btn-add-item:hover {
+  background: var(--accent, #c8a96e);
+  color: #0e0c0a;
 }
 .glossary-title {
   font-family: 'Cinzel', serif;

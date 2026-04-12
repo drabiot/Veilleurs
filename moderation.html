@@ -224,6 +224,7 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     <button class="filter-btn" id="btn-ghost-ids"  onclick="showGhostIds()">🔗 IDs fantômes</button>
     <button class="filter-btn" id="btn-region-orphans" onclick="showRegionOrphans()">🗺️ Régions orphelines</button>
     <button class="filter-btn" id="btn-mob-orphans"    onclick="showMobOrphans()">👾 Mobs orphelins</button>
+    <button class="filter-btn" id="btn-quest-orphans" onclick="showQuestOrphans()">📋 Quêtes orphelines</button>
     <button class="filter-btn" id="btn-creator-controls" onclick="showCreatorControls()">🎛️ Contrôles Creator</button>
     <button class="filter-btn" id="btn-discord-webhooks" onclick="showDiscordWebhooks()">🔔 Webhooks Discord</button>
   </aside>
@@ -314,6 +315,18 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     <div id="mob-orphan-list"><div class="empty">Chargement…</div></div>
   </main>
 
+  <!-- Panneau Quêtes Orphelines -->
+  <main class="main" id="quest-orphan-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">📋 Quêtes orphelines</span>
+      <button class="btn btn-ghost" onclick="loadQuestOrphans()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      Quêtes <b>sans <code>mapId</code></b> — non reliées à un marqueur sur la carte interactive.
+    </p>
+    <div id="quest-orphan-list"><div class="empty">Chargement…</div></div>
+  </main>
+
   <!-- Panneau Ordre des régions -->
   <main class="main" id="region-order-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -331,11 +344,12 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 
   <!-- Panneau Liste des quêtes -->
   <main class="main" id="quest-order-panel" style="display:none;">
-    <div style="margin-bottom:4px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <span style="font-size:15px;font-weight:700;">📜 Liste des quêtes</span>
+      <button class="btn btn-ghost" id="btn-save-quest-order" onclick="saveQuestOrder()" style="font-size:12px;" disabled>💾 Sauvegarder</button>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-      Toutes les quêtes approuvées dans Firestore, groupées par type et palier.
+      Glisse-dépose les quêtes pour définir leur ordre d'apparition dans le wiki. Les changements sont sauvegardés directement dans Firestore.
     </p>
     <input type="search" id="quest-order-search" placeholder="🔍 Rechercher une quête…"
            oninput="renderQuestOrder()"
@@ -484,6 +498,7 @@ onAuthStateChanged(auth, async user => {
     'ghost-ids':     showGhostIds,
     'region-orphans': showRegionOrphans,
     'mob-orphans':   showMobOrphans,
+    'quest-orphans': showQuestOrphans,
   };
   loadSubmissions();
   if (savedPanel && panelFns[savedPanel]) {
@@ -981,6 +996,7 @@ function refreshCurrentPanel() {
     'ghost-ids':    () => loadGhostIds(),
     'region-orphans': () => loadRegionOrphans(),
     'mob-orphans':  () => loadMobOrphans(),
+    'quest-orphans': () => loadQuestOrphans(),
     submissions:    () => loadSubmissions(),
   };
   (refreshMap[_activePanel] || refreshMap.submissions)();
@@ -997,6 +1013,7 @@ window.showSubmissions = function showSubmissions() {
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
@@ -1008,6 +1025,7 @@ window.showSubmissions = function showSubmissions() {
   document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.querySelector('.sidebar').classList.remove('in-order-panel');
@@ -1025,6 +1043,7 @@ window.showMobOrder = async () => {
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('mob-order-panel').style.display     = '';
@@ -1258,6 +1277,7 @@ window.showItemOrder = async () => {
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('item-order-panel').style.display    = '';
@@ -1562,6 +1582,7 @@ window.showPnjOrder = async () => {
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('pnj-order-panel').style.display     = '';
@@ -1912,6 +1933,7 @@ window.showRegionOrder = async () => {
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('region-order-panel').style.display  = '';
@@ -1921,6 +1943,7 @@ window.showRegionOrder = async () => {
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-region-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -2117,6 +2140,7 @@ window.showGhostIds = async () => {
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('ghost-id-panel').style.display      = '';
@@ -2127,6 +2151,7 @@ window.showGhostIds = async () => {
   document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -2148,6 +2173,7 @@ window.showRegionOrphans = async () => {
   document.getElementById('region-order-panel').style.display  = 'none';
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('region-orphan-panel').style.display = '';
@@ -2158,6 +2184,7 @@ window.showRegionOrphans = async () => {
   document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -2583,7 +2610,7 @@ function _typeLabel(t) {
 }
 
 const _GEN_FIELD_ORDER = [
-  'id','name','type','palier','rarity','category','cat','lvl','set','behavior','difficulty',
+  'id','name','titre','type','palier','zone','npc','mapId','rarity','category','cat','lvl','set','behavior','difficulty',
   'region','regionId','tag','inCodex','color','sensible','twoHanded','rune_slots',
   'img','lore','obtain','respawnDelay','spawnTime',
   'stats','classes','tags','effects','craft','loot','sells','zones','drops','morceaux','camera','attacks',
@@ -2899,6 +2926,10 @@ function _buildGenericForm(data, col) {
   if (col === 'regions' && !('color' in data)) {
     data = { ...data, color: _makeColorObj('#9a9ab0') };
   }
+  // Auto-injecter mapId pour les quêtes qui n'en ont pas encore
+  if (col === 'quetes' && !('mapId' in data)) {
+    data = { ...data, mapId: '' };
+  }
 
   _editorOrigData = { ...data };
 
@@ -3096,6 +3127,7 @@ window.showEditor = async function(collection, id, data, origin) {
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -3105,6 +3137,7 @@ window.showEditor = async function(collection, id, data, origin) {
   document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
 
@@ -3163,6 +3196,7 @@ window.editorGoBack = function() {
   if (_editorOrigin === 'quest')          { showQuestOrder();     return; }
   if (_editorOrigin === 'region-orphan')  { showRegionOrphans(); return; }
   if (_editorOrigin === 'mob-orphan')     { showMobOrphans();    return; }
+  if (_editorOrigin === 'quest-orphan')  { showQuestOrphans();  return; }
   showSubmissions();
 };
 
@@ -3231,6 +3265,7 @@ function _editorCacheUpdate(col, id, newData) {
   else if (col === 'mobs')        { const m  = _mobOrderData.find(m => m.id === id);   if (m)  applyTo(m); }
   else if (col === 'personnages') { _pnjRegions.forEach(r => { const p = r.pnjs.find(p => p.id === id); if (p) applyTo(p); }); }
   else if (col === 'regions')     { const r  = _regionOrderData.find(r => r.id === id); if (r) applyTo(r); }
+  else if (col === 'quetes')      { const qt = _questOrderData.find(q => q.id === id);  if (qt) applyTo(qt); }
 }
 
 // ── Delete entry (depuis l'éditeur) ──────────────────
@@ -3249,6 +3284,7 @@ window.deleteCurrentEntry = async function() {
     else if (_editorCollection === 'items')        { _itemOrderData   = _itemOrderData.filter(i => i.id !== _editorId); }
     else if (_editorCollection === 'personnages')  { _pnjRegions.forEach(r => { r.pnjs = r.pnjs.filter(p => p.id !== _editorId); }); }
     else if (_editorCollection === 'regions')      { _regionOrderData = _regionOrderData.filter(r => r.id !== _editorId); }
+    else if (_editorCollection === 'quetes')       { _questOrderData  = _questOrderData.filter(q => q.id !== _editorId); }
     editorGoBack();
   } catch(e) {
     btn.disabled = false; btn.textContent = '🗑️ Supprimer';
@@ -3275,6 +3311,7 @@ window.showCreatorControls = async () => {
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = '';
   document.getElementById('btn-mob-order').classList.remove('active');
@@ -3285,6 +3322,7 @@ window.showCreatorControls = async () => {
   document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadCreatorConfig();
@@ -3389,6 +3427,7 @@ window.showDiscordWebhooks = async () => {
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('discord-webhooks-panel').style.display = '';
@@ -3400,6 +3439,7 @@ window.showDiscordWebhooks = async () => {
   document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-discord-webhooks').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -3664,11 +3704,14 @@ window.deleteSub = async (id) => {
 // ═══════════════════════════════════════════════════
 // LISTE DES QUÊTES
 // ═══════════════════════════════════════════════════
-let _questOrderData = [];
+let _questOrderData  = [];
+let _questOrderDirty = false;
+let _questDragSrc    = null;
+let _questPalierCollapsed = new Set();
 
-const QUEST_TYPE_ORDER  = ['main', 'secondary', 'tertiary'];
-const QUEST_TYPE_LABELS_MOD = { main: '⚔️ Principale', secondary: '🗺️ Secondaire', tertiary: '📋 Tertiaire' };
-const QUEST_TYPE_COLORS_MOD = { main: '#e07c50',        secondary: '#6aaad4',         tertiary: '#82c470' };
+const QUEST_TYPE_ORDER  = ['main', 'sec', 'ter'];
+const QUEST_TYPE_LABELS_MOD = { main: '⚔️ Principale', sec: '🗺️ Secondaire', ter: '📋 Tertiaire' };
+const QUEST_TYPE_COLORS_MOD = { main: '#e07c50',        sec: '#6aaad4',        ter: '#82c470'     };
 
 window.showQuestOrder = async () => {
   _activePanel = 'quest';
@@ -3683,6 +3726,7 @@ window.showQuestOrder = async () => {
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
   document.getElementById('creator-controls-panel').style.display = 'none';
   document.getElementById('quest-order-panel').style.display   = '';
@@ -3694,6 +3738,7 @@ window.showQuestOrder = async () => {
   document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
   document.getElementById('btn-creator-controls').classList.remove('active');
   document.getElementById('btn-quest-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -3703,12 +3748,19 @@ window.showQuestOrder = async () => {
 async function loadQuestOrder() {
   const listEl = document.getElementById('quest-order-list');
   listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _questOrderDirty = false;
+  document.getElementById('btn-save-quest-order').disabled = true;
   try {
     const quetes = [...(await cachedDocs('quetes'))];
     quetes.sort((a, b) => {
       const ti = QUEST_TYPE_ORDER.indexOf(a.type) - QUEST_TYPE_ORDER.indexOf(b.type);
       if (ti !== 0) return ti;
       if ((a.palier||1) !== (b.palier||1)) return (a.palier||1) - (b.palier||1);
+      // Respecter l'ordre existant, puis fallback alphabétique
+      const ao = a.ordre ?? null, bo = b.ordre ?? null;
+      if (ao !== null && bo !== null) return ao - bo;
+      if (ao !== null) return -1;
+      if (bo !== null) return 1;
       return (a.titre||a.id||'').localeCompare(b.titre||b.id||'', 'fr');
     });
     _questOrderData = quetes;
@@ -3726,6 +3778,7 @@ window.renderQuestOrder = function renderQuestOrder() {
 
   if (!_questOrderData.length) { listEl.innerHTML = '<div class="empty">Aucune quête</div>'; return; }
 
+  // ── Mode recherche : liste plate, pas de drag ──
   if (q) {
     const visible = _questOrderData.filter(qt =>
       (qt.titre||qt.id||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q) ||
@@ -3734,10 +3787,14 @@ window.renderQuestOrder = function renderQuestOrder() {
     );
     listEl.innerHTML = '';
     if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
-    visible.forEach(qt => listEl.appendChild(_buildQuestRow(qt)));
+    visible.forEach(qt => {
+      const globalIdx = _questOrderData.indexOf(qt) + 1;
+      listEl.appendChild(_buildQuestRow(qt, 'quest', globalIdx));
+    });
     return;
   }
 
+  // ── Mode normal : type → palier → quêtes draggables ──
   listEl.innerHTML = '';
   for (const type of QUEST_TYPE_ORDER) {
     const group = _questOrderData.filter(qt => qt.type === type);
@@ -3745,25 +3802,38 @@ window.renderQuestOrder = function renderQuestOrder() {
 
     const tc = QUEST_TYPE_COLORS_MOD[type] || '#9a9ab0';
     const tl = QUEST_TYPE_LABELS_MOD[type] || type;
+    const collapsed = _questPalierCollapsed.has(type);
 
     const section = document.createElement('div');
     section.style.cssText = 'margin-bottom:16px;';
 
     const gh = document.createElement('div');
-    gh.style.cssText = `padding:6px 10px;background:${tc}18;border-left:3px solid ${tc};border-radius:0 6px 6px 0;font-size:11px;font-weight:700;color:${tc};text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:8px;`;
-    gh.innerHTML = `<span>${tl}</span><span style="font-size:10px;font-weight:400;color:var(--muted);">${group.length} quête${group.length>1?'s':''}</span>`;
+    gh.style.cssText = `padding:6px 10px;background:${tc}18;border-left:3px solid ${tc};border-radius:0 6px 6px 0;font-size:11px;font-weight:700;color:${tc};text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;`;
+    gh.innerHTML = `<span>${tl}</span><span style="font-size:10px;font-weight:400;color:var(--muted);">${group.length} quête${group.length>1?'s':''}</span><button style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:0 4px;line-height:1;margin-left:auto;">${collapsed?'▶':'▼'}</button>`;
+    gh.querySelector('button').addEventListener('click', e => {
+      e.stopPropagation();
+      if (_questPalierCollapsed.has(type)) _questPalierCollapsed.delete(type);
+      else _questPalierCollapsed.add(type);
+      renderQuestOrder();
+    });
     section.appendChild(gh);
 
-    const paliers = [...new Set(group.map(qt => qt.palier || 1))].sort((a,b) => a-b);
-    for (const palier of paliers) {
-      const palierGroup = group.filter(qt => (qt.palier||1) === palier);
+    if (!collapsed) {
+      const paliers = [...new Set(group.map(qt => qt.palier || 1))].sort((a,b) => a-b);
+      for (const palier of paliers) {
+        const palierGroup = group.filter(qt => (qt.palier||1) === palier);
 
-      const ph = document.createElement('div');
-      ph.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:4px 10px 2px;';
-      ph.textContent = `Palier ${palier}`;
-      section.appendChild(ph);
+        const ph = document.createElement('div');
+        ph.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:4px 10px 2px;';
+        ph.textContent = `Palier ${palier}`;
+        section.appendChild(ph);
 
-      palierGroup.forEach(qt => section.appendChild(_buildQuestRow(qt)));
+        palierGroup.forEach(qt => {
+          const palierIdx = palierGroup.indexOf(qt) + 1;
+          const row = _buildQuestRow(qt, 'quest', palierIdx, palierGroup.length);
+          section.appendChild(row);
+        });
+      }
     }
     listEl.appendChild(section);
   }
@@ -3774,30 +3844,192 @@ window.renderQuestOrder = function renderQuestOrder() {
     uh.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;';
     uh.textContent = '— Sans type —';
     listEl.appendChild(uh);
-    untyped.forEach(qt => listEl.appendChild(_buildQuestRow(qt)));
+    untyped.forEach(qt => {
+      const gi = _questOrderData.indexOf(qt) + 1;
+      listEl.appendChild(_buildQuestRow(qt, 'quest', gi));
+    });
   }
 };
 
-function _buildQuestRow(qt) {
+// ════════════════════════════════════════
+//   QUÊTES ORPHELINES (sans mapId)
+// ════════════════════════════════════════
+
+window.showQuestOrphans = async () => {
+  _activePanel = 'quest-orphans';
+  // Cacher tous les panneaux
+  ['submissions-list','mob-order-panel','item-order-panel','pnj-order-panel',
+   'ghost-id-panel','region-order-panel','quest-order-panel',
+   'region-orphan-panel','mob-orphan-panel','quest-orphan-panel',
+   'editor-panel','creator-controls-panel','discord-webhooks-panel'
+  ].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  ['btn-mob-order','btn-item-order','btn-pnj-order','btn-ghost-ids',
+   'btn-region-order','btn-quest-order','btn-region-orphans','btn-mob-orphans',
+   'btn-quest-orphans','btn-creator-controls','btn-discord-webhooks'
+  ].forEach(id => { document.getElementById(id)?.classList.remove('active'); });
+
+  document.getElementById('quest-orphan-panel').style.display = '';
+  document.getElementById('btn-quest-orphans').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadQuestOrphans();
+};
+
+window.loadQuestOrphans = async function loadQuestOrphans() {
+  const listEl = document.getElementById('quest-orphan-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const quetes = await cachedDocs('quetes');
+    const orphans = quetes.filter(q => !q.mapId);
+    if (!orphans.length) {
+      listEl.innerHTML = '<div class="empty" style="color:#6fbf73;">✓ Toutes les quêtes ont un mapId</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+
+    const byType = {};
+    for (const q of orphans) {
+      const t = q.type || '—';
+      if (!byType[t]) byType[t] = [];
+      byType[t].push(q);
+    }
+
+    const typeOrder = ['main','sec','ter','—'];
+    for (const type of typeOrder) {
+      const group = byType[type];
+      if (!group || !group.length) continue;
+
+      const tc = QUEST_TYPE_COLORS_MOD[type] || 'var(--muted)';
+      const tl = QUEST_TYPE_LABELS_MOD[type] || type;
+
+      const gh = document.createElement('div');
+      gh.style.cssText = `padding:6px 10px;background:${tc}18;border-left:3px solid ${tc};border-radius:0 6px 6px 0;font-size:11px;font-weight:700;color:${tc};text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px;display:flex;align-items:center;gap:8px;`;
+      gh.innerHTML = `<span>${tl}</span><span style="font-size:10px;font-weight:400;color:var(--muted);">${group.length} sans mapId</span>`;
+      listEl.appendChild(gh);
+
+      group.sort((a,b) => ((a.palier||1)-(b.palier||1)) || (a.titre||'').localeCompare(b.titre||'','fr'));
+      group.forEach(qt => {
+        const row = _buildQuestRow(qt, 'quest-orphan');
+        // Indicateur visuel d'orphelin
+        row.style.borderLeft = '3px solid var(--danger)';
+        listEl.appendChild(row);
+      });
+    }
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+};
+
+function _buildQuestRow(qt, origin = 'quest', posIdx = null, groupLen = null) {
   const row = document.createElement('div');
-  row.className = 'mob-order-row';
+  row.className  = 'mob-order-row';
   row.dataset.id = qt.id;
 
   const tc = QUEST_TYPE_COLORS_MOD[qt.type] || 'var(--muted)';
   const zone = qt.zone ? `<span style="font-size:11px;color:var(--muted);">📍 ${escHtml(qt.zone)}</span>` : '';
   const npc  = qt.npc  ? `<span style="font-size:11px;color:var(--muted);">🧑 ${escHtml(qt.npc)}</span>`  : '';
 
-  row.innerHTML = `
-    <span style="width:8px;height:8px;border-radius:50%;background:${tc};flex-shrink:0;display:inline-block;"></span>
-    <span class="mob-order-name" style="flex:1;min-width:0;">${escHtml(qt.titre || qt.id)}</span>
-    ${zone}${npc}
-    <button class="ed-edit-btn" title="Modifier">✏️</button>`;
+  const isDraggable = origin === 'quest' && posIdx !== null && groupLen !== null;
+
+  if (isDraggable) {
+    row.draggable = true;
+    row.innerHTML = `
+      <span class="mob-order-handle">⠿</span>
+      <input type="number" class="mob-order-index" value="${posIdx}" min="1" max="${groupLen}" title="Position dans ce groupe" draggable="false">
+      <span style="width:8px;height:8px;border-radius:50%;background:${tc};flex-shrink:0;display:inline-block;"></span>
+      <span class="mob-order-name" style="flex:1;min-width:0;">${escHtml(qt.titre || qt.id)}</span>
+      ${zone}${npc}
+      <button class="ed-edit-btn" title="Modifier" draggable="false">✏️</button>`;
+
+    const indexInput = row.querySelector('.mob-order-index');
+    indexInput.addEventListener('click', e => e.stopPropagation());
+    indexInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); indexInput.blur(); } });
+    indexInput.addEventListener('change', () => {
+      // Trouver le groupe (même type + palier) dans _questOrderData
+      const palier = qt.palier || 1;
+      const type   = qt.type;
+      const grp    = _questOrderData.filter(q => q.type === type && (q.palier||1) === palier);
+      let toIdx = parseInt(indexInput.value, 10) - 1;
+      toIdx = Math.max(0, Math.min(grp.length - 1, toIdx));
+      const curIdx = grp.indexOf(qt);
+      if (toIdx === curIdx) { indexInput.value = curIdx + 1; return; }
+      const fromGlobal = _questOrderData.indexOf(qt);
+      const [removed]  = _questOrderData.splice(fromGlobal, 1);
+      const nowGrp     = _questOrderData.filter(q => q.type === type && (q.palier||1) === palier);
+      const insertAt   = toIdx < nowGrp.length
+        ? _questOrderData.indexOf(nowGrp[toIdx])
+        : (_questOrderData.indexOf(nowGrp[nowGrp.length - 1]) + 1 || _questOrderData.length);
+      _questOrderData.splice(insertAt, 0, removed);
+      _questOrderDirty = true;
+      document.getElementById('btn-save-quest-order').disabled = false;
+      renderQuestOrder();
+    });
+
+    row.addEventListener('dragstart', e => {
+      if (e.target.closest('.ed-edit-btn')) { e.preventDefault(); return; }
+      _questDragSrc = row;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', () => { row.classList.remove('dragging'); _questDragSrc = null; });
+    row.addEventListener('dragover', e => {
+      if (!_questDragSrc || _questDragSrc === row) return;
+      e.preventDefault();
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if (!_questDragSrc || _questDragSrc === row) return;
+      const fromQt = _questOrderData.find(q => q.id === _questDragSrc.dataset.id);
+      const toQt   = _questOrderData.find(q => q.id === row.dataset.id);
+      if (!fromQt || !toQt) return;
+      // Seulement dans le même type + palier
+      if (fromQt.type !== toQt.type || (fromQt.palier||1) !== (toQt.palier||1)) return;
+      const fromIdx = _questOrderData.findIndex(q => q.id === _questDragSrc.dataset.id);
+      const toIdx2  = _questOrderData.findIndex(q => q.id === row.dataset.id);
+      if (fromIdx === -1 || toIdx2 === -1) return;
+      const [moved] = _questOrderData.splice(fromIdx, 1);
+      _questOrderData.splice(toIdx2, 0, moved);
+      _questOrderDirty = true;
+      document.getElementById('btn-save-quest-order').disabled = false;
+      renderQuestOrder();
+    });
+  } else {
+    row.innerHTML = `
+      <span style="width:8px;height:8px;border-radius:50%;background:${tc};flex-shrink:0;display:inline-block;"></span>
+      <span class="mob-order-name" style="flex:1;min-width:0;">${escHtml(qt.titre || qt.id)}</span>
+      ${zone}${npc}
+      <button class="ed-edit-btn" title="Modifier">✏️</button>`;
+  }
+
   row.querySelector('.ed-edit-btn').addEventListener('click', e => {
     e.stopPropagation();
-    showEditor('quetes', qt.id, qt, 'quest');
+    showEditor('quetes', qt.id, qt, origin);
   });
   return row;
 }
+
+window.saveQuestOrder = async () => {
+  if (!_questOrderDirty) return;
+  const btn = document.getElementById('btn-save-quest-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  let ok = 0, err = 0;
+  for (let i = 0; i < _questOrderData.length; i++) {
+    try {
+      await updateDoc(doc(db, 'quetes', _questOrderData[i].id), { ordre: i + 1 });
+      ok++;
+    } catch(e) { console.error(_questOrderData[i].id, e); err++; }
+  }
+  localStorage.removeItem('vcl_cache_v2_quetes');
+  localStorage.removeItem('vcl_cache_meta_v2_quetes');
+  invalidateModCache('quetes');
+  _questOrderDirty = false;
+  btn.textContent = '💾 Sauvegarder';
+  alert(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Ordre sauvegardé (${ok} quêtes).`);
+  document.getElementById('quest-order-search').value = '';
+  await loadQuestOrder();
+};
 </script>
 <div id="img-lightbox" onclick="this.classList.remove('open')">
   <img id="img-lightbox-img" src="" alt="">

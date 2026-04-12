@@ -256,16 +256,6 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 #mob-form    { display:none; flex-direction:column; gap:16px; }
 #quest-form  { display:none; flex-direction:column; gap:16px; }
 
-/* ── QUEST PHASES ── */
-.quest-phase {
-  background: var(--surface3); border: 1px solid var(--border); border-radius: 9px;
-  padding: 10px; display: flex; flex-direction: column; gap: 6px;
-}
-.quest-phase-head {
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 11px; font-weight: 700; color: var(--muted);
-  text-transform: uppercase; letter-spacing: .05em;
-}
 .quest-obj-row {
   background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
   padding: 8px; display: flex; flex-direction: column; gap: 6px;
@@ -273,6 +263,19 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 .quest-obj-items {
   display: flex; flex-direction: column; gap: 4px;
   padding-left: 8px; border-left: 2px solid var(--border); margin-top: 2px;
+}
+.obj-next-btn {
+  font-size: 11px; padding: 2px 9px; border-radius: 5px;
+  border: 1px solid var(--border); background: var(--surface3); color: var(--muted);
+  cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.obj-next-btn.active {
+  border-color: var(--accent); color: var(--accent); background: var(--accent-dim, rgba(200,169,110,.12));
+}
+.obj-next-arrow {
+  text-align: center; font-size: 16px; color: var(--accent); opacity: .7;
+  margin: -2px 0; pointer-events: none; user-select: none;
 }
 
 /* ── PNJ CRAFT CARD ── */
@@ -899,8 +902,8 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
               <select id="quest-type" onchange="update()">
                 <option value="">— Choisir —</option>
                 <option value="main">⚔️ Principale</option>
-                <option value="secondary">🗺️ Secondaire</option>
-                <option value="tertiary">📋 Tertiaire</option>
+                <option value="sec">🗺️ Secondaire</option>
+                <option value="ter">📋 Tertiaire</option>
               </select>
             </div>
             <div class="field">
@@ -932,21 +935,10 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
       <div class="section">
         <div class="sec-head" onclick="toggleSec(this)">🎯 Objectifs <span class="chev">▾</span></div>
         <div class="sec-body">
-          <div style="display:flex;gap:6px;margin-bottom:4px;">
-            <button id="qobj-mode-simple" class="cls-btn active" onclick="setQuestObjMode('simple')">🔹 Simple</button>
-            <button id="qobj-mode-phases" class="cls-btn"        onclick="setQuestObjMode('phases')">🔷 Phases</button>
-          </div>
-          <div class="hint" id="qobj-hint-simple">Liste plate d'objectifs à compléter dans l'ordre.</div>
-          <div class="hint" id="qobj-hint-phases" style="display:none;">Chaque phase se déverrouille après la précédente. Chaque phase est un tableau d'objectifs.</div>
-
+          <div class="hint">Liste d'objectifs. Activez → Suite pour indiquer une suite logique entre deux étapes.</div>
           <div id="qobj-simple">
-            <div id="qobj-simple-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px;"></div>
+            <div id="qobj-simple-list" style="display:flex;flex-direction:column;gap:4px;margin-bottom:6px;"></div>
             <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="addQuestObjectif()">+ Ajouter un objectif</button>
-          </div>
-
-          <div id="qobj-phases" style="display:none;">
-            <div id="qobj-phases-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:6px;"></div>
-            <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="addQuestPhase()">+ Ajouter une phase</button>
           </div>
         </div>
       </div>
@@ -4431,11 +4423,9 @@ function resetRegionForm() {
 // ═══════════════════════════════════════════════════
 // QUÊTE — STATE
 // ═══════════════════════════════════════════════════
-let questObjectifsMode = 'simple';
-let questSimpleObjs  = []; // [{uid, texte, items:[{uid, itemId, qte}]}]
-let questPhases      = []; // [{uid, objectifs:[{uid, texte, items:[{uid, itemId, qte}]}]}]
+let questSimpleObjs  = []; // [{uid, texte, next, items:[{uid, itemId, qte}]}]
 let questRecompenses = []; // [{uid, type, label, itemId}]
-let _qObjUid = 0, _qPhaseUid = 0, _qRewUid = 0, _qItemUid = 0;
+let _qObjUid = 0, _qRewUid = 0, _qItemUid = 0;
 
 function questTitreToId(titre, palier) {
   const stripped = titre.replace(/^\d+\s*[-–—]\s*/, '');
@@ -4458,16 +4448,6 @@ function onQuestPalierChange() {
 }
 
 // ── Mode toggle objectifs
-function setQuestObjMode(mode) {
-  questObjectifsMode = mode;
-  document.getElementById('qobj-mode-simple').classList.toggle('active', mode === 'simple');
-  document.getElementById('qobj-mode-phases').classList.toggle('active', mode === 'phases');
-  document.getElementById('qobj-simple').style.display      = mode === 'simple' ? '' : 'none';
-  document.getElementById('qobj-phases').style.display      = mode === 'phases' ? '' : 'none';
-  document.getElementById('qobj-hint-simple').style.display = mode === 'simple' ? '' : 'none';
-  document.getElementById('qobj-hint-phases').style.display = mode === 'phases' ? '' : 'none';
-  update();
-}
 
 // ── Row builder : item requis dans un objectif
 function _makeQuestItemRow(item, onRemove) {
@@ -4496,7 +4476,10 @@ function _makeQuestItemRow(item, onRemove) {
 }
 
 // ── Row builder : un objectif
-function _makeQuestObjRow(obj, onRemove) {
+function _makeQuestObjRow(obj, onRemove, onNextToggle) {
+  const container = document.createElement('div');
+  container.style.cssText = 'display:flex;flex-direction:column;gap:0;';
+
   const wrap = document.createElement('div');
   wrap.className = 'quest-obj-row';
 
@@ -4511,11 +4494,22 @@ function _makeQuestObjRow(obj, onRemove) {
   texteEl.addEventListener('blur',  () => texteEl.style.borderColor = 'var(--border)');
   texteEl.addEventListener('input', () => { obj.texte = texteEl.value; update(); });
 
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'obj-next-btn' + (obj.next ? ' active' : '');
+  nextBtn.title = 'Indique une suite logique vers l\'étape suivante';
+  nextBtn.textContent = '→ Suite';
+  nextBtn.addEventListener('click', () => {
+    obj.next = !obj.next;
+    nextBtn.classList.toggle('active', !!obj.next);
+    if (onNextToggle) onNextToggle();
+    update();
+  });
+
   const rm = document.createElement('button');
   rm.className = 'btn-icon'; rm.textContent = '✕';
   rm.addEventListener('click', onRemove);
 
-  topRow.append(texteEl, rm);
+  topRow.append(texteEl, nextBtn, rm);
 
   const itemsWrap = document.createElement('div');
   itemsWrap.className = 'quest-obj-items';
@@ -4543,7 +4537,18 @@ function _makeQuestObjRow(obj, onRemove) {
   renderItems();
 
   wrap.append(topRow, itemsWrap);
-  return wrap;
+
+  // Flèche de suite (affichée sous la row si next: true)
+  const arrowEl = document.createElement('div');
+  arrowEl.className = 'obj-next-arrow';
+  arrowEl.textContent = '↓';
+  arrowEl.style.display = obj.next ? '' : 'none';
+  nextBtn.addEventListener('click', () => {
+    arrowEl.style.display = obj.next ? '' : 'none';
+  });
+
+  container.append(wrap, arrowEl);
+  return container;
 }
 
 // ── Simple mode
@@ -4560,69 +4565,20 @@ function renderQuestSimpleObjs() {
     const row = _makeQuestObjRow(obj, () => {
       questSimpleObjs = questSimpleObjs.filter(o => o.uid !== obj.uid);
       renderQuestSimpleObjs(); update();
+    }, () => {
+      renderQuestSimpleObjs(); update();
     });
     list.appendChild(row);
   }
 }
 
-// ── Phases mode
-function addQuestPhase() {
-  questPhases.push({ uid: _qPhaseUid++, objectifs: [] });
-  renderQuestPhases();
-}
-
-function renderQuestPhases() {
-  const list = document.getElementById('qobj-phases-list');
-  list.innerHTML = '';
-  questPhases.forEach((phase, idx) => {
-    const phaseWrap = document.createElement('div');
-    phaseWrap.className = 'quest-phase';
-
-    const head = document.createElement('div');
-    head.className = 'quest-phase-head';
-    head.innerHTML = `<span>Phase ${idx + 1}</span>`;
-    const rmPhase = document.createElement('button');
-    rmPhase.className = 'btn-icon'; rmPhase.textContent = '✕';
-    rmPhase.style.cssText = 'font-size:11px;padding:2px 7px;';
-    rmPhase.addEventListener('click', () => {
-      questPhases = questPhases.filter(p => p.uid !== phase.uid);
-      renderQuestPhases(); update();
-    });
-    head.appendChild(rmPhase);
-
-    const objList = document.createElement('div');
-    objList.style.cssText = 'display:flex;flex-direction:column;gap:5px;';
-
-    const renderPhaseObjs = () => {
-      objList.innerHTML = '';
-      for (const obj of phase.objectifs) {
-        const row = _makeQuestObjRow(obj, () => {
-          phase.objectifs = phase.objectifs.filter(o => o.uid !== obj.uid);
-          renderPhaseObjs(); update();
-        });
-        objList.appendChild(row);
-      }
-      const addObjBtn = document.createElement('button');
-      addObjBtn.className = 'btn btn-ghost btn-sm';
-      addObjBtn.textContent = '+ Objectif';
-      addObjBtn.style.width = '100%';
-      addObjBtn.addEventListener('click', () => {
-        ensureAllItemsIndex();
-        phase.objectifs.push({ uid: _qObjUid++, texte: '', items: [] });
-        renderPhaseObjs();
-      });
-      objList.appendChild(addObjBtn);
-    };
-    renderPhaseObjs();
-
-    phaseWrap.append(head, objList);
-    list.appendChild(phaseWrap);
-  });
-}
 
 // ── Récompenses
 function addQuestRecompense() {
-  questRecompenses.push({ uid: _qRewUid++, type: 'exp', value: '', itemId: '' });
+  // exp et cols sont uniques — on choisit le premier type disponible
+  const used = new Set(questRecompenses.filter(r => r.type !== 'items').map(r => r.type));
+  const next = ['exp', 'cols'].find(t => !used.has(t)) || 'items';
+  questRecompenses.push({ uid: _qRewUid++, type: next, value: '', itemId: '' });
   renderQuestRecompenses();
 }
 
@@ -4636,11 +4592,14 @@ function renderQuestRecompenses() {
 
     const typeEl = document.createElement('select');
     typeEl.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px;font-size:13px;outline:none;height:38px;width:100%;';
+    const takenTypes = new Set(questRecompenses.filter(r => r.uid !== rew.uid && r.type !== 'items').map(r => r.type));
     typeEl.innerHTML = `
-      <option value="exp"  ${rew.type==='exp'  ?'selected':''}>⭐ XP</option>
-      <option value="cols" ${rew.type==='cols' ?'selected':''}>🪙 Cols</option>
+      <option value="exp"  ${rew.type==='exp'  ?'selected':''} ${takenTypes.has('exp')  ?'disabled':''}>⭐ XP</option>
+      <option value="cols" ${rew.type==='cols' ?'selected':''} ${takenTypes.has('cols') ?'disabled':''}>🪙 Cols</option>
       <option value="items"${rew.type==='items'?'selected':''}>🎁 Item</option>`;
     typeEl.addEventListener('change', () => {
+      const taken = new Set(questRecompenses.filter(r => r.uid !== rew.uid && r.type !== 'items').map(r => r.type));
+      if (typeEl.value !== 'items' && taken.has(typeEl.value)) { typeEl.value = rew.type; return; }
       rew.type = typeEl.value; rew.value = ''; rew.itemId = '';
       renderQuestRecompenses(); update();
     });
@@ -4715,40 +4674,29 @@ function buildQuestObj() {
   obj.npc = npc;
   if (desc)   obj.desc   = desc;
 
-  if (questObjectifsMode === 'simple') {
-    const objs = questSimpleObjs
-      .filter(o => o.texte.trim())
-      .map(o => {
-        const e = { texte: o.texte.trim() };
-        const items = o.items.filter(i => i.itemId).map(i => ({ id: i.itemId, qte: +i.qte || 1 }));
-        if (items.length) e.items = items;
-        return e;
-      });
-    if (objs.length) obj.objectifs = objs;
-  } else {
-    const phases = questPhases.map(ph =>
-      ph.objectifs
-        .filter(o => o.texte.trim())
-        .map(o => {
-          const e = { texte: o.texte.trim() };
-          const items = o.items.filter(i => i.itemId).map(i => ({ id: i.itemId, qte: +i.qte || 1 }));
-          if (items.length) e.items = items;
-          return e;
-        })
-    );
-    if (phases.length) obj.objectifs = phases;
-  }
+  const objs = questSimpleObjs
+    .filter(o => o.texte.trim())
+    .map(o => {
+      const e = { texte: o.texte.trim() };
+      const items = o.items.filter(i => i.itemId).map(i => ({ id: i.itemId, qte: +i.qte || 1 }));
+      if (items.length) e.items = items;
+      if (o.next) e.next = true;
+      return e;
+    });
+  if (objs.length) obj.objectifs = objs;
 
   const rews = questRecompenses
     .filter(r => r.type === 'items' ? r.itemId : r.value)
     .map(r => {
       if (r.type === 'items') {
-        const e = { type: 'items', label: r.value || '', itemId: r.itemId };
+        const e = { type: 'items', itemId: r.itemId };
+        if (r.value) e.label = r.value;
         if (r.qte && r.qte > 1) e.qte = r.qte;
         return e;
       }
-      const suffix = r.type === 'exp' ? ' XP' : ' Cols';
-      return { type: r.type, label: r.value + suffix };
+      if (r.type === 'exp')  return { type: 'exp',  xp:   parseInt(r.value) || 0 };
+      if (r.type === 'cols') return { type: 'cols', cols: parseInt(r.value) || 0 };
+      return { type: r.type, label: r.value };
     });
   if (rews.length) obj.recompenses = rews;
 
@@ -4789,35 +4737,20 @@ function renderQuestPreview(obj) {
   // Objectifs HTML
   let objHtml = '';
   if (obj.objectifs?.length) {
-    const isPhases = Array.isArray(obj.objectifs[0]);
-    if (isPhases) {
-      obj.objectifs.forEach((phase, i) => {
-        objHtml += `<div style="font-size:10px;font-weight:700;color:${tc};text-transform:uppercase;letter-spacing:.05em;margin:6px 0 3px;">Phase ${i+1}</div>`;
-        phase.forEach(o => {
-          objHtml += `<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;">
-            <span style="color:${tc};flex-shrink:0;margin-top:1px;">◻</span>
-            <span style="font-size:12px;">${esc(o.texte)}</span>
-          </div>`;
-          if (o.items?.length) {
-            o.items.forEach(it => {
-              objHtml += `<div style="font-size:11px;color:var(--muted);padding-left:18px;">→ ${esc(it.id)} ×${it.qte}</div>`;
-            });
-          }
+    obj.objectifs.forEach((o, idx) => {
+      objHtml += `<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;">
+        <span style="color:${tc};flex-shrink:0;margin-top:1px;">◻</span>
+        <span style="font-size:12px;">${esc(o.texte)}</span>
+      </div>`;
+      if (o.items?.length) {
+        o.items.forEach(it => {
+          objHtml += `<div style="font-size:11px;color:var(--muted);padding-left:18px;">→ ${esc(it.id)} ×${it.qte}</div>`;
         });
-      });
-    } else {
-      obj.objectifs.forEach(o => {
-        objHtml += `<div style="display:flex;align-items:flex-start;gap:6px;padding:3px 0;">
-          <span style="color:${tc};flex-shrink:0;margin-top:1px;">◻</span>
-          <span style="font-size:12px;">${esc(o.texte)}</span>
-        </div>`;
-        if (o.items?.length) {
-          o.items.forEach(it => {
-            objHtml += `<div style="font-size:11px;color:var(--muted);padding-left:18px;">→ ${esc(it.id)} ×${it.qte}</div>`;
-          });
-        }
-      });
-    }
+      }
+      if (o.next && idx < obj.objectifs.length - 1) {
+        objHtml += `<div style="text-align:center;font-size:14px;color:${tc};opacity:.7;margin:1px 0;line-height:1;">↓</div>`;
+      }
+    });
   }
 
   // Récompenses HTML
@@ -4860,9 +4793,7 @@ function renderQuestPreview(obj) {
 
 // ── Reset
 function resetQuestForm() {
-  questObjectifsMode = 'simple';
   questSimpleObjs  = [];
-  questPhases      = [];
   questRecompenses = [];
   ['quest-titre','quest-id','quest-npc','quest-desc'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
@@ -4870,9 +4801,7 @@ function resetQuestForm() {
   if (_questZoneDrop) _questZoneDrop.reset();
   const t = document.getElementById('quest-type');   if (t) t.selectedIndex = 0;
   const p = document.getElementById('quest-palier'); if (p) p.selectedIndex = 0;
-  setQuestObjMode('simple');
   renderQuestSimpleObjs();
-  renderQuestPhases();
   renderQuestRecompenses();
 }
 

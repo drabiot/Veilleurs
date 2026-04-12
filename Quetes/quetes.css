@@ -381,13 +381,8 @@ body.quetes-page { overflow: hidden; }
 /* Description — tronquée à 2 lignes */
 .card-desc {
   font-size: 11px; color: var(--muted); font-style: italic; line-height: 1.55;
-  /* Prend tout l'espace disponible entre meta et récompenses */
-  flex: 1;
-  overflow: hidden;
-  /* Clamp dynamique : autant de lignes que possible */
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 10; /* valeur haute — c'est overflow:hidden qui coupe réellement */
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden; flex-shrink: 0;
 }
 
 /* Récompenses mini (sur les cartes) */
@@ -691,6 +686,19 @@ body.quetes-page { overflow: hidden; }
 
 .obj-text { flex: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 
+/* Objectif bloqué (précédent non coché avec next:true) */
+.obj-item.obj-blocked {
+  opacity: .35;
+  pointer-events: none;
+}
+.obj-item.obj-blocked .obj-ck-label { cursor: default; }
+
+/* Flèche de suite logique */
+.obj-next-arrow {
+  text-align: center; font-size: 14px; color: var(--gold-dim, #c8a96e);
+  opacity: .65; margin: 0; line-height: 1.8; user-select: none;
+}
+
 /* ── Récompenses (modal) — style compendium ── */
 .reward-list { display: flex; flex-wrap: wrap; gap: 8px; }
 
@@ -773,85 +781,4 @@ body.quetes-page { overflow: hidden; }
   .quest-modal { max-width: 98vw; max-height: 92vh; }
   .quest-sheet-header { grid-template-columns: 1fr; }
   .quete-card { height: auto; min-height: 200px; }
-}
-
-/* ══════════════════════════════════
-   DÉPENDANCES ENTRE QUÊTES
-   Indicateur "→ suite de X" et "⚠ bloquée"
-══════════════════════════════════ */
-.card-requires {
-  display: flex; align-items: center; gap: 5px;
-  padding: 3px 16px 0;
-  font-family: 'JetBrains Mono', monospace; font-size: 9px;
-  color: var(--muted); letter-spacing: .04em;
-  flex-shrink: 0;
-}
-.card-requires-arrow { color: var(--gold-dim); font-size: 10px; }
-.card-requires-name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* Quête bloquée (prérequis non terminé) */
-.quete-card.blocked {
-  opacity: .55;
-  filter: grayscale(.4);
-}
-.quete-card.blocked .type-stripe { opacity: .4; }
-.card-blocked-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-family: 'JetBrains Mono', monospace; font-size: 8px;
-  padding: 2px 6px; border: 1px solid #d4a84044;
-  background: rgba(212,168,64,.06); color: #d4a840;
-  flex-shrink: 0; white-space: nowrap;
-}
-
-/* Connecteur visuel entre quêtes liées dans la grille */
-.quest-chain-connector {
-  grid-column: 1 / -1;
-  display: flex; align-items: center; gap: 10px;
-  padding: 2px 0;
-  font-family: 'JetBrains Mono', monospace; font-size: 9px;
-  color: var(--gold-dim); letter-spacing: .08em; opacity: .6;
-}
-.quest-chain-connector::before,
-.quest-chain-connector::after {
-  content: ''; flex: 1; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold-dim));
-}
-.quest-chain-connector::after {
-  background: linear-gradient(90deg, var(--gold-dim), transparent);
-}
-
-/* ══════════════════════════════════
-   FLÈCHES ENTRE QUÊTES LIÉES
-══════════════════════════════════ */
-.quest-chain-arrow {
-  /* Span sur toute la grille pour centrer la flèche */
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: var(--gold-dim);
-  opacity: .55;
-  margin: -6px 0;
-  pointer-events: none;
-  transition: opacity .15s;
-}
-.quest-chain-arrow svg {
-  filter: drop-shadow(0 0 4px var(--gold-dim));
-}
-
-/* ══════════════════════════════════
-   FLÈCHE ENTRE OBJECTIFS (next:true)
-══════════════════════════════════ */
-.obj-next-arrow {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: var(--gold-dim);
-  opacity: .6;
-  margin: 0;
-  pointer-events: none;
-  height: 20px;
-}
-.obj-next-arrow svg {
-  filter: drop-shadow(0 0 3px var(--gold-dim));
 }
