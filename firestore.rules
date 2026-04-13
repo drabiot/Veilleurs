@@ -11,9 +11,8 @@ service cloud.firestore {
     }
 
     function isAdmin()       { return isAuth() && userRole() == 'admin'; }
-    function isModo()        { return isAuth() && userRole() in ['modo', 'admin']; }
-    function isContrib()     { return isAuth() && userRole() in ['contributeur', 'modo', 'admin']; }
-    function isMembre()      { return isAuth() && userRole() in ['membre', 'contributeur', 'modo', 'admin']; }
+    function isContrib()     { return isAuth() && userRole() in ['contributeur', 'admin']; }
+    function isMembre()      { return isAuth() && userRole() in ['membre', 'contributeur', 'admin']; }
 
     function creatorToolEnabled(toolType) {
       return !exists(/databases/$(database)/documents/config/creator)
@@ -46,7 +45,7 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read:   if isAuth();
+      allow read:   if isAuth() && (request.auth.uid == uid || isAdmin());
       // Création du propre profil à l'inscription (rôle forcé à 'membre', pas d'autres champs)
       allow create: if isAuth()
                     && request.auth.uid == uid
@@ -63,17 +62,17 @@ service cloud.firestore {
 
     match /submissions/{id} {
       // Tout le monde peut soumettre (invités inclus) — pseudo et type obligatoires
-      // Les modo+ contournent les restrictions du creator
+      // Les contributeurs+ contournent les restrictions du creator
       allow create: if request.resource.data.submitterName is string
                     && request.resource.data.submitterName.size() >= 2
                     && request.resource.data.type in ['item','mob','pnj','region','quest']
                     && request.resource.data.status == 'pending'
-                    && (isModo() || creatorToolEnabled(request.resource.data.type));
-      // Les modo+ voient tout ; un user connecté voit ses propres soumissions
-      allow read:   if isModo() || (isAuth() && resource.data.submittedBy == request.auth.uid);
-      // Seuls les modo/admin peuvent modifier (approuver/rejeter)
-      allow update: if isModo();
-      allow delete: if isModo();
+                    && (isContrib() || creatorToolEnabled(request.resource.data.type));
+      // Les contributeurs+ voient tout ; un user connecté voit ses propres soumissions
+      allow read:   if isContrib() || (isAuth() && resource.data.submittedBy == request.auth.uid);
+      // Seuls les contributeurs/admin peuvent modifier (approuver/rejeter)
+      allow update: if isContrib();
+      allow delete: if isContrib();
     }
 
   }

@@ -601,6 +601,21 @@ const SLOTS_BOT = [
 ];
 const ALL_SLOTS = [...SLOTS_LEFT, ...SLOTS_RIGHT, ...SLOTS_BOT];
 //#endregion SLOTS
+
+/* ══ HELPERS IMAGES ══
+   Champ canonique : images (tableau de chemins).
+   Rétrocompat : image (string), img (string).              */
+function getItemImages(item) {
+  if (item.images && item.images.length) return item.images;
+  if (item.image) return [item.image];
+  if (item.img)   return [item.img];
+  return [];
+}
+function getItemImg(item) {
+  const imgs = getItemImages(item);
+  return imgs.length ? imgs[0] : null;
+}
+
 //#endregion CONSTANTES
 
 var ITEMS = [];

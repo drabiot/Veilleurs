@@ -1,3 +1,7 @@
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 /* ══════════════════════════════════
    DOM
 ══════════════════════════════════ */
@@ -67,7 +71,7 @@ function buildSidebarAlpha(items) {
     const color = rarityColor(item.rarity);
     link.innerHTML = `
       <span class="sidebar-item-dot" style="background:${color}"></span>
-      ${item.name}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
+      ${escHtml(item.name)}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
     link.addEventListener('click', (e) => {
       e.preventDefault();
       showItem(item.id);
@@ -136,18 +140,18 @@ function inlineLinks(str) {
 
     if (type === 'item') {
       const target = inItems;
-      if (!target) return `<span style="color:#888;border-bottom:1px dashed #555" title="Item introuvable: ${id}">${label}</span>`;
+      if (!target) return `<span style="color:#888;border-bottom:1px dashed #555" title="Item introuvable: ${escHtml(id)}">${label}</span>`;
       const color = rarityColor(target.rarity);
-      return `<a class="obtain-entity-link" href="compendium.html#${id}" data-id="${id}" data-type="item" style="color:${color}">${label}</a>`;
+      return `<a class="obtain-entity-link" href="compendium.html#${escHtml(id)}" data-id="${escHtml(id)}" data-type="item" style="color:${color}">${label}</a>`;
     }
 
     // Pour mobs et npc → bestiaire avec préfixe de section
     const sectionPrefix = type === 'npc' ? 'personnages' : 'monstres';
     const hash  = `${sectionPrefix}/${id}`;
-    const page  = `../Bestiaire/bestiaire.html#${hash}`;
+    const page  = `../Bestiaire/bestiaire.html#${escHtml(hash)}`;
     const color = 'var(--gold)';
 
-    return `<a class="obtain-entity-link" href="${page}" data-id="${id}" data-type="${type}" data-hash="${hash}" style="color:${color}">${label}</a>`;
+    return `<a class="obtain-entity-link" href="${page}" data-id="${escHtml(id)}" data-type="${escHtml(type)}" data-hash="${escHtml(hash)}" style="color:${color}">${label}</a>`;
   });
 }
 
@@ -223,7 +227,7 @@ function extractBadge(str, rank) {
 }
 
 function inlineMd(str) {
-  return inlineLinks(str.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'));
+  return inlineLinks(escHtml(str).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'));
 }
 
 /* Regroupe les items par palier puis par catégorie, triés par rareté */
@@ -314,7 +318,7 @@ function buildSidebar(items, expandAll = false) {
           const color = rarityColor(item.rarity);
           link.innerHTML = `
           <span class="sidebar-item-dot" style="background:${color}"></span>
-          ${item.name}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
+          ${escHtml(item.name)}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
 
           link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -346,11 +350,8 @@ let   _slidePaused = false;
 let   _slideMedia  = [];
 
 function resolveMedia(item) {
-  if (item.images && Array.isArray(item.images)) return item.images;
-  if (item.model)  return [item.model];
-  if (item.image)  return [item.image];
-  if (item.img)  return [item.img];
-  return [];
+  if (item.model) return [item.model];
+  return getItemImages(item);
 }
 
 function stopSlideshow() {
@@ -734,18 +735,18 @@ function renderCraft(craftList) {
       const ingredient = ITEMS.find(i => i.id === entry.id);
       let imgHtml;
       if (ingredient) {
-        const imgSrc = ingredient.image || ingredient.img || null;
+        const imgSrc = getItemImg(ingredient);
         imgHtml = imgSrc
-          ? `<img class="craft-ingredient-img" src="${imgSrc}" alt="${ingredient.name}">`
+          ? `<img class="craft-ingredient-img" src="${imgSrc}" alt="${escHtml(ingredient.name)}">`
           : `<span class="craft-ingredient-emoji">${catData(ingredient.category).emoji}</span>`;
       } else {
         imgHtml = `<span class="craft-ingredient-emoji">❓</span>`;
       }
 
-      const name  = ingredient ? ingredient.name : `<em style="color:#888">${entry.id}</em>`;
+      const name  = ingredient ? escHtml(ingredient.name) : `<em style="color:#888">${escHtml(entry.id)}</em>`;
       const color = ingredient ? rarityColor(ingredient.rarity) : '#666';
       const nameHtml = ingredient
-        ? `<a class="craft-ingredient-name" href="#${entry.id}" style="color:${color}" data-id="${entry.id}">${name}</a>`
+        ? `<a class="craft-ingredient-name" href="#${escHtml(entry.id)}" style="color:${color}" data-id="${escHtml(entry.id)}">${name}</a>`
         : `<span class="craft-ingredient-name" style="color:#888">${name}</span>`;
 
       return `
@@ -758,7 +759,7 @@ function renderCraft(craftList) {
   }
 
 function renderNpcHeader(recette, index) {
-  const label = recette.name || ('Recette ' + (index + 1));
+  const label = escHtml(recette.name || ('Recette ' + (index + 1)));
   if (!recette.npcId) {
     return `<div class="craft-npc-header craft-npc-header--plain">
       <span class="craft-npc-label">${label}</span>
@@ -770,16 +771,17 @@ function renderNpcHeader(recette, index) {
   const npcMob   = (typeof MOBS  !== 'undefined') && MOBS.find(m => m.id === recette.npcId);
   const npc      = npcItem || npcMob;
   const npcName  = npc ? (npc.name || label) : label;
-  const npcImg   = npc ? (npc.img || npc.image || null) : null;
+  const npcImg   = npc ? getItemImg(npc) : null;
   const npcColor = npcItem ? rarityColor(npcItem.rarity) : 'var(--gold)';
 
+  const npcNameEsc = escHtml(npcName);
   const imgHtml = npcImg
-    ? `<img class="craft-npc-img" src="${npcImg}" alt="${npcName}">`
+    ? `<img class="craft-npc-img" src="${npcImg}" alt="${npcNameEsc}">`
     : `<span class="craft-npc-ico">⚒</span>`;
 
-  return `<div class="craft-npc-header" data-npc-id="${recette.npcId}" data-npc-section="${section}">
+  return `<div class="craft-npc-header" data-npc-id="${escHtml(recette.npcId)}" data-npc-section="${escHtml(section)}">
     <span class="craft-npc-visual">${imgHtml}</span>
-    <span class="craft-npc-name" style="color:${npcColor}">${npcName}</span>
+    <span class="craft-npc-name" style="color:${npcColor}">${npcNameEsc}</span>
     <span class="craft-npc-arrow">›</span>
   </div>`;
 }
@@ -792,7 +794,7 @@ function renderNpcHeader(recette, index) {
   }
 
   const tabsHtml = recettes.map((r, i) => {
-    const label = r.name || ('Recette ' + (i + 1));
+    const label = escHtml(r.name || ('Recette ' + (i + 1)));
     return `<button class="craft-tab${i === 0 ? ' active' : ''}" data-tab="${i}">${label}</button>`;
   }).join('');
 
@@ -828,12 +830,12 @@ function renderEffects(effectsList) {
                    : '';
     return `
       <div class="effect-row">
-        <div class="effect-icon" style="color:${color};">${icon}</div>
+        <div class="effect-icon" style="color:${color};">${escHtml(icon)}</div>
         <div class="effect-body">
-          <div class="effect-label">${label}</div>
-          <div class="effect-value" style="color:${color};">${valueStr}</div>
+          <div class="effect-label">${escHtml(label)}</div>
+          <div class="effect-value" style="color:${color};">${escHtml(valueStr)}</div>
         </div>
-        ${duration ? `<div class="effect-duration">${duration}</div>` : ''}
+        ${duration ? `<div class="effect-duration">${escHtml(duration)}</div>` : ''}
       </div>`;
   }).join('');
 
@@ -979,7 +981,7 @@ function showItem(id, initialQuality = false) {
           ${slideshowControls}
         </div>
         <div class="item-info">
-          <h2 class="item-name">${item.name}</h2>
+          <h2 class="item-name">${escHtml(item.name)}</h2>
           <div class="item-rarity-badge" style="color:${color}; border-color:${color};">
             <span class="item-rarity-dot" style="background:${color};"></span>
             ${rlabel}

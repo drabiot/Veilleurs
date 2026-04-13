@@ -772,9 +772,10 @@ function loadAccessoriesForClass(classId) {
       dot.className = 'slot-dot';
       dot.style.background = col;
       el.appendChild(dot);
-      if (item.img) {
+      const _slotImgSrc = getItemImg(item);
+      if (_slotImgSrc) {
         const img = document.createElement('img');
-        img.src = item.img; img.alt = item.name; img.className = 'slot-img';
+        img.src = _slotImgSrc; img.alt = item.name; img.className = 'slot-img';
         el.appendChild(img);
       } else {
         appendDiv(el, 'slot-icon', slotDef.ico);
@@ -1280,18 +1281,34 @@ stats.innerHTML = statsLines +
 
   function selectSlot(slotId) {
 		if (getBlockedSlots().has(slotId)) return;
-    activeSlot = slotId;
+    activeSlot = (activeSlot === slotId) ? null : slotId;
     document.querySelectorAll('.slot').forEach(function(el) {
-      el.classList.toggle('active', el.dataset.slotId === slotId);
+      el.classList.toggle('active', el.dataset.slotId === activeSlot);
     });
     renderPickerInfo();
     renderItemList();
   }
 
+  function findBestSlotForItem(item) {
+    const blocked = getBlockedSlots();
+    const compatible = ALL_SLOTS.filter(function(s) {
+      return s.cats.includes(item.cat) && !blocked.has(s.id);
+    });
+    if (!compatible.length) return null;
+    // 1) slot ayant déjà cet item (pour le déséquiper)
+    const same = compatible.find(function(s) { return equipped[s.id] && equipped[s.id].id === item.id; });
+    if (same) return same.id;
+    // 2) slot vide
+    const empty = compatible.find(function(s) { return !equipped[s.id]; });
+    if (empty) return empty.id;
+    // 3) premier slot compatible
+    return compatible[0].id;
+  }
+
   function renderPickerInfo() {
     const box = document.getElementById('picker-info');
     if (!activeSlot) {
-      box.innerHTML = '<div class="psi-hint">Cliquez sur un emplacement</div>';
+      box.innerHTML = '<div class="psi-hint">Tous les items · cliquez sur un emplacement pour filtrer</div>';
       return;
     }
     const s = ALL_SLOTS.find(function(x) { return x.id === activeSlot; });
@@ -1494,35 +1511,51 @@ stats.innerHTML = statsLines +
 
   function renderItemList() {
     const list = document.getElementById('items-list');
-    if (!activeSlot) {
-      list.innerHTML = '<div class="picker-empty-msg">Sélectionnez un emplacement</div>';
-      return;
-    }
-    const slot = ALL_SLOTS.find(function(s) { return s.id === activeSlot; });
     const norm = function(str) { return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
     const q    = norm(filterQ);
-    const visible = ITEMS.filter(function(item) {
-    // Unicité : si unique:true, vérifier qu'il n'est pas déjà équipé dans un autre slot
-    if (item.unique) {
-      const alreadyEquippedElsewhere = Object.entries(equipped).some(function(e) {
-        return e[1] && e[1].id === item.id && e[0] !== activeSlot;
-      });
-      if (alreadyEquippedElsewhere) return false;
-    }
-    return slot.cats.includes(item.cat) &&
-      itemAllowedForClass(item, activeClass) &&
-      (!filterRar  || item.rarity === filterRar) &&
-      (filterTier === null || item.palier === filterTier) &&
-      (!q || norm(item.name).includes(q)) &&
-      (!item.sensible || (q && norm(item.name) === q)) &&
-      (filterStats.size === 0 || [...filterStats].every(function(sid) {
+    const statsFilter = function(item) {
+      return filterStats.size === 0 || [...filterStats].every(function(sid) {
         if (!item.stats) return false;
         const val = item.stats[sid];
         if (val === undefined) return false;
         const v = Array.isArray(val) ? val[1] : val;
         return v !== 0;
-      }));
-  });
+      });
+    };
+
+    const _equipCats = new Set(ALL_SLOTS.flatMap(function(s) { return s.cats; }));
+
+    let visible;
+    if (!activeSlot) {
+      // Mode "tous les items" — uniquement armes / armures / accessoires
+      visible = ITEMS.filter(function(item) {
+        return _equipCats.has(item.cat) &&
+          itemAllowedForClass(item, activeClass) &&
+          (!filterRar  || item.rarity === filterRar) &&
+          (filterTier === null || item.palier === filterTier) &&
+          (!q || norm(item.name).includes(q)) &&
+          (!item.sensible || (q && norm(item.name) === q)) &&
+          statsFilter(item);
+      });
+    } else {
+      const slot = ALL_SLOTS.find(function(s) { return s.id === activeSlot; });
+      visible = ITEMS.filter(function(item) {
+        if (item.unique) {
+          const alreadyEquippedElsewhere = Object.entries(equipped).some(function(e) {
+            return e[1] && e[1].id === item.id && e[0] !== activeSlot;
+          });
+          if (alreadyEquippedElsewhere) return false;
+        }
+        return slot.cats.includes(item.cat) &&
+          itemAllowedForClass(item, activeClass) &&
+          (!filterRar  || item.rarity === filterRar) &&
+          (filterTier === null || item.palier === filterTier) &&
+          (!q || norm(item.name).includes(q)) &&
+          (!item.sensible || (q && norm(item.name) === q)) &&
+          statsFilter(item);
+      });
+    }
+
     if (!visible.length) {
       list.innerHTML = '<div class="picker-empty-msg">Aucun item compatible</div>';
       return;
@@ -1534,12 +1567,16 @@ stats.innerHTML = statsLines +
 	  const thresholdOk = itemMeetsThreshold(item);
 	  const isLocked    = !levelOk || !thresholdOk;
 	  row.className = 'item-row' + (isLocked ? ' item-locked' : '');
-      if (equipped[activeSlot] && equipped[activeSlot].id === item.id) row.classList.add('active');
+      // Actif si équipé dans le slot actif (ou dans n'importe quel slot si vue globale)
+      const isActive = activeSlot
+        ? (equipped[activeSlot] && equipped[activeSlot].id === item.id)
+        : Object.values(equipped).some(function(e) { return e && e.id === item.id; });
+      if (isActive) row.classList.add('active');
       const rarColor = (RARITIES[item.rarity] || { color: '#888' }).color;
       const rarLabel = (RARITIES[item.rarity] || { label: item.rarity }).label;
       row.innerHTML =
         '<div class="item-thumb">' +
-          (item.img ? '<img src="' + item.img + '" alt="' + item.name + '">' : '<span>📦</span>') +
+          (getItemImg(item) ? '<img src="' + getItemImg(item) + '" alt="' + item.name + '">' : '<span>📦</span>') +
           '<div class="item-thumb-bar" style="background:' + rarColor + '"></div>' +
         '</div>' +
         '<div class="item-meta">' +
@@ -1555,34 +1592,37 @@ stats.innerHTML = statsLines +
 
     	if (!isLocked) {
 			row.addEventListener('click', function() {
-				if (equipped[activeSlot] && equipped[activeSlot].id === item.id) {
-    				clearSlot(activeSlot);
-					} else {
-						clearRunesForSlot(activeSlot);
+				// En vue globale, trouver le meilleur slot pour cet item
+				const targetSlot = activeSlot || findBestSlotForItem(item);
+				if (!targetSlot) return;
 
-						// ← Vérifier si l'ancien item était 2 mains avant de le remplacer
-						const previousItem = equipped[activeSlot];
-						const prevOffSlotId = findOffhandSlotId(previousItem);
+				if (equipped[targetSlot] && equipped[targetSlot].id === item.id) {
+    				clearSlot(targetSlot);
+				} else {
+					clearRunesForSlot(targetSlot);
 
-						equipped[activeSlot] = item;
+					const previousItem = equipped[targetSlot];
+					const prevOffSlotId = findOffhandSlotId(previousItem);
 
-						// Offhand du nouvel item (2 mains → bloquer)
-						const offSlotId = findOffhandSlotId(item);
-						if (offSlotId) {
-								delete equipped[offSlotId];
-								clearRunesForSlot(offSlotId);
-								redrawSlot(offSlotId);
-						}
+					equipped[targetSlot] = item;
 
-						// Offhand de l'ancien item (2 mains → débloquer si le nouveau est 1 main)
-						if (prevOffSlotId && prevOffSlotId !== offSlotId) {
-								redrawSlot(prevOffSlotId);
-						}
+					// Offhand du nouvel item (2 mains → bloquer)
+					const offSlotId = findOffhandSlotId(item);
+					if (offSlotId) {
+						delete equipped[offSlotId];
+						clearRunesForSlot(offSlotId);
+						redrawSlot(offSlotId);
+					}
 
-						saveToStorage();
-						redrawSlot(activeSlot);
-						renderStats();
-						renderItemList();
+					// Offhand de l'ancien item (2 mains → débloquer si le nouveau est 1 main)
+					if (prevOffSlotId && prevOffSlotId !== offSlotId) {
+						redrawSlot(prevOffSlotId);
+					}
+
+					saveToStorage();
+					redrawSlot(targetSlot);
+					renderStats();
+					renderItemList();
 				}
 			});
       } else {
@@ -1826,7 +1866,7 @@ stats.innerHTML = statsLines +
     if (!header || !page) return;
 
     document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
-  
+    page.style.marginTop = header.offsetHeight + 'px';
     page.style.height = 'calc(100vh - ' + header.offsetHeight + 'px)';
 
     const wrap = document.querySelector('.mannequin-col');
@@ -1927,6 +1967,7 @@ stats.innerHTML = statsLines +
 
     renderStats();
     renderPickerInfo();
+    renderItemList();
 	requestAnimationFrame(function() {
 		fitGrid();
 		requestAnimationFrame(fitGrid);
@@ -2065,8 +2106,8 @@ stats.innerHTML = statsLines +
       imgW.style.cssText = 'width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.03);border:1px solid var(--rim);';
       if (isCols) {
         imgW.innerHTML = '<span style="font-size:12px">🪙</span>';
-      } else if (matItem && (matItem.img || matItem.image)) {
-        imgW.innerHTML = '<img src="' + (matItem.img || matItem.image) + '" alt="" style="width:14px;height:14px;object-fit:contain;image-rendering:pixelated;">';
+      } else if (matItem && getItemImg(matItem)) {
+        imgW.innerHTML = '<img src="' + getItemImg(matItem) + '" alt="" style="width:14px;height:14px;object-fit:contain;image-rendering:pixelated;">';
       } else {
         imgW.innerHTML = '<span style="font-size:10px">📦</span>';
       }
@@ -2233,8 +2274,8 @@ stats.innerHTML = statsLines +
 
       const imgWrap = document.createElement('div');
       imgWrap.className = 'cdp-group-img';
-      if (item.img || item.image) {
-        imgWrap.innerHTML = '<img src="' + (item.img || item.image) + '" alt="">';
+      if (getItemImg(item)) {
+        imgWrap.innerHTML = '<img src="' + getItemImg(item) + '" alt="">';
       } else {
         imgWrap.innerHTML = '<span style="font-size:13px">📦</span>';
       }
@@ -2287,8 +2328,8 @@ stats.innerHTML = statsLines +
     imgW.className = 'cdp-mat-img';
     if (isCols) {
       imgW.innerHTML = '<span style="font-size:14px;line-height:1;">🪙</span>';
-    } else if (matItem && (matItem.img || matItem.image)) {
-      imgW.innerHTML = '<img src="' + (matItem.img || matItem.image) + '" alt="">';
+    } else if (matItem && getItemImg(matItem)) {
+      imgW.innerHTML = '<img src="' + getItemImg(matItem) + '" alt="">';
     } else {
       imgW.innerHTML = '<span class="cdp-fallback">📦</span>';
     }

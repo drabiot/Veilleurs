@@ -90,8 +90,108 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
 .field textarea { resize: vertical; min-height: 62px; }
+
+/* ── CUSTOM SELECT ── */
+select {
+  appearance: none; -webkit-appearance: none;
+  background-color: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px 28px 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: border-color .15s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='none' stroke='%237a7a90' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 10px 6px;
+}
+select:focus, select:hover { border-color: var(--accent); }
+.field select { width: 100%; padding-right: 28px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── CUSTOM SELECT (remplace les <select> natifs) ── */
+.custom-sel-wrap { position: relative; display: block; width: 100%; }
+.custom-sel-trigger {
+  appearance: none; -webkit-appearance: none;
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+  color: var(--text); padding: 8px 10px; font-size: 13px; font-family: inherit;
+  outline: none; transition: border-color .15s; width: 100%; cursor: pointer;
+  text-align: left; box-sizing: border-box; min-height: 38px;
+}
+.custom-sel-trigger:focus, .custom-sel-trigger:hover { border-color: var(--accent); }
+.custom-sel-trigger.open { border-color: var(--accent); }
+.custom-sel-value { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.custom-sel-placeholder { color: var(--muted); font-style: italic; }
+.custom-sel-chevron {
+  width: 10px; height: 6px; flex-shrink: 0; margin-left: 8px;
+  color: var(--muted); transition: transform .15s;
+}
+.custom-sel-trigger.open .custom-sel-chevron { transform: rotate(180deg); }
 .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+/* ── COORDS ── */
+.coords-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.coord-field {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: border-color .15s;
+}
+.coord-field:focus-within { border-color: var(--accent); }
+.coord-axis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 0 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  border-right: 1px solid var(--border);
+  letter-spacing: .04em;
+  user-select: none;
+}
+.coord-x .coord-axis { background: rgba(248,113,113,.15); color: #f87171; border-color: rgba(248,113,113,.2); }
+.coord-y .coord-axis { background: rgba(74,222,128,.15); color: #4ade80; border-color: rgba(74,222,128,.2); }
+.coord-z .coord-axis { background: rgba(96,165,250,.15); color: #60a5fa; border-color: rgba(96,165,250,.2); }
+.coord-field input[type=number] {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  width: 100%;
+  min-width: 0;
+}
+.coord-field input[type=number]::-webkit-inner-spin-button,
+.coord-field input[type=number]::-webkit-outer-spin-button { opacity: .4; }
+.coords-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+.coords-label .req { color: var(--danger); }
 
 /* ── RARITY BUTTONS ── */
 .rarity-row { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -208,19 +308,38 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 .drop-list {
   position: absolute; top: calc(100% + 4px); left: 0; right: 0;
   background: var(--surface); border: 1px solid var(--accent); border-radius: 8px;
-  max-height: 200px; overflow-y: auto; z-index: 100; display: none;
-  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  max-height: 200px; overflow-y: auto; z-index: 300; display: none;
+  box-shadow: 0 12px 32px rgba(0,0,0,.65), 0 0 0 1px rgba(122,90,248,.15);
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  overscroll-behavior: contain;
 }
-.drop-list.open { display: block; }
+.drop-list.open { display: block; animation: dropFadeIn .13s ease; }
+.drop-list.drop-up { top: auto; bottom: calc(100% + 4px); }
+.drop-list.drop-up.open { animation: dropFadeUp .13s ease; }
+@keyframes dropFadeIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
+@keyframes dropFadeUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
 .drop-item {
-  padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border);
-  font-size: 13px; display: flex; flex-direction: column; gap: 2px;
+  padding: 9px 13px; cursor: pointer; border-bottom: 1px solid var(--border);
+  font-size: 13px; display: flex; flex-direction: column; gap: 3px; transition: background .1s;
 }
 .drop-item:last-child { border-bottom: none; }
 .drop-item:hover, .drop-item.focused { background: var(--surface2); }
-.drop-item-name { color: var(--text); }
+.drop-item-name { color: var(--text); font-weight: 500; }
 .drop-item-id { color: var(--muted); font-size: 11px; font-family: monospace; }
-.drop-empty { padding: 10px 12px; color: var(--muted); font-size: 13px; font-style: italic; }
+.drop-empty { padding: 10px 13px; color: var(--muted); font-size: 13px; font-style: italic; }
+
+/* ── MOB REGION DROPDOWN ── */
+.region-drop {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  z-index: 300; max-height: 220px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--accent); border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.65), 0 0 0 1px rgba(122,90,248,.15);
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  overscroll-behavior: contain;
+}
+.region-drop.open { display: block; animation: dropFadeIn .13s ease; }
+.region-drop.drop-up { top: auto; bottom: calc(100% + 4px); }
+.region-drop.drop-up.open { animation: dropFadeUp .13s ease; }
 
 /* ── TAGS ── */
 .preset-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 4px; }
@@ -361,6 +480,8 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; display: flex; align-items: center; justify-content: center; }
 .modal-overlay.hidden { display: none; }
 .modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 320px; display: flex; flex-direction: column; gap: 12px; }
+.btn-google { background: var(--surface2); color: var(--text); border: 1px solid var(--border); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: background .15s; }
+.btn-google:hover { background: var(--surface3); }
 .modal-card h2 { font-size: 15px; font-weight: 700; color: var(--accent); }
 .mfield { display: flex; flex-direction: column; gap: 4px; }
 .mfield label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
@@ -403,18 +524,44 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 
     <!-- Panneau Connexion -->
     <div id="panel-login">
-      <div class="mfield"><label>Email</label><input type="email" id="modal-email" placeholder="email@exemple.com"></div>
+      <button class="btn btn-google" onclick="doLoginGoogle()" style="width:100%;justify-content:center;margin-bottom:10px;">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;height:18px;margin-right:8px;" alt="Google"> Continuer avec Google
+      </button>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:11px;color:var(--muted)">ou</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <div class="mfield"><label>Identifiant</label><input type="text" id="modal-email" placeholder="ton_identifiant" autocomplete="username"></div>
       <div class="mfield"><label>Mot de passe</label><input type="password" id="modal-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <button class="btn btn-primary" onclick="doLogin()" style="width:100%;justify-content:center;">🔑 Se connecter</button>
     </div>
 
     <!-- Panneau Inscription -->
     <div id="panel-register" style="display:none;">
-      <div class="mfield"><label>Pseudo <span style="color:var(--danger)">*</span></label><input type="text" id="reg-pseudo" placeholder="Ton pseudo ingame…" maxlength="32"></div>
-      <div class="mfield"><label>Email</label><input type="email" id="reg-email" placeholder="email@exemple.com"></div>
+      <button class="btn btn-google" onclick="doLoginGoogle()" style="width:100%;justify-content:center;margin-bottom:10px;">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;height:18px;margin-right:8px;" alt="Google"> Continuer avec Google
+      </button>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-size:11px;color:var(--muted)">ou</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+      </div>
+      <div class="mfield"><label>Identifiant <span style="color:var(--danger)">*</span></label><input type="text" id="reg-pseudo" placeholder="ex : identifiant" maxlength="32" autocomplete="username"></div>
       <div class="mfield"><label>Mot de passe</label><input type="password" id="reg-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
       <button class="btn btn-primary" onclick="doRegister()" style="width:100%;justify-content:center;">✨ Créer mon compte</button>
     </div>
+
+    <!-- Panneau : choix du pseudo (première connexion Google) -->
+    <div id="panel-pseudo" style="display:none;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Bienvenue ! Choisis ton identifiant :</div>
+      <div class="mfield">
+        <label>Identifiant <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="google-pseudo" placeholder="ex : identifiant" maxlength="32" onkeydown="if(event.key==='Enter')doSavePseudo()">
+      </div>
+      <button class="btn btn-primary" onclick="doSavePseudo()" style="width:100%;justify-content:center;margin-top:4px;">Valider</button>
+    </div>
+
 
     <div id="modal-error" style="font-size:12px;color:var(--danger);display:none;text-align:center;"></div>
     <button class="btn btn-ghost" onclick="closeLoginModal()" style="width:100%;justify-content:center;font-size:12px;">Annuler</button>
@@ -641,7 +788,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 
           <!-- Type + search row -->
           <div style="display:grid;grid-template-columns:170px 1fr auto;gap:6px;align-items:start;margin-bottom:8px;">
-            <select id="obtain-type" onchange="onObtainTypeChange()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;height:38px;">
+            <select id="obtain-type" onchange="onObtainTypeChange()" style="height:38px;">
               <option value="mob">🗡️ Drop de Mob</option>
               <option value="donjon">🏰 Donjon</option>
               <option value="artisant">🔨 Forgeron / Artisan</option>
@@ -731,24 +878,65 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
         <div class="sec-body">
           <div class="row2">
             <div class="field">
-              <label>Nom affiché *</label>
-              <input type="text" id="pnj-name" placeholder="Forgeron d'Armes" oninput="onPnjNameInput()">
+              <label>Type du PNJ *</label>
+              <select id="pnj-type" onchange="onPnjTypeChange()">
+                <option value="">— Choisir un type —</option>
+                <option value="forgeron d'armes">Forgeron d'armes</option>
+                <option value="forgeron d'armures">Forgeron d'armures</option>
+                <option value="forgeron d'accessoires">Forgeron d'accessoires</option>
+                <option value="forgeron de lingots">Forgeron de lingots</option>
+                <option value="forgeron de clés">Forgeron de clés</option>
+                <option value="forgeron d'items secrets">Forgeron d'items secrets</option>
+                <option value="marchand d'équipement">Marchand d'équipement</option>
+                <option value="marchand de consommable">Marchand de consommable</option>
+                <option value="marchand d'outils">Marchand d'outils</option>
+                <option value="marchand d'accessoires">Marchand d'accessoires</option>
+                <option value="marchand itinérant">Marchand itinérant</option>
+                <option value="repreneur de butin">Repreneur de butin</option>
+                <option value="bûcheron">Bûcheron</option>
+                <option value="alchimiste">Alchimiste</option>
+                <option value="quêtes">Quêtes</option>
+                <option value="autres">Autres</option>
+              </select>
             </div>
             <div class="field">
               <label>ID généré</label>
               <input type="text" id="pnj-id" placeholder="forgeron_armes_tolbana" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
             </div>
           </div>
+          <!-- Coordonnées -->
+          <div class="field" style="margin-top:2px;">
+            <div class="coords-label">
+              <span>📍 Coordonnées</span>
+              <span class="req">*</span>
+            </div>
+            <div class="coords-row">
+              <div class="coord-field coord-x">
+                <span class="coord-axis">X</span>
+                <input type="number" step="1" id="pnj-x" placeholder="128" oninput="update()">
+              </div>
+              <div class="coord-field coord-y">
+                <span class="coord-axis">Y</span>
+                <input type="number" step="1" id="pnj-y" placeholder="64" oninput="update()">
+              </div>
+              <div class="coord-field coord-z">
+                <span class="coord-axis">Z</span>
+                <input type="number" step="1" id="pnj-z" placeholder="-320" oninput="update()">
+              </div>
+            </div>
+          </div>
+
           <div class="row2">
             <div class="field">
-              <label>Tag (type)</label>
-              <input type="text" id="pnj-tag" placeholder="forgeron_armes" oninput="update()" list="pnj-tag-list">
-              <datalist id="pnj-tag-list">
-                <option value="repreneur_butin"><option value="marchand_equipement"><option value="marchand_outils">
-                <option value="marchand_accessoires"><option value="alchimiste"><option value="bucheron">
-                <option value="refaconneur"><option value="forgeron_armes"><option value="forgeron_armures">
-                <option value="marchand"><option value="artisant">
-              </datalist>
+              <label>Région</label>
+              <div style="position:relative;">
+                <input type="text" id="pnj-region-search" placeholder="🔍 Rechercher une région…" autocomplete="off"
+                       oninput="filterPnjRegionList()" onfocus="openPnjRegionList()"
+                       onblur="setTimeout(closePnjRegionList,150)" onkeydown="regionDropKeydown(event,'pnj-region-dropdown')"
+                       style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;">
+                <div id="pnj-region-dropdown" class="region-drop"></div>
+              </div>
+              <input type="hidden" id="pnj-region" value="">
             </div>
             <div class="field">
               <label>Palier</label>
@@ -759,33 +947,6 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
                 <option value="3">Palier 3</option>
               </select>
             </div>
-          </div>
-          <div class="row2">
-            <div class="field">
-              <label>Région</label>
-              <input type="text" id="pnj-region" placeholder="Ville de Départ" oninput="update()" list="pnj-region-list">
-              <datalist id="pnj-region-list">
-                <option value="Ville de Départ"><option value="Hanaka"><option value="Mizunari">
-                <option value="Vallhat"><option value="Virelune"><option value="Tolbana">
-                <option value="Candelia"><option value="Labyrinthe des Déchus"><option value="Urbus">
-                <option value="Kaelor"><option value="Marome"><option value="Taran">
-              </datalist>
-            </div>
-            <div class="field">
-              <label>Region ID</label>
-              <input type="text" id="pnj-regionId" placeholder="m1a1" oninput="update()" style="font-family:monospace;font-size:12px;color:var(--muted);">
-            </div>
-          </div>
-        </div>
-      </div>
-
-
-      <!-- Lore PNJ -->
-      <div class="section">
-        <div class="sec-head" onclick="toggleSec(this)">📖 Lore <span class="chev">▾</span></div>
-        <div class="sec-body">
-          <div class="field">
-            <textarea id="pnj-lore" placeholder="Description du PNJ…" oninput="update()"></textarea>
           </div>
         </div>
       </div>
@@ -1033,7 +1194,7 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
           <div class="row2">
             <div class="field">
               <label>Palier</label>
-              <select id="mob-palier" onchange="onMobPalierChange()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;">
+              <select id="mob-palier" onchange="onMobPalierChange()">
                 <option value="">—</option>
                 <option value="1">Palier 1</option>
                 <option value="2">Palier 2</option>
@@ -1050,9 +1211,9 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
             <div style="position:relative;">
               <input type="text" id="mob-region-search" placeholder="🔍 Rechercher une région…" autocomplete="off"
                      oninput="filterMobRegionList()" onfocus="openMobRegionList()"
-                     onblur="setTimeout(closeMobRegionList,150)"
+                     onblur="setTimeout(closeMobRegionList,150)" onkeydown="regionDropKeydown(event,'mob-region-dropdown')"
                      style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;">
-              <div id="mob-region-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;max-height:220px;overflow-y:auto;background:var(--surface2);border:1px solid var(--accent);border-top:none;border-radius:0 0 6px 6px;box-shadow:0 4px 12px rgba(0,0,0,.4);"></div>
+              <div id="mob-region-dropdown" class="region-drop"></div>
             </div>
             <input type="hidden" id="mob-region" value="">
           </div>
@@ -1123,13 +1284,13 @@ header .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center;
 <script src="Bestiaire/mob_data.js"></script>
 <script src="Map/data.js"></script>
 <script src="Compendium/data.js"></script>
-<script src="Compendium/data_region.js"></script>
 
 <!-- Module 1 : Auth + soumission Firestore -->
 <script type="module">
 import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
-         createUserWithEmailAndPassword }
+         createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup,
+         sendEmailVerification }
                                         from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, collection, getDocs, addDoc, serverTimestamp, getDoc, doc, setDoc }
                                         from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -1152,9 +1313,11 @@ window._vcl_addDoc          = addDoc;
 window._vcl_getDocs         = getDocs;
 window._vcl_collection      = collection;
 window._vcl_serverTimestamp = serverTimestamp;
-window._vcl_login     = (email, pw) => signInWithEmailAndPassword(auth, email, pw);
-window._vcl_logout    = ()          => signOut(auth);
-window._vcl_register  = (email, pw) => createUserWithEmailAndPassword(auth, email, pw);
+window._vcl_login             = (email, pw) => signInWithEmailAndPassword(auth, email, pw);
+window._vcl_logout            = ()          => signOut(auth);
+window._vcl_register          = (email, pw) => createUserWithEmailAndPassword(auth, email, pw);
+window._vcl_loginGoogle       = ()          => signInWithPopup(auth, new GoogleAuthProvider());
+window._vcl_sendVerification  = ()          => auth.currentUser ? sendEmailVerification(auth.currentUser) : Promise.resolve();
 window._vcl_setDoc    = setDoc;
 window._vcl_doc       = doc;
 window._vcl_getDoc    = getDoc;
@@ -1182,7 +1345,7 @@ onAuthStateChanged(auth, async user => {
       window._vcl_role = role;
       if (pseudo && authorInput) { authorInput.value = pseudo; saveAuthor(); }
       const modBtn = document.getElementById('btn-moderation');
-      if (modBtn) modBtn.style.display = ['modo','admin'].includes(role) ? '' : 'none';
+      if (modBtn) modBtn.style.display = ['contributeur','admin'].includes(role) ? '' : 'none';
       // Re-appliquer la config maintenant qu'on connaît le rôle
       if (window._vcl_lastCreatorConfig !== undefined && typeof applyCreatorConfig === 'function') {
         applyCreatorConfig(window._vcl_lastCreatorConfig);
@@ -1315,8 +1478,8 @@ document.addEventListener('paste', e => {
 function applyCreatorConfig(cfg) {
   if (!cfg) return;
   window._vcl_lastCreatorConfig = cfg; // mémorisé pour re-apply après auth
-  // Les admins et modo voient toujours tout
-  if (['modo', 'admin'].includes(window._vcl_role || '')) {
+  // Les contributeurs+ voient toujours tout
+  if (['contributeur', 'admin'].includes(window._vcl_role || '')) {
     document.querySelectorAll('.mode-btn').forEach(b => b.style.display = '');
     for (const selId of ['f-palier', 'mob-palier', 'pnj-palier', 'reg-palier']) {
       const sel = document.getElementById(selId);
@@ -1461,6 +1624,7 @@ window.addEventListener('DOMContentLoaded', () => {
   buildSetSelect();
   initObtainData();
   initLoadSearch();
+  initCustomSelects();
   buildOrphanSection();
   buildEffectTemplates();
 
@@ -1501,68 +1665,121 @@ function switchAuthTab(tab) {
   const isLogin = tab === 'login';
   document.getElementById('panel-login').style.display    = isLogin ? '' : 'none';
   document.getElementById('panel-register').style.display = isLogin ? 'none' : '';
+  document.getElementById('panel-pseudo').style.display   = 'none';
   document.getElementById('tab-login').style.color        = isLogin ? 'var(--accent)' : 'var(--muted)';
   document.getElementById('tab-login').style.borderBottomColor    = isLogin ? 'var(--accent)' : 'transparent';
   document.getElementById('tab-register').style.color     = isLogin ? 'var(--muted)' : 'var(--accent)';
   document.getElementById('tab-register').style.borderBottomColor = isLogin ? 'transparent' : 'var(--accent)';
   document.getElementById('modal-error').style.display = 'none';
 }
+function toEmail(input) {
+  // Si l'input contient un @, c'est un vrai email (compte Google ou ancien compte)
+  // Sinon c'est un identifiant → on génère l'email interne
+  return input.includes('@') ? input : `${input}@veilleurs.wiki`;
+}
+
 async function doLogin() {
-  const email = document.getElementById('modal-email').value.trim();
-  const pw    = document.getElementById('modal-password').value;
-  const err   = document.getElementById('modal-error');
+  const raw = document.getElementById('modal-email').value.trim();
+  const pw  = document.getElementById('modal-password').value;
+  const err = document.getElementById('modal-error');
   err.style.display = 'none';
-  if (!email || !pw) return;
+  if (!raw || !pw) return;
   try {
-    await window._vcl_login(email, pw);
+    await window._vcl_login(toEmail(raw), pw);
     closeLoginModal();
   } catch (e) {
-    err.textContent = e.message.includes('invalid-credential') ? 'Email ou mot de passe incorrect.' : e.message;
+    err.textContent = e.message.includes('invalid-credential') ? 'Identifiant ou mot de passe incorrect.' : e.message;
     err.style.display = '';
   }
 }
-async function doRegister() {
-  const pseudo = document.getElementById('reg-pseudo').value.trim();
-  const email  = document.getElementById('reg-email').value.trim();
-  const pw     = document.getElementById('reg-password').value;
+
+async function doLoginGoogle() {
+  const err = document.getElementById('modal-error');
+  err.style.display = 'none';
+  try {
+    const cred = await window._vcl_loginGoogle();
+    const uid  = cred.user.uid;
+    const snap = await window._vcl_getDoc(window._vcl_doc(window._vcl_db, 'users', uid));
+    if (!snap.exists()) {
+      // Première connexion Google : demander le pseudo
+      const suggested = (cred.user.displayName || cred.user.email.split('@')[0]).slice(0, 32);
+      document.getElementById('panel-login').style.display    = 'none';
+      document.getElementById('panel-register').style.display = 'none';
+      document.getElementById('panel-pseudo').style.display   = '';
+      document.getElementById('google-pseudo').value = suggested;
+      document.getElementById('google-pseudo').focus();
+      document.getElementById('google-pseudo').select();
+    } else {
+      closeLoginModal();
+    }
+  } catch (e) {
+    if (e.code !== 'auth/popup-closed-by-user') {
+      err.textContent = e.message;
+      err.style.display = '';
+    }
+  }
+}
+
+async function doSavePseudo() {
+  const pseudo = document.getElementById('google-pseudo').value.trim();
   const err    = document.getElementById('modal-error');
   err.style.display = 'none';
-
-  // Validation pseudo : 2-32 caractères, lettres/chiffres/tirets/underscores/espaces
   if (!pseudo) { err.textContent = 'Le pseudo est obligatoire.'; err.style.display = ''; return; }
-  if (pseudo.length < 2) { err.textContent = 'Pseudo trop court (2 caractères min).'; err.style.display = ''; return; }
-  if (pseudo.length > 32) { err.textContent = 'Pseudo trop long (32 caractères max).'; err.style.display = ''; return; }
+  if (pseudo.length < 2)  { err.textContent = 'Pseudo trop court (2 caractères min).'; err.style.display = ''; return; }
   if (!/^[\w\- ]+$/i.test(pseudo)) { err.textContent = 'Pseudo invalide (lettres, chiffres, - et _ seulement).'; err.style.display = ''; return; }
+  const user = window._vcl_auth?.currentUser;
+  if (!user) { err.textContent = 'Session expirée, réessaie.'; err.style.display = ''; return; }
+  try {
+    await window._vcl_setDoc(window._vcl_doc(window._vcl_db, 'users', user.uid), { pseudo, role: 'membre' });
+    const authorInput = document.getElementById('author-input');
+    if (authorInput) { authorInput.value = pseudo; saveAuthor(); }
+    closeLoginModal();
+  } catch (e) {
+    err.textContent = e.message;
+    err.style.display = '';
+  }
+}
 
-  if (!email || !pw) { err.textContent = 'Email et mot de passe obligatoires.'; err.style.display = ''; return; }
+async function doRegister() {
+  const identifiant = document.getElementById('reg-pseudo').value.trim();
+  const pw          = document.getElementById('reg-password').value;
+  const err         = document.getElementById('modal-error');
+  err.style.display = 'none';
+
+  // Validation identifiant : 2-32 caractères, lettres/chiffres/tirets/underscores (pas d'espaces)
+  if (!identifiant) { err.textContent = "L'identifiant est obligatoire."; err.style.display = ''; return; }
+  if (identifiant.length < 2)  { err.textContent = 'Identifiant trop court (2 caractères min).'; err.style.display = ''; return; }
+  if (identifiant.length > 32) { err.textContent = 'Identifiant trop long (32 caractères max).'; err.style.display = ''; return; }
+  if (!/^[\w\-]+$/i.test(identifiant)) { err.textContent = 'Identifiant invalide (lettres, chiffres, - et _ seulement, sans espaces).'; err.style.display = ''; return; }
+  if (!pw) { err.textContent = 'Mot de passe obligatoire.'; err.style.display = ''; return; }
   if (pw.length < 6) { err.textContent = 'Mot de passe trop court (6 caractères min).'; err.style.display = ''; return; }
+
+  const email = toEmail(identifiant);
 
   try {
     const cred = await window._vcl_register(email, pw);
-    // Sauvegarder le pseudo dans Firestore — tentative avec retry si le token n'est pas encore propagé
+    // Sauvegarder l'identifiant dans Firestore — retry si le token n'est pas encore propagé
     const saveProfile = async () => {
       await window._vcl_setDoc(
         window._vcl_doc(window._vcl_db, 'users', cred.user.uid),
-        { pseudo, role: 'membre' }
+        { pseudo: identifiant, role: 'membre' }
       );
     };
     try {
       await saveProfile();
     } catch {
-      // Retry après 1s (token auth pas encore reconnu par Firestore)
       await new Promise(r => setTimeout(r, 1000));
       try { await saveProfile(); } catch (e2) {
         console.warn('Profil non sauvegardé :', e2.message);
-        // Non bloquant : l'account est créé, on continue
       }
     }
+    // Connexion directe — pas de vérification email requise
     const authorInput = document.getElementById('author-input');
-    if (authorInput) { authorInput.value = pseudo; saveAuthor(); }
+    if (authorInput) { authorInput.value = identifiant; saveAuthor(); }
     closeLoginModal();
   } catch (e) {
-    const msg = e.code === 'auth/email-already-in-use' ? 'Cet email est déjà utilisé.'
+    const msg = e.code === 'auth/email-already-in-use' ? 'Cet identifiant est déjà utilisé.'
               : e.code === 'auth/weak-password'        ? 'Mot de passe trop faible (6 caractères min).'
-              : e.code === 'auth/invalid-email'        ? 'Email invalide.'
               : e.message;
     err.textContent = msg;
     err.style.display = '';
@@ -1570,6 +1787,7 @@ async function doRegister() {
 }
 async function doLogout() {
   await window._vcl_logout();
+  window.location.reload();
 }
 
 // ═══════════════════════════════════════════════════
@@ -1693,8 +1911,9 @@ function restoreForm() {
       }
     }
 
+    refreshCustomSelects();
     update();
-  } catch(e) { update(); }
+  } catch(e) { refreshCustomSelects(); update(); }
 }
 
 function clearSavedForm() {
@@ -2039,6 +2258,7 @@ function buildCatSlotOptions(cat) {
     opt.value = val; opt.textContent = label;
     sel.appendChild(opt);
   }
+  _customSelUpdaters['f-cat']?.();
 }
 
 function syncPresetTagButtons() {
@@ -2150,6 +2370,7 @@ function initLoadSearch() {
 }
 
 function loadItem(item) {
+  switchMode('item');
   resetFormSilent();
 
   // Bannière
@@ -2278,8 +2499,83 @@ function resetFormSilent() {
   renderObtainSources();
   clearForumImage();
   onCatChange();
+  refreshCustomSelects();
   _skipSave = false;
   clearSavedForm();
+}
+
+function loadMob(mob) {
+  switchMode('mob');
+  resetMobForm();
+  if (mob.id)       document.getElementById('mob-id').value    = mob.id;
+  if (mob.name)     document.getElementById('mob-name').value  = mob.name;
+  if (mob.lore)     document.getElementById('mob-lore').value  = mob.lore;
+  if (mob.spawnTime)document.getElementById('mob-spawntime').value = mob.spawnTime;
+  if (mob.type)     setMobType(mob.type);
+  if (mob.behavior) setBehavior(mob.behavior);
+  if (mob.palier)   document.getElementById('mob-palier').value = String(mob.palier);
+  if (mob.inCodex !== undefined) setMobCodex(mob.inCodex);
+  if (mob.sensible) { mobSensible = true; document.getElementById('mob-sensible-btn').classList.add('active'); }
+  document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
+  refreshCustomSelects();
+  update();
+}
+
+function loadPnj(pnj) {
+  switchMode('pnj');
+  resetPnjForm();
+  if (pnj.id)     document.getElementById('pnj-id').value     = pnj.id;
+  if (pnj.name)   document.getElementById('pnj-type').value   = pnj.name;
+  if (pnj.region) {
+    document.getElementById('pnj-region').value        = pnj.region;
+    document.getElementById('pnj-region-search').value = pnj.region;
+  }
+  if (pnj.palier) document.getElementById('pnj-palier').value = String(pnj.palier);
+  if (pnj.coords) {
+    document.getElementById('pnj-x').value = pnj.coords.x ?? '';
+    document.getElementById('pnj-y').value = pnj.coords.y ?? '';
+    document.getElementById('pnj-z').value = pnj.coords.z ?? '';
+  }
+  document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
+  refreshCustomSelects();
+  update();
+}
+
+function loadRegion(reg) {
+  switchMode('region');
+  resetRegionForm();
+  if (reg.id)     document.getElementById('reg-id').value   = reg.id;
+  if (reg.name)   document.getElementById('reg-name').value = reg.name;
+  if (reg.lore)   document.getElementById('reg-lore').value = reg.lore;
+  if (reg.palier) document.getElementById('reg-palier').value = String(reg.palier);
+  if (reg.inCodex !== undefined) setRegCodex(reg.inCodex);
+  if (reg.canTp   !== undefined) setRegCanTp(reg.canTp);
+  document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
+  refreshCustomSelects();
+  update();
+}
+
+function loadQuest(quest) {
+  switchMode('quest');
+  if (quest.id)     document.getElementById('quest-id').value    = quest.id;
+  if (quest.titre)  document.getElementById('quest-titre').value = quest.titre;
+  if (quest.type)   document.getElementById('quest-type').value  = quest.type;
+  if (quest.palier) document.getElementById('quest-palier').value = String(quest.palier);
+  if (quest.npc)    document.getElementById('quest-npc').value   = quest.npc;
+  if (quest.desc)   document.getElementById('quest-desc').value  = quest.desc;
+  document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
+  refreshCustomSelects();
+  update();
+}
+
+function loadByType(type, obj) {
+  switch (type) {
+    case 'mob':    loadMob(obj);    break;
+    case 'pnj':    loadPnj(obj);    break;
+    case 'region': loadRegion(obj); break;
+    case 'quest':  loadQuest(obj);  break;
+    default:       loadItem(obj);   break;
+  }
 }
 
 function clearEditingMode() {
@@ -2296,6 +2592,115 @@ function clearObtainOverride() {
 
 // ═══════════════════════════════════════════════════
 // SHARED SEARCHABLE DROPDOWN
+// ── Positionnement intelligent des dropdowns ──────────
+// Ouvre la liste en-dessous si assez de place, sinon au-dessus.
+function positionDrop(list, anchor) {
+  const rect = anchor.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - rect.bottom - 8;
+  const spaceAbove = rect.top - 8;
+  const listMaxH = 200;
+  if (spaceBelow < listMaxH && spaceAbove > spaceBelow) {
+    list.style.top    = 'auto';
+    list.style.bottom = 'calc(100% + 4px)';
+    list.classList.add('drop-up');
+  } else {
+    list.style.top    = 'calc(100% + 4px)';
+    list.style.bottom = 'auto';
+    list.classList.remove('drop-up');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// CUSTOM SELECT — remplace les <select> natifs par des
+// dropdowns stylés identiques aux search-drops
+// ═══════════════════════════════════════════════════
+const _customSelUpdaters = {};
+
+function initCustomSelects() {
+  document.querySelectorAll('.field select').forEach(nativeSel => {
+    const wrap = document.createElement('div');
+    wrap.className = 'custom-sel-wrap';
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'custom-sel-trigger';
+
+    const valSpan = document.createElement('span');
+    valSpan.className = 'custom-sel-value';
+
+    trigger.appendChild(valSpan);
+    trigger.insertAdjacentHTML('beforeend',
+      '<svg class="custom-sel-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 6">' +
+      '<path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M1 1l4 4 4-4"/></svg>'
+    );
+
+    const list = document.createElement('div');
+    list.className = 'drop-list';
+
+    wrap.appendChild(trigger);
+    wrap.appendChild(list);
+
+    function updateDisplay() {
+      const opt = nativeSel.options[nativeSel.selectedIndex];
+      const hasVal = opt && opt.value !== '';
+      valSpan.textContent = opt ? opt.text : '';
+      valSpan.classList.toggle('custom-sel-placeholder', !hasVal);
+    }
+
+    function buildListItems() {
+      list.innerHTML = '';
+      const curVal = nativeSel.value;
+      Array.from(nativeSel.options).forEach(opt => {
+        const di = document.createElement('div');
+        di.className = 'drop-item';
+        di.textContent = opt.text;
+        if (!opt.value) di.style.cssText = 'color:var(--muted);font-style:italic;';
+        if (opt.value && opt.value === curVal) di.classList.add('focused');
+        di.addEventListener('mousedown', ev => {
+          ev.preventDefault();
+          nativeSel.value = opt.value;
+          nativeSel.dispatchEvent(new Event('change', { bubbles: true }));
+          list.classList.remove('open');
+          trigger.classList.remove('open');
+          updateDisplay();
+        });
+        list.appendChild(di);
+      });
+    }
+
+    trigger.addEventListener('click', () => {
+      const isOpen = list.classList.contains('open');
+      document.querySelectorAll('.drop-list.open').forEach(d => d.classList.remove('open'));
+      document.querySelectorAll('.custom-sel-trigger.open').forEach(t => t.classList.remove('open'));
+      if (!isOpen) {
+        buildListItems();
+        positionDrop(list, wrap);
+        list.classList.add('open');
+        trigger.classList.add('open');
+      }
+    });
+
+    trigger.addEventListener('blur', () => setTimeout(() => {
+      list.classList.remove('open');
+      trigger.classList.remove('open');
+    }, 150));
+
+    // Mettre à jour l'affichage quand le select natif change (via dispatchEvent)
+    nativeSel.addEventListener('change', updateDisplay);
+
+    nativeSel.style.display = 'none';
+    nativeSel.parentNode.insertBefore(wrap, nativeSel);
+    wrap.appendChild(nativeSel);
+
+    if (nativeSel.id) _customSelUpdaters[nativeSel.id] = updateDisplay;
+    updateDisplay();
+  });
+}
+
+function refreshCustomSelects() {
+  Object.values(_customSelUpdaters).forEach(fn => fn());
+}
+
 // items: [{ id, name, search }]
 // onSelect(id, name) appelé à chaque sélection / désélection
 // Retourne { mount(container), getValue, reset }
@@ -2350,12 +2755,14 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
       results.forEach(it => {
         const di = document.createElement('div');
         di.className = 'drop-item';
-        di.innerHTML = `<span class="drop-item-name">${it.name}</span><span class="drop-item-id">${it.subtitle || it.id}</span>`;
+        di.innerHTML = `<span class="drop-item-name">${escHtml(it.name)}</span><span class="drop-item-id">${escHtml(it.subtitle || it.id)}</span>`;
         di.addEventListener('mousedown', ev => { ev.preventDefault(); pick(it); });
         list.appendChild(di);
       });
     }
-    list.classList.toggle('open', q.length >= 1);
+    const willOpen = q.length >= 1;
+    if (willOpen) positionDrop(list, wrap);
+    list.classList.toggle('open', willOpen);
   }
 
   function pick(it) {
@@ -2380,7 +2787,7 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
     const rows = list.querySelectorAll('.drop-item');
     if (ev.key === 'ArrowDown') { ev.preventDefault(); focusedIdx = Math.min(focusedIdx+1, rows.length-1); }
     else if (ev.key === 'ArrowUp') { ev.preventDefault(); focusedIdx = Math.max(focusedIdx-1, 0); }
-    else if (ev.key === 'Enter' && focusedIdx >= 0) { ev.preventDefault(); rows[focusedIdx]?.dispatchEvent(new Event('mousedown')); return; }
+    else if (ev.key === 'Enter') { ev.preventDefault(); const target = focusedIdx >= 0 ? rows[focusedIdx] : rows[0]; target?.dispatchEvent(new Event('mousedown')); return; }
     else if (ev.key === 'Escape') { list.classList.remove('open'); return; }
     rows.forEach((el, i) => el.classList.toggle('focused', i === focusedIdx));
   });
@@ -3010,9 +3417,17 @@ function loadHistory() {
   } catch(e) {}
 }
 
+function _guessEntryType(obj) {
+  if (obj.behavior !== undefined || obj.spawnTime !== undefined || obj.loot !== undefined) return 'mob';
+  if (obj.sells !== undefined || obj.tag !== undefined) return 'pnj';
+  if (obj.inCodex !== undefined && obj.canTp !== undefined) return 'region';
+  if (obj.objectifs !== undefined || obj.recompenses !== undefined) return 'quest';
+  return 'item';
+}
+
 function addToHistory(obj, code) {
   const idx = sessionHistory.findIndex(h => h.obj.id === obj.id);
-  const entry = { ts: Date.now(), obj: JSON.parse(JSON.stringify(obj)), code };
+  const entry = { ts: Date.now(), _type: creatorMode, obj: JSON.parse(JSON.stringify(obj)), code };
   if (idx >= 0) sessionHistory[idx] = entry;
   else sessionHistory.unshift(entry);
   saveHistory();
@@ -3040,10 +3455,12 @@ function renderHistory() {
   list.innerHTML      = '';
   for (const entry of sessionHistory) {
     const { obj, ts } = entry;
+    const entryType = entry._type || _guessEntryType(obj);
+    const typeLabel = { item:'Item', mob:'Mob', pnj:'PNJ', region:'Région', quest:'Quête' }[entryType] || entryType;
     const color = RARITY_COLORS[obj.rarity] || '#7a7a90';
-    const rl    = RARITY_LABELS[obj.rarity] || (obj.rarity || '—');
+    const rl    = RARITY_LABELS[obj.rarity] || '';
     const time  = new Date(ts).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
-    const meta  = [rl, obj.category, obj.palier ? 'P'+obj.palier : ''].filter(Boolean).join(' · ');
+    const meta  = [typeLabel, rl || obj.category || obj.type, obj.palier ? 'P'+obj.palier : ''].filter(Boolean).join(' · ');
 
     const div = document.createElement('div');
     div.className = 'hist-item';
@@ -3058,12 +3475,14 @@ function renderHistory() {
         <button class="btn-icon" title="Supprimer de l'historique">✕</button>
       </div>`;
     div.querySelector('.btn-ghost').addEventListener('click', () => {
-      loadItem(entry.obj);
+      const type = entry._type || _guessEntryType(entry.obj);
+      loadByType(type, entry.obj);
       switchTab('preview');
     });
     div.querySelector('.btn-icon').addEventListener('click', () => {
       sessionHistory = sessionHistory.filter(h => h !== entry);
       renderHistory();
+      saveHistory();
     });
     list.appendChild(div);
   }
@@ -3722,8 +4141,8 @@ async function submitToFirestore() {
 
   if (!db) throw new Error('Firebase non initialisé');
 
-  // Vérifier que l'outil est activé (sauf pour les modo/admin)
-  if (!['modo', 'admin'].includes(window._vcl_role || '')) {
+  // Vérifier que l'outil est activé (sauf pour les contributeurs+)
+  if (!['contributeur', 'admin'].includes(window._vcl_role || '')) {
     const cfg = window._vcl_lastCreatorConfig;
     if (cfg?.tools?.[creatorMode] === false) {
       throw new Error(`L'outil "${creatorMode}" est actuellement désactivé.`);
@@ -3745,6 +4164,7 @@ async function submitToFirestore() {
     type = 'pnj';
     data = buildPnjObj();
     if (!data.id || !data.name) throw new Error('Nom et ID obligatoires');
+    if (!data.coords) throw new Error('Les coordonnées X, Y et Z sont obligatoires');
   } else if (creatorMode === 'region') {
     type = 'region';
     data = buildRegionObj();
@@ -3815,7 +4235,7 @@ async function submitToFirestore() {
 
 // Close dropdowns on outside click
 document.addEventListener('click', e => {
-  if (!e.target.closest('.search-drop-wrap')) {
+  if (!e.target.closest('.search-drop-wrap') && !e.target.closest('.custom-sel-wrap')) {
     document.querySelectorAll('.drop-list').forEach(d => d.classList.remove('open'));
   }
 });
@@ -3968,18 +4388,32 @@ function onMobPalierChange() {
   update();
 }
 
+function regionDropKeydown(ev, dropId) {
+  if (ev.key !== 'Enter' && ev.key !== 'Escape') return;
+  const dd = document.getElementById(dropId);
+  if (!dd?.classList.contains('open')) return;
+  ev.preventDefault();
+  if (ev.key === 'Escape') { dd.classList.remove('open'); return; }
+  // Enter → sélectionner le premier item
+  dd.querySelector('.region-drop-item')?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+}
+
 function openMobRegionList() {
+  const dd = document.getElementById('mob-region-dropdown');
   renderMobRegionDropdown();
-  document.getElementById('mob-region-dropdown').style.display = '';
+  positionDrop(dd, dd.parentElement);
+  dd.classList.add('open');
 }
 
 function closeMobRegionList() {
-  document.getElementById('mob-region-dropdown').style.display = 'none';
+  document.getElementById('mob-region-dropdown').classList.remove('open');
 }
 
 function filterMobRegionList() {
+  const dd = document.getElementById('mob-region-dropdown');
   renderMobRegionDropdown();
-  document.getElementById('mob-region-dropdown').style.display = '';
+  positionDrop(dd, dd.parentElement);
+  dd.classList.add('open');
 }
 
 function renderMobRegionDropdown() {
@@ -4035,6 +4469,7 @@ function renderMobRegionDropdown() {
 
     items.forEach(r => {
       const item = document.createElement('div');
+      item.className = 'region-drop-item';
       item.style.cssText = 'padding:6px 24px;cursor:pointer;font-size:13px;color:var(--text);transition:background .1s;';
       item.textContent = r.name || r.id;
       item.addEventListener('mousedown', e => { e.preventDefault(); selectMobRegion(r); });
@@ -4049,7 +4484,91 @@ function selectMobRegion(r) {
   document.getElementById('mob-region-search').value = r.name || r.id;
   document.getElementById('mob-region').value        = r.id;
   document.getElementById('mob-regionid').value      = r.id;
-  document.getElementById('mob-region-dropdown').style.display = 'none';
+  document.getElementById('mob-region-dropdown').classList.remove('open');
+  update();
+}
+
+// ── PNJ — Dropdown région (même pattern que mob) ──
+function openPnjRegionList() {
+  const dd = document.getElementById('pnj-region-dropdown');
+  renderPnjRegionDropdown();
+  positionDrop(dd, dd.parentElement);
+  dd.classList.add('open');
+}
+
+function closePnjRegionList() {
+  document.getElementById('pnj-region-dropdown').classList.remove('open');
+}
+
+function filterPnjRegionList() {
+  const dd = document.getElementById('pnj-region-dropdown');
+  renderPnjRegionDropdown();
+  positionDrop(dd, dd.parentElement);
+  dd.classList.add('open');
+}
+
+function renderPnjRegionDropdown() {
+  const dropdown = document.getElementById('pnj-region-dropdown');
+  if (!dropdown) return;
+  const q = (document.getElementById('pnj-region-search')?.value || '')
+              .trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  let filtered = _allMobRegions;
+  if (q) filtered = filtered.filter(r =>
+    (r.name || r.id || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q));
+
+  dropdown.innerHTML = '';
+  if (!filtered.length) {
+    dropdown.innerHTML = '<div style="padding:8px 12px;color:var(--muted);font-size:12px;">Aucune région</div>';
+    return;
+  }
+
+  const groups = {};
+  filtered.forEach(r => {
+    const p   = r.palier || '?';
+    const sub = r.inCodex === false ? 'Hors Codex' : 'Codex';
+    const key = `${p}__${sub}`;
+    if (!groups[key]) groups[key] = { palier: p, sub, items: [] };
+    groups[key].items.push(r);
+  });
+
+  const sorted = Object.values(groups).sort((a, b) => {
+    if (a.palier !== b.palier) return String(a.palier).localeCompare(String(b.palier), undefined, { numeric: true });
+    return a.sub === 'Codex' ? -1 : 1;
+  });
+
+  let lastPalier = null;
+  sorted.forEach(({ palier, sub, items }) => {
+    if (palier !== lastPalier) {
+      const ph = document.createElement('div');
+      ph.style.cssText = 'padding:6px 12px 2px;font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;border-top:' + (lastPalier !== null ? '1px solid var(--surface3)' : 'none');
+      ph.textContent = palier === '?' ? 'Palier inconnu' : `Palier ${palier}`;
+      dropdown.appendChild(ph);
+      lastPalier = palier;
+    }
+    const sh = document.createElement('div');
+    sh.style.cssText = 'padding:3px 18px;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;';
+    sh.textContent = sub;
+    dropdown.appendChild(sh);
+    items.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'region-drop-item';
+      item.style.cssText = 'padding:6px 24px;cursor:pointer;font-size:13px;color:var(--text);transition:background .1s;';
+      item.textContent = r.name || r.id;
+      item.addEventListener('mousedown', e => { e.preventDefault(); selectPnjRegion(r); });
+      item.addEventListener('mouseover', () => item.style.background = 'var(--surface3)');
+      item.addEventListener('mouseout',  () => item.style.background = '');
+      dropdown.appendChild(item);
+    });
+  });
+}
+
+function selectPnjRegion(r) {
+  const name = r.name || r.id;
+  document.getElementById('pnj-region-search').value = name;
+  document.getElementById('pnj-region').value        = name;
+  document.getElementById('pnj-region-dropdown').classList.remove('open');
+  if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
   update();
 }
 
@@ -4115,6 +4634,7 @@ function resetMobForm() {
   setMobType('monstre');
   setBehavior('agressif');
   document.getElementById('mob-palier').selectedIndex   = 0;
+  _customSelUpdaters['mob-palier']?.();
   document.getElementById('mob-region').value           = '';
   document.getElementById('mob-regionid').value         = '';
   document.getElementById('mob-region-search').value    = '';
@@ -4157,6 +4677,7 @@ function switchMode(mode) {
   document.getElementById('id-duplicate-badge').style.display = 'none';
   document.getElementById('id-orphan-badge').style.display = 'none';
   if (mode === 'mob')    loadMobRegions();
+  if (mode === 'pnj')    loadMobRegions();
   if (mode === 'region') loadRegionsCache();
   if (mode === 'quest')  loadMobRegions().then(initQuestZoneDrop);
   update();
@@ -4171,8 +4692,44 @@ let pnjSellUid  = 0;
 let pnjCraftUid = 0;
 let pnjIngUid   = 0;
 
-function onPnjNameInput() {
-  if (!pnjIdLocked) document.getElementById('pnj-id').value = nameToId(document.getElementById('pnj-name').value);
+const PNJ_TYPE_TAGS = {
+  "forgeron d'armes":        "forgeron_armes",
+  "forgeron d'armures":      "forgeron_armures",
+  "forgeron d'accessoires":  "forgeron_accessoires",
+  "forgeron de lingots":     "forgeron_lingots",
+  "forgeron de clés":        "forgeron_cles",
+  "forgeron d'items secrets":"forgeron_items_secrets",
+  "marchand d'équipement":   "marchand_equipement",
+  "marchand de consommable": "marchand_consommable",
+  "marchand d'outils":       "marchand_outils",
+  "marchand d'accessoires":  "marchand_accessoires",
+  "marchand itinérant":      "marchand_itinerant",
+  "repreneur de butin":      "repreneur_butin",
+  "bûcheron":                "bucheron",
+  "alchimiste":              "alchimiste",
+  "quêtes":                  "quetes",
+  "autres":                  "autres",
+};
+
+function pnjRegionSlug(regionName) {
+  if (!regionName) return '';
+  if (nameToId(regionName) === 'ville_de_depart') return 'vdp';
+  return nameToId(regionName);
+}
+
+function buildPnjId() {
+  const type       = document.getElementById('pnj-type').value;
+  const region     = document.getElementById('pnj-region').value.trim();
+  const typeSlug   = PNJ_TYPE_TAGS[type] || nameToId(type);
+  const regionSlug = pnjRegionSlug(region);
+  if (!typeSlug && !regionSlug) return '';
+  if (!regionSlug) return typeSlug;
+  if (!typeSlug)   return regionSlug;
+  return typeSlug + '_' + regionSlug;
+}
+
+function onPnjTypeChange() {
+  if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
   update();
 }
 
@@ -4337,23 +4894,21 @@ function renderPnjCrafts() {
 // PNJ — BUILD OBJECT
 // ═══════════════════════════════════════════════════
 function buildPnjObj() {
-  const id       = document.getElementById('pnj-id').value.trim();
-  const name     = document.getElementById('pnj-name').value.trim();
-  const tag      = document.getElementById('pnj-tag').value.trim();
-  const palier   = document.getElementById('pnj-palier').value;
-  const region   = document.getElementById('pnj-region').value.trim();
-  const regionId = document.getElementById('pnj-regionId').value.trim();
-  const lore     = document.getElementById('pnj-lore').value.trim();
+  const id     = document.getElementById('pnj-id').value.trim();
+  const type   = document.getElementById('pnj-type').value;
+  const palier = document.getElementById('pnj-palier').value;
+  const region = document.getElementById('pnj-region').value.trim();
+  const cx     = document.getElementById('pnj-x').value;
+  const cy     = document.getElementById('pnj-y').value;
+  const cz     = document.getElementById('pnj-z').value;
 
   const obj = {};
-  if (id)       obj.id       = id;
-  if (name)     obj.name     = name;
-  if (tag)      obj.tag      = tag;
-  if (palier)   obj.palier   = +palier;
-  if (region)   obj.region   = region;
-  if (regionId) obj.regionId = regionId;
+  if (id)     obj.id     = id;
+  if (type)   { obj.name = type; obj.tag = PNJ_TYPE_TAGS[type] || nameToId(type); }
+  if (palier) obj.palier = +palier;
+  if (region) obj.region = region;
+  if (cx !== '' && cy !== '' && cz !== '') obj.coords = { x: +cx, y: +cy, z: +cz };
   obj.img = null;
-  if (lore)     obj.lore     = lore;
 
   const sells = pnjSells.filter(s => s.itemId).map(s => {
     const e = { id: s.itemId };
@@ -4402,10 +4957,13 @@ function buildRegionObj() {
 // ═══════════════════════════════════════════════════
 function resetPnjForm() {
   pnjSells = []; pnjCrafts = []; pnjIdLocked = false;
-  ['pnj-name','pnj-id','pnj-tag','pnj-region','pnj-regionId','pnj-lore'].forEach(id => {
+  ['pnj-id','pnj-region','pnj-region-search','pnj-x','pnj-y','pnj-z'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  const t = document.getElementById('pnj-type');   if (t) t.value = '';
   const p = document.getElementById('pnj-palier'); if (p) p.selectedIndex = 0;
+  _customSelUpdaters['pnj-type']?.();
+  _customSelUpdaters['pnj-palier']?.();
   document.getElementById('pnj-sells-list').innerHTML  = '';
   document.getElementById('pnj-crafts-list').innerHTML = '';
 }
@@ -4416,6 +4974,7 @@ function resetRegionForm() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const p = document.getElementById('reg-palier'); if (p) p.selectedIndex = 0;
+  _customSelUpdaters['reg-palier']?.();
   setRegCodex(true);
   setRegCanTp(null);
 }
@@ -4801,6 +5360,8 @@ function resetQuestForm() {
   if (_questZoneDrop) _questZoneDrop.reset();
   const t = document.getElementById('quest-type');   if (t) t.selectedIndex = 0;
   const p = document.getElementById('quest-palier'); if (p) p.selectedIndex = 0;
+  _customSelUpdaters['quest-type']?.();
+  _customSelUpdaters['quest-palier']?.();
   renderQuestSimpleObjs();
   renderQuestRecompenses();
 }
@@ -4838,6 +5399,14 @@ function _setCreatorDisabled(disabled) {
   }
 }
 
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const skip = new Set(['modal-email','reg-pseudo','modal-password']);
+    document.querySelectorAll('input, textarea').forEach(function(el) {
+      if (!skip.has(el.id)) el.setAttribute('autocomplete', 'off');
+    });
+  });
 </script>
 </body>
 </html>

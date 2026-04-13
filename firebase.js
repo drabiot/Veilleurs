@@ -13,7 +13,9 @@ import { initializeFirestore, getFirestore,
          setDoc, addDoc, updateDoc, deleteDoc,
          query, where, orderBy }                  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getAuth, onAuthStateChanged,
-         signInWithEmailAndPassword, signOut }    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+         signInWithEmailAndPassword, signOut,
+         GoogleAuthProvider, signInWithPopup,
+         sendEmailVerification }                 from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 // ── Config ──────────────────────────────────────────
 const firebaseConfig = {
@@ -55,8 +57,8 @@ export const COL = {
 };
 
 // ── Rôles ─────────────────────────────────────────────
-// Hiérarchie : visiteur < membre < contributeur < modo < admin
-export const ROLES = ['visiteur', 'membre', 'contributeur', 'modo', 'admin'];
+// Hiérarchie : visiteur < membre < contributeur < admin
+export const ROLES = ['visiteur', 'membre', 'contributeur', 'admin'];
 
 export function roleLevel(role) {
   return ROLES.indexOf(role ?? 'visiteur');
@@ -92,6 +94,15 @@ export async function getUserRole(uid) {
 
 export async function login(email, password) {
   return signInWithEmailAndPassword(auth, email, password);
+}
+
+export async function loginWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  return signInWithPopup(auth, provider);
+}
+
+export async function sendVerificationEmail() {
+  if (auth.currentUser) return sendEmailVerification(auth.currentUser);
 }
 
 export async function logout() {

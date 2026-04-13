@@ -113,8 +113,27 @@ body > *:not(.ambient-bg) { position: relative; z-index: 1; }
 
 /* header-top defined in nav block */
 
-.header-left  { display: flex; align-items: center; gap: 10px; }
-.header-right { display: flex; align-items: center; gap: 14px; }
+.header-left  { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.header-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+
+.btn-add-item {
+  display: inline-block;
+  padding: 5px 13px;
+  background: transparent;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .72rem;
+  letter-spacing: .08em;
+  text-decoration: none;
+  border-radius: 3px;
+  transition: background .2s, color .2s;
+  white-space: nowrap;
+}
+.btn-add-item:hover {
+  background: var(--gold);
+  color: #0e0c0a;
+}
 
 /* Traffic lights */
 .traffic-lights { display: flex; gap: 5px; }
@@ -176,6 +195,8 @@ body > *:not(.ambient-bg) { position: relative; z-index: 1; }
   border-right: 1px solid var(--rim);
   position: relative;
   transition: color .2s, background .2s;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .nav-link:first-child { border-left: none; }
 .nav-link::after {

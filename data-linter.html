@@ -59,6 +59,10 @@
 <script src="Bestiaire/mob_data.js"></script>
 
 <script>
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ─── Constantes de validation ───────────────────────────────────────────────
 
 const VALID_RARITIES   = new Set(Object.keys(RARITIES));
@@ -323,7 +327,7 @@ for (const [key, section] of Object.entries(issues)) {
     for (const issue of section.items) {
       const row = document.createElement('div');
       row.className = 'issue-row';
-      row.innerHTML = `<div class="issue-id">${issue.id}</div><div class="issue-msg">${issue.msg}</div>`;
+      row.innerHTML = `<div class="issue-id">${escHtml(issue.id)}</div><div class="issue-msg">${escHtml(issue.msg)}</div>`;
       body.appendChild(row);
     }
   }

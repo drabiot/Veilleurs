@@ -2,6 +2,10 @@
    BESTIAIRE — Veilleurs au Clair de Lune
 ══════════════════════════════════════════════════════════════ */
 
+function escHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 /* ══════════════════════════════════
    ÉTAT
 ══════════════════════════════════ */
@@ -283,7 +287,7 @@ function buildGrid() {
     const isMob = activeTab === 'monstres';
 
     const imgHTML = e.img
-      ? `<img src="${e.img}" alt="${e.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
+      ? `<img src="${e.img}" alt="${escHtml(e.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
       : '';
     const phStyle = e.img ? 'style="display:none"' : '';
     const ph = `<span class="card-img-placeholder" ${phStyle}>${isMob ? '👾' : '🧑'}</span>`;
@@ -299,12 +303,12 @@ function buildGrid() {
       behaviorHTML = `
         <div class="card-behavior-row">
           <span class="card-behavior-dot cdot-${e.behavior}"></span>
-          <span class="card-behavior-text">${BEHAVIOR_LABELS[e.behavior]||e.behavior}</span>
+          <span class="card-behavior-text">${escHtml(BEHAVIOR_LABELS[e.behavior]||e.behavior)}</span>
         </div>`;
     } else {
       behaviorHTML = `
         <div class="card-behavior-row">
-          <span class="card-behavior-text" style="color:var(--muted)">${e.region||''}</span>
+          <span class="card-behavior-text" style="color:var(--muted)">${escHtml(e.region||'')}</span>
         </div>`;
     }
 
@@ -316,7 +320,7 @@ function buildGrid() {
 			${codexBadge}
 		</div>
 		<div class="card-info">
-			<div class="card-name">${e.name}</div>
+			<div class="card-name">${escHtml(e.name)}</div>
 			${behaviorHTML}
 		</div>`;
 
@@ -484,7 +488,7 @@ function renderMobSheet(mob) {
         <button class="btn-expand-3d" id="btn-expand-3d" title="Agrandir le modèle 3D">⛶</button>
       </div>`
     : mob.img
-      ? `<img src="${mob.img}" alt="${mob.name}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mob-img-placeholder" style="display:none">👾</span>`
+      ? `<img src="${mob.img}" alt="${escHtml(mob.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mob-img-placeholder" style="display:none">👾</span>`
       : `<span class="mob-img-placeholder">👾</span>`;
 
   let attacksHTML = '';
@@ -495,8 +499,8 @@ function renderMobSheet(mob) {
         <div class="mob-attacks-list">
           ${mob.attacks.map(a => `
             <div class="mob-attack-row">
-              <div class="attack-name">${a.name}${a.dmg && a.dmg!=='—' ? ` <span class="attack-dmg">[ ${a.dmg} ]</span>` : ''}</div>
-              ${a.desc ? `<div class="attack-desc">${a.desc}</div>` : ''}
+              <div class="attack-name">${escHtml(a.name)}${a.dmg && a.dmg!=='—' ? ` <span class="attack-dmg">[ ${escHtml(a.dmg)} ]</span>` : ''}</div>
+              ${a.desc ? `<div class="attack-desc">${escHtml(a.desc)}</div>` : ''}
             </div>`).join('')}
         </div>
       </div>`;
@@ -508,33 +512,33 @@ function renderMobSheet(mob) {
       const item  = findItem(l.id);
       const name  = item ? item.name : (l.name || l.id);
       const color = item ? getRarityColor(item.rarity) : '#8c8c8c';
-      const img   = item?.img || item?.image || '';
+      const img   = item ? (getItemImg(item) || '') : '';
       const rc    = dropRateColor(l.chance);
-      const href  = item ? `../Compendium/compendium.html#${item.id}` : '#';
+      const href  = item ? `../Compendium/compendium.html#${escHtml(item.id)}` : '#';
       const imgPart = img
-        ? `<div class="loot-img-wrap"><img src="${img}" alt="${name}" onerror="this.style.display='none'"></div>`
+        ? `<div class="loot-img-wrap"><img src="${img}" alt="${escHtml(name)}" onerror="this.style.display='none'"></div>`
         : `<span class="loot-dot" style="background:${color}"></span>`;
       const hasCraft = item?.craft && item.craft.length > 0;
       const craftIngredients = hasCraft ? item.craft.map(c => {
         const ing      = findItem(c.id);
         const ingName  = ing ? ing.name : c.id;
         const ingColor = ing ? getRarityColor(ing.rarity) : '#8c8c8c';
-        const ingImg   = ing?.img || '';
-        const ingHref  = ing ? `../Compendium/compendium.html#${ing.id}` : '#';
+        const ingImg   = ing ? (getItemImg(ing) || '') : '';
+        const ingHref  = ing ? `../Compendium/compendium.html#${escHtml(ing.id)}` : '#';
         const ingImgPart = ingImg
-          ? `<div class="loot-img-wrap"><img src="${ingImg}" alt="${ingName}" onerror="this.style.display='none'"></div>`
+          ? `<div class="loot-img-wrap"><img src="${ingImg}" alt="${escHtml(ingName)}" onerror="this.style.display='none'"></div>`
           : `<span class="loot-dot" style="background:${ingColor}"></span>`;
         return `<a class="loot-row craft-ingredient-row" href="${ingHref}">
           ${ingImgPart}
-          <span class="loot-name" style="color:${ingColor}">${ingName}</span>
-          <span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${c.qty}</span>
+          <span class="loot-name" style="color:${ingColor}">${escHtml(ingName)}</span>
+          <span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${escHtml(String(c.qty))}</span>
         </a>`;
       }).join('') : '';
       return `
         <div class="loot-row-wrap">
           <a class="loot-row" href="${href}">
             ${imgPart}
-            <span class="loot-name" style="color:${color}">${name}</span>
+            <span class="loot-name" style="color:${color}">${escHtml(name)}</span>
             ${l.qty ? `<span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${l.qty}</span>` : ''}
             <span class="loot-drop-rate" style="color:${rc};border-color:${rc}33">${l.chance ?? '?'}%</span>
           </a>
@@ -551,7 +555,7 @@ function renderMobSheet(mob) {
   const loreHTML = mob.lore ? `
     <div class="mob-section full-width">
       <div class="mob-section-title">Lore</div>
-      <blockquote class="mob-lore">${mob.lore}</blockquote>
+      <blockquote class="mob-lore">${escHtml(mob.lore).replace(/\n/g,'<br>')}</blockquote>
     </div>` : '';
 
   const bcolor = BEHAVIOR_COLORS[mob.behavior] || '#888';
@@ -573,7 +577,7 @@ function renderMobSheet(mob) {
         </div>
         <div class="mob-header-info">
           <div class="mob-name-row">
-            <div class="mob-name">${mob.name}</div>
+            <div class="mob-name">${escHtml(mob.name)}</div>
             ${spawnBadgeHTML}
           </div>
           <div class="mob-badge-row">
@@ -596,8 +600,8 @@ function renderMobSheet(mob) {
             <div class="mob-meta-item">
               <span class="mob-meta-key">Région</span>
               <span class="mob-meta-val">
-                ${mob.region}
-                ${getMapZone(mob) ? `<a class="region-link" href="../Map/map.html#${getMapZone(mob)}">→ Carte</a>` : ''}
+                ${escHtml(mob.region)}
+                ${getMapZone(mob) ? `<a class="region-link" href="../Map/map.html#${escHtml(getMapZone(mob))}">→ Carte</a>` : ''}
               </span>
             </div>` : ''}
           </div>
@@ -637,10 +641,10 @@ function renderPNJSheet(pnj) {
       const item  = findItem(s.id);
       const name  = item ? item.name : s.id;
       const color = item ? getRarityColor(item.rarity) : '#8c8c8c';
-      const img   = item?.img || item?.image || '';
-      const href  = item ? `../Compendium/compendium.html#${item.id}${s.quality ? '-quality' : ''}` : '#';
+      const img   = item ? (getItemImg(item) || '') : '';
+      const href  = item ? `../Compendium/compendium.html#${escHtml(item.id)}${s.quality ? '-quality' : ''}` : '#';
       const imgPart = img
-        ? `<div class="loot-img-wrap"><img src="${img}" alt="${name}" onerror="this.style.display='none'"></div>`
+        ? `<div class="loot-img-wrap"><img src="${img}" alt="${escHtml(name)}" onerror="this.style.display='none'"></div>`
         : `<span class="loot-dot" style="background:${color}"></span>`;
       const priceVal = hasPriceCol
         ? `<span class="pnj-val pnj-val-vente${s.price == null ? ' pnj-val-empty' : ''}">${s.price != null ? `${s.price} cols` : '—'}</span>`
@@ -652,7 +656,7 @@ function renderPNJSheet(pnj) {
       return `
         <a class="loot-row${s.quality ? ' loot-row-quality' : ''}" href="${href}">
           ${imgPart}
-          <span class="loot-name" style="color:${color}">${name}${qualityBadge}</span>
+          <span class="loot-name" style="color:${color}">${escHtml(name)}${qualityBadge}</span>
           ${priceVal}${buyVal}
         </a>`;
     }).join('');
@@ -681,10 +685,10 @@ function renderPNJSheet(pnj) {
       const result      = findItem(recipe.id);
       const resultName  = result ? result.name : recipe.id;
       const resultColor = result ? getRarityColor(result.rarity) : '#8c8c8c';
-      const resultImg   = result?.img || result?.image || '';
-      const resultHref  = result ? `../Compendium/compendium.html#${result.id}${recipe.quality ? '-quality' : ''}` : '#';
+      const resultImg   = result ? (getItemImg(result) || '') : '';
+      const resultHref  = result ? `../Compendium/compendium.html#${escHtml(result.id)}${recipe.quality ? '-quality' : ''}` : '#';
       const resultImgPart = resultImg
-        ? `<div class="loot-img-wrap"><img src="${resultImg}" alt="${resultName}" onerror="this.style.display='none'"></div>`
+        ? `<div class="loot-img-wrap"><img src="${resultImg}" alt="${escHtml(resultName)}" onerror="this.style.display='none'"></div>`
         : `<span class="loot-dot" style="background:${resultColor}"></span>`;
       const qualityBadge = recipe.quality ? ' <span class="loot-quality-badge">✦</span>' : '';
 
@@ -692,16 +696,16 @@ function renderPNJSheet(pnj) {
         const ing      = findItem(c.id);
         const ingName  = ing ? ing.name : c.id;
         const ingColor = ing ? getRarityColor(ing.rarity) : '#8c8c8c';
-        const ingImg   = ing?.img || ing?.image || '';
-        const ingHref  = ing ? `../Compendium/compendium.html#${ing.id}` : '#';
+        const ingImg   = ing ? (getItemImg(ing) || '') : '';
+        const ingHref  = ing ? `../Compendium/compendium.html#${escHtml(ing.id)}` : '#';
         const ingImgPart = ingImg
-          ? `<div class="loot-img-wrap"><img src="${ingImg}" alt="${ingName}" onerror="this.style.display='none'"></div>`
+          ? `<div class="loot-img-wrap"><img src="${ingImg}" alt="${escHtml(ingName)}" onerror="this.style.display='none'"></div>`
           : `<span class="loot-dot" style="background:${ingColor}"></span>`;
         return `
           <a class="loot-row" href="${ingHref}">
             ${ingImgPart}
-            <span class="loot-name" style="color:${ingColor}">${ingName}</span>
-            <span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${c.qty}</span>
+            <span class="loot-name" style="color:${ingColor}">${escHtml(ingName)}</span>
+            <span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${escHtml(String(c.qty))}</span>
           </a>`;
       }).join('');
 
@@ -709,8 +713,8 @@ function renderPNJSheet(pnj) {
         <div class="craft-recipe-row">
           <a class="craft-result-cell${recipe.quality ? ' loot-row-quality' : ''}" href="${resultHref}">
             ${resultImgPart}
-            <span class="loot-name" style="color:${resultColor}">${resultName}${qualityBadge}</span>
-            ${recipe.time ? `<span class="craft-timer">⏱ ${recipe.time}</span>` : ''}
+            <span class="loot-name" style="color:${resultColor}">${escHtml(resultName)}${qualityBadge}</span>
+            ${recipe.time ? `<span class="craft-timer">⏱ ${escHtml(recipe.time)}</span>` : ''}
           </a>
           <div class="craft-ings-col">
             ${ingsHTML}
@@ -728,7 +732,7 @@ function renderPNJSheet(pnj) {
   const loreHTML = pnj.lore ? `
     <div class="mob-section full-width">
       <div class="mob-section-title">Description</div>
-      <blockquote class="mob-lore">${pnj.lore}</blockquote>
+      <blockquote class="mob-lore">${escHtml(pnj.lore).replace(/\n/g,'<br>')}</blockquote>
     </div>` : '';
 
   modalContent.innerHTML = `
@@ -738,11 +742,11 @@ function renderPNJSheet(pnj) {
           <div class="mob-image-bg" style="background:rgba(100,80,30,.85);"></div>
           <div class="mob-image-border" style="border-color:#c06c2055;"></div>
           <div class="mob-image-inner">
-            ${pnj.img ? `<img src="${pnj.img}" alt="${pnj.name}">` : '<span class="mob-img-placeholder">🧑</span>'}
+            ${pnj.img ? `<img src="${pnj.img}" alt="${escHtml(pnj.name)}">` : '<span class="mob-img-placeholder">🧑</span>'}
           </div>
         </div>
         <div class="mob-header-info">
-          <div class="mob-name">${pnj.name}</div>
+          <div class="mob-name">${escHtml(pnj.name)}</div>
           <div class="mob-badge-row">
             <span class="mob-type-badge" style="background:${pnj.tag ? PNJ_TAG_COLORS[pnj.tag]+'22' : 'rgba(100,80,30,.85)'};color:${pnj.tag ? PNJ_TAG_COLORS[pnj.tag] : '#ffd9a0'};border:1px solid ${pnj.tag ? PNJ_TAG_COLORS[pnj.tag]+'55' : '#c06c2055'};">${PNJ_TAG_LABELS[pnj.tag]||pnj.tag||'PNJ'}</span>
           </div>
@@ -755,8 +759,8 @@ function renderPNJSheet(pnj) {
             <div class="mob-meta-item">
               <span class="mob-meta-key">Région</span>
               <span class="mob-meta-val">
-                ${pnj.region}
-                ${getMapZone(pnj) ? `<a class="region-link" href="../Map/map.html#${getMapZone(pnj)}">→ Carte</a>` : ''}
+                ${escHtml(pnj.region)}
+                ${getMapZone(pnj) ? `<a class="region-link" href="../Map/map.html#${escHtml(getMapZone(pnj))}">→ Carte</a>` : ''}
               </span>
             </div>` : ''}
           </div>

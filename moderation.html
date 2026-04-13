@@ -77,6 +77,14 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 .btn-copy    { background: var(--surface3); color: var(--muted); border: 1px solid var(--border); font-size: 11px; padding: 5px 10px; }
 
+/* Membres */
+.user-row { display: grid; grid-template-columns: 160px 1fr auto auto; align-items: center; gap: 12px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; }
+.user-pseudo { font-weight: 700; color: var(--text); font-size: 13px; }
+.user-uid { font-size: 10px; color: var(--muted); font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-role-badge { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.user-role-sel { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 5px 8px; font-size: 12px; cursor: pointer; outline: none; }
+.user-role-sel:disabled { opacity: .5; }
+
 /* Lightbox image */
 #img-lightbox {
   display: none; position: fixed; inset: 0; z-index: 300;
@@ -105,6 +113,8 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .auth-wall { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 49px); flex-direction: column; gap: 16px; }
 .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 340px; display: flex; flex-direction: column; gap: 12px; }
 .auth-card h2 { font-size: 15px; font-weight: 700; color: var(--accent); }
+.btn-google { background: var(--surface2); color: var(--text); border: 1px solid var(--border); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: background .15s; }
+.btn-google:hover { background: var(--surface3); }
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .field input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 8px 10px; font-size: 13px; outline: none; transition: border-color .15s; }
@@ -189,10 +199,18 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 <div class="auth-wall" id="auth-wall">
   <div class="auth-card">
     <h2>🔐 Connexion requise</h2>
-    <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="admin@example.com"></div>
+    <button class="btn btn-google" onclick="doLoginGoogle()" style="width:100%;justify-content:center;margin-bottom:4px;">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;height:18px;margin-right:8px;" alt="Google"> Continuer avec Google
+    </button>
+    <div style="display:flex;align-items:center;gap:8px;margin:4px 0 8px;">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-size:11px;color:var(--muted)">ou</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <div class="field"><label>Identifiant</label><input type="text" id="login-email" placeholder="ton_identifiant" autocomplete="username"></div>
     <div class="field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()"></div>
-    <button class="btn" style="background:var(--accent);color:#fff;" onclick="doLogin()">🔑 Connexion</button>
-    <div id="login-error" style="font-size:12px;color:var(--danger);display:none;"></div>
+    <button class="btn" style="background:var(--accent);color:#fff;width:100%;justify-content:center;" onclick="doLogin()">🔑 Connexion</button>
+    <div id="login-error" style="font-size:12px;color:var(--danger);display:none;text-align:center;"></div>
   </div>
 </div>
 
@@ -225,12 +243,28 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     <button class="filter-btn" id="btn-region-orphans" onclick="showRegionOrphans()">🗺️ Régions orphelines</button>
     <button class="filter-btn" id="btn-mob-orphans"    onclick="showMobOrphans()">👾 Mobs orphelins</button>
     <button class="filter-btn" id="btn-quest-orphans" onclick="showQuestOrphans()">📋 Quêtes orphelines</button>
-    <button class="filter-btn" id="btn-creator-controls" onclick="showCreatorControls()">🎛️ Contrôles Creator</button>
+    <button class="filter-btn" id="btn-users" onclick="showUsersPanel()">👥 Membres</button>
     <button class="filter-btn" id="btn-discord-webhooks" onclick="showDiscordWebhooks()">🔔 Webhooks Discord</button>
+    <button class="filter-btn" id="btn-permissions" onclick="showPermissions()">🔑 Permissions</button>
   </aside>
 
   <main class="main" id="submissions-list">
     <div class="empty">Chargement…</div>
+  </main>
+
+  <!-- Panneau Membres -->
+  <main class="main" id="users-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">👥 Membres</span>
+      <button class="btn btn-ghost" onclick="loadUsers()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Seuls les admins peuvent modifier les rôles.</p>
+    <div id="users-search-wrap" style="margin-bottom:10px;">
+      <input id="users-search" type="text" placeholder="Rechercher par pseudo…"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;"
+        oninput="filterUsers()">
+    </div>
+    <div id="users-list"><div class="empty">Chargement…</div></div>
   </main>
 
   <!-- Panneau Ordre des mobs -->
@@ -357,24 +391,6 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     <div id="quest-order-list"><div class="empty">Chargement…</div></div>
   </main>
 
-  <!-- Panneau Contrôles Creator -->
-  <main class="main" id="creator-controls-panel" style="display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:15px;font-weight:700;">🎛️ Contrôles Creator</span>
-      <button class="btn btn-ghost" onclick="loadCreatorConfig()" style="font-size:12px;">🔄 Rafraîchir</button>
-    </div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
-      Active ou désactive les outils visibles dans le Creator. Les changements sont appliqués en temps réel pour tous les contributeurs.
-    </p>
-    <div id="cc-loading" style="color:var(--muted);font-size:13px;">Chargement…</div>
-    <div id="cc-content" style="display:none;">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;">Outils du Creator</div>
-      <div id="cc-tools-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;"></div>
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;">Sélection de Palier</div>
-      <div id="cc-palier-list" style="display:flex;flex-direction:column;gap:6px;"></div>
-    </div>
-  </main>
-
   <!-- Panneau Webhooks Discord -->
   <main class="main" id="discord-webhooks-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -408,6 +424,20 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     </div>
   </main>
 
+  <!-- Panneau Permissions -->
+  <main class="main" id="permissions-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🔑 Permissions</span>
+      <button class="btn btn-ghost" onclick="loadPermissions()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
+      Rôle minimum requis pour chaque fonctionnalité. Cliquez sur un rôle pour l'appliquer immédiatement.
+      Les entrées <b>🔒</b> sont gérées par les règles Firestore et ne peuvent pas être modifiées ici.
+    </p>
+    <div id="perm-loading" style="color:var(--muted);font-size:13px;">Chargement…</div>
+    <div id="perm-content" style="display:none;"></div>
+  </main>
+
   <!-- Panneau Éditeur -->
   <main class="main" id="editor-panel" style="display:none;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
@@ -424,7 +454,8 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 
 <script type="module">
 import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
+         GoogleAuthProvider, signInWithPopup }
                              from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, deleteField, serverTimestamp, orderBy, query }
                              from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -440,7 +471,7 @@ const app  = initializeApp({
 const auth = getAuth(app);
 const db   = getFirestore(app);
 
-const ROLES = ['visiteur', 'membre', 'contributeur', 'modo', 'admin'];
+const ROLES = ['visiteur', 'membre', 'contributeur', 'admin'];
 let currentUser = null;
 let currentRole = 'visiteur';
 let allSubs      = [];
@@ -476,9 +507,17 @@ onAuthStateChanged(auth, async user => {
   } catch { currentRole = 'membre'; }
 
   const roleLevel = ROLES.indexOf(currentRole);
-  if (roleLevel < ROLES.indexOf('modo')) {
-    showAuthWall('⛔ Accès réservé aux modérateurs.');
+  if (roleLevel < ROLES.indexOf('contributeur')) {
+    showAuthWall('⛔ Accès réservé aux contributeurs.');
     return;
+  }
+
+  // Masquer les sections admin-only pour les contributeurs
+  if (currentRole === 'contributeur') {
+    ['btn-users', 'btn-discord-webhooks', 'btn-permissions'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
   }
 
   document.getElementById('auth-wall').style.display   = 'none';
@@ -515,21 +554,38 @@ function showAuthWall(msg) {
   }
 }
 
+function toEmail(input) {
+  return input.includes('@') ? input : `${input}@veilleurs.wiki`;
+}
+
 window.doLogin = async () => {
-  const email = document.getElementById('login-email').value.trim();
-  const pass  = document.getElementById('login-password').value;
-  const err   = document.getElementById('login-error');
+  const raw  = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-password').value;
+  const err  = document.getElementById('login-error');
   err.style.display = 'none';
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    await signInWithEmailAndPassword(auth, toEmail(raw), pass);
   } catch(e) {
-    err.textContent = '⛔ ' + e.message; err.style.display = '';
+    err.textContent = '⛔ ' + (e.message.includes('invalid-credential') ? 'Identifiant ou mot de passe incorrect.' : e.message);
+    err.style.display = '';
+  }
+};
+
+window.doLoginGoogle = async () => {
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+  try {
+    await signInWithPopup(auth, new GoogleAuthProvider());
+  } catch(e) {
+    if (e.code !== 'auth/popup-closed-by-user') {
+      err.textContent = '⛔ ' + e.message; err.style.display = '';
+    }
   }
 };
 
 window.doLogout = async () => {
   await signOut(auth);
-  showAuthWall();
+  location.reload();
 };
 
 // ── Load submissions ──────────────────────────────────
@@ -544,7 +600,7 @@ async function fetchUserNames(uids) {
 }
 
 function userName(uid, fallback) {
-  if (!uid) return '—';
+  if (!uid) return fallback || '—';
   if (fallback) return fallback;
   const name = _userNames.get(uid);
   return name || uid.slice(0, 8) + '…';
@@ -614,7 +670,7 @@ function renderSubs() {
 
 // Ordre canonique des champs pour un affichage stable
 const FIELD_ORDER = ['id','name','rarity','category','cat','palier','lvl','twoHanded','sensible',
-  'classes','tags','lore','obtain','stats','bonuses','craft','effects','img','inCodex',
+  'classes','tags','lore','obtain','stats','bonuses','craft','effects','images','inCodex',
   'type','mobType','region','zones','loot','drops','ordre'];
 
 function sortedEntries(obj) {
@@ -1004,6 +1060,8 @@ function refreshCurrentPanel() {
 
 window.showSubmissions = function showSubmissions() {
   _activePanel = 'submissions';
+  document.getElementById('users-panel').style.display         = 'none';
+  document.getElementById('btn-users').classList.remove('active');
   document.getElementById('submissions-list').style.display    = '';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('item-order-panel').style.display    = 'none';
@@ -1015,8 +1073,9 @@ window.showSubmissions = function showSubmissions() {
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
-  document.getElementById('creator-controls-panel').style.display = 'none';
+
   document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.remove('active');
@@ -1026,16 +1085,18 @@ window.showSubmissions = function showSubmissions() {
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-quest-orphans').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.remove('active');
+
   document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.querySelector('.sidebar').classList.remove('in-order-panel');
 }
 
 window.showMobOrder = async () => {
   _activePanel = 'mob';
+  document.getElementById('users-panel').style.display         = 'none';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
   document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
@@ -1045,14 +1106,14 @@ window.showMobOrder = async () => {
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
-  document.getElementById('creator-controls-panel').style.display = 'none';
+
   document.getElementById('mob-order-panel').style.display     = '';
   document.getElementById('btn-item-order').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-quest-order').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.remove('active');
+
   document.getElementById('btn-mob-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadMobOrder();
@@ -1103,7 +1164,7 @@ function renderMobOrder() {
         <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
         <span class="mob-order-name">${mob.name||mob.id}</span>
         <span class="mob-order-tag">${mobTag(mob)}</span>
-        <button class="ed-edit-btn" title="Modifier">✏️</button>`;
+        <button class="ed-edit-btn" title="Modifier : ${mob.name||mob.id}\nID : ${mob.id}">✏️</button>`;
       row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('mobs', mob.id, mob, 'mob'); });
       listEl.appendChild(row);
     });
@@ -1149,7 +1210,7 @@ function renderMobOrder() {
         <input type="number" class="mob-order-index" value="${palierIdx+1}" min="1" max="${palierMobs.length}" title="Position dans ce palier">
         <span class="mob-order-name">${mob.name||mob.id}</span>
         <span class="mob-order-tag">${mobTag(mob)}</span>
-        <button class="ed-edit-btn" title="Modifier" draggable="false">✏️</button>`;
+        <button class="ed-edit-btn" title="Modifier : ${mob.name||mob.id}\nID : ${mob.id}" draggable="false">✏️</button>`;
 
       const indexInput = row.querySelector('.mob-order-index');
       indexInput.addEventListener('click', e => e.stopPropagation());
@@ -1267,9 +1328,11 @@ function itemTag(item) {
 
 window.showItemOrder = async () => {
   _activePanel = 'item';
+  document.getElementById('users-panel').style.display         = 'none';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
   document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
@@ -1279,14 +1342,14 @@ window.showItemOrder = async () => {
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
-  document.getElementById('creator-controls-panel').style.display = 'none';
+
   document.getElementById('item-order-panel').style.display    = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-pnj-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-quest-order').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.remove('active');
+
   document.getElementById('btn-item-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadItemOrder();
@@ -1338,7 +1401,7 @@ function renderItemOrder() {
         <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
         <span class="mob-order-name">${item.name||item.id}</span>
         <span class="mob-order-tag">${itemCatLabel(item.category)} · ${itemTag(item)}</span>
-        <button class="ed-edit-btn" title="Modifier">✏️</button>`;
+        <button class="ed-edit-btn" title="Modifier : ${item.name||item.id}\nID : ${item.id}">✏️</button>`;
       row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('items', item.id, item, 'item'); });
       listEl.appendChild(row);
     });
@@ -1468,7 +1531,7 @@ function renderItemOrder() {
           <input type="number" class="mob-order-index" value="${catIdx+1}" min="1" max="${catItems.length}" title="Position dans cette catégorie">
           <span class="mob-order-name">${item.name||item.id}</span>
           <span class="mob-order-tag">${itemTag(item)}</span>
-          <button class="ed-edit-btn" title="Modifier" draggable="false">✏️</button>`;
+          <button class="ed-edit-btn" title="Modifier : ${item.name||item.id}\nID : ${item.id}" draggable="false">✏️</button>`;
 
         const indexInput = row.querySelector('.mob-order-index');
         indexInput.addEventListener('click', e => e.stopPropagation());
@@ -1572,9 +1635,11 @@ let _pnjPalierCollapsed = new Set(); // paliers réduits
 
 window.showPnjOrder = async () => {
   _activePanel = 'pnj';
+  document.getElementById('users-panel').style.display         = 'none';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
   document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
@@ -1584,14 +1649,14 @@ window.showPnjOrder = async () => {
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
-  document.getElementById('creator-controls-panel').style.display = 'none';
+
   document.getElementById('pnj-order-panel').style.display     = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
   document.getElementById('btn-ghost-ids').classList.remove('active');
   document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-quest-order').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.remove('active');
+
   document.getElementById('btn-pnj-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadPnjOrder();
@@ -1731,7 +1796,7 @@ function _makePnjRegionGroup(group, gi, palierPnjs, palier) {
       <span class="mob-order-handle">⠿</span>
       <input type="number" class="mob-order-index" value="${pnjIdx+1}" min="1" max="${palierPnjs.length}" title="Position dans cette région">
       <span class="mob-order-name">${pnj.name||pnj.id}</span>
-      <button class="ed-edit-btn" title="Modifier" draggable="false">✏️</button>`;
+      <button class="ed-edit-btn" title="Modifier : ${pnj.name||pnj.id}\nID : ${pnj.id}" draggable="false">✏️</button>`;
 
     const indexInput = row.querySelector('.mob-order-index');
     indexInput.addEventListener('click', e => e.stopPropagation());
@@ -1924,10 +1989,12 @@ let _regionPalierCollapsed = new Set();
 
 window.showRegionOrder = async () => {
   _activePanel = 'region';
+  document.getElementById('users-panel').style.display         = 'none';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
   document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
@@ -1935,7 +2002,7 @@ window.showRegionOrder = async () => {
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
-  document.getElementById('creator-controls-panel').style.display = 'none';
+
   document.getElementById('region-order-panel').style.display  = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -1944,7 +2011,7 @@ window.showRegionOrder = async () => {
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-quest-orphans').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.remove('active');
+
   document.getElementById('btn-region-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadRegionOrder();
@@ -1991,7 +2058,7 @@ function renderRegionOrder() {
         <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
         <span class="mob-order-name">${r.name||r.id}</span>
         <span class="mob-order-tag">P${r.palier||1}</span>
-        <button class="ed-edit-btn" title="Modifier">✏️</button>`;
+        <button class="ed-edit-btn" title="Modifier : ${r.name||r.id}\nID : ${r.id}">✏️</button>`;
       row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('regions', r.id, r, 'region'); });
       listEl.appendChild(row);
     });
@@ -2052,7 +2119,7 @@ function renderRegionOrder() {
           <input type="number" class="mob-order-index" value="${groupIdx+1}" min="1" max="${groupRegions.length}" title="Position dans ce groupe">
           <span class="mob-order-name">${r.name||r.id}</span>
           <span class="mob-order-tag">P${r.palier||1}</span>
-          <button class="ed-edit-btn" title="Modifier" draggable="false">✏️</button>`;
+          <button class="ed-edit-btn" title="Modifier : ${r.name||r.id}\nID : ${r.id}" draggable="false">✏️</button>`;
 
         const indexInput = row.querySelector('.mob-order-index');
         indexInput.addEventListener('click', e => e.stopPropagation());
@@ -2130,9 +2197,11 @@ window.saveRegionOrder = async () => {
 // ── Ghost ID tracker ─────────────────────────────────
 window.showGhostIds = async () => {
   _activePanel = 'ghost-ids';
+  document.getElementById('users-panel').style.display        = 'none';
   document.getElementById('submissions-list').style.display   = 'none';
   document.getElementById('mob-order-panel').style.display    = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
   document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('item-order-panel').style.display   = 'none';
   document.getElementById('pnj-order-panel').style.display    = 'none';
@@ -2142,7 +2211,7 @@ window.showGhostIds = async () => {
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
-  document.getElementById('creator-controls-panel').style.display = 'none';
+
   document.getElementById('ghost-id-panel').style.display      = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -2152,7 +2221,7 @@ window.showGhostIds = async () => {
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-quest-orphans').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.remove('active');
+
   document.getElementById('btn-ghost-ids').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadGhostIds();
@@ -2163,9 +2232,11 @@ window.showGhostIds = async () => {
 // ══════════════════════════════════════════════════════
 window.showRegionOrphans = async () => {
   _activePanel = 'region-orphans';
+  document.getElementById('users-panel').style.display         = 'none';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
   document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('pnj-order-panel').style.display     = 'none';
@@ -2175,7 +2246,7 @@ window.showRegionOrphans = async () => {
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
-  document.getElementById('creator-controls-panel').style.display = 'none';
+
   document.getElementById('region-orphan-panel').style.display = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -2185,7 +2256,7 @@ window.showRegionOrphans = async () => {
   document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-quest-orphans').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.remove('active');
+
   document.getElementById('btn-region-orphans').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadRegionOrphans();
@@ -2351,9 +2422,11 @@ window.loadRegionOrphans = async function loadRegionOrphans() {
 // ══════════════════════════════════════════════════════
 window.showMobOrphans = async () => {
   _activePanel = 'mob-orphans';
+  document.getElementById('users-panel').style.display         = 'none';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
   document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('pnj-order-panel').style.display     = 'none';
@@ -2362,7 +2435,7 @@ window.showMobOrphans = async () => {
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
-  document.getElementById('creator-controls-panel').style.display = 'none';
+
   document.getElementById('mob-orphan-panel').style.display    = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -2371,7 +2444,7 @@ window.showMobOrphans = async () => {
   document.getElementById('btn-region-order').classList.remove('active');
   document.getElementById('btn-quest-order').classList.remove('active');
   document.getElementById('btn-region-orphans').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.remove('active');
+
   document.getElementById('btn-mob-orphans').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadMobOrphans();
@@ -2612,7 +2685,7 @@ function _typeLabel(t) {
 const _GEN_FIELD_ORDER = [
   'id','name','titre','type','palier','zone','npc','mapId','rarity','category','cat','lvl','set','behavior','difficulty',
   'region','regionId','tag','inCodex','color','sensible','twoHanded','rune_slots',
-  'img','lore','obtain','respawnDelay','spawnTime',
+  'images','lore','obtain','respawnDelay','spawnTime',
   'stats','classes','tags','effects','craft','loot','sells','zones','drops','morceaux','camera','attacks',
   'ordre','_order'
 ];
@@ -2922,6 +2995,17 @@ function _genValueHtml(key, val, col) {
 }
 
 function _buildGenericForm(data, col) {
+  // Normaliser img / image → images (tableau)
+  if ('img' in data || 'image' in data) {
+    const existing = data.images && data.images.length ? data.images : null;
+    if (!existing) {
+      const src = data.img || data.image;
+      data = { ...data, images: src ? [src] : [] };
+    }
+    const { img, image, ...rest } = data;
+    data = rest;
+  }
+
   // Auto-injecter le champ color pour les régions qui n'en ont pas encore
   if (col === 'regions' && !('color' in data)) {
     data = { ...data, color: _makeColorObj('#9a9ab0') };
@@ -3118,6 +3202,7 @@ window.edAddGenField = function() {
 };
 
 window.showEditor = async function(collection, id, data, origin) {
+  document.getElementById('users-panel').style.display        = 'none';
   document.getElementById('submissions-list').style.display   = 'none';
   document.getElementById('mob-order-panel').style.display    = 'none';
   document.getElementById('item-order-panel').style.display   = 'none';
@@ -3128,6 +3213,7 @@ window.showEditor = async function(collection, id, data, origin) {
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('quest-orphan-panel').style.display  = 'none';
+  document.getElementById('permissions-panel').style.display   = 'none';
   document.getElementById('editor-panel').style.display        = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -3138,7 +3224,7 @@ window.showEditor = async function(collection, id, data, origin) {
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-quest-orphans').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.remove('active');
+
   document.querySelector('.sidebar').classList.add('in-order-panel');
 
   _editorCollection = collection;
@@ -3292,95 +3378,15 @@ window.deleteCurrentEntry = async function() {
   }
 };
 
-// ══════════════════════════════════════════════════════
-// CONTRÔLES CREATOR
-// ══════════════════════════════════════════════════════
 // ⚠️ Ajouter ici les nouveaux paliers quand ils sont créés dans le creator
 const CREATOR_PALIERS = [1, 2, 3];
 let _ccConfig = null;
 
-window.showCreatorControls = async () => {
-  document.getElementById('submissions-list').style.display    = 'none';
-  document.getElementById('mob-order-panel').style.display     = 'none';
-  document.getElementById('discord-webhooks-panel').style.display = 'none';
-  document.getElementById('btn-discord-webhooks').classList.remove('active');
-  document.getElementById('item-order-panel').style.display    = 'none';
-  document.getElementById('pnj-order-panel').style.display     = 'none';
-  document.getElementById('ghost-id-panel').style.display      = 'none';
-  document.getElementById('region-order-panel').style.display  = 'none';
-  document.getElementById('quest-order-panel').style.display   = 'none';
-  document.getElementById('region-orphan-panel').style.display = 'none';
-  document.getElementById('mob-orphan-panel').style.display    = 'none';
-  document.getElementById('quest-orphan-panel').style.display  = 'none';
-  document.getElementById('editor-panel').style.display        = 'none';
-  document.getElementById('creator-controls-panel').style.display = '';
-  document.getElementById('btn-mob-order').classList.remove('active');
-  document.getElementById('btn-item-order').classList.remove('active');
-  document.getElementById('btn-pnj-order').classList.remove('active');
-  document.getElementById('btn-ghost-ids').classList.remove('active');
-  document.getElementById('btn-region-order').classList.remove('active');
-  document.getElementById('btn-quest-order').classList.remove('active');
-  document.getElementById('btn-region-orphans').classList.remove('active');
-  document.getElementById('btn-mob-orphans').classList.remove('active');
-  document.getElementById('btn-quest-orphans').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.add('active');
-  document.querySelector('.sidebar').classList.add('in-order-panel');
-  await loadCreatorConfig();
-};
-
-window.loadCreatorConfig = async function loadCreatorConfig() {
-  const loading = document.getElementById('cc-loading');
-  const content = document.getElementById('cc-content');
-  loading.style.display = '';
-  loading.textContent   = 'Chargement…';
-  content.style.display = 'none';
+async function _saveCreatorConfig() {
   try {
-    const snap = await getDoc(doc(db, 'config', 'creator'));
-    _ccConfig = snap.exists() ? snap.data() : {};
-    _renderCreatorControls();
-    loading.style.display = 'none';
-    content.style.display = '';
+    await setDoc(doc(db, 'config', 'creator'), _ccConfig);
   } catch(e) {
-    loading.textContent = `Erreur : ${e.message}`;
-  }
-};
-
-function _renderCreatorControls() {
-  const tools = _ccConfig.tools || {};
-  const TOOLS = [
-    { id: 'item',   label: '⚔️ Items' },
-    { id: 'mob',    label: '👾 Mobs' },
-    { id: 'pnj',    label: '🧑 PNJ' },
-    { id: 'region', label: '📍 Régions' },
-  ];
-  const list = document.getElementById('cc-tools-list');
-  list.innerHTML = '';
-  for (const t of TOOLS) {
-    const on = tools[t.id] !== false;
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);';
-    row.innerHTML = `
-      <span style="font-size:13px;font-weight:500;">${t.label}</span>
-      <button class="btn btn-sm btn-ghost" onclick="toggleCreatorTool('${t.id}')"
-        style="${on ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);' : 'color:var(--danger);border-color:rgba(248,113,113,.4);'}">
-        ${on ? '✓ Actif' : '✕ Désactivé'}
-      </button>`;
-    list.appendChild(row);
-  }
-  const hidden = new Set(_ccConfig.hiddenPaliers || []);
-  const palierList = document.getElementById('cc-palier-list');
-  palierList.innerHTML = '';
-  for (const p of CREATOR_PALIERS) {
-    const visible = !hidden.has(p);
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);';
-    row.innerHTML = `
-      <span style="font-size:13px;font-weight:500;">Palier ${p}</span>
-      <button class="btn btn-sm btn-ghost" onclick="toggleCreatorPalier(${p})"
-        style="${visible ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);' : 'color:var(--danger);border-color:rgba(248,113,113,.4);'}">
-        ${visible ? '✓ Visible' : '✕ Masqué'}
-      </button>`;
-    palierList.appendChild(row);
+    alert(`⛔ Erreur sauvegarde config creator : ${e.message}`);
   }
 }
 
@@ -3388,7 +3394,7 @@ window.toggleCreatorTool = async function(toolId) {
   if (!_ccConfig) return;
   _ccConfig.tools = _ccConfig.tools || {};
   _ccConfig.tools[toolId] = _ccConfig.tools[toolId] === false ? true : false;
-  _renderCreatorControls();
+  _renderPermissions();
   await _saveCreatorConfig();
 };
 
@@ -3397,17 +3403,9 @@ window.toggleCreatorPalier = async function(p) {
   const hidden = new Set(_ccConfig.hiddenPaliers || []);
   if (hidden.has(p)) hidden.delete(p); else hidden.add(p);
   _ccConfig.hiddenPaliers = [...hidden];
-  _renderCreatorControls();
+  _renderPermissions();
   await _saveCreatorConfig();
 };
-
-async function _saveCreatorConfig() {
-  try {
-    await setDoc(doc(db, 'config', 'creator'), _ccConfig);
-  } catch(e) {
-    alert(`⛔ Erreur sauvegarde config : ${e.message}`);
-  }
-}
 
 // ── Discord Webhooks ──────────────────────────────────
 let _dwConfig = null;
@@ -3418,6 +3416,7 @@ const DW_CATEGORIES = [
 ];
 
 window.showDiscordWebhooks = async () => {
+  document.getElementById('users-panel').style.display         = 'none';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('item-order-panel').style.display    = 'none';
@@ -3429,7 +3428,7 @@ window.showDiscordWebhooks = async () => {
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
-  document.getElementById('creator-controls-panel').style.display = 'none';
+
   document.getElementById('discord-webhooks-panel').style.display = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -3440,7 +3439,7 @@ window.showDiscordWebhooks = async () => {
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-quest-orphans').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.remove('active');
+
   document.getElementById('btn-discord-webhooks').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadDiscordWebhooks();
@@ -3551,6 +3550,208 @@ window.testDiscordWebhook = async function testDiscordWebhook(key) {
     }
   } catch(e) {
     alert(`⛔ Erreur réseau : ${e.message}`);
+  }
+};
+
+// ── Permissions ────────────────────────────────────────
+const PERM_ROLES_ALL   = ['visiteur', 'membre', 'contributeur', 'admin'];
+const PERM_ROLE_LABELS = { visiteur: 'Visiteur', membre: 'Membre', contributeur: 'Contrib.', admin: 'Admin' };
+const PERM_ROLE_COLORS = { visiteur: '#4ade80', membre: '#60a5fa', contributeur: '#f59e0b', admin: '#f87171' };
+
+const PERM_SECTIONS = [
+  { title: 'Wiki — Pages publiques', perms: [
+    { id: 'view_compendium', label: 'Compendium',  desc: 'Liste et détail des items' },
+    { id: 'view_bestiaire',  label: 'Bestiaire',   desc: 'Mobs, PNJ et encyclopédie' },
+    { id: 'view_atelier',    label: 'Atelier',     desc: 'Simulateur de builds' },
+    { id: 'view_map',        label: 'Carte',       desc: 'Carte interactive du monde' },
+    { id: 'view_quetes',     label: 'Quêtes',      desc: 'Encyclopédie des quêtes' },
+  ]},
+  { title: 'Contributions (Creator)', perms: [
+    { id: 'submit_item',   label: 'Soumettre un item',    desc: 'Armes, armures, accessoires…' },
+    { id: 'submit_mob',    label: 'Soumettre un mob',     desc: 'Monstres et créatures' },
+    { id: 'submit_pnj',    label: 'Soumettre un PNJ',     desc: 'Personnages non-joueurs' },
+    { id: 'submit_region', label: 'Soumettre une région', desc: 'Zones et territoires' },
+    { id: 'submit_quest',  label: 'Soumettre une quête',  desc: 'Quêtes du jeu' },
+  ]},
+  { title: 'Modération — fixe (règles Firestore)', perms: [
+    { id: '_mod_panel',   label: 'Panel modération',         desc: 'Soumissions, éditeur, outils',   fixed: 'contributeur' },
+    { id: '_approve',     label: 'Approuver / Rejeter',      desc: 'Modérer les soumissions',        fixed: 'contributeur' },
+    { id: '_edit_direct', label: 'Écriture directe en base', desc: 'Items, mobs, PNJ, régions…',    fixed: 'contributeur' },
+    { id: '_admin',       label: 'Configuration admin',      desc: 'Permissions, webhooks, rôles',   fixed: 'admin' },
+  ]},
+];
+
+let _permConfig = null;
+
+window.showPermissions = async () => {
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('permissions-panel').style.display = '';
+  document.getElementById('btn-permissions').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadPermissions();
+};
+
+window.loadPermissions = async function() {
+  const loading = document.getElementById('perm-loading');
+  const content = document.getElementById('perm-content');
+  loading.style.display = ''; loading.textContent = 'Chargement…';
+  content.style.display = 'none';
+  try {
+    const [permSnap, ccSnap] = await Promise.all([
+      getDoc(doc(db, 'config', 'permissions')),
+      getDoc(doc(db, 'config', 'creator')),
+    ]);
+    _permConfig = permSnap.exists() ? (permSnap.data().minRole || {}) : {};
+    _ccConfig   = ccSnap.exists() ? ccSnap.data() : {};
+    _renderPermissions();
+    loading.style.display = 'none';
+    content.style.display = '';
+  } catch(e) { loading.textContent = `Erreur : ${e.message}`; }
+};
+
+function _renderPermissions() {
+  const content = document.getElementById('perm-content');
+  content.innerHTML = '';
+
+  // Sections rôle-minimum
+  for (const section of PERM_SECTIONS) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:24px;';
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;';
+    title.textContent = section.title;
+    wrap.appendChild(title);
+    const rows = document.createElement('div');
+    rows.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+    for (const perm of section.perms) rows.appendChild(_buildPermRow(perm));
+    wrap.appendChild(rows);
+    content.appendChild(wrap);
+  }
+
+  // Section Creator — Outils actifs
+  const ccTools = (_ccConfig || {}).tools || {};
+  const CC_TOOLS = [
+    { id: 'item',   label: '⚔️ Items',    desc: 'Soumission d\'items dans le Creator' },
+    { id: 'mob',    label: '👾 Mobs',     desc: 'Soumission de mobs dans le Creator' },
+    { id: 'pnj',    label: '🧑 PNJ',      desc: 'Soumission de PNJ dans le Creator' },
+    { id: 'region', label: '📍 Régions',  desc: 'Soumission de régions dans le Creator' },
+    { id: 'quest',  label: '📜 Quêtes',   desc: 'Soumission de quêtes dans le Creator' },
+  ];
+  const toolsWrap = document.createElement('div');
+  toolsWrap.style.cssText = 'margin-bottom:24px;';
+  const toolsTitle = document.createElement('div');
+  toolsTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;';
+  toolsTitle.textContent = 'Creator — Outils actifs';
+  toolsWrap.appendChild(toolsTitle);
+  const toolsRows = document.createElement('div');
+  toolsRows.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  for (const t of CC_TOOLS) {
+    const on = ccTools[t.id] !== false;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;';
+    const info = document.createElement('div');
+    info.style.cssText = 'flex:1;min-width:140px;';
+    info.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--text);">${t.label}</div>`
+                   + `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${t.desc}</div>`;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm btn-ghost';
+    btn.style.cssText = on
+      ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);flex-shrink:0;'
+      : 'color:var(--danger);border-color:rgba(248,113,113,.4);flex-shrink:0;';
+    btn.textContent = on ? '✓ Actif' : '✕ Désactivé';
+    btn.onclick = () => toggleCreatorTool(t.id);
+    row.appendChild(info);
+    row.appendChild(btn);
+    toolsRows.appendChild(row);
+  }
+  toolsWrap.appendChild(toolsRows);
+  content.appendChild(toolsWrap);
+
+  // Section Creator — Paliers visibles
+  const hidden = new Set((_ccConfig || {}).hiddenPaliers || []);
+  const paliersWrap = document.createElement('div');
+  paliersWrap.style.cssText = 'margin-bottom:24px;';
+  const paliersTitle = document.createElement('div');
+  paliersTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;';
+  paliersTitle.textContent = 'Creator — Paliers visibles';
+  paliersWrap.appendChild(paliersTitle);
+  const paliersRows = document.createElement('div');
+  paliersRows.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  for (const p of CREATOR_PALIERS) {
+    const visible = !hidden.has(p);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;';
+    const info = document.createElement('div');
+    info.style.cssText = 'flex:1;';
+    info.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--text);">Palier ${p}</div>`;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm btn-ghost';
+    btn.style.cssText = visible
+      ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);flex-shrink:0;'
+      : 'color:var(--danger);border-color:rgba(248,113,113,.4);flex-shrink:0;';
+    btn.textContent = visible ? '✓ Visible' : '✕ Masqué';
+    btn.onclick = () => toggleCreatorPalier(p);
+    row.appendChild(info);
+    row.appendChild(btn);
+    paliersRows.appendChild(row);
+  }
+  paliersWrap.appendChild(paliersRows);
+  content.appendChild(paliersWrap);
+}
+
+function _buildPermRow(perm) {
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap;';
+
+  const info = document.createElement('div');
+  info.style.cssText = 'flex:1;min-width:140px;';
+  info.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--text);">${perm.label}</div>`
+                 + `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${perm.desc}</div>`;
+  row.appendChild(info);
+
+  if (perm.fixed) {
+    const badge = document.createElement('span');
+    const col = PERM_ROLE_COLORS[perm.fixed] || '#888';
+    badge.style.cssText = `padding:4px 12px;font-size:11px;font-weight:700;background:${col};color:#000;border-radius:6px;`;
+    badge.textContent = PERM_ROLE_LABELS[perm.fixed] + '+';
+    const lock = document.createElement('span');
+    lock.style.cssText = 'font-size:12px;color:var(--muted);';
+    lock.textContent = '🔒';
+    lock.title = 'Géré par les règles Firestore — non modifiable ici';
+    row.appendChild(badge);
+    row.appendChild(lock);
+    return row;
+  }
+
+  const current = _permConfig[perm.id] ?? 'visiteur';
+  const seg = document.createElement('div');
+  seg.style.cssText = 'display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0;';
+
+  for (const role of PERM_ROLES_ALL) {
+    const btn = document.createElement('button');
+    const active = role === current;
+    const col = PERM_ROLE_COLORS[role];
+    btn.style.cssText = `padding:5px 10px;font-size:11px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;`
+                      + `background:${active ? col : 'var(--surface3)'};color:${active ? '#000' : 'var(--muted)'};`
+                      + `transition:background .12s,color .12s;`;
+    btn.textContent = PERM_ROLE_LABELS[role];
+    btn.title = `Rôle minimum : ${role}`;
+    btn.onclick = () => _setPermission(perm.id, role);
+    seg.appendChild(btn);
+  }
+  row.appendChild(seg);
+  return row;
+}
+
+window._setPermission = async function(permId, role) {
+  if (!_permConfig) return;
+  _permConfig[permId] = role;
+  _renderPermissions();
+  try {
+    await setDoc(doc(db, 'config', 'permissions'), { minRole: _permConfig });
+  } catch(e) {
+    alert(`⛔ Erreur sauvegarde permissions : ${e.message}`);
   }
 };
 
@@ -3715,10 +3916,12 @@ const QUEST_TYPE_COLORS_MOD = { main: '#e07c50',        sec: '#6aaad4',        t
 
 window.showQuestOrder = async () => {
   _activePanel = 'quest';
+  document.getElementById('users-panel').style.display         = 'none';
   document.getElementById('submissions-list').style.display    = 'none';
   document.getElementById('mob-order-panel').style.display     = 'none';
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
   document.getElementById('btn-discord-webhooks').classList.remove('active');
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
@@ -3728,7 +3931,7 @@ window.showQuestOrder = async () => {
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('quest-orphan-panel').style.display  = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
-  document.getElementById('creator-controls-panel').style.display = 'none';
+
   document.getElementById('quest-order-panel').style.display   = '';
   document.getElementById('btn-mob-order').classList.remove('active');
   document.getElementById('btn-item-order').classList.remove('active');
@@ -3739,7 +3942,7 @@ window.showQuestOrder = async () => {
   document.getElementById('btn-region-orphans').classList.remove('active');
   document.getElementById('btn-mob-orphans').classList.remove('active');
   document.getElementById('btn-quest-orphans').classList.remove('active');
-  document.getElementById('btn-creator-controls').classList.remove('active');
+
   document.getElementById('btn-quest-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadQuestOrder();
@@ -3861,11 +4064,11 @@ window.showQuestOrphans = async () => {
   ['submissions-list','mob-order-panel','item-order-panel','pnj-order-panel',
    'ghost-id-panel','region-order-panel','quest-order-panel',
    'region-orphan-panel','mob-orphan-panel','quest-orphan-panel',
-   'editor-panel','creator-controls-panel','discord-webhooks-panel'
+   'editor-panel','discord-webhooks-panel','permissions-panel'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
   ['btn-mob-order','btn-item-order','btn-pnj-order','btn-ghost-ids',
    'btn-region-order','btn-quest-order','btn-region-orphans','btn-mob-orphans',
-   'btn-quest-orphans','btn-creator-controls','btn-discord-webhooks'
+   'btn-quest-orphans','btn-discord-webhooks','btn-permissions'
   ].forEach(id => { document.getElementById(id)?.classList.remove('active'); });
 
   document.getElementById('quest-orphan-panel').style.display = '';
@@ -3938,7 +4141,7 @@ function _buildQuestRow(qt, origin = 'quest', posIdx = null, groupLen = null) {
       <span style="width:8px;height:8px;border-radius:50%;background:${tc};flex-shrink:0;display:inline-block;"></span>
       <span class="mob-order-name" style="flex:1;min-width:0;">${escHtml(qt.titre || qt.id)}</span>
       ${zone}${npc}
-      <button class="ed-edit-btn" title="Modifier" draggable="false">✏️</button>`;
+      <button class="ed-edit-btn" title="Modifier : ${qt.titre||qt.id}\nID : ${qt.id}" draggable="false">✏️</button>`;
 
     const indexInput = row.querySelector('.mob-order-index');
     indexInput.addEventListener('click', e => e.stopPropagation());
@@ -4000,7 +4203,7 @@ function _buildQuestRow(qt, origin = 'quest', posIdx = null, groupLen = null) {
       <span style="width:8px;height:8px;border-radius:50%;background:${tc};flex-shrink:0;display:inline-block;"></span>
       <span class="mob-order-name" style="flex:1;min-width:0;">${escHtml(qt.titre || qt.id)}</span>
       ${zone}${npc}
-      <button class="ed-edit-btn" title="Modifier">✏️</button>`;
+      <button class="ed-edit-btn" title="Modifier : ${qt.titre||qt.id}\nID : ${qt.id}">✏️</button>`;
   }
 
   row.querySelector('.ed-edit-btn').addEventListener('click', e => {
@@ -4029,6 +4232,84 @@ window.saveQuestOrder = async () => {
   alert(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Ordre sauvegardé (${ok} quêtes).`);
   document.getElementById('quest-order-search').value = '';
   await loadQuestOrder();
+};
+
+/* ══════════════════════════════════════════════════════
+   MEMBRES — gestion des rôles
+══════════════════════════════════════════════════════ */
+const ROLES_LIST = ['membre', 'contributeur', 'admin'];
+let _allUsers = [];
+
+window.showUsersPanel = async () => {
+  _activePanel = 'users';
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.sidebar').classList.remove('in-order-panel');
+  document.getElementById('users-panel').style.display = '';
+  document.getElementById('btn-users').classList.add('active');
+  await loadUsers();
+};
+
+window.loadUsers = async () => {
+  const list = document.getElementById('users-list');
+  list.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    _allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+      .sort((a, b) => ROLES_LIST.indexOf(b.role) - ROLES_LIST.indexOf(a.role)
+                   || (a.pseudo || '').localeCompare(b.pseudo || ''));
+    renderUsers(_allUsers);
+  } catch (e) {
+    list.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
+  }
+};
+
+function renderUsers(users) {
+  const list = document.getElementById('users-list');
+  if (!users.length) { list.innerHTML = '<div class="empty">Aucun membre.</div>'; return; }
+
+  const roleColor = { membre: 'var(--muted)', contributeur: '#60a5fa', admin: 'var(--danger)' };
+
+  list.innerHTML = '';
+  users.forEach(u => {
+    const row = document.createElement('div');
+    row.className = 'user-row';
+    row.dataset.uid = u.uid;
+
+    const sel = ROLES_LIST.map(r =>
+      `<option value="${r}"${r === u.role ? ' selected' : ''}>${r}</option>`
+    ).join('');
+
+    row.innerHTML = `
+      <span class="user-pseudo">${escHtml(u.pseudo || '—')}</span>
+      <span class="user-uid">${escHtml(u.uid)}</span>
+      <span class="user-role-badge" style="color:${roleColor[u.role] || 'var(--muted)'};">${escHtml(u.role || 'membre')}</span>
+      <select class="user-role-sel" onchange="setUserRole('${escHtml(u.uid)}', this.value, this)">${sel}</select>
+    `;
+    list.appendChild(row);
+  });
+}
+
+window.filterUsers = () => {
+  const q = document.getElementById('users-search').value.trim().toLowerCase();
+  renderUsers(q ? _allUsers.filter(u => (u.pseudo || '').toLowerCase().includes(q)) : _allUsers);
+};
+
+window.setUserRole = async (uid, newRole, sel) => {
+  if (!ROLES_LIST.includes(newRole)) return;
+  const prev = sel.dataset.prev || sel.querySelector('option[selected]')?.value || sel.value;
+  sel.disabled = true;
+  try {
+    await updateDoc(doc(db, 'users', uid), { role: newRole });
+    const u = _allUsers.find(x => x.uid === uid);
+    if (u) u.role = newRole;
+    sel.dataset.prev = newRole;
+  } catch (e) {
+    sel.value = prev;
+    alert('Erreur : ' + e.message);
+  } finally {
+    sel.disabled = false;
+  }
 };
 </script>
 <div id="img-lightbox" onclick="this.classList.remove('open')">

@@ -122,7 +122,7 @@ function rewardMiniTag(r) {
   /* items */
   const item  = r.itemId ? dbItem(r.itemId) : null;
   const color = item ? rarityColor(item.rarity) : '#c0a0dc';
-  const imgSrc = item ? (item.img || item.image || null) : null;
+  const imgSrc = item ? (getItemImg(item)) : null;
   const visual = imgSrc
     ? `<img class="rmt-item-img" src="${imgSrc}" alt="">`
     : `<span class="rmt-item-icon">📦</span>`;
@@ -158,7 +158,7 @@ function renderRewardFull(r) {
   const item   = r.itemId ? dbItem(r.itemId) : null;
   const color  = item ? rarityColor(item.rarity) : '#c0a0dc';
   const name   = item ? item.name : (r.label || r.itemId || '?');
-  const imgSrc = item ? (item.img || item.image || null) : null;
+  const imgSrc = item ? (getItemImg(item)) : null;
   const visual = imgSrc
     ? `<img class="reward-img" src="${imgSrc}" alt="${name}">`
     : `<span class="reward-icon-fallback">📦</span>`;
@@ -182,7 +182,7 @@ function renderItemChip(itemId, qte) {
   const item   = dbItem(itemId);
   const color  = item ? rarityColor(item.rarity) : '#888';
   const name   = item ? item.name : itemId;
-  const imgSrc = item ? (item.img || item.image || null) : null;
+  const imgSrc = item ? (getItemImg(item)) : null;
 
   const visual = imgSrc
     ? `<img class="chip-img" src="${imgSrc}" alt="${name}">`
@@ -322,7 +322,7 @@ function buildInventoryPanel() {
     const item   = dbItem(id);
     const name   = item ? item.name : id;
     const color  = item ? rarityColor(item.rarity) : '#888';
-    const imgSrc = item ? (item.img || item.image || null) : null;
+    const imgSrc = item ? (getItemImg(item)) : null;
 
     const row = document.createElement('div');
     row.className = 'inv-row';

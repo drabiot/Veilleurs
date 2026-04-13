@@ -25,6 +25,18 @@ function rarityColor(key) {
 const DB_ITEMS = [];
 function dbItem(id) { return DB_ITEMS.find(i => i.id === id) || null; }
 
+/* ── Helpers images (champ canonique : images[]) ── */
+function getItemImages(item) {
+  if (item.images && item.images.length) return item.images;
+  if (item.image) return [item.image];
+  if (item.img)   return [item.img];
+  return [];
+}
+function getItemImg(item) {
+  const imgs = getItemImages(item);
+  return imgs.length ? imgs[0] : null;
+}
+
 /* ── Couleurs par zone (régions du palier 1) ── */
 const ZONE_COLORS = {
   'Ville de Départ'         : { color: '#e0a050', dim: 'rgba(224,160,80,.35)',  glow: 'rgba(224,160,80,.08)'  },
