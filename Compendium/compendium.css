@@ -216,16 +216,13 @@
   margin-bottom: 28px;
   padding-bottom: 18px;
   border-bottom: 1px solid var(--rim);
-  display: flex;
-  align-items: baseline;
-  gap: 16px;
 }
 .glossary-main-header > .glossary-title {
   flex: 0 0 auto;
 }
 .glossary-main-header > .glossary-subtitle {
-  margin-left: auto;
-  text-align: right;
+  margin-left: 0;
+  text-align: left;
 }
 .glossary-title {
   font-family: 'Cinzel', serif;
