@@ -548,18 +548,18 @@ function getMax(val) { return Array.isArray(val) ? val[1] : val; }
 //#endregion CARACTERISTIQUES
 //#region CATEGORIES
 const CATEGORIES = {
-  materiaux:       { label: 'Matériaux',          emoji: '🧱' },
-  quete:           { label: 'Objets de Quête',    emoji: '📜' },
-  ressources:      { label: 'Ressources',         emoji: '⛏️' },
-  nourriture:      { label: 'Nourriture',         emoji: '🍖' },
-  consommable:     { label: 'Consommables',       emoji: '🧪' },
-  arme:            { label: 'Armes',              emoji: '⚔️' },
-  armure:          { label: 'Armures',            emoji: '🛡️' },
-  accessoire:      { label: 'Accessoires',        emoji: '💍' },
-  outils:          { label: 'Outils',             emoji: '🛠️' },
-  rune:            { label: 'Runes',              emoji: '🔮' },
-	donjon:          { label: 'Donjon',             emoji: '🏰' },
-	monnaie:         { label: 'Monnaie',            emoji: '🪙' },
+  armure:          { label: 'Armures',         emoji: '🛡️',  ordre: 1 },
+  arme:            { label: 'Armes',           emoji: '⚔️',  ordre: 2 },
+  accessoire:      { label: 'Accessoires',     emoji: '💍',  ordre: 3 },
+  rune:            { label: 'Runes',           emoji: '🔮',  ordre: 4 },
+  outils:           { label: 'Outils',          emoji: '🛠️',  ordre: 5 },
+  nourriture:       { label: 'Nourriture',      emoji: '🍖',  ordre: 6 },
+  consommable:     { label: 'Consommables',    emoji: '🧪',  ordre: 7 },
+  materiaux:        { label: 'Matériaux',       emoji: '🧱',  ordre: 8 },
+  quete:  { label: 'Objets de Quête', emoji: '📜',  ordre: 9 },
+  ressources:       { label: 'Ressources',      emoji: '⛏️',  ordre: 10 },
+  donjon:           { label: 'Donjon',          emoji: '🏰',  ordre: 11 },
+  monnaie:          { label: 'Monnaie',         emoji: '🪙',  ordre: 12 },
 };
 
 //#endregion CATEGORIES

@@ -283,7 +283,13 @@ function buildSidebar(items, expandAll = false) {
       });
 
       /* ── Blocs Catégorie ── */
-      Object.keys(grouped[palier]).forEach(cat => {
+      Object.keys(grouped[palier])
+        .sort((a, b) => {
+          const oa = (CATEGORIES[a] && CATEGORIES[a].ordre) ?? 999;
+          const ob = (CATEGORIES[b] && CATEGORIES[b].ordre) ?? 999;
+          return oa - ob;
+        })
+        .forEach(cat => {
         const catItems  = grouped[palier][cat];
         const cat_data  = catData(cat);
 
