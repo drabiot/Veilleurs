@@ -1560,17 +1560,6 @@ stats.innerHTML = statsLines +
       list.innerHTML = '<div class="picker-empty-msg">Aucun item compatible</div>';
       return;
     }
-
-    visible.sort(function(a, b) {
-      if (a.palier !== b.palier) return (a.palier || 0) - (b.palier || 0);
-      const ao = a.ordre ?? null;
-      const bo = b.ordre ?? null;
-      if (ao !== null && bo !== null) return ao - bo;
-      if (ao !== null) return -1;
-      if (bo !== null) return 1;
-      return 0;
-    });
-
     list.innerHTML = '';
     visible.forEach(function(item) {
       const row = document.createElement('div');

@@ -3515,7 +3515,22 @@ function buildObj() {
   if (category)              obj.category = category;
   if (palier)                obj.palier   = +palier;
   if (lvl)                   obj.lvl      = +lvl;
-  obj.img = null;
+  {
+    const CAT_IMG = {
+      arme:        id ? `../img/compendium/textures/weapons/${id}.png`                          : null,
+      armure:      id ? `../img/compendium/textures/armors/${id}.png`                           : null,
+      accessoire:  id ? `../img/compendium/textures/trinkets/${palier ? 'P'+palier+'/' : ''}${id}.png` : null,
+      outils:      id ? `../img/compendium/textures/gears/${id}.png`                            : null,
+      materiaux:   id ? `../img/compendium/textures/items/Material/${id}.png`                   : null,
+      ressources:  id ? `../img/compendium/textures/items/Ressources/${id}.png`                 : null,
+      consommable: id ? `../img/compendium/textures/items/Consommable/${id}.png`                : null,
+      nourriture:  id ? `../img/compendium/textures/items/Nourriture/${id}.png`                 : null,
+      rune:        id ? `../img/compendium/textures/items/Runes/${id}.png`                      : null,
+      quete:       id ? `../img/compendium/textures/items/Quest/${id}.png`                      : null,
+      donjon:      id ? `../img/compendium/textures/items/Donjon/${id}.png`                     : null,
+    };
+    obj.img = (category && CAT_IMG[category]) || null;
+  }
   if (selTwoHanded)              obj.twoHanded  = true;
   const runeSlots = parseInt(document.getElementById('f-rune-slots').value);
   if (runeSlots > 0)             obj.rune_slots = runeSlots;
@@ -4612,6 +4627,7 @@ function buildMobObj() {
   obj.behavior = behavior;
   if (palier)   obj.palier   = +palier;
   if (regionId) obj.region   = regionId;
+  if (id && palier) obj.img  = `../img/mobs/P${palier}/${id}.png`;
   obj.inCodex  = mobInCodex;
   if (mobSensible) obj.sensible = true;
   if (lore)     obj.lore     = lore;
@@ -4908,7 +4924,7 @@ function buildPnjObj() {
   if (palier) obj.palier = +palier;
   if (region) obj.region = region;
   if (cx !== '' && cy !== '' && cz !== '') obj.coords = { x: +cx, y: +cy, z: +cz };
-  obj.img = null;
+  obj.img = id ? `../img/compendium/montages/${id}.png` : null;
 
   const sells = pnjSells.filter(s => s.itemId).map(s => {
     const e = { id: s.itemId };
