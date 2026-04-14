@@ -258,15 +258,9 @@ function buildPalierFilters() {
    FILTRES ZONE
 ══════════════════════════════════ */
 function buildZoneFilters() {
-  const zf    = document.getElementById('zone-filters');
-  const list  = getTabQuests();
-  const zones = [...new Set(list.map(q => q.zone))].sort((a, b) => {
-    const ra = ZONE_META_BY_NAME.get(a);
-    const rb = ZONE_META_BY_NAME.get(b);
-    const pa = ra?.palier ?? 99, pb = rb?.palier ?? 99;
-    if (pa !== pb) return pa - pb;
-    return (ra?.ordre ?? 99) - (rb?.ordre ?? 99);
-  });
+  const zf   = document.getElementById('zone-filters');
+  const list = getTabQuests();
+  const zones = [...new Set(list.map(q => q.zone))].sort();
   activeZones = new Set(zones);
   zf.innerHTML = '';
 
@@ -469,62 +463,6 @@ function buildGrid() {
 
     _sortQuests(entities.filter(q => q.palier === p), 'default').forEach(q => {
       _buildGridCard(q, idx++);
-    entities.filter(q => q.palier === p).sort((a, b) => {
-      const ao = a.ordre ?? null, bo = b.ordre ?? null;
-      if (ao !== null && bo !== null) return ao - bo;
-      if (ao !== null) return -1;
-      if (bo !== null) return 1;
-      return 0;
-    }).forEach(q => {
-      const card = document.createElement('div');
-      card.className = `quete-card ${q.type}`;
-      card.dataset.id = q.id;
-      card.style.animationDelay = `${idx * 0.03}s`;
-      idx++;
-
-      const { done, total, pct } = getProgress(q);
-      const effectiveDone = done === total && total > 0;
-      const zs     = getZoneStyle(q.zone);
-      const mapUrl = getMapUrl(q.mapId, q.zone);
-
-			card.style.setProperty('--zone-color', zs.color);
-			card.style.setProperty('--zone-dim',   zs.dim);
-
-      /* Footer récompenses — max 3 affichées */
-      const rewFooter = q.recompenses.slice(0, 3).map(r => rewardMiniTag(r)).join('');
-
-      card.innerHTML = `
-        <div class="type-stripe"></div>
-        <div class="card-body">
-          <div class="card-top">
-            <div class="card-title">${q.titre}</div>
-            <span class="card-badge ${effectiveDone ? 'badge-done' : 'badge-todo'}">${effectiveDone ? 'Terminée' : 'À faire'}</span>
-          </div>
-          <div class="card-meta">
-            <span class="ctag ctag-palier">P${q.palier}</span>
-            ${mapUrl
-              ? `<a class="ctag ctag-zone" href="${mapUrl}"
-                   style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}"
-                   title="Voir sur la carte" onclick="event.stopPropagation()">🗺 ${q.zone}</a>`
-              : `<span class="ctag ctag-zone" style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}">🗺 ${q.zone}</span>`
-            }
-          </div>
-          <p class="card-desc">${q.desc}</p>
-        </div>
-        <div class="card-footer">
-          <div class="card-rewards-footer">${rewFooter}</div>
-          <div class="card-progress-wrap">
-            <div class="card-progress">
-              <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
-              <span class="progress-lbl">${done}/${total}</span>
-            </div>
-            <span class="card-npc">🧑 ${q.npc}</span>
-          </div>
-        </div>`;
-
-      card.addEventListener('mousedown', e => e.preventDefault());
-      card.addEventListener('click', () => openModal(q));
-      queteGrid.appendChild(card);
     });
   });
 }
