@@ -525,8 +525,11 @@ function renderMobSheet(mob) {
   }
 
   let lootHTML = '';
-  if (mob.loot && mob.loot.length > 0) {
-    const rows = mob.loot.map(l => {
+  // Filtrer les drops pointant vers un item absent de la collection publique
+  // (item sensible → items_hidden, invisible au public).
+  const visibleLoot = (mob.loot || []).filter(l => !!findItem(l.id));
+  if (visibleLoot.length > 0) {
+    const rows = visibleLoot.map(l => {
       const item  = findItem(l.id);
       const name  = item ? item.name : (l.name || l.id);
       const color = item ? getRarityColor(item.rarity) : '#8c8c8c';
@@ -653,11 +656,13 @@ function renderMobSheet(mob) {
 /* ── Fiche PNJ ── */
 function renderPNJSheet(pnj) {
   let sellsHTML = '';
-  if (pnj.sells && pnj.sells.length > 0) {
-    const hasPriceCol = pnj.sells.some(s => s.price != null);
-    const hasBuyCol   = pnj.sells.some(s => s.buy   != null);
+  // Filtrer les ventes pointant vers un item sensible (absent de la collection publique)
+  const visibleSells = (pnj.sells || []).filter(s => !!findItem(s.id));
+  if (visibleSells.length > 0) {
+    const hasPriceCol = visibleSells.some(s => s.price != null);
+    const hasBuyCol   = visibleSells.some(s => s.buy   != null);
 
-    const rows = pnj.sells.map(s => {
+    const rows = visibleSells.map(s => {
       const item  = findItem(s.id);
       const name  = item ? item.name : s.id;
       const color = item ? getRarityColor(item.rarity) : '#8c8c8c';
@@ -700,8 +705,10 @@ function renderPNJSheet(pnj) {
   }
 
   let craftHTML = '';
-  if (pnj.craft && pnj.craft.length > 0) {
-    const rows = pnj.craft.map(recipe => {
+  // Masquer les recettes dont le résultat est sensible (absent de la collection publique)
+  const visibleCraft = (pnj.craft || []).filter(r => !!findItem(r.id));
+  if (visibleCraft.length > 0) {
+    const rows = visibleCraft.map(recipe => {
       const result      = findItem(recipe.id);
       const resultName  = result ? result.name : recipe.id;
       const resultColor = result ? getRarityColor(result.rarity) : '#8c8c8c';

@@ -104,17 +104,6 @@
     <!-- ITEM FORM -->
     <div id="item-form">
 
-    <!-- ORPHELINS -->
-    <div class="section" id="orphan-section" style="border-color:#4ade80;display:none;">
-      <div class="sec-head" style="background:rgba(74,222,128,.08);color:#4ade80;" onclick="toggleSec(this)">
-        🔗 Items orphelins <span id="orphan-count" style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;"></span><span class="chev">▾</span>
-      </div>
-      <div class="sec-body">
-        <div class="hint" style="color:#4ade80;opacity:.8;">Ces IDs sont référencés dans les drops de mobs mais n'existent pas encore dans data.js.</div>
-        <div id="orphan-list" style="display:flex;flex-direction:column;gap:5px;margin-top:4px;"></div>
-      </div>
-    </div>
-
     <!-- CHARGER UN ITEM -->
     <div class="section" style="border-color:var(--accent);">
       <div class="sec-head" style="background:rgba(122,90,248,.12);color:var(--accent);" onclick="toggleSec(this)">
@@ -263,6 +252,20 @@
           <span style="font-size:10px;color:var(--muted);font-weight:700;text-align:center;">Max</span>
         </div>
         <div id="stats-container"></div>
+      </div>
+    </div>
+
+    <!-- PRÉREQUIS D'ATTRIBUTS -->
+    <div class="section" id="threshold-section">
+      <div class="sec-head" onclick="toggleSec(this)">🎯 Prérequis d'attributs
+        <span style="margin-left:8px;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;">
+          Points nécessaires pour pouvoir équiper l'item
+        </span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="sec-body">
+        <div class="hint">Laisser vide ou à 0 pour ne pas imposer de prérequis sur cet attribut.</div>
+        <div id="threshold-grid" style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin-top:6px;"></div>
       </div>
     </div>
 
@@ -509,7 +512,7 @@
           <div class="row2">
             <div class="field">
               <label>Nom affiché *</label>
-              <input type="text" id="reg-name" placeholder="Ville de Départ" oninput="onRegNameInput()">
+              <input type="text" id="reg-name" name="region-title" placeholder="Ville de Départ" autocomplete="off" oninput="onRegNameInput()">
             </div>
             <div class="field">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
@@ -1035,6 +1038,70 @@ let effectEntries= [];
 let activeTags   = new Set();
 let craftUid     = 0;
 let effectUid    = 0;
+let selThreshold = {}; // { force:20, dexterite:15, ... }
+
+const THRESHOLD_ATTRS = [
+  { id:'force',        label:'Force',       icon:'⚔️' },
+  { id:'dexterite',    label:'Dextérité',   icon:'🏹' },
+  { id:'intelligence', label:'Intelligence',icon:'📘' },
+  { id:'esprit',       label:'Esprit',      icon:'✨' },
+  { id:'defense_car',  label:'Défense',     icon:'🛡️' },
+  { id:'vitalite',     label:'Vitalité',    icon:'❤️' },
+];
+
+function buildThresholdGrid() {
+  const grid = document.getElementById('threshold-grid');
+  if (!grid || grid.dataset.built === '1') return;
+  grid.dataset.built = '1';
+  THRESHOLD_ATTRS.forEach(a => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+    const lab = document.createElement('label');
+    lab.textContent = `${a.icon} ${a.label}`;
+    lab.style.cssText = 'font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;';
+    const inp = document.createElement('input');
+    inp.type = 'number';
+    inp.min = '0';
+    inp.placeholder = '0';
+    inp.id = `thr-${a.id}`;
+    inp.style.cssText = 'width:100%;';
+    inp.addEventListener('input', () => {
+      const v = parseInt(inp.value);
+      if (v > 0) selThreshold[a.id] = v;
+      else delete selThreshold[a.id];
+      if (typeof update === 'function') update();
+    });
+    wrap.appendChild(lab);
+    wrap.appendChild(inp);
+    grid.appendChild(wrap);
+  });
+}
+
+function resetThresholdInputs() {
+  selThreshold = {};
+  THRESHOLD_ATTRS.forEach(a => {
+    const el = document.getElementById(`thr-${a.id}`);
+    if (el) el.value = '';
+  });
+}
+
+function loadThreshold(thr) {
+  resetThresholdInputs();
+  if (!thr || typeof thr !== 'object') return;
+  for (const [k, v] of Object.entries(thr)) {
+    const n = parseInt(v);
+    if (!n || n <= 0) continue;
+    selThreshold[k] = n;
+    const el = document.getElementById(`thr-${k}`);
+    if (el) el.value = n;
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', buildThresholdGrid);
+} else {
+  buildThresholdGrid();
+}
 
 const pendingOrphans = new Map(); // id → displayName (tapé par l'user)
 
@@ -1559,13 +1626,15 @@ function onObtainTypeChange() {
       document.getElementById('obtain-add-btn').disabled = true;
     } else {
       hideLootPicker();
-      document.getElementById('obtain-add-btn').disabled = !id;
+      // Sélection = ajout direct (pas besoin de bouton "Ajouter")
+      if (id) addObtainSource();
     }
   }, type === 'mob', 'mob');
   container.appendChild(obtainDrop.element);
   document.getElementById('obtain-add-btn').disabled = true;
-  // hide add btn for mobs (loot picker replaces it)
-  document.getElementById('obtain-add-btn').style.display = type === 'mob' ? 'none' : '';
+  // Le bouton "Ajouter" n'est plus nécessaire : sélection = ajout direct
+  // (masqué pour mob = loot picker, masqué pour les autres = ajout auto)
+  document.getElementById('obtain-add-btn').style.display = 'none';
 }
 
 function showLootPicker(mob) {
@@ -1849,6 +1918,7 @@ function toggleTwoHanded() {
 // LOAD EXISTING ITEM
 // ═══════════════════════════════════════════════════
 let allItemsIndex = [];
+let allMobsIndex  = [];
 let loadDrop = null;
 
 function ensureAllItemsIndex() {
@@ -1860,6 +1930,17 @@ function ensureAllItemsIndex() {
     subtitle: [rarityLabel[it.rarity] || it.rarity, it.category, it.palier ? 'P'+it.palier : ''].filter(Boolean).join(' · '),
     search: ((it.name || '') + ' ' + it.id + ' ' + (it.category || '')).toLowerCase(),
     _raw: it
+  }));
+}
+
+function ensureAllMobsIndex() {
+  if (allMobsIndex.length || typeof MOBS === 'undefined') return;
+  allMobsIndex = MOBS.map(m => ({
+    id: m.id,
+    name: m.name || m.id,
+    subtitle: [m.type || '', m.palier ? 'P'+m.palier : '', m.region || ''].filter(Boolean).join(' · '),
+    search: ((m.name || '') + ' ' + m.id + ' ' + (m.region || '')).toLowerCase(),
+    _raw: m
   }));
 }
 
@@ -1957,9 +2038,20 @@ function loadItem(item) {
       if (e._type)  e._type.value  = eff.type  || 'heal';
       if (e._val)   e._val.value   = eff.value  ?? '';
       if (e._unit)  e._unit.value  = eff.unit   || '';
+      // Durée stockée en secondes → choisir l'unité la plus lisible
+      if (e._dur && e._durUnit) {
+        const s = eff.duration;
+        if (s == null || s === '') { e._dur.value = ''; e._durUnit.value = 's'; }
+        else if (s >= 3600 && s % 3600 === 0) { e._dur.value = s / 3600; e._durUnit.value = 'h'; }
+        else if (s >= 60 && s % 60 === 0)     { e._dur.value = s / 60;   e._durUnit.value = 'min'; }
+        else                                   { e._dur.value = s;        e._durUnit.value = 's'; }
+      }
       if (e._label) e._label.value = eff.label  || '';
     }
   }
+
+  // Threshold (prérequis d'attributs)
+  if (item.threshold) loadThreshold(item.threshold);
 
   // Lore
   if (item.lore) document.getElementById('f-lore').value = item.lore;
@@ -1988,6 +2080,7 @@ function resetFormSilent() {
   document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel textarea').forEach(i => i.value = '');
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
   selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; idLocked = false;
+  resetThresholdInputs();
   const rarityField = document.getElementById('rarity-field');
   if (rarityField) rarityField.classList.add('unset');
   document.getElementById('sensible-btn').classList.remove('active');
@@ -2490,7 +2583,7 @@ function addEffect() {
 
   const row = document.createElement('div');
   row.id = `eff-${uid}`;
-  row.style.cssText = 'display:grid;grid-template-columns:110px 70px 70px 1fr auto;gap:6px;align-items:center;';
+  row.style.cssText = 'display:grid;grid-template-columns:110px 70px 70px 60px 55px 1fr auto;gap:6px;align-items:center;';
 
   const makeInp = (placeholder, type='text', opts='') => {
     const el = document.createElement('input');
@@ -2510,6 +2603,11 @@ function addEffect() {
 
   const valInp   = makeInp('Valeur','number');
   const unitInp  = makeInp('PV / s…');
+  const durInp   = makeInp('Durée','number');
+  const durUnitSel = document.createElement('select');
+  durUnitSel.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:6px 4px;font-size:12px;outline:none;width:100%';
+  durUnitSel.innerHTML = '<option value="s">s</option><option value="min">min</option><option value="h">h</option>';
+  durUnitSel.addEventListener('change', update);
   const labelInp = makeInp('Label (optionnel)');
 
   const rmBtn = document.createElement('button');
@@ -2524,13 +2622,16 @@ function addEffect() {
   row.appendChild(typeSel);
   row.appendChild(valInp);
   row.appendChild(unitInp);
+  row.appendChild(durInp);
+  row.appendChild(durUnitSel);
   row.appendChild(labelInp);
   row.appendChild(rmBtn);
   document.getElementById('effects-list').appendChild(row);
 
   // Store refs
   const entry = effectEntries.find(e => e.uid === uid);
-  entry._type = typeSel; entry._val = valInp; entry._unit = unitInp; entry._label = labelInp;
+  entry._type = typeSel; entry._val = valInp; entry._unit = unitInp;
+  entry._dur = durInp; entry._durUnit = durUnitSel; entry._label = labelInp;
 }
 
 function getEffects() {
@@ -2539,6 +2640,12 @@ function getEffects() {
     const v = parseFloat(e._val.value);
     if (!isNaN(v)) obj.value = v;
     const u = e._unit.value.trim(); if (u) obj.unit = u;
+    // Durée : stockée en secondes (canonique) pour rester compatible avec le compendium
+    const d = parseFloat(e._dur?.value);
+    if (!isNaN(d) && d > 0) {
+      const mult = e._durUnit?.value === 'h' ? 3600 : e._durUnit?.value === 'min' ? 60 : 1;
+      obj.duration = Math.round(d * mult);
+    }
     const l = e._label.value.trim(); if (l) obj.label = l;
     return obj;
   });
@@ -3040,6 +3147,7 @@ function buildObj() {
   if (Object.keys(stats).length)  obj.stats   = stats;
   if (selClasses.length)     obj.classes  = [...selClasses];
   if (effects.length)        obj.effects  = effects;
+  if (Object.keys(selThreshold).length) obj.threshold = { ...selThreshold };
   if (lore)                  obj.lore     = lore;
   if (tagsArr.length)        obj.tags     = tagsArr;
   if (obtain)                obj.obtain   = obtain;
@@ -3145,6 +3253,10 @@ function renderValidation() {
 }
 
 function buildOrphanSection() {
+  // Panneau "Items orphelins" retiré — fonction conservée en no-op
+  // pour ne pas casser les appelants historiques.
+  return;
+  /* eslint-disable no-unreachable */
   if (typeof MOBS === 'undefined' || typeof ITEMS === 'undefined') return;
   const itemIds = new Set(ITEMS.map(it => it.id));
 
@@ -4521,6 +4633,31 @@ function _makeQuestItemRow(item, onRemove) {
   return row;
 }
 
+function _makeQuestMobRow(mob, onRemove) {
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 60px auto;gap:5px;align-items:start;';
+
+  ensureAllMobsIndex();
+  const drop = makeSearchDrop(allMobsIndex, 'Monstre…', id => { mob.mobId = id; update(); }, false);
+  if (mob.mobId) {
+    const f = allMobsIndex.find(m => m.id === mob.mobId);
+    if (f) drop.setValue(mob.mobId, f.name);
+  }
+
+  const qteEl = document.createElement('input');
+  qteEl.type = 'number'; qteEl.min = '1'; qteEl.placeholder = 'Qté';
+  qteEl.value = mob.qte || '';
+  qteEl.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 6px;font-size:12px;text-align:center;outline:none;width:100%;';
+  qteEl.addEventListener('input', () => { mob.qte = +qteEl.value; update(); });
+
+  const rm = document.createElement('button');
+  rm.className = 'btn-icon'; rm.textContent = '✕';
+  rm.addEventListener('click', onRemove);
+
+  row.append(drop.element, qteEl, rm);
+  return row;
+}
+
 // ── Row builder : un objectif
 function _makeQuestObjRow(obj, onRemove, onNextToggle) {
   const container = document.createElement('div');
@@ -4560,6 +4697,7 @@ function _makeQuestObjRow(obj, onRemove, onNextToggle) {
   const itemsWrap = document.createElement('div');
   itemsWrap.className = 'quest-obj-items';
 
+  if (!obj.mobs) obj.mobs = [];
   const renderItems = () => {
     itemsWrap.innerHTML = '';
     for (const it of obj.items) {
@@ -4569,16 +4707,38 @@ function _makeQuestObjRow(obj, onRemove, onNextToggle) {
       });
       itemsWrap.appendChild(row);
     }
+    for (const m of obj.mobs) {
+      const row = _makeQuestMobRow(m, () => {
+        obj.mobs = obj.mobs.filter(x => x.uid !== m.uid);
+        renderItems(); update();
+      });
+      itemsWrap.appendChild(row);
+    }
+    const btnBar = document.createElement('div');
+    btnBar.style.cssText = 'display:flex;gap:6px;';
+
     const addItemBtn = document.createElement('button');
     addItemBtn.className = 'btn btn-ghost btn-sm';
     addItemBtn.textContent = '+ Item requis';
-    addItemBtn.style.cssText = 'font-size:11px;padding:3px 9px;align-self:flex-start;';
+    addItemBtn.style.cssText = 'font-size:11px;padding:3px 9px;';
     addItemBtn.addEventListener('click', () => {
       ensureAllItemsIndex();
       obj.items.push({ uid: _qItemUid++, itemId: '', qte: 1 });
       renderItems();
     });
-    itemsWrap.appendChild(addItemBtn);
+
+    const addMobBtn = document.createElement('button');
+    addMobBtn.className = 'btn btn-ghost btn-sm';
+    addMobBtn.textContent = '+ Monstre requis';
+    addMobBtn.style.cssText = 'font-size:11px;padding:3px 9px;';
+    addMobBtn.addEventListener('click', () => {
+      ensureAllMobsIndex();
+      obj.mobs.push({ uid: _qItemUid++, mobId: '', qte: 1 });
+      renderItems();
+    });
+
+    btnBar.append(addItemBtn, addMobBtn);
+    itemsWrap.appendChild(btnBar);
   };
   renderItems();
 
@@ -4600,7 +4760,8 @@ function _makeQuestObjRow(obj, onRemove, onNextToggle) {
 // ── Simple mode
 function addQuestObjectif() {
   ensureAllItemsIndex();
-  questSimpleObjs.push({ uid: _qObjUid++, texte: '', items: [] });
+  ensureAllMobsIndex();
+  questSimpleObjs.push({ uid: _qObjUid++, texte: '', items: [], mobs: [] });
   renderQuestSimpleObjs();
 }
 
@@ -4726,6 +4887,8 @@ function buildQuestObj() {
       const e = { texte: o.texte.trim() };
       const items = o.items.filter(i => i.itemId).map(i => ({ id: i.itemId, qte: +i.qte || 1 }));
       if (items.length) e.items = items;
+      const mobs = (o.mobs || []).filter(m => m.mobId).map(m => ({ id: m.mobId, qte: +m.qte || 1 }));
+      if (mobs.length) e.mobs = mobs;
       if (o.next) e.next = true;
       return e;
     });

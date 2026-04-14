@@ -22,6 +22,18 @@ function dbItem(id) {
   return _dbItemsIndex.get(id) || null;
 }
 
+/* ── DB_MOBS peuplé depuis Firestore par le module inline de quetes.html ── */
+const DB_MOBS = [];
+let _dbMobsIndex = null;
+let _dbMobsIndexSize = -1;
+function dbMob(id) {
+  if (!_dbMobsIndex || _dbMobsIndexSize !== DB_MOBS.length) {
+    _dbMobsIndex = new Map(DB_MOBS.map(m => [m.id, m]));
+    _dbMobsIndexSize = DB_MOBS.length;
+  }
+  return _dbMobsIndex.get(id) || null;
+}
+
 /* ── Helpers images (champ canonique : images[]) ── */
 function getItemImages(item) {
   if (item.images && item.images.length) return item.images;

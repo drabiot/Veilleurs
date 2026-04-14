@@ -481,7 +481,8 @@ async function fetchUserNames(uids) {
 }
 
 function userName(uid, fallback) {
-  if (!uid) return fallback || '—';
+  // Pas de compte → "pseudo (invité)"
+  if (!uid) return fallback ? `${fallback} (invité)` : '— (invité)';
   if (fallback) return fallback;
   const name = _userNames.get(uid);
   return name || uid.slice(0, 8) + '…';
@@ -2751,8 +2752,7 @@ window.edPickPreset = function(swatch) {
 function _genValueHtml(key, val, col) {
   const t = _typeOf(val);
   const isInternal = key === '_order';
-  const isIdReadonly = (key === 'id' && col !== 'mobs');
-  const isReadonly = isInternal || isIdReadonly;
+  const isReadonly = isInternal;
 
   if (isReadonly) {
     return `<input class="ed-input" value="${_ee(String(val ?? ''))}" readonly style="opacity:.4;cursor:default;font-family:monospace;">`;
@@ -2945,7 +2945,7 @@ function _buildGenericForm(data, col) {
 
   const rowsHtml = entries.map(([key, val]) => {
     const t = _typeOf(val);
-    const isFixed = key === '_order' || (key === 'id' && col !== 'mobs');
+    const isFixed = key === '_order' || key === 'id';
     return `<div class="ed-gen-row" data-gf-orig-key="${_ee(key)}">
       <div class="ed-gen-keycell">
         ${isFixed
@@ -3210,15 +3210,20 @@ window.saveEditor = async function() {
   try {
     const newData = _collectGenericForm();
 
-    // Mob : renommage d'ID → recréer le document
-    const newDocId = (_editorCollection === 'mobs') ? (newData.id || _editorId) : _editorId;
+    // Renommage d'ID → recréer le document (toutes collections)
+    const rawNewId = (newData.id != null ? String(newData.id).trim() : '');
+    const newDocId = rawNewId || _editorId;
     if (newDocId !== _editorId) {
+      // Vérifier qu'aucun document n'existe déjà avec cet ID
+      const clashSnap = await getDoc(doc(db, _editorCollection, newDocId));
+      if (clashSnap.exists()) {
+        throw new Error(`Un document avec l'ID "${newDocId}" existe déjà dans ${_editorCollection}.`);
+      }
       const currentSnap = await getDoc(doc(db, _editorCollection, _editorId));
       const existing = currentSnap.exists() ? currentSnap.data() : {};
       await setDoc(doc(db, _editorCollection, newDocId), { ...existing, ...newData, id: newDocId });
       await deleteDoc(doc(db, _editorCollection, _editorId));
-      const mob = _mobOrderData.find(m => m.id === _editorId);
-      if (mob) { mob.id = newDocId; Object.assign(mob, newData); }
+      _editorCacheRename(_editorCollection, _editorId, newDocId, newData);
       _editorId = newDocId;
     } else {
       // Patch : nouvelles valeurs + deleteField() pour les champs supprimés
@@ -3254,6 +3259,19 @@ window.saveEditor = async function() {
     errDiv.style.display = '';
   }
 };
+
+function _editorCacheRename(col, oldId, newId, newData) {
+  const renameIn = (obj) => {
+    obj.id = newId;
+    Object.keys(obj).forEach(k => { if (k !== '_order' && !(k in newData)) delete obj[k]; });
+    Object.entries(newData).forEach(([k, v]) => { if (k !== '_order' || !(k in obj)) obj[k] = v; });
+  };
+  if      (col === 'items')       { const it = _itemOrderData.find(i => i.id === oldId); if (it) renameIn(it); }
+  else if (col === 'mobs')        { const m  = _mobOrderData.find(m => m.id === oldId);   if (m)  renameIn(m); }
+  else if (col === 'personnages') { _pnjRegions.forEach(r => { const p = r.pnjs.find(p => p.id === oldId); if (p) renameIn(p); }); }
+  else if (col === 'regions')     { const r  = _regionOrderData.find(r => r.id === oldId); if (r) renameIn(r); }
+  else if (col === 'quetes')      { const qt = _questOrderData.find(q => q.id === oldId);  if (qt) renameIn(qt); }
+}
 
 function _editorCacheUpdate(col, id, newData) {
   const applyTo = (obj) => {
@@ -4526,6 +4544,70 @@ window.sensMobToPublic = async (sourceId) => {
     console.error(err);
   }
 };
+
+// ── Auto-scroll pendant le drag dans n'importe quelle liste draggable ──
+(() => {
+  const EDGE = 60;      // zone d'activation en pixels depuis le bord
+  const MAX_SPEED = 18; // vitesse max en pixels par frame
+  let rafId = null;
+  let targetEl = null;
+  let dy = 0;
+  let dragging = false;
+
+  const findScrollableAncestor = (el) => {
+    while (el && el !== document.body && el !== document.documentElement) {
+      const cs = getComputedStyle(el);
+      const canScroll = /(auto|scroll|overlay)/.test(cs.overflowY);
+      if (canScroll && el.scrollHeight > el.clientHeight) return el;
+      el = el.parentElement;
+    }
+    return document.scrollingElement || document.documentElement;
+  };
+
+  const step = () => {
+    if (!dragging || !targetEl || !dy) { rafId = null; return; }
+    targetEl.scrollTop += dy;
+    rafId = requestAnimationFrame(step);
+  };
+
+  document.addEventListener('dragstart', () => { dragging = true; }, true);
+  const stopScroll = () => {
+    dragging = false; dy = 0; targetEl = null;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  };
+  document.addEventListener('dragend',  stopScroll, true);
+  document.addEventListener('drop',     stopScroll, true);
+
+  document.addEventListener('dragover', (e) => {
+    if (!dragging) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const scroller = el ? findScrollableAncestor(el) : null;
+    if (!scroller) { dy = 0; return; }
+    targetEl = scroller;
+    const rect = scroller === document.scrollingElement || scroller === document.documentElement
+      ? { top: 0, bottom: window.innerHeight }
+      : scroller.getBoundingClientRect();
+    const y = e.clientY;
+    if (y - rect.top < EDGE) {
+      dy = -Math.ceil(MAX_SPEED * (1 - (y - rect.top) / EDGE));
+    } else if (rect.bottom - y < EDGE) {
+      dy =  Math.ceil(MAX_SPEED * (1 - (rect.bottom - y) / EDGE));
+    } else {
+      dy = 0;
+    }
+    if (dy && !rafId) rafId = requestAnimationFrame(step);
+  }, true);
+
+  // Pendant un drag, certains navigateurs bloquent le wheel natif → on scroll nous-mêmes
+  document.addEventListener('wheel', (e) => {
+    if (!dragging) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const scroller = el ? findScrollableAncestor(el) : null;
+    if (!scroller) return;
+    scroller.scrollTop += e.deltaY;
+    e.preventDefault();
+  }, { capture: true, passive: false });
+})();
 
 </script>
 <div id="img-lightbox" onclick="this.classList.remove('open')">

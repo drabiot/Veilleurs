@@ -192,6 +192,26 @@ function renderItemChip(itemId, qte) {
   </a>`;
 }
 
+/* Chip monstre — même style que renderItemChip, lien vers bestiaire */
+function renderMobChip(mobId, qte) {
+  const mob    = dbMob(mobId);
+  const color  = '#d47070';
+  const name   = mob ? mob.name : mobId;
+  const imgSrc = mob && mob.img ? mob.img : null;
+
+  const visual = imgSrc
+    ? `<img class="chip-img" src="${imgSrc}" alt="${name}">`
+    : `<span class="chip-fallback">👾</span>`;
+
+  const href = `../Bestiaire/bestiaire.html#${mobId}`;
+  return `<a class="item-chip" href="${href}" target="_blank"
+     style="--chip-color:${color}" title="Voir dans le Bestiaire — ${name}">
+    <span class="chip-visual">${visual}</span>
+    <span class="chip-name" style="color:${color}">${name}</span>
+    <span class="chip-qty">×${qte}</span>
+  </a>`;
+}
+
 /* ══════════════════════════════════
    SIDEBAR COLLAPSIBLES
 ══════════════════════════════════ */
@@ -385,6 +405,31 @@ function buildFeasiblePanel() {
 /* ══════════════════════════════════
    GRILLE — cartes hauteur fixe
 ══════════════════════════════════ */
+function _questXP(q)   { const r = (q.recompenses||[]).find(x => x.type === 'exp');  return r ? rewardVal(r, 'xp')   : 0; }
+function _questCols(q) { const r = (q.recompenses||[]).find(x => x.type === 'cols'); return r ? rewardVal(r, 'cols') : 0; }
+
+function _sortQuests(list, mode) {
+  const arr = list.slice();
+  if (mode === 'profit') {
+    arr.sort((a, b) => (_questXP(b) + _questCols(b)) - (_questXP(a) + _questCols(a)));
+  } else if (mode === 'exp') {
+    arr.sort((a, b) => _questXP(b) - _questXP(a));
+  } else if (mode === 'cols') {
+    arr.sort((a, b) => _questCols(b) - _questCols(a));
+  } else {
+    arr.sort((a, b) => {
+      const ao = a.ordre ?? null, bo = b.ordre ?? null;
+      if (ao !== null && bo !== null) return ao - bo;
+      if (ao !== null) return -1;
+      if (bo !== null) return 1;
+      return 0;
+    });
+  }
+  return arr;
+}
+
+let _currentSort = 'default';
+
 function buildGrid() {
   const entities = getFiltered();
   queteGrid.innerHTML = '';
@@ -399,6 +444,14 @@ function buildGrid() {
   queteGrid.style.display = 'grid';
   resultCount.textContent = `${entities.length} quête${entities.length > 1 ? 's' : ''}`;
 
+  // En mode tri explicite : liste plate sans sectionnement par palier
+  if (_currentSort !== 'default') {
+    const sorted = _sortQuests(entities, _currentSort);
+    let idx = 0;
+    sorted.forEach(q => _buildGridCard(q, idx++));
+    return;
+  }
+
   const paliers = [...new Set(entities.map(q => q.palier))].sort((a, b) => a - b);
   let idx = 0;
 
@@ -408,61 +461,58 @@ function buildGrid() {
     heading.textContent = `⬡ Palier ${p}`;
     queteGrid.appendChild(heading);
 
-    entities.filter(q => q.palier === p).sort((a, b) => {
-      const ao = a.ordre ?? null, bo = b.ordre ?? null;
-      if (ao !== null && bo !== null) return ao - bo;
-      if (ao !== null) return -1;
-      if (bo !== null) return 1;
-      return 0;
-    }).forEach(q => {
-      const card = document.createElement('div');
-      card.className = `quete-card ${q.type}`;
-      card.dataset.id = q.id;
-      card.style.animationDelay = `${idx * 0.03}s`;
-      idx++;
-
-      const { done, total, pct } = getProgress(q);
-      const effectiveDone = done === total && total > 0;
-      const zs     = getZoneStyle(q.zone);
-      const mapUrl = getMapUrl(q.mapId, q.zone);
-
-      /* Footer récompenses — max 3 affichées */
-      const rewFooter = q.recompenses.slice(0, 3).map(r => rewardMiniTag(r)).join('');
-
-      card.innerHTML = `
-        <div class="type-stripe"></div>
-        <div class="card-body">
-          <div class="card-top">
-            <div class="card-title">${q.titre}</div>
-            <span class="card-badge ${effectiveDone ? 'badge-done' : 'badge-todo'}">${effectiveDone ? 'Terminée' : 'À faire'}</span>
-          </div>
-          <div class="card-meta">
-            <span class="ctag ctag-palier">P${q.palier}</span>
-            ${mapUrl
-              ? `<a class="ctag ctag-zone" href="${mapUrl}"
-                   style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}"
-                   title="Voir sur la carte" onclick="event.stopPropagation()">🗺 ${q.zone}</a>`
-              : `<span class="ctag ctag-zone" style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}">🗺 ${q.zone}</span>`
-            }
-          </div>
-          <p class="card-desc">${q.desc}</p>
-        </div>
-        <div class="card-footer">
-          <div class="card-rewards-footer">${rewFooter}</div>
-          <div class="card-progress-wrap">
-            <div class="card-progress">
-              <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
-              <span class="progress-lbl">${done}/${total}</span>
-            </div>
-            <span class="card-npc">🧑 ${q.npc}</span>
-          </div>
-        </div>`;
-
-      card.addEventListener('mousedown', e => e.preventDefault());
-      card.addEventListener('click', () => openModal(q));
-      queteGrid.appendChild(card);
+    _sortQuests(entities.filter(q => q.palier === p), 'default').forEach(q => {
+      _buildGridCard(q, idx++);
     });
   });
+}
+
+function _buildGridCard(q, idx) {
+  const card = document.createElement('div');
+  card.className = `quete-card ${q.type}`;
+  card.dataset.id = q.id;
+  card.style.animationDelay = `${idx * 0.03}s`;
+
+  const { done, total, pct } = getProgress(q);
+  const effectiveDone = done === total && total > 0;
+  const zs     = getZoneStyle(q.zone);
+  const mapUrl = getMapUrl(q.mapId, q.zone);
+
+  /* Footer récompenses — max 3 affichées */
+  const rewFooter = q.recompenses.slice(0, 3).map(r => rewardMiniTag(r)).join('');
+
+  card.innerHTML = `
+    <div class="type-stripe"></div>
+    <div class="card-body">
+      <div class="card-top">
+        <div class="card-title">${q.titre}</div>
+        <span class="card-badge ${effectiveDone ? 'badge-done' : 'badge-todo'}">${effectiveDone ? 'Terminée' : 'À faire'}</span>
+      </div>
+      <div class="card-meta">
+        <span class="ctag ctag-palier">P${q.palier}</span>
+        ${mapUrl
+          ? `<a class="ctag ctag-zone" href="${mapUrl}"
+               style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}"
+               title="Voir sur la carte" onclick="event.stopPropagation()">🗺 ${q.zone}</a>`
+          : `<span class="ctag ctag-zone" style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}">🗺 ${q.zone}</span>`
+        }
+      </div>
+      <p class="card-desc">${q.desc}</p>
+    </div>
+    <div class="card-footer">
+      <div class="card-rewards-footer">${rewFooter}</div>
+      <div class="card-progress-wrap">
+        <div class="card-progress">
+          <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <span class="progress-lbl">${done}/${total}</span>
+        </div>
+        <span class="card-npc">🧑 ${q.npc}</span>
+      </div>
+    </div>`;
+
+  card.addEventListener('mousedown', e => e.preventDefault());
+  card.addEventListener('click', () => openModal(q));
+  queteGrid.appendChild(card);
 }
 
 /* ══════════════════════════════════
@@ -553,19 +603,27 @@ modalOverlay.addEventListener('click', e => {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 /* ── Bind checkboxes ── */
+/* Vrai si un objectif antérieur à `i` porte le tag `next` ET n'est pas coché.
+   Dès qu'un tel verrou est rencontré, tous les objectifs suivants sont bloqués. */
+function isObjectiveBlocked(q, i) {
+  for (let j = 0; j < i; j++) {
+    const prev = q.objectifs[j];
+    if (Array.isArray(prev)) continue;
+    if (prev?.next && !getCk(q.id, j)) return true;
+  }
+  return false;
+}
+
 function updateNextBlocking(q) {
   q.objectifs.forEach((o, i) => {
     if (Array.isArray(o)) return;
-    const prevO = i > 0 && !Array.isArray(q.objectifs[i - 1]) ? q.objectifs[i - 1] : null;
-    if (!prevO?.next) return;
-    const prevDone = getCk(q.id, i - 1);
     const itemEl = modalContent.querySelector(`.obj-item[data-oi="${i}"]`);
     const cb = itemEl?.querySelector('.obj-checkbox');
     if (!itemEl || !cb) return;
-    const blocked = !prevDone;
+    const blocked = isObjectiveBlocked(q, i);
     cb.disabled = blocked;
     itemEl.classList.toggle('obj-blocked', blocked);
-    // Si la case précédente est décochée, on force la décocher
+    // Si l'étape est de nouveau verrouillée, on force à décocher
     if (blocked && cb.checked) {
       cb.checked = false;
       setCk(q.id, i, undefined, false);
@@ -615,7 +673,9 @@ function renderSheet(q) {
       // Héritage : tableau de sous-objectifs (ancien système phases)
       const subs = o.map((sub, j) => {
         const ck    = getCk(q.id, i, j);
-        const chips = sub.items ? sub.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
+        const itemChips = sub.items ? sub.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
+        const mobChips  = sub.mobs  ? sub.mobs .map(m  => renderMobChip (m.id,  m.qte )).join('') : '';
+        const chips = itemChips + mobChips;
         return `<div class="obj-item obj-sub ${ck ? 'done' : ''} obj-item-${q.type}">
           <label class="obj-ck-label">
             <input type="checkbox" class="obj-checkbox" data-oi="${i}" data-si="${j}" ${ck ? 'checked' : ''}/>
@@ -627,10 +687,11 @@ function renderSheet(q) {
       return `<div class="obj-group"><div class="obj-group-lbl">↳ Séquence</div>${subs}</div>`;
     } else {
       const ck    = getCk(q.id, i);
-      // Blocage : bloqué si l'objectif précédent a next:true et n'est pas coché
-      const prevO = i > 0 && !Array.isArray(q.objectifs[i - 1]) ? q.objectifs[i - 1] : null;
-      const blocked = prevO?.next && !getCk(q.id, i - 1);
-      const chips = o.items ? o.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
+      // Blocage cumulatif : bloqué tant qu'un objectif antérieur avec next:true n'est pas coché
+      const blocked = isObjectiveBlocked(q, i);
+      const itemChips = o.items ? o.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
+      const mobChips  = o.mobs  ? o.mobs .map(m  => renderMobChip (m.id,  m.qte )).join('') : '';
+      const chips = itemChips + mobChips;
       const objEl = `<div class="obj-item ${ck ? 'done' : ''} ${blocked ? 'obj-blocked' : ''} obj-item-${q.type}" data-oi="${i}">
         <label class="obj-ck-label">
           <input type="checkbox" class="obj-checkbox" data-oi="${i}" ${ck ? 'checked' : ''} ${blocked ? 'disabled' : ''}/>
@@ -759,6 +820,14 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
     if (btn.dataset.tab && btn.dataset.tab !== 'inv') setActiveTab(btn.dataset.tab);
   });
 });
+
+const _sortSelectEl = document.getElementById('quest-sort');
+if (_sortSelectEl) {
+  _sortSelectEl.addEventListener('change', () => {
+    _currentSort = _sortSelectEl.value;
+    buildGrid();
+  });
+}
 
 searchInput.addEventListener('input', () => {
   searchQuery = searchInput.value.trim();

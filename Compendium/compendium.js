@@ -39,13 +39,12 @@ function currentItems() {
 	});
   const filtered = q.length >= 1
     ? ITEMS.filter(item =>
-        !item.sensible &&
-        (normalize(String(item.name  || '')).includes(norm) ||
+        normalize(String(item.name  || '')).includes(norm) ||
         normalize(String(item.lore  || '')).includes(norm) ||
         normalize(catData(item.category).label || '').includes(norm) ||
-        (item.tags || []).some(t => t != null && normalize(String(t)).includes(norm)))
+        (item.tags || []).some(t => t != null && normalize(String(t)).includes(norm))
       )
-    : ITEMS.filter(item => !item.sensible);
+    : ITEMS.slice();
   return filtered;
 }
 
@@ -818,6 +817,20 @@ function renderNpcHeader(recette, index) {
    AFFICHAGE FICHE ITEM
 ══════════════════════════════════ */
 
+/* Formate une durée en secondes vers une chaîne lisible :
+   45 → "45 s", 60 → "1 min", 90 → "1 min 30", 3600 → "1 h", 5400 → "1 h 30" */
+function formatDuration(sec) {
+  const s = Number(sec);
+  if (!isFinite(s) || s <= 0) return '';
+  if (s < 60) return `${s} s`;
+  if (s < 3600) {
+    const m = Math.floor(s / 60), r = s % 60;
+    return r ? `${m} min ${r}` : `${m} min`;
+  }
+  const h = Math.floor(s / 3600), rm = Math.floor((s % 3600) / 60);
+  return rm ? `${h} h ${rm}` : `${h} h`;
+}
+
 function renderEffects(effectsList) {
   if (!effectsList || effectsList.length === 0) return '';
 
@@ -830,7 +843,7 @@ function renderEffects(effectsList) {
     const valueStr = `${prefix}${eff.value}${eff.unit ? ' ' + eff.unit : ''}`;
     const duration = eff.instant          ? 'Instantané'
                    : eff.type === 'cooldown' ? 'Cooldown'
-                   : eff.duration            ? `${eff.duration} s`
+                   : eff.duration            ? formatDuration(eff.duration)
                    : '';
     return `
       <div class="effect-row">

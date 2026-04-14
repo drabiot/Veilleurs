@@ -156,7 +156,15 @@
           <h1 class="quetes-title" id="main-title">Quêtes Principales</h1>
           <p class="quetes-subtitle" id="main-subtitle">// PRINCIPALES · VEILLEURS AU CLAIR DE LUNE</p>
         </div>
-        <span id="result-count" class="result-count"></span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <select id="quest-sort" class="quest-sort">
+            <option value="default">Ordre par défaut</option>
+            <option value="profit">💰 Rentabilité (XP + Cols)</option>
+            <option value="exp">✨ XP décroissante</option>
+            <option value="cols">🪙 Cols décroissants</option>
+          </select>
+          <span id="result-count" class="result-count"></span>
+        </div>
       </div>
 
       <div id="quete-grid" class="quete-grid"></div>
@@ -232,9 +240,10 @@
     }
 
     (async () => {
-      // Charger items et quêtes Firestore en parallèle
-      const [items, firestoreQuetes] = await Promise.allSettled([
+      // Charger items, mobs et quêtes Firestore en parallèle
+      const [items, mobs, firestoreQuetes] = await Promise.allSettled([
         loadCollection(COL.items),
+        loadCollection(COL.mobs),
         loadCollection(COL.quetes),
       ]);
 
@@ -242,6 +251,12 @@
         DB_ITEMS.push(...items.value);
       } else {
         console.error('[Quêtes] Erreur chargement items :', items.reason);
+      }
+
+      if (mobs.status === 'fulfilled') {
+        DB_MOBS.push(...mobs.value);
+      } else {
+        console.error('[Quêtes] Erreur chargement mobs :', mobs.reason);
       }
 
       if (firestoreQuetes.status === 'fulfilled') {

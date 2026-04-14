@@ -1467,7 +1467,6 @@ stats.innerHTML = statsLines +
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
           (!q || normalize(item.name).includes(q)) &&
-          (!item.sensible || (q && normalize(item.name) === q)) &&
           statsFilter(item);
       });
     } else {
@@ -1484,7 +1483,6 @@ stats.innerHTML = statsLines +
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
           (!q || normalize(item.name).includes(q)) &&
-          (!item.sensible || (q && normalize(item.name) === q)) &&
           statsFilter(item);
       });
     }
@@ -1794,9 +1792,56 @@ stats.innerHTML = statsLines +
   });
 
   /* ══ RECHERCHE ══ */
+  // Les items "sensibles" ne sont pas dans ITEMS : ils sont stockés dans
+  // items_hidden, accessibles uniquement par hash(nom exact). On tente un
+  // lookup débouncé à chaque frappe ; si l'item existe, on l'injecte dans
+  // ITEMS et on re-render.
+  const _sensibleTried = new Set(); // normalisés déjà tentés
+  let _sensibleTimer = null;
+  function _sensibleImg(category, id, palier) {
+    if (!id) return null;
+    const p = palier ? 'P' + palier + '\'' : '';
+    switch (category) {
+      case 'arme':        return '../img/compendium/textures/weapons/' + id + '.png';
+      case 'armure':      return '../img/compendium/textures/armors/' + id + '.png';
+      case 'accessoire':  return '../img/compendium/textures/trinkets/' + p + id + '.png';
+      case 'outils':      return '../img/compendium/textures/gears/' + id + '.png';
+      case 'materiaux':   return '../img/compendium/textures/items/Material/' + id + '.png';
+      case 'ressources':  return '../img/compendium/textures/items/Ressources/' + id + '.png';
+      case 'consommable': return '../img/compendium/textures/items/Consommable/' + id + '.png';
+      case 'nourriture':  return '../img/compendium/textures/items/Nourriture/' + id + '.png';
+      case 'rune':        return '../img/compendium/textures/items/Runes/' + id + '.png';
+      case 'quete':       return '../img/compendium/textures/items/Quest/' + id + '.png';
+      case 'donjon':      return '../img/compendium/textures/items/Donjon/' + id + '.png';
+      default:            return null;
+    }
+  }
+  async function _trySensibleLookup(rawName) {
+    const q = normalize(rawName);
+    if (!q || q.length < 3) return;
+    if (_sensibleTried.has(q)) return;
+    _sensibleTried.add(q);
+    const api = window.VCL_DB;
+    if (!api || !api.getHiddenByName) return;
+    try {
+      const hit = await api.getHiddenByName(api.COL.itemsHidden, rawName);
+      if (!hit) return;
+      // Éviter doublon si l'item est déjà dans ITEMS (cas limite)
+      if (ITEMS.some(function(it) { return it.id === hit.id; })) return;
+      if (!hit.img) hit.img = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier);
+      ITEMS.push(hit);
+      // Ne re-render que si la recherche courante correspond encore
+      if (normalize(filterQ) === q) renderItemList();
+    } catch (err) {
+      console.warn('[atelier] sensible lookup:', err);
+    }
+  }
   document.getElementById('inp-search').addEventListener('input', function(e) {
     filterQ = e.target.value.trim();
     renderItemList();
+    clearTimeout(_sensibleTimer);
+    const raw = filterQ;
+    _sensibleTimer = setTimeout(function() { _trySensibleLookup(raw); }, 250);
   });
 
   document.getElementById('inp-name').addEventListener('input', function() {
