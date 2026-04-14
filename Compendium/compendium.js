@@ -1,6 +1,4 @@
-function escHtml(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+// escHtml → défini globalement dans /utils.js (function au top-level classique)
 
 /* ══════════════════════════════════
    DOM
@@ -99,10 +97,10 @@ function rarityRank(key) {
 /* ══════════════════════════════════
    HELPERS
 ══════════════════════════════════ */
-function normalize(str) {
-  if (str == null) return '';
-  return String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
+// normalize → défini dans /utils.js
+
+// Index O(1) pour les lookups d'items (peuplé dans initCompendium après Firestore).
+const ITEMS_BY_ID = new Map();
 
 function rarityColor(rarityKey) {
   return (RARITIES[rarityKey] || { color: '#666' }).color;
@@ -132,7 +130,7 @@ function inlineLinks(str) {
       type = null;
     }
 
-    const inItems = (typeof ITEMS !== 'undefined') && ITEMS.find(i => i.id === id);
+    const inItems = ITEMS_BY_ID.get(id);
 
     if (!type) {
       type = inItems ? 'item' : 'mob';
@@ -738,7 +736,7 @@ function renderCraft(craftList) {
           </div>`;
       }
 
-      const ingredient = ITEMS.find(i => i.id === entry.id);
+      const ingredient = ITEMS_BY_ID.get(entry.id);
       let imgHtml;
       if (ingredient) {
         const imgSrc = getItemImg(ingredient);
@@ -773,7 +771,7 @@ function renderNpcHeader(recette, index) {
   }
 
   const section  = recette.npcSection || 'personnages'; // défaut : personnages
-  const npcItem  = (typeof ITEMS !== 'undefined') && ITEMS.find(i => i.id === recette.npcId);
+  const npcItem  = ITEMS_BY_ID.get(recette.npcId);
   const npcMob   = (typeof MOBS  !== 'undefined') && MOBS.find(m => m.id === recette.npcId);
   const npc      = npcItem || npcMob;
   const npcName  = npc ? (npc.name || label) : label;
@@ -893,7 +891,7 @@ function bindEntityLinks() {
     header.addEventListener('click', () => {
       const id      = header.dataset.npcId;
       const section = header.dataset.npcSection || 'personnages';
-      const inItems = (typeof ITEMS !== 'undefined') && ITEMS.find(i => i.id === id);
+      const inItems = ITEMS_BY_ID.get(id);
       if (inItems) {
         showItem(id);
         history.pushState({ item: id }, '', `#${id}`);
@@ -905,7 +903,7 @@ function bindEntityLinks() {
 }
 
 function showItem(id, initialQuality = false) {
-  const item = ITEMS.find(i => i.id === id);
+  const item = ITEMS_BY_ID.get(id);
   if (!item) return;
 
   stopSlideshow();
@@ -1134,13 +1132,17 @@ window.addEventListener('popstate', () => {
    INIT
 ══════════════════════════════════ */
 function initCompendium() {
+  // Indexer une fois les items chargés depuis Firestore
+  ITEMS_BY_ID.clear();
+  for (const it of ITEMS) ITEMS_BY_ID.set(it.id, it);
+
   buildSidebar(ITEMS);
   document.querySelector('.glossary-subtitle').innerHTML =
     '// BASE DE DONNÉES · VEILLEURS AU CLAIR DE LUNE &nbsp;·&nbsp; <span style="color:var(--gold);font-weight:600">' + ITEMS.length + '</span> items recensés';
 
   const { id: initId, quality: initQuality } = parseHash(window.location.hash);
   if (initId) {
-    const target = ITEMS.find(i => i.id === initId);
+    const target = ITEMS_BY_ID.get(initId);
     if (target) {
       buildSidebar(ITEMS);
       requestAnimationFrame(() => {

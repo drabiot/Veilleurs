@@ -1402,3 +1402,36 @@ html, body {
   letter-spacing: .03em;
   white-space: nowrap;
 }
+
+/* ══════════════════════════════════════════════════════
+   TOOLTIP CARACTÉRISTIQUES — déplacé depuis atelier.js
+   ══════════════════════════════════════════════════════ */
+.car-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+  transition: opacity .15s ease, transform .15s ease;
+  background: #111220;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  padding: 11px 14px;
+  min-width: 190px;
+  max-width: 250px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04);
+  font-size: 11.5px;
+  color: rgba(255,255,255,.75);
+  line-height: 1.5;
+}
+.car-tooltip.visible { opacity: 1; transform: translateY(0) scale(1); }
+.car-tt-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.car-tt-icon { font-size: 15px; line-height: 1; }
+.car-tt-name { font-weight: 700; font-size: 12.5px; letter-spacing: .02em; }
+.car-tt-desc { font-style: italic; color: rgba(255,255,255,.45); font-size: 11px; margin-bottom: 8px; line-height: 1.45; }
+.car-tt-stats { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid rgba(255,255,255,.07); padding-top: 7px; }
+.car-tt-stat-row { display: flex; align-items: center; gap: 6px; }
+.car-tt-stat-icon { font-size: 12px; flex-shrink: 0; width: 16px; text-align: center; }
+.car-tt-stat-label { flex: 1; color: rgba(255,255,255,.6); font-size: 11px; }
+.car-tt-stat-val { font-weight: 700; font-size: 11.5px; white-space: nowrap; }
+.car-tt-per-pt { font-size: 9.5px; color: rgba(255,255,255,.3); margin-left: 2px; font-weight: 400; }

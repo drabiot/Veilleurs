@@ -24,8 +24,29 @@ service cloud.firestore {
       allow write: if isContrib();
     }
 
+    // Items sensibles — gameplay stocké sous hash(normalize(name))
+    // get public (si on connaît le hash), list réservé aux contributeurs
+    match /items_hidden/{hashId} {
+      allow get:   if true;
+      allow list:  if isContrib();
+      allow write: if isContrib();
+    }
+
+    // Items sensibles — contenu flavor (lore, obtain, craft…), contrib only
+    match /items_secret/{id} {
+      allow read:  if isContrib();
+      allow write: if isContrib();
+    }
+
     match /mobs/{id} {
       allow read:  if true;
+      allow write: if isContrib();
+    }
+
+    // Mobs sensibles — doc complet, contrib only (jamais visible au public)
+    // Bascule sensible ↔ non-sensible = déplacement entre mobs_secret et mobs
+    match /mobs_secret/{id} {
+      allow read:  if isContrib();
       allow write: if isContrib();
     }
 

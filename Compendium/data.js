@@ -1,16 +1,5 @@
 //#region CONSTANTES
-//#region RARITIES
-const RARITIES = {
-  'commun':     { label: 'Commun',      color: '#59d059' },
-  'rare':       { label: 'Rare',        color: '#2a5fa8' },
-  'epique':     { label: 'Épique',      color: '#6a3daa' },
-  'legendaire': { label: 'Légendaire',  color: '#d7af5f' },
-  'mythique':   { label: 'Mythique',    color: '#f5b5e4' },
-  'godlike':    { label: 'Godlike',     color: '#a83020' },
-	'event':    	{ label: 'Event',     	color: '#ebebeb' },
-};
-
-//#endregion RARITIES
+// RARITIES → défini dans /utils.js (source unique)
 //#region CLASSES
 const CLASSES = [
   { id:'guerrier', label:'Guerrier', ico:'⚔️'  },

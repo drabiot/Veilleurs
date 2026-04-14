@@ -2,9 +2,7 @@
    BESTIAIRE — Veilleurs au Clair de Lune
 ══════════════════════════════════════════════════════════════ */
 
-function escHtml(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+// escHtml → défini globalement dans /utils.js (function au top-level classique)
 
 /* ══════════════════════════════════
    ÉTAT
@@ -23,6 +21,7 @@ function _queueCapture(card, mob) {
 
 async function _runCaptureQueue() {
   _captureRunning = true;
+  await ensureThree();
   while (_captureQueue.length > 0) {
     const { card, mob } = _captureQueue.shift();
     if (!card.isConnected) continue;
@@ -71,16 +70,34 @@ function getMapZone(entity) {
 /* ══════════════════════════════════
    HELPERS
 ══════════════════════════════════ */
-function normalize(str) {
-  if (!str) return '';
-  return String(str).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-function getRarityColor(key) {
-  if (typeof RARITIES !== 'undefined' && RARITIES[key]) return RARITIES[key].color;
-  return { commun:'#8c8c8c', peu_commun:'#2dc44e', rare:'#4e96e8', epique:'#a135db', legendaire:'#e0ac60' }[key] || '#8c8c8c';
-}
+// normalize + getRarityColor → définis dans /utils.js
+// Index lazy des items, reconstruit automatiquement quand ITEMS grandit
+// (Firestore peut repopuler le tableau de façon asynchrone via db-loader).
+let _itemsIndex = null;
+let _itemsIndexSize = -1;
 function findItem(id) {
-  return (typeof ITEMS !== 'undefined') ? ITEMS.find(i => i.id === id) || null : null;
+  if (typeof ITEMS === 'undefined') return null;
+  if (!_itemsIndex || _itemsIndexSize !== ITEMS.length) {
+    _itemsIndex = new Map(ITEMS.map(i => [i.id, i]));
+    _itemsIndexSize = ITEMS.length;
+  }
+  return _itemsIndex.get(id) || null;
+}
+
+// Lazy-load THREE.js (utilisé uniquement par MonstreViewer3D pour les mobs 3D).
+// Permet d'éviter les ~600 KB au chargement initial de la page.
+let _threeLoader = null;
+function ensureThree() {
+  if (typeof THREE !== 'undefined') return Promise.resolve();
+  if (_threeLoader) return _threeLoader;
+  _threeLoader = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+  return _threeLoader;
 }
 function dropRateColor(chance) {
   if (chance >= 70) return '#7fdf62';
@@ -460,8 +477,9 @@ function _openFullscreen3D(mob) {
   overlay.appendChild(hint);
   document.body.appendChild(overlay);
 
-  // Lancer le viewer après que le DOM soit rendu
-  requestAnimationFrame(() => {
+  // Lancer le viewer après que le DOM soit rendu (et THREE chargé)
+  requestAnimationFrame(async () => {
+    await ensureThree();
     _fullscreenViewer = new MonstreViewer3D(container, { autoRotate: true });
     _fullscreenViewer.chargerDepuisData(mob);
   });
@@ -617,8 +635,10 @@ function renderMobSheet(mob) {
   if (has3D) {
     const container = document.getElementById('mob-3d-container');
     if (container && typeof MonstreViewer3D !== 'undefined') {
-      _activeViewer = new MonstreViewer3D(container, { autoRotate: false });
-      _activeViewer.chargerDepuisData(mob);
+      ensureThree().then(() => {
+        _activeViewer = new MonstreViewer3D(container, { autoRotate: false });
+        _activeViewer.chargerDepuisData(mob);
+      });
     }
   }
   const expandBtn = document.getElementById('btn-expand-3d');

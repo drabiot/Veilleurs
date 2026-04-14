@@ -4,184 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Modération — VCL Wiki</title>
-<style>
-:root {
-  --bg: #0f0f14; --surface: #1a1a24; --surface2: #22222f; --surface3: #2a2a3a;
-  --border: #2e2e42; --accent: #7a5af8; --text: #e8e8f0; --muted: #7a7a90;
-  --success: #4ade80; --danger: #f87171; --warn: #fbbf24;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
-
-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 50; }
-header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
-.hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-
-.layout { display: grid; grid-template-columns: 220px 1fr; align-items: start; }
-.layout > aside { grid-column: 1; grid-row: 1; position: sticky; top: 49px; max-height: calc(100vh - 49px); overflow-y: auto; }
-.sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; gap: 8px; min-height: 100vh; }
-.main { grid-column: 2; grid-row: 1; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-
-/* Sidebar filters */
-.filter-group { display: flex; flex-direction: column; gap: 4px; }
-.filter-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
-.filter-btn { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; font-size: 12px; text-align: left; transition: all .15s; display: flex; align-items: center; justify-content: space-between; }
-.filter-btn:hover { color: var(--text); border-color: var(--accent); }
-.filter-btn.active { background: rgba(122,90,248,.15); color: var(--accent); border-color: var(--accent); font-weight: 700; }
-.filter-count { font-size: 11px; background: var(--surface3); border-radius: 8px; padding: 1px 6px; }
-.filter-btn.active .filter-count { background: var(--accent); color: #fff; }
-.in-order-panel .filter-btn[data-status].active,
-.in-order-panel .filter-btn[data-type].active { background: var(--surface2); color: var(--muted); border-color: var(--border); font-weight: 400; }
-.in-order-panel .filter-btn[data-status].active .filter-count,
-.in-order-panel .filter-btn[data-type].active .filter-count { background: var(--surface3); color: inherit; }
-
-/* Cards */
-.sub-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .15s; }
-.sub-card:hover { border-color: var(--accent); }
-.sub-card.status-approved { border-left: 3px solid var(--success); }
-.sub-card.status-rejected { border-left: 3px solid var(--danger); opacity: .6; }
-.sub-card.status-pending  { border-left: 3px solid var(--warn); }
-
-.sub-head { padding: 12px 14px; background: var(--surface2); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.sub-type { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: 8px; background: var(--surface3); color: var(--muted); }
-.sub-name { font-size: 15px; font-weight: 700; color: var(--text); flex: 1; }
-.sub-meta { font-size: 11px; color: var(--muted); }
-.sub-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px; }
-.sub-status.pending  { background: rgba(251,191,36,.12);  color: var(--warn); border: 1px solid rgba(251,191,36,.3); }
-.sub-status.approved { background: rgba(74,222,128,.12);  color: var(--success); border: 1px solid rgba(74,222,128,.3); }
-.sub-status.rejected { background: rgba(248,113,113,.12); color: var(--danger);  border: 1px solid rgba(248,113,113,.3); }
-
-.sub-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
-.sub-details { display: none; flex-direction: column; gap: 10px; }
-.sub-details.open { display: flex; }
-.sub-code { background: #0d1117; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; font-family: 'Consolas', monospace; font-size: 11px; color: #c9d1d9; white-space: pre; overflow-x: auto; line-height: 1.6; }
-.sub-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.btn-toggle { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; margin-left: auto; padding: 4px 8px; border-radius: 4px; transition: color .15s; }
-.btn-toggle:hover { color: var(--text); }
-.sub-comment { flex: 1; min-width: 200px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 7px 10px; font-size: 12px; font-family: inherit; outline: none; transition: border-color .15s; }
-.sub-comment:focus { border-color: var(--accent); }
-.review-comment { font-size: 12px; color: var(--muted); font-style: italic; padding: 6px 10px; background: var(--surface2); border-radius: 6px; border-left: 3px solid var(--border); }
-
-/* Editor */
-.sub-editor { display: none; flex-direction: column; gap: 6px; }
-.sub-editor.open { display: flex; }
-.sub-editor-ta { background: #0d1117; border: 1px solid var(--accent); border-radius: 6px; padding: 10px 12px; font-family: 'Consolas', monospace; font-size: 11px; color: #c9d1d9; line-height: 1.6; resize: vertical; min-height: 180px; outline: none; width: 100%; }
-.sub-editor-err { font-size: 11px; color: var(--danger); display: none; }
-
-/* Buttons */
-.btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: filter .15s; }
-.btn:hover { filter: brightness(1.15); }
-.btn:disabled { opacity: .4; cursor: default; filter: none; }
-.btn-approve { background: #14532d; color: var(--success); border: 1px solid #166534; }
-.btn-reject  { background: #7f1d1d; color: var(--danger);  border: 1px solid #991b1b; }
-.btn-ghost   { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-.btn-copy    { background: var(--surface3); color: var(--muted); border: 1px solid var(--border); font-size: 11px; padding: 5px 10px; }
-
-/* Membres */
-.user-row { display: grid; grid-template-columns: 160px 1fr auto auto; align-items: center; gap: 12px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px; }
-.user-pseudo { font-weight: 700; color: var(--text); font-size: 13px; }
-.user-uid { font-size: 10px; color: var(--muted); font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.user-role-badge { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-.user-role-sel { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 5px 8px; font-size: 12px; cursor: pointer; outline: none; }
-.user-role-sel:disabled { opacity: .5; }
-
-/* Lightbox image */
-#img-lightbox {
-  display: none; position: fixed; inset: 0; z-index: 300;
-  background: rgba(0,0,0,.85); align-items: center; justify-content: center; cursor: zoom-out;
-}
-#img-lightbox.open { display: flex; }
-#img-lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 8px; box-shadow: 0 8px 40px rgba(0,0,0,.7); }
-
-/* Image soumission */
-.mod-img-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0 2px; }
-.mod-img-zone {
-  position: relative; border: 2px dashed var(--border); border-radius: 8px;
-  cursor: pointer; transition: border-color .2s, background .2s; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  min-width: 90px; min-height: 60px; overflow: hidden;
-}
-.mod-img-zone:hover, .mod-img-zone.drag-over { border-color: var(--accent); background: rgba(122,90,248,.06); }
-.mod-img-zone.has-img { border-style: solid; border-color: var(--accent); }
-.mod-img-preview { max-width: 160px; max-height: 120px; border-radius: 5px; display: block; cursor: zoom-in; }
-.mod-img-placeholder { font-size: 11px; color: var(--muted); padding: 10px; text-align: center; pointer-events: none; }
-.mod-img-actions { display: flex; flex-direction: column; gap: 5px; justify-content: center; }
-.mod-img-clear { background: rgba(248,113,113,.15); border: 1px solid rgba(248,113,113,.3); color: var(--danger); border-radius: 5px; cursor: pointer; padding: 4px 10px; font-size: 11px; font-weight: 600; }
-.mod-img-clear:hover { background: rgba(248,113,113,.3); }
-
-/* Auth */
-.auth-wall { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 49px); flex-direction: column; gap: 16px; }
-.auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 340px; display: flex; flex-direction: column; gap: 12px; }
-.auth-card h2 { font-size: 15px; font-weight: 700; color: var(--accent); }
-.btn-google { background: var(--surface2); color: var(--text); border: 1px solid var(--border); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: background .15s; }
-.btn-google:hover { background: var(--surface3); }
-.field { display: flex; flex-direction: column; gap: 4px; }
-.field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.field input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 8px 10px; font-size: 13px; outline: none; transition: border-color .15s; }
-.field input:focus { border-color: var(--accent); }
-.empty { color: var(--muted); font-size: 13px; font-style: italic; text-align: center; padding: 60px 20px; }
-
-/* Mob order panel */
-.mob-order-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); margin-bottom: 4px; cursor: grab; user-select: none; transition: background .1s, opacity .15s; }
-.mob-order-row:active { cursor: grabbing; }
-.mob-order-row.drag-over { border-color: var(--accent); background: rgba(122,90,248,.1); }
-.mob-order-row.dragging { opacity: .35; }
-.mob-order-handle { color: var(--muted); font-size: 14px; flex-shrink: 0; }
-.mob-order-index { font-size: 11px; color: var(--muted); font-family: monospace; width: 38px; text-align: center; flex-shrink: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; outline: none; transition: border-color .15s; }
-.mob-order-index:focus { border-color: var(--accent); color: var(--text); }
-.mob-order-name { flex: 1; font-size: 13px; }
-.mob-order-tag { font-size: 11px; color: var(--muted); background: var(--surface2); border-radius: 4px; padding: 2px 7px; flex-shrink: 0; }
-
-/* Palier sections */
-.palier-section { margin-bottom: 8px; }
-.palier-section-header { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 6px; background: var(--surface3); border: 1px solid var(--border); user-select: none; font-size: 11px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
-.palier-section-header:hover { border-color: var(--accent); }
-.palier-section-body { }
-
-/* Ghost ID tracker */
-.ghost-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.ghost-table th { text-align: left; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; padding: 6px 10px; border-bottom: 1px solid var(--border); font-weight: 700; }
-.ghost-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
-.ghost-table tbody tr:hover td { background: var(--surface2); }
-.ghost-id { font-family: 'Consolas', monospace; font-size: 12px; color: #fbbf24; font-weight: 700; }
-.ghost-refs { color: var(--muted); font-size: 11px; line-height: 1.6; }
-.ghost-type-craft      { color: var(--accent); }
-.ghost-type-drop       { color: var(--success); }
-.ghost-type-mob-obtain { color: var(--warn); }
-
-/* ── Éditeur ── */
-.ed-section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
-.ed-section-title { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: 2px; }
-.ed-field { display: flex; flex-direction: column; gap: 4px; }
-.ed-label { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .03em; }
-.ed-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 7px 10px; font-size: 13px; outline: none; transition: border-color .15s; font-family: inherit; }
-.ed-input:focus { border-color: var(--accent); }
-.ed-input[readonly] { opacity: .45; cursor: default; }
-.ed-textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 7px 10px; font-size: 13px; outline: none; transition: border-color .15s; font-family: inherit; resize: vertical; min-height: 70px; }
-.ed-textarea:focus { border-color: var(--accent); }
-.ed-json-ta { width: 100%; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; color: #c9d1d9; padding: 8px 10px; font-family: 'Consolas', monospace; font-size: 11px; outline: none; transition: border-color .15s; resize: vertical; min-height: 32px; line-height: 1.6; overflow: hidden; }
-.ed-json-ta:focus { border-color: var(--accent); }
-.ed-json-ta.ed-json-err { border-color: var(--danger); background: rgba(248,113,113,.05); }
-.ed-check-row { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; padding: 4px 0; }
-.ed-check-row input { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
-.ed-row2 { display: flex; gap: 10px; }
-.ed-row2 .ed-field { flex: 1; min-width: 0; }
-.ed-edit-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 13px; padding: 3px 6px; border-radius: 4px; transition: color .15s, background .15s; flex-shrink: 0; line-height: 1; }
-.ed-edit-btn:hover { color: var(--accent); background: rgba(122,90,248,.12); }
-
-/* ── Éditeur générique ── */
-.ed-gen-row { display:grid; grid-template-columns:155px 38px 1fr 26px; gap:8px; align-items:start; padding:6px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; }
-.ed-gen-row.ed-gen-newrow { border-color:rgba(122,90,248,.4); background:rgba(122,90,248,.05); grid-template-columns:145px 80px 1fr 26px; }
-.ed-gen-keycell { padding-top:8px; overflow:hidden; }
-.ed-gen-keylbl { font-size:12px; font-family:'Consolas',monospace; color:var(--accent); font-weight:600; cursor:pointer; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.ed-gen-keylbl:hover { text-decoration:underline dotted; }
-.ed-gen-type { font-size:10px; font-weight:700; padding-top:9px; text-align:center; font-family:monospace; }
-.ed-gen-val { min-width:0; }
-.ed-gen-val .ed-input, .ed-gen-val .ed-textarea, .ed-gen-val .ed-json-ta { width:100%; }
-.ed-gen-delbtn { background:none; border:none; cursor:pointer; color:var(--danger); font-size:14px; padding:6px 3px; line-height:1; opacity:.45; border-radius:4px; margin-top:2px; }
-.ed-gen-delbtn:hover { opacity:1; background:rgba(248,113,113,.1); }
-.ed-gen-key-input { font-family:'Consolas',monospace !important; font-size:12px !important; color:var(--warn) !important; }
-</style>
+<link rel="stylesheet" href="moderation.css">
 </head>
 <body>
 
@@ -246,6 +69,7 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     <button class="filter-btn" id="btn-users" onclick="showUsersPanel()">👥 Membres</button>
     <button class="filter-btn" id="btn-discord-webhooks" onclick="showDiscordWebhooks()">🔔 Webhooks Discord</button>
     <button class="filter-btn" id="btn-permissions" onclick="showPermissions()">🔑 Permissions</button>
+    <button class="filter-btn" id="btn-migration" onclick="showMigration()">🔒 Sensible</button>
   </aside>
 
   <main class="main" id="submissions-list">
@@ -438,6 +262,69 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
     <div id="perm-content" style="display:none;"></div>
   </main>
 
+  <!-- Panneau Sensible (admin only) -->
+  <main class="main" id="migration-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🔒 Items & mobs sensibles</span>
+      <button class="btn btn-ghost" onclick="sensReload()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      Bascule des items/mobs entre public et sensible.
+      Un item sensible n'apparaît dans l'atelier qu'en tapant son nom exact.
+      Un mob sensible est totalement invisible au public.
+    </p>
+
+    <div id="sens-loading" style="color:var(--muted);font-size:13px;padding:14px 0;">Chargement…</div>
+
+    <div id="sens-content" style="display:none;">
+      <!-- ITEMS SENSIBLES -->
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:14px;">
+        <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+          <span style="font-size:14px;font-weight:700;">🔒 Items sensibles actuels</span>
+          <span id="sens-items-hidden-count" style="margin-left:auto;font-size:12px;color:var(--muted);">—</span>
+        </div>
+        <div style="padding:10px 14px;" id="sens-items-hidden-list"></div>
+      </div>
+
+      <!-- AJOUTER UN ITEM -->
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:24px;">
+        <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+          <span style="font-size:14px;font-weight:700;">➕ Rendre un item sensible</span>
+          <span id="sens-items-public-count" style="margin-left:auto;font-size:12px;color:var(--muted);">—</span>
+        </div>
+        <div style="padding:10px 14px;">
+          <input type="text" id="sens-items-search" placeholder="Rechercher un item public par nom…"
+            oninput="sensFilterItemsPublic()"
+            style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:7px 10px;font-size:12px;font-family:inherit;margin-bottom:10px;">
+          <div id="sens-items-public-list"></div>
+        </div>
+      </div>
+
+      <!-- MOBS SENSIBLES -->
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:14px;">
+        <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+          <span style="font-size:14px;font-weight:700;">🔒 Mobs sensibles actuels</span>
+          <span id="sens-mobs-hidden-count" style="margin-left:auto;font-size:12px;color:var(--muted);">—</span>
+        </div>
+        <div style="padding:10px 14px;" id="sens-mobs-hidden-list"></div>
+      </div>
+
+      <!-- AJOUTER UN MOB -->
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+        <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+          <span style="font-size:14px;font-weight:700;">➕ Rendre un mob sensible</span>
+          <span id="sens-mobs-public-count" style="margin-left:auto;font-size:12px;color:var(--muted);">—</span>
+        </div>
+        <div style="padding:10px 14px;">
+          <input type="text" id="sens-mobs-search" placeholder="Rechercher un mob public par nom…"
+            oninput="sensFilterMobsPublic()"
+            style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:7px 10px;font-size:12px;font-family:inherit;margin-bottom:10px;">
+          <div id="sens-mobs-public-list"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
   <!-- Panneau Éditeur -->
   <main class="main" id="editor-panel" style="display:none;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
@@ -452,26 +339,21 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
   </main>
 </div>
 
+<script src="utils.js"></script>
 <script type="module">
-import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
-         GoogleAuthProvider, signInWithPopup }
-                             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, deleteField, serverTimestamp, orderBy, query }
-                             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { db, auth, onAuthStateChanged,
+         login, logout, loginWithGoogle,
+         ROLES, roleLevel, hasRole, COL,
+         collection, getDocs, getDoc, doc, updateDoc, setDoc,
+         deleteDoc, deleteField, serverTimestamp, orderBy, query,
+         hashName, getItemGameplayKeys,
+         sanitizeForFirestore, desanitizeFromFirestore,
+         invalidateCache }
+                             from './firebase.js';
 
-const app  = initializeApp({
-  apiKey:            "AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0",
-  authDomain:        "veilleurs-a13b3.firebaseapp.com",
-  projectId:         "veilleurs-a13b3",
-  storageBucket:     "veilleurs-a13b3.firebasestorage.app",
-  messagingSenderId: "876055511485",
-  appId:             "1:876055511485:web:33d8c8dce684bec05692d4",
-});
-const auth = getAuth(app);
-const db   = getFirestore(app);
+// Helpers partagés — utils.js est chargé en classic script avant ce module
+const { normalize } = window.VCL;
 
-const ROLES = ['visiteur', 'membre', 'contributeur', 'admin'];
 let currentUser = null;
 let currentRole = 'visiteur';
 let allSubs      = [];
@@ -506,15 +388,14 @@ onAuthStateChanged(auth, async user => {
     currentRole = snap.exists() ? (snap.data().role || 'membre') : 'membre';
   } catch { currentRole = 'membre'; }
 
-  const roleLevel = ROLES.indexOf(currentRole);
-  if (roleLevel < ROLES.indexOf('contributeur')) {
+  if (!hasRole(currentRole, 'contributeur')) {
     showAuthWall('⛔ Accès réservé aux contributeurs.');
     return;
   }
 
-  // Masquer les sections admin-only pour les contributeurs
-  if (currentRole === 'contributeur') {
-    ['btn-users', 'btn-discord-webhooks', 'btn-permissions'].forEach(id => {
+  // Masquer les sections admin-only pour tout rôle non-admin (contributeur, modo, etc.)
+  if (currentRole !== 'admin') {
+    ['btn-users', 'btn-discord-webhooks', 'btn-permissions', 'btn-migration'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
@@ -564,7 +445,7 @@ window.doLogin = async () => {
   const err  = document.getElementById('login-error');
   err.style.display = 'none';
   try {
-    await signInWithEmailAndPassword(auth, toEmail(raw), pass);
+    await login(toEmail(raw), pass);
   } catch(e) {
     err.textContent = '⛔ ' + (e.message.includes('invalid-credential') ? 'Identifiant ou mot de passe incorrect.' : e.message);
     err.style.display = '';
@@ -575,7 +456,7 @@ window.doLoginGoogle = async () => {
   const err = document.getElementById('login-error');
   err.style.display = 'none';
   try {
-    await signInWithPopup(auth, new GoogleAuthProvider());
+    await loginWithGoogle();
   } catch(e) {
     if (e.code !== 'auth/popup-closed-by-user') {
       err.textContent = '⛔ ' + e.message; err.style.display = '';
@@ -584,7 +465,7 @@ window.doLoginGoogle = async () => {
 };
 
 window.doLogout = async () => {
-  await signOut(auth);
+  await logout();
   location.reload();
 };
 
@@ -765,7 +646,7 @@ function buildCard(sub) {
       <div class="sub-actions">
         ${actionsHtml}
         <button class="btn btn-copy" onclick="copyCode('${sub._id}')">📋 Copier</button>
-        <button class="btn btn-copy" onclick="deleteSub('${sub._id}')" style="color:var(--danger);border-color:var(--danger);">🗑️</button>
+        ${currentRole === 'admin' || sub.status === 'pending' ? `<button class="btn btn-copy" onclick="deleteSub('${sub._id}')" style="color:var(--danger);border-color:var(--danger);">🗑️</button>` : ''}
         <button class="btn-toggle" onclick="toggleDetails('${sub._id}', this)">▾ Voir</button>
       </div>
       <div class="sub-details" id="details-${sub._id}">
@@ -788,7 +669,7 @@ function buildCard(sub) {
   return card;
 }
 
-function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+const escHtml = window.VCL.escHtml;
 
 // ── Copier le code ────────────────────────────────────
 // ── Image soumission : voir / changer ─────────────────
@@ -968,14 +849,54 @@ window.approve = async (id) => {
     const dataId = sub.data?.id;
     if (!dataId) throw new Error('Pas d\'ID dans les données');
 
-    // Écrire dans la vraie collection
-    // _order = timestamp → les nouveaux items s'ajoutent après les items migrés (qui ont de petits entiers)
-    const dataToWrite = { _order: Date.now(), ...sub.data };
-    await setDoc(doc(db, target, String(dataId)), dataToWrite);
+    const isSensible = sub.data?.sensible === true;
 
-    // Invalider le cache localStorage pour forcer un re-fetch sur les pages de lecture
-    localStorage.removeItem(`vcl_cache_v2_${target}`);
-    localStorage.removeItem(`vcl_cache_meta_v2_${target}`);
+    if (sub.type === 'item' && isSensible) {
+      // Item sensible → split gameplay (items_hidden par hash) + flavor (items_secret par id)
+      const gameplayKeys = await getItemGameplayKeys();
+      const gameplay = {};
+      const secret   = {};
+      for (const [k, v] of Object.entries(sub.data)) {
+        if (k === 'sensible' || k === 'img') continue;
+        if (gameplayKeys.includes(k)) gameplay[k] = v;
+        else                          secret[k]   = v;
+      }
+      const hash = await hashName(sub.data.name);
+      if (!hash) throw new Error('Nom manquant pour hash');
+      await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore(gameplay));
+      if (Object.keys(secret).length) {
+        await setDoc(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore(secret));
+      }
+      // Nettoyer toute version publique existante
+      try { await deleteDoc(doc(db, COL.items, String(dataId))); } catch {}
+      invalidateCache(COL.items);
+    } else if (sub.type === 'mob' && isSensible) {
+      // Mob sensible → doc complet dans mobs_secret, jamais dans mobs
+      const payload = { _order: Date.now(), ...sub.data };
+      delete payload.sensible;
+      await setDoc(doc(db, COL.mobsSecret, String(dataId)), sanitizeForFirestore(payload));
+      try { await deleteDoc(doc(db, COL.mobs, String(dataId))); } catch {}
+      invalidateCache(COL.mobs);
+    } else {
+      // Flux standard
+      const dataToWrite = { _order: Date.now(), ...sub.data };
+      await setDoc(doc(db, target, String(dataId)), dataToWrite);
+
+      // Si l'entité était précédemment sensible, nettoyer les collections cachées
+      if (sub.type === 'item') {
+        try { await deleteDoc(doc(db, COL.itemsSecret, String(dataId))); } catch {}
+        try {
+          const hash = await hashName(sub.data.name);
+          if (hash) await deleteDoc(doc(db, COL.itemsHidden, hash));
+        } catch {}
+      } else if (sub.type === 'mob') {
+        try { await deleteDoc(doc(db, COL.mobsSecret, String(dataId))); } catch {}
+      }
+
+      // Invalider le cache localStorage pour forcer un re-fetch sur les pages de lecture
+      localStorage.removeItem(`vcl_cache_v2_${target}`);
+      localStorage.removeItem(`vcl_cache_meta_v2_${target}`);
+    }
 
     // Mettre à jour la soumission
     await updateDoc(doc(db, 'submissions', id), {
@@ -1145,14 +1066,12 @@ async function loadMobOrder() {
 
 function renderMobOrder() {
   const listEl  = document.getElementById('mob-order-list');
-  const searchQ = document.getElementById('mob-order-search').value.trim().toLowerCase()
-                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const searchQ = normalize(document.getElementById('mob-order-search').value.trim());
   listEl.innerHTML = '';
 
   // ── Mode recherche : liste plate, positions globales, pas de drag ──
   if (searchQ) {
-    const visible = _mobOrderData.filter(m =>
-      (m.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(searchQ));
+    const visible = _mobOrderData.filter(m => normalize(m.name).includes(searchQ));
     if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
     visible.forEach(mob => {
       const row = document.createElement('div');
@@ -1382,14 +1301,12 @@ async function loadItemOrder() {
 
 function renderItemOrder() {
   const listEl  = document.getElementById('item-order-list');
-  const searchQ = document.getElementById('item-order-search').value.trim().toLowerCase()
-                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const searchQ = normalize(document.getElementById('item-order-search').value.trim());
   listEl.innerHTML = '';
 
   // ── Mode recherche : liste plate avec position globale ──
   if (searchQ) {
-    const visible = _itemOrderData.filter(it =>
-      (it.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(searchQ));
+    const visible = _itemOrderData.filter(it => normalize(it.name).includes(searchQ));
     if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
     visible.forEach(item => {
       const row = document.createElement('div');
@@ -1870,8 +1787,7 @@ function _makePnjRegionGroup(group, gi, palierPnjs, palier) {
 
 function renderPnjOrder() {
   const listEl  = document.getElementById('pnj-order-list');
-  const searchQ = document.getElementById('pnj-order-search').value.trim().toLowerCase()
-                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const searchQ = normalize(document.getElementById('pnj-order-search').value.trim());
   listEl.innerHTML = '';
 
   // ── Mode recherche : liste plate ──
@@ -1882,7 +1798,7 @@ function renderPnjOrder() {
     const posMap  = new Map();
     let pos = 1;
     paliers.forEach(pal => _pnjRegions.forEach(g => g.pnjs.filter(p => (p.palier||1)===pal).forEach(p => posMap.set(p.id, pos++))));
-    const results = allPnjs.filter(p => (p.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(searchQ));
+    const results = allPnjs.filter(p => normalize(p.name).includes(searchQ));
     if (!results.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
     results.forEach(p => {
       const row = document.createElement('div');
@@ -2040,13 +1956,11 @@ async function loadRegionOrder() {
 
 function renderRegionOrder() {
   const listEl  = document.getElementById('region-order-list');
-  const searchQ = document.getElementById('region-order-search').value.trim().toLowerCase()
-                    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const searchQ = normalize(document.getElementById('region-order-search').value.trim());
   listEl.innerHTML = '';
 
   if (searchQ) {
-    const visible = _regionOrderData.filter(r =>
-      (r.name||r.id||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(searchQ));
+    const visible = _regionOrderData.filter(r => normalize(r.name||r.id||'').includes(searchQ));
     if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
     visible.forEach(r => {
       const row = document.createElement('div');
@@ -2665,7 +2579,7 @@ async function _populateSetDatalist() {
 // ── Éditeur générique ────────────────────────────────
 let _editorOrigData = null;
 
-function _ee(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+const _ee = escHtml;
 
 function _typeOf(val) {
   if (val === null || val === undefined) return 'null';
@@ -3132,14 +3046,14 @@ window.edFilterRegions = function(input) {
   const dd = input.closest('div[style*="position:relative"]').querySelector('[data-reg-dropdown]');
   if (!dd) return;
   dd.style.display = '';
-  const q = input.value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const q = normalize(input.value.trim());
   let lastGroup = null;
   Array.from(dd.children).forEach(el => {
     if (el.hasAttribute('data-reg-group')) {
       lastGroup = el; el.style.display = 'none'; return;
     }
     if (!el.hasAttribute('data-reg-id') && !el.hasAttribute('data-reg-name')) return;
-    const name = (el.dataset.regName || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const name = normalize(el.dataset.regName || '');
     const id   = (el.dataset.regId   || '').toLowerCase();
     const show = !q || name.includes(q) || id.includes(q);
     el.style.display = show ? '' : 'none';
@@ -3804,19 +3718,7 @@ async function sendApprovalWebhook(sub) {
       .replace(/\{classes\}/g,   (sub.data.classes || []).map(c => CLS_LABEL[c] || c).join(', '));
   }
 
-  if (imgBlob && imgFname) {
-    payload.attachments = [{ id: 0, filename: imgFname }];
-    const fd = new FormData();
-    fd.append('payload_json', JSON.stringify(payload));
-    fd.append('files[0]', imgBlob, imgFname);
-    await fetch(`${url}?wait=false`, { method: 'POST', body: fd });
-  } else {
-    await fetch(`${url}?wait=false`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-  }
+  await window.VCL.postDiscord(`${url}?wait=false`, payload, imgBlob, imgFname);
 }
 
 function _buildApprovalEmbed(obj, imageFilename) {
@@ -3891,6 +3793,11 @@ function _buildApprovalEmbed(obj, imageFilename) {
 
 // ── Delete submission ─────────────────────────────────
 window.deleteSub = async (id) => {
+  const sub = allSubs.find(s => s._id === id);
+  if (currentRole !== 'admin' && sub && sub.status !== 'pending') {
+    alert('⛔ Seuls les admins peuvent supprimer l\'historique des soumissions approuvées ou rejetées.');
+    return;
+  }
   if (!confirm('Supprimer définitivement cette soumission ?')) return;
   try {
     await deleteDoc(doc(db, 'submissions', id));
@@ -3976,17 +3883,16 @@ async function loadQuestOrder() {
 window.renderQuestOrder = function renderQuestOrder() {
   const listEl  = document.getElementById('quest-order-list');
   if (!listEl) return;
-  const q = (document.getElementById('quest-order-search')?.value || '')
-              .trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const q = normalize((document.getElementById('quest-order-search')?.value || '').trim());
 
   if (!_questOrderData.length) { listEl.innerHTML = '<div class="empty">Aucune quête</div>'; return; }
 
   // ── Mode recherche : liste plate, pas de drag ──
   if (q) {
     const visible = _questOrderData.filter(qt =>
-      (qt.titre||qt.id||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q) ||
-      (qt.zone||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q) ||
-      (qt.npc||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').includes(q)
+      normalize(qt.titre||qt.id||'').includes(q) ||
+      normalize(qt.zone||'').includes(q) ||
+      normalize(qt.npc||'').includes(q)
     );
     listEl.innerHTML = '';
     if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
@@ -4237,7 +4143,7 @@ window.saveQuestOrder = async () => {
 /* ══════════════════════════════════════════════════════
    MEMBRES — gestion des rôles
 ══════════════════════════════════════════════════════ */
-const ROLES_LIST = ['membre', 'contributeur', 'admin'];
+const ROLES_LIST = ROLES.filter(r => r !== 'visiteur');
 let _allUsers = [];
 
 window.showUsersPanel = async () => {
@@ -4311,6 +4217,316 @@ window.setUserRole = async (uid, newRole, sel) => {
     sel.disabled = false;
   }
 };
+
+// ═══════════════════════════════════════════════════════
+// SENSIBLE — Liste & toggle (admin only)
+// ═══════════════════════════════════════════════════════
+
+const _sensState = {
+  itemsHidden: [],          // docs de items_hidden (_id = hash)
+  itemsSecretById: new Map(), // id original → doc items_secret
+  itemsPublic: [],          // docs de items
+  mobsSecret: [],           // docs de mobs_secret
+  mobsPublic: [],           // docs de mobs
+};
+
+function _sensEsc(s) {
+  return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// Formule d'image identique à creator.html:3022-3033 (source de vérité partagée)
+function _sensComputeImg(category, id, palier) {
+  if (!id) return null;
+  const p = palier ? 'P' + palier + '/' : '';
+  switch (category) {
+    case 'arme':        return `../img/compendium/textures/weapons/${id}.png`;
+    case 'armure':      return `../img/compendium/textures/armors/${id}.png`;
+    case 'accessoire':  return `../img/compendium/textures/trinkets/${p}${id}.png`;
+    case 'outils':      return `../img/compendium/textures/gears/${id}.png`;
+    case 'materiaux':   return `../img/compendium/textures/items/Material/${id}.png`;
+    case 'ressources':  return `../img/compendium/textures/items/Ressources/${id}.png`;
+    case 'consommable': return `../img/compendium/textures/items/Consommable/${id}.png`;
+    case 'nourriture':  return `../img/compendium/textures/items/Nourriture/${id}.png`;
+    case 'rune':        return `../img/compendium/textures/items/Runes/${id}.png`;
+    case 'quete':       return `../img/compendium/textures/items/Quest/${id}.png`;
+    case 'donjon':      return `../img/compendium/textures/items/Donjon/${id}.png`;
+    default:            return null;
+  }
+}
+
+window.showMigration = async () => {
+  if (currentRole !== 'admin') return;
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('migration-panel').style.display = '';
+  document.getElementById('btn-migration').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await sensReload();
+};
+
+window.sensReload = async () => {
+  document.getElementById('sens-loading').style.display = '';
+  document.getElementById('sens-loading').textContent = 'Chargement…';
+  document.getElementById('sens-content').style.display = 'none';
+  try {
+    const [ih, is, ip, ms, mp] = await Promise.all([
+      getDocs(collection(db, COL.itemsHidden)),
+      getDocs(collection(db, COL.itemsSecret)),
+      getDocs(collection(db, COL.items)),
+      getDocs(collection(db, COL.mobsSecret)),
+      getDocs(collection(db, COL.mobs)),
+    ]);
+    _sensState.itemsHidden = ih.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+    _sensState.itemsSecretById = new Map(
+      is.docs.map(d => [d.id, desanitizeFromFirestore({ _id: d.id, ...d.data() })])
+    );
+    _sensState.itemsPublic = ip.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+    _sensState.mobsSecret = ms.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+    _sensState.mobsPublic = mp.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+
+    // Sort alphabétique pour confort
+    const byName = (a, b) => normalize(a.name || a._id).localeCompare(normalize(b.name || b._id), 'fr');
+    _sensState.itemsHidden.sort(byName);
+    _sensState.itemsPublic.sort(byName);
+    _sensState.mobsSecret.sort(byName);
+    _sensState.mobsPublic.sort(byName);
+
+    _sensRenderAll();
+    document.getElementById('sens-loading').style.display = 'none';
+    document.getElementById('sens-content').style.display = '';
+  } catch (err) {
+    document.getElementById('sens-loading').textContent = 'Erreur : ' + err.message;
+    console.error(err);
+  }
+};
+
+function _sensRenderAll() {
+  _sensRenderItemsHidden();
+  _sensRenderItemsPublic();
+  _sensRenderMobsHidden();
+  _sensRenderMobsPublic();
+}
+
+// ─── Rendu ───────────────────────────────────────────────
+
+function _sensItemRow(item, btnHtml) {
+  const id = _sensEsc(item.id || item._id);
+  const name = _sensEsc(item.name || item._id);
+  const rar  = _sensEsc(item.rarity || '—');
+  const pal  = item.palier != null ? 'P' + _sensEsc(item.palier) : '—';
+  const lvl  = item.lvl != null ? 'lvl ' + _sensEsc(item.lvl) : '';
+  return `<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--border);font-size:12px;">
+    <div style="flex:1;min-width:0;">
+      <div style="color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
+      <div style="color:var(--muted);font-size:11px;">${id} · ${rar} · ${pal} ${lvl}</div>
+    </div>
+    ${btnHtml}
+  </div>`;
+}
+
+function _sensMobRow(mob, btnHtml) {
+  const id = _sensEsc(mob.id || mob._id);
+  const name = _sensEsc(mob.name || mob._id);
+  const type = _sensEsc(mob.type || '—');
+  const pal  = mob.palier != null ? 'P' + _sensEsc(mob.palier) : '—';
+  return `<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--border);font-size:12px;">
+    <div style="flex:1;min-width:0;">
+      <div style="color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
+      <div style="color:var(--muted);font-size:11px;">${id} · ${type} · ${pal}</div>
+    </div>
+    ${btnHtml}
+  </div>`;
+}
+
+function _sensRenderItemsHidden() {
+  const list = _sensState.itemsHidden;
+  document.getElementById('sens-items-hidden-count').textContent = list.length + ' item(s)';
+  const el = document.getElementById('sens-items-hidden-list');
+  if (!list.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;">Aucun item sensible.</div>';
+    return;
+  }
+  el.innerHTML = list.map(item => {
+    const btn = `<button class="btn btn-ghost" onclick="sensItemToPublic('${_sensEsc(item._id)}')" style="font-size:11px;padding:3px 10px;">🔓 Rendre public</button>`;
+    return _sensItemRow(item, btn);
+  }).join('');
+}
+
+function _sensRenderItemsPublic() {
+  const list = _sensState.itemsPublic;
+  document.getElementById('sens-items-public-count').textContent = list.length + ' item(s)';
+  window.sensFilterItemsPublic();
+}
+
+window.sensFilterItemsPublic = function() {
+  const q = normalize(document.getElementById('sens-items-search').value.trim());
+  const el = document.getElementById('sens-items-public-list');
+  if (!q) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;font-size:12px;">Tape un nom pour filtrer…</div>';
+    return;
+  }
+  const matches = _sensState.itemsPublic.filter(item =>
+    normalize(item.name || '').includes(q) || normalize(item._id || '').includes(q)
+  ).slice(0, 30);
+  if (!matches.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;font-size:12px;">Aucun résultat.</div>';
+    return;
+  }
+  el.innerHTML = matches.map(item => {
+    const btn = `<button class="btn btn-ghost" onclick="sensItemToSensible('${_sensEsc(item._id)}')" style="font-size:11px;padding:3px 10px;color:var(--danger);border-color:var(--danger);">🔒 Rendre sensible</button>`;
+    return _sensItemRow(item, btn);
+  }).join('');
+};
+
+function _sensRenderMobsHidden() {
+  const list = _sensState.mobsSecret;
+  document.getElementById('sens-mobs-hidden-count').textContent = list.length + ' mob(s)';
+  const el = document.getElementById('sens-mobs-hidden-list');
+  if (!list.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;">Aucun mob sensible.</div>';
+    return;
+  }
+  el.innerHTML = list.map(mob => {
+    const btn = `<button class="btn btn-ghost" onclick="sensMobToPublic('${_sensEsc(mob._id)}')" style="font-size:11px;padding:3px 10px;">🔓 Rendre public</button>`;
+    return _sensMobRow(mob, btn);
+  }).join('');
+}
+
+function _sensRenderMobsPublic() {
+  const list = _sensState.mobsPublic;
+  document.getElementById('sens-mobs-public-count').textContent = list.length + ' mob(s)';
+  window.sensFilterMobsPublic();
+}
+
+window.sensFilterMobsPublic = function() {
+  const q = normalize(document.getElementById('sens-mobs-search').value.trim());
+  const el = document.getElementById('sens-mobs-public-list');
+  if (!q) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;font-size:12px;">Tape un nom pour filtrer…</div>';
+    return;
+  }
+  const matches = _sensState.mobsPublic.filter(mob =>
+    normalize(mob.name || '').includes(q) || normalize(mob._id || '').includes(q)
+  ).slice(0, 30);
+  if (!matches.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;font-size:12px;">Aucun résultat.</div>';
+    return;
+  }
+  el.innerHTML = matches.map(mob => {
+    const btn = `<button class="btn btn-ghost" onclick="sensMobToSensible('${_sensEsc(mob._id)}')" style="font-size:11px;padding:3px 10px;color:var(--danger);border-color:var(--danger);">🔒 Rendre sensible</button>`;
+    return _sensMobRow(mob, btn);
+  }).join('');
+};
+
+// ─── Toggles ─────────────────────────────────────────────
+
+// Item public → sensible : split gameplay/secret + hash + cibles + delete source
+window.sensItemToSensible = async (sourceId) => {
+  const item = _sensState.itemsPublic.find(x => x._id === sourceId);
+  if (!item) { alert('Item introuvable.'); return; }
+  if (!item.name) { alert('Item sans name, impossible de hasher.'); return; }
+  if (!confirm(`Rendre "${item.name}" sensible ?\n\nIl disparaîtra des pages publiques et ne sera accessible via l'atelier qu'en tapant son nom exact.`)) return;
+  try {
+    const gameplayKeys = await getItemGameplayKeys();
+    const allKeys = Object.keys(item).filter(k => k !== '_id');
+    const gameplay = {};
+    for (const k of allKeys) if (gameplayKeys.includes(k)) gameplay[k] = item[k];
+    const secret = {};
+    for (const k of allKeys) if (!gameplayKeys.includes(k) && k !== 'sensible' && k !== 'img') secret[k] = item[k];
+
+    const hash = await hashName(item.name);
+    if (!hash) throw new Error('hash vide');
+
+    await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore(gameplay));
+    if (Object.keys(secret).length) {
+      await setDoc(doc(db, COL.itemsSecret, sourceId), sanitizeForFirestore(secret));
+    }
+    await deleteDoc(doc(db, COL.items, sourceId));
+
+    invalidateCache(COL.items);
+    await sensReload();
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+    console.error(err);
+  }
+};
+
+// Item sensible → public : merge hidden+secret, write to items, delete cibles
+window.sensItemToPublic = async (hashId) => {
+  const hidden = _sensState.itemsHidden.find(x => x._id === hashId);
+  if (!hidden) { alert('Hidden item introuvable.'); return; }
+  const origId = hidden.id;
+  if (!origId) { alert('Hidden item sans champ id — impossible de déterminer l\'id cible.'); return; }
+  if (!confirm(`Rendre "${hidden.name || origId}" public ?\n\nIl redeviendra visible dans le compendium et l'atelier normalement.`)) return;
+  try {
+    const secret = _sensState.itemsSecretById.get(origId) || null;
+    // Merge : gameplay d'abord (source de vérité pour stats), puis secret (flavor)
+    const merged = {};
+    for (const [k, v] of Object.entries(hidden)) if (k !== '_id') merged[k] = v;
+    if (secret) {
+      for (const [k, v] of Object.entries(secret)) if (k !== '_id') merged[k] = v;
+    }
+    // Recalcul de l'img depuis la formule (on ne la stocke pas dans hidden)
+    merged.img = _sensComputeImg(merged.category, merged.id, merged.palier);
+    // Pas de flag sensible dans le doc public
+    delete merged.sensible;
+
+    await setDoc(doc(db, COL.items, origId), sanitizeForFirestore(merged));
+    await deleteDoc(doc(db, COL.itemsHidden, hashId));
+    if (secret) {
+      await deleteDoc(doc(db, COL.itemsSecret, origId));
+    }
+
+    invalidateCache(COL.items);
+    await sensReload();
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+    console.error(err);
+  }
+};
+
+// Mob public → sensible : doc entier vers mobs_secret
+window.sensMobToSensible = async (sourceId) => {
+  const mob = _sensState.mobsPublic.find(x => x._id === sourceId);
+  if (!mob) { alert('Mob introuvable.'); return; }
+  if (!confirm(`Rendre "${mob.name || sourceId}" sensible ?\n\nIl disparaîtra complètement des pages publiques.`)) return;
+  try {
+    const payload = {};
+    for (const [k, v] of Object.entries(mob)) if (k !== '_id') payload[k] = v;
+    delete payload.sensible; // on garde pas le flag, la collection suffit
+
+    await setDoc(doc(db, COL.mobsSecret, sourceId), sanitizeForFirestore(payload));
+    await deleteDoc(doc(db, COL.mobs, sourceId));
+
+    invalidateCache(COL.mobs);
+    await sensReload();
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+    console.error(err);
+  }
+};
+
+// Mob sensible → public : doc entier vers mobs
+window.sensMobToPublic = async (sourceId) => {
+  const mob = _sensState.mobsSecret.find(x => x._id === sourceId);
+  if (!mob) { alert('Mob sensible introuvable.'); return; }
+  if (!confirm(`Rendre "${mob.name || sourceId}" public ?\n\nIl redeviendra visible dans le bestiaire.`)) return;
+  try {
+    const payload = {};
+    for (const [k, v] of Object.entries(mob)) if (k !== '_id') payload[k] = v;
+    delete payload.sensible;
+
+    await setDoc(doc(db, COL.mobs, sourceId), sanitizeForFirestore(payload));
+    await deleteDoc(doc(db, COL.mobsSecret, sourceId));
+
+    invalidateCache(COL.mobs);
+    await sensReload();
+  } catch (err) {
+    alert('Erreur : ' + err.message);
+    console.error(err);
+  }
+};
+
 </script>
 <div id="img-lightbox" onclick="this.classList.remove('open')">
   <img id="img-lightbox-img" src="" alt="">

@@ -10,10 +10,12 @@ import { initializeApp, getApps, getApp }          from 'https://www.gstatic.com
 import { initializeFirestore, getFirestore,
          persistentLocalCache, persistentMultipleTabManager,
          doc, getDoc, collection, getDocs, onSnapshot,
-         setDoc, addDoc, updateDoc, deleteDoc,
+         setDoc, addDoc, updateDoc, deleteDoc, deleteField,
+         serverTimestamp,
          query, where, orderBy }                  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getAuth, onAuthStateChanged,
          signInWithEmailAndPassword, signOut,
+         createUserWithEmailAndPassword,
          GoogleAuthProvider, signInWithPopup,
          sendEmailVerification }                 from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
@@ -48,12 +50,15 @@ export const auth = getAuth(app);
 
 // ── Collections ──────────────────────────────────────
 export const COL = {
-  items:    'items',
-  mobs:     'mobs',
-  pnj:      'personnages',
-  regions:  'regions',
-  users:    'users',      // profils + rôles
-  quetes:   'quetes',     // quêtes approuvées via modération
+  items:        'items',
+  itemsHidden:  'items_hidden',   // gameplay des items sensibles, docId = hashName(name)
+  itemsSecret:  'items_secret',   // flavor des items sensibles (lore/obtain/craft…), contrib only
+  mobs:         'mobs',
+  mobsSecret:   'mobs_secret',    // mobs sensibles (doc complet), contrib only
+  pnj:          'personnages',
+  regions:      'regions',
+  users:        'users',          // profils + rôles
+  quetes:       'quetes',         // quêtes approuvées via modération
 };
 
 // ── Rôles ─────────────────────────────────────────────
@@ -96,6 +101,10 @@ export async function login(email, password) {
   return signInWithEmailAndPassword(auth, email, password);
 }
 
+export async function register(email, password) {
+  return createUserWithEmailAndPassword(auth, email, password);
+}
+
 export async function loginWithGoogle() {
   const provider = new GoogleAuthProvider();
   return signInWithPopup(auth, provider);
@@ -110,6 +119,29 @@ export async function logout() {
 }
 
 // ── Data helpers ─────────────────────────────────────
+
+/**
+ * Sanitize une valeur pour Firestore :
+ *  [n, m] (2 nombres)        → {min: n, max: m}   (ranges)
+ *  tableaux imbriqués          → {"0":…,"1":…}     (Firestore refuse les arrays d'arrays)
+ */
+export function sanitizeForFirestore(val, insideArray = false) {
+  if (Array.isArray(val)) {
+    if (val.length === 2 && val.every(v => typeof v === 'number')) return { min: val[0], max: val[1] };
+    if (insideArray) {
+      const out = {};
+      val.forEach((v, i) => { out[String(i)] = sanitizeForFirestore(v, false); });
+      return out;
+    }
+    return val.map(v => sanitizeForFirestore(v, true));
+  }
+  if (val !== null && typeof val === 'object') {
+    const out = {};
+    for (const [k, v] of Object.entries(val)) out[k] = sanitizeForFirestore(v, false);
+    return out;
+  }
+  return val;
+}
 
 /**
  * Inverse la sanitization Firestore :
@@ -137,6 +169,84 @@ export function desanitizeFromFirestore(val) {
   const out = {};
   for (const [k, v] of Object.entries(val)) out[k] = desanitizeFromFirestore(v);
   return out;
+}
+
+// ── Items sensibles — liste des champs gameplay ──────
+// Les champs listés ici vont dans items_hidden (public via get par hash).
+// Tout le reste d'un item sensible va dans items_secret (contrib only).
+// La liste est surchargeable via config/sensibleFields.itemGameplayKeys
+// pour permettre à la modération d'ajouter/retirer des champs plus tard.
+export const DEFAULT_ITEM_GAMEPLAY_KEYS = [
+  'id', 'name', 'rarity', 'category', 'cat',
+  'palier', 'lvl', 'set', 'stats', 'classes',
+  'twoHanded', 'rune_slots',
+];
+
+/**
+ * Retourne la liste effective des champs gameplay pour items sensibles.
+ * Lit config/sensibleFields.itemGameplayKeys si dispo, sinon fallback défaut.
+ * Toujours cast en tableau de strings unique.
+ */
+export async function getItemGameplayKeys() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'sensibleFields'));
+    if (snap.exists()) {
+      const arr = snap.data()?.itemGameplayKeys;
+      if (Array.isArray(arr) && arr.length) {
+        return [...new Set(arr.filter(k => typeof k === 'string' && k))];
+      }
+    }
+  } catch (err) {
+    console.warn('[getItemGameplayKeys] fallback défaut:', err);
+  }
+  return [...DEFAULT_ITEM_GAMEPLAY_KEYS];
+}
+
+// ── Items/mobs sensibles — lookup par hash du nom ────
+// Normalise agressivement pour le hash : strip tout sauf [a-z0-9].
+// Doit être appliquée identiquement en écriture (creator) et en lecture (atelier).
+export function normalizeForHash(name) {
+  return String(name ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+/** Hash SHA-1 hex d'un nom normalisé. Retourne '' si nom vide. */
+export async function hashName(name) {
+  const normalized = normalizeForHash(name);
+  if (!normalized) return '';
+  const buf = new TextEncoder().encode(normalized);
+  const digest = await crypto.subtle.digest('SHA-1', buf);
+  return Array.from(new Uint8Array(digest))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
+ * Lookup d'un item/mob caché par nom exact (après normalisation).
+ * Fait un getDoc ciblé (pas de list) — autorisé au public par les règles.
+ * Retourne l'objet désanitisé (avec _id = docId = hash) ou null.
+ * Pas de cache localStorage : on ne veut pas persister les hits côté visiteur.
+ */
+const _hiddenLookupCache = new Map(); // mémoire uniquement, par (col+hash)
+export async function getHiddenByName(colName, name) {
+  const hash = await hashName(name);
+  if (!hash) return null;
+  const cacheKey = `${colName}/${hash}`;
+  if (_hiddenLookupCache.has(cacheKey)) return _hiddenLookupCache.get(cacheKey);
+  try {
+    const snap = await getDoc(doc(db, colName, hash));
+    const data = snap.exists()
+      ? desanitizeFromFirestore({ _id: snap.id, ...snap.data() })
+      : null;
+    _hiddenLookupCache.set(cacheKey, data);
+    return data;
+  } catch (err) {
+    console.warn(`[getHiddenByName] ${colName}:`, err);
+    return null;
+  }
 }
 
 /**
@@ -189,4 +299,8 @@ export function invalidateCache(colName) {
 
 // ── Exports Firestore bruts (pour les pages qui en ont besoin) ──
 export { doc, getDoc, collection, getDocs, onSnapshot, setDoc, addDoc,
-         updateDoc, deleteDoc, query, where, orderBy };
+         updateDoc, deleteDoc, deleteField, serverTimestamp,
+         query, where, orderBy };
+
+// ── Exports Auth bruts (pour listeners réactifs côté pages) ──
+export { onAuthStateChanged };

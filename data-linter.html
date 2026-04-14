@@ -55,13 +55,12 @@
 <div id="results"></div>
 
 <!-- Charger les mêmes fichiers que le compendium -->
+<script src="utils.js"></script>
 <script src="Compendium/data.js"></script>
 <script src="Bestiaire/mob_data.js"></script>
 
 <script>
-function escHtml(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+// escHtml → défini globalement dans /utils.js (function au top-level classique)
 
 // ─── Constantes de validation ───────────────────────────────────────────────
 

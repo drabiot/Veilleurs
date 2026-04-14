@@ -300,8 +300,6 @@ function updateLayerTabStyles(container) {
   });
 }
 
-function getLayerBtnHTML() { return ''; } // plus utilisé
-
 function updateLayerBtn() {
   const container = document.getElementById('layer-switcher');
   if (container) updateLayerTabStyles(container);
@@ -486,6 +484,11 @@ function screenToImage(sx, sy) {
   const cx = _vpW / 2 + panOffset.x;
   const cy = _vpH / 2 + panOffset.y;
   return { x: (sx - cx) / zoomLevel + MAP_SIZE / 2, y: (sy - cy) / zoomLevel + MAP_SIZE / 2 };
+}
+/** Raccourci : coordonnées jeu → coordonnées écran (gameToPixel + imageToScreen). */
+function gameToScreen(gx, gy) {
+  const img = gameToPixel(gx, gy);
+  return imageToScreen(img.x, img.y);
 }
 
 /* ══════════════════════════════════
@@ -817,10 +820,15 @@ function renderZones() {
   const zoneOn = isZoneFilterEnabled();
   const zones  = getFloorZones(currentFloor);
 
+  // Index region-marker par nom (construit 1×, réutilisé dans _cleanup/_activate et init loop)
+  const regionMarkerByName = new Map();
+  getFloorMarkers(currentFloor).forEach(m => {
+    if (m.type === 'région') regionMarkerByName.set(m.name, m);
+  });
+
   zones.forEach(zone => {
     const pointsStr = zone.points.map(p => {
-      const img = gameToPixel(p.gx, p.gy);
-      const s   = imageToScreen(img.x, img.y);
+      const s = gameToScreen(p.gx, p.gy);
       return `${s.x},${s.y}`;
     }).join(' ');
 
@@ -837,10 +845,12 @@ function renderZones() {
     poly.style.opacity       = zoneOn ? '1' : '0';
     poly.style.pointerEvents = 'none';
 
-    const cx   = zone.points.reduce((s, p) => s + p.gx, 0) / zone.points.length;
-    const cy   = zone.points.reduce((s, p) => s + p.gy, 0) / zone.points.length;
-    const imgC = gameToPixel(cx, cy);
-    const sC   = imageToScreen(imgC.x, imgC.y);
+    if (!zone._centroid) {
+      const cx = zone.points.reduce((s, p) => s + p.gx, 0) / zone.points.length;
+      const cy = zone.points.reduce((s, p) => s + p.gy, 0) / zone.points.length;
+      zone._centroid = { cx, cy };
+    }
+    const sC = gameToScreen(zone._centroid.cx, zone._centroid.cy);
 
     const emojiText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
     emojiText.setAttribute('x',                 sC.x);
@@ -880,7 +890,7 @@ function renderZones() {
       zoneTooltip.classList.add('hidden');
       document.querySelectorAll('.monster-pin-hover').forEach(p => p.remove());
       const regionName = zone.regionName || zone.name;
-      const markerData = getFloorMarkers(currentFloor).find(m => m.type === 'région' && m.name === regionName);
+      const markerData = regionMarkerByName.get(regionName);
       if (markerData) {
         const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
         if (pin) { pin.style.opacity = '1'; pin.style.pointerEvents = ''; pin.style.cursor = ''; }
@@ -896,7 +906,7 @@ function renderZones() {
       emojiText.style.opacity = '1';
       label.style.opacity     = '1';
       const regionName = zone.regionName || zone.name;
-      const markerData = getFloorMarkers(currentFloor).find(m => m.type === 'région' && m.name === regionName);
+      const markerData = regionMarkerByName.get(regionName);
       if (markerData) {
         const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
         if (pin) { pin.style.opacity = '0'; pin.style.pointerEvents = 'none'; pin.style.cursor = 'default'; }
@@ -927,9 +937,15 @@ function renderZones() {
     svgEl.appendChild(g);
   });
 
-  window._zoneHoverHandler = (e) => {
+  // Throttle via requestAnimationFrame : au plus 1 calcul par frame, même sous une rafale de mousemove
+  let _hoverFrameScheduled = false;
+  let _lastHoverX = 0, _lastHoverY = 0;
+
+  const processHover = () => {
+    _hoverFrameScheduled = false;
     if (!isZoneHoverEnabled()) return;
-    const els = document.elementsFromPoint(e.clientX, e.clientY);
+
+    const els = document.elementsFromPoint(_lastHoverX, _lastHoverY);
     const hasPriorityPin = els.some(el => {
       const marker = el.closest('.marker');
       return marker &&
@@ -943,7 +959,7 @@ function renderZones() {
       return;
     }
 
-    const vp  = clientToVp(e.clientX, e.clientY);
+    const vp  = clientToVp(_lastHoverX, _lastHoverY);
     const img = screenToImage(vp.x, vp.y);
     const gp  = pixelToGame(img.x, img.y);
     const hitZone = zones.find(z => pointInPolygon(gp.x, gp.y, z.points));
@@ -959,7 +975,6 @@ function renderZones() {
     }
 
     if (window._zoneLeaveTimer) { clearTimeout(window._zoneLeaveTimer); window._zoneLeaveTimer = null; }
-
     if (window._activeZoneId === hitZone.id) return;
 
     if (window._zoneCleanup) window._zoneCleanup();
@@ -967,14 +982,20 @@ function renderZones() {
     hitZone._activate();
   };
 
+  window._zoneHoverHandler = (e) => {
+    _lastHoverX = e.clientX;
+    _lastHoverY = e.clientY;
+    if (_hoverFrameScheduled) return;
+    _hoverFrameScheduled = true;
+    requestAnimationFrame(processHover);
+  };
+
   mapViewport.addEventListener('mousemove', window._zoneHoverHandler);
 
   if (zoneOn) {
     zones.forEach(zone => {
       const regionName = zone.regionName || zone.name;
-      const markerData = getFloorMarkers(currentFloor).find(m =>
-        m.type === 'région' && m.name === regionName
-      );
+      const markerData = regionMarkerByName.get(regionName);
       if (markerData) {
         const pin = markersLayer.querySelector(`.marker[data-id="${markerData.id}"]`);
         if (pin) { pin.style.opacity = '0'; pin.style.pointerEvents = 'none'; pin.style.cursor = 'default'; }
@@ -992,14 +1013,19 @@ function renderMarkers() {
   markersLayer.innerHTML = '';
   document.querySelectorAll('.cluster-expanded').forEach(n => n.remove());
 
+  // Cache l'état des filtres une fois — évite N querySelector DOM par frame
+  const filterState = {};
+  document.querySelectorAll('.marker-filter').forEach(cb => {
+    filterState[cb.dataset.type] = cb.checked;
+  });
+  const isTypeVisible = (type) => filterState[type] !== false;
+
   const markers = getFlatFloorMarkers(currentFloor);
 
 	const otherLayerMarkers = getFlatOtherLayerMarkers(currentFloor);
   otherLayerMarkers.forEach(m => {
-    const cb = document.querySelector(`.marker-filter[data-type="${m.type}"]`);
-    if (cb && !cb.checked) return;
-    const img = gameToPixel(m.gx, m.gy);
-    const s   = imageToScreen(img.x, img.y);
+    if (!isTypeVisible(m.type)) return;
+    const s = gameToScreen(m.gx, m.gy);
     renderGhostMarker({ ...m, sx: s.x, sy: s.y });
   });
 
@@ -1008,8 +1034,7 @@ function renderMarkers() {
 
   const visible = markers.filter(m => {
     if (m.id === _searchFocusId) return false;
-    const cb = document.querySelector(`.marker-filter[data-type="${m.type}"]`);
-    return !cb || cb.checked;
+    return isTypeVisible(m.type);
   });
 
   clusterMarkers(visible).forEach(group => {
@@ -1023,15 +1048,13 @@ function renderMarkers() {
 
   if (focusedList.length === 1) {
     const focused = focusedList[0];
-    const img = gameToPixel(focused.gx, focused.gy);
-    const s   = imageToScreen(img.x, img.y);
+    const s = gameToScreen(focused.gx, focused.gy);
     renderSingleMarker({ ...focused, sx: s.x, sy: s.y });
     const el = markersLayer.querySelector(`.marker[data-id="${focused.id}"]`);
     if (el) el.classList.remove('marker-dimmed');
   } else if (isMultiFocus) {
     focusedList.forEach(focused => {
-      const img = gameToPixel(focused.gx, focused.gy);
-      const s   = imageToScreen(img.x, img.y);
+      const s = gameToScreen(focused.gx, focused.gy);
       renderSingleMarker({ ...focused, sx: s.x, sy: s.y });
     });
     markersLayer.querySelectorAll(`.marker[data-id="${_searchFocusId}"]`).forEach(el => {
@@ -1565,16 +1588,17 @@ window.addEventListener('resize', () => { updateVpBounds(); renderMarkers(); });
 const searchInput   = document.getElementById('search-input');
 const searchResults = document.getElementById('search-results');
 
+// Mémoïsé — les données sont 100% statiques, on construit l'index une fois.
+let _allMarkersCache = null;
 function getAllMarkers() {
+  if (_allMarkersCache) return _allMarkersCache;
+
   const all  = [];
   const seen = new Set();
 
   const sources = [
-    { layer: 'surface',     src: typeof FLOOR_MARKERS_SURFACE !== 'undefined'
-        ? FLOOR_MARKERS_SURFACE
-        : (typeof FLOOR_MARKERS !== 'undefined' ? FLOOR_MARKERS : null) },
-    { layer: 'underground', src: typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined'
-        ? FLOOR_MARKERS_UNDERGROUND : null },
+    { layer: 'surface',     src: typeof FLOOR_MARKERS !== 'undefined' ? FLOOR_MARKERS : null },
+    { layer: 'underground', src: typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined' ? FLOOR_MARKERS_UNDERGROUND : null },
   ];
 
   sources.forEach(({ layer, src }) => {
@@ -1590,12 +1614,11 @@ function getAllMarkers() {
     });
   });
 
+  _allMarkersCache = all;
   return all;
 }
 
-function normalize(str) {
-  return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
+// normalize → défini dans /utils.js
 
 searchInput.addEventListener('input', () => {
   const query = searchInput.value.trim();

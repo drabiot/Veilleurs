@@ -7,23 +7,20 @@
 const TYPE_LABELS   = { main: 'Principale', sec: 'Secondaire', ter: 'Tertiaire' };
 const TYPE_ICONS    = { main: '🔥', sec: '💬', ter: '❓' };
 
-/* ── Couleurs de rareté ── */
-const RARITIES = {
-  'commun':     { label: 'Commun',      color: '#59d059' },
-  'rare':       { label: 'Rare',        color: '#2a5fa8' },
-  'epique':     { label: 'Épique',      color: '#6a3daa' },
-  'legendaire': { label: 'Légendaire',  color: '#d7af5f' },
-  'mythique':   { label: 'Mythique',    color: '#f5b5e4' },
-  'godlike':    { label: 'Godlike',     color: '#a83020' },
-	'event':    	{ label: 'Event',     	color: '#ebebeb' },
-};
-function rarityColor(key) {
-  return (RARITIES[key] || { color: '#888' }).color;
-}
+/* RARITIES + rarityColor → définis dans /utils.js (source unique) */
+const rarityColor = getRarityColor;
 
-/* ── DB_ITEMS peuplé par quetes-loader.js depuis Firestore ── */
+/* ── DB_ITEMS peuplé depuis Firestore par le module inline de quetes.html ── */
 const DB_ITEMS = [];
-function dbItem(id) { return DB_ITEMS.find(i => i.id === id) || null; }
+let _dbItemsIndex = null;
+let _dbItemsIndexSize = -1;
+function dbItem(id) {
+  if (!_dbItemsIndex || _dbItemsIndexSize !== DB_ITEMS.length) {
+    _dbItemsIndex = new Map(DB_ITEMS.map(i => [i.id, i]));
+    _dbItemsIndexSize = DB_ITEMS.length;
+  }
+  return _dbItemsIndex.get(id) || null;
+}
 
 /* ── Helpers images (champ canonique : images[]) ── */
 function getItemImages(item) {

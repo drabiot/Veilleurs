@@ -11,6 +11,15 @@
   let activeClass   = null;
   let filterStats	= new Set();
 
+  /* ══ INDEX MAPS ══
+     Lookup O(1) au lieu de N × Array.find() dans les boucles de rendu.
+     Les données viennent de Compendium/data.js (chargé avant ce script). */
+  const STATS_BY_ID   = new Map(ALL_STATS.map(s => [s.id, s]));
+  const SLOTS_BY_ID   = new Map(ALL_SLOTS.map(s => [s.id, s]));
+  const CAR_BY_ID     = new Map(CARACTERISTIQUES.map(c => [c.id, c]));
+  const RUNES_BY_ID   = new Map(RUNES.map(r => [r.id, r]));
+  const CLASSES_BY_ID = new Map(CLASSES.map(c => [c.id, c]));
+
   /* ══ VALIDATION DES RUNES ══ */
   function isRuneKeyValid(runeKey, equippedItems) {
     const match = runeKey.match(/^(.+)_rune_(\d+)$/);
@@ -36,84 +45,10 @@
   		});
 	}
 
-  /* ══ TOOLTIP CARACTÉRISTIQUES ══ */
+  /* ══ TOOLTIP CARACTÉRISTIQUES ══
+     Styles définis dans atelier.css (.car-tooltip, .car-tt-*) */
   function buildCarTooltip() {
     if (document.getElementById('car-tooltip')) return;
-
-    const style = document.createElement('style');
-    style.textContent = `
-      .car-tooltip {
-        position: fixed;
-        z-index: 9999;
-        pointer-events: none;
-        opacity: 0;
-        transform: translateY(6px) scale(0.97);
-        transition: opacity .15s ease, transform .15s ease;
-        background: #111220;
-        border: 1px solid rgba(255,255,255,.1);
-        border-radius: 10px;
-        padding: 11px 14px;
-        min-width: 190px;
-        max-width: 250px;
-        box-shadow: 0 8px 28px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.04);
-        font-size: 11.5px;
-        color: rgba(255,255,255,.75);
-        line-height: 1.5;
-      }
-      .car-tooltip.visible {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-      .car-tt-header {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-bottom: 6px;
-      }
-      .car-tt-icon {
-        font-size: 15px;
-        line-height: 1;
-      }
-      .car-tt-name {
-        font-weight: 700;
-        font-size: 12.5px;
-        letter-spacing: .02em;
-      }
-      .car-tt-desc {
-        font-style: italic;
-        color: rgba(255,255,255,.45);
-        font-size: 11px;
-        margin-bottom: 8px;
-        line-height: 1.45;
-      }
-      .car-tt-stats {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        border-top: 1px solid rgba(255,255,255,.07);
-        padding-top: 7px;
-      }
-      .car-tt-stat-row {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .car-tt-stat-icon { font-size: 12px; flex-shrink: 0; width: 16px; text-align: center; }
-      .car-tt-stat-label { flex: 1; color: rgba(255,255,255,.6); font-size: 11px; }
-      .car-tt-stat-val {
-        font-weight: 700;
-        font-size: 11.5px;
-        white-space: nowrap;
-      }
-      .car-tt-per-pt {
-        font-size: 9.5px;
-        color: rgba(255,255,255,.3);
-        margin-left: 2px;
-        font-weight: 400;
-      }
-    `;
-    document.head.appendChild(style);
-
     const tooltip = document.createElement('div');
     tooltip.id = 'car-tooltip';
     tooltip.className = 'car-tooltip';
@@ -315,7 +250,7 @@ function loadAccessoriesForClass(classId) {
     if (car.stats && Object.keys(car.stats).length > 0) {
       html += '<div class="car-tt-stats">';
       Object.entries(car.stats).forEach(function(entry) {
-        const statDef = ALL_STATS.find(function(s) { return s.id === entry[0]; });
+        const statDef = STATS_BY_ID.get(entry[0]);
         const label = statDef ? statDef.label : entry[0];
         const unit  = statDef ? statDef.unit  : '';
         const icon  = statDef ? statDef.icon  : '◈';
@@ -560,8 +495,8 @@ function loadAccessoriesForClass(classId) {
     container.innerHTML = '';
     itemsAtRisk.forEach(slotId => {
       const item = equipped[slotId];
-      const slotDef = ALL_SLOTS.find(s => s.id === slotId);
-      const rarColor = (RARITIES[item.rarity] || { color: '#888' }).color;
+      const slotDef = SLOTS_BY_ID.get(slotId);
+      const rarColor = getRarityColor(item.rarity);
       const line = document.createElement('div');
       line.className = 'class-warn-item';
       line.innerHTML =
@@ -677,7 +612,7 @@ function loadAccessoriesForClass(classId) {
       if (!itemsAtRisk.length) { applyClassChange(); return; }
 
       const newLabel = newClass
-        ? (CLASSES.find(function(c) { return c.id === newClass; }) || { label: '?' }).label
+        ? (CLASSES_BY_ID.get(newClass) || { label: '?' }).label
         : 'Toutes classes';
 
       document.getElementById('modal-title').textContent = '⚠ Changement de classe';
@@ -692,9 +627,9 @@ function loadAccessoriesForClass(classId) {
       container.innerHTML = '';
       itemsAtRisk.forEach(function(slotId) {
         const item = equipped[slotId];
-        const slotDef = ALL_SLOTS.find(function(s) { return s.id === slotId; });
+        const slotDef = SLOTS_BY_ID.get(slotId);
         const slotLabel = slotDef ? slotDef.label : slotId;
-        const rarColor = (RARITIES[item.rarity] || { color: '#888' }).color;
+        const rarColor = getRarityColor(item.rarity);
         const line = document.createElement('div');
         line.className = 'class-warn-item';
         line.innerHTML =
@@ -767,7 +702,7 @@ function loadAccessoriesForClass(classId) {
 
     if (item) {
       el.classList.add('filled');
-      const col = (RARITIES[item.rarity] || { color: '#888' }).color;
+      const col = getRarityColor(item.rarity);
       const dot = document.createElement('span');
       dot.className = 'slot-dot';
       dot.style.background = col;
@@ -789,7 +724,7 @@ function loadAccessoriesForClass(classId) {
         for (let i = 0; i < runeCount; i++) {
           const runeKey = slotDef.id + '_rune_' + i;
           const runeId  = equippedRunes[runeKey];
-          const rune    = runeId ? RUNES.find(function(r) { return r.id === runeId; }) : null;
+          const rune    = runeId ? RUNES_BY_ID.get(runeId) : null;
           const orb = document.createElement('div');
           orb.className = 'rune-orb' + (rune ? ' rune-orb-filled' : ' rune-orb-empty');
           if (rune) {
@@ -821,7 +756,7 @@ function loadAccessoriesForClass(classId) {
   }
 
   function redrawSlot(slotId) {
-    const def = ALL_SLOTS.find(s => s.id === slotId);
+    const def = SLOTS_BY_ID.get(slotId);
     const el  = document.querySelector('.slot[data-slot-id="' + slotId + '"]');
     if (def && el) drawSlot(el, def);
   }
@@ -864,7 +799,7 @@ function loadAccessoriesForClass(classId) {
 			stats.className = 'rune-picker-stats';
 
 			const statsLines = Object.entries(rune.stats).map(function(e) {
-					const statDef = ALL_STATS.find(function(s) { return s.id === e[0]; });
+					const statDef = STATS_BY_ID.get(e[0]);
 					const icon  = statDef ? statDef.icon  : '◈';
 					const label = statDef ? statDef.label : e[0];
 					const unit  = statDef ? statDef.unit  : '';
@@ -876,7 +811,7 @@ function loadAccessoriesForClass(classId) {
 			}).join('');
 
 					const buffLines = rune.buff ? Object.entries(rune.buff).map(function(e) {
-					const carDef = CARACTERISTIQUES.find(function(c) { return c.id === e[0]; });
+					const carDef = CAR_BY_ID.get(e[0]);
 					const icon  = carDef ? carDef.icon  : '◈';
 					const label = carDef ? carDef.label : e[0];
 					const color = carDef ? carDef.color : '#aaa';
@@ -1060,7 +995,7 @@ stats.innerHTML = statsLines +
     /* ── Bonus des runes ── */
     Object.entries(equippedRunes).forEach(function(entry) {
       const runeId = entry[1];
-      const rune = RUNES.find(function(r) { return r.id === runeId; });
+      const rune = RUNES_BY_ID.get(runeId);
       if (!rune) return;
       Object.entries(rune.stats).forEach(function(sv) {
         const sid = sv[0]; const val = sv[1];
@@ -1091,7 +1026,7 @@ stats.innerHTML = statsLines +
             const runeId  = entry[1];
             const slotId  = runeKey.split('_rune_')[0];
             if (blockedSlots.has(slotId)) return;
-            const rune = RUNES.find(function(r) { return r.id === runeId; });
+            const rune = RUNES_BY_ID.get(runeId);
             if (rune && rune.buff) pts += rune.buff[car.id] || 0;
         });
 				
@@ -1198,7 +1133,7 @@ stats.innerHTML = statsLines +
       tier.appendChild(tierHead);
 
       Object.entries(stats).forEach(function(sv) {
-        const statDef = ALL_STATS.find(function(s) { return s.id === sv[0]; });
+        const statDef = STATS_BY_ID.get(sv[0]);
         const label = statDef ? statDef.label : sv[0];
         const unit  = statDef ? statDef.unit  : '';
         const icon  = statDef ? statDef.icon  : '';
@@ -1264,9 +1199,7 @@ stats.innerHTML = statsLines +
     if (!item || !item.twoHanded) return null;
     const offCat = TWO_HANDED_PAIRS[item.cat];
     if (!offCat) return null;
-    const offSlot = ALL_SLOTS.find(function(s) {
-        return s.id === offCat || (s.cats && s.cats.includes(offCat));
-    });
+    const offSlot = SLOTS_BY_ID.get(offCat || (s.cats && s.cats.includes(offCat)));
     return offSlot ? offSlot.id : null;
 	}
 
@@ -1311,7 +1244,7 @@ stats.innerHTML = statsLines +
       box.innerHTML = '<div class="psi-hint">Tous les items · cliquez sur un emplacement pour filtrer</div>';
       return;
     }
-    const s = ALL_SLOTS.find(function(x) { return x.id === activeSlot; });
+    const s = SLOTS_BY_ID.get(activeSlot);
     box.innerHTML =
       '<div class="psi-label">Emplacement sélectionné</div>' +
       '<div class="psi-name">' + s.ico + ' ' + s.label + '</div>';
@@ -1421,7 +1354,7 @@ stats.innerHTML = statsLines +
 
 			const lines = entries.map(function(e) {
 					const key = e[0]; const val = e[1];
-					const statDef = ALL_STATS.find(function(s) { return s.id === key; });
+					const statDef = STATS_BY_ID.get(key);
 					const label = statDef ? statDef.label : key;
 					const unit  = statDef ? statDef.unit  : '';
 					const icon  = statDef ? statDef.icon  : '';
@@ -1436,7 +1369,7 @@ stats.innerHTML = statsLines +
 			// ── Buffs de caractéristiques ──
 			const buffEntries = Object.entries(item.buff || {});
 			const buffLines = buffEntries.map(function(e) {
-					const carDef = CARACTERISTIQUES.find(function(c) { return c.id === e[0]; });
+					const carDef = CAR_BY_ID.get(e[0]);
 					const label = carDef ? carDef.label : e[0];
 					const icon  = carDef ? carDef.icon  : '◈';
 					const color = carDef ? carDef.color : '#aaa';
@@ -1459,7 +1392,7 @@ stats.innerHTML = statsLines +
     // Badges de classe
     if (item.classes && item.classes.length > 0) {
       item.classes.forEach(function(cid) {
-        const cls = CLASSES.find(function(c) { return c.id === cid; });
+        const cls = CLASSES_BY_ID.get(cid);
         if (!cls) return;
         badges += '<span class="item-class-badge" style="border-color:' + cls.color + '60;color:' + cls.color + '">' + cls.ico + ' ' + cls.label + '</span>';
       });
@@ -1502,7 +1435,7 @@ stats.innerHTML = statsLines +
 					const runeId  = entry[1];
 					const slotId = runeKey.split('_rune_')[0];
 					if (blockedSlots.has(slotId)) return;
-					const rune = RUNES.find(function(r) { return r.id === runeId; });
+					const rune = RUNES_BY_ID.get(runeId);
 					if (rune && rune.buff) bonus += rune.buff[carId] || 0;
 			});
 
@@ -1511,8 +1444,8 @@ stats.innerHTML = statsLines +
 
   function renderItemList() {
     const list = document.getElementById('items-list');
-    const norm = function(str) { return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
-    const q    = norm(filterQ);
+    // normalize → /utils.js (source unique)
+    const q    = normalize(filterQ);
     const statsFilter = function(item) {
       return filterStats.size === 0 || [...filterStats].every(function(sid) {
         if (!item.stats) return false;
@@ -1533,12 +1466,12 @@ stats.innerHTML = statsLines +
           itemAllowedForClass(item, activeClass) &&
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
-          (!q || norm(item.name).includes(q)) &&
-          (!item.sensible || (q && norm(item.name) === q)) &&
+          (!q || normalize(item.name).includes(q)) &&
+          (!item.sensible || (q && normalize(item.name) === q)) &&
           statsFilter(item);
       });
     } else {
-      const slot = ALL_SLOTS.find(function(s) { return s.id === activeSlot; });
+      const slot = SLOTS_BY_ID.get(activeSlot);
       visible = ITEMS.filter(function(item) {
         if (item.unique) {
           const alreadyEquippedElsewhere = Object.entries(equipped).some(function(e) {
@@ -1550,8 +1483,8 @@ stats.innerHTML = statsLines +
           itemAllowedForClass(item, activeClass) &&
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
-          (!q || norm(item.name).includes(q)) &&
-          (!item.sensible || (q && norm(item.name) === q)) &&
+          (!q || normalize(item.name).includes(q)) &&
+          (!item.sensible || (q && normalize(item.name) === q)) &&
           statsFilter(item);
       });
     }
@@ -1646,7 +1579,7 @@ stats.innerHTML = statsLines +
   function buildThresholdHTML(item) {
   if (!item.threshold || !Object.keys(item.threshold).length) return '';
   const rows = Object.entries(item.threshold).map(function(e) {
-    const carDef = CARACTERISTIQUES.find(function(c) { return c.id === e[0]; });
+    const carDef = CAR_BY_ID.get(e[0]);
     const label  = carDef ? carDef.label : e[0];
     const icon   = carDef ? carDef.icon  : '◈';
     const color  = carDef ? carDef.color : '#888';
@@ -1792,7 +1725,7 @@ stats.innerHTML = statsLines +
           Object.entries(parsed.runes).forEach(function(e) {
             const runeKey = e[0]; const runeId = e[1];
             if (
-              RUNES.find(function(r) { return r.id === runeId; }) &&
+              RUNES_BY_ID.get(runeId) &&
               isRuneKeyValid(runeKey, equipped)
             ) {
               equippedRunes[runeKey] = runeId;
@@ -1946,7 +1879,7 @@ stats.innerHTML = statsLines +
             Object.entries(parsed.runes).forEach(function(e) {
               const runeKey = e[0]; const runeId = e[1];
               if (
-                RUNES.find(function(r) { return r.id === runeId; }) &&
+                RUNES_BY_ID.get(runeId) &&
                 isRuneKeyValid(runeKey, equipped)
               ) {
                 equippedRunes[runeKey] = runeId;
@@ -2299,7 +2232,7 @@ stats.innerHTML = statsLines +
       const slotEl = document.createElement('span');
       slotEl.className = 'cdp-group-slot';
       if (typeof ALL_SLOTS !== 'undefined') {
-        const slotDef = ALL_SLOTS.find(function (s) { return s.id === slotId; });
+        const slotDef = SLOTS_BY_ID.get(slotId);
         slotEl.textContent = slotDef ? slotDef.ico + ' ' + slotDef.label : slotId;
       }
 

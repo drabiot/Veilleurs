@@ -65,9 +65,7 @@ const modalCloseBtn = document.getElementById('modal-close-btn');
 /* ══════════════════════════════════
    HELPERS
 ══════════════════════════════════ */
-function normalize(str) {
-  return String(str || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
+// normalize → défini dans /utils.js
 
 function getFiltered() {
   const q = normalize(searchQuery);
@@ -95,16 +93,15 @@ function getFiltered() {
    - items : { type:'items', itemId, qte, label? }
 ══════════════════════════════════ */
 
+/* Parse la valeur numérique d'une récompense exp/cols (gère le format hérité `label`) */
+function rewardVal(r, key) {
+  return r[key] != null ? r[key] : (parseInt(r.label) || 0);
+}
+
 /* Label formaté automatiquement — gère les deux formats (xp/cols ou label hérité) */
 function rewardLabel(r) {
-  if (r.type === 'exp') {
-    const val = r.xp != null ? r.xp : (parseInt(r.label) || 0);
-    return `${val.toLocaleString('fr-FR')} XP`;
-  }
-  if (r.type === 'cols') {
-    const val = r.cols != null ? r.cols : (parseInt(r.label) || 0);
-    return `${val.toLocaleString('fr-FR')} Cols`;
-  }
+  if (r.type === 'exp')  return `${rewardVal(r, 'xp').toLocaleString('fr-FR')} XP`;
+  if (r.type === 'cols') return `${rewardVal(r, 'cols').toLocaleString('fr-FR')} Cols`;
   /* items */
   const item = r.itemId ? dbItem(r.itemId) : null;
   const name = item ? item.name : (r.label || '?');
@@ -135,21 +132,19 @@ function rewardMiniTag(r) {
 /* Récompense complète dans le modal */
 function renderRewardFull(r) {
   if (r.type === 'exp') {
-    const val = r.xp != null ? r.xp : (parseInt(r.label) || 0);
     return `<div class="reward-full reward-full-exp">
       <span class="reward-full-icon">✨</span>
       <div class="reward-full-body">
-        <span class="reward-full-val">${val.toLocaleString('fr-FR')}</span>
+        <span class="reward-full-val">${rewardVal(r, 'xp').toLocaleString('fr-FR')}</span>
         <span class="reward-full-unit">XP</span>
       </div>
     </div>`;
   }
   if (r.type === 'cols') {
-    const val = r.cols != null ? r.cols : (parseInt(r.label) || 0);
     return `<div class="reward-full reward-full-cols">
       <span class="reward-full-icon">🪙</span>
       <div class="reward-full-body">
-        <span class="reward-full-val">${val.toLocaleString('fr-FR')}</span>
+        <span class="reward-full-val">${rewardVal(r, 'cols').toLocaleString('fr-FR')}</span>
         <span class="reward-full-unit">Cols</span>
       </div>
     </div>`;
@@ -214,8 +209,13 @@ initCollapsible('inv-block-header',    'inv-block-body');
 /* ══════════════════════════════════
    FILTRES PALIER
 ══════════════════════════════════ */
+let _tabQuestsCache = null;
+function getTabQuests() {
+  return _tabQuestsCache || (_tabQuestsCache = QUETES.filter(q => q.type === activeTab));
+}
+
 function buildPalierFilters() {
-  const list    = QUETES.filter(q => q.type === activeTab);
+  const list    = getTabQuests();
   const paliers = [...new Set(list.map(q => q.palier))].sort((a, b) => a - b);
   palierFilters.innerHTML = '';
 
@@ -239,7 +239,7 @@ function buildPalierFilters() {
 ══════════════════════════════════ */
 function buildZoneFilters() {
   const zf   = document.getElementById('zone-filters');
-  const list = QUETES.filter(q => q.type === activeTab);
+  const list = getTabQuests();
   const zones = [...new Set(list.map(q => q.zone))].sort();
   activeZones = new Set(zones);
   zf.innerHTML = '';
@@ -267,7 +267,7 @@ function buildZoneFilters() {
    COMPTEURS STATUT
 ══════════════════════════════════ */
 function updateStatutCounts() {
-  const base = QUETES.filter(q => q.type === activeTab);
+  const base = getTabQuests();
   document.getElementById('cnt-all').textContent  = base.length;
   document.getElementById('cnt-todo').textContent = base.filter(q => !isQuestDone(q)).length;
   document.getElementById('cnt-done').textContent = base.filter(q =>  isQuestDone(q)).length;
@@ -370,8 +370,8 @@ function buildFeasiblePanel() {
     const xp  = q.recompenses.find(r => r.type === 'exp');
     const col = q.recompenses.find(r => r.type === 'cols');
     const rewStr = [
-      xp  ? `${xp.xp  != null ? xp.xp  : (parseInt(xp.label)  || 0)} XP` : '',
-      col ? `${col.cols != null ? col.cols : (parseInt(col.label) || 0)} Cols` : '',
+      xp  ? `${rewardVal(xp, 'xp')} XP`    : '',
+      col ? `${rewardVal(col, 'cols')} Cols` : '',
     ].filter(Boolean).join(' · ');
     div.innerHTML = `
       <span class="feasible-dot" style="background:var(--quete-${q.type})"></span>
@@ -470,8 +470,14 @@ function buildGrid() {
    quetes.html#quest_id
    → active le bon tab, scrolle la card, ouvre le modal
 ══════════════════════════════════ */
+let _questsIndex = null;
+let _questsIndexSize = -1;
 function getQuestById(id) {
-  return QUETES.find(q => q.id === id) || null;
+  if (!_questsIndex || _questsIndexSize !== QUETES.length) {
+    _questsIndex = new Map(QUETES.map(q => [q.id, q]));
+    _questsIndexSize = QUETES.length;
+  }
+  return _questsIndex.get(id) || null;
 }
 
 function navigateToQuest(id, { pushState = true } = {}) {
@@ -736,6 +742,7 @@ function setActiveTab(tab) {
    REFRESH
 ══════════════════════════════════ */
 function refreshAll() {
+  _tabQuestsCache = null;
   updateHeader();
   buildPalierFilters();
   buildZoneFilters();
