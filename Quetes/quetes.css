@@ -328,8 +328,8 @@ body.quetes-page { overflow: hidden; }
 .quete-card::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 .quete-card:hover::before, .quete-card:hover::after { opacity: 1; }
 .quete-card:hover {
-  border-color: var(--zone-dim);
-  box-shadow: 0 6px 24px rgba(0,0,0,.5), 0 0 12px var(--zone-dim);
+  border-color: var(--gold-dim);
+  box-shadow: 0 6px 24px rgba(0,0,0,.5), 0 0 12px var(--gold-glow);
 }
 
 /* Barre colorée gauche */
@@ -340,7 +340,7 @@ body.quetes-page { overflow: hidden; }
 }
 
 .quete-card.main .type-stripe { background: var(--quete-main); box-shadow: 2px 0 8px var(--quete-main-dim); }
-.quete-card.sec  .type-stripe { background: var(--quete-sec);  box-shadow: 2px 0 8px var(--quete-sec-dim); }
+.quete-card.sec  .type-stripe { background: var(--zone-color);  box-shadow: 2px 0 8px var(--zone-dim); }
 .quete-card.ter  .type-stripe { background: var(--quete-ter);  box-shadow: 2px 0 8px var(--quete-ter-dim); }
 
 /* Body : flex-grow pour pousser le footer en bas, overflow hidden */
