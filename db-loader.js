@@ -7,17 +7,35 @@
 import { loadCollection, COL } from './firebase.js';
 
 (async () => {
-  try {
-    const [items, mobs, pnj] = await Promise.all([
-      loadCollection(COL.items),
-      loadCollection(COL.mobs),
-      loadCollection(COL.pnj),
-    ]);
-    if (typeof ITEMS      !== 'undefined') ITEMS.push(...items);
-    if (typeof MOBS       !== 'undefined') MOBS.push(...mobs);
-    if (typeof PERSONNAGES !== 'undefined') PERSONNAGES.push(...pnj);
-  } catch (err) {
-    console.error('[DB-Loader] Erreur Firestore :', err);
+  const [items, firestoreQuetes, regions] = await Promise.allSettled([
+    loadCollection(COL.items),
+    loadCollection(COL.quetes),
+    loadCollection(COL.regions),
+  ]);
+
+  if (items.status === 'fulfilled') {
+    DB_ITEMS.push(...items.value);
+  } else {
+    console.error('[Quêtes] Erreur chargement items :', items.reason);
   }
-  window._pageInit?.();
+
+  if (firestoreQuetes.status === 'fulfilled') {
+    const existingIds = new Set(QUETES.map(q => q.id));
+    const newQuetes = firestoreQuetes.value
+      .map(normalizeFirestoreQuest)
+      .filter(q => q.id && !existingIds.has(q.id));
+    QUETES.push(...newQuetes);
+  } else {
+    console.error('[Quêtes] Erreur chargement quêtes Firestore :', firestoreQuetes.reason);
+  }
+
+  if (regions.status === 'fulfilled') {
+    populateZoneColors(regions.value);
+  } else {
+    console.error('[Quêtes] Erreur chargement régions :', regions.reason);
+  }
+
+  
+
+  window._initQuetes?.();
 })();

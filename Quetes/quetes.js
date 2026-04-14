@@ -238,9 +238,15 @@ function buildPalierFilters() {
    FILTRES ZONE
 ══════════════════════════════════ */
 function buildZoneFilters() {
-  const zf   = document.getElementById('zone-filters');
-  const list = getTabQuests();
-  const zones = [...new Set(list.map(q => q.zone))].sort();
+  const zf    = document.getElementById('zone-filters');
+  const list  = getTabQuests();
+  const zones = [...new Set(list.map(q => q.zone))].sort((a, b) => {
+    const ra = ZONE_META_BY_NAME.get(a);
+    const rb = ZONE_META_BY_NAME.get(b);
+    const pa = ra?.palier ?? 99, pb = rb?.palier ?? 99;
+    if (pa !== pb) return pa - pb;
+    return (ra?.ordre ?? 99) - (rb?.ordre ?? 99);
+  });
   activeZones = new Set(zones);
   zf.innerHTML = '';
 
@@ -425,6 +431,9 @@ function buildGrid() {
       const effectiveDone = done === total && total > 0;
       const zs     = getZoneStyle(q.zone);
       const mapUrl = getMapUrl(q.mapId, q.zone);
+
+			card.style.setProperty('--zone-color', zs.color);
+			card.style.setProperty('--zone-dim',   zs.dim);
 
       /* Footer récompenses — max 3 affichées */
       const rewFooter = q.recompenses.slice(0, 3).map(r => rewardMiniTag(r)).join('');

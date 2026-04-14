@@ -210,53 +210,57 @@
 
   <!-- Inline module : évite les problèmes MIME type avec Live Server -->
   <script type="module">
-    import { loadCollection, COL } from '../firebase.js';
+  import { loadCollection, COL } from '../firebase.js';
 
-    /* Normalise une quête Firestore pour la rendre compatible avec le format QUETES statique */
-    function normalizeFirestoreQuest(q) {
-      // Type : corriger les anciennes valeurs 'secondary'/'tertiary' → 'sec'/'ter'
-      if (q.type === 'secondary') q.type = 'sec';
-      if (q.type === 'tertiary')  q.type = 'ter';
+  function normalizeFirestoreQuest(q) {
+    if (q.type === 'secondary') q.type = 'sec';
+    if (q.type === 'tertiary')  q.type = 'ter';
+    if (Array.isArray(q.recompenses)) {
+      q.recompenses = q.recompenses.map(r => {
+        if (r.type === 'exp'  && r.label && r.xp  == null) r.xp   = parseInt(r.label)  || 0;
+        if (r.type === 'cols' && r.label && r.cols == null) r.cols = parseInt(r.label) || 0;
+        return r;
+      });
+    }
+    if (!Array.isArray(q.objectifs))   q.objectifs   = [];
+    if (!Array.isArray(q.recompenses)) q.recompenses = [];
+    return q;
+  }
 
-      // Récompenses : convertir { type:'exp', label:'420 XP' } → { type:'exp', xp:420 }
-      if (Array.isArray(q.recompenses)) {
-        q.recompenses = q.recompenses.map(r => {
-          if (r.type === 'exp'  && r.label && r.xp  == null) r.xp   = parseInt(r.label)  || 0;
-          if (r.type === 'cols' && r.label && r.cols == null) r.cols = parseInt(r.label) || 0;
-          return r;
-        });
-      }
-      if (!Array.isArray(q.objectifs))    q.objectifs    = [];
-      if (!Array.isArray(q.recompenses))  q.recompenses  = [];
-      return q;
+  (async () => {
+    const [items, firestoreQuetes, regions] = await Promise.allSettled([
+      loadCollection(COL.items),
+      loadCollection(COL.quetes),
+      loadCollection(COL.regions),
+    ]);
+
+    if (items.status === 'fulfilled') {
+      DB_ITEMS.push(...items.value);
+    } else {
+      console.error('[Quêtes] Erreur chargement items :', items.reason);
     }
 
-    (async () => {
-      // Charger items et quêtes Firestore en parallèle
-      const [items, firestoreQuetes] = await Promise.allSettled([
-        loadCollection(COL.items),
-        loadCollection(COL.quetes),
-      ]);
+    if (firestoreQuetes.status === 'fulfilled') {
+      const existingIds = new Set(QUETES.map(q => q.id));
+      const newQuetes = firestoreQuetes.value
+        .map(normalizeFirestoreQuest)
+        .filter(q => q.id && !existingIds.has(q.id));
+      QUETES.push(...newQuetes);
+    } else {
+      console.error('[Quêtes] Erreur chargement quêtes Firestore :', firestoreQuetes.reason);
+    }
 
-      if (items.status === 'fulfilled') {
-        DB_ITEMS.push(...items.value);
-      } else {
-        console.error('[Quêtes] Erreur chargement items :', items.reason);
-      }
+    console.log('[Régions] status:', regions.status);
+    console.log('[Régions] data:', regions.value?.slice(0, 2));
+    if (regions.status === 'fulfilled') {
+      populateZoneColors(regions.value);
+    } else {
+      console.error('[Quêtes] Erreur chargement régions :', regions.reason);
+    }
 
-      if (firestoreQuetes.status === 'fulfilled') {
-        const existingIds = new Set(QUETES.map(q => q.id));
-        const newQuetes = firestoreQuetes.value
-          .map(normalizeFirestoreQuest)
-          .filter(q => q.id && !existingIds.has(q.id)); // éviter les doublons avec le statique
-        QUETES.push(...newQuetes);
-      } else {
-        console.error('[Quêtes] Erreur chargement quêtes Firestore :', firestoreQuetes.reason);
-      }
-
-      window._initQuetes?.();
-    })();
-  </script>
+    window._initQuetes?.();
+  })();
+</script>
 
 </body>
 </html>

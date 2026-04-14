@@ -156,18 +156,25 @@ body.quetes-page { overflow: hidden; }
 /* Checkbox/radio rows */
 .bfilter-list { display: flex; flex-direction: column; padding: 2px 0 6px; }
 .bfilter-row {
-  display: flex; align-items: center; gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 6px 14px 6px 24px;
-  cursor: pointer; transition: background .12s;
-  user-select: none; border-left: 2px solid transparent;
+}
+
+.bfilter-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  position: relative;
+  top: 1px;
 }
 .bfilter-row:hover { background: rgba(255,255,255,.03); }
 .bfilter-row input[type="checkbox"],
 .bfilter-row input[type="radio"] { display: none; }
-.bfilter-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  flex-shrink: 0; opacity: .3; transition: opacity .15s;
-}
+
 .bfilter-row:has(input:checked) .bfilter-dot { opacity: 1; }
 .dot-all  { background: var(--gold-dim); opacity: 1 !important; }
 .dot-todo { background: #d4a840; box-shadow: 0 0 5px #d4a84066; }
@@ -321,14 +328,17 @@ body.quetes-page { overflow: hidden; }
 .quete-card::after  { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 .quete-card:hover::before, .quete-card:hover::after { opacity: 1; }
 .quete-card:hover {
-  border-color: var(--gold-dim);
-  background: linear-gradient(160deg, rgba(30,25,18,.98) 0%, rgba(18,15,11,.95) 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(0,0,0,.5);
+  border-color: var(--zone-dim);
+  box-shadow: 0 6px 24px rgba(0,0,0,.5), 0 0 12px var(--zone-dim);
 }
 
 /* Barre colorée gauche */
-.type-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.type-stripe {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--zone-color, #888);
+  box-shadow: 2px 0 8px var(--zone-dim, rgba(136,136,136,.3));
+}
+
 .quete-card.main .type-stripe { background: var(--quete-main); box-shadow: 2px 0 8px var(--quete-main-dim); }
 .quete-card.sec  .type-stripe { background: var(--quete-sec);  box-shadow: 2px 0 8px var(--quete-sec-dim); }
 .quete-card.ter  .type-stripe { background: var(--quete-ter);  box-shadow: 2px 0 8px var(--quete-ter-dim); }
