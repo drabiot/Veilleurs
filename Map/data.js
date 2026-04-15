@@ -560,7 +560,7 @@ const FLOOR_MARKERS = {
     { id: 'm1s8',  type: 'quête_secondaire',  gx: 1556, gy: 4316, name: "Rikyu",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/rikyu' },
     { id: 'm1s9',  type: 'quête_secondaire',  gx: 1534, gy: 4329, name: "Bunta",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/bunta' },
     { id: 'm1s10',  type: 'quête_secondaire', gx: 1635, gy: 4039, name: "Nacht",                        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/nacht' },
-    { id: 'm1s11',  type: 'quête_secondaire', gx: 2207, gy: 4187, name: "Millia",                       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/millia' },
+    { id: 'm1s11',  type: 'quête_secondaire', gx: 2207, gy: 4187, name: "Milla",                       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/millia' },
     { id: 'm1s12',  type: 'quête_secondaire', gx: 1532, gy: 3376, name: "Genzo",                        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/hanaka/genzo' },
     { id: 'm1s13',  type: 'quête_secondaire', gx: 1526, gy: 3377, name: "Bartok",                       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/hanaka/bartok' },
     { id: 'm1s14',  type: 'quête_secondaire', gx: 1438, gy: 3400, name: "Greta",                        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/hanaka/greta' },
