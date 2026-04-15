@@ -555,10 +555,11 @@ const CATEGORIES = {
 //#region EFFECT_META
 const EFFECT_META = {
   heal:     { icon: '❤️',  	color: '#e05252', label: 'Points de vie',    prefix: '+' },
-	regen:     { icon: '💓',  	color: '#ce7b7b', label: 'Régénération',    prefix: 'Régénération ' },
+	regen:    { icon: '💓',  	color: '#ce7b7b', label: 'Régénération',    prefix: 'Régénération ' },
   mana:     { icon: '💧', 	 color: '#5b8dee', label: 'Mana',             prefix: '+' },
   stamina:  { icon: '👟', 	color: '#f4d745', label: 'Stamina',          prefix: '+' },
   buff:     { icon: '💪',  	color: '#d4a017', label: 'Bonus',            prefix: '+' },
+	force:    { icon: '💪',  	color: '#d4a017', label: 'Bonus',            prefix: 'Boost les Dégâts d\'Armes de ' },
 	feed:     { icon: '🍖',  	color: '#8d520b', label: 'Nourriture',       prefix: 'Restaure ' },
   debuff:   { icon: '☠️',  	color: '#9b59b6', label: 'Malus',            prefix: ''  }, 
   cooldown: { icon: '⏱️',  	color: '#888888', label: 'Cooldown',         prefix: ''  },
