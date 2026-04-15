@@ -337,9 +337,13 @@ body.quetes-page { overflow: hidden; }
 }
 
 /* Barre colorée gauche */
-.type-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+.type-stripe {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--zone-color, #888);
+  box-shadow: 2px 0 8px var(--zone-dim, rgba(136,136,136,.3));
+}
 .quete-card.main .type-stripe { background: var(--quete-main); box-shadow: 2px 0 8px var(--quete-main-dim); }
-.quete-card.sec  .type-stripe { background: var(--quete-sec);  box-shadow: 2px 0 8px var(--quete-sec-dim); }
+.quete-card.sec  .type-stripe { background: var(--zone-color);  box-shadow: 2px 0 8px var(--zone-dim); }
 .quete-card.ter  .type-stripe { background: var(--quete-ter);  box-shadow: 2px 0 8px var(--quete-ter-dim); }
 
 /* Body : flex-grow pour pousser le footer en bas, overflow hidden */

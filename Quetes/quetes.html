@@ -241,10 +241,11 @@
 
     (async () => {
       // Charger items, mobs et quêtes Firestore en parallèle
-      const [items, mobs, firestoreQuetes] = await Promise.allSettled([
+      const [items, mobs, firestoreQuetes, regions] = await Promise.allSettled([
         loadCollection(COL.items),
         loadCollection(COL.mobs),
         loadCollection(COL.quetes),
+        loadCollection(COL.regions)
       ]);
 
       if (items.status === 'fulfilled') {
@@ -263,11 +264,18 @@
         const existingIds = new Set(QUETES.map(q => q.id));
         const newQuetes = firestoreQuetes.value
           .map(normalizeFirestoreQuest)
-          .filter(q => q.id && !existingIds.has(q.id)); // éviter les doublons avec le statique
+          .filter(q => q.id && !existingIds.has(q.id));
         QUETES.push(...newQuetes);
       } else {
         console.error('[Quêtes] Erreur chargement quêtes Firestore :', firestoreQuetes.reason);
       }
+
+      if (regions.status === 'fulfilled') {
+        populateZoneColors(regions.value);
+      } else {
+        console.error('[Quêtes] Erreur chargement régions :', regions.reason);
+      }
+
 
       window._initQuetes?.();
     })();
