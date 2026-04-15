@@ -20,6 +20,7 @@
     <span class="copy-msg" id="copy-msg">✓ Copié !</span>
     <span id="auth-user-status" style="font-size:12px;color:var(--muted);display:none;"></span>
     <button class="btn btn-ghost" id="btn-login" onclick="openLoginModal()" style="display:none;font-size:12px;">🔑 Connexion</button>
+    <button class="btn btn-ghost" id="btn-change-pseudo" onclick="openChangePseudoModal()" style="display:none;font-size:12px;" title="Changer mon pseudo">✏️</button>
     <button class="btn btn-ghost" id="btn-logout-hdr" onclick="doLogout()" style="display:none;font-size:12px;">🚪</button>
     <button class="btn btn-primary" id="btn-submit-discord" onclick="submitToDiscord()">📨 Soumettre</button>
     <button class="btn btn-ghost" onclick="resetForm()">🔄 Reset</button>
@@ -81,6 +82,21 @@
       <button class="btn btn-primary" onclick="doSavePseudo()" style="width:100%;justify-content:center;margin-top:4px;">Valider</button>
     </div>
 
+    <!-- Panneau : changement de pseudo sécurisé -->
+    <div id="panel-change-pseudo" style="display:none;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Changer ton pseudo :</div>
+      <div class="mfield">
+        <label>Nouveau pseudo <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="change-pseudo-input" placeholder="ex : nouveau_pseudo" maxlength="32" onkeydown="if(event.key==='Enter')doChangePseudo()">
+      </div>
+      <div class="mfield" id="change-pseudo-pw-field">
+        <label>Mot de passe actuel <span style="color:var(--danger)">*</span></label>
+        <input type="password" id="change-pseudo-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doChangePseudo()">
+      </div>
+      <div id="change-pseudo-google-hint" style="font-size:12px;color:var(--muted);margin-bottom:8px;display:none;">Tu seras invité à ré-authentifier via Google.</div>
+      <button class="btn btn-primary" onclick="doChangePseudo()" style="width:100%;justify-content:center;margin-top:4px;">Valider</button>
+    </div>
+
 
     <div id="modal-error" style="font-size:12px;color:var(--danger);display:none;text-align:center;"></div>
     <button class="btn btn-ghost" onclick="closeLoginModal()" style="width:100%;justify-content:center;font-size:12px;">Annuler</button>
@@ -99,6 +115,7 @@
       <button class="mode-btn"        data-mode="pnj"    onclick="switchMode('pnj')">🧑 PNJ</button>
       <button class="mode-btn"        data-mode="region" onclick="switchMode('region')">📍 Région</button>
       <button class="mode-btn"        data-mode="quest"  onclick="switchMode('quest')">📜 Quête</button>
+      <button class="mode-btn"        data-mode="panoplie" onclick="switchMode('panoplie')">🔗 Panoplie</button>
     </div>
 
     <!-- ITEM FORM -->
@@ -561,6 +578,44 @@
     </div><!-- /region-form -->
 
     <!-- ═══════════════════════════════════════════
+         PANOPLIE FORM
+    ═══════════════════════════════════════════ -->
+    <div id="panoplie-form" style="display:none;">
+
+      <!-- Identité Panoplie -->
+      <div class="section">
+        <div class="sec-head" onclick="toggleSec(this)">🔗 Identité <span class="chev">▾</span></div>
+        <div class="sec-body">
+          <div class="row2">
+            <div class="field">
+              <label>Nom affiché *</label>
+              <input type="text" id="panop-label" placeholder="Set de Cuivre" autocomplete="off" oninput="onPanopLabelInput()">
+            </div>
+            <div class="field">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                <label style="margin:0">ID généré</label>
+                <span id="panop-id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant</span>
+              </div>
+              <input type="text" id="panop-id" placeholder="cuivre" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">La couleur de la panoplie est définie par la modération lors de la validation.</div>
+        </div>
+      </div>
+
+      <!-- Bonus -->
+      <div class="section">
+        <div class="sec-head" onclick="toggleSec(this)">✨ Bonus par nombre de pièces <span class="chev">▾</span></div>
+        <div class="sec-body">
+          <div id="panop-bonuses-list"></div>
+          <button class="btn btn-ghost btn-sm" onclick="addPanopBonus()" style="margin-top:8px;">+ Ajouter un bonus</button>
+          <div style="font-size:11px;color:var(--muted);margin-top:8px;">Chaque ligne définit une stat qui s'active à partir de X pièces équipées. Tu peux avoir plusieurs stats pour le même palier.</div>
+        </div>
+      </div>
+
+    </div><!-- /panoplie-form -->
+
+    <!-- ═══════════════════════════════════════════
          QUEST FORM
     ═══════════════════════════════════════════ -->
     <div id="quest-form">
@@ -813,7 +868,10 @@
 import { db, auth, onAuthStateChanged,
          login, logout, register, loginWithGoogle, sendVerificationEmail,
          collection, getDocs, addDoc, serverTimestamp,
-         doc, getDoc, setDoc, sanitizeForFirestore } from './firebase.js';
+         doc, getDoc, setDoc, sanitizeForFirestore,
+         changePseudoSecurely } from './firebase.js';
+
+window._vcl_changePseudoSecurely = changePseudoSecurely;
 
 window._vcl_sanitize        = sanitizeForFirestore;
 window._vcl_auth            = auth;
@@ -843,6 +901,8 @@ onAuthStateChanged(auth, async user => {
     if (status)    { status.style.display = ''; status.textContent = user.email; }
     if (loginBtn)  loginBtn.style.display  = 'none';
     if (logoutBtn) logoutBtn.style.display = '';
+    const changePseudoBtn = document.getElementById('btn-change-pseudo');
+    if (changePseudoBtn) changePseudoBtn.style.display = '';
     if (submitBtn) submitBtn.textContent   = '📨 Soumettre';
 
     // Pré-remplir le pseudo et récupérer le rôle depuis Firestore
@@ -866,6 +926,8 @@ onAuthStateChanged(auth, async user => {
     if (status)    status.style.display    = 'none';
     if (loginBtn)  loginBtn.style.display  = '';
     if (logoutBtn) logoutBtn.style.display = 'none';
+    const changePseudoBtn = document.getElementById('btn-change-pseudo');
+    if (changePseudoBtn) changePseudoBtn.style.display = 'none';
     if (submitBtn) submitBtn.textContent   = '📨 Soumettre';
     if (authorInput) authorInput.style.display = '';
     const modBtn = document.getElementById('btn-moderation');
@@ -883,9 +945,10 @@ window._vcl_loadCollection = loadCollection;
 
 (async () => {
   try {
-    const [items, mobs] = await Promise.all([
+    const [items, mobs, panoplies] = await Promise.all([
       loadCollection('items'),
       loadCollection('mobs'),
+      loadCollection('panoplies').catch(() => []),
     ]);
 
     if (items?.length) {
@@ -896,6 +959,26 @@ window._vcl_loadCollection = loadCollection;
     if (mobs?.length) {
       window.MOBS = mobs;
       if (typeof initObtainData === 'function') initObtainData();
+    }
+    // Fusionne panoplies Firestore dans SETS + rebuild du dropdown
+    if (Array.isArray(panoplies) && typeof SETS !== 'undefined') {
+      const sorted = [...panoplies].sort((a, b) => (a.ordre ?? 999) - (b.ordre ?? 999));
+      for (const p of sorted) {
+        const key = p.id || p._id;
+        if (!key) continue;
+        const bonuses = {};
+        if (p.bonuses && typeof p.bonuses === 'object') {
+          for (const [k, v] of Object.entries(p.bonuses)) bonuses[k] = v;
+        }
+        SETS[key] = {
+          label: p.label ?? key,
+          color: p.color ?? '#888',
+          bonuses,
+          ordre: p.ordre ?? 999,
+        };
+      }
+      // Rebuild du dropdown set avec les panoplies Firestore
+      if (typeof buildSetSelect === 'function') buildSetSelect();
     }
     if (typeof update === 'function') update();
   } catch(e) {
@@ -987,9 +1070,9 @@ document.addEventListener('paste', e => {
 function applyCreatorConfig(cfg) {
   if (!cfg) return;
   window._vcl_lastCreatorConfig = cfg; // mémorisé pour re-apply après auth
-  // Les contributeurs+ voient toujours tout
+  // Les contributeurs+ voient tout
   if (['contributeur', 'admin'].includes(window._vcl_role || '')) {
-    document.querySelectorAll('.mode-btn').forEach(b => b.style.display = '');
+    document.querySelectorAll('.mode-btn').forEach(b => { b.style.display = ''; });
     for (const selId of ['f-palier', 'mob-palier', 'pnj-palier', 'reg-palier']) {
       const sel = document.getElementById(selId);
       if (sel) sel.querySelectorAll('option').forEach(o => o.hidden = false);
@@ -1000,7 +1083,7 @@ function applyCreatorConfig(cfg) {
   }
   // Outils
   const tools = cfg.tools || {};
-  const MODES = ['item', 'mob', 'pnj', 'region'];
+  const MODES = ['item', 'mob', 'pnj', 'region', 'panoplie'];
   for (const m of MODES) {
     const enabled = tools[m] !== false;
     const btn = document.querySelector(`.mode-btn[data-mode="${m}"]`);
@@ -1236,9 +1319,11 @@ function closeLoginModal() {
 }
 function switchAuthTab(tab) {
   const isLogin = tab === 'login';
-  document.getElementById('panel-login').style.display    = isLogin ? '' : 'none';
-  document.getElementById('panel-register').style.display = isLogin ? 'none' : '';
-  document.getElementById('panel-pseudo').style.display   = 'none';
+  document.getElementById('panel-login').style.display         = isLogin ? '' : 'none';
+  document.getElementById('panel-register').style.display      = isLogin ? 'none' : '';
+  document.getElementById('panel-pseudo').style.display        = 'none';
+  const pcp = document.getElementById('panel-change-pseudo');
+  if (pcp) pcp.style.display = 'none';
   document.getElementById('tab-login').style.color        = isLogin ? 'var(--accent)' : 'var(--muted)';
   document.getElementById('tab-login').style.borderBottomColor    = isLogin ? 'var(--accent)' : 'transparent';
   document.getElementById('tab-register').style.color     = isLogin ? 'var(--muted)' : 'var(--accent)';
@@ -1309,6 +1394,81 @@ async function doSavePseudo() {
     closeLoginModal();
   } catch (e) {
     err.textContent = e.message;
+    err.style.display = '';
+  }
+}
+
+async function openChangePseudoModal() {
+  const user = window._vcl_auth?.currentUser;
+  if (!user) { openLoginModal(); return; }
+
+  // Lecture du pseudo actuel
+  let currentPseudo = '';
+  try {
+    const snap = await window._vcl_getDoc(window._vcl_doc(window._vcl_db, 'users', user.uid));
+    if (snap.exists()) currentPseudo = snap.data()?.pseudo || '';
+  } catch {}
+
+  // Ouvre la modal, masque les panneaux de login et affiche le panel change-pseudo
+  document.getElementById('login-modal').classList.remove('hidden');
+  document.getElementById('panel-login').style.display         = 'none';
+  document.getElementById('panel-register').style.display      = 'none';
+  document.getElementById('panel-pseudo').style.display        = 'none';
+  document.getElementById('panel-change-pseudo').style.display = '';
+  document.getElementById('modal-error').style.display         = 'none';
+
+  // Préremplir
+  const input = document.getElementById('change-pseudo-input');
+  input.value = currentPseudo;
+  input.focus();
+  input.select();
+
+  // Détecter provider pour afficher le champ mot de passe ou l'indication Google
+  const providers = (user.providerData || []).map(p => p.providerId);
+  const pwField   = document.getElementById('change-pseudo-pw-field');
+  const gHint     = document.getElementById('change-pseudo-google-hint');
+  if (providers.includes('password')) {
+    pwField.style.display = '';
+    gHint.style.display   = 'none';
+  } else if (providers.includes('google.com')) {
+    pwField.style.display = 'none';
+    gHint.style.display   = '';
+  } else {
+    pwField.style.display = '';
+    gHint.style.display   = 'none';
+  }
+}
+
+async function doChangePseudo() {
+  const err = document.getElementById('modal-error');
+  err.style.display = 'none';
+  const newPseudo = document.getElementById('change-pseudo-input').value.trim();
+  const password  = document.getElementById('change-pseudo-password').value;
+
+  if (!newPseudo) { err.textContent = 'Le pseudo est obligatoire.'; err.style.display = ''; return; }
+  if (!/^[\w\- ]{2,32}$/.test(newPseudo)) {
+    err.textContent = 'Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_).';
+    err.style.display = '';
+    return;
+  }
+
+  try {
+    const applied = await window._vcl_changePseudoSecurely(newPseudo, { password });
+    const authorInput = document.getElementById('author-input');
+    if (authorInput) { authorInput.value = applied; saveAuthor(); }
+    document.getElementById('change-pseudo-password').value = '';
+    closeLoginModal();
+  } catch (e) {
+    const code = e?.code || e?.message || '';
+    const msg  = code === 'invalid-pseudo'       ? 'Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_).'
+              : code === 'pseudo-taken'          ? 'Ce pseudo est déjà utilisé.'
+              : code === 'password-required'     ? 'Mot de passe obligatoire pour ré-authentifier.'
+              : code === 'auth/wrong-password'   ? 'Mot de passe incorrect.'
+              : code === 'auth/invalid-credential' ? 'Mot de passe incorrect.'
+              : code === 'auth/popup-closed-by-user' ? 'Ré-authentification annulée.'
+              : code === 'no-current-user'       ? 'Session expirée, reconnecte-toi.'
+              : (e?.message || 'Erreur inconnue');
+    err.textContent = msg;
     err.style.display = '';
   }
 }
@@ -2423,11 +2583,16 @@ let setDrop = null;
 
 function buildSetSelect() {
   if (typeof SETS === 'undefined') return;
-  const setItems = Object.entries(SETS).map(([id, { label }]) => ({
-    id, name: label, search: (label + ' ' + id).toLowerCase()
-  }));
+  const container = document.getElementById('set-drop-container');
+  if (!container) return;
+  const setItems = Object.entries(SETS)
+    .sort((a, b) => (a[1].ordre ?? 999) - (b[1].ordre ?? 999))
+    .map(([id, { label }]) => ({
+      id, name: label, search: (label + ' ' + id).toLowerCase()
+    }));
   setDrop = makeSearchDrop(setItems, 'Rechercher un set…', () => update());
-  document.getElementById('set-drop-container').appendChild(setDrop.element);
+  container.innerHTML = '';
+  container.appendChild(setDrop.element);
 }
 
 // ═══════════════════════════════════════════════════
@@ -3368,6 +3533,23 @@ function isRegionDuplicate(id) {
   return _regionsCache.some(r => r.id === id || r._id === id);
 }
 
+let _panopliesCache = null;
+async function loadPanopliesCache() {
+  if (_panopliesCache) return;
+  const getDocs = window._vcl_getDocs;
+  const col     = window._vcl_collection;
+  const db      = window._vcl_db;
+  if (!getDocs || !col || !db) return;
+  try {
+    const snap = await getDocs(col(db, 'panoplies'));
+    _panopliesCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch { _panopliesCache = []; }
+}
+function isPanoplieDuplicate(id) {
+  if (!id || !_panopliesCache) return false;
+  return _panopliesCache.some(p => p.id === id || p._id === id);
+}
+
 function update() {
   // ── Mob mode ──
   if (creatorMode === 'mob') {
@@ -3424,6 +3606,22 @@ function update() {
     document.getElementById('id-orphan-badge').style.display    = 'none';
     document.getElementById('validation-panel').style.display   = 'none';
     renderQuestPreview(empty ? null : obj);
+    return;
+  }
+  // ── Panoplie mode ──
+  if (creatorMode === 'panoplie') {
+    const obj   = buildPanoplieObj();
+    const empty = !obj.id && !obj.label;
+    document.getElementById('out-code').textContent = empty
+      ? '// Remplis le formulaire\n// pour générer le code ici.'
+      : toJS(obj, 0) + ',';
+    document.getElementById('id-duplicate-badge').style.display = 'none';
+    document.getElementById('id-orphan-badge').style.display    = 'none';
+    document.getElementById('validation-panel').style.display   = 'none';
+    const dupBadge = document.getElementById('panop-id-duplicate-badge');
+    if (dupBadge) dupBadge.style.display = isPanoplieDuplicate(obj.id) ? '' : 'none';
+    if (empty) document.getElementById('preview-wrap').innerHTML = '';
+    else renderPanopliePreview();
     return;
   }
   // ── Item mode (original) ──
@@ -3487,6 +3685,8 @@ function resetForm() {
     resetRegionForm();
   } else if (creatorMode === 'quest') {
     resetQuestForm();
+  } else if (creatorMode === 'panoplie') {
+    resetPanoplieForm();
   } else {
     document.getElementById('editing-banner').style.display = 'none';
     resetFormSilent();
@@ -3681,6 +3881,20 @@ async function submitToDiscord() {
     return;
   }
 
+  if (creatorMode === 'panoplie') {
+    const p = buildPanoplieObj();
+    const pErrors = [];
+    if (!p.label) pErrors.push('Nom obligatoire.');
+    if (!p.id) pErrors.push('ID manquant.');
+    if (!p.bonuses || !Object.keys(p.bonuses).length) pErrors.push('Au moins un bonus obligatoire.');
+    if (pErrors.length) {
+      alert('⛔ Corrige les erreurs avant de soumettre :\n\n' + pErrors.map(e => '• ' + e).join('\n'));
+      return;
+    }
+    await submitToFirestore();
+    return;
+  }
+
   if (creatorMode !== 'item') {
     await submitToFirestore();
     return;
@@ -3779,6 +3993,12 @@ async function submitToFirestore() {
     if (!data.type)  throw new Error('Type de quête obligatoire');
     if (!data.titre) throw new Error('Titre obligatoire');
     if (!data.desc)  throw new Error('Description obligatoire');
+  } else if (creatorMode === 'panoplie') {
+    type = 'panoplie';
+    data = buildPanoplieObj();
+    if (!data.id)    throw new Error('ID manquant (remplis le nom)');
+    if (!data.label) throw new Error('Nom obligatoire');
+    if (!data.bonuses || !Object.keys(data.bonuses).length) throw new Error('Au moins un bonus obligatoire');
   }
 
   // Nettoyer pour Firestore
@@ -3826,6 +4046,8 @@ async function submitToFirestore() {
     resetRegionForm();
   } else if (creatorMode === 'quest') {
     resetQuestForm();
+  } else if (creatorMode === 'panoplie') {
+    resetPanoplieForm();
   }
   update();
 
@@ -4268,6 +4490,8 @@ function switchMode(mode) {
   document.getElementById('pnj-form').style.display    = mode === 'pnj'    ? 'flex' : 'none';
   document.getElementById('region-form').style.display = mode === 'region' ? 'flex' : 'none';
   document.getElementById('quest-form').style.display  = mode === 'quest'  ? 'flex' : 'none';
+  const panopForm = document.getElementById('panoplie-form');
+  if (panopForm) panopForm.style.display = mode === 'panoplie' ? 'flex' : 'none';
   document.getElementById('header-subtitle').textContent = MODE_SUBTITLES[mode] || '';
   document.getElementById('btn-submit-discord').style.display = '';
   // Reset output
@@ -4279,6 +4503,7 @@ function switchMode(mode) {
   if (mode === 'pnj')    loadMobRegions();
   if (mode === 'region') loadRegionsCache();
   if (mode === 'quest')  loadMobRegions().then(initQuestZoneDrop);
+  if (mode === 'panoplie') { loadPanopliesCache().then(() => { renderPanopBonuses(); update(); }); }
   update();
 }
 
@@ -4549,6 +4774,172 @@ function buildRegionObj() {
   if (lore)   obj.lore    = lore;
 
   return obj;
+}
+
+// ═══════════════════════════════════════════════════
+// PANOPLIE — STATE + HELPERS
+// ═══════════════════════════════════════════════════
+let panopBonuses = []; // [{uid, pieces, stat, value}]
+let _panopUid = 0;
+let panopIdLocked = false;
+let _panopStatChoices = null;
+
+function panopStatChoices() {
+  if (_panopStatChoices) return _panopStatChoices;
+  if (typeof STAT_GROUPS === 'undefined') return [];
+  _panopStatChoices = STAT_GROUPS.flatMap(g =>
+    g.stats.map(s => ({ id: s.id, label: s.label, unit: s.unit || '' }))
+  );
+  return _panopStatChoices;
+}
+
+function onPanopLabelInput() {
+  const label = document.getElementById('panop-label').value.trim();
+  if (!panopIdLocked) {
+    const id = (typeof nameToId === 'function' ? nameToId(label) : label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''));
+    document.getElementById('panop-id').value = id;
+  }
+  update();
+}
+
+function addPanopBonus(preset) {
+  panopBonuses.push({
+    uid: ++_panopUid,
+    pieces: preset?.pieces ?? 2,
+    stat:   preset?.stat   ?? '',
+    value:  preset?.value  ?? '',
+  });
+  renderPanopBonuses();
+  update();
+}
+
+function removePanopBonus(uid) {
+  panopBonuses = panopBonuses.filter(b => b.uid !== uid);
+  renderPanopBonuses();
+  update();
+}
+
+function renderPanopBonuses() {
+  const wrap = document.getElementById('panop-bonuses-list');
+  if (!wrap) return;
+  if (!panopBonuses.length) {
+    wrap.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Aucun bonus. Clique sur « + Ajouter un bonus ».</div>';
+    return;
+  }
+  const stats = panopStatChoices();
+  const statsOpts = ['<option value="">— stat —</option>']
+    .concat(stats.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.label)}${s.unit ? ' (' + s.unit + ')' : ''}</option>`))
+    .join('');
+  wrap.innerHTML = panopBonuses.map(b => `
+    <div class="panop-bonus-row" data-uid="${b.uid}" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+      <div class="field" style="max-width:90px;margin:0;">
+        <label style="font-size:10px;">Pièces</label>
+        <input type="number" min="2" max="12" value="${b.pieces}" data-k="pieces" oninput="updatePanopBonus(${b.uid}, 'pieces', this.value)">
+      </div>
+      <div class="field" style="flex:1;margin:0;">
+        <label style="font-size:10px;">Stat</label>
+        <select data-k="stat" onchange="updatePanopBonus(${b.uid}, 'stat', this.value)">${statsOpts}</select>
+      </div>
+      <div class="field" style="max-width:100px;margin:0;">
+        <label style="font-size:10px;">Valeur</label>
+        <input type="number" step="any" value="${b.value}" data-k="value" oninput="updatePanopBonus(${b.uid}, 'value', this.value)">
+      </div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:14px;" onclick="removePanopBonus(${b.uid})" title="Supprimer">🗑️</button>
+    </div>
+  `).join('');
+  // Remettre les valeurs de select (innerHTML reset)
+  panopBonuses.forEach(b => {
+    const row = wrap.querySelector(`.panop-bonus-row[data-uid="${b.uid}"]`);
+    if (row) {
+      const sel = row.querySelector('select[data-k="stat"]');
+      if (sel) sel.value = b.stat || '';
+    }
+  });
+}
+
+function updatePanopBonus(uid, key, value) {
+  const b = panopBonuses.find(x => x.uid === uid);
+  if (!b) return;
+  if (key === 'pieces') b.pieces = Math.max(2, parseInt(value, 10) || 2);
+  else if (key === 'value') b.value = value === '' ? '' : parseFloat(value);
+  else b[key] = value;
+  update();
+}
+
+function buildPanoplieObj() {
+  const id    = document.getElementById('panop-id').value.trim();
+  const label = document.getElementById('panop-label').value.trim();
+
+  const obj = {};
+  if (id)    obj.id    = id;
+  if (label) obj.label = label;
+
+  // Grouper les bonus par nombre de pièces
+  const bonuses = {};
+  for (const b of panopBonuses) {
+    if (!b.stat || b.value === '' || b.value == null) continue;
+    const key = String(b.pieces);
+    if (!bonuses[key]) bonuses[key] = {};
+    bonuses[key][b.stat] = Number(b.value);
+  }
+  if (Object.keys(bonuses).length) obj.bonuses = bonuses;
+  return obj;
+}
+
+function resetPanoplieForm() {
+  panopBonuses = []; panopIdLocked = false;
+  ['panop-label','panop-id'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  renderPanopBonuses();
+}
+
+function loadPanoplie(p) {
+  switchMode('panoplie');
+  resetPanoplieForm();
+  if (p.id || p._id) { document.getElementById('panop-id').value = p.id || p._id; panopIdLocked = true; }
+  if (p.label)       document.getElementById('panop-label').value = p.label;
+  const bonuses = p.bonuses || {};
+  for (const [pieces, stats] of Object.entries(bonuses)) {
+    for (const [stat, value] of Object.entries(stats || {})) {
+      panopBonuses.push({ uid: ++_panopUid, pieces: +pieces, stat, value });
+    }
+  }
+  renderPanopBonuses();
+  document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
+  update();
+}
+
+function renderPanopliePreview() {
+  const wrap = document.getElementById('preview-wrap');
+  const obj  = buildPanoplieObj();
+  if (!obj.id && !obj.label) { wrap.innerHTML = ''; return; }
+  const color = obj.color || '#b87333';
+  const statMap = Object.fromEntries(panopStatChoices().map(s => [s.id, s]));
+  let h = `<div class="mob-card" style="border-color:${color}55;">`;
+  h += `<div class="mob-card-header">`;
+  h += `<div class="mob-card-name" style="color:${color};">🔗 ${escHtml(obj.label || '')}</div>`;
+  if (obj.id) h += `<div style="font-size:10px;color:var(--muted);font-family:monospace;margin-top:4px;">${escHtml(obj.id)}</div>`;
+  h += `</div>`;
+  h += `<div class="mob-card-body">`;
+  const entries = Object.entries(obj.bonuses || {}).sort((a, b) => +a[0] - +b[0]);
+  if (!entries.length) {
+    h += `<div class="ic-empty">Aucun bonus défini</div>`;
+  } else {
+    h += `<ul style="list-style:none;padding:0;margin:0;">`;
+    for (const [pieces, stats] of entries) {
+      const parts = Object.entries(stats).map(([k, v]) => {
+        const meta = statMap[k];
+        const label = meta ? meta.label : k;
+        const unit  = meta?.unit ? (meta.unit === '%' ? '%' : meta.unit === '/s' ? '/s' : '') : '';
+        return `+${v}${unit} ${escHtml(label)}`;
+      });
+      h += `<li style="padding:4px 0;border-top:1px solid var(--border);font-size:12px;"><b style="color:${color};">${pieces} pièces</b> — ${parts.join(', ')}</li>`;
+    }
+    h += `</ul>`;
+  }
+  h += `</div></div>`;
+  wrap.innerHTML = h;
 }
 
 // ═══════════════════════════════════════════════════

@@ -840,7 +840,7 @@ function renderEffects(effectsList) {
     const icon    = eff.icon   || meta.icon;
     const label   = eff.label  || meta.label;
     const prefix  = eff.prefix ?? meta.prefix;
-    const valueStr = `${prefix}${eff.value}${eff.unit ?? ''}`;
+    const valueStr = `${prefix}${eff.value}${eff.unit ? ' ' + eff.unit : ''}`;
     const duration = eff.instant          ? 'Instantané'
                    : eff.type === 'cooldown' ? 'Cooldown'
                    : eff.duration            ? formatDuration(eff.duration)

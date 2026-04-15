@@ -54,6 +54,7 @@
       <button class="filter-btn"        data-type="item"   onclick="setFilter('type','item')">⚔️ Items</button>
       <button class="filter-btn"        data-type="pnj"    onclick="setFilter('type','pnj')">🧑 PNJ</button>
       <button class="filter-btn"        data-type="region" onclick="setFilter('type','region')">📍 Régions</button>
+      <button class="filter-btn"        data-type="panoplie" onclick="setFilter('type','panoplie')">🔗 Panoplies</button>
     </div>
     <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">
     <div class="filter-label" style="margin-top:4px;">Admin</div>
@@ -62,6 +63,7 @@
     <button class="filter-btn" id="btn-pnj-order"  onclick="showPnjOrder()">🧑 Liste des PNJ</button>
     <button class="filter-btn" id="btn-region-order" onclick="showRegionOrder()">📍 Liste des régions</button>
     <button class="filter-btn" id="btn-quest-order"  onclick="showQuestOrder()">📜 Liste des quêtes</button>
+    <button class="filter-btn" id="btn-panoplie-order" onclick="showPanoplieOrder()">🔗 Liste des panoplies</button>
     <button class="filter-btn" id="btn-ghost-ids"  onclick="showGhostIds()">🔗 IDs fantômes</button>
     <button class="filter-btn" id="btn-region-orphans" onclick="showRegionOrphans()">🗺️ Régions orphelines</button>
     <button class="filter-btn" id="btn-mob-orphans"    onclick="showMobOrphans()">👾 Mobs orphelins</button>
@@ -213,6 +215,21 @@
            oninput="renderQuestOrder()"
            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
     <div id="quest-order-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Liste des panoplies -->
+  <main class="main" id="panoplie-order-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🔗 Liste des panoplies</span>
+      <button class="btn btn-ghost" id="btn-save-panoplie-order" onclick="savePanoplieOrder()" style="font-size:12px;" disabled>💾 Sauvegarder</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
+      Glisse-dépose les panoplies pour définir leur ordre d'apparition dans le Compendium. Édition via le creator.
+    </p>
+    <input type="search" id="panoplie-order-search" placeholder="🔍 Rechercher une panoplie…"
+           oninput="renderPanoplieOrder()"
+           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
+    <div id="panoplie-order-list"><div class="empty">Chargement…</div></div>
   </main>
 
   <!-- Panneau Webhooks Discord -->
@@ -415,6 +432,7 @@ onAuthStateChanged(auth, async user => {
     pnj:             showPnjOrder,
     region:          showRegionOrder,
     quest:           showQuestOrder,
+    panoplie:        showPanoplieOrder,
     'ghost-ids':     showGhostIds,
     'region-orphans': showRegionOrphans,
     'mob-orphans':   showMobOrphans,
@@ -589,8 +607,8 @@ function buildCard(sub) {
   card.className = `sub-card status-${sub.status}`;
   card.id = `card-${sub._id}`;
 
-  const typeLabels = { item:'⚔️ Item', mob:'👾 Mob', pnj:'🧑 PNJ', region:'📍 Région', quest:'📜 Quête' };
-  const name = sub.data?.titre || sub.data?.name || sub._id;
+  const typeLabels = { item:'⚔️ Item', mob:'👾 Mob', pnj:'🧑 PNJ', region:'📍 Région', quest:'📜 Quête', panoplie:'🔗 Panoplie' };
+  const name = sub.data?.titre || sub.data?.name || sub.data?.label || sub._id;
   const ts   = sub.submittedAt?.toDate ? sub.submittedAt.toDate().toLocaleString('fr-FR') : '—';
   const code = toJSStr(sub.data || {}, 0) + ',';
 
@@ -843,7 +861,7 @@ window.approve = async (id) => {
   if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
 
   try {
-    const colMap = { item: 'items', mob: 'mobs', pnj: 'personnages', region: 'regions', quest: 'quetes' };
+    const colMap = { item: 'items', mob: 'mobs', pnj: 'personnages', region: 'regions', quest: 'quetes', panoplie: 'panoplies' };
     const target = colMap[sub.type];
     if (!target) throw new Error('Type inconnu : ' + sub.type);
 
@@ -881,6 +899,8 @@ window.approve = async (id) => {
     } else {
       // Flux standard
       const dataToWrite = { _order: Date.now(), ...sub.data };
+      // Panoplie : couleur par défaut si absente (définie par la modération côté liste)
+      if (sub.type === 'panoplie' && !dataToWrite.color) dataToWrite.color = '#b87333';
       await setDoc(doc(db, target, String(dataId)), dataToWrite);
 
       // Si l'entité était précédemment sensible, nettoyer les collections cachées
@@ -971,6 +991,7 @@ function refreshCurrentPanel() {
     mob:            () => { delete _modCache['mobs'];        loadMobOrder();      },
     item:           () => { delete _modCache['items'];       loadItemOrder();     },
     pnj:            () => { delete _modCache['personnages']; loadPnjOrder();      },
+    panoplie:       () => { delete _modCache['panoplies'];   loadPanoplieOrder(); },
     'ghost-ids':    () => loadGhostIds(),
     'region-orphans': () => loadRegionOrphans(),
     'mob-orphans':  () => loadMobOrphans(),
@@ -990,6 +1011,7 @@ window.showSubmissions = function showSubmissions() {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
@@ -1023,6 +1045,7 @@ window.showMobOrder = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
@@ -1257,6 +1280,7 @@ window.showItemOrder = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
@@ -1562,6 +1586,7 @@ window.showPnjOrder = async () => {
   document.getElementById('item-order-panel').style.display    = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
@@ -2109,6 +2134,190 @@ window.saveRegionOrder = async () => {
   await loadRegionOrder();
 };
 
+// ── Panoplie order panel ─────────────────────────────
+let _panoplieOrderData  = [];
+let _panoplieOrderDirty = false;
+let _panoplieDragSrc    = null;
+
+window.showPanoplieOrder = async () => {
+  _activePanel = 'panoplie';
+  ['users-panel','submissions-list','mob-order-panel','item-order-panel',
+   'pnj-order-panel','region-order-panel','quest-order-panel',
+   'discord-webhooks-panel','permissions-panel','ghost-id-panel',
+   'region-orphan-panel','mob-orphan-panel','quest-orphan-panel','editor-panel'
+  ].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  ['btn-mob-order','btn-item-order','btn-pnj-order','btn-region-order',
+   'btn-quest-order','btn-ghost-ids','btn-region-orphans','btn-mob-orphans',
+   'btn-quest-orphans','btn-discord-webhooks','btn-permissions'
+  ].forEach(id => document.getElementById(id)?.classList.remove('active'));
+
+  document.getElementById('panoplie-order-panel').style.display = '';
+  document.getElementById('btn-panoplie-order').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadPanoplieOrder();
+};
+
+async function loadPanoplieOrder() {
+  const listEl = document.getElementById('panoplie-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _panoplieOrderDirty = false;
+  document.getElementById('btn-save-panoplie-order').disabled = true;
+  try {
+    const rows = [...(await cachedDocs('panoplies'))];
+    rows.sort((a, b) => {
+      if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
+      if (a.ordre != null) return -1;
+      if (b.ordre != null) return 1;
+      return (a.label || a.id || '').localeCompare(b.label || b.id || '', 'fr');
+    });
+    _panoplieOrderData = rows;
+    renderPanoplieOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+window.renderPanoplieOrder = function renderPanoplieOrder() {
+  const listEl  = document.getElementById('panoplie-order-list');
+  const searchQ = normalize(document.getElementById('panoplie-order-search').value.trim());
+  listEl.innerHTML = '';
+
+  const items = searchQ
+    ? _panoplieOrderData.filter(p => normalize((p.label||'') + ' ' + (p.id||'')).includes(searchQ))
+    : _panoplieOrderData;
+
+  if (!items.length) { listEl.innerHTML = '<div class="empty">Aucune panoplie</div>'; return; }
+
+  items.forEach(p => {
+    const globalIdx = _panoplieOrderData.indexOf(p);
+    const bonusCount = p.bonuses && typeof p.bonuses === 'object' ? Object.keys(p.bonuses).length : 0;
+    const row = document.createElement('div');
+    row.className  = 'mob-order-row';
+    row.draggable  = !searchQ;
+    row.dataset.id = p.id;
+    row.innerHTML  = `
+      <span class="mob-order-handle">⠿</span>
+      <input type="number" class="mob-order-index" value="${globalIdx+1}" min="1" max="${_panoplieOrderData.length}" ${searchQ?'disabled':''}>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${p.color||'#b87333'};border:1px solid var(--border);flex-shrink:0;"></span>
+      <span class="mob-order-name">${p.label||p.id}</span>
+      <span class="mob-order-tag">${bonusCount} bonus</span>
+      <button class="ed-edit-btn" title="Modifier : ${p.label||p.id}\nID : ${p.id}" draggable="false">✏️</button>`;
+
+    row.querySelector('.ed-edit-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      showEditor('panoplies', p.id, p, 'panoplie');
+    });
+
+    const indexInput = row.querySelector('.mob-order-index');
+    indexInput.addEventListener('click', e => e.stopPropagation());
+    indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+    indexInput.addEventListener('change', () => {
+      let to = parseInt(indexInput.value, 10) - 1;
+      to = Math.max(0, Math.min(_panoplieOrderData.length - 1, to));
+      const from = _panoplieOrderData.indexOf(p);
+      if (from === to) { indexInput.value = from + 1; return; }
+      const [moved] = _panoplieOrderData.splice(from, 1);
+      _panoplieOrderData.splice(to, 0, moved);
+      _panoplieOrderDirty = true;
+      document.getElementById('btn-save-panoplie-order').disabled = false;
+      renderPanoplieOrder();
+    });
+
+    row.addEventListener('dragstart', e => { _panoplieDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    row.addEventListener('dragend',   () => { row.classList.remove('dragging'); _panoplieDragSrc = null; });
+    row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault(); row.classList.remove('drag-over');
+      if (!_panoplieDragSrc || _panoplieDragSrc === row) return;
+      const fromIdx = _panoplieOrderData.findIndex(x => x.id === _panoplieDragSrc.dataset.id);
+      const toIdx   = _panoplieOrderData.findIndex(x => x.id === row.dataset.id);
+      if (fromIdx === -1 || toIdx === -1) return;
+      const [moved] = _panoplieOrderData.splice(fromIdx, 1);
+      _panoplieOrderData.splice(toIdx, 0, moved);
+      _panoplieOrderDirty = true;
+      document.getElementById('btn-save-panoplie-order').disabled = false;
+      renderPanoplieOrder();
+    });
+
+    listEl.appendChild(row);
+  });
+};
+
+window.savePanoplieOrder = async () => {
+  if (!_panoplieOrderDirty) return;
+  const btn = document.getElementById('btn-save-panoplie-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  let ok = 0, err = 0;
+  for (let i = 0; i < _panoplieOrderData.length; i++) {
+    try {
+      await updateDoc(doc(db, 'panoplies', _panoplieOrderData[i].id), { ordre: i + 1 });
+      ok++;
+    } catch(e) { console.error(_panoplieOrderData[i].id, e); err++; }
+  }
+  localStorage.removeItem('vcl_cache_v2_panoplies');
+  localStorage.removeItem('vcl_cache_meta_v2_panoplies');
+  invalidateModCache('panoplies');
+  _panoplieOrderDirty = false;
+  btn.textContent = '💾 Sauvegarder';
+  alert(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Ordre sauvegardé (${ok} panoplies).`);
+  document.getElementById('panoplie-order-search').value = '';
+  await loadPanoplieOrder();
+};
+
+// Migration one-shot des SETS hardcodés vers Firestore
+window.importSetsToFirestore = async () => {
+  const btn = document.getElementById('btn-import-sets');
+  if (!confirm('Importer les SETS hardcodés de Compendium/data.js dans Firestore ?\n\nLes panoplies déjà existantes avec le même ID seront écrasées.')) return;
+  btn.disabled = true; btn.textContent = '⏳ Import…';
+  try {
+    // Charge data.js comme script classique (définit window.SETS — data.js utilise `let SETS` global)
+    if (typeof window.SETS === 'undefined') {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'Compendium/data.js?v=' + Date.now();
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Impossible de charger Compendium/data.js'));
+        document.head.appendChild(s);
+      });
+    }
+    const SETS = window.SETS;
+    if (!SETS || typeof SETS !== 'object') throw new Error('SETS introuvable dans data.js');
+    const entries = Object.entries(SETS);
+    if (!entries.length) throw new Error('Aucun set trouvé');
+
+    let ok = 0, err = 0, idx = 0;
+    for (const [id, set] of entries) {
+      try {
+        // Les bonuses en data.js utilisent des clés numériques (2, 3, ...) — Firestore les stocke en string
+        const bonuses = {};
+        if (set.bonuses && typeof set.bonuses === 'object') {
+          for (const [k, v] of Object.entries(set.bonuses)) bonuses[String(k)] = v;
+        }
+        const payload = {
+          id,
+          label: set.label || id,
+          color: set.color || '#888',
+          bonuses,
+          ordre: ++idx,
+        };
+        await setDoc(doc(db, 'panoplies', id), payload);
+        ok++;
+      } catch(e) { console.error('[import SETS]', id, e); err++; }
+    }
+    localStorage.removeItem('vcl_cache_v2_panoplies');
+    localStorage.removeItem('vcl_cache_meta_v2_panoplies');
+    invalidateModCache('panoplies');
+    alert(`✓ Import terminé : ${ok} panoplies${err ? ` (${err} erreurs)` : ''}.`);
+    await loadPanoplieOrder();
+  } catch(e) {
+    alert('⛔ Erreur : ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📥 Importer SETS';
+  }
+};
+
 // ── Ghost ID tracker ─────────────────────────────────
 window.showGhostIds = async () => {
   _activePanel = 'ghost-ids';
@@ -2121,6 +2330,7 @@ window.showGhostIds = async () => {
   document.getElementById('item-order-panel').style.display   = 'none';
   document.getElementById('pnj-order-panel').style.display    = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
@@ -2157,6 +2367,7 @@ window.showRegionOrphans = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
   document.getElementById('quest-orphan-panel').style.display  = 'none';
@@ -2347,6 +2558,7 @@ window.showMobOrphans = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('editor-panel').style.display        = 'none';
@@ -2548,7 +2760,7 @@ let _editorCollection = null;
 let _editorId         = null;
 let _editorOrigin     = null;
 
-const _COL_LABELS = { items:'Item', mobs:'Mob', personnages:'PNJ', regions:'Région' };
+const _COL_LABELS = { items:'Item', mobs:'Mob', personnages:'PNJ', regions:'Région', panoplies:'Panoplie', quetes:'Quête' };
 
 let _cachedRegions = null;
 let _cachedSets    = null;
@@ -2687,9 +2899,10 @@ function _cpUpdate(id, h, s, v) {
   if (ds) ds.textContent = colorObj.dim;
   if (gs) gs.textContent = colorObj.glow;
 
-  // Textarea JSON (valeur collectée par _collectGenericForm)
-  const ta = wrap.querySelector('[data-gf-type="json"]');
-  if (ta) ta.value = JSON.stringify(colorObj);
+  // Valeur sérialisée collectée par _collectGenericForm (JSON objet pour régions, hex pour panoplies)
+  const mode = wrap.dataset.cpMode || 'object';
+  const out  = wrap.querySelector('.ed-cp-out');
+  if (out) out.value = mode === 'hex' ? hex : JSON.stringify(colorObj);
 
   // Palette — marquer la pastille active
   wrap.querySelectorAll('.ed-cp-preset').forEach(p => {
@@ -2769,9 +2982,12 @@ function _genValueHtml(key, val, col) {
     return `<input class="ed-input" type="number" step="${t === 'float' ? 'any' : '1'}" data-gf-type="number" value="${_ee(String(val ?? ''))}">`;
   }
 
-  // Color picker complet pour le champ color des régions
-  if (key === 'color' && col === 'regions') {
-    const hex = (val && typeof val === 'object' && val.color) ? val.color : '#9a9ab0';
+  // Color picker complet pour le champ color des régions & panoplies
+  if (key === 'color' && (col === 'regions' || col === 'panoplies')) {
+    const mode = col === 'panoplies' ? 'hex' : 'object';
+    const hex  = mode === 'hex'
+      ? (typeof val === 'string' && /^#[0-9a-f]{6}$/i.test(val) ? val : '#b87333')
+      : ((val && typeof val === 'object' && val.color) ? val.color : '#9a9ab0');
     const obj = _makeColorObj(hex);
     const CP  = 'ed-cp-reg';  // ID fixe (un seul éditeur ouvert à la fois)
 
@@ -2791,7 +3007,7 @@ function _genValueHtml(key, val, col) {
           onmouseover="this.style.transform='scale(1.25)'" onmouseout="this.style.transform=''"></div>`).join('')}
       </div>`).join('');
 
-    return `<div class="ed-color-picker" id="${_ee(CP)}" data-init-hex="${_ee(hex)}"
+    return `<div class="ed-color-picker" id="${_ee(CP)}" data-init-hex="${_ee(hex)}" data-cp-mode="${mode}"
       style="display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;max-width:320px;">
 
       <!-- Carré Saturation / Valeur -->
@@ -2841,7 +3057,9 @@ function _genValueHtml(key, val, col) {
       </div>
 
       <!-- Valeur sérialisée (lue par _collectGenericForm) -->
-      <textarea class="ed-json-ta" data-gf-type="json" spellcheck="false" style="display:none;">${_ee(JSON.stringify(obj))}</textarea>
+      ${mode === 'hex'
+        ? `<input class="ed-cp-out" data-gf-type="string" type="hidden" value="${_ee(hex)}">`
+        : `<textarea class="ed-cp-out ed-json-ta" data-gf-type="json" spellcheck="false" style="display:none;">${_ee(JSON.stringify(obj))}</textarea>`}
     </div>`;
   }
 
@@ -2923,6 +3141,10 @@ function _buildGenericForm(data, col) {
   // Auto-injecter le champ color pour les régions qui n'en ont pas encore
   if (col === 'regions' && !('color' in data)) {
     data = { ...data, color: _makeColorObj('#9a9ab0') };
+  }
+  // Auto-injecter le champ color pour les panoplies qui n'en ont pas encore
+  if (col === 'panoplies' && !('color' in data)) {
+    data = { ...data, color: '#b87333' };
   }
   // Auto-injecter mapId pour les quêtes qui n'en ont pas encore
   if (col === 'quetes' && !('mapId' in data)) {
@@ -3123,6 +3345,7 @@ window.showEditor = async function(collection, id, data, origin) {
   document.getElementById('pnj-order-panel').style.display    = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
@@ -3193,6 +3416,7 @@ window.editorGoBack = function() {
   if (_editorOrigin === 'item')           { showItemOrder();      return; }
   if (_editorOrigin === 'pnj')            { showPnjOrder();       return; }
   if (_editorOrigin === 'region')         { showRegionOrder();    return; }
+  if (_editorOrigin === 'panoplie')       { showPanoplieOrder();  return; }
   if (_editorOrigin === 'quest')          { showQuestOrder();     return; }
   if (_editorOrigin === 'region-orphan')  { showRegionOrphans(); return; }
   if (_editorOrigin === 'mob-orphan')     { showMobOrphans();    return; }
@@ -3355,6 +3579,7 @@ window.showDiscordWebhooks = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
@@ -3851,6 +4076,7 @@ window.showQuestOrder = async () => {
   document.getElementById('pnj-order-panel').style.display     = 'none';
   document.getElementById('ghost-id-panel').style.display      = 'none';
   document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
   document.getElementById('quest-order-panel').style.display   = 'none';
   document.getElementById('region-orphan-panel').style.display = 'none';
   document.getElementById('mob-orphan-panel').style.display    = 'none';
@@ -3986,12 +4212,12 @@ window.showQuestOrphans = async () => {
   _activePanel = 'quest-orphans';
   // Cacher tous les panneaux
   ['submissions-list','mob-order-panel','item-order-panel','pnj-order-panel',
-   'ghost-id-panel','region-order-panel','quest-order-panel',
+   'ghost-id-panel','region-order-panel','quest-order-panel','panoplie-order-panel',
    'region-orphan-panel','mob-orphan-panel','quest-orphan-panel',
    'editor-panel','discord-webhooks-panel','permissions-panel'
   ].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
   ['btn-mob-order','btn-item-order','btn-pnj-order','btn-ghost-ids',
-   'btn-region-order','btn-quest-order','btn-region-orphans','btn-mob-orphans',
+   'btn-region-order','btn-quest-order','btn-panoplie-order','btn-region-orphans','btn-mob-orphans',
    'btn-quest-orphans','btn-discord-webhooks','btn-permissions'
   ].forEach(id => { document.getElementById(id)?.classList.remove('active'); });
 

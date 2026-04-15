@@ -17,7 +17,9 @@ import { getAuth, onAuthStateChanged,
          signInWithEmailAndPassword, signOut,
          createUserWithEmailAndPassword,
          GoogleAuthProvider, signInWithPopup,
-         sendEmailVerification }                 from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+         sendEmailVerification,
+         reauthenticateWithCredential, reauthenticateWithPopup,
+         EmailAuthProvider, updateProfile }      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
 // ── Config ──────────────────────────────────────────
 const firebaseConfig = {
@@ -59,6 +61,7 @@ export const COL = {
   regions:      'regions',
   users:        'users',          // profils + rôles
   quetes:       'quetes',         // quêtes approuvées via modération
+  panoplies:    'panoplies',      // panoplies (sets d'équipement)
 };
 
 // ── Rôles ─────────────────────────────────────────────
@@ -303,4 +306,60 @@ export { doc, getDoc, collection, getDocs, onSnapshot, setDoc, addDoc,
          query, where, orderBy };
 
 // ── Exports Auth bruts (pour listeners réactifs côté pages) ──
-export { onAuthStateChanged };
+export { onAuthStateChanged,
+         reauthenticateWithCredential, reauthenticateWithPopup,
+         EmailAuthProvider, GoogleAuthProvider, updateProfile };
+
+// ── Helpers ré-authentification ───────────────────────────
+/**
+ * Ré-authentifie l'utilisateur courant avant une opération sensible.
+ * - email/password : nécessite `password`
+ * - google         : déclenche un popup
+ * Retourne true en cas de succès, throw sinon.
+ */
+export async function reauthenticateCurrentUser({ password } = {}) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('no-current-user');
+  const providers = (user.providerData || []).map(p => p.providerId);
+  if (providers.includes('password')) {
+    if (!password) throw new Error('password-required');
+    const cred = EmailAuthProvider.credential(user.email, password);
+    await reauthenticateWithCredential(user, cred);
+    return true;
+  }
+  if (providers.includes('google.com')) {
+    await reauthenticateWithPopup(user, new GoogleAuthProvider());
+    return true;
+  }
+  throw new Error('unsupported-provider');
+}
+
+/**
+ * Met à jour le pseudo de l'utilisateur courant de façon sécurisée.
+ * - ré-authentifie d'abord (password requis si email/password)
+ * - vérifie l'unicité du pseudo (pas d'autre uid avec ce pseudo)
+ * - update users/{uid}.pseudo
+ * - met à jour displayName Firebase Auth
+ */
+export async function changePseudoSecurely(newPseudo, { password } = {}) {
+  const user = auth.currentUser;
+  if (!user) throw new Error('no-current-user');
+
+  const pseudo = String(newPseudo || '').trim();
+  if (!/^[A-Za-z0-9 _-]{2,32}$/.test(pseudo)) throw new Error('invalid-pseudo');
+
+  // Unicité : query users where pseudo == pseudo
+  const q = query(collection(db, COL.users), where('pseudo', '==', pseudo));
+  const snap = await getDocs(q);
+  if (snap.docs.some(d => d.id !== user.uid)) throw new Error('pseudo-taken');
+
+  // Ré-auth
+  await reauthenticateCurrentUser({ password });
+
+  // Update Firestore
+  await updateDoc(doc(db, COL.users, user.uid), { pseudo });
+  // Update Firebase Auth displayName (best effort)
+  try { await updateProfile(user, { displayName: pseudo }); } catch {}
+
+  return pseudo;
+}

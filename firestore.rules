@@ -65,6 +65,12 @@ service cloud.firestore {
       allow write: if isContrib();
     }
 
+    // Panoplies — lecture publique, écriture admin uniquement
+    match /panoplies/{id} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
     match /users/{uid} {
       allow read:   if isAuth() && (request.auth.uid == uid || isAdmin());
       // Création du propre profil à l'inscription (rôle forcé à 'membre', pas d'autres champs)
@@ -72,8 +78,13 @@ service cloud.firestore {
                     && request.auth.uid == uid
                     && request.resource.data.role == 'membre'
                     && request.resource.data.keys().hasOnly(['pseudo','role']);
-      // Seul un admin peut modifier (changer le rôle, etc.)
-      allow update, delete: if isAdmin();
+      // Self-update : l'utilisateur peut modifier uniquement son pseudo (jamais son rôle)
+      allow update: if isAdmin()
+                    || (isAuth()
+                        && request.auth.uid == uid
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pseudo'])
+                        && request.resource.data.pseudo is string);
+      allow delete: if isAdmin();
     }
 
     match /config/{id} {
@@ -86,7 +97,7 @@ service cloud.firestore {
       // Les contributeurs+ contournent les restrictions du creator
       allow create: if request.resource.data.submitterName is string
                     && request.resource.data.submitterName.size() >= 2
-                    && request.resource.data.type in ['item','mob','pnj','region','quest']
+                    && request.resource.data.type in ['item','mob','pnj','region','quest','panoplie']
                     && request.resource.data.status == 'pending'
                     && (isContrib() || creatorToolEnabled(request.resource.data.type));
       // Les contributeurs+ voient tout ; un user connecté voit ses propres soumissions
