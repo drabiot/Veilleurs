@@ -566,6 +566,7 @@ const EFFECT_META = {
 	stam_heal:{ icon: '💨',  	color: '#e4c84b', label: 'Stamina',  						prefix: 'Vous rends ' },
 	crit_c:		{ icon: '🎯',  	color: '#d3b327', label: 'Coûp Critique',  			prefix: 'Boost les Chances Crtique de ' },
 	crit_d:		{ icon: '💢',  	color: '#e4c84b', label: 'Dégât Critique',  			prefix: 'Boost les Dégâts Critique de ' },
+	res:			{ icon: '✳️',  	color: '#4faa39', label: 'Ressurection',  				prefix: 'Vous permet de réanimer un camarade au combat dans les ' },
 	feed:     { icon: '🍖',  	color: '#8d520b', label: 'Nourriture',       		prefix: 'Restaure ' },
   debuff:   { icon: '☠️',  	color: '#9b59b6', label: 'Malus',            		prefix: ''  }, 
   cooldown: { icon: '⏱️',  	color: '#888888', label: 'Cooldown',        		 	prefix: ''  },
