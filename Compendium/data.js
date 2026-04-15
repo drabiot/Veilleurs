@@ -554,17 +554,23 @@ const CATEGORIES = {
 //#endregion CATEGORIES
 //#region EFFECT_META
 const EFFECT_META = {
-  heal:     { icon: '❤️',  	color: '#e05252', label: 'Points de vie',    prefix: '+' },
-	regen:    { icon: '💓',  	color: '#ce7b7b', label: 'Régénération',    prefix: 'Régénération ' },
-  mana:     { icon: '💧', 	 color: '#5b8dee', label: 'Mana',             prefix: '+' },
-  stamina:  { icon: '👟', 	color: '#f4d745', label: 'Stamina',          prefix: '+' },
-  buff:     { icon: '💪',  	color: '#d4a017', label: 'Bonus',            prefix: '+' },
-	force:    { icon: '💪',  	color: '#d4a017', label: 'Bonus',            prefix: 'Boost les Dégâts d\'Armes de ' },
-	feed:     { icon: '🍖',  	color: '#8d520b', label: 'Nourriture',       prefix: 'Restaure ' },
-  debuff:   { icon: '☠️',  	color: '#9b59b6', label: 'Malus',            prefix: ''  }, 
-  cooldown: { icon: '⏱️',  	color: '#888888', label: 'Cooldown',         prefix: ''  },
-	use: 			{ icon: '🧪',  	color: '#7db0ca', label: 'Utilisations',     prefix: ''  },
-	level: 		{ icon: '❓',  	color: '#c43c28', label: 'Niveau Requis',     prefix: 'Niveau '  }
+  heal:     { icon: '❤️',  	color: '#e05252', label: 'Points de vie',    		prefix: '+' },
+	regen:    { icon: '💓',  	color: '#ce7b7b', label: 'Régénération',     		prefix: 'Régénération ' },
+  mana:     { icon: '💧', 	 color: '#5b8dee', label: 'Mana',            		prefix: '+' },
+  stamina:  { icon: '👟', 	color: '#f4d745', label: 'Stamina',          		prefix: '+' },
+  buff:     { icon: '💪',  	color: '#d4a017', label: 'Bonus',           		 	prefix: '+' },
+	force:    { icon: '💪',  	color: '#f36d14', label: 'Force Accrue',     		prefix: 'Boost les Dégâts d\'Armes de ' },
+	arcane:   { icon: '🔮',  	color: '#c24cda', label: 'Puissance Arcanique',  prefix: 'Boost les Dégâts Magique de ' },
+	healing:  { icon: '💓',  	color: '#a01212', label: 'Healing',  						prefix: 'Vous rends ' },
+	mana_heal:{ icon: '💦',  	color: '#247ca5', label: 'Mana',  								prefix: 'Vous rends ' },
+	stam_heal:{ icon: '💨',  	color: '#e4c84b', label: 'Stamina',  						prefix: 'Vous rends ' },
+	crit_c:		{ icon: '🎯',  	color: '#d3b327', label: 'Coûp Critique',  			prefix: 'Boost les Chances Crtique de ' },
+	crit_d:		{ icon: '💢',  	color: '#e4c84b', label: 'Dégât Critique',  			prefix: 'Boost les Dégâts Critique de ' },
+	feed:     { icon: '🍖',  	color: '#8d520b', label: 'Nourriture',       		prefix: 'Restaure ' },
+  debuff:   { icon: '☠️',  	color: '#9b59b6', label: 'Malus',            		prefix: ''  }, 
+  cooldown: { icon: '⏱️',  	color: '#888888', label: 'Cooldown',        		 	prefix: ''  },
+	use: 			{ icon: '🧪',  	color: '#7db0ca', label: 'Utilisations',     		prefix: ''  },
+	level: 		{ icon: '❓',  	color: '#c43c28', label: 'Niveau Requis',   		 prefix: 'Niveau '  }
 };
 
 //#endregion EFFECT_META
