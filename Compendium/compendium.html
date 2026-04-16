@@ -105,6 +105,15 @@
   <script src="../Bestiaire/mob_data.js"></script>
   <script src="../Bestiaire/data.js"></script>
   <script src="compendium.js"></script>
-  <script type="module" src="../db-loader.js"></script>
+  <script type="module">
+    import { store } from '../store.js';
+    try {
+      await store.load(['items', 'mobs', 'pnj', 'panoplies']);
+      store.populateGlobals();
+    } catch (err) {
+      console.error('[Compendium] Erreur Firestore :', err);
+    }
+    window._pageInit?.();
+  </script>
 </body>
 </html>

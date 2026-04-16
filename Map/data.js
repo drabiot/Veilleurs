@@ -34,8 +34,8 @@ const FLOOR_ZONES = {
       color: '#e0ac60',
       emoji: '🐺',
       monsters: [
-        { name: 'Loup Sinitre Blanc', level: 2, difficulty: '⭐',   emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/loup_sinistre_blanc' },
-        { name: 'Loup Sinitre Noir',  level: 2, difficulty: '⭐',   emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/loup_sinistre_noir' },
+        { name: 'Loup Sinitre Blanc', level: 2, difficulty: '⭐',   emoji: '🐺', link: '../Bestiaire/bestiaire.html#monstres/loup_sinistre_blanc' },
+        { name: 'Loup Sinitre Noir',  level: 2, difficulty: '⭐',   emoji: '🐺', link: '../Bestiaire/bestiaire.html#monstres/loup_sinistre_noir' },
       ],
       points: [
         { gx: 2430, gy: 4026 }, { gx: 2344, gy: 3943 }, { gx: 2380, gy: 3784 },
@@ -50,7 +50,7 @@ const FLOOR_ZONES = {
       color: '#644d58',
       emoji: '🐗',
       monsters: [
-        { name: 'Sanglier Corrompu', level: 2, difficulty: '⭐',   emoji: '🐗', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/sanglier_corrompu' },
+        { name: 'Sanglier Corrompu', level: 2, difficulty: '⭐',   emoji: '🐗', link: '../Bestiaire/bestiaire.html#monstres/sanglier_corrompu' },
       ],
       points: [
         { gx: 1611, gy: 3620 }, { gx: 1781, gy: 3344 }, { gx: 1986, gy: 3339 },
@@ -63,7 +63,7 @@ const FLOOR_ZONES = {
       color: '#82e753',
       emoji: '🌾',
       monsters: [
-        { name: 'Nephentes', level: 4, difficulty: '⭐⭐', emoji: '🥬', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nephentes' },
+        { name: 'Nephentes', level: 4, difficulty: '⭐⭐', emoji: '🥬', link: '../Bestiaire/bestiaire.html#monstres/nephentes' },
       ],
       points: [
         { gx: 3306, gy: 3721 }, { gx: 3360, gy: 3698 }, { gx: 3423, gy: 3761 },
@@ -77,10 +77,10 @@ const FLOOR_ZONES = {
       color: '#ee7560',
       emoji: '🍄',
       monsters: [
-        { name: 'Mini Tréant',       level: 3, difficulty: '⭐⭐',   emoji: '🌿', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/mini_treant' },
-        { name: 'Guerrier Tréant',   level: 3, difficulty: '⭐⭐',   emoji: '🛡️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/guerrier_treant' },
-        { name: "Tréant d'Élite",    level: 3, difficulty: '⭐⭐',   emoji: '🏹', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/treant_elite' },
-        { name: 'Mage Sylvestre',    level: 3, difficulty: '⭐⭐',   emoji: '🧙', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/mage_sylvestre' },
+        { name: 'Mini Tréant',       level: 3, difficulty: '⭐⭐',   emoji: '🌿', link: '../Bestiaire/bestiaire.html#monstres/mini_treant' },
+        { name: 'Guerrier Tréant',   level: 3, difficulty: '⭐⭐',   emoji: '🛡️', link: '../Bestiaire/bestiaire.html#monstres/guerrier_treant' },
+        { name: "Tréant d'Élite",    level: 3, difficulty: '⭐⭐',   emoji: '🏹', link: '../Bestiaire/bestiaire.html#monstres/treant_elite' },
+        { name: 'Mage Sylvestre',    level: 3, difficulty: '⭐⭐',   emoji: '🧙', link: '../Bestiaire/bestiaire.html#monstres/mage_sylvestre' },
       ],
       points: [
         { gx: 1643, gy: 3261 }, { gx: 1486, gy: 3269 }, { gx: 1043, gy: 3272 },
@@ -95,10 +95,10 @@ const FLOOR_ZONES = {
       color: '#74ce50',
       emoji: '🌳',
       monsters: [
-        { name: 'Petit Slime',      level: 3, difficulty: '⭐⭐',    emoji: '🟢', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/petit_slime' },
-        { name: 'Guerrier Slime',   level: 3, difficulty: '⭐⭐',    emoji: '⚔️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/guerrier_slime' },
-        { name: 'Slime Soigneur',   level: 3, difficulty: '⭐⭐⭐',  emoji: '⛑️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/slime_soigneur' },
-        { name: 'Slime Magicien',   level: 3, difficulty: '⭐⭐⭐',  emoji: '🧙', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/slime_magicien' },
+        { name: 'Petit Slime',      level: 3, difficulty: '⭐⭐',    emoji: '🟢', link: '../Bestiaire/bestiaire.html#monstres/petit_slime' },
+        { name: 'Guerrier Slime',   level: 3, difficulty: '⭐⭐',    emoji: '⚔️', link: '../Bestiaire/bestiaire.html#monstres/guerrier_slime' },
+        { name: 'Slime Soigneur',   level: 3, difficulty: '⭐⭐⭐',  emoji: '⛑️', link: '../Bestiaire/bestiaire.html#monstres/slime_soigneur' },
+        { name: 'Slime Magicien',   level: 3, difficulty: '⭐⭐⭐',  emoji: '🧙', link: '../Bestiaire/bestiaire.html#monstres/slime_magicien' },
       ],
       points: [
         { gx: 549, gy: 3154 }, { gx: 421, gy: 3348 }, { gx: 272, gy: 3368 },
@@ -112,9 +112,9 @@ const FLOOR_ZONES = {
       color: '#eecf21',
       emoji: '💀',
       monsters: [
-        { name: 'Squelette Épéiste',      level: 3, difficulty: '⭐⭐',   emoji: '💀', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_epeiste' },
-        { name: 'Guerrier Squelette',     level: 3, difficulty: '⭐⭐⭐', emoji: '⚔️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/guerrier_squelette' },
-        { name: 'Squelette Hallebardier', level: 3, difficulty: '⭐⭐⭐', emoji: '🔨', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_hallebardier' },
+        { name: 'Squelette Épéiste',      level: 3, difficulty: '⭐⭐',   emoji: '💀', link: '../Bestiaire/bestiaire.html#monstres/squelette_epeiste' },
+        { name: 'Guerrier Squelette',     level: 3, difficulty: '⭐⭐⭐', emoji: '⚔️', link: '../Bestiaire/bestiaire.html#monstres/guerrier_squelette' },
+        { name: 'Squelette Hallebardier', level: 3, difficulty: '⭐⭐⭐', emoji: '🔨', link: '../Bestiaire/bestiaire.html#monstres/squelette_hallebardier' },
       ],
       points: [
         { gx: 2766, gy: 4371 }, { gx: 2831, gy: 4375 }, { gx: 2889, gy: 4427 },
@@ -128,9 +128,9 @@ const FLOOR_ZONES = {
       color: '#75bdcf',
       emoji: '⛰️',
       monsters: [
-        { name: 'Bandit Archer',   level: 3, difficulty: '⭐⭐', emoji: '🏹', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/bandit_archer' },
-        { name: 'Bandit Assassin', level: 3, difficulty: '⭐⭐', emoji: '🗡️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/bandit_assassin' },
-        { name: 'Bandit Robuste',  level: 3, difficulty: '⭐⭐', emoji: '💪', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/bandit_robuste' },
+        { name: 'Bandit Archer',   level: 3, difficulty: '⭐⭐', emoji: '🏹', link: '../Bestiaire/bestiaire.html#monstres/bandit_archer' },
+        { name: 'Bandit Assassin', level: 3, difficulty: '⭐⭐', emoji: '🗡️', link: '../Bestiaire/bestiaire.html#monstres/bandit_assassin' },
+        { name: 'Bandit Robuste',  level: 3, difficulty: '⭐⭐', emoji: '💪', link: '../Bestiaire/bestiaire.html#monstres/bandit_robuste' },
       ],
       points: [
         { gx: 3996, gy: 3804 }, { gx: 4155, gy: 3814 }, { gx: 4275, gy: 3860 },
@@ -145,7 +145,7 @@ const FLOOR_ZONES = {
       color: '#3e9db4',
       emoji: '🏝️',
       monsters: [
-        { name: 'Ika', level: 3, difficulty: '⭐⭐⭐', emoji: '🐢', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ika' },
+        { name: 'Ika', level: 3, difficulty: '⭐⭐⭐', emoji: '🐢', link: '../Bestiaire/bestiaire.html#monstres/ika' },
       ],
       points: [
         { gx: 3204, gy: 4045 }, { gx: 3237, gy: 3998 }, { gx: 3317, gy: 4000 },
@@ -160,7 +160,7 @@ const FLOOR_ZONES = {
       color: '#8bbeca',
       emoji: '🕸️',
       monsters: [
-        { name: 'Araignée des Forêts', level: 7, difficulty: '⭐⭐⭐⭐', emoji: '🕷️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/araignee_foret' },
+        { name: 'Araignée des Forêts', level: 7, difficulty: '⭐⭐⭐⭐', emoji: '🕷️', link: '../Bestiaire/bestiaire.html#monstres/araignee_foret' },
       ],
       points: [
         { gx: 1448, gy: 1146 }, { gx: 1526, gy: 1411 }, { gx: 1412, gy: 1449 },
@@ -175,7 +175,7 @@ const FLOOR_ZONES = {
       color: '#ddb04e',
       emoji: '🏔️',
       monsters: [
-        { name: 'Cerf des Montagnes', level: 7, difficulty: '⭐⭐⭐', emoji: '🦌', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/cerf_montagnes' },
+        { name: 'Cerf des Montagnes', level: 7, difficulty: '⭐⭐⭐', emoji: '🦌', link: '../Bestiaire/bestiaire.html#monstres/cerf_montagnes' },
       ],
       points: [
         { gx: 4019, gy: 1143 }, { gx: 4101, gy: 1026 }, { gx: 4261, gy: 1022 },
@@ -189,8 +189,8 @@ const FLOOR_ZONES = {
       color: '#224ba5',
       emoji: '❄️',
       monsters: [
-        { name: 'Golem de Glace',   level: 7, difficulty: '⭐⭐⭐',    emoji: '🧊', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/golem_glace' },
-        { name: 'Spirite de Glace', level: 7, difficulty: '⭐⭐⭐',    emoji: '🦋', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/spirite_glace' },
+        { name: 'Golem de Glace',   level: 7, difficulty: '⭐⭐⭐',    emoji: '🧊', link: '../Bestiaire/bestiaire.html#monstres/golem_glace' },
+        { name: 'Spirite de Glace', level: 7, difficulty: '⭐⭐⭐',    emoji: '🦋', link: '../Bestiaire/bestiaire.html#monstres/spirite_glace' },
       ],
       points: [
         { gx: 4053, gy: 1988 }, { gx: 4051, gy: 2014 }, { gx: 4027, gy: 2023 },
@@ -204,7 +204,7 @@ const FLOOR_ZONES = {
       color: '#bde3f1',
       emoji: '🎣',
       monsters: [
-        { name: 'Poisson Requin', level: 7, difficulty: '⭐⭐⭐',    emoji: '🐟', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/poisson_requin' },
+        { name: 'Poisson Requin', level: 7, difficulty: '⭐⭐⭐',    emoji: '🐟', link: '../Bestiaire/bestiaire.html#monstres/poisson_requin' },
       ],
       points: [
         { gx: 1473, gy: 1992 }, { gx: 1471, gy: 2075 }, { gx: 1410, gy: 2111 },
@@ -218,7 +218,7 @@ const FLOOR_ZONES = {
       color: '#644d58',
       emoji: '🐗',
       monsters: [
-        { name: 'Sanglier Corrompu', level: 2, difficulty: '⭐', emoji: '🐗', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/sanglier_corrompu' },
+        { name: 'Sanglier Corrompu', level: 2, difficulty: '⭐', emoji: '🐗', link: '../Bestiaire/bestiaire.html#monstres/sanglier_corrompu' },
       ],
       points: [
         { gx: 2693, gy: 2133 }, { gx: 2566, gy: 2170 }, { gx: 2595, gy: 1965 },
@@ -236,8 +236,8 @@ const FLOOR_ZONES = {
       color: '#39494e',
       emoji: '🐂',
       monsters: [
-        { name: 'Taureau', level: 10, difficulty: '⭐', emoji: '🐃', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/taureau' },
-        { name: 'Taureau Monstrueux', level: 10, difficulty: '⭐', emoji: '🐃', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/taureau_monstrueux' },
+        { name: 'Taureau', level: 10, difficulty: '⭐', emoji: '🐃', link: '../Bestiaire/bestiaire.html#monstres/taureau' },
+        { name: 'Taureau Monstrueux', level: 10, difficulty: '⭐', emoji: '🐃', link: '../Bestiaire/bestiaire.html#monstres/taureau_monstrueux' },
       ],
       points: [
         { gx: 151, gy: -135 }, { gx: 200, gy: -81 }, { gx: 175, gy: -9 },
@@ -251,8 +251,8 @@ const FLOOR_ZONES = {
       color: '#53cb38',
       emoji: '🍯',
       monsters: [
-        { name: 'Ours de la Forêt', level: 11, difficulty: '⭐', emoji: '🐻', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ours_foret' },
-        { name: 'Winnie', level: 11, difficulty: '⭐⭐⭐', emoji: '🐻', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/winnie' },
+        { name: 'Ours de la Forêt', level: 11, difficulty: '⭐', emoji: '🐻', link: '../Bestiaire/bestiaire.html#monstres/ours_foret' },
+        { name: 'Winnie', level: 11, difficulty: '⭐⭐⭐', emoji: '🐻', link: '../Bestiaire/bestiaire.html#monstres/winnie' },
       ],
       points: [
         { gx: 324, gy: -665 }, { gx: 364, gy: -749 }, { gx: 571, gy: -759 },
@@ -266,8 +266,8 @@ const FLOOR_ZONES = {
       color: '#f3c26f',
       emoji: '🐺',
       monsters: [
-        { name: 'Loups des Montagnes', level: 10, difficulty: '⭐⭐', emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/loup_montagnes' },
-        { name: 'Loups des Savanes', level: 10, difficulty: '⭐⭐', emoji: '🐺', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/loup_savanes' },
+        { name: 'Loups des Montagnes', level: 10, difficulty: '⭐⭐', emoji: '🐺', link: '../Bestiaire/bestiaire.html#monstres/loup_montagnes' },
+        { name: 'Loups des Savanes', level: 10, difficulty: '⭐⭐', emoji: '🐺', link: '../Bestiaire/bestiaire.html#monstres/loup_savanes' },
       ],
       points: [
         { gx: -207, gy: -643 }, { gx: -263, gy: -531 }, { gx: -528, gy: -445 },
@@ -281,7 +281,7 @@ const FLOOR_ZONES = {
       color: '#53cb38',
       emoji: '🍃',
       monsters: [
-        { name: 'Harpie de Terre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/harpie_terre' },
+        { name: 'Harpie de Terre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: '../Bestiaire/bestiaire.html#monstres/harpie_terre' },
       ],
       points: [
         { gx: -633, gy: 405 }, { gx: -618, gy: 394 }, { gx: -581, gy: 430 },
@@ -295,8 +295,8 @@ const FLOOR_ZONES = {
       color: '#6363d7',
       emoji: '🌊',
       monsters: [
-        { name: 'Harpie de Foudre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/harpie_foudre' },
-        { name: 'Poisson Fulgurant', level: 12, difficulty: '⭐', emoji: '🐟', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/poisson_fulgurant' },
+        { name: 'Harpie de Foudre', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: '../Bestiaire/bestiaire.html#monstres/harpie_foudre' },
+        { name: 'Poisson Fulgurant', level: 12, difficulty: '⭐', emoji: '🐟', link: '../Bestiaire/bestiaire.html#monstres/poisson_fulgurant' },
       ],
       points: [
         { gx: -559, gy: -48 }, { gx: -492, gy: 76 },  { gx: -573, gy: 193 },
@@ -310,11 +310,11 @@ const FLOOR_ZONES = {
       color: '#e0e02c',
       emoji: '🛕',
       monsters: [
-        { name: 'Squelette du Sanctuaire - Archer', level: 13, difficulty: '⭐⭐', emoji: '🏹', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_archer' },
-        { name: 'Squelette du Sanctuaire - Shaman', level: 13, difficulty: '⭐⭐', emoji: '🌿', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_shaman' },
-        { name: 'Squelette du Sanctuaire - Guerrier', level: 13, difficulty: '⭐⭐⭐', emoji: '⚔️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_guerrier' },
-        { name: 'Gardien du Sanctuaire', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '☠️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gardien_sanctuaire' },
-        { name: 'Minion du Gardien', level: 13, difficulty: '⭐', emoji: '🦴', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/minion_gardien' },
+        { name: 'Squelette du Sanctuaire - Archer', level: 13, difficulty: '⭐⭐', emoji: '🏹', link: '../Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_archer' },
+        { name: 'Squelette du Sanctuaire - Shaman', level: 13, difficulty: '⭐⭐', emoji: '🌿', link: '../Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_shaman' },
+        { name: 'Squelette du Sanctuaire - Guerrier', level: 13, difficulty: '⭐⭐⭐', emoji: '⚔️', link: '../Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_guerrier' },
+        { name: 'Gardien du Sanctuaire', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '☠️', link: '../Bestiaire/bestiaire.html#monstres/gardien_sanctuaire' },
+        { name: 'Minion du Gardien', level: 13, difficulty: '⭐', emoji: '🦴', link: '../Bestiaire/bestiaire.html#monstres/minion_gardien' },
       ],
       points: [
         { gx: -18, gy: 133 }, { gx: 14, gy: 137 }, { gx: 36, gy: 182 },
@@ -328,7 +328,7 @@ const FLOOR_ZONES = {
       color: '#98f8f9',
       emoji: '🏝️',
       monsters: [
-        { name: 'Velindra la Tisseuse', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🧙‍♀️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/velindra' },
+        { name: 'Velindra la Tisseuse', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🧙‍♀️', link: '../Bestiaire/bestiaire.html#monstres/velindra' },
       ],
       points: [
         { gx: 754, gy: 351 }, { gx: 766, gy: 298 }, { gx: 816, gy: 275 },
@@ -348,9 +348,9 @@ const FLOOR_ZONES_UNDERGROUND = {
 				color: '#b86cbe',
 				emoji: '💀',
 				monsters: [
-					{ name: 'Archer Squelette', level: 2, difficulty: '⭐', emoji: '🏹', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/archer_squelette' },
-					{ name: 'Tank Squelette', level: 2, difficulty: '⭐⭐', emoji: '🛡️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/tank_squelette' },
-					{ name: 'Squelette Mage', level: 2, difficulty: '⭐⭐⭐', emoji: '🔮', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/squelette_mage' },
+					{ name: 'Archer Squelette', level: 2, difficulty: '⭐', emoji: '🏹', link: '../Bestiaire/bestiaire.html#monstres/archer_squelette' },
+					{ name: 'Tank Squelette', level: 2, difficulty: '⭐⭐', emoji: '🛡️', link: '../Bestiaire/bestiaire.html#monstres/tank_squelette' },
+					{ name: 'Squelette Mage', level: 2, difficulty: '⭐⭐⭐', emoji: '🔮', link: '../Bestiaire/bestiaire.html#monstres/squelette_mage' },
 				],
 				points: [
 					{ gx: 2780, gy: 4380 }, { gx: 2849, gy: 4380 }, { gx: 2849, gy: 4340 },
@@ -367,10 +367,10 @@ const FLOOR_ZONES_UNDERGROUND = {
 				color: '#84d840',
 				emoji: '⛏️',
 				monsters: [
-					{ name: 'Tréant de la Forêt', level: 4, difficulty: '⭐', emoji: '🪵', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/treant_foret' },
-					{ name: 'Tréant de la Forêt', level: 4, difficulty: '⭐', emoji: '🌲', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/treant_mal_foret' },
-					{ name: 'Plante Décoreuse', level: 4, difficulty: '⭐', emoji: '🌷', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/plante_devoreuse' },
-					{ name: 'Brute de la Forêt', level: 4, difficulty: '⭐⭐', emoji: '🌳', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/brute_foret' },
+					{ name: 'Tréant de la Forêt', level: 4, difficulty: '⭐', emoji: '🪵', link: '../Bestiaire/bestiaire.html#monstres/treant_foret' },
+					{ name: 'Tréant de la Forêt', level: 4, difficulty: '⭐', emoji: '🌲', link: '../Bestiaire/bestiaire.html#monstres/treant_mal_foret' },
+					{ name: 'Plante Décoreuse', level: 4, difficulty: '⭐', emoji: '🌷', link: '../Bestiaire/bestiaire.html#monstres/plante_devoreuse' },
+					{ name: 'Brute de la Forêt', level: 4, difficulty: '⭐⭐', emoji: '🌳', link: '../Bestiaire/bestiaire.html#monstres/brute_foret' },
 				],
 				points: [
 					{ gx: 4349, gy: 3838 }, { gx: 4344, gy: 3904 }, { gx: 4306, gy: 3921 },
@@ -391,9 +391,9 @@ const FLOOR_ZONES_UNDERGROUND = {
 				color: '#8750e0',
 				emoji: '🕷️',
 				monsters: [
-					{ name: 'Araignée de Chasse', level: 7, difficulty: '⭐⭐', emoji: '🕷️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/araignee_chasse' },
-					{ name: 'Araignée Venimeuse', level: 7, difficulty: '⭐⭐⭐', emoji: '🧪', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/araignee_venimeuse' },
-					{ name: 'Araignée Étrangleuse', level: 7, difficulty: '⭐⭐⭐', emoji: '🕸️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/araignee_etrangleuse' },
+					{ name: 'Araignée de Chasse', level: 7, difficulty: '⭐⭐', emoji: '🕷️', link: '../Bestiaire/bestiaire.html#monstres/araignee_chasse' },
+					{ name: 'Araignée Venimeuse', level: 7, difficulty: '⭐⭐⭐', emoji: '🧪', link: '../Bestiaire/bestiaire.html#monstres/araignee_venimeuse' },
+					{ name: 'Araignée Étrangleuse', level: 7, difficulty: '⭐⭐⭐', emoji: '🕸️', link: '../Bestiaire/bestiaire.html#monstres/araignee_etrangleuse' },
 				],
 				points: [
 					{ gx: 1002, gy: 1186 }, { gx: 1010, gy: 1150 }, { gx: 1076, gy: 1139 },
@@ -421,7 +421,7 @@ const FLOOR_ZONES_UNDERGROUND = {
       color: '#df6c42',
       emoji: '🔥',
       monsters: [
-        { name: 'Harpie de Feu', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/harpie_feu' },
+        { name: 'Harpie de Feu', level: 12, difficulty: '⭐⭐', emoji: '🦅', link: '../Bestiaire/bestiaire.html#monstres/harpie_feu' },
       ],
       points: [
         { gx: -461, gy: 217 }, { gx: -536, gy: 342 }, { gx: -679, gy: 257 },
@@ -435,8 +435,8 @@ const FLOOR_ZONES_UNDERGROUND = {
       color: '#ded26b',
       emoji: '🕳️',
       monsters: [
-        { name: 'Golem de Pierre', level: 13, difficulty: '⭐⭐⭐', emoji: '🗿', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/golem_pierre' },
-        { name: 'Magnus, Colosse des Veines', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🛡️', link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/magnus' },
+        { name: 'Golem de Pierre', level: 13, difficulty: '⭐⭐⭐', emoji: '🗿', link: '../Bestiaire/bestiaire.html#monstres/golem_pierre' },
+        { name: 'Magnus, Colosse des Veines', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🛡️', link: '../Bestiaire/bestiaire.html#monstres/magnus' },
       ],
       points: [
         { gx: 246, gy: 366 }, { gx: 186, gy: 352 }, { gx: 174, gy: 323 },
@@ -494,59 +494,59 @@ const FLOOR_MARKERS = {
     { id: 'm1t5',  type: 'ressource', emoji: '🌳', gx: 1794, gy: 1155, name: 'Bouleau',             desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/bucheron#bouleau' },
 		//#endregion P1 Markers > Ressources
 		//#region P1 Markers > Artisant
-    { id: 'm1a1',  type: 'artisant', gx: 1772, gy: 4135, name: "Forgeron d'Armes",                  desc: "Forgeron des Armes pour Débutants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armes_vdp' },
-    { id: 'm1a2',  type: 'artisant', gx: 1760, gy: 4145, name: "Forgeron d'Armures",                desc: "Forgeron des Armures pour Débutants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armures_vdp' },
-    { id: 'm1a3',  type: 'artisant', gx: 1767, gy: 4126, name: "Forgeron d'Accessoires",            desc: "Forgeron des Accessoires pour Débutants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_vdp' },
-    { id: 'm1a4',  type: 'artisant', gx: 1789, gy: 4609, name: 'Marchand Étrange',                  desc: "Marchand suspect trainant derrière la Cathédrale", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_etrange_vdp' },
-    { id: 'm1a5',  type: 'artisant', gx: 1787, gy: 4697, name: "Forgeron d'Accessoires en Cuivre",  desc: "Forgeron des Accessoires en Cuivre pour Débutants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_cuivre_vdp' },
-    { id: 'm1a6',  type: 'artisant', gx: 1776, gy: 4684, name: "Forgeron d'Accessoires en Fer",     desc: "Forgeron des Accessoires en Fer pour Débutants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_fer_vdp' },
-    { id: 'm1a7',  type: 'artisant', emoji: '🪛', gx: 1776, gy: 4693, name: 'Refaçonneur',                       desc: "Permet la fabrication de ficelle en tout genre", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/refaconneur_vdp' },
-    { id: 'm1a8',  type: 'artisant', gx: 2397, gy: 3568, name: 'Forgeron de Lingots Cuivre & Fer',  desc: "Forgeron de Lingots de Cuivre et de Fer", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_lingot_vdp' },
-    { id: 'm1a13', type: 'artisant', emoji: '🪓', gx: 2467, gy: 4289, name: 'Bucheron',                          desc: "Bucheron permettant la Réalisation de Planches", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/bucheron_vdp' },
-    { id: 'm1a14', type: 'artisant', emoji: '⚗️', gx: 1771, gy: 4096, name: 'Alchimiste',                        desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/alchimiste_vdp' },
-    { id: 'm1a15', type: 'artisant', emoji: '⚗️',  gx: 3335, gy: 1613, name: 'Alchimiste',                        desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/alchimiste_tolbana' },
+    { id: 'm1a1',  type: 'artisant', gx: 1772, gy: 4135, name: "Forgeron d'Armes",                  desc: "Forgeron des Armes pour Débutants", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armes_vdp' },
+    { id: 'm1a2',  type: 'artisant', gx: 1760, gy: 4145, name: "Forgeron d'Armures",                desc: "Forgeron des Armures pour Débutants", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armures_vdp' },
+    { id: 'm1a3',  type: 'artisant', gx: 1767, gy: 4126, name: "Forgeron d'Accessoires",            desc: "Forgeron des Accessoires pour Débutants", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_vdp' },
+    { id: 'm1a4',  type: 'artisant', gx: 1789, gy: 4609, name: 'Marchand Étrange',                  desc: "Marchand suspect trainant derrière la Cathédrale", link: '../Bestiaire/bestiaire.html#personnages/marchand_etrange_vdp' },
+    { id: 'm1a5',  type: 'artisant', gx: 1787, gy: 4697, name: "Forgeron d'Accessoires en Cuivre",  desc: "Forgeron des Accessoires en Cuivre pour Débutants", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_cuivre_vdp' },
+    { id: 'm1a6',  type: 'artisant', gx: 1776, gy: 4684, name: "Forgeron d'Accessoires en Fer",     desc: "Forgeron des Accessoires en Fer pour Débutants", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_fer_vdp' },
+    { id: 'm1a7',  type: 'artisant', emoji: '🪛', gx: 1776, gy: 4693, name: 'Refaçonneur',                       desc: "Permet la fabrication de ficelle en tout genre", link: '../Bestiaire/bestiaire.html#personnages/refaconneur_vdp' },
+    { id: 'm1a8',  type: 'artisant', gx: 2397, gy: 3568, name: 'Forgeron de Lingots Cuivre & Fer',  desc: "Forgeron de Lingots de Cuivre et de Fer", link: '../Bestiaire/bestiaire.html#personnages/forgeron_lingot_vdp' },
+    { id: 'm1a13', type: 'artisant', emoji: '🪓', gx: 2467, gy: 4289, name: 'Bucheron',                          desc: "Bucheron permettant la Réalisation de Planches", link: '../Bestiaire/bestiaire.html#personnages/bucheron_vdp' },
+    { id: 'm1a14', type: 'artisant', emoji: '⚗️', gx: 1771, gy: 4096, name: 'Alchimiste',                        desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: '../Bestiaire/bestiaire.html#personnages/alchimiste_vdp' },
+    { id: 'm1a15', type: 'artisant', emoji: '⚗️',  gx: 3335, gy: 1613, name: 'Alchimiste',                        desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: '../Bestiaire/bestiaire.html#personnages/alchimiste_tolbana' },
 		//#endregion P1 Markers > Artisant
 		//#region P1 Markers > Repreneur Butin
-    { id: 'm1b1',  type: 'repreneur_butin', gx: 1788, gy: 4179, name: 'Repreneur des Débutants',       desc: "Achète des ressources digne d'un Débutant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_vdp' },
-    { id: 'm1b2',  type: 'repreneur_butin', gx: 1509, gy: 3415, name: 'Repreneur de la Forêt',         desc: "Achète des ressources de la Forêt", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_hanaka' },
-    { id: 'm1b3',  type: 'repreneur_butin', gx: 3155, gy: 3690, name: 'Repreneur Champêtre',           desc: "Achète des ressources des Champs", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_mizunari' },
-    { id: 'm1b4',  type: 'repreneur_butin', gx: 413,  gy: 3089, name: 'Repreneur des Marécages',      desc: "Achète des ressources Gluantes", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_vallhat' },
-    { id: 'm1b5',  type: 'repreneur_butin', gx: 1598, gy: 1947, name: 'Repreneur des Mers',            desc: "Achète des ressources Maritimes", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_virelune' },
-    { id: 'm1b6',  type: 'repreneur_butin', gx: 2832, gy: 4709, name: 'Repreneur de Squelette',        desc: "Achète des ressources venant des Morts", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_chateau_abandonne' },
-    { id: 'm1b7',  type: 'repreneur_butin', gx: 3295, gy: 1629, name: 'Repreneur Agguerie de Tolbana', desc: "Achète des ressources digne d'un Combattant Agguerie", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_tolbana' },
-	  { id: 'm1b8',  type: 'repreneur_butin', gx: 1488, gy: 3403, name: 'Repreneur d\'Armes', desc: "Achète des Armes de niveau 5", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_arme_hanaka' },
+    { id: 'm1b1',  type: 'repreneur_butin', gx: 1788, gy: 4179, name: 'Repreneur des Débutants',       desc: "Achète des ressources digne d'un Débutant", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_vdp' },
+    { id: 'm1b2',  type: 'repreneur_butin', gx: 1509, gy: 3415, name: 'Repreneur de la Forêt',         desc: "Achète des ressources de la Forêt", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_hanaka' },
+    { id: 'm1b3',  type: 'repreneur_butin', gx: 3155, gy: 3690, name: 'Repreneur Champêtre',           desc: "Achète des ressources des Champs", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_mizunari' },
+    { id: 'm1b4',  type: 'repreneur_butin', gx: 413,  gy: 3089, name: 'Repreneur des Marécages',      desc: "Achète des ressources Gluantes", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_vallhat' },
+    { id: 'm1b5',  type: 'repreneur_butin', gx: 1598, gy: 1947, name: 'Repreneur des Mers',            desc: "Achète des ressources Maritimes", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_virelune' },
+    { id: 'm1b6',  type: 'repreneur_butin', gx: 2832, gy: 4709, name: 'Repreneur de Squelette',        desc: "Achète des ressources venant des Morts", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_chateau_abandonne' },
+    { id: 'm1b7',  type: 'repreneur_butin', gx: 3295, gy: 1629, name: 'Repreneur Agguerie de Tolbana', desc: "Achète des ressources digne d'un Combattant Agguerie", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_tolbana' },
+	  { id: 'm1b8',  type: 'repreneur_butin', gx: 1488, gy: 3403, name: 'Repreneur d\'Armes', desc: "Achète des Armes de niveau 5", link: '../Bestiaire/bestiaire.html#personnages/repreneur_arme_hanaka' },
 		//#endregion P1 Markers > Repreneur Butin
 		//#region P1 Markers > Marchand
-    { id: 'm1m1',  type: 'marchand', emoji: '⚔️', gx: 1788, gy: 4162, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_equipement_vdp' },
-    { id: 'm1m2',  type: 'marchand', emoji: '⚔️', gx: 1503, gy: 3391, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_equipement_hanaka' },
-    { id: 'm1m3',  type: 'marchand', gx: 485,  gy: 3058, name: "Marchand d'Accessoires Gluant",   desc: "Vends des Accessoires Gluants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_accessoire_vallhat' },
-    { id: 'm1m4',  type: 'marchand', gx: 3320, gy: 1605, name: "Marchand d'Accessoires Tolbana",   desc: "Vends des Accessoires Résistants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_accessoire_tolbana' },
-    { id: 'm1m5',  type: 'marchand', emoji: '⛏️', gx: 1813, gy: 4162, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_vdp' },
-    { id: 'm1m6',  type: 'marchand', emoji: '⛏️', gx: 1587, gy: 1985, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_virelune' },
-    { id: 'm1m7',  type: 'marchand', emoji: '⛏️', gx: 3335, gy: 1621,  name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_tolbana' },
-    { id: 'm1m8',  type: 'marchand', gx: 3309, gy: 1642, name: "Marchand de Consommables", desc: "Vends des Utilitaires comme des Potions ou des Parchemins", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_consommable_tolbana' },
-    { id: 'm1m9',  type: 'marchand', emoji: '⚔️', gx: 3316, gy: 1642, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_equipement_tolbana' },
-    { id: 'm1m10', type: 'marchand', emoji: '⛏️', gx: 2002, gy: 822, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_candelia' },
-    { id: 'm1m11', type: 'marchand', emoji: '⛏️', gx: 3150, gy: 3702, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_mizunari' },
-		{ id: 'm1m12', type: 'marchand', emoji: '💵', gx: 1457, gy: 1145, name: "Marchand Itinérant",        desc: "Vends & Achète à Arakh'Nol nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_candelia' },
-    { id: 'm1m13', type: 'marchand', emoji: '💵', gx: 3484, gy: 1332, name: "Marchand Itinérant",        desc: "Vends & Achète à Tolbana nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_tolbana' },
-    { id: 'm1m14', type: 'marchand', emoji: '💵', gx: 3600, gy: 3400, name: "Marchand Itinérant",        desc: "Vends & Achète à Mizunari nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_mizunari' },
-    { id: 'm1m15', type: 'marchand', emoji: '💵', gx: 1415, gy: 2976, name: "Marchand Itinérant",        desc: "Vends & Achète Au Marécage Putride nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_hanaka' },
-    { id: 'm1m16', type: 'marchand', emoji: '💵', gx: 582, gy: 3189, name: "Marchand Itinérant",        desc: "Vends & Achète à Vallhat nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_vallhat' },
-    { id: 'm1m17', type: 'marchand', emoji: '💵', gx: 1205, gy: 2100, name: "Marchand Itinérant",        desc: "Vends & Achète à Virelune nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_virelune' },
-    { id: 'm1m18', type: 'marchand', emoji: '💵', gx: 2080, gy: 3765, name: "Marchand Itinérant",        desc: "Vends & Achète à la Zone des Sangliers nombreux objets locaux et originaire du Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_itinerant_vdp' },
-		{ id: 'm1m19', type: 'marchand', emoji: '👻', gx: 2391, gy: 989, name: "Marchand Kazor",       			 desc: "Vends des Armes, Accessoires & autre en échange de quelques Pièces de Kazor", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_kazor' },
+    { id: 'm1m1',  type: 'marchand', emoji: '⚔️', gx: 1788, gy: 4162, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: '../Bestiaire/bestiaire.html#personnages/repreneur_equipement_vdp' },
+    { id: 'm1m2',  type: 'marchand', emoji: '⚔️', gx: 1503, gy: 3391, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: '../Bestiaire/bestiaire.html#personnages/repreneur_equipement_hanaka' },
+    { id: 'm1m3',  type: 'marchand', gx: 485,  gy: 3058, name: "Marchand d'Accessoires Gluant",   desc: "Vends des Accessoires Gluants", link: '../Bestiaire/bestiaire.html#personnages/marchand_accessoire_vallhat' },
+    { id: 'm1m4',  type: 'marchand', gx: 3320, gy: 1605, name: "Marchand d'Accessoires Tolbana",   desc: "Vends des Accessoires Résistants", link: '../Bestiaire/bestiaire.html#personnages/marchand_accessoire_tolbana' },
+    { id: 'm1m5',  type: 'marchand', emoji: '⛏️', gx: 1813, gy: 4162, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: '../Bestiaire/bestiaire.html#personnages/marchand_outils_vdp' },
+    { id: 'm1m6',  type: 'marchand', emoji: '⛏️', gx: 1587, gy: 1985, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: '../Bestiaire/bestiaire.html#personnages/marchand_outils_virelune' },
+    { id: 'm1m7',  type: 'marchand', emoji: '⛏️', gx: 3335, gy: 1621,  name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: '../Bestiaire/bestiaire.html#personnages/marchand_outils_tolbana' },
+    { id: 'm1m8',  type: 'marchand', gx: 3309, gy: 1642, name: "Marchand de Consommables", desc: "Vends des Utilitaires comme des Potions ou des Parchemins", link: '../Bestiaire/bestiaire.html#personnages/marchand_consommable_tolbana' },
+    { id: 'm1m9',  type: 'marchand', emoji: '⚔️', gx: 3316, gy: 1642, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: '../Bestiaire/bestiaire.html#personnages/repreneur_equipement_tolbana' },
+    { id: 'm1m10', type: 'marchand', emoji: '⛏️', gx: 2002, gy: 822, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: '../Bestiaire/bestiaire.html#personnages/marchand_outils_candelia' },
+    { id: 'm1m11', type: 'marchand', emoji: '⛏️', gx: 3150, gy: 3702, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: '../Bestiaire/bestiaire.html#personnages/marchand_outils_mizunari' },
+		{ id: 'm1m12', type: 'marchand', emoji: '💵', gx: 1457, gy: 1145, name: "Marchand Itinérant",        desc: "Vends & Achète à Arakh'Nol nombreux objets locaux et originaire du Palier 1", link: '../Bestiaire/bestiaire.html#personnages/marchand_itinerant_candelia' },
+    { id: 'm1m13', type: 'marchand', emoji: '💵', gx: 3484, gy: 1332, name: "Marchand Itinérant",        desc: "Vends & Achète à Tolbana nombreux objets locaux et originaire du Palier 1", link: '../Bestiaire/bestiaire.html#personnages/marchand_itinerant_tolbana' },
+    { id: 'm1m14', type: 'marchand', emoji: '💵', gx: 3600, gy: 3400, name: "Marchand Itinérant",        desc: "Vends & Achète à Mizunari nombreux objets locaux et originaire du Palier 1", link: '../Bestiaire/bestiaire.html#personnages/marchand_itinerant_mizunari' },
+    { id: 'm1m15', type: 'marchand', emoji: '💵', gx: 1415, gy: 2976, name: "Marchand Itinérant",        desc: "Vends & Achète Au Marécage Putride nombreux objets locaux et originaire du Palier 1", link: '../Bestiaire/bestiaire.html#personnages/marchand_itinerant_hanaka' },
+    { id: 'm1m16', type: 'marchand', emoji: '💵', gx: 582, gy: 3189, name: "Marchand Itinérant",        desc: "Vends & Achète à Vallhat nombreux objets locaux et originaire du Palier 1", link: '../Bestiaire/bestiaire.html#personnages/marchand_itinerant_vallhat' },
+    { id: 'm1m17', type: 'marchand', emoji: '💵', gx: 1205, gy: 2100, name: "Marchand Itinérant",        desc: "Vends & Achète à Virelune nombreux objets locaux et originaire du Palier 1", link: '../Bestiaire/bestiaire.html#personnages/marchand_itinerant_virelune' },
+    { id: 'm1m18', type: 'marchand', emoji: '💵', gx: 2080, gy: 3765, name: "Marchand Itinérant",        desc: "Vends & Achète à la Zone des Sangliers nombreux objets locaux et originaire du Palier 1", link: '../Bestiaire/bestiaire.html#personnages/marchand_itinerant_vdp' },
+		{ id: 'm1m19', type: 'marchand', emoji: '👻', gx: 2391, gy: 989, name: "Marchand Kazor",       			 desc: "Vends des Armes, Accessoires & autre en échange de quelques Pièces de Kazor", link: '../Bestiaire/bestiaire.html#personnages/marchand_kazor' },
 		//#endregion P1 Markers > Marchand
 		//#region P1 Markers > Clé
-    { id: 'm1c1', type: 'clef', emoji: '🗝️', gx: 1812, gy: 4180, name: 'Clef du Donjon Mine de Geldorak',      desc: "Clef permettant d'ouvrir la porte du Donjon des Mines de Geldorak",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/cle_vdp' },
-    { id: 'm1c2', type: 'clef', emoji: '🗝️', gx: 4287, gy: 3893, name: 'Clef du Donjon Mine de Geldorak',      desc: "Clef permettant d'ouvrir la porte du Donjon des Mines de Geldorak",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/cle_mine_geldorak' },
-    { id: 'm1c3', type: 'clef', emoji: '🗝️', gx: 2388, gy: 2421, name: 'Clef du Donjon Labyrinthe des Déchus', desc: "Clef permettant d'ouvrir la porte du Donjon du Labyrinthe des Déchus", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/cle_labyrinthe' },
-    { id: 'm1c4', type: 'clef', emoji: '🗝️', gx: 1014,  gy: 1189, name: "Clef du Donjon Xal'Zirith",            desc: "Clef permettant d'ouvrir la porte du Donjon Xal'Zirith",                link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/cle_xal' },
-    { id: 'm1c6', type: 'clef', emoji: '💍', gx: 4216, gy: 1801, name: "Fabricant Secret de l'Ours",           desc: "Permet la confection Secrète du Bracelet de Glace",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_citadelle_neiges' },
-    { id: 'm1c8', type: 'clef', emoji: '💍', gx: 391,  gy: 3065, name: 'Fabricant Secret des Slimes',          desc: "Permet la confection Secrète de l'Anneau Gluant",       link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_vallaht' },
-    { id: 'm1c9', type: 'clef', emoji: '💍', gx: 1114, gy: 1172, name: "Fabricant Secret des Araignées",       desc: "Permet la confection Secrète du Collier d'Aragorn",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_arakh\'nol' },
-    { id: 'm1c11', type: 'clef', emoji: '💍', gx: 2494, gy: 3701, name: "Fabricant Secret des Loups",       desc: "Permet la confection Secrète des Gants des Loups",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_loups' },
-    { id: 'm1c12', type: 'clef', emoji: '💍', gx: 1160, gy: 3545, name: "Fabricant Secret des Squelettes",       desc: "Permet la confection Secrète du Crâne de Squelette",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_cyclorim' },
+    { id: 'm1c1', type: 'clef', emoji: '🗝️', gx: 1812, gy: 4180, name: 'Clef du Donjon Mine de Geldorak',      desc: "Clef permettant d'ouvrir la porte du Donjon des Mines de Geldorak",     link: '../Bestiaire/bestiaire.html#personnages/cle_vdp' },
+    { id: 'm1c2', type: 'clef', emoji: '🗝️', gx: 4287, gy: 3893, name: 'Clef du Donjon Mine de Geldorak',      desc: "Clef permettant d'ouvrir la porte du Donjon des Mines de Geldorak",     link: '../Bestiaire/bestiaire.html#personnages/cle_mine_geldorak' },
+    { id: 'm1c3', type: 'clef', emoji: '🗝️', gx: 2388, gy: 2421, name: 'Clef du Donjon Labyrinthe des Déchus', desc: "Clef permettant d'ouvrir la porte du Donjon du Labyrinthe des Déchus", link: '../Bestiaire/bestiaire.html#personnages/cle_labyrinthe' },
+    { id: 'm1c4', type: 'clef', emoji: '🗝️', gx: 1014,  gy: 1189, name: "Clef du Donjon Xal'Zirith",            desc: "Clef permettant d'ouvrir la porte du Donjon Xal'Zirith",                link: '../Bestiaire/bestiaire.html#personnages/cle_xal' },
+    { id: 'm1c6', type: 'clef', emoji: '💍', gx: 4216, gy: 1801, name: "Fabricant Secret de l'Ours",           desc: "Permet la confection Secrète du Bracelet de Glace",     link: '../Bestiaire/bestiaire.html#personnages/secret_citadelle_neiges' },
+    { id: 'm1c8', type: 'clef', emoji: '💍', gx: 391,  gy: 3065, name: 'Fabricant Secret des Slimes',          desc: "Permet la confection Secrète de l'Anneau Gluant",       link: '../Bestiaire/bestiaire.html#personnages/secret_vallaht' },
+    { id: 'm1c9', type: 'clef', emoji: '💍', gx: 1114, gy: 1172, name: "Fabricant Secret des Araignées",       desc: "Permet la confection Secrète du Collier d'Aragorn",     link: '../Bestiaire/bestiaire.html#personnages/secret_arakh\'nol' },
+    { id: 'm1c11', type: 'clef', emoji: '💍', gx: 2494, gy: 3701, name: "Fabricant Secret des Loups",       desc: "Permet la confection Secrète des Gants des Loups",     link: '../Bestiaire/bestiaire.html#personnages/secret_loups' },
+    { id: 'm1c12', type: 'clef', emoji: '💍', gx: 1160, gy: 3545, name: "Fabricant Secret des Squelettes",       desc: "Permet la confection Secrète du Crâne de Squelette",     link: '../Bestiaire/bestiaire.html#personnages/secret_cyclorim' },
     { id: 'm1c13', type: 'clef', emoji: '🩸', gx: 867, gy: 4028, name: "Marchand Occulte Capuche Robe Crâne",       desc: "Permet l'achat de la Capuche, de la Robe et du Crâne Occulte",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/occulte_pecheur' },
     { id: 'm1c14', type: 'clef', emoji: '🩸', gx: 3348, gy: 1634, name: "Marchand Occulte Bracelet",       desc: "Permet l'achat du Bracelet Occulte",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/occulte_bracelet_p1' },
     { id: 'm1c15', type: 'clef', emoji: '🩸', gx: 3371, gy: 1698, name: "Marchand Occulte Gants",       desc: "Permet l'achat des Gants Occultes",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/occulte_gants_p1' },
@@ -564,7 +564,7 @@ const FLOOR_MARKERS = {
     { id: 'm1s8',  type: 'quête_secondaire',  gx: 1556, gy: 4316, name: "Rikyu",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/rikyu' },
     { id: 'm1s9',  type: 'quête_secondaire',  gx: 1534, gy: 4329, name: "Bunta",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/bunta' },
     { id: 'm1s10',  type: 'quête_secondaire', gx: 1635, gy: 4039, name: "Nacht",                        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/nacht' },
-    { id: 'm1s11',  type: 'quête_secondaire', gx: 2207, gy: 4187, name: "Milla",                       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/millia' },
+    { id: 'm1s11',  type: 'quête_secondaire', gx: 2207, gy: 4187, name: "Milla",                       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/ville-de-depart/milla' },
     { id: 'm1s12',  type: 'quête_secondaire', gx: 1532, gy: 3376, name: "Genzo",                        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/hanaka/genzo' },
     { id: 'm1s13',  type: 'quête_secondaire', gx: 1526, gy: 3377, name: "Bartok",                       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/hanaka/bartok' },
     { id: 'm1s14',  type: 'quête_secondaire', gx: 1438, gy: 3400, name: "Greta",                        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/hanaka/greta' },
@@ -629,34 +629,34 @@ const FLOOR_MARKERS = {
     { id: 'm1p28', type: 'quête_principale', gx: 3260,  gy: 1389, name: "28 - Donjon: Le Kobold",            desc: "Retournez voir le roi Harald et menez une expédition punitive, afin de défaire le roi Kobold: Illfang", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/donjon-le-kobold' },
 		//#endregion P1 Markers > Quête Principale
 		//#region P1 Markers > Boss
-		{ id: 'm1boss1', type: 'boss', emoji: '🐗', name: "Pumba Corrompu", desc: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/pumba_corrompu', coords: [
+		{ id: 'm1boss1', type: 'boss', emoji: '🐗', name: "Pumba Corrompu", desc: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive", link: '../Bestiaire/bestiaire.html#monstres/pumba_corrompu', coords: [
 			{ gx: 1760, gy: 3525 },
 			{ gx: 1925, gy: 3525 },
 			{ gx: 1985, gy: 3635 },
 		]},
-		{ id: 'm1boss2', type: 'boss', emoji: '🐺', name: "Albal", desc: "Un loup solitaire aux yeux d'argent glacés. Son passage laisse une brume et le silence", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/albal', coords: [
+		{ id: 'm1boss2', type: 'boss', emoji: '🐺', name: "Albal", desc: "Un loup solitaire aux yeux d'argent glacés. Son passage laisse une brume et le silence", link: '../Bestiaire/bestiaire.html#monstres/albal', coords: [
 			{ gx: 2617, gy: 3836 },
 			{ gx: 2388, gy: 3834 },
 			{ gx: 2510, gy: 3964 },
 		]},
-		{ id: 'm1boss3', type: 'boss', emoji: '🌳', name: "Gardien Colossal", desc: "Forgé dans la pierre et éveillé par la magie ancienne, il garde les terres oubliées contre toute intrusion. Ses pas seuls font trembler la forêt...", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gardien_colossal', coords: [
+		{ id: 'm1boss3', type: 'boss', emoji: '🌳', name: "Gardien Colossal", desc: "Forgé dans la pierre et éveillé par la magie ancienne, il garde les terres oubliées contre toute intrusion. Ses pas seuls font trembler la forêt...", link: '../Bestiaire/bestiaire.html#monstres/gardien_colossal', coords: [
 			{ gx: 1288, gy: 3157 },
 			{ gx: 1069, gy: 3252 },
 			{ gx: 1246, gy: 2974 },
 		]},
-		{ id: 'm1boss4', type: 'boss', emoji: '👑', name: "Gorbel", desc: "Un colosse gélatineux, maître des essaims de slimes. Il écrase tout sur son passage, lentement mais sûrement", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/gorbel', coords: [
+		{ id: 'm1boss4', type: 'boss', emoji: '👑', name: "Gorbel", desc: "Un colosse gélatineux, maître des essaims de slimes. Il écrase tout sur son passage, lentement mais sûrement", link: '../Bestiaire/bestiaire.html#monstres/gorbel', coords: [
 			{ gx: 300, gy: 3200 },
 		]},
-		{ id: 'm1boss5', type: 'boss', emoji: '🐻', name: "Ours de Glace", desc: "Né dans les cavernes les plus froides des montagnes, l'Ours de Glace incarne la force brute du Nord. Son rugissement fait frissonner l'air, et son souffle glacé fige tout sur son passage", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/ours_glace', coords: [
+		{ id: 'm1boss5', type: 'boss', emoji: '🐻', name: "Ours de Glace", desc: "Né dans les cavernes les plus froides des montagnes, l'Ours de Glace incarne la force brute du Nord. Son rugissement fait frissonner l'air, et son souffle glacé fige tout sur son passage", link: '../Bestiaire/bestiaire.html#monstres/ours_glace', coords: [
 			{ gx: 4000, gy: 2010 },
 		]},
-		{ id: 'm1bosskazor', type: 'boss', emoji: '⛏️', name: "Kazor", desc: "Terrible World Boss du Palier 1 qui déverse le Labyrinthe des Déchus sur l'Étage", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/kazor', coords: [
+		{ id: 'm1bosskazor', type: 'boss', emoji: '⛏️', name: "Kazor", desc: "Terrible World Boss du Palier 1 qui déverse le Labyrinthe des Déchus sur l'Étage", link: '../Bestiaire/bestiaire.html#monstres/kazor', coords: [
 			{ gx: 2438, gy: 959 },
 		]},
 		//#endregion P1 Markers > Boss
 		//#region P1 Markers > Autre
-		{ id: 'm1other1',  type: 'autre', emoji: '💎', gx: 1781, gy: 4138, name: "Maître des Runes",    desc: "Donne des Quêtes Quotidiennes permettant le gains de Cols & de Runes", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/maitre_des_runes' },
-		{ id: 'm1other2',  type: 'autre', gx: 1807, gy: 4295, name: "David Goodenough Palier 1",    desc: "Permet d'être au bon niveau suite à des Bugs de Gain d'Exp au Palier 1", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/david_goodenough1' },
+		{ id: 'm1other1',  type: 'autre', emoji: '💎', gx: 1781, gy: 4138, name: "Maître des Runes",    desc: "Donne des Quêtes Quotidiennes permettant le gains de Cols & de Runes", link: '../Bestiaire/bestiaire.html#personnages/maitre_des_runes' },
+		{ id: 'm1other2',  type: 'autre', gx: 1807, gy: 4295, name: "David Goodenough Palier 1",    desc: "Permet d'être au bon niveau suite à des Bugs de Gain d'Exp au Palier 1", link: '../Bestiaire/bestiaire.html#personnages/david_goodenough1' },
 		//#endregion P1 Markers > Autre
 	],
 	//#endregion P1 Markers
@@ -690,9 +690,9 @@ const FLOOR_MARKERS = {
     { id: 'm2t3',  type: 'ressource', emoji: '🌾', gx: 491, gy: -97, name: 'Épine d\'Oracile',            desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/ressources/herboriste#epine-doracile' },
 		//#endregion P2 Markers > Ressource
 		//#region P2 Markers > Repreneur Butin
-    { id: 'm2b1',  type: 'repreneur_butin', gx: 68, gy: -344, name: 'Repreneur des Ressources aux abords de Urbus',          desc: "Achète des ressources digne d'un Débutant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_urbus' },
-    { id: 'm2b2',  type: 'repreneur_butin', gx: -570, gy: -250, name: 'Repreneur des Ressources des Harpies',                desc: "Achète des ressources digne d'un Débutant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_kaelor' },
-    { id: 'm2b3',  type: 'repreneur_butin', gx: 708, gy: -277, name: 'Repreneur des Ressources du Sanctuaire de Khesûn',     desc: "Achète des ressources digne d'un Débutant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_butin_marome' },
+    { id: 'm2b1',  type: 'repreneur_butin', gx: 68, gy: -344, name: 'Repreneur des Ressources aux abords de Urbus',          desc: "Achète des ressources digne d'un Débutant", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_urbus' },
+    { id: 'm2b2',  type: 'repreneur_butin', gx: -570, gy: -250, name: 'Repreneur des Ressources des Harpies',                desc: "Achète des ressources digne d'un Débutant", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_kaelor' },
+    { id: 'm2b3',  type: 'repreneur_butin', gx: 708, gy: -277, name: 'Repreneur des Ressources du Sanctuaire de Khesûn',     desc: "Achète des ressources digne d'un Débutant", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_marome' },
 		//#endregion P2 Markers > Repreneur Butin
 		//#region P2 Markers > Clé
     { id: 'm2c1', type: 'clef', emoji: '🗝️', gx: 162, gy: -315,  name: "Clef du Donjon Ruche de Melliona",                  desc: "Clef permettant d'ouvrir la porte du Donjon Ruche de Melliona",                link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#urbus-melliona' },
@@ -704,21 +704,21 @@ const FLOOR_MARKERS = {
 		{ id: 'm2c6', type: 'clef', emoji: '💍', gx: -713, gy: -92, name: "Fabricant Secret de la Corruption",                    desc: "Permet la confection Secrète du très puissant Masque Corrompu",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/~/changes/107/carte/personnages/fabricants-clefs-et-secrets#corruption' },
 		//#endregion P2 Markers > Clé
 		//#region P2 Markers > Marchand
-    { id: 'm2m1',  type: 'marchand', emoji: '⚔️', gx: -573, gy: -287, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_equipement_kaelor' },
-    { id: 'm2m2',  type: 'marchand', gx: -570, gy: -287, name: "Marchand d'Accessoires",   desc: "Vends des Accessoires de la faune du Palier 2", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_accessoires_kaelor' },
-    { id: 'm2m3',  type: 'marchand', emoji: '⛏️', gx: -583, gy: -284, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/marchand_outils_kaelor' },
+    { id: 'm2m1',  type: 'marchand', emoji: '⚔️', gx: -573, gy: -287, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: '../Bestiaire/bestiaire.html#personnages/marchand_equipement_kaelor' },
+    { id: 'm2m2',  type: 'marchand', gx: -570, gy: -287, name: "Marchand d'Accessoires",   desc: "Vends des Accessoires de la faune du Palier 2", link: '../Bestiaire/bestiaire.html#personnages/marchand_accessoires_kaelor' },
+    { id: 'm2m3',  type: 'marchand', emoji: '⛏️', gx: -583, gy: -284, name: "Marchand d'Outils",        desc: "Vends des outils pour récolter des matières premières", link: '../Bestiaire/bestiaire.html#personnages/marchand_outils_kaelor' },
 		//#endregion P2 Markers > Marchand
 		//#region P2 Markers > Artisant
-    { id: 'm2a1', type: 'artisant', emoji: '⚗️',  gx: -570, gy: -293, name: 'Alchimiste',               desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/alchimiste_kaelor' },
-    { id: 'm2a2', type: 'artisant', emoji: '🪓',  gx: -573, gy: -294, name: 'Bucheron',                 desc: "Bucheron permettant la Réalisation de Planches", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/bucheron_kaelor' },
-    { id: 'm2a3', type: 'artisant', emoji: '🪛',   gx: 2,    gy: -357, name: 'Refaçonneur',              desc: "Permet la fabrication de ficelle en tout genre", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/refaconneur_urbus' },
-    { id: 'm2a4', type: 'artisant',  gx: 115,  gy: -415, name: 'Forgeron d\'Accessoires Puissant',  desc: "Permet la fabrication d'Accessoires puissant", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_urbus' },
-    { id: 'm2a5', type: 'artisant',  gx: 124,  gy: -385, name: 'Forgeron de Lingots Bauxite & Onyx Impur',      desc: "Permet la fabrication de lingots de Bauxite et d'Onyx Impur", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_lingots_urbus' },
-    { id: 'm2a6', type: 'artisant',  gx: 867, gy: -293, name: 'Forgeron de Lingots Onyx Pur',      desc: "Permet la fabrication de lingots d'Onyx Pur", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_lingots_marome' },
-    { id: 'm2a7', type: 'artisant',  gx: -602, gy: -284, name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires des Ours et du Taureau", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_kaelor' },
-    { id: 'm2a8', type: 'artisant',  gx: -776, gy: 18,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Feraille", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_ferraille' },
-    { id: 'm2a9', type: 'artisant',  gx: -194, gy: 20,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Bauxite", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_bauxite' },
-    { id: 'm2a10',type: 'artisant',  gx: -502, gy: 336,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires d'Onyx Impur", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_onyx_impur' },
+    { id: 'm2a1', type: 'artisant', emoji: '⚗️',  gx: -570, gy: -293, name: 'Alchimiste',               desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: '../Bestiaire/bestiaire.html#personnages/alchimiste_kaelor' },
+    { id: 'm2a2', type: 'artisant', emoji: '🪓',  gx: -573, gy: -294, name: 'Bucheron',                 desc: "Bucheron permettant la Réalisation de Planches", link: '../Bestiaire/bestiaire.html#personnages/bucheron_kaelor' },
+    { id: 'm2a3', type: 'artisant', emoji: '🪛',   gx: 2,    gy: -357, name: 'Refaçonneur',              desc: "Permet la fabrication de ficelle en tout genre", link: '../Bestiaire/bestiaire.html#personnages/refaconneur_urbus' },
+    { id: 'm2a4', type: 'artisant',  gx: 115,  gy: -415, name: 'Forgeron d\'Accessoires Puissant',  desc: "Permet la fabrication d'Accessoires puissant", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_urbus' },
+    { id: 'm2a5', type: 'artisant',  gx: 124,  gy: -385, name: 'Forgeron de Lingots Bauxite & Onyx Impur',      desc: "Permet la fabrication de lingots de Bauxite et d'Onyx Impur", link: '../Bestiaire/bestiaire.html#personnages/forgeron_lingots_urbus' },
+    { id: 'm2a6', type: 'artisant',  gx: 867, gy: -293, name: 'Forgeron de Lingots Onyx Pur',      desc: "Permet la fabrication de lingots d'Onyx Pur", link: '../Bestiaire/bestiaire.html#personnages/forgeron_lingots_marome' },
+    { id: 'm2a7', type: 'artisant',  gx: -602, gy: -284, name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires des Ours et du Taureau", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_kaelor' },
+    { id: 'm2a8', type: 'artisant',  gx: -776, gy: 18,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Feraille", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_ferraille' },
+    { id: 'm2a9', type: 'artisant',  gx: -194, gy: 20,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires de Bauxite", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_bauxite' },
+    { id: 'm2a10',type: 'artisant',  gx: -502, gy: 336,   name: 'Forgeron d\'Accessoires',  desc: "Permet la fabrication d'Accessoires d'Onyx Impur", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_onyx_impur' },
 		//#endregion P2 Markers > Artisant
 		//#region P2 Markers > Quête Secondaire
     { id: 'm2s1',  type: 'quête_secondaire',  gx: 112, gy: -391, name: "L'Art des Plumes",                         desc: "Ramenez 4 plumes de chaque Harpies à Ifa", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lart-des-plumes' },
@@ -774,50 +774,50 @@ const FLOOR_MARKERS_UNDERGROUND = {
     { id: 'm1t11', type: 'ressource', emoji: '⛏️', gx: 910,  gy: 3516, name: 'Fer Grande Cave',     desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/ressources/mineur#fer' },
 		//#endregion P1 Markers Underground > Ressource
 		//#region P1 Markers Underground > Clé
-		{ id: 'm1c7', type: 'clef', emoji: '💍', gx: 1326, gy: 2107, name: 'Fabricant Secret du Léviathan',        desc: "Permet la confection Secrète de l'Anneau du Léviathan", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_antre_aepep' },
-    { id: 'm1c10', type: 'clef', emoji: '💍', gx: 3650, gy: 1331, name: "Fabricant Secret des Cerfs",       desc: "Permet la confection Secrète de la Ceinture des Cerfs",     link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/secret_cerfs' },
+		{ id: 'm1c7', type: 'clef', emoji: '💍', gx: 1326, gy: 2107, name: 'Fabricant Secret du Léviathan',        desc: "Permet la confection Secrète de l'Anneau du Léviathan", link: '../Bestiaire/bestiaire.html#personnages/secret_antre_aepep' },
+    { id: 'm1c10', type: 'clef', emoji: '💍', gx: 3650, gy: 1331, name: "Fabricant Secret des Cerfs",       desc: "Permet la confection Secrète de la Ceinture des Cerfs",     link: '../Bestiaire/bestiaire.html#personnages/secret_cerfs' },
 		//#endregion P1 Markers Underground > Clé
 		//#region P1 Markers Underground > Artisant
-		{ id: 'm1a9',  type: 'artisant', gx: 3235, gy: 1482, name: "Forgeron d'Armes",                  desc: "Forgeron des Armes pour Confirmés", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armes_tolbana' },
-    { id: 'm1a10', type: 'artisant', gx: 3237, gy: 1477, name: "Forgeron d'Armures",                desc: "Forgeron des Armures pour Confirmés", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armures_tolbana' },
-    { id: 'm1a11', type: 'artisant', gx: 2415, gy: 2373, name: "Forgeron d'Armes",                  desc: "Forgeron d'Armes du Donjon du Labyrinthe des Déchus", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armes_labyrinthe' },
-    { id: 'm1a12', type: 'artisant', gx: 2415, gy: 2373, name: "Forgeron d'Armures",                desc: "Forgeron d'Armures du Donjon du Labyrinthe des Déchus", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_armures_labyrinthe' },
+		{ id: 'm1a9',  type: 'artisant', gx: 3235, gy: 1482, name: "Forgeron d'Armes",                  desc: "Forgeron des Armes pour Confirmés", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armes_tolbana' },
+    { id: 'm1a10', type: 'artisant', gx: 3237, gy: 1477, name: "Forgeron d'Armures",                desc: "Forgeron des Armures pour Confirmés", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armures_tolbana' },
+    { id: 'm1a11', type: 'artisant', gx: 2415, gy: 2373, name: "Forgeron d'Armes",                  desc: "Forgeron d'Armes du Donjon du Labyrinthe des Déchus", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armes_labyrinthe' },
+    { id: 'm1a12', type: 'artisant', gx: 2415, gy: 2373, name: "Forgeron d'Armures",                desc: "Forgeron d'Armures du Donjon du Labyrinthe des Déchus", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armures_labyrinthe' },
 		//#endregion P1 Markers Underground > Artisant
 		//#region P1 Markers Underground > Repreneur Butin
-		{ id: 'm1b9',  type: 'repreneur_butin', gx: 2415, gy: 2373, name: 'Repreneur du Donjon des Déchus', desc: "Achète des ressources provenant du Donjon du Labyrinthe des Déchus", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/repreneur_labyrinthe' },
+		{ id: 'm1b9',  type: 'repreneur_butin', gx: 2415, gy: 2373, name: 'Repreneur du Donjon des Déchus', desc: "Achète des ressources provenant du Donjon du Labyrinthe des Déchus", link: '../Bestiaire/bestiaire.html#personnages/repreneur_labyrinthe' },
 		//#endregion P1 Markers Underground > Repreneur Butin
 		//#region P1 Markers Underground > Boss
-		{ id: 'm1boss6', type: 'boss', emoji: '🦈', name: "Nymbréa", desc: "Serpent mythique glissant entre les courants profonds, Nymbréa incarne la grâce et la traîtrise des eaux calmes. Ses écailles scintillent comme des perles maudites, et son regard hypnotique attire les imprudents vers les abysses", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nymbrea', coords: [
+		{ id: 'm1boss6', type: 'boss', emoji: '🦈', name: "Nymbréa", desc: "Serpent mythique glissant entre les courants profonds, Nymbréa incarne la grâce et la traîtrise des eaux calmes. Ses écailles scintillent comme des perles maudites, et son regard hypnotique attire les imprudents vers les abysses", link: '../Bestiaire/bestiaire.html#monstres/nymbrea', coords: [
 			{ gx: 1410, gy: 2140 },
 		]},
-		{ id: 'm1boss7', type: 'boss', emoji: '☠️', name: "Narax", desc: "Ancien général d'une armée déchue, Narax fut ressuscité par une magie interdite. Son armure brisée résonne encore de ses exploits d'antan, hantant les terres maudites. On dit que son regard vide perce jusqu'à l'âme", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/narax', coords: [
+		{ id: 'm1boss7', type: 'boss', emoji: '☠️', name: "Narax", desc: "Ancien général d'une armée déchue, Narax fut ressuscité par une magie interdite. Son armure brisée résonne encore de ses exploits d'antan, hantant les terres maudites. On dit que son regard vide perce jusqu'à l'âme", link: '../Bestiaire/bestiaire.html#monstres/narax', coords: [
 			{ gx: 2721, gy: 4330 },
 		]},
-		{ id: 'm1boss8', type: 'boss', emoji: '🏇', name: "Nasgul", desc: "Entité maudite surgie des ténèbres anciennes, il rôde, invisible, prêt à déchirer l'âme des vivants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/nasgul', coords: [
+		{ id: 'm1boss8', type: 'boss', emoji: '🏇', name: "Nasgul", desc: "Entité maudite surgie des ténèbres anciennes, il rôde, invisible, prêt à déchirer l'âme des vivants", link: '../Bestiaire/bestiaire.html#monstres/nasgul', coords: [
 			{ gx: 2818, gy: 4234 },
 		]},
-		{ id: 'm1boss9', type: 'boss', emoji: '🌺', name: "Vyrmos", desc: "Entité rampante née des mines de Geldorak, Vyrmos s'imprègne des spores et de la terre humide. Sa peau est couverte de mousse vivante, et son souffle corrompt tout ce qu'il touche", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/vyrmos', coords: [
+		{ id: 'm1boss9', type: 'boss', emoji: '🌺', name: "Vyrmos", desc: "Entité rampante née des mines de Geldorak, Vyrmos s'imprègne des spores et de la terre humide. Sa peau est couverte de mousse vivante, et son souffle corrompt tout ce qu'il touche", link: '../Bestiaire/bestiaire.html#monstres/vyrmos', coords: [
 			{ gx: 4247, gy: 3852 },
 		]},
-		{ id: 'm1boss10', type: 'boss', emoji: '🪾', name: "Tornak", desc: "Massive et sauvage, cette créature veille sur la forêt. Elle repousse les intrus à coups de poings dévastateurs. Aucune parole, seulement la force brute de la nature", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/tornak', coords: [
+		{ id: 'm1boss10', type: 'boss', emoji: '🪾', name: "Tornak", desc: "Massive et sauvage, cette créature veille sur la forêt. Elle repousse les intrus à coups de poings dévastateurs. Aucune parole, seulement la force brute de la nature", link: '../Bestiaire/bestiaire.html#monstres/tornak', coords: [
 			{ gx: 4302, gy: 3969 },
 		]},
-		{ id: 'm1boss11', type: 'boss', emoji: '🛡️', name: "Déchu", desc: "", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/', coords: [
+		{ id: 'm1boss11', type: 'boss', emoji: '🛡️', name: "Déchu", desc: "", link: '../Bestiaire/bestiaire.html#monstres/', coords: [
 			{ gx: 4305, gy: 4085 },
 		]},
-		{ id: 'm1boss12', type: 'boss', emoji: '🫧', name: "Kamila", desc: "Silencieuse au cœur du donjon, Kamilia tisse des pièges invisibles dans l'ombre. Sa morsure injecte un venin paralysant, laissant ses proies conscientes, mais incapables de fuir", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/kamila', coords: [
+		{ id: 'm1boss12', type: 'boss', emoji: '🫧', name: "Kamila", desc: "Silencieuse au cœur du donjon, Kamilia tisse des pièges invisibles dans l'ombre. Sa morsure injecte un venin paralysant, laissant ses proies conscientes, mais incapables de fuir", link: '../Bestiaire/bestiaire.html#monstres/kamila', coords: [
 			{ gx: 986, gy: 1245 },
 		]},
-		{ id: 'm1boss13', type: 'boss', emoji: '🧪', name: "Jira", desc: "Créature silencieuse tapie entre les toiles, Jira surveille chaque recoin du donjon. Plus rapide que l'éclair, elle frappe sans prévenir, ne laissant derrière elle que le silence... et des toiles sanglantes", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/kamila', coords: [
+		{ id: 'm1boss13', type: 'boss', emoji: '🧪', name: "Jira", desc: "Créature silencieuse tapie entre les toiles, Jira surveille chaque recoin du donjon. Plus rapide que l'éclair, elle frappe sans prévenir, ne laissant derrière elle que le silence... et des toiles sanglantes", link: '../Bestiaire/bestiaire.html#monstres/kamila', coords: [
 			{ gx: 1190, gy: 1400 },
 		]},
-		{ id: 'm1boss14', type: 'boss', emoji: '🔥', name: "Pricilia", desc: "Créature ancienne et rusée, Pricilia tisse ses toiles dans les recoins oubliés des forêts les plus sombre. Ses proies ne voient jamais la mort... seulement ses yeux luisants", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/pricilia', coords: [
+		{ id: 'm1boss14', type: 'boss', emoji: '🔥', name: "Pricilia", desc: "Créature ancienne et rusée, Pricilia tisse ses toiles dans les recoins oubliés des forêts les plus sombre. Ses proies ne voient jamais la mort... seulement ses yeux luisants", link: '../Bestiaire/bestiaire.html#monstres/pricilia', coords: [
 			{ gx: 1230, gy: 1100 },
 		]},
-		{ id: 'm1boss15', type: 'boss', emoji: '❄️', name: "Yula", desc: "Tapis dans l'obscurité humide du donjon, Yula est une araignée redoutée par les aventuriers. Ses pattes tranchantes et ses yeux luisants inspirent la terreur à quiconque croise son chemin", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/yula', coords: [
+		{ id: 'm1boss15', type: 'boss', emoji: '❄️', name: "Yula", desc: "Tapis dans l'obscurité humide du donjon, Yula est une araignée redoutée par les aventuriers. Ses pattes tranchantes et ses yeux luisants inspirent la terreur à quiconque croise son chemin", link: '../Bestiaire/bestiaire.html#monstres/yula', coords: [
 			{ gx: 1100, gy: 1222 },
 		]},
-		{ id: 'm1boss16', type: 'boss', emoji: '🕷️', name: "Boss Xal", desc: "", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#monstres/', coords: [
+		{ id: 'm1boss16', type: 'boss', emoji: '🕷️', name: "Boss Xal", desc: "", link: '../Bestiaire/bestiaire.html#monstres/', coords: [
 			{ gx: 1313, gy: 1183 },
 		]},
 		//#endregion P1 Markers Underground > Boss
@@ -840,7 +840,7 @@ const FLOOR_MARKERS_UNDERGROUND = {
     { id: 'm2c1u1', type: 'clef', emoji: '💍', gx: -694, gy: 205, name: "Fabricant Secret de la Harpie Enflammée",                     desc: "Permet la confection Secrète de l'Anneau de la Harpie Enflammée",     link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/personnages/fabricants-clefs-et-secrets#nid-de-brasier' },
 		//#endregion P2 Markers Underground > Clé
 		//#region P2 Markers Underground > Artisant
-    { id: 'm2a1u1',type: 'artisant',  gx: 339, gy: 509,   name: 'Forgeron d\'Accessoires',                 desc: "Permet la fabrication d'Accessoires d'Onyx Pur", link: 'https://drabiot.github.io/Veilleurs/Bestiaire/bestiaire.html#personnages/forgeron_accessoires_onyx_pur' },
+    { id: 'm2a1u1',type: 'artisant',  gx: 339, gy: 509,   name: 'Forgeron d\'Accessoires',                 desc: "Permet la fabrication d'Accessoires d'Onyx Pur", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_onyx_pur' },
 		//#endregion P2 Markers Underground > Artisant
 	],
 };

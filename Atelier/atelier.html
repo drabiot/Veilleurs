@@ -6,7 +6,6 @@
   <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
   <title>[VCL] - Atelier</title>
   <link rel="stylesheet" href="atelier.css" />
-  <link rel="stylesheet" href="checklist-drawer.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
@@ -220,6 +219,15 @@
   <script src="../utils.js"></script>
   <script src="../Compendium/data.js"></script>
   <script src="atelier.js"></script>
-  <script type="module" src="../db-loader.js"></script>
+  <script type="module">
+    import { store } from '../store.js';
+    try {
+      await store.load(['items', 'panoplies']);
+      store.populateGlobals();
+    } catch (err) {
+      console.error('[Atelier] Erreur Firestore :', err);
+    }
+    window._pageInit?.();
+  </script>
 </body>
 </html>

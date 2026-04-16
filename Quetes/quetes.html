@@ -162,6 +162,8 @@
             <option value="profit">💰 Rentabilité (XP + Cols)</option>
             <option value="exp">✨ XP décroissante</option>
             <option value="cols">🪙 Cols décroissants</option>
+            <option value="alpha-asc">🔤 A → Z</option>
+            <option value="alpha-desc">🔤 Z → A</option>
           </select>
           <span id="result-count" class="result-count"></span>
         </div>
@@ -216,17 +218,14 @@
     });
   </script>
 
-  <!-- Inline module : évite les problèmes MIME type avec Live Server -->
+  <!-- Inline module : chargement Firestore via store.js -->
   <script type="module">
-    import { loadCollection, COL } from '../firebase.js';
+    import { store } from '../store.js';
 
     /* Normalise une quête Firestore pour la rendre compatible avec le format QUETES statique */
     function normalizeFirestoreQuest(q) {
-      // Type : corriger les anciennes valeurs 'secondary'/'tertiary' → 'sec'/'ter'
       if (q.type === 'secondary') q.type = 'sec';
       if (q.type === 'tertiary')  q.type = 'ter';
-
-      // Récompenses : convertir { type:'exp', label:'420 XP' } → { type:'exp', xp:420 }
       if (Array.isArray(q.recompenses)) {
         q.recompenses = q.recompenses.map(r => {
           if (r.type === 'exp'  && r.label && r.xp  == null) r.xp   = parseInt(r.label)  || 0;
@@ -234,51 +233,25 @@
           return r;
         });
       }
-      if (!Array.isArray(q.objectifs))    q.objectifs    = [];
-      if (!Array.isArray(q.recompenses))  q.recompenses  = [];
+      if (!Array.isArray(q.objectifs))   q.objectifs   = [];
+      if (!Array.isArray(q.recompenses)) q.recompenses = [];
       return q;
     }
 
-    (async () => {
-      // Charger items, mobs et quêtes Firestore en parallèle
-      const [items, mobs, firestoreQuetes, regions] = await Promise.allSettled([
-        loadCollection(COL.items),
-        loadCollection(COL.mobs),
-        loadCollection(COL.quetes),
-        loadCollection(COL.regions)
-      ]);
-
-      if (items.status === 'fulfilled') {
-        DB_ITEMS.push(...items.value);
-      } else {
-        console.error('[Quêtes] Erreur chargement items :', items.reason);
-      }
-
-      if (mobs.status === 'fulfilled') {
-        DB_MOBS.push(...mobs.value);
-      } else {
-        console.error('[Quêtes] Erreur chargement mobs :', mobs.reason);
-      }
-
-      if (firestoreQuetes.status === 'fulfilled') {
-        const existingIds = new Set(QUETES.map(q => q.id));
-        const newQuetes = firestoreQuetes.value
-          .map(normalizeFirestoreQuest)
-          .filter(q => q.id && !existingIds.has(q.id));
-        QUETES.push(...newQuetes);
-      } else {
-        console.error('[Quêtes] Erreur chargement quêtes Firestore :', firestoreQuetes.reason);
-      }
-
-      if (regions.status === 'fulfilled') {
-        populateZoneColors(regions.value);
-      } else {
-        console.error('[Quêtes] Erreur chargement régions :', regions.reason);
-      }
-
-
-      window._initQuetes?.();
-    })();
+    try {
+      await store.load(['items', 'mobs', 'quetes', 'regions']);
+      DB_ITEMS.push(...store.items);
+      DB_MOBS.push(...store.mobs);
+      const existingIds = new Set(QUETES.map(q => q.id));
+      const newQuetes = store.quetes
+        .map(normalizeFirestoreQuest)
+        .filter(q => q.id && !existingIds.has(q.id));
+      QUETES.push(...newQuetes);
+      populateZoneColors(store.regions);
+    } catch (err) {
+      console.error('[Quêtes] Erreur Firestore :', err);
+    }
+    window._initQuetes?.();
   </script>
 
 </body>
