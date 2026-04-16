@@ -183,16 +183,19 @@ function renderItemChip(itemId, qte) {
     ? `<img class="chip-img" src="${imgSrc}" alt="${name}">`
     : `<span class="chip-fallback">📦</span>`;
 
+  const qty = (qte !== undefined && qte !== null)
+    ? `<span class="chip-qty">×${qte}</span>`
+    : '';
+
   const href = `../Compendium/compendium.html#${itemId}`;
   return `<a class="item-chip" href="${href}" target="_blank"
      style="--chip-color:${color}" title="Voir dans le Compendium — ${name}">
     <span class="chip-visual">${visual}</span>
     <span class="chip-name" style="color:${color}">${name}</span>
-    <span class="chip-qty">×${qte}</span>
+    ${qty}
   </a>`;
 }
 
-/* Chip monstre — même style que renderItemChip, lien vers bestiaire */
 function renderMobChip(mobId, qte) {
   const mob    = dbMob(mobId);
   const color  = '#d47070';
@@ -203,12 +206,16 @@ function renderMobChip(mobId, qte) {
     ? `<img class="chip-img" src="${imgSrc}" alt="${name}">`
     : `<span class="chip-fallback">👾</span>`;
 
-  const href = `../Bestiaire/bestiaire.html#${mobId}`;
+  const qty = (qte !== undefined && qte !== null)
+    ? `<span class="chip-qty">×${qte}</span>`
+    : '';
+
+  const href = `../Bestiaire/bestiaire.html#monstres/${mobId}`;
   return `<a class="item-chip" href="${href}" target="_blank"
      style="--chip-color:${color}" title="Voir dans le Bestiaire — ${name}">
     <span class="chip-visual">${visual}</span>
     <span class="chip-name" style="color:${color}">${name}</span>
-    <span class="chip-qty">×${qte}</span>
+    ${qty}
   </a>`;
 }
 
