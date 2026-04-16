@@ -422,6 +422,10 @@ function _sortQuests(list, mode) {
     arr.sort((a, b) => _questXP(b) - _questXP(a));
   } else if (mode === 'cols') {
     arr.sort((a, b) => _questCols(b) - _questCols(a));
+  } else if (mode === 'alpha-asc') {
+    arr.sort((a, b) => (a.titre || '').localeCompare(b.titre || '', 'fr'));
+  } else if (mode === 'alpha-desc') {
+    arr.sort((a, b) => (b.titre || '').localeCompare(a.titre || '', 'fr'));
   } else {
     arr.sort((a, b) => {
       const ao = a.ordre ?? null, bo = b.ordre ?? null;

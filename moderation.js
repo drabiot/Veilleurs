@@ -1,0 +1,4907 @@
+import { db, auth, onAuthStateChanged,
+         login, logout, loginWithGoogle,
+         ROLES, roleLevel, hasRole, COL,
+         collection, getDocs, getDoc, doc, updateDoc, setDoc,
+         deleteDoc, deleteField, serverTimestamp, orderBy, query,
+         hashName, getItemGameplayKeys,
+         sanitizeForFirestore, desanitizeFromFirestore,
+         invalidateCache }
+                             from './firebase.js';
+import { toast }  from './components/toast.js';
+import { modal }  from './components/modal.js';
+import { store }  from './store.js';
+
+// Helpers partagés — utils.js est chargé en classic script avant ce module
+const { normalize } = window.VCL;
+
+let currentUser = null;
+let currentRole = 'visiteur';
+let allSubs      = [];
+let filterStatus = 'pending';
+let filterType   = 'all';
+let filterSearch = '';
+const _userNames = new Map(); // uid → pseudo
+
+// ── Cache lecture Firestore (session) ─────────────────
+// Évite de relire la même collection plusieurs fois dans la même session.
+// Invalidé explicitement après chaque sauvegarde qui modifie la collection.
+const _modCache = {};
+async function cachedDocs(colName) {
+  if (_modCache[colName]) return _modCache[colName];
+  const snap = await getDocs(collection(db, colName));
+  _modCache[colName] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  return _modCache[colName];
+}
+function invalidateModCache(colName) {
+  delete _modCache[colName];
+}
+
+// ── Auth ──────────────────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    showAuthWall();
+    return;
+  }
+  currentUser = user;
+  // Lire le rôle
+  try {
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    currentRole = snap.exists() ? (snap.data().role || 'membre') : 'membre';
+  } catch { currentRole = 'membre'; }
+
+  if (!hasRole(currentRole, 'contributeur')) {
+    showAuthWall('⛔ Accès réservé aux contributeurs.');
+    return;
+  }
+
+  // Masquer les sections admin-only pour tout rôle non-admin (contributeur, modo, etc.)
+  if (currentRole !== 'admin') {
+    ['btn-users', 'btn-discord-webhooks', 'btn-permissions', 'btn-migration', 'btn-creator-validation', 'sec-admin'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+
+  document.getElementById('auth-wall').style.display   = 'none';
+  document.getElementById('main-layout').style.display = 'grid';
+  // Afficher le pseudo si disponible, sinon l'email
+  try {
+    const snapU = await getDoc(doc(db, 'users', user.uid));
+    const pseudo = snapU.exists() ? (snapU.data().pseudo || null) : null;
+    document.getElementById('header-user').textContent = '👤 ' + (pseudo || user.email);
+  } catch { document.getElementById('header-user').textContent = '👤 ' + user.email; }
+  document.getElementById('header-role').textContent   = currentRole;
+  document.getElementById('btn-logout').style.display  = '';
+
+  // Hash routing — navigue vers le panel correspondant au hash initial
+  _routeToHash();
+});
+
+function showAuthWall(msg) {
+  document.getElementById('auth-wall').style.display   = 'flex';
+  document.getElementById('main-layout').style.display = 'none';
+  if (msg) {
+    const err = document.getElementById('login-error');
+    err.textContent = msg; err.style.display = '';
+  }
+}
+
+function toEmail(input) {
+  return input.includes('@') ? input : `${input}@veilleurs.wiki`;
+}
+
+window.doLogin = async () => {
+  const raw  = document.getElementById('login-email').value.trim();
+  const pass = document.getElementById('login-password').value;
+  const err  = document.getElementById('login-error');
+  err.style.display = 'none';
+  try {
+    await login(toEmail(raw), pass);
+  } catch(e) {
+    err.textContent = '⛔ ' + (e.message.includes('invalid-credential') ? 'Identifiant ou mot de passe incorrect.' : e.message);
+    err.style.display = '';
+  }
+};
+
+window.doLoginGoogle = async () => {
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+  try {
+    await loginWithGoogle();
+  } catch(e) {
+    if (e.code !== 'auth/popup-closed-by-user') {
+      err.textContent = '⛔ ' + e.message; err.style.display = '';
+    }
+  }
+};
+
+window.doLogout = async () => {
+  await logout();
+  location.reload();
+};
+
+// ── Load submissions ──────────────────────────────────
+async function fetchUserNames(uids) {
+  await Promise.all(uids.map(async uid => {
+    if (_userNames.has(uid)) return;
+    try {
+      const snap = await getDoc(doc(db, 'users', uid));
+      _userNames.set(uid, snap.exists() ? (snap.data().pseudo || snap.data().displayName || null) : null);
+    } catch { _userNames.set(uid, null); }
+  }));
+}
+
+function userName(uid, fallback) {
+  // Pas de compte → "pseudo (invité)"
+  if (!uid) return fallback ? `${fallback} (invité)` : '— (invité)';
+  if (fallback) return fallback;
+  const name = _userNames.get(uid);
+  return name || uid.slice(0, 8) + '…';
+}
+
+window.loadSubmissions = async () => {
+  document.getElementById('submissions-list').innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    let snap;
+    try {
+      const q = query(collection(db, 'submissions'), orderBy('submittedAt', 'desc'));
+      snap = await getDocs(q);
+    } catch {
+      // Fallback sans orderBy (en cas d'index manquant ou de docs sans submittedAt)
+      snap = await getDocs(collection(db, 'submissions'));
+    }
+    allSubs = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    // Trier côté client par submittedAt desc (robuste si certains docs n'ont pas le champ)
+    allSubs.sort((a, b) => {
+      const ta = a.submittedAt?.toMillis?.() ?? a.submittedAt ?? 0;
+      const tb = b.submittedAt?.toMillis?.() ?? b.submittedAt ?? 0;
+      if (tb !== ta) return tb - ta;
+      return a._id < b._id ? -1 : a._id > b._id ? 1 : 0; // tiebreaker stable
+    });
+    // Pré-charger les pseudos de tous les auteurs (non-bloquant)
+    const uids = [...new Set(allSubs.flatMap(s => [s.submittedBy, s.reviewedBy].filter(Boolean)))];
+    try { await fetchUserNames(uids); } catch {}
+    updateCounts();
+    renderSubs();
+  } catch(e) {
+    document.getElementById('submissions-list').innerHTML = `<div class="empty">Erreur : ${e.message}</div>`;
+  }
+};
+
+function updateCounts() {
+  const nPending = allSubs.filter(s => s.status === 'pending').length;
+  document.getElementById('count-all').textContent      = allSubs.length;
+  document.getElementById('count-pending').textContent  = nPending;
+  document.getElementById('count-approved').textContent = allSubs.filter(s => s.status === 'approved').length;
+  // Title badge
+  document.title = nPending > 0 ? `(${nPending}) Modération — VCL` : 'Modération — VCL';
+  document.getElementById('count-rejected').textContent = allSubs.filter(s => s.status === 'rejected').length;
+}
+
+// ── Filters ───────────────────────────────────────────
+window.setFilter = (key, val) => {
+  showSubmissions();
+  if (key === 'status') {
+    filterStatus = val;
+    document.querySelectorAll('.filter-btn[data-status]').forEach(b => b.classList.toggle('active', b.dataset.status === val));
+  } else {
+    filterType = val;
+    document.querySelectorAll('.filter-btn[data-type]').forEach(b => b.classList.toggle('active', b.dataset.type === val));
+  }
+  renderSubs();
+};
+
+function renderSubs() {
+  const list = document.getElementById('submissions-list');
+  let subs = allSubs;
+  if (filterStatus !== 'all') subs = subs.filter(s => s.status === filterStatus);
+  if (filterType   !== 'all') subs = subs.filter(s => s.type === filterType);
+  if (filterSearch) {
+    const q = normalize(filterSearch);
+    subs = subs.filter(s =>
+      normalize(s.data?.name || s.data?.titre || s.data?.label || '').includes(q) ||
+      normalize(s.data?.id || '').includes(q)
+    );
+  }
+  if (!subs.length) { list.innerHTML = '<div class="empty">Aucune soumission dans cette catégorie.</div>'; return; }
+
+  list.innerHTML = '';
+  for (const sub of subs) {
+    list.appendChild(buildCard(sub));
+  }
+}
+
+window.setFilterSearch = (val) => {
+  filterSearch = val.trim();
+  showSubmissions();
+  renderSubs();
+};
+
+// Ordre canonique des champs pour un affichage stable
+const FIELD_ORDER = ['id','name','rarity','category','cat','palier','lvl','twoHanded','sensible',
+  'classes','tags','lore','obtain','stats','bonuses','craft','effects','images','inCodex',
+  'type','mobType','region','zones','loot','drops','ordre'];
+
+function sortedEntries(obj) {
+  const entries = Object.entries(obj);
+  entries.sort(([a], [b]) => {
+    const ia = FIELD_ORDER.indexOf(a), ib = FIELD_ORDER.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
+  });
+  return entries;
+}
+
+function toJSStr(obj, depth = 0) {
+  const T = '\t', pad = T.repeat(depth), pad2 = T.repeat(depth + 1);
+  if (Array.isArray(obj)) {
+    if (!obj.length) return '[]';
+    if (obj.every(v => typeof v !== 'object' || v === null)) return '[' + obj.map(v => JSON.stringify(v)).join(', ') + ']';
+    return '[\n' + obj.map(v => pad2 + toJSStr(v, depth+1)).join(',\n') + '\n' + pad + ']';
+  }
+  if (obj !== null && typeof obj === 'object') {
+    const entries = sortedEntries(obj);
+    if (!entries.length) return '{}';
+    const allPrim = entries.every(([,v]) => typeof v !== 'object');
+    if (allPrim && entries.length <= 6 && depth > 0) return '{' + entries.map(([k,v]) => `${k}:${JSON.stringify(v)}`).join(', ') + '}';
+    return '{\n' + entries.map(([k,v]) => `${pad2}${k}:\t\t${toJSStr(v, depth+1)}`).join(',\n') + '\n' + pad + '}';
+  }
+  return JSON.stringify(obj);
+}
+
+function buildCard(sub) {
+  const card = document.createElement('div');
+  card.className = `sub-card status-${sub.status}`;
+  card.id = `card-${sub._id}`;
+
+  const typeLabels = { item:'⚔️ Item', mob:'👾 Mob', pnj:'🧑 PNJ', region:'📍 Région', quest:'📜 Quête', panoplie:'🔗 Panoplie' };
+  const name = sub.data?.titre || sub.data?.name || sub.data?.label || sub._id;
+  const ts   = sub.submittedAt?.toDate ? sub.submittedAt.toDate().toLocaleString('fr-FR') : '—';
+  const code = toJSStr(sub.data || {}, 0) + ',';
+
+  const statusLabel = { pending:'⏳ En attente', approved:'✓ Approuvé', rejected:'✕ Rejeté' }[sub.status] || sub.status;
+
+  let actionsHtml = '';
+  let editorHtml  = '';
+  if (sub.status === 'pending') {
+    editorHtml = `
+      <div class="sub-editor" id="editor-${sub._id}">
+        <textarea class="sub-editor-ta" id="editor-ta-${sub._id}" spellcheck="false" oninput="onEditorInput('${sub._id}')"></textarea>
+        <div class="sub-editor-err" id="editor-err-${sub._id}"></div>
+        <div class="sub-editor-status" id="editor-status-${sub._id}"></div>
+      </div>
+    `;
+    const hasImg = !!sub.forum_image;
+    actionsHtml = `
+      <input type="text" class="sub-comment" id="comment-${sub._id}" placeholder="Commentaire (optionnel)">
+      <button class="btn btn-ghost"   id="btn-edit-${sub._id}" onclick="toggleEdit('${sub._id}')" style="font-size:12px;">✏️ Modifier</button>
+      <button class="btn btn-ghost"   onclick="openInCreator('${sub._id}')" style="font-size:12px;" title="Ouvre cette soumission dans le Creator pour l'éditer">⚙️ Creator</button>
+      <button class="btn btn-approve" onclick="approve('${sub._id}')">✓ Approuver</button>
+      <button class="btn btn-reject"  onclick="reject('${sub._id}')">✕ Rejeter</button>
+    `;
+    if (sub.type === 'item') {
+      actionsHtml += `
+        <div class="mod-img-row">
+          <div class="mod-img-zone${hasImg ? ' has-img' : ''}" id="mod-img-zone-${sub._id}"
+               ondragover="event.preventDefault();this.classList.add('drag-over')"
+               ondragleave="this.classList.remove('drag-over')"
+               ondrop="modImgDrop('${sub._id}',event)">
+            <img class="mod-img-preview" id="mod-img-preview-${sub._id}" style="display:none" alt="">
+            <span class="mod-img-placeholder" id="mod-img-placeholder-${sub._id}"${hasImg ? ' style="display:none"' : ''}>🖼️ Glisse une image ici</span>
+          </div>
+          <div class="mod-img-actions">
+            <button class="btn btn-ghost btn-sm" onclick="modImgPaste('${sub._id}')" style="font-size:11px;">📋 Coller</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('mod-img-input-${sub._id}').click()" style="font-size:11px;">📁 Fichier</button>
+            <button class="mod-img-clear" id="mod-img-clear-${sub._id}" onclick="modImgClear('${sub._id}')"${hasImg ? '' : ' style="display:none"'}>✕ Supprimer</button>
+          </div>
+          <input type="file" id="mod-img-input-${sub._id}" accept="image/*" style="display:none" onchange="modImgFile('${sub._id}',this.files[0])">
+        </div>
+      `;
+    }
+  } else if (sub.comment) {
+    actionsHtml = `<div class="review-comment">💬 ${escHtml(sub.comment)}</div>`;
+  }
+
+  card.innerHTML = `
+    <div class="sub-head">
+      <span class="sub-type">${typeLabels[sub.type] || sub.type}</span>
+      <span class="sub-name">${escHtml(name)}</span>
+      <span class="sub-meta">${ts}</span>
+      <span class="sub-meta">par <b>${escHtml(userName(sub.submittedBy, sub.submitterName))}</b></span>
+      <span class="sub-status ${sub.status}">${statusLabel}</span>
+    </div>
+    <div class="sub-body">
+      <div class="sub-actions">
+        ${actionsHtml}
+        <button class="btn btn-copy" onclick="copyCode('${sub._id}')">📋 Copier</button>
+        ${currentRole === 'admin' || sub.status === 'pending' ? `<button class="btn btn-copy" onclick="deleteSub('${sub._id}')" style="color:var(--danger);border-color:var(--danger);">🗑️</button>` : ''}
+        <button class="btn-toggle" onclick="toggleDetails('${sub._id}', this)">▾ Voir</button>
+      </div>
+      <div class="sub-details" id="details-${sub._id}">
+        <div class="sub-code" id="code-${sub._id}">${escHtml(code)}</div>
+        ${editorHtml}
+      </div>
+    </div>
+  `;
+
+  // Initialiser le preview image hors innerHTML (évite de mettre le base64 dans le template)
+  if (sub.forum_image && sub.type === 'item' && sub.status === 'pending') {
+    const img = card.querySelector(`#mod-img-preview-${sub._id}`);
+    if (img) {
+      img.src = sub.forum_image;
+      img.style.display = 'block';
+      img.onclick = e => { e.stopPropagation(); openLightbox(sub.forum_image); };
+    }
+  }
+
+  return card;
+}
+
+const escHtml = window.VCL.escHtml;
+
+// ── Copier le code ────────────────────────────────────
+// ── Image soumission : voir / changer ─────────────────
+async function _applyModImage(id, file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  const sub = allSubs.find(s => s._id === id);
+  if (!sub) return;
+
+  const base64 = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload  = e => res(e.target.result);
+    r.onerror = () => rej();
+    r.readAsDataURL(file);
+  });
+
+  sub.forum_image = base64;
+
+  const zone        = document.getElementById(`mod-img-zone-${id}`);
+  const preview     = document.getElementById(`mod-img-preview-${id}`);
+  const placeholder = document.getElementById(`mod-img-placeholder-${id}`);
+  const clearBtn    = document.getElementById(`mod-img-clear-${id}`);
+  if (zone)        zone.classList.add('has-img');
+  if (preview)     {
+    preview.src = base64;
+    preview.style.display = 'block';
+    preview.onclick = e => { e.stopPropagation(); openLightbox(base64); };
+  }
+  if (placeholder) placeholder.style.display = 'none';
+  if (clearBtn)    clearBtn.style.display = '';
+}
+
+function openLightbox(src) {
+  const lb = document.getElementById('img-lightbox');
+  document.getElementById('img-lightbox-img').src = src;
+  lb.classList.add('open');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('img-lightbox')?.classList.remove('open');
+});
+
+window.modImgFile = (id, file) => _applyModImage(id, file);
+
+window.modImgDrop = (id, e) => {
+  e.preventDefault();
+  document.getElementById(`mod-img-zone-${id}`)?.classList.remove('drag-over');
+  const file = e.dataTransfer?.files?.[0];
+  if (file) _applyModImage(id, file);
+};
+
+window.modImgClear = (id) => {
+  const sub = allSubs.find(s => s._id === id);
+  if (sub) sub.forum_image = null;
+  const zone        = document.getElementById(`mod-img-zone-${id}`);
+  const preview     = document.getElementById(`mod-img-preview-${id}`);
+  const placeholder = document.getElementById(`mod-img-placeholder-${id}`);
+  const clearBtn    = document.getElementById(`mod-img-clear-${id}`);
+  const input       = document.getElementById(`mod-img-input-${id}`);
+  if (zone)        zone.classList.remove('has-img');
+  if (preview)     { preview.src = ''; preview.style.display = 'none'; }
+  if (placeholder) placeholder.style.display = '';
+  if (clearBtn)    clearBtn.style.display = 'none';
+  if (input)       input.value = '';
+};
+
+window.modImgPaste = async (id) => {
+  try {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const mime = item.types.find(t => t.startsWith('image/'));
+      if (mime) {
+        const blob = await item.getType(mime);
+        const ext  = { 'image/png':'png','image/jpeg':'jpg','image/gif':'gif','image/webp':'webp' }[mime] || 'png';
+        await _applyModImage(id, new File([blob], `image.${ext}`, { type: mime }));
+        return;
+      }
+    }
+    toast('Pas d\'image dans le presse-papiers.', 'warning');
+  } catch(e) {
+    toast('Impossible de lire le presse-papiers : ' + e.message, 'error');
+  }
+};
+
+window.copyCode = (id) => {
+  const sub  = allSubs.find(s => s._id === id);
+  if (!sub) return;
+  const code = toJSStr(sub.data || {}, 0) + ',';
+  navigator.clipboard.writeText(code);
+};
+
+// ── Toggle détails (code + éditeur) ──────────────────
+window.toggleDetails = (id, btn) => {
+  const details = document.getElementById(`details-${id}`);
+  if (!details) return;
+  const open = details.classList.toggle('open');
+  btn.textContent = open ? '▴ Masquer' : '▾ Voir';
+};
+
+// ── Toggle éditeur inline ─────────────────────────────
+window.toggleEdit = (id) => {
+  // S'assurer que les détails sont ouverts avant d'éditer
+  const details = document.getElementById(`details-${id}`);
+  const toggleBtn = document.querySelector(`#card-${id} .btn-toggle`);
+  if (details && !details.classList.contains('open')) {
+    details.classList.add('open');
+    if (toggleBtn) toggleBtn.textContent = '▴ Masquer';
+  }
+  const sub     = allSubs.find(s => s._id === id);
+  const editor  = document.getElementById(`editor-${id}`);
+  const ta      = document.getElementById(`editor-ta-${id}`);
+  const codeDiv = document.getElementById(`code-${id}`);
+  const btn     = document.getElementById(`btn-edit-${id}`);
+  const errDiv  = document.getElementById(`editor-err-${id}`);
+  if (!editor || !ta) return;
+
+  const isOpen = editor.classList.contains('open');
+  if (isOpen) {
+    // Fermer : valider le JSON
+    const errMsg = tryParseEdit(id);
+    if (errMsg) { errDiv.textContent = errMsg; errDiv.style.display = ''; return; }
+    errDiv.style.display = 'none';
+    // Mettre à jour l'aperçu
+    codeDiv.textContent = toJSStr(sub.data, 0) + ',';
+    editor.classList.remove('open');
+    btn.textContent = '✏️ Modifier';
+    btn.style.background = '';
+  } else {
+    // Ouvrir : pre-fill JSON
+    ta.value = JSON.stringify(sub.data || {}, null, 2);
+    editor.classList.add('open');
+    btn.textContent = '✔ Valider';
+    btn.style.background = 'rgba(122,90,248,.25)';
+    ta.focus();
+  }
+};
+
+function tryParseEdit(id) {
+  const sub = allSubs.find(s => s._id === id);
+  const ta  = document.getElementById(`editor-ta-${id}`);
+  if (!sub || !ta) return null;
+  try {
+    const parsed = JSON.parse(ta.value);
+    if (typeof parsed !== 'object' || parsed === null) return 'Objet JSON attendu.';
+    sub.data = parsed; // mutate in-place → approve() lira la version modifiée
+    return null;
+  } catch(e) {
+    return 'JSON invalide : ' + e.message;
+  }
+}
+
+// ── Live JSON validation dans l'éditeur inline ────────
+window.onEditorInput = (id) => {
+  const ta     = document.getElementById(`editor-ta-${id}`);
+  const status = document.getElementById(`editor-status-${id}`);
+  if (!ta) return;
+  try {
+    JSON.parse(ta.value);
+    ta.classList.add('json-valid');
+    ta.classList.remove('json-invalid');
+    if (status) { status.textContent = '✓ JSON valide'; status.className = 'sub-editor-status ok'; }
+  } catch(e) {
+    ta.classList.add('json-invalid');
+    ta.classList.remove('json-valid');
+    if (status) { status.textContent = '✕ ' + e.message; status.className = 'sub-editor-status err'; }
+  }
+};
+
+// ── Ouvrir dans Creator ────────────────────────────────
+window.openInCreator = (id) => {
+  const sub = allSubs.find(s => s._id === id);
+  if (!sub || sub.status !== 'pending') return;
+  sessionStorage.setItem('editSub', JSON.stringify({ type: sub.type, data: sub.data }));
+  window.open('../creator.html');
+};
+
+// ── Approve ───────────────────────────────────────────
+window.approve = async (id) => {
+  const sub     = allSubs.find(s => s._id === id);
+  if (!sub) return;
+
+  // Si l'éditeur est ouvert, valider d'abord
+  const editor = document.getElementById(`editor-${id}`);
+  if (editor?.classList.contains('open')) {
+    const errMsg = tryParseEdit(id);
+    if (errMsg) {
+      const errDiv = document.getElementById(`editor-err-${id}`);
+      if (errDiv) { errDiv.textContent = errMsg; errDiv.style.display = ''; }
+      return;
+    }
+    editor.classList.remove('open');
+  }
+
+  const comment = document.getElementById(`comment-${id}`)?.value?.trim() || '';
+  const btn     = document.querySelector(`#card-${id} .btn-approve`);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+
+  try {
+    const colMap = { item: 'items', mob: 'mobs', pnj: 'personnages', region: 'regions', quest: 'quetes', panoplie: 'panoplies' };
+    const target = colMap[sub.type];
+    if (!target) throw new Error('Type inconnu : ' + sub.type);
+
+    const dataId = sub.data?.id;
+    if (!dataId) throw new Error('Pas d\'ID dans les données');
+
+    const isSensible = sub.data?.sensible === true;
+
+    if (sub.type === 'item' && isSensible) {
+      // Item sensible → split gameplay (items_hidden par hash) + flavor (items_secret par id)
+      const gameplayKeys = await getItemGameplayKeys();
+      const gameplay = {};
+      const secret   = {};
+      for (const [k, v] of Object.entries(sub.data)) {
+        if (k === 'sensible' || k === 'img') continue;
+        if (gameplayKeys.includes(k)) gameplay[k] = v;
+        else                          secret[k]   = v;
+      }
+      const hash = await hashName(sub.data.name);
+      if (!hash) throw new Error('Nom manquant pour hash');
+      await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore(gameplay));
+      if (Object.keys(secret).length) {
+        await setDoc(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore(secret));
+      }
+      // Nettoyer toute version publique existante
+      try { await deleteDoc(doc(db, COL.items, String(dataId))); } catch {}
+      store.invalidate('items');
+    } else if (sub.type === 'mob' && isSensible) {
+      // Mob sensible → doc complet dans mobs_secret, jamais dans mobs
+      const payload = { _order: Date.now(), ...sub.data };
+      delete payload.sensible;
+      await setDoc(doc(db, COL.mobsSecret, String(dataId)), sanitizeForFirestore(payload));
+      try { await deleteDoc(doc(db, COL.mobs, String(dataId))); } catch {}
+      store.invalidate('mobs');
+    } else {
+      // Flux standard
+      const dataToWrite = { _order: Date.now(), ...sub.data };
+      // Panoplie : couleur par défaut si absente (définie par la modération côté liste)
+      if (sub.type === 'panoplie' && !dataToWrite.color) dataToWrite.color = '#b87333';
+      await setDoc(doc(db, target, String(dataId)), dataToWrite);
+
+      // Si l'entité était précédemment sensible, nettoyer les collections cachées
+      if (sub.type === 'item') {
+        try { await deleteDoc(doc(db, COL.itemsSecret, String(dataId))); } catch {}
+        try {
+          const hash = await hashName(sub.data.name);
+          if (hash) await deleteDoc(doc(db, COL.itemsHidden, hash));
+        } catch {}
+      } else if (sub.type === 'mob') {
+        try { await deleteDoc(doc(db, COL.mobsSecret, String(dataId))); } catch {}
+      }
+
+      // Invalider le store (cache + mémoire) pour forcer un re-fetch sur les pages de lecture
+      const storeKey = { item:'items', mob:'mobs', pnj:'pnj', region:'regions', quetes:'quetes', panoplie:'panoplies' }[sub.type];
+      if (storeKey) store.invalidate(storeKey);
+    }
+
+    // Mettre à jour la soumission
+    await updateDoc(doc(db, 'submissions', id), {
+      status:     'approved',
+      reviewedBy: currentUser.uid,
+      reviewedAt: serverTimestamp(),
+      comment,
+    });
+
+    sub.status     = 'approved';
+    sub.comment    = comment;
+    sub.reviewedBy = currentUser.uid;
+    updateCounts();
+    renderSubs();
+
+    // Webhook Discord (best-effort)
+    sendApprovalWebhook(sub).catch(() => {});
+  } catch(e) {
+    toast('⛔ Erreur : ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Approuver'; }
+  }
+};
+
+// ── Reject ────────────────────────────────────────────
+window.reject = async (id) => {
+  const sub     = allSubs.find(s => s._id === id);
+  if (!sub) return;
+  const comment = document.getElementById(`comment-${id}`)?.value?.trim() || '';
+  const btn     = document.querySelector(`#card-${id} .btn-reject`);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+
+  try {
+    await updateDoc(doc(db, 'submissions', id), {
+      status:     'rejected',
+      reviewedBy: currentUser.uid,
+      reviewedAt: serverTimestamp(),
+      comment,
+    });
+
+    sub.status     = 'rejected';
+    sub.comment    = comment;
+    sub.reviewedBy = currentUser.uid;
+    updateCounts();
+    renderSubs();
+  } catch(e) {
+    toast('⛔ Erreur : ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '✕ Rejeter'; }
+  }
+};
+
+// ── Mob order panel ───────────────────────────────────
+let _mobOrderData       = [];
+let _mobOrderDirty      = false;
+let _dragSrc            = null;
+let _mobPalierCollapsed = new Set();
+
+const TYPE_ORDER_MOD  = { monstre: 0, sbire: 1, mini_boss: 2, boss: 3 };
+const TYPE_LABELS_MOD = { monstre: 'Monstre', sbire: 'Sbire', mini_boss: 'Mini-boss', boss: 'Boss' };
+
+function mobTag(mob) {
+  return `P${mob.palier||1} ${TYPE_LABELS_MOD[mob.type]||mob.type}`;
+}
+
+let _activePanel = 'submissions';
+window._modDoRefresh = () => { location.reload(); }; // location.reload() conserve le hash
+
+// ── Hash routing ──────────────────────────────────────
+const HASH_PANELS = {
+  'submissions':    () => { loadSubmissions(); showSubmissions(); },
+  'mob-order':      () => showMobOrder(),
+  'item-order':     () => showItemOrder(),
+  'pnj-order':      () => showPnjOrder(),
+  'region-order':   () => showRegionOrder(),
+  'quest-order':    () => showQuestOrder(),
+  'panoplie-order': () => showPanoplieOrder(),
+  'ghost-ids':      () => showGhostIds(),
+  'region-orphans': () => showRegionOrphans(),
+  'mob-orphans':    () => showMobOrphans(),
+  'quest-orphans':  () => showQuestOrphans(),
+  'members':        () => showUsersPanel(),
+  'webhooks':       () => showDiscordWebhooks(),
+  'permissions':    () => showPermissions(),
+  'migration':        () => showMigration(),
+  'completion':       () => showCompletion(),
+  'creator-validation': () => showCreatorValidation(),
+  'data-incomplete':  () => showDataIncomplete(),
+};
+
+function _setHash(hash) {
+  history.replaceState(null, '', '#' + hash);
+  _activePanel = hash;
+}
+
+// Masque tous les panneaux .main, retire tous les actifs de la sidebar,
+// puis affiche le panneau et le bouton demandés.
+function _showPanel(panelId, btnId) {
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.sidebar').classList.remove('in-order-panel');
+  const panel = document.getElementById(panelId);
+  if (panel) panel.style.display = '';
+  if (btnId) {
+    const btn = document.getElementById(btnId);
+    if (btn) btn.classList.add('active');
+  }
+}
+
+function _routeToHash() {
+  const hash = location.hash.slice(1) || 'submissions';
+  loadSubmissions(); // toujours charger les soumissions en fond
+  const fn = HASH_PANELS[hash];
+  if (fn) fn();
+}
+
+window.addEventListener('hashchange', () => {
+  if (document.getElementById('main-layout').style.display === 'none') return;
+  _routeToHash();
+});
+
+function refreshCurrentPanel() {
+  const refreshMap = {
+    quest:          () => { delete _modCache['quetes'];      loadQuestOrder();    },
+    region:         () => { delete _modCache['regions'];     loadRegionOrder();   },
+    mob:            () => { delete _modCache['mobs'];        loadMobOrder();      },
+    item:           () => { delete _modCache['items'];       loadItemOrder();     },
+    pnj:            () => { delete _modCache['personnages']; loadPnjOrder();      },
+    panoplie:       () => { delete _modCache['panoplies'];   loadPanoplieOrder(); },
+    'ghost-ids':    () => loadGhostIds(),
+    'region-orphans': () => loadRegionOrphans(),
+    'mob-orphans':  () => loadMobOrphans(),
+    'quest-orphans': () => loadQuestOrphans(),
+    submissions:    () => loadSubmissions(),
+  };
+  (refreshMap[_activePanel] || refreshMap.submissions)();
+}
+
+window.showSubmissions = function showSubmissions() {
+  _setHash('submissions');
+  document.getElementById('users-panel').style.display         = 'none';
+  document.getElementById('btn-users').classList.remove('active');
+  document.getElementById('submissions-list').style.display    = '';
+  document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('pnj-order-panel').style.display     = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
+  document.getElementById('btn-region-orphans').classList.remove('active');
+  document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
+
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
+  const completionPanel = document.getElementById('completion-panel');
+  if (completionPanel) completionPanel.style.display = 'none';
+  const cvPanel = document.getElementById('creator-validation-panel');
+  if (cvPanel) cvPanel.style.display = 'none';
+  document.querySelector('.sidebar').classList.remove('in-order-panel');
+}
+
+window.showMobOrder = async () => {
+  _setHash('mob-order');
+  document.getElementById('users-panel').style.display         = 'none';
+  document.getElementById('submissions-list').style.display    = 'none';
+  document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
+  document.getElementById('pnj-order-panel').style.display     = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+
+  document.getElementById('mob-order-panel').style.display     = '';
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
+
+  document.getElementById('btn-mob-order').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadMobOrder();
+};
+
+async function loadMobOrder() {
+  const listEl = document.getElementById('mob-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _mobOrderDirty = false;
+  document.getElementById('btn-save-order').disabled = true;
+  try {
+    const mobs = [...(await cachedDocs('mobs'))];
+    // Tri initial : ordre existant → palier → type → nom
+    mobs.sort((a, b) => {
+      if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
+      if (a.ordre != null) return -1;
+      if (b.ordre != null) return 1;
+      if ((a.palier||1) !== (b.palier||1)) return (a.palier||1) - (b.palier||1);
+      const ta = TYPE_ORDER_MOD[a.type]??99, tb = TYPE_ORDER_MOD[b.type]??99;
+      if (ta !== tb) return ta - tb;
+      return (a.name||'').localeCompare(b.name||'');
+    });
+    _mobOrderData = mobs;
+    renderMobOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+function renderMobOrder() {
+  const listEl  = document.getElementById('mob-order-list');
+  const searchQ = normalize(document.getElementById('mob-order-search').value.trim());
+  listEl.innerHTML = '';
+
+  // ── Mode recherche : liste plate, positions globales, pas de drag ──
+  if (searchQ) {
+    const visible = _mobOrderData.filter(m => normalize(m.name).includes(searchQ));
+    if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
+    visible.forEach(mob => {
+      const row = document.createElement('div');
+      row.className = 'mob-order-row';
+      row.dataset.id = mob.id;
+      const globalIdx = _mobOrderData.indexOf(mob) + 1;
+      row.innerHTML = `
+        <span class="mob-order-handle" style="color:var(--border);">⠿</span>
+        <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
+        <span class="mob-order-name">${mob.name||mob.id}</span>
+        <span class="mob-order-tag">${mobTag(mob)}</span>
+        <button class="ed-edit-btn" title="Modifier : ${mob.name||mob.id}\nID : ${mob.id}">✏️</button>`;
+      row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('mobs', mob.id, mob, 'mob'); });
+      listEl.appendChild(row);
+    });
+    return;
+  }
+
+  // ── Mode normal : groupes par palier ──
+  const paliers = [...new Set(_mobOrderData.map(m => m.palier || 1))].sort((a,b) => a-b);
+  if (!paliers.length) { listEl.innerHTML = '<div class="empty">Aucun mob</div>'; return; }
+
+  paliers.forEach(palier => {
+    const palierMobs = _mobOrderData.filter(m => (m.palier||1) === palier);
+    const collapsed  = _mobPalierCollapsed.has(palier);
+
+    const section = document.createElement('div');
+    section.className = 'palier-section';
+
+    const ph = document.createElement('div');
+    ph.className = 'palier-section-header';
+    ph.innerHTML = `
+      <span style="flex:1;">Palier ${palier}</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierMobs.length} mob${palierMobs.length>1?'s':''}</span>
+      <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
+    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+      if (_mobPalierCollapsed.has(palier)) _mobPalierCollapsed.delete(palier);
+      else _mobPalierCollapsed.add(palier);
+      renderMobOrder();
+    });
+    section.appendChild(ph);
+
+    const body = document.createElement('div');
+    body.className = 'palier-section-body';
+    body.style.display = collapsed ? 'none' : '';
+
+    palierMobs.forEach(mob => {
+      const palierIdx = palierMobs.indexOf(mob);
+      const row = document.createElement('div');
+      row.className  = 'mob-order-row';
+      row.draggable  = true;
+      row.dataset.id = mob.id;
+      row.innerHTML  = `
+        <span class="mob-order-handle">⠿</span>
+        <input type="number" class="mob-order-index" value="${palierIdx+1}" min="1" max="${palierMobs.length}" title="Position dans ce palier">
+        <span class="mob-order-name">${mob.name||mob.id}</span>
+        <span class="mob-order-tag">${mobTag(mob)}</span>
+        <button class="ed-edit-btn" title="Modifier : ${mob.name||mob.id}\nID : ${mob.id}" draggable="false">✏️</button>`;
+
+      const indexInput = row.querySelector('.mob-order-index');
+      indexInput.addEventListener('click', e => e.stopPropagation());
+      indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+      indexInput.addEventListener('change', () => {
+        let toPalierIdx = parseInt(indexInput.value, 10) - 1;
+        toPalierIdx = Math.max(0, Math.min(palierMobs.length - 1, toPalierIdx));
+        if (toPalierIdx === palierIdx) { indexInput.value = palierIdx + 1; return; }
+        const fromGlobal = _mobOrderData.indexOf(mob);
+        const [removed]  = _mobOrderData.splice(fromGlobal, 1);
+        const nowPalier  = _mobOrderData.filter(m => (m.palier||1) === palier);
+        const insertAt   = toPalierIdx < nowPalier.length
+          ? _mobOrderData.indexOf(nowPalier[toPalierIdx])
+          : (_mobOrderData.indexOf(nowPalier[nowPalier.length-1]) + 1 || _mobOrderData.length);
+        _mobOrderData.splice(insertAt, 0, removed);
+        _mobOrderDirty = true;
+        document.getElementById('btn-save-order').disabled = false;
+        renderMobOrder();
+      });
+
+      row.addEventListener('dragstart', e => { if (e.target.closest('.ed-edit-btn')) { e.preventDefault(); return; } _dragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+      row.addEventListener('dragend',   () => row.classList.remove('dragging'));
+      row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
+      row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+      row.addEventListener('drop', e => {
+        e.preventDefault(); row.classList.remove('drag-over');
+        if (!_dragSrc || _dragSrc === row) return;
+        const fromMob = _mobOrderData.find(m => m.id === _dragSrc.dataset.id);
+        const toMob   = _mobOrderData.find(m => m.id === row.dataset.id);
+        if (!fromMob || !toMob || (fromMob.palier||1) !== (toMob.palier||1)) return;
+        const fromIdx = _mobOrderData.findIndex(m => m.id === _dragSrc.dataset.id);
+        const toIdx   = _mobOrderData.findIndex(m => m.id === row.dataset.id);
+        if (fromIdx === -1 || toIdx === -1) return;
+        const [moved] = _mobOrderData.splice(fromIdx, 1);
+        _mobOrderData.splice(toIdx, 0, moved);
+        _mobOrderDirty = true;
+        document.getElementById('btn-save-order').disabled = false;
+        renderMobOrder();
+      });
+      row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('mobs', mob.id, mob, 'mob'); });
+
+      body.appendChild(row);
+    });
+    section.appendChild(body);
+    listEl.appendChild(section);
+  });
+}
+
+window.filterMobOrder = () => {
+  renderMobOrder();
+};
+
+window.saveMobOrder = async () => {
+  if (!_mobOrderDirty) return;
+  const btn = document.getElementById('btn-save-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+
+  // Écrire ordre = position (1-based) pour chaque mob dans l'ordre actuel
+  let ok = 0, err = 0;
+  for (let i = 0; i < _mobOrderData.length; i++) {
+    try {
+      await updateDoc(doc(db, 'mobs', _mobOrderData[i].id), { ordre: i + 1 });
+      ok++;
+    } catch(e) {
+      console.error(_mobOrderData[i].id, e);
+      err++;
+    }
+  }
+
+  // Invalider les caches
+  localStorage.removeItem('vcl_cache_v2_mobs');
+  localStorage.removeItem('vcl_cache_meta_v2_mobs');
+  invalidateModCache('mobs');
+
+  _mobOrderDirty = false;
+  btn.textContent = '💾 Sauvegarder';
+  toast(err ? `⚠️ Erreur lors de la sauvegarde.` : `✓ Ordre sauvegardé (${ok} mobs, err ? 'error' : 'success').`);
+  document.getElementById('mob-order-search').value = '';
+  await loadMobOrder();
+};
+
+// ── Item order panel ──────────────────────────────────
+let _itemOrderData       = [];
+let _itemOrderDirty      = false;
+let _itemDragSrc         = null;  // drag item
+let _itemCatDragSrc      = null;  // drag catégorie { palier, cat }
+let _itemPalierCollapsed = new Set();
+let _itemCatCollapsed    = new Set(); // clé : `${palier}:${cat}`
+
+const ITEM_CATEGORIES = {
+  materiaux:   { label: 'Matériaux',       emoji: '🧱' },
+  quete:       { label: 'Objets de Quête', emoji: '📜' },
+  ressources:  { label: 'Ressources',      emoji: '⛏️' },
+  nourriture:  { label: 'Nourriture',      emoji: '🍖' },
+  consommable: { label: 'Consommables',    emoji: '🧪' },
+  arme:        { label: 'Armes',           emoji: '⚔️' },
+  armure:      { label: 'Armures',         emoji: '🛡️' },
+  accessoire:  { label: 'Accessoires',     emoji: '💍' },
+  outils:      { label: 'Outils',          emoji: '🛠️' },
+  rune:        { label: 'Runes',           emoji: '🔮' },
+  donjon:      { label: 'Donjon',          emoji: '🏰' },
+  monnaie:     { label: 'Monnaie',         emoji: '🪙' },
+};
+
+function itemCatLabel(cat) {
+  const c = ITEM_CATEGORIES[cat];
+  return c ? `${c.emoji} ${c.label}` : cat || '—';
+}
+
+const RARITY_ORDER_MOD = ['commun','rare','epique','legendaire','mythique','godlike','event'];
+function itemTag(item) {
+  const r = RARITY_ORDER_MOD.includes(item.rarity) ? item.rarity : (item.rarity || '');
+  return r ? r.charAt(0).toUpperCase() + r.slice(1) : (item.type || '—');
+}
+
+window.showItemOrder = async () => {
+  _setHash('item-order');
+  document.getElementById('users-panel').style.display         = 'none';
+  document.getElementById('submissions-list').style.display    = 'none';
+  document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
+  document.getElementById('pnj-order-panel').style.display     = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+
+  document.getElementById('item-order-panel').style.display    = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
+
+  document.getElementById('btn-item-order').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadItemOrder();
+};
+
+async function loadItemOrder() {
+  const listEl = document.getElementById('item-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _itemOrderDirty = false;
+  document.getElementById('btn-save-item-order').disabled = true;
+  try {
+    const items = [...(await cachedDocs('items'))];
+    // Tri initial : ordre existant → _order (timestamp approbation) → nom
+    items.sort((a, b) => {
+      const ao = a.ordre ?? null, bo = b.ordre ?? null;
+      if (ao !== null && bo !== null) return ao - bo;
+      if (ao !== null) return -1;
+      if (bo !== null) return 1;
+      // items sans ordre : par _order (timestamp), puis nom
+      const at = a._order ?? 0, bt = b._order ?? 0;
+      if (at !== bt) return at - bt;
+      return (a.name||'').localeCompare(b.name||'');
+    });
+    _itemOrderData = items;
+    renderItemOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+function renderItemOrder() {
+  const listEl  = document.getElementById('item-order-list');
+  const searchQ = normalize(document.getElementById('item-order-search').value.trim());
+  listEl.innerHTML = '';
+
+  // ── Mode recherche : liste plate avec position globale ──
+  if (searchQ) {
+    const visible = _itemOrderData.filter(it => normalize(it.name).includes(searchQ));
+    if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
+    visible.forEach(item => {
+      const row = document.createElement('div');
+      row.className  = 'mob-order-row';
+      row.dataset.id = item.id;
+      const globalIdx = _itemOrderData.indexOf(item) + 1;
+      row.innerHTML = `
+        <span class="mob-order-handle" style="color:var(--border);">⠿</span>
+        <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
+        <span class="mob-order-name">${item.name||item.id}</span>
+        <span class="mob-order-tag">${itemCatLabel(item.category)} · ${itemTag(item)}</span>
+        <button class="ed-edit-btn" title="Modifier : ${item.name||item.id}\nID : ${item.id}">✏️</button>`;
+      row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('items', item.id, item, 'item'); });
+      listEl.appendChild(row);
+    });
+    return;
+  }
+
+  // ── Mode normal : palier → catégorie → items ──
+  const paliers = [...new Set(_itemOrderData.map(it => it.palier || 1))].sort((a,b) => a-b);
+  if (!paliers.length) { listEl.innerHTML = '<div class="empty">Aucun item</div>'; return; }
+
+  paliers.forEach(palier => {
+    const palierItems    = _itemOrderData.filter(it => (it.palier||1) === palier);
+    const palierCollapsed = _itemPalierCollapsed.has(palier);
+
+    const section = document.createElement('div');
+    section.className = 'palier-section';
+
+    const ph = document.createElement('div');
+    ph.className = 'palier-section-header';
+    ph.innerHTML = `
+      <span style="flex:1;">Palier ${palier}</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierItems.length} item${palierItems.length>1?'s':''}</span>
+      <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${palierCollapsed?'Dérouler':'Réduire'}">${palierCollapsed?'▶':'▼'}</button>`;
+    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+      if (_itemPalierCollapsed.has(palier)) _itemPalierCollapsed.delete(palier);
+      else _itemPalierCollapsed.add(palier);
+      renderItemOrder();
+    });
+    section.appendChild(ph);
+
+    const palierBody = document.createElement('div');
+    palierBody.className = 'palier-section-body';
+    palierBody.style.display = palierCollapsed ? 'none' : '';
+
+    // Catégories dans l'ordre d'apparition dans _itemOrderData (reflète l'ordre admin)
+    const cats = [...new Set(palierItems.map(it => it.category || ''))];
+
+    cats.forEach(cat => {
+      const catItems     = palierItems.filter(it => (it.category||'') === cat);
+      const catKey       = `${palier}:${cat}`;
+      const catCollapsed = _itemCatCollapsed.has(catKey);
+
+      const catSection = document.createElement('div');
+      catSection.className  = 'mob-order-row';
+      catSection.draggable  = true;
+      catSection.dataset.cat    = cat;
+      catSection.dataset.palier = palier;
+      catSection.style.cssText  = 'flex-direction:column;align-items:stretch;padding:0;margin-bottom:4px;cursor:default;background:var(--surface2);';
+
+      // ── En-tête de catégorie (draggable) ──
+      const ch = document.createElement('div');
+      ch.style.cssText = `
+        display:flex;align-items:center;gap:8px;padding:6px 10px 6px 10px;
+        border-radius:6px 6px 0 0;cursor:grab;user-select:none;`;
+      ch.innerHTML = `
+        <span class="mob-order-handle" style="font-size:16px;">⠿</span>
+        <span style="flex:1;font-size:12px;font-weight:700;color:var(--text);">${itemCatLabel(cat)}</span>
+        <span style="font-size:11px;color:var(--muted);font-weight:400;">${catItems.length} item${catItems.length>1?'s':''}</span>
+        <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:0 4px;line-height:1;">${catCollapsed?'▶':'▼'}</button>`;
+
+      ch.querySelector('[data-toggle]').addEventListener('click', e => {
+        e.stopPropagation();
+        if (_itemCatCollapsed.has(catKey)) _itemCatCollapsed.delete(catKey);
+        else _itemCatCollapsed.add(catKey);
+        renderItemOrder();
+      });
+      catSection.appendChild(ch);
+
+      // ── Drag catégorie ──
+      catSection.addEventListener('dragstart', e => {
+        if (_itemDragSrc) return; // un item est déjà en cours de drag
+        _itemCatDragSrc = { palier, cat };
+        catSection.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.stopPropagation();
+      });
+      catSection.addEventListener('dragend', () => {
+        catSection.classList.remove('dragging');
+        _itemCatDragSrc = null;
+      });
+      catSection.addEventListener('dragover', e => {
+        if (!_itemCatDragSrc || _itemCatDragSrc.palier !== palier || _itemCatDragSrc.cat === cat) return;
+        e.preventDefault();
+        e.stopPropagation();
+        catSection.classList.add('drag-over');
+      });
+      catSection.addEventListener('dragleave', () => catSection.classList.remove('drag-over'));
+      catSection.addEventListener('drop', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        catSection.classList.remove('drag-over');
+        if (!_itemCatDragSrc || _itemCatDragSrc.palier !== palier || _itemCatDragSrc.cat === cat) return;
+
+        const srcCat   = _itemCatDragSrc.cat;
+        const srcItems = _itemOrderData.filter(it => (it.palier||1) === palier && (it.category||'') === srcCat);
+
+        // Retirer les items source de _itemOrderData
+        srcItems.forEach(it => {
+          const idx = _itemOrderData.indexOf(it);
+          if (idx !== -1) _itemOrderData.splice(idx, 1);
+        });
+
+        // Trouver le premier item de la catégorie cible (après suppression des sources)
+        const firstTargetIdx = _itemOrderData.findIndex(it => (it.palier||1) === palier && (it.category||'') === cat);
+        const insertAt = firstTargetIdx === -1 ? _itemOrderData.length : firstTargetIdx;
+
+        _itemOrderData.splice(insertAt, 0, ...srcItems);
+        _itemOrderDirty = true;
+        document.getElementById('btn-save-item-order').disabled = false;
+        _itemCatDragSrc = null;
+        renderItemOrder();
+      });
+
+      // ── Corps : items de la catégorie ──
+      const catBody = document.createElement('div');
+      catBody.style.cssText = `padding:0 4px 4px 8px;${catCollapsed ? 'display:none;' : ''}`;
+
+      catItems.forEach(item => {
+        const catIdx = catItems.indexOf(item);
+        const row = document.createElement('div');
+        row.className  = 'mob-order-row';
+        row.draggable  = true;
+        row.dataset.id = item.id;
+        row.style.cssText = 'margin-top:3px;';
+        row.innerHTML  = `
+          <span class="mob-order-handle">⠿</span>
+          <input type="number" class="mob-order-index" value="${catIdx+1}" min="1" max="${catItems.length}" title="Position dans cette catégorie">
+          <span class="mob-order-name">${item.name||item.id}</span>
+          <span class="mob-order-tag">${itemTag(item)}</span>
+          <button class="ed-edit-btn" title="Modifier : ${item.name||item.id}\nID : ${item.id}" draggable="false">✏️</button>`;
+
+        const indexInput = row.querySelector('.mob-order-index');
+        indexInput.addEventListener('click', e => e.stopPropagation());
+        indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+        indexInput.addEventListener('change', () => {
+          let toCatIdx = parseInt(indexInput.value, 10) - 1;
+          toCatIdx = Math.max(0, Math.min(catItems.length - 1, toCatIdx));
+          if (toCatIdx === catIdx) { indexInput.value = catIdx + 1; return; }
+          const fromGlobal = _itemOrderData.indexOf(item);
+          const [removed]  = _itemOrderData.splice(fromGlobal, 1);
+          const nowCat     = _itemOrderData.filter(it => (it.palier||1) === palier && (it.category||'') === cat);
+          const insertAt   = toCatIdx < nowCat.length
+            ? _itemOrderData.indexOf(nowCat[toCatIdx])
+            : (_itemOrderData.indexOf(nowCat[nowCat.length-1]) + 1 || _itemOrderData.length);
+          _itemOrderData.splice(insertAt, 0, removed);
+          _itemOrderDirty = true;
+          document.getElementById('btn-save-item-order').disabled = false;
+          renderItemOrder();
+        });
+
+        row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('items', item.id, item, 'item'); });
+        row.addEventListener('dragstart', e => {
+          if (e.target.closest('.ed-edit-btn') || _itemCatDragSrc) return;
+          _itemDragSrc = row;
+          row.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.stopPropagation();
+        });
+        row.addEventListener('dragend', () => { row.classList.remove('dragging'); _itemDragSrc = null; });
+        row.addEventListener('dragover', e => {
+          if (_itemCatDragSrc) return;
+          e.preventDefault();
+          e.stopPropagation();
+          row.classList.add('drag-over');
+        });
+        row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+        row.addEventListener('drop', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          row.classList.remove('drag-over');
+          if (_itemCatDragSrc || !_itemDragSrc || _itemDragSrc === row) return;
+          const fromItem = _itemOrderData.find(it => it.id === _itemDragSrc.dataset.id);
+          const toItem   = _itemOrderData.find(it => it.id === row.dataset.id);
+          if (!fromItem || !toItem) return;
+          if ((fromItem.palier||1) !== (toItem.palier||1)) return;
+          if ((fromItem.category||'') !== (toItem.category||'')) return;
+          const fromIdx = _itemOrderData.findIndex(it => it.id === _itemDragSrc.dataset.id);
+          const toIdx   = _itemOrderData.findIndex(it => it.id === row.dataset.id);
+          if (fromIdx === -1 || toIdx === -1) return;
+          const [moved] = _itemOrderData.splice(fromIdx, 1);
+          _itemOrderData.splice(toIdx, 0, moved);
+          _itemOrderDirty = true;
+          document.getElementById('btn-save-item-order').disabled = false;
+          renderItemOrder();
+        });
+
+        catBody.appendChild(row);
+      });
+
+      catSection.appendChild(catBody);
+      palierBody.appendChild(catSection);
+    });
+
+    section.appendChild(palierBody);
+    listEl.appendChild(section);
+  });
+}
+
+window.filterItemOrder = () => renderItemOrder();
+
+window.saveItemOrder = async () => {
+  if (!_itemOrderDirty) return;
+  const btn = document.getElementById('btn-save-item-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  let ok = 0, err = 0;
+  for (let i = 0; i < _itemOrderData.length; i++) {
+    try {
+      await updateDoc(doc(db, 'items', _itemOrderData[i].id), { ordre: i + 1 });
+      ok++;
+    } catch(e) { console.error(_itemOrderData[i].id, e); err++; }
+  }
+  localStorage.removeItem('vcl_cache_v2_items');
+  localStorage.removeItem('vcl_cache_meta_v2_items');
+  invalidateModCache('items');
+  _cachedSets = null;
+  _itemOrderDirty = false;
+  btn.textContent = '💾 Sauvegarder';
+  toast(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Ordre sauvegardé (${ok} items, err ? 'error' : 'success').`);
+  document.getElementById('item-order-search').value = '';
+  await loadItemOrder();
+};
+
+// ── PNJ order panel ───────────────────────────────────
+// _pnjRegions = [{id, name, pnjs:[{id,name,region,...},...]},...] dans l'ordre drag
+let _pnjRegions         = [];
+let _pnjDirty           = false;
+let _pnjDragSrc         = null;  // drag région
+let _pnjItemDragSrc     = null;  // drag PNJ individuel
+let _pnjCollapsed       = new Set(); // IDs de régions réduites
+let _pnjPalierCollapsed = new Set(); // paliers réduits
+
+window.showPnjOrder = async () => {
+  _setHash('pnj-order');
+  document.getElementById('users-panel').style.display         = 'none';
+  document.getElementById('submissions-list').style.display    = 'none';
+  document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
+  document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+
+  document.getElementById('pnj-order-panel').style.display     = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
+
+  document.getElementById('btn-pnj-order').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadPnjOrder();
+};
+
+async function loadPnjOrder() {
+  const listEl = document.getElementById('pnj-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _pnjDirty = false;
+  document.getElementById('btn-save-pnj-order').disabled = true;
+  try {
+    const [pnjs, _regDocsRaw] = await Promise.all([
+      cachedDocs('personnages'),
+      cachedDocs('regions'),
+    ]);
+
+    // Grouper tous les PNJ par région (clé = p.region || '')
+    const byRegion = {};
+    pnjs.forEach(p => {
+      const key = p.region || '';
+      if (!byRegion[key]) byRegion[key] = [];
+      byRegion[key].push(p);
+    });
+    // Trier par ordre admin (champ `ordre`), puis alphabétiquement en fallback
+    Object.values(byRegion).forEach(arr => arr.sort((a, b) => {
+      const ao = a.ordre ?? null, bo = b.ordre ?? null;
+      if (ao !== null && bo !== null) return ao - bo;
+      if (ao !== null) return -1;
+      if (bo !== null) return 1;
+      return (a.name||'').localeCompare(b.name||'', 'fr');
+    }));
+
+    // Régions connues depuis Firestore, triées par leur ordre actuel
+    const regDocs = [..._regDocsRaw].sort((a, b) => (a.ordre ?? 9999) - (b.ordre ?? 9999));
+
+    // Construire _pnjRegions :
+    // 1. Régions connues (dans leur ordre), avec leurs PNJ
+    const knownNames = new Set();
+    _pnjRegions = regDocs.map(r => {
+      const name = r.name || r.id;
+      knownNames.add(name);
+      return { id: r.id, name, pnjs: byRegion[name] || [] };
+    });
+
+    // 2. Régions inconnues (présentes dans les PNJ mais pas dans la collection regions)
+    //    triées alphabétiquement, ajoutées à la fin
+    const unknownNames = Object.keys(byRegion)
+      .filter(k => k !== '' && !knownNames.has(k))
+      .sort((a, b) => a.localeCompare(b, 'fr'));
+    unknownNames.forEach(name => {
+      _pnjRegions.push({ id: '__unknown__' + name, name, pnjs: byRegion[name] });
+    });
+
+    // 3. PNJ sans région
+    if (byRegion['']?.length) {
+      _pnjRegions.push({ id: '__none__', name: '', pnjs: byRegion[''] });
+    }
+
+    renderPnjOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+function _makePnjRegionGroup(group, gi, palierPnjs, palier) {
+  const collapsed = _pnjCollapsed.has(group.id);
+  const groupEl   = document.createElement('div');
+  groupEl.dataset.gi    = gi;
+  groupEl.style.cssText = 'margin-bottom:4px;';
+
+  const header = document.createElement('div');
+  header.draggable = true;
+  header.style.cssText = `
+    display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;
+    background:var(--surface2);border:1px solid var(--border);
+    cursor:grab;user-select:none;margin-bottom:3px;
+    font-size:12px;font-weight:700;color:var(--accent);
+    transition:border-color .1s,background .1s;`;
+  header.innerHTML = `
+    <span style="font-size:15px;color:var(--muted);">⠿</span>
+    <span style="flex:1;">${group.name || '— Sans région —'}</span>
+    <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierPnjs.length} PNJ</span>
+    <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
+
+  header.querySelector('[data-toggle]').addEventListener('click', e => {
+    e.stopPropagation();
+    if (_pnjCollapsed.has(group.id)) _pnjCollapsed.delete(group.id);
+    else _pnjCollapsed.add(group.id);
+    renderPnjOrder();
+  });
+  header.addEventListener('dragstart', e => {
+    if (_pnjItemDragSrc) return;
+    _pnjDragSrc = groupEl; groupEl.style.opacity = '.35';
+    e.dataTransfer.effectAllowed = 'move';
+    e.stopPropagation();
+  });
+  header.addEventListener('dragend', () => {
+    groupEl.style.opacity = '';
+    document.querySelectorAll('#pnj-order-list [data-gi]').forEach(g => { g.style.outline = ''; });
+    _pnjDragSrc = null;
+  });
+  header.addEventListener('dragover', e => {
+    if (_pnjItemDragSrc || !_pnjDragSrc || _pnjDragSrc === groupEl) return;
+    e.preventDefault(); e.stopPropagation();
+    groupEl.style.outline = '2px solid var(--accent)';
+  });
+  header.addEventListener('dragleave', () => { groupEl.style.outline = ''; });
+  header.addEventListener('drop', e => {
+    e.preventDefault(); e.stopPropagation();
+    groupEl.style.outline = '';
+    if (_pnjItemDragSrc || !_pnjDragSrc || _pnjDragSrc === groupEl) return;
+    const fromGi = parseInt(_pnjDragSrc.dataset.gi, 10);
+    const toGi   = parseInt(groupEl.dataset.gi, 10);
+    if (isNaN(fromGi) || isNaN(toGi)) return;
+    const [moved] = _pnjRegions.splice(fromGi, 1);
+    _pnjRegions.splice(toGi, 0, moved);
+    _pnjDirty = true;
+    document.getElementById('btn-save-pnj-order').disabled = false;
+    _pnjDragSrc = null;
+    renderPnjOrder();
+  });
+
+  groupEl.appendChild(header);
+
+  const pnjList = document.createElement('div');
+  pnjList.style.cssText = `padding:0 4px 2px 8px;${collapsed ? 'display:none;' : ''}`;
+
+  palierPnjs.forEach(pnj => {
+    const pnjIdx = palierPnjs.indexOf(pnj);
+    const row = document.createElement('div');
+    row.className    = 'mob-order-row';
+    row.draggable    = true;
+    row.dataset.id   = pnj.id;
+    row.dataset.gi   = gi;
+    row.style.cssText = 'margin-top:3px;';
+    row.innerHTML = `
+      <span class="mob-order-handle">⠿</span>
+      <input type="number" class="mob-order-index" value="${pnjIdx+1}" min="1" max="${palierPnjs.length}" title="Position dans cette région">
+      <span class="mob-order-name">${pnj.name||pnj.id}</span>
+      <button class="ed-edit-btn" title="Modifier : ${pnj.name||pnj.id}\nID : ${pnj.id}" draggable="false">✏️</button>`;
+
+    const indexInput = row.querySelector('.mob-order-index');
+    indexInput.addEventListener('click', e => e.stopPropagation());
+    indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+    indexInput.addEventListener('change', () => {
+      let toIdx = parseInt(indexInput.value, 10) - 1;
+      toIdx = Math.max(0, Math.min(palierPnjs.length - 1, toIdx));
+      if (toIdx === pnjIdx) { indexInput.value = pnjIdx + 1; return; }
+      const fromIdx = group.pnjs.indexOf(pnj);
+      group.pnjs.splice(fromIdx, 1);
+      // palierPnjs est un sous-ensemble de group.pnjs pour ce palier
+      // recalculer la position globale dans group.pnjs
+      const nowPalierPnjs = group.pnjs.filter(p => (p.palier||1) === palier);
+      const insertBefore  = nowPalierPnjs[toIdx];
+      if (insertBefore) {
+        const insertAt = group.pnjs.indexOf(insertBefore);
+        group.pnjs.splice(insertAt, 0, pnj);
+      } else {
+        // insérer après le dernier du palier dans group.pnjs
+        const last = nowPalierPnjs[nowPalierPnjs.length - 1];
+        const insertAt = last ? group.pnjs.indexOf(last) + 1 : group.pnjs.length;
+        group.pnjs.splice(insertAt, 0, pnj);
+      }
+      _pnjDirty = true;
+      document.getElementById('btn-save-pnj-order').disabled = false;
+      renderPnjOrder();
+    });
+
+    row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('personnages', pnj.id, pnj, 'pnj'); });
+    row.addEventListener('dragstart', e => {
+      if (e.target.closest('.ed-edit-btn') || _pnjDragSrc) return;
+      _pnjItemDragSrc = row;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.stopPropagation();
+    });
+    row.addEventListener('dragend', () => { row.classList.remove('dragging'); _pnjItemDragSrc = null; });
+    row.addEventListener('dragover', e => {
+      if (_pnjDragSrc || !_pnjItemDragSrc || _pnjItemDragSrc === row) return;
+      // même région et même palier seulement
+      if (_pnjItemDragSrc.dataset.gi !== row.dataset.gi) return;
+      e.preventDefault(); e.stopPropagation();
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault(); e.stopPropagation();
+      row.classList.remove('drag-over');
+      if (_pnjDragSrc || !_pnjItemDragSrc || _pnjItemDragSrc === row) return;
+      if (_pnjItemDragSrc.dataset.gi !== row.dataset.gi) return;
+      const fromPnj = group.pnjs.find(p => p.id === _pnjItemDragSrc.dataset.id);
+      const toPnj   = group.pnjs.find(p => p.id === row.dataset.id);
+      if (!fromPnj || !toPnj) return;
+      const fromIdx = group.pnjs.indexOf(fromPnj);
+      const toIdx2  = group.pnjs.indexOf(toPnj);
+      if (fromIdx === -1 || toIdx2 === -1) return;
+      const [moved] = group.pnjs.splice(fromIdx, 1);
+      group.pnjs.splice(toIdx2, 0, moved);
+      _pnjDirty = true;
+      document.getElementById('btn-save-pnj-order').disabled = false;
+      _pnjItemDragSrc = null;
+      renderPnjOrder();
+    });
+
+    pnjList.appendChild(row);
+  });
+
+  groupEl.appendChild(pnjList);
+  return groupEl;
+}
+
+function renderPnjOrder() {
+  const listEl  = document.getElementById('pnj-order-list');
+  const searchQ = normalize(document.getElementById('pnj-order-search').value.trim());
+  listEl.innerHTML = '';
+
+  // ── Mode recherche : liste plate ──
+  if (searchQ) {
+    const allPnjs = _pnjRegions.flatMap(g => g.pnjs);
+    // Calculer positions globales (palier → région → nom)
+    const paliers = [...new Set(allPnjs.map(p => p.palier||1))].sort((a,b) => a-b);
+    const posMap  = new Map();
+    let pos = 1;
+    paliers.forEach(pal => _pnjRegions.forEach(g => g.pnjs.filter(p => (p.palier||1)===pal).forEach(p => posMap.set(p.id, pos++))));
+    const results = allPnjs.filter(p => normalize(p.name).includes(searchQ));
+    if (!results.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
+    results.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'mob-order-row';
+      row.innerHTML = `
+        <span class="mob-order-handle" style="color:var(--border);">⠿</span>
+        <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${posMap.get(p.id)}</span>
+        <span class="mob-order-name">${p.name||p.id}</span>
+        <span class="mob-order-tag">${p.region||'—'}</span>`;
+      listEl.appendChild(row);
+    });
+    return;
+  }
+
+  // ── Mode normal : palier → régions ──
+  const allPnjs = _pnjRegions.flatMap(g => g.pnjs);
+  if (!allPnjs.length) { listEl.innerHTML = '<div class="empty">Aucun PNJ</div>'; return; }
+
+  const paliers = [...new Set(allPnjs.map(p => p.palier||1))].sort((a,b) => a-b);
+
+  paliers.forEach(palier => {
+    const totalCount   = allPnjs.filter(p => (p.palier||1) === palier).length;
+    if (!totalCount) return;
+    const palCollapsed = _pnjPalierCollapsed.has(palier);
+
+    const palSection = document.createElement('div');
+    palSection.className = 'palier-section';
+
+    const ph = document.createElement('div');
+    ph.className = 'palier-section-header';
+    ph.innerHTML = `
+      <span style="flex:1;">Palier ${palier}</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:400;">${totalCount} PNJ</span>
+      <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${palCollapsed?'Dérouler':'Réduire'}">${palCollapsed?'▶':'▼'}</button>`;
+    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+      if (_pnjPalierCollapsed.has(palier)) _pnjPalierCollapsed.delete(palier);
+      else _pnjPalierCollapsed.add(palier);
+      renderPnjOrder();
+    });
+    palSection.appendChild(ph);
+
+    const palBody = document.createElement('div');
+    palBody.className    = 'palier-section-body';
+    palBody.style.display = palCollapsed ? 'none' : '';
+
+    _pnjRegions.forEach((group, gi) => {
+      const palierPnjs = group.pnjs.filter(p => (p.palier||1) === palier);
+      if (!palierPnjs.length) return;
+      palBody.appendChild(_makePnjRegionGroup(group, gi, palierPnjs, palier));
+    });
+
+    palSection.appendChild(palBody);
+    listEl.appendChild(palSection);
+  });
+}
+
+window.filterPnjOrder = () => renderPnjOrder();
+
+window.savePnjOrder = async () => {
+  const btn = document.getElementById('btn-save-pnj-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  let ok = 0, err = 0;
+
+  // 1. Mettre à jour l'ordre des régions connues uniquement
+  let regPos = 1;
+  for (const g of _pnjRegions) {
+    if (g.id.startsWith('__')) continue; // groupes synthétiques (sans région, région inconnue)
+    try {
+      await updateDoc(doc(db, 'regions', g.id), { ordre: regPos++ });
+      ok++;
+    } catch(e) { console.error(g.id, e); err++; }
+  }
+
+  // 2. Mettre à jour l'ordre des PNJ (ordre global = région + nom)
+  let pos = 1;
+  for (const g of _pnjRegions) {
+    for (const pnj of g.pnjs) {
+      try {
+        await updateDoc(doc(db, 'personnages', pnj.id), { ordre: pos++ });
+        ok++;
+      } catch(e) { console.error(pnj.id, e); err++; }
+    }
+  }
+
+  localStorage.removeItem('vcl_cache_v2_regions');
+  localStorage.removeItem('vcl_cache_meta_v2_regions');
+  localStorage.removeItem('vcl_cache_v2_personnages');
+  localStorage.removeItem('vcl_cache_meta_v2_personnages');
+  invalidateModCache('regions');
+  invalidateModCache('personnages');
+  _cachedRegions = null;
+
+  _pnjDirty = false;
+  btn.disabled = true;
+  btn.textContent = '💾 Sauvegarder';
+  toast(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Sauvegardé (${ok} documents mis à jour, err ? 'error' : 'success').`);
+};
+
+// ── Region order panel ────────────────────────────────
+let _regionOrderData  = [];
+let _regionOrderDirty = false;
+let _regionDragSrc    = null;
+let _regionPalierCollapsed = new Set();
+
+window.showRegionOrder = async () => {
+  _setHash('region-order');
+  document.getElementById('users-panel').style.display         = 'none';
+  document.getElementById('submissions-list').style.display    = 'none';
+  document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
+  document.getElementById('pnj-order-panel').style.display     = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+
+  document.getElementById('region-order-panel').style.display  = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-orphans').classList.remove('active');
+  document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
+
+  document.getElementById('btn-region-order').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadRegionOrder();
+};
+
+async function loadRegionOrder() {
+  const listEl = document.getElementById('region-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _regionOrderDirty = false;
+  document.getElementById('btn-save-region-order').disabled = true;
+  try {
+    const regions = [...(await cachedDocs('regions'))];
+    regions.sort((a, b) => {
+      if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
+      if (a.ordre != null) return -1;
+      if (b.ordre != null) return 1;
+      if ((a.palier||1) !== (b.palier||1)) return (a.palier||1) - (b.palier||1);
+      return (a.name||'').localeCompare(b.name||'', 'fr');
+    });
+    _regionOrderData = regions;
+    renderRegionOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+function renderRegionOrder() {
+  const listEl  = document.getElementById('region-order-list');
+  const searchQ = normalize(document.getElementById('region-order-search').value.trim());
+  listEl.innerHTML = '';
+
+  if (searchQ) {
+    const visible = _regionOrderData.filter(r => normalize(r.name||r.id||'').includes(searchQ));
+    if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
+    visible.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'mob-order-row';
+      row.dataset.id = r.id;
+      const globalIdx = _regionOrderData.indexOf(r) + 1;
+      row.innerHTML = `
+        <span class="mob-order-handle" style="color:var(--border);">⠿</span>
+        <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
+        <span class="mob-order-name">${r.name||r.id}</span>
+        <span class="mob-order-tag">P${r.palier||1}</span>
+        <button class="ed-edit-btn" title="Modifier : ${r.name||r.id}\nID : ${r.id}">✏️</button>`;
+      row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('regions', r.id, r, 'region'); });
+      listEl.appendChild(row);
+    });
+    return;
+  }
+
+  const paliers = [...new Set(_regionOrderData.map(r => r.palier || 1))].sort((a,b) => a-b);
+  if (!paliers.length) { listEl.innerHTML = '<div class="empty">Aucune région</div>'; return; }
+
+  const isSameGroup = (a, b) => (a.palier||1) === (b.palier||1) && (a.inCodex === false) === (b.inCodex === false);
+
+  paliers.forEach(palier => {
+    const palierRegions = _regionOrderData.filter(r => (r.palier||1) === palier);
+    const collapsed     = _regionPalierCollapsed.has(palier);
+
+    const section = document.createElement('div');
+    section.className = 'palier-section';
+
+    const ph = document.createElement('div');
+    ph.className = 'palier-section-header';
+    ph.innerHTML = `
+      <span style="flex:1;">Palier ${palier}</span>
+      <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierRegions.length} région${palierRegions.length>1?'s':''}</span>
+      <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
+    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+      if (_regionPalierCollapsed.has(palier)) _regionPalierCollapsed.delete(palier);
+      else _regionPalierCollapsed.add(palier);
+      renderRegionOrder();
+    });
+    section.appendChild(ph);
+
+    const body = document.createElement('div');
+    body.className = 'palier-section-body';
+    body.style.display = collapsed ? 'none' : '';
+
+    const subGroups = [
+      { label: 'Codex',      filter: r => r.inCodex !== false },
+      { label: 'Hors Codex', filter: r => r.inCodex === false },
+    ];
+
+    subGroups.forEach(({ label, filter }) => {
+      const groupRegions = palierRegions.filter(filter);
+      if (!groupRegions.length) return;
+
+      const sh = document.createElement('div');
+      sh.style.cssText = 'padding:4px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;';
+      sh.textContent = label;
+      body.appendChild(sh);
+
+      groupRegions.forEach(r => {
+        const groupIdx = groupRegions.indexOf(r);
+        const row = document.createElement('div');
+        row.className  = 'mob-order-row';
+        row.draggable  = true;
+        row.dataset.id = r.id;
+        row.innerHTML  = `
+          <span class="mob-order-handle">⠿</span>
+          <input type="number" class="mob-order-index" value="${groupIdx+1}" min="1" max="${groupRegions.length}" title="Position dans ce groupe">
+          <span class="mob-order-name">${r.name||r.id}</span>
+          <span class="mob-order-tag">P${r.palier||1}</span>
+          <button class="ed-edit-btn" title="Modifier : ${r.name||r.id}\nID : ${r.id}" draggable="false">✏️</button>`;
+
+        const indexInput = row.querySelector('.mob-order-index');
+        indexInput.addEventListener('click', e => e.stopPropagation());
+        indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+        indexInput.addEventListener('change', () => {
+          let toGroupIdx = parseInt(indexInput.value, 10) - 1;
+          toGroupIdx = Math.max(0, Math.min(groupRegions.length - 1, toGroupIdx));
+          if (toGroupIdx === groupIdx) { indexInput.value = groupIdx + 1; return; }
+          const fromGlobal = _regionOrderData.indexOf(r);
+          const [removed]  = _regionOrderData.splice(fromGlobal, 1);
+          const nowGroup   = _regionOrderData.filter(filter).filter(x => (x.palier||1) === palier);
+          const insertAt   = toGroupIdx < nowGroup.length
+            ? _regionOrderData.indexOf(nowGroup[toGroupIdx])
+            : (_regionOrderData.indexOf(nowGroup[nowGroup.length-1]) + 1 || _regionOrderData.length);
+          _regionOrderData.splice(insertAt, 0, removed);
+          _regionOrderDirty = true;
+          document.getElementById('btn-save-region-order').disabled = false;
+          renderRegionOrder();
+        });
+
+        row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('regions', r.id, r, 'region'); });
+        row.addEventListener('dragstart', e => { if (e.target.closest('.ed-edit-btn')) { e.preventDefault(); return; } _regionDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+        row.addEventListener('dragend',   () => { row.classList.remove('dragging'); _regionDragSrc = null; });
+        row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
+        row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+        row.addEventListener('drop', e => {
+          e.preventDefault(); row.classList.remove('drag-over');
+          if (!_regionDragSrc || _regionDragSrc === row) return;
+          const fromR = _regionOrderData.find(x => x.id === _regionDragSrc.dataset.id);
+          const toR   = _regionOrderData.find(x => x.id === row.dataset.id);
+          if (!fromR || !toR || !isSameGroup(fromR, toR)) return;
+          const fromIdx = _regionOrderData.findIndex(x => x.id === _regionDragSrc.dataset.id);
+          const toIdx   = _regionOrderData.findIndex(x => x.id === row.dataset.id);
+          if (fromIdx === -1 || toIdx === -1) return;
+          const [moved] = _regionOrderData.splice(fromIdx, 1);
+          _regionOrderData.splice(toIdx, 0, moved);
+          _regionOrderDirty = true;
+          document.getElementById('btn-save-region-order').disabled = false;
+          renderRegionOrder();
+        });
+
+        body.appendChild(row);
+      });
+    });
+
+    section.appendChild(body);
+    listEl.appendChild(section);
+  });
+}
+
+window.filterRegionOrder = () => renderRegionOrder();
+
+window.saveRegionOrder = async () => {
+  if (!_regionOrderDirty) return;
+  const btn = document.getElementById('btn-save-region-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  let ok = 0, err = 0;
+  for (let i = 0; i < _regionOrderData.length; i++) {
+    try {
+      await updateDoc(doc(db, 'regions', _regionOrderData[i].id), { ordre: i + 1 });
+      ok++;
+    } catch(e) { console.error(_regionOrderData[i].id, e); err++; }
+  }
+  localStorage.removeItem('vcl_cache_v2_regions');
+  localStorage.removeItem('vcl_cache_meta_v2_regions');
+  invalidateModCache('regions');
+  _cachedRegions = null;
+  _regionOrderDirty = false;
+  btn.textContent = '💾 Sauvegarder';
+  toast(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Ordre sauvegardé (${ok} régions, err ? 'error' : 'success').`);
+  document.getElementById('region-order-search').value = '';
+  await loadRegionOrder();
+};
+
+// ── Panoplie order panel ─────────────────────────────
+let _panoplieOrderData  = [];
+let _panoplieOrderDirty = false;
+let _panoplieDragSrc    = null;
+
+window.showPanoplieOrder = async () => {
+  _setHash('panoplie-order');
+  ['users-panel','submissions-list','mob-order-panel','item-order-panel',
+   'pnj-order-panel','region-order-panel','quest-order-panel',
+   'discord-webhooks-panel','permissions-panel','ghost-id-panel',
+   'region-orphan-panel','mob-orphan-panel','quest-orphan-panel','editor-panel'
+  ].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  ['btn-mob-order','btn-item-order','btn-pnj-order','btn-region-order',
+   'btn-quest-order','btn-ghost-ids','btn-region-orphans','btn-mob-orphans',
+   'btn-quest-orphans','btn-discord-webhooks','btn-permissions'
+  ].forEach(id => document.getElementById(id)?.classList.remove('active'));
+
+  document.getElementById('panoplie-order-panel').style.display = '';
+  document.getElementById('btn-panoplie-order').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadPanoplieOrder();
+};
+
+async function loadPanoplieOrder() {
+  const listEl = document.getElementById('panoplie-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _panoplieOrderDirty = false;
+  document.getElementById('btn-save-panoplie-order').disabled = true;
+  try {
+    const rows = [...(await cachedDocs('panoplies'))];
+    rows.sort((a, b) => {
+      if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
+      if (a.ordre != null) return -1;
+      if (b.ordre != null) return 1;
+      return (a.label || a.id || '').localeCompare(b.label || b.id || '', 'fr');
+    });
+    _panoplieOrderData = rows;
+    renderPanoplieOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+window.renderPanoplieOrder = function renderPanoplieOrder() {
+  const listEl  = document.getElementById('panoplie-order-list');
+  const searchQ = normalize(document.getElementById('panoplie-order-search').value.trim());
+  listEl.innerHTML = '';
+
+  const items = searchQ
+    ? _panoplieOrderData.filter(p => normalize((p.label||'') + ' ' + (p.id||'')).includes(searchQ))
+    : _panoplieOrderData;
+
+  if (!items.length) { listEl.innerHTML = '<div class="empty">Aucune panoplie</div>'; return; }
+
+  items.forEach(p => {
+    const globalIdx = _panoplieOrderData.indexOf(p);
+    const bonusCount = p.bonuses && typeof p.bonuses === 'object' ? Object.keys(p.bonuses).length : 0;
+    const row = document.createElement('div');
+    row.className  = 'mob-order-row';
+    row.draggable  = !searchQ;
+    row.dataset.id = p.id;
+    row.innerHTML  = `
+      <span class="mob-order-handle">⠿</span>
+      <input type="number" class="mob-order-index" value="${globalIdx+1}" min="1" max="${_panoplieOrderData.length}" ${searchQ?'disabled':''}>
+      <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${p.color||'#b87333'};border:1px solid var(--border);flex-shrink:0;"></span>
+      <span class="mob-order-name">${p.label||p.id}</span>
+      <span class="mob-order-tag">${bonusCount} bonus</span>
+      <button class="ed-edit-btn" title="Modifier : ${p.label||p.id}\nID : ${p.id}" draggable="false">✏️</button>`;
+
+    row.querySelector('.ed-edit-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      showEditor('panoplies', p.id, p, 'panoplie');
+    });
+
+    const indexInput = row.querySelector('.mob-order-index');
+    indexInput.addEventListener('click', e => e.stopPropagation());
+    indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+    indexInput.addEventListener('change', () => {
+      let to = parseInt(indexInput.value, 10) - 1;
+      to = Math.max(0, Math.min(_panoplieOrderData.length - 1, to));
+      const from = _panoplieOrderData.indexOf(p);
+      if (from === to) { indexInput.value = from + 1; return; }
+      const [moved] = _panoplieOrderData.splice(from, 1);
+      _panoplieOrderData.splice(to, 0, moved);
+      _panoplieOrderDirty = true;
+      document.getElementById('btn-save-panoplie-order').disabled = false;
+      renderPanoplieOrder();
+    });
+
+    row.addEventListener('dragstart', e => { _panoplieDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    row.addEventListener('dragend',   () => { row.classList.remove('dragging'); _panoplieDragSrc = null; });
+    row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault(); row.classList.remove('drag-over');
+      if (!_panoplieDragSrc || _panoplieDragSrc === row) return;
+      const fromIdx = _panoplieOrderData.findIndex(x => x.id === _panoplieDragSrc.dataset.id);
+      const toIdx   = _panoplieOrderData.findIndex(x => x.id === row.dataset.id);
+      if (fromIdx === -1 || toIdx === -1) return;
+      const [moved] = _panoplieOrderData.splice(fromIdx, 1);
+      _panoplieOrderData.splice(toIdx, 0, moved);
+      _panoplieOrderDirty = true;
+      document.getElementById('btn-save-panoplie-order').disabled = false;
+      renderPanoplieOrder();
+    });
+
+    listEl.appendChild(row);
+  });
+};
+
+window.savePanoplieOrder = async () => {
+  if (!_panoplieOrderDirty) return;
+  const btn = document.getElementById('btn-save-panoplie-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  let ok = 0, err = 0;
+  for (let i = 0; i < _panoplieOrderData.length; i++) {
+    try {
+      await updateDoc(doc(db, 'panoplies', _panoplieOrderData[i].id), { ordre: i + 1 });
+      ok++;
+    } catch(e) { console.error(_panoplieOrderData[i].id, e); err++; }
+  }
+  localStorage.removeItem('vcl_cache_v2_panoplies');
+  localStorage.removeItem('vcl_cache_meta_v2_panoplies');
+  invalidateModCache('panoplies');
+  _panoplieOrderDirty = false;
+  btn.textContent = '💾 Sauvegarder';
+  toast(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Ordre sauvegardé (${ok} panoplies, err ? 'error' : 'success').`);
+  document.getElementById('panoplie-order-search').value = '';
+  await loadPanoplieOrder();
+};
+
+// Migration one-shot des SETS hardcodés vers Firestore
+window.importSetsToFirestore = async () => {
+  const btn = document.getElementById('btn-import-sets');
+  if (!await modal.confirm('Importer les SETS hardcodés de Compendium/data.js dans Firestore ?\n\nLes panoplies déjà existantes avec le même ID seront écrasées.')) return;
+  btn.disabled = true; btn.textContent = '⏳ Import…';
+  try {
+    // Charge data.js comme script classique (définit window.SETS — data.js utilise `let SETS` global)
+    if (typeof window.SETS === 'undefined') {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'Compendium/data.js?v=' + Date.now();
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Impossible de charger Compendium/data.js'));
+        document.head.appendChild(s);
+      });
+    }
+    const SETS = window.SETS;
+    if (!SETS || typeof SETS !== 'object') throw new Error('SETS introuvable dans data.js');
+    const entries = Object.entries(SETS);
+    if (!entries.length) throw new Error('Aucun set trouvé');
+
+    let ok = 0, err = 0, idx = 0;
+    for (const [id, set] of entries) {
+      try {
+        // Les bonuses en data.js utilisent des clés numériques (2, 3, ...) — Firestore les stocke en string
+        const bonuses = {};
+        if (set.bonuses && typeof set.bonuses === 'object') {
+          for (const [k, v] of Object.entries(set.bonuses)) bonuses[String(k)] = v;
+        }
+        const payload = {
+          id,
+          label: set.label || id,
+          color: set.color || '#888',
+          bonuses,
+          ordre: ++idx,
+        };
+        await setDoc(doc(db, 'panoplies', id), payload);
+        ok++;
+      } catch(e) { console.error('[import SETS]', id, e); err++; }
+    }
+    localStorage.removeItem('vcl_cache_v2_panoplies');
+    localStorage.removeItem('vcl_cache_meta_v2_panoplies');
+    invalidateModCache('panoplies');
+    toast(`✓ Import terminé : ${ok} panoplies${err ? ` (${err} erreurs)` : ''}.`, 'success');
+    await loadPanoplieOrder();
+  } catch(e) {
+    toast('⛔ Erreur : ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📥 Importer SETS';
+  }
+};
+
+// ── Ghost ID tracker ─────────────────────────────────
+window.showGhostIds = async () => {
+  _setHash('ghost-ids');
+  document.getElementById('users-panel').style.display        = 'none';
+  document.getElementById('submissions-list').style.display   = 'none';
+  document.getElementById('mob-order-panel').style.display    = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
+  document.getElementById('item-order-panel').style.display   = 'none';
+  document.getElementById('pnj-order-panel').style.display    = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+
+  document.getElementById('ghost-id-panel').style.display      = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
+  document.getElementById('btn-region-orphans').classList.remove('active');
+  document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
+
+  document.getElementById('btn-ghost-ids').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadGhostIds();
+};
+
+// ══════════════════════════════════════════════════════
+// RÉGIONS ORPHELINES
+// ══════════════════════════════════════════════════════
+window.showRegionOrphans = async () => {
+  _setHash('region-orphans');
+  document.getElementById('users-panel').style.display         = 'none';
+  document.getElementById('submissions-list').style.display    = 'none';
+  document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
+  document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('pnj-order-panel').style.display     = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+
+  document.getElementById('region-orphan-panel').style.display = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
+  document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
+
+  document.getElementById('btn-region-orphans').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadRegionOrphans();
+};
+
+// ── Système ignore (localStorage) ───────────────────
+const IGNORE_KEY = 'vcl_orphan_ignored';
+function _getIgnored() {
+  try { return JSON.parse(localStorage.getItem(IGNORE_KEY) || '{}'); } catch { return {}; }
+}
+function _isIgnored(cat, id) { const d = _getIgnored(); return !!(d[cat] && d[cat].includes(id)); }
+function _addIgnored(cat, id) {
+  const d = _getIgnored(); d[cat] = [...new Set([...(d[cat]||[]), id])];
+  localStorage.setItem(IGNORE_KEY, JSON.stringify(d));
+}
+function _removeIgnored(cat, id) {
+  const d = _getIgnored(); d[cat] = (d[cat]||[]).filter(x => x !== id);
+  localStorage.setItem(IGNORE_KEY, JSON.stringify(d));
+}
+
+// ── Helpers communs ──────────────────────────────────
+function _orphanSubHead(text, activeCount, ignoredCount) {
+  const d = document.createElement('div');
+  d.style.cssText = 'font-size:13px;font-weight:700;color:var(--text);margin:16px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;';
+  d.innerHTML = `${text} <span style="font-size:11px;font-weight:400;color:var(--muted);">${activeCount} trouvé${activeCount>1?'s':''}</span>`
+    + (ignoredCount ? `<span style="font-size:11px;font-weight:400;color:var(--muted);margin-left:auto;">${ignoredCount} ignoré${ignoredCount>1?'s':''}</span>` : '');
+  return d;
+}
+
+function _orphanIgnoredToggle(container, rows) {
+  // rows = [{tr, restore}] already built
+  if (!rows.length) return;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-top:4px;';
+  const tog = document.createElement('button');
+  tog.className = 'btn btn-ghost';
+  tog.style.cssText = 'font-size:11px;padding:3px 8px;opacity:.6;';
+  tog.textContent = `▶ Afficher les ${rows.length} entrée${rows.length>1?'s':''} ignorée${rows.length>1?'s':''}`;
+  let open = false;
+  const table = document.createElement('table');
+  table.className = 'ghost-table';
+  table.style.display = 'none';
+  table.style.marginTop = '6px';
+  const tbody = document.createElement('tbody');
+  rows.forEach(({ tr }) => tbody.appendChild(tr));
+  table.appendChild(tbody);
+  tog.addEventListener('click', () => {
+    open = !open;
+    table.style.display = open ? '' : 'none';
+    tog.textContent = open
+      ? `▼ Masquer les ${rows.length} entrée${rows.length>1?'s':''} ignorée${rows.length>1?'s':''}`
+      : `▶ Afficher les ${rows.length} entrée${rows.length>1?'s':''} ignorée${rows.length>1?'s':''}`;
+  });
+  wrap.appendChild(tog);
+  wrap.appendChild(table);
+  container.appendChild(wrap);
+}
+
+window.loadRegionOrphans = async function loadRegionOrphans() {
+  const listEl = document.getElementById('region-orphan-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [regions, mobs] = await Promise.all([
+      cachedDocs('regions'),
+      cachedDocs('mobs'),
+    ]);
+
+    const regionIds = new Set(regions.map(r => r.id));
+    const mobsWithBadRegion = mobs.filter(m => m.region && !regionIds.has(m.region));
+
+    listEl.innerHTML = '';
+
+    // ── Section 1 : mobs avec région invalide ────────────
+    const active1   = mobsWithBadRegion.filter(m => !_isIgnored('region-bad-mob', m.id)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','fr'));
+    const ignored1  = mobsWithBadRegion.filter(m =>  _isIgnored('region-bad-mob', m.id)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','fr'));
+    listEl.appendChild(_orphanSubHead('🔴 Mobs avec région non reconnue', active1.length, ignored1.length));
+
+    if (!active1.length && !ignored1.length) {
+      const ok = document.createElement('div'); ok.style.cssText='font-size:12px;color:var(--success);padding:6px 0;'; ok.textContent='✓ Aucun mob avec une région invalide.'; listEl.appendChild(ok);
+    } else if (active1.length) {
+      // Map nom normalisé → ID de région (pour auto-correction)
+      const regionByName = new Map(regions.map(r => [r.name?.trim().toLowerCase(), r.id]));
+      const autoFixable = active1.filter(m => regionByName.has(m.region?.trim().toLowerCase()));
+
+      if (autoFixable.length) {
+        const autoBar = document.createElement('div');
+        autoBar.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;';
+        autoBar.innerHTML = `<span style="color:var(--success);">🔧 <b>${autoFixable.length}</b> mob${autoFixable.length>1?'s':''} peut être corrigé automatiquement (nom exact trouvé dans les régions)</span>`;
+        const autoBtn = document.createElement('button');
+        autoBtn.className = 'btn btn-ghost';
+        autoBtn.style.cssText = 'font-size:11px;padding:4px 12px;margin-left:auto;';
+        autoBtn.textContent = `🔧 Tout auto-corriger (${autoFixable.length})`;
+        autoBtn.addEventListener('click', async () => {
+          autoBtn.disabled = true; autoBtn.textContent = 'Correction en cours…';
+          let done = 0, failed = 0;
+          for (const mob of autoFixable) {
+            const rid = regionByName.get(mob.region?.trim().toLowerCase());
+            if (!rid) { failed++; continue; }
+            try {
+              await updateDoc(doc(db, 'mobs', mob.id), { region: rid });
+              invalidateModCache('mobs');
+              done++;
+            } catch(e) { failed++; }
+          }
+          autoBtn.textContent = `✓ ${done} corrigé${done>1?'s':''}${failed?` · ${failed} échec${failed>1?'s':''}` : ''}`;
+          setTimeout(() => loadRegionOrphans(), 800);
+        });
+        autoBar.appendChild(autoBtn);
+        listEl.appendChild(autoBar);
+      }
+
+      const table = document.createElement('table'); table.className='ghost-table';
+      table.innerHTML=`<thead><tr><th>Mob</th><th>ID mob</th><th>Valeur région (texte libre)</th><th>→ Région détectée</th><th></th></tr></thead>`;
+      const tbody = document.createElement('tbody');
+      for (const mob of active1) {
+        const matchedId = regionByName.get(mob.region?.trim().toLowerCase());
+        const matchedRegion = matchedId ? regions.find(r => r.id === matchedId) : null;
+        const detectedCell = matchedRegion
+          ? `<span style="color:var(--success);font-family:monospace;font-size:12px;">${escHtml(matchedRegion.name)} <span style="opacity:.6;">(${escHtml(matchedId)})</span></span>`
+          : `<span style="color:var(--muted);font-size:11px;">—</span>`;
+        const tr = document.createElement('tr');
+        tr.innerHTML=`<td>${escHtml(mob.name||mob.id)}</td><td><span class="ghost-id">${escHtml(mob.id)}</span></td><td><span style="color:var(--warn);font-family:monospace;font-size:12px;">${escHtml(mob.region)}</span></td><td>${detectedCell}</td><td style="white-space:nowrap;display:flex;gap:6px;"></td>`;
+        const td = tr.querySelector('td:last-child');
+        if (matchedId) {
+          const fixBtn = document.createElement('button'); fixBtn.className='btn btn-ghost'; fixBtn.style.cssText='font-size:11px;padding:4px 10px;color:var(--success);'; fixBtn.textContent='🔧 Corriger';
+          fixBtn.addEventListener('click', async () => {
+            fixBtn.disabled = true; fixBtn.textContent = '…';
+            await updateDoc(doc(db, 'mobs', mob.id), { region: matchedId });
+            invalidateModCache('mobs');
+            loadRegionOrphans();
+          });
+          td.appendChild(fixBtn);
+        }
+        const editBtn = document.createElement('button'); editBtn.className='btn btn-ghost'; editBtn.style.cssText='font-size:11px;padding:4px 10px;'; editBtn.textContent='✏️ Éditer';
+        editBtn.addEventListener('click', () => showEditor('mobs', mob.id, mob, 'region-orphan'));
+        const ignBtn = document.createElement('button'); ignBtn.className='btn btn-ghost'; ignBtn.style.cssText='font-size:11px;padding:4px 10px;opacity:.7;'; ignBtn.textContent='✓ C\'est normal';
+        ignBtn.addEventListener('click', () => { _addIgnored('region-bad-mob', mob.id); loadRegionOrphans(); });
+        td.appendChild(editBtn); td.appendChild(ignBtn);
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody); listEl.appendChild(table);
+    }
+    if (ignored1.length) {
+      const rows = ignored1.map(mob => {
+        const tr = document.createElement('tr');
+        tr.style.opacity='.5';
+        tr.innerHTML=`<td>${escHtml(mob.name||mob.id)}</td><td><span class="ghost-id">${escHtml(mob.id)}</span></td><td><span style="font-family:monospace;font-size:12px;">${escHtml(mob.region)}</span></td><td></td>`;
+        const restBtn = document.createElement('button'); restBtn.className='btn btn-ghost'; restBtn.style.cssText='font-size:11px;padding:4px 10px;'; restBtn.textContent='↩ Restaurer';
+        restBtn.addEventListener('click', () => { _removeIgnored('region-bad-mob', mob.id); loadRegionOrphans(); });
+        tr.querySelector('td:last-child').appendChild(restBtn);
+        return { tr };
+      });
+      _orphanIgnoredToggle(listEl, rows);
+    }
+
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
+  }
+};
+
+// ══════════════════════════════════════════════════════
+// MOBS ORPHELINS
+// ══════════════════════════════════════════════════════
+window.showMobOrphans = async () => {
+  _setHash('mob-orphans');
+  document.getElementById('users-panel').style.display         = 'none';
+  document.getElementById('submissions-list').style.display    = 'none';
+  document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
+  document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('pnj-order-panel').style.display     = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+
+  document.getElementById('mob-orphan-panel').style.display    = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
+  document.getElementById('btn-region-orphans').classList.remove('active');
+
+  document.getElementById('btn-mob-orphans').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadMobOrphans();
+};
+
+window.loadMobOrphans = async function loadMobOrphans() {
+  const listEl = document.getElementById('mob-orphan-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [mobs, items, regions] = await Promise.all([
+      cachedDocs('mobs'),
+      cachedDocs('items'),
+      cachedDocs('regions'),
+    ]);
+
+    const regionIds = new Set(regions.map(r => r.id));
+
+    // Section 1 : mobs sans région du tout (les mobs avec région invalide sont dans "Région Orphelins")
+    const mobsNoValidRegion = mobs.filter(m => !m.region);
+
+    listEl.innerHTML = '';
+
+    const makeMobSection = (cat, headText, list, extraCol) => {
+      const active  = list.filter(m => !_isIgnored(cat, m.id)).sort((a,b)=>(a.palier||1)-(b.palier||1)||(a.name||'').localeCompare(b.name||'','fr'));
+      const ignored = list.filter(m =>  _isIgnored(cat, m.id)).sort((a,b)=>(a.palier||1)-(b.palier||1)||(a.name||'').localeCompare(b.name||'','fr'));
+      listEl.appendChild(_orphanSubHead(headText, active.length, ignored.length));
+
+      if (!active.length && !ignored.length) {
+        const ok = document.createElement('div'); ok.style.cssText='font-size:12px;color:var(--success);padding:6px 0;'; ok.textContent='✓ Aucun.'; listEl.appendChild(ok); return;
+      }
+
+      if (active.length) {
+        const hasExtra = !!extraCol;
+        const table = document.createElement('table'); table.className='ghost-table';
+        table.innerHTML=`<thead><tr><th>Mob</th><th>ID</th><th>Type</th>${hasExtra?`<th>${escHtml(extraCol.head)}</th>`:''}<th></th></tr></thead>`;
+        const tbody = document.createElement('tbody');
+        for (const mob of active) {
+          const typeLabel = `P${mob.palier||'?'} ${mob.type||'—'}`;
+          const extraCell = hasExtra ? `<td><span style="font-family:monospace;font-size:11px;color:var(--warn);">${escHtml(extraCol.val(mob)||'—')}</span></td>` : '';
+          const tr = document.createElement('tr');
+          tr.innerHTML=`<td>${escHtml(mob.name||mob.id)}</td><td><span class="ghost-id">${escHtml(mob.id)}</span></td><td><span style="font-size:11px;color:var(--muted);">${escHtml(typeLabel)}</span></td>${extraCell}<td style="white-space:nowrap;display:flex;gap:6px;"></td>`;
+          const td = tr.querySelector('td:last-child');
+          const editBtn = document.createElement('button'); editBtn.className='btn btn-ghost'; editBtn.style.cssText='font-size:11px;padding:4px 10px;'; editBtn.textContent='✏️ Corriger';
+          editBtn.addEventListener('click', () => showEditor('mobs', mob.id, mob, 'mob-orphan'));
+          const ignBtn = document.createElement('button'); ignBtn.className='btn btn-ghost'; ignBtn.style.cssText='font-size:11px;padding:4px 10px;opacity:.7;'; ignBtn.textContent="✓ C'est normal";
+          ignBtn.addEventListener('click', () => { _addIgnored(cat, mob.id); loadMobOrphans(); });
+          td.appendChild(editBtn); td.appendChild(ignBtn);
+          tbody.appendChild(tr);
+        }
+        table.appendChild(tbody); listEl.appendChild(table);
+      }
+
+      if (ignored.length) {
+        const rows = ignored.map(mob => {
+          const typeLabel = `P${mob.palier||'?'} ${mob.type||'—'}`;
+          const tr = document.createElement('tr'); tr.style.opacity='.5';
+          tr.innerHTML=`<td>${escHtml(mob.name||mob.id)}</td><td><span class="ghost-id">${escHtml(mob.id)}</span></td><td><span style="font-size:11px;color:var(--muted);">${escHtml(typeLabel)}</span></td><td></td>`;
+          const restBtn = document.createElement('button'); restBtn.className='btn btn-ghost'; restBtn.style.cssText='font-size:11px;padding:4px 10px;'; restBtn.textContent='↩ Restaurer';
+          restBtn.addEventListener('click', () => { _removeIgnored(cat, mob.id); loadMobOrphans(); });
+          tr.querySelector('td:last-child').appendChild(restBtn);
+          return { tr };
+        });
+        _orphanIgnoredToggle(listEl, rows);
+      }
+    };
+
+    makeMobSection(
+      'mob-region',
+      '🔴 Mobs sans région',
+      mobsNoValidRegion,
+      { head: 'Valeur actuelle', val: m => m.region || '' }
+    );
+
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
+  }
+};
+
+// ══════════════════════════════════════════════════════
+// IDs FANTÔMES (items)
+// ══════════════════════════════════════════════════════
+async function loadGhostIds() {
+  const listEl = document.getElementById('ghost-id-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [items, mobs] = await Promise.all([
+      cachedDocs('items'),
+      cachedDocs('mobs'),
+    ]);
+    const definedItemIds = new Set(items.map(i => i.id));
+    const definedMobIds  = new Set(mobs.map(m => m.id));
+
+    // ghostId → [{ label, type }]
+    // type: 'craft' | 'drop' | 'mob-obtain'
+    const refs = {};
+
+    const EXCLUDED_IDS = new Set(['cols']); // IDs spéciaux (monnaie, etc.) jamais dans items
+
+    // 1. Ingrédients de craft référençant un item inexistant
+    for (const item of items) {
+      for (const c of (item.craft || [])) {
+        if (c.id && !definedItemIds.has(c.id) && !EXCLUDED_IDS.has(c.id)) {
+          (refs[c.id] ??= []).push({ label: `Craft : ${item.name || item.id}`, type: 'craft' });
+        }
+      }
+    }
+
+    // 2. Loot de mobs référençant un item inexistant
+    for (const mob of mobs) {
+      for (const loot of (mob.loot || [])) {
+        if (loot.id && !definedItemIds.has(loot.id) && !EXCLUDED_IDS.has(loot.id)) {
+          const pct = loot.chance != null ? `${loot.chance}%` : '?%';
+          (refs[loot.id] ??= []).push({ label: `Drop : ${mob.name || mob.id} (${pct})`, type: 'drop' });
+        }
+      }
+    }
+
+    // 3. Mobs référencés dans item.obtain mais absents de la collection mobs
+    // Format : [mobId|MobName][chance] — on exclut [npc:xxx|...] qui sont des PNJ
+    const reMobRef = /\[(?!npc:)([\w]+)\|[^\]]*\]\[/g;
+    for (const item of items) {
+      if (!item.obtain) continue;
+      let m;
+      reMobRef.lastIndex = 0;
+      while ((m = reMobRef.exec(item.obtain)) !== null) {
+        const mobId = m[1];
+        if (!definedMobIds.has(mobId)) {
+          (refs[mobId] ??= []).push({ label: `Obtain (mob) : ${item.name || item.id}`, type: 'mob-obtain' });
+        }
+      }
+    }
+
+    const ghostIds = Object.keys(refs).sort();
+    listEl.innerHTML = '';
+
+    if (!ghostIds.length) {
+      listEl.innerHTML = '<div class="empty">✓ Aucun ID fantôme — tout est défini.</div>';
+      return;
+    }
+
+    const summary = document.createElement('div');
+    summary.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:12px;';
+    summary.textContent = `${ghostIds.length} ID${ghostIds.length > 1 ? 's' : ''} fantôme${ghostIds.length > 1 ? 's' : ''} trouvé${ghostIds.length > 1 ? 's' : ''}`;
+    listEl.appendChild(summary);
+
+    const table = document.createElement('table');
+    table.className = 'ghost-table';
+    table.innerHTML = `<thead><tr><th>Type</th><th>ID fantôme</th><th>Référencé dans</th><th></th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+
+    for (const id of ghostIds) {
+      const entries = refs[id];
+      // Un ID est un mob fantôme si toutes ses références viennent de mob-obtain
+      const isMob = entries.every(e => e.type === 'mob-obtain');
+      const tr = document.createElement('tr');
+      const refsHtml = entries.map(e =>
+        `<span class="ghost-type-${e.type}">${escHtml(e.label)}</span>`
+      ).join('<br>');
+      const typeCell = isMob
+        ? `<span style="font-size:10px;font-weight:700;color:var(--warn);background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 7px;">Mob</span>`
+        : `<span style="font-size:10px;font-weight:700;color:var(--accent);background:rgba(122,90,248,.1);border:1px solid rgba(122,90,248,.3);border-radius:8px;padding:2px 7px;">Item</span>`;
+      const actionCell = isMob
+        ? `<a href="creator.html?ghostid=${encodeURIComponent(id)}&ghosttype=mob" target="_blank"
+             class="btn btn-ghost" style="font-size:11px;padding:4px 10px;text-decoration:none;">👾 Créer le mob</a>`
+        : `<a href="creator.html?ghostid=${encodeURIComponent(id)}" target="_blank"
+             class="btn btn-ghost" style="font-size:11px;padding:4px 10px;text-decoration:none;">✏️ Créer l'item</a>`;
+      tr.innerHTML = `
+        <td>${typeCell}</td>
+        <td><span class="ghost-id">${escHtml(id)}</span></td>
+        <td><span class="ghost-refs">${refsHtml}</span></td>
+        <td style="white-space:nowrap;">${actionCell}</td>`;
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    listEl.appendChild(table);
+
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty">Erreur : ${escHtml(e.message)}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// ÉDITEUR DE DONNÉES
+// ══════════════════════════════════════════════════════
+let _editorCollection = null;
+let _editorId         = null;
+let _editorOrigin     = null;
+
+const _COL_LABELS = { items:'Item', mobs:'Mob', personnages:'PNJ', regions:'Région', panoplies:'Panoplie', quetes:'Quête' };
+
+let _cachedRegions = null;
+let _cachedSets    = null;
+
+async function _loadRegionsForEditor() {
+  if (_cachedRegions) return _cachedRegions;
+  try {
+    const docs = await cachedDocs('regions');
+    _cachedRegions = [...docs].sort((a, b) => (a.ordre ?? 9999) - (b.ordre ?? 9999));
+  } catch { _cachedRegions = []; }
+  return _cachedRegions;
+}
+
+async function _populateSetDatalist() {
+  const dl = document.getElementById('ed-dl-sets');
+  if (!dl) return;
+  if (_cachedSets === null) {
+    let items = _itemOrderData.length ? _itemOrderData : null;
+    if (!items) {
+      try {
+        items = await cachedDocs('items');
+      } catch { items = []; }
+    }
+    _cachedSets = [...new Set(items.map(i => i.set).filter(Boolean))].sort((a,b) => a.localeCompare(b,'fr'));
+  }
+  dl.innerHTML = _cachedSets.map(s => `<option value="${_ee(s)}">`).join('');
+}
+
+// ── Éditeur générique ────────────────────────────────
+let _editorOrigData = null;
+
+const _ee = escHtml;
+
+function _typeOf(val) {
+  if (val === null || val === undefined) return 'null';
+  if (typeof val === 'boolean') return 'bool';
+  if (typeof val === 'number') return Number.isInteger(val) ? 'int' : 'float';
+  if (typeof val === 'string') return 'string';
+  if (Array.isArray(val)) return 'array';
+  return 'map';
+}
+function _typeColor(t) {
+  return { bool:'#7dd3fc', int:'#86efac', float:'#a5f3c4', string:'#fcd34d', array:'#c084fc', map:'#f472b6', null:'var(--muted)' }[t] || 'var(--muted)';
+}
+function _typeLabel(t) {
+  return { bool:'bool', int:'int', float:'float', string:'str', array:'array', map:'map', null:'null' }[t] || t;
+}
+
+const _GEN_FIELD_ORDER = [
+  'id','name','titre','type','palier','zone','npc','mapId','rarity','category','cat','lvl','set','behavior','difficulty',
+  'region','regionId','tag','inCodex','color','sensible','twoHanded','rune_slots',
+  'images','lore','obtain','respawnDelay','spawnTime',
+  'stats','classes','tags','effects','craft','loot','sells','zones','drops','morceaux','camera','attacks',
+  'ordre','_order'
+];
+
+// ── Color Picker complet (HSV) ────────────────────
+let _cpState = {};   // { [pickerId]: { h, s, v } }
+let _cpDrag  = null; // { id, type: 'sv'|'hue' }
+
+function _cpHsvToRgb(h, s, v) {
+  s /= 100; v /= 100;
+  const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+  let r = 0, g = 0, b = 0;
+  if      (h <  60) { r=c; g=x; }
+  else if (h < 120) { r=x; g=c; }
+  else if (h < 180) {      g=c; b=x; }
+  else if (h < 240) {      g=x; b=c; }
+  else if (h < 300) { r=x;      b=c; }
+  else              { r=c;      b=x; }
+  return [Math.round((r+m)*255), Math.round((g+m)*255), Math.round((b+m)*255)];
+}
+function _cpRgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max - min;
+  let h = 0;
+  if (d > 0) {
+    if      (max === r) h = ((g-b)/d + (g<b?6:0)) * 60;
+    else if (max === g) h = ((b-r)/d + 2) * 60;
+    else                h = ((r-g)/d + 4) * 60;
+  }
+  return [h, max===0 ? 0 : d/max*100, max*100];
+}
+function _cpHexToRgb(hex) {
+  return [parseInt(hex.slice(1,3),16), parseInt(hex.slice(3,5),16), parseInt(hex.slice(5,7),16)];
+}
+function _cpRgbToHex(r,g,b) {
+  return '#' + [r,g,b].map(v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+}
+function _makeColorObj(hex) {
+  const [r,g,b] = _cpHexToRgb(hex);
+  return { color: hex, dim: `rgba(${r},${g},${b},.35)`, glow: `rgba(${r},${g},${b},.08)` };
+}
+
+function _cpUpdate(id, h, s, v) {
+  h = ((h % 360) + 360) % 360;
+  s = Math.max(0, Math.min(100, s));
+  v = Math.max(0, Math.min(100, v));
+  _cpState[id] = { h, s, v };
+
+  const [r,g,b] = _cpHsvToRgb(h, s, v);
+  const hex     = _cpRgbToHex(r, g, b);
+  const wrap    = document.getElementById(id);
+  if (!wrap) return;
+
+  // Carré SV — couleur de fond = teinte pure
+  const pureHex = _cpRgbToHex(..._cpHsvToRgb(h, 100, 100));
+  const svBg = wrap.querySelector('.ed-cp-sv-bg');
+  if (svBg) svBg.style.background = pureHex;
+
+  // Curseur SV
+  const cur = wrap.querySelector('.ed-cp-cursor');
+  if (cur) { cur.style.left = s+'%'; cur.style.top = (100-v)+'%'; cur.style.background = hex; }
+
+  // Thumb teinte
+  const hThumb = wrap.querySelector('.ed-cp-hue-thumb');
+  if (hThumb) { hThumb.style.left = (h/360*100)+'%'; hThumb.style.background = pureHex; }
+
+  // Input hex
+  const hexIn = wrap.querySelector('.ed-cp-hex-in');
+  if (hexIn && document.activeElement !== hexIn) hexIn.value = hex;
+
+  // Inputs RGB
+  const rgbIns = wrap.querySelectorAll('.ed-cp-rgb-in');
+  if (rgbIns[0] && document.activeElement !== rgbIns[0]) rgbIns[0].value = r;
+  if (rgbIns[1] && document.activeElement !== rgbIns[1]) rgbIns[1].value = g;
+  if (rgbIns[2] && document.activeElement !== rgbIns[2]) rgbIns[2].value = b;
+
+  // Swatches + labels
+  const colorObj = _makeColorObj(hex);
+  const sw = wrap.querySelector('.ed-cp-swatch'), swd = wrap.querySelector('.ed-cp-swatch-dim');
+  if (sw)  sw.style.background  = hex;
+  if (swd) swd.style.background = colorObj.dim;
+  const hs = wrap.querySelector('.ed-cp-hex-lbl'), ds = wrap.querySelector('.ed-cp-dim-lbl'), gs = wrap.querySelector('.ed-cp-glow-lbl');
+  if (hs) hs.textContent = hex;
+  if (ds) ds.textContent = colorObj.dim;
+  if (gs) gs.textContent = colorObj.glow;
+
+  // Valeur sérialisée collectée par _collectGenericForm (JSON objet pour régions, hex pour panoplies)
+  const mode = wrap.dataset.cpMode || 'object';
+  const out  = wrap.querySelector('.ed-cp-out');
+  if (out) out.value = mode === 'hex' ? hex : JSON.stringify(colorObj);
+
+  // Palette — marquer la pastille active
+  wrap.querySelectorAll('.ed-cp-preset').forEach(p => {
+    p.style.outline       = p.dataset.hex === hex ? '2px solid #fff' : 'none';
+    p.style.outlineOffset = '1px';
+  });
+}
+
+document.addEventListener('mousemove', e => {
+  if (!_cpDrag) return;
+  const wrap = document.getElementById(_cpDrag.id);
+  if (!wrap) { _cpDrag = null; return; }
+  const st = _cpState[_cpDrag.id] || { h:0, s:100, v:100 };
+  if (_cpDrag.type === 'sv') {
+    const rect = wrap.querySelector('.ed-cp-sv').getBoundingClientRect();
+    _cpUpdate(_cpDrag.id, st.h,
+      Math.max(0,Math.min(100,(e.clientX-rect.left)/rect.width*100)),
+      Math.max(0,Math.min(100,100-(e.clientY-rect.top)/rect.height*100)));
+  } else {
+    const rect = wrap.querySelector('.ed-cp-hue').getBoundingClientRect();
+    _cpUpdate(_cpDrag.id, Math.max(0,Math.min(360,(e.clientX-rect.left)/rect.width*360)), st.s, st.v);
+  }
+});
+document.addEventListener('mouseup', () => { _cpDrag = null; });
+
+window.cpSvDown = function(e, id) {
+  e.preventDefault(); _cpDrag = { id, type:'sv' };
+  const rect = e.currentTarget.getBoundingClientRect(), st = _cpState[id]||{h:0,s:100,v:100};
+  _cpUpdate(id, st.h,
+    Math.max(0,Math.min(100,(e.clientX-rect.left)/rect.width*100)),
+    Math.max(0,Math.min(100,100-(e.clientY-rect.top)/rect.height*100)));
+};
+window.cpHueDown = function(e, id) {
+  e.preventDefault(); _cpDrag = { id, type:'hue' };
+  const rect = e.currentTarget.getBoundingClientRect(), st = _cpState[id]||{h:0,s:100,v:100};
+  _cpUpdate(id, Math.max(0,Math.min(360,(e.clientX-rect.left)/rect.width*360)), st.s, st.v);
+};
+window.cpHexInput = function(input, id) {
+  const hex = input.value.trim();
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+  const [r,g,b] = _cpHexToRgb(hex); const [h,s,v] = _cpRgbToHsv(r,g,b);
+  _cpUpdate(id, h, s, v);
+};
+window.cpRgbInput = function(input, id) {
+  const wrap = document.getElementById(id); if (!wrap) return;
+  const ins = wrap.querySelectorAll('.ed-cp-rgb-in');
+  const r = Math.max(0,Math.min(255,parseInt(ins[0]?.value)||0));
+  const g = Math.max(0,Math.min(255,parseInt(ins[1]?.value)||0));
+  const b = Math.max(0,Math.min(255,parseInt(ins[2]?.value)||0));
+  const [h,s,v] = _cpRgbToHsv(r,g,b);
+  _cpUpdate(id, h, s, v);
+};
+window.edPickPreset = function(swatch) {
+  const wrap = swatch.closest('.ed-color-picker'); if (!wrap) return;
+  const [r,g,b] = _cpHexToRgb(swatch.dataset.hex);
+  const [h,s,v] = _cpRgbToHsv(r,g,b);
+  _cpUpdate(wrap.id, h, s, v);
+};
+
+function _genValueHtml(key, val, col) {
+  const t = _typeOf(val);
+  const isInternal = key === '_order';
+  const isReadonly = isInternal;
+
+  if (isReadonly) {
+    return `<input class="ed-input" value="${_ee(String(val ?? ''))}" readonly style="opacity:.4;cursor:default;font-family:monospace;">`;
+  }
+
+  if (t === 'bool') {
+    return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0;">
+      <input type="checkbox" data-gf-type="bool"${val ? ' checked' : ''} style="accent-color:var(--accent);width:15px;height:15px;cursor:pointer;">
+      <span class="ed-gen-bool-txt" style="font-size:12px;color:var(--muted);">${val ? 'true' : 'false'}</span>
+    </label>`;
+  }
+
+  if (t === 'int' || t === 'float') {
+    return `<input class="ed-input" type="number" step="${t === 'float' ? 'any' : '1'}" data-gf-type="number" value="${_ee(String(val ?? ''))}">`;
+  }
+
+  // Color picker complet pour le champ color des régions & panoplies
+  if (key === 'color' && (col === 'regions' || col === 'panoplies')) {
+    const mode = col === 'panoplies' ? 'hex' : 'object';
+    const hex  = mode === 'hex'
+      ? (typeof val === 'string' && /^#[0-9a-f]{6}$/i.test(val) ? val : '#b87333')
+      : ((val && typeof val === 'object' && val.color) ? val.color : '#9a9ab0');
+    const obj = _makeColorObj(hex);
+    const CP  = 'ed-cp-reg';  // ID fixe (un seul éditeur ouvert à la fois)
+
+    const PRESETS = [
+      { label:'Naturel',  colors:['#4ade80','#22c55e','#86efac','#a3e635','#34d399'] },
+      { label:'Chaud',    colors:['#fbbf24','#f59e0b','#e0a050','#fb923c','#f97316'] },
+      { label:'Feu',      colors:['#f87171','#ef4444','#f43f5e','#fb7185','#dc2626'] },
+      { label:'Froid',    colors:['#60a5fa','#38bdf8','#7dd3fc','#a5f3fc','#818cf8'] },
+      { label:'Mystique', colors:['#c084fc','#a855f7','#e879f9','#f0abfc','#d946ef'] },
+      { label:'Neutre',   colors:['#9a9ab0','#94a3b8','#6b7280','#d4d4d8','#a1a1aa'] },
+    ];
+    const paletteHtml = PRESETS.map(g => `
+      <div style="display:contents;">
+        <span style="font-size:10px;color:var(--muted);grid-column:1;align-self:center;white-space:nowrap;">${_ee(g.label)}</span>
+        ${g.colors.map(c => `<div class="ed-cp-preset" data-hex="${_ee(c)}" onclick="edPickPreset(this)"
+          style="width:20px;height:20px;border-radius:4px;background:${_ee(c)};cursor:pointer;border:1px solid rgba(255,255,255,.15);transition:transform .12s;"
+          onmouseover="this.style.transform='scale(1.25)'" onmouseout="this.style.transform=''"></div>`).join('')}
+      </div>`).join('');
+
+    return `<div class="ed-color-picker" id="${_ee(CP)}" data-init-hex="${_ee(hex)}" data-cp-mode="${mode}"
+      style="display:flex;flex-direction:column;gap:8px;padding:10px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;max-width:320px;">
+
+      <!-- Carré Saturation / Valeur -->
+      <div class="ed-cp-sv" style="position:relative;width:100%;height:180px;border-radius:5px;cursor:crosshair;user-select:none;flex-shrink:0;"
+           onmousedown="cpSvDown(event,'${_ee(CP)}')">
+        <div class="ed-cp-sv-bg" style="position:absolute;inset:0;border-radius:5px;"></div>
+        <div style="position:absolute;inset:0;border-radius:5px;background:linear-gradient(to right,#fff,transparent);"></div>
+        <div style="position:absolute;inset:0;border-radius:5px;background:linear-gradient(to bottom,transparent,#000);"></div>
+        <div class="ed-cp-cursor" style="position:absolute;width:13px;height:13px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.4),0 2px 6px rgba(0,0,0,.6);transform:translate(-50%,-50%);pointer-events:none;"></div>
+      </div>
+
+      <!-- Slider Teinte -->
+      <div class="ed-cp-hue" style="position:relative;height:14px;border-radius:7px;cursor:pointer;user-select:none;
+           background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);"
+           onmousedown="cpHueDown(event,'${_ee(CP)}')">
+        <div class="ed-cp-hue-thumb" style="position:absolute;top:50%;width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.3),0 2px 4px rgba(0,0,0,.5);transform:translate(-50%,-50%);pointer-events:none;"></div>
+      </div>
+
+      <!-- Swatches + labels -->
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="ed-cp-swatch"     style="width:32px;height:32px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,.2);" title="color"></div>
+        <div class="ed-cp-swatch-dim" style="width:32px;height:32px;border-radius:5px;flex-shrink:0;border:1px solid rgba(255,255,255,.1);" title="dim (opacité 35%)"></div>
+        <div style="font-family:monospace;font-size:11px;display:flex;flex-direction:column;gap:1px;min-width:0;overflow:hidden;">
+          <span class="ed-cp-hex-lbl"  style="color:var(--text);font-weight:600;"></span>
+          <span class="ed-cp-dim-lbl"  style="color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+          <span class="ed-cp-glow-lbl" style="color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+        </div>
+      </div>
+
+      <!-- Inputs Hex + RGB -->
+      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+        <span style="font-size:11px;color:var(--muted);width:20px;">#</span>
+        <input class="ed-input ed-cp-hex-in" type="text" maxlength="7"
+               style="font-family:monospace;width:76px;padding:4px 6px;font-size:13px;"
+               oninput="cpHexInput(this,'${_ee(CP)}')" spellcheck="false" autocomplete="off">
+        <span style="font-size:11px;color:var(--muted);">R</span>
+        <input class="ed-input ed-cp-rgb-in" type="number" min=0 max=255 style="width:44px;padding:4px;" oninput="cpRgbInput(this,'${_ee(CP)}')">
+        <span style="font-size:11px;color:var(--muted);">G</span>
+        <input class="ed-input ed-cp-rgb-in" type="number" min=0 max=255 style="width:44px;padding:4px;" oninput="cpRgbInput(this,'${_ee(CP)}')">
+        <span style="font-size:11px;color:var(--muted);">B</span>
+        <input class="ed-input ed-cp-rgb-in" type="number" min=0 max=255 style="width:44px;padding:4px;" oninput="cpRgbInput(this,'${_ee(CP)}')">
+      </div>
+
+      <!-- Palette de présélections -->
+      <div style="display:grid;grid-template-columns:52px repeat(5,20px);gap:4px 6px;align-items:center;padding-top:4px;border-top:1px solid var(--border);">
+        ${paletteHtml}
+      </div>
+
+      <!-- Valeur sérialisée (lue par _collectGenericForm) -->
+      ${mode === 'hex'
+        ? `<input class="ed-cp-out" data-gf-type="string" type="hidden" value="${_ee(hex)}">`
+        : `<textarea class="ed-cp-out ed-json-ta" data-gf-type="json" spellcheck="false" style="display:none;">${_ee(JSON.stringify(obj))}</textarea>`}
+    </div>`;
+  }
+
+  if (t === 'array' || t === 'map') {
+    return `<textarea class="ed-json-ta" data-gf-type="json" spellcheck="false">${_ee(JSON.stringify(val, null, 2))}</textarea>`;
+  }
+
+  if (t === 'null') {
+    return `<input class="ed-input" data-gf-type="string" value="" placeholder="(null)">`;
+  }
+
+  // Champ region sur les mobs → dropdown searchable groupé par palier/codex
+  if (key === 'region' && col === 'mobs') {
+    const regions = _cachedRegions || [];
+    const known = new Set(regions.map(r => r.id));
+    const currentName = regions.find(r => r.id === val)?.name || (val && !known.has(val) ? `⚠️ ${val} (non reconnu)` : '');
+    const paliers = [...new Set(regions.map(r => r.palier || 1))].sort((a,b) => a-b);
+
+    let itemsHtml = `<div data-reg-id="" data-reg-name=""
+      style="padding:7px 14px;cursor:pointer;font-size:13px;color:var(--muted);font-style:italic;"
+      onmousedown="edSelectRegion(event,this)"
+      onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background=''">— aucune —</div>`;
+
+    for (const p of paliers) {
+      const groups = [
+        { label: `Palier ${p} — Codex`,      items: regions.filter(r => (r.palier||1)===p && r.inCodex!==false) },
+        { label: `Palier ${p} — Hors Codex`, items: regions.filter(r => (r.palier||1)===p && r.inCodex===false) },
+      ].filter(g => g.items.length);
+      for (const { label, items } of groups) {
+        itemsHtml += `<div data-reg-group style="padding:4px 10px 2px;font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;pointer-events:none;">${_ee(label)}</div>`;
+        itemsHtml += items.map(r => `<div data-reg-id="${_ee(r.id)}" data-reg-name="${_ee(r.name||r.id)}"
+          style="padding:6px 14px 6px 20px;cursor:pointer;font-size:13px;color:var(--text);"
+          onmousedown="edSelectRegion(event,this)"
+          onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background=''">${_ee(r.name||r.id)}</div>`).join('');
+      }
+    }
+    if (val && !known.has(val)) {
+      itemsHtml += `<div data-reg-id="${_ee(val)}" data-reg-name="${_ee(val)}"
+        style="padding:6px 14px;cursor:pointer;font-size:13px;color:var(--warn);"
+        onmousedown="edSelectRegion(event,this)"
+        onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background=''">⚠️ ${_ee(val)} (conserver tel quel)</div>`;
+    }
+
+    return `<div style="position:relative;">
+      <input type="text" class="ed-input" placeholder="🔍 Rechercher une région…"
+             value="${_ee(currentName)}" autocomplete="off"
+             oninput="edFilterRegions(this)" onfocus="edOpenRegions(this)"
+             onblur="setTimeout(()=>edCloseRegions(this),150)">
+      <input type="hidden" data-gf-type="string" value="${_ee(val||'')}">
+      <div data-reg-dropdown style="display:none;position:absolute;top:100%;left:0;right:0;z-index:300;
+           max-height:240px;overflow-y:auto;background:var(--surface2);border:1px solid var(--accent);
+           border-top:none;border-radius:0 0 6px 6px;box-shadow:0 4px 12px rgba(0,0,0,.5);">
+        ${itemsHtml}
+      </div>
+    </div>`;
+  }
+
+  // string
+  const str = String(val ?? '');
+  const listAttr = key === 'set' ? ' list="ed-dl-sets"' : '';
+  if (str.length > 100 || str.includes('\n')) {
+    return `<textarea class="ed-textarea" data-gf-type="string">${_ee(str)}</textarea>`;
+  }
+  return `<input class="ed-input" data-gf-type="string" value="${_ee(str)}"${listAttr} autocomplete="off">`;
+}
+
+function _buildGenericForm(data, col) {
+  // Normaliser img / image → images (tableau)
+  if ('img' in data || 'image' in data) {
+    const existing = data.images && data.images.length ? data.images : null;
+    if (!existing) {
+      const src = data.img || data.image;
+      data = { ...data, images: src ? [src] : [] };
+    }
+    const { img, image, ...rest } = data;
+    data = rest;
+  }
+
+  // Auto-injecter le champ color pour les régions qui n'en ont pas encore
+  if (col === 'regions' && !('color' in data)) {
+    data = { ...data, color: _makeColorObj('#9a9ab0') };
+  }
+  // Auto-injecter le champ color pour les panoplies qui n'en ont pas encore
+  if (col === 'panoplies' && !('color' in data)) {
+    data = { ...data, color: '#b87333' };
+  }
+  // Auto-injecter mapId pour les quêtes qui n'en ont pas encore
+  if (col === 'quetes' && !('mapId' in data)) {
+    data = { ...data, mapId: '' };
+  }
+  // Auto-injecter obtain pour les items qui n'en ont pas encore
+  if (col === 'items' && !('obtain' in data)) {
+    data = { ...data, obtain: '' };
+  }
+
+  _editorOrigData = { ...data };
+
+  const entries = Object.entries(data).sort(([ak, av], [bk, bv]) => {
+    const ia = _GEN_FIELD_ORDER.indexOf(ak), ib = _GEN_FIELD_ORDER.indexOf(bk);
+    const ta = _typeOf(av), tb = _typeOf(bv);
+    const cxa = ta === 'array' || ta === 'map', cxb = tb === 'array' || tb === 'map';
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    if (cxa && !cxb) return 1;
+    if (!cxa && cxb) return -1;
+    return ak.localeCompare(bk);
+  });
+
+  const rowsHtml = entries.map(([key, val]) => {
+    const t = _typeOf(val);
+    const isFixed = key === '_order' || key === 'id';
+    return `<div class="ed-gen-row" data-gf-orig-key="${_ee(key)}">
+      <div class="ed-gen-keycell">
+        ${isFixed
+          ? `<span class="ed-gen-keylbl" style="cursor:default;color:var(--muted);">${_ee(key)}</span>`
+          : `<span class="ed-gen-keylbl" title="Clic pour renommer" onclick="edRenameField(this)">${_ee(key)}</span>`}
+      </div>
+      <span class="ed-gen-type" style="color:${_typeColor(t)};">${_typeLabel(t)}</span>
+      <div class="ed-gen-val">${_genValueHtml(key, val, col)}</div>
+      ${isFixed ? '<span></span>' : `<button type="button" class="ed-gen-delbtn" onclick="edDelGenRow(this)" title="Supprimer ce champ">✕</button>`}
+    </div>`;
+  }).join('');
+
+  return `<div id="ed-gen-fields" style="display:flex;flex-direction:column;gap:4px;">
+    ${rowsHtml}
+  </div>
+  <datalist id="ed-dl-sets"></datalist>
+  <button type="button" onclick="edAddGenField()" class="btn btn-ghost" style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ</button>`;
+}
+
+function _collectGenericForm() {
+  const result = {};
+  document.querySelectorAll('#ed-gen-fields .ed-gen-row').forEach(row => {
+    const keyInput = row.querySelector('.ed-gen-key-input');
+    const keyLbl   = row.querySelector('.ed-gen-keylbl');
+    const newKeyEl = row.querySelector('.ed-gen-new-key');
+    const key = (keyInput ? keyInput.value.trim() : (keyLbl ? keyLbl.textContent.trim() : ''));
+    const effectiveKey = newKeyEl ? newKeyEl.value.trim() : key;
+    if (!effectiveKey) return;
+
+    const el = row.querySelector('[data-gf-type]');
+    if (!el) return; // readonly field (id for items/pnj/regions, _order)
+
+    const t = el.dataset.gfType;
+    if (t === 'bool')   { result[effectiveKey] = el.checked; return; }
+    if (t === 'number') { const v = el.value.trim(); if (v !== '') result[effectiveKey] = +v; return; }
+    if (t === 'json')   {
+      const v = el.value.trim();
+      if (!v) { result[effectiveKey] = null; return; }
+      const parsed = JSON.parse(v); // throws if invalid → caught by saveEditor
+      result[effectiveKey] = parsed; return;
+    }
+    result[effectiveKey] = el.value;
+  });
+  // Preserve readonly fields from origData
+  if (_editorOrigData) {
+    if ('id' in _editorOrigData && !('id' in result)) result.id = _editorOrigData.id;
+    if ('_order' in _editorOrigData) result._order = _editorOrigData._order;
+  }
+  return result;
+}
+
+window.edRenameField = function(lbl) {
+  const currentKey = lbl.textContent.trim();
+  const input = document.createElement('input');
+  input.className = 'ed-gen-key-input ed-input';
+  input.value = currentKey;
+  input.title = 'Renommer ce champ — appuyez sur Entrée pour valider';
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
+  input.addEventListener('blur', () => {
+    const newKey = input.value.trim();
+    if (!newKey) { input.replaceWith(lbl); return; }
+    if (newKey !== currentKey) {
+      const row = input.closest('.ed-gen-row');
+      if (row) row.dataset.gfOrigKey = currentKey; // keep original for diff
+      lbl.textContent = newKey;
+    }
+    input.replaceWith(lbl);
+  });
+  lbl.replaceWith(input);
+  input.focus(); input.select();
+};
+
+window.edDelGenRow = function(btn) {
+  btn.closest('.ed-gen-row').remove();
+};
+
+// ── Region dropdown (éditeur) ────────────────────────
+window.edOpenRegions = function(input) {
+  const dd = input.closest('div[style*="position:relative"]').querySelector('[data-reg-dropdown]');
+  if (dd) { dd.style.display = ''; edFilterRegions(input); }
+};
+window.edCloseRegions = function(input) {
+  const wrap = input.closest('div[style*="position:relative"]');
+  if (!wrap) return;
+  const dd = wrap.querySelector('[data-reg-dropdown]');
+  if (dd) dd.style.display = 'none';
+  // Restaure le nom affiché depuis la valeur cachée
+  const hidden = wrap.querySelector('input[type="hidden"]');
+  if (hidden) {
+    const cached = (_cachedRegions || []).find(r => r.id === hidden.value);
+    input.value = cached ? (cached.name || cached.id) : (hidden.value || '');
+  }
+};
+window.edFilterRegions = function(input) {
+  const dd = input.closest('div[style*="position:relative"]').querySelector('[data-reg-dropdown]');
+  if (!dd) return;
+  dd.style.display = '';
+  const q = normalize(input.value.trim());
+  let lastGroup = null;
+  Array.from(dd.children).forEach(el => {
+    if (el.hasAttribute('data-reg-group')) {
+      lastGroup = el; el.style.display = 'none'; return;
+    }
+    if (!el.hasAttribute('data-reg-id') && !el.hasAttribute('data-reg-name')) return;
+    const name = normalize(el.dataset.regName || '');
+    const id   = (el.dataset.regId   || '').toLowerCase();
+    const show = !q || name.includes(q) || id.includes(q);
+    el.style.display = show ? '' : 'none';
+    if (show && lastGroup) { lastGroup.style.display = ''; lastGroup = null; }
+  });
+};
+window.edSelectRegion = function(e, el) {
+  e.preventDefault();
+  const wrap   = el.closest('div[style*="position:relative"]');
+  const textIn = wrap.querySelector('input[type="text"]');
+  const hidden = wrap.querySelector('input[type="hidden"]');
+  const id     = el.dataset.regId;
+  const name   = el.dataset.regName;
+  if (hidden) hidden.value = id;
+  if (textIn) textIn.value = name || '';
+  const dd = wrap.querySelector('[data-reg-dropdown]');
+  if (dd) dd.style.display = 'none';
+};
+
+window.edAddGenField = function() {
+  const container = document.getElementById('ed-gen-fields');
+  const row = document.createElement('div');
+  row.className = 'ed-gen-row ed-gen-newrow';
+  row.innerHTML = `
+    <input class="ed-gen-new-key ed-input" placeholder="nom_du_champ" style="font-family:monospace;font-size:12px;">
+    <select class="ed-gen-new-type ed-input" style="font-size:11px;padding:5px 4px;">
+      <option value="string">str</option>
+      <option value="number">int</option>
+      <option value="bool">bool</option>
+      <option value="json">array/map</option>
+    </select>
+    <div class="ed-gen-val">
+      <input class="ed-input" data-gf-type="string" placeholder="valeur…">
+    </div>
+    <button type="button" class="ed-gen-delbtn" onclick="edDelGenRow(this)" title="Annuler">✕</button>`;
+
+  const typeSelect = row.querySelector('.ed-gen-new-type');
+  const valDiv     = row.querySelector('.ed-gen-val');
+  typeSelect.addEventListener('change', () => {
+    const t = typeSelect.value;
+    if (t === 'bool') {
+      valDiv.innerHTML = `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0;">
+        <input type="checkbox" data-gf-type="bool" style="accent-color:var(--accent);width:15px;height:15px;">
+        <span class="ed-gen-bool-txt" style="font-size:12px;color:var(--muted);">false</span>
+      </label>`;
+      valDiv.querySelector('input').addEventListener('change', function () {
+        this.closest('label').querySelector('.ed-gen-bool-txt').textContent = this.checked ? 'true' : 'false';
+      });
+    } else if (t === 'json') {
+      valDiv.innerHTML = `<textarea class="ed-json-ta" data-gf-type="json" spellcheck="false" placeholder="[] ou {}" style="min-height:50px;"></textarea>`;
+    } else if (t === 'number') {
+      valDiv.innerHTML = `<input class="ed-input" type="number" data-gf-type="number" placeholder="0">`;
+    } else {
+      valDiv.innerHTML = `<input class="ed-input" data-gf-type="string" placeholder="valeur…">`;
+    }
+  });
+
+  container.appendChild(row);
+  row.querySelector('.ed-gen-new-key').focus();
+};
+
+window.showEditor = async function(collection, id, data, origin) {
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.getElementById('editor-panel').style.display = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
+  document.getElementById('btn-region-orphans').classList.remove('active');
+  document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
+
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+
+  _editorCollection = collection;
+  _editorId         = id;
+  _editorOrigin     = origin;
+
+  document.getElementById('editor-title').textContent            = `✏️  ${data.name || id}`;
+  document.getElementById('editor-collection-badge').textContent = _COL_LABELS[collection] || collection;
+  document.getElementById('ed-error').style.display              = 'none';
+  const btn = document.getElementById('btn-save-editor');
+  btn.textContent = '💾 Sauvegarder'; btn.disabled = false;
+  btn.style.background = 'var(--accent)'; btn.style.color = '#fff';
+
+  // Charger les régions si besoin (pour la datalist)
+  if (collection === 'mobs' || collection === 'personnages' || collection === 'regions') {
+    await _loadRegionsForEditor();
+  }
+
+  // Construire le formulaire générique
+  document.getElementById('editor-form').innerHTML = _buildGenericForm(data, collection);
+
+  // Initialiser le color picker si présent (régions)
+  const cpEl = document.querySelector('#editor-form .ed-color-picker[data-init-hex]');
+  if (cpEl) {
+    const initHex    = cpEl.dataset.initHex || '#9a9ab0';
+    const [ir,ig,ib] = _cpHexToRgb(initHex);
+    const [ih,is,iv] = _cpRgbToHsv(ir, ig, ib);
+    _cpUpdate(cpEl.id, ih, is, iv);
+  }
+
+  // Peupler la datalist des sets (items uniquement)
+  if (collection === 'items') await _populateSetDatalist();
+
+  // Auto-resize des JSON textareas
+  document.querySelectorAll('#editor-form .ed-json-ta').forEach(ta => {
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+    ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; });
+  });
+
+  // Sync labels des booleans
+  document.querySelectorAll('#editor-form [data-gf-type="bool"]').forEach(cb => {
+    cb.addEventListener('change', function () {
+      const lbl = this.closest('label')?.querySelector('.ed-gen-bool-txt');
+      if (lbl) lbl.textContent = this.checked ? 'true' : 'false';
+    });
+  });
+};
+
+window.editorGoBack = function() {
+  if (_editorOrigin === 'mob')            { showMobOrder();       return; }
+  if (_editorOrigin === 'item')           { showItemOrder();      return; }
+  if (_editorOrigin === 'pnj')            { showPnjOrder();       return; }
+  if (_editorOrigin === 'region')         { showRegionOrder();    return; }
+  if (_editorOrigin === 'panoplie')       { showPanoplieOrder();  return; }
+  if (_editorOrigin === 'quest')          { showQuestOrder();     return; }
+  if (_editorOrigin === 'region-orphan')  { showRegionOrphans(); return; }
+  if (_editorOrigin === 'mob-orphan')     { showMobOrphans();    return; }
+  if (_editorOrigin === 'quest-orphan')  { showQuestOrphans();  return; }
+  showSubmissions();
+};
+
+// ── Save (générique) ─────────────────────────────────
+window.saveEditor = async function() {
+  const btn    = document.getElementById('btn-save-editor');
+  const errDiv = document.getElementById('ed-error');
+  errDiv.style.display = 'none';
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+
+  try {
+    const newData = _collectGenericForm();
+
+    // Renommage d'ID → recréer le document (toutes collections)
+    const rawNewId = (newData.id != null ? String(newData.id).trim() : '');
+    const newDocId = rawNewId || _editorId;
+    if (newDocId !== _editorId) {
+      // Vérifier qu'aucun document n'existe déjà avec cet ID
+      const clashSnap = await getDoc(doc(db, _editorCollection, newDocId));
+      if (clashSnap.exists()) {
+        throw new Error(`Un document avec l'ID "${newDocId}" existe déjà dans ${_editorCollection}.`);
+      }
+      const currentSnap = await getDoc(doc(db, _editorCollection, _editorId));
+      const existing = currentSnap.exists() ? currentSnap.data() : {};
+      await setDoc(doc(db, _editorCollection, newDocId), { ...existing, ...newData, id: newDocId });
+      await deleteDoc(doc(db, _editorCollection, _editorId));
+      _editorCacheRename(_editorCollection, _editorId, newDocId, newData);
+      _editorId = newDocId;
+    } else {
+      // Patch : nouvelles valeurs + deleteField() pour les champs supprimés
+      const patch = {};
+      Object.entries(newData).forEach(([k, v]) => { patch[k] = v; });
+      Object.keys(_editorOrigData).forEach(k => {
+        if (!(k in newData) && k !== '_order') patch[k] = deleteField();
+      });
+      await updateDoc(doc(db, _editorCollection, _editorId), patch);
+    }
+
+    // Invalider les caches localStorage et session
+    localStorage.removeItem(`vcl_cache_v2_${_editorCollection}`);
+    localStorage.removeItem(`vcl_cache_meta_v2_${_editorCollection}`);
+    invalidateModCache(_editorCollection);
+    if (_editorCollection === 'regions') _cachedRegions = null;
+    if (_editorCollection === 'items')   _cachedSets    = null;
+
+    // Mettre à jour le cache mémoire
+    _editorCacheUpdate(_editorCollection, _editorId, newData);
+    _editorOrigData = { ...newData };
+
+    btn.textContent = '✔ Sauvegardé'; btn.style.background = '#14532d'; btn.style.color = 'var(--success)';
+    setTimeout(() => {
+      btn.disabled = false; btn.textContent = '💾 Sauvegarder';
+      btn.style.background = 'var(--accent)'; btn.style.color = '#fff';
+    }, 2500);
+
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '💾 Sauvegarder';
+    btn.style.background = 'var(--accent)'; btn.style.color = '#fff';
+    errDiv.textContent = '⛔ ' + e.message;
+    errDiv.style.display = '';
+  }
+};
+
+function _editorCacheRename(col, oldId, newId, newData) {
+  const renameIn = (obj) => {
+    obj.id = newId;
+    Object.keys(obj).forEach(k => { if (k !== '_order' && !(k in newData)) delete obj[k]; });
+    Object.entries(newData).forEach(([k, v]) => { if (k !== '_order' || !(k in obj)) obj[k] = v; });
+  };
+  if      (col === 'items')       { const it = _itemOrderData.find(i => i.id === oldId); if (it) renameIn(it); }
+  else if (col === 'mobs')        { const m  = _mobOrderData.find(m => m.id === oldId);   if (m)  renameIn(m); }
+  else if (col === 'personnages') { _pnjRegions.forEach(r => { const p = r.pnjs.find(p => p.id === oldId); if (p) renameIn(p); }); }
+  else if (col === 'regions')     { const r  = _regionOrderData.find(r => r.id === oldId); if (r) renameIn(r); }
+  else if (col === 'quetes')      { const qt = _questOrderData.find(q => q.id === oldId);  if (qt) renameIn(qt); }
+}
+
+function _editorCacheUpdate(col, id, newData) {
+  const applyTo = (obj) => {
+    // Supprimer les clés qui ne sont plus présentes (sauf internes)
+    Object.keys(obj).forEach(k => { if (k !== '_order' && !(k in newData)) delete obj[k]; });
+    Object.entries(newData).forEach(([k, v]) => { if (k !== '_order' || !(k in obj)) obj[k] = v; });
+  };
+  if      (col === 'items')       { const it = _itemOrderData.find(i => i.id === id); if (it) applyTo(it); }
+  else if (col === 'mobs')        { const m  = _mobOrderData.find(m => m.id === id);   if (m)  applyTo(m); }
+  else if (col === 'personnages') { _pnjRegions.forEach(r => { const p = r.pnjs.find(p => p.id === id); if (p) applyTo(p); }); }
+  else if (col === 'regions')     { const r  = _regionOrderData.find(r => r.id === id); if (r) applyTo(r); }
+  else if (col === 'quetes')      { const qt = _questOrderData.find(q => q.id === id);  if (qt) applyTo(qt); }
+}
+
+// ── Delete entry (depuis l'éditeur) ──────────────────
+window.deleteCurrentEntry = async function() {
+  const typeName = _COL_LABELS[_editorCollection] || _editorCollection;
+  if (!await modal.confirm(`Supprimer définitivement ce ${typeName} "${_editorId}" ?\n\nCette action est irréversible.`)) return;
+  const btn = document.getElementById('btn-delete-editor');
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    await deleteDoc(doc(db, _editorCollection, _editorId));
+    // Invalider les caches localStorage
+    localStorage.removeItem(`vcl_cache_v2_${_editorCollection}`);
+    localStorage.removeItem(`vcl_cache_meta_v2_${_editorCollection}`);
+    // Retirer de la liste locale (évite d'avoir à recharger le panneau)
+    if      (_editorCollection === 'mobs')        { _mobOrderData    = _mobOrderData.filter(m => m.id !== _editorId); }
+    else if (_editorCollection === 'items')        { _itemOrderData   = _itemOrderData.filter(i => i.id !== _editorId); }
+    else if (_editorCollection === 'personnages')  { _pnjRegions.forEach(r => { r.pnjs = r.pnjs.filter(p => p.id !== _editorId); }); }
+    else if (_editorCollection === 'regions')      { _regionOrderData = _regionOrderData.filter(r => r.id !== _editorId); }
+    else if (_editorCollection === 'quetes')       { _questOrderData  = _questOrderData.filter(q => q.id !== _editorId); }
+    editorGoBack();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '🗑️ Supprimer';
+    toast('⛔ Erreur : ' + e.message, 'error');
+  }
+};
+
+// ⚠️ Ajouter ici les nouveaux paliers quand ils sont créés dans le creator
+const CREATOR_PALIERS = [1, 2, 3];
+let _ccConfig = null;
+
+async function _saveCreatorConfig() {
+  try {
+    await setDoc(doc(db, 'config', 'creator'), _ccConfig);
+  } catch(e) {
+    toast(`⛔ Erreur sauvegarde config creator : ${e.message}`, "error");
+  }
+}
+
+window.toggleCreatorTool = async function(toolId) {
+  if (!_ccConfig) return;
+  _ccConfig.tools = _ccConfig.tools || {};
+  _ccConfig.tools[toolId] = _ccConfig.tools[toolId] === false ? true : false;
+  _renderPermissions();
+  await _saveCreatorConfig();
+};
+
+window.toggleCreatorPalier = async function(p) {
+  if (!_ccConfig) return;
+  const hidden = new Set(_ccConfig.hiddenPaliers || []);
+  if (hidden.has(p)) hidden.delete(p); else hidden.add(p);
+  _ccConfig.hiddenPaliers = [...hidden];
+  _renderPermissions();
+  await _saveCreatorConfig();
+};
+
+// ── Discord Webhooks ──────────────────────────────────
+let _dwConfig = null;
+const DW_CATEGORIES = [
+  { id: 'arme',       label: '⚔️ Arme' },
+  { id: 'armure',     label: '🛡️ Armure' },
+  { id: 'accessoire', label: '💍 Accessoire' },
+];
+
+window.showDiscordWebhooks = async () => {
+  _setHash('webhooks');
+  document.getElementById('users-panel').style.display         = 'none';
+  document.getElementById('submissions-list').style.display    = 'none';
+  document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('pnj-order-panel').style.display     = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+
+  document.getElementById('discord-webhooks-panel').style.display = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
+  document.getElementById('btn-region-orphans').classList.remove('active');
+  document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
+
+  document.getElementById('btn-discord-webhooks').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadDiscordWebhooks();
+};
+
+window.loadDiscordWebhooks = async function loadDiscordWebhooks() {
+  const loading = document.getElementById('dw-loading');
+  const content = document.getElementById('dw-content');
+  loading.style.display = '';
+  loading.textContent   = 'Chargement…';
+  content.style.display = 'none';
+  try {
+    const snap = await getDoc(doc(db, 'config', 'discord_webhooks'));
+    _dwConfig = snap.exists() ? snap.data() : {};
+    _renderDiscordWebhooks();
+    document.getElementById('dw-template').value = _dwConfig.template || '';
+    _renderDiscordTags();
+    loading.style.display = 'none';
+    content.style.display = '';
+  } catch(e) {
+    loading.textContent = `Erreur : ${e.message}`;
+  }
+};
+
+function _renderDiscordWebhooks() {
+  const list = document.getElementById('dw-list');
+  list.innerHTML = '';
+  for (const cat of DW_CATEGORIES) {
+    const section = document.createElement('div');
+    section.style.cssText = 'margin-bottom:20px;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;';
+    header.textContent = cat.label;
+    section.appendChild(header);
+
+    for (const p of CREATOR_PALIERS) {
+      const key = `${cat.id}_${p}`;
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
+      const input = document.createElement('input');
+      input.type        = 'text';
+      input.id          = `dw-${key}`;
+      input.placeholder = 'https://discord.com/api/webhooks/…';
+      input.value       = _dwConfig[key] || '';
+      input.style.cssText = 'flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:11px;outline:none;font-family:monospace;transition:border-color .15s;';
+      input.addEventListener('focus', () => { input.style.borderColor = 'var(--accent)'; });
+      input.addEventListener('blur',  () => { input.style.borderColor = 'var(--border)'; });
+
+      const label = document.createElement('span');
+      label.textContent = `Palier ${p}`;
+      label.style.cssText = 'font-size:12px;width:58px;flex-shrink:0;color:var(--text);';
+
+      const testBtn = document.createElement('button');
+      testBtn.className = 'btn btn-ghost';
+      testBtn.style.cssText = 'font-size:11px;padding:5px 10px;flex-shrink:0;';
+      testBtn.textContent = '🧪 Test';
+      testBtn.addEventListener('click', () => testDiscordWebhook(key));
+
+      row.appendChild(label);
+      row.appendChild(input);
+      row.appendChild(testBtn);
+      section.appendChild(row);
+    }
+    list.appendChild(section);
+  }
+}
+
+window.saveDiscordWebhooks = async function saveDiscordWebhooks() {
+  const btn = document.getElementById('dw-save-btn');
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const data = {};
+    for (const cat of DW_CATEGORIES) {
+      for (const p of CREATOR_PALIERS) {
+        const key = `${cat.id}_${p}`;
+        const val = document.getElementById(`dw-${key}`)?.value?.trim() || '';
+        if (val) data[key] = val;
+      }
+    }
+    const tpl = document.getElementById('dw-template')?.value?.trim() || '';
+    if (tpl) data.template = tpl;
+    // Collect tags
+    const tags = {};
+    document.querySelectorAll('.dw-tag-row').forEach(row => {
+      const k = row.querySelector('.dw-tag-key')?.value?.trim();
+      const v = row.querySelector('.dw-tag-val')?.value?.trim();
+      if (k && v) tags[k] = v;
+    });
+    if (Object.keys(tags).length) data.tags = tags;
+    await setDoc(doc(db, 'config', 'discord_webhooks'), data);
+    _dwConfig = data;
+    btn.textContent = '✓ Sauvegardé';
+    setTimeout(() => { btn.disabled = false; btn.textContent = '💾 Sauvegarder'; }, 2000);
+  } catch(e) {
+    toast(`⛔ Erreur sauvegarde webhooks : ${e.message}`, "error");
+    btn.disabled = false; btn.textContent = '💾 Sauvegarder';
+  }
+};
+
+function _renderDiscordTags() {
+  const list = document.getElementById('dw-tags-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const tags = _dwConfig?.tags || {};
+  Object.entries(tags).forEach(([k, v]) => _dwTagRow(list, k, v));
+}
+
+window.dwAddTag = function() {
+  const list = document.getElementById('dw-tags-list');
+  if (!list) return;
+  _dwTagRow(list, '', '');
+};
+
+function _dwTagRow(list, key, value) {
+  const row = document.createElement('div');
+  row.className = 'dw-tag-row';
+  row.style.cssText = 'display:flex;align-items:center;gap:6px;';
+  row.innerHTML = `
+    <input class="dw-tag-key" type="text" value="${_ee(key)}" placeholder="ex: commun"
+      style="width:130px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;font-family:monospace;outline:none;">
+    <input class="dw-tag-val" type="text" value="${_ee(value)}" placeholder="ID Discord du tag"
+      style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;font-family:monospace;outline:none;">
+    <button class="btn btn-ghost" onclick="this.closest('.dw-tag-row').remove()" style="font-size:11px;padding:5px 8px;flex-shrink:0;">✕</button>
+  `;
+  list.appendChild(row);
+}
+
+window.testDiscordWebhook = async function testDiscordWebhook(key) {
+  const url = document.getElementById(`dw-${key}`)?.value?.trim();
+  if (!url) { toast('⚠️ Aucun webhook configuré pour cette combinaison.', 'warning'); return; }
+  const [catId, palier] = key.split('_');
+  const catLabel = DW_CATEGORIES.find(c => c.id === catId)?.label || catId;
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ thread_name: `🧪 Test · ${catLabel} · Palier ${palier}`, content: `🧪 **Test webhook** · ${catLabel} · Palier ${palier} · VCL Wiki Modération` })
+    });
+    if (resp.ok || resp.status === 204) {
+      toast('✓ Message de test envoyé !', 'success');
+    } else {
+      const text = await resp.text().catch(() => String(resp.status));
+      toast(`⛔ Erreur Discord ${resp.status} :\n${text.slice(0, 300)}`, "error");
+    }
+  } catch(e) {
+    toast(`⛔ Erreur réseau : ${e.message}`, "error");
+  }
+};
+
+// ── Permissions ────────────────────────────────────────
+const PERM_ROLES_ALL   = ['visiteur', 'membre', 'contributeur', 'admin'];
+const PERM_ROLE_LABELS = { visiteur: 'Visiteur', membre: 'Membre', contributeur: 'Contrib.', admin: 'Admin' };
+const PERM_ROLE_COLORS = { visiteur: '#4ade80', membre: '#60a5fa', contributeur: '#f59e0b', admin: '#f87171' };
+
+const PERM_SECTIONS = [
+  { title: 'Wiki — Pages publiques', perms: [
+    { id: 'view_compendium', label: 'Compendium',  desc: 'Liste et détail des items' },
+    { id: 'view_bestiaire',  label: 'Bestiaire',   desc: 'Mobs, PNJ et encyclopédie' },
+    { id: 'view_atelier',    label: 'Atelier',     desc: 'Simulateur de builds' },
+    { id: 'view_map',        label: 'Carte',       desc: 'Carte interactive du monde' },
+    { id: 'view_quetes',     label: 'Quêtes',      desc: 'Encyclopédie des quêtes' },
+  ]},
+  { title: 'Contributions (Creator)', perms: [
+    { id: 'submit_item',   label: 'Soumettre un item',    desc: 'Armes, armures, accessoires…' },
+    { id: 'submit_mob',    label: 'Soumettre un mob',     desc: 'Monstres et créatures' },
+    { id: 'submit_pnj',    label: 'Soumettre un PNJ',     desc: 'Personnages non-joueurs' },
+    { id: 'submit_region', label: 'Soumettre une région', desc: 'Zones et territoires' },
+    { id: 'submit_quest',  label: 'Soumettre une quête',  desc: 'Quêtes du jeu' },
+  ]},
+  { title: 'Modération — fixe (règles Firestore)', perms: [
+    { id: '_mod_panel',   label: 'Panel modération',         desc: 'Soumissions, éditeur, outils',   fixed: 'contributeur' },
+    { id: '_approve',     label: 'Approuver / Rejeter',      desc: 'Modérer les soumissions',        fixed: 'contributeur' },
+    { id: '_edit_direct', label: 'Écriture directe en base', desc: 'Items, mobs, PNJ, régions…',    fixed: 'contributeur' },
+    { id: '_admin',       label: 'Configuration admin',      desc: 'Permissions, webhooks, rôles',   fixed: 'admin' },
+  ]},
+];
+
+let _permConfig = null;
+
+window.showPermissions = async () => {
+  _setHash('permissions');
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('permissions-panel').style.display = '';
+  document.getElementById('btn-permissions').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadPermissions();
+};
+
+window.loadPermissions = async function() {
+  const loading = document.getElementById('perm-loading');
+  const content = document.getElementById('perm-content');
+  loading.style.display = ''; loading.textContent = 'Chargement…';
+  content.style.display = 'none';
+  try {
+    const [permSnap, ccSnap] = await Promise.all([
+      getDoc(doc(db, 'config', 'permissions')),
+      getDoc(doc(db, 'config', 'creator')),
+    ]);
+    _permConfig = permSnap.exists() ? (permSnap.data().minRole || {}) : {};
+    _ccConfig   = ccSnap.exists() ? ccSnap.data() : {};
+    _renderPermissions();
+    loading.style.display = 'none';
+    content.style.display = '';
+  } catch(e) { loading.textContent = `Erreur : ${e.message}`; }
+};
+
+function _renderPermissions() {
+  const content = document.getElementById('perm-content');
+  content.innerHTML = '';
+
+  // Sections rôle-minimum
+  for (const section of PERM_SECTIONS) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'margin-bottom:24px;';
+    const title = document.createElement('div');
+    title.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;';
+    title.textContent = section.title;
+    wrap.appendChild(title);
+    const rows = document.createElement('div');
+    rows.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+    for (const perm of section.perms) rows.appendChild(_buildPermRow(perm));
+    wrap.appendChild(rows);
+    content.appendChild(wrap);
+  }
+
+  // Section Creator — Outils actifs
+  const ccTools = (_ccConfig || {}).tools || {};
+  const CC_TOOLS = [
+    { id: 'item',   label: '⚔️ Items',    desc: 'Soumission d\'items dans le Creator' },
+    { id: 'mob',    label: '👾 Mobs',     desc: 'Soumission de mobs dans le Creator' },
+    { id: 'pnj',    label: '🧑 PNJ',      desc: 'Soumission de PNJ dans le Creator' },
+    { id: 'region', label: '📍 Régions',  desc: 'Soumission de régions dans le Creator' },
+    { id: 'quest',  label: '📜 Quêtes',   desc: 'Soumission de quêtes dans le Creator' },
+  ];
+  const toolsWrap = document.createElement('div');
+  toolsWrap.style.cssText = 'margin-bottom:24px;';
+  const toolsTitle = document.createElement('div');
+  toolsTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;';
+  toolsTitle.textContent = 'Creator — Outils actifs';
+  toolsWrap.appendChild(toolsTitle);
+  const toolsRows = document.createElement('div');
+  toolsRows.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  for (const t of CC_TOOLS) {
+    const on = ccTools[t.id] !== false;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;';
+    const info = document.createElement('div');
+    info.style.cssText = 'flex:1;min-width:140px;';
+    info.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--text);">${t.label}</div>`
+                   + `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${t.desc}</div>`;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm btn-ghost';
+    btn.style.cssText = on
+      ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);flex-shrink:0;'
+      : 'color:var(--danger);border-color:rgba(248,113,113,.4);flex-shrink:0;';
+    btn.textContent = on ? '✓ Actif' : '✕ Désactivé';
+    btn.onclick = () => toggleCreatorTool(t.id);
+    row.appendChild(info);
+    row.appendChild(btn);
+    toolsRows.appendChild(row);
+  }
+  toolsWrap.appendChild(toolsRows);
+  content.appendChild(toolsWrap);
+
+  // Section Creator — Paliers visibles
+  const hidden = new Set((_ccConfig || {}).hiddenPaliers || []);
+  const paliersWrap = document.createElement('div');
+  paliersWrap.style.cssText = 'margin-bottom:24px;';
+  const paliersTitle = document.createElement('div');
+  paliersTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;';
+  paliersTitle.textContent = 'Creator — Paliers visibles';
+  paliersWrap.appendChild(paliersTitle);
+  const paliersRows = document.createElement('div');
+  paliersRows.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  for (const p of CREATOR_PALIERS) {
+    const visible = !hidden.has(p);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;';
+    const info = document.createElement('div');
+    info.style.cssText = 'flex:1;';
+    info.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--text);">Palier ${p}</div>`;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm btn-ghost';
+    btn.style.cssText = visible
+      ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);flex-shrink:0;'
+      : 'color:var(--danger);border-color:rgba(248,113,113,.4);flex-shrink:0;';
+    btn.textContent = visible ? '✓ Visible' : '✕ Masqué';
+    btn.onclick = () => toggleCreatorPalier(p);
+    row.appendChild(info);
+    row.appendChild(btn);
+    paliersRows.appendChild(row);
+  }
+  paliersWrap.appendChild(paliersRows);
+  content.appendChild(paliersWrap);
+}
+
+function _buildPermRow(perm) {
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap;';
+
+  const info = document.createElement('div');
+  info.style.cssText = 'flex:1;min-width:140px;';
+  info.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--text);">${perm.label}</div>`
+                 + `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${perm.desc}</div>`;
+  row.appendChild(info);
+
+  if (perm.fixed) {
+    const badge = document.createElement('span');
+    const col = PERM_ROLE_COLORS[perm.fixed] || '#888';
+    badge.style.cssText = `padding:4px 12px;font-size:11px;font-weight:700;background:${col};color:#000;border-radius:6px;`;
+    badge.textContent = PERM_ROLE_LABELS[perm.fixed] + '+';
+    const lock = document.createElement('span');
+    lock.style.cssText = 'font-size:12px;color:var(--muted);';
+    lock.textContent = '🔒';
+    lock.title = 'Géré par les règles Firestore — non modifiable ici';
+    row.appendChild(badge);
+    row.appendChild(lock);
+    return row;
+  }
+
+  const current = _permConfig[perm.id] ?? 'visiteur';
+  const seg = document.createElement('div');
+  seg.style.cssText = 'display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0;';
+
+  for (const role of PERM_ROLES_ALL) {
+    const btn = document.createElement('button');
+    const active = role === current;
+    const col = PERM_ROLE_COLORS[role];
+    btn.style.cssText = `padding:5px 10px;font-size:11px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;`
+                      + `background:${active ? col : 'var(--surface3)'};color:${active ? '#000' : 'var(--muted)'};`
+                      + `transition:background .12s,color .12s;`;
+    btn.textContent = PERM_ROLE_LABELS[role];
+    btn.title = `Rôle minimum : ${role}`;
+    btn.onclick = () => _setPermission(perm.id, role);
+    seg.appendChild(btn);
+  }
+  row.appendChild(seg);
+  return row;
+}
+
+window._setPermission = async function(permId, role) {
+  if (!_permConfig) return;
+  _permConfig[permId] = role;
+  _renderPermissions();
+  try {
+    await setDoc(doc(db, 'config', 'permissions'), { minRole: _permConfig });
+  } catch(e) {
+    toast(`⛔ Erreur sauvegarde permissions : ${e.message}`, "error");
+  }
+};
+
+async function sendApprovalWebhook(sub) {
+  if (sub.type !== 'item') return;
+  const cat = sub.data?.category;
+  if (!['arme', 'armure', 'accessoire'].includes(cat)) return;
+  const palier = sub.data?.palier;
+  if (!palier) return;
+  const key = `${cat}_${palier}`;
+
+  if (!_dwConfig) {
+    try {
+      const snap = await getDoc(doc(db, 'config', 'discord_webhooks'));
+      _dwConfig = snap.exists() ? snap.data() : {};
+    } catch { return; }
+  }
+
+  const url = _dwConfig[key];
+  if (!url) return;
+
+  // Image stockée en base64 dans la soumission
+  let imgBlob = null, imgFname = null;
+  if (sub.forum_image) {
+    try {
+      const dataUrl = sub.forum_image;
+      const mime    = dataUrl.match(/^data:([^;]+);/)?.[1] || 'image/png';
+      const extMap  = { 'image/png':'png','image/jpeg':'jpg','image/gif':'gif','image/webp':'webp' };
+      imgFname = `image.${extMap[mime] || 'png'}`;
+      const b64  = dataUrl.split(',')[1];
+      const bin  = atob(b64);
+      const arr  = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      imgBlob = new Blob([arr], { type: mime });
+    } catch { imgBlob = null; imgFname = null; }
+  }
+
+  const embed   = _buildApprovalEmbed(sub.data, imgFname);
+
+  // Thread name: use set label if item belongs to a set, else item name
+  let threadName = sub.data.name;
+  if (sub.data.set && _dwConfig._setCache?.[sub.data.set]) {
+    threadName = _dwConfig._setCache[sub.data.set];
+  } else if (sub.data.set) {
+    try {
+      const setSnap = await getDoc(doc(db, 'panoplies', sub.data.set));
+      if (setSnap.exists()) {
+        const setLabel = setSnap.data().label || sub.data.set;
+        if (!_dwConfig._setCache) _dwConfig._setCache = {};
+        _dwConfig._setCache[sub.data.set] = setLabel;
+        threadName = setLabel;
+      }
+    } catch { /* ignore */ }
+  }
+
+  const payload = { thread_name: threadName, embeds: [embed] };
+
+  // Apply Discord forum tags
+  if (_dwConfig.tags) {
+    const appliedTags = [];
+    const rarTag = _dwConfig.tags[sub.data.rarity];
+    if (rarTag) appliedTags.push(rarTag);
+    const catTag = _dwConfig.tags[sub.data.category];
+    if (catTag) appliedTags.push(catTag);
+    if (appliedTags.length) payload.applied_tags = appliedTags;
+  }
+
+  if (_dwConfig.template) {
+    const RARITY_LABEL = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+    const CAT_LABEL    = { arme:'Arme', armure:'Armure', accessoire:'Accessoire' };
+    const CLS_LABEL    = { guerrier:'Guerrier', assassin:'Assassin', archer:'Archer', mage:'Mage', shaman:'Shaman' };
+    payload.content = _dwConfig.template
+      .replace(/\{nom\}/g,       sub.data.name        || '')
+      .replace(/\{categorie\}/g, CAT_LABEL[sub.data.category]  || sub.data.category || '')
+      .replace(/\{rarete\}/g,    RARITY_LABEL[sub.data.rarity] || sub.data.rarity   || '')
+      .replace(/\{palier\}/g,    sub.data.palier       || '')
+      .replace(/\{niveau\}/g,    sub.data.lvl          || '')
+      .replace(/\{classes\}/g,   (sub.data.classes || []).map(c => CLS_LABEL[c] || c).join(', '));
+  }
+
+  await window.VCL.postDiscord(`${url}?wait=false`, payload, imgBlob, imgFname);
+}
+
+function _buildApprovalEmbed(obj, imageFilename) {
+  const RARITY_LABEL  = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+  const RARITY_ICON   = { commun:'🟢', rare:'🔵', epique:'🟣', legendaire:'🟡', mythique:'🌸', godlike:'🔴', event:'⚪' };
+  const RARITY_COLORS = { commun:0x59d059, rare:0x2a5fa8, epique:0x6a3daa, legendaire:0xd7af5f, mythique:0xf5b5e4, godlike:0xa83020, event:0xebebeb };
+  const CAT_LABEL     = { arme:'⚔️ Arme', armure:'🛡️ Armure', accessoire:'💍 Accessoire' };
+  const CLS_LABEL     = { guerrier:'⚔️ Guerrier', assassin:'🗡️ Assassin', archer:'🏹 Archer', mage:'📖 Mage', shaman:'🌿 Shaman' };
+  const STAT_LABELS   = {
+    pv:'PV', def:'Défense', atk:'Attaque', atk_magique:'Atk Magique',
+    atk_soin:'Atk Soin', vitesse:'Vitesse', critique:'Critique',
+    critique_bonus:'Bonus Critique', esquive:'Esquive', precision:'Précision',
+    resilience:'Résilience', armure:'Armure (stat)', puissance:'Puissance',
+    mana:'Mana', mana_regen:'Regen Mana',
+  };
+
+  const rarIcon  = RARITY_ICON[obj.rarity]  || '▪️';
+  const rarLabel = RARITY_LABEL[obj.rarity] || obj.rarity || '—';
+  const catLabel = CAT_LABEL[obj.category]  || obj.category || '—';
+  const color    = RARITY_COLORS[obj.rarity] || 0x7a7a90;
+
+  // Ligne d'identité compacte
+  const infoLine = [
+    `${rarIcon} **${rarLabel}**`,
+    catLabel,
+    obj.palier ? `Palier ${obj.palier}` : null,
+    obj.lvl    ? `Niveau ≥ ${obj.lvl}`  : null,
+  ].filter(Boolean).join('  ·  ');
+
+  const clsLine = obj.classes?.length
+    ? obj.classes.map(c => CLS_LABEL[c] || c).join('  ·  ')
+    : null;
+
+  const descParts = [infoLine];
+  if (clsLine) descParts.push(clsLine);
+  if (obj.lore) descParts.push(`\n*${obj.lore.slice(0, 280)}*`);
+
+  const fields = [];
+
+  const statEntries = obj.stats ? Object.entries(obj.stats) : [];
+  if (statEntries.length || obj.rune_slots) {
+    const lines = statEntries.map(([k, v]) => {
+      const label = STAT_LABELS[k] || k;
+      const val   = Array.isArray(v) ? `${v[0]} — ${v[1]}` : String(v);
+      return `**${label}** \`${val}\``;
+    });
+    if (obj.rune_slots) lines.push(`**Emplacements de Runes** \`${obj.rune_slots}\``);
+    fields.push({ name:'📊 Stats', value: lines.join('\n').slice(0, 1024), inline:false });
+  }
+
+  {
+    const rawObtain = obj.obtain || '';
+    const clean = rawObtain.replace(/\[[\w:]+\|([^\]]+)\]/g, '**$1**').slice(0, 1024) || '—';
+    fields.push({ name:'📍 Obtention', value: clean, inline:false });
+  }
+
+  if (obj.craft?.length) {
+    const lines = obj.craft.map(c => `\`${c.qty}×\` ${c.id}`);
+    fields.push({ name:'🔨 Craft', value: lines.join('\n').slice(0, 1024), inline:false });
+  }
+
+  const embed = {
+    title: obj.name,
+    description: descParts.join('\n').slice(0, 4096),
+    color,
+    fields,
+  };
+
+  if (imageFilename) embed.image = { url: `attachment://${imageFilename}` };
+
+  return embed;
+}
+
+// ── Delete submission ─────────────────────────────────
+window.deleteSub = async (id) => {
+  const sub = allSubs.find(s => s._id === id);
+  if (currentRole !== 'admin' && sub && sub.status !== 'pending') {
+    toast('⛔ Seuls les admins peuvent supprimer les soumissions approuvées/rejetées.', 'error');
+    return;
+  }
+  if (!await modal.confirm('Supprimer définitivement cette soumission ?')) return;
+  try {
+    await deleteDoc(doc(db, 'submissions', id));
+    allSubs = allSubs.filter(s => s._id !== id);
+    updateCounts();
+    renderSubs();
+  } catch(e) {
+    toast('⛔ Erreur : ' + e.message, 'error');
+  }
+};
+
+// ═══════════════════════════════════════════════════
+// LISTE DES QUÊTES
+// ═══════════════════════════════════════════════════
+let _questOrderData  = [];
+let _questOrderDirty = false;
+let _questDragSrc    = null;
+let _questPalierCollapsed = new Set();
+
+const QUEST_TYPE_ORDER  = ['main', 'sec', 'ter'];
+const QUEST_TYPE_LABELS_MOD = { main: '⚔️ Principale', sec: '🗺️ Secondaire', ter: '📋 Tertiaire' };
+const QUEST_TYPE_COLORS_MOD = { main: '#e07c50',        sec: '#6aaad4',        ter: '#82c470'     };
+
+window.showQuestOrder = async () => {
+  _setHash('quest-order');
+  document.getElementById('users-panel').style.display         = 'none';
+  document.getElementById('submissions-list').style.display    = 'none';
+  document.getElementById('mob-order-panel').style.display     = 'none';
+  document.getElementById('item-order-panel').style.display    = 'none';
+  document.getElementById('discord-webhooks-panel').style.display = 'none';
+  document.getElementById('permissions-panel').style.display      = 'none';
+  document.getElementById('btn-discord-webhooks').classList.remove('active');
+  document.getElementById('pnj-order-panel').style.display     = 'none';
+  document.getElementById('ghost-id-panel').style.display      = 'none';
+  document.getElementById('region-order-panel').style.display  = 'none';
+  document.getElementById('panoplie-order-panel').style.display = 'none';
+  document.getElementById('quest-order-panel').style.display   = 'none';
+  document.getElementById('region-orphan-panel').style.display = 'none';
+  document.getElementById('mob-orphan-panel').style.display    = 'none';
+  document.getElementById('quest-orphan-panel').style.display  = 'none';
+  document.getElementById('editor-panel').style.display        = 'none';
+
+  document.getElementById('quest-order-panel').style.display   = '';
+  document.getElementById('btn-mob-order').classList.remove('active');
+  document.getElementById('btn-item-order').classList.remove('active');
+  document.getElementById('btn-pnj-order').classList.remove('active');
+  document.getElementById('btn-ghost-ids').classList.remove('active');
+  document.getElementById('btn-region-order').classList.remove('active');
+  document.getElementById('btn-quest-order').classList.remove('active');
+  document.getElementById('btn-region-orphans').classList.remove('active');
+  document.getElementById('btn-mob-orphans').classList.remove('active');
+  document.getElementById('btn-quest-orphans').classList.remove('active');
+
+  document.getElementById('btn-quest-order').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadQuestOrder();
+};
+
+async function loadQuestOrder() {
+  const listEl = document.getElementById('quest-order-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _questOrderDirty = false;
+  document.getElementById('btn-save-quest-order').disabled = true;
+  try {
+    const quetes = [...(await cachedDocs('quetes'))];
+    quetes.sort((a, b) => {
+      const ti = QUEST_TYPE_ORDER.indexOf(a.type) - QUEST_TYPE_ORDER.indexOf(b.type);
+      if (ti !== 0) return ti;
+      if ((a.palier||1) !== (b.palier||1)) return (a.palier||1) - (b.palier||1);
+      // Respecter l'ordre existant, puis fallback alphabétique
+      const ao = a.ordre ?? null, bo = b.ordre ?? null;
+      if (ao !== null && bo !== null) return ao - bo;
+      if (ao !== null) return -1;
+      if (bo !== null) return 1;
+      return (a.titre||a.id||'').localeCompare(b.titre||b.id||'', 'fr');
+    });
+    _questOrderData = quetes;
+    renderQuestOrder();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+}
+
+window.renderQuestOrder = function renderQuestOrder() {
+  const listEl  = document.getElementById('quest-order-list');
+  if (!listEl) return;
+  const q = normalize((document.getElementById('quest-order-search')?.value || '').trim());
+
+  if (!_questOrderData.length) { listEl.innerHTML = '<div class="empty">Aucune quête</div>'; return; }
+
+  // ── Mode recherche : liste plate, pas de drag ──
+  if (q) {
+    const visible = _questOrderData.filter(qt =>
+      normalize(qt.titre||qt.id||'').includes(q) ||
+      normalize(qt.zone||'').includes(q) ||
+      normalize(qt.npc||'').includes(q)
+    );
+    listEl.innerHTML = '';
+    if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
+    visible.forEach(qt => {
+      const globalIdx = _questOrderData.indexOf(qt) + 1;
+      listEl.appendChild(_buildQuestRow(qt, 'quest', globalIdx));
+    });
+    return;
+  }
+
+  // ── Mode normal : type → palier → quêtes draggables ──
+  listEl.innerHTML = '';
+  for (const type of QUEST_TYPE_ORDER) {
+    const group = _questOrderData.filter(qt => qt.type === type);
+    if (!group.length) continue;
+
+    const tc = QUEST_TYPE_COLORS_MOD[type] || '#9a9ab0';
+    const tl = QUEST_TYPE_LABELS_MOD[type] || type;
+    const collapsed = _questPalierCollapsed.has(type);
+
+    const section = document.createElement('div');
+    section.style.cssText = 'margin-bottom:16px;';
+
+    const gh = document.createElement('div');
+    gh.style.cssText = `padding:6px 10px;background:${tc}18;border-left:3px solid ${tc};border-radius:0 6px 6px 0;font-size:11px;font-weight:700;color:${tc};text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;`;
+    gh.innerHTML = `<span>${tl}</span><span style="font-size:10px;font-weight:400;color:var(--muted);">${group.length} quête${group.length>1?'s':''}</span><button style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:0 4px;line-height:1;margin-left:auto;">${collapsed?'▶':'▼'}</button>`;
+    gh.querySelector('button').addEventListener('click', e => {
+      e.stopPropagation();
+      if (_questPalierCollapsed.has(type)) _questPalierCollapsed.delete(type);
+      else _questPalierCollapsed.add(type);
+      renderQuestOrder();
+    });
+    section.appendChild(gh);
+
+    if (!collapsed) {
+      const paliers = [...new Set(group.map(qt => qt.palier || 1))].sort((a,b) => a-b);
+      for (const palier of paliers) {
+        const palierGroup = group.filter(qt => (qt.palier||1) === palier);
+
+        const ph = document.createElement('div');
+        ph.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:4px 10px 2px;';
+        ph.textContent = `Palier ${palier}`;
+        section.appendChild(ph);
+
+        palierGroup.forEach(qt => {
+          const palierIdx = palierGroup.indexOf(qt) + 1;
+          const row = _buildQuestRow(qt, 'quest', palierIdx, palierGroup.length);
+          section.appendChild(row);
+        });
+      }
+    }
+    listEl.appendChild(section);
+  }
+
+  const untyped = _questOrderData.filter(qt => !qt.type);
+  if (untyped.length) {
+    const uh = document.createElement('div');
+    uh.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;';
+    uh.textContent = '— Sans type —';
+    listEl.appendChild(uh);
+    untyped.forEach(qt => {
+      const gi = _questOrderData.indexOf(qt) + 1;
+      listEl.appendChild(_buildQuestRow(qt, 'quest', gi));
+    });
+  }
+};
+
+// ════════════════════════════════════════
+//   QUÊTES ORPHELINES (sans mapId)
+// ════════════════════════════════════════
+
+window.showQuestOrphans = async () => {
+  _setHash('quest-orphans');
+  // Cacher tous les panneaux
+  ['submissions-list','mob-order-panel','item-order-panel','pnj-order-panel',
+   'ghost-id-panel','region-order-panel','quest-order-panel','panoplie-order-panel',
+   'region-orphan-panel','mob-orphan-panel','quest-orphan-panel',
+   'editor-panel','discord-webhooks-panel','permissions-panel'
+  ].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  ['btn-mob-order','btn-item-order','btn-pnj-order','btn-ghost-ids',
+   'btn-region-order','btn-quest-order','btn-panoplie-order','btn-region-orphans','btn-mob-orphans',
+   'btn-quest-orphans','btn-discord-webhooks','btn-permissions'
+  ].forEach(id => { document.getElementById(id)?.classList.remove('active'); });
+
+  document.getElementById('quest-orphan-panel').style.display = '';
+  document.getElementById('btn-quest-orphans').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadQuestOrphans();
+};
+
+window.loadQuestOrphans = async function loadQuestOrphans() {
+  const listEl = document.getElementById('quest-orphan-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const quetes = await cachedDocs('quetes');
+    const orphans = quetes.filter(q => !q.mapId);
+    if (!orphans.length) {
+      listEl.innerHTML = '<div class="empty" style="color:#6fbf73;">✓ Toutes les quêtes ont un mapId</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+
+    const byType = {};
+    for (const q of orphans) {
+      const t = q.type || '—';
+      if (!byType[t]) byType[t] = [];
+      byType[t].push(q);
+    }
+
+    const typeOrder = ['main','sec','ter','—'];
+    for (const type of typeOrder) {
+      const group = byType[type];
+      if (!group || !group.length) continue;
+
+      const tc = QUEST_TYPE_COLORS_MOD[type] || 'var(--muted)';
+      const tl = QUEST_TYPE_LABELS_MOD[type] || type;
+
+      const gh = document.createElement('div');
+      gh.style.cssText = `padding:6px 10px;background:${tc}18;border-left:3px solid ${tc};border-radius:0 6px 6px 0;font-size:11px;font-weight:700;color:${tc};text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px;display:flex;align-items:center;gap:8px;`;
+      gh.innerHTML = `<span>${tl}</span><span style="font-size:10px;font-weight:400;color:var(--muted);">${group.length} sans mapId</span>`;
+      listEl.appendChild(gh);
+
+      group.sort((a,b) => ((a.palier||1)-(b.palier||1)) || (a.titre||'').localeCompare(b.titre||'','fr'));
+      group.forEach(qt => {
+        const row = _buildQuestRow(qt, 'quest-orphan');
+        // Indicateur visuel d'orphelin
+        row.style.borderLeft = '3px solid var(--danger)';
+        listEl.appendChild(row);
+      });
+    }
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${e.message}</div>`;
+  }
+};
+
+function _buildQuestRow(qt, origin = 'quest', posIdx = null, groupLen = null) {
+  const row = document.createElement('div');
+  row.className  = 'mob-order-row';
+  row.dataset.id = qt.id;
+
+  const tc = QUEST_TYPE_COLORS_MOD[qt.type] || 'var(--muted)';
+  const zone = qt.zone ? `<span style="font-size:11px;color:var(--muted);">📍 ${escHtml(qt.zone)}</span>` : '';
+  const npc  = qt.npc  ? `<span style="font-size:11px;color:var(--muted);">🧑 ${escHtml(qt.npc)}</span>`  : '';
+
+  const isDraggable = origin === 'quest' && posIdx !== null && groupLen !== null;
+
+  if (isDraggable) {
+    row.draggable = true;
+    row.innerHTML = `
+      <span class="mob-order-handle">⠿</span>
+      <input type="number" class="mob-order-index" value="${posIdx}" min="1" max="${groupLen}" title="Position dans ce groupe" draggable="false">
+      <span style="width:8px;height:8px;border-radius:50%;background:${tc};flex-shrink:0;display:inline-block;"></span>
+      <span class="mob-order-name" style="flex:1;min-width:0;">${escHtml(qt.titre || qt.id)}</span>
+      ${zone}${npc}
+      <button class="ed-edit-btn" title="Modifier : ${qt.titre||qt.id}\nID : ${qt.id}" draggable="false">✏️</button>`;
+
+    const indexInput = row.querySelector('.mob-order-index');
+    indexInput.addEventListener('click', e => e.stopPropagation());
+    indexInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); indexInput.blur(); } });
+    indexInput.addEventListener('change', () => {
+      // Trouver le groupe (même type + palier) dans _questOrderData
+      const palier = qt.palier || 1;
+      const type   = qt.type;
+      const grp    = _questOrderData.filter(q => q.type === type && (q.palier||1) === palier);
+      let toIdx = parseInt(indexInput.value, 10) - 1;
+      toIdx = Math.max(0, Math.min(grp.length - 1, toIdx));
+      const curIdx = grp.indexOf(qt);
+      if (toIdx === curIdx) { indexInput.value = curIdx + 1; return; }
+      const fromGlobal = _questOrderData.indexOf(qt);
+      const [removed]  = _questOrderData.splice(fromGlobal, 1);
+      const nowGrp     = _questOrderData.filter(q => q.type === type && (q.palier||1) === palier);
+      const insertAt   = toIdx < nowGrp.length
+        ? _questOrderData.indexOf(nowGrp[toIdx])
+        : (_questOrderData.indexOf(nowGrp[nowGrp.length - 1]) + 1 || _questOrderData.length);
+      _questOrderData.splice(insertAt, 0, removed);
+      _questOrderDirty = true;
+      document.getElementById('btn-save-quest-order').disabled = false;
+      renderQuestOrder();
+    });
+
+    row.addEventListener('dragstart', e => {
+      if (e.target.closest('.ed-edit-btn')) { e.preventDefault(); return; }
+      _questDragSrc = row;
+      row.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', () => { row.classList.remove('dragging'); _questDragSrc = null; });
+    row.addEventListener('dragover', e => {
+      if (!_questDragSrc || _questDragSrc === row) return;
+      e.preventDefault();
+      row.classList.add('drag-over');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if (!_questDragSrc || _questDragSrc === row) return;
+      const fromQt = _questOrderData.find(q => q.id === _questDragSrc.dataset.id);
+      const toQt   = _questOrderData.find(q => q.id === row.dataset.id);
+      if (!fromQt || !toQt) return;
+      // Seulement dans le même type + palier
+      if (fromQt.type !== toQt.type || (fromQt.palier||1) !== (toQt.palier||1)) return;
+      const fromIdx = _questOrderData.findIndex(q => q.id === _questDragSrc.dataset.id);
+      const toIdx2  = _questOrderData.findIndex(q => q.id === row.dataset.id);
+      if (fromIdx === -1 || toIdx2 === -1) return;
+      const [moved] = _questOrderData.splice(fromIdx, 1);
+      _questOrderData.splice(toIdx2, 0, moved);
+      _questOrderDirty = true;
+      document.getElementById('btn-save-quest-order').disabled = false;
+      renderQuestOrder();
+    });
+  } else {
+    row.innerHTML = `
+      <span style="width:8px;height:8px;border-radius:50%;background:${tc};flex-shrink:0;display:inline-block;"></span>
+      <span class="mob-order-name" style="flex:1;min-width:0;">${escHtml(qt.titre || qt.id)}</span>
+      ${zone}${npc}
+      <button class="ed-edit-btn" title="Modifier : ${qt.titre||qt.id}\nID : ${qt.id}">✏️</button>`;
+  }
+
+  row.querySelector('.ed-edit-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    showEditor('quetes', qt.id, qt, origin);
+  });
+  return row;
+}
+
+window.saveQuestOrder = async () => {
+  if (!_questOrderDirty) return;
+  const btn = document.getElementById('btn-save-quest-order');
+  btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
+  let ok = 0, err = 0;
+  for (let i = 0; i < _questOrderData.length; i++) {
+    try {
+      await updateDoc(doc(db, 'quetes', _questOrderData[i].id), { ordre: i + 1 });
+      ok++;
+    } catch(e) { console.error(_questOrderData[i].id, e); err++; }
+  }
+  localStorage.removeItem('vcl_cache_v2_quetes');
+  localStorage.removeItem('vcl_cache_meta_v2_quetes');
+  invalidateModCache('quetes');
+  _questOrderDirty = false;
+  btn.textContent = '💾 Sauvegarder';
+  toast(err ? '⚠️ Erreur lors de la sauvegarde.' : `✓ Ordre sauvegardé (${ok} quêtes, err ? 'error' : 'success').`);
+  document.getElementById('quest-order-search').value = '';
+  await loadQuestOrder();
+};
+
+/* ══════════════════════════════════════════════════════
+   MEMBRES — gestion des rôles
+══════════════════════════════════════════════════════ */
+const ROLES_LIST = ROLES.filter(r => r !== 'visiteur');
+let _allUsers = [];
+
+window.showUsersPanel = async () => {
+  _setHash('members');
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.sidebar').classList.remove('in-order-panel');
+  document.getElementById('users-panel').style.display = '';
+  document.getElementById('btn-users').classList.add('active');
+  await loadUsers();
+};
+
+window.loadUsers = async () => {
+  const list = document.getElementById('users-list');
+  list.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    _allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
+      .sort((a, b) => ROLES_LIST.indexOf(b.role) - ROLES_LIST.indexOf(a.role)
+                   || (a.pseudo || '').localeCompare(b.pseudo || ''));
+    renderUsers(_allUsers);
+  } catch (e) {
+    list.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
+  }
+};
+
+function renderUsers(users) {
+  const list = document.getElementById('users-list');
+  if (!users.length) { list.innerHTML = '<div class="empty">Aucun membre.</div>'; return; }
+
+  const roleColor = { membre: 'var(--muted)', contributeur: '#60a5fa', admin: 'var(--danger)' };
+
+  list.innerHTML = '';
+  users.forEach(u => {
+    const row = document.createElement('div');
+    row.className = 'user-row';
+    row.dataset.uid = u.uid;
+
+    const sel = ROLES_LIST.map(r =>
+      `<option value="${r}"${r === u.role ? ' selected' : ''}>${r}</option>`
+    ).join('');
+
+    row.innerHTML = `
+      <span class="user-pseudo">${escHtml(u.pseudo || '—')}</span>
+      <span class="user-uid">${escHtml(u.uid)}</span>
+      <span class="user-role-badge" style="color:${roleColor[u.role] || 'var(--muted)'};">${escHtml(u.role || 'membre')}</span>
+      <select class="user-role-sel" onchange="setUserRole('${escHtml(u.uid)}', this.value, this)">${sel}</select>
+    `;
+    list.appendChild(row);
+  });
+}
+
+window.filterUsers = () => {
+  const q = document.getElementById('users-search').value.trim().toLowerCase();
+  renderUsers(q ? _allUsers.filter(u => (u.pseudo || '').toLowerCase().includes(q)) : _allUsers);
+};
+
+window.setUserRole = async (uid, newRole, sel) => {
+  if (!ROLES_LIST.includes(newRole)) return;
+  const prev = sel.dataset.prev || sel.querySelector('option[selected]')?.value || sel.value;
+  sel.disabled = true;
+  try {
+    await updateDoc(doc(db, 'users', uid), { role: newRole });
+    const u = _allUsers.find(x => x.uid === uid);
+    if (u) u.role = newRole;
+    sel.dataset.prev = newRole;
+  } catch (e) {
+    sel.value = prev;
+    toast('Erreur : ' + e.message, 'error');
+  } finally {
+    sel.disabled = false;
+  }
+};
+
+// ═══════════════════════════════════════════════════════
+// SENSIBLE — Liste & toggle (admin only)
+// ═══════════════════════════════════════════════════════
+
+const _sensState = {
+  itemsHidden: [],          // docs de items_hidden (_id = hash)
+  itemsSecretById: new Map(), // id original → doc items_secret
+  itemsPublic: [],          // docs de items
+  mobsSecret: [],           // docs de mobs_secret
+  mobsPublic: [],           // docs de mobs
+};
+
+function _sensEsc(s) {
+  return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+// Formule d'image identique à creator.html:3022-3033 (source de vérité partagée)
+function _sensComputeImg(category, id, palier) {
+  if (!id) return null;
+  const p = palier ? 'P' + palier + '/' : '';
+  switch (category) {
+    case 'arme':        return `../img/compendium/textures/weapons/${id}.png`;
+    case 'armure':      return `../img/compendium/textures/armors/${id}.png`;
+    case 'accessoire':  return `../img/compendium/textures/trinkets/${p}${id}.png`;
+    case 'outils':      return `../img/compendium/textures/gears/${id}.png`;
+    case 'materiaux':   return `../img/compendium/textures/items/Material/${id}.png`;
+    case 'ressources':  return `../img/compendium/textures/items/Ressources/${id}.png`;
+    case 'consommable': return `../img/compendium/textures/items/Consommable/${id}.png`;
+    case 'nourriture':  return `../img/compendium/textures/items/Nourriture/${id}.png`;
+    case 'rune':        return `../img/compendium/textures/items/Runes/${id}.png`;
+    case 'quete':       return `../img/compendium/textures/items/Quest/${id}.png`;
+    case 'donjon':      return `../img/compendium/textures/items/Donjon/${id}.png`;
+    default:            return null;
+  }
+}
+
+window.showMigration = async () => {
+  if (currentRole !== 'admin') return;
+  _setHash('migration');
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('migration-panel').style.display = '';
+  document.getElementById('btn-migration').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await sensReload();
+};
+
+// ── Sidebar section toggle ─────────────────────────────
+window.toggleSidebarSection = (id) => {
+  const sec  = document.getElementById(id);
+  if (!sec) return;
+  const body = sec.querySelector('.sidebar-sec-body');
+  const chev = sec.querySelector('.sidebar-chev');
+  const open = sec.classList.toggle('open');
+  if (body) body.style.display = open ? '' : 'none';
+  if (chev) chev.textContent   = open ? '▾' : '▸';
+};
+
+// ── Completion panel ───────────────────────────────────
+const REQUIRED_ADMIN_FIELDS = {
+  mob:    ['difficulty'],
+  quete:  ['mapId'],
+  region: ['color'],
+};
+
+window.showCompletion = async () => {
+  _setHash('completion');
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('completion-panel').style.display = '';
+  document.getElementById('btn-completion').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadCompletion();
+};
+
+window.loadCompletion = async () => {
+  const list = document.getElementById('completion-list');
+  list.innerHTML = '<div class="empty">Chargement…</div>';
+
+  let requiredFields = REQUIRED_ADMIN_FIELDS;
+  // Tenter de charger depuis config Firestore
+  try {
+    const snap = await getDoc(doc(db, 'config', 'required_admin_fields'));
+    if (snap.exists()) requiredFields = snap.data();
+  } catch {}
+
+  const incomplete = [];
+  try {
+    const colMap = { mob: 'mobs', quete: 'quetes', region: 'regions' };
+    for (const [type, fields] of Object.entries(requiredFields)) {
+      const colName = colMap[type] || type;
+      let docs = [];
+      try { docs = await cachedDocs(colName); } catch { continue; }
+      for (const d of docs) {
+        const missing = fields.filter(f => d[f] == null || d[f] === '');
+        if (missing.length) incomplete.push({ type, doc: d, missing });
+      }
+    }
+  } catch(e) {
+    list.innerHTML = `<div class="empty">Erreur : ${e.message}</div>`;
+    return;
+  }
+
+  // Mise à jour badge
+  const badge = document.getElementById('count-incomplete');
+  if (badge) { badge.textContent = incomplete.length; badge.style.display = incomplete.length ? '' : 'none'; }
+
+  if (!incomplete.length) { list.innerHTML = '<div class="empty">Aucun document à compléter. ✓</div>'; return; }
+
+  list.innerHTML = '';
+  for (const { type, doc: d, missing } of incomplete) {
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;';
+    const safeId = (d.id||'').replace(/[^a-zA-Z0-9_-]/g, '_');
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:8px;background:var(--surface3);color:var(--muted);">${type}</span>
+        <span style="font-size:14px;font-weight:700;">${escHtml(d.name||d.titre||d.label||d.id||'—')}</span>
+        <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
+        <span style="font-size:11px;color:var(--warn);">Manque : ${missing.map(f => `<code>${f}</code>`).join(', ')}</span>
+      </div>
+      <div id="completion-fields-${safeId}" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
+      <div style="margin-top:8px;">
+        <button class="btn btn-ghost btn-sm" onclick="saveCompletionFields('${escHtml(type)}','${escHtml(d.id||'')}',this)" style="font-size:12px;">💾 Sauvegarder</button>
+        <span id="completion-status-${safeId}" style="font-size:11px;margin-left:8px;"></span>
+      </div>
+    `;
+    const fieldsWrap = card.querySelector(`#completion-fields-${safeId}`);
+    for (const f of missing) {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+      wrap.innerHTML = `<label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;">${f}</label>`;
+      let input;
+      if (f === 'difficulty') {
+        input = document.createElement('input');
+        input.type = 'number'; input.min = '1'; input.max = '5'; input.step = '1';
+        input.placeholder = '1–5';
+        input.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;width:80px;outline:none;';
+      } else if (f === 'color') {
+        input = document.createElement('input');
+        input.type = 'text'; input.placeholder = '#a07ae8';
+        input.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;width:120px;outline:none;font-family:monospace;';
+      } else {
+        input = document.createElement('input');
+        input.type = 'text'; input.placeholder = f;
+        input.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;outline:none;';
+      }
+      input.dataset.field = f;
+      if (d[f] != null) input.value = d[f];
+      wrap.appendChild(input);
+      if (fieldsWrap) fieldsWrap.appendChild(wrap);
+    }
+    list.appendChild(card);
+  }
+};
+
+window.saveCompletionFields = async (type, docId, btn) => {
+  const colMap = { mob:'mobs', quete:'quetes', region:'regions' };
+  const colName = colMap[type] || type;
+  if (!hasRole(currentRole, 'contributeur')) { toast('⛔ Accès refusé', 'error'); return; }
+  const safeDocId  = docId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const fieldsWrap = document.getElementById(`completion-fields-${safeDocId}`);
+  const status     = document.getElementById(`completion-status-${safeDocId}`);
+  if (!fieldsWrap) return;
+  const patch = {};
+  for (const input of fieldsWrap.querySelectorAll('input[data-field]')) {
+    const f = input.dataset.field;
+    const v = input.value.trim();
+    if (!v) continue;
+    patch[f] = isNaN(Number(v)) ? v : Number(v);
+  }
+  if (!Object.keys(patch).length) { toast('⚠️ Aucun champ rempli', 'warning'); return; }
+  try {
+    if (btn) btn.disabled = true;
+    await updateDoc(doc(db, colName, docId), patch);
+    invalidateModCache(colName);
+    if (status) { status.textContent = '✓ Sauvegardé'; status.style.color = 'var(--success)'; }
+  } catch(e) {
+    if (status) { status.textContent = '⛔ ' + e.message; status.style.color = 'var(--danger)'; }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
+
+// ── Creator Validation Config ──────────────────────────
+window.showCreatorValidation = async () => {
+  if (currentRole !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
+  _setHash('creator-validation');
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('creator-validation-panel').style.display = '';
+  document.getElementById('btn-creator-validation').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadCreatorValidation();
+};
+
+window.loadCreatorValidation = async () => {
+  const ta     = document.getElementById('creator-validation-ta');
+  const status = document.getElementById('cv-status');
+  if (!ta) return;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'creator_validation'));
+    const data = snap.exists() ? snap.data() : {
+      mob:      { required: ['name', 'palier', 'region'] },
+      pnj:      { required: ['type', 'coords', 'region'] },
+      region:   { required: ['name', 'palier'] },
+      quest:    { required: ['titre', 'type'] },
+      panoplie: { required: ['label', 'bonuses'] },
+    };
+    ta.value = JSON.stringify(data, null, 2);
+    if (status) { status.style.display = 'none'; }
+  } catch(e) {
+    if (status) { status.textContent = '⛔ ' + e.message; status.style.color = 'var(--danger)'; status.style.display = ''; }
+  }
+};
+
+window.onCreatorValidationInput = () => {
+  const ta     = document.getElementById('creator-validation-ta');
+  const status = document.getElementById('cv-status');
+  if (!ta || !status) return;
+  try {
+    JSON.parse(ta.value);
+    ta.style.borderColor = 'var(--success)';
+    status.textContent   = '✓ JSON valide';
+    status.style.color   = 'var(--success)';
+    status.style.display = '';
+  } catch(e) {
+    ta.style.borderColor = 'var(--danger)';
+    status.textContent   = '✕ ' + e.message;
+    status.style.color   = 'var(--danger)';
+    status.style.display = '';
+  }
+};
+
+window.saveCreatorValidation = async () => {
+  const ta     = document.getElementById('creator-validation-ta');
+  const status = document.getElementById('cv-status');
+  const btn    = document.getElementById('btn-save-creator-validation');
+  if (!ta) return;
+  let parsed;
+  try { parsed = JSON.parse(ta.value); } catch(e) {
+    if (status) { status.textContent = '⛔ JSON invalide : ' + e.message; status.style.color = 'var(--danger)'; status.style.display = ''; }
+    return;
+  }
+  try {
+    if (btn) btn.disabled = true;
+    await setDoc(doc(db, 'config', 'creator_validation'), parsed);
+    if (status) { status.textContent = '✓ Sauvegardé'; status.style.color = 'var(--success)'; status.style.display = ''; }
+    toast('✓ Config sauvegardée', 'success');
+  } catch(e) {
+    if (status) { status.textContent = '⛔ ' + e.message; status.style.color = 'var(--danger)'; status.style.display = ''; }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+};
+
+// ── Data Incomplète ───────────────────────────────────
+const DATA_STANDARDS = {
+  items:  ['id', 'name', 'rarity', 'category', 'palier', 'lvl', 'stats', 'obtain'],
+  mobs:   ['id', 'name', 'type', 'palier', 'region'],
+  quetes: ['id', 'titre', 'type', 'palier', 'zone', 'npc', 'objectifs', 'recompenses'],
+};
+
+window.showDataIncomplete = async () => {
+  _setHash('data-incomplete');
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('data-incomplete-panel').style.display = '';
+  document.getElementById('btn-data-incomplete').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadDataIncomplete();
+};
+
+window.loadDataIncomplete = async () => {
+  const list = document.getElementById('data-incomplete-list');
+  list.innerHTML = '<div class="empty">Chargement…</div>';
+
+  const colMap = { items: COL.items, mobs: COL.mobs, quetes: COL.quetes };
+  const results = [];
+
+  try {
+    for (const [type, fields] of Object.entries(DATA_STANDARDS)) {
+      let docs = [];
+      try { docs = await cachedDocs(colMap[type] || type); } catch { continue; }
+      for (const d of docs) {
+        const missing = fields.filter(f => d[f] == null || d[f] === '' || (Array.isArray(d[f]) && d[f].length === 0));
+        if (missing.length) results.push({ type, doc: d, missing });
+      }
+    }
+  } catch(e) {
+    list.innerHTML = `<div class="empty">Erreur : ${e.message}</div>`;
+    return;
+  }
+
+  if (!results.length) { list.innerHTML = '<div class="empty">Aucun document incomplet. ✓</div>'; return; }
+
+  // Group by type
+  const byType = {};
+  for (const r of results) {
+    if (!byType[r.type]) byType[r.type] = [];
+    byType[r.type].push(r);
+  }
+
+  list.innerHTML = '';
+  const TYPE_LABEL = { items:'⚔️ Items', mobs:'👾 Mobs', quetes:'📜 Quêtes' };
+  for (const [type, rows] of Object.entries(byType)) {
+    const header = document.createElement('div');
+    header.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;margin-top:16px;';
+    header.textContent = `${TYPE_LABEL[type] || type} — ${rows.length} incomplet${rows.length > 1 ? 's' : ''}`;
+    list.appendChild(header);
+
+    for (const { doc: d, missing } of rows) {
+      const colName = colMap[type] || type;
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
+      card.innerHTML = `
+        <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.titre||d.label||d.id||'—')}</span>
+        <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
+        <span style="font-size:11px;color:var(--warn);">Manque : ${missing.map(f => `<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;">${f}</code>`).join(' ')}</span>
+        <button class="btn btn-ghost btn-sm" onclick="showEditor('${escHtml(colName)}','${escHtml(d.id||'')}',null,null)" style="font-size:11px;">✏️ Éditer</button>
+      `;
+      list.appendChild(card);
+    }
+  }
+};
+
+window.sensReload = async () => {
+  document.getElementById('sens-loading').style.display = '';
+  document.getElementById('sens-loading').textContent = 'Chargement…';
+  document.getElementById('sens-content').style.display = 'none';
+  try {
+    const [ih, is, ip, ms, mp] = await Promise.all([
+      getDocs(collection(db, COL.itemsHidden)),
+      getDocs(collection(db, COL.itemsSecret)),
+      getDocs(collection(db, COL.items)),
+      getDocs(collection(db, COL.mobsSecret)),
+      getDocs(collection(db, COL.mobs)),
+    ]);
+    _sensState.itemsHidden = ih.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+    _sensState.itemsSecretById = new Map(
+      is.docs.map(d => [d.id, desanitizeFromFirestore({ _id: d.id, ...d.data() })])
+    );
+    _sensState.itemsPublic = ip.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+    _sensState.mobsSecret = ms.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+    _sensState.mobsPublic = mp.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+
+    // Sort alphabétique pour confort
+    const byName = (a, b) => normalize(a.name || a._id).localeCompare(normalize(b.name || b._id), 'fr');
+    _sensState.itemsHidden.sort(byName);
+    _sensState.itemsPublic.sort(byName);
+    _sensState.mobsSecret.sort(byName);
+    _sensState.mobsPublic.sort(byName);
+
+    _sensRenderAll();
+    document.getElementById('sens-loading').style.display = 'none';
+    document.getElementById('sens-content').style.display = '';
+  } catch (err) {
+    document.getElementById('sens-loading').textContent = 'Erreur : ' + err.message;
+    console.error(err);
+  }
+};
+
+function _sensRenderAll() {
+  _sensRenderItemsHidden();
+  _sensRenderItemsPublic();
+  _sensRenderMobsHidden();
+  _sensRenderMobsPublic();
+}
+
+// ─── Rendu ───────────────────────────────────────────────
+
+function _sensItemRow(item, btnHtml) {
+  const id = _sensEsc(item.id || item._id);
+  const name = _sensEsc(item.name || item._id);
+  const rar  = _sensEsc(item.rarity || '—');
+  const pal  = item.palier != null ? 'P' + _sensEsc(item.palier) : '—';
+  const lvl  = item.lvl != null ? 'lvl ' + _sensEsc(item.lvl) : '';
+  return `<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--border);font-size:12px;">
+    <div style="flex:1;min-width:0;">
+      <div style="color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
+      <div style="color:var(--muted);font-size:11px;">${id} · ${rar} · ${pal} ${lvl}</div>
+    </div>
+    ${btnHtml}
+  </div>`;
+}
+
+function _sensMobRow(mob, btnHtml) {
+  const id = _sensEsc(mob.id || mob._id);
+  const name = _sensEsc(mob.name || mob._id);
+  const type = _sensEsc(mob.type || '—');
+  const pal  = mob.palier != null ? 'P' + _sensEsc(mob.palier) : '—';
+  return `<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--border);font-size:12px;">
+    <div style="flex:1;min-width:0;">
+      <div style="color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
+      <div style="color:var(--muted);font-size:11px;">${id} · ${type} · ${pal}</div>
+    </div>
+    ${btnHtml}
+  </div>`;
+}
+
+function _sensRenderItemsHidden() {
+  const list = _sensState.itemsHidden;
+  document.getElementById('sens-items-hidden-count').textContent = list.length + ' item(s)';
+  const el = document.getElementById('sens-items-hidden-list');
+  if (!list.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;">Aucun item sensible.</div>';
+    return;
+  }
+  el.innerHTML = list.map(item => {
+    const btn = `<button class="btn btn-ghost" onclick="sensItemToPublic('${_sensEsc(item._id)}')" style="font-size:11px;padding:3px 10px;">🔓 Rendre public</button>`;
+    return _sensItemRow(item, btn);
+  }).join('');
+}
+
+function _sensRenderItemsPublic() {
+  const list = _sensState.itemsPublic;
+  document.getElementById('sens-items-public-count').textContent = list.length + ' item(s)';
+  window.sensFilterItemsPublic();
+}
+
+window.sensFilterItemsPublic = function() {
+  const q = normalize(document.getElementById('sens-items-search').value.trim());
+  const el = document.getElementById('sens-items-public-list');
+  if (!q) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;font-size:12px;">Tape un nom pour filtrer…</div>';
+    return;
+  }
+  const matches = _sensState.itemsPublic.filter(item =>
+    normalize(item.name || '').includes(q) || normalize(item._id || '').includes(q)
+  ).slice(0, 30);
+  if (!matches.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;font-size:12px;">Aucun résultat.</div>';
+    return;
+  }
+  el.innerHTML = matches.map(item => {
+    const btn = `<button class="btn btn-ghost" onclick="sensItemToSensible('${_sensEsc(item._id)}')" style="font-size:11px;padding:3px 10px;color:var(--danger);border-color:var(--danger);">🔒 Rendre sensible</button>`;
+    return _sensItemRow(item, btn);
+  }).join('');
+};
+
+function _sensRenderMobsHidden() {
+  const list = _sensState.mobsSecret;
+  document.getElementById('sens-mobs-hidden-count').textContent = list.length + ' mob(s)';
+  const el = document.getElementById('sens-mobs-hidden-list');
+  if (!list.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;">Aucun mob sensible.</div>';
+    return;
+  }
+  el.innerHTML = list.map(mob => {
+    const btn = `<button class="btn btn-ghost" onclick="sensMobToPublic('${_sensEsc(mob._id)}')" style="font-size:11px;padding:3px 10px;">🔓 Rendre public</button>`;
+    return _sensMobRow(mob, btn);
+  }).join('');
+}
+
+function _sensRenderMobsPublic() {
+  const list = _sensState.mobsPublic;
+  document.getElementById('sens-mobs-public-count').textContent = list.length + ' mob(s)';
+  window.sensFilterMobsPublic();
+}
+
+window.sensFilterMobsPublic = function() {
+  const q = normalize(document.getElementById('sens-mobs-search').value.trim());
+  const el = document.getElementById('sens-mobs-public-list');
+  if (!q) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;font-size:12px;">Tape un nom pour filtrer…</div>';
+    return;
+  }
+  const matches = _sensState.mobsPublic.filter(mob =>
+    normalize(mob.name || '').includes(q) || normalize(mob._id || '').includes(q)
+  ).slice(0, 30);
+  if (!matches.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;font-size:12px;">Aucun résultat.</div>';
+    return;
+  }
+  el.innerHTML = matches.map(mob => {
+    const btn = `<button class="btn btn-ghost" onclick="sensMobToSensible('${_sensEsc(mob._id)}')" style="font-size:11px;padding:3px 10px;color:var(--danger);border-color:var(--danger);">🔒 Rendre sensible</button>`;
+    return _sensMobRow(mob, btn);
+  }).join('');
+};
+
+// ─── Toggles ─────────────────────────────────────────────
+
+// Item public → sensible : split gameplay/secret + hash + cibles + delete source
+window.sensItemToSensible = async (sourceId) => {
+  const item = _sensState.itemsPublic.find(x => x._id === sourceId);
+  if (!item) { toast('Item introuvable.', 'info'); return; }
+  if (!item.name) { toast('Item sans name, impossible de hasher.', 'info'); return; }
+  if (!await modal.confirm(`Rendre "${item.name}" sensible ?\n\nIl disparaîtra des pages publiques et ne sera accessible via l'atelier qu'en tapant son nom exact.`)) return;
+  try {
+    const gameplayKeys = await getItemGameplayKeys();
+    const allKeys = Object.keys(item).filter(k => k !== '_id');
+    const gameplay = {};
+    for (const k of allKeys) if (gameplayKeys.includes(k)) gameplay[k] = item[k];
+    const secret = {};
+    for (const k of allKeys) if (!gameplayKeys.includes(k) && k !== 'sensible' && k !== 'img') secret[k] = item[k];
+
+    const hash = await hashName(item.name);
+    if (!hash) throw new Error('hash vide');
+
+    await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore(gameplay));
+    if (Object.keys(secret).length) {
+      await setDoc(doc(db, COL.itemsSecret, sourceId), sanitizeForFirestore(secret));
+    }
+    await deleteDoc(doc(db, COL.items, sourceId));
+
+    store.invalidate('items');
+    await sensReload();
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'error');
+    console.error(err);
+  }
+};
+
+// Item sensible → public : merge hidden+secret, write to items, delete cibles
+window.sensItemToPublic = async (hashId) => {
+  const hidden = _sensState.itemsHidden.find(x => x._id === hashId);
+  if (!hidden) { toast('Hidden item introuvable.', 'info'); return; }
+  const origId = hidden.id;
+  if (!origId) { toast('Hidden item sans champ id — impossible de déterminer l\'id cible.', 'error'); return; }
+  if (!await modal.confirm(`Rendre "${hidden.name || origId}" public ?\n\nIl redeviendra visible dans le compendium et l'atelier normalement.`)) return;
+  try {
+    const secret = _sensState.itemsSecretById.get(origId) || null;
+    // Merge : gameplay d'abord (source de vérité pour stats), puis secret (flavor)
+    const merged = {};
+    for (const [k, v] of Object.entries(hidden)) if (k !== '_id') merged[k] = v;
+    if (secret) {
+      for (const [k, v] of Object.entries(secret)) if (k !== '_id') merged[k] = v;
+    }
+    // Recalcul de l'img depuis la formule (on ne la stocke pas dans hidden)
+    merged.img = _sensComputeImg(merged.category, merged.id, merged.palier);
+    // Pas de flag sensible dans le doc public
+    delete merged.sensible;
+
+    await setDoc(doc(db, COL.items, origId), sanitizeForFirestore(merged));
+    await deleteDoc(doc(db, COL.itemsHidden, hashId));
+    if (secret) {
+      await deleteDoc(doc(db, COL.itemsSecret, origId));
+    }
+
+    store.invalidate('items');
+    await sensReload();
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'error');
+    console.error(err);
+  }
+};
+
+// Mob public → sensible : doc entier vers mobs_secret
+window.sensMobToSensible = async (sourceId) => {
+  const mob = _sensState.mobsPublic.find(x => x._id === sourceId);
+  if (!mob) { toast('Mob introuvable.', 'info'); return; }
+  if (!await modal.confirm(`Rendre "${mob.name || sourceId}" sensible ?\n\nIl disparaîtra complètement des pages publiques.`)) return;
+  try {
+    const payload = {};
+    for (const [k, v] of Object.entries(mob)) if (k !== '_id') payload[k] = v;
+    delete payload.sensible; // on garde pas le flag, la collection suffit
+
+    await setDoc(doc(db, COL.mobsSecret, sourceId), sanitizeForFirestore(payload));
+    await deleteDoc(doc(db, COL.mobs, sourceId));
+
+    store.invalidate('mobs');
+    await sensReload();
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'error');
+    console.error(err);
+  }
+};
+
+// Mob sensible → public : doc entier vers mobs
+window.sensMobToPublic = async (sourceId) => {
+  const mob = _sensState.mobsSecret.find(x => x._id === sourceId);
+  if (!mob) { toast('Mob sensible introuvable.', 'info'); return; }
+  if (!await modal.confirm(`Rendre "${mob.name || sourceId}" public ?\n\nIl redeviendra visible dans le bestiaire.`)) return;
+  try {
+    const payload = {};
+    for (const [k, v] of Object.entries(mob)) if (k !== '_id') payload[k] = v;
+    delete payload.sensible;
+
+    await setDoc(doc(db, COL.mobs, sourceId), sanitizeForFirestore(payload));
+    await deleteDoc(doc(db, COL.mobsSecret, sourceId));
+
+    store.invalidate('mobs');
+    await sensReload();
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'error');
+    console.error(err);
+  }
+};
+
+// ── Auto-scroll pendant le drag dans n'importe quelle liste draggable ──
+(() => {
+  const EDGE = 60;      // zone d'activation en pixels depuis le bord
+  const MAX_SPEED = 18; // vitesse max en pixels par frame
+  let rafId = null;
+  let targetEl = null;
+  let dy = 0;
+  let dragging = false;
+
+  const findScrollableAncestor = (el) => {
+    while (el && el !== document.body && el !== document.documentElement) {
+      const cs = getComputedStyle(el);
+      const canScroll = /(auto|scroll|overlay)/.test(cs.overflowY);
+      if (canScroll && el.scrollHeight > el.clientHeight) return el;
+      el = el.parentElement;
+    }
+    return document.scrollingElement || document.documentElement;
+  };
+
+  const step = () => {
+    if (!dragging || !targetEl || !dy) { rafId = null; return; }
+    targetEl.scrollTop += dy;
+    rafId = requestAnimationFrame(step);
+  };
+
+  document.addEventListener('dragstart', () => { dragging = true; }, true);
+  const stopScroll = () => {
+    dragging = false; dy = 0; targetEl = null;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  };
+  document.addEventListener('dragend',  stopScroll, true);
+  document.addEventListener('drop',     stopScroll, true);
+
+  document.addEventListener('dragover', (e) => {
+    if (!dragging) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const scroller = el ? findScrollableAncestor(el) : null;
+    if (!scroller) { dy = 0; return; }
+    targetEl = scroller;
+    const rect = scroller === document.scrollingElement || scroller === document.documentElement
+      ? { top: 0, bottom: window.innerHeight }
+      : scroller.getBoundingClientRect();
+    const y = e.clientY;
+    if (y - rect.top < EDGE) {
+      dy = -Math.ceil(MAX_SPEED * (1 - (y - rect.top) / EDGE));
+    } else if (rect.bottom - y < EDGE) {
+      dy =  Math.ceil(MAX_SPEED * (1 - (rect.bottom - y) / EDGE));
+    } else {
+      dy = 0;
+    }
+    if (dy && !rafId) rafId = requestAnimationFrame(step);
+  }, true);
+
+  // Pendant un drag, certains navigateurs bloquent le wheel natif → on scroll nous-mêmes
+  document.addEventListener('wheel', (e) => {
+    if (!dragging) return;
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const scroller = el ? findScrollableAncestor(el) : null;
+    if (!scroller) return;
+    scroller.scrollTop += e.deltaY;
+    e.preventDefault();
+  }, { capture: true, passive: false });
+})();
+

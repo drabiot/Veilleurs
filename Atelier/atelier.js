@@ -1603,18 +1603,18 @@ stats.innerHTML = statsLines +
   const STORAGE_KEY = 'vcl_atelier';
 
 	function saveToStorage() {
-	const equippedIds = {};
+	const equippedSlots = {};
 	Object.entries(equipped).forEach(function(e) {
-		if (e[1]) equippedIds[e[0]] = e[1].id;
+		if (e[1]) equippedSlots[e[0]] = { id: e[1].id, name: e[1].name || e[1].id };
 	});
 	try {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify({
-		v: 1, sig: SIG,
+		v: 2, sig: SIG,
 		name: document.getElementById('inp-name').value.trim(),
 		classe: activeClass || '',
 		level: buildLevel,
 		caracterPoints: caracterPoints,
-		slots: equippedIds,
+		slots: equippedSlots,
 		runes: equippedRunes,
 		}));
 	} catch(e) {}
@@ -1913,11 +1913,23 @@ stats.innerHTML = statsLines +
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed.sig === SIG && parsed.v === 1 && parsed.slots) {
+        if (parsed.sig === SIG && (parsed.v === 1 || parsed.v === 2) && parsed.slots) {
+
+          const sensiblePending = []; // { slotId, name } à résoudre en async
 
           Object.entries(parsed.slots).forEach(function(e) {
-            const item = ITEMS.find(function(i) { return i.id === e[1]; });
-            if (item) equipped[e[0]] = item;
+            const slotId = e[0];
+            const entry  = e[1];
+            // Compat v1 (string) et v2 ({ id, name })
+            const itemId   = typeof entry === 'string' ? entry : entry.id;
+            const itemName = typeof entry === 'string' ? null  : entry.name;
+            const item = ITEMS.find(function(i) { return i.id === itemId; });
+            if (item) {
+              equipped[slotId] = item;
+            } else if (itemName) {
+              // Item non trouvé dans ITEMS → potentiellement sensible
+              sensiblePending.push({ slotId: slotId, name: itemName });
+            }
           });
 
           if (parsed.runes && typeof parsed.runes === 'object') {
@@ -1950,6 +1962,29 @@ stats.innerHTML = statsLines +
 
           buildGrid();
           buildLevelPanel();
+
+          // Restauration asynchrone des items sensibles
+          if (sensiblePending.length) {
+            sensiblePending.forEach(function(pending) {
+              (function(slotId, rawName) {
+                var api = window.VCL_DB;
+                if (!api || !api.getHiddenByName) return;
+                api.getHiddenByName(api.COL.itemsHidden, rawName).then(function(hit) {
+                  if (!hit) return;
+                  if (ITEMS.some(function(it) { return it.id === hit.id; })) {
+                    equipped[slotId] = ITEMS.find(function(it) { return it.id === hit.id; });
+                  } else {
+                    if (!hit.img) hit.img = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier);
+                    ITEMS.push(hit);
+                    equipped[slotId] = hit;
+                  }
+                  buildGrid();
+                  renderStats();
+                  renderPickerInfo();
+                }).catch(function() {});
+              })(pending.slotId, pending.name);
+            });
+          }
         }
       }
     } catch(e) { }
@@ -1975,6 +2010,9 @@ stats.innerHTML = statsLines +
 
   const SIG         = '🌙VCL_DRAWER_v2';
   const STORAGE_KEY = 'vcl_craft_drawer_v2';
+
+  /* Lookup partagé — ALL_SLOTS vient de Compendium/data.js */
+  const SLOTS_BY_ID = new Map(ALL_SLOTS.map(s => [s.id, s]));
 
   /* ══ ORDRE D'AFFICHAGE DES SLOTS ══ */
   const SLOT_ORDER = [
@@ -2277,7 +2315,7 @@ stats.innerHTML = statsLines +
       const slotEl = document.createElement('span');
       slotEl.className = 'cdp-group-slot';
       if (typeof ALL_SLOTS !== 'undefined') {
-        const slotDef = SLOTS_BY_ID.get(slotId);
+        const slotDef = ALL_SLOTS.find(function(s) { return s.id === slotId; });
         slotEl.textContent = slotDef ? slotDef.ico + ' ' + slotDef.label : slotId;
       }
 
