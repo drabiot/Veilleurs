@@ -387,33 +387,74 @@ function parseHash(hash) {
 }
 
 function navigateToMapId(id) {
-  const undergroundSrc = typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined'
-		? FLOOR_MARKERS_UNDERGROUND : null;
-	if (undergroundSrc) {
-		const allUnderFloors = Object.values(undergroundSrc).flat();
-		const inUnder = allUnderFloors.some(m =>
-		m.id === id || (m.coords && m.coords.some(() => m.id === id))
-		);
-		if (inUnder && currentLayer !== 'underground') {
-		goToLayer('underground');
-		}
-	}
-  const zones   = getFloorZones(currentFloor);
-  const zone    = zones.find(z => z.id === id);
+  // Chercher dans quelle layer + floor se trouve cet id (zones d'abord, puis markers)
+  let targetLayer = currentLayer;
+  let targetFloor = currentFloor;
+
+  const zoneSources = [
+    { layer: 'surface',     src: typeof FLOOR_ZONES_SURFACE !== 'undefined' ? FLOOR_ZONES_SURFACE : (typeof FLOOR_ZONES !== 'undefined' ? FLOOR_ZONES : null) },
+    { layer: 'underground', src: typeof FLOOR_ZONES_UNDERGROUND !== 'undefined' ? FLOOR_ZONES_UNDERGROUND : null },
+  ];
+  const markerSources = [
+    { layer: 'surface',     src: typeof FLOOR_MARKERS_SURFACE !== 'undefined' ? FLOOR_MARKERS_SURFACE : (typeof FLOOR_MARKERS !== 'undefined' ? FLOOR_MARKERS : null) },
+    { layer: 'underground', src: typeof FLOOR_MARKERS_UNDERGROUND !== 'undefined' ? FLOOR_MARKERS_UNDERGROUND : null },
+  ];
+
+  // Chercher dans les zones
+  outer:
+  for (const { layer, src } of zoneSources) {
+    if (!src) continue;
+    for (const [floor, zones] of Object.entries(src)) {
+      if (zones.some(z => z.id === id)) {
+        targetLayer = layer;
+        targetFloor = parseInt(floor);
+        break outer;
+      }
+    }
+  }
+  // Chercher dans les markers si pas trouvé dans les zones
+  if (targetLayer === currentLayer && targetFloor === currentFloor) {
+    outer:
+    for (const { layer, src } of markerSources) {
+      if (!src) continue;
+      for (const [floor, markers] of Object.entries(src)) {
+        if (markers.some(m => m.id === id)) {
+          targetLayer = layer;
+          targetFloor = parseInt(floor);
+          break outer;
+        }
+      }
+    }
+  }
+
+  // Appliquer floor + layer si nécessaire, puis naviguer
+  if (targetFloor !== currentFloor) goToFloor(targetFloor);
+  if (targetLayer !== currentLayer) goToLayer(targetLayer);
+
+  // Maintenant chercher la zone/marker dans le contexte correct
+  const zones = getFloorZones(currentFloor);
+  const zone  = zones.find(z => z.id === id);
   if (zone) {
     updateVpBounds();
     const minGx = Math.min(...zone.points.map(p => p.gx));
     const maxGx = Math.max(...zone.points.map(p => p.gx));
-    const cx    = (minGx + maxGx) / 2;
-    const cy    = zone.points.reduce((s, p) => s + p.gy, 0) / zone.points.length;
+    const minGy = Math.min(...zone.points.map(p => p.gy));
+    const maxGy = Math.max(...zone.points.map(p => p.gy));
+    const cx = (minGx + maxGx) / 2;
+    const cy = (minGy + maxGy) / 2;
 
-    const leftPx  = gameToPixel(minGx, cy).x;
-    const rightPx = gameToPixel(maxGx, cy).x;
+    const leftPx   = gameToPixel(minGx, cy).x;
+    const rightPx  = gameToPixel(maxGx, cy).x;
+    const topPx    = gameToPixel(cx, minGy).y;
+    const bottomPx = gameToPixel(cx, maxGy).y;
     const zoneImgW = rightPx - leftPx;
+    const zoneImgH = bottomPx - topPx;
 
-    if (zoneImgW > 0) {
-      const padding = 48;
-      zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, (_vpW - padding * 2) / zoneImgW));
+    if (zoneImgW > 0 && zoneImgH > 0) {
+      const padding = 80;
+      const zoomW = (_vpW - padding * 2) / zoneImgW;
+      const zoomH = (_vpH - padding * 2) / zoneImgH;
+      zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.min(zoomW, zoomH)));
     }
 
     const img   = gameToPixel(cx, cy);
@@ -426,6 +467,7 @@ function navigateToMapId(id) {
     }
     return;
   }
+
   const markers = getFlatFloorMarkers(currentFloor);
   const matched = markers.filter(m => m.id === id);
   if (matched.length > 0) {

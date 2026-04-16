@@ -252,7 +252,6 @@ const FLOOR_ZONES = {
       emoji: '🍯',
       monsters: [
         { name: 'Ours de la Forêt', level: 11, difficulty: '⭐', emoji: '🐻', link: '../Bestiaire/bestiaire.html#monstres/ours_foret' },
-        { name: 'Winnie', level: 11, difficulty: '⭐⭐⭐', emoji: '🐻', link: '../Bestiaire/bestiaire.html#monstres/winnie' },
       ],
       points: [
         { gx: 324, gy: -665 }, { gx: 364, gy: -749 }, { gx: 571, gy: -759 },
@@ -313,26 +312,11 @@ const FLOOR_ZONES = {
         { name: 'Squelette du Sanctuaire - Archer', level: 13, difficulty: '⭐⭐', emoji: '🏹', link: '../Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_archer' },
         { name: 'Squelette du Sanctuaire - Shaman', level: 13, difficulty: '⭐⭐', emoji: '🌿', link: '../Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_shaman' },
         { name: 'Squelette du Sanctuaire - Guerrier', level: 13, difficulty: '⭐⭐⭐', emoji: '⚔️', link: '../Bestiaire/bestiaire.html#monstres/squelette_sanctuaire_guerrier' },
-        { name: 'Gardien du Sanctuaire', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '☠️', link: '../Bestiaire/bestiaire.html#monstres/gardien_sanctuaire' },
         { name: 'Minion du Gardien', level: 13, difficulty: '⭐', emoji: '🦴', link: '../Bestiaire/bestiaire.html#monstres/minion_gardien' },
       ],
       points: [
         { gx: -18, gy: 133 }, { gx: 14, gy: 137 }, { gx: 36, gy: 182 },
         { gx: 36, gy: 210 },  { gx: -23, gy: 233 }, { gx: -47, gy: 228 }, { gx: -47, gy: 201 },
-      ],
-    },
-    {
-      id: 'm2z7',
-      name: 'Oasis Secret',
-      regionName: 'Oasis Secret',
-      color: '#98f8f9',
-      emoji: '🏝️',
-      monsters: [
-        { name: 'Velindra la Tisseuse', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🧙‍♀️', link: '../Bestiaire/bestiaire.html#monstres/velindra' },
-      ],
-      points: [
-        { gx: 754, gy: 351 }, { gx: 766, gy: 298 }, { gx: 816, gy: 275 },
-        { gx: 833, gy: 310 }, { gx: 795, gy: 334 },
       ],
     },
   ],
@@ -436,7 +420,6 @@ const FLOOR_ZONES_UNDERGROUND = {
       emoji: '🕳️',
       monsters: [
         { name: 'Golem de Pierre', level: 13, difficulty: '⭐⭐⭐', emoji: '🗿', link: '../Bestiaire/bestiaire.html#monstres/golem_pierre' },
-        { name: 'Magnus, Colosse des Veines', level: 13, difficulty: '⭐⭐⭐⭐⭐', emoji: '🛡️', link: '../Bestiaire/bestiaire.html#monstres/magnus' },
       ],
       points: [
         { gx: 246, gy: 366 }, { gx: 186, gy: 352 }, { gx: 174, gy: 323 },
@@ -756,6 +739,14 @@ const FLOOR_MARKERS = {
 		{ id: 'm2p11', type: 'quête_principale', gx: 62, gy: -428, name: "11 - La Facette de la Réalité",             desc: "Faites votre rapport au Maître Épéiste sur la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/la-facette-de-la-realite' },
 		{ id: 'm2p12', type: 'quête_principale', gx: -509, gy: -58, name: "12 - Le Rituel de Purification",             desc: "C'est le grand moment, invoquez les 3 statues divine afin qu'elle vous donne de quoi affronter le puissant Astérius!", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-rituel-de-purification' },
 		//#endregion P2 Markers > Quête Principale
+		{ id: 'm2boss1', type: 'boss', emoji: '🐻', name: "Winnie, le meilleur Ami de l'Homme", desc: "Maître des sous-bois de la Forêt Sucrée, puissant mais placide... jusqu'à provocation. Ses griffes peuvent mettre à terre même les mieux protégés", link: '../Bestiaire/bestiaire.html#monstres/winnie', coords: [
+			{ gx: 578, gy: -774 },
+
+		]},
+		{ id: 'm2boss7', type: 'boss', emoji: '🐂', name: "Rugibœuf, Le Gardien", desc: "Seigneur du labyrinthe, hurle avant de charger pour briser les rangs. Frappe en arcs larges et repouse violemment ses adversaires", link: '../Bestiaire/bestiaire.html#monstres/rugiboeuf', coords: [
+			{ gx: -155, gy: 571 },
+
+		]},
 	],
   
 };
@@ -841,7 +832,32 @@ const FLOOR_MARKERS_UNDERGROUND = {
 		//#endregion P2 Markers Underground > Clé
 		//#region P2 Markers Underground > Artisant
     { id: 'm2a1u1',type: 'artisant',  gx: 339, gy: 509,   name: 'Forgeron d\'Accessoires',                 desc: "Permet la fabrication d'Accessoires d'Onyx Pur", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_onyx_pur' },
+		{ id: 'm2a2u1',type: 'artisant',  gx: 591, gy: -700,   name: 'Forgeron d\'Armes de la Ruche',                 desc: "Permet la fabrication d'Armes issue de la Ruche de Melliona", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armes_abeille' },
+		{ id: 'm2a3u1',type: 'artisant',  gx: 591, gy: -675,   name: 'Forgeron d\'Armures de la Ruche',                 desc: "Permet la fabrication d'Armures issue de la Ruche de Melliona", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armures_abeille' },
+		{ id: 'm2a4u1',type: 'artisant',  gx: 725, gy: 262,   name: 'Forgeron d\'Armes du Tombeau',                 desc: "Permet la fabrication d'Armes issue du Tombeau Oublié du Nécromancien", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armes_necromancien' },
+		{ id: 'm2a5u1',type: 'artisant',  gx: 725, gy: 262,   name: 'Forgeron d\'Armures du Tombeau',                 desc: "Permet la fabrication d'Armures issue du Tombeau Oublié du Nécromancien", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armures_necromancien' },
 		//#endregion P2 Markers Underground > Artisant
+		//#endregion P2 Markers Underground > Artisant
+		{ id: 'm2boss2', type: 'boss', emoji: '☠️', name: "Gardien du Sanctuaire", desc: "Sentinelle antique guidée par une volonté oubliée. Insensible à la peur, terrasse les intrus d'un seul revers", link: '../Bestiaire/bestiaire.html#monstres/gardien_sanctuaire', coords: [
+			{ gx: 0, gy: 190 },
+
+		]},
+		{ id: 'm2boss3', type: 'boss', emoji: '🧙‍♀️', name: "Velindra la Tisseuse", desc: "Enchanteresse perfide tissant maléfices et toiles alchimiques. Empoisonne, affaiblit puis s'achève d'un éclat de rire", link: '../Bestiaire/bestiaire.html#monstres/velindra', coords: [
+			{ gx: 800, gy: 300 },
+
+		]},
+		{ id: 'm2boss4', type: 'boss', emoji: '🐝', name: "Melisara, Souveraine de la Ruche", desc: "Matriarche vénérée, chef d'ochestre des essaims et gardienne du miel. Ses ordres galvanisent les abeilles et laissent peu de répit aux intrus", link: '../Bestiaire/bestiaire.html#monstres/melisara', coords: [
+			{ gx: 175, gy: -409 },
+
+		]},
+		{ id: 'm2boss5', type: 'boss', emoji: '📖', name: "Morverth l'Écorcheur d'Âmes", desc: "Maître nécromant dont les malédictions drainent la vitalité. Commande des légions d'ossements et frappe par vagues d'ombres", link: '../Bestiaire/bestiaire.html#monstres/morveth', coords: [
+			{ gx: 583, gy: -187 },
+
+		]},
+		{ id: 'm2boss6', type: 'boss', emoji: '🛡️', name: "Magnus, Colosse des Veines", desc: "Titan antique sculpté par la sédimentation et la pression du temps. Ses coups fracturent la garde et projettent des nuées de poussière", link: '../Bestiaire/bestiaire.html#monstres/magnus', coords: [
+			{ gx: 228, gy: 316 },
+
+		]},
 	],
 };
 
