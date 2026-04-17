@@ -1617,6 +1617,7 @@ stats.innerHTML = statsLines +
 		slots: equippedSlots,
 		runes: equippedRunes,
 		}));
+    window.dispatchEvent(new CustomEvent('vcl:stuffChanged'));
 	} catch(e) {}
 	}
 
@@ -2061,7 +2062,8 @@ stats.innerHTML = statsLines +
 
       sortedEntries.forEach(function (entry) {
         const slotId = entry[0];
-        const itemId = entry[1];
+        const raw    = entry[1];
+        const itemId = typeof raw === 'string' ? raw : raw.id;
         const item = ITEMS.find(function (i) { return i.id === itemId; });
         if (!item) return;
         if (!item.craft || !Array.isArray(item.craft) || !item.craft.length) return;
@@ -2484,25 +2486,10 @@ stats.innerHTML = statsLines +
   });
 
   /* ══ OBSERVER ══ */
-  window.addEventListener('storage', function (e) {
-    if (e.key === 'vcl_atelier') {
-      setTimeout(function () {
-        if (drawer.classList.contains('open')) refresh();
-        else updateProgress(computeAll());
-      }, 80);
-    }
+  window.addEventListener('vcl:stuffChanged', function () {
+    if (drawer.classList.contains('open')) refresh();
+    else updateProgress(computeAll());
   });
-
-  const _origSetItem = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = function (k, v) {
-    _origSetItem(k, v);
-    if (k === 'vcl_atelier') {
-      setTimeout(function () {
-        if (drawer.classList.contains('open')) refresh();
-        else updateProgress(computeAll());
-      }, 50);
-    }
-  };
 
   /* ══ INIT ══ */
   function init() {
