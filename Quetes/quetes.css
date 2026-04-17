@@ -785,6 +785,23 @@ body.quetes-page { overflow: hidden; }
   border: 1px solid var(--rim); border-left: 2px solid var(--gold-dim);
 }
 
+.coord-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 5px;
+  padding: 2px 8px;
+  background: rgba(238, 208, 87, 0.12);
+  border: 1px solid rgba(235, 185, 48, 0.4);
+  border-radius: 0px;
+  color: #dcad4f;
+  font-family: monospace;
+  font-size: 0.85em;
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 /* ══════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════ */

@@ -173,6 +173,12 @@ function renderRewardFull(r) {
    RENDU ITEM CHIP (dans objectifs)
    Style identique craft-ingredient du compendium
 ══════════════════════════════════ */
+function formatObjectifText(texte) {
+  return texte.replace(/\((-?\d+)\s*,\s*(-?\d+)\)/g, (_, x, z) =>
+    `<span class="coord-badge">📍 ${x}, ${z}</span>`
+  );
+}
+
 function renderItemChip(itemId, qte) {
   const item   = dbItem(itemId);
   const color  = item ? rarityColor(item.rarity) : '#888';
@@ -700,7 +706,7 @@ function renderSheet(q) {
             <input type="checkbox" class="obj-checkbox" data-oi="${i}" data-si="${j}" ${ck ? 'checked' : ''}/>
             <span class="obj-checkmark"></span>
           </label>
-          <span class="obj-text">${sub.texte}${chips}</span>
+          <span class="obj-text">${formatObjectifText(sub.texte)}${chips}</span>
         </div>`;
       }).join('');
       return `<div class="obj-group"><div class="obj-group-lbl">↳ Séquence</div>${subs}</div>`;
@@ -716,7 +722,7 @@ function renderSheet(q) {
           <input type="checkbox" class="obj-checkbox" data-oi="${i}" ${ck ? 'checked' : ''} ${blocked ? 'disabled' : ''}/>
           <span class="obj-checkmark"></span>
         </label>
-        <span class="obj-text">${o.texte}${chips}</span>
+        <span class="obj-text">${formatObjectifText(o.texte)}${chips}</span>
       </div>`;
       const arrowEl = o.next && i < q.objectifs.length - 1
         ? `<div class="obj-next-arrow">↓</div>`
