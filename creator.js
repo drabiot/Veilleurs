@@ -2741,6 +2741,7 @@ function buildObj() {
     obj.img = (category && CAT_IMG[category]) || null;
   }
   if (selTwoHanded)              obj.twoHanded  = true;
+  if (cat === 'artefact')        obj.unique     = true;
   if (selEvolutif)               obj.evolving   = true;
   const runeSlots = parseInt(document.getElementById('f-rune-slots').value);
   if (runeSlots > 0)             obj.rune_slots = runeSlots;
@@ -3262,7 +3263,6 @@ function findTargetRegion(obj) {
   if (obj.category === 'accessoire') {
     if (rar === 'event') return `Accessoires > ${p} > Events`;
     const sec = { anneau:'Anneaux', amulette:'Amulettes', gants:'Gants', bracelet:'Bracelets', artefact:'Artefacts' };
-    if (cat === 'artefact') obj.unique = true;
     return `Accessoires > ${p} > ${sec[cat] || 'Artefacts'}`;
   }
   if (obj.category === 'armure') {
