@@ -10,6 +10,8 @@
   let filterTier 	= null;
   let activeClass   = null;
   let filterStats	= new Set();
+  const NUM_BUILDS   = 3;
+	let activeBuildIndex = 0;
 
   /* ══ INDEX MAPS ══
      Lookup O(1) au lieu de N × Array.find() dans les boucles de rendu.
@@ -1600,25 +1602,232 @@ stats.innerHTML = statsLines +
 
   /* ══ PERSISTANCE localStorage ══ */
   const SIG = "🌙𝓥𝓮𝓲𝓵𝓵𝓮𝓾𝓻𝓼 𝓪𝓾 𝓒𝓵𝓪𝓲𝓻 𝓭𝓮 𝓛𝓾𝓷𝓮🌙";
-  const STORAGE_KEY = 'vcl_atelier';
+  const STORAGE_KEY_BASE = 'vcl_atelier';
+	const META_KEY         = 'vcl_atelier_meta';
+
+	function getBuildKey(idx) {
+		return STORAGE_KEY_BASE + '_' + idx;
+	}
+
+	// Migration : si l'ancien format existe et que le build 0 n'existe pas encore
+	(function migrate() {
+		const old = localStorage.getItem(STORAGE_KEY_BASE);
+		if (old && !localStorage.getItem(getBuildKey(0))) {
+			localStorage.setItem(getBuildKey(0), old);
+			localStorage.removeItem(STORAGE_KEY_BASE);
+		}
+	})();
+
+	// Charge l'index actif depuis le meta
+	(function loadActiveBuild() {
+		try {
+			const meta = JSON.parse(localStorage.getItem(META_KEY) || '{}');
+			activeBuildIndex = meta.active ?? 0;
+		} catch(e) { activeBuildIndex = 0; }
+	})();
 
 	function saveToStorage() {
-	const equippedSlots = {};
-	Object.entries(equipped).forEach(function(e) {
-		if (e[1]) equippedSlots[e[0]] = { id: e[1].id, name: e[1].name || e[1].id };
-	});
-	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify({
-		v: 2, sig: SIG,
-		name: document.getElementById('inp-name').value.trim(),
-		classe: activeClass || '',
-		level: buildLevel,
-		caracterPoints: caracterPoints,
-		slots: equippedSlots,
-		runes: equippedRunes,
-		}));
-    window.dispatchEvent(new CustomEvent('vcl:stuffChanged'));
-	} catch(e) {}
+		const equippedSlots = {};
+		Object.entries(equipped).forEach(function(e) {
+			if (e[1]) equippedSlots[e[0]] = { id: e[1].id, name: e[1].name || e[1].id };
+		});
+		try {
+			localStorage.setItem(getBuildKey(activeBuildIndex), JSON.stringify({
+				v: 2, sig: SIG,
+				name: document.getElementById('inp-name').value.trim(),
+				classe: activeClass || '',
+				level: buildLevel,
+				caracterPoints: caracterPoints,
+				slots: equippedSlots,
+				runes: equippedRunes,
+			}));
+			localStorage.setItem(META_KEY, JSON.stringify({ active: activeBuildIndex }));
+			window._vclActiveBuildKey = getBuildKey(activeBuildIndex);
+			window.dispatchEvent(new CustomEvent('vcl:stuffChanged'));
+			updateBuildTabs();
+		} catch(e) {}
+	}
+
+	
+
+	function loadBuild(idx) {
+		// Sauvegarde le build actuel avant de switcher
+		saveToStorage();
+
+		activeBuildIndex = idx;
+		window._vclActiveBuildKey = getBuildKey(idx);
+		localStorage.setItem(META_KEY, JSON.stringify({ active: idx }));
+
+		// Reset état
+		equipped = {};
+		equippedRunes = {};
+		activeSlot = null;
+		buildLevel = 1;
+		caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
+
+		try {
+			const raw = localStorage.getItem(getBuildKey(idx));
+			if (raw) {
+				const parsed = JSON.parse(raw);
+				if (parsed.sig === SIG && parsed.slots) {
+					Object.entries(parsed.slots).forEach(function(e) {
+						const slotId = e[0];
+						const entry  = e[1];
+						const itemId = typeof entry === 'string' ? entry : entry.id;
+						const item   = ITEMS.find(function(i) { return i.id === itemId; });
+						if (item) equipped[slotId] = item;
+					});
+					if (parsed.runes) {
+						Object.entries(parsed.runes).forEach(function(e) {
+							if (RUNES_BY_ID.get(e[1]) && isRuneKeyValid(e[0], equipped))
+								equippedRunes[e[0]] = e[1];
+						});
+					}
+					if (parsed.name)  document.getElementById('inp-name').value = parsed.name;
+					else              document.getElementById('inp-name').value = '';
+					if (parsed.classe) { activeClass = parsed.classe || null; buildClassPicker(); updateSkinClass(); }
+					else               { activeClass = null; buildClassPicker(); updateSkinClass(); }
+					if (parsed.level >= 1) buildLevel = parsed.level;
+					if (parsed.caracterPoints) {
+						Object.keys(caracterPoints).forEach(k => {
+							if (typeof parsed.caracterPoints[k] === 'number')
+								caracterPoints[k] = parsed.caracterPoints[k];
+						});
+					}
+				}
+			} else {
+				// Build vide : reset le nom
+				document.getElementById('inp-name').value = '';
+				activeClass = null;
+				buildClassPicker();
+				updateSkinClass();
+			}
+		} catch(e) {}
+
+		buildGrid();
+		buildLevelPanel();
+		renderStats();
+		renderPickerInfo();
+		renderItemList();
+		updateBuildTabs();
+		window.dispatchEvent(new CustomEvent('vcl:stuffChanged'));
+	}
+
+	function buildBuildTabs() {
+  let bar = document.getElementById('build-tabs-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'build-tabs-bar';
+    bar.style.cssText = [
+      'position:absolute',
+      'top:8px',
+      'left:50%',
+      'transform:translateX(-50%)',
+      'display:flex',
+      'gap:8px',
+      'z-index:10',
+      'pointer-events:all',
+    ].join(';');
+
+    // Insérer DANS .mq (l'encadré doré du skin)
+    const mq = document.querySelector('.mq');
+    if (mq) {
+      // S'assurer que .mq est en position relative pour que absolute fonctionne
+      mq.style.position = 'relative';
+      mq.appendChild(bar);
+    }
+  }
+
+		bar.innerHTML = '';
+
+		for (let i = 0; i < NUM_BUILDS; i++) {
+			// Lire le nom sauvegardé
+			let buildName = 'Build ' + (i + 1);
+			try {
+				const raw = localStorage.getItem(getBuildKey(i));
+				if (raw) {
+					const p = JSON.parse(raw);
+					if (p.name) buildName = p.name;
+				}
+			} catch(e) {}
+
+			const btn = document.createElement('button');
+			btn.dataset.buildIdx = i;
+			btn.style.cssText = [
+				'display:flex',
+				'flex-direction:column',
+				'align-items:center',
+				'justify-content:center',
+				'gap:2px',
+				'width:72px',
+				'padding:6px 8px',
+				'border-radius:0px',
+				'border:1px solid var(--rim)',
+				'background:' + (i === activeBuildIndex ? 'var(--surface2)' : 'var(--surface)'),
+				'color:' + (i === activeBuildIndex ? 'var(--gold)' : 'var(--muted)'),
+				'cursor:pointer',
+				'transition:all .15s',
+				'font-family:inherit',
+				i === activeBuildIndex ? 'box-shadow:0 0 0 1px var(--gold)40' : '',
+			].join(';');
+
+			const num = document.createElement('span');
+			num.style.cssText = 'font-family:"Cinzel",serif;font-size:16px;font-weight:700;line-height:1;color:' +
+				(i === activeBuildIndex ? 'var(--gold)' : 'var(--muted)');
+			num.textContent = i + 1;
+
+			const lbl = document.createElement('span');
+			lbl.style.cssText = 'font-size:8px;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+			lbl.textContent = buildName;
+
+			btn.appendChild(num);
+			btn.appendChild(lbl);
+
+			btn.addEventListener('click', function() {
+				const idx = parseInt(this.dataset.buildIdx);
+				if (idx === activeBuildIndex) return;
+				loadBuild(idx);
+			});
+
+			bar.appendChild(btn);
+		}
+	}
+
+	function updateBuildTabs() {
+		const bar = document.getElementById('build-tabs-bar');
+		if (!bar) { buildBuildTabs(); return; }
+
+		bar.querySelectorAll('button').forEach(function(btn) {
+			const i = parseInt(btn.dataset.buildIdx);
+			const isActive = i === activeBuildIndex;
+
+			btn.style.background  = isActive ? 'var(--surface2)' : 'var(--surface)';
+			btn.style.color       = isActive ? 'var(--gold)' : 'var(--muted)';
+			btn.style.boxShadow   = isActive ? '0 0 0 1px rgba(215,175,95,.4)' : 'none';
+			btn.style.borderColor = isActive ? 'var(--gold)' : 'var(--rim)';
+
+			const num = btn.querySelector('span:first-child');
+			if (num) num.style.color = isActive ? 'var(--gold)' : 'var(--muted)';
+
+			// Mettre à jour le label avec le nom actuel
+			const lbl = btn.querySelector('span:last-child');
+			if (lbl) {
+				let buildName = 'Build ' + (i + 1);
+				try {
+					const raw = localStorage.getItem(getBuildKey(i));
+					if (raw) {
+						const p = JSON.parse(raw);
+						if (p.name) buildName = p.name;
+					}
+				} catch(e) {}
+				// Si c'est le build actif, prendre le nom depuis l'input directement
+				if (isActive) {
+					const inp = document.getElementById('inp-name');
+					if (inp && inp.value.trim()) buildName = inp.value.trim();
+				}
+				lbl.textContent = buildName;
+			}
+		});
 	}
 
   /* ══ MODALES ══ */
@@ -1648,6 +1857,7 @@ stats.innerHTML = statsLines +
     const payload = {
       v: 1,
       sig: SIG,
+			buildIndex: activeBuildIndex,
       name: name,
       classe: activeClass || '',
       level: buildLevel,
@@ -1774,7 +1984,7 @@ stats.innerHTML = statsLines +
     activeSlot = null;
     buildLevel = 1;
     caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(getBuildKey(activeBuildIndex));
     buildGrid();
     buildLevelPanel();
     renderStats();
@@ -1782,8 +1992,9 @@ stats.innerHTML = statsLines +
     renderItemList();
     closeModal();
 	filterStats = new Set();
-	document.querySelectorAll('.stat-row.stat-filtered')
-	.forEach(function(r) { r.classList.remove('stat-filtered'); });
+  document.querySelectorAll('.stat-row.stat-filtered').forEach(r => r.classList.remove('stat-filtered'));
+  document.getElementById('inp-name').value = '';
+  updateBuildTabs();
   });
 
   /* ══ FERMETURE MODALE ══ */
@@ -1847,6 +2058,7 @@ stats.innerHTML = statsLines +
 
   document.getElementById('inp-name').addEventListener('input', function() {
     saveToStorage();
+		updateBuildTabs();
   });
 
   /* ══ RESIZE ══ */
@@ -1911,7 +2123,7 @@ stats.innerHTML = statsLines +
     buildLevelPanel();
 
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(getBuildKey(activeBuildIndex));
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed.sig === SIG && (parsed.v === 1 || parsed.v === 2) && parsed.slots) {
@@ -1993,6 +2205,7 @@ stats.innerHTML = statsLines +
     renderStats();
     renderPickerInfo();
     renderItemList();
+		buildBuildTabs();
 	requestAnimationFrame(function() {
 		fitGrid();
 		requestAnimationFrame(fitGrid);
@@ -2025,7 +2238,7 @@ stats.innerHTML = statsLines +
 
   function loadState() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(getBuildKey(activeBuildIndex));
       if (!raw) return null;
       const p = JSON.parse(raw);
       return p.sig === SIG ? p : null;
@@ -2048,7 +2261,7 @@ stats.innerHTML = statsLines +
     if (typeof ITEMS === 'undefined') return [];
     const results = [];
     try {
-      const raw = localStorage.getItem('vcl_atelier');
+      const raw = localStorage.getItem(window._vclActiveBuildKey || 'vcl_atelier_0');
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       if (!parsed || !parsed.slots) return [];
