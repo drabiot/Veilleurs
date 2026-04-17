@@ -175,7 +175,7 @@ function renderRewardFull(r) {
 ══════════════════════════════════ */
 function formatObjectifText(texte) {
   return texte.replace(/\((-?\d+)\s*,\s*(-?\d+)\)/g, (_, x, z) =>
-    `<span class="coord-badge">📍 ${x}, ${z}</span>`
+    `<span class="coord-badge">📍 X:${x}, Z:${z}</span>`
   );
 }
 
