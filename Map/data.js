@@ -705,6 +705,7 @@ const FLOOR_MARKERS = {
 			{ gx: 1288, gy: 3157 },
 			{ gx: 1069, gy: 3252 },
 			{ gx: 1246, gy: 2974 },
+      { gx: 4574, gy: 1607 },
 		]},
 		{ id: 'm1boss4', type: 'boss', emoji: '👑', name: "Gorbel", desc: "Un colosse gélatineux, maître des essaims de slimes. Il écrase tout sur son passage, lentement mais sûrement", link: '../Bestiaire/bestiaire.html#monstres/gorbel', coords: [
 			{ gx: 300, gy: 3200 },
