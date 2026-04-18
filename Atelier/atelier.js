@@ -10,7 +10,7 @@
   let filterTier 	= null;
   let activeClass   = null;
   let filterStats	= new Set();
-  const NUM_BUILDS   = 100;
+  const NUM_BUILDS   = 5;
 	let activeBuildIndex = 0;
 
   /* ══ INDEX MAPS ══
