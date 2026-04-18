@@ -206,6 +206,14 @@ function renderSubs() {
   if (!subs.length) { list.innerHTML = '<div class="empty">Aucune soumission dans cette catégorie.</div>'; return; }
 
   list.innerHTML = '';
+  if (filterStatus === 'approved' || filterStatus === 'rejected') {
+    const bulkBtn = document.createElement('button');
+    bulkBtn.className = 'btn btn-danger';
+    bulkBtn.style.cssText = 'margin-bottom:12px;font-size:12px;';
+    bulkBtn.textContent = `🗑️ Tout supprimer (${subs.length})`;
+    bulkBtn.addEventListener('click', () => bulkDeleteSubs(filterStatus));
+    list.appendChild(bulkBtn);
+  }
   for (const sub of subs) {
     list.appendChild(buildCard(sub));
   }
@@ -739,39 +747,14 @@ function refreshCurrentPanel() {
 
 window.showSubmissions = function showSubmissions() {
   _setHash('submissions');
-  document.getElementById('users-panel').style.display         = 'none';
-  document.getElementById('btn-users').classList.remove('active');
-  document.getElementById('submissions-list').style.display    = '';
-  document.getElementById('mob-order-panel').style.display     = 'none';
-  document.getElementById('item-order-panel').style.display    = 'none';
-  document.getElementById('pnj-order-panel').style.display     = 'none';
-  document.getElementById('ghost-id-panel').style.display      = 'none';
-  document.getElementById('region-order-panel').style.display  = 'none';
-  document.getElementById('panoplie-order-panel').style.display = 'none';
-  document.getElementById('quest-order-panel').style.display   = 'none';
-  document.getElementById('region-orphan-panel').style.display = 'none';
-  document.getElementById('mob-orphan-panel').style.display    = 'none';
-  document.getElementById('quest-orphan-panel').style.display  = 'none';
-  document.getElementById('editor-panel').style.display        = 'none';
-
-  document.getElementById('discord-webhooks-panel').style.display = 'none';
-  document.getElementById('permissions-panel').style.display      = 'none';
-  document.getElementById('btn-mob-order').classList.remove('active');
-  document.getElementById('btn-item-order').classList.remove('active');
-  document.getElementById('btn-pnj-order').classList.remove('active');
-  document.getElementById('btn-ghost-ids').classList.remove('active');
-  document.getElementById('btn-region-order').classList.remove('active');
-  document.getElementById('btn-quest-order').classList.remove('active');
-  document.getElementById('btn-region-orphans').classList.remove('active');
-  document.getElementById('btn-mob-orphans').classList.remove('active');
-  document.getElementById('btn-quest-orphans').classList.remove('active');
-
-  document.getElementById('btn-discord-webhooks').classList.remove('active');
-  const completionPanel = document.getElementById('completion-panel');
-  if (completionPanel) completionPanel.style.display = 'none';
-  const cvPanel = document.getElementById('creator-validation-panel');
-  if (cvPanel) cvPanel.style.display = 'none';
-  document.querySelector('.sidebar').classList.remove('in-order-panel');
+  document.getElementById('submissions-list').style.display = '';
+  // _setHash efface tous les .filter-btn actifs — restaurer le bon état
+  document.querySelectorAll('.filter-btn[data-status]').forEach(b =>
+    b.classList.toggle('active', b.dataset.status === filterStatus)
+  );
+  document.querySelectorAll('.filter-btn[data-type]').forEach(b =>
+    b.classList.toggle('active', b.dataset.type === filterType)
+  );
 }
 
 window.showMobOrder = async () => {
@@ -2397,11 +2380,15 @@ async function loadGhostIds() {
   const listEl = document.getElementById('ghost-id-list');
   listEl.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const [items, mobs] = await Promise.all([
+    const [items, mobs, hiddenItems] = await Promise.all([
       cachedDocs('items'),
       cachedDocs('mobs'),
+      cachedDocs('items_hidden').catch(() => []),
     ]);
-    const definedItemIds = new Set(items.map(i => i.id));
+    const definedItemIds = new Set([
+      ...items.map(i => i.id),
+      ...hiddenItems.map(h => h.id).filter(Boolean),
+    ]);
     const definedMobIds  = new Set(mobs.map(m => m.id));
 
     // ghostId → [{ label, type }]
@@ -3868,6 +3855,24 @@ function _buildApprovalEmbed(obj, imageFilename) {
   return embed;
 }
 
+// ── Bulk delete submissions ───────────────────────────
+window.bulkDeleteSubs = async (status) => {
+  const targets = allSubs.filter(s => s.status === status);
+  if (!targets.length) return;
+  const label = status === 'approved' ? 'approuvées' : 'rejetées';
+  if (!await modal.confirm(`Supprimer définitivement les ${targets.length} soumissions ${label} ?`)) return;
+  try {
+    await Promise.all(targets.map(s => deleteDoc(doc(db, 'submissions', s._id))));
+    const ids = new Set(targets.map(s => s._id));
+    allSubs = allSubs.filter(s => !ids.has(s._id));
+    updateCounts();
+    renderSubs();
+    toast(`✓ ${targets.length} soumission${targets.length > 1 ? 's' : ''} supprimée${targets.length > 1 ? 's' : ''}.`, 'success');
+  } catch(e) {
+    toast('⛔ Erreur : ' + e.message, 'error');
+  }
+};
+
 // ── Delete submission ─────────────────────────────────
 window.deleteSub = async (id) => {
   const sub = allSubs.find(s => s._id === id);
@@ -4480,7 +4485,122 @@ window.saveCompletionFields = async (type, docId, btn) => {
   }
 };
 
-// ── Creator Validation Config ──────────────────────────
+// ── Creator Validation Config (Champs requis) ──────────
+const QUALITY_FIELD_SCHEMA = {
+  items: [
+    { id: 'name',     label: 'Nom affiché' },
+    { id: 'rarity',   label: 'Rareté' },
+    { id: 'category', label: 'Catégorie' },
+    { id: 'palier',   label: 'Palier' },
+    { id: 'lvl',      label: 'Niveau requis' },
+    { id: 'img',      label: 'Image' },
+    { id: 'lore',     label: 'Lore' },
+    { id: 'obtain',   label: 'Obtention' },
+    { id: 'stats',    label: 'Stats' },
+    { id: 'cat',      label: 'Slot interne' },
+  ],
+  mobs: [
+    { id: 'name',   label: 'Nom' },
+    { id: 'type',   label: 'Type' },
+    { id: 'palier', label: 'Palier' },
+    { id: 'region', label: 'Région' },
+    { id: 'lore',   label: 'Lore (Codex)' },
+    { id: 'loot',   label: 'Loot' },
+  ],
+  pnj: [
+    { id: 'name',   label: 'Nom' },
+    { id: 'type',   label: 'Type' },
+    { id: 'coords', label: 'Coordonnées' },
+    { id: 'region', label: 'Région' },
+    { id: 'palier', label: 'Palier' },
+  ],
+  regions: [
+    { id: 'name',   label: 'Nom' },
+    { id: 'palier', label: 'Palier' },
+    { id: 'lore',   label: 'Lore (Codex)' },
+    { id: 'img',    label: 'Image' },
+  ],
+  quetes: [
+    { id: 'titre',      label: 'Titre' },
+    { id: 'type',       label: 'Type' },
+    { id: 'palier',     label: 'Palier' },
+    { id: 'zone',       label: 'Zone' },
+    { id: 'npc',        label: 'PNJ donneur' },
+    { id: 'desc',       label: 'Description' },
+    { id: 'objectifs',  label: 'Objectifs' },
+    { id: 'recompenses',label: 'Récompenses' },
+  ],
+  panoplies: [
+    { id: 'label',   label: 'Nom' },
+    { id: 'bonuses', label: 'Bonus' },
+    { id: 'img',     label: 'Image' },
+  ],
+};
+
+const QUALITY_COL_MAP = {
+  items: COL.items, mobs: COL.mobs, pnj: COL.pnj,
+  regions: COL.regions, quetes: COL.quetes, panoplies: COL.panoplies,
+};
+
+const QUALITY_MODE_LABELS = {
+  items:     '⚔️ Items',
+  mobs:      '👾 Mobs',
+  pnj:       '🧑 PNJ',
+  regions:   '📍 Régions',
+  quetes:    '📜 Quêtes',
+  panoplies: '🔗 Panoplies',
+};
+
+// Champ discriminant par mode (détermine la sous-catégorie d'un doc)
+const QUALITY_DISCRIMINANT = {
+  items:  'category',
+  mobs:   'type',
+  quetes: 'type',
+};
+
+// Sous-catégories connues par mode (UI + règles byCategory)
+const QUALITY_SUBCATEGORIES = {
+  items: [
+    { id: 'arme',        label: '⚔️ Arme' },
+    { id: 'armure',      label: '🛡️ Armure' },
+    { id: 'accessoire',  label: '💍 Accessoire' },
+    { id: 'materiaux',   label: '🧱 Matériau' },
+    { id: 'ressources',  label: '⛏️ Ressource' },
+    { id: 'consommable', label: '🧪 Consommable' },
+    { id: 'nourriture',  label: '🍖 Nourriture' },
+    { id: 'outils',      label: '🔧 Outil' },
+    { id: 'rune',        label: '🔮 Rune' },
+    { id: 'quete',       label: '📜 Objet Quête' },
+    { id: 'donjon',      label: '🏰 Donjon' },
+  ],
+  mobs: [
+    { id: 'monstre',   label: '👹 Monstre' },
+    { id: 'sbire',     label: '💀 Sbire' },
+    { id: 'mini_boss', label: '⚡ Mini-Boss' },
+    { id: 'boss',      label: '🔥 Boss' },
+  ],
+  quetes: [
+    { id: 'main', label: '⚔️ Principale' },
+    { id: 'sec',  label: '🗺️ Secondaire' },
+    { id: 'ter',  label: '📋 Tertiaire' },
+  ],
+};
+
+// _cvData: { [mode]: { required: Set<string>, byCategory: { [subcat]: Set<string> } } }
+let _cvData    = {};
+let _cvMode    = 'items';
+let _cvSubMode = {}; // mode → sous-catégorie sélectionnée dans l'UI
+
+function _cvModeData(mode) {
+  if (!_cvData[mode]) _cvData[mode] = { required: new Set(), byCategory: {} };
+  return _cvData[mode];
+}
+function _cvSubData(mode, subcat) {
+  const md = _cvModeData(mode);
+  if (!md.byCategory[subcat]) md.byCategory[subcat] = new Set();
+  return md.byCategory[subcat];
+}
+
 window.showCreatorValidation = async () => {
   if (currentRole !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
   _setHash('creator-validation');
@@ -4493,58 +4613,111 @@ window.showCreatorValidation = async () => {
 };
 
 window.loadCreatorValidation = async () => {
-  const ta     = document.getElementById('creator-validation-ta');
   const status = document.getElementById('cv-status');
-  if (!ta) return;
   try {
-    const snap = await getDoc(doc(db, 'config', 'creator_validation'));
-    const data = snap.exists() ? snap.data() : {
-      mob:      { required: ['name', 'palier', 'region'] },
-      pnj:      { required: ['type', 'coords', 'region'] },
-      region:   { required: ['name', 'palier'] },
-      quest:    { required: ['titre', 'type'] },
-      panoplie: { required: ['label', 'bonuses'] },
-    };
-    ta.value = JSON.stringify(data, null, 2);
-    if (status) { status.style.display = 'none'; }
+    const snap = await getDoc(doc(db, 'config', 'data_quality_standards'));
+    _cvData = {};
+    if (snap.exists()) {
+      for (const [mode, cfg] of Object.entries(snap.data())) {
+        _cvData[mode] = { required: new Set(cfg.required || []), byCategory: {} };
+        for (const [subcat, scfg] of Object.entries(cfg.byCategory || {})) {
+          _cvData[mode].byCategory[subcat] = new Set(scfg.required || []);
+        }
+      }
+    }
+    _renderCvUI();
+    if (status) status.style.display = 'none';
   } catch(e) {
     if (status) { status.textContent = '⛔ ' + e.message; status.style.color = 'var(--danger)'; status.style.display = ''; }
   }
 };
 
-window.onCreatorValidationInput = () => {
-  const ta     = document.getElementById('creator-validation-ta');
-  const status = document.getElementById('cv-status');
-  if (!ta || !status) return;
-  try {
-    JSON.parse(ta.value);
-    ta.style.borderColor = 'var(--success)';
-    status.textContent   = '✓ JSON valide';
-    status.style.color   = 'var(--success)';
-    status.style.display = '';
-  } catch(e) {
-    ta.style.borderColor = 'var(--danger)';
-    status.textContent   = '✕ ' + e.message;
-    status.style.color   = 'var(--danger)';
-    status.style.display = '';
+function _renderCvFieldGrid(fields, reqSet, scope, subcat) {
+  const subcatAttr = subcat ? ` data-subcat="${subcat}"` : '';
+  return `
+    <div style="display:grid;grid-template-columns:1fr 80px;gap:6px;padding:0 4px;margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:6px;">
+      <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Champ</span>
+      <span style="font-size:10px;font-weight:700;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:.06em;">Requis</span>
+    </div>
+    ${fields.map(f => `
+      <label style="display:grid;grid-template-columns:1fr 80px;gap:6px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--border);cursor:pointer;">
+        <span style="font-size:13px;">${f.label || f.id}</span>
+        <div style="text-align:center;">
+          <input type="checkbox" data-mode="${_cvMode}" data-scope="${scope}" data-field="${f.id}"${subcatAttr}
+            style="width:16px;height:16px;cursor:pointer;"
+            ${reqSet.has(f.id) ? 'checked' : ''} onchange="window._onCvToggle(this)">
+        </div>
+      </label>
+    `).join('')}
+  `;
+}
+
+function _renderCvUI() {
+  const tabsEl = document.getElementById('cv-tabs');
+  if (!tabsEl) return;
+  tabsEl.innerHTML = Object.entries(QUALITY_MODE_LABELS).map(([m, lbl]) =>
+    `<button class="btn btn-ghost btn-sm${m === _cvMode ? ' active' : ''}" onclick="window._setCvMode('${m}')">${lbl}</button>`
+  ).join('');
+
+  const grid    = document.getElementById('cv-grid');
+  const fields  = QUALITY_FIELD_SCHEMA[_cvMode] || [];
+  const md      = _cvModeData(_cvMode);
+  const subCats = QUALITY_SUBCATEGORIES[_cvMode] || [];
+  let html = '';
+
+  html += `<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 4px 8px;margin-bottom:4px;">Toujours requis</div>`;
+  html += _renderCvFieldGrid(fields, md.required, 'global', null);
+
+  if (subCats.length) {
+    const selSub = _cvSubMode[_cvMode] || subCats[0].id;
+    if (!_cvSubMode[_cvMode]) _cvSubMode[_cvMode] = selSub;
+    const subReq = _cvSubData(_cvMode, selSub);
+
+    html += `<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:18px 4px 8px;margin-bottom:4px;">Par catégorie</div>`;
+    html += `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px;">
+      ${subCats.map(sc =>
+        `<button class="btn btn-ghost btn-sm${sc.id === selSub ? ' active' : ''}"
+          onclick="window._setCvSubMode('${sc.id}')" style="font-size:11px;">${sc.label}</button>`
+      ).join('')}
+    </div>`;
+    html += _renderCvFieldGrid(fields, subReq, 'bycat', selSub);
+  }
+
+  grid.innerHTML = html;
+}
+
+window._setCvMode    = (m)  => { _cvMode = m; _renderCvUI(); };
+window._setCvSubMode = (sc) => { _cvSubMode[_cvMode] = sc; _renderCvUI(); };
+window._onCvToggle   = (cb) => {
+  const { mode, scope, field, subcat } = cb.dataset;
+  if (scope === 'global') {
+    const req = _cvModeData(mode).required;
+    cb.checked ? req.add(field) : req.delete(field);
+  } else {
+    const req = _cvSubData(mode, subcat);
+    cb.checked ? req.add(field) : req.delete(field);
   }
 };
 
 window.saveCreatorValidation = async () => {
-  const ta     = document.getElementById('creator-validation-ta');
   const status = document.getElementById('cv-status');
   const btn    = document.getElementById('btn-save-creator-validation');
-  if (!ta) return;
-  let parsed;
-  try { parsed = JSON.parse(ta.value); } catch(e) {
-    if (status) { status.textContent = '⛔ JSON invalide : ' + e.message; status.style.color = 'var(--danger)'; status.style.display = ''; }
-    return;
+  const payload = {};
+  for (const [mode, md] of Object.entries(_cvData)) {
+    const entry = {};
+    if (md.required?.size) entry.required = [...md.required];
+    const byCat = {};
+    for (const [subcat, req] of Object.entries(md.byCategory || {})) {
+      if (req.size) byCat[subcat] = { required: [...req] };
+    }
+    if (Object.keys(byCat).length) entry.byCategory = byCat;
+    if (Object.keys(entry).length) payload[mode] = entry;
   }
   try {
     if (btn) btn.disabled = true;
-    await setDoc(doc(db, 'config', 'creator_validation'), parsed);
+    await setDoc(doc(db, 'config', 'data_quality_standards'), payload);
     if (status) { status.textContent = '✓ Sauvegardé'; status.style.color = 'var(--success)'; status.style.display = ''; }
-    toast('✓ Config sauvegardée', 'success');
+    toast('✓ Champs requis sauvegardés', 'success');
   } catch(e) {
     if (status) { status.textContent = '⛔ ' + e.message; status.style.color = 'var(--danger)'; status.style.display = ''; }
   } finally {
@@ -4553,11 +4726,17 @@ window.saveCreatorValidation = async () => {
 };
 
 // ── Data Incomplète ───────────────────────────────────
-const DATA_STANDARDS = {
-  items:  ['id', 'name', 'rarity', 'category', 'palier', 'lvl', 'stats', 'obtain'],
-  mobs:   ['id', 'name', 'type', 'palier', 'region'],
-  quetes: ['id', 'titre', 'type', 'palier', 'zone', 'npc', 'objectifs', 'recompenses'],
-};
+function _fieldEmpty(d, fieldId) {
+  if (fieldId === 'coords') return !d.coords || d.coords.x == null;
+  const v = d[fieldId];
+  if (v == null || v === '') return true;
+  if (Array.isArray(v) && v.length === 0) return true;
+  return false;
+}
+
+function _subcatLabel(mode, subcatId) {
+  return (QUALITY_SUBCATEGORIES[mode] || []).find(s => s.id === subcatId)?.label || subcatId || null;
+}
 
 window.showDataIncomplete = async () => {
   _setHash('data-incomplete');
@@ -4573,16 +4752,46 @@ window.loadDataIncomplete = async () => {
   const list = document.getElementById('data-incomplete-list');
   list.innerHTML = '<div class="empty">Chargement…</div>';
 
-  const colMap = { items: COL.items, mobs: COL.mobs, quetes: COL.quetes };
-  const results = [];
-
+  // Charger config depuis Firestore — structure { required, byCategory }
+  let standards = {};
   try {
-    for (const [type, fields] of Object.entries(DATA_STANDARDS)) {
+    const snap = await getDoc(doc(db, 'config', 'data_quality_standards'));
+    if (snap.exists()) {
+      for (const [mode, cfg] of Object.entries(snap.data())) {
+        standards[mode] = { required: cfg.required || [], byCategory: cfg.byCategory || {} };
+      }
+    }
+  } catch { /* silently ignore */ }
+  if (!Object.keys(standards).length) {
+    list.innerHTML = '<div class="empty">Aucune configuration définie. Définissez les champs requis dans ⚙️ Champs requis.</div>';
+    const badge = document.getElementById('count-incomplete');
+    if (badge) badge.style.display = 'none';
+    return;
+  }
+
+  const results = [];
+  try {
+    for (const [mode, std] of Object.entries(standards)) {
+      const colName  = QUALITY_COL_MAP[mode];
+      if (!colName) continue;
+      const disc     = QUALITY_DISCRIMINANT[mode];
+      const hasByCat = disc && Object.keys(std.byCategory || {}).length > 0;
       let docs = [];
-      try { docs = await cachedDocs(colMap[type] || type); } catch { continue; }
+      try { docs = await cachedDocs(colName); } catch { continue; }
       for (const d of docs) {
-        const missing = fields.filter(f => d[f] == null || d[f] === '' || (Array.isArray(d[f]) && d[f].length === 0));
-        if (missing.length) results.push({ type, doc: d, missing });
+        const missing = (std.required || []).filter(f => _fieldEmpty(d, f));
+
+        const discVal = disc ? (d[disc] || null) : null;
+        if (hasByCat && !discVal) {
+          // Catégorie absente alors que des règles par catégorie existent
+          if (!missing.includes(disc)) missing.push(disc);
+        } else if (discVal && std.byCategory?.[discVal]) {
+          for (const f of (std.byCategory[discVal].required || [])) {
+            if (!missing.includes(f) && _fieldEmpty(d, f)) missing.push(f);
+          }
+        }
+
+        if (missing.length) results.push({ mode, doc: d, missing, discVal });
       }
     }
   } catch(e) {
@@ -4590,31 +4799,36 @@ window.loadDataIncomplete = async () => {
     return;
   }
 
+  // Badge sidebar
+  const badge = document.getElementById('count-incomplete');
+  if (badge) { badge.textContent = results.length; badge.style.display = results.length ? '' : 'none'; }
+
   if (!results.length) { list.innerHTML = '<div class="empty">Aucun document incomplet. ✓</div>'; return; }
 
-  // Group by type
-  const byType = {};
+  // Grouper par mode
+  const byMode = {};
   for (const r of results) {
-    if (!byType[r.type]) byType[r.type] = [];
-    byType[r.type].push(r);
+    if (!byMode[r.mode]) byMode[r.mode] = [];
+    byMode[r.mode].push(r);
   }
 
   list.innerHTML = '';
-  const TYPE_LABEL = { items:'⚔️ Items', mobs:'👾 Mobs', quetes:'📜 Quêtes' };
-  for (const [type, rows] of Object.entries(byType)) {
+  for (const [mode, rows] of Object.entries(byMode)) {
     const header = document.createElement('div');
     header.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;margin-top:16px;';
-    header.textContent = `${TYPE_LABEL[type] || type} — ${rows.length} incomplet${rows.length > 1 ? 's' : ''}`;
+    header.textContent = `${QUALITY_MODE_LABELS[mode] || mode} — ${rows.length} incomplet${rows.length > 1 ? 's' : ''}`;
     list.appendChild(header);
 
-    for (const { doc: d, missing } of rows) {
-      const colName = colMap[type] || type;
+    for (const { doc: d, missing, discVal } of rows) {
+      const colName   = QUALITY_COL_MAP[mode];
+      const subcatLbl = discVal ? _subcatLabel(mode, discVal) : null;
       const card = document.createElement('div');
       card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
       card.innerHTML = `
         <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.titre||d.label||d.id||'—')}</span>
+        ${subcatLbl ? `<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:rgba(122,90,248,.12);color:var(--accent);border:1px solid rgba(122,90,248,.25);">${escHtml(subcatLbl)}</span>` : ''}
         <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
-        <span style="font-size:11px;color:var(--warn);">Manque : ${missing.map(f => `<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;">${f}</code>`).join(' ')}</span>
+        <span style="font-size:11px;color:var(--warn);">Manque : ${missing.map(f => `<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;">${escHtml(f)}</code>`).join(' ')}</span>
         <button class="btn btn-ghost btn-sm" onclick="showEditor('${escHtml(colName)}','${escHtml(d.id||'')}',null,null)" style="font-size:11px;">✏️ Éditer</button>
       `;
       list.appendChild(card);

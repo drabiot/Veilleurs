@@ -497,7 +497,8 @@ function _buildGridCard(q, idx) {
   card.style.animationDelay = `${idx * 0.03}s`;
 
   const { done, total, pct } = getProgress(q);
-  const effectiveDone = done === total && total > 0;
+  const effectiveDone    = done === total && total > 0;
+  const effectiveStarted = !effectiveDone && done > 0;
   const zs     = getZoneStyle(q.zone);
   const mapUrl = getMapUrl(q.mapId, q.zone);
 
@@ -511,7 +512,7 @@ function _buildGridCard(q, idx) {
     <div class="card-body">
       <div class="card-top">
         <div class="card-title">${q.titre}</div>
-        <span class="card-badge ${effectiveDone ? 'badge-done' : 'badge-todo'}">${effectiveDone ? 'Terminée' : 'À faire'}</span>
+        <span class="card-badge ${effectiveDone ? 'badge-done' : effectiveStarted ? 'badge-wip' : 'badge-todo'}">${effectiveDone ? 'Terminée' : effectiveStarted ? 'En cours' : 'À faire'}</span>
       </div>
       <div class="card-meta">
         <span class="ctag ctag-palier">P${q.palier}</span>
@@ -657,6 +658,24 @@ function updateNextBlocking(q) {
   });
 }
 
+window.questCheckAll = function(qid, checked) {
+  const q = getQuestById(qid);
+  if (!q) return;
+  // Écrire directement en localStorage pour contourner le blocage DOM (next:true)
+  q.objectifs.forEach((o, i) => {
+    if (Array.isArray(o)) {
+      o.forEach((_, j) => setCk(qid, i, j, checked));
+    } else {
+      setCk(qid, i, undefined, checked);
+    }
+  });
+  // Re-rendre le modal pour refléter le nouvel état
+  modalContent.innerHTML = renderSheet(q);
+  bindModalCheckboxes(q);
+  buildGrid();
+  updateStatutCounts();
+};
+
 function bindModalCheckboxes(q) {
   modalContent.querySelectorAll('.obj-checkbox').forEach(cb => {
     cb.addEventListener('change', () => {
@@ -674,10 +693,11 @@ function bindModalCheckboxes(q) {
       const badge = modalContent.querySelector('.quest-status-badge');
       if (bar)   bar.style.width   = pct + '%';
       if (lbl)   lbl.textContent   = `${done}/${total} objectifs`;
-      const isDone = done === total && total > 0;
+      const isDone    = done === total && total > 0;
+      const isStarted = !isDone && done > 0;
       if (badge) {
-        badge.className   = `quest-status-badge ${isDone ? 'badge-done' : 'badge-todo'}`;
-        badge.textContent = isDone ? 'Terminée' : 'À faire';
+        badge.className   = `quest-status-badge ${isDone ? 'badge-done' : isStarted ? 'badge-wip' : 'badge-todo'}`;
+        badge.textContent = isDone ? 'Terminée' : isStarted ? 'En cours' : 'À faire';
       }
       buildGrid();
       updateStatutCounts();
@@ -690,7 +710,8 @@ function renderSheet(q) {
   const zs = getZoneStyle(q.zone);
   const mapUrl = getMapUrl(q.mapId, q.zone);
   const { done, total, pct } = getProgress(q);
-  const isDone = done === total && total > 0;
+  const isDone    = done === total && total > 0;
+  const isStarted = !isDone && done > 0;
 
   /* Objectifs */
   const objsHTML = q.objectifs.map((o, i) => {
@@ -750,7 +771,7 @@ function renderSheet(q) {
         <div class="quest-sheet-name">${q.titre}</div>
         <div class="quest-badge-row">
           <span class="quest-type-badge qbadge-${q.type}">${TYPE_LABELS[q.type]}</span>
-          <span class="quest-status-badge ${isDone ? 'badge-done' : 'badge-todo'}">${isDone ? 'Terminée' : 'À faire'}</span>
+          <span class="quest-status-badge ${isDone ? 'badge-done' : isStarted ? 'badge-wip' : 'badge-todo'}">${isDone ? 'Terminée' : isStarted ? 'En cours' : 'À faire'}</span>
           <button class="quest-share-btn" title="Copier le lien de la quête" onclick="
             navigator.clipboard.writeText('${shareUrl}');
             this.textContent='✓ Copié';
@@ -785,6 +806,10 @@ function renderSheet(q) {
       </div>
       <div class="quest-section">
         <div class="quest-section-title">Objectifs</div>
+        <div class="quest-check-all-row">
+          <button class="quest-check-all-btn" onclick="questCheckAll('${q.id}', true)">✓ Tout cocher</button>
+          <button class="quest-check-all-btn" onclick="questCheckAll('${q.id}', false)">○ Tout décocher</button>
+        </div>
         <div class="obj-list">${objsHTML}</div>
       </div>
       <div class="quest-section">

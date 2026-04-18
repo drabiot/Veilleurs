@@ -377,6 +377,7 @@ body.quetes-page { overflow: hidden; }
 }
 .badge-todo { color: #d4a840; border-color: #d4a84044; background: rgba(212,168,64,.06); }
 .badge-done { color: #7db87a; border-color: #7db87a44; background: rgba(125,184,122,.06); }
+.badge-wip  { color: #7aabdc; border-color: #7aabdc44; background: rgba(122,171,220,.06); }
 
 /* Meta tags */
 .card-meta { display: flex; flex-wrap: wrap; gap: 5px; flex-shrink: 0; }
@@ -646,6 +647,17 @@ body.quetes-page { overflow: hidden; }
   display: flex; align-items: center; gap: 6px;
 }
 .quest-section-title::before { content: '◈'; font-size: 8px; opacity: .7; }
+
+/* Check all / uncheck all */
+.quest-check-all-row {
+  display: flex; gap: 8px; margin-bottom: 10px;
+}
+.quest-check-all-btn {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .06em;
+  padding: 4px 10px; border: 1px solid var(--rim); background: transparent;
+  color: var(--muted); cursor: pointer; transition: color .15s, border-color .15s;
+}
+.quest-check-all-btn:hover { color: var(--text); border-color: var(--gold); }
 
 /* Objectifs */
 .obj-list { display: flex; flex-direction: column; gap: 4px; }

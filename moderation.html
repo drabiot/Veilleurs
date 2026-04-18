@@ -422,21 +422,12 @@
       </div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
-      Définit les champs obligatoires pour chaque type dans le Creator.
-      Stocké dans Firestore <code>config/creator_validation</code>.
-      Le Creator lira cette config dynamiquement sans redéploiement.
+      Définit les champs obligatoires vérifiés par le panneau "📊 Data incomplète".
+      Stocké dans Firestore <code>config/data_quality_standards</code>.
     </p>
+    <div id="cv-tabs" style="display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap;"></div>
     <div id="cv-status" style="display:none;font-size:12px;padding:6px 10px;border-radius:6px;margin-bottom:10px;"></div>
-    <textarea id="creator-validation-ta" rows="20" spellcheck="false"
-      style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:10px;font-size:12px;font-family:monospace;outline:none;resize:vertical;transition:border-color .15s;"
-      oninput="onCreatorValidationInput()"
-      placeholder='{
-  "mob":      { "required": ["name", "palier", "region"] },
-  "pnj":      { "required": ["type", "coords", "region"] },
-  "region":   { "required": ["name", "palier"] },
-  "quest":    { "required": ["titre", "type"] },
-  "panoplie": { "required": ["label", "bonuses"] }
-}'></textarea>
+    <div id="cv-grid"></div>
   </main>
 
   <!-- Panneau Éditeur -->

@@ -15,6 +15,7 @@ const monsterSel  = document.getElementById('monster-select');
 let pieces        = [];   // { outerGroup, boxHelper, cfg }
 let selectedIdx   = -1;
 let cameraTarget  = new THREE.Vector3(0, 0.5, 0);
+const tTarget     = new THREE.Vector3(0, 0.5, 0); // cible lissée pour le pan
 let camHauteur    = 0.5;
 let camDistance   = 2.5;
 
@@ -31,7 +32,7 @@ let dragShift      = false;
 
 /* ─── Scene Three.js ─── */
 let scene, camera, renderer, previewCamera;
-let orbiting = false, lastMouse = { x: 0, y: 0 };
+let orbiting = false, panning = false, lastMouse = { x: 0, y: 0 };
 const orb = { phi: 1.1, theta: 0.4, r: 2.5, tPhi: 1.1, tTheta: 0.4, tR: 2.5 };
 
 /* ─── Helpers drag ─── */
@@ -134,7 +135,17 @@ function initScene() {
 
   const el = renderer.domElement;
 
+  el.addEventListener('contextmenu', e => e.preventDefault());
+
   el.addEventListener('mousedown', e => {
+    // Clic-droit ou molette → pan
+    if (e.button === 1 || e.button === 2) {
+      e.preventDefault();
+      panning = true;
+      lastMouse = { x: e.clientX, y: e.clientY };
+      renderer.domElement.style.cursor = 'grab';
+      return;
+    }
     if (e.button !== 0) return;
     dragStartMouse = { x: e.clientX, y: e.clientY };
     isDragging = false;
@@ -161,6 +172,7 @@ function initScene() {
 
   window.addEventListener('mouseup', () => {
     orbiting = false;
+    panning  = false;
     dragMode = false;
     dragPieceIdx = -1;
     isDragging = false;
@@ -176,6 +188,18 @@ function initScene() {
         renderer.domElement.style.cursor = 'move';
         movePieceDrag(dragPieceIdx, e.clientX, e.clientY);
       }
+      return;
+    }
+    if (panning) {
+      renderer.domElement.style.cursor = 'grabbing';
+      const dx = e.clientX - lastMouse.x;
+      const dy = e.clientY - lastMouse.y;
+      lastMouse = { x: e.clientX, y: e.clientY };
+      const speed = orb.r * 0.0012;
+      const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+      const up    = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
+      tTarget.addScaledVector(right, -dx * speed);
+      tTarget.addScaledVector(up,     dy * speed);
       return;
     }
     if (!orbiting) return;
@@ -206,6 +230,7 @@ function animate() {
   orb.phi    += (orb.tPhi    - orb.phi)    * 0.1;
   orb.theta  += (orb.tTheta  - orb.theta)  * 0.1;
   orb.r      += (orb.tR      - orb.r)      * 0.1;
+  cameraTarget.lerp(tTarget, 0.12);
   const { phi, theta, r } = orb;
   camera.position.set(
     cameraTarget.x + r * Math.sin(phi) * Math.sin(theta),
@@ -481,6 +506,7 @@ async function loadMonster(mob) {
   pieces.forEach(p => box.expandByObject(p.outerGroup));
   if (!box.isEmpty()) {
     box.getCenter(cameraTarget);
+    tTarget.copy(cameraTarget);
     const size = box.getSize(new THREE.Vector3()).length();
     orb.tR = orb.r = Math.max(0.8, size * 2.2);
   }
