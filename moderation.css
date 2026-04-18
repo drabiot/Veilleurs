@@ -29,7 +29,7 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .in-order-panel .filter-btn[data-type].active .filter-count { background: var(--surface3); color: inherit; }
 
 /* Cards */
-.sub-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .15s; }
+.sub-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: border-color .15s; flex-shrink: 0; }
 .sub-card:hover { border-color: var(--accent); }
 .sub-card.status-approved { border-left: 3px solid var(--success); }
 .sub-card.status-rejected { border-left: 3px solid var(--danger); opacity: .6; }

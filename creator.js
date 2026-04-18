@@ -859,6 +859,7 @@ let allMobs      = [];
 let allDonjons   = [];
 let allArtisans  = [];
 let allMarchands = [];
+let allQuetes    = [];
 
 function initObtainData() {
   if (typeof MOBS !== 'undefined') {
@@ -880,17 +881,26 @@ function initObtainData() {
     allArtisans  = flat.filter(m => m.type === 'artisant').map(toItem);
     allMarchands = flat.filter(m => m.type === 'marchand').map(toItem);
   }
+  if (typeof QUETES_DATA !== 'undefined') {
+    const TYPE_LABELS_Q = { main: 'Principale', sec: 'Secondaire', ter: 'Tertiaire' };
+    allQuetes = QUETES_DATA.map(q => ({
+      id: q.id, name: q.titre || q.name || q.id,
+      subtitle: (TYPE_LABELS_Q[q.type] || q.type || '') + (q.palier ? ' · Palier ' + q.palier : ''),
+      search: ((q.titre || q.name || '') + ' ' + q.id).toLowerCase()
+    }));
+  }
   onObtainTypeChange();
 }
 
 function obtainItemsForType(type) {
-  return { mob: allMobs, donjon: allDonjons, artisant: allArtisans, marchand: allMarchands }[type] || [];
+  return { mob: allMobs, donjon: allDonjons, artisant: allArtisans, marchand: allMarchands, quete: allQuetes }[type] || [];
 }
 
 const OBTAIN_PLACEHOLDERS = {
   mob:      'Rechercher un mob…',
   donjon:   'Rechercher un donjon…',
   artisant: 'Rechercher un forgeron / artisan…',
+  quete:    'Rechercher une quête…',
   marchand: 'Rechercher un marchand…',
 };
 
@@ -996,7 +1006,7 @@ function addObtainSource() {
   if (!item) return;
   if (obtainSources.some(s => s.id === id && s.type === type)) return;
 
-  obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc });
+  obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc, subtitle: item.subtitle });
   obtainDrop.reset();
   document.getElementById('obtain-add-btn').disabled = true;
   renderObtainSources();
@@ -1014,7 +1024,7 @@ function removeObtainSource(uid) {
   update();
 }
 
-const OBTAIN_ICONS = { mob:'🗡️', donjon:'🏰', artisant:'🔨', marchand:'🛒' };
+const OBTAIN_ICONS = { mob:'🗡️', donjon:'🏰', artisant:'🔨', marchand:'🛒', quete:'📜' };
 
 function renderObtainSources() {
   const list = document.getElementById('obtain-sources-list');
@@ -1033,6 +1043,10 @@ function renderObtainSources() {
       if (s.chance != null) label += ` — <b style="color:var(--success)">${s.chance}%</b>`;
       else label += ` <span style="color:var(--muted)">— chance non définie</span>`;
       if (s.qty) label += ` <span style="color:var(--muted)">×${s.qty}</span>`;
+    } else if (s.type === 'quete') {
+      const href = `Quetes/quetes.html#${encodeURIComponent(s.id)}`;
+      label += `<a href="${href}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">${s.name}</a>`;
+      if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
     } else {
       label += `<b>${s.name}</b>`;
       if (s.desc) label += ` <span style="color:var(--muted)">— ${s.desc}</span>`;
@@ -1051,6 +1065,8 @@ function buildObtainText() {
   const artisans  = obtainSources.filter(s => s.type === 'artisant');
   const marchands = obtainSources.filter(s => s.type === 'marchand');
 
+  const quetes     = obtainSources.filter(s => s.type === 'quete');
+
   if (mobs.length) {
     // Une ligne par mob : [mob_id|Nom Mob][chance]
     const lines = mobs.map(s => {
@@ -1062,6 +1078,7 @@ function buildObtainText() {
   for (const d of donjons)   parts.push(`Obtenable en récompense du [npc:${d.id}|${d.name}]`);
   for (const a of artisans)  parts.push(`Fabricable au [npc:${a.id}|${a.name}]`);
   for (const m of marchands) parts.push(`Achetable au [npc:${m.id}|${m.name}]`);
+  for (const q of quetes)    parts.push(`Récompense de la quête [quest:${q.id}|${q.name}]`);
   return parts.join('\n');
 }
 

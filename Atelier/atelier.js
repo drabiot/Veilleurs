@@ -1576,6 +1576,16 @@ stats.innerHTML = statsLines +
         statsFilter(item);
       });
     }
+    // Injecter les items sensibles depuis le cache local (jamais dans ITEMS global)
+    // Visibles uniquement si la recherche correspond exactement au nom
+    if (q) {
+      _hiddenCache.forEach(function(item) {
+        if (normalize(item.name) !== q) return;
+        if (activeSlot && !SLOTS_BY_ID.get(activeSlot)?.cats.includes(item.cat)) return;
+        if (!activeSlot && !_equipCats.has(item.cat)) return;
+        if (!visible.some(function(v) { return v.id === item.id; })) visible.push(item);
+      });
+    }
 
     if (!visible.length) {
       list.innerHTML = '<div class="picker-empty-msg">Aucun item compatible</div>';
@@ -2096,7 +2106,8 @@ stats.innerHTML = statsLines +
   // items_hidden, accessibles uniquement par hash(nom exact). On tente un
   // lookup débouncé à chaque frappe ; si l'item existe, on l'injecte dans
   // ITEMS et on re-render.
-  const _sensibleTried = new Set(); // normalisés déjà tentés
+  const _sensibleTried = new Set(); // noms normalisés déjà tentés
+  const _hiddenCache   = new Map(); // id → item, jamais exposé dans ITEMS global
   let _sensibleTimer = null;
   function _sensibleImg(category, id, palier) {
     if (!id) return null;
@@ -2126,11 +2137,21 @@ stats.innerHTML = statsLines +
     try {
       const hit = await api.getHiddenByName(api.COL.itemsHidden, rawName);
       if (!hit) return;
-      // Éviter doublon si l'item est déjà dans ITEMS (cas limite)
-      if (ITEMS.some(function(it) { return it.id === hit.id; })) return;
-      if (!hit.img) hit.img = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier);
-      ITEMS.push(hit);
-      // Ne re-render que si la recherche courante correspond encore
+      if (!_hiddenCache.has(hit.id)) {
+        // Tenter de récupérer le flavor (images, lore…) depuis items_secret
+        // Silencieux si refusé (non-contrib)
+        if (hit.id && api.getSecretById) {
+          const secret = await api.getSecretById(api.COL.itemsSecret, hit.id);
+          if (secret) Object.assign(hit, secret);
+        }
+        // Fallback image calculée si toujours aucun champ image
+        if (!hit.images?.length && !hit.image && !hit.img) {
+          const builtImg = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier);
+          if (builtImg) { hit.img = builtImg; hit.images = [builtImg]; }
+        }
+        _hiddenCache.set(hit.id, hit);
+      }
+      // Ne re-render que si la recherche courante correspond encore (nom exact)
       if (normalize(filterQ) === q) renderItemList();
     } catch (err) {
       console.warn('[atelier] sensible lookup:', err);
@@ -2287,15 +2308,20 @@ stats.innerHTML = statsLines +
               (function(slotId, rawName) {
                 var api = window.VCL_DB;
                 if (!api || !api.getHiddenByName) return;
-                api.getHiddenByName(api.COL.itemsHidden, rawName).then(function(hit) {
+                api.getHiddenByName(api.COL.itemsHidden, rawName).then(async function(hit) {
                   if (!hit) return;
-                  if (ITEMS.some(function(it) { return it.id === hit.id; })) {
-                    equipped[slotId] = ITEMS.find(function(it) { return it.id === hit.id; });
-                  } else {
-                    if (!hit.img) hit.img = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier);
-                    ITEMS.push(hit);
-                    equipped[slotId] = hit;
+                  if (!_hiddenCache.has(hit.id)) {
+                    if (hit.id && api.getSecretById) {
+                      const secret = await api.getSecretById(api.COL.itemsSecret, hit.id);
+                      if (secret) Object.assign(hit, secret);
+                    }
+                    if (!hit.images?.length && !hit.image && !hit.img) {
+                      const builtImg = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier);
+                      if (builtImg) { hit.img = builtImg; hit.images = [builtImg]; }
+                    }
+                    _hiddenCache.set(hit.id, hit);
                   }
+                  equipped[slotId] = _hiddenCache.get(hit.id);
                   buildGrid();
                   renderStats();
                   renderPickerInfo();

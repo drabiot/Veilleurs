@@ -276,28 +276,10 @@ function cheminSortie(mob) {
   return `img/mobs/P${mob.palier || 1}/${mob.id}.png`;
 }
 
-// Filtrer les mobs avec des morceaux 3D définis
-const MONSTRES = MOBS
-  .filter(m => m.morceaux && m.morceaux.length > 0)
-  .map(m => ({
-    ...m,
-    // Normaliser les chemins des morceaux
-    morceaux: m.morceaux.map(morceau => ({
-      ...morceau,
-      fichier: normaliseChemin(morceau.fichier)
-    })),
-    // Chemin de sortie calculé
-    imgOut: cheminSortie(m)
-  }));
+// MONSTRES est peuplé par _initCapture() après chargement Firestore
+let MONSTRES = [];
 
 const SPRITE_SIZE = 256;
-
-/* ── Stats ── */
-const paliers = [...new Set(MONSTRES.map(m => m.palier || 1))].sort();
-document.getElementById('stats').innerHTML =
-  `Mobs avec modèle 3D : <span>${MONSTRES.length}</span> &nbsp;|&nbsp; ` +
-  `Paliers : <span>${paliers.join(', ')}</span> &nbsp;|&nbsp; ` +
-  `Taille sprite : <span>${SPRITE_SIZE}×${SPRITE_SIZE}px</span>`;
 
 /* ── Log ── */
 const logEl = document.getElementById('log');
@@ -548,7 +530,7 @@ async function capture(mob, size) {
 }
 
 /* ── Construction de la grille ── */
-const grid     = document.getElementById('grid');
+const grid      = document.getElementById('grid');
 const btnRender = document.getElementById('btn-render');
 const btnZip    = document.getElementById('btn-zip');
 const progWrap  = document.getElementById('progress-wrap');
@@ -556,35 +538,9 @@ const progBar   = document.getElementById('progress-bar');
 const progLabel = document.getElementById('progress-label');
 const results   = {};
 
-MONSTRES.forEach(mob => {
-  const isBoss = mob.type === 'boss' || mob.type === 'mini_boss';
-  const card = document.createElement('div');
-  card.className = 'card';
-  card.innerHTML = `
-    <div class="card-preview" id="prev-${mob.id}">
-      <span class="badge-palier">P${mob.palier || 1}</span>
-      ${isBoss ? `<span class="badge-boss">${mob.type === 'mini_boss' ? 'mini-boss' : 'boss'}</span>` : ''}
-      🐾
-    </div>
-    <div class="card-body">
-      <div class="card-name">${mob.name}</div>
-      <div class="card-path">→ ${mob.imgOut}</div>
-      <div class="card-status" id="st-${mob.id}">en attente…</div>
-      <button class="card-dl" id="dl-${mob.id}">⬇ Télécharger</button>
-    </div>`;
-  grid.appendChild(card);
-
-  document.getElementById('dl-' + mob.id).addEventListener('click', () => {
-    const r = results[mob.id]; if (!r) return;
-    const a = document.createElement('a');
-    a.href = r.dataUrl;
-    a.download = mob.imgOut.split('/').pop();
-    a.click();
-  });
-});
-
 function setSt(id, msg, cls = '') {
   const el = document.getElementById('st-' + id);
+  if (!el) return;
   el.textContent = msg;
   el.className = 'card-status' + (cls ? ' ' + cls : '');
 }
@@ -649,6 +605,72 @@ btnZip.addEventListener('click', async () => {
   btnZip.disabled = false;
   log('ZIP prêt — extrayez à la racine du projet pour écraser les images.', 'ok');
 });
+
+/* ── Initialisation (appelée après chargement MOBS depuis Firestore) ── */
+window._initCapture = function() {
+  MONSTRES = MOBS
+    .filter(m => m.morceaux && m.morceaux.length > 0)
+    .map(m => ({
+      ...m,
+      morceaux: m.morceaux.map(morceau => ({
+        ...morceau,
+        fichier: normaliseChemin(morceau.fichier)
+      })),
+      imgOut: cheminSortie(m)
+    }));
+
+  // Stats
+  const paliers = [...new Set(MONSTRES.map(m => m.palier || 1))].sort();
+  document.getElementById('stats').innerHTML =
+    `Mobs avec modèle 3D : <span>${MONSTRES.length}</span> &nbsp;|&nbsp; ` +
+    `Paliers : <span>${paliers.join(', ')}</span> &nbsp;|&nbsp; ` +
+    `Taille sprite : <span>${SPRITE_SIZE}×${SPRITE_SIZE}px</span>`;
+
+  // Grille de cartes
+  grid.innerHTML = '';
+  MONSTRES.forEach(mob => {
+    const isBoss = mob.type === 'boss' || mob.type === 'mini_boss';
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-preview" id="prev-${mob.id}">
+        <span class="badge-palier">P${mob.palier || 1}</span>
+        ${isBoss ? `<span class="badge-boss">${mob.type === 'mini_boss' ? 'mini-boss' : 'boss'}</span>` : ''}
+        🐾
+      </div>
+      <div class="card-body">
+        <div class="card-name">${mob.name}</div>
+        <div class="card-path">→ ${mob.imgOut}</div>
+        <div class="card-status" id="st-${mob.id}">en attente…</div>
+        <button class="card-dl" id="dl-${mob.id}">⬇ Télécharger</button>
+      </div>`;
+    grid.appendChild(card);
+
+    document.getElementById('dl-' + mob.id).addEventListener('click', () => {
+      const r = results[mob.id]; if (!r) return;
+      const a = document.createElement('a');
+      a.href = r.dataUrl;
+      a.download = mob.imgOut.split('/').pop();
+      a.click();
+    });
+  });
+
+  if (MONSTRES.length === 0) {
+    document.getElementById('stats').innerHTML = '<span style="color:var(--err)">Aucun mob avec modèle 3D trouvé.</span>';
+  }
+};
+</script>
+
+<script type="module">
+/* Chargement des mobs depuis Firestore (MOBS est vide via mob_data.js statique) */
+import { store } from './store.js';
+try {
+  await store.load(['mobs']);
+  MOBS.push(...store.mobs);
+} catch(e) {
+  console.warn('[Capture Sprites] Firestore indisponible — seuls les mobs statiques sont chargés.', e);
+}
+window._initCapture?.();
 </script>
 </body>
 </html>

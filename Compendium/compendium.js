@@ -1127,6 +1127,7 @@ function showItem(id, initialQuality = false) {
 /* ══════════════════════════════════
    RECHERCHE
 ══════════════════════════════════ */
+
 searchInput.addEventListener('input', () => {
   const expandAll = currentSort === 'palier';
   buildSidebar(currentItems(), expandAll);

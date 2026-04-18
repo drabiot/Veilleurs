@@ -99,6 +99,16 @@ function ensureThree() {
   });
   return _threeLoader;
 }
+function getRegionLabel(id) {
+  if (!id) return '';
+  if (window._regionIndex) {
+    const label = window._regionIndex.get(id);
+    if (label) return label;
+  }
+  // Fallback : convertit snake_case → mots capitalisés
+  return id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
 function dropRateColor(chance) {
   if (chance >= 70) return '#7fdf62';
   if (chance >= 30) return '#c9a84c';
@@ -171,7 +181,7 @@ function getList() { return activeTab === 'monstres' ? MOBS : PERSONNAGES; }
 function getFiltered() {
   const q = normalize(searchQuery);
   const filtered = getList().filter(e => {
-    if (q && !normalize(e.name).includes(q) && !normalize(e.region||'').includes(q) && !normalize(e.lore||'').includes(q)) return false;
+    if (q && !normalize(e.name).includes(q) && !normalize(getRegionLabel(e.region||'')).includes(q) && !normalize(e.region||'').includes(q) && !normalize(e.lore||'').includes(q)) return false;
     if (activePalier !== 'all' && e.palier !== activePalier) return false;
     if (activeTab === 'monstres') {
       if (!activeTypes.has(e.type)) return false;
@@ -325,7 +335,7 @@ function buildGrid() {
     } else {
       behaviorHTML = `
         <div class="card-behavior-row">
-          <span class="card-behavior-text" style="color:var(--muted)">${escHtml(e.region||'')}</span>
+          <span class="card-behavior-text" style="color:var(--muted)">${escHtml(getRegionLabel(e.region||''))}</span>
         </div>`;
     }
 
@@ -621,7 +631,7 @@ function renderMobSheet(mob) {
             <div class="mob-meta-item">
               <span class="mob-meta-key">Région</span>
               <span class="mob-meta-val">
-                ${escHtml(mob.region)}
+                ${escHtml(getRegionLabel(mob.region))}
                 ${getMapZone(mob) ? `<a class="region-link" href="../Map/map.html#${escHtml(getMapZone(mob))}">→ Carte</a>` : ''}
               </span>
             </div>` : ''}

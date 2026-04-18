@@ -225,6 +225,8 @@
   <script src="atelier.js"></script>
   <script type="module">
     import { store } from '../store.js';
+    import { getHiddenByName, getSecretById, COL } from '../firebase.js';
+    window.VCL_DB = { getHiddenByName, getSecretById, COL };
     try {
       await store.load(['items', 'panoplies']);
       store.populateGlobals();

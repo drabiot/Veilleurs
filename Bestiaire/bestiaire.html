@@ -309,8 +309,10 @@
   <script type="module">
     import { store } from '../store.js';
     try {
-      await store.load(['items', 'mobs', 'pnj']);
+      await store.load(['items', 'mobs', 'pnj', 'regions']);
       store.populateGlobals();
+      // Index région id → nom lisible, pour l'affichage des mobs
+      window._regionIndex = new Map(store.regions.map(r => [r.id, r.name || r.id]));
     } catch (err) {
       console.error('[Bestiaire] Erreur Firestore :', err);
     }

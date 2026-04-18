@@ -426,5 +426,16 @@
   <script src="mob_data.js"></script>
   <script src="data.js"></script>
   <script src="calibrateur.js"></script>
+  <script type="module">
+    import { store } from '../store.js';
+    try {
+      await store.load(['mobs']);
+      store.mobs.forEach(m => { if (!MOBS.some(x => x.id === m.id)) MOBS.push(m); });
+      // Repopuler le dropdown après chargement Firestore
+      if (typeof populateMobSelect === 'function') populateMobSelect();
+    } catch(e) {
+      console.warn('[Calibrateur] Firestore indisponible :', e);
+    }
+  </script>
 </body>
 </html>

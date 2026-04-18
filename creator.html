@@ -335,6 +335,7 @@
               <option value="donjon">🏰 Donjon</option>
               <option value="artisant">🔨 Forgeron / Artisan</option>
               <option value="marchand">🛒 Marchand</option>
+              <option value="quete">📜 Quête</option>
             </select>
             <div id="obtain-search-container"></div>
             <button class="btn btn-primary btn-sm" id="obtain-add-btn" onclick="addObtainSource()" disabled style="height:38px;white-space:nowrap;">+ Ajouter</button>
@@ -1034,12 +1035,13 @@ window._vcl_store          = store;
 window._vcl_loadCollection = loadCollection;
 
 try {
-  await store.load(['items', 'mobs', 'panoplies']);
+  await store.load(['items', 'mobs', 'panoplies', 'quetes']);
   if (store.items.length)     { window.ITEMS = store.items; }
   if (store.mobs.length)      {
     window.MOBS = store.mobs;
-    if (typeof initObtainData === 'function') initObtainData();
   }
+  if (store.quetes.length)    { window.QUETES_DATA = store.quetes; }
+  if (typeof initObtainData === 'function') initObtainData();
   if (typeof SETS !== 'undefined') {
     Object.assign(SETS, store.sets);
     if (typeof buildSetSelect === 'function') buildSetSelect();

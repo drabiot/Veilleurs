@@ -680,11 +680,18 @@ const HASH_PANELS = {
   'completion':       () => showCompletion(),
   'creator-validation': () => showCreatorValidation(),
   'data-incomplete':  () => showDataIncomplete(),
+  'calibrateur':      () => showCalibrateur(),
+  'capture-sprites':  () => showCaptureSprites(),
 };
 
 function _setHash(hash) {
   history.replaceState(null, '', '#' + hash);
   _activePanel = hash;
+  // Cache TOUS les panneaux et désactive TOUS les boutons de filtre —
+  // chaque show* n'a plus qu'à afficher son propre panneau et activer son bouton.
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.sidebar')?.classList.remove('in-order-panel');
 }
 
 // Masque tous les panneaux .main, retire tous les actifs de la sidebar,
@@ -2493,7 +2500,7 @@ let _editorCollection = null;
 let _editorId         = null;
 let _editorOrigin     = null;
 
-const _COL_LABELS = { items:'Item', mobs:'Mob', personnages:'PNJ', regions:'Région', panoplies:'Panoplie', quetes:'Quête' };
+const _COL_LABELS = { items:'Item', mobs:'Mob', personnages:'PNJ', regions:'Région', panoplies:'Panoplie', quetes:'Quête', items_sensible:'Item Sensible' };
 
 let _cachedRegions = null;
 let _cachedSets    = null;
@@ -3102,8 +3109,9 @@ window.showEditor = async function(collection, id, data, origin) {
     await _loadRegionsForEditor();
   }
 
-  // Construire le formulaire générique
-  document.getElementById('editor-form').innerHTML = _buildGenericForm(data, collection);
+  // Construire le formulaire générique (items_sensible traité comme items)
+  const formCollection = collection === 'items_sensible' ? 'items' : collection;
+  document.getElementById('editor-form').innerHTML = _buildGenericForm(data, formCollection);
 
   // Initialiser le color picker si présent (régions)
   const cpEl = document.querySelector('#editor-form .ed-color-picker[data-init-hex]');
@@ -3114,8 +3122,8 @@ window.showEditor = async function(collection, id, data, origin) {
     _cpUpdate(cpEl.id, ih, is, iv);
   }
 
-  // Peupler la datalist des sets (items uniquement)
-  if (collection === 'items') await _populateSetDatalist();
+  // Peupler la datalist des sets (items et items_sensible)
+  if (collection === 'items' || collection === 'items_sensible') await _populateSetDatalist();
 
   // Auto-resize des JSON textareas
   document.querySelectorAll('#editor-form .ed-json-ta').forEach(ta => {
@@ -3143,6 +3151,7 @@ window.editorGoBack = function() {
   if (_editorOrigin === 'region-orphan')  { showRegionOrphans(); return; }
   if (_editorOrigin === 'mob-orphan')     { showMobOrphans();    return; }
   if (_editorOrigin === 'quest-orphan')  { showQuestOrphans();  return; }
+  if (_editorOrigin === 'migration')     { showMigration();     return; }
   showSubmissions();
 };
 
@@ -3155,6 +3164,43 @@ window.saveEditor = async function() {
 
   try {
     const newData = _collectGenericForm();
+
+    // ── Cas spécial : item sensible (items_hidden + items_secret) ──────────
+    if (_editorCollection === 'items_sensible') {
+      const gameplayKeys = await getItemGameplayKeys();
+      const gameplay = {};
+      const secret   = {};
+      for (const [k, v] of Object.entries(newData)) {
+        if (k === 'sensible' || k === 'img') continue;
+        if (gameplayKeys.includes(k)) gameplay[k] = v;
+        else                          secret[k]   = v;
+      }
+      const hash = await hashName(newData.name);
+      if (!hash) throw new Error('Nom manquant pour recalculer le hash');
+      // Si le nom a changé, supprimer l'ancien doc items_hidden
+      if (hash !== _editorId) {
+        try { await deleteDoc(doc(db, COL.itemsHidden, _editorId)); } catch {}
+      }
+      await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore(gameplay));
+      const itemId = String(newData.id || '');
+      if (itemId) {
+        if (Object.keys(secret).length) {
+          await setDoc(doc(db, COL.itemsSecret, itemId), sanitizeForFirestore(secret));
+        } else {
+          try { await deleteDoc(doc(db, COL.itemsSecret, itemId)); } catch {}
+        }
+      }
+      // Mettre à jour _sensState en mémoire
+      const merged = { ...gameplay, ...secret };
+      const idx = _sensState.itemsHidden.findIndex(x => x._id === _editorId);
+      if (idx >= 0) _sensState.itemsHidden[idx] = { _id: hash, ...merged };
+      else _sensState.itemsHidden.push({ _id: hash, ...merged });
+      _editorId = hash;
+      _editorOrigData = { ...newData };
+      btn.textContent = '✔ Sauvegardé'; btn.style.background = '#14532d'; btn.style.color = 'var(--success)';
+      setTimeout(() => { btn.disabled = false; btn.textContent = '💾 Sauvegarder'; btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; }, 2500);
+      return;
+    }
 
     // Renommage d'ID → recréer le document (toutes collections)
     const rawNewId = (newData.id != null ? String(newData.id).trim() : '');
@@ -3239,6 +3285,15 @@ window.deleteCurrentEntry = async function() {
   const btn = document.getElementById('btn-delete-editor');
   btn.disabled = true; btn.textContent = '⏳';
   try {
+    if (_editorCollection === 'items_sensible') {
+      // Supprimer items_hidden (par hash) + items_secret (par id)
+      await deleteDoc(doc(db, COL.itemsHidden, _editorId));
+      const itemId = String(_editorOrigData?.id || '');
+      if (itemId) try { await deleteDoc(doc(db, COL.itemsSecret, itemId)); } catch {}
+      _sensState.itemsHidden = _sensState.itemsHidden.filter(x => x._id !== _editorId);
+      editorGoBack();
+      return;
+    }
     await deleteDoc(doc(db, _editorCollection, _editorId));
     // Invalider les caches localStorage
     localStorage.removeItem(`vcl_cache_v2_${_editorCollection}`);
@@ -3295,19 +3350,8 @@ const DW_CATEGORIES = [
 
 window.showDiscordWebhooks = async () => {
   _setHash('webhooks');
-  document.getElementById('users-panel').style.display         = 'none';
-  document.getElementById('submissions-list').style.display    = 'none';
-  document.getElementById('mob-order-panel').style.display     = 'none';
-  document.getElementById('item-order-panel').style.display    = 'none';
-  document.getElementById('pnj-order-panel').style.display     = 'none';
-  document.getElementById('ghost-id-panel').style.display      = 'none';
-  document.getElementById('region-order-panel').style.display  = 'none';
-  document.getElementById('panoplie-order-panel').style.display = 'none';
-  document.getElementById('quest-order-panel').style.display   = 'none';
-  document.getElementById('region-orphan-panel').style.display = 'none';
-  document.getElementById('mob-orphan-panel').style.display    = 'none';
-  document.getElementById('quest-orphan-panel').style.display  = 'none';
-  document.getElementById('editor-panel').style.display        = 'none';
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
 
   document.getElementById('discord-webhooks-panel').style.display = '';
   document.getElementById('btn-mob-order').classList.remove('active');
@@ -4661,10 +4705,24 @@ function _sensRenderItemsHidden() {
     return;
   }
   el.innerHTML = list.map(item => {
-    const btn = `<button class="btn btn-ghost" onclick="sensItemToPublic('${_sensEsc(item._id)}')" style="font-size:11px;padding:3px 10px;">🔓 Rendre public</button>`;
-    return _sensItemRow(item, btn);
+    const h = _sensEsc(item._id);
+    const btns = `
+      <button class="btn btn-ghost" onclick="sensEditItem('${h}')" style="font-size:11px;padding:3px 10px;">✏️ Éditer</button>
+      <button class="btn btn-ghost" onclick="sensItemToPublic('${h}')" style="font-size:11px;padding:3px 10px;">🔓 Public</button>`;
+    return _sensItemRow(item, btns);
   }).join('');
 }
+
+window.sensEditItem = async function(hashId) {
+  const hidden = _sensState.itemsHidden.find(x => x._id === hashId);
+  if (!hidden) return;
+  const secret = hidden.id ? (_sensState.itemsSecretById.get(String(hidden.id)) || {}) : {};
+  // Fusionner hidden + secret en un seul objet éditable (sans méta _id)
+  const merged = {};
+  for (const [k, v] of Object.entries(hidden))  { if (k !== '_id') merged[k] = v; }
+  for (const [k, v] of Object.entries(secret))  { if (k !== '_id') merged[k] = v; }
+  await showEditor('items_sensible', hashId, merged, 'migration');
+};
 
 function _sensRenderItemsPublic() {
   const list = _sensState.itemsPublic;
@@ -4904,4 +4962,23 @@ window.sensMobToPublic = async (sourceId) => {
     e.preventDefault();
   }, { capture: true, passive: false });
 })();
+
+// ── Outils modération ──────────────────────────────
+window.showCalibrateur = function() {
+  _setHash('calibrateur');
+  _showPanel('calibrateur-panel', 'btn-calibrateur');
+  const iframe = document.getElementById('calibrateur-iframe');
+  if (!iframe.src || iframe.src === 'about:blank') {
+    iframe.src = 'Bestiaire/calibrateur.html';
+  }
+};
+
+window.showCaptureSprites = function() {
+  _setHash('capture-sprites');
+  _showPanel('capture-panel', 'btn-capture-sprites');
+  const iframe = document.getElementById('capture-iframe');
+  if (!iframe.src || iframe.src === 'about:blank') {
+    iframe.src = 'capture-sprites.html';
+  }
+};
 

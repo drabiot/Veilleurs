@@ -693,15 +693,24 @@ document.getElementById('copy-btn').addEventListener('click', () => {
 
 /* ─── Sélecteur monstre ─── */
 
-const mobsAvec3D = (typeof MOBS !== 'undefined' ? MOBS : [])
-  .filter(m => m.morceaux && m.morceaux.length > 0);
+let mobsAvec3D = [];
 
-mobsAvec3D.forEach(mob => {
-  const opt = document.createElement('option');
-  opt.value = mob.id;
-  opt.textContent = `[P${mob.palier}] ${mob.name}`;
-  monsterSel.appendChild(opt);
-});
+function populateMobSelect() {
+  mobsAvec3D = (typeof MOBS !== 'undefined' ? MOBS : [])
+    .filter(m => m.morceaux && m.morceaux.length > 0);
+  while (monsterSel.firstChild) monsterSel.removeChild(monsterSel.firstChild);
+  mobsAvec3D.forEach(mob => {
+    const opt = document.createElement('option');
+    opt.value = mob.id;
+    opt.textContent = `[P${mob.palier}] ${mob.name}`;
+    monsterSel.appendChild(opt);
+  });
+  if (mobsAvec3D.length > 0) {
+    monsterSel.value = mobsAvec3D[0].id;
+    loadMonster(mobsAvec3D[0]);
+  }
+}
+window.populateMobSelect = populateMobSelect;
 
 monsterSel.addEventListener('change', () => {
   const mob = mobsAvec3D.find(m => m.id === monsterSel.value);
@@ -711,8 +720,4 @@ monsterSel.addEventListener('change', () => {
 /* ─── Init ─── */
 
 initScene();
-
-if (mobsAvec3D.length > 0) {
-  monsterSel.value = mobsAvec3D[0].id;
-  loadMonster(mobsAvec3D[0]);
-}
+populateMobSelect();

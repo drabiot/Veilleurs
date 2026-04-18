@@ -252,6 +252,17 @@ export async function getHiddenByName(colName, name) {
   }
 }
 
+/** Récupère un doc par ID dans une collection (ex: items_secret/{id}). Retourne null si absent ou refusé. */
+export async function getSecretById(colName, id) {
+  if (!id) return null;
+  try {
+    const snap = await getDoc(doc(db, colName, String(id)));
+    return snap.exists() ? desanitizeFromFirestore({ _id: snap.id, ...snap.data() }) : null;
+  } catch {
+    return null; // accès refusé (non-contrib) → silencieux
+  }
+}
+
 /**
  * Charge toute une collection avec cache localStorage.
  * v2 : les données sont stockées désanitisées (format JS original).
