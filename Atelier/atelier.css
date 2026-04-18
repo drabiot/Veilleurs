@@ -1435,3 +1435,23 @@ html, body {
 .car-tt-stat-label { flex: 1; color: rgba(255,255,255,.6); font-size: 11px; }
 .car-tt-stat-val { font-weight: 700; font-size: 11.5px; white-space: nowrap; }
 .car-tt-per-pt { font-size: 9.5px; color: rgba(255,255,255,.3); margin-left: 2px; font-weight: 400; }
+
+.item-locked {
+  cursor: default;
+}
+
+.set-tooltip {
+  position: fixed;
+  z-index: 9999;
+  width: 240px;
+  background: var(--surface2, #1a1714);
+  border: 1px solid rgba(215,175,95,.25);
+  box-shadow: 0 0 0 1px rgba(215,175,95,.08);
+  padding: 10px 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .12s;
+}
+.set-tooltip.visible {
+  opacity: 1;
+}

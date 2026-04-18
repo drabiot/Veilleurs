@@ -47,14 +47,96 @@
   		});
 	}
 
-  /* ══ TOOLTIP CARACTÉRISTIQUES ══
-     Styles définis dans atelier.css (.car-tooltip, .car-tt-*) */
+  /* ══ TOOLTIP CARACTÉRISTIQUES ══ */
+  function hideSetTooltip() {
+    const tooltip = document.getElementById('set-tooltip');
+    if (tooltip) tooltip.classList.remove('visible');
+  }
+
   function buildCarTooltip() {
     if (document.getElementById('car-tooltip')) return;
     const tooltip = document.createElement('div');
     tooltip.id = 'car-tooltip';
     tooltip.className = 'car-tooltip';
     document.body.appendChild(tooltip);
+  }
+
+  function buildSetTooltip() {
+    if (document.getElementById('set-tooltip')) return;
+    const tooltip = document.createElement('div');
+    tooltip.id = 'set-tooltip';
+    tooltip.className = 'set-tooltip';
+    document.body.appendChild(tooltip);
+  }
+
+  function showSetTooltip(e, setId) {
+    const tooltip = document.getElementById('set-tooltip');
+    if (!tooltip) return;
+    const setDef = SETS[setId];
+    if (!setDef) return;
+
+    // Compter les items de ce set actuellement équipés
+    const setCounts = computeSetCounts();
+    const equipped_count = setCounts[setId] || 0;
+
+    // Tous les items du set
+    const setItems = ITEMS.filter(function(i) { return i.set === setId; });
+
+    let html = '<div class="car-tt-header">' +
+      '<span class="car-tt-name" style="color:' + setDef.color + '">◈ ' + setDef.label + '</span>' +
+      '</div>';
+
+    // Items du set
+    html += '<div style="margin-bottom:6px;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:6px;">';
+    setItems.forEach(function(item) {
+      const isEquipped = Object.values(equipped).some(function(e) { return e && e.id === item.id; });
+      const rarColor = (RARITIES[item.rarity] || {color:'#888'}).color;
+      html += '<div style="display:flex;align-items:center;gap:6px;padding:2px 0;">' +
+        '<span style="width:6px;height:6px;border-radius:50%;background:' + rarColor + ';flex-shrink:0;display:inline-block"></span>' +
+        '<span style="font-size:10.5px;color:' + (isEquipped ? '#d7af5f' : 'rgba(255,255,255,.5)') + ';' + (isEquipped ? 'font-weight:600' : '') + '">' + item.name + '</span>' +
+        (isEquipped ? '<span style="font-size:9px;color:#d7af5f;margin-left:auto">✓</span>' : '') +
+        '</div>';
+    });
+    html += '</div>';
+
+    // Bonus de panoplie
+    html += '<div class="car-tt-stats">';
+    Object.entries(setDef.bonuses).forEach(function(b) {
+      const threshold = parseInt(b[0]);
+      const stats = b[1];
+      const isActive = equipped_count >= threshold;
+      html += '<div style="margin-bottom:4px;">' +
+        '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;color:' + (isActive ? setDef.color : 'rgba(255,255,255,.3)') + ';margin-bottom:2px;">' +
+        (isActive ? '✓ ' : '○ ') + threshold + ' pcs</div>';
+      Object.entries(stats).forEach(function(sv) {
+        const statDef = STATS_BY_ID.get(sv[0]);
+        const label = statDef ? statDef.label : sv[0];
+        const unit  = statDef ? statDef.unit  : '';
+        const icon  = statDef ? statDef.icon  : '◈';
+        const val   = sv[1];
+        const valStr = Array.isArray(val)
+          ? (val[0] === val[1] 
+              ? (val[0] < 0 ? val[0] + unit : '+' + val[0] + unit)
+              : (val[0] < 0 ? val[0] + '–' + val[1] + unit : '+' + val[0] + '–' + val[1] + unit))
+          : (val < 0 ? val + unit : '+' + val + unit);
+        html += '<div class="car-tt-stat-row" style="opacity:' + (isActive ? '1' : '0.4') + '">' +
+          '<span class="car-tt-stat-icon">' + icon + '</span>' +
+          '<span class="car-tt-stat-label">' + label + '</span>' +
+          '<span class="car-tt-stat-val" style="color:' + setDef.color + '">' + valStr + '</span>' +
+          '</div>';
+      });
+      html += '</div>';
+    });
+    html += '</div>';
+
+    tooltip.innerHTML = html;
+    tooltip.classList.add('visible');
+    positionCarTooltip(e, tooltip);
+  }
+
+  function hideSetTooltip() {
+    const tooltip = document.getElementById('set-tooltip');
+    if (tooltip) tooltip.classList.remove('visible');
   }
 
   /* ══ SKIN 3D ══ */
@@ -915,7 +997,6 @@ stats.innerHTML = statsLines +
           '<span class="stat-icon">' + stat.icon + '</span>' +
           '<span class="stat-name">' + stat.label + '</span>';
         list.appendChild(row);
-		row.style.cursor = 'pointer';
 		row.addEventListener('click', function() {
 		if (filterStats.has(stat.id)) {
 			filterStats.delete(stat.id);
@@ -1405,7 +1486,7 @@ stats.innerHTML = statsLines +
       const setDef = SETS[item.set];
       const color = setDef ? setDef.color : '#888';
       const label = setDef ? setDef.label : item.set;
-      badges += '<span class="item-set-badge" style="border-color:' + color + '60;color:' + color + '">◈ ' + label + '</span>';
+      badges += '<span class="item-set-badge" data-set-id="' + item.set + '" style="border-color:' + color + '60;color:' + color + '">◈ ' + label + '</span>';
     }
 
     if (!badges) return '';
@@ -1444,6 +1525,13 @@ stats.innerHTML = statsLines +
 			return bonus;
 	}
 
+  function matchesSetSearch(item, normalizedQuery) {
+    if (!item.set) return false;
+    const setDef = SETS[item.set];
+    if (!setDef) return false;
+    return normalize(setDef.label).includes(normalizedQuery);
+  }
+
   function renderItemList() {
     const list = document.getElementById('items-list');
     // normalize → /utils.js (source unique)
@@ -1468,7 +1556,7 @@ stats.innerHTML = statsLines +
           itemAllowedForClass(item, activeClass) &&
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
-          (!q || normalize(item.name).includes(q)) &&
+          (!q || normalize(item.name).includes(q) || matchesSetSearch(item, q)) &&
           statsFilter(item);
       });
     } else {
@@ -1481,11 +1569,11 @@ stats.innerHTML = statsLines +
           if (alreadyEquippedElsewhere) return false;
         }
         return slot.cats.includes(item.cat) &&
-          itemAllowedForClass(item, activeClass) &&
-          (!filterRar  || item.rarity === filterRar) &&
-          (filterTier === null || item.palier === filterTier) &&
-          (!q || normalize(item.name).includes(q)) &&
-          statsFilter(item);
+        itemAllowedForClass(item, activeClass) &&
+        (!filterRar  || item.rarity === filterRar) &&
+        (filterTier === null || item.palier === filterTier) &&
+        (!q || normalize(item.name).includes(q) || matchesSetSearch(item, q)) &&
+        statsFilter(item);
       });
     }
 
@@ -2115,11 +2203,28 @@ stats.innerHTML = statsLines +
   /* ══ INIT ══ */
   function init() {
     buildCarTooltip();
+    buildSetTooltip();
     buildClassPicker();
     buildGrid();
     buildFilters();
-	buildTierFilter();
+	  buildTierFilter();
     buildStatsUI();
+
+    document.getElementById('items-list').addEventListener('mouseover', function(e) {
+      const row = e.target.closest('.item-row');
+      if (!row) { hideSetTooltip(); return; }
+      const badge = row.querySelector('[data-set-id]');
+      if (badge) showSetTooltip(e, badge.dataset.setId);
+      else hideSetTooltip();
+    });
+    document.getElementById('items-list').addEventListener('mousemove', function(e) {
+      const tooltip = document.getElementById('set-tooltip');
+      if (tooltip && tooltip.classList.contains('visible')) positionCarTooltip(e, tooltip);
+    });
+    document.getElementById('items-list').addEventListener('mouseleave', function() {
+      hideSetTooltip();
+    });
+
     buildLevelPanel();
 
     try {
