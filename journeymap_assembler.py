@@ -1,127 +1,101 @@
-"""
-╔══════════════════════════════════════════════════════════════╗
-║         JourneyMap Tile Assembler — Carte PNG Géante         ║
-║         Version : JourneyMap 1.20+  |  Vue : Day            ║
-║         Mode multi-dossiers supporté                        ║
-╚══════════════════════════════════════════════════════════════╝
-
-PRÉREQUIS
----------
-  pip install Pillow tqdm
-
-UTILISATION — MODE DOSSIER PARENT (recommandé)
------------------------------------------------
-  Renseigne PARENT_DIR avec le chemin du dossier overworld/
-  Le script parcourt automatiquement tous les sous-dossiers
-  et génère un PNG par sous-dossier (ex: -2.png, 0.png, 3.png…)
-
-UTILISATION — MODE DOSSIERS INDIVIDUELS
------------------------------------------
-  Renseigne TILES_DIRS avec une liste de chemins explicites.
-  Laisse PARENT_DIR vide si tu utilises ce mode.
-
-UTILISATION — MODE CHEMIN UNIQUE (compatibilité)
--------------------------------------------------
-  Renseigne uniquement TILES_DIR (comportement original).
-"""
-
 import os
 import re
 import sys
 from pathlib import Path
+from typing import List, Tuple
+import io
+
+# Fix encodage console (Python 3.7 Windows)
+try:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+except Exception:
+    pass
 
 # ─────────────────────────────────────────────────────────────
-# ① CONFIGURATION
+# CONFIGURATION
 # ─────────────────────────────────────────────────────────────
 
-# ── Option A : dossier parent contenant plusieurs sous-dossiers ──
-# Le script génère un PNG par sous-dossier trouvé.
-# Ex : r"C:\...\overworld"  →  traitera -2/, 0/, 3/, etc.
 PARENT_DIR = r""
-
-# ── Option B : liste de dossiers explicites ──
-# Laisse vide [] si tu utilises PARENT_DIR ou TILES_DIR.
 TILES_DIRS = []
-
-# ── Option C : dossier unique (compatibilité avec l'ancien script) ──
-# Laisse vide "" si tu utilises PARENT_DIR ou TILES_DIRS.
 TILES_DIR = ""
-
-# Dossier de sortie pour les PNG générés (vide = même dossier que le script)
 OUTPUT_DIR = ""
-
-# Zoom utilisé (0 = qualité maximale, 1 pixel par bloc)
 ZOOM_LEVEL = 0
-
-# Limite mémoire de sécurité en Go
 MAX_RAM_GB = 4
 
+
 # ─────────────────────────────────────────────────────────────
-# ② DÉTECTION AUTOMATIQUE DU DOSSIER (mode solo)
+# DETECTION AUTO
 # ─────────────────────────────────────────────────────────────
 
-def detect_tiles_dir() -> Path:
+def detect_tiles_dir():
     appdata = Path(os.environ.get("APPDATA", ""))
     base = appdata / ".minecraft" / "journeymap" / "data" / "mp"
     if not base.exists():
         return None
+
     servers = [p for p in base.iterdir() if p.is_dir()]
-    if not servers:
-        return None
     candidates = []
+
     for server in servers:
         zoom_dir = server / "tiles" / "day" / str(ZOOM_LEVEL)
         if zoom_dir.exists():
-            tile_count = len(list(zoom_dir.glob("*.png")))
-            candidates.append((tile_count, zoom_dir, server.name))
+            count = len(list(zoom_dir.glob("*.png")))
+            candidates.append((count, zoom_dir, server.name))
+
     if not candidates:
         return None
+
     candidates.sort(reverse=True)
-    best_count, best_path, best_server = candidates[0]
-    print(f"[✓] Serveur détecté : {best_server}  ({best_count} tuiles)")
-    return best_path
+    best = candidates[0]
+    print("[OK] Serveur detecte :", best[2], "(", best[0], "tuiles )")
+    return best[1]
 
 
 # ─────────────────────────────────────────────────────────────
-# ③ PARSING DES COORDONNÉES
+# PARSE COORDS
 # ─────────────────────────────────────────────────────────────
 
-def parse_tile_coords(path: Path):
+def parse_tile_coords(path):
     name = path.stem
-    m = re.fullmatch(r"(-?\d+),(-?\d+)", name)
-    if m:
-        return int(m.group(1)), int(m.group(2))
-    m = re.fullmatch(r"(-?\d+)_(-?\d+)", name)
-    if m:
-        return int(m.group(1)), int(m.group(2))
-    m = re.fullmatch(r"\[(-?\d+),(-?\d+)\]", name)
-    if m:
-        return int(m.group(1)), int(m.group(2))
+
+    patterns = [
+        r"(-?\d+),(-?\d+)",
+        r"(-?\d+)_(-?\d+)",
+        r"\[(-?\d+),(-?\d+)\]"
+    ]
+
+    for p in patterns:
+        m = re.fullmatch(p, name)
+        if m:
+            return int(m.group(1)), int(m.group(2))
+
     return None
 
 
 # ─────────────────────────────────────────────────────────────
-# ④ ASSEMBLAGE D'UN SEUL DOSSIER
+# ASSEMBLE
 # ─────────────────────────────────────────────────────────────
 
-def assemble(tiles_dir: Path, output_file: Path):
+def assemble(tiles_dir, output_file):
     from PIL import Image
+
     try:
         from tqdm import tqdm
         use_tqdm = True
-    except ImportError:
+    except:
         use_tqdm = False
-        print("[!] tqdm absent — pas de barre de progression")
+        print("[WARN] tqdm absent")
 
-    print(f"\n[→] Dossier source : {tiles_dir}")
+    print("\n[->] Dossier :", tiles_dir)
 
     tile_files = list(tiles_dir.glob("*.png"))
     if not tile_files:
-        print("[✗] Aucun fichier .png trouvé — dossier ignoré.")
+        print("[ERR] Aucun PNG")
         return False
 
     coords_map = {}
     skipped = 0
+
     for f in tile_files:
         c = parse_tile_coords(f)
         if c is None:
@@ -129,161 +103,143 @@ def assemble(tiles_dir: Path, output_file: Path):
         else:
             coords_map[c] = f
 
-    print(f"[✓] {len(coords_map)} tuiles valides  (ignorées : {skipped})")
+    print("[OK]", len(coords_map), "tuiles (ignorees :", skipped, ")")
 
     if not coords_map:
-        print("[✗] Aucune tuile avec des coordonnées lisibles — dossier ignoré.")
         return False
 
-    sample_img = Image.open(next(iter(coords_map.values())))
-    TILE_W, TILE_H = sample_img.size
-    sample_img.close()
-    print(f"[✓] Taille d'une tuile : {TILE_W}×{TILE_H} px")
+    img = Image.open(next(iter(coords_map.values())))
+    TILE_W, TILE_H = img.size
+    img.close()
 
     xs = [c[0] for c in coords_map]
     zs = [c[1] for c in coords_map]
+
     x_min, x_max = min(xs), max(xs)
     z_min, z_max = min(zs), max(zs)
 
     grid_w = x_max - x_min + 1
     grid_h = z_max - z_min + 1
-    img_w  = grid_w * TILE_W
-    img_h  = grid_h * TILE_H
 
-    print(f"[✓] Grille : {grid_w}×{grid_h} tuiles  →  image {img_w}×{img_h} px")
+    img_w = grid_w * TILE_W
+    img_h = grid_h * TILE_H
 
-    ram_needed_gb = (img_w * img_h * 3) / (1024**3)
-    print(f"[→] RAM estimée : ~{ram_needed_gb:.2f} Go")
-    if ram_needed_gb > MAX_RAM_GB:
-        print(f"[⚠] Dépasse la limite RAM ({MAX_RAM_GB} Go). Dossier ignoré.")
-        print("    Augmente MAX_RAM_GB si tu veux forcer la génération.")
+    print("[OK] Image :", img_w, "x", img_h)
+
+    ram_needed = (img_w * img_h * 3) / (1024 ** 3)
+    print("[->] RAM ~ %.2f Go" % ram_needed)
+
+    if ram_needed > MAX_RAM_GB:
+        print("[WARN] Trop de RAM, ignore")
         return False
 
-    print("[→] Création de l'image…")
-    canvas = Image.new("RGB", (img_w, img_h), color=(0, 0, 0))
+    canvas = Image.new("RGB", (img_w, img_h))
 
     iterator = coords_map.items()
     if use_tqdm:
-        iterator = tqdm(iterator, total=len(coords_map), unit="tuile",
-                        desc=f"  {tiles_dir.name}", ncols=70)
+        iterator = tqdm(iterator, total=len(coords_map))
 
     errors = 0
+
     for (tx, tz), fpath in iterator:
         px = (tx - x_min) * TILE_W
         py = (tz - z_min) * TILE_H
+
         try:
             tile = Image.open(fpath).convert("RGB")
             canvas.paste(tile, (px, py))
             tile.close()
-        except Exception as e:
+        except:
             errors += 1
-            if not use_tqdm:
-                print(f"  [!] Erreur sur {fpath.name} : {e}")
 
     if errors:
-        print(f"[!] {errors} tuile(s) non lisibles.")
+        print("[WARN]", errors, "erreurs")
 
-    print(f"[→] Sauvegarde → {output_file}")
-    canvas.save(output_file, "PNG", optimize=False)
-    size_mb = output_file.stat().st_size / (1024**2)
-    print(f"[✓] Terminé !  {img_w}×{img_h} px  |  {size_mb:.1f} Mo  →  {output_file.name}")
+    print("[->] Sauvegarde :", output_file)
+    canvas.save(output_file, "PNG")
+
     return True
 
 
 # ─────────────────────────────────────────────────────────────
-# ⑤ RÉSOLUTION DE LA LISTE DE DOSSIERS À TRAITER
+# RESOLVE DIRS
 # ─────────────────────────────────────────────────────────────
 
-def resolve_dirs() -> list[tuple[Path, str]]:
-    """
-    Retourne une liste de (chemin_du_dossier, nom_de_sortie_sans_extension).
-    """
-    entries = []  # (Path, label)
+def resolve_dirs() -> List[Tuple[Path, str]]:
+    entries = []
 
-    # — Mode A : dossier parent —
     if PARENT_DIR:
         parent = Path(PARENT_DIR)
+
         if not parent.exists():
-            print(f"[✗] PARENT_DIR introuvable : {parent}")
+            print("[ERR] PARENT_DIR introuvable")
             sys.exit(1)
-        subdirs = sorted([p for p in parent.iterdir() if p.is_dir()])
-        if not subdirs:
-            print(f"[✗] Aucun sous-dossier dans {parent}")
-            sys.exit(1)
-        print(f"[✓] {len(subdirs)} sous-dossier(s) détecté(s) dans {parent.name}/")
+
+        subdirs = [p for p in parent.iterdir() if p.is_dir()]
+
+        print("[OK]", len(subdirs), "sous-dossiers detectes")
+
         for sub in subdirs:
             entries.append((sub, sub.name))
+
         return entries
 
-    # — Mode B : liste explicite —
     if TILES_DIRS:
         for raw in TILES_DIRS:
             p = Path(raw)
-            if not p.exists():
-                print(f"[⚠] Chemin introuvable (ignoré) : {p}")
-                continue
-            entries.append((p, p.name))
-        if not entries:
-            print("[✗] Aucun chemin valide dans TILES_DIRS.")
-            sys.exit(1)
+            if p.exists():
+                entries.append((p, p.name))
+
         return entries
 
-    # — Mode C : dossier unique —
     if TILES_DIR:
         p = Path(TILES_DIR)
-        if not p.exists():
-            print(f"[✗] TILES_DIR introuvable : {p}")
-            sys.exit(1)
+        if p.exists():
+            entries.append((p, p.name))
+        return entries
+
+    print("[->] Detection auto")
+    p = detect_tiles_dir()
+
+    if p:
         entries.append((p, p.name))
         return entries
 
-    # — Détection automatique —
-    print("[→] Détection automatique du dossier JourneyMap…")
-    p = detect_tiles_dir()
-    if p is None:
-        print("[✗] Impossible de détecter automatiquement le dossier.")
-        print("    Renseigne PARENT_DIR, TILES_DIRS ou TILES_DIR dans le script.")
-        sys.exit(1)
-    entries.append((p, p.name))
-    return entries
+    print("[ERR] Aucun dossier trouve")
+    sys.exit(1)
 
 
 # ─────────────────────────────────────────────────────────────
-# ⑥ POINT D'ENTRÉE
+# MAIN
 # ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     try:
         from PIL import Image
-    except ImportError:
-        print("[✗] Pillow n'est pas installé. Lance :  pip install Pillow tqdm")
+    except:
+        print("[ERR] Installe Pillow : pip install Pillow tqdm")
         sys.exit(1)
 
-    print("=" * 62)
-    print("  JourneyMap Tile Assembler  |  JM 1.20+  |  Multi-dossiers")
-    print("=" * 62)
+    print("=" * 50)
+    print("JourneyMap Assembler (Python 3.7 compatible)")
+    print("=" * 50)
 
-    out_dir = Path(OUTPUT_DIR).resolve() if OUTPUT_DIR else Path(__file__).parent.resolve()
+    out_dir = Path(OUTPUT_DIR) if OUTPUT_DIR else Path(__file__).parent
     out_dir.mkdir(parents=True, exist_ok=True)
 
     dirs = resolve_dirs()
 
-    print(f"\n[→] {len(dirs)} dossier(s) à traiter — sortie dans : {out_dir}\n")
-    print("─" * 62)
+    success = 0
+    failed = 0
 
-    success, failed = 0, 0
     for tiles_path, label in dirs:
-        print(f"\n{'─'*62}")
-        print(f"  ▶  {label}")
-        print(f"{'─'*62}")
-        output_file = out_dir / f"{label}.png"
-        ok = assemble(tiles_path, output_file)
-        if ok:
+        print("\n---", label, "---")
+
+        output_file = out_dir / (label + ".png")
+
+        if assemble(tiles_path, output_file):
             success += 1
         else:
             failed += 1
 
-    print(f"\n{'='*62}")
-    print(f"  Résumé : {success} PNG générés, {failed} dossier(s) ignorés")
-    print(f"  Dossier de sortie : {out_dir}")
-    print(f"{'='*62}")
+    print("\nRESULTAT :", success, "OK /", failed, "fails")
