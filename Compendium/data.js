@@ -242,7 +242,7 @@ const CATEGORIES = {
 const EFFECT_META = {
   heal:     { icon: '❤️',  	color: '#e05252', label: 'Points de vie',    		prefix: '+' },
 	regen:    { icon: '💓',  	color: '#ce7b7b', label: 'Régénération',     		prefix: 'Régénération ' },
-  mana:     { icon: '💧', 	 color: '#5b8dee', label: 'Mana',            		prefix: '+' },
+  mana:     { icon: '💧', 	 color: '#5b8dee', label: 'Mana',            		 prefix: '+' },
   stamina:  { icon: '👟', 	color: '#f4d745', label: 'Stamina',          		prefix: '+' },
   buff:     { icon: '💪',  	color: '#d4a017', label: 'Bonus',           		 	prefix: '+' },
 	force:    { icon: '💪',  	color: '#f36d14', label: 'Force Accrue',     		prefix: 'Boost les Dégâts d\'Armes de ' },
@@ -253,11 +253,17 @@ const EFFECT_META = {
 	crit_c:		{ icon: '🎯',  	color: '#d3b327', label: 'Coûp Critique',  			prefix: 'Boost les Chances Crtique de ' },
 	crit_d:		{ icon: '💢',  	color: '#e4c84b', label: 'Dégât Critique',  			prefix: 'Boost les Dégâts Critique de ' },
 	res:			{ icon: '✳️',  	color: '#4faa39', label: 'Ressurection',  				prefix: 'Vous permet de réanimer un camarade au combat dans les ' },
+	dex_att:	{ icon: '🏹',  	color: '#e3cb5f', label: 'Augmentation Dextérité',       prefix: 'Augmente votre attribut de Dextérité de ' },
+	force_att:{ icon: '⚔️',  	color: '#d97f43', label: 'Augmentation Force',       		prefix: 'Augmente votre attribut de Force de ' },
+	esp_att:	{ icon: '🌿',  	color: '#62d435', label: 'Augmentation Esprit',       		prefix: 'Augmente votre attribut d\'Esprit de ' },
+	intel_att:{ icon: '🔮',  	color: '#a152a8', label: 'Augmentation Intelligence',    prefix: 'Augmente votre attribut d\'Intelligence de ' },
+	vita_att:	{ icon: '❤️',  	color: '#e91b1b', label: 'Augmentation Vitalité',       	prefix: 'Augmente votre attribut de Vitalité de ' },
+	def_att:	{ icon: '🛡️',  	color: '#c7c7c7', label: 'Augmentation Défense',       	prefix: 'Augmente votre attribut de Défense de ' },
 	feed:     { icon: '🍖',  	color: '#8d520b', label: 'Nourriture',       		prefix: 'Restaure ' },
   debuff:   { icon: '☠️',  	color: '#9b59b6', label: 'Malus',            		prefix: ''  }, 
   cooldown: { icon: '⏱️',  	color: '#888888', label: 'Cooldown',        		 	prefix: ''  },
 	use: 			{ icon: '🧪',  	color: '#7db0ca', label: 'Utilisations',     		prefix: ''  },
-	level: 		{ icon: '❓',  	color: '#c43c28', label: 'Niveau Requis',   		 prefix: 'Niveau '  }
+	level: 		{ icon: '❓',  	color: '#c43c28', label: 'Niveau Requis',   		  prefix: 'Niveau '  }
 };
 
 //#endregion EFFECT_META
