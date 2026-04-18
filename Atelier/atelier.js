@@ -1707,6 +1707,9 @@ stats.innerHTML = statsLines +
 		return STORAGE_KEY_BASE + '_' + idx;
 	}
 
+  window._vclGetBuildKey      = getBuildKey;
+  window._vclGetBuildKey(activeBuildIndex);
+
 	// Migration : si l'ancien format existe et que le build 0 n'existe pas encore
 	(function migrate() {
 		const old = localStorage.getItem(STORAGE_KEY_BASE);
@@ -1721,6 +1724,7 @@ stats.innerHTML = statsLines +
 		try {
 			const meta = JSON.parse(localStorage.getItem(META_KEY) || '{}');
 			activeBuildIndex = meta.active ?? 0;
+      window._vclActiveBuildIndex = activeBuildIndex;
 		} catch(e) { activeBuildIndex = 0; }
 	})();
 
@@ -1741,6 +1745,8 @@ stats.innerHTML = statsLines +
 			}));
 			localStorage.setItem(META_KEY, JSON.stringify({ active: activeBuildIndex }));
 			window._vclActiveBuildKey = getBuildKey(activeBuildIndex);
+      window._vclGetBuildKey(activeBuildIndex);
+      window._vclActiveBuildIndex = activeBuildIndex;
 			window.dispatchEvent(new CustomEvent('vcl:stuffChanged'));
 			updateBuildTabs();
 		} catch(e) {}
@@ -1753,7 +1759,9 @@ stats.innerHTML = statsLines +
 		saveToStorage();
 
 		activeBuildIndex = idx;
+    window._vclGetBuildKey(idx);
 		window._vclActiveBuildKey = getBuildKey(idx);
+    window._vclActiveBuildIndex = idx;
 		localStorage.setItem(META_KEY, JSON.stringify({ active: idx }));
 
 		// Reset état
@@ -2353,9 +2361,10 @@ stats.innerHTML = statsLines +
 (function () {
   'use strict';
 
-  const SIG         = '🌙VCL_DRAWER_v2';
-  const STORAGE_KEY = 'vcl_craft_drawer_v2';
+  let checkedKeys = {};
+  let haveQty     = {};
 
+  const SIG = '🌙VCL_DRAWER_v2';
   /* Lookup partagé — ALL_SLOTS vient de Compendium/data.js */
   const SLOTS_BY_ID = new Map(ALL_SLOTS.map(s => [s.id, s]));
 
@@ -2367,32 +2376,26 @@ stats.innerHTML = statsLines +
     'artefact1', 'artefact2', 'artefact3',
   ];
 
-  function loadState() {
+  function getCraftKey(idx) {
+    const i = idx !== undefined ? idx : (window._vclActiveBuildIndex !== undefined ? window._vclActiveBuildIndex : 0);
+    return 'vcl_craft_v2_' + i;
+  }
+
+  function loadState(idx) {
     try {
-      const raw = localStorage.getItem(getBuildKey(activeBuildIndex));
+      const raw = localStorage.getItem(getCraftKey(idx));
       if (!raw) return null;
       const p = JSON.parse(raw);
       return p.sig === SIG ? p : null;
     } catch (e) { return null; }
   }
-  function saveState() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        sig:     SIG,
-        checked: checkedKeys,
-        qty:     haveQty,
-      }));
-    } catch (e) {}
-  }
-
-  let checkedKeys = {};
-  let haveQty     = {};
 
   function getEquippedCraftItems() {
-    if (typeof ITEMS === 'undefined') return [];
-    const results = [];
-    try {
-      const raw = localStorage.getItem(window._vclActiveBuildKey || 'vcl_atelier_0');
+      if (typeof ITEMS === 'undefined') return [];
+      const results = [];
+      try {
+        const idx = window._vclActiveBuildIndex !== undefined ? window._vclActiveBuildIndex : 0;
+        const raw = localStorage.getItem(window._vclGetBuildKey(idx));
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       if (!parsed || !parsed.slots) return [];
@@ -2415,6 +2418,17 @@ stats.innerHTML = statsLines +
       });
     } catch (e) {}
     return results;
+  }
+
+  function saveState() {
+    const idx = window._vclActiveBuildIndex !== undefined ? window._vclActiveBuildIndex : 0;
+    try {
+      localStorage.setItem(getCraftKey(idx), JSON.stringify({
+        sig: SIG,
+        checked: checkedKeys,
+        qty: haveQty,
+      }));
+    } catch(e) {}
   }
 
   function computeAll() {
@@ -2512,7 +2526,12 @@ stats.innerHTML = statsLines +
 
   tab.addEventListener('click', function () {
     drawer.classList.toggle('open');
-    if (drawer.classList.contains('open')) refresh();
+    if (drawer.classList.contains('open')) {
+      if (window._vclActiveBuildIndex === undefined) {
+        window._vclActiveBuildIndex = 0;
+      }
+      refresh();
+    }
   });
   closeBtn.addEventListener('click', function () {
     drawer.classList.remove('open');
@@ -2831,24 +2850,34 @@ stats.innerHTML = statsLines +
 
   /* ══ OBSERVER ══ */
   window.addEventListener('vcl:stuffChanged', function () {
+    const idx = window._vclActiveBuildIndex !== undefined ? window._vclActiveBuildIndex : 0;
+    const saved = loadState(idx);
+    checkedKeys = saved ? (saved.checked || {}) : {};
+    haveQty     = saved ? (saved.qty    || {}) : {};
     if (drawer.classList.contains('open')) refresh();
     else updateProgress(computeAll());
   });
 
-  /* ══ INIT ══ */
   function init() {
-    const saved = loadState();
+    const idx = window._vclActiveBuildIndex !== undefined ? window._vclActiveBuildIndex : 0;
+    const saved = loadState(idx);
     if (saved) {
       checkedKeys = saved.checked || {};
       haveQty     = saved.qty    || {};
+    } else {
+      checkedKeys = {};
+      haveQty     = {};
     }
     updateProgress(computeAll());
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
+  if (window._vclActiveBuildIndex !== undefined) {
     init();
+  } else {
+    window.addEventListener('vcl:stuffChanged', function onFirstLoad() {
+      window.removeEventListener('vcl:stuffChanged', onFirstLoad);
+      init();
+    });
   }
 
 })();
