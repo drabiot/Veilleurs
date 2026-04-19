@@ -606,7 +606,7 @@ function buildWheel() {
     const img  = screenToImage(vp.x, vp.y);
     const game = pixelToGame(img.x, img.y);
     document.getElementById('coord-zone').textContent = FLOOR_NAMES[currentFloor] || `Étage ${currentFloor}`;
-    document.getElementById('coord-xy').textContent   = `X: ${game.x}  Y: ${game.y}`;
+    document.getElementById('coord-xy').textContent   = `X: ${game.x}  Z: ${game.y}`;
     coordDisplay.classList.remove('hidden');
   });
   mapViewport.addEventListener('mouseleave', () => {
