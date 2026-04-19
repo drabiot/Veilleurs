@@ -93,6 +93,7 @@
     <button class="filter-btn" id="btn-permissions"        onclick="showPermissions()">🔑 Permissions</button>
     <button class="filter-btn" id="btn-migration"          onclick="showMigration()">🔒 Sensible</button>
     <button class="filter-btn" id="btn-creator-validation" onclick="showCreatorValidation()">⚙️ Champs requis</button>
+    <button class="filter-btn" id="btn-pnj-coords"         onclick="showPnjCoords()">🧭 Coords PNJ</button>
 
     <!-- ── OUTILS ───────────────────────────────────────── -->
     <div class="sb-label">OUTILS</div>
@@ -260,53 +261,122 @@
 
   <!-- Panneau Webhooks Discord -->
   <main class="main" id="discord-webhooks-panel" style="display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <span style="font-size:15px;font-weight:700;">🔔 Webhooks Discord</span>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-ghost" onclick="loadDiscordWebhooks()" style="font-size:12px;">🔄 Rafraîchir</button>
         <button class="btn" id="dw-save-btn" onclick="saveDiscordWebhooks()" style="background:var(--accent);color:#fff;font-size:12px;">💾 Sauvegarder</button>
       </div>
     </div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
-      Webhook Discord envoyé automatiquement lors de l'approbation d'un item <b>arme</b>, <b>armure</b> ou <b>accessoire</b>.
-      Un webhook par type et par palier. Laisser vide pour désactiver.
-    </p>
+
+    <!-- Tab bar -->
+    <div id="dw-tab-bar" style="display:flex;gap:2px;margin-bottom:20px;background:var(--surface2);border-radius:8px;padding:3px;">
+      <button id="dw-tab-btn-webhooks" onclick="switchDwTab('webhooks')"
+        style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:#fff;">
+        🔗 Webhooks
+      </button>
+      <button id="dw-tab-btn-embed" onclick="switchDwTab('embed')"
+        style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
+        🎨 Embed
+      </button>
+      <button id="dw-tab-btn-tags" onclick="switchDwTab('tags')"
+        style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
+        🏷️ Tags
+      </button>
+      <button id="dw-tab-btn-publish" onclick="switchDwTab('publish')"
+        style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
+        📤 Publier
+      </button>
+    </div>
+
     <div id="dw-loading" style="color:var(--muted);font-size:13px;">Chargement…</div>
     <div id="dw-content" style="display:none;">
-      <div id="dw-list"></div>
-      <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Message template</div>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-          Texte envoyé en accompagnement de l'embed lors de l'approbation. Laisser vide pour aucun message.<br>
-          Variables disponibles :
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{nom}</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{categorie}</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{rarete}</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{palier}</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{classes}</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">{niveau}</code>
+
+      <!-- Tab Webhooks -->
+      <div id="dw-tab-webhooks">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
+          Webhook Discord envoyé automatiquement lors de l'approbation d'un item <b>arme</b>, <b>armure</b> ou <b>accessoire</b>.
+          Un webhook par type et par palier. Laisser vide pour désactiver.
         </p>
-        <textarea id="dw-template" rows="4" placeholder="Ex : ✅ **{nom}** ({rarete} · {categorie} · Palier {palier}) vient d'être approuvé !" style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;resize:vertical;transition:border-color .15s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        <div id="dw-list"></div>
+        <!-- dw-template kept hidden for save/load compatibility -->
+        <textarea id="dw-template" style="display:none;"></textarea>
       </div>
 
-      <!-- Tags Discord -->
-      <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Tags Discord (Forum Channel)</div>
-        <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-          IDs des tags Discord à appliquer automatiquement selon la rareté et la catégorie. Créer les tags dans le forum Discord puis coller leurs IDs ici.<br>
-          Clés disponibles : <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">commun</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">rare</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">epique</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">legendaire</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">mythique</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">godlike</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">arme</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">armure</code>
-          <code style="background:var(--surface2);border-radius:3px;padding:1px 5px;font-size:11px;">accessoire</code>
+      <!-- Tab Embed -->
+      <div id="dw-tab-embed" style="display:none;">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
+          Choisis quels blocs d'information apparaissent dans l'embed Discord et dans quel ordre. Glisse-dépose pour réordonner, clique ✕ pour désactiver.
         </p>
-        <div id="dw-tags-list" style="display:flex;flex-direction:column;gap:6px;"></div>
-        <button class="btn btn-ghost" onclick="dwAddTag()" style="font-size:12px;margin-top:8px;">＋ Ajouter un tag</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Blocs actifs (dans l'ordre)</div>
+            <div id="dw-embed-active" style="display:flex;flex-direction:column;gap:4px;min-height:40px;"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Blocs désactivés</div>
+            <div id="dw-embed-inactive" style="display:flex;flex-direction:column;gap:4px;"></div>
+          </div>
+        </div>
+        <div style="padding-top:20px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Prévisualisation de l'embed</div>
+          <div id="dw-embed-preview"></div>
+        </div>
       </div>
+
+      <!-- Tab Tags -->
+      <div id="dw-tab-tags" style="display:none;">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
+          Règles d'application automatique des tags Discord (Forum Channel). Chaque règle évalue un champ de l'item : si la condition est remplie, le tag correspondant est ajouté.
+        </p>
+        <div id="dw-tag-rules-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+      </div>
+
+      <!-- Tab Publier -->
+      <div id="dw-tab-publish" style="display:none;">
+        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">
+          Sélectionne des items et envoie-les manuellement sur Discord. Chaque item est envoyé dans le salon correspondant à sa catégorie et son palier.
+        </p>
+
+        <!-- Section "nouvelles approvals non envoyées" (rendue dynamiquement) -->
+        <div id="dw-unsent-section" style="display:none;"></div>
+
+        <!-- Filtres -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <select id="dw-pub-cat" onchange="dwPublishFilter()"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+            <option value="">Toutes catégories</option>
+            <option value="arme">⚔️ Arme</option>
+            <option value="armure">🛡️ Armure</option>
+            <option value="accessoire">💍 Accessoire</option>
+          </select>
+          <select id="dw-pub-palier" onchange="dwPublishFilter()"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+            <option value="">Tous paliers</option>
+            <option value="1">Palier 1</option>
+            <option value="2">Palier 2</option>
+            <option value="3">Palier 3</option>
+          </select>
+          <input id="dw-pub-search" type="search" placeholder="🔍 Rechercher un item…" oninput="dwPublishFilter()"
+            style="flex:1;min-width:150px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost" onclick="dwPublishCheckAll(true)" style="font-size:11px;padding:4px 10px;">✅ Tout cocher</button>
+            <button class="btn btn-ghost" onclick="dwPublishCheckAll(false)" style="font-size:11px;padding:4px 10px;">☐ Tout décocher</button>
+          </div>
+          <button id="dw-pub-send-btn" class="btn" onclick="dwPublishSelected()"
+            style="background:var(--accent);color:#fff;font-size:12px;">📤 Envoyer les sélectionnés</button>
+        </div>
+        <div id="dw-pub-progress" style="display:none;margin-bottom:12px;">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;" id="dw-pub-progress-text">Envoi en cours…</div>
+          <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+            <div id="dw-pub-progress-bar" style="height:100%;background:var(--accent);width:0%;transition:width .3s;border-radius:3px;"></div>
+          </div>
+        </div>
+        <div id="dw-pub-list" style="display:flex;flex-direction:column;gap:4px;max-height:500px;overflow-y:auto;"></div>
+      </div>
+
     </div>
   </main>
 
@@ -428,6 +498,42 @@
     <div id="cv-tabs" style="display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap;"></div>
     <div id="cv-status" style="display:none;font-size:12px;padding:6px 10px;border-radius:6px;margin-bottom:10px;"></div>
     <div id="cv-grid"></div>
+  </main>
+
+  <!-- Panneau Coords PNJ -->
+  <main class="main" id="pnj-coords-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🧭 Coords PNJ</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
+      Migration en deux étapes : d'abord ajouter le champ <code>coords</code> vide à tous les PNJ, puis (après les avoir remplis) injecter les coordonnées dans les champs <code>obtain</code> des items.
+    </p>
+
+    <!-- Étape 1 -->
+    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px;">
+      <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+        <span style="font-size:13px;font-weight:700;">Étape 1 — Ajouter le champ coords aux PNJ</span>
+      </div>
+      <div style="padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <p style="font-size:12px;color:var(--muted);margin:0;flex:1;">Ajoute <code>coords: ""</code> à tout PNJ qui n'a pas encore ce champ. Les PNJ qui l'ont déjà sont ignorés.</p>
+        <button class="btn" onclick="addCoordsToAllPnj()" style="background:var(--accent);color:#fff;font-size:12px;white-space:nowrap;">▶ Lancer l'étape 1</button>
+      </div>
+      <div id="pnj-coords-step1-status" style="display:none;font-size:12px;padding:6px 14px 10px;color:var(--muted);"></div>
+    </div>
+
+    <!-- Étape 2 -->
+    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+      <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+        <span style="font-size:13px;font-weight:700;">Étape 2 — Injecter les coords dans les obtain</span>
+      </div>
+      <div style="padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <p style="font-size:12px;color:var(--muted);margin:0;flex:1;">
+          Pour chaque item dont le champ <code>obtain</code> cite le nom d'un PNJ qui a des coords, remplace <em>Nom PNJ</em> par <em>Nom PNJ (coords)</em>. Les PNJ sans coords sont ignorés. Idempotent : relancer met à jour les anciens coords.
+        </p>
+        <button class="btn" onclick="updateObtainWithCoords()" style="background:var(--accent);color:#fff;font-size:12px;white-space:nowrap;">▶ Lancer l'étape 2</button>
+      </div>
+      <div id="pnj-coords-step2-status" style="display:none;font-size:12px;padding:6px 14px 10px;color:var(--muted);"></div>
+    </div>
   </main>
 
   <!-- Panneau Éditeur -->

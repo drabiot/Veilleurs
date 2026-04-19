@@ -604,21 +604,23 @@ window.approve = async (id) => {
     }
 
     // Mettre à jour la soumission
-    await updateDoc(doc(db, 'submissions', id), {
+    const isDiscordItem = sub.type === 'item' &&
+      ['arme', 'armure', 'accessoire'].includes(sub.data?.category) && sub.data?.palier;
+    const subUpdate = {
       status:     'approved',
       reviewedBy: currentUser.uid,
       reviewedAt: serverTimestamp(),
       comment,
-    });
+    };
+    if (isDiscordItem) subUpdate.discord_sent = false;
+    await updateDoc(doc(db, 'submissions', id), subUpdate);
 
     sub.status     = 'approved';
     sub.comment    = comment;
     sub.reviewedBy = currentUser.uid;
+    if (isDiscordItem) sub.discord_sent = false;
     updateCounts();
     renderSubs();
-
-    // Webhook Discord (best-effort)
-    sendApprovalWebhook(sub).catch(() => {});
   } catch(e) {
     toast('⛔ Erreur : ' + e.message, 'error');
     if (btn) { btn.disabled = false; btn.textContent = '✓ Approuver'; }
@@ -690,6 +692,7 @@ const HASH_PANELS = {
   'data-incomplete':  () => showDataIncomplete(),
   'calibrateur':      () => showCalibrateur(),
   'capture-sprites':  () => showCaptureSprites(),
+  'pnj-coords':       () => showPnjCoords(),
 };
 
 function _setHash(hash) {
@@ -1552,11 +1555,14 @@ function renderPnjOrder() {
     results.forEach(p => {
       const row = document.createElement('div');
       row.className = 'mob-order-row';
+      row.dataset.id = p.id;
       row.innerHTML = `
         <span class="mob-order-handle" style="color:var(--border);">⠿</span>
         <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${posMap.get(p.id)}</span>
         <span class="mob-order-name">${p.name||p.id}</span>
-        <span class="mob-order-tag">${p.region||'—'}</span>`;
+        <span class="mob-order-tag">${p.region||'—'}</span>
+        <button class="ed-edit-btn" title="Modifier : ${p.name||p.id}\nID : ${p.id}">✏️</button>`;
+      row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('personnages', p.id, p, 'pnj'); });
       listEl.appendChild(row);
     });
     return;
@@ -2798,8 +2804,8 @@ function _genValueHtml(key, val, col) {
     return `<input class="ed-input" data-gf-type="string" value="" placeholder="(null)">`;
   }
 
-  // Champ region sur les mobs → dropdown searchable groupé par palier/codex
-  if (key === 'region' && col === 'mobs') {
+  // Champ region sur les mobs et PNJ → dropdown searchable groupé par palier/codex
+  if (key === 'region' && (col === 'mobs' || col === 'personnages')) {
     const regions = _cachedRegions || [];
     const known = new Set(regions.map(r => r.id));
     const currentName = regions.find(r => r.id === val)?.name || (val && !known.has(val) ? `⚠️ ${val} (non reconnu)` : '');
@@ -3335,6 +3341,30 @@ const DW_CATEGORIES = [
   { id: 'accessoire', label: '💍 Accessoire' },
 ];
 
+const EMBED_FIELDS = [
+  { id:'identity', label:'🏷️ Identité',   desc:'Rareté · Catégorie · Palier · Niveau' },
+  { id:'classes',  label:'⚔️ Classes',    desc:'Classes requises' },
+  { id:'lore',     label:'📖 Lore',       desc:'Texte de lore en italique' },
+  { id:'stats',    label:'📊 Stats',      desc:'Stats + emplacements de runes' },
+  { id:'obtain',   label:'📍 Obtention',  desc:"Méthode d'obtention" },
+  { id:'craft',    label:'🔨 Craft',      desc:'Recette de craft' },
+  { id:'effects',  label:'✨ Effets',     desc:'Effets spéciaux' },
+  { id:'bonuses',  label:'🔗 Bonus pano', desc:'Bonus de panoplie' },
+];
+
+const TAG_RULE_FIELDS = [
+  { id:'rarity',    label:'Rareté',      type:'enum',    values:['commun','rare','epique','legendaire','mythique','godlike','event'] },
+  { id:'category',  label:'Catégorie',   type:'enum',    values:['arme','armure','accessoire'] },
+  { id:'classes',   label:'Classes',     type:'array',   values:['guerrier','assassin','archer','mage','shaman'] },
+  { id:'palier',    label:'Palier',      type:'number' },
+  { id:'sensible',  label:'Sensible',    type:'boolean' },
+  { id:'twoHanded', label:'Deux mains',  type:'boolean' },
+  { id:'rune_slots',label:'Empl. runes', type:'number'  },
+];
+
+let _dwPublishItems = [];
+let _dwActivetab = 'webhooks';
+
 window.showDiscordWebhooks = async () => {
   _setHash('webhooks');
   document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
@@ -3365,9 +3395,37 @@ window.loadDiscordWebhooks = async function loadDiscordWebhooks() {
   try {
     const snap = await getDoc(doc(db, 'config', 'discord_webhooks'));
     _dwConfig = snap.exists() ? snap.data() : {};
+
+    // Migrate: array format (v1) → object format (v2)
+    if (Array.isArray(_dwConfig.tagRules)) {
+      const oldRules = _dwConfig.tagRules;
+      _dwConfig.tagRules = {};
+      for (const cat of DW_CATEGORIES) {
+        for (const p of CREATOR_PALIERS) {
+          const key = `${cat.id}_${p}`;
+          if (_dwConfig[key]) _dwConfig.tagRules[key] = oldRules.map(r => ({...r}));
+        }
+      }
+    }
+    // Migrate: legacy flat tags → tagRules object (very old format)
+    if (_dwConfig.tags && !_dwConfig.tagRules) {
+      _dwConfig.tagRules = {};
+      const rules = Object.entries(_dwConfig.tags).map(([k, v]) => {
+        const isCategory = ['arme','armure','accessoire'].includes(k);
+        return { field: isCategory ? 'category' : 'rarity', op: 'eq', value: k, tagId: v };
+      }).filter(r => r.tagId);
+      for (const cat of DW_CATEGORIES) {
+        for (const p of CREATOR_PALIERS) {
+          const key = `${cat.id}_${p}`;
+          if (_dwConfig[key]) _dwConfig.tagRules[key] = rules.map(r => ({...r}));
+        }
+      }
+    }
+    if (!_dwConfig.tagRules) _dwConfig.tagRules = {};
+
     _renderDiscordWebhooks();
     document.getElementById('dw-template').value = _dwConfig.template || '';
-    _renderDiscordTags();
+    switchDwTab(_dwActivetab || 'webhooks');
     loading.style.display = 'none';
     content.style.display = '';
   } catch(e) {
@@ -3433,14 +3491,22 @@ window.saveDiscordWebhooks = async function saveDiscordWebhooks() {
     }
     const tpl = document.getElementById('dw-template')?.value?.trim() || '';
     if (tpl) data.template = tpl;
-    // Collect tags
-    const tags = {};
-    document.querySelectorAll('.dw-tag-row').forEach(row => {
-      const k = row.querySelector('.dw-tag-key')?.value?.trim();
-      const v = row.querySelector('.dw-tag-val')?.value?.trim();
-      if (k && v) tags[k] = v;
-    });
-    if (Object.keys(tags).length) data.tags = tags;
+
+    // Persist embedFields from in-memory config
+    if (_dwConfig?.embedFields) data.embedFields = _dwConfig.embedFields;
+
+    // Persist tagRules object (keyed by channel, skip empty arrays)
+    if (_dwConfig?.tagRules && !Array.isArray(_dwConfig.tagRules)) {
+      const cleaned = {};
+      for (const [k, v] of Object.entries(_dwConfig.tagRules)) {
+        if (Array.isArray(v) && v.length > 0) cleaned[k] = v;
+      }
+      if (Object.keys(cleaned).length) data.tagRules = cleaned;
+    }
+
+    // Preserve set cache
+    if (_dwConfig?._setCache) data._setCache = _dwConfig._setCache;
+
     await setDoc(doc(db, 'config', 'discord_webhooks'), data);
     _dwConfig = data;
     btn.textContent = '✓ Sauvegardé';
@@ -3451,32 +3517,460 @@ window.saveDiscordWebhooks = async function saveDiscordWebhooks() {
   }
 };
 
-function _renderDiscordTags() {
-  const list = document.getElementById('dw-tags-list');
-  if (!list) return;
-  list.innerHTML = '';
-  const tags = _dwConfig?.tags || {};
-  Object.entries(tags).forEach(([k, v]) => _dwTagRow(list, k, v));
-}
-
-window.dwAddTag = function() {
-  const list = document.getElementById('dw-tags-list');
-  if (!list) return;
-  _dwTagRow(list, '', '');
+// ── Tab switcher ──────────────────────────────────────
+window.switchDwTab = function switchDwTab(name) {
+  _dwActivetab = name;
+  const tabs = ['webhooks', 'embed', 'tags', 'publish'];
+  for (const t of tabs) {
+    const tab = document.getElementById(`dw-tab-${t}`);
+    const btn = document.getElementById(`dw-tab-btn-${t}`);
+    if (!tab || !btn) continue;
+    const active = t === name;
+    tab.style.display = active ? '' : 'none';
+    btn.style.background = active ? 'var(--accent)' : 'transparent';
+    btn.style.color = active ? '#fff' : 'var(--muted)';
+  }
+  if (name === 'embed')   _renderEmbedBuilder();
+  if (name === 'tags')    _renderTagRules();
+  if (name === 'publish') _renderPublishPanel();
 };
 
-function _dwTagRow(list, key, value) {
-  const row = document.createElement('div');
-  row.className = 'dw-tag-row';
-  row.style.cssText = 'display:flex;align-items:center;gap:6px;';
-  row.innerHTML = `
-    <input class="dw-tag-key" type="text" value="${_ee(key)}" placeholder="ex: commun"
-      style="width:130px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;font-family:monospace;outline:none;">
-    <input class="dw-tag-val" type="text" value="${_ee(value)}" placeholder="ID Discord du tag"
-      style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;font-family:monospace;outline:none;">
-    <button class="btn btn-ghost" onclick="this.closest('.dw-tag-row').remove()" style="font-size:11px;padding:5px 8px;flex-shrink:0;">✕</button>
-  `;
-  list.appendChild(row);
+// ── Embed Builder ─────────────────────────────────────
+function _renderEmbedBuilder() {
+  const activeEl   = document.getElementById('dw-embed-active');
+  const inactiveEl = document.getElementById('dw-embed-inactive');
+  if (!activeEl || !inactiveEl) return;
+
+  const allIds   = EMBED_FIELDS.map(f => f.id);
+  const activeIds = (_dwConfig?.embedFields) ? [..._dwConfig.embedFields] : [...allIds];
+  const inactiveIds = allIds.filter(id => !activeIds.includes(id));
+
+  const INPUT_STYLE = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:11px;color:var(--text);outline:none;';
+  const BTN_GHOST   = 'background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--muted);cursor:pointer;font-size:11px;padding:3px 7px;';
+
+  function rebuildActiveDOM() {
+    activeEl.innerHTML = '';
+    const ids = (_dwConfig.embedFields || EMBED_FIELDS.map(f=>f.id));
+    for (let i = 0; i < ids.length; i++) {
+      const fid = ids[i];
+      const fd  = EMBED_FIELDS.find(f => f.id === fid);
+      if (!fd) continue;
+      const row = document.createElement('div');
+      row.dataset.id = fid;
+      row.draggable  = true;
+      row.style.cssText = 'display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;cursor:grab;user-select:none;transition:opacity .15s;';
+      row.innerHTML = `
+        <span style="color:var(--muted);font-size:14px;flex-shrink:0;">≡</span>
+        <span style="flex:1;font-size:12px;font-weight:600;">${fd.label}</span>
+        <span style="font-size:11px;color:var(--muted);">${fd.desc}</span>
+        <button style="${BTN_GHOST}" title="Désactiver" onclick="dwEmbedRemove('${fid}')">✕</button>
+      `;
+      row.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', fid); row.style.opacity = '.4'; });
+      row.addEventListener('dragend',   () => { row.style.opacity = '1'; });
+      row.addEventListener('dragover',  e => { e.preventDefault(); row.style.borderColor = 'var(--accent)'; });
+      row.addEventListener('dragleave', () => { row.style.borderColor = 'var(--border)'; });
+      row.addEventListener('drop',      e => {
+        e.preventDefault();
+        row.style.borderColor = 'var(--border)';
+        const srcId = e.dataTransfer.getData('text/plain');
+        if (srcId === fid) return;
+        const arr = _dwConfig.embedFields || EMBED_FIELDS.map(f=>f.id);
+        const si = arr.indexOf(srcId), di = arr.indexOf(fid);
+        if (si < 0 || di < 0) return;
+        arr.splice(di, 0, arr.splice(si, 1)[0]);
+        _dwConfig.embedFields = arr;
+        rebuildActiveDOM(); _renderEmbedPreview();
+      });
+      activeEl.appendChild(row);
+    }
+  }
+
+  function rebuildInactiveDOM() {
+    inactiveEl.innerHTML = '';
+    const activeIds2 = _dwConfig.embedFields || EMBED_FIELDS.map(f=>f.id);
+    const inactive = EMBED_FIELDS.filter(f => !activeIds2.includes(f.id));
+    if (!inactive.length) {
+      inactiveEl.innerHTML = '<div style="font-size:12px;color:var(--muted);font-style:italic;">Tous les blocs sont actifs.</div>';
+      return;
+    }
+    for (const fd of inactive) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;opacity:.6;';
+      row.innerHTML = `
+        <span style="flex:1;font-size:12px;">${fd.label} <span style="color:var(--muted);font-size:11px;">· ${fd.desc}</span></span>
+        <button style="${BTN_GHOST};color:var(--accent);" onclick="dwEmbedAdd('${fd.id}')">＋</button>
+      `;
+      inactiveEl.appendChild(row);
+    }
+  }
+
+  if (!_dwConfig.embedFields) _dwConfig.embedFields = EMBED_FIELDS.map(f => f.id);
+  rebuildActiveDOM();
+  rebuildInactiveDOM();
+  _renderEmbedPreview();
+
+  window.dwEmbedRemove = function(fid) {
+    _dwConfig.embedFields = (_dwConfig.embedFields || EMBED_FIELDS.map(f=>f.id)).filter(id => id !== fid);
+    rebuildActiveDOM(); rebuildInactiveDOM(); _renderEmbedPreview();
+  };
+  window.dwEmbedAdd = function(fid) {
+    if (!_dwConfig.embedFields) _dwConfig.embedFields = EMBED_FIELDS.map(f=>f.id);
+    if (!_dwConfig.embedFields.includes(fid)) _dwConfig.embedFields.push(fid);
+    rebuildActiveDOM(); rebuildInactiveDOM(); _renderEmbedPreview();
+  };
+}
+
+// ── Tag Rules ─────────────────────────────────────────
+function _dwAllChannelKeys() {
+  const standard = [];
+  for (const cat of DW_CATEGORIES) {
+    for (const p of CREATOR_PALIERS) standard.push(`${cat.id}_${p}`);
+  }
+  const extra = Object.keys(_dwConfig.tagRules || {}).filter(k => !standard.includes(k));
+  return [...standard, ...extra];
+}
+
+function _dwChannelLabel(key) {
+  const parts  = key.split('_');
+  const catId  = parts.slice(0, -1).join('_');
+  const palier = parts[parts.length - 1];
+  const cat    = DW_CATEGORIES.find(c => c.id === catId);
+  return cat ? `${cat.label} · Palier ${palier}` : key;
+}
+
+function _renderTagRules() {
+  const container = document.getElementById('dw-tag-rules-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (!_dwConfig.tagRules || Array.isArray(_dwConfig.tagRules)) _dwConfig.tagRules = {};
+
+  const SEL  = 'background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
+  const MONO = 'background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;font-family:monospace;outline:none;width:155px;';
+
+  for (const key of _dwAllChannelKeys()) {
+    const hasWebhook = !!(_dwConfig[key]);
+    const rules      = _dwConfig.tagRules[key] || [];
+    const label      = _dwChannelLabel(key);
+
+    const section = document.createElement('div');
+    section.style.cssText = 'border:1px solid var(--border);border-radius:10px;overflow:hidden;';
+
+    // Header
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);';
+    hdr.innerHTML = `
+      <span style="font-size:13px;font-weight:700;">${_ee(label)}</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${hasWebhook
+          ? '<span style="font-size:10px;color:#4ade80;background:rgba(74,222,128,.1);padding:2px 8px;border-radius:10px;border:1px solid rgba(74,222,128,.3);">✓ Webhook actif</span>'
+          : '<span style="font-size:10px;color:var(--muted);padding:2px 8px;border-radius:10px;border:1px solid var(--border);">Pas de webhook</span>'}
+        <button class="btn btn-ghost" onclick="dwAddTagRule('${key}')" style="font-size:11px;padding:3px 9px;">＋ Règle</button>
+      </div>`;
+    section.appendChild(hdr);
+
+    // Rules body
+    const body = document.createElement('div');
+    body.id    = `dw-rules-body-${key}`;
+    body.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:6px;';
+
+    if (!rules.length) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:12px;color:var(--muted);font-style:italic;padding:2px 0;';
+      empty.textContent   = 'Aucune règle — les tags de ce forum seront ignorés.';
+      body.appendChild(empty);
+    } else {
+      rules.forEach((r, i) => {
+        const fieldDef = TAG_RULE_FIELDS.find(f => f.id === r.field);
+        const ops      = _dwTagRuleOpsFor(fieldDef?.type);
+        const fieldOpts = TAG_RULE_FIELDS.map(f => `<option value="${_ee(f.id)}" ${r.field===f.id?'selected':''}>${_ee(f.label)}</option>`).join('');
+        const opOpts    = ops.map(([v,l]) => `<option value="${_ee(v)}" ${r.op===v?'selected':''}>${_ee(l)}</option>`).join('');
+        const valWidget = _dwTagRuleValueWidget(fieldDef, r.value, `dwRuleSync('${key}',${i},'value',this.value)`);
+
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;';
+        row.innerHTML = `
+          <select onchange="dwRuleFieldChange('${key}',${i},this.value)" style="${SEL}">${fieldOpts}</select>
+          <select onchange="dwRuleSync('${key}',${i},'op',this.value)" style="${SEL}">${opOpts}</select>
+          <div style="flex:1;min-width:80px;display:flex;">${valWidget}</div>
+          <span style="font-size:12px;color:var(--muted);flex-shrink:0;">→</span>
+          <input type="text" value="${_ee(r.tagId||'')}" placeholder="ID tag Discord…"
+            onchange="dwRuleSync('${key}',${i},'tagId',this.value)"
+            style="${MONO}">
+          <button class="btn btn-ghost" onclick="dwRuleRemove('${key}',${i})" style="font-size:11px;padding:4px 8px;flex-shrink:0;">✕</button>`;
+        body.appendChild(row);
+      });
+    }
+    section.appendChild(body);
+    container.appendChild(section);
+  }
+}
+
+function _dwTagRuleOpsFor(fieldType) {
+  if (fieldType === 'array')   return [['contains','contient'],['not_contains','ne contient pas']];
+  if (fieldType === 'boolean') return [['eq','est']];
+  if (fieldType === 'number')  return [['eq','='],['gte','≥'],['lte','≤']];
+  return [['eq','=']];
+}
+
+function _dwTagRuleValueWidget(fieldDef, currentValue, onChange) {
+  const S = 'flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
+  if (!fieldDef) return `<input type="text" value="${_ee(String(currentValue??''))}" placeholder="valeur" onchange="${onChange}" style="${S}">`;
+  if (fieldDef.type === 'boolean') {
+    return `<select onchange="${onChange}" style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;">
+      <option value="true"  ${currentValue===true||currentValue==='true'?'selected':''}>Oui</option>
+      <option value="false" ${currentValue===false||currentValue==='false'?'selected':''}>Non</option>
+    </select>`;
+  }
+  if (fieldDef.type === 'number') {
+    return `<input type="number" value="${_ee(String(currentValue??''))}" placeholder="0" onchange="${onChange}" style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;">`;
+  }
+  const opts = (fieldDef.values||[]).map(v => `<option value="${_ee(v)}" ${currentValue==v?'selected':''}>${_ee(v)}</option>`).join('');
+  return `<select onchange="${onChange}" style="${S}">${opts}</select>`;
+}
+
+window.dwRuleSync = function(channelKey, idx, prop, value) {
+  if (!_dwConfig.tagRules) _dwConfig.tagRules = {};
+  const rules = _dwConfig.tagRules[channelKey];
+  if (!rules || !rules[idx]) return;
+  const r = rules[idx];
+  if (prop === 'value' && (r.field === 'sensible' || r.field === 'twoHanded')) {
+    r[prop] = (value === 'true');
+  } else if (prop === 'value' && (r.field === 'palier' || r.field === 'rune_slots')) {
+    r[prop] = Number(value);
+  } else {
+    r[prop] = value;
+  }
+};
+
+window.dwRuleFieldChange = function(channelKey, idx, newField) {
+  const rules = _dwConfig.tagRules?.[channelKey];
+  if (!rules || !rules[idx]) return;
+  const fd = TAG_RULE_FIELDS.find(f => f.id === newField);
+  const ops = _dwTagRuleOpsFor(fd?.type);
+  rules[idx].field = newField;
+  rules[idx].op    = ops[0][0];
+  rules[idx].value = fd?.type === 'boolean' ? true : (fd?.values?.[0] ?? '');
+  _renderTagRules();
+};
+
+window.dwRuleRemove = function(channelKey, idx) {
+  const rules = _dwConfig.tagRules?.[channelKey];
+  if (!rules) return;
+  rules.splice(idx, 1);
+  _renderTagRules();
+};
+
+window.dwAddTagRule = function(channelKey) {
+  if (!_dwConfig) return;
+  if (!_dwConfig.tagRules) _dwConfig.tagRules = {};
+  if (!_dwConfig.tagRules[channelKey]) _dwConfig.tagRules[channelKey] = [];
+  _dwConfig.tagRules[channelKey].push({ field: 'rarity', op: 'eq', value: 'commun', tagId: '' });
+  _renderTagRules();
+};
+
+// ── Publish Panel ─────────────────────────────────────
+function _renderUnsentSection() {
+  const section = document.getElementById('dw-unsent-section');
+  if (!section) return;
+  const unsent = allSubs.filter(s =>
+    s.status === 'approved' &&
+    s.type === 'item' &&
+    s.discord_sent === false &&
+    ['arme', 'armure', 'accessoire'].includes(s.data?.category) &&
+    s.data?.palier
+  );
+  const RARITY_ICON = { commun:'🟢', rare:'🔵', epique:'🟣', legendaire:'🟡', mythique:'🌸', godlike:'🔴', event:'⚪' };
+  const CAT_ICON    = { arme:'⚔️', armure:'🛡️', accessoire:'💍' };
+  let body = '';
+  if (!unsent.length) {
+    body = `<div style="padding:12px 14px;font-size:12px;color:var(--muted);font-style:italic;">Aucune approval en attente d'envoi.</div>`;
+  } else {
+    let rows = '';
+    for (const sub of unsent) {
+      const it = sub.data || {};
+      rows += `<label style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;cursor:pointer;transition:background .1s;"
+        onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
+        <input type="checkbox" class="dw-unsent-check" data-subid="${_ee(sub._id)}" checked
+          style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;">
+        <span style="flex:1;font-size:13px;font-weight:500;">${_ee(it.name||'—')}</span>
+        <span style="font-size:11px;color:var(--muted);">
+          ${CAT_ICON[it.category]||''} ${_ee(it.category||'')} · P${_ee(String(it.palier||'?'))} · ${RARITY_ICON[it.rarity]||''} ${_ee(it.rarity||'')}
+        </span>
+      </label>`;
+    }
+    body = `<div style="padding:8px 10px;display:flex;flex-direction:column;gap:2px;">${rows}</div>`;
+  }
+  section.style.display = '';
+  section.innerHTML = `
+    <div style="border:1px solid var(--accent);border-radius:8px;overflow:hidden;margin-bottom:20px;">
+      <div style="padding:10px 14px;background:rgba(122,90,248,.1);border-bottom:1px solid var(--accent);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <span style="font-size:13px;font-weight:700;color:var(--accent);">🆕 Nouvelles approvals${unsent.length ? ` — ${unsent.length} non envoyée${unsent.length>1?'s':''}` : ''}</span>
+        ${unsent.length ? `<div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn btn-ghost" onclick="dwUnsentCheckAll(true)"  style="font-size:11px;padding:4px 10px;">✅ Tout cocher</button>
+          <button class="btn btn-ghost" onclick="dwUnsentCheckAll(false)" style="font-size:11px;padding:4px 10px;">☐ Tout décocher</button>
+          <button id="dw-unsent-send-btn" class="btn" onclick="dwPublishUnsentSend()"
+            style="background:var(--accent);color:#fff;font-size:12px;">📤 Envoyer la file</button>
+        </div>` : ''}
+      </div>
+      ${body}
+    </div>`;
+}
+
+window.dwUnsentCheckAll = function(state) {
+  document.querySelectorAll('.dw-unsent-check').forEach(cb => { cb.checked = state; });
+};
+
+window.dwPublishUnsentSend = async function() {
+  const checks = [...document.querySelectorAll('.dw-unsent-check:checked')];
+  if (!checks.length) { toast('⚠️ Aucun item sélectionné.', 'warning'); return; }
+  const btn = document.getElementById('dw-unsent-send-btn');
+  if (btn) btn.disabled = true;
+  const ids  = checks.map(c => c.dataset.subid);
+  const subs = allSubs.filter(s => ids.includes(s._id));
+  let done = 0, failed = 0;
+  for (const sub of subs) {
+    try {
+      await sendApprovalWebhook(sub);
+      await updateDoc(doc(db, 'submissions', sub._id), { discord_sent: true });
+      sub.discord_sent = true;
+      done++;
+    } catch(e) {
+      toast(`⛔ Erreur « ${sub.data?.name || sub._id} » : ${e.message}`, 'error');
+      failed++;
+    }
+    if (done + failed < subs.length) await new Promise(r => setTimeout(r, 1100));
+  }
+  if (done) toast(`✓ ${done} item${done>1?'s':''} envoyé${done>1?'s':''}`, 'success');
+  if (btn) btn.disabled = false;
+  _renderUnsentSection();
+};
+
+async function _renderPublishPanel() {
+  _renderUnsentSection();
+  const listEl = document.getElementById('dw-pub-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;">Chargement des items…</div>';
+  try {
+    const [items, hiddenItems] = await Promise.all([
+      cachedDocs('items'),
+      cachedDocs('items_hidden').catch(() => []),
+    ]);
+    _dwPublishItems = [...items, ...hiddenItems].filter(it => it.category && it.palier);
+    _dwPublishItems.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
+    dwPublishFilter();
+  } catch(e) {
+    listEl.innerHTML = `<div style="color:var(--muted);font-size:13px;">Erreur : ${_ee(e.message)}</div>`;
+  }
+}
+
+window.dwPublishFilter = function() {
+  const cat    = document.getElementById('dw-pub-cat')?.value    || '';
+  const palier = document.getElementById('dw-pub-palier')?.value || '';
+  const q      = (document.getElementById('dw-pub-search')?.value || '').toLowerCase();
+  const listEl = document.getElementById('dw-pub-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+
+  const RARITY_ICON = { commun:'🟢', rare:'🔵', epique:'🟣', legendaire:'🟡', mythique:'🌸', godlike:'🔴', event:'⚪' };
+  const CAT_ICON    = { arme:'⚔️', armure:'🛡️', accessoire:'💍' };
+
+  const filtered = _dwPublishItems.filter(it => {
+    if (cat    && it.category !== cat) return false;
+    if (palier && String(it.palier) !== palier) return false;
+    if (q      && !(it.name||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    listEl.innerHTML = '<div style="font-size:13px;color:var(--muted);font-style:italic;padding:12px 0;">Aucun item trouvé.</div>';
+    return;
+  }
+
+  for (const it of filtered) {
+    const id  = it._id || it.id;
+    const row = document.createElement('label');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;cursor:pointer;transition:background .1s;';
+    row.onmouseenter = () => { row.style.background = 'var(--surface2)'; };
+    row.onmouseleave = () => { row.style.background = ''; };
+    row.innerHTML = `
+      <input type="checkbox" class="dw-pub-check" data-id="${_ee(id)}" style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;">
+      <span style="flex:1;font-size:13px;font-weight:500;">${_ee(it.name||'—')}</span>
+      <span style="font-size:11px;color:var(--muted);">
+        ${CAT_ICON[it.category]||''} ${it.category||''} · P${it.palier||'?'} · ${RARITY_ICON[it.rarity]||''} ${it.rarity||''}
+        ${it.sensible ? '<span style="color:#f87171;margin-left:4px;">🔞</span>' : ''}
+      </span>
+    `;
+    listEl.appendChild(row);
+  }
+};
+
+window.dwPublishCheckAll = function(state) {
+  document.querySelectorAll('.dw-pub-check').forEach(cb => { cb.checked = state; });
+};
+
+window.dwPublishSelected = async function() {
+  const checks = [...document.querySelectorAll('.dw-pub-check:checked')];
+  if (!checks.length) { toast('⚠️ Aucun item sélectionné.', 'warning'); return; }
+
+  const btn = document.getElementById('dw-pub-send-btn');
+  const prog = document.getElementById('dw-pub-progress');
+  const progText = document.getElementById('dw-pub-progress-text');
+  const progBar  = document.getElementById('dw-pub-progress-bar');
+  btn.disabled = true;
+  prog.style.display = '';
+
+  const ids   = checks.map(c => c.dataset.id);
+  const items = _dwPublishItems.filter(it => ids.includes(it._id || it.id));
+  let done = 0;
+
+  for (const item of items) {
+    progText.textContent = `Envoi ${done + 1} / ${items.length} — ${item.name || ''}…`;
+    progBar.style.width  = `${Math.round(done / items.length * 100)}%`;
+    try {
+      await _sendSingleItemDiscord(item);
+    } catch(e) {
+      toast(`⛔ Erreur pour « ${item.name} » : ${e.message}`, 'error');
+    }
+    done++;
+    if (done < items.length) await new Promise(r => setTimeout(r, 1100));
+  }
+
+  progBar.style.width  = '100%';
+  progText.textContent = `✓ ${done} item${done>1?'s':''} envoyé${done>1?'s':''} !`;
+  setTimeout(() => { prog.style.display = 'none'; btn.disabled = false; }, 3000);
+};
+
+async function _sendSingleItemDiscord(item) {
+  const cat    = item.category;
+  const palier = item.palier;
+  if (!cat || !palier) throw new Error('Catégorie ou palier manquant');
+  const key = `${cat}_${palier}`;
+  const url = _dwConfig?.[key];
+  if (!url) throw new Error(`Aucun webhook configuré pour ${key}`);
+
+  const [itemNames, { blob: imgBlob, fname: imgFname }] = await Promise.all([
+    _getItemNamesCache(),
+    _fetchItemImgBlob(item),
+  ]);
+  const embed = _buildApprovalEmbed(item, imgFname, _dwConfig?.embedFields || null, itemNames);
+  const tags  = _resolveTagRules(item, (_dwConfig?.tagRules || {})[key] || []);
+
+  const payload = { thread_name: item.name || 'Item', embeds: [embed] };
+  if (tags.length) payload.applied_tags = tags;
+  if (_dwConfig?.template) {
+    const RARITY_LABEL = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+    const CAT_LABEL    = { arme:'Arme', armure:'Armure', accessoire:'Accessoire' };
+    const CLS_LABEL    = { guerrier:'Guerrier', assassin:'Assassin', archer:'Archer', mage:'Mage', shaman:'Shaman' };
+    payload.content = _dwConfig.template
+      .replace(/\{nom\}/g,       item.name        || '')
+      .replace(/\{categorie\}/g, CAT_LABEL[item.category]  || item.category || '')
+      .replace(/\{rarete\}/g,    RARITY_LABEL[item.rarity] || item.rarity   || '')
+      .replace(/\{palier\}/g,    item.palier       || '')
+      .replace(/\{niveau\}/g,    item.lvl          || '')
+      .replace(/\{classes\}/g,   (item.classes || []).map(c => CLS_LABEL[c] || c).join(', '));
+  }
+  await window.VCL.postDiscord(`${url}?wait=false`, payload, imgBlob, imgFname);
 }
 
 window.testDiscordWebhook = async function testDiscordWebhook(key) {
@@ -3722,7 +4216,7 @@ async function sendApprovalWebhook(sub) {
   const url = _dwConfig[key];
   if (!url) return;
 
-  // Image stockée en base64 dans la soumission
+  // Image : legacy base64 forum_image → fallback sur fetch de l'img de l'item
   let imgBlob = null, imgFname = null;
   if (sub.forum_image) {
     try {
@@ -3737,8 +4231,14 @@ async function sendApprovalWebhook(sub) {
       imgBlob = new Blob([arr], { type: mime });
     } catch { imgBlob = null; imgFname = null; }
   }
+  if (!imgBlob) {
+    const fetched = await _fetchItemImgBlob(sub.data);
+    imgBlob  = fetched.blob;
+    imgFname = fetched.fname;
+  }
 
-  const embed   = _buildApprovalEmbed(sub.data, imgFname);
+  const itemNames = await _getItemNamesCache();
+  const embed   = _buildApprovalEmbed(sub.data, imgFname, _dwConfig.embedFields || null, itemNames);
 
   // Thread name: use set label if item belongs to a set, else item name
   let threadName = sub.data.name;
@@ -3758,15 +4258,9 @@ async function sendApprovalWebhook(sub) {
 
   const payload = { thread_name: threadName, embeds: [embed] };
 
-  // Apply Discord forum tags
-  if (_dwConfig.tags) {
-    const appliedTags = [];
-    const rarTag = _dwConfig.tags[sub.data.rarity];
-    if (rarTag) appliedTags.push(rarTag);
-    const catTag = _dwConfig.tags[sub.data.category];
-    if (catTag) appliedTags.push(catTag);
-    if (appliedTags.length) payload.applied_tags = appliedTags;
-  }
+  // Apply Discord forum tags via rules engine (channel-specific)
+  const appliedTags = _resolveTagRules(sub.data, (_dwConfig.tagRules || {})[key] || []);
+  if (appliedTags.length) payload.applied_tags = appliedTags;
 
   if (_dwConfig.template) {
     const RARITY_LABEL = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
@@ -3784,75 +4278,310 @@ async function sendApprovalWebhook(sub) {
   await window.VCL.postDiscord(`${url}?wait=false`, payload, imgBlob, imgFname);
 }
 
-function _buildApprovalEmbed(obj, imageFilename) {
-  const RARITY_LABEL  = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+// ── Item names cache (for craft display) ──────────────
+let _itemNamesCache = null;
+async function _getItemNamesCache() {
+  if (_itemNamesCache) return _itemNamesCache;
+  try {
+    const [items, hidden] = await Promise.all([
+      cachedDocs('items'),
+      cachedDocs('items_hidden').catch(() => []),
+    ]);
+    _itemNamesCache = new Map();
+    for (const it of [...items, ...hidden]) {
+      const id = it._id || it.id;
+      if (id && it.name) _itemNamesCache.set(id, it.name);
+    }
+  } catch { _itemNamesCache = new Map(); }
+  return _itemNamesCache;
+}
+
+function _resolveTagRules(item, rules = []) {
+  const tags = [];
+  for (const r of rules) {
+    if (!r.tagId) continue;
+    const val = item[r.field];
+    let match = false;
+    if (r.op === 'eq')          match = String(val) == String(r.value) || val == r.value;
+    if (r.op === 'contains')    match = Array.isArray(val) && val.includes(r.value);
+    if (r.op === 'not_contains')match = Array.isArray(val) && !val.includes(r.value);
+    if (r.op === 'gte')         match = Number(val) >= Number(r.value);
+    if (r.op === 'lte')         match = Number(val) <= Number(r.value);
+    if (match) tags.push(r.tagId);
+  }
+  return tags;
+}
+
+// ── Item image fetch (attach as file, not URL reference) ─
+function _itemImgSrc(obj) {
+  const base = new URL('.', window.location.href).href;
+  if (obj.img) {
+    const rel = obj.img.replace(/^(\.\.\/)+/, '');
+    return base + rel;
+  }
+  if (!obj.id) return null;
+  const { id, category, palier } = obj;
+  switch (category) {
+    case 'arme':       return `${base}img/compendium/textures/weapons/${id}.png`;
+    case 'armure':     return `${base}img/compendium/textures/armors/${id}.png`;
+    case 'accessoire': return `${base}img/compendium/textures/trinkets/${palier ? 'P'+palier+'/' : ''}${id}.png`;
+    default:           return null;
+  }
+}
+
+async function _fetchItemImgBlob(obj) {
+  const src = _itemImgSrc(obj);
+  if (!src) return { blob: null, fname: null };
+  try {
+    const resp = await fetch(src);
+    if (!resp.ok) return { blob: null, fname: null };
+    const blob = await resp.blob();
+    const ext  = src.split('.').pop().split('?')[0].toLowerCase() || 'png';
+    return { blob, fname: `item.${ext}` };
+  } catch {
+    return { blob: null, fname: null };
+  }
+}
+
+// ── Stat helpers ──────────────────────────────────────
+const DW_STAT_LABELS = {
+  // Offensif
+  degats:              '🗡️ Dégâts',
+  degats_physique:     '💥 Dég. Physique',
+  degats_arme:         '⚔️ Dég. d\'Arme',
+  degats_magique:      '📖 Dég. Magiques',
+  degats_competence:   '✨ Dég. Compétence',
+  degats_projectile:   '🏹 Dég. Projectile',
+  vitesse_attaque:     '💨 Vitesse Attaque',
+  crit_chance:         '🎯 Chance Critique',
+  crit_degats:         '💢 Dégâts Critique',
+  crit_comp_chance:    '🎯 Crit. Compétence',
+  crit_comp_degats:    '💢 Crit. Comp. Dég.',
+  // Défensif
+  defense:             '🛡️ Défense',
+  maitrise_bloc:       '🧱 Maî. de Blocage',
+  puissance_bloc:      '💪 Puis. de Blocage',
+  sante:               '❤️ Santé',
+  esquive:             '💨 Esquive',
+  reduction_degats:    '🔰 Réd. de Dégâts',
+  reduction_chutes:    '🦘 Réd. de Chutes',
+  tenacite:            '🏋️ Ténacité',
+  res_recul:           '🔒 Rés. au Recul',
+  // Mobilité & Ressources
+  hate:                '🌀 Hâte',
+  vitesse_deplacement: '💨 Vit. Déplacement',
+  mana:                '💧 Mana',
+  stamina:             '👟 Stamina',
+  // Soutien
+  vol_vie:             '🩸 Vol de Vie',
+  omnivamp:            '👄 Omnivamp',
+  soin_bonus:          '✳️ Soin Bonus',
+  regen_sante:         '💓 Rég. Santé',
+  regen_mana:          '💦 Rég. Mana',
+  regen_stamina:       '👟 Rég. Stamina',
+};
+
+function _fmtStatVal(v) {
+  if (v === null || v === undefined) return '—';
+  if (Array.isArray(v)) return v[0] === v[1] ? String(v[0]) : `${v[0]}–${v[1]}`;
+  if (typeof v === 'object') {
+    const { min, max } = v;
+    if (min !== undefined && max !== undefined) return min === max ? String(min) : `${min}–${max}`;
+    return JSON.stringify(v);
+  }
+  return String(v);
+}
+
+const _SP = '\u200B'; // Discord spacer
+
+function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames = null) {
+  const RARITY_LABEL  = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Évènement' };
   const RARITY_ICON   = { commun:'🟢', rare:'🔵', epique:'🟣', legendaire:'🟡', mythique:'🌸', godlike:'🔴', event:'⚪' };
-  const RARITY_COLORS = { commun:0x59d059, rare:0x2a5fa8, epique:0x6a3daa, legendaire:0xd7af5f, mythique:0xf5b5e4, godlike:0xa83020, event:0xebebeb };
+  const RARITY_COLORS = { commun:0x59d059, rare:0x2a5fa8, epique:0x6a3daa, legendaire:0xd7af5f, mythique:0xf5b5e4, godlike:0xa83020, event:0xdedede };
   const CAT_LABEL     = { arme:'⚔️ Arme', armure:'🛡️ Armure', accessoire:'💍 Accessoire' };
   const CLS_LABEL     = { guerrier:'⚔️ Guerrier', assassin:'🗡️ Assassin', archer:'🏹 Archer', mage:'📖 Mage', shaman:'🌿 Shaman' };
-  const STAT_LABELS   = {
-    pv:'PV', def:'Défense', atk:'Attaque', atk_magique:'Atk Magique',
-    atk_soin:'Atk Soin', vitesse:'Vitesse', critique:'Critique',
-    critique_bonus:'Bonus Critique', esquive:'Esquive', precision:'Précision',
-    resilience:'Résilience', armure:'Armure (stat)', puissance:'Puissance',
-    mana:'Mana', mana_regen:'Regen Mana',
-  };
+
+  const active = activeFields ?? EMBED_FIELDS.map(f => f.id);
+  const has    = id => active.includes(id);
 
   const rarIcon  = RARITY_ICON[obj.rarity]  || '▪️';
   const rarLabel = RARITY_LABEL[obj.rarity] || obj.rarity || '—';
   const catLabel = CAT_LABEL[obj.category]  || obj.category || '—';
   const color    = RARITY_COLORS[obj.rarity] || 0x7a7a90;
 
-  // Ligne d'identité compacte
-  const infoLine = [
-    `${rarIcon} **${rarLabel}**`,
-    catLabel,
-    obj.palier ? `Palier ${obj.palier}` : null,
-    obj.lvl    ? `Niveau ≥ ${obj.lvl}`  : null,
-  ].filter(Boolean).join('  ·  ');
+  // ── Description ──────────────────────────────────────
+  const descParts = [];
 
-  const clsLine = obj.classes?.length
-    ? obj.classes.map(c => CLS_LABEL[c] || c).join('  ·  ')
-    : null;
+  if (has('identity')) {
+    descParts.push([
+      `${rarIcon} **${rarLabel}**`,
+      catLabel,
+      obj.palier    ? `Palier ${obj.palier}` : null,
+      obj.lvl       ? `Niv. ≥ ${obj.lvl}`    : null,
+      obj.twoHanded ? '🤲 Deux mains'         : null,
+      obj.sensible  ? '🔞 Sensible'           : null,
+    ].filter(Boolean).join('  ·  '));
+  }
 
-  const descParts = [infoLine];
-  if (clsLine) descParts.push(clsLine);
-  if (obj.lore) descParts.push(`\n*${obj.lore.slice(0, 280)}*`);
+  if (has('classes') && obj.classes?.length) {
+    descParts.push(obj.classes.map(c => CLS_LABEL[c] || c).join('  ·  '));
+  }
 
-  const fields = [];
+  if (has('lore') && obj.lore) {
+    descParts.push(`\n> *${obj.lore.slice(0, 300)}*`);
+  }
 
-  const statEntries = obj.stats ? Object.entries(obj.stats) : [];
-  if (statEntries.length || obj.rune_slots) {
-    const lines = statEntries.map(([k, v]) => {
-      const label = STAT_LABELS[k] || k;
-      const val   = Array.isArray(v) ? `${v[0]} — ${v[1]}` : String(v);
-      return `**${label}** \`${val}\``;
+  // ── Fields ───────────────────────────────────────────
+  const embedFields = [];
+  let hasContent = false;
+
+  if (has('stats')) {
+    const statEntries = obj.stats ? Object.entries(obj.stats) : [];
+    if (statEntries.length || obj.rune_slots) {
+      if (hasContent) embedFields.push({ name: _SP, value: _SP, inline: false });
+      const lines = statEntries.map(([k, v]) => `${DW_STAT_LABELS[k] || k}  \`${_fmtStatVal(v)}\``);
+      if (obj.rune_slots) lines.push(`🔮 Empl. Runes  \`${obj.rune_slots}\``);
+      embedFields.push({ name: '📊 Stats', value: lines.join('\n').slice(0, 1024), inline: false });
+      hasContent = true;
+    }
+  }
+
+  if (has('obtain')) {
+    if (hasContent) embedFields.push({ name: _SP, value: _SP, inline: false });
+    const raw   = obj.obtain || '';
+    const clean = raw.replace(/\[[\w:]+\|([^\]]+)\]/g, '**$1**').slice(0, 1024) || '—';
+    embedFields.push({ name: '📍 Obtention', value: clean, inline: false });
+    hasContent = true;
+  }
+
+  if (has('craft') && obj.craft?.length) {
+    if (hasContent) embedFields.push({ name: _SP, value: _SP, inline: false });
+    const lines = obj.craft.map(c => {
+      const name = itemNames?.get(c.id) || c.name || c.id.replace(/_/g, ' ');
+      return `\`${c.qty}×\`  **${name}**`;
     });
-    if (obj.rune_slots) lines.push(`**Emplacements de Runes** \`${obj.rune_slots}\``);
-    fields.push({ name:'📊 Stats', value: lines.join('\n').slice(0, 1024), inline:false });
+    embedFields.push({ name: '🔨 Craft', value: lines.join('\n').slice(0, 1024), inline: false });
+    hasContent = true;
   }
 
-  {
-    const rawObtain = obj.obtain || '';
-    const clean = rawObtain.replace(/\[[\w:]+\|([^\]]+)\]/g, '**$1**').slice(0, 1024) || '—';
-    fields.push({ name:'📍 Obtention', value: clean, inline:false });
+  if (has('effects') && obj.effects?.length) {
+    if (hasContent) embedFields.push({ name: _SP, value: _SP, inline: false });
+    const lines = obj.effects.map(e => `▸ ${e.label || e.id || JSON.stringify(e)}`);
+    embedFields.push({ name: '✨ Effets spéciaux', value: lines.join('\n').slice(0, 1024), inline: false });
+    hasContent = true;
   }
 
-  if (obj.craft?.length) {
-    const lines = obj.craft.map(c => `\`${c.qty}×\` ${c.id}`);
-    fields.push({ name:'🔨 Craft', value: lines.join('\n').slice(0, 1024), inline:false });
+  if (has('bonuses') && obj.bonuses?.length) {
+    if (hasContent) embedFields.push({ name: _SP, value: _SP, inline: false });
+    const lines = obj.bonuses.map(b => {
+      const thresh = b.count ? `**(×${b.count})** ` : '';
+      return `${thresh}${b.bonus || b.label || JSON.stringify(b)}`;
+    });
+    embedFields.push({ name: '🔗 Bonus de panoplie', value: lines.join('\n').slice(0, 1024), inline: false });
   }
 
+  // ── Embed object ─────────────────────────────────────
   const embed = {
-    title: obj.name,
-    description: descParts.join('\n').slice(0, 4096),
+    title:       obj.name,
+    description: descParts.join('\n').slice(0, 4096) || undefined,
     color,
-    fields,
+    fields:      embedFields,
+    footer:      { text: 'VCL Wiki' },
+    timestamp:   new Date().toISOString(),
   };
 
-  if (imageFilename) embed.image = { url: `attachment://${imageFilename}` };
+  if (imageFilename) embed.thumbnail = { url: `attachment://${imageFilename}` };
 
   return embed;
+}
+
+// ── Embed Preview ─────────────────────────────────────
+const _PREVIEW_ITEM = {
+  name: 'Épée de Cristal',
+  id:   'epee_cristal',
+  rarity: 'legendaire',
+  category: 'arme',
+  palier: 2,
+  lvl: 35,
+  twoHanded: true,
+  classes: ['guerrier', 'assassin'],
+  lore: "Forgée dans les profondeurs des mines de Cristalith, cette lame légendaire vibre d'une énergie ancienne.",
+  stats: {
+    degats:      { min: 280, max: 350 },
+    crit_chance: { min: 15, max: 15  },
+    defense:     { min: 40,  max: 60  },
+    sante:       { min: 800, max: 800 },
+  },
+  obtain: 'Obtenu en battant le [boss:gardien|Gardien de Cristal] dans le [region:mines|Donjon des Mines].',
+  craft: [
+    { qty: 3, id: 'cristal_pur' },
+    { qty: 1, id: 'fil_argent'  },
+  ],
+  rune_slots: 2,
+  effects: [{ label: 'Chaque coup critique inflige +20% de dégâts bonus pendant 3s.' }],
+};
+
+function _renderEmbedPreview() {
+  const el = document.getElementById('dw-embed-preview');
+  if (!el) return;
+
+  const embed = _buildApprovalEmbed(_PREVIEW_ITEM, null, _dwConfig?.embedFields || null);
+
+  const RARITY_COLORS_CSS = {
+    legendaire: '#d7af5f', commun: '#59d059', rare: '#2a5fa8',
+    epique: '#6a3daa', mythique: '#f5b5e4', godlike: '#a83020', event: '#dedede',
+  };
+  const accentColor = RARITY_COLORS_CSS[_PREVIEW_ITEM.rarity] || '#7a7a90';
+
+  const escP = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Minimal markdown → HTML (bold, italic, code, blockquote)
+  function mdToHtml(text) {
+    if (!text) return '';
+    return escP(text)
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,.1);border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px;">$1</code>')
+      .replace(/^&gt;\s?(.+)$/gm, '<span style="border-left:3px solid rgba(255,255,255,.2);padding-left:8px;display:block;color:rgba(255,255,255,.7);font-style:italic;">$1</span>')
+      .replace(/\n/g, '<br>');
+  }
+
+  let fieldsHtml = '';
+  for (const f of (embed.fields || [])) {
+    if (f.name === _SP || f.value === _SP) {
+      fieldsHtml += '<div style="height:6px;"></div>';
+      continue;
+    }
+    fieldsHtml += `
+      <div style="margin-bottom:2px;">
+        <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:3px;">${escP(f.name)}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.85);line-height:1.5;">${mdToHtml(f.value)}</div>
+      </div>`;
+  }
+
+  // Preview uses the real URL (not attachment://) for display
+  const thumbUrl = _itemImgSrc(_PREVIEW_ITEM) || '';
+
+  el.innerHTML = `
+    <div style="display:inline-flex;max-width:520px;width:100%;border-radius:8px;overflow:hidden;background:#2b2d31;font-family:sans-serif;">
+      <div style="width:4px;flex-shrink:0;background:${accentColor};"></div>
+      <div style="flex:1;padding:14px 16px;min-width:0;">
+        <div style="display:flex;align-items:flex-start;gap:12px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:15px;font-weight:700;color:${accentColor};margin-bottom:6px;">${escP(embed.title || '')}</div>
+            ${embed.description ? `<div style="font-size:13px;color:rgba(255,255,255,.85);margin-bottom:10px;line-height:1.5;">${mdToHtml(embed.description)}</div>` : ''}
+          </div>
+          ${thumbUrl ? `<img src="${escP(thumbUrl)}" style="width:60px;height:60px;object-fit:contain;border-radius:6px;flex-shrink:0;background:rgba(0,0,0,.3);" onerror="this.style.display='none'">` : ''}
+        </div>
+        ${fieldsHtml ? `<div style="display:flex;flex-direction:column;gap:4px;">${fieldsHtml}</div>` : ''}
+        <div style="margin-top:12px;padding-top:8px;border-top:1px solid rgba(255,255,255,.07);display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:10px;color:rgba(255,255,255,.35);">VCL Wiki</span>
+          <span style="font-size:10px;color:rgba(255,255,255,.35);">${new Date().toLocaleDateString('fr-FR')}</span>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic;">Aperçu avec un item fictif — image non chargée en local, visible en production.</p>
+  `;
 }
 
 // ── Bulk delete submissions ───────────────────────────
@@ -5193,6 +5922,101 @@ window.showCaptureSprites = function() {
   const iframe = document.getElementById('capture-iframe');
   if (!iframe.src || iframe.src === 'about:blank') {
     iframe.src = 'capture-sprites.html';
+  }
+};
+
+// ── Coords PNJ ────────────────────────────────────────
+window.showPnjCoords = function() {
+  _setHash('pnj-coords');
+  _showPanel('pnj-coords-panel', 'btn-pnj-coords');
+};
+
+function _escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+window.addCoordsToAllPnj = async function() {
+  const statusEl = document.getElementById('pnj-coords-step1-status');
+  statusEl.style.display = '';
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = '⏳ Chargement des PNJ…';
+  try {
+    const pnjs = await cachedDocs('personnages');
+    const toUpdate = pnjs.filter(p => !('coords' in p));
+    if (!toUpdate.length) {
+      statusEl.textContent = '✓ Tous les PNJ ont déjà le champ coords.';
+      statusEl.style.color = 'var(--success)';
+      return;
+    }
+    statusEl.textContent = `⏳ Mise à jour de ${toUpdate.length} PNJ…`;
+    let done = 0;
+    for (const p of toUpdate) {
+      await updateDoc(doc(db, 'personnages', p.id), { coords: '' });
+      p.coords = '';
+      done++;
+      if (done % 10 === 0) statusEl.textContent = `⏳ ${done} / ${toUpdate.length}…`;
+    }
+    localStorage.removeItem('vcl_cache_v2_personnages');
+    localStorage.removeItem('vcl_cache_meta_v2_personnages');
+    invalidateModCache('personnages');
+    statusEl.textContent = `✓ ${done} PNJ mis à jour !`;
+    statusEl.style.color = 'var(--success)';
+    toast(`✓ coords ajouté à ${done} PNJ`, 'success');
+  } catch(e) {
+    statusEl.textContent = '⛔ ' + e.message;
+    statusEl.style.color = 'var(--danger)';
+    toast('⛔ Erreur : ' + e.message, 'error');
+  }
+};
+
+window.updateObtainWithCoords = async function() {
+  const statusEl = document.getElementById('pnj-coords-step2-status');
+  statusEl.style.display = '';
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = '⏳ Chargement…';
+  try {
+    const [pnjs, items] = await Promise.all([
+      cachedDocs('personnages'),
+      cachedDocs('items'),
+    ]);
+    const pnjWithCoords = pnjs.filter(p => p.name && p.coords && p.coords.trim());
+    if (!pnjWithCoords.length) {
+      statusEl.textContent = '⚠️ Aucun PNJ n\'a de coords. Complète l\'étape 1 puis renseigne les coords via l\'éditeur.';
+      statusEl.style.color = 'var(--warn)';
+      return;
+    }
+    // Trier par longueur de nom décroissante pour éviter les correspondances partielles
+    pnjWithCoords.sort((a, b) => b.name.length - a.name.length);
+    statusEl.textContent = `⏳ Analyse de ${items.length} items…`;
+    let count = 0;
+    for (const item of items) {
+      if (!item.obtain) continue;
+      let obtain = item.obtain;
+      for (const pnj of pnjWithCoords) {
+        const coords = pnj.coords.trim();
+        // Remplace "Nom PNJ" ou "Nom PNJ (anciens coords)" par "Nom PNJ (coords)"
+        const pattern = new RegExp(_escapeRegex(pnj.name) + '(?:\\s*\\([^)]*\\))?', 'g');
+        obtain = obtain.replace(pattern, `${pnj.name} (${coords})`);
+      }
+      if (obtain !== item.obtain) {
+        await updateDoc(doc(db, 'items', item.id), { obtain });
+        item.obtain = obtain;
+        count++;
+        statusEl.textContent = `⏳ ${count} item${count>1?'s':''} mis à jour…`;
+      }
+    }
+    if (count > 0) {
+      localStorage.removeItem('vcl_cache_v2_items');
+      localStorage.removeItem('vcl_cache_meta_v2_items');
+      invalidateModCache('items');
+    }
+    statusEl.textContent = `✓ ${count} item${count>1?'s':''} mis à jour !`;
+    statusEl.style.color = 'var(--success)';
+    toast(`✓ ${count} items mis à jour`, count > 0 ? 'success' : 'info');
+  } catch(e) {
+    statusEl.textContent = '⛔ ' + e.message;
+    statusEl.style.color = 'var(--danger)';
+    toast('⛔ Erreur : ' + e.message, 'error');
   }
 };
 
