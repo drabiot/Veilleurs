@@ -3090,6 +3090,25 @@ window.showEditor = async function(collection, id, data, origin) {
   _editorId         = id;
   _editorOrigin     = origin;
 
+  // Fetch data from Firestore when not provided (e.g. called from data-incomplete panel)
+  if (!data) {
+    document.getElementById('editor-title').textContent            = '✏️  Chargement…';
+    document.getElementById('editor-collection-badge').textContent = _COL_LABELS[collection] || collection;
+    document.getElementById('ed-error').style.display              = 'none';
+    document.getElementById('editor-form').innerHTML               = '<div class="empty">Chargement…</div>';
+    const btnL = document.getElementById('btn-save-editor');
+    btnL.textContent = '💾 Sauvegarder'; btnL.disabled = false;
+    btnL.style.background = 'var(--accent)'; btnL.style.color = '#fff';
+    try {
+      const snap = await getDoc(doc(db, collection, id));
+      data = snap.exists() ? desanitizeFromFirestore({ id: snap.id, ...snap.data() }) : { id };
+    } catch(e) {
+      document.getElementById('ed-error').textContent = `Erreur lors du chargement : ${e.message}`;
+      document.getElementById('ed-error').style.display = '';
+      return;
+    }
+  }
+
   document.getElementById('editor-title').textContent            = `✏️  ${data.name || id}`;
   document.getElementById('editor-collection-badge').textContent = _COL_LABELS[collection] || collection;
   document.getElementById('ed-error').style.display              = 'none';
@@ -3144,7 +3163,8 @@ window.editorGoBack = function() {
   if (_editorOrigin === 'region-orphan')  { showRegionOrphans(); return; }
   if (_editorOrigin === 'mob-orphan')     { showMobOrphans();    return; }
   if (_editorOrigin === 'quest-orphan')  { showQuestOrphans();  return; }
-  if (_editorOrigin === 'migration')     { showMigration();     return; }
+  if (_editorOrigin === 'migration')       { showMigration();       return; }
+  if (_editorOrigin === 'data-incomplete') { showDataIncomplete(); return; }
   showSubmissions();
 };
 
@@ -5455,8 +5475,50 @@ window.saveCreatorValidation = async () => {
 };
 
 // ── Data Incomplète ───────────────────────────────────
+function _testImageUrl(url) {
+  return new Promise(resolve => {
+    if (!url || typeof url !== 'string' || url.startsWith('data:')) { resolve(true); return; }
+    const img = new Image();
+    const t = setTimeout(() => { img.src = ''; resolve(false); }, 8000);
+    img.onload  = () => { clearTimeout(t); resolve(true); };
+    img.onerror = () => { clearTimeout(t); resolve(false); };
+    img.src = url;
+  });
+}
+
+async function _checkBrokenImages(docs, onProgress) {
+  const BATCH = 8;
+  const broken = [];
+  const entries = docs.map(d => {
+    const urls = [];
+    if (d.img   && typeof d.img   === 'string' && !d.img.startsWith('data:'))   urls.push(d.img);
+    if (d.image && typeof d.image === 'string' && !d.image.startsWith('data:')) urls.push(d.image);
+    if (Array.isArray(d.images)) d.images.forEach(u => { if (u && typeof u === 'string' && !u.startsWith('data:')) urls.push(u); });
+    return { doc: d, urls };
+  }).filter(e => e.urls.length > 0);
+
+  let done = 0;
+  for (let i = 0; i < entries.length; i += BATCH) {
+    await Promise.all(entries.slice(i, i + BATCH).map(async ({ doc: d, urls }) => {
+      const ok = await Promise.all(urls.map(_testImageUrl));
+      const bad = urls.filter((_, j) => !ok[j]);
+      if (bad.length) broken.push({ doc: d, brokenUrls: bad });
+    }));
+    done = Math.min(i + BATCH, entries.length);
+    if (onProgress) onProgress(done, entries.length);
+  }
+  return broken;
+}
+
 function _fieldEmpty(d, fieldId) {
   if (fieldId === 'coords') return !d.coords || d.coords.x == null;
+  // img et images sont interchangeables : si l'un est rempli, l'autre n'est pas manquant
+  if (fieldId === 'img' || fieldId === 'images' || fieldId === 'image') {
+    const hasImg    = d.img   != null && d.img   !== '';
+    const hasImage  = d.image != null && d.image !== '';
+    const hasImages = Array.isArray(d.images) && d.images.length > 0 && d.images.some(x => x != null && x !== '');
+    return !hasImg && !hasImage && !hasImages;
+  }
   const v = d[fieldId];
   if (v == null || v === '') return true;
   if (Array.isArray(v) && v.length === 0) return true;
@@ -5532,36 +5594,71 @@ window.loadDataIncomplete = async () => {
   const badge = document.getElementById('count-incomplete');
   if (badge) { badge.textContent = results.length; badge.style.display = results.length ? '' : 'none'; }
 
-  if (!results.length) { list.innerHTML = '<div class="empty">Aucun document incomplet. ✓</div>'; return; }
+  list.innerHTML = '';
 
-  // Grouper par mode
-  const byMode = {};
-  for (const r of results) {
-    if (!byMode[r.mode]) byMode[r.mode] = [];
-    byMode[r.mode].push(r);
+  if (!results.length) {
+    list.innerHTML = '<div class="empty">Aucun document incomplet. ✓</div>';
+  } else {
+    // Grouper par mode
+    const byMode = {};
+    for (const r of results) {
+      if (!byMode[r.mode]) byMode[r.mode] = [];
+      byMode[r.mode].push(r);
+    }
+    for (const [mode, rows] of Object.entries(byMode)) {
+      const header = document.createElement('div');
+      header.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;margin-top:16px;';
+      header.textContent = `${QUALITY_MODE_LABELS[mode] || mode} — ${rows.length} incomplet${rows.length > 1 ? 's' : ''}`;
+      list.appendChild(header);
+      for (const { doc: d, missing, discVal } of rows) {
+        const colName   = QUALITY_COL_MAP[mode];
+        const subcatLbl = discVal ? _subcatLabel(mode, discVal) : null;
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
+        card.innerHTML = `
+          <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.titre||d.label||d.id||'—')}</span>
+          ${subcatLbl ? `<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:rgba(122,90,248,.12);color:var(--accent);border:1px solid rgba(122,90,248,.25);">${escHtml(subcatLbl)}</span>` : ''}
+          <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
+          <span style="font-size:11px;color:var(--warn);">Manque : ${missing.map(f => `<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;">${escHtml(f)}</code>`).join(' ')}</span>
+          <button class="btn btn-ghost btn-sm" onclick="showEditor('${escHtml(colName)}','${escHtml(d.id||'')}',null,'data-incomplete')" style="font-size:11px;">✏️ Éditer</button>
+        `;
+        list.appendChild(card);
+      }
+    }
   }
 
-  list.innerHTML = '';
-  for (const [mode, rows] of Object.entries(byMode)) {
-    const header = document.createElement('div');
-    header.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;margin-top:16px;';
-    header.textContent = `${QUALITY_MODE_LABELS[mode] || mode} — ${rows.length} incomplet${rows.length > 1 ? 's' : ''}`;
-    list.appendChild(header);
+  // ── Vérification des images cassées ──────────────────
+  const imgHeader = document.createElement('div');
+  imgHeader.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;margin-top:16px;';
+  imgHeader.textContent = '🖼️ Images — vérification en cours…';
+  list.appendChild(imgHeader);
 
-    for (const { doc: d, missing, discVal } of rows) {
-      const colName   = QUALITY_COL_MAP[mode];
-      const subcatLbl = discVal ? _subcatLabel(mode, discVal) : null;
-      const card = document.createElement('div');
-      card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
-      card.innerHTML = `
-        <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.titre||d.label||d.id||'—')}</span>
-        ${subcatLbl ? `<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:rgba(122,90,248,.12);color:var(--accent);border:1px solid rgba(122,90,248,.25);">${escHtml(subcatLbl)}</span>` : ''}
-        <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
-        <span style="font-size:11px;color:var(--warn);">Manque : ${missing.map(f => `<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;">${escHtml(f)}</code>`).join(' ')}</span>
-        <button class="btn btn-ghost btn-sm" onclick="showEditor('${escHtml(colName)}','${escHtml(d.id||'')}',null,null)" style="font-size:11px;">✏️ Éditer</button>
-      `;
-      list.appendChild(card);
+  try {
+    const itemDocs = await cachedDocs('items').catch(() => []);
+    const broken = await _checkBrokenImages(itemDocs, (done, total) => {
+      imgHeader.textContent = `🖼️ Images — ${done} / ${total} vérifiées…`;
+    });
+
+    if (!broken.length) {
+      imgHeader.textContent = '🖼️ Images — toutes accessibles ✓';
+    } else {
+      imgHeader.textContent = `🖼️ Images cassées — ${broken.length} item${broken.length > 1 ? 's' : ''}`;
+      for (const { doc: d, brokenUrls } of broken) {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;';
+        card.innerHTML = `
+          <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.id||'—')}</span>
+          <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
+          <div style="width:100%;display:flex;flex-direction:column;gap:3px;">
+            ${brokenUrls.map(u => `<span style="font-size:11px;color:var(--danger);font-family:monospace;word-break:break-all;">⛔ ${escHtml(u)}</span>`).join('')}
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="showEditor('items','${escHtml(d.id||'')}',null,'data-incomplete')" style="font-size:11px;">✏️ Éditer</button>
+        `;
+        list.appendChild(card);
+      }
     }
+  } catch(e) {
+    imgHeader.textContent = '🖼️ Images — erreur lors de la vérification';
   }
 };
 
