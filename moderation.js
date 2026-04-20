@@ -560,7 +560,7 @@ window.approve = async (id) => {
       const gameplay = {};
       const secret   = {};
       for (const [k, v] of Object.entries(sub.data)) {
-        if (k === 'sensible' || k === 'img') continue;
+        if (k === 'sensible') continue;
         if (gameplayKeys.includes(k)) gameplay[k] = v;
         else                          secret[k]   = v;
       }
@@ -2887,6 +2887,10 @@ function _buildGenericForm(data, col) {
   if (col === 'items' && !('obtain' in data)) {
     data = { ...data, obtain: '' };
   }
+  // Auto-injecter stats pour les catégories qui en ont (arme, armure, accessoire, rune)
+  if (col === 'items' && !('stats' in data) && ['arme','armure','accessoire','rune'].includes(data.category)) {
+    data = { ...data, stats: {} };
+  }
 
   _editorOrigData = { ...data };
 
@@ -3184,7 +3188,7 @@ window.saveEditor = async function() {
       const gameplay = {};
       const secret   = {};
       for (const [k, v] of Object.entries(newData)) {
-        if (k === 'sensible' || k === 'img') continue;
+        if (k === 'sensible') continue;
         if (gameplayKeys.includes(k)) gameplay[k] = v;
         else                          secret[k]   = v;
       }
@@ -3809,15 +3813,18 @@ function _renderUnsentSection() {
     let rows = '';
     for (const sub of unsent) {
       const it = sub.data || {};
-      rows += `<label style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;cursor:pointer;transition:background .1s;"
+      rows += `<div style="display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:7px;transition:background .1s;"
         onmouseenter="this.style.background='var(--surface2)'" onmouseleave="this.style.background=''">
         <input type="checkbox" class="dw-unsent-check" data-subid="${_ee(sub._id)}" checked
-          style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;">
+          style="width:15px;height:15px;accent-color:var(--accent);flex-shrink:0;cursor:pointer;">
         <span style="flex:1;font-size:13px;font-weight:500;">${_ee(it.name||'—')}</span>
         <span style="font-size:11px;color:var(--muted);">
           ${CAT_ICON[it.category]||''} ${_ee(it.category||'')} · P${_ee(String(it.palier||'?'))} · ${RARITY_ICON[it.rarity]||''} ${_ee(it.rarity||'')}
         </span>
-      </label>`;
+        <button onclick="dwUnsentDelete('${_ee(sub._id)}')" title="Retirer de la file d'envoi Discord"
+          style="background:none;border:none;cursor:pointer;color:var(--danger,#f87171);font-size:14px;padding:2px 6px;border-radius:4px;flex-shrink:0;"
+          onmouseenter="this.style.background='rgba(248,113,113,.15)'" onmouseleave="this.style.background='none'">🗑️</button>
+      </div>`;
     }
     body = `<div style="padding:8px 10px;display:flex;flex-direction:column;gap:2px;">${rows}</div>`;
   }
@@ -3839,6 +3846,19 @@ function _renderUnsentSection() {
 
 window.dwUnsentCheckAll = function(state) {
   document.querySelectorAll('.dw-unsent-check').forEach(cb => { cb.checked = state; });
+};
+
+window.dwUnsentDelete = async function(subId) {
+  if (!await modal.confirm('Retirer cet item de la file d\'envoi Discord ? (il restera approuvé mais ne sera plus proposé à l\'envoi)')) return;
+  try {
+    await updateDoc(doc(db, 'submissions', subId), { discord_sent: true });
+    const sub = allSubs.find(s => s._id === subId);
+    if (sub) sub.discord_sent = true;
+    _renderUnsentSection();
+    toast('✓ Item retiré de la file d\'envoi.', 'success');
+  } catch(e) {
+    toast('⛔ Erreur : ' + e.message, 'error');
+  }
 };
 
 window.dwPublishUnsentSend = async function() {
@@ -3969,11 +3989,20 @@ async function _sendSingleItemDiscord(item) {
   const url = _dwConfig?.[key];
   if (!url) throw new Error(`Aucun webhook configuré pour ${key}`);
 
-  const [itemNames, { blob: imgBlob, fname: imgFname }] = await Promise.all([
+  const [itemNames, { blob: imgBlob, fname: imgFname }, mobsPublic, mobsSecret, pnjs] = await Promise.all([
     _getItemNamesCache(),
     _fetchItemImgBlob(item),
+    cachedDocs(COL.mobs),
+    cachedDocs(COL.mobsSecret).catch(() => []),
+    cachedDocs(COL.pnj).catch(() => []),
   ]);
-  const embed = _buildApprovalEmbed(item, imgFname, _dwConfig?.embedFields || null, itemNames);
+  const allMobs = [...mobsPublic, ...mobsSecret];
+  const itemForEmbed = item.obtain ? { ...item, obtain:
+    _enrichObtainWithPnjCoords(
+      _enrichObtainWithMobChances(item.obtain, item.id, allMobs),
+      pnjs)
+  } : item;
+  const embed = _buildApprovalEmbed(itemForEmbed, imgFname, _dwConfig?.embedFields || null, itemNames);
   const tags  = _resolveTagRules(item, (_dwConfig?.tagRules || {})[key] || []);
 
   const payload = { thread_name: item.name || 'Item', embeds: [embed] };
@@ -4257,8 +4286,19 @@ async function sendApprovalWebhook(sub) {
     imgFname = fetched.fname;
   }
 
-  const itemNames = await _getItemNamesCache();
-  const embed   = _buildApprovalEmbed(sub.data, imgFname, _dwConfig.embedFields || null, itemNames);
+  const [itemNames, mobsPublic, mobsSecret, pnjs] = await Promise.all([
+    _getItemNamesCache(),
+    cachedDocs(COL.mobs),
+    cachedDocs(COL.mobsSecret).catch(() => []),
+    cachedDocs(COL.pnj).catch(() => []),
+  ]);
+  const allMobs = [...mobsPublic, ...mobsSecret];
+  const subDataForEmbed = sub.data.obtain ? { ...sub.data, obtain:
+    _enrichObtainWithPnjCoords(
+      _enrichObtainWithMobChances(sub.data.obtain, sub.data.id, allMobs),
+      pnjs)
+  } : sub.data;
+  const embed   = _buildApprovalEmbed(subDataForEmbed, imgFname, _dwConfig.embedFields || null, itemNames);
 
   // Thread name: use set label if item belongs to a set, else item name
   let threadName = sub.data.name;
@@ -4414,6 +4454,50 @@ function _fmtStatVal(v) {
 
 const _SP = '\u200B'; // Discord spacer
 
+function _enrichObtainWithPnjCoords(obtain, pnjs) {
+  if (!obtain || !pnjs?.length) return obtain;
+  const pnjById   = new Map();
+  const pnjByName = new Map();
+  for (const pnj of pnjs) {
+    if (!pnj.coords || pnj.coords.x == null) continue;
+    if (pnj.id) pnjById.set(pnj.id, pnj.coords);
+    const n = (pnj.name || pnj.nom || '').trim().toLowerCase();
+    if (n) pnjByName.set(n, pnj.coords);
+  }
+  const fmtCoords = c => `\n\`x:${c.x}\` \`y:${c.y}\` \`z:${c.z}\``;
+  // New bracket format: [npc:id|Name]
+  let result = obtain.replace(/\[npc:([^\]|]+)\|([^\]]+)\]/g, (match, pnjId, name) => {
+    const c = pnjById.get(pnjId) || pnjByName.get(name.trim().toLowerCase());
+    return c ? `[npc:${pnjId}|${name} ${fmtCoords(c)}]` : match;
+  });
+  // Old format: npc:text (no bracket, no ID) — negative lookbehind avoids re-matching inside [npc:...|...]
+  const namesSorted = [...pnjByName.keys()].sort((a, b) => b.length - a.length);
+  result = result.replace(/(?<!\[)npc:([^\n\[]+)/g, (match, text) => {
+    const textLow = text.trim().toLowerCase();
+    const found   = namesSorted.find(n => textLow.includes(n));
+    if (!found) return match;
+    const c = pnjByName.get(found);
+    return `npc:${text.trim()} ${fmtCoords(c)}`;
+  });
+  return result;
+}
+
+function _enrichObtainWithMobChances(obtain, itemId, mobs) {
+  if (!obtain || !itemId || !mobs?.length) return obtain;
+  const chanceMap = new Map();
+  for (const mob of mobs) {
+    const loot = (mob.loot || []).find(l => l.id === itemId);
+    if (loot) {
+      const c = loot.chance === '?' ? '?' : parseFloat(loot.chance);
+      if (c === '?' || !isNaN(c)) chanceMap.set(mob.id, c);
+    }
+  }
+  return obtain.replace(/\[([^\]|:]+)\|([^\]]+)\](\[\?\]|(?!\[))/g, (match, mobId, name) => {
+    const chance = chanceMap.get(mobId);
+    return chance != null ? `[${mobId}|${name}][${chance}]` : match;
+  });
+}
+
 function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames = null) {
   const RARITY_LABEL  = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Évènement' };
   const RARITY_ICON   = { commun:'🟢', rare:'🔵', epique:'🟣', legendaire:'🟡', mythique:'🌸', godlike:'🔴', event:'⚪' };
@@ -4437,10 +4521,10 @@ function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames 
       `${rarIcon} **${rarLabel}**`,
       catLabel,
       obj.palier    ? `Palier ${obj.palier}` : null,
-      obj.lvl       ? `Niv. ≥ ${obj.lvl}`    : null,
+      obj.lvl       ? `Niveau : ${obj.lvl}`  : null,
       obj.twoHanded ? '🤲 Deux mains'         : null,
       obj.sensible  ? '🔞 Sensible'           : null,
-    ].filter(Boolean).join('  ·  '));
+    ].filter(Boolean).join('\n'));
   }
 
   if (has('classes') && obj.classes?.length) {
@@ -4453,46 +4537,47 @@ function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames 
 
   // ── Fields ───────────────────────────────────────────
   const embedFields = [];
-  let hasContent = false;
+  const mainParts = [];
 
   if (has('stats')) {
     const statEntries = obj.stats ? Object.entries(obj.stats) : [];
     if (statEntries.length || obj.rune_slots) {
-      if (hasContent) embedFields.push({ name: _SP, value: _SP, inline: false });
       const lines = statEntries.map(([k, v]) => `${DW_STAT_LABELS[k] || k}  \`${_fmtStatVal(v)}\``);
       if (obj.rune_slots) lines.push(`🔮 Empl. Runes  \`${obj.rune_slots}\``);
-      embedFields.push({ name: '📊 Stats', value: lines.join('\n').slice(0, 1024), inline: false });
-      hasContent = true;
+      mainParts.push('📊 **Stats**\n' + lines.join('\n'));
     }
   }
 
   if (has('obtain')) {
-    if (hasContent) embedFields.push({ name: _SP, value: _SP, inline: false });
     const raw   = obj.obtain || '';
-    const clean = raw.replace(/\[[\w:]+\|([^\]]+)\]/g, '**$1**').slice(0, 1024) || '—';
-    embedFields.push({ name: '📍 Obtention', value: clean, inline: false });
-    hasContent = true;
+    const clean = raw
+      .replace(/\[npc:[^\]|]+\|([^\]]+)\]/g, '**$1**')
+      .replace(/\[[^\]|:]+\|([^\]]+)\]/g, '**$1**')
+      .replace(/\[(\d+(?:[.,]\d+)?)\]/g, ' [$1%]')
+      .replace(/\[\?\]/g, ' [?%]')
+      .replace(/\bnpc:/g, '')
+      || '—';
+    mainParts.push('📍 **Obtention**\n' + clean);
   }
 
   if (has('craft') && obj.craft?.length) {
-    if (hasContent) embedFields.push({ name: _SP, value: _SP, inline: false });
     const lines = obj.craft.map(c => {
       const name = itemNames?.get(c.id) || c.name || c.id.replace(/_/g, ' ');
       return `\`${c.qty}×\`  **${name}**`;
     });
-    embedFields.push({ name: '🔨 Craft', value: lines.join('\n').slice(0, 1024), inline: false });
-    hasContent = true;
+    mainParts.push('🔨 **Craft**\n' + lines.join('\n'));
+  }
+
+  if (mainParts.length) {
+    embedFields.push({ name: _SP, value: mainParts.join('\n\n').slice(0, 1024), inline: false });
   }
 
   if (has('effects') && obj.effects?.length) {
-    if (hasContent) embedFields.push({ name: _SP, value: _SP, inline: false });
     const lines = obj.effects.map(e => `▸ ${e.label || e.id || JSON.stringify(e)}`);
     embedFields.push({ name: '✨ Effets spéciaux', value: lines.join('\n').slice(0, 1024), inline: false });
-    hasContent = true;
   }
 
   if (has('bonuses') && obj.bonuses?.length) {
-    if (hasContent) embedFields.push({ name: _SP, value: _SP, inline: false });
     const lines = obj.bonuses.map(b => {
       const thresh = b.count ? `**(×${b.count})** ` : '';
       return `${thresh}${b.bonus || b.label || JSON.stringify(b)}`;
@@ -5486,14 +5571,21 @@ function _testImageUrl(url) {
   });
 }
 
+function _normalizeUrlForModeration(url) {
+  if (!url || typeof url !== 'string') return url;
+  let u = url;
+  while (u.startsWith('../')) u = u.slice(3);
+  return u;
+}
+
 async function _checkBrokenImages(docs, onProgress) {
   const BATCH = 8;
   const broken = [];
   const entries = docs.map(d => {
     const urls = [];
-    if (d.img   && typeof d.img   === 'string' && !d.img.startsWith('data:'))   urls.push(d.img);
-    if (d.image && typeof d.image === 'string' && !d.image.startsWith('data:')) urls.push(d.image);
-    if (Array.isArray(d.images)) d.images.forEach(u => { if (u && typeof u === 'string' && !u.startsWith('data:')) urls.push(u); });
+    if (d.img   && typeof d.img   === 'string' && !d.img.startsWith('data:'))   urls.push(_normalizeUrlForModeration(d.img));
+    if (d.image && typeof d.image === 'string' && !d.image.startsWith('data:')) urls.push(_normalizeUrlForModeration(d.image));
+    if (Array.isArray(d.images)) d.images.forEach(u => { if (u && typeof u === 'string' && !u.startsWith('data:')) urls.push(_normalizeUrlForModeration(u)); });
     return { doc: d, urls };
   }).filter(e => e.urls.length > 0);
 
@@ -5555,7 +5647,7 @@ window.loadDataIncomplete = async () => {
   } catch { /* silently ignore */ }
   if (!Object.keys(standards).length) {
     list.innerHTML = '<div class="empty">Aucune configuration définie. Définissez les champs requis dans ⚙️ Champs requis.</div>';
-    const badge = document.getElementById('count-incomplete');
+    const badge = document.getElementById('count-data-incomplete');
     if (badge) badge.style.display = 'none';
     return;
   }
@@ -5591,7 +5683,7 @@ window.loadDataIncomplete = async () => {
   }
 
   // Badge sidebar
-  const badge = document.getElementById('count-incomplete');
+  const badge = document.getElementById('count-data-incomplete');
   if (badge) { badge.textContent = results.length; badge.style.display = results.length ? '' : 'none'; }
 
   list.innerHTML = '';
@@ -5844,7 +5936,7 @@ window.sensItemToSensible = async (sourceId) => {
     const gameplay = {};
     for (const k of allKeys) if (gameplayKeys.includes(k)) gameplay[k] = item[k];
     const secret = {};
-    for (const k of allKeys) if (!gameplayKeys.includes(k) && k !== 'sensible' && k !== 'img') secret[k] = item[k];
+    for (const k of allKeys) if (!gameplayKeys.includes(k) && k !== 'sensible') secret[k] = item[k];
 
     const hash = await hashName(item.name);
     if (!hash) throw new Error('hash vide');

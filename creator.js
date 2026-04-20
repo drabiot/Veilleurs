@@ -290,7 +290,10 @@ window.addEventListener('DOMContentLoaded', () => {
     } catch(e) {}
   }
 
-  restoreForm();
+  const _validModes = ['item','mob','pnj','region','quest','panoplie'];
+  const _urlMode = _params.has('mode') && _validModes.includes(_params.get('mode')) ? _params.get('mode') : null;
+  if (_urlMode) switchMode(_urlMode);
+  restoreForm(_urlMode);
 
   // Pré-remplir depuis le tracker d'IDs fantômes (moderation.html)
   if (_params.has('ghostid')) {
@@ -624,15 +627,15 @@ function saveForm() {
   } catch(e) {}
 }
 
-function restoreForm() {
+function restoreForm(forcedMode) {
   try {
     // Try new key first, fall back to legacy key
     const raw = localStorage.getItem('vcl_form_v2') || localStorage.getItem('vcl_form');
     if (!raw) { update(); return; }
     const d = JSON.parse(raw);
 
-    // Restore active mode
-    if (d._mode && d._mode !== 'item') {
+    // Restore active mode — skip if a URL mode param already set the mode
+    if (d._mode && d._mode !== 'item' && !forcedMode) {
       switchMode(d._mode);
     }
 
@@ -1254,95 +1257,116 @@ function initLoadSearch() {
 }
 
 // ── Load search for all modes ──────────────────────────
-function initLoadSearchForAllModes() {
-  // Mob
-  const mobWrap = document.getElementById('load-mob-search-wrap');
-  if (mobWrap) {
-    ensureAllMobsIndex();
-    const drop = makeSearchDrop(allMobsIndex, 'Rechercher un mob à éditer…', id => {
-      if (!id) return;
-      const entry = allMobsIndex.find(m => m.id === id);
-      if (entry) loadMob(entry._raw);
-    });
-    mobWrap.appendChild(drop.element);
-  }
-  // PNJ (loaded async — use a lazy approach)
+let _pnjDropBuilt      = false;
+let _regDropBuilt      = false;
+let _panopDropBuilt    = false;
+
+async function _buildLoadDrops() {
+  const getDocs = window._vcl_getDocs;
+  const col     = window._vcl_collection;
+  const db      = window._vcl_db;
+  if (!getDocs || !col || !db) return;
+
+  // ── PNJ ──
   const pnjWrap = document.getElementById('load-pnj-search-wrap');
-  if (pnjWrap) {
-    let _pnjDrop = null;
-    const placeholder = document.createElement('div');
-    placeholder.style.cssText = 'font-size:12px;color:var(--muted);padding:6px 0;';
-    placeholder.textContent = 'Chargement…';
-    pnjWrap.appendChild(placeholder);
-    // Build index when PNJ data is available
-    const buildPnjDropOnce = () => {
-      if (_pnjDrop) return;
-      const pnjList = typeof PERSONNAGES !== 'undefined' ? PERSONNAGES : [];
-      const idx = pnjList.map(p => ({
-        id: p.id, name: p.name || p.id,
-        subtitle: [p.region || '', p.palier ? 'P'+p.palier : ''].filter(Boolean).join(' · '),
-        search: ((p.name||'') + ' ' + p.id + ' ' + (p.region||'')).toLowerCase(),
-        _raw: p
-      }));
-      _pnjDrop = makeSearchDrop(idx, 'Rechercher un PNJ à éditer…', id => {
-        if (!id) return;
-        const entry = idx.find(p => p.id === id);
-        if (entry) loadPnj(entry._raw);
-      });
-      placeholder.replaceWith(_pnjDrop.element);
-    };
-    // Try immediately, then on mode switch
-    setTimeout(buildPnjDropOnce, 500);
-    const origSwitchMode = window._switchModePnj;
-    pnjWrap.addEventListener('mouseenter', buildPnjDropOnce, { once: true });
+  if (pnjWrap && !_pnjDropBuilt) {
+    try {
+      const snap = await getDocs(col(db, 'personnages'));
+      const pnjs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      if (pnjs.length) {
+        const idx = pnjs.map(p => {
+          const parts = [];
+          if (p.palier) parts.push('P' + p.palier);
+          if (p.region) parts.push(p.region);
+          return {
+            id:       p.id || p._id,
+            name:     p.name || p.nom || p.id || p._id,
+            subtitle: parts.join(' · '),
+            search:   ((p.name || p.nom || '') + ' ' + (p.region || '') + ' ' + (p.id || p._id || '')).toLowerCase(),
+            _raw: p
+          };
+        });
+        pnjWrap.innerHTML = '';
+        const drop = makeSearchDrop(idx, 'Rechercher un PNJ à éditer…', id => {
+          if (!id) return;
+          const entry = idx.find(p => p.id === id);
+          if (entry) loadPnj(entry._raw);
+        });
+        pnjWrap.appendChild(drop.element);
+        _pnjDropBuilt = true;
+      }
+    } catch(e) { console.warn('[Creator] PNJ dropdown:', e); }
   }
-  // Région
+
+  // ── Région ──
   const regWrap = document.getElementById('load-region-search-wrap');
-  if (regWrap) {
-    const buildRegDrop = () => {
-      const cache = typeof _regionsCache !== 'undefined' ? _regionsCache : [];
-      if (!cache.length) return;
-      regWrap.innerHTML = '';
-      const idx = cache.map(r => ({
-        id: r.id, name: r.name || r.id,
-        subtitle: r.palier ? 'Palier '+r.palier : '',
-        search: ((r.name||'') + ' ' + r.id).toLowerCase(),
+  if (regWrap && !_regDropBuilt) {
+    await loadRegionsCache();
+    if (_regionsCache?.length) {
+      const idx = _regionsCache.map(r => ({
+        id: r.id || r._id,
+        name: r.name || r.id || r._id,
+        subtitle: r.palier ? 'P' + r.palier : '',
+        search: ((r.name || '') + ' ' + (r.id || r._id || '')).toLowerCase(),
         _raw: r
       }));
+      regWrap.innerHTML = '';
       const drop = makeSearchDrop(idx, 'Rechercher une région à éditer…', id => {
         if (!id) return;
         const entry = idx.find(r => r.id === id);
         if (entry) loadRegion(entry._raw);
       });
       regWrap.appendChild(drop.element);
-    };
-    regWrap.addEventListener('click', buildRegDrop, { once: true });
-    // Also try after cache is likely loaded
-    setTimeout(buildRegDrop, 1000);
+      _regDropBuilt = true;
+    }
   }
-  // Panoplie
+
+  // ── Panoplie ──
   const panopWrap = document.getElementById('load-panoplie-search-wrap');
-  if (panopWrap) {
-    const buildPanopDrop = () => {
-      const cache = typeof _panopliesCache !== 'undefined' ? _panopliesCache : [];
-      if (!cache.length) return;
-      panopWrap.innerHTML = '';
-      const idx = cache.map(p => ({
-        id: p.id || p._id, name: p.label || p.id,
+  if (panopWrap && !_panopDropBuilt) {
+    await loadPanopliesCache();
+    if (_panopliesCache?.length) {
+      const idx = _panopliesCache.map(p => ({
+        id: p.id || p._id,
+        name: p.label || p.id || p._id,
         subtitle: '',
-        search: ((p.label||'') + ' ' + (p.id||p._id||'')).toLowerCase(),
+        search: ((p.label || '') + ' ' + (p.id || p._id || '')).toLowerCase(),
         _raw: p
       }));
+      panopWrap.innerHTML = '';
       const drop = makeSearchDrop(idx, 'Rechercher une panoplie à éditer…', id => {
         if (!id) return;
-        const entry = idx.find(p => (p.id||p._id) === id);
+        const entry = idx.find(p => p.id === id);
         if (entry) loadPanoplie(entry._raw);
       });
       panopWrap.appendChild(drop.element);
-    };
-    panopWrap.addEventListener('click', buildPanopDrop, { once: true });
-    setTimeout(buildPanopDrop, 1000);
+      _panopDropBuilt = true;
+    }
   }
+}
+
+function _buildMobLoadDrop() {
+  const mobWrap = document.getElementById('load-mob-search-wrap');
+  if (!mobWrap) return;
+  ensureAllMobsIndex();
+  if (!allMobsIndex.length) return;
+  mobWrap.innerHTML = '';
+  const drop = makeSearchDrop(allMobsIndex, 'Rechercher un mob à éditer…', id => {
+    if (!id) return;
+    const entry = allMobsIndex.find(m => m.id === id);
+    if (entry) loadMob(entry._raw);
+  });
+  mobWrap.appendChild(drop.element);
+}
+
+function initLoadSearchForAllModes() {
+  // Mob — rebuilt in _pageInit once Firestore data is loaded
+  const mobWrap = document.getElementById('load-mob-search-wrap');
+  if (mobWrap) {
+    _buildMobLoadDrop(); // works immediately if MOBS already populated (e.g. hot reload)
+  }
+  // PNJ / Région / Panoplie — built from _buildLoadDrops() after _pageInit
+  _buildLoadDrops();
 
   // Quête (chargement Firestore à la demande)
   const questWrap = document.getElementById('load-quest-search-wrap');
@@ -1618,8 +1642,19 @@ function loadMob(mob) {
 function loadPnj(pnj) {
   switchMode('pnj');
   resetPnjForm();
-  if (pnj.id)     document.getElementById('pnj-id').value     = pnj.id;
-  if (pnj.name)   document.getElementById('pnj-type').value   = pnj.name;
+  if (pnj.id) {
+    document.getElementById('pnj-id').value = pnj.id;
+    pnjIdLocked = true;
+  }
+  if (pnj.name) {
+    const sel = document.getElementById('pnj-type');
+    // Exact match first, then case-insensitive fallback
+    const normName = pnj.name.toLowerCase().replace(/\u2019/g, "'");
+    const matchOpt = Array.from(sel.options).find(o =>
+      o.value === pnj.name || o.value.toLowerCase().replace(/\u2019/g, "'") === normName
+    );
+    if (matchOpt) sel.value = matchOpt.value;
+  }
   if (pnj.region) {
     document.getElementById('pnj-region').value        = pnj.region;
     const regionName = _allMobRegions.find(r => r.id === pnj.region)?.name || pnj.region;
@@ -1631,6 +1666,34 @@ function loadPnj(pnj) {
     document.getElementById('pnj-y').value = pnj.coords.y ?? '';
     document.getElementById('pnj-z').value = pnj.coords.z ?? '';
   }
+  // Restore sells — push entries with data, then render once
+  ensureAllItemsIndex();
+  const sells = Array.isArray(pnj.sells) ? pnj.sells
+    : pnj.sells && typeof pnj.sells === 'object' ? Object.values(pnj.sells) : [];
+  for (const s of sells) {
+    pnjSells.push({
+      uid:    pnjSellUid++,
+      itemId: s.id    || '',
+      buy:    s.buy   != null ? s.buy   : '',
+      price:  s.price != null ? s.price : '',
+    });
+  }
+  if (sells.length) renderPnjSells();
+  // Restore crafts — push entries with data, then render once
+  const crafts = Array.isArray(pnj.craft) ? pnj.craft
+    : pnj.craft && typeof pnj.craft === 'object' ? Object.values(pnj.craft) : [];
+  for (const c of crafts) {
+    const ings = Array.isArray(c.ingredients) ? c.ingredients
+      : c.ingredients && typeof c.ingredients === 'object' ? Object.values(c.ingredients) : [];
+    pnjCrafts.push({
+      uid:         pnjCraftUid++,
+      resultId:    c.id      || '',
+      time:        c.time    || '',
+      quality:     !!c.quality,
+      ingredients: ings.map(i => ({ uid: pnjIngUid++, itemId: i.id || '', qty: i.qty || 1 })),
+    });
+  }
+  if (crafts.length) renderPnjCrafts();
   // Bannière édition
   const banner = document.getElementById('pnj-editing-banner');
   const nameEl = document.getElementById('pnj-editing-name');
@@ -4952,6 +5015,16 @@ function _setCreatorDisabled(disabled) {
   }
 }
 
+
+// ── Appelé par db-loader.js après chargement Firestore ─
+window._pageInit = function() {
+  allMobsIndex = []; // force rebuild avec les données fraîches
+  _buildMobLoadDrop();
+  _pnjDropBuilt = false; _regDropBuilt = false; _panopDropBuilt = false;
+  _buildLoadDrops();
+  initObtainData();  // recharge la liste de mobs pour le loot picker
+  buildOrphanSection();
+};
 
 // ── Autocomplete off (sauf champs auth) ────────────────
   document.addEventListener('DOMContentLoaded', function() {
