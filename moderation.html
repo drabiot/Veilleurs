@@ -93,7 +93,6 @@
     <button class="filter-btn" id="btn-permissions"        onclick="showPermissions()">🔑 Permissions</button>
     <button class="filter-btn" id="btn-migration"          onclick="showMigration()">🔒 Sensible</button>
     <button class="filter-btn" id="btn-creator-validation" onclick="showCreatorValidation()">⚙️ Champs requis</button>
-    <button class="filter-btn" id="btn-pnj-coords"         onclick="showPnjCoords()">🧭 Coords PNJ</button>
 
     <!-- ── OUTILS ───────────────────────────────────────── -->
     <div class="sb-label">OUTILS</div>
@@ -500,41 +499,6 @@
     <div id="cv-grid"></div>
   </main>
 
-  <!-- Panneau Coords PNJ -->
-  <main class="main" id="pnj-coords-panel" style="display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:15px;font-weight:700;">🧭 Coords PNJ</span>
-    </div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
-      Migration en deux étapes : d'abord ajouter le champ <code>coords</code> vide à tous les PNJ, puis (après les avoir remplis) injecter les coordonnées dans les champs <code>obtain</code> des items.
-    </p>
-
-    <!-- Étape 1 -->
-    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px;">
-      <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
-        <span style="font-size:13px;font-weight:700;">Étape 1 — Ajouter le champ coords aux PNJ</span>
-      </div>
-      <div style="padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <p style="font-size:12px;color:var(--muted);margin:0;flex:1;">Ajoute <code>coords: ""</code> à tout PNJ qui n'a pas encore ce champ. Les PNJ qui l'ont déjà sont ignorés.</p>
-        <button class="btn" onclick="addCoordsToAllPnj()" style="background:var(--accent);color:#fff;font-size:12px;white-space:nowrap;">▶ Lancer l'étape 1</button>
-      </div>
-      <div id="pnj-coords-step1-status" style="display:none;font-size:12px;padding:6px 14px 10px;color:var(--muted);"></div>
-    </div>
-
-    <!-- Étape 2 -->
-    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-      <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
-        <span style="font-size:13px;font-weight:700;">Étape 2 — Injecter les coords dans les obtain</span>
-      </div>
-      <div style="padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <p style="font-size:12px;color:var(--muted);margin:0;flex:1;">
-          Pour chaque item dont le champ <code>obtain</code> cite le nom d'un PNJ qui a des coords, remplace <em>Nom PNJ</em> par <em>Nom PNJ (coords)</em>. Les PNJ sans coords sont ignorés. Idempotent : relancer met à jour les anciens coords.
-        </p>
-        <button class="btn" onclick="updateObtainWithCoords()" style="background:var(--accent);color:#fff;font-size:12px;white-space:nowrap;">▶ Lancer l'étape 2</button>
-      </div>
-      <div id="pnj-coords-step2-status" style="display:none;font-size:12px;padding:6px 14px 10px;color:var(--muted);"></div>
-    </div>
-  </main>
 
   <!-- Panneau Éditeur -->
   <main class="main" id="editor-panel" style="display:none;">

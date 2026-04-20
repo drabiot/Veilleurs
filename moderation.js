@@ -2804,6 +2804,25 @@ function _genValueHtml(key, val, col) {
     return `<input class="ed-input" data-gf-type="string" value="" placeholder="(null)">`;
   }
 
+  // Champ coords sur les PNJ → 3 inputs X/Y/Z
+  if (key === 'coords' && col === 'personnages') {
+    const c = (val && typeof val === 'object') ? val : { x: null, y: null, z: null };
+    const xv = c.x ?? '';
+    const yv = c.y ?? '';
+    const zv = c.z ?? '';
+    return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;">
+        X <input class="ed-input" type="number" step="any" data-gf-type="coords-x" value="${_ee(String(xv))}" style="width:76px;" placeholder="—">
+      </label>
+      <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;">
+        Z <input class="ed-input" type="number" step="any" data-gf-type="coords-z" value="${_ee(String(zv))}" style="width:76px;" placeholder="—">
+      </label>
+      <label style="font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;">
+        Y <input class="ed-input" type="number" step="any" data-gf-type="coords-y" value="${_ee(String(yv))}" style="width:76px;" placeholder="—">
+      </label>
+    </div>`;
+  }
+
   // Champ region sur les mobs et PNJ → dropdown searchable groupé par palier/codex
   if (key === 'region' && (col === 'mobs' || col === 'personnages')) {
     const regions = _cachedRegions || [];
@@ -2887,6 +2906,13 @@ function _buildGenericForm(data, col) {
   if (col === 'items' && !('obtain' in data)) {
     data = { ...data, obtain: '' };
   }
+  // Normaliser coords pour les PNJ → toujours un objet {x,y,z} avec null si absent
+  if (col === 'personnages') {
+    const c = data.coords;
+    if (c == null || typeof c === 'string') {
+      data = { ...data, coords: { x: null, y: null, z: null } };
+    }
+  }
   // Auto-injecter stats pour les catégories qui en ont (arme, armure, accessoire, rune)
   if (col === 'items' && !('stats' in data) && ['arme','armure','accessoire','rune'].includes(data.category)) {
     data = { ...data, stats: {} };
@@ -2944,6 +2970,14 @@ function _collectGenericForm() {
     const t = el.dataset.gfType;
     if (t === 'bool')   { result[effectiveKey] = el.checked; return; }
     if (t === 'number') { const v = el.value.trim(); if (v !== '') result[effectiveKey] = +v; return; }
+    if (t === 'coords-x') {
+      const xEl = row.querySelector('[data-gf-type="coords-x"]');
+      const yEl = row.querySelector('[data-gf-type="coords-y"]');
+      const zEl = row.querySelector('[data-gf-type="coords-z"]');
+      const x = xEl?.value.trim(), y = yEl?.value.trim(), z = zEl?.value.trim();
+      result[effectiveKey] = { x: x !== '' ? +x : null, y: y !== '' ? +y : null, z: z !== '' ? +z : null };
+      return;
+    }
     if (t === 'json')   {
       const v = el.value.trim();
       if (!v) { result[effectiveKey] = null; return; }
@@ -6131,17 +6165,17 @@ window.addCoordsToAllPnj = async function() {
   statusEl.textContent = '⏳ Chargement des PNJ…';
   try {
     const pnjs = await cachedDocs('personnages');
-    const toUpdate = pnjs.filter(p => !('coords' in p));
+    const toUpdate = pnjs.filter(p => !('coords' in p) || typeof p.coords === 'string');
     if (!toUpdate.length) {
-      statusEl.textContent = '✓ Tous les PNJ ont déjà le champ coords.';
+      statusEl.textContent = '✓ Tous les PNJ ont déjà le champ coords (map).';
       statusEl.style.color = 'var(--success)';
       return;
     }
     statusEl.textContent = `⏳ Mise à jour de ${toUpdate.length} PNJ…`;
     let done = 0;
     for (const p of toUpdate) {
-      await updateDoc(doc(db, 'personnages', p.id), { coords: '' });
-      p.coords = '';
+      await updateDoc(doc(db, 'personnages', p.id), { coords: { x: null, y: null, z: null } });
+      p.coords = { x: null, y: null, z: null };
       done++;
       if (done % 10 === 0) statusEl.textContent = `⏳ ${done} / ${toUpdate.length}…`;
     }
@@ -6158,7 +6192,7 @@ window.addCoordsToAllPnj = async function() {
   }
 };
 
-window.updateObtainWithCoords = async function() {
+window.revertObtainCoords = async function() {
   const statusEl = document.getElementById('pnj-coords-step2-status');
   statusEl.style.display = '';
   statusEl.style.color = 'var(--muted)';
@@ -6168,30 +6202,27 @@ window.updateObtainWithCoords = async function() {
       cachedDocs('personnages'),
       cachedDocs('items'),
     ]);
-    const pnjWithCoords = pnjs.filter(p => p.name && p.coords && p.coords.trim());
-    if (!pnjWithCoords.length) {
-      statusEl.textContent = '⚠️ Aucun PNJ n\'a de coords. Complète l\'étape 1 puis renseigne les coords via l\'éditeur.';
+    const pnjsWithName = pnjs.filter(p => p.name).sort((a, b) => b.name.length - a.name.length);
+    if (!pnjsWithName.length) {
+      statusEl.textContent = '⚠️ Aucun PNJ trouvé.';
       statusEl.style.color = 'var(--warn)';
       return;
     }
-    // Trier par longueur de nom décroissante pour éviter les correspondances partielles
-    pnjWithCoords.sort((a, b) => b.name.length - a.name.length);
     statusEl.textContent = `⏳ Analyse de ${items.length} items…`;
     let count = 0;
     for (const item of items) {
       if (!item.obtain) continue;
       let obtain = item.obtain;
-      for (const pnj of pnjWithCoords) {
-        const coords = pnj.coords.trim();
-        // Remplace "Nom PNJ" ou "Nom PNJ (anciens coords)" par "Nom PNJ (coords)"
-        const pattern = new RegExp(_escapeRegex(pnj.name) + '(?:\\s*\\([^)]*\\))?', 'g');
-        obtain = obtain.replace(pattern, `${pnj.name} (${coords})`);
+      for (const pnj of pnjsWithName) {
+        // Retire "Nom PNJ (quoi que ce soit)" → "Nom PNJ"
+        const pattern = new RegExp(_escapeRegex(pnj.name) + '\\s*\\([^)]*\\)', 'g');
+        obtain = obtain.replace(pattern, pnj.name);
       }
       if (obtain !== item.obtain) {
         await updateDoc(doc(db, 'items', item.id), { obtain });
         item.obtain = obtain;
         count++;
-        statusEl.textContent = `⏳ ${count} item${count>1?'s':''} mis à jour…`;
+        statusEl.textContent = `⏳ ${count} item${count>1?'s':''} nettoyé${count>1?'s':''}…`;
       }
     }
     if (count > 0) {
@@ -6199,9 +6230,9 @@ window.updateObtainWithCoords = async function() {
       localStorage.removeItem('vcl_cache_meta_v2_items');
       invalidateModCache('items');
     }
-    statusEl.textContent = `✓ ${count} item${count>1?'s':''} mis à jour !`;
+    statusEl.textContent = `✓ ${count} item${count>1?'s':''} nettoyé${count>1?'s':''} !`;
     statusEl.style.color = 'var(--success)';
-    toast(`✓ ${count} items mis à jour`, count > 0 ? 'success' : 'info');
+    toast(`✓ ${count} items nettoyés`, count > 0 ? 'success' : 'info');
   } catch(e) {
     statusEl.textContent = '⛔ ' + e.message;
     statusEl.style.color = 'var(--danger)';

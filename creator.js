@@ -2372,7 +2372,33 @@ const CAT_ICONS = {
 // Transforme le format obtain [npc:id|Name] / [mob_id|Name][chance] en HTML lisible
 function renderObtainHtml(text) {
   if (!text) return '';
+  const lines = text.split('\n');
+  let html = '';
+  let inList = false;
+
+  lines.forEach(raw => {
+    const line = raw.trim();
+    if (line.match(/^[-*]\s+/)) {
+      if (!inList) { html += '<ul style="margin:4px 0 4px 0;padding:0;list-style:none;">'; inList = true; }
+      const content = line.replace(/^[-*]\s+/, '');
+      html += `<li style="display:flex;align-items:baseline;gap:5px;padding:1px 0;">`
+            + `<span style="color:var(--accent);font-size:9px;flex-shrink:0;">◆</span>`
+            + `<span>${_renderObtainInline(content)}</span></li>`;
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      if (line === '') { html += '<br>'; }
+      else { html += `<span style="display:block;">${_renderObtainInline(line)}</span>`; }
+    }
+  });
+
+  if (inList) html += '</ul>';
+  return html;
+}
+
+function _renderObtainInline(text) {
   return escHtml(text)
+    // **gras**
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     // [npc:id|Nom] → badge violet
     .replace(/\[npc:([^\]|]+)\|([^\]]+)\]/g,
       (_, id, name) => `<span style="color:var(--accent);background:rgba(122,90,248,.12);border:1px solid rgba(122,90,248,.3);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name}</span>`)
@@ -2381,8 +2407,7 @@ function renderObtainHtml(text) {
       (_, id, name, chance) => `<span style="color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name} <b>${chance}%</b></span>`)
     // [mob_id|Nom] sans chance
     .replace(/\[([^\]:]+)\|([^\]]+)\]/g,
-      (_, id, name) => `<span style="color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name}</span>`)
-    .replace(/\n/g, '<br>');
+      (_, id, name) => `<span style="color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name}</span>`);
 }
 
 // escHtml → défini dans /utils.js
