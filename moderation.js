@@ -3905,8 +3905,24 @@ window.dwPublishUnsentSend = async function() {
   if (btn) btn.disabled = true;
   const ids  = checks.map(c => c.dataset.subid);
   const subs = allSubs.filter(s => ids.includes(s._id));
-  let done = 0, failed = 0;
+
+  // Grouper par set — les items sans set partent individuellement
+  const setGroups = new Map(); // setId → [sub]
+  const soloSubs  = [];
   for (const sub of subs) {
+    const setId = sub.data?.set || null;
+    if (setId) {
+      if (!setGroups.has(setId)) setGroups.set(setId, []);
+      setGroups.get(setId).push(sub);
+    } else {
+      soloSubs.push(sub);
+    }
+  }
+
+  let done = 0, failed = 0;
+  const total = soloSubs.length + setGroups.size;
+
+  for (const sub of soloSubs) {
     try {
       await sendApprovalWebhook(sub);
       await updateDoc(doc(db, 'submissions', sub._id), { discord_sent: true });
@@ -3916,9 +3932,24 @@ window.dwPublishUnsentSend = async function() {
       toast(`⛔ Erreur « ${sub.data?.name || sub._id} » : ${e.message}`, 'error');
       failed++;
     }
-    if (done + failed < subs.length) await new Promise(r => setTimeout(r, 1100));
+    if (done + failed < total) await new Promise(r => setTimeout(r, 1100));
   }
-  if (done) toast(`✓ ${done} item${done>1?'s':''} envoyé${done>1?'s':''}`, 'success');
+
+  for (const setSubs of setGroups.values()) {
+    try {
+      await _sendSetGroupDiscord(setSubs);
+      await Promise.all(setSubs.map(s => updateDoc(doc(db, 'submissions', s._id), { discord_sent: true })));
+      for (const s of setSubs) s.discord_sent = true;
+      done++;
+    } catch(e) {
+      const names = setSubs.map(s => s.data?.name || s._id).join(', ');
+      toast(`⛔ Erreur set « ${names} » : ${e.message}`, 'error');
+      failed++;
+    }
+    if (done + failed < total) await new Promise(r => setTimeout(r, 1100));
+  }
+
+  if (done) toast(`✓ ${done} envoi${done>1?'s':''} réussi${done>1?'s':''}`, 'success');
   if (btn) btn.disabled = false;
   _renderUnsentSection();
 };
@@ -4039,7 +4070,16 @@ async function _sendSingleItemDiscord(item) {
       _enrichObtainWithMobChances(item.obtain, item.id, allMobs),
       pnjs)
   } : item;
-  const embed = _buildApprovalEmbed(itemForEmbed, imgFname, _dwConfig?.embedFields || null, itemNames);
+  // Cherche le nom du soumetteur dans les submissions en mémoire
+  const itemId = item._id || item.id;
+  const matchSub = itemId
+    ? [...allSubs].reverse().find(s => s.type === 'item' && (String(s.data?.id) === String(itemId) || String(s.data?._id) === String(itemId)))
+    : null;
+  const _contributor = matchSub
+    ? (matchSub.submitterName || _userNames.get(matchSub.submittedBy) || null)
+    : null;
+
+  const embed = _buildApprovalEmbed(itemForEmbed, imgFname, _dwConfig?.embedFields || null, itemNames, _contributor);
   const tags  = _resolveTagRules(item, (_dwConfig?.tagRules || {})[key] || []);
 
   const payload = { thread_name: item.name || 'Item', embeds: [embed] };
@@ -4164,11 +4204,12 @@ function _renderPermissions() {
   // Section Creator — Outils actifs
   const ccTools = (_ccConfig || {}).tools || {};
   const CC_TOOLS = [
-    { id: 'item',   label: '⚔️ Items',    desc: 'Soumission d\'items dans le Creator' },
-    { id: 'mob',    label: '👾 Mobs',     desc: 'Soumission de mobs dans le Creator' },
-    { id: 'pnj',    label: '🧑 PNJ',      desc: 'Soumission de PNJ dans le Creator' },
-    { id: 'region', label: '📍 Régions',  desc: 'Soumission de régions dans le Creator' },
-    { id: 'quest',  label: '📜 Quêtes',   desc: 'Soumission de quêtes dans le Creator' },
+    { id: 'item',     label: '⚔️ Items',     desc: 'Soumission d\'items dans le Creator' },
+    { id: 'mob',      label: '👾 Mobs',      desc: 'Soumission de mobs dans le Creator' },
+    { id: 'pnj',      label: '🧑 PNJ',       desc: 'Soumission de PNJ dans le Creator' },
+    { id: 'region',   label: '📍 Régions',   desc: 'Soumission de régions dans le Creator' },
+    { id: 'quest',    label: '📜 Quêtes',    desc: 'Soumission de quêtes dans le Creator' },
+    { id: 'panoplie', label: '🔗 Panoplies', desc: 'Soumission de panoplies dans le Creator' },
   ];
   const toolsWrap = document.createElement('div');
   toolsWrap.style.cssText = 'margin-bottom:24px;';
@@ -4287,13 +4328,30 @@ window._setPermission = async function(permId, role) {
   }
 };
 
+async function _extractSubBlob(sub) {
+  if (sub.forum_image) {
+    try {
+      const dataUrl = sub.forum_image;
+      const mime    = dataUrl.match(/^data:([^;]+);/)?.[1] || 'image/png';
+      const extMap  = { 'image/png':'png','image/jpeg':'jpg','image/gif':'gif','image/webp':'webp' };
+      const fname   = `image.${extMap[mime] || 'png'}`;
+      const b64  = dataUrl.split(',')[1];
+      const bin  = atob(b64);
+      const arr  = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return { blob: new Blob([arr], { type: mime }), fname };
+    } catch {}
+  }
+  return _fetchItemImgBlob(sub.data);
+}
+
 async function sendApprovalWebhook(sub) {
   if (sub.type !== 'item') return;
   const cat = sub.data?.category;
   if (!['arme', 'armure', 'accessoire'].includes(cat)) return;
   const palier = sub.data?.palier;
   if (!palier) return;
-  const key = `${cat}_${palier}`;
+  const key = sub.data.rarity === 'event' ? `${cat}_event` : `${cat}_${palier}`;
 
   if (!_dwConfig) {
     try {
@@ -4305,26 +4363,7 @@ async function sendApprovalWebhook(sub) {
   const url = _dwConfig[key];
   if (!url) return;
 
-  // Image : legacy base64 forum_image → fallback sur fetch de l'img de l'item
-  let imgBlob = null, imgFname = null;
-  if (sub.forum_image) {
-    try {
-      const dataUrl = sub.forum_image;
-      const mime    = dataUrl.match(/^data:([^;]+);/)?.[1] || 'image/png';
-      const extMap  = { 'image/png':'png','image/jpeg':'jpg','image/gif':'gif','image/webp':'webp' };
-      imgFname = `image.${extMap[mime] || 'png'}`;
-      const b64  = dataUrl.split(',')[1];
-      const bin  = atob(b64);
-      const arr  = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-      imgBlob = new Blob([arr], { type: mime });
-    } catch { imgBlob = null; imgFname = null; }
-  }
-  if (!imgBlob) {
-    const fetched = await _fetchItemImgBlob(sub.data);
-    imgBlob  = fetched.blob;
-    imgFname = fetched.fname;
-  }
+  const { blob: imgBlob, fname: imgFname } = await _extractSubBlob(sub);
 
   const [itemNames, mobsPublic, mobsSecret, pnjs] = await Promise.all([
     _getItemNamesCache(),
@@ -4338,7 +4377,8 @@ async function sendApprovalWebhook(sub) {
       _enrichObtainWithMobChances(sub.data.obtain, sub.data.id, allMobs),
       pnjs)
   } : sub.data;
-  const embed   = _buildApprovalEmbed(subDataForEmbed, imgFname, _dwConfig.embedFields || null, itemNames);
+  const contributorName = sub.submitterName || (_userNames.get(sub.submittedBy) || null);
+  const embed   = _buildApprovalEmbed(subDataForEmbed, imgFname, _dwConfig.embedFields || null, itemNames, contributorName);
 
   // Thread name: use set label if item belongs to a set, else item name
   let threadName = sub.data.name;
@@ -4378,6 +4418,88 @@ async function sendApprovalWebhook(sub) {
   await window.VCL.postDiscord(`${url}?wait=false`, payload, imgBlob, imgFname);
 }
 
+// ── Envoi groupé d'un set (plusieurs embeds dans un seul post) ──
+async function _sendSetGroupDiscord(subs) {
+  if (!subs.length) return;
+  if (!_dwConfig) {
+    const snap = await getDoc(doc(db, 'config', 'discord_webhooks'));
+    _dwConfig = snap.exists() ? snap.data() : {};
+  }
+
+  // Webhook du premier item du set
+  const first  = subs[0];
+  const cat    = first.data?.category;
+  const palier = first.data?.palier;
+  if (!cat || !palier) throw new Error('Catégorie ou palier manquant');
+  const key = first.data.rarity === 'event' ? `${cat}_event` : `${cat}_${palier}`;
+  const url = _dwConfig[key];
+  if (!url) throw new Error(`Aucun webhook configuré pour ${key}`);
+
+  // Nom du thread = label du set
+  const setId = first.data.set;
+  let threadName = setId;
+  if (_dwConfig._setCache?.[setId]) {
+    threadName = _dwConfig._setCache[setId];
+  } else {
+    try {
+      const snap = await getDoc(doc(db, 'panoplies', setId));
+      if (snap.exists()) {
+        threadName = snap.data().label || setId;
+        if (!_dwConfig._setCache) _dwConfig._setCache = {};
+        _dwConfig._setCache[setId] = threadName;
+      }
+    } catch {}
+  }
+
+  const [itemNames, mobsPublic, mobsSecret, pnjs] = await Promise.all([
+    _getItemNamesCache(),
+    cachedDocs(COL.mobs),
+    cachedDocs(COL.mobsSecret).catch(() => []),
+    cachedDocs(COL.pnj).catch(() => []),
+  ]);
+  const allMobs = [...mobsPublic, ...mobsSecret];
+
+  const embeds = [];
+  const files  = []; // { blob, fname }
+
+  for (let i = 0; i < subs.length; i++) {
+    const sub = subs[i];
+    const { blob, fname } = await _extractSubBlob(sub);
+    const indexedFname = (blob && fname)
+      ? `image_${i}.${fname.split('.').pop() || 'png'}`
+      : null;
+    if (blob && indexedFname) files.push({ blob, fname: indexedFname });
+
+    const subDataForEmbed = sub.data.obtain ? { ...sub.data, obtain:
+      _enrichObtainWithPnjCoords(
+        _enrichObtainWithMobChances(sub.data.obtain, sub.data.id, allMobs),
+        pnjs)
+    } : sub.data;
+
+    const contributorName = sub.submitterName || (_userNames.get(sub.submittedBy) || null);
+    embeds.push(_buildApprovalEmbed(subDataForEmbed, indexedFname, _dwConfig.embedFields || null, itemNames, contributorName));
+  }
+
+  // Discord : max 10 embeds par message
+  const payload = { thread_name: threadName, embeds: embeds.slice(0, 10) };
+  const appliedTags = _resolveTagRules(first.data, (_dwConfig.tagRules || {})[key] || []);
+  if (appliedTags.length) payload.applied_tags = appliedTags;
+
+  if (files.length) {
+    const p  = { ...payload, attachments: files.map((f, i) => ({ id: i, filename: f.fname })) };
+    const fd = new FormData();
+    fd.append('payload_json', JSON.stringify(p));
+    files.forEach((f, i) => fd.append(`files[${i}]`, f.blob, f.fname));
+    await fetch(`${url}?wait=false`, { method: 'POST', body: fd });
+  } else {
+    await fetch(`${url}?wait=false`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  }
+}
+
 // ── Item names cache (for craft display) ──────────────
 let _itemNamesCache = null;
 async function _getItemNamesCache() {
@@ -4415,8 +4537,9 @@ function _resolveTagRules(item, rules = []) {
 // ── Item image fetch (attach as file, not URL reference) ─
 function _itemImgSrc(obj) {
   const base = new URL('.', window.location.href).href;
-  if (obj.img) {
-    const rel = obj.img.replace(/^(\.\.\/)+/, '');
+  const imgVal = (Array.isArray(obj.images) && obj.images[0]) || obj.img;
+  if (imgVal) {
+    const rel = imgVal.replace(/^(\.\.\/)+/, '');
     return base + rel;
   }
   if (!obj.id) return null;
@@ -4538,7 +4661,7 @@ function _enrichObtainWithMobChances(obtain, itemId, mobs) {
   });
 }
 
-function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames = null) {
+function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames = null, contributorName = null) {
   const RARITY_LABEL  = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Évènement' };
   const RARITY_ICON   = { commun:'🟢', rare:'🔵', epique:'🟣', legendaire:'🟡', mythique:'🌸', godlike:'🔴', event:'⚪' };
   const RARITY_COLORS = { commun:0x59d059, rare:0x2a5fa8, epique:0x6a3daa, legendaire:0xd7af5f, mythique:0xf5b5e4, godlike:0xa83020, event:0xdedede };
@@ -4563,7 +4686,7 @@ function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames 
       obj.palier    ? `Palier ${obj.palier}` : null,
       obj.lvl       ? `Niveau : ${obj.lvl}`  : null,
       obj.twoHanded ? '🤲 Deux mains'         : null,
-      obj.sensible  ? '🔞 Sensible'           : null,
+      obj.sensible  ? '🤫 Sensible'           : null,
     ].filter(Boolean).join('\n'));
   }
 
@@ -4591,8 +4714,13 @@ function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames 
   if (has('obtain')) {
     const raw   = obj.obtain || '';
     const clean = raw
-      .replace(/\[npc:[^\]|]+\|([^\]]+)\]/g, '**$1**')
-      .replace(/\[[^\]|:]+\|([^\]]+)\]/g, '**$1**')
+      .replace(/\[npc:[^\]|]+\|([^\]]+)\]/g, (_, content) => {
+        const [namePart, coordsPart] = content.split('\n');
+        const name   = namePart.trim();
+        const coords = coordsPart?.trim() || '';
+        return coords ? `**${name}**\n${coords}` : `**${name}**`;
+      })
+      .replace(/\[[^\]|:]+\|([^\]]+)\]/g, (_, name) => `**${name.split('\n')[0].trim()}**`)
       .replace(/\[(\d+(?:[.,]\d+)?)\]/g, ' [$1%]')
       .replace(/\[\?\]/g, ' [?%]')
       .replace(/\bnpc:/g, '')
@@ -4626,13 +4754,15 @@ function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames 
   }
 
   // ── Embed object ─────────────────────────────────────
+  const footerText = contributorName
+    ? `🌙 Veilleurs au Clair de Lune — ${contributorName}`
+    : '🌙 Veilleurs au Clair de Lune';
   const embed = {
     title:       obj.name,
     description: descParts.join('\n').slice(0, 4096) || undefined,
     color,
     fields:      embedFields,
-    footer:      { text: 'VCL Wiki' },
-    timestamp:   new Date().toISOString(),
+    footer:      { text: footerText },
   };
 
   if (imageFilename) embed.thumbnail = { url: `attachment://${imageFilename}` };
@@ -5367,10 +5497,11 @@ const QUALITY_FIELD_SCHEMA = {
     { id: 'category', label: 'Catégorie' },
     { id: 'palier',   label: 'Palier' },
     { id: 'lvl',      label: 'Niveau requis' },
-    { id: 'img',      label: 'Image' },
+    { id: 'images',   label: 'Image' },
     { id: 'lore',     label: 'Lore' },
     { id: 'obtain',   label: 'Obtention' },
     { id: 'stats',    label: 'Stats' },
+    { id: 'effects',  label: 'Effets' },
     { id: 'cat',      label: 'Slot interne' },
   ],
   mobs: [
@@ -5392,7 +5523,7 @@ const QUALITY_FIELD_SCHEMA = {
     { id: 'name',   label: 'Nom' },
     { id: 'palier', label: 'Palier' },
     { id: 'lore',   label: 'Lore (Codex)' },
-    { id: 'img',    label: 'Image' },
+    { id: 'images', label: 'Image' },
   ],
   quetes: [
     { id: 'titre',      label: 'Titre' },
@@ -5407,7 +5538,7 @@ const QUALITY_FIELD_SCHEMA = {
   panoplies: [
     { id: 'label',   label: 'Nom' },
     { id: 'bonuses', label: 'Bonus' },
-    { id: 'img',     label: 'Image' },
+    { id: 'images',  label: 'Image' },
   ],
 };
 
@@ -5490,12 +5621,13 @@ window.loadCreatorValidation = async () => {
   const status = document.getElementById('cv-status');
   try {
     const snap = await getDoc(doc(db, 'config', 'data_quality_standards'));
+    const _normF = f => (f === 'img' || f === 'image') ? 'images' : f;
     _cvData = {};
     if (snap.exists()) {
       for (const [mode, cfg] of Object.entries(snap.data())) {
-        _cvData[mode] = { required: new Set(cfg.required || []), byCategory: {} };
+        _cvData[mode] = { required: new Set((cfg.required || []).map(_normF)), byCategory: {} };
         for (const [subcat, scfg] of Object.entries(cfg.byCategory || {})) {
-          _cvData[mode].byCategory[subcat] = new Set(scfg.required || []);
+          _cvData[mode].byCategory[subcat] = new Set((scfg.required || []).map(_normF));
         }
       }
     }
@@ -5678,10 +5810,16 @@ window.loadDataIncomplete = async () => {
   // Charger config depuis Firestore — structure { required, byCategory }
   let standards = {};
   try {
+    const _normF = f => (f === 'img' || f === 'image') ? 'images' : f;
     const snap = await getDoc(doc(db, 'config', 'data_quality_standards'));
     if (snap.exists()) {
       for (const [mode, cfg] of Object.entries(snap.data())) {
-        standards[mode] = { required: cfg.required || [], byCategory: cfg.byCategory || {} };
+        const normReq = [...new Set((cfg.required || []).map(_normF))];
+        const normByCat = {};
+        for (const [sc, scfg] of Object.entries(cfg.byCategory || {})) {
+          normByCat[sc] = { required: [...new Set((scfg.required || []).map(_normF))] };
+        }
+        standards[mode] = { required: normReq, byCategory: normByCat };
       }
     }
   } catch { /* silently ignore */ }
@@ -5701,7 +5839,11 @@ window.loadDataIncomplete = async () => {
       const hasByCat = disc && Object.keys(std.byCategory || {}).length > 0;
       let docs = [];
       try { docs = await cachedDocs(colName); } catch { continue; }
-      for (const d of docs) {
+      for (const _d of docs) {
+        // Normalise img/image → images pour que les anciens docs soient traités correctement
+        const d = (!_d.images?.length && (_d.img || _d.image))
+          ? { ..._d, images: [_d.img || _d.image].filter(Boolean) }
+          : _d;
         const missing = (std.required || []).filter(f => _fieldEmpty(d, f));
 
         const discVal = disc ? (d[disc] || null) : null;
@@ -6010,8 +6152,10 @@ window.sensItemToPublic = async (hashId) => {
     if (secret) {
       for (const [k, v] of Object.entries(secret)) if (k !== '_id') merged[k] = v;
     }
-    // Recalcul de l'img depuis la formule (on ne la stocke pas dans hidden)
-    merged.img = _sensComputeImg(merged.category, merged.id, merged.palier);
+    // Recalcul de l'image depuis la formule (on ne la stocke pas dans hidden)
+    const _sensImg = _sensComputeImg(merged.category, merged.id, merged.palier);
+    merged.images = _sensImg ? [_sensImg] : [];
+    delete merged.img;
     // Pas de flag sensible dans le doc public
     delete merged.sensible;
 

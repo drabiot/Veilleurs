@@ -313,10 +313,11 @@ function buildGrid() {
 
     const isMob = activeTab === 'monstres';
 
-    const imgHTML = e.img
-      ? `<img src="${e.img}" alt="${escHtml(e.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
+    const _eImg = e.images?.[0] || e.img;
+    const imgHTML = _eImg
+      ? `<img src="${_eImg}" alt="${escHtml(e.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
       : '';
-    const phStyle = e.img ? 'style="display:none"' : '';
+    const phStyle = _eImg ? 'style="display:none"' : '';
     const ph = `<span class="card-img-placeholder" ${phStyle}>${isMob ? '👾' : '🧑'}</span>`;
 
     const typeKey   = isMob ? e.type : (e.tag || 'pnj');
@@ -515,8 +516,8 @@ function renderMobSheet(mob) {
     ? `<div id="mob-3d-container" class="mob-3d-container" style="position:relative;">
         <button class="btn-expand-3d" id="btn-expand-3d" title="Agrandir le modèle 3D">⛶</button>
       </div>`
-    : mob.img
-      ? `<img src="${mob.img}" alt="${escHtml(mob.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mob-img-placeholder" style="display:none">👾</span>`
+    : (mob.images?.[0] || mob.img)
+      ? `<img src="${mob.images?.[0] || mob.img}" alt="${escHtml(mob.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mob-img-placeholder" style="display:none">👾</span>`
       : `<span class="mob-img-placeholder">👾</span>`;
 
   let attacksHTML = '';
@@ -779,7 +780,7 @@ function renderPNJSheet(pnj) {
           <div class="mob-image-bg" style="background:rgba(100,80,30,.85);"></div>
           <div class="mob-image-border" style="border-color:#c06c2055;"></div>
           <div class="mob-image-inner">
-            ${pnj.img ? `<img src="${pnj.img}" alt="${escHtml(pnj.name)}">` : '<span class="mob-img-placeholder">🧑</span>'}
+            ${(pnj.images?.[0] || pnj.img) ? `<img src="${pnj.images?.[0] || pnj.img}" alt="${escHtml(pnj.name)}">` : '<span class="mob-img-placeholder">🧑</span>'}
           </div>
         </div>
         <div class="mob-header-info">
@@ -796,7 +797,7 @@ function renderPNJSheet(pnj) {
             <div class="mob-meta-item">
               <span class="mob-meta-key">Région</span>
               <span class="mob-meta-val">
-                ${escHtml(pnj.region)}
+                ${escHtml(getRegionLabel(pnj.region))}
                 ${getMapZone(pnj) ? `<a class="region-link" href="../Map/map.html#${escHtml(getMapZone(pnj))}">→ Carte</a>` : ''}
               </span>
             </div>` : ''}

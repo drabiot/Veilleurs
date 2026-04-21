@@ -206,7 +206,7 @@ function renderMobChip(mobId, qte) {
   const mob    = dbMob(mobId);
   const color  = '#d47070';
   const name   = mob ? mob.name : mobId;
-  const imgSrc = mob && mob.img ? mob.img : null;
+  const imgSrc = mob ? (mob.images?.[0] || mob.img || null) : null;
 
   const visual = imgSrc
     ? `<img class="chip-img" src="${imgSrc}" alt="${name}">`

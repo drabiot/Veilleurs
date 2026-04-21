@@ -66,7 +66,7 @@ function applyCreatorConfig(cfg) {
   }
   // Outils
   const tools = cfg.tools || {};
-  const MODES = ['item', 'mob', 'pnj', 'region', 'panoplie'];
+  const MODES = ['item', 'mob', 'pnj', 'region', 'quest', 'panoplie'];
   for (const m of MODES) {
     const enabled = tools[m] !== false;
     const btn = document.querySelector(`.mode-btn[data-mode="${m}"]`);
@@ -2837,7 +2837,8 @@ function buildObj() {
       quete:       id ? `../img/compendium/textures/items/Quest/${id}.png`                      : null,
       donjon:      id ? `../img/compendium/textures/items/Donjon/${id}.png`                     : null,
     };
-    obj.img = (category && CAT_IMG[category]) || null;
+    const _imgUrl = (category && CAT_IMG[category]) || null;
+    if (_imgUrl) obj.images = [_imgUrl];
   }
   if (selTwoHanded)              obj.twoHanded  = true;
   if (cat === 'artefact')        obj.unique     = true;
@@ -4039,7 +4040,7 @@ function buildMobObj() {
   obj.behavior = behavior;
   if (palier)   obj.palier   = +palier;
   if (regionId) obj.region   = regionId;
-  if (id && palier) obj.img  = `../img/mobs/P${palier}/${id}.png`;
+  if (id && palier) obj.images = [`../img/mobs/P${palier}/${id}.png`];
   obj.inCodex  = mobInCodex;
   if (mobSensible) obj.sensible = true;
   if (lore)     obj.lore     = lore;
@@ -4349,7 +4350,7 @@ function buildPnjObj() {
   if (palier) obj.palier = +palier;
   if (region) obj.region = region;
   if (cx !== '' && cy !== '' && cz !== '') obj.coords = { x: +cx, y: +cy, z: +cz };
-  obj.img = id ? `../img/compendium/montages/${id}.png` : null;
+  if (id) obj.images = [`../img/compendium/montages/${id}.png`];
 
   const sells = pnjSells.filter(s => s.itemId).map(s => {
     const e = { id: s.itemId };
@@ -4386,7 +4387,7 @@ function buildRegionObj() {
   if (name)   obj.name    = name;
   if (palier) obj.palier  = +palier;
   obj.inCodex = regInCodex;
-  obj.img     = null;
+  obj.images  = [];
   if (regCanTp !== null) obj.canTp = regCanTp;
   if (lore)   obj.lore    = lore;
 
