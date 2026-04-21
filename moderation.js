@@ -679,6 +679,7 @@ const HASH_PANELS = {
   'region-order':   () => showRegionOrder(),
   'quest-order':    () => showQuestOrder(),
   'panoplie-order': () => showPanoplieOrder(),
+  'map':            () => showMapPanel(),
   'ghost-ids':      () => showGhostIds(),
   'region-orphans': () => showRegionOrphans(),
   'mob-orphans':    () => showMobOrphans(),
@@ -739,6 +740,7 @@ function refreshCurrentPanel() {
     item:           () => { delete _modCache['items'];       loadItemOrder();     },
     pnj:            () => { delete _modCache['personnages']; loadPnjOrder();      },
     panoplie:       () => { delete _modCache['panoplies'];   loadPanoplieOrder(); },
+    map:            () => { delete _modCache['map_markers']; loadMapMarkers(); },
     'ghost-ids':    () => loadGhostIds(),
     'region-orphans': () => loadRegionOrphans(),
     'mob-orphans':  () => loadMobOrphans(),
@@ -3503,7 +3505,7 @@ function _renderDiscordWebhooks() {
     header.textContent = cat.label;
     section.appendChild(header);
 
-    for (const p of CREATOR_PALIERS) {
+    for (const p of [...CREATOR_PALIERS, 'event']) {
       const key = `${cat.id}_${p}`;
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
@@ -3517,8 +3519,8 @@ function _renderDiscordWebhooks() {
       input.addEventListener('blur',  () => { input.style.borderColor = 'var(--border)'; });
 
       const label = document.createElement('span');
-      label.textContent = `Palier ${p}`;
-      label.style.cssText = 'font-size:12px;width:58px;flex-shrink:0;color:var(--text);';
+      label.textContent = p === 'event' ? 'Event' : `Palier ${p}`;
+      label.style.cssText = `font-size:12px;width:58px;flex-shrink:0;color:${p === 'event' ? '#ebebeb' : 'var(--text)'};${p === 'event' ? 'font-weight:600;' : ''}`;
 
       const testBtn = document.createElement('button');
       testBtn.className = 'btn btn-ghost';
@@ -3541,7 +3543,7 @@ window.saveDiscordWebhooks = async function saveDiscordWebhooks() {
   try {
     const data = {};
     for (const cat of DW_CATEGORIES) {
-      for (const p of CREATOR_PALIERS) {
+      for (const p of [...CREATOR_PALIERS, 'event']) {
         const key = `${cat.id}_${p}`;
         const val = document.getElementById(`dw-${key}`)?.value?.trim() || '';
         if (val) data[key] = val;
@@ -3682,7 +3684,7 @@ function _renderEmbedBuilder() {
 function _dwAllChannelKeys() {
   const standard = [];
   for (const cat of DW_CATEGORIES) {
-    for (const p of CREATOR_PALIERS) standard.push(`${cat.id}_${p}`);
+    for (const p of [...CREATOR_PALIERS, 'event']) standard.push(`${cat.id}_${p}`);
   }
   const extra = Object.keys(_dwConfig.tagRules || {}).filter(k => !standard.includes(k));
   return [...standard, ...extra];
@@ -3693,7 +3695,8 @@ function _dwChannelLabel(key) {
   const catId  = parts.slice(0, -1).join('_');
   const palier = parts[parts.length - 1];
   const cat    = DW_CATEGORIES.find(c => c.id === catId);
-  return cat ? `${cat.label} · Palier ${palier}` : key;
+  if (!cat) return key;
+  return palier === 'event' ? `${cat.label} · Event` : `${cat.label} · Palier ${palier}`;
 }
 
 function _renderTagRules() {
@@ -4019,7 +4022,7 @@ async function _sendSingleItemDiscord(item) {
   const cat    = item.category;
   const palier = item.palier;
   if (!cat || !palier) throw new Error('Catégorie ou palier manquant');
-  const key = `${cat}_${palier}`;
+  const key = item.rarity === 'event' ? `${cat}_event` : `${cat}_${palier}`;
   const url = _dwConfig?.[key];
   if (!url) throw new Error(`Aucun webhook configuré pour ${key}`);
 
@@ -4059,13 +4062,16 @@ async function _sendSingleItemDiscord(item) {
 window.testDiscordWebhook = async function testDiscordWebhook(key) {
   const url = document.getElementById(`dw-${key}`)?.value?.trim();
   if (!url) { toast('⚠️ Aucun webhook configuré pour cette combinaison.', 'warning'); return; }
-  const [catId, palier] = key.split('_');
+  const parts = key.split('_');
+  const catId = parts.slice(0, -1).join('_');
+  const palier = parts[parts.length - 1];
   const catLabel = DW_CATEGORIES.find(c => c.id === catId)?.label || catId;
+  const palierLabel = palier === 'event' ? 'Event' : `Palier ${palier}`;
   try {
     const resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ thread_name: `🧪 Test · ${catLabel} · Palier ${palier}`, content: `🧪 **Test webhook** · ${catLabel} · Palier ${palier} · VCL Wiki Modération` })
+      body: JSON.stringify({ thread_name: `🧪 Test · ${catLabel} · ${palierLabel}`, content: `🧪 **Test webhook** · ${catLabel} · ${palierLabel} · VCL Wiki Modération` })
     });
     if (resp.ok || resp.status === 204) {
       toast('✓ Message de test envoyé !', 'success');
@@ -6237,6 +6243,202 @@ window.revertObtainCoords = async function() {
     statusEl.textContent = '⛔ ' + e.message;
     statusEl.style.color = 'var(--danger)';
     toast('⛔ Erreur : ' + e.message, 'error');
+  }
+};
+
+/* ══════════════════════════════════════════════════════
+   OUTIL CARTE — Gestion des map_markers (Firestore)
+══════════════════════════════════════════════════════ */
+
+let _mapMarkersList = [];
+
+window.showMapPanel = async function showMapPanel() {
+  _showPanel('map-panel', 'btn-map-order');
+  _setHash('map');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadMapMarkers();
+};
+
+async function loadMapMarkers() {
+  const tableEl = document.getElementById('map-markers-table');
+  tableEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const snap = await getDocs(collection(db, COL.mapMarkers));
+    _mapMarkersList = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    renderMapTable();
+  } catch (err) {
+    tableEl.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${err.message}</div>`;
+    toast('⛔ Erreur chargement map_markers : ' + err.message, 'error');
+  }
+}
+
+window.renderMapTable = function renderMapTable() {
+  const tableEl = document.getElementById('map-markers-table');
+  const floorF  = document.getElementById('map-filter-floor')?.value || '';
+  const typeF   = document.getElementById('map-filter-type')?.value  || '';
+  const searchF = (document.getElementById('map-filter-search')?.value || '').toLowerCase();
+
+  const filtered = _mapMarkersList.filter(m => {
+    if (floorF  && String(m.floor) !== floorF)           return false;
+    if (typeF   && m.type !== typeF)                      return false;
+    if (searchF && !(m.name || '').toLowerCase().includes(searchF)) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    tableEl.innerHTML = '<div class="empty">Aucun marqueur</div>';
+    return;
+  }
+
+  const TYPE_EMOJI = { donjon: '⚔️', ressource: '🌿', zone_monstre: '💀' };
+
+  const rows = filtered.map(m => `
+    <tr>
+      <td>${TYPE_EMOJI[m.type] || '📍'} ${m.type || '—'}</td>
+      <td style="font-weight:600;">${m.name || '—'}</td>
+      <td style="text-align:center;">${m.floor ?? '—'}</td>
+      <td style="font-family:monospace;font-size:11px;color:var(--muted);">${m.gx ?? '—'} / ${m.gy ?? '—'}</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-ghost btn-sm" onclick="openMapMarkerForm(${JSON.stringify(m._id)})" style="font-size:11px;padding:3px 8px;">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteMapMarker(${JSON.stringify(m._id)})" style="font-size:11px;padding:3px 8px;color:var(--danger);">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
+
+  tableEl.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:6px 8px;">Type</th>
+          <th style="text-align:left;padding:6px 8px;">Nom</th>
+          <th style="text-align:center;padding:6px 8px;">Palier</th>
+          <th style="text-align:left;padding:6px 8px;">Coords (X / Z)</th>
+          <th style="padding:6px 8px;"></th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+};
+
+window.openMapMarkerForm = function openMapMarkerForm(id) {
+  const formEl = document.getElementById('map-marker-form');
+  formEl.style.display = '';
+  document.getElementById('map-form-title').textContent = id ? 'Modifier le marqueur' : 'Nouveau marqueur';
+  document.getElementById('map-form-id').value = id || '';
+
+  if (id) {
+    const m = _mapMarkersList.find(x => x._id === id);
+    if (m) {
+      document.getElementById('map-form-type').value  = m.type  || 'donjon';
+      document.getElementById('map-form-floor').value = String(m.floor ?? 1);
+      document.getElementById('map-form-name').value  = m.name  || '';
+      document.getElementById('map-form-gx').value    = m.gx    ?? '';
+      document.getElementById('map-form-gy').value    = m.gy    ?? '';
+      document.getElementById('map-form-desc').value  = m.desc  || '';
+      document.getElementById('map-form-link').value  = m.link  || '';
+      document.getElementById('map-form-level').value = m.level || '';
+      document.getElementById('map-form-color').value = m.color || '#ff4444';
+      document.getElementById('map-form-polygon').value = m.polygon ? JSON.stringify(m.polygon) : '';
+    }
+  } else {
+    document.getElementById('map-form-type').value    = 'donjon';
+    document.getElementById('map-form-floor').value   = '1';
+    document.getElementById('map-form-name').value    = '';
+    document.getElementById('map-form-gx').value      = '';
+    document.getElementById('map-form-gy').value      = '';
+    document.getElementById('map-form-desc').value    = '';
+    document.getElementById('map-form-link').value    = '';
+    document.getElementById('map-form-level').value   = '';
+    document.getElementById('map-form-color').value   = '#ff4444';
+    document.getElementById('map-form-polygon').value = '';
+  }
+  onMapFormTypeChange();
+  formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+
+window.closeMapMarkerForm = function closeMapMarkerForm() {
+  document.getElementById('map-marker-form').style.display = 'none';
+};
+
+window.onMapFormTypeChange = function onMapFormTypeChange() {
+  const t = document.getElementById('map-form-type').value;
+  document.getElementById('map-form-donjon-fields').style.display = t === 'donjon'      ? '' : 'none';
+  document.getElementById('map-form-zone-fields').style.display   = t === 'zone_monstre' ? '' : 'none';
+};
+
+window.saveMapMarker = async function saveMapMarker() {
+  const name  = document.getElementById('map-form-name').value.trim();
+  const type  = document.getElementById('map-form-type').value;
+  const floor = parseInt(document.getElementById('map-form-floor').value);
+  const gxVal = document.getElementById('map-form-gx').value;
+  const gyVal = document.getElementById('map-form-gy').value;
+
+  if (!name)  { toast('⚠ Le nom est obligatoire', 'warning'); return; }
+  if (!type)  { toast('⚠ Le type est obligatoire', 'warning'); return; }
+  if (isNaN(floor)) { toast('⚠ Palier invalide', 'warning'); return; }
+
+  const obj = {
+    type,
+    floor,
+    name,
+    desc:  document.getElementById('map-form-desc').value.trim() || null,
+    link:  document.getElementById('map-form-link').value.trim() || null,
+    gx:    gxVal !== '' ? parseFloat(gxVal) : null,
+    gy:    gyVal !== '' ? parseFloat(gyVal) : null,
+  };
+
+  if (type === 'donjon') {
+    const lvl = document.getElementById('map-form-level').value.trim();
+    if (lvl) obj.level = lvl;
+  }
+  if (type === 'zone_monstre') {
+    obj.color = document.getElementById('map-form-color').value;
+    const polyRaw = document.getElementById('map-form-polygon').value.trim();
+    if (polyRaw) {
+      try { obj.polygon = JSON.parse(polyRaw); } catch { toast('⚠ JSON polygone invalide', 'warning'); return; }
+    }
+  }
+
+  // Nettoyer les nulls
+  Object.keys(obj).forEach(k => { if (obj[k] === null) delete obj[k]; });
+
+  try {
+    const existingId = document.getElementById('map-form-id').value;
+    if (existingId) {
+      await setDoc(doc(db, COL.mapMarkers, existingId), obj, { merge: true });
+      const idx = _mapMarkersList.findIndex(m => m._id === existingId);
+      if (idx !== -1) _mapMarkersList[idx] = { _id: existingId, ...obj };
+      toast('✓ Marqueur mis à jour', 'success');
+    } else {
+      const newId = `${type}_${Date.now()}`;
+      await setDoc(doc(db, COL.mapMarkers, newId), obj);
+      _mapMarkersList.push({ _id: newId, ...obj });
+      toast('✓ Marqueur créé', 'success');
+    }
+    invalidateModCache(COL.mapMarkers);
+    invalidateCache(COL.mapMarkers);
+    closeMapMarkerForm();
+    renderMapTable();
+  } catch (err) {
+    toast('⛔ Erreur : ' + err.message, 'error');
+  }
+};
+
+window.deleteMapMarker = async function deleteMapMarker(id) {
+  const m = _mapMarkersList.find(x => x._id === id);
+  if (!m) return;
+  const confirmed = await modal.confirm(`Supprimer "${m.name}" ?`, 'Cette action est irréversible.');
+  if (!confirmed) return;
+  try {
+    await deleteDoc(doc(db, COL.mapMarkers, id));
+    _mapMarkersList = _mapMarkersList.filter(x => x._id !== id);
+    invalidateModCache(COL.mapMarkers);
+    invalidateCache(COL.mapMarkers);
+    renderMapTable();
+    toast('✓ Marqueur supprimé', 'success');
+  } catch (err) {
+    toast('⛔ Erreur : ' + err.message, 'error');
   }
 };
 

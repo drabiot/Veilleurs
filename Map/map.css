@@ -109,6 +109,17 @@
   border: 1px solid rgba(0,0,0,.3);
 }
 
+/* Groupes de filtres (map2) */
+.filter-group-label {
+  font-size: 9px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 0 2px;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+}
+
 /* Floor info sidebar */
 .floor-info {
   display: flex;
@@ -313,6 +324,9 @@
 .marker[data-type="clef"]                  .marker-icon { background: #ebbc58; color: #ebbc58; box-shadow: 0 2px 12px rgba(212, 161, 49, 0.5); }
 .marker[data-type="boss"]                  .marker-icon { background: #6b1a1a; color: #e05050; box-shadow: 0 2px 12px rgba(224,80,80,.6); }
 .marker[data-type="autre"]                 .marker-icon { background: #3edb29; color: #a2dd7b; box-shadow: 0 2px 12px rgba(17, 133, 33, 0.5); }
+.marker[data-type="occulte"]               .marker-icon { background: #3d1a5c; color: #c080ff; box-shadow: 0 2px 12px rgba(160,80,255,.5); }
+.marker[data-type="secret"]                .marker-icon { background: #1a2a3c; color: #6090c0; box-shadow: 0 2px 12px rgba(80,140,200,.5); }
+.marker[data-type="miniboss"]              .marker-icon { background: #8b3030; color: #e08080; box-shadow: 0 2px 12px rgba(200,80,80,.5); }
 
 .marker.hidden-marker { display: none; }
 .marker.marker-dimmed { opacity: 0.15; pointer-events: none; transition: opacity .2s; }

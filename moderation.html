@@ -76,6 +76,7 @@
     <button class="filter-btn" id="btn-region-order"   onclick="showRegionOrder()">📍 Régions</button>
     <button class="filter-btn" id="btn-quest-order"    onclick="showQuestOrder()">📜 Quêtes</button>
     <button class="filter-btn" id="btn-panoplie-order" onclick="showPanoplieOrder()">🔗 Panoplies</button>
+    <button class="filter-btn" id="btn-map-order"      onclick="showMapPanel()">🗺️ Carte</button>
 
     <!-- ── DIAGNOSTIC ──────────────────────────────────── -->
     <div class="sb-label">DIAGNOSTIC</div>
@@ -256,6 +257,103 @@
            oninput="renderPanoplieOrder()"
            style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 12px;font-size:13px;outline:none;transition:border-color .15s;margin-bottom:12px;">
     <div id="panoplie-order-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Carte (map_markers) -->
+  <main class="main" id="map-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <span style="font-size:15px;font-weight:700;">🗺️ Marqueurs de carte</span>
+      <button class="btn btn-ghost" onclick="openMapMarkerForm(null)" style="font-size:12px;">+ Ajouter</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+      Gestion des marqueurs statiques (donjons, ressources, zones monstres) affichés sur map2.
+    </p>
+
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <select id="map-filter-floor" onchange="renderMapTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+        <option value="">Tous les paliers</option>
+        <option value="1">Palier 1</option>
+        <option value="2">Palier 2</option>
+        <option value="3">Palier 3</option>
+      </select>
+      <select id="map-filter-type" onchange="renderMapTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+        <option value="">Tous les types</option>
+        <option value="donjon">Donjon</option>
+        <option value="ressource">Ressource</option>
+        <option value="zone_monstre">Zone monstre</option>
+      </select>
+      <input type="search" id="map-filter-search" placeholder="🔍 Nom…" oninput="renderMapTable()"
+             style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+    </div>
+
+    <!-- Formulaire inline -->
+    <div id="map-marker-form" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px;" id="map-form-title">Nouveau marqueur</div>
+      <input type="hidden" id="map-form-id">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Type *</label>
+          <select id="map-form-type" onchange="onMapFormTypeChange()" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+            <option value="donjon">⚔️ Donjon</option>
+            <option value="ressource">🌿 Ressource</option>
+            <option value="zone_monstre">💀 Zone monstre</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Palier *</label>
+          <select id="map-form-floor" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+            <option value="1">Palier 1</option>
+            <option value="2">Palier 2</option>
+            <option value="3">Palier 3</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Nom *</label>
+        <input type="text" id="map-form-name" placeholder="Donjon de Darkhold" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div>
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Coord X (in-game)</label>
+          <input type="number" step="0.1" id="map-form-gx" placeholder="1234.5" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Coord Z (in-game)</label>
+          <input type="number" step="0.1" id="map-form-gy" placeholder="-890.2" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+        </div>
+      </div>
+      <!-- Champs conditionnels -->
+      <div id="map-form-donjon-fields" style="display:none;margin-bottom:10px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Niveaux requis (ex: 15-20)</label>
+        <input type="text" id="map-form-level" placeholder="15-20" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+      </div>
+      <div id="map-form-zone-fields" style="display:none;margin-bottom:10px;">
+        <div style="margin-bottom:8px;">
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Couleur</label>
+          <input type="color" id="map-form-color" value="#ff4444" style="width:60px;height:32px;border:none;background:none;cursor:pointer;border-radius:4px;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Polygone (JSON array [[gx,gy],…])</label>
+          <textarea id="map-form-polygon" placeholder='[[100,200],[150,250],…]' rows="3" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:12px;font-family:monospace;outline:none;resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Description</label>
+        <input type="text" id="map-form-desc" placeholder="Courte description…" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Lien (guide externe)</label>
+        <input type="url" id="map-form-link" placeholder="https://…" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-ghost" onclick="closeMapMarkerForm()">Annuler</button>
+        <button class="btn" style="background:var(--accent);color:#fff;" onclick="saveMapMarker()">💾 Enregistrer</button>
+      </div>
+    </div>
+
+    <div id="map-markers-table">
+      <div class="empty">Chargement…</div>
+    </div>
   </main>
 
   <!-- Panneau Webhooks Discord -->

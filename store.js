@@ -14,12 +14,13 @@ import { loadCollection, invalidateCache, COL } from './firebase.js';
 
 // Correspondance nom logique → nom collection Firestore
 const COL_MAP = {
-  items:     COL.items,
-  mobs:      COL.mobs,
-  pnj:       COL.pnj,
-  regions:   COL.regions,
-  quetes:    COL.quetes,
-  panoplies: COL.panoplies,
+  items:      COL.items,
+  mobs:       COL.mobs,
+  pnj:        COL.pnj,
+  regions:    COL.regions,
+  quetes:     COL.quetes,
+  panoplies:  COL.panoplies,
+  mapMarkers: COL.mapMarkers,
 };
 
 const _data    = {};
@@ -28,12 +29,13 @@ let _callbacks = [];
 
 export const store = {
   // ── Accesseurs ──────────────────────────────────────
-  get items()     { return _data.items     ?? []; },
-  get mobs()      { return _data.mobs      ?? []; },
-  get pnj()       { return _data.pnj       ?? []; },
-  get regions()   { return _data.regions   ?? []; },
-  get quetes()    { return _data.quetes    ?? []; },
-  get panoplies() { return _data.panoplies ?? []; },
+  get items()      { return _data.items      ?? []; },
+  get mobs()       { return _data.mobs       ?? []; },
+  get pnj()        { return _data.pnj        ?? []; },
+  get regions()    { return _data.regions    ?? []; },
+  get quetes()     { return _data.quetes     ?? []; },
+  get panoplies()  { return _data.panoplies  ?? []; },
+  get mapMarkers() { return _data.mapMarkers ?? []; },
   /** Panoplies indexées par id — compatible avec le global SETS des pages legacy */
   get sets()      { return _data.sets      ?? {}; },
 

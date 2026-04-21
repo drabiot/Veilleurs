@@ -1612,6 +1612,11 @@ function loadMob(mob) {
     const regionName = _allMobRegions.find(r => r.id === mob.region)?.name || mob.region;
     document.getElementById('mob-region-search').value = regionName;
   }
+  if (mob.coords) {
+    document.getElementById('mob-x').value = mob.coords.x ?? '';
+    document.getElementById('mob-y').value = mob.coords.y ?? '';
+    document.getElementById('mob-z').value = mob.coords.z ?? '';
+  }
   if (mob.loot?.length) {
     ensureItemIndex();
     for (const l of mob.loot) {
@@ -3234,16 +3239,19 @@ const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1476647889920065549/1x
 
 // Webhooks forums Discord (arme/armure/accessoire × palier)
 const FORUM_WEBHOOKS = {
-  'arme_1':      'https://discord.com/api/webhooks/1491072737761038357/DXrNa-UEnhY_IYNWxsxTI4ztqt_-_6vhgf7p35Ia7AIZgjPya9sA4nTuT4IekyTM0Mek',
-  'arme_2':      'https://discord.com/api/webhooks/1491072819088588970/RAPDd0z4d5Aiy0SXP_li1xo2LuzrlMoIU0ALs0lCEwwisMhlB0aCVxTdkF-7g72PMWk8',
-  'armure_1':    'https://discord.com/api/webhooks/1491072872637272214/IK9fJGjMJ8up1jlyCNIjxVf_SBv1MRnh8QXY2Xndxca_W0YWImaFNttv47ZJZfsnJadk',
-  'armure_2':    'https://discord.com/api/webhooks/1491072932800368832/pukxiljqxIQCm6Fh8I1v1fXhF-G-_FyJ_iU_BMXcM5216MwOsbeUVLo7HRU6KqzEoFL1',
-  'accessoire_1':'https://discord.com/api/webhooks/1491072941985890386/RFNjfNRfGuRv7nmzEMmHdz4lhzxH9DzjX8rqpDLLKfLHkWS95xOgGMvPTFqRiQgqzNj1',
-  'accessoire_2':'https://discord.com/api/webhooks/1491073046759342081/b-b21JWzETX1zsTVfMtop5tJm0fr1ZhTV5oQmXEH_DVKVFdbatHPYg2LybvKtsqMmqBO',
+  'arme_1':         'https://discord.com/api/webhooks/1491072737761038357/DXrNa-UEnhY_IYNWxsxTI4ztqt_-_6vhgf7p35Ia7AIZgjPya9sA4nTuT4IekyTM0Mek',
+  'arme_2':         'https://discord.com/api/webhooks/1491072819088588970/RAPDd0z4d5Aiy0SXP_li1xo2LuzrlMoIU0ALs0lCEwwisMhlB0aCVxTdkF-7g72PMWk8',
+  'arme_event':     '',
+  'armure_1':       'https://discord.com/api/webhooks/1491072872637272214/IK9fJGjMJ8up1jlyCNIjxVf_SBv1MRnh8QXY2Xndxca_W0YWImaFNttv47ZJZfsnJadk',
+  'armure_2':       'https://discord.com/api/webhooks/1491072932800368832/pukxiljqxIQCm6Fh8I1v1fXhF-G-_FyJ_iU_BMXcM5216MwOsbeUVLo7HRU6KqzEoFL1',
+  'armure_event':   '',
+  'accessoire_1':   'https://discord.com/api/webhooks/1491072941985890386/RFNjfNRfGuRv7nmzEMmHdz4lhzxH9DzjX8rqpDLLKfLHkWS95xOgGMvPTFqRiQgqzNj1',
+  'accessoire_2':   'https://discord.com/api/webhooks/1491073046759342081/b-b21JWzETX1zsTVfMtop5tJm0fr1ZhTV5oQmXEH_DVKVFdbatHPYg2LybvKtsqMmqBO',
+  'accessoire_event': '',
 };
 
 function getForumWebhook(obj) {
-  const key = `${obj.category}_${obj.palier}`;
+  const key = obj.rarity === 'event' ? `${obj.category}_event` : `${obj.category}_${obj.palier}`;
   return FORUM_WEBHOOKS[key] || null;
 }
 
@@ -4036,6 +4044,12 @@ function buildMobObj() {
   if (mobSensible) obj.sensible = true;
   if (lore)     obj.lore     = lore;
   if (spawnTime && (type === 'boss' || type === 'mini_boss')) obj.spawnTime = spawnTime;
+  const cx = document.getElementById('mob-x')?.value;
+  const cy = document.getElementById('mob-y')?.value;
+  const cz = document.getElementById('mob-z')?.value;
+  if (cx !== '' && cy !== '' && cz !== '' && cx != null && cy != null && cz != null) {
+    obj.coords = { x: +cx, y: +cy, z: +cz };
+  }
   const loot = getMobLoot();
   if (loot.length) obj.loot = loot;
 
@@ -4048,7 +4062,7 @@ function buildMobObj() {
 function resetMobForm() {
   mobIdLocked = false; mobInCodex = true; mobSensible = false; mobLootEntries = [];
   const sensBtn = document.getElementById('mob-sensible-btn'); if (sensBtn) sensBtn.classList.remove('active');
-  ['mob-name','mob-id','mob-lore','mob-spawntime','mob-regionid'].forEach(fid => {
+  ['mob-name','mob-id','mob-lore','mob-spawntime','mob-regionid','mob-x','mob-y','mob-z'].forEach(fid => {
     const el = document.getElementById(fid); if (el) el.value = '';
   });
   setMobType('monstre');
@@ -4132,6 +4146,9 @@ const PNJ_TYPE_TAGS = {
   "bûcheron":                "bucheron",
   "alchimiste":              "alchimiste",
   "quêtes":                  "quetes",
+  "quête principale":        "quete_principale",
+  "marchand occulte":        "marchand_occulte",
+  "fabricant secret":        "fabricant_secret",
   "autres":                  "autres",
 };
 

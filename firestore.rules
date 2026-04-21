@@ -87,6 +87,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Marqueurs carte (donjons, ressources, zones) — lecture publique, écriture contrib
+    match /map_markers/{id} {
+      allow read:  if true;
+      allow write: if isContrib();
+    }
+
     match /config/{id} {
       allow read:  if true;
       allow write: if isAdmin();

@@ -456,6 +456,9 @@
                 <option value="bûcheron">Bûcheron</option>
                 <option value="alchimiste">Alchimiste</option>
                 <option value="quêtes">Quêtes</option>
+                <option value="quête principale">Quête principale</option>
+                <option value="marchand occulte">Marchand occulte</option>
+                <option value="fabricant secret">Fabricant secret</option>
                 <option value="autres">Autres</option>
               </select>
             </div>
@@ -882,6 +885,26 @@
               <div id="mob-region-dropdown" class="region-drop"></div>
             </div>
             <input type="hidden" id="mob-region" value="">
+          </div>
+          <!-- Coordonnées mob (boss/miniboss) -->
+          <div class="field" style="margin-top:2px;">
+            <div class="coords-label">
+              <span>📍 Coordonnées <span style="font-size:10px;color:var(--muted);font-weight:400;">(boss / mini-boss)</span></span>
+            </div>
+            <div class="coords-row">
+              <div class="coord-field coord-x">
+                <span class="coord-axis">X</span>
+                <input type="number" step="1" id="mob-x" placeholder="128" oninput="update()">
+              </div>
+              <div class="coord-field coord-y">
+                <span class="coord-axis">Y</span>
+                <input type="number" step="1" id="mob-y" placeholder="64" oninput="update()">
+              </div>
+              <div class="coord-field coord-z">
+                <span class="coord-axis">Z</span>
+                <input type="number" step="1" id="mob-z" placeholder="-320" oninput="update()">
+              </div>
+            </div>
           </div>
         </div>
       </div>

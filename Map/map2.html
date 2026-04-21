@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
+  <title>[VCL] - Carte v2</title>
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="map.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+</head>
+<body class="map-page">
+
+  <!-- Fond ambiant -->
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="moon"></div>
+    <div class="fog fog-1"></div>
+    <div class="fog fog-2"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <!-- ══════ HEADER ══════ -->
+  <header class="site-header">
+    <div class="header-top">
+      <div class="header-left">
+        <div class="traffic-lights">
+          <span class="tl tl-red"></span>
+          <span class="tl tl-yellow"></span>
+          <span class="tl tl-green"></span>
+        </div>
+        <span class="header-sep">─────</span>
+        <a href="../index.html" class="header-logo">Veilleurs au Clair de Lune</a>
+      </div>
+      <div class="header-right">
+        <a href="../creator.html?mode=item" class="btn-add-item">+ Ajouter un item</a>
+      </div>
+    </div>
+    <nav class="header-nav">
+      <a href="../index.html" class="nav-link">
+        <span class="nav-icon">📜</span>
+        <span class="nav-label">Patchnotes</span>
+      </a>
+      <a href="map2.html" class="nav-link active">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-label">Carte</span>
+      </a>
+      <a href="../Compendium/compendium.html" class="nav-link">
+        <span class="nav-icon">📖</span>
+        <span class="nav-label">Compendium</span>
+      </a>
+      <a href="../Bestiaire/bestiaire.html" class="nav-link">
+        <span class="nav-icon">💀</span><span class="nav-label">Bestiaire</span>
+      </a>
+      <a href="../Quetes/quetes.html" class="nav-link">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Quêtes</span>
+      </a>
+      <a href="../Atelier/atelier.html" class="nav-link"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
+    </nav>
+  </header>
+
+  <!-- ══════ MAP LAYOUT ══════ -->
+  <div class="map-layout">
+
+    <!-- ── Sidebar gauche ── -->
+    <aside class="map-sidebar">
+      <div class="sidebar-title">Légende</div>
+      <div class="legend-filters" id="legend-filters">
+
+        <!-- Tout sélectionner / désélectionner -->
+        <label class="legend-item legend-toggle-all">
+          <input type="checkbox" id="toggle-all-filters" />
+          <span class="legend-emoji" style="background:#333;">⚙️</span>
+          <span>Tout sélectionner</span>
+        </label>
+        <label class="legend-item legend-toggle-all">
+          <input type="checkbox" id="zone-hover-toggle" checked />
+          <span class="legend-emoji" style="background:#89ace0;">🗺️</span>
+          <span>Survol des zones</span>
+        </label>
+
+        <div class="sidebar-sep"></div>
+
+        <!-- ── Exploration ── -->
+        <div class="filter-group-label">Exploration</div>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="région" checked />
+          <span class="legend-emoji" style="background:#e8c8c8;">📍</span>
+          <span>Régions</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="donjon" checked />
+          <span class="legend-emoji" style="background:#c47a6a;">⚔️</span>
+          <span>Donjon</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="ressource" />
+          <span class="legend-emoji" style="background:#4a7d48;">🌿</span>
+          <span>Ressource</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="zone_monstre" />
+          <span class="legend-emoji" style="background:#7a3030;">💀</span>
+          <span>Zones monstres</span>
+        </label>
+
+        <div class="sidebar-sep"></div>
+
+        <!-- ── Personnages ── -->
+        <div class="filter-group-label">Personnages</div>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="artisant" />
+          <span class="legend-emoji" style="background:#6a4daa;">⚒️</span>
+          <span>Artisant</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="marchand" />
+          <span class="legend-emoji" style="background:#3a6e8a;">💰</span>
+          <span>Marchand</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="repreneur_butin" />
+          <span class="legend-emoji" style="background:#153f55;">🛒</span>
+          <span>Repreneur de Butin</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="occulte" />
+          <span class="legend-emoji" style="background:#3d1a5c;">🔮</span>
+          <span>Marchand Occulte</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="secret" />
+          <span class="legend-emoji" style="background:#1a2a3c;">🔐</span>
+          <span>Fabricant Secret</span>
+        </label>
+
+        <div class="sidebar-sep"></div>
+
+        <!-- ── Quêtes ── -->
+        <div class="filter-group-label">Quêtes</div>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="quête_principale" />
+          <span class="legend-emoji" style="background:#b8893a;">💬</span>
+          <span>Quête Principale</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="quête_secondaire" />
+          <span class="legend-emoji" style="background:#d4b57e;">❓</span>
+          <span>Quête Secondaire</span>
+        </label>
+
+        <div class="sidebar-sep"></div>
+
+        <!-- ── Combat ── -->
+        <div class="filter-group-label">Combat</div>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="boss" />
+          <span class="legend-emoji" style="background:#6b1a1a;">☠️</span>
+          <span>Boss</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="miniboss" />
+          <span class="legend-emoji" style="background:#8b3030;">⚔️</span>
+          <span>Mini-Boss</span>
+        </label>
+
+      </div>
+
+      <div class="sidebar-sep"></div>
+      <div class="sidebar-title">Étage actuel</div>
+      <div class="floor-info">
+        <span class="floor-info-num" id="floor-info-num">1</span>
+        <span class="floor-info-label">/ 100</span>
+      </div>
+      <div class="sidebar-sep"></div>
+      <div class="sidebar-title">Zoom</div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoom-out">-</button>
+        <span class="zoom-level" id="zoom-level">100%</span>
+        <button class="zoom-btn" id="zoom-in">+</button>
+        <button class="zoom-btn zoom-reset" id="zoom-reset">⟳</button>
+      </div>
+
+      <div class="sidebar-sep"></div>
+      <div id="firestore-status" style="font-size:10px;color:var(--muted);text-align:center;">⏳ Chargement…</div>
+    </aside>
+
+    <!-- ── Zone centrale ── -->
+    <main class="map-main">
+
+      <div class="map-topbar">
+        <span class="map-topbar-label">ÉTAGE</span>
+        <span class="map-topbar-num" id="floor-display">01</span>
+        <span class="map-topbar-name" id="floor-name-display">Forêt</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;letter-spacing:.05em;">CARTE v2 · Firestore</span>
+      </div>
+      <div class="map-searchbar">
+        <input type="text" id="search-input" class="search-input" placeholder="🔍  Rechercher un marqueur…" autocomplete="off" />
+        <div class="search-results hidden" id="search-results"></div>
+      </div>
+
+      <!-- Viewport -->
+      <div class="map-viewport" id="map-viewport">
+        <div class="map-canvas" id="map-canvas">
+          <img id="map-svg" src="" data-missing="true" width="900" height="900" alt="Carte" draggable="false" />
+        </div>
+        <div class="markers-layer" id="markers-layer"></div>
+      </div>
+
+      <!-- Tooltip -->
+      <div class="map-tooltip hidden" id="map-tooltip">
+        <div class="tooltip-type" id="tooltip-type"></div>
+        <div class="tooltip-name" id="tooltip-name"></div>
+        <div class="tooltip-desc" id="tooltip-desc"></div>
+        <a class="tooltip-link hidden" id="tooltip-link" href="#" target="_blank">Voir le guide →</a>
+      </div>
+
+    </main>
+
+    <!-- ── Molette droite ── -->
+    <div class="floor-wheel-panel">
+      <button class="wheel-btn wheel-up" id="wheel-up" title="Étage suivant">▲</button>
+      <div class="wheel-display">
+        <div class="wheel-track" id="wheel-track"></div>
+      </div>
+      <div class="wheel-current">
+        <input type="text" id="floor-input" class="floor-input" value="1" maxlength="3"
+               title="Tapez un numéro d'étage" aria-label="Numéro d'étage" />
+        <span class="wheel-current-label">étage</span>
+      </div>
+      <button class="wheel-btn wheel-down" id="wheel-down" title="Étage précédent">▼</button>
+    </div>
+
+  </div>
+
+  <script src="../utils.js"></script>
+  <script src="data.js"></script>
+  <script src="map2.js"></script>
+  <script type="module">
+    import { store } from '../store.js';
+    (async () => {
+      try {
+        await store.load(['pnj', 'mobs', 'mapMarkers']);
+        window._pnjMarkers    = store.pnj;
+        window._mobMarkers    = store.mobs;
+        window._mapMarkersFS  = store.mapMarkers;
+        document.getElementById('firestore-status').textContent = '✓ Données chargées';
+        document.getElementById('firestore-status').style.color = 'var(--gold-dim)';
+      } catch (err) {
+        console.error('[map2] Firestore load error:', err);
+        document.getElementById('firestore-status').textContent = '⚠ Erreur chargement';
+        document.getElementById('firestore-status').style.color = 'var(--danger)';
+      }
+      window._onFirestoreLoaded?.();
+    })();
+  </script>
+</body>
+</html>
