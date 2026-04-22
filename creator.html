@@ -1059,7 +1059,7 @@ window._vcl_loadCollection = loadCollection;
 
 try {
   await store.load(['items', 'mobs', 'panoplies', 'quetes']);
-  if (store.items.length)     { window.ITEMS = store.items; }
+  if (store.items.length)     { window.ITEMS = store.items; if (typeof initLoadSearch === 'function') initLoadSearch(); }
   if (store.mobs.length)      {
     window.MOBS = store.mobs;
   }

@@ -1248,12 +1248,15 @@ function ensureAllMobsIndex() {
 
 function initLoadSearch() {
   ensureAllItemsIndex();
+  if (!allItemsIndex.length) return; // ITEMS pas encore chargés — sera rappelé après
+  const wrap = document.getElementById('load-item-search-wrap');
+  wrap.innerHTML = ''; // vider le drop vide éventuellement injecté avant le chargement
   loadDrop = makeSearchDrop(allItemsIndex, 'Rechercher un item à éditer…', (id) => {
     if (!id) return;
     const entry = allItemsIndex.find(it => it.id === id);
     if (entry) loadItem(entry._raw);
   });
-  document.getElementById('load-item-search-wrap').appendChild(loadDrop.element);
+  wrap.appendChild(loadDrop.element);
 }
 
 // ── Load search for all modes ──────────────────────────

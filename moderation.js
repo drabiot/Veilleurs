@@ -3907,10 +3907,14 @@ window.dwPublishUnsentSend = async function() {
   const subs = allSubs.filter(s => ids.includes(s._id));
 
   // Grouper par set — les items sans set partent individuellement
+  // Pour les anciennes soumissions, sub.data.set peut être absent (snapshot avant l'ajout du champ).
+  // On tombe alors dans la collection 'items' déjà mise en cache.
+  const _cachedItems = _modCache['items'] || [];
   const setGroups = new Map(); // setId → [sub]
   const soloSubs  = [];
   for (const sub of subs) {
-    const setId = sub.data?.set || null;
+    const liveItem = _cachedItems.find(it => it.id === sub.data?.id);
+    const setId = sub.data?.set || liveItem?.set || null;
     if (setId) {
       if (!setGroups.has(setId)) setGroups.set(setId, []);
       setGroups.get(setId).push(sub);
