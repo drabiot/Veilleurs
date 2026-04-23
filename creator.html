@@ -26,7 +26,7 @@
       </div>
       <span class="header-sep">─────</span>
       <a href="index.html" class="header-logo">Veilleurs au Clair de Lune</a>
-      <span class="header-subtitle">// CREATOR</span>
+      <span class="header-subtitle" id="header-subtitle">// CREATOR</span>
     </div>
     <div class="header-right">
       <a href="Compendium/compendium.html" class="btn btn-ghost" style="font-size:11px;">📖 Compendium</a>
@@ -302,7 +302,7 @@
       </div>
       <div class="sec-body">
         <div class="hint">Laisser vide ou à 0 pour ne pas imposer de prérequis sur cet attribut.</div>
-        <div id="threshold-grid" style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin-top:6px;"></div>
+        <div id="threshold-grid" style="display:grid;grid-template-columns:repeat(2, 1fr);gap:8px;margin-top:6px;"></div>
       </div>
     </div>
 
@@ -479,7 +479,7 @@
                 <option value="autres">Autres</option>
               </select>
             </div>
-            <div class="field">
+            <div class="field" style="display:none;" aria-hidden="true">
               <label>ID généré</label>
               <input type="text" id="pnj-id" placeholder="forgeron_armes_tolbana" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
             </div>
@@ -589,7 +589,7 @@
               <label>Nom affiché *</label>
               <input type="text" id="reg-name" name="region-title" placeholder="Ville de Départ" autocomplete="off" oninput="onRegNameInput()">
             </div>
-            <div class="field">
+            <div class="field" style="display:none;" aria-hidden="true">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
                 <label style="margin:0">ID généré</label>
                 <span id="reg-id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant</span>
@@ -666,7 +666,7 @@
               <label>Nom affiché *</label>
               <input type="text" id="panop-label" placeholder="Set de Cuivre" autocomplete="off" oninput="onPanopLabelInput()">
             </div>
-            <div class="field">
+            <div class="field" style="display:none;" aria-hidden="true">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
                 <label style="margin:0">ID généré</label>
                 <span id="panop-id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant</span>
@@ -721,7 +721,7 @@
               <label>Titre *</label>
               <input type="text" id="quest-titre" placeholder="1 - Un Nouveau Départ" oninput="onQuestTitreInput()">
             </div>
-            <div class="field">
+            <div class="field" style="display:none;" aria-hidden="true">
               <label>ID généré</label>
               <input type="text" id="quest-id" placeholder="" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
             </div>
@@ -815,7 +815,7 @@
               <label>Nom affiché *</label>
               <input type="text" id="mob-name" placeholder="Albal" oninput="onMobNameInput()">
             </div>
-            <div class="field">
+            <div class="field" style="display:none;" aria-hidden="true">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
                 <label style="margin:0">ID généré</label>
                 <span id="mob-id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant</span>

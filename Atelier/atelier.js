@@ -1484,7 +1484,7 @@ function loadAccessoriesForClass(classId) {
     /* ── Mode rune : affiche les items cat='rune' ── */
     if (activeRuneSlot) {
       const runes = ITEMS.filter(function(item) {
-        return item.cat === 'rune' &&
+        return (item.cat === 'rune' || item.category === 'rune') &&
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
           (!q || normalize(item.name).includes(q)) &&
@@ -1540,7 +1540,7 @@ function loadAccessoriesForClass(classId) {
     if (!activeSlot) {
       // Mode "tous les items" — armes / armures / accessoires + runes
       visible = ITEMS.filter(function(item) {
-        return (_equipCats.has(item.cat) || item.cat === 'rune') &&
+        return (_equipCats.has(item.cat) || item.cat === 'rune' || item.category === 'rune') &&
           itemAllowedForClass(item, activeClass) &&
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
@@ -1604,7 +1604,7 @@ function loadAccessoriesForClass(classId) {
       if (isActive) row.classList.add('active');
       const rarColor = (RARITIES[item.rarity] || { color: '#888' }).color;
       const rarLabel = (RARITIES[item.rarity] || { label: item.rarity }).label;
-      const _itemImg = getItemImg(item) || (item.cat === 'rune' ? '../img/compendium/textures/items/Runes/' + (getItemId(item) || '') + '.png' : null);
+      const _itemImg = getItemImg(item) || ((item.cat === 'rune' || item.category === 'rune') ? '../img/compendium/textures/items/Runes/' + (getItemId(item) || '') + '.png' : null);
       row.innerHTML =
         '<div class="item-thumb">' +
           (_itemImg ? '<img src="' + _itemImg + '" alt="' + item.name + '" onerror="this.style.display=\'none\'">' : '<span>📦</span>') +
@@ -1947,7 +1947,8 @@ function loadAccessoriesForClass(classId) {
     const name = document.getElementById('inp-name').value.trim() || 'Mon Stuff';
     const equippedIds = {};
     Object.entries(equipped).forEach(function(e) {
-      if (e[1]) equippedIds[e[0]] = e[1].id;
+      const item = e[1];
+      if (item && !_hiddenCache.has(getItemId(item))) equippedIds[e[0]] = getItemId(item);
     });
     const payload = {
       v: 1,
@@ -2220,7 +2221,7 @@ function loadAccessoriesForClass(classId) {
 
   /* ══ INIT ══ */
   function init() {
-    ITEMS.filter(function(i) { return i.cat === 'rune'; }).forEach(function(r) {
+    ITEMS.filter(function(i) { return i.cat === 'rune' || i.category === 'rune'; }).forEach(function(r) {
       const rid = getItemId(r); if (rid) RUNES_BY_ID.set(rid, r);
     });
     buildCarTooltip();
