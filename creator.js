@@ -115,30 +115,67 @@ const THRESHOLD_ATTRS = [
   { id:'vitalite',     label:'Vitalité',    icon:'❤️' },
 ];
 
+const THRESHOLD_COLORS = {
+  force:'#e07a35', dexterite:'#60a5fa', intelligence:'#a855f7',
+  esprit:'#4ade80', defense_car:'#94a3b8', vitalite:'#f87171'
+};
+
 function buildThresholdGrid() {
   const grid = document.getElementById('threshold-grid');
   if (!grid || grid.dataset.built === '1') return;
   grid.dataset.built = '1';
   THRESHOLD_ATTRS.forEach(a => {
+    const color = THRESHOLD_COLORS[a.id] || '#888';
+
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
-    const lab = document.createElement('label');
-    lab.textContent = `${a.icon} ${a.label}`;
-    lab.style.cssText = 'font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;';
+    wrap.style.cssText = `display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;border-left:3px solid ${color};transition:border-color .15s,box-shadow .15s;`;
+
+    const icon = document.createElement('div');
+    icon.style.cssText = `width:34px;height:34px;border-radius:50%;background:${color}1a;border:1.5px solid ${color}55;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;`;
+    icon.textContent = a.icon;
+
+    const body = document.createElement('div');
+    body.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;';
+
+    const lbl = document.createElement('div');
+    lbl.style.cssText = `font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`;
+    lbl.textContent = a.label;
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:5px;';
+
     const inp = document.createElement('input');
-    inp.type = 'number';
-    inp.min = '0';
-    inp.placeholder = '0';
+    inp.type = 'number'; inp.min = '0'; inp.placeholder = '—';
     inp.id = `thr-${a.id}`;
-    inp.style.cssText = 'width:100%;';
+    inp.style.cssText = `flex:1;min-width:0;background:var(--surface3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font-size:13px;font-family:inherit;text-align:center;outline:none;transition:border-color .15s;`;
+
+    const unit = document.createElement('span');
+    unit.style.cssText = `font-size:10px;color:${color};font-weight:700;white-space:nowrap;opacity:.8;`;
+    unit.textContent = 'pt';
+
+    inp.addEventListener('focus', () => {
+      inp.style.borderColor = color;
+      wrap.style.borderColor = color;
+      wrap.style.boxShadow = `0 0 0 2px ${color}22`;
+    });
+    inp.addEventListener('blur',  () => {
+      inp.style.borderColor = 'var(--border)';
+      wrap.style.borderColor = 'var(--border)';
+      wrap.style.boxShadow = '';
+    });
     inp.addEventListener('input', () => {
       const v = parseInt(inp.value);
       if (v > 0) selThreshold[a.id] = v;
       else delete selThreshold[a.id];
       if (typeof update === 'function') update();
     });
-    wrap.appendChild(lab);
-    wrap.appendChild(inp);
+
+    row.appendChild(inp);
+    row.appendChild(unit);
+    body.appendChild(lbl);
+    body.appendChild(row);
+    wrap.appendChild(icon);
+    wrap.appendChild(body);
     grid.appendChild(wrap);
   });
 }
@@ -1471,12 +1508,21 @@ function loadItem(item) {
   if (item.rarity)   setRarity(item.rarity);
 
   if (item.category) {
-    document.getElementById('f-category').value = item.category;
-    onCatChange();
+    const catSel = document.getElementById('f-category');
+    catSel.value = item.category;
+    catSel.dispatchEvent(new Event('change'));  // met à jour le custom select + onCatChange
   }
-  if (item.cat)    document.getElementById('f-cat').value    = String(item.cat);
-  if (item.palier) document.getElementById('f-palier').value = String(item.palier);
-  if (item.lvl)    document.getElementById('f-lvl').value    = String(item.lvl);
+  if (item.cat) {
+    const catSlotSel = document.getElementById('f-cat');
+    catSlotSel.value = String(item.cat);
+    _customSelUpdaters['f-cat']?.();
+  }
+  if (item.palier != null) {
+    const palierSel = document.getElementById('f-palier');
+    palierSel.value = String(item.palier);
+    _customSelUpdaters['f-palier']?.();
+  }
+  if (item.lvl) document.getElementById('f-lvl').value = String(item.lvl);
 
   // Set
   if (item.set && setDrop && typeof SETS !== 'undefined' && SETS[item.set]) {
@@ -1581,9 +1627,9 @@ function loadItem(item) {
     renderCustomTags();
   }
 
+  refreshCustomSelects();
   loadDrop?.reset();
   update();
-  // Scroll vers le formulaire
   document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -3108,6 +3154,27 @@ function isPanoplieDuplicate(id) {
   return _panopliesCache.some(p => p.id === id || p._id === id);
 }
 
+function isQuestDuplicate(id) {
+  if (!id || typeof QUETES_DATA === 'undefined') return false;
+  return QUETES_DATA.some(q => q.id === id || q._id === id);
+}
+
+async function hasPendingSubmission(type, name) {
+  const db      = window._vcl_db;
+  const getDocs = window._vcl_getDocs;
+  const col     = window._vcl_collection;
+  if (!db || !getDocs || !col || !name) return false;
+  try {
+    const snap = await getDocs(col(db, 'submissions'));
+    return snap.docs.some(d => {
+      const s = d.data();
+      if (s.type !== type || s.status !== 'pending') return false;
+      const n = s.data?.name || s.data?.titre || s.data?.label || '';
+      return n.toLowerCase() === name.toLowerCase();
+    });
+  } catch { return false; }
+}
+
 function update() {
   // ── Mob mode ──
   if (creatorMode === 'mob') {
@@ -3456,13 +3523,25 @@ async function submitToDiscord() {
   }
 
   if (creatorMode === 'region') {
+    const regName = document.getElementById('reg-name').value.trim();
     const regErrors = [];
-    if (!document.getElementById('reg-name').value.trim()) regErrors.push('Le nom est obligatoire.');
+    if (!regName) regErrors.push('Le nom est obligatoire.');
     if (!document.getElementById('reg-palier').value)      regErrors.push('Le palier est obligatoire.');
     if (regInCodex && !document.getElementById('reg-lore').value.trim()) regErrors.push('Le lore est obligatoire pour une région Codex.');
     if (regErrors.length) {
       window._toast?.('⛔ ' + regErrors.join(' · '), 'error', 5000);
       return;
+    }
+    const regId = document.getElementById('reg-id').value.trim();
+    if (isRegionDuplicate(regId)) {
+      const yes = await window._modal?.confirm(`⚠️ La région "${regName}" existe déjà dans la base.\nVotre soumission sera traitée comme une modification. Continuer ?`);
+      if (!yes) return;
+    } else {
+      const pendingReg = await hasPendingSubmission('region', regName);
+      if (pendingReg) {
+        const yes = await window._modal?.confirm(`⚠️ Une soumission avec ce nom est déjà en attente de validation.\nContinuer quand même ?`);
+        if (!yes) return;
+      }
     }
     await submitToFirestore();
     return;
@@ -3479,6 +3558,16 @@ async function submitToDiscord() {
       window._toast?.('⛔ ' + qErrors.join(' · '), 'error', 5000);
       return;
     }
+    if (isQuestDuplicate(q.id)) {
+      const yes = await window._modal?.confirm(`⚠️ La quête "${q.titre}" existe déjà dans la base.\nVotre soumission sera traitée comme une modification. Continuer ?`);
+      if (!yes) return;
+    } else {
+      const pendingQ = await hasPendingSubmission('quest', q.titre);
+      if (pendingQ) {
+        const yes = await window._modal?.confirm(`⚠️ Une soumission avec ce titre est déjà en attente de validation.\nContinuer quand même ?`);
+        if (!yes) return;
+      }
+    }
     const btn = document.getElementById('btn-submit-discord');
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
     try { await submitToFirestore(); }
@@ -3492,10 +3581,19 @@ async function submitToDiscord() {
     const pErrors = [];
     if (!p.label) pErrors.push('Nom obligatoire.');
     if (!p.id) pErrors.push('ID manquant.');
-    if (!p.bonuses || !Object.keys(p.bonuses).length) pErrors.push('Au moins un bonus obligatoire.');
     if (pErrors.length) {
       window._toast?.('⛔ ' + pErrors.join(' · '), 'error', 5000);
       return;
+    }
+    if (isPanoplieDuplicate(p.id)) {
+      const yes = await window._modal?.confirm(`⚠️ La panoplie "${p.label}" existe déjà dans la base.\nVotre soumission sera traitée comme une modification. Continuer ?`);
+      if (!yes) return;
+    } else {
+      const pendingP = await hasPendingSubmission('panoplie', p.label);
+      if (pendingP) {
+        const yes = await window._modal?.confirm(`⚠️ Une soumission avec ce nom est déjà en attente de validation.\nContinuer quand même ?`);
+        if (!yes) return;
+      }
     }
     await submitToFirestore();
     return;
@@ -3506,10 +3604,19 @@ async function submitToDiscord() {
     const errs = [];
     if (!data.id || !data.name) errs.push('Nom et ID obligatoires.');
     if (data.inCodex && !data.lore) errs.push('Le lore est obligatoire si le mob est dans le Codex.');
-    // Validation dynamique depuis config Firestore
     const { errors: dynErrors } = validateCurrentMode();
     errs.push(...dynErrors);
     if (errs.length) { window._toast?.('⛔ ' + errs.join(' · '), 'error', 5000); return; }
+    if (isMobDuplicate(data.id)) {
+      const yes = await window._modal?.confirm(`⚠️ Le mob "${data.name}" existe déjà dans la base.\nVotre soumission sera traitée comme une modification. Continuer ?`);
+      if (!yes) return;
+    } else {
+      const pendingMob = await hasPendingSubmission('mob', data.name);
+      if (pendingMob) {
+        const yes = await window._modal?.confirm(`⚠️ Une soumission avec ce nom est déjà en attente de validation.\nContinuer quand même ?`);
+        if (!yes) return;
+      }
+    }
     await submitToFirestore();
     return;
   }
@@ -3517,6 +3624,12 @@ async function submitToDiscord() {
   if (creatorMode === 'pnj') {
     const { errors: dynErrors } = validateCurrentMode();
     if (dynErrors.length) { window._toast?.('⛔ ' + dynErrors.join(' · '), 'error', 5000); return; }
+    const pnjData = buildPnjObj();
+    const pendingPnj = await hasPendingSubmission('pnj', pnjData.name);
+    if (pendingPnj) {
+      const yes = await window._modal?.confirm(`⚠️ Une soumission avec ce nom est déjà en attente de validation.\nContinuer quand même ?`);
+      if (!yes) return;
+    }
     await submitToFirestore();
     return;
   }
@@ -3530,6 +3643,22 @@ async function submitToDiscord() {
   if (errors.length) {
     window._toast?.('⛔ Corrige les erreurs avant de soumettre', 'error', 5000);
     return;
+  }
+
+  // Check for duplicates before submitting
+  {
+    const itemId   = document.getElementById('f-id').value.trim();
+    const itemName = document.getElementById('f-name').value.trim();
+    if (isDuplicate(itemId)) {
+      const yes = await window._modal?.confirm(`⚠️ L'item "${itemName}" existe déjà dans la base.\nVotre soumission sera traitée comme une modification. Continuer ?`);
+      if (!yes) return;
+    } else {
+      const pendingItem = await hasPendingSubmission('item', itemName);
+      if (pendingItem) {
+        const yes = await window._modal?.confirm(`⚠️ Une soumission avec ce nom est déjà en attente de validation.\nContinuer quand même ?`);
+        if (!yes) return;
+      }
+    }
   }
 
   const btn = document.getElementById('btn-submit-discord');
@@ -3624,7 +3753,6 @@ async function submitToFirestore() {
     data = buildPanoplieObj();
     if (!data.id)    throw new Error('ID manquant (remplis le nom)');
     if (!data.label) throw new Error('Nom obligatoire');
-    if (!data.bonuses || !Object.keys(data.bonuses).length) throw new Error('Au moins un bonus obligatoire');
   }
 
   // Nettoyer pour Firestore
