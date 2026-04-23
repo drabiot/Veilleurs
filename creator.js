@@ -2179,7 +2179,7 @@ function getCraft() {
 // ═══════════════════════════════════════════════════
 // EFFECTS
 // ═══════════════════════════════════════════════════
-const EFFECT_TYPES = ['heal','mana','stamina','regen','buff','feed','debuff','cooldown','use','level','force','arcane','healing','mana_heal','stam_heal','crit_c','crit_d','res','dex_att','force_att','esp_att','intel_att','vita_att','def_att','magie','endu','vol_vie'];
+const EFFECT_TYPES = ['heal','regen','mana','stamina','degats_physique','degats_armes','degats_arcane','boost_mana','boost_stamina','coups_critique','degats_critique','vol_vie','health_heal','mana_heal','stamina_heal','dexterite_attribut','force_attribut','esprit_attribut','intelligence_attribut','vitalite_attribut','defense_attribut','resurection','feed','cooldown','use','level'];
 
 const EFFECT_TEMPLATES = [
   { label:'❤️ Soin',         effects:[{ type:'heal',    value:50  }] },
