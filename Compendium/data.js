@@ -203,10 +203,11 @@ const EFFECT_META = {
 
 	resurection:					{ icon: '✳️',  	color: '#4faa39', label: 'Ressurection',  				prefix: 'Vous permet de réanimer un camarade au combat dans les ' },
 
-	feed:     { icon: '🍖',  	color: '#8d520b', label: 'Nourriture',       		prefix: 'Restaure ' },
-  cooldown: { icon: '⏱️',  	color: '#888888', label: 'Cooldown',        		 	prefix: ''  },
-	use: 			{ icon: '🧪',  	color: '#7db0ca', label: 'Utilisations',     		prefix: ''  },
-	level: 		{ icon: '❓',  	color: '#c43c28', label: 'Niveau Requis',   		  prefix: 'Niveau '  }
+	feed:     						{ icon: '🍖',  	color: '#8d520b', label: 'Nourriture',       		prefix: 'Restaure ' },
+	saturation:     			{ icon: '🍖',  	color: '#cc4c11', label: 'Saturation',       		prefix: 'Offre ' },
+  cooldown: 						{ icon: '⏱️',  	color: '#888888', label: 'Cooldown',        		 	prefix: ''  },
+	use: 									{ icon: '🧪',  	color: '#7db0ca', label: 'Utilisations',     		prefix: ''  },
+	level: 								{ icon: '❓',  	color: '#c43c28', label: 'Niveau Requis',   		  prefix: 'Niveau '  }
 };
 
 //#endregion EFFECT_META
