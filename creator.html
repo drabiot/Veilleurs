@@ -3,27 +3,43 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="img/VeilleursLogo.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@900&family=JetBrains+Mono:ital,wght@0,400;0,600;1,400&display=swap">
-<title>Creator — Veilleurs</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Cinzel:wght@600;900&display=swap">
+<title>Creator — Veilleurs au Clair de Lune</title>
 <link rel="stylesheet" href="creator.css">
 </head>
 <body>
 
-<header>
-  <h1>⚙️ Creator</h1>
-  <span id="header-subtitle">Soumet un item</span>
-  <div class="hbtns">
-    <a href="Compendium/compendium.html" class="btn btn-ghost">📖 Compendium</a>
-    <a href="moderation.html" id="btn-moderation" class="btn btn-ghost" style="display:none;">🛡️ Modération</a>
-    <input type="text" id="author-input" placeholder="👤 Ton pseudo…" oninput="saveAuthor()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;outline:none;width:130px;transition:border-color .15s;" title="Pseudo affiché dans la soumission Discord">
-    <span class="copy-msg" id="copy-msg">✓ Copié !</span>
-    <span id="auth-user-status" style="font-size:12px;color:var(--muted);display:none;"></span>
-    <button class="btn btn-ghost" id="btn-login" onclick="openLoginModal()" style="display:none;font-size:12px;">🔑 Connexion</button>
-    <button class="btn btn-ghost" id="btn-change-pseudo" onclick="openChangePseudoModal()" style="display:none;font-size:12px;" title="Changer mon pseudo">✏️</button>
-    <button class="btn btn-ghost" id="btn-logout-hdr" onclick="doLogout()" style="display:none;font-size:12px;">🚪</button>
-    <button class="btn btn-primary" id="btn-submit-discord" onclick="submitToDiscord()">📨 Soumettre</button>
-    <button class="btn btn-ghost" onclick="resetForm()">🔄 Reset</button>
+<div class="ambient-bg" aria-hidden="true">
+  <div class="moon"></div>
+</div>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-left">
+      <div class="traffic-lights">
+        <span class="tl tl-red"></span>
+        <span class="tl tl-yellow"></span>
+        <span class="tl tl-green"></span>
+      </div>
+      <span class="header-sep">─────</span>
+      <a href="index.html" class="header-logo">Veilleurs au Clair de Lune</a>
+      <span class="header-subtitle">// CREATOR</span>
+    </div>
+    <div class="header-right">
+      <a href="Compendium/compendium.html" class="btn btn-ghost" style="font-size:11px;">📖 Compendium</a>
+      <a href="moderation.html" id="btn-moderation" class="btn btn-ghost" style="display:none;font-size:11px;">🛡️ Modération</a>
+      <input type="text" id="author-input" placeholder="👤 Pseudo…" oninput="saveAuthor()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 10px;font-size:11px;outline:none;width:110px;transition:border-color .15s;font-family:inherit;" title="Pseudo affiché dans la soumission Discord">
+      <span class="copy-msg" id="copy-msg">✓ Copié !</span>
+      <span id="auth-user-status" style="font-size:11px;color:var(--muted);display:none;"></span>
+      <button class="btn btn-ghost" id="btn-login" onclick="openLoginModal()" style="display:none;font-size:11px;">🔑 Connexion</button>
+      <button class="btn btn-ghost" id="btn-change-pseudo" onclick="openChangePseudoModal()" style="display:none;font-size:11px;" title="Changer mon pseudo">✏️</button>
+      <button class="btn btn-ghost" id="btn-logout-hdr" onclick="doLogout()" style="display:none;font-size:11px;">🚪</button>
+      <button class="btn btn-primary" id="btn-submit-discord" onclick="submitToDiscord()">◈ Soumettre</button>
+      <button class="btn btn-ghost" onclick="resetForm()" style="font-size:11px;">↺ Reset</button>
+    </div>
   </div>
 </header>
 
@@ -147,7 +163,7 @@
             <label>Nom affiché *</label>
             <input type="text" id="f-name" placeholder="Épée du Dragon" oninput="onNameInput()">
           </div>
-          <div class="field">
+          <div class="field" style="display:none;" aria-hidden="true">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
               <label style="margin:0">ID généré</label>
               <span id="id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant</span>
@@ -171,9 +187,11 @@
         </div>
 
         <div class="field">
-          <label>Item sensible</label>
-          <div>
-            <button id="sensible-btn" class="r-btn" style="--c:#f87171;" onclick="toggleSensible()">🔒 Sensible</button>
+          <label>Drapeaux</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button id="sensible-btn"  class="r-btn" style="--c:#f87171;width:fit-content;"  onclick="toggleSensible()">🔒 Sensible</button>
+            <button id="event-btn"     class="r-btn" style="--c:#a855f7;width:fit-content;"  onclick="toggleEvent()">🎊 Event</button>
+            <button id="evolutif-btn"  class="r-btn" style="--c:#60a5fa;width:fit-content;"  onclick="toggleEvolutif()">🔄 Évolutif</button>
           </div>
         </div>
 
@@ -208,7 +226,6 @@
           <label>Type d'arme</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button id="twohanded-btn" class="r-btn" style="--c:#f59e0b;width:fit-content;" onclick="toggleTwoHanded()">⚔️⚔️ Deux mains</button>
-            <button id="evolutif-btn" class="r-btn" style="--c:#60a5fa;width:fit-content;" onclick="toggleEvolutif()">🔄 Évolutif</button>
           </div>
         </div>
 
@@ -1101,5 +1118,16 @@ window._modal = modal;
 
 
 <script src="creator.js"></script>
+<script>
+  (function() {
+    function setHeaderH() {
+      const h = document.querySelector('.site-header');
+      if (h) document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
+    }
+    setHeaderH();
+    window.addEventListener('resize', setHeaderH);
+    new ResizeObserver(setHeaderH).observe(document.querySelector('.site-header'));
+  })();
+</script>
 </body>
 </html>

@@ -56,7 +56,7 @@ onAuthStateChanged(auth, async user => {
 
   // Masquer les sections admin-only pour tout rôle non-admin (contributeur, modo, etc.)
   if (currentRole !== 'admin') {
-    ['btn-users', 'btn-discord-webhooks', 'btn-permissions', 'btn-migration', 'btn-creator-validation', 'sec-admin'].forEach(id => {
+    ['btn-users', 'btn-discord-webhooks', 'btn-permissions', 'btn-migration', 'btn-creator-validation', 'btn-migration-evolutif', 'sec-admin'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });

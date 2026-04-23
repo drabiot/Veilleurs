@@ -94,6 +94,7 @@
     <button class="filter-btn" id="btn-permissions"        onclick="showPermissions()">🔑 Permissions</button>
     <button class="filter-btn" id="btn-migration"          onclick="showMigration()">🔒 Sensible</button>
     <button class="filter-btn" id="btn-creator-validation" onclick="showCreatorValidation()">⚙️ Champs requis</button>
+    <button class="filter-btn" id="btn-migration-evolutif" onclick="showMigrationEvolutif()">🔄 Migration Évolutif</button>
 
     <!-- ── OUTILS ───────────────────────────────────────── -->
     <div class="sb-label">OUTILS</div>
@@ -620,10 +621,204 @@
   <main class="main" id="capture-panel" style="display:none;padding:0;overflow:hidden;">
     <iframe id="capture-iframe" style="width:100%;height:100%;border:none;" src="about:blank" title="Capture Sprites"></iframe>
   </main>
+
+  <!-- Panneau Migration Évolutif -->
+  <main class="main" id="migration-evolutif-panel" style="display:none;">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:15px;font-weight:700;">🔄 Migration — Items Évolutifs</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="migAnalyze()" style="font-size:12px;">🔍 Analyser</button>
+        <button class="btn" id="mig-ev-btn-all" onclick="migRunAll()" style="display:none;background:var(--accent);color:#fff;font-size:12px;">⚡ Tout migrer</button>
+      </div>
+    </div>
+
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
+      Détecte les items avec l'ancien booléen <code>evolving: true</code> et les migre vers <code>evolutif: true</code>
+      (en supprimant l'ancien champ). Détecte aussi les items dont l'ID correspond au pattern évolutif
+      (<code>nom_classe_p1</code>) mais sans aucun des deux flags.
+    </p>
+
+    <!-- Stats rapides -->
+    <div id="mig-ev-stats" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:13px;"></div>
+
+    <!-- Barre de progression -->
+    <div id="mig-ev-progress" style="display:none;margin-bottom:14px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:5px;" id="mig-ev-progress-text">Mise à jour en cours…</div>
+      <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+        <div id="mig-ev-progress-bar" style="height:100%;background:var(--accent);width:0%;transition:width .25s;border-radius:3px;"></div>
+      </div>
+    </div>
+
+    <!-- Listes -->
+    <div id="mig-ev-list"></div>
+
+  </main>
 </div>
 
 <script src="utils.js"></script>
 <script type="module" src="moderation.js"></script>
+<script type="module">
+import { db, collection, getDocs, doc, updateDoc, deleteField } from './firebase.js';
+
+// Pattern d'ID évolutif : se termine par _classe_pN
+const EVOLUTIF_PATTERN = /_(guerrier|assassin|archer|mage|shaman)_p\d$/;
+
+let _migPending  = []; // items avec evolving:true → à migrer
+let _migDetected = []; // items détectés par pattern ID, sans flag
+
+function _switchToPanel(id) {
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('btn-migration-evolutif');
+  if (btn) btn.classList.add('active');
+  const panel = document.getElementById(id);
+  if (panel) panel.style.display = '';
+}
+
+window.showMigrationEvolutif = function() {
+  _switchToPanel('migration-evolutif-panel');
+  migAnalyze();
+};
+
+window.migAnalyze = async function() {
+  const statsEl   = document.getElementById('mig-ev-stats');
+  const listEl    = document.getElementById('mig-ev-list');
+  const btnAll    = document.getElementById('mig-ev-btn-all');
+  statsEl.innerHTML = '<span style="color:var(--muted)">Chargement…</span>';
+  listEl.innerHTML  = '';
+  btnAll.style.display = 'none';
+
+  const snap  = await getDocs(collection(db, 'items'));
+  const items = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
+
+  const migrated  = items.filter(i => i.evolutif === true);
+  _migPending     = items.filter(i => i.evolving === true && !i.evolutif);
+  _migDetected    = items.filter(i => !i.evolving && !i.evolutif &&
+                      EVOLUTIF_PATTERN.test(i.id || i._docId || ''));
+
+  // Stats
+  statsEl.innerHTML =
+    `<span>✅ Déjà migrés : <b style="color:var(--success)">${migrated.length}</b></span>` +
+    `<span>⚠️ À migrer (<code>evolving</code>) : <b style="color:#f59e0b">${_migPending.length}</b></span>` +
+    `<span>🔍 Détectés par pattern ID : <b style="color:#60a5fa">${_migDetected.length}</b></span>`;
+
+  if (!_migPending.length && !_migDetected.length) {
+    listEl.innerHTML = '<div style="color:var(--success);font-size:13px;padding:12px 0;">✓ Aucun item à migrer — tout est à jour.</div>';
+    return;
+  }
+
+  btnAll.style.display = (_migPending.length > 0) ? '' : 'none';
+
+  listEl.innerHTML = '';
+
+  if (_migPending.length) {
+    listEl.appendChild(_migSection(
+      '⚠️ À migrer — <code>evolving: true</code> → <code>evolutif: true</code>',
+      _migPending,
+      true
+    ));
+  }
+
+  if (_migDetected.length) {
+    listEl.appendChild(_migSection(
+      '🔍 Détectés par pattern ID (sans flag)',
+      _migDetected,
+      true
+    ));
+  }
+};
+
+function _migSection(title, items, showBtn) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-bottom:24px;';
+
+  const h = document.createElement('div');
+  h.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);';
+  h.innerHTML = title + ' <span style="opacity:.6;">(' + items.length + ')</span>';
+  wrap.appendChild(h);
+
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.id = 'mig-row-' + item._docId;
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);margin-bottom:5px;';
+
+    const nameEl = document.createElement('span');
+    nameEl.style.cssText = 'flex:1;font-size:13px;color:var(--text);';
+    nameEl.textContent = item.name || '(sans nom)';
+
+    const idEl = document.createElement('code');
+    idEl.style.cssText = 'font-size:10px;color:var(--muted);';
+    idEl.textContent = item.id || item._docId;
+
+    const tagEl = document.createElement('span');
+    tagEl.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.3);flex-shrink:0;';
+    tagEl.textContent = item.evolving ? 'evolving:true' : 'pattern';
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost';
+    btn.style.cssText = 'font-size:11px;padding:3px 10px;flex-shrink:0;';
+    btn.textContent = '▶ Migrer';
+    btn.onclick = () => migOne(item._docId, btn, row);
+
+    row.appendChild(nameEl);
+    row.appendChild(idEl);
+    row.appendChild(tagEl);
+    row.appendChild(btn);
+    wrap.appendChild(row);
+  });
+
+  return wrap;
+}
+
+async function migOne(docId, btn, row) {
+  btn.disabled = true;
+  btn.textContent = '…';
+  try {
+    await updateDoc(doc(db, 'items', docId), {
+      evolutif: true,
+      evolving: deleteField(),
+    });
+    row.style.background = 'rgba(74,222,128,.08)';
+    row.style.borderColor = 'rgba(74,222,128,.3)';
+    btn.textContent = '✓ Migré';
+    btn.style.color = 'var(--success)';
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '✕ Erreur';
+    btn.style.color = 'var(--danger)';
+    console.error('[Migration] erreur sur', docId, e);
+  }
+}
+
+window.migRunAll = async function() {
+  const all   = [..._migPending, ..._migDetected];
+  const btnAll = document.getElementById('mig-ev-btn-all');
+  const progWrap = document.getElementById('mig-ev-progress');
+  const progBar  = document.getElementById('mig-ev-progress-bar');
+  const progText = document.getElementById('mig-ev-progress-text');
+
+  btnAll.disabled = true;
+  progWrap.style.display = '';
+
+  let done = 0;
+  for (const item of all) {
+    progText.textContent = `Migration ${done + 1} / ${all.length} — ${item.name || item._docId}`;
+    progBar.style.width = Math.round((done / all.length) * 100) + '%';
+    const row = document.getElementById('mig-row-' + item._docId);
+    const btn = row?.querySelector('button');
+    await migOne(item._docId, btn || document.createElement('button'), row || document.createElement('div'));
+    done++;
+  }
+
+  progBar.style.width = '100%';
+  progText.textContent = `✓ ${done} items migrés.`;
+  progText.style.color = 'var(--success)';
+  btnAll.disabled = false;
+  _migPending  = [];
+  _migDetected = [];
+};
+</script>
 <div id="img-lightbox" onclick="this.classList.remove('open')">
   <img id="img-lightbox-img" src="" alt="">
 </div>

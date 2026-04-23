@@ -565,7 +565,7 @@ function saveForm() {
       lvl:      document.getElementById('f-lvl').value,
       lore:     document.getElementById('f-lore').value,
       obtainOverride: document.getElementById('f-obtain-override').value,
-      selRarity, selClasses, selTwoHanded, selSensible, selEvolutif,
+      selRarity, selClasses, selTwoHanded, selSensible, selEvent, selEvolutif,
       activeTags: [...activeTags],
       obtainSources,
       stats: (() => {
@@ -664,6 +664,10 @@ function restoreForm(forcedMode) {
     if (d.selSensible) {
       selSensible = true;
       document.getElementById('sensible-btn').classList.add('active');
+    }
+    if (d.selEvent) {
+      selEvent = true;
+      document.getElementById('event-btn')?.classList.add('active');
     }
     if (d.selTwoHanded) {
       selTwoHanded = true;
@@ -1178,12 +1182,19 @@ function onCatChange() {
 }
 
 let selSensible  = false;
+let selEvent     = false;
 let selTwoHanded = false;
 let selEvolutif  = false;
 
 function toggleSensible() {
   selSensible = !selSensible;
   document.getElementById('sensible-btn').classList.toggle('active', selSensible);
+  update();
+}
+
+function toggleEvent() {
+  selEvent = !selEvent;
+  document.getElementById('event-btn').classList.toggle('active', selEvent);
   update();
 }
 
@@ -1227,10 +1238,10 @@ function ensureAllItemsIndex() {
   if (allItemsIndex.length || typeof ITEMS === 'undefined') return;
   const rarityLabel = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
   allItemsIndex = ITEMS.map(it => ({
-    id: it.id,
-    name: it.name || it.id,
+    id: it.id ?? it._id,
+    name: it.name || it.id || it._id,
     subtitle: [rarityLabel[it.rarity] || it.rarity, it.category, it.palier ? 'P'+it.palier : ''].filter(Boolean).join(' · '),
-    search: ((it.name || '') + ' ' + it.id + ' ' + (it.category || '')).toLowerCase(),
+    search: ((it.name || '') + ' ' + (it.id || it._id || '') + ' ' + (it.category || '')).toLowerCase(),
     _raw: it
   }));
 }
@@ -1454,8 +1465,8 @@ function loadItem(item) {
 
   // Identité
   document.getElementById('f-name').value = item.name || '';
-  document.getElementById('f-id').value   = item.id   || '';
-  idLocked = !!(item.id);
+  document.getElementById('f-id').value   = item.id || item._id || '';
+  idLocked = !!(item.id || item._id);
 
   if (item.rarity)   setRarity(item.rarity);
 
@@ -1479,6 +1490,11 @@ function loadItem(item) {
     document.getElementById('sensible-btn').classList.add('active');
   }
 
+  if (item.event) {
+    selEvent = true;
+    document.getElementById('event-btn')?.classList.add('active');
+  }
+
   // Two-handed
   if (item.twoHanded) {
     selTwoHanded = true;
@@ -1486,9 +1502,9 @@ function loadItem(item) {
   }
 
   // Évolutif
-  if (item.evolving) {
+  if (item.evolutif || item.evolving) {
     selEvolutif = true;
-    document.getElementById('evolutif-btn').classList.add('active');
+    document.getElementById('evolutif-btn')?.classList.add('active');
   }
 
   // Rune slots
@@ -1575,12 +1591,13 @@ function resetFormSilent() {
   _skipSave = true;
   document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel textarea').forEach(i => i.value = '');
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
-  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvolutif = false; idLocked = false;
+  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvent = false; selEvolutif = false; idLocked = false;
   document.getElementById('evolutif-btn')?.classList.remove('active');
   resetThresholdInputs();
   const rarityField = document.getElementById('rarity-field');
   if (rarityField) rarityField.classList.add('unset');
   document.getElementById('sensible-btn').classList.remove('active');
+  document.getElementById('event-btn')?.classList.remove('active');
   document.getElementById('twohanded-btn').classList.remove('active');
   activeTags = new Set();
   obtainSources = [];
@@ -2845,10 +2862,11 @@ function buildObj() {
   }
   if (selTwoHanded)              obj.twoHanded  = true;
   if (cat === 'artefact')        obj.unique     = true;
-  if (selEvolutif)               obj.evolving   = true;
+  if (selEvolutif)               obj.evolutif   = true;
   const runeSlots = parseInt(document.getElementById('f-rune-slots').value);
   if (runeSlots > 0)             obj.rune_slots = runeSlots;
   if (selSensible)               obj.sensible  = true;
+  if (selEvent)                  obj.event     = true;
   if (Object.keys(stats).length)  obj.stats   = stats;
   if (selClasses.length)     obj.classes  = [...selClasses];
   if (effects.length)        obj.effects  = effects;

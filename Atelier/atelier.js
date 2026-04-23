@@ -2,9 +2,11 @@
   'use strict';
 
   /* ══ ÉTAT ══ */
-  let equipped      = {};
-  let equippedRunes = {};
-  let activeSlot    = null;
+  let equipped        = {};
+  let equippedRunes   = {};
+  let activeSlot      = null;
+  let activeRuneSlot  = null; // runeKey actif, ex. "plastron_rune_0"
+  let activeRuneSlotId = null; // slotId parent de l'emplacement de rune actif
   let filterQ       = '';
   let filterRar     = null;
   let filterTier 	= null;
@@ -13,13 +15,16 @@
   const NUM_BUILDS   = 3;
 	let activeBuildIndex = 0;
 
+  /* ══ HELPER ID ══ */
+  function getItemId(item) { return item && (item.id ?? item._id) || null; }
+
   /* ══ INDEX MAPS ══
      Lookup O(1) au lieu de N × Array.find() dans les boucles de rendu.
      Les données viennent de Compendium/data.js (chargé avant ce script). */
   const STATS_BY_ID   = new Map(ALL_STATS.map(s => [s.id, s]));
   const SLOTS_BY_ID   = new Map(ALL_SLOTS.map(s => [s.id, s]));
   const CAR_BY_ID     = new Map(CARACTERISTIQUES.map(c => [c.id, c]));
-  const RUNES_BY_ID   = new Map(RUNES.map(r => [r.id, r]));
+  let   RUNES_BY_ID   = new Map(); // peuplé dans init() depuis ITEMS (cat='rune')
   const CLASSES_BY_ID = new Map(CLASSES.map(c => [c.id, c]));
 
   /* ══ VALIDATION DES RUNES ══ */
@@ -810,16 +815,31 @@ function loadAccessoriesForClass(classId) {
           const runeId  = equippedRunes[runeKey];
           const rune    = runeId ? RUNES_BY_ID.get(runeId) : null;
           const orb = document.createElement('div');
-          orb.className = 'rune-orb' + (rune ? ' rune-orb-filled' : ' rune-orb-empty');
+          const isActiveOrb = activeRuneSlot === runeKey;
+          orb.className = 'rune-orb' +
+            (rune ? ' rune-orb-filled' : ' rune-orb-empty') +
+            (isActiveOrb ? ' rune-orb-active' : '');
           if (rune) {
-            orb.style.background   = rune.color + '30';
-            orb.style.borderColor  = rune.color;
-            orb.style.boxShadow    = '0 0 0 2px ' + rune.color + '55';
+            const runeColor = rune.color || getRarityColor(rune.rarity);
+            orb.style.borderColor = runeColor;
+            orb.style.setProperty('--rune-glow', runeColor + '55');
             orb.title = rune.name;
+            const orbRuneId = getItemId(rune);
+            const runeImg = getItemImg(rune) || (orbRuneId ? '../img/compendium/textures/items/Runes/' + orbRuneId + '.png' : null);
+            if (runeImg) {
+              const img = document.createElement('img');
+              img.src = runeImg; img.alt = rune.name;
+              img.onerror = function() { this.style.display = 'none'; };
+              orb.appendChild(img);
+            } else {
+              orb.textContent = '💎';
+            }
+          } else {
+            orb.textContent = '+';
           }
           orb.addEventListener('click', function(e) {
             e.stopPropagation();
-            openRunePicker(runeKey, orb, slotDef.id);
+            selectRuneSlot(runeKey, slotDef.id);
           });
           orbsRow.appendChild(orb);
         }
@@ -845,134 +865,36 @@ function loadAccessoriesForClass(classId) {
     if (def && el) drawSlot(el, def);
   }
 
-  /* ══ RUNE PICKER ══ */
-  function openRunePicker(runeKey, anchorEl, slotId) {
-    const existing = document.getElementById('rune-picker-popup');
-    if (existing) {
-      const wasKey = existing.dataset.runeKey;
-      existing.remove();
-      if (wasKey === runeKey) return;
+  /* ══ SÉLECTION D'EMPLACEMENT DE RUNE ══ */
+  function selectRuneSlot(runeKey, parentSlotId) {
+    const prevSlotId = activeRuneSlotId;
+    if (activeRuneSlot === runeKey) {
+      activeRuneSlot   = null;
+      activeRuneSlotId = null;
+    } else {
+      activeRuneSlot   = runeKey;
+      activeRuneSlotId = parentSlotId;
     }
-
-    const popup = document.createElement('div');
-    popup.id = 'rune-picker-popup';
-    popup.className = 'rune-picker-popup';
-    popup.dataset.runeKey = runeKey;
-
-    const currentRuneId = equippedRunes[runeKey];
-
-    const title = document.createElement('div');
-    title.className = 'rune-picker-title';
-    const orbIdx = parseInt(runeKey.split('_rune_')[1]) + 1;
-    title.textContent = 'Emplacement de Rune ' + orbIdx;
-    popup.appendChild(title);
-
-    RUNES.forEach(function(rune) {
-      const item = document.createElement('div');
-      item.className = 'rune-picker-item' + (currentRuneId === rune.id ? ' active' : '');
-
-      const pip = document.createElement('span');
-      pip.className = 'rune-pip';
-      pip.style.background = rune.color;
-
-      const name = document.createElement('span');
-      name.className = 'rune-picker-name';
-      name.textContent = rune.name;
-
-      const stats = document.createElement('div');
-			stats.className = 'rune-picker-stats';
-
-			const statsLines = Object.entries(rune.stats).map(function(e) {
-					const statDef = STATS_BY_ID.get(e[0]);
-					const icon  = statDef ? statDef.icon  : '◈';
-					const label = statDef ? statDef.label : e[0];
-					const unit  = statDef ? statDef.unit  : '';
-					return '<div style="display:flex;align-items:center;gap:8px;padding:2px 0">' +
-							'<span style="font-size:11px;width:15px;text-align:center;flex-shrink:0">' + icon + '</span>' +
-							'<span style="flex:1;color:rgba(255,255,255,.55);font-size:10.5px">' + label + '</span>' +
-							'<span style="font-weight:700;color:rgba(255,255,255,.9)">+' + e[1] + unit + '</span>' +
-							'</div>';
-			}).join('');
-
-					const buffLines = rune.buff ? Object.entries(rune.buff).map(function(e) {
-					const carDef = CAR_BY_ID.get(e[0]);
-					const icon  = carDef ? carDef.icon  : '◈';
-					const label = carDef ? carDef.label : e[0];
-					const color = carDef ? carDef.color : '#aaa';
-					return '<div style="display:flex;align-items:center;gap:8px;padding:2px 0">' +
-							'<span style="font-size:11px;width:15px;text-align:center;flex-shrink:0">' + icon + '</span>' +
-							'<span style="flex:1;font-size:10.5px;color:' + color + '">' + label + '</span>' +
-							'<span style="font-weight:700;color:' + color + '">+' + e[1] + ' pt</span>' +
-							'</div>';
-			}).join('') : '';
-
-stats.innerHTML = statsLines +
-    (buffLines ? '<div style="border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:4px">' + buffLines + '</div>' : '');
-
-      item.appendChild(pip);
-      item.appendChild(name);
-      item.appendChild(stats);
-
-      item.addEventListener('click', function(e) {
-			e.stopPropagation();
-			if (equippedRunes[runeKey] === rune.id) {
-				delete equippedRunes[runeKey];   // déjà sélectionnée → on l'enlève
-			} else {
-				equippedRunes[runeKey] = rune.id;
-			}
-			popup.remove();
-			redrawSlot(slotId);
-			renderStats();
-			saveToStorage();
-			});
-
-      popup.appendChild(item);
-    });
-
-    if (currentRuneId) {
-      const sep = document.createElement('div');
-      sep.className = 'rune-picker-sep';
-      popup.appendChild(sep);
-
-      const rem = document.createElement('div');
-      rem.className = 'rune-picker-remove';
-      rem.textContent = '✕ Retirer la rune';
-      rem.addEventListener('click', function(e) {
-        e.stopPropagation();
-        delete equippedRunes[runeKey];
-        popup.remove();
-        redrawSlot(slotId);
-        renderStats();
-        saveToStorage();
-      });
-      popup.appendChild(rem);
-    }
-
-    document.body.appendChild(popup);
-    const rect = anchorEl.getBoundingClientRect();
-    const popW = popup.offsetWidth || 260;
-    const popH = popup.offsetHeight || 300;
-    let left = rect.left + window.scrollX;
-    let top  = rect.bottom + window.scrollY + 5;
-    if (left + popW > window.innerWidth - 8) left = window.innerWidth - popW - 8;
-    if (top + popH > window.innerHeight + window.scrollY - 8) top = rect.top + window.scrollY - popH - 5;
-    popup.style.left = left + 'px';
-    popup.style.top  = top  + 'px';
-
-    setTimeout(function() {
-      function onOutside(e) {
-        if (!popup.contains(e.target) && e.target !== anchorEl) {
-          popup.remove();
-          document.removeEventListener('click', onOutside);
-        }
-      }
-      document.addEventListener('click', onOutside);
-    }, 0);
+    activeSlot = null;
+    document.querySelectorAll('.slot').forEach(function(el) { el.classList.remove('active'); });
+    if (prevSlotId) redrawSlot(prevSlotId);
+    if (activeRuneSlotId && activeRuneSlotId !== prevSlotId) redrawSlot(activeRuneSlotId);
+    renderPickerInfo();
+    renderItemList();
   }
 
   function clearRunesForSlot(slotId) {
     Object.keys(equippedRunes).forEach(function(key) {
       if (key.startsWith(slotId + '_rune_')) delete equippedRunes[key];
+    });
+  }
+
+  // Garde les runes qui tiennent dans newCount emplacements, supprime le reste.
+  function trimRunesForSlot(slotId, newCount) {
+    Object.keys(equippedRunes).forEach(function(key) {
+      if (!key.startsWith(slotId + '_rune_')) return;
+      const idx = parseInt(key.split('_rune_')[1], 10);
+      if (isNaN(idx) || idx >= (newCount || 0)) delete equippedRunes[key];
     });
   }
 
@@ -1296,7 +1218,11 @@ stats.innerHTML = statsLines +
 	}
 
   function selectSlot(slotId) {
-		if (getBlockedSlots().has(slotId)) return;
+    if (getBlockedSlots().has(slotId)) return;
+    const prevRuneSlotId = activeRuneSlotId;
+    activeRuneSlot   = null;
+    activeRuneSlotId = null;
+    if (prevRuneSlotId) redrawSlot(prevRuneSlotId);
     activeSlot = (activeSlot === slotId) ? null : slotId;
     document.querySelectorAll('.slot').forEach(function(el) {
       el.classList.toggle('active', el.dataset.slotId === activeSlot);
@@ -1323,6 +1249,15 @@ stats.innerHTML = statsLines +
 
   function renderPickerInfo() {
     const box = document.getElementById('picker-info');
+    if (activeRuneSlot) {
+      const orbIdx = parseInt(activeRuneSlot.split('_rune_')[1]) + 1;
+      const currentRune = equippedRunes[activeRuneSlot] ? RUNES_BY_ID.get(equippedRunes[activeRuneSlot]) : null;
+      box.innerHTML =
+        '<div class="psi-label">Emplacement de Rune sélectionné</div>' +
+        '<div class="psi-name">💎 Emplacement ' + orbIdx +
+        (currentRune ? ' · <span style="opacity:.65">' + currentRune.name + '</span>' : '') + '</div>';
+      return;
+    }
     if (!activeSlot) {
       box.innerHTML = '<div class="psi-hint">Tous les items · cliquez sur un emplacement pour filtrer</div>';
       return;
@@ -1534,8 +1469,8 @@ stats.innerHTML = statsLines +
 
   function renderItemList() {
     const list = document.getElementById('items-list');
-    // normalize → /utils.js (source unique)
     const q    = normalize(filterQ);
+
     const statsFilter = function(item) {
       return filterStats.size === 0 || [...filterStats].every(function(sid) {
         if (!item.stats) return false;
@@ -1546,13 +1481,66 @@ stats.innerHTML = statsLines +
       });
     };
 
+    /* ── Mode rune : affiche les items cat='rune' ── */
+    if (activeRuneSlot) {
+      const runes = ITEMS.filter(function(item) {
+        return item.cat === 'rune' &&
+          (!filterRar  || item.rarity === filterRar) &&
+          (filterTier === null || item.palier === filterTier) &&
+          (!q || normalize(item.name).includes(q)) &&
+          statsFilter(item);
+      });
+      runes.sort(function(a, b) {
+        if ((a.palier || 0) !== (b.palier || 0)) return (a.palier || 0) - (b.palier || 0);
+        return (a.ordre ?? 999) - (b.ordre ?? 999);
+      });
+      if (!runes.length) {
+        list.innerHTML = '<div class="picker-empty-msg">Aucune rune disponible</div>';
+        return;
+      }
+      list.innerHTML = '';
+      runes.forEach(function(rune) {
+        const rid = getItemId(rune);
+        if (!rid) return; // rune sans ID valide → ignorée
+        const row = document.createElement('div');
+        const isActive = equippedRunes[activeRuneSlot] === rid;
+        row.className = 'item-row' + (isActive ? ' active' : '');
+        const rarColor = (RARITIES[rune.rarity] || { color: '#888' }).color;
+        const rarLabel = (RARITIES[rune.rarity] || { label: rune.rarity }).label;
+        const imgSrc = getItemImg(rune) || ('../img/compendium/textures/items/Runes/' + rid + '.png');
+        row.innerHTML =
+          '<div class="item-thumb">' +
+            '<img src="' + imgSrc + '" alt="' + rune.name + '" onerror="this.style.display=\'none\'">' +
+            '<div class="item-thumb-bar" style="background:' + rarColor + '"></div>' +
+          '</div>' +
+          '<div class="item-meta">' +
+            '<div class="item-meta-top"><div class="item-meta-name">' + rune.name + '</div></div>' +
+            '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + '</div>' +
+            buildItemStatsHTML(rune) +
+          '</div>';
+        row.addEventListener('click', function() {
+          if (equippedRunes[activeRuneSlot] === rid) {
+            delete equippedRunes[activeRuneSlot];
+          } else {
+            equippedRunes[activeRuneSlot] = rid;
+          }
+          if (activeRuneSlotId) redrawSlot(activeRuneSlotId);
+          renderStats();
+          renderItemList();
+          saveToStorage();
+        });
+        list.appendChild(row);
+      });
+      return;
+    }
+
     const _equipCats = new Set(ALL_SLOTS.flatMap(function(s) { return s.cats; }));
 
     let visible;
     if (!activeSlot) {
-      // Mode "tous les items" — uniquement armes / armures / accessoires
+      // Mode "tous les items" — armes / armures / accessoires + runes
       visible = ITEMS.filter(function(item) {
-        return _equipCats.has(item.cat) &&
+        return (_equipCats.has(item.cat) || item.cat === 'rune') &&
           itemAllowedForClass(item, activeClass) &&
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
@@ -1616,9 +1604,10 @@ stats.innerHTML = statsLines +
       if (isActive) row.classList.add('active');
       const rarColor = (RARITIES[item.rarity] || { color: '#888' }).color;
       const rarLabel = (RARITIES[item.rarity] || { label: item.rarity }).label;
+      const _itemImg = getItemImg(item) || (item.cat === 'rune' ? '../img/compendium/textures/items/Runes/' + (getItemId(item) || '') + '.png' : null);
       row.innerHTML =
         '<div class="item-thumb">' +
-          (getItemImg(item) ? '<img src="' + getItemImg(item) + '" alt="' + item.name + '">' : '<span>📦</span>') +
+          (_itemImg ? '<img src="' + _itemImg + '" alt="' + item.name + '" onerror="this.style.display=\'none\'">' : '<span>📦</span>') +
           '<div class="item-thumb-bar" style="background:' + rarColor + '"></div>' +
         '</div>' +
         '<div class="item-meta">' +
@@ -1641,7 +1630,7 @@ stats.innerHTML = statsLines +
 				if (equipped[targetSlot] && equipped[targetSlot].id === item.id) {
     				clearSlot(targetSlot);
 				} else {
-					clearRunesForSlot(targetSlot);
+					trimRunesForSlot(targetSlot, item.rune_slots || 0);
 
 					const previousItem = equipped[targetSlot];
 					const prevOffSlotId = findOffhandSlotId(previousItem);
@@ -2231,6 +2220,9 @@ stats.innerHTML = statsLines +
 
   /* ══ INIT ══ */
   function init() {
+    ITEMS.filter(function(i) { return i.cat === 'rune'; }).forEach(function(r) {
+      const rid = getItemId(r); if (rid) RUNES_BY_ID.set(rid, r);
+    });
     buildCarTooltip();
     buildSetTooltip();
     buildClassPicker();
@@ -2887,9 +2879,16 @@ const statsDrawer  = document.getElementById('stats-drawer');
 const statsTab     = document.getElementById('stats-drawer-tab');
 const statsClose   = document.getElementById('stats-drawer-close');
 
+function setStatsOpen(open) {
+  statsDrawer.classList.toggle('open', open);
+  document.querySelector('.body').classList.toggle('stats-open', open);
+  window.dispatchEvent(new Event('resize'));
+  setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 260);
+}
+
 statsTab.addEventListener('click', function() {
-  statsDrawer.classList.toggle('open');
+  setStatsOpen(!statsDrawer.classList.contains('open'));
 });
 statsClose.addEventListener('click', function() {
-  statsDrawer.classList.remove('open');
+  setStatsOpen(false);
 });
