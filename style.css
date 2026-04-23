@@ -197,95 +197,85 @@ body > *:not(.ambient-bg) { position: relative; z-index: 1; }
 }
 
 /* ── Logo composé ── */
+/*
+  Logo composé : sword.png × 2 + shield.png
+  Positions calculées pixel-perfect par Pillow sur canvas 340×340 :
+    - sword 150×300px, angle 25°, croisement à 92% de la hauteur (pointe)
+    - épée gauche  : centre (116, 157) → left=34.1% top=46.2%
+    - épée droite  : centre (223, 157) → left=65.6% top=46.2%
+    - bouclier 202×202px : centre (170, 155) → left=50%  top=45.6%
+  mix-blend-mode: lighten efface le fond noir des PNG.
+*/
+
 .logo-wrap {
   position: relative;
   width: 340px;
   height: 340px;
   margin-bottom: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-/* Halo derrière le logo */
 .logo-glow {
   position: absolute;
-  inset: -30px;
+  inset: -40px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(224,172,96,.22) 0%, transparent 68%);
+  background: radial-gradient(circle, rgba(224,172,96,.2) 0%, transparent 65%);
   animation: glow-pulse 5s ease-in-out infinite alternate;
   pointer-events: none;
 }
 @keyframes glow-pulse {
-  from { transform: scale(.88); opacity: .55; }
-  to   { transform: scale(1.08); opacity: 1; }
+  from { transform: scale(.88); opacity: .5;  }
+  to   { transform: scale(1.1); opacity: 1; }
 }
 
-/*
-  sword.png / shield.png ont un fond noir pur.
-  mix-blend-mode: lighten supprime le noir et ne garde que les pixels colorés.
-
-  Logique de positionnement (calquée sur le logo ref) :
-  - L'épée est verticale, pointe en bas dans l'image source.
-  - On veut pointe-bas-droite / garde-haut-gauche → rotate(33deg).
-  - Le point de croisement (~52% de la hauteur de l'épée) doit atterrir
-    au centre du logo-wrap, légèrement au-dessus → translateY(-4%).
-  - translateX(±26%) décale chaque épée pour que les gardes s'écartent.
-  - Le bouclier est centré légèrement en-dessous du croisement.
-*/
-
-/*
-  Valeurs calquées pixel-perfect sur le logo original via Pillow :
-  - épée : 79% du logo-wrap (270px/340px), angle 38°
-  - centre de l'épée décalé à -29% X / -15% Y depuis le centre du wrap
-  - croisement à 74% de la hauteur de l'épée (proche de la pointe)
-  - bouclier : 82% du logo-wrap, centré à -4% Y
-*/
-
+/* Épée gauche : pointe bas-gauche, garde haut-droite */
 .sword-left {
   position: absolute;
-  width: 79%;
+  width: 44%;          /* 150px / 340px */
   height: auto;
   mix-blend-mode: lighten;
-  transform: translateX(-29%) translateY(-15%) rotate(38deg);
-  transform-origin: center center;
-  filter: drop-shadow(0 4px 20px rgba(120,160,220,.3));
+  left:  34.1%;
+  top:   46.2%;
+  transform: translate(-50%, -50%) rotate(25deg);
+  filter: drop-shadow(0 4px 18px rgba(120,160,220,.25));
   animation: sword-idle 6s ease-in-out infinite alternate;
   z-index: 1;
 }
 
+/* Épée droite : miroir horizontal */
 .sword-right {
   position: absolute;
-  width: 79%;
+  width: 44%;
   height: auto;
   mix-blend-mode: lighten;
-  transform: translateX(29%) translateY(-15%) rotate(-38deg) scaleX(-1);
-  transform-origin: center center;
-  filter: drop-shadow(0 4px 20px rgba(120,160,220,.3));
+  left:  65.6%;
+  top:   46.2%;
+  transform: translate(-50%, -50%) rotate(-25deg) scaleX(-1);
+  filter: drop-shadow(0 4px 18px rgba(120,160,220,.25));
   animation: sword-idle 6s ease-in-out infinite alternate;
   z-index: 1;
 }
 
 @keyframes sword-idle {
-  from { filter: drop-shadow(0 4px 14px rgba(120,160,220,.2)); }
-  to   { filter: drop-shadow(0 6px 26px rgba(120,160,220,.5)); }
+  from { filter: drop-shadow(0 4px 12px rgba(120,160,220,.18)); }
+  to   { filter: drop-shadow(0 6px 24px rgba(120,160,220,.45)); }
 }
 
+/* Bouclier centré */
 .shield-img {
   position: absolute;
-  width: 82%;
+  width: 59%;          /* 202px / 340px */
   height: auto;
   mix-blend-mode: lighten;
-  top: 50%;
   left: 50%;
-  transform: translate(-50%, -54%);
-  filter: drop-shadow(0 8px 32px rgba(224,172,96,.35));
+  top:  45.6%;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 8px 28px rgba(224,172,96,.32));
   animation: shield-float 7s ease-in-out infinite alternate;
   z-index: 2;
 }
 @keyframes shield-float {
-  from { transform: translate(-50%, -55%) scale(1);    filter: drop-shadow(0 8px 30px rgba(224,172,96,.28)); }
-  to   { transform: translate(-50%, -53%) scale(1.02); filter: drop-shadow(0 14px 44px rgba(224,172,96,.58)); }
+  from { transform: translate(-50%, -51%) scale(1);    filter: drop-shadow(0 8px 26px rgba(224,172,96,.25)); }
+  to   { transform: translate(-50%, -49%) scale(1.02); filter: drop-shadow(0 14px 42px rgba(224,172,96,.55)); }
 }
 
 /* ── Textes hero ── */
@@ -500,10 +490,10 @@ body > *:not(.ambient-bg) { position: relative; z-index: 1; }
 @media (max-width: 640px) {
   .nav-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
   .nav-card.card-featured { grid-column: span 2; flex-direction: column; align-items: flex-start; }
-  .logo-wrap   { width: 230px; height: 230px; }
-  .sword-left  { width: 165px; transform: translateX(-42px) rotate(38deg); }
-  .sword-right { width: 165px; transform: translateX(42px) rotate(-38deg) scaleX(-1); }
-  .shield-img  { width: 165px; }
+  .logo-wrap   { width: 260px; height: 260px; }
+  .sword-left  { width: 44%; }
+  .sword-right { width: 44%; }
+  .shield-img  { width: 59%; }
   .hero-title  { font-size: 2rem; }
   .nav-link { padding: 12px 18px; font-size: 10px; }
 }
