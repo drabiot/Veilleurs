@@ -566,6 +566,8 @@ window.approve = async (id) => {
     if (!dataId) throw new Error('Pas d\'ID dans les données');
 
     const isSensible = sub.data?.sensible === true;
+    const _contribName  = sub.submitterName || _userNames.get(sub.submittedBy) || 'Inconnu';
+    const _contribField = { uid: sub.submittedBy || null, name: _contribName };
 
     if (sub.type === 'item' && isSensible) {
       // Item sensible → split gameplay (items_hidden par hash) + flavor (items_secret par id)
@@ -580,22 +582,21 @@ window.approve = async (id) => {
       const hash = await hashName(sub.data.name);
       if (!hash) throw new Error('Nom manquant pour hash');
       await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore(gameplay));
-      if (Object.keys(secret).length) {
-        await setDoc(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore(secret));
-      }
+      // items_secret sert aussi de point d'ancrage pour le _contributor (créé même si vide)
+      await setDoc(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore({ ...secret, _contributor: _contribField }));
       // Nettoyer toute version publique existante
       try { await deleteDoc(doc(db, COL.items, String(dataId))); } catch {}
       store.invalidate('items');
     } else if (sub.type === 'mob' && isSensible) {
       // Mob sensible → doc complet dans mobs_secret, jamais dans mobs
-      const payload = { _order: Date.now(), ...sub.data };
+      const payload = { _order: Date.now(), _contributor: _contribField, ...sub.data };
       delete payload.sensible;
       await setDoc(doc(db, COL.mobsSecret, String(dataId)), sanitizeForFirestore(payload));
       try { await deleteDoc(doc(db, COL.mobs, String(dataId))); } catch {}
       store.invalidate('mobs');
     } else {
       // Flux standard
-      const dataToWrite = { _order: Date.now(), ...sub.data };
+      const dataToWrite = { _order: Date.now(), ...sub.data, _contributor: _contribField };
       // Panoplie : couleur par défaut si absente (définie par la modération côté liste)
       if (sub.type === 'panoplie' && !dataToWrite.color) dataToWrite.color = '#b87333';
       await setDoc(doc(db, target, String(dataId)), dataToWrite);
@@ -646,6 +647,7 @@ window.approve = async (id) => {
     if (isDiscordItem) sub.discord_sent = false;
     updateCounts();
     renderSubs();
+    _saveLbSnapshot(allSubs).catch(() => {});
   } catch(e) {
     toast('⛔ Erreur : ' + e.message, 'error');
     if (btn) { btn.disabled = false; btn.textContent = '✓ Approuver'; }
@@ -5447,23 +5449,46 @@ window.loadLeaderboard = async () => {
     listEl.innerHTML = '';
     _renderLbRows(ranked, listEl, false);
   } else {
-    // Fallback : snapshot sauvegardé
-    try {
-      const snapDoc = await getDoc(doc(db, 'config', 'leaderboard_snapshot'));
-      if (snapDoc.exists() && snapDoc.data().counts) {
-        const ranked = Object.values(snapDoc.data().counts)
-          .sort((a, b) => b.total - a.total)
-          .map(u => ({ ...u, subs: null }));
-        listEl.innerHTML = '';
-        const warn = document.createElement('div');
-        warn.style.cssText = 'font-size:12px;color:var(--warn);padding:6px 10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:6px;margin-bottom:12px;';
-        warn.textContent = '⚠️ Soumissions introuvables — affichage depuis le dernier snapshot.';
-        listEl.appendChild(warn);
-        _renderLbRows(ranked, listEl, true);
-        return;
-      }
-    } catch {}
-    listEl.innerHTML = '<div class="empty">Aucune contribution approuvée.</div>';
+    // Fallback : scanner les collections pour le champ _contributor
+    const scanCols = [
+      { col: COL.items,       type: 'item'      },
+      { col: COL.itemsSecret, type: 'item'      },
+      { col: COL.mobs,        type: 'mob'       },
+      { col: COL.mobsSecret,  type: 'mob'       },
+      { col: COL.pnj,         type: 'pnj'       },
+      { col: 'regions',       type: 'region'    },
+      { col: 'quetes',        type: 'quest'     },
+      { col: 'panoplies',     type: 'panoplie'  },
+    ];
+    const byKey = {};
+    for (const { col, type } of scanCols) {
+      try {
+        const snap = await getDocs(collection(db, col));
+        for (const d of snap.docs) {
+          const c = d.data()._contributor;
+          if (!c) continue;
+          const uid   = c.uid  || null;
+          const cname = c.name || 'Inconnu';
+          const key   = uid || ('__' + cname);
+          if (!byKey[key]) byKey[key] = { uid, name: cname, subs: [] };
+          byKey[key].subs.push({
+            _id: d.id, type, isFromCollection: true,
+            name: d.data().name || d.data().titre || d.data().label || d.id,
+          });
+        }
+      } catch {}
+    }
+    const ranked = Object.values(byKey).sort((a, b) => b.subs.length - a.subs.length);
+    listEl.innerHTML = '';
+    if (ranked.length) {
+      const warn = document.createElement('div');
+      warn.style.cssText = 'font-size:12px;color:var(--warn);padding:6px 10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:6px;margin-bottom:12px;';
+      warn.textContent = '⚠️ Historique des soumissions supprimé — affichage depuis les documents approuvés.';
+      listEl.appendChild(warn);
+      _renderLbRows(ranked, listEl, false);
+    } else {
+      listEl.innerHTML = '<div class="empty">Aucune contribution trouvée.</div>';
+    }
   }
 };
 
@@ -5516,11 +5541,13 @@ window.showLeaderboardUser = function(u) {
       return tb - ta;
     });
     for (const s of sorted) {
-      const name = s.data?.name || s.data?.titre || s.data?.label || s._id;
-      const ts   = s.submittedAt?.toDate
+      const name = s.isFromCollection
+        ? s.name
+        : (s.data?.name || s.data?.titre || s.data?.label || s._id);
+      const ts   = s.isFromCollection ? '—' : (s.submittedAt?.toDate
         ? s.submittedAt.toDate().toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' })
-        : '—';
-      const actionLabel = s.editType === 'edit' ? '✏️ Modif.' : '➕ Ajout';
+        : '—');
+      const actionLabel = s.isFromCollection ? '' : (s.editType === 'edit' ? '✏️ Modif.' : '➕ Ajout');
       const row = document.createElement('div');
       row.id = `lb-row-${s._id}`;
       row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;';
@@ -5531,13 +5558,15 @@ window.showLeaderboardUser = function(u) {
         <span style="color:var(--muted);font-size:11px;">${actionLabel}</span>
         <span style="color:var(--muted);font-size:11px;white-space:nowrap;">${ts}</span>
       `;
-      const ignoreBtn = document.createElement('button');
-      ignoreBtn.className = 'btn btn-ghost';
-      ignoreBtn.style.cssText = 'font-size:11px;padding:2px 8px;color:var(--muted);flex-shrink:0;';
-      ignoreBtn.title = 'Masquer du leaderboard (test)';
-      ignoreBtn.textContent = '✕ Ignorer';
-      ignoreBtn.addEventListener('click', () => _lbExclude(s._id, u, updateTitle, renderRows));
-      row.appendChild(ignoreBtn);
+      if (!s.isFromCollection) {
+        const ignoreBtn = document.createElement('button');
+        ignoreBtn.className = 'btn btn-ghost';
+        ignoreBtn.style.cssText = 'font-size:11px;padding:2px 8px;color:var(--muted);flex-shrink:0;';
+        ignoreBtn.title = 'Masquer du leaderboard (test)';
+        ignoreBtn.textContent = '✕ Ignorer';
+        ignoreBtn.addEventListener('click', () => _lbExclude(s._id, u, updateTitle, renderRows));
+        row.appendChild(ignoreBtn);
+      }
       subsEl.appendChild(row);
     }
   };

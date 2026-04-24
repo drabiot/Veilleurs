@@ -4797,6 +4797,20 @@ function renderPnjCrafts() {
 // ═══════════════════════════════════════════════════
 // PNJ — BUILD OBJECT
 // ═══════════════════════════════════════════════════
+function pnjTitleCase(str) {
+  const minor = new Set(['de', 'du', 'des', 'le', 'la', 'les', 'et', 'à', 'en', 'au', 'aux']);
+  return str.replace(/\S+/g, (word, offset) => {
+    const apIdx = word.search(/['’]/);
+    if (apIdx !== -1) {
+      const pre  = word.slice(0, apIdx + 1);
+      const post = word.slice(apIdx + 1);
+      return pre.toLowerCase() + (post ? post[0].toUpperCase() + post.slice(1) : '');
+    }
+    if (offset > 0 && minor.has(word.toLowerCase())) return word.toLowerCase();
+    return word[0].toUpperCase() + word.slice(1);
+  });
+}
+
 function buildPnjObj() {
   const id     = document.getElementById('pnj-id').value.trim();
   const type   = document.getElementById('pnj-type').value;
@@ -4808,7 +4822,7 @@ function buildPnjObj() {
 
   const obj = {};
   if (id)     obj.id     = id;
-  if (type)   { obj.name = type; obj.tag = PNJ_TYPE_TAGS[type] || nameToId(type); }
+  if (type)   { obj.name = pnjTitleCase(type); obj.tag = PNJ_TYPE_TAGS[type] || nameToId(type); }
   if (palier) obj.palier = +palier;
   if (region) obj.region = region;
   if (cx !== '' && cy !== '' && cz !== '') obj.coords = { x: +cx, y: +cy, z: +cz };
