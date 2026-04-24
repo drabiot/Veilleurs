@@ -641,18 +641,18 @@ function updateJSON() {
     const comma = i < pieces.length - 1 ? ',' : '';
     lines.push(
       `    {`,
-      `      fichier: '${p.cfg.fichier}',`,
-      `      position: ${pos},`,
-      `      rotation: ${rot},`,
-      `      scale: ${sc}`,
+      `      "fichier": '${p.cfg.fichier}',`,
+      `      "position": ${pos},`,
+      `      "rotation": ${rot},`,
+      `      "scale": ${sc}`,
       `    }${comma}`,
     );
   });
   lines.push(
     `  ],`,
     `  camera: {`,
-    `    distance: ${round3(camDistance)},   // distance de la caméra (plus grand = plus loin)`,
-    `    hauteur: ${round3(camHauteur)}   // hauteur du point de regard (0 = centre, + = plus haut)`,
+    `    "distance": ${round3(camDistance)},   // distance de la caméra (plus grand = plus loin)`,
+    `    "hauteur": ${round3(camHauteur)}   // hauteur du point de regard (0 = centre, + = plus haut)`,
     `  }`,
   );
   jsonOutput.value = lines.join('\n');
