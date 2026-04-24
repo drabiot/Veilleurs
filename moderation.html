@@ -168,7 +168,10 @@
   <main class="main" id="pnj-order-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <span style="font-size:15px;font-weight:700;">🧑 Ordre des PNJ</span>
-      <button class="btn btn-ghost" id="btn-save-pnj-order" onclick="savePnjOrder()" style="font-size:12px;" disabled>💾 Sauvegarder</button>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-ghost" id="btn-auto-sort-pnj" onclick="autoSortPnjOrder()" style="font-size:12px;">⚡ Tri automatique</button>
+        <button class="btn btn-ghost" id="btn-save-pnj-order" onclick="savePnjOrder()" style="font-size:12px;" disabled>💾 Sauvegarder</button>
+      </div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
       Glisse-dépose les <b>régions</b> pour changer leur ordre. Les PNJ d'une région sont triés alphabétiquement. La sauvegarde met à jour l'<code>ordre</code> des régions <b>et</b> des PNJ dans Firestore.

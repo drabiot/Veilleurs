@@ -10,7 +10,7 @@
      store.invalidate('items');                 // force re-fetch au prochain load()
 ══════════════════════════════════════════════════════ */
 
-import { loadCollection, invalidateCache, COL } from './firebase.js';
+import { loadCollection, invalidateCache, COL, db, doc, onSnapshot } from './firebase.js';
 
 // Correspondance nom logique → nom collection Firestore
 const COL_MAP = {
@@ -93,6 +93,18 @@ export const store = {
     invalidateCache(COL_MAP[colName] ?? colName);
     delete _data[colName];
     if (colName === 'panoplies') delete _data.sets;
+  },
+
+  // ── Temps réel ───────────────────────────────────────
+
+  /**
+   * Écoute config/wiki_version et appelle callback({collection}) à chaque bump.
+   * Retourne la fonction unsubscribe.
+   */
+  listenForUpdates(callback) {
+    return onSnapshot(doc(db, 'config', 'wiki_version'), snap => {
+      if (snap.exists()) callback(snap.data());
+    });
   },
 
   // ── Compat legacy ────────────────────────────────────

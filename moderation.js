@@ -312,14 +312,24 @@ function buildCard(sub) {
     actionsHtml = `<div class="review-comment">💬 ${escHtml(sub.comment)}</div>`;
   }
 
+  const modBadge = sub.isModification
+    ? `<span class="sub-type" style="background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3);">✏️ Modif</span>`
+    : `<span class="sub-type" style="background:rgba(74,222,128,.12);color:var(--success);border:1px solid rgba(74,222,128,.3);">✨ Ajout</span>`;
+
+  const playerCommentHtml = sub.submitter_comment
+    ? `<div style="margin:4px 0 6px;padding:6px 10px;background:rgba(215,175,95,.08);border:1px solid rgba(215,175,95,.25);border-radius:6px;font-size:12px;color:#d7af5f;">💬 ${escHtml(sub.submitter_comment)}</div>`
+    : '';
+
   card.innerHTML = `
     <div class="sub-head">
       <span class="sub-type">${typeLabels[sub.type] || sub.type}</span>
+      ${modBadge}
       <span class="sub-name">${escHtml(name)}</span>
       <span class="sub-meta">${ts}</span>
       <span class="sub-meta">par <b>${escHtml(userName(sub.submittedBy, sub.submitterName))}</b></span>
       <span class="sub-status ${sub.status}">${statusLabel}</span>
     </div>
+    ${playerCommentHtml}
     <div class="sub-body">
       <div class="sub-actions">
         ${actionsHtml}
@@ -600,7 +610,19 @@ window.approve = async (id) => {
 
       // Invalider le store (cache + mémoire) pour forcer un re-fetch sur les pages de lecture
       const storeKey = { item:'items', mob:'mobs', pnj:'pnj', region:'regions', quetes:'quetes', panoplie:'panoplies' }[sub.type];
-      if (storeKey) store.invalidate(storeKey);
+      if (storeKey) {
+        store.invalidate(storeKey);
+        // Bump wiki_version pour notifier les autres onglets/pages
+        setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: storeKey }, { merge: true }).catch(() => {});
+      }
+
+      // Si PNJ approuvé et panneau d'ordre ouvert, le recharger
+      if (sub.type === 'pnj') {
+        invalidateModCache('personnages');
+        if (document.getElementById('pnj-order-panel')?.style.display !== 'none') {
+          loadPnjOrder().catch(() => {});
+        }
+      }
     }
 
     // Mettre à jour la soumission
@@ -648,6 +670,19 @@ window.reject = async (id) => {
     sub.reviewedBy = currentUser.uid;
     updateCounts();
     renderSubs();
+
+    // Avertissement si d'autres soumissions en attente référencent cet élément
+    const rejectedId = sub.data?.id;
+    if (rejectedId) {
+      const refs = allSubs.filter(s => s._id !== id && s.status === 'pending' && (
+        s.data?.region === rejectedId ||
+        s.data?.craft?.some?.(c => c.id === rejectedId) ||
+        s.data?.loot?.some?.(l => l.id === rejectedId)
+      ));
+      if (refs.length) {
+        toast(`⚠️ ${refs.length} soumission(s) en attente référencent cet élément.`, 'warning', 6000);
+      }
+    }
   } catch(e) {
     toast('⛔ Erreur : ' + e.message, 'error');
     if (btn) { btn.disabled = false; btn.textContent = '✕ Rejeter'; }
@@ -1613,6 +1648,21 @@ function renderPnjOrder() {
 }
 
 window.filterPnjOrder = () => renderPnjOrder();
+
+window.autoSortPnjOrder = () => {
+  for (const group of _pnjRegions) {
+    group.pnjs.sort((a, b) => {
+      const typeA = (a.name || a.type || '').toLowerCase();
+      const typeB = (b.name || b.type || '').toLowerCase();
+      if (typeA !== typeB) return typeA.localeCompare(typeB, 'fr');
+      return (a.name || '').localeCompare(b.name || '', 'fr');
+    });
+  }
+  _pnjDirty = true;
+  document.getElementById('btn-save-pnj-order').disabled = false;
+  renderPnjOrder();
+  toast('⚡ PNJ triés automatiquement.', 'success');
+};
 
 window.savePnjOrder = async () => {
   const btn = document.getElementById('btn-save-pnj-order');

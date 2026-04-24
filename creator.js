@@ -902,6 +902,16 @@ function initObtainData() {
       subtitle: (m.type === 'boss' ? '👑 Boss' : '👾 Monstre') + ' · Palier ' + (m.palier || '?') + (m.region ? ' · ' + m.region : ''),
       search: (m.name + ' ' + m.id + ' ' + (m.region || '')).toLowerCase()
     }));
+    // Merge pending mobs
+    for (const s of (window._vcl_pendingMobs || [])) {
+      if (!s.data?.id || !s.data?.name) continue;
+      allMobs.push({
+        id: s.data.id, name: s.data.name, palier: s.data.palier, mobType: s.data.type,
+        loot: [], isPending: true,
+        subtitle: '⏳ En attente · Palier ' + (s.data.palier || '?'),
+        search: ((s.data.name || '') + ' ' + s.data.id).toLowerCase()
+      });
+    }
   }
   if (typeof FLOOR_MARKERS !== 'undefined') {
     const flat = Object.values(FLOOR_MARKERS).flat();
@@ -921,7 +931,28 @@ function initObtainData() {
       subtitle: (TYPE_LABELS_Q[q.type] || q.type || '') + (q.palier ? ' · Palier ' + q.palier : ''),
       search: ((q.titre || q.name || '') + ' ' + q.id).toLowerCase()
     }));
+    // Merge pending quest submissions
+    for (const s of (window._vcl_pendingQuests || [])) {
+      if (!s.data?.id || !(s.data?.titre || s.data?.name)) continue;
+      allQuetes.push({
+        id: s.data.id, name: '⏳ ' + (s.data.titre || s.data.name || s.data.id),
+        subtitle: '⏳ En attente' + (s.data.palier ? ' · Palier ' + s.data.palier : ''),
+        search: ('⏳ ' + (s.data.titre || s.data.name || '') + ' ' + s.data.id).toLowerCase()
+      });
+    }
   }
+
+  // Pending PNJ submissions as artisans (référençables comme source d'obtention)
+  for (const s of (window._vcl_pendingPnjs || [])) {
+    if (!s.data?.id || !s.data?.name) continue;
+    const fakePnj = {
+      id: s.data.id, name: s.data.name + ' (' + (s.data.id || '') + ')', desc: '⏳ En attente',
+      subtitle: '⏳ En attente',
+      search: ('⏳ ' + (s.data.name || '') + ' ' + s.data.id).toLowerCase()
+    };
+    allArtisans.push(fakePnj);
+  }
+
   onObtainTypeChange();
 }
 
@@ -1196,9 +1227,10 @@ function onCatChange() {
   const hasStats = ['arme','armure','accessoire','rune'].includes(cat);
   const isCons  = ['consommable','nourriture'].includes(cat);
   const isArme  = cat === 'arme';
-  document.getElementById('stats-section').style.display    = hasStats ? '' : 'none';
-  document.getElementById('effects-section').style.display  = isCons  ? '' : 'none';
-  document.getElementById('classes-field').style.display    = isEquip ? '' : 'none';
+  document.getElementById('stats-section').style.display     = hasStats ? '' : 'none';
+  document.getElementById('threshold-section').style.display = isEquip  ? '' : 'none';
+  document.getElementById('effects-section').style.display   = isCons   ? '' : 'none';
+  document.getElementById('classes-field').style.display     = isEquip  ? '' : 'none';
   document.getElementById('twohanded-field').style.display      = isArme           ? '' : 'none';
   document.getElementById('rune-slots-field').style.display     = cat === 'armure' ? '' : 'none';
   if (!isArme) {
@@ -1285,13 +1317,16 @@ function ensureAllItemsIndex() {
 
 function ensureAllMobsIndex() {
   if (allMobsIndex.length || typeof MOBS === 'undefined') return;
-  allMobsIndex = MOBS.map(m => ({
-    id: m.id,
-    name: m.name || m.id,
-    subtitle: [m.type || '', m.palier ? 'P'+m.palier : '', m.region || ''].filter(Boolean).join(' · '),
-    search: ((m.name || '') + ' ' + m.id + ' ' + (m.region || '')).toLowerCase(),
-    _raw: m
-  }));
+  allMobsIndex = MOBS.map(m => {
+    const regionName = _allMobRegions.find(r => r.id === m.region)?.name || m.region || '';
+    return {
+      id: m.id,
+      name: m.name || m.id,
+      subtitle: [m.type || '', m.palier ? 'P'+m.palier : '', regionName].filter(Boolean).join(' · '),
+      search: ((m.name || '') + ' ' + m.id + ' ' + regionName.toLowerCase()).toLowerCase(),
+      _raw: m
+    };
+  });
 }
 
 function initLoadSearch() {
@@ -1322,13 +1357,15 @@ async function _buildLoadDrops() {
   const pnjWrap = document.getElementById('load-pnj-search-wrap');
   if (pnjWrap && !_pnjDropBuilt) {
     try {
+      await loadRegionsCache();
+      const regNameMap = new Map((_regionsCache || []).map(r => [r.id || r._id, r.name || r.id || r._id]));
       const snap = await getDocs(col(db, 'personnages'));
       const pnjs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       if (pnjs.length) {
         const idx = pnjs.map(p => {
           const parts = [];
           if (p.palier) parts.push('P' + p.palier);
-          if (p.region) parts.push(p.region);
+          if (p.region) parts.push(regNameMap.get(p.region) || p.region);
           return {
             id:       p.id || p._id,
             name:     p.name || p.nom || p.id || p._id,
@@ -1402,9 +1439,10 @@ function _buildMobLoadDrop() {
   ensureAllMobsIndex();
   if (!allMobsIndex.length) return;
   mobWrap.innerHTML = '';
-  const drop = makeSearchDrop(allMobsIndex, 'Rechercher un mob à éditer…', id => {
+  const idx = allMobsIndex; // capture la référence avant que loadMobRegions() ne réinitialise la variable
+  const drop = makeSearchDrop(idx, 'Rechercher un mob à éditer…', id => {
     if (!id) return;
-    const entry = allMobsIndex.find(m => m.id === id);
+    const entry = idx.find(m => m.id === id);
     if (entry) loadMob(entry._raw);
   });
   mobWrap.appendChild(drop.element);
@@ -1693,7 +1731,7 @@ function loadMob(mob) {
       const row = document.getElementById(`mob-loot-${entry.uid}`);
       if (row) {
         // Le second enfant du row est le champ chance (après le dropdown)
-        const chInput = row.querySelectorAll('input')[0];
+        const chInput = row.querySelectorAll('input')[1];
         if (chInput) chInput.value = l.chance !== undefined ? l.chance : 100;
         const name = itemIndex.find(it => it.id === l.id)?.name || l.id;
         entry.drop?.setValue(l.id, name);
@@ -1724,7 +1762,10 @@ function loadPnj(pnj) {
     const matchOpt = Array.from(sel.options).find(o =>
       o.value === pnj.name || o.value.toLowerCase().replace(/\u2019/g, "'") === normName
     );
-    if (matchOpt) sel.value = matchOpt.value;
+    if (matchOpt) {
+      sel.value = matchOpt.value;
+      _customSelUpdaters['pnj-type']?.();
+    }
   }
   if (pnj.region) {
     document.getElementById('pnj-region').value        = pnj.region;
@@ -2168,6 +2209,20 @@ function ensureItemIndex() {
       });
       bar.style.display = '';
     }
+  }
+
+  // Merge pending items into craft index
+  const knownItemIds = new Set(itemIndex.map(i => i.id));
+  for (const s of (window._vcl_pendingItems || [])) {
+    if (!s.data?.id || !s.data?.name) continue;
+    if (knownItemIds.has(s.data.id)) continue;
+    if (!CRAFT_CATEGORIES.has(s.data.category)) continue;
+    itemIndex.push({
+      id: s.data.id,
+      name: '⏳ ' + s.data.name,
+      search: ('⏳ ' + (s.data.name || '') + ' ' + s.data.id).toLowerCase()
+    });
+    knownItemIds.add(s.data.id);
   }
 }
 
@@ -2975,7 +3030,7 @@ function validateForm() {
   if (!selRarity) errors.push({ field:null,          msg:'Rareté non sélectionnée' });
   if (!lore)      errors.push({ field:'f-lore',      msg:'Lore obligatoire' });
   if (isEquip && !cat)    warnings.push({ field:'f-cat',    msg:'Slot (cat) non sélectionné' });
-  if (isEquip && !palier) warnings.push({ field:'f-palier', msg:'Palier non renseigné' });
+  if (!palier)            errors.push ({ field:'f-palier', msg:'Palier obligatoire' });
   if (isEquip && !lvl)    warnings.push({ field:'f-lvl',    msg:'Niveau requis non renseigné' });
 
   return { errors, warnings };
@@ -3550,10 +3605,11 @@ async function submitToDiscord() {
   if (creatorMode === 'quest') {
     const q = buildQuestObj();
     const qErrors = [];
-    if (!q.id)    qErrors.push('ID manquant — remplis le titre.');
-    if (!q.type)  qErrors.push('Type de quête obligatoire.');
-    if (!q.titre) qErrors.push('Titre obligatoire.');
-    if (!q.desc)  qErrors.push('Description obligatoire.');
+    if (!q.id)     qErrors.push('ID manquant — remplis le titre.');
+    if (!q.type)   qErrors.push('Type de quête obligatoire.');
+    if (!q.titre)  qErrors.push('Titre obligatoire.');
+    if (!q.desc)   qErrors.push('Description obligatoire.');
+    if (!q.palier) qErrors.push('Le palier est obligatoire.');
     if (qErrors.length) {
       window._toast?.('⛔ ' + qErrors.join(' · '), 'error', 5000);
       return;
@@ -3603,6 +3659,7 @@ async function submitToDiscord() {
     const data = buildMobObj();
     const errs = [];
     if (!data.id || !data.name) errs.push('Nom et ID obligatoires.');
+    if (!data.palier) errs.push('Le palier est obligatoire.');
     if (data.inCodex && !data.lore) errs.push('Le lore est obligatoire si le mob est dans le Codex.');
     const { errors: dynErrors } = validateCurrentMode();
     errs.push(...dynErrors);
@@ -3625,6 +3682,7 @@ async function submitToDiscord() {
     const { errors: dynErrors } = validateCurrentMode();
     if (dynErrors.length) { window._toast?.('⛔ ' + dynErrors.join(' · '), 'error', 5000); return; }
     const pnjData = buildPnjObj();
+    if (!pnjData.palier) { window._toast?.('⛔ Le palier est obligatoire.', 'error', 5000); return; }
     const pendingPnj = await hasPendingSubmission('pnj', pnjData.name);
     if (pendingPnj) {
       const yes = await window._modal?.confirm(`⚠️ Une soumission avec ce nom est déjà en attente de validation.\nContinuer quand même ?`);
@@ -3730,11 +3788,13 @@ async function submitToFirestore() {
     type = 'mob';
     data = buildMobObj();
     if (!data.id || !data.name) throw new Error('Nom et ID obligatoires');
+    if (!data.palier) throw new Error('Le palier est obligatoire');
     if (data.inCodex && !data.lore) throw new Error('Le lore est obligatoire si le mob est dans le Codex');
   } else if (creatorMode === 'pnj') {
     type = 'pnj';
     data = buildPnjObj();
     if (!data.id || !data.name) throw new Error('Nom et ID obligatoires');
+    if (!data.palier) throw new Error('Le palier est obligatoire');
     if (!data.coords) throw new Error('Les coordonnées X, Y et Z sont obligatoires');
   } else if (creatorMode === 'region') {
     type = 'region';
@@ -3744,10 +3804,11 @@ async function submitToFirestore() {
   } else if (creatorMode === 'quest') {
     type = 'quest';
     data = buildQuestObj();
-    if (!data.id)    throw new Error('ID manquant (remplis le titre)');
-    if (!data.type)  throw new Error('Type de quête obligatoire');
-    if (!data.titre) throw new Error('Titre obligatoire');
-    if (!data.desc)  throw new Error('Description obligatoire');
+    if (!data.id)     throw new Error('ID manquant (remplis le titre)');
+    if (!data.type)   throw new Error('Type de quête obligatoire');
+    if (!data.titre)  throw new Error('Titre obligatoire');
+    if (!data.desc)   throw new Error('Description obligatoire');
+    if (!data.palier) throw new Error('Le palier est obligatoire');
   } else if (creatorMode === 'panoplie') {
     type = 'panoplie';
     data = buildPanoplieObj();
@@ -3772,16 +3833,28 @@ async function submitToFirestore() {
     } catch { forumImageData = null; }
   }
 
+  let isModification = false;
+  if (creatorMode === 'item')      isModification = isDuplicate(data.id);
+  else if (creatorMode === 'mob')  isModification = isMobDuplicate(data.id);
+  else if (creatorMode === 'region') isModification = isRegionDuplicate(data.id);
+  else if (creatorMode === 'quest')  isModification = isQuestDuplicate(data.id);
+  else if (creatorMode === 'panoplie') isModification = isPanoplieDuplicate(data.id);
+  else if (creatorMode === 'pnj')  isModification = !!pnjIdLocked;
+
+  const submitterComment = document.getElementById('submitter-comment')?.value?.trim() || '';
+
   const docRef = await addDoc(col(db, 'submissions'), {
     type,
-    status:        'pending',
-    data:          clean,
-    submittedBy:   user ? user.uid : null,
-    submitterName: getAuthor() || (user ? user.displayName || user.email : null) || null,
-    submittedAt:   serverTimestamp(),
-    reviewedBy:    null,
-    reviewedAt:    null,
-    comment:       '',
+    status:            'pending',
+    data:              clean,
+    submittedBy:       user ? user.uid : null,
+    submitterName:     getAuthor() || (user ? user.displayName || user.email : null) || null,
+    submittedAt:       serverTimestamp(),
+    reviewedBy:        null,
+    reviewedAt:        null,
+    comment:           '',
+    isModification,
+    submitter_comment: submitterComment,
     ...(forumImageData ? { forum_image: forumImageData } : {}),
   });
 
@@ -3803,6 +3876,8 @@ async function submitToFirestore() {
   } else if (creatorMode === 'panoplie') {
     resetPanoplieForm();
   }
+  const scEl = document.getElementById('submitter-comment');
+  if (scEl) scEl.value = '';
   update();
 
   const m = document.getElementById('copy-msg');
@@ -4007,6 +4082,16 @@ function renderMobRegionDropdown() {
   if (palier) filtered = filtered.filter(r => String(r.palier||'') === palier);
   if (q)      filtered = filtered.filter(r => normalize(r.name||r.id||'').includes(q));
 
+  // Pending regions from submissions
+  const pendingRegions = (window._vcl_pendingRegions || [])
+    .filter(s => {
+      const name = s.data?.name || '';
+      if (q && !normalize(name).includes(q)) return false;
+      if (palier && String(s.data?.palier||'') !== palier) return false;
+      return true;
+    })
+    .map(s => ({ ...s.data, _pendingId: s._pendingId, _isPending: true }));
+
   dropdown.innerHTML = '';
   if (!filtered.length) {
     dropdown.innerHTML = '<div style="padding:8px 12px;color:var(--muted);font-size:12px;">Aucune région</div>';
@@ -4057,6 +4142,24 @@ function renderMobRegionDropdown() {
       dropdown.appendChild(item);
     });
   });
+
+  // Pending regions (en attente de validation)
+  if (pendingRegions.length) {
+    const ph = document.createElement('div');
+    ph.style.cssText = 'padding:6px 12px 2px;font-size:11px;font-weight:700;color:#d7af5f;text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--surface3);';
+    ph.textContent = '⏳ En attente';
+    dropdown.appendChild(ph);
+    pendingRegions.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'region-drop-item';
+      item.style.cssText = 'padding:6px 24px;cursor:pointer;font-size:13px;color:#d7af5f;transition:background .1s;';
+      item.textContent = '⏳ ' + (r.name || r.id) + ' (en attente)';
+      item.addEventListener('mousedown', e => { e.preventDefault(); selectMobRegion(r); });
+      item.addEventListener('mouseover', () => item.style.background = 'var(--surface3)');
+      item.addEventListener('mouseout',  () => item.style.background = '');
+      dropdown.appendChild(item);
+    });
+  }
 }
 
 function selectMobRegion(r) {
@@ -4093,6 +4196,10 @@ function renderPnjRegionDropdown() {
 
   let filtered = _allMobRegions;
   if (q) filtered = filtered.filter(r => normalize(r.name || r.id || '').includes(q));
+
+  const pendingRegions = (window._vcl_pendingRegions || [])
+    .filter(s => !q || normalize(s.data?.name || '').includes(q))
+    .map(s => ({ ...s.data, _pendingId: s._pendingId, _isPending: true }));
 
   dropdown.innerHTML = '';
   if (!filtered.length) {
@@ -4138,6 +4245,23 @@ function renderPnjRegionDropdown() {
       dropdown.appendChild(item);
     });
   });
+
+  if (pendingRegions.length) {
+    const ph = document.createElement('div');
+    ph.style.cssText = 'padding:6px 12px 2px;font-size:11px;font-weight:700;color:#d7af5f;text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--surface3);';
+    ph.textContent = '⏳ En attente';
+    dropdown.appendChild(ph);
+    pendingRegions.forEach(r => {
+      const item = document.createElement('div');
+      item.className = 'region-drop-item';
+      item.style.cssText = 'padding:6px 24px;cursor:pointer;font-size:13px;color:#d7af5f;transition:background .1s;';
+      item.textContent = '⏳ ' + (r.name || r.id) + ' (en attente)';
+      item.addEventListener('mousedown', e => { e.preventDefault(); selectPnjRegion(r); });
+      item.addEventListener('mouseover', () => item.style.background = 'var(--surface3)');
+      item.addEventListener('mouseout',  () => item.style.background = '');
+      dropdown.appendChild(item);
+    });
+  }
 }
 
 function selectPnjRegion(r) {
@@ -4166,6 +4290,7 @@ async function loadMobRegions() {
       return (a.name||a.id||'').localeCompare(b.name||b.id||'', 'fr');
     });
     _allMobRegions = regions;
+    allMobsIndex   = []; // force rebuild with region names
   } catch(e) { console.warn('[Mob] Régions non chargées:', e); }
 }
 
@@ -4400,7 +4525,18 @@ function renderPnjCrafts() {
     const head = document.createElement('div');
     head.style.cssText = 'display:grid;grid-template-columns:1fr 80px auto auto;gap:6px;align-items:start;';
 
-    const resDrop = makeSearchDrop(allItemsIndex, 'Résultat…', id => { c.resultId = id; update(); }, true);
+    const resDrop = makeSearchDrop(allItemsIndex, 'Résultat…', id => {
+      c.resultId = id;
+      if (id && typeof ITEMS !== 'undefined' && !c.ingredients.length) {
+        const entry = allItemsIndex.find(it => it.id === id);
+        const item  = entry?._raw;
+        if (item?.craft?.length) {
+          c.ingredients = item.craft.map(ing => ({ uid: pnjIngUid++, itemId: ing.id || '', qty: ing.qty || 1 }));
+          renderPnjCrafts(); // re-render only when auto-fill happened
+        }
+      }
+      update();
+    }, true);
     if (c.resultId) {
       const f = allItemsIndex.find(it => it.id === c.resultId);
       if (f) resDrop.setValue(c.resultId, f.name);

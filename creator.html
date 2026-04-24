@@ -37,6 +37,7 @@
       <button class="btn btn-ghost" id="btn-login" onclick="openLoginModal()" style="display:none;font-size:11px;">🔑 Connexion</button>
       <button class="btn btn-ghost" id="btn-change-pseudo" onclick="openChangePseudoModal()" style="display:none;font-size:11px;" title="Changer mon pseudo">✏️</button>
       <button class="btn btn-ghost" id="btn-logout-hdr" onclick="doLogout()" style="display:none;font-size:11px;">🚪</button>
+      <textarea id="submitter-comment" placeholder="Note pour la modération (optionnel)…" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-size:10px;outline:none;width:150px;height:34px;resize:none;font-family:inherit;line-height:1.3;border-radius:4px;transition:border-color .15s;vertical-align:middle;"></textarea>
       <button class="btn btn-primary" id="btn-submit-discord" onclick="submitToDiscord()">◈ Soumettre</button>
       <button class="btn btn-ghost" onclick="resetForm()" style="font-size:11px;">↺ Reset</button>
     </div>
@@ -269,7 +270,7 @@
     </div>
 
     <!-- STATS -->
-    <div class="section" id="stats-section">
+    <div class="section" id="stats-section" style="display:none">
       <div class="sec-head" onclick="toggleSec(this)">
         📊 Stats
         <span style="margin-left:8px;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;">
@@ -293,7 +294,7 @@
     </div>
 
     <!-- PRÉREQUIS D'ATTRIBUTS -->
-    <div class="section" id="threshold-section">
+    <div class="section" id="threshold-section" style="display:none">
       <div class="sec-head" onclick="toggleSec(this)">🎯 Prérequis d'attributs
         <span style="margin-left:8px;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;">
           Points nécessaires pour pouvoir équiper l'item
@@ -1068,7 +1069,7 @@ onAuthStateChanged(auth, async user => {
 <!-- Module 2 : Chargement des données via store.js -->
 <script type="module">
 import { store } from './store.js';
-import { loadCollection, doc, getDoc, db } from './firebase.js';
+import { loadCollection, doc, getDoc, getDocs, collection, query, where, onSnapshot, db } from './firebase.js';
 
 // Expose store.invalidate() et loadCollection() pour les scripts classiques
 window._vcl_store          = store;
@@ -1079,6 +1080,7 @@ try {
   if (store.items.length)     { window.ITEMS = store.items; if (typeof initLoadSearch === 'function') initLoadSearch(); }
   if (store.mobs.length)      {
     window.MOBS = store.mobs;
+    window._pageInit?.();
   }
   if (store.quetes.length)    { window.QUETES_DATA = store.quetes; }
   if (typeof initObtainData === 'function') initObtainData();
@@ -1106,6 +1108,46 @@ try {
 } catch(e) {
   console.warn('[VCL Creator] Config validation non chargée:', e);
 }
+// Charger les soumissions en attente (pour les afficher dans les dropdowns)
+try {
+  window._vcl_pendingRegions = [];
+  window._vcl_pendingMobs    = [];
+  window._vcl_pendingItems   = [];
+  window._vcl_pendingQuests  = [];
+  window._vcl_pendingPnjs    = [];
+  const subSnap = await getDocs(query(collection(db, 'submissions'), where('status', '==', 'pending')));
+  for (const d of subSnap.docs) {
+    const s = { _pendingId: d.id, ...d.data() };
+    if (s.type === 'region') window._vcl_pendingRegions.push(s);
+    if (s.type === 'mob')    window._vcl_pendingMobs.push(s);
+    if (s.type === 'item')   window._vcl_pendingItems.push(s);
+    if (s.type === 'quest')  window._vcl_pendingQuests.push(s);
+    if (s.type === 'pnj')    window._vcl_pendingPnjs.push(s);
+  }
+  // Réinitialiser les données d'obtention avec les submissions en attente
+  if (typeof initObtainData === 'function') initObtainData();
+} catch(e) {
+  console.warn('[VCL Creator] Soumissions en attente non chargées:', e);
+}
+// Écoute temps réel : invalider le cache quand une approbation est publiée
+// Note : ne recharge pas allItemsIndex (l'utilisateur voit les nouveaux items après F5)
+onSnapshot(doc(db, 'config', 'wiki_version'), async snap => {
+  if (!snap.exists()) return;
+  const col = snap.data()?.collection;
+  if (!col) return;
+  store.invalidate(col);
+  try {
+    await store.load([col]);
+    if (col === 'mobs' && store.mobs.length) {
+      window.MOBS = store.mobs;
+      if (typeof initObtainData === 'function') initObtainData();
+    }
+    if (col === 'panoplies') {
+      if (typeof SETS !== 'undefined') Object.assign(SETS, store.sets);
+      if (typeof buildSetSelect === 'function') buildSetSelect();
+    }
+  } catch {}
+});
 </script>
 
 <!-- Module 3 : Composants UI (toast / modal) -->
