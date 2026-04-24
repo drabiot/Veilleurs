@@ -149,7 +149,7 @@ function inlineLinks(str) {
 
     if (type === 'quest') {
       const page = `../Quetes/quetes.html#${escHtml(id)}`;
-      return `<a class="obtain-entity-link" href="${page}" data-id="${escHtml(id)}" data-type="quest" style="color:#e07c50">${label}</a>`;
+      return `«<a class="obtain-entity-link" href="${page}" data-id="${escHtml(id)}" data-type="quest" style="color:#e07c50">${label}</a>»`;
     }
 
     // Pour mobs et npc → bestiaire avec préfixe de section
