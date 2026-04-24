@@ -13,6 +13,7 @@ import { store }  from './store.js';
 
 // Helpers partagés — utils.js est chargé en classic script avant ce module
 const { normalize } = window.VCL;
+const _WIKI_ROOT = new URL('.', import.meta.url).href;
 
 let currentUser = null;
 let currentRole = 'visiteur';
@@ -163,6 +164,7 @@ window.loadSubmissions = async () => {
     try { await fetchUserNames(uids); } catch {}
     updateCounts();
     renderSubs();
+    _saveLbSnapshot(allSubs).catch(() => {}); // snapshot de secours en arrière-plan
   } catch(e) {
     document.getElementById('submissions-list').innerHTML = `<div class="empty">Erreur : ${e.message}</div>`;
   }
@@ -186,7 +188,8 @@ window.setFilter = (key, val) => {
     document.querySelectorAll('.filter-btn[data-status]').forEach(b => b.classList.toggle('active', b.dataset.status === val));
   } else {
     filterType = val;
-    document.querySelectorAll('.filter-btn[data-type]').forEach(b => b.classList.toggle('active', b.dataset.type === val));
+    const sel = document.getElementById('filter-type-select');
+    if (sel) sel.value = val;
   }
   renderSubs();
 };
@@ -720,6 +723,7 @@ const HASH_PANELS = {
   'mob-orphans':    () => showMobOrphans(),
   'quest-orphans':  () => showQuestOrphans(),
   'members':        () => showUsersPanel(),
+  'leaderboard':    () => showLeaderboard(),
   'webhooks':       () => showDiscordWebhooks(),
   'permissions':    () => showPermissions(),
   'migration':        () => showMigration(),
@@ -792,9 +796,8 @@ window.showSubmissions = function showSubmissions() {
   document.querySelectorAll('.filter-btn[data-status]').forEach(b =>
     b.classList.toggle('active', b.dataset.status === filterStatus)
   );
-  document.querySelectorAll('.filter-btn[data-type]').forEach(b =>
-    b.classList.toggle('active', b.dataset.type === filterType)
-  );
+  const sel = document.getElementById('filter-type-select');
+  if (sel) sel.value = filterType;
 }
 
 window.showMobOrder = async () => {
@@ -3254,7 +3257,8 @@ window.editorGoBack = function() {
   if (_editorOrigin === 'mob-orphan')     { showMobOrphans();    return; }
   if (_editorOrigin === 'quest-orphan')  { showQuestOrphans();  return; }
   if (_editorOrigin === 'migration')       { showMigration();       return; }
-  if (_editorOrigin === 'data-incomplete') { showDataIncomplete(); return; }
+  if (_editorOrigin === 'data-incomplete') { showCompletion(); return; }
+  if (_editorOrigin === 'completion')      { showCompletion(); return; }
   showSubmissions();
 };
 
@@ -3555,7 +3559,7 @@ function _renderDiscordWebhooks() {
     header.textContent = cat.label;
     section.appendChild(header);
 
-    for (const p of [...CREATOR_PALIERS, 'event']) {
+    for (const p of CREATOR_PALIERS) {
       const key = `${cat.id}_${p}`;
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:8px;';
@@ -3569,8 +3573,8 @@ function _renderDiscordWebhooks() {
       input.addEventListener('blur',  () => { input.style.borderColor = 'var(--border)'; });
 
       const label = document.createElement('span');
-      label.textContent = p === 'event' ? 'Event' : `Palier ${p}`;
-      label.style.cssText = `font-size:12px;width:58px;flex-shrink:0;color:${p === 'event' ? '#ebebeb' : 'var(--text)'};${p === 'event' ? 'font-weight:600;' : ''}`;
+      label.textContent = `Palier ${p}`;
+      label.style.cssText = 'font-size:12px;width:58px;flex-shrink:0;color:var(--text);';
 
       const testBtn = document.createElement('button');
       testBtn.className = 'btn btn-ghost';
@@ -3593,7 +3597,7 @@ window.saveDiscordWebhooks = async function saveDiscordWebhooks() {
   try {
     const data = {};
     for (const cat of DW_CATEGORIES) {
-      for (const p of [...CREATOR_PALIERS, 'event']) {
+      for (const p of CREATOR_PALIERS) {
         const key = `${cat.id}_${p}`;
         const val = document.getElementById(`dw-${key}`)?.value?.trim() || '';
         if (val) data[key] = val;
@@ -4107,7 +4111,7 @@ async function _sendSingleItemDiscord(item) {
   const cat    = item.category;
   const palier = item.palier;
   if (!cat || !palier) throw new Error('Catégorie ou palier manquant');
-  const key = item.rarity === 'event' ? `${cat}_event` : `${cat}_${palier}`;
+  const key = `${cat}_${palier}`;
   const url = _dwConfig?.[key];
   if (!url) throw new Error(`Aucun webhook configuré pour ${key}`);
 
@@ -4807,6 +4811,13 @@ function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames 
     embedFields.push({ name: '🔗 Bonus de panoplie', value: lines.join('\n').slice(0, 1024), inline: false });
   }
 
+  // ── Lien wiki ────────────────────────────────────────
+  const itemId = obj.id || obj._id || obj._docId;
+  if (itemId) {
+    const wikiUrl = `${_WIKI_ROOT}Compendium/compendium.html#item/${encodeURIComponent(itemId)}`;
+    embedFields.push({ name: _SP, value: `[🌐 Voir la fiche sur le wiki](${wikiUrl})`, inline: false });
+  }
+
   // ── Embed object ─────────────────────────────────────
   const footerText = contributorName
     ? `🌙 Veilleurs au Clair de Lune — ${contributorName}`
@@ -5360,6 +5371,184 @@ window.setUserRole = async (uid, newRole, sel) => {
 };
 
 // ═══════════════════════════════════════════════════════
+// LEADERBOARD — contributions approuvées par membre
+// ═══════════════════════════════════════════════════════
+
+const _LB_EXCLUDED_DOC  = 'config/leaderboard_excluded';
+const _LB_SNAPSHOT_DOC  = 'config/leaderboard_snapshot';
+
+async function _saveLbSnapshot(subs, excludedIds = new Set()) {
+  const approved = subs.filter(s => s.status === 'approved' && !excludedIds.has(s._id));
+  const counts = {};
+  for (const s of approved) {
+    const uid  = s.submittedBy || null;
+    const key  = uid || ('__' + (s.submitterName || 'anon'));
+    const name = s.submitterName || _userNames.get(uid) || (uid ? uid.slice(0, 8) + '…' : '—');
+    if (!counts[key]) counts[key] = { uid, name, total: 0, byType: {} };
+    counts[key].byType[s.type] = (counts[key].byType[s.type] || 0) + 1;
+    counts[key].total++;
+  }
+  await setDoc(doc(db, 'config', 'leaderboard_snapshot'), { counts, updatedAt: serverTimestamp() });
+}
+
+window.showLeaderboard = async () => {
+  _setHash('leaderboard');
+  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.sidebar').classList.remove('in-order-panel');
+  document.getElementById('leaderboard-panel').style.display = '';
+  document.getElementById('btn-leaderboard').classList.add('active');
+  await loadLeaderboard();
+};
+
+window.loadLeaderboard = async () => {
+  const listEl = document.getElementById('leaderboard-list');
+  const detailEl = document.getElementById('leaderboard-user-detail');
+  if (detailEl) detailEl.style.display = 'none';
+  listEl.style.display = '';
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+
+  // Charger les IDs exclus
+  let excludedIds = new Set();
+  try {
+    const exSnap = await getDoc(doc(db, 'config', 'leaderboard_excluded'));
+    if (exSnap.exists()) excludedIds = new Set(exSnap.data().ids || []);
+  } catch {}
+
+  const subs = allSubs.length ? allSubs : await getDocs(collection(db, 'submissions'))
+    .then(s => s.docs.map(d => ({ _id: d.id, ...d.data() }))).catch(() => []);
+
+  const approved = subs.filter(s => s.status === 'approved' && !excludedIds.has(s._id));
+
+  if (approved.length > 0) {
+    const byKey = {};
+    for (const s of approved) {
+      const uid  = s.submittedBy || null;
+      const name = s.submitterName || _userNames.get(uid) || (uid ? uid.slice(0, 8) + '…' : '— (invité)');
+      const key  = uid || ('__' + (s.submitterName || 'anon'));
+      if (!byKey[key]) byKey[key] = { uid, name, subs: [] };
+      byKey[key].subs.push(s);
+    }
+    const ranked = Object.values(byKey).sort((a, b) => b.subs.length - a.subs.length);
+    _saveLbSnapshot(subs, excludedIds).catch(() => {});
+    listEl.innerHTML = '';
+    _renderLbRows(ranked, listEl, false);
+  } else {
+    // Fallback : snapshot sauvegardé
+    try {
+      const snapDoc = await getDoc(doc(db, 'config', 'leaderboard_snapshot'));
+      if (snapDoc.exists() && snapDoc.data().counts) {
+        const ranked = Object.values(snapDoc.data().counts)
+          .sort((a, b) => b.total - a.total)
+          .map(u => ({ ...u, subs: null }));
+        listEl.innerHTML = '';
+        const warn = document.createElement('div');
+        warn.style.cssText = 'font-size:12px;color:var(--warn);padding:6px 10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:6px;margin-bottom:12px;';
+        warn.textContent = '⚠️ Soumissions introuvables — affichage depuis le dernier snapshot.';
+        listEl.appendChild(warn);
+        _renderLbRows(ranked, listEl, true);
+        return;
+      }
+    } catch {}
+    listEl.innerHTML = '<div class="empty">Aucune contribution approuvée.</div>';
+  }
+};
+
+function _renderLbRows(ranked, listEl, isSnapshot) {
+  if (!ranked.length) { listEl.innerHTML += '<div class="empty">Aucune contribution approuvée.</div>'; return; }
+  const TYPE_ICON = { item:'⚔️', mob:'👾', pnj:'🧑', region:'📍', quest:'📜', panoplie:'🔗' };
+  ranked.forEach((u, i) => {
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+    const total = u.subs ? u.subs.length : (u.total || 0);
+    const byType = u.subs
+      ? u.subs.reduce((acc, s) => { acc[s.type] = (acc[s.type]||0)+1; return acc; }, {})
+      : (u.byType || {});
+    const byTypeParts = Object.entries(byType).map(([t, n]) => `${TYPE_ICON[t]||'📄'} ${n}`).join('  ');
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;${!isSnapshot ? 'cursor:pointer;' : ''}transition:background .15s;`;
+    if (!isSnapshot) {
+      row.onmouseenter = () => { row.style.background = 'var(--surface2)'; };
+      row.onmouseleave = () => { row.style.background = 'var(--surface)'; };
+    }
+    row.innerHTML = `
+      <span style="font-size:18px;width:28px;text-align:center;flex-shrink:0;">${medal}</span>
+      <span style="flex:1;font-size:13px;font-weight:700;">${escHtml(u.name)}</span>
+      <span style="font-size:12px;color:var(--muted);">${byTypeParts}</span>
+      <span style="font-size:13px;font-weight:700;color:var(--accent);">${total}</span>
+    `;
+    if (!isSnapshot) row.addEventListener('click', () => showLeaderboardUser(u));
+    listEl.appendChild(row);
+  });
+}
+
+window.showLeaderboardUser = function(u) {
+  document.getElementById('leaderboard-list').style.display = 'none';
+  const detailEl = document.getElementById('leaderboard-user-detail');
+  const titleEl  = document.getElementById('leaderboard-user-title');
+  const subsEl   = document.getElementById('leaderboard-user-subs');
+  detailEl.style.display = '';
+  const updateTitle = () => {
+    titleEl.textContent = `${u.name} — ${u.subs.length} contribution${u.subs.length > 1 ? 's' : ''} approuvée${u.subs.length > 1 ? 's' : ''}`;
+  };
+  updateTitle();
+
+  const TYPE_ICON  = { item:'⚔️', mob:'👾', pnj:'🧑', region:'📍', quest:'📜', panoplie:'🔗' };
+  const TYPE_LABEL = { item:'Item', mob:'Mob', pnj:'PNJ', region:'Région', quest:'Quête', panoplie:'Panoplie' };
+
+  const renderRows = () => {
+    subsEl.innerHTML = '';
+    const sorted = [...u.subs].sort((a, b) => {
+      const ta = a.submittedAt?.toMillis?.() ?? 0;
+      const tb = b.submittedAt?.toMillis?.() ?? 0;
+      return tb - ta;
+    });
+    for (const s of sorted) {
+      const name = s.data?.name || s.data?.titre || s.data?.label || s._id;
+      const ts   = s.submittedAt?.toDate
+        ? s.submittedAt.toDate().toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' })
+        : '—';
+      const actionLabel = s.editType === 'edit' ? '✏️ Modif.' : '➕ Ajout';
+      const row = document.createElement('div');
+      row.id = `lb-row-${s._id}`;
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;';
+      row.innerHTML = `
+        <span style="width:18px;text-align:center;flex-shrink:0;">${TYPE_ICON[s.type]||'📄'}</span>
+        <span style="flex:1;font-weight:600;">${escHtml(name)}</span>
+        <span style="color:var(--muted);font-size:11px;">${TYPE_LABEL[s.type]||s.type}</span>
+        <span style="color:var(--muted);font-size:11px;">${actionLabel}</span>
+        <span style="color:var(--muted);font-size:11px;white-space:nowrap;">${ts}</span>
+      `;
+      const ignoreBtn = document.createElement('button');
+      ignoreBtn.className = 'btn btn-ghost';
+      ignoreBtn.style.cssText = 'font-size:11px;padding:2px 8px;color:var(--muted);flex-shrink:0;';
+      ignoreBtn.title = 'Masquer du leaderboard (test)';
+      ignoreBtn.textContent = '✕ Ignorer';
+      ignoreBtn.addEventListener('click', () => _lbExclude(s._id, u, updateTitle, renderRows));
+      row.appendChild(ignoreBtn);
+      subsEl.appendChild(row);
+    }
+  };
+  renderRows();
+};
+
+async function _lbExclude(subId, userData, updateTitle, renderRows) {
+  try {
+    const ref = doc(db, 'config', 'leaderboard_excluded');
+    const snap = await getDoc(ref);
+    const existing = snap.exists() ? (snap.data().ids || []) : [];
+    if (existing.includes(subId)) { toast('Déjà ignoré.', 'warning'); return; }
+    await setDoc(ref, { ids: [...existing, subId] });
+    userData.subs = userData.subs.filter(s => s._id !== subId);
+    updateTitle();
+    renderRows();
+    _saveLbSnapshot(allSubs, new Set([...existing, subId])).catch(() => {});
+    toast('Contribution masquée du leaderboard.', 'success');
+  } catch(e) {
+    toast('⛔ ' + e.message, 'error');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
 // SENSIBLE — Liste & toggle (admin only)
 // ═══════════════════════════════════════════════════════
 
@@ -5418,11 +5607,151 @@ window.toggleSidebarSection = (id) => {
 };
 
 // ── Completion panel ───────────────────────────────────
+
+// Définitions des champs pour les inputs guidés
+// Clé = fieldId, ou "mode:fieldId" pour une surcharge par mode
+const _CF_DEFS = {
+  palier:      { type:'select',    opts:[[1,'Palier 1'],[2,'Palier 2'],[3,'Palier 3']] },
+  difficulty:  { type:'number',    min:1, max:5, placeholder:'1–5' },
+  lvl:         { type:'number',    min:1, placeholder:'Niveau requis' },
+  lore:        { type:'textarea',  placeholder:'Texte de lore…' },
+  obtain:      { type:'textarea',  placeholder:"Description de l'obtention…" },
+  desc:        { type:'textarea',  placeholder:'Description…' },
+  objectifs:   { type:'textarea',  placeholder:'Objectifs (un par ligne)' },
+  recompenses: { type:'textarea',  placeholder:'Récompenses' },
+  name:        { type:'text',      placeholder:'Nom affiché' },
+  label:       { type:'text',      placeholder:'Nom affiché' },
+  titre:       { type:'text',      placeholder:'Titre' },
+  images:      { type:'text',      placeholder:'URL image (https://…)' },
+  color:       { type:'colortext', placeholder:'#a07ae8' },
+  mapId:       { type:'text',      placeholder:'ID marqueur sur la carte' },
+  npc:         { type:'text',      placeholder:'ID ou nom du PNJ donneur' },
+  zone:        { type:'text',      placeholder:'ID région' },
+  // Surcharges par mode
+  'items:rarity':    { type:'select', opts:[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['mythique','Mythique'],['godlike','Godlike'],['event','Évènement']] },
+  'items:category':  { type:'select', opts:[['arme','⚔️ Arme'],['armure','🛡️ Armure'],['accessoire','💍 Accessoire'],['materiaux','🧱 Matériau'],['ressources','⛏️ Ressource'],['consommable','🧪 Consommable'],['nourriture','🍖 Nourriture'],['outils','🔧 Outil'],['rune','🔮 Rune'],['quete','📜 Objet Quête'],['donjon','🏰 Donjon']] },
+  'items:classes':   { type:'multicheckbox', opts:[['guerrier','⚔️ Guerrier'],['assassin','🗡️ Assassin'],['archer','🏹 Archer'],['mage','📖 Mage'],['shaman','🌿 Shaman']] },
+  'mobs:type':       { type:'select', opts:[['monstre','👹 Monstre'],['sbire','💀 Sbire'],['mini_boss','⚡ Mini-Boss'],['boss','🔥 Boss']] },
+  'mobs:region':     { type:'dbselect', colName:'regions', labelKey:'name' },
+  'quetes:type':     { type:'select', opts:[['main','⚔️ Principale'],['sec','🗺️ Secondaire'],['ter','📋 Tertiaire']] },
+  'quetes:zone':     { type:'dbselect', colName:'regions', labelKey:'name' },
+  'quetes:mapId':    { type:'text',    placeholder:'ID marqueur carte' },
+  'pnj:type':        { type:'select', opts:[['marchand','🛒 Marchand'],['donneur_quete','📜 Donneur quête'],['forgeron','⚒️ Forgeron'],['aubergiste','🍺 Aubergiste'],['instructeur','📚 Instructeur'],['autre','❓ Autre']] },
+  'pnj:region':      { type:'dbselect', colName:'regions', labelKey:'name' },
+};
+
+const _NUMERIC_CF_FIELDS = new Set(['palier','lvl','difficulty','rune_slots','ordre']);
+
+// Construit un input guidé pour un champ manquant
+function _buildCompletionInput(fieldId, mode, currentValue) {
+  const def = _CF_DEFS[`${mode}:${fieldId}`] || _CF_DEFS[fieldId];
+  const BASE_STYLE = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;outline:none;';
+
+  if (!def || def.type === 'text') {
+    const el = document.createElement('input');
+    el.type = 'text'; el.dataset.field = fieldId;
+    el.placeholder = def?.placeholder || fieldId;
+    el.style.cssText = BASE_STYLE;
+    if (currentValue != null) el.value = currentValue;
+    return el;
+  }
+
+  if (def.type === 'number') {
+    const el = document.createElement('input');
+    el.type = 'number'; el.dataset.field = fieldId;
+    if (def.min != null) el.min = def.min;
+    if (def.max != null) el.max = def.max;
+    el.placeholder = def.placeholder || fieldId;
+    el.style.cssText = BASE_STYLE + 'width:80px;';
+    if (currentValue != null) el.value = currentValue;
+    return el;
+  }
+
+  if (def.type === 'select') {
+    const el = document.createElement('select');
+    el.dataset.field = fieldId;
+    el.style.cssText = BASE_STYLE + 'min-width:140px;cursor:pointer;';
+    el.innerHTML = '<option value="">— choisir —</option>' +
+      def.opts.map(([v, l]) =>
+        `<option value="${escHtml(String(v))}"${String(v) === String(currentValue) ? ' selected' : ''}>${escHtml(l || String(v))}</option>`
+      ).join('');
+    return el;
+  }
+
+  if (def.type === 'textarea') {
+    const el = document.createElement('textarea');
+    el.dataset.field = fieldId;
+    el.placeholder = def.placeholder || fieldId;
+    el.rows = 3;
+    el.style.cssText = BASE_STYLE + 'width:300px;max-width:100%;resize:vertical;font-family:inherit;font-size:12px;';
+    if (currentValue != null) el.value = currentValue;
+    return el;
+  }
+
+  if (def.type === 'colortext') {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:6px;';
+    const colorPicker = document.createElement('input');
+    colorPicker.type = 'color';
+    colorPicker.style.cssText = 'width:36px;height:32px;border:none;background:none;cursor:pointer;border-radius:4px;padding:0;flex-shrink:0;';
+    const textEl = document.createElement('input');
+    textEl.type = 'text'; textEl.dataset.field = fieldId;
+    textEl.placeholder = def.placeholder || '#a07ae8';
+    textEl.style.cssText = BASE_STYLE + 'width:120px;font-family:monospace;';
+    if (currentValue) { textEl.value = currentValue; try { colorPicker.value = currentValue; } catch {} }
+    colorPicker.addEventListener('input', () => { textEl.value = colorPicker.value; });
+    textEl.addEventListener('input', () => { if (/^#[0-9a-fA-F]{6}$/.test(textEl.value)) try { colorPicker.value = textEl.value; } catch {} });
+    wrap.appendChild(colorPicker);
+    wrap.appendChild(textEl);
+    return wrap;
+  }
+
+  if (def.type === 'multicheckbox') {
+    const wrap = document.createElement('div');
+    wrap.dataset.field = fieldId;
+    wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;';
+    const current = Array.isArray(currentValue) ? currentValue : [];
+    def.opts.forEach(([v, l]) => {
+      const label = document.createElement('label');
+      label.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;white-space:nowrap;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.value = v; cb.checked = current.includes(v);
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(l || v));
+      wrap.appendChild(label);
+    });
+    return wrap;
+  }
+
+  if (def.type === 'dbselect') {
+    const el = document.createElement('select');
+    el.dataset.field = fieldId;
+    el.style.cssText = BASE_STYLE + 'min-width:160px;cursor:pointer;';
+    el.innerHTML = '<option value="">Chargement…</option>';
+    cachedDocs(def.colName).then(docs => {
+      docs = [...docs].sort((a, b) => (a[def.labelKey]||a.id||'').localeCompare(b[def.labelKey]||b.id||'', 'fr'));
+      el.innerHTML = '<option value="">— choisir —</option>' +
+        docs.map(d => `<option value="${escHtml(d.id||'')}"${d.id === String(currentValue||'') ? ' selected' : ''}>${escHtml(d[def.labelKey]||d.id||'')}</option>`).join('');
+    }).catch(() => { el.innerHTML = '<option value="">Erreur</option>'; });
+    return el;
+  }
+
+  // Fallback
+  const el = document.createElement('input');
+  el.type = 'text'; el.dataset.field = fieldId;
+  el.placeholder = fieldId;
+  el.style.cssText = BASE_STYLE;
+  if (currentValue != null) el.value = currentValue;
+  return el;
+}
+
 const REQUIRED_ADMIN_FIELDS = {
   mob:    ['difficulty'],
   quete:  ['mapId'],
   region: ['color'],
 };
+
+let _completionResults = [];
 
 window.showCompletion = async () => {
   _setHash('completion');
@@ -5438,23 +5767,68 @@ window.loadCompletion = async () => {
   const list = document.getElementById('completion-list');
   list.innerHTML = '<div class="empty">Chargement…</div>';
 
-  let requiredFields = REQUIRED_ADMIN_FIELDS;
-  // Tenter de charger depuis config Firestore
+  // Charger quality standards depuis Firestore
+  let standards = {};
   try {
-    const snap = await getDoc(doc(db, 'config', 'required_admin_fields'));
-    if (snap.exists()) requiredFields = snap.data();
+    const _normF = f => (f === 'img' || f === 'image') ? 'images' : f;
+    const snap = await getDoc(doc(db, 'config', 'data_quality_standards'));
+    if (snap.exists()) {
+      for (const [mode, cfg] of Object.entries(snap.data())) {
+        const normReq = [...new Set((cfg.required || []).map(_normF))];
+        const normByCat = {};
+        for (const [sc, scfg] of Object.entries(cfg.byCategory || {})) {
+          normByCat[sc] = { required: [...new Set((scfg.required || []).map(_normF))] };
+        }
+        standards[mode] = { required: normReq, byCategory: normByCat };
+      }
+    }
   } catch {}
 
-  const incomplete = [];
+  // Fusionner les champs admin obligatoires (required_admin_fields ou fallback)
+  let adminFields = REQUIRED_ADMIN_FIELDS;
   try {
-    const colMap = { mob: 'mobs', quete: 'quetes', region: 'regions' };
-    for (const [type, fields] of Object.entries(requiredFields)) {
-      const colName = colMap[type] || type;
+    const snap = await getDoc(doc(db, 'config', 'required_admin_fields'));
+    if (snap.exists()) adminFields = snap.data();
+  } catch {}
+  const _adminColMap = { mob:'mobs', quete:'quetes', region:'regions' };
+  for (const [type, fields] of Object.entries(adminFields)) {
+    const mode = _adminColMap[type] || type;
+    if (!standards[mode]) standards[mode] = { required: [], byCategory: {} };
+    for (const f of fields) {
+      if (!standards[mode].required.includes(f)) standards[mode].required.push(f);
+    }
+  }
+
+  if (!Object.keys(standards).length) {
+    list.innerHTML = '<div class="empty">Aucune configuration définie. Définissez les champs requis dans ⚙️ Champs requis.</div>';
+    const badge = document.getElementById('count-incomplete');
+    if (badge) badge.style.display = 'none';
+    return;
+  }
+
+  _completionResults = [];
+  try {
+    for (const [mode, std] of Object.entries(standards)) {
+      const colName = QUALITY_COL_MAP[mode];
+      if (!colName) continue;
+      const disc    = QUALITY_DISCRIMINANT[mode];
+      const hasByCat = disc && Object.keys(std.byCategory || {}).length > 0;
       let docs = [];
       try { docs = await cachedDocs(colName); } catch { continue; }
-      for (const d of docs) {
-        const missing = fields.filter(f => d[f] == null || d[f] === '');
-        if (missing.length) incomplete.push({ type, doc: d, missing });
+      for (const _d of docs) {
+        const d = (!_d.images?.length && (_d.img || _d.image))
+          ? { ..._d, images: [_d.img || _d.image].filter(Boolean) }
+          : _d;
+        const missing = (std.required || []).filter(f => _fieldEmpty(d, f));
+        const discVal = disc ? (d[disc] || null) : null;
+        if (hasByCat && !discVal) {
+          if (!missing.includes(disc)) missing.push(disc);
+        } else if (discVal && std.byCategory?.[discVal]) {
+          for (const f of (std.byCategory[discVal].required || [])) {
+            if (!missing.includes(f) && _fieldEmpty(d, f)) missing.push(f);
+          }
+        }
+        if (missing.length) _completionResults.push({ mode, colName, doc: d, missing, discVal });
       }
     }
   } catch(e) {
@@ -5462,74 +5836,175 @@ window.loadCompletion = async () => {
     return;
   }
 
-  // Mise à jour badge
+  // Badge sidebar
   const badge = document.getElementById('count-incomplete');
-  if (badge) { badge.textContent = incomplete.length; badge.style.display = incomplete.length ? '' : 'none'; }
+  if (badge) { badge.textContent = _completionResults.length; badge.style.display = _completionResults.length ? '' : 'none'; }
 
-  if (!incomplete.length) { list.innerHTML = '<div class="empty">Aucun document à compléter. ✓</div>'; return; }
-
-  list.innerHTML = '';
-  for (const { type, doc: d, missing } of incomplete) {
-    const card = document.createElement('div');
-    card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;';
-    const safeId = (d.id||'').replace(/[^a-zA-Z0-9_-]/g, '_');
-    card.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
-        <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:8px;background:var(--surface3);color:var(--muted);">${type}</span>
-        <span style="font-size:14px;font-weight:700;">${escHtml(d.name||d.titre||d.label||d.id||'—')}</span>
-        <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
-        <span style="font-size:11px;color:var(--warn);">Manque : ${missing.map(f => `<code>${f}</code>`).join(', ')}</span>
-      </div>
-      <div id="completion-fields-${safeId}" style="display:flex;flex-wrap:wrap;gap:10px;"></div>
-      <div style="margin-top:8px;">
-        <button class="btn btn-ghost btn-sm" onclick="saveCompletionFields('${escHtml(type)}','${escHtml(d.id||'')}',this)" style="font-size:12px;">💾 Sauvegarder</button>
-        <span id="completion-status-${safeId}" style="font-size:11px;margin-left:8px;"></span>
-      </div>
-    `;
-    const fieldsWrap = card.querySelector(`#completion-fields-${safeId}`);
-    for (const f of missing) {
-      const wrap = document.createElement('div');
-      wrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
-      wrap.innerHTML = `<label style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;">${f}</label>`;
-      let input;
-      if (f === 'difficulty') {
-        input = document.createElement('input');
-        input.type = 'number'; input.min = '1'; input.max = '5'; input.step = '1';
-        input.placeholder = '1–5';
-        input.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;width:80px;outline:none;';
-      } else if (f === 'color') {
-        input = document.createElement('input');
-        input.type = 'text'; input.placeholder = '#a07ae8';
-        input.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;width:120px;outline:none;font-family:monospace;';
-      } else {
-        input = document.createElement('input');
-        input.type = 'text'; input.placeholder = f;
-        input.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:13px;outline:none;';
-      }
-      input.dataset.field = f;
-      if (d[f] != null) input.value = d[f];
-      wrap.appendChild(input);
-      if (fieldsWrap) fieldsWrap.appendChild(wrap);
-    }
-    list.appendChild(card);
+  // Filtre dynamique : uniquement les champs qui ont au moins un manquant
+  const allMissingFields = [...new Set(_completionResults.flatMap(r => r.missing))].sort();
+  const filterBar = document.getElementById('completion-filter-bar');
+  const filterSel = document.getElementById('completion-filter-field');
+  if (filterSel) {
+    const prev = filterSel.value;
+    filterSel.innerHTML = '<option value="">Tous les problèmes</option>' +
+      allMissingFields.map(f => `<option value="${escHtml(f)}"${f === prev ? ' selected' : ''}>${escHtml(f)}</option>`).join('');
+    if (filterBar) filterBar.style.display = allMissingFields.length > 1 ? 'flex' : 'none';
   }
+
+  renderCompletion(); // inclut _appendBrokenImagesSection en fin
 };
 
-window.saveCompletionFields = async (type, docId, btn) => {
-  const colMap = { mob:'mobs', quete:'quetes', region:'regions' };
-  const colName = colMap[type] || type;
+window.renderCompletion = function renderCompletion() {
+  const list        = document.getElementById('completion-list');
+  const filterField = document.getElementById('completion-filter-field')?.value || '';
+
+  let results = _completionResults;
+  if (filterField) results = results.filter(r => r.missing.includes(filterField));
+
+  list.innerHTML = '';
+
+  if (!results.length) {
+    list.innerHTML = filterField
+      ? '<div class="empty">Aucun document incomplet pour ce critère. ✓</div>'
+      : '<div class="empty">Aucun document à compléter. ✓</div>';
+    _appendBrokenImagesSection();
+    return;
+  }
+
+  // Grouper par mode
+  const byMode = {};
+  for (const r of results) {
+    if (!byMode[r.mode]) byMode[r.mode] = [];
+    byMode[r.mode].push(r);
+  }
+
+  for (const [mode, rows] of Object.entries(byMode)) {
+    const header = document.createElement('div');
+    header.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;margin-top:12px;';
+    header.textContent = `${QUALITY_MODE_LABELS[mode] || mode} — ${rows.length} incomplet${rows.length > 1 ? 's' : ''}`;
+    list.appendChild(header);
+
+    for (const { colName, doc: d, missing, discVal } of rows) {
+      const safeId    = (d.id || '').replace(/[^a-zA-Z0-9_-]/g, '_') || Math.random().toString(36).slice(2);
+      const subcatLbl = discVal ? _subcatLabel(mode, discVal) : null;
+      const docId     = d.id || '';
+
+      const card = document.createElement('div');
+      card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;';
+
+      // Ligne d'en-tête
+      const headRow = document.createElement('div');
+      headRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;';
+      headRow.innerHTML = `
+        <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:8px;background:var(--surface3);color:var(--muted);flex-shrink:0;">${escHtml(mode)}</span>
+        ${subcatLbl ? `<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:rgba(122,90,248,.12);color:var(--accent);border:1px solid rgba(122,90,248,.25);flex-shrink:0;">${escHtml(subcatLbl)}</span>` : ''}
+        <span style="font-size:14px;font-weight:700;">${escHtml(d.name||d.titre||d.label||docId||'—')}</span>
+        <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(docId)}</span>
+        <span style="font-size:11px;color:var(--warn);flex:1;min-width:0;">Manque : ${missing.map(f => `<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;">${escHtml(f)}</code>`).join(' ')}</span>
+        <button class="btn btn-ghost btn-sm" onclick="showEditor('${escHtml(colName)}','${escHtml(docId)}',null,'completion')" style="font-size:11px;flex-shrink:0;">✏️ Éditer</button>
+        ${mode === 'items' ? `<button class="btn btn-ghost btn-sm" onclick="openCompletionInCreator('${escHtml(colName)}','${escHtml(docId)}')" style="font-size:11px;flex-shrink:0;" title="Ouvrir dans le Creator">⚙️ Creator</button>` : ''}
+      `;
+      card.appendChild(headRow);
+
+      // Champs inline guidés
+      const fieldsWrap = document.createElement('div');
+      fieldsWrap.id = `completion-fields-${safeId}`;
+      fieldsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;';
+
+      for (const f of missing) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+        const lbl = document.createElement('label');
+        lbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;';
+        lbl.textContent = f;
+        wrap.appendChild(lbl);
+        const inputEl = _buildCompletionInput(f, mode, d[f] != null ? d[f] : undefined);
+        wrap.appendChild(inputEl);
+        fieldsWrap.appendChild(wrap);
+      }
+      card.appendChild(fieldsWrap);
+
+      // Bouton sauvegarder
+      const saveRow = document.createElement('div');
+      saveRow.style.cssText = 'margin-top:10px;display:flex;align-items:center;gap:8px;';
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'btn btn-ghost btn-sm';
+      saveBtn.style.cssText = 'font-size:12px;';
+      saveBtn.textContent = '💾 Sauvegarder';
+      saveBtn.setAttribute('onclick', `saveCompletionFields('${escHtml(mode)}','${escHtml(docId)}',this)`);
+      const statusEl = document.createElement('span');
+      statusEl.id = `completion-status-${safeId}`;
+      statusEl.style.cssText = 'font-size:11px;';
+      saveRow.appendChild(saveBtn);
+      saveRow.appendChild(statusEl);
+      card.appendChild(saveRow);
+      list.appendChild(card);
+    }
+  }
+
+  _appendBrokenImagesSection();
+};
+
+async function _appendBrokenImagesSection() {
+  const list = document.getElementById('completion-list');
+  if (!list) return;
+  const imgHeader = document.createElement('div');
+  imgHeader.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;margin-top:16px;';
+  imgHeader.textContent = '🖼️ Images — vérification en cours…';
+  list.appendChild(imgHeader);
+  try {
+    const itemDocs = await cachedDocs('items').catch(() => []);
+    const broken = await _checkBrokenImages(itemDocs, (done, total) => {
+      imgHeader.textContent = `🖼️ Images — ${done} / ${total} vérifiées…`;
+    });
+    if (!broken.length) {
+      imgHeader.textContent = '🖼️ Images — toutes accessibles ✓';
+    } else {
+      imgHeader.textContent = `🖼️ Images cassées — ${broken.length} item${broken.length > 1 ? 's' : ''}`;
+      for (const { doc: d, brokenUrls } of broken) {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;';
+        card.innerHTML = `
+          <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.id||'—')}</span>
+          <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
+          <div style="width:100%;display:flex;flex-direction:column;gap:3px;">
+            ${brokenUrls.map(u => `<span style="font-size:11px;color:var(--danger);font-family:monospace;word-break:break-all;">⛔ ${escHtml(u)}</span>`).join('')}
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="showEditor('items','${escHtml(d.id||'')}',null,'completion')" style="font-size:11px;">✏️ Éditer</button>
+        `;
+        list.appendChild(card);
+      }
+    }
+  } catch {
+    imgHeader.textContent = '🖼️ Images — erreur lors de la vérification';
+  }
+}
+
+window.saveCompletionFields = async (mode, docId, btn) => {
+  const colName = QUALITY_COL_MAP[mode] || ({ mob:'mobs', quete:'quetes', region:'regions' }[mode]) || mode;
   if (!hasRole(currentRole, 'contributeur')) { toast('⛔ Accès refusé', 'error'); return; }
   const safeDocId  = docId.replace(/[^a-zA-Z0-9_-]/g, '_');
   const fieldsWrap = document.getElementById(`completion-fields-${safeDocId}`);
   const status     = document.getElementById(`completion-status-${safeDocId}`);
   if (!fieldsWrap) return;
+
   const patch = {};
-  for (const input of fieldsWrap.querySelectorAll('input[data-field]')) {
-    const f = input.dataset.field;
-    const v = input.value.trim();
+
+  // input / select / textarea avec data-field (hors checkbox et color picker)
+  for (const el of fieldsWrap.querySelectorAll('input[data-field]:not([type=checkbox]):not([type=color]), select[data-field], textarea[data-field]')) {
+    const f = el.dataset.field;
+    const v = el.value.trim();
     if (!v) continue;
-    patch[f] = isNaN(Number(v)) ? v : Number(v);
+    patch[f] = _NUMERIC_CF_FIELDS.has(f) ? Number(v) : v;
   }
+
+  // div[data-field] = multicheckbox
+  for (const wrap of fieldsWrap.querySelectorAll('div[data-field]')) {
+    const f       = wrap.dataset.field;
+    const checked = [...wrap.querySelectorAll('input[type=checkbox]:checked')].map(cb => cb.value);
+    if (checked.length) patch[f] = checked;
+  }
+
   if (!Object.keys(patch).length) { toast('⚠️ Aucun champ rempli', 'warning'); return; }
   try {
     if (btn) btn.disabled = true;
@@ -5541,6 +6016,22 @@ window.saveCompletionFields = async (type, docId, btn) => {
   } finally {
     if (btn) btn.disabled = false;
   }
+};
+
+window.openCompletionInCreator = async function(colName, docId) {
+  let data = null;
+  try {
+    const snap = await getDoc(doc(db, colName, docId));
+    if (snap.exists()) data = { id: snap.id, ...snap.data() };
+  } catch(e) {
+    toast('⛔ Impossible de charger le document : ' + e.message, 'error');
+    return;
+  }
+  if (!data) { toast('⛔ Document introuvable.', 'error'); return; }
+  const typeMap = { items:'item', mobs:'mob', personnages:'pnj', regions:'region', quetes:'quest', panoplies:'panoplie' };
+  const type = typeMap[colName] || 'item';
+  sessionStorage.setItem('editSub', JSON.stringify({ type, data }));
+  window.open('creator.html', '_blank');
 };
 
 // ── Creator Validation Config (Champs requis) ──────────
@@ -5847,15 +6338,7 @@ function _subcatLabel(mode, subcatId) {
   return (QUALITY_SUBCATEGORIES[mode] || []).find(s => s.id === subcatId)?.label || subcatId || null;
 }
 
-window.showDataIncomplete = async () => {
-  _setHash('data-incomplete');
-  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('data-incomplete-panel').style.display = '';
-  document.getElementById('btn-data-incomplete').classList.add('active');
-  document.querySelector('.sidebar').classList.add('in-order-panel');
-  await loadDataIncomplete();
-};
+window.showDataIncomplete = async () => showCompletion();
 
 window.loadDataIncomplete = async () => {
   const list = document.getElementById('data-incomplete-list');

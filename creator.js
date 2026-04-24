@@ -907,7 +907,7 @@ function initObtainData() {
       if (!s.data?.id || !s.data?.name) continue;
       allMobs.push({
         id: s.data.id, name: s.data.name, palier: s.data.palier, mobType: s.data.type,
-        loot: [], isPending: true,
+        loot: s.data.loot || [], isPending: true,
         subtitle: '⏳ En attente · Palier ' + (s.data.palier || '?'),
         search: ((s.data.name || '') + ' ' + s.data.id).toLowerCase()
       });
@@ -1118,6 +1118,62 @@ function renderObtainSources() {
     chip.innerHTML = `<span>${label}</span><button class="btn-icon" onclick="removeObtainSource(${s.uid})">✕</button>`;
     list.appendChild(chip);
   }
+}
+
+function parseObtainText(text, itemId, itemName) {
+  const sources = [];
+  if (!text) return sources;
+  const lines = text.split('\n');
+  let inMobSection = false;
+  for (const line of lines) {
+    const t = line.trim();
+    if (t === 'Obtenable en tuant:') { inMobSection = true; continue; }
+    if (inMobSection && t.startsWith('- ')) {
+      const m = t.match(/^-\s*\[([^|]+)\|([^\]]+)\]\[([^\]]+)\]$/);
+      if (m) {
+        const [, mobId, mobName, chanceStr] = m;
+        const chance = chanceStr === '?' ? null : parseFloat(chanceStr);
+        const mob = allMobs.find(x => x.id === mobId);
+        sources.push({
+          uid: obtainUid++, type: 'mob',
+          id: mobId, mobId, lootId: itemId,
+          name: mobName, lootName: itemName,
+          palier: mob?.palier ?? null, mobType: mob?.mobType ?? null,
+          chance, qty: null
+        });
+      }
+      continue;
+    }
+    inMobSection = false;
+    const donjonM = t.match(/^Obtenable en récompense du \[npc:([^|]+)\|([^\]]+)\]$/);
+    if (donjonM) {
+      const [, id, name] = donjonM;
+      const d = allDonjons.find(x => x.id === id);
+      sources.push({ uid: obtainUid++, type: 'donjon', id, name, desc: d?.desc || '', subtitle: d?.subtitle || '' });
+      continue;
+    }
+    const artM = t.match(/^Fabricable au \[npc:([^|]+)\|([^\]]+)\]$/);
+    if (artM) {
+      const [, id, name] = artM;
+      const a = allArtisans.find(x => x.id === id);
+      sources.push({ uid: obtainUid++, type: 'artisant', id, name, desc: a?.desc || '', subtitle: a?.subtitle || '' });
+      continue;
+    }
+    const marchM = t.match(/^Achetable au \[npc:([^|]+)\|([^\]]+)\]$/);
+    if (marchM) {
+      const [, id, name] = marchM;
+      const mx = allMarchands.find(x => x.id === id);
+      sources.push({ uid: obtainUid++, type: 'marchand', id, name, desc: mx?.desc || '', subtitle: mx?.subtitle || '' });
+      continue;
+    }
+    const queteM = t.match(/^Récompense de la quête \[quest:([^|]+)\|([^\]]+)\]$/);
+    if (queteM) {
+      const [, id, name] = queteM;
+      const q = allQuetes.find(x => x.id === id);
+      sources.push({ uid: obtainUid++, type: 'quete', id, name, desc: q?.desc || '', subtitle: q?.subtitle || '' });
+    }
+  }
+  return sources;
 }
 
 function buildObtainText() {
@@ -1652,10 +1708,16 @@ function loadItem(item) {
   // Lore
   if (item.lore) document.getElementById('f-lore').value = item.lore;
 
-  // Obtain — texte brut en override
+  // Obtain — parse en sources structurées, fallback sur override texte brut
   if (item.obtain) {
-    document.getElementById('f-obtain-override').value = item.obtain;
-    document.getElementById('obtain-override-wrap').style.display = '';
+    const parsed = parseObtainText(item.obtain, item.id, item.name);
+    if (parsed.length) {
+      obtainSources = parsed;
+      renderObtainSources();
+    } else {
+      document.getElementById('f-obtain-override').value = item.obtain;
+      document.getElementById('obtain-override-wrap').style.display = '';
+    }
   }
 
   // Tags
@@ -3834,7 +3896,10 @@ async function submitToFirestore() {
   }
 
   let isModification = false;
-  if (creatorMode === 'item')      isModification = isDuplicate(data.id);
+  if (creatorMode === 'item') {
+    const editingName = document.getElementById('editing-name').textContent;
+    isModification = !!editingName || isDuplicate(data.id);
+  }
   else if (creatorMode === 'mob')  isModification = isMobDuplicate(data.id);
   else if (creatorMode === 'region') isModification = isRegionDuplicate(data.id);
   else if (creatorMode === 'quest')  isModification = isQuestDuplicate(data.id);
