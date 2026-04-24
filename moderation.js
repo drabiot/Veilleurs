@@ -164,7 +164,6 @@ window.loadSubmissions = async () => {
     try { await fetchUserNames(uids); } catch {}
     updateCounts();
     renderSubs();
-    _saveLbSnapshot(allSubs).catch(() => {}); // snapshot de secours en arrière-plan
   } catch(e) {
     document.getElementById('submissions-list').innerHTML = `<div class="empty">Erreur : ${e.message}</div>`;
   }
@@ -647,7 +646,6 @@ window.approve = async (id) => {
     if (isDiscordItem) sub.discord_sent = false;
     updateCounts();
     renderSubs();
-    _saveLbSnapshot(allSubs).catch(() => {});
   } catch(e) {
     toast('⛔ Erreur : ' + e.message, 'error');
     if (btn) { btn.disabled = false; btn.textContent = '✓ Approuver'; }
@@ -5389,22 +5387,18 @@ window.setUserRole = async (uid, newRole, sel) => {
 // LEADERBOARD — contributions approuvées par membre
 // ═══════════════════════════════════════════════════════
 
-const _LB_EXCLUDED_DOC  = 'config/leaderboard_excluded';
-const _LB_SNAPSHOT_DOC  = 'config/leaderboard_snapshot';
+const _LB_EXCLUDED_DOC = 'config/leaderboard_excluded';
 
-async function _saveLbSnapshot(subs, excludedIds = new Set()) {
-  const approved = subs.filter(s => s.status === 'approved' && !excludedIds.has(s._id));
-  const counts = {};
-  for (const s of approved) {
-    const uid  = s.submittedBy || null;
-    const key  = uid || ('__' + (s.submitterName || 'anon'));
-    const name = s.submitterName || _userNames.get(uid) || (uid ? uid.slice(0, 8) + '…' : '—');
-    if (!counts[key]) counts[key] = { uid, name, total: 0, byType: {} };
-    counts[key].byType[s.type] = (counts[key].byType[s.type] || 0) + 1;
-    counts[key].total++;
-  }
-  await setDoc(doc(db, 'config', 'leaderboard_snapshot'), { counts, updatedAt: serverTimestamp() });
-}
+const _LB_SCAN_COLS = [
+  { col: COL.items,       type: 'item'     },
+  { col: COL.itemsSecret, type: 'item'     },
+  { col: COL.mobs,        type: 'mob'      },
+  { col: COL.mobsSecret,  type: 'mob'      },
+  { col: COL.pnj,         type: 'pnj'      },
+  { col: 'regions',       type: 'region'   },
+  { col: 'quetes',        type: 'quest'    },
+  { col: 'panoplies',     type: 'panoplie' },
+];
 
 window.showLeaderboard = async () => {
   _setHash('leaderboard');
@@ -5417,78 +5411,46 @@ window.showLeaderboard = async () => {
 };
 
 window.loadLeaderboard = async () => {
-  const listEl = document.getElementById('leaderboard-list');
+  const listEl   = document.getElementById('leaderboard-list');
   const detailEl = document.getElementById('leaderboard-user-detail');
   if (detailEl) detailEl.style.display = 'none';
   listEl.style.display = '';
   listEl.innerHTML = '<div class="empty">Chargement…</div>';
 
-  // Charger les IDs exclus
   let excludedIds = new Set();
   try {
     const exSnap = await getDoc(doc(db, 'config', 'leaderboard_excluded'));
     if (exSnap.exists()) excludedIds = new Set(exSnap.data().ids || []);
   } catch {}
 
-  const subs = allSubs.length ? allSubs : await getDocs(collection(db, 'submissions'))
-    .then(s => s.docs.map(d => ({ _id: d.id, ...d.data() }))).catch(() => []);
+  const byKey = {};
+  for (const { col, type } of _LB_SCAN_COLS) {
+    try {
+      const snap = await getDocs(collection(db, col));
+      for (const d of snap.docs) {
+        const data = d.data();
+        const c = data._contributor;
+        if (!c) continue;
+        const entryId = col + '/' + d.id;
+        if (excludedIds.has(entryId)) continue;
+        const uid   = c.uid  || null;
+        const cname = c.name || 'Inconnu';
+        const key   = uid || ('__' + cname);
+        if (!byKey[key]) byKey[key] = { uid, name: cname, subs: [] };
+        byKey[key].subs.push({
+          _id: entryId, _col: col, _docId: d.id, type,
+          name: data.name || data.titre || data.label || d.id,
+        });
+      }
+    } catch {}
+  }
 
-  const approved = subs.filter(s => s.status === 'approved' && !excludedIds.has(s._id));
-
-  if (approved.length > 0) {
-    const byKey = {};
-    for (const s of approved) {
-      const uid  = s.submittedBy || null;
-      const name = s.submitterName || _userNames.get(uid) || (uid ? uid.slice(0, 8) + '…' : '— (invité)');
-      const key  = uid || ('__' + (s.submitterName || 'anon'));
-      if (!byKey[key]) byKey[key] = { uid, name, subs: [] };
-      byKey[key].subs.push(s);
-    }
-    const ranked = Object.values(byKey).sort((a, b) => b.subs.length - a.subs.length);
-    _saveLbSnapshot(subs, excludedIds).catch(() => {});
-    listEl.innerHTML = '';
+  const ranked = Object.values(byKey).sort((a, b) => b.subs.length - a.subs.length);
+  listEl.innerHTML = '';
+  if (ranked.length) {
     _renderLbRows(ranked, listEl, false);
   } else {
-    // Fallback : scanner les collections pour le champ _contributor
-    const scanCols = [
-      { col: COL.items,       type: 'item'      },
-      { col: COL.itemsSecret, type: 'item'      },
-      { col: COL.mobs,        type: 'mob'       },
-      { col: COL.mobsSecret,  type: 'mob'       },
-      { col: COL.pnj,         type: 'pnj'       },
-      { col: 'regions',       type: 'region'    },
-      { col: 'quetes',        type: 'quest'     },
-      { col: 'panoplies',     type: 'panoplie'  },
-    ];
-    const byKey = {};
-    for (const { col, type } of scanCols) {
-      try {
-        const snap = await getDocs(collection(db, col));
-        for (const d of snap.docs) {
-          const c = d.data()._contributor;
-          if (!c) continue;
-          const uid   = c.uid  || null;
-          const cname = c.name || 'Inconnu';
-          const key   = uid || ('__' + cname);
-          if (!byKey[key]) byKey[key] = { uid, name: cname, subs: [] };
-          byKey[key].subs.push({
-            _id: d.id, type, isFromCollection: true,
-            name: d.data().name || d.data().titre || d.data().label || d.id,
-          });
-        }
-      } catch {}
-    }
-    const ranked = Object.values(byKey).sort((a, b) => b.subs.length - a.subs.length);
-    listEl.innerHTML = '';
-    if (ranked.length) {
-      const warn = document.createElement('div');
-      warn.style.cssText = 'font-size:12px;color:var(--warn);padding:6px 10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:6px;margin-bottom:12px;';
-      warn.textContent = '⚠️ Historique des soumissions supprimé — affichage depuis les documents approuvés.';
-      listEl.appendChild(warn);
-      _renderLbRows(ranked, listEl, false);
-    } else {
-      listEl.innerHTML = '<div class="empty">Aucune contribution trouvée.</div>';
-    }
+    listEl.innerHTML = '<div class="empty">Aucune contribution trouvée.</div>';
   }
 };
 
@@ -5525,8 +5487,10 @@ window.showLeaderboardUser = function(u) {
   const titleEl  = document.getElementById('leaderboard-user-title');
   const subsEl   = document.getElementById('leaderboard-user-subs');
   detailEl.style.display = '';
+
   const updateTitle = () => {
-    titleEl.textContent = `${u.name} — ${u.subs.length} contribution${u.subs.length > 1 ? 's' : ''} approuvée${u.subs.length > 1 ? 's' : ''}`;
+    const n = u.subs.length;
+    titleEl.textContent = `${u.name} — ${n} contribution${n > 1 ? 's' : ''}`;
   };
   updateTitle();
 
@@ -5535,56 +5499,49 @@ window.showLeaderboardUser = function(u) {
 
   const renderRows = () => {
     subsEl.innerHTML = '';
-    const sorted = [...u.subs].sort((a, b) => {
-      const ta = a.submittedAt?.toMillis?.() ?? 0;
-      const tb = b.submittedAt?.toMillis?.() ?? 0;
-      return tb - ta;
-    });
+    if (!u.subs.length) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'Aucune contribution.';
+      subsEl.appendChild(empty);
+      return;
+    }
+    const sorted = [...u.subs].sort((a, b) =>
+      (a.type || '').localeCompare(b.type || '', 'fr') || (a.name || '').localeCompare(b.name || '', 'fr')
+    );
     for (const s of sorted) {
-      const name = s.isFromCollection
-        ? s.name
-        : (s.data?.name || s.data?.titre || s.data?.label || s._id);
-      const ts   = s.isFromCollection ? '—' : (s.submittedAt?.toDate
-        ? s.submittedAt.toDate().toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' })
-        : '—');
-      const actionLabel = s.isFromCollection ? '' : (s.editType === 'edit' ? '✏️ Modif.' : '➕ Ajout');
       const row = document.createElement('div');
-      row.id = `lb-row-${s._id}`;
+      row.id = `lb-row-${CSS.escape(s._id)}`;
       row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;';
       row.innerHTML = `
         <span style="width:18px;text-align:center;flex-shrink:0;">${TYPE_ICON[s.type]||'📄'}</span>
-        <span style="flex:1;font-weight:600;">${escHtml(name)}</span>
+        <span style="flex:1;font-weight:600;">${escHtml(s.name || s._docId)}</span>
         <span style="color:var(--muted);font-size:11px;">${TYPE_LABEL[s.type]||s.type}</span>
-        <span style="color:var(--muted);font-size:11px;">${actionLabel}</span>
-        <span style="color:var(--muted);font-size:11px;white-space:nowrap;">${ts}</span>
       `;
-      if (!s.isFromCollection) {
-        const ignoreBtn = document.createElement('button');
-        ignoreBtn.className = 'btn btn-ghost';
-        ignoreBtn.style.cssText = 'font-size:11px;padding:2px 8px;color:var(--muted);flex-shrink:0;';
-        ignoreBtn.title = 'Masquer du leaderboard (test)';
-        ignoreBtn.textContent = '✕ Ignorer';
-        ignoreBtn.addEventListener('click', () => _lbExclude(s._id, u, updateTitle, renderRows));
-        row.appendChild(ignoreBtn);
-      }
+      const ignoreBtn = document.createElement('button');
+      ignoreBtn.className = 'btn btn-ghost';
+      ignoreBtn.style.cssText = 'font-size:11px;padding:2px 8px;color:var(--muted);flex-shrink:0;';
+      ignoreBtn.title = 'Décomptabiliser cette contribution';
+      ignoreBtn.textContent = '✕ Retirer';
+      ignoreBtn.addEventListener('click', () => _lbExclude(s._id, u, updateTitle, renderRows));
+      row.appendChild(ignoreBtn);
       subsEl.appendChild(row);
     }
   };
   renderRows();
 };
 
-async function _lbExclude(subId, userData, updateTitle, renderRows) {
+async function _lbExclude(entryId, userData, updateTitle, renderRows) {
   try {
     const ref = doc(db, 'config', 'leaderboard_excluded');
     const snap = await getDoc(ref);
     const existing = snap.exists() ? (snap.data().ids || []) : [];
-    if (existing.includes(subId)) { toast('Déjà ignoré.', 'warning'); return; }
-    await setDoc(ref, { ids: [...existing, subId] });
-    userData.subs = userData.subs.filter(s => s._id !== subId);
+    if (existing.includes(entryId)) { toast('Déjà retiré.', 'warning'); return; }
+    await setDoc(ref, { ids: [...existing, entryId] });
+    userData.subs = userData.subs.filter(s => s._id !== entryId);
     updateTitle();
     renderRows();
-    _saveLbSnapshot(allSubs, new Set([...existing, subId])).catch(() => {});
-    toast('Contribution masquée du leaderboard.', 'success');
+    toast('Contribution retirée du leaderboard.', 'success');
   } catch(e) {
     toast('⛔ ' + e.message, 'error');
   }
