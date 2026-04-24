@@ -893,6 +893,7 @@ let allDonjons   = [];
 let allArtisans  = [];
 let allMarchands = [];
 let allQuetes    = [];
+let allRegions   = [];
 
 function initObtainData() {
   if (typeof MOBS !== 'undefined') {
@@ -902,7 +903,6 @@ function initObtainData() {
       subtitle: (m.type === 'boss' ? '👑 Boss' : '👾 Monstre') + ' · Palier ' + (m.palier || '?') + (m.region ? ' · ' + m.region : ''),
       search: (m.name + ' ' + m.id + ' ' + (m.region || '')).toLowerCase()
     }));
-    // Merge pending mobs
     for (const s of (window._vcl_pendingMobs || [])) {
       if (!s.data?.id || !s.data?.name) continue;
       allMobs.push({
@@ -931,7 +931,6 @@ function initObtainData() {
       subtitle: (TYPE_LABELS_Q[q.type] || q.type || '') + (q.palier ? ' · Palier ' + q.palier : ''),
       search: ((q.titre || q.name || '') + ' ' + q.id).toLowerCase()
     }));
-    // Merge pending quest submissions
     for (const s of (window._vcl_pendingQuests || [])) {
       if (!s.data?.id || !(s.data?.titre || s.data?.name)) continue;
       allQuetes.push({
@@ -942,54 +941,93 @@ function initObtainData() {
     }
   }
 
-  // Pending PNJ submissions as artisans (référençables comme source d'obtention)
   for (const s of (window._vcl_pendingPnjs || [])) {
     if (!s.data?.id || !s.data?.name) continue;
-    const fakePnj = {
+    allArtisans.push({
       id: s.data.id, name: s.data.name + ' (' + (s.data.id || '') + ')', desc: '⏳ En attente',
       subtitle: '⏳ En attente',
       search: ('⏳ ' + (s.data.name || '') + ' ' + s.data.id).toLowerCase()
-    };
-    allArtisans.push(fakePnj);
+    });
+  }
+
+  // Régions pour le type 'ressource'
+  const buildRegionItem = r => ({
+    id: r.id, name: r.name || r.id,
+    subtitle: r.palier ? 'Palier ' + r.palier : '',
+    search: ((r.name || '') + ' ' + r.id).toLowerCase()
+  });
+  if (_regionsCache) {
+    allRegions = _regionsCache.map(buildRegionItem);
+    for (const s of (window._vcl_pendingRegions || [])) {
+      if (!s.data?.id || !s.data?.name) continue;
+      allRegions.push({ ...buildRegionItem(s.data), subtitle: '⏳ En attente' });
+    }
+  } else {
+    loadRegionsCache().then(() => {
+      allRegions = (_regionsCache || []).map(buildRegionItem);
+      for (const s of (window._vcl_pendingRegions || [])) {
+        if (!s.data?.id || !s.data?.name) continue;
+        allRegions.push({ ...buildRegionItem(s.data), subtitle: '⏳ En attente' });
+      }
+      if (document.getElementById('obtain-type')?.value === 'ressource') onObtainTypeChange();
+    });
   }
 
   onObtainTypeChange();
 }
 
+// Seul 'autre' est en texte libre — tous les autres types utilisent un sélecteur d'entité
+const OBTAIN_TEXT_TYPES = new Set(['autre']);
+
 function obtainItemsForType(type) {
-  return { mob: allMobs, donjon: allDonjons, artisant: allArtisans, marchand: allMarchands, quete: allQuetes }[type] || [];
+  return { mob: allMobs, donjon: allDonjons, artisant: allArtisans, marchand: allMarchands, quete: allQuetes, ressource: allRegions }[type] || [];
 }
 
 const OBTAIN_PLACEHOLDERS = {
-  mob:      'Rechercher un mob…',
-  donjon:   'Rechercher un donjon…',
-  artisant: 'Rechercher un forgeron / artisan…',
-  quete:    'Rechercher une quête…',
-  marchand: 'Rechercher un marchand…',
+  mob:       'Rechercher un mob…',
+  donjon:    'Rechercher un donjon…',
+  artisant:  'Rechercher un forgeron / artisan…',
+  quete:     'Rechercher une quête…',
+  marchand:  'Rechercher un marchand…',
+  ressource: 'Rechercher une région…',
+  autre:     'Pour des cas particuliers, détaillez ici précisément le moyen d\'obtention de cet item.',
 };
 
 function onObtainTypeChange() {
   const type = document.getElementById('obtain-type').value;
   const container = document.getElementById('obtain-search-container');
+  const addBtn = document.getElementById('obtain-add-btn');
   container.innerHTML = '';
   hideLootPicker();
+  obtainDrop = null;
 
-  obtainDrop = makeSearchDrop(obtainItemsForType(type), OBTAIN_PLACEHOLDERS[type], (id) => {
-    if (type === 'mob') {
-      const mob = allMobs.find(m => m.id === id);
-      if (mob) showLootPicker(mob); else hideLootPicker();
-      document.getElementById('obtain-add-btn').disabled = true;
-    } else {
-      hideLootPicker();
-      // Sélection = ajout direct (pas besoin de bouton "Ajouter")
-      if (id) addObtainSource();
-    }
-  }, type === 'mob', 'mob');
-  container.appendChild(obtainDrop.element);
-  document.getElementById('obtain-add-btn').disabled = true;
-  // Le bouton "Ajouter" n'est plus nécessaire : sélection = ajout direct
-  // (masqué pour mob = loot picker, masqué pour les autres = ajout auto)
-  document.getElementById('obtain-add-btn').style.display = 'none';
+  if (type === 'autre') {
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.id = 'obtain-text-input';
+    inp.placeholder = OBTAIN_PLACEHOLDERS.autre;
+    inp.style.cssText = 'width:100%;height:38px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 10px;font-size:12px;outline:none;font-family:inherit;';
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') addObtainSource(); });
+    inp.addEventListener('input', () => { addBtn.disabled = !inp.value.trim(); });
+    container.appendChild(inp);
+    addBtn.disabled = true;
+    addBtn.style.display = '';
+
+  } else {
+    obtainDrop = makeSearchDrop(obtainItemsForType(type), OBTAIN_PLACEHOLDERS[type], (id) => {
+      if (type === 'mob') {
+        const mob = allMobs.find(m => m.id === id);
+        if (mob) showLootPicker(mob); else hideLootPicker();
+        addBtn.disabled = true;
+      } else {
+        hideLootPicker();
+        if (id) addObtainSource();
+      }
+    }, type === 'mob', 'mob');
+    container.appendChild(obtainDrop.element);
+    addBtn.disabled = true;
+    addBtn.style.display = 'none';
+  }
 }
 
 function showLootPicker(mob) {
@@ -1062,7 +1100,19 @@ function addObtainMobSource(mob, loot, itemName) {
 
 function addObtainSource() {
   const type = document.getElementById('obtain-type').value;
-  if (type === 'mob') return; // handled by loot picker
+  if (type === 'mob') return;
+
+  if (type === 'autre') {
+    const inp = document.getElementById('obtain-text-input');
+    const desc = inp ? inp.value.trim() : '';
+    if (!desc) return;
+    obtainSources.push({ uid: obtainUid++, type, desc });
+    if (inp) { inp.value = ''; document.getElementById('obtain-add-btn').disabled = true; }
+    renderObtainSources();
+    update();
+    return;
+  }
+
   const id = obtainDrop ? obtainDrop.getValue() : '';
   if (!id) return;
 
@@ -1070,7 +1120,7 @@ function addObtainSource() {
   if (!item) return;
   if (obtainSources.some(s => s.id === id && s.type === type)) return;
 
-  obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc, subtitle: item.subtitle });
+  obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc || '', subtitle: item.subtitle });
   obtainDrop.reset();
   document.getElementById('obtain-add-btn').disabled = true;
   renderObtainSources();
@@ -1088,7 +1138,7 @@ function removeObtainSource(uid) {
   update();
 }
 
-const OBTAIN_ICONS = { mob:'🗡️', donjon:'🏰', artisant:'🔨', marchand:'🛒', quete:'📜' };
+const OBTAIN_ICONS = { mob:'🗡️', donjon:'🏰', artisant:'🔨', marchand:'🛒', quete:'📜', ressource:'🌿', autre:'💬', coffre:'🎁', event:'🎊', exploration:'🗺️' };
 
 function renderObtainSources() {
   const list = document.getElementById('obtain-sources-list');
@@ -1111,9 +1161,11 @@ function renderObtainSources() {
       const href = `Quetes/quetes.html#${encodeURIComponent(s.id)}`;
       label += `<a href="${href}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">${s.name}</a>`;
       if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
+    } else if (s.type === 'autre' || s.type === 'coffre' || s.type === 'event' || s.type === 'exploration') {
+      label += `<span style="color:var(--muted)">${s.type === 'autre' ? 'Autre' : s.type} ·</span> <b>${s.desc}</b>`;
     } else {
       label += `<b>${s.name}</b>`;
-      if (s.desc) label += ` <span style="color:var(--muted)">— ${s.desc}</span>`;
+      if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
     }
     chip.innerHTML = `<span>${label}</span><button class="btn-icon" onclick="removeObtainSource(${s.uid})">✕</button>`;
     list.appendChild(chip);
@@ -1171,7 +1223,24 @@ function parseObtainText(text, itemId, itemName) {
       const [, id, name] = queteM;
       const q = allQuetes.find(x => x.id === id);
       sources.push({ uid: obtainUid++, type: 'quete', id, name, desc: q?.desc || '', subtitle: q?.subtitle || '' });
+      continue;
     }
+    const ressourceM = t.match(/^Récoltable dans \[region:([^|]+)\|([^\]]+)\]$/);
+    if (ressourceM) {
+      const [, id, name] = ressourceM;
+      const r = allRegions.find(x => x.id === id);
+      sources.push({ uid: obtainUid++, type: 'ressource', id, name, subtitle: r?.subtitle || '' });
+      continue;
+    }
+    // Anciens formats (compatibilité lecture)
+    const coffreM = t.match(/^Trouvable dans un coffre — (.+)$/);
+    if (coffreM) { sources.push({ uid: obtainUid++, type: 'coffre', desc: coffreM[1] }); continue; }
+    const eventM = t.match(/^Récompense d'événement — (.+)$/);
+    if (eventM) { sources.push({ uid: obtainUid++, type: 'event', desc: eventM[1] }); continue; }
+    const exploM = t.match(/^Trouvable en exploration — (.+)$/);
+    if (exploM) { sources.push({ uid: obtainUid++, type: 'exploration', desc: exploM[1] }); continue; }
+    const autreM = t.match(/^Autre source — (.+)$/);
+    if (autreM) { sources.push({ uid: obtainUid++, type: 'autre', desc: autreM[1] }); continue; }
   }
   return sources;
 }
@@ -1180,25 +1249,35 @@ function buildObtainText() {
   const override = document.getElementById('f-obtain-override')?.value?.trim();
   if (override) return override;
   const parts = [];
-  const mobs      = obtainSources.filter(s => s.type === 'mob');
-  const donjons   = obtainSources.filter(s => s.type === 'donjon');
-  const artisans  = obtainSources.filter(s => s.type === 'artisant');
-  const marchands = obtainSources.filter(s => s.type === 'marchand');
-
-  const quetes     = obtainSources.filter(s => s.type === 'quete');
+  const mobs        = obtainSources.filter(s => s.type === 'mob');
+  const donjons     = obtainSources.filter(s => s.type === 'donjon');
+  const artisans    = obtainSources.filter(s => s.type === 'artisant');
+  const marchands   = obtainSources.filter(s => s.type === 'marchand');
+  const quetes      = obtainSources.filter(s => s.type === 'quete');
+  const ressources  = obtainSources.filter(s => s.type === 'ressource');
+  const autres      = obtainSources.filter(s => s.type === 'autre');
+  // Anciens formats conservés pour ne pas perdre de données
+  const coffres     = obtainSources.filter(s => s.type === 'coffre');
+  const events      = obtainSources.filter(s => s.type === 'event');
+  const explorations = obtainSources.filter(s => s.type === 'exploration');
 
   if (mobs.length) {
-    // Une ligne par mob : [mob_id|Nom Mob][chance]
     const lines = mobs.map(s => {
       const base = `[${s.mobId}|${s.name}]`;
       return `- ${base}[${s.chance != null ? s.chance : '?'}]`;
     });
     parts.push('Obtenable en tuant:\n' + lines.join('\n'));
   }
-  for (const d of donjons)   parts.push(`Obtenable en récompense du [npc:${d.id}|${d.name}]`);
-  for (const a of artisans)  parts.push(`Fabricable au [npc:${a.id}|${a.name}]`);
-  for (const m of marchands) parts.push(`Achetable au [npc:${m.id}|${m.name}]`);
-  for (const q of quetes)    parts.push(`Récompense de la quête [quest:${q.id}|${q.name}]`);
+  for (const d of donjons)      parts.push(`Obtenable en récompense du [npc:${d.id}|${d.name}]`);
+  for (const a of artisans)     parts.push(`Fabricable au [npc:${a.id}|${a.name}]`);
+  for (const m of marchands)    parts.push(`Achetable au [npc:${m.id}|${m.name}]`);
+  for (const q of quetes)       parts.push(`Récompense de la quête [quest:${q.id}|${q.name}]`);
+  for (const r of ressources)   parts.push(`Récoltable dans [region:${r.id}|${r.name}]`);
+  for (const a of autres)       parts.push(`Autre source — ${a.desc}`);
+  // Anciens formats
+  for (const c of coffres)      parts.push(`Trouvable dans un coffre — ${c.desc}`);
+  for (const e of events)       parts.push(`Récompense d'événement — ${e.desc}`);
+  for (const ex of explorations) parts.push(`Trouvable en exploration — ${ex.desc}`);
   return parts.join('\n');
 }
 
@@ -1387,16 +1466,49 @@ function ensureAllMobsIndex() {
 
 function initLoadSearch() {
   ensureAllItemsIndex();
-  if (!allItemsIndex.length) return; // ITEMS pas encore chargés — sera rappelé après
+  if (!allItemsIndex.length) return;
   const wrap = document.getElementById('load-item-search-wrap');
-  wrap.innerHTML = ''; // vider le drop vide éventuellement injecté avant le chargement
+  wrap.innerHTML = '';
   loadDrop = makeSearchDrop(allItemsIndex, 'Rechercher un item à éditer…', (id) => {
     if (!id) return;
     const entry = allItemsIndex.find(it => it.id === id);
     if (entry) loadItem(entry._raw);
   });
   wrap.appendChild(loadDrop.element);
+
+  // Si admin/contributeur déjà connu, enrichir avec items sensibles
+  if (['contributeur','admin'].includes(window._vcl_role || '')) {
+    _enrichAdminItems();
+  }
 }
+
+async function _enrichAdminItems() {
+  const getDocs = window._vcl_getDocs;
+  const col     = window._vcl_collection;
+  const db      = window._vcl_db;
+  if (!getDocs || !col || !db || !allItemsIndex.length) return;
+  try {
+    const snap = await getDocs(col(db, 'items_hidden'));
+    const existingIds = new Set(allItemsIndex.map(i => String(i.id)));
+    const rarityLabel = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+    let added = false;
+    for (const d of snap.docs) {
+      const h = { id: d.id, ...d.data() };
+      if (!h.id || existingIds.has(String(h.id))) continue;
+      allItemsIndex.push({
+        id: h.id,
+        name: h.name || h.id,
+        subtitle: [rarityLabel[h.rarity] || h.rarity, h.category, h.palier ? 'P'+h.palier : '', '🔒 Sensible'].filter(Boolean).join(' · '),
+        search: ((h.name || '') + ' ' + h.id + ' sensible').toLowerCase(),
+        _raw: h,
+      });
+      existingIds.add(String(h.id));
+      added = true;
+    }
+    if (added) initLoadSearch();
+  } catch {}
+}
+window._vcl_enrichAdminItems = _enrichAdminItems;
 
 // ── Load search for all modes ──────────────────────────
 let _pnjDropBuilt      = false;

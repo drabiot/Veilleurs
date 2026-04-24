@@ -1816,20 +1816,19 @@ function loadAccessoriesForClass(classId) {
     bar.style.cssText = [
       'position:absolute',
       'top:8px',
-      'left:50%',
-      'transform:translateX(-50%)',
+      'left:8px',
+      'right:8px',
       'display:flex',
-      'gap:8px',
+      'gap:6px',
       'z-index:10',
       'pointer-events:all',
     ].join(';');
 
-    // Insérer DANS .mq (l'encadré doré du skin)
-    const mq = document.querySelector('.mq');
-    if (mq) {
-      // S'assurer que .mq est en position relative pour que absolute fonctionne
-      mq.style.position = 'relative';
-      mq.appendChild(bar);
+    // Insérer DANS .mq-skin pour rester dans les bornes du cadre personnage
+    const skinEl = document.getElementById('mq-skin');
+    if (skinEl) {
+      skinEl.style.position = 'relative';
+      skinEl.appendChild(bar);
     }
   }
 
@@ -1854,8 +1853,9 @@ function loadAccessoriesForClass(classId) {
 				'align-items:center',
 				'justify-content:center',
 				'gap:2px',
-				'width:72px',
-				'padding:6px 8px',
+				'flex:1',
+				'min-width:0',
+				'padding:6px 4px',
 				'border-radius:0px',
 				'border:1px solid var(--rim)',
 				'background:' + (i === activeBuildIndex ? 'var(--surface2)' : 'var(--surface)'),
@@ -1872,7 +1872,7 @@ function loadAccessoriesForClass(classId) {
 			num.textContent = i + 1;
 
 			const lbl = document.createElement('span');
-			lbl.style.cssText = 'font-size:8px;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+			lbl.style.cssText = 'font-size:8px;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;';
 			lbl.textContent = buildName;
 
 			btn.appendChild(num);

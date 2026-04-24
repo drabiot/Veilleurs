@@ -40,7 +40,7 @@
 <!-- Main layout (visible une fois connecté) -->
 <div class="layout" id="main-layout" style="display:none;">
   <aside class="sidebar">
-    <button class="btn btn-ghost" onclick="window._modDoRefresh()" style="width:100%;justify-content:center;font-size:12px;margin-bottom:4px;">🔄 Rafraîchir</button>
+    <button class="btn btn-ghost" onclick="location.reload()" style="width:100%;justify-content:center;font-size:12px;margin-bottom:4px;">🔄 Rafraîchir</button>
 
     <!-- ── FILE DE MODÉRATION ──────────────────────────── -->
     <div class="sb-label">FILE DE MODÉRATION</div>
@@ -88,6 +88,7 @@
     <button class="filter-btn" id="btn-quest-orphans"   onclick="showQuestOrphans()">📋 Quêtes orphelines</button>
     <button class="filter-btn" id="btn-completion"      onclick="showCompletion()">⚠️ À compléter <span class="filter-count" id="count-incomplete" style="display:none;">0</span></button>
     <button class="filter-btn" id="btn-data-incomplete" onclick="showDataIncomplete()" style="display:none;">📊 Data incomplète <span class="filter-count" id="count-data-incomplete" style="display:none;">0</span></button>
+    <button class="filter-btn" id="btn-obtain-legacy"   onclick="showObtainLegacy()">🗂️ Obtentions libres <span class="filter-count" id="count-obtain-legacy" style="display:none;">0</span></button>
 
     <!-- ── ADMIN ───────────────────────────────────────── -->
     <div class="sb-label">ADMIN</div>
@@ -591,6 +592,34 @@
       Items, mobs et quêtes présents dans la base mais manquant de champs essentiels selon le standard de données.
     </p>
     <div id="data-incomplete-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Obtentions libres (non structurées) -->
+  <main class="main" id="obtain-legacy-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🗂️ Obtentions libres</span>
+      <button class="btn btn-ghost" onclick="loadObtainLegacy()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
+      Items dont le champ <code>obtain</code> contient du texte libre non parseable par le builder.<br>
+      Cliquer <b>✏️ Éditer</b> ouvre l'item dans le Creator pour le convertir en sources structurées.
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <input type="search" id="obtain-legacy-search" placeholder="🔍 Filtrer par nom ou texte…"
+             oninput="filterObtainLegacy()"
+             style="flex:1;min-width:140px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+      <select id="obtain-legacy-cat" onchange="filterObtainLegacy()"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+        <option value="">Toutes catégories</option>
+        <option value="arme">⚔️ Arme</option>
+        <option value="armure">🛡️ Armure</option>
+        <option value="accessoire">💍 Accessoire</option>
+        <option value="consommable">🧪 Consommable</option>
+        <option value="materiaux">🧱 Matériaux</option>
+        <option value="ressources">⛏️ Ressources</option>
+      </select>
+    </div>
+    <div id="obtain-legacy-list"><div class="empty">Chargement…</div></div>
   </main>
 
   <!-- Panneau Config champs requis (Creator Validation) -->

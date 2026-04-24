@@ -354,6 +354,8 @@
               <option value="artisant">🔨 Forgeron / Artisan</option>
               <option value="marchand">🛒 Marchand</option>
               <option value="quete">📜 Quête</option>
+              <option value="ressource">🌿 Ressource</option>
+              <option value="autre">💬 Autre</option>
             </select>
             <div id="obtain-search-container"></div>
             <button class="btn btn-primary btn-sm" id="obtain-add-btn" onclick="addObtainSource()" disabled style="height:38px;white-space:nowrap;">+ Ajouter</button>
@@ -1045,6 +1047,10 @@ onAuthStateChanged(auth, async user => {
       if (pseudo && authorInput) { authorInput.value = pseudo; saveAuthor(); }
       const modBtn = document.getElementById('btn-moderation');
       if (modBtn) modBtn.style.display = ['contributeur','admin'].includes(role) ? '' : 'none';
+      // Enrichir la liste d'items avec les sensibles pour les contributeurs/admins
+      if (['contributeur','admin'].includes(role)) {
+        window._vcl_enrichAdminItems?.();
+      }
       // Re-appliquer la config maintenant qu'on connaît le rôle
       if (window._vcl_lastCreatorConfig !== undefined && typeof applyCreatorConfig === 'function') {
         applyCreatorConfig(window._vcl_lastCreatorConfig);
