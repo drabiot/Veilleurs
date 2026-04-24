@@ -15,7 +15,7 @@ except Exception:
 # CONFIGURATION
 # ─────────────────────────────────────────────────────────────
 
-PARENT_DIR = r""
+PARENT_DIR = ""
 TILES_DIRS = []
 TILES_DIR = ""
 OUTPUT_DIR = ""
