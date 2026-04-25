@@ -307,11 +307,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   loadAuthor();
   loadHistory();
-  // Effacer le brouillon si l'utilisateur force un rechargement (Ctrl+Shift+R)
-  if (performance.navigation.type === 1) {
-    localStorage.removeItem('vcl_form_v2');
-    localStorage.removeItem('vcl_form');
-  }
 
   // Pré-remplir depuis sessionStorage (bouton "Ouvrir dans Creator" depuis moderation.html)
   const editSubRaw = sessionStorage.getItem('editSub');
@@ -602,7 +597,7 @@ function saveForm() {
       lvl:      document.getElementById('f-lvl').value,
       lore:     document.getElementById('f-lore').value,
       obtainOverride: document.getElementById('f-obtain-override').value,
-      selRarity, selClasses, selTwoHanded, selSensible, selEvent, selEvolutif,
+      selRarity, selClasses, selTwoHanded, selSensible, selEvent, selEvolutif, evolutifEvolutions,
       activeTags: [...activeTags],
       obtainSources,
       stats: (() => {
@@ -659,20 +654,38 @@ function saveForm() {
         idLocked: panopIdLocked,
         bonuses:  panopBonuses.map(b => ({ pieces: b.pieces, stat: b.stat, value: b.value })),
       } : null,
+      // Quest form
+      quest: creatorMode === 'quest' ? {
+        titre:  document.getElementById('quest-titre')?.value || '',
+        id:     document.getElementById('quest-id')?.value   || '',
+        type:   document.getElementById('quest-type')?.value  || '',
+        palier: document.getElementById('quest-palier')?.value || '',
+        npc:    document.getElementById('quest-npc')?.value   || '',
+        desc:   document.getElementById('quest-desc')?.value  || '',
+        zone:   _questZoneDrop ? _questZoneDrop.getValue() : '',
+        objs: questSimpleObjs.map(o => ({
+          uid: o.uid, texte: o.texte, next: !!o.next,
+          items: (o.items||[]).map(i => ({ uid: i.uid, itemId: i.itemId, qte: i.qte })),
+          mobs:  (o.mobs ||[]).map(m => ({ uid: m.uid, mobId: m.mobId, qte: m.qte })),
+          location: o.location ? { ...o.location } : null,
+        })),
+        rews: questRecompenses.map(r => ({ uid: r.uid, type: r.type, value: r.value, itemId: r.itemId, qte: r.qte })),
+      } : null,
     };
     localStorage.setItem('vcl_form_v2', JSON.stringify(data));
   } catch(e) {}
 }
 
 function restoreForm(forcedMode) {
+  _skipSave = true;
   try {
     // Try new key first, fall back to legacy key
     const raw = localStorage.getItem('vcl_form_v2') || localStorage.getItem('vcl_form');
-    if (!raw) { update(); return; }
+    if (!raw) { _skipSave = false; update(); return; }
     const d = JSON.parse(raw);
 
     // Restore active mode — skip if a URL mode param already set the mode
-    if (d._mode && d._mode !== 'item' && !forcedMode) {
+    if (d._mode && !forcedMode) {
       switchMode(d._mode);
     }
 
@@ -713,6 +726,13 @@ function restoreForm(forcedMode) {
     if (d.selEvolutif) {
       selEvolutif = true;
       document.getElementById('evolutif-btn')?.classList.add('active');
+      const _evSec = document.getElementById('evolutif-evolutions-section');
+      if (_evSec) _evSec.style.display = '';
+      _initEvolutifDrop();
+    }
+    if (d.evolutifEvolutions?.length) {
+      evolutifEvolutions = d.evolutifEvolutions;
+      renderEvolutifEvolutions();
     }
     if (d.selClasses?.length) {
       selClasses = d.selClasses;
@@ -787,9 +807,37 @@ function restoreForm(forcedMode) {
       }
     }
 
+    // ── Quest form ──
+    if (d.quest && d._mode === 'quest') {
+      const q = d.quest;
+      if (q.titre) document.getElementById('quest-titre').value = q.titre;
+      if (q.id)    document.getElementById('quest-id').value    = q.id;
+      if (q.type)  { document.getElementById('quest-type').value = q.type; _customSelUpdaters['quest-type']?.(); }
+      if (q.palier) { document.getElementById('quest-palier').value = String(q.palier); _customSelUpdaters['quest-palier']?.(); }
+      if (q.npc)   document.getElementById('quest-npc').value   = q.npc;
+      if (q.desc)  document.getElementById('quest-desc').value  = q.desc;
+      if (q.zone)  window._pendingQuestZone = q.zone;
+      if (q.objs?.length) {
+        questSimpleObjs = q.objs.map(o => ({
+          uid: _qObjUid++, texte: o.texte || '', next: !!o.next,
+          items: (o.items||[]).map(i => ({ uid: _qItemUid++, itemId: i.itemId, qte: i.qte||1 })),
+          mobs:  (o.mobs ||[]).map(m => ({ uid: _qItemUid++, mobId: m.mobId,  qte: m.qte||1 })),
+          location: o.location ? { ...o.location } : null,
+        }));
+        renderQuestSimpleObjs();
+      }
+      if (q.rews?.length) {
+        questRecompenses = q.rews.map(r => ({
+          uid: _qRewUid++, type: r.type, value: r.value||'', itemId: r.itemId||'', qte: r.qte
+        }));
+        renderQuestRecompenses();
+      }
+    }
+
     refreshCustomSelects();
+    _skipSave = false;
     update();
-  } catch(e) { refreshCustomSelects(); update(); }
+  } catch(e) { _skipSave = false; refreshCustomSelects(); update(); }
 }
 
 function clearSavedForm() {
@@ -868,10 +916,12 @@ let idLocked = false; // true = ID a été fixé manuellement, ne pas écraser d
 function _computeItemId() {
   const name = document.getElementById('f-name').value;
   const slug  = nameToId(name);
-  const cat   = document.getElementById('f-category').value;
-  if (selEvolutif && cat === 'arme') {
+  if (selEvolutif) {
     const palier = document.getElementById('f-palier').value;
-    return palier ? `${slug}_${palier}` : slug;
+    // Si un item avec le même slug existe déjà (palier différent), distinguer par palier
+    if (palier && typeof ITEMS !== 'undefined' && ITEMS.some(it => (it.id || it._id) === slug)) {
+      return `${slug}_${palier}`;
+    }
   }
   return slug;
 }
@@ -938,6 +988,30 @@ function initObtainData() {
         subtitle: '⏳ En attente' + (s.data.palier ? ' · Palier ' + s.data.palier : ''),
         search: ('⏳ ' + (s.data.titre || s.data.name || '') + ' ' + s.data.id).toLowerCase()
       });
+    }
+  }
+
+  // PNJs depuis Firestore dans les listes artisan/marchand
+  if (_pnjsForObtain) {
+    const _artisanTags = new Set(['forgeron_armes','forgeron_armures','forgeron_accessoires','forgeron_lingots','forgeron_cles','forgeron_items_secrets','bucheron','alchimiste','fabricant_secret']);
+    const _marchandTags = new Set(['marchand_equipement','marchand_consommable','marchand_outils','marchand_accessoires','marchand_itinerant','repreneur_butin','marchand_occulte']);
+    const _existArtIds = new Set(allArtisans.map(a => a.id));
+    const _existMchIds = new Set(allMarchands.map(m => m.id));
+    for (const p of _pnjsForObtain) {
+      const tag  = p.tag  || '';
+      const pId  = p.id   || p._id || '';
+      if (!pId) continue;
+      const pName = p.name || p.nom || pId;
+      const entry = {
+        id: pId, name: pName, desc: p.region || '',
+        subtitle: [p.palier ? 'P'+p.palier : '', p.region || ''].filter(Boolean).join(' · '),
+        search: (pName + ' ' + pId + ' ' + (p.region || '')).toLowerCase()
+      };
+      if (_artisanTags.has(tag) && !_existArtIds.has(pId)) {
+        allArtisans.push(entry); _existArtIds.add(pId);
+      } else if (_marchandTags.has(tag) && !_existMchIds.has(pId)) {
+        allMarchands.push(entry); _existMchIds.add(pId);
+      }
     }
   }
 
@@ -1416,9 +1490,124 @@ function onPalierChange() {
 function toggleEvolutif() {
   selEvolutif = !selEvolutif;
   document.getElementById('evolutif-btn').classList.toggle('active', selEvolutif);
+  const evSection = document.getElementById('evolutif-evolutions-section');
+  if (evSection) evSection.style.display = selEvolutif ? '' : 'none';
+  const fromSection = document.getElementById('evolutif-from-section');
+  if (fromSection) fromSection.style.display = selEvolutif ? '' : 'none';
+  if (selEvolutif) {
+    _initEvolutifDrop();
+    _initEvolutifFromDrop();
+  } else {
+    evolutifEvolutions = [];
+    renderEvolutifEvolutions();
+    evolutifEvolvedFrom = [];
+    renderEvolutifFrom();
+  }
   if (!idLocked) document.getElementById('f-id').value = _computeItemId();
   update();
 }
+
+function _initEvolutifDrop() {
+  const wrap = document.getElementById('evolutif-evolutions-drop-wrap');
+  if (!wrap || wrap.hasChildNodes()) return;
+  ensureAllItemsIndex();
+  const drop = makeSearchDrop(allItemsIndex, 'Rechercher un item…', (id) => {
+    if (id) { addEvolutifEvolution(id); drop.reset(); }
+  });
+  wrap.appendChild(drop.element);
+  window._evolutifEvoDropInst = drop;
+}
+
+// ─── Évolutions d'un item évolutif ───────────────────
+let evolutifEvolutions  = []; // [{id, name}] — items vers lesquels cet item évolue
+let evolutifEvolvedFrom = []; // [{id, name}] — items depuis lesquels cet item évolue
+
+function renderEvolutifEvolutions() {
+  const container = document.getElementById('evolutif-evolutions-list');
+  if (!container) return;
+  container.innerHTML = '';
+  evolutifEvolutions.forEach(ev => {
+    const chip = document.createElement('div');
+    chip.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 10px;background:rgba(122,90,248,.12);border:1px solid rgba(122,90,248,.35);border-radius:20px;font-size:12px;flex-shrink:0;';
+    chip.innerHTML = `<span style="color:var(--accent);">🔄</span><span style="font-weight:600;">${escHtml(ev.name || ev.id)}</span><span style="color:var(--muted);font-size:10px;">(${escHtml(ev.id)})</span><button class="btn-icon" onclick="removeEvolutifEvolution('${ev.id.replace(/'/g,"\\'")}')">✕</button>`;
+    container.appendChild(chip);
+  });
+}
+
+function addEvolutifEvolution(id) {
+  if (!id || evolutifEvolutions.some(e => e.id === id)) return;
+  ensureAllItemsIndex();
+  const entry = allItemsIndex.find(it => it.id === id);
+  evolutifEvolutions.push({ id, name: entry?.name || id });
+  renderEvolutifEvolutions();
+  update();
+}
+
+function removeEvolutifEvolution(id) {
+  evolutifEvolutions = evolutifEvolutions.filter(e => e.id !== id);
+  renderEvolutifEvolutions();
+  update();
+}
+
+// ─── Évolue depuis (prédécesseurs) ───────────────────
+function _initEvolutifFromDrop() {
+  const wrap = document.getElementById('evolutif-from-drop-wrap');
+  if (!wrap || wrap.hasChildNodes()) return;
+  ensureAllItemsIndex();
+  const drop = makeSearchDrop(allItemsIndex, 'Rechercher un item…', (id) => {
+    if (id) { addEvolutifFrom(id); drop.reset(); }
+  });
+  wrap.appendChild(drop.element);
+  window._evolutifFromDropInst = drop;
+}
+
+function renderEvolutifFrom() {
+  const container = document.getElementById('evolutif-from-list');
+  if (!container) return;
+  container.innerHTML = '';
+  evolutifEvolvedFrom.forEach(ev => {
+    const chip = document.createElement('div');
+    chip.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 10px;background:rgba(122,90,248,.12);border:1px solid rgba(122,90,248,.35);border-radius:20px;font-size:12px;flex-shrink:0;';
+    chip.innerHTML = `<span style="color:var(--accent);">⬆️</span><span style="font-weight:600;">${escHtml(ev.name || ev.id)}</span><span style="color:var(--muted);font-size:10px;">(${escHtml(ev.id)})</span><button class="btn-icon" onclick="removeEvolutifFrom('${ev.id.replace(/'/g,"\\'")}')">✕</button>`;
+    container.appendChild(chip);
+  });
+}
+
+function addEvolutifFrom(id) {
+  if (!id || evolutifEvolvedFrom.some(e => e.id === id)) return;
+  ensureAllItemsIndex();
+  const entry = allItemsIndex.find(it => it.id === id);
+  evolutifEvolvedFrom.push({ id, name: entry?.name || id });
+  renderEvolutifFrom();
+  update();
+}
+
+function removeEvolutifFrom(id) {
+  evolutifEvolvedFrom = evolutifEvolvedFrom.filter(e => e.id !== id);
+  renderEvolutifFrom();
+  update();
+}
+
+// ─── Merge pending items into allItemsIndex ───────────
+function _mergePendingToAllItemsIndex() {
+  if (!allItemsIndex.length) return;
+  const rarityLabel = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+  const existingIds = new Set(allItemsIndex.map(i => String(i.id)));
+  for (const s of (window._vcl_pendingItems || [])) {
+    if (!s.data?.id || !s.data?.name) continue;
+    if (existingIds.has(String(s.data.id))) continue;
+    allItemsIndex.push({
+      id: s.data.id,
+      name: '⏳ ' + s.data.name,
+      subtitle: ['⏳ En attente', rarityLabel[s.data.rarity] || s.data.rarity, s.data.category, s.data.palier ? 'P'+s.data.palier : ''].filter(Boolean).join(' · '),
+      search: ('⏳ ' + (s.data.name || '') + ' ' + s.data.id + ' ' + (s.data.category || '')).toLowerCase(),
+      _raw: s.data,
+      _pending: true
+    });
+    existingIds.add(String(s.data.id));
+  }
+}
+window._vcl_mergePendingToAllItemsIndex = _mergePendingToAllItemsIndex;
 
 
 function toggleTwoHanded() {
@@ -1514,6 +1703,7 @@ window._vcl_enrichAdminItems = _enrichAdminItems;
 let _pnjDropBuilt      = false;
 let _regDropBuilt      = false;
 let _panopDropBuilt    = false;
+let _pnjsForObtain     = null; // PNJs depuis Firestore pour la liste artisans/marchands
 
 async function _buildLoadDrops() {
   const getDocs = window._vcl_getDocs;
@@ -1529,6 +1719,8 @@ async function _buildLoadDrops() {
       const regNameMap = new Map((_regionsCache || []).map(r => [r.id || r._id, r.name || r.id || r._id]));
       const snap = await getDocs(col(db, 'personnages'));
       const pnjs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      _pnjsForObtain = pnjs; // sauvegarder pour la liste d'obtention
+      initObtainData();      // rafraîchir allArtisans / allMarchands avec les PNJs Firestore
       if (pnjs.length) {
         const idx = pnjs.map(p => {
           const parts = [];
@@ -1754,10 +1946,39 @@ function loadItem(item) {
   }
 
   // Évolutif
+  evolutifEvolutions  = [];
+  evolutifEvolvedFrom = [];
   if (item.evolutif || item.evolving) {
     selEvolutif = true;
     document.getElementById('evolutif-btn')?.classList.add('active');
   }
+  const _evSection = document.getElementById('evolutif-evolutions-section');
+  if (_evSection) _evSection.style.display = selEvolutif ? '' : 'none';
+  const _fromSection = document.getElementById('evolutif-from-section');
+  if (_fromSection) _fromSection.style.display = selEvolutif ? '' : 'none';
+  if (item.evolutions?.length) {
+    ensureAllItemsIndex();
+    for (const evId of item.evolutions) {
+      const entry = allItemsIndex.find(it => it.id === evId);
+      evolutifEvolutions.push({ id: evId, name: entry?.name || evId });
+    }
+    renderEvolutifEvolutions();
+  }
+  if (item.evolvedFrom?.length) {
+    ensureAllItemsIndex();
+    for (const fromId of item.evolvedFrom) {
+      const entry = allItemsIndex.find(it => it.id === fromId);
+      evolutifEvolvedFrom.push({ id: fromId, name: entry?.name || fromId });
+    }
+    renderEvolutifFrom();
+    if (selEvolutif) _initEvolutifFromDrop();
+  }
+
+  // Met à jour le label + placeholder du commentaire en mode édition
+  const _noteLabel = document.getElementById('submit-note-label');
+  if (_noteLabel) _noteLabel.textContent = '📝 Modification — quoi ?';
+  const _noteTA = document.getElementById('submitter-comment');
+  if (_noteTA) _noteTA.placeholder = 'Décris ce que tu as modifié pour que la modération sache quoi vérifier…';
 
   // Rune slots
   if (item.rune_slots) document.getElementById('f-rune-slots').value = item.rune_slots;
@@ -1849,7 +2070,20 @@ function resetFormSilent() {
   _skipSave = true;
   document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel textarea').forEach(i => i.value = '');
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
-  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvent = false; selEvolutif = false; idLocked = false;
+  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvent = false; selEvolutif = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
+  const _evSec = document.getElementById('evolutif-evolutions-section');
+  if (_evSec) _evSec.style.display = 'none';
+  const _evList = document.getElementById('evolutif-evolutions-list');
+  if (_evList) _evList.innerHTML = '';
+  const _fromSec = document.getElementById('evolutif-from-section');
+  if (_fromSec) _fromSec.style.display = 'none';
+  const _fromList = document.getElementById('evolutif-from-list');
+  if (_fromList) _fromList.innerHTML = '';
+  window._evolutifFromDropInst?.reset();
+  const _noteLabel = document.getElementById('submit-note-label');
+  if (_noteLabel) _noteLabel.textContent = '📝 Note';
+  const _noteTA = document.getElementById('submitter-comment');
+  if (_noteTA) { _noteTA.value = ''; _noteTA.placeholder = 'Note pour la modération (optionnel pour un nouvel item)…'; _noteTA.style.height = '34px'; _noteTA.style.borderColor = 'var(--border)'; }
   document.getElementById('evolutif-btn')?.classList.remove('active');
   resetThresholdInputs();
   const rarityField = document.getElementById('rarity-field');
@@ -1917,6 +2151,10 @@ function loadMob(mob) {
   const nameEl = document.getElementById('mob-editing-name');
   if (banner) banner.style.display = 'flex';
   if (nameEl) nameEl.textContent = mob.name || mob.id || '';
+  const _mobNoteLabel = document.getElementById('submit-note-label');
+  if (_mobNoteLabel) _mobNoteLabel.textContent = '📝 Modification — quoi ?';
+  const _mobNoteTA = document.getElementById('submitter-comment');
+  if (_mobNoteTA) _mobNoteTA.placeholder = 'Décris ce que tu as modifié pour que la modération sache quoi vérifier…';
   document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
   refreshCustomSelects();
   update();
@@ -1985,6 +2223,10 @@ function loadPnj(pnj) {
   const nameEl = document.getElementById('pnj-editing-name');
   if (banner) banner.style.display = 'flex';
   if (nameEl) nameEl.textContent = pnj.name || pnj.id || '';
+  const _pnjNoteLabel = document.getElementById('submit-note-label');
+  if (_pnjNoteLabel) _pnjNoteLabel.textContent = '📝 Modification — quoi ?';
+  const _pnjNoteTA = document.getElementById('submitter-comment');
+  if (_pnjNoteTA) _pnjNoteTA.placeholder = 'Décris ce que tu as modifié pour que la modération sache quoi vérifier…';
   document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
   refreshCustomSelects();
   update();
@@ -2004,6 +2246,10 @@ function loadRegion(reg) {
   const nameEl = document.getElementById('region-editing-name');
   if (banner) banner.style.display = 'flex';
   if (nameEl) nameEl.textContent = reg.name || reg.id || '';
+  const _regNoteLabel = document.getElementById('submit-note-label');
+  if (_regNoteLabel) _regNoteLabel.textContent = '📝 Modification — quoi ?';
+  const _regNoteTA = document.getElementById('submitter-comment');
+  if (_regNoteTA) _regNoteTA.placeholder = 'Décris ce que tu as modifié pour que la modération sache quoi vérifier…';
   document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
   refreshCustomSelects();
   update();
@@ -2017,11 +2263,44 @@ function loadQuest(quest) {
   if (quest.palier) document.getElementById('quest-palier').value = String(quest.palier);
   if (quest.npc)    document.getElementById('quest-npc').value   = quest.npc;
   if (quest.desc)   document.getElementById('quest-desc').value  = quest.desc;
+
+  // Charger les objectifs
+  questSimpleObjs = [];
+  if (quest.objectifs?.length) {
+    for (const o of quest.objectifs) {
+      questSimpleObjs.push({
+        uid:      _qObjUid++,
+        texte:    o.texte || '',
+        items:    (o.items || []).map(i => ({ uid: _qItemUid++, itemId: i.id, qte: i.qte || 1 })),
+        mobs:     (o.mobs  || []).map(m => ({ uid: _qItemUid++, mobId: m.id, qte: m.qte || 1 })),
+        next:     !!o.next,
+        location: o.location || null,
+      });
+    }
+  }
+  renderQuestSimpleObjs();
+
+  // Charger les récompenses
+  questRecompenses = [];
+  if (quest.recompenses?.length) {
+    for (const r of quest.recompenses) {
+      if (r.type === 'exp')        questRecompenses.push({ uid: _qRewUid++, type: 'exp',   value: String(r.xp   || '') });
+      else if (r.type === 'cols')  questRecompenses.push({ uid: _qRewUid++, type: 'cols',  value: String(r.cols || '') });
+      else if (r.type === 'items') questRecompenses.push({ uid: _qRewUid++, type: 'items', itemId: r.itemId || '', value: r.label || '', qte: r.qte });
+      else                         questRecompenses.push({ uid: _qRewUid++, type: r.type,  value: r.label || '' });
+    }
+  }
+  renderQuestRecompenses();
+
   // Bannière édition
   const banner = document.getElementById('quest-editing-banner');
   const nameEl = document.getElementById('quest-editing-name');
   if (banner) banner.style.display = 'flex';
   if (nameEl) nameEl.textContent = quest.titre || quest.id || '';
+  const _questNoteLabel = document.getElementById('submit-note-label');
+  if (_questNoteLabel) _questNoteLabel.textContent = '📝 Modification — quoi ?';
+  const _questNoteTA = document.getElementById('submitter-comment');
+  if (_questNoteTA) _questNoteTA.placeholder = 'Décris ce que tu as modifié pour que la modération sache quoi vérifier…';
   document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
   refreshCustomSelects();
   update();
@@ -2713,10 +2992,11 @@ function _renderObtainInline(text) {
 // escHtml → défini dans /utils.js
 
 function switchTab(tab) {
-  ['preview','history'].forEach(t => {
-    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
-    document.getElementById('pane-'+t).classList.toggle('active', t === tab);
+  ['preview','history','leaderboard'].forEach(t => {
+    document.getElementById('tab-'+t)?.classList.toggle('active', t === tab);
+    document.getElementById('pane-'+t)?.classList.toggle('active', t === tab);
   });
+  if (tab === 'leaderboard') loadCreatorLeaderboard();
 }
 
 function renderPreview() {
@@ -2808,6 +3088,27 @@ function renderPreview() {
     for (const c of obj.craft) {
       const cname = (typeof ITEMS !== 'undefined' && ITEMS.find(i => i.id === c.id)?.name) || c.id;
       h += `<div class="ic-stat"><span class="ic-stat-label">${escHtml(cname)}</span><span class="ic-stat-val">×${c.qty}</span></div>`;
+    }
+    h += `</div></div>`;
+  }
+
+  // Évolution chain
+  const hasEvoFrom = evolutifEvolvedFrom.length > 0;
+  const hasEvoNext = evolutifEvolutions.length > 0;
+  if (hasEvoFrom || hasEvoNext) {
+    h += `<div style="margin-bottom:6px;"><div class="ic-section-label">🔄 Évolutions</div><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:12px;">`;
+    if (hasEvoFrom) {
+      evolutifEvolvedFrom.forEach(ev => {
+        h += `<span style="padding:2px 8px;border-radius:12px;border:1px solid rgba(122,90,248,.4);background:rgba(122,90,248,.1);color:var(--accent);">${escHtml(ev.name || ev.id)}</span>`;
+      });
+      h += `<span style="color:var(--muted)">→</span>`;
+    }
+    h += `<span style="padding:2px 8px;border-radius:12px;border:1px solid rgba(122,90,248,.6);background:rgba(122,90,248,.18);color:var(--accent);font-weight:700;">${escHtml(obj.name || '…')}</span>`;
+    if (hasEvoNext) {
+      h += `<span style="color:var(--muted)">→</span>`;
+      evolutifEvolutions.forEach(ev => {
+        h += `<span style="padding:2px 8px;border-radius:12px;border:1px solid rgba(122,90,248,.4);background:rgba(122,90,248,.1);color:var(--accent);">${escHtml(ev.name || ev.id)}</span>`;
+      });
     }
     h += `</div></div>`;
   }
@@ -3070,14 +3371,30 @@ function renderHistory() {
     div.innerHTML = `
       <span class="hist-dot" style="background:${color}"></span>
       <div class="hist-info">
-        <div class="hist-name">${escHtml(obj.name || obj.id || '—')}</div>
+        <div class="hist-name">${escHtml(obj.name || obj.titre || obj.label || obj.id || '—')}</div>
         <div class="hist-meta">${escHtml(meta)} <span style="margin-left:6px;opacity:.5">${time}</span></div>
       </div>
       <div class="hist-actions">
-        <button class="btn btn-ghost btn-sm" title="Recharger dans le formulaire">↩ Charger</button>
+        <button class="hist-code-toggle btn btn-ghost btn-sm" title="Voir le JSON soumis">{ }</button>
+        <button class="btn btn-ghost btn-sm" title="Recharger dans le formulaire">↩</button>
         <button class="btn-icon" title="Supprimer de l'historique">✕</button>
       </div>`;
-    div.querySelector('.btn-ghost').addEventListener('click', () => {
+
+    // Code JSON expansible
+    const codeWrap = document.createElement('div');
+    codeWrap.style.cssText = 'display:none;width:100%;margin-top:4px;';
+    const pre = document.createElement('pre');
+    pre.style.cssText = 'background:#0d1117;color:#c9d1d9;padding:10px 12px;border-radius:6px;font-size:11px;font-family:monospace;overflow-x:auto;white-space:pre;line-height:1.5;margin:0;cursor:text;';
+    pre.textContent = entry.code || toJS(entry.obj, 0) + ',';
+    codeWrap.appendChild(pre);
+    div.appendChild(codeWrap);
+
+    div.querySelector('.hist-code-toggle').addEventListener('click', () => {
+      const open = codeWrap.style.display !== 'none';
+      codeWrap.style.display = open ? 'none' : '';
+      div.querySelector('.hist-code-toggle').style.color = open ? '' : 'var(--accent)';
+    });
+    div.querySelector('.btn-ghost:not(.hist-code-toggle)').addEventListener('click', () => {
       const type = entry._type || _guessEntryType(entry.obj);
       loadByType(type, entry.obj);
       switchTab('preview');
@@ -3137,7 +3454,9 @@ function buildObj() {
   }
   if (selTwoHanded)              obj.twoHanded  = true;
   if (cat === 'artefact')        obj.unique     = true;
-  if (selEvolutif)               obj.evolutif   = true;
+  if (selEvolutif)                               obj.evolutif    = true;
+  if (selEvolutif && evolutifEvolutions.length)  obj.evolutions  = evolutifEvolutions.map(e => e.id);
+  if (selEvolutif && evolutifEvolvedFrom.length) obj.evolvedFrom = evolutifEvolvedFrom.map(e => e.id);
   const runeSlots = parseInt(document.getElementById('f-rune-slots').value);
   if (runeSlots > 0)             obj.rune_slots = runeSlots;
   if (selSensible)               obj.sensible  = true;
@@ -3334,19 +3653,25 @@ function getOrphanMobs(id) {
 }
 
 function isDuplicate(id) {
-  if (!id || typeof ITEMS === 'undefined') return false;
-  // En mode édition, l'ID original est autorisé
+  if (!id) return false;
   const editingName = document.getElementById('editing-name').textContent;
-  if (editingName) {
+  if (editingName && typeof ITEMS !== 'undefined') {
     const original = ITEMS.find(it => it.name === editingName);
-    if (original && original.id === id) return false;
+    if (original && (original.id || original._id) === id) return false;
+    // En mode édition on ne vérifie pas les soumissions en attente
+    return ITEMS.some(it => (it.id || it._id) === id);
   }
-  return ITEMS.some(it => it.id === id);
+  if (typeof ITEMS !== 'undefined' && ITEMS.some(it => (it.id || it._id) === id)) return true;
+  // Vérifier aussi les soumissions en attente (items non encore approuvés)
+  const pending = window._vcl_pendingItems || [];
+  return pending.some(s => s.data?.id === id);
 }
 
 function isMobDuplicate(id) {
-  if (!id || typeof MOBS === 'undefined') return false;
-  return MOBS.some(m => m.id === id || m._id === id);
+  if (!id) return false;
+  if (typeof MOBS !== 'undefined' && MOBS.some(m => m.id === id || m._id === id)) return true;
+  const pending = window._vcl_pendingMobs || [];
+  return pending.some(s => s.data?.id === id);
 }
 
 let _regionsCache = null; // [{ id }] chargé une fois
@@ -3362,8 +3687,10 @@ async function loadRegionsCache() {
   } catch {}
 }
 function isRegionDuplicate(id) {
-  if (!id || !_regionsCache) return false;
-  return _regionsCache.some(r => r.id === id || r._id === id);
+  if (!id) return false;
+  if (_regionsCache && _regionsCache.some(r => r.id === id || r._id === id)) return true;
+  const pending = window._vcl_pendingRegions || [];
+  return pending.some(s => s.data?.id === id);
 }
 
 let _panopliesCache = null;
@@ -3379,13 +3706,15 @@ async function loadPanopliesCache() {
   } catch { _panopliesCache = []; }
 }
 function isPanoplieDuplicate(id) {
-  if (!id || !_panopliesCache) return false;
-  return _panopliesCache.some(p => p.id === id || p._id === id);
+  if (!id) return false;
+  return !!(_panopliesCache && _panopliesCache.some(p => p.id === id || p._id === id));
 }
 
 function isQuestDuplicate(id) {
-  if (!id || typeof QUETES_DATA === 'undefined') return false;
-  return QUETES_DATA.some(q => q.id === id || q._id === id);
+  if (!id) return false;
+  if (typeof QUETES_DATA !== 'undefined' && QUETES_DATA.some(q => q.id === id || q._id === id)) return true;
+  const pending = window._vcl_pendingQuests || [];
+  return pending.some(s => s.data?.id === id);
 }
 
 async function hasPendingSubmission(type, name) {
@@ -3405,6 +3734,7 @@ async function hasPendingSubmission(type, name) {
 }
 
 function update() {
+  saveForm();
   // ── Mob mode ──
   if (creatorMode === 'mob') {
     const obj   = buildMobObj();
@@ -3498,7 +3828,6 @@ function update() {
   renderValidation();
   renderPreview();
   if (dup) document.getElementById('f-id').style.borderColor = 'var(--danger)';
-  saveForm();
 }
 
 async function copyCode() {
@@ -3633,8 +3962,10 @@ function buildItemCardEmbed(obj, color, imageFilename) {
     fields.push({ name:'🔨 Craft', value: lines.join('\n').slice(0, 1024), inline: false });
   }
 
+  const itemId = obj.id || (typeof nameToId === 'function' ? nameToId(obj.name || '') : '');
   const embed = {
     title: obj.name,
+    url: `https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${itemId}`,
     description: descParts.join('\n').slice(0, 4096),
     color,
     fields,
@@ -5222,12 +5553,103 @@ function _makeQuestObjRow(obj, onRemove, onNextToggle) {
       renderItems();
     });
 
-    btnBar.append(addItemBtn, addMobBtn);
+    const addLocBtn = document.createElement('button');
+    addLocBtn.className = 'btn btn-ghost btn-sm';
+    addLocBtn.textContent = '📍 Lieu';
+    addLocBtn.style.cssText = 'font-size:11px;padding:3px 9px;';
+    addLocBtn.addEventListener('click', () => {
+      if (obj.location) { obj.location = null; } else { obj.location = { regionId: '', regionName: '', x: '', y: '', z: '' }; }
+      renderLocationBlock();
+      update();
+    });
+    btnBar.append(addItemBtn, addMobBtn, addLocBtn);
     itemsWrap.appendChild(btnBar);
   };
   renderItems();
 
-  wrap.append(topRow, itemsWrap);
+  // ── Bloc Lieu (région + coordonnées optionnelles)
+  const locationWrap = document.createElement('div');
+  locationWrap.style.cssText = 'margin-top:4px;';
+
+  function renderLocationBlock() {
+    locationWrap.innerHTML = '';
+    if (!obj.location) return;
+    const loc = obj.location;
+    const block = document.createElement('div');
+    block.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:7px 10px;display:flex;flex-direction:column;gap:6px;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;';
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;';
+    lbl.textContent = '📍 Lieu associé';
+    const rmLoc = document.createElement('button');
+    rmLoc.className = 'btn-icon'; rmLoc.textContent = '✕'; rmLoc.style.fontSize = '11px';
+    rmLoc.addEventListener('click', () => { obj.location = null; renderLocationBlock(); update(); });
+    header.append(lbl, rmLoc);
+    block.appendChild(header);
+
+    // Région search
+    const regRow = document.createElement('div');
+    regRow.style.cssText = 'position:relative;';
+    const regInput = document.createElement('input');
+    regInput.type = 'text';
+    regInput.placeholder = '🔍 Rechercher une région…';
+    regInput.value = loc.regionName || '';
+    regInput.autocomplete = 'off';
+    regInput.style.cssText = 'width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;transition:border-color .15s;box-sizing:border-box;';
+    const regDrop = document.createElement('div');
+    regDrop.className = 'region-drop';
+    const filterReg = () => {
+      const q = normalize(regInput.value);
+      const options = (_allMobRegions || []).filter(r => normalize(r.name || r.id || '').includes(q));
+      regDrop.innerHTML = '';
+      if (!options.length) { regDrop.classList.remove('open'); return; }
+      options.slice(0, 12).forEach(r => {
+        const item = document.createElement('div');
+        item.className = 'region-drop-item';
+        item.textContent = r.name || r.id;
+        item.addEventListener('mousedown', e => {
+          e.preventDefault();
+          loc.regionId = r.id || r.name;
+          loc.regionName = r.name || r.id;
+          regInput.value = loc.regionName;
+          regDrop.classList.remove('open');
+          update();
+        });
+        regDrop.appendChild(item);
+      });
+      regDrop.classList.add('open');
+    };
+    regInput.addEventListener('input', () => { loc.regionName = regInput.value; loc.regionId = ''; filterReg(); update(); });
+    regInput.addEventListener('focus', filterReg);
+    regInput.addEventListener('blur', () => setTimeout(() => { regDrop.classList.remove('open'); }, 150));
+    regRow.append(regInput, regDrop);
+    block.appendChild(regRow);
+
+    // Coordonnées X/Y/Z
+    const coordRow = document.createElement('div');
+    coordRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;';
+    [['x','X'],['y','Y'],['z','Z']].forEach(([axis, label]) => {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;align-items:center;gap:4px;background:var(--surface3);border:1px solid var(--border);border-radius:6px;padding:4px 8px;';
+      const ax = document.createElement('span');
+      ax.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);min-width:10px;';
+      ax.textContent = label;
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.step = '1'; inp.placeholder = '—';
+      inp.value = loc[axis] ?? '';
+      inp.style.cssText = 'width:100%;background:transparent;border:none;color:var(--text);font-size:12px;outline:none;font-family:monospace;';
+      inp.addEventListener('input', () => { loc[axis] = inp.value !== '' ? +inp.value : ''; update(); });
+      wrap.append(ax, inp);
+      coordRow.appendChild(wrap);
+    });
+    block.appendChild(coordRow);
+    locationWrap.appendChild(block);
+  }
+  renderLocationBlock();
+
+  wrap.append(topRow, itemsWrap, locationWrap);
 
   // Flèche de suite (affichée sous la row si next: true)
   const arrowEl = document.createElement('div');
@@ -5375,6 +5797,14 @@ function buildQuestObj() {
       const mobs = (o.mobs || []).filter(m => m.mobId).map(m => ({ id: m.mobId, qte: +m.qte || 1 }));
       if (mobs.length) e.mobs = mobs;
       if (o.next) e.next = true;
+      if (o.location?.regionId || o.location?.regionName) {
+        e.location = {};
+        if (o.location.regionId)   e.location.regionId   = o.location.regionId;
+        if (o.location.regionName) e.location.regionName = o.location.regionName;
+        if (o.location.x !== '' && o.location.x != null) e.location.x = +o.location.x;
+        if (o.location.y !== '' && o.location.y != null) e.location.y = +o.location.y;
+        if (o.location.z !== '' && o.location.z != null) e.location.z = +o.location.z;
+      }
       return e;
     });
   if (objs.length) obj.objectifs = objs;
@@ -5413,6 +5843,10 @@ function initQuestZoneDrop() {
   _questZoneDrop = makeSearchDrop(zones, '🔍 Zone…', () => update(), false);
   container.innerHTML = '';
   container.appendChild(_questZoneDrop.element);
+  if (window._pendingQuestZone) {
+    _questZoneDrop.setValue(window._pendingQuestZone, window._pendingQuestZone);
+    window._pendingQuestZone = null;
+  }
 }
 
 // ── Preview
@@ -5453,7 +5887,11 @@ function renderQuestPreview(obj) {
     rewHtml = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">';
     obj.recompenses.forEach(r => {
       const icon = r.type === 'exp' ? '⭐' : r.type === 'cols' ? '🪙' : '🎁';
-      let lbl = r.type === 'items' ? (r.label || r.itemId || '?') : (r.label || '?');
+      let lbl;
+      if (r.type === 'exp')        lbl = String(r.xp  ?? r.value ?? '?');
+      else if (r.type === 'cols')  lbl = String(r.cols ?? r.value ?? '?');
+      else if (r.type === 'items') lbl = r.label || r.itemId || '?';
+      else lbl = r.label || '?';
       if (r.type === 'items' && r.qte > 1) lbl += ` ×${r.qte}`;
       rewHtml += `<span style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:3px 10px;font-size:12px;">${icon} ${esc(lbl)}</span>`;
     });
@@ -5504,6 +5942,59 @@ function resetQuestForm() {
 function _revealLayout() {
   const layout = document.getElementById('main-layout');
   if (layout) layout.style.visibility = '';
+}
+
+// ═══════════════════════════════════════════════════
+// LEADERBOARD (top 10 contributions approuvées)
+// ═══════════════════════════════════════════════════
+async function loadCreatorLeaderboard() {
+  const db      = window._vcl_db;
+  const getDocs = window._vcl_getDocs;
+  const col     = window._vcl_collection;
+  const pane    = document.getElementById('pane-leaderboard');
+  if (!pane) return;
+  pane.innerHTML = '<div style="padding:30px;color:var(--muted);text-align:center;">⏳ Chargement…</div>';
+  if (!db || !getDocs || !col) {
+    pane.innerHTML = '<div style="padding:30px;color:var(--muted);text-align:center;">Firebase non disponible.</div>';
+    return;
+  }
+  const COLS_LB = ['items','mobs','personnages','regions','quetes','panoplies'];
+  const byKey = {};
+  for (const colName of COLS_LB) {
+    try {
+      const snap = await getDocs(col(db, colName));
+      for (const d of snap.docs) {
+        const c = d.data()._contributor;
+        if (!c) continue;
+        const name = c.name || null;
+        if (!name || /^invit[ée]?$/i.test(name.trim())) continue;
+        const key = c.uid || ('__' + name);
+        if (!byKey[key]) byKey[key] = { name, count: 0 };
+        byKey[key].count++;
+      }
+    } catch {}
+  }
+  const ranked = Object.values(byKey).sort((a, b) => b.count - a.count).slice(0, 10);
+  pane.innerHTML = '';
+  if (!ranked.length) {
+    pane.innerHTML = '<div style="padding:30px;color:var(--muted);text-align:center;">Aucune contribution trouvée.</div>';
+    return;
+  }
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:10px 14px 6px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);';
+  header.textContent = '🏆 Top 10 des contributeurs';
+  pane.appendChild(header);
+  ranked.forEach((u, i) => {
+    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);';
+    row.innerHTML = `
+      <span style="font-size:16px;width:28px;text-align:center;flex-shrink:0;">${medal}</span>
+      <span style="flex:1;font-size:13px;font-weight:600;">${escHtml(u.name)}</span>
+      <span style="font-size:13px;font-weight:700;color:var(--accent);">${u.count}</span>
+    `;
+    pane.appendChild(row);
+  });
 }
 
 function _setCreatorDisabled(disabled) {

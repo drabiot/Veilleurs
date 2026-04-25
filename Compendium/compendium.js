@@ -925,6 +925,55 @@ function bindEntityLinks() {
   });
 }
 
+function renderEvolutionChain(item) {
+  const hasPrev = item.evolvedFrom?.length > 0;
+  const hasNext = item.evolutions?.length > 0;
+  if (!hasPrev && !hasNext) return '';
+
+  function evoLink(evoId) {
+    const other = ITEMS_BY_ID.get(evoId);
+    const c     = other ? rarityColor(other.rarity) : '#9a9ab0';
+    const name  = other ? escHtml(other.name) : escHtml(evoId);
+    return `<a class="obtain-entity-link evo-chain-link" href="compendium.html#${escHtml(evoId)}" data-id="${escHtml(evoId)}" data-type="item" style="color:${c};border-color:${c}40;background:${c}12;">${name}</a>`;
+  }
+
+  // Arbre récursif d'évolutions
+  function evoTree(evoId, visited = new Set()) {
+    if (visited.has(evoId)) return '';
+    const v2 = new Set(visited); v2.add(evoId);
+    const evo = ITEMS_BY_ID.get(evoId);
+    const children = evo?.evolutions?.filter(id => !v2.has(id)) || [];
+    const childHtml = children.map(cId => evoTree(cId, v2)).join('');
+    return `<div class="evo-tree-node">
+      <div class="evo-tree-row"><span class="evo-arrow">→</span>${evoLink(evoId)}</div>
+      ${childHtml ? `<div class="evo-tree-children">${childHtml}</div>` : ''}
+    </div>`;
+  }
+
+  const curColor = rarityColor(item.rarity);
+  let html = '';
+
+  if (hasPrev) {
+    const prevLinks = item.evolvedFrom.map(id => evoLink(id)).join(' ');
+    html += `<div class="evo-prev-row"><span style="font-size:11px;color:var(--muted);margin-right:6px;">Évolue depuis :</span>${prevLinks}</div>`;
+  }
+
+  if (hasNext) {
+    const visited = new Set([item.id]);
+    const treeHtml = item.evolutions.map(id => evoTree(id, visited)).join('');
+    html += `<div class="evo-next-block">
+      <span style="font-size:11px;color:var(--muted);">Peut évoluer en :</span>
+      <div class="evo-tree-root">${treeHtml}</div>
+    </div>`;
+  }
+
+  return `
+    <div class="evo-chain-wrap">
+      <div class="item-section-title" style="margin-bottom:8px;">🔄 Évolutions</div>
+      ${html}
+    </div>`;
+}
+
 function showItem(id, initialQuality = false) {
   const item = ITEMS_BY_ID.get(id);
   if (!item) return;
@@ -1019,6 +1068,7 @@ function showItem(id, initialQuality = false) {
       </div>
 
       <div class="item-sep"></div>
+      ${renderEvolutionChain(item)}
       <div class="item-section-title">Comment obtenir cet item</div>
       <div class="item-obtain" id="item-obtain-text">${parseText(item.obtain)}</div>
       ${(item.craft || item.effects) ? `

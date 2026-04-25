@@ -318,6 +318,8 @@ function buildCard(sub) {
     ? `<span class="sub-type" style="background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3);">✏️ Modif</span>`
     : `<span class="sub-type" style="background:rgba(74,222,128,.12);color:var(--success);border:1px solid rgba(74,222,128,.3);">✨ Ajout</span>`;
 
+  const preservedHtml = '';
+
   const playerCommentHtml = sub.submitter_comment
     ? `<div style="margin:4px 0 6px;padding:6px 10px;background:rgba(215,175,95,.08);border:1px solid rgba(215,175,95,.25);border-radius:6px;font-size:12px;color:#d7af5f;">💬 ${escHtml(sub.submitter_comment)}</div>`
     : '';
@@ -331,6 +333,7 @@ function buildCard(sub) {
       <span class="sub-meta">par <b>${escHtml(userName(sub.submittedBy, sub.submitterName))}</b></span>
       <span class="sub-status ${sub.status}">${statusLabel}</span>
     </div>
+    ${preservedHtml}
     ${playerCommentHtml}
     <div class="sub-body">
       <div class="sub-actions">
@@ -532,8 +535,42 @@ window.openInCreator = (id) => {
   const sub = allSubs.find(s => s._id === id);
   if (!sub || sub.status !== 'pending') return;
   sessionStorage.setItem('editSub', JSON.stringify({ type: sub.type, data: sub.data }));
-  window.open('../creator.html');
+  window.open('creator.html');
 };
+
+// Ouvre l'item actuellement dans l'éditeur dans le Creator
+window.openEditorInCreator = function() {
+  const COL_TO_TYPE = {
+    'items':'item', 'items_sensible':'item',
+    'mobs':'mob', 'mobs_secret':'mob',
+    'personnages':'pnj',
+    'regions':'region',
+    'quetes':'quest',
+    'panoplies':'panoplie',
+  };
+  const type = COL_TO_TYPE[_editorCollection];
+  if (!type || !_editorOrigData) return;
+  sessionStorage.setItem('editSub', JSON.stringify({ type, data: _editorOrigData }));
+  window.open('creator.html');
+};
+
+// Ajoute un bouton Creator à gauche du ✏️ dans une ligne de liste
+function _addCreatorBtn(row, creatorType, data) {
+  const editBtn = row.querySelector('.ed-edit-btn');
+  if (!editBtn || !data) return;
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-ghost';
+  btn.style.cssText = 'font-size:11px;padding:3px 8px;flex-shrink:0;';
+  btn.title = 'Ouvrir dans le Creator';
+  btn.textContent = '⚙️';
+  btn.setAttribute('draggable', 'false');
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    sessionStorage.setItem('editSub', JSON.stringify({ type: creatorType, data }));
+    window.open('creator.html');
+  });
+  editBtn.parentNode.insertBefore(btn, editBtn);
+}
 
 // ── Approve ───────────────────────────────────────────
 window.approve = async (id) => {
@@ -595,9 +632,24 @@ window.approve = async (id) => {
       store.invalidate('mobs');
     } else {
       // Flux standard
-      const dataToWrite = { _order: Date.now(), ...sub.data, _contributor: _contribField };
+      let dataToWrite = { _order: Date.now(), ...sub.data, _contributor: _contribField };
       // Panoplie : couleur par défaut si absente (définie par la modération côté liste)
       if (sub.type === 'panoplie' && !dataToWrite.color) dataToWrite.color = '#b87333';
+
+      // Pour une modification : préserver l'ordre et les images du doc existant
+      if (sub.isModification) {
+        try {
+          const existingSnap = await getDoc(doc(db, target, String(dataId)));
+          if (existingSnap.exists()) {
+            const existing = existingSnap.data();
+            if (existing._order != null) dataToWrite._order = existing._order;
+            if (existing.ordre  != null) dataToWrite.ordre  = existing.ordre;
+            if (existing.images?.length) dataToWrite.images = existing.images;
+            else if (existing.image)     dataToWrite.image  = existing.image;
+          }
+        } catch {}
+      }
+
       await setDoc(doc(db, target, String(dataId)), dataToWrite);
 
       // Si l'entité était précédemment sensible, nettoyer les collections cachées
@@ -697,6 +749,7 @@ let _mobOrderData       = [];
 let _mobOrderDirty      = false;
 let _dragSrc            = null;
 let _mobPalierCollapsed = new Set();
+let _mobCollapseInit   = false;
 
 const TYPE_ORDER_MOD  = { monstre: 0, sbire: 1, mini_boss: 2, boss: 3 };
 const TYPE_LABELS_MOD = { monstre: 'Monstre', sbire: 'Sbire', mini_boss: 'Mini-boss', boss: 'Boss' };
@@ -734,6 +787,7 @@ const HASH_PANELS = {
   'calibrateur':       () => showCalibrateur(),
   'capture-sprites':  () => showCaptureSprites(),
   'pnj-coords':       () => showPnjCoords(),
+  'data-all':         () => showDataAll(),
 };
 
 function _setHash(hash) {
@@ -786,6 +840,7 @@ function refreshCurrentPanel() {
     'mob-orphans':  () => loadMobOrphans(),
     'quest-orphans': () => loadQuestOrphans(),
     submissions:    () => loadSubmissions(),
+    'data-all':     () => loadDataAll(),
   };
   (refreshMap[_activePanel] || refreshMap.submissions)();
 }
@@ -876,6 +931,7 @@ function renderMobOrder() {
         <span class="mob-order-tag">${mobTag(mob)}</span>
         <button class="ed-edit-btn" title="Modifier : ${mob.name||mob.id}\nID : ${mob.id}">✏️</button>`;
       row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('mobs', mob.id, mob, 'mob'); });
+      _addCreatorBtn(row, 'mob', mob);
       listEl.appendChild(row);
     });
     return;
@@ -884,6 +940,7 @@ function renderMobOrder() {
   // ── Mode normal : groupes par palier ──
   const paliers = [...new Set(_mobOrderData.map(m => m.palier || 1))].sort((a,b) => a-b);
   if (!paliers.length) { listEl.innerHTML = '<div class="empty">Aucun mob</div>'; return; }
+  if (!_mobCollapseInit) { _mobCollapseInit = true; paliers.forEach(p => _mobPalierCollapsed.add(p)); }
 
   paliers.forEach(palier => {
     const palierMobs = _mobOrderData.filter(m => (m.palier||1) === palier);
@@ -898,7 +955,7 @@ function renderMobOrder() {
       <span style="flex:1;">Palier ${palier}</span>
       <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierMobs.length} mob${palierMobs.length>1?'s':''}</span>
       <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
-    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+    ph.addEventListener('click', () => {
       if (_mobPalierCollapsed.has(palier)) _mobPalierCollapsed.delete(palier);
       else _mobPalierCollapsed.add(palier);
       renderMobOrder();
@@ -961,6 +1018,7 @@ function renderMobOrder() {
         renderMobOrder();
       });
       row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('mobs', mob.id, mob, 'mob'); });
+      _addCreatorBtn(row, 'mob', mob);
 
       body.appendChild(row);
     });
@@ -1009,6 +1067,7 @@ let _itemDragSrc         = null;  // drag item
 let _itemCatDragSrc      = null;  // drag catégorie { palier, cat }
 let _itemPalierCollapsed = new Set();
 let _itemCatCollapsed    = new Set(); // clé : `${palier}:${cat}`
+let _itemCollapseInit    = false;
 
 const ITEM_CATEGORIES = {
   materiaux:   { label: 'Matériaux',       emoji: '🧱' },
@@ -1124,6 +1183,7 @@ function renderItemOrder() {
         <span class="mob-order-tag">${itemCatLabel(item.category)} · ${itemTag(item)}</span>
         <button class="ed-edit-btn" title="Modifier : ${item.name||item.id}\nID : ${item.id}">✏️</button>`;
       row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('items', item.id, item, 'item'); });
+      _addCreatorBtn(row, 'item', item);
       listEl.appendChild(row);
     });
     return;
@@ -1132,6 +1192,7 @@ function renderItemOrder() {
   // ── Mode normal : palier → catégorie → items ──
   const paliers = [...new Set(_itemOrderData.map(it => it.palier || 1))].sort((a,b) => a-b);
   if (!paliers.length) { listEl.innerHTML = '<div class="empty">Aucun item</div>'; return; }
+  if (!_itemCollapseInit) { _itemCollapseInit = true; paliers.forEach(p => _itemPalierCollapsed.add(p)); }
 
   paliers.forEach(palier => {
     const palierItems    = _itemOrderData.filter(it => (it.palier||1) === palier);
@@ -1146,7 +1207,7 @@ function renderItemOrder() {
       <span style="flex:1;">Palier ${palier}</span>
       <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierItems.length} item${palierItems.length>1?'s':''}</span>
       <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${palierCollapsed?'Dérouler':'Réduire'}">${palierCollapsed?'▶':'▼'}</button>`;
-    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+    ph.addEventListener('click', () => {
       if (_itemPalierCollapsed.has(palier)) _itemPalierCollapsed.delete(palier);
       else _itemPalierCollapsed.add(palier);
       renderItemOrder();
@@ -1183,7 +1244,7 @@ function renderItemOrder() {
         <span style="font-size:11px;color:var(--muted);font-weight:400;">${catItems.length} item${catItems.length>1?'s':''}</span>
         <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:0 4px;line-height:1;">${catCollapsed?'▶':'▼'}</button>`;
 
-      ch.querySelector('[data-toggle]').addEventListener('click', e => {
+      ch.addEventListener('click', e => {
         e.stopPropagation();
         if (_itemCatCollapsed.has(catKey)) _itemCatCollapsed.delete(catKey);
         else _itemCatCollapsed.add(catKey);
@@ -1274,6 +1335,7 @@ function renderItemOrder() {
         });
 
         row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('items', item.id, item, 'item'); });
+        _addCreatorBtn(row, 'item', item);
         row.addEventListener('dragstart', e => {
           if (e.target.closest('.ed-edit-btn') || _itemCatDragSrc) return;
           _itemDragSrc = row;
@@ -1352,6 +1414,7 @@ let _pnjDirty           = false;
 let _pnjDragSrc         = null;  // drag région
 let _pnjItemDragSrc     = null;  // drag PNJ individuel
 let _pnjCollapsed       = new Set(); // IDs de régions réduites
+let _pnjCollapseInit    = false;
 let _pnjPalierCollapsed = new Set(); // paliers réduits
 
 window.showPnjOrder = async () => {
@@ -1463,8 +1526,8 @@ function _makePnjRegionGroup(group, gi, palierPnjs, palier) {
     <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierPnjs.length} PNJ</span>
     <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
 
-  header.querySelector('[data-toggle]').addEventListener('click', e => {
-    e.stopPropagation();
+  header.addEventListener('click', e => {
+    if (e.target.closest('[draggable]') && e.target !== header) return;
     if (_pnjCollapsed.has(group.id)) _pnjCollapsed.delete(group.id);
     else _pnjCollapsed.add(group.id);
     renderPnjOrder();
@@ -1548,6 +1611,7 @@ function _makePnjRegionGroup(group, gi, palierPnjs, palier) {
     });
 
     row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('personnages', pnj.id, pnj, 'pnj'); });
+    _addCreatorBtn(row, 'pnj', pnj);
     row.addEventListener('dragstart', e => {
       if (e.target.closest('.ed-edit-btn') || _pnjDragSrc) return;
       _pnjItemDragSrc = row;
@@ -1616,6 +1680,7 @@ function renderPnjOrder() {
         <span class="mob-order-tag">${p.region||'—'}</span>
         <button class="ed-edit-btn" title="Modifier : ${p.name||p.id}\nID : ${p.id}">✏️</button>`;
       row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('personnages', p.id, p, 'pnj'); });
+      _addCreatorBtn(row, 'pnj', p);
       listEl.appendChild(row);
     });
     return;
@@ -1626,6 +1691,7 @@ function renderPnjOrder() {
   if (!allPnjs.length) { listEl.innerHTML = '<div class="empty">Aucun PNJ</div>'; return; }
 
   const paliers = [...new Set(allPnjs.map(p => p.palier||1))].sort((a,b) => a-b);
+  if (!_pnjCollapseInit) { _pnjCollapseInit = true; paliers.forEach(p => _pnjPalierCollapsed.add(p)); }
 
   paliers.forEach(palier => {
     const totalCount   = allPnjs.filter(p => (p.palier||1) === palier).length;
@@ -1641,7 +1707,7 @@ function renderPnjOrder() {
       <span style="flex:1;">Palier ${palier}</span>
       <span style="font-size:11px;color:var(--muted);font-weight:400;">${totalCount} PNJ</span>
       <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${palCollapsed?'Dérouler':'Réduire'}">${palCollapsed?'▶':'▼'}</button>`;
-    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+    ph.addEventListener('click', () => {
       if (_pnjPalierCollapsed.has(palier)) _pnjPalierCollapsed.delete(palier);
       else _pnjPalierCollapsed.add(palier);
       renderPnjOrder();
@@ -1725,6 +1791,7 @@ let _regionOrderData  = [];
 let _regionOrderDirty = false;
 let _regionDragSrc    = null;
 let _regionPalierCollapsed = new Set();
+let _regionCollapseInit    = false;
 
 window.showRegionOrder = async () => {
   _setHash('region-order');
@@ -1797,6 +1864,7 @@ function renderRegionOrder() {
         <span class="mob-order-tag">P${r.palier||1}</span>
         <button class="ed-edit-btn" title="Modifier : ${r.name||r.id}\nID : ${r.id}">✏️</button>`;
       row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('regions', r.id, r, 'region'); });
+      _addCreatorBtn(row, 'region', r);
       listEl.appendChild(row);
     });
     return;
@@ -1804,6 +1872,7 @@ function renderRegionOrder() {
 
   const paliers = [...new Set(_regionOrderData.map(r => r.palier || 1))].sort((a,b) => a-b);
   if (!paliers.length) { listEl.innerHTML = '<div class="empty">Aucune région</div>'; return; }
+  if (!_regionCollapseInit) { _regionCollapseInit = true; paliers.forEach(p => _regionPalierCollapsed.add(p)); }
 
   const isSameGroup = (a, b) => (a.palier||1) === (b.palier||1) && (a.inCodex === false) === (b.inCodex === false);
 
@@ -1820,7 +1889,7 @@ function renderRegionOrder() {
       <span style="flex:1;">Palier ${palier}</span>
       <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierRegions.length} région${palierRegions.length>1?'s':''}</span>
       <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
-    ph.querySelector('[data-toggle]').addEventListener('click', () => {
+    ph.addEventListener('click', () => {
       if (_regionPalierCollapsed.has(palier)) _regionPalierCollapsed.delete(palier);
       else _regionPalierCollapsed.add(palier);
       renderRegionOrder();
@@ -1878,6 +1947,7 @@ function renderRegionOrder() {
         });
 
         row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('regions', r.id, r, 'region'); });
+        _addCreatorBtn(row, 'region', r);
         row.addEventListener('dragstart', e => { if (e.target.closest('.ed-edit-btn')) { e.preventDefault(); return; } _regionDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
         row.addEventListener('dragend',   () => { row.classList.remove('dragging'); _regionDragSrc = null; });
         row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
@@ -2004,6 +2074,7 @@ window.renderPanoplieOrder = function renderPanoplieOrder() {
       e.stopPropagation();
       showEditor('panoplies', p.id, p, 'panoplie');
     });
+    _addCreatorBtn(row, 'panoplie', p);
 
     const indexInput = row.querySelector('.mob-order-index');
     indexInput.addEventListener('click', e => e.stopPropagation());
@@ -4827,7 +4898,7 @@ function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames 
   // ── Lien wiki ────────────────────────────────────────
   const itemId = obj.id || obj._id || obj._docId;
   if (itemId) {
-    const wikiUrl = `${_WIKI_ROOT}Compendium/compendium.html#item/${encodeURIComponent(itemId)}`;
+    const wikiUrl = `https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${itemId}`;
     embedFields.push({ name: _SP, value: `[🌐 Voir la fiche sur le wiki](${wikiUrl})`, inline: false });
   }
 
@@ -4979,7 +5050,9 @@ window.deleteSub = async (id) => {
 let _questOrderData  = [];
 let _questOrderDirty = false;
 let _questDragSrc    = null;
-let _questPalierCollapsed = new Set();
+let _questPalierCollapsed    = new Set();
+let _questPalierSubCollapsed = new Set(); // clés : "type-palier"
+let _questCollapseInit       = false;
 
 const QUEST_TYPE_ORDER  = ['main', 'sec', 'ter'];
 const QUEST_TYPE_LABELS_MOD = { main: '⚔️ Principale', sec: '🗺️ Secondaire', ter: '📋 Tertiaire' };
@@ -5070,6 +5143,10 @@ window.renderQuestOrder = function renderQuestOrder() {
 
   // ── Mode normal : type → palier → quêtes draggables ──
   listEl.innerHTML = '';
+  if (!_questCollapseInit) {
+    _questCollapseInit = true;
+    QUEST_TYPE_ORDER.forEach(t => { if (_questOrderData.some(q => q.type === t)) _questPalierCollapsed.add(t); });
+  }
   for (const type of QUEST_TYPE_ORDER) {
     const group = _questOrderData.filter(qt => qt.type === type);
     if (!group.length) continue;
@@ -5096,17 +5173,26 @@ window.renderQuestOrder = function renderQuestOrder() {
       const paliers = [...new Set(group.map(qt => qt.palier || 1))].sort((a,b) => a-b);
       for (const palier of paliers) {
         const palierGroup = group.filter(qt => (qt.palier||1) === palier);
+        const subKey = `${type}-${palier}`;
+        const subCollapsed = _questPalierSubCollapsed.has(subKey);
 
         const ph = document.createElement('div');
-        ph.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:4px 10px 2px;';
-        ph.textContent = `Palier ${palier}`;
+        ph.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:4px 10px 2px;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;';
+        ph.innerHTML = `<span>Palier ${palier}</span><span style="opacity:.5;font-size:9px;">${palierGroup.length} quête${palierGroup.length>1?'s':''}</span><span style="margin-left:auto;font-size:11px;">${subCollapsed?'▶':'▼'}</span>`;
+        ph.addEventListener('click', () => {
+          if (_questPalierSubCollapsed.has(subKey)) _questPalierSubCollapsed.delete(subKey);
+          else _questPalierSubCollapsed.add(subKey);
+          renderQuestOrder();
+        });
         section.appendChild(ph);
 
-        palierGroup.forEach(qt => {
-          const palierIdx = palierGroup.indexOf(qt) + 1;
-          const row = _buildQuestRow(qt, 'quest', palierIdx, palierGroup.length);
-          section.appendChild(row);
-        });
+        if (!subCollapsed) {
+          palierGroup.forEach(qt => {
+            const palierIdx = palierGroup.indexOf(qt) + 1;
+            const row = _buildQuestRow(qt, 'quest', palierIdx, palierGroup.length);
+            section.appendChild(row);
+          });
+        }
       }
     }
     listEl.appendChild(section);
@@ -5281,6 +5367,7 @@ function _buildQuestRow(qt, origin = 'quest', posIdx = null, groupLen = null) {
     e.stopPropagation();
     showEditor('quetes', qt.id, qt, origin);
   });
+  _addCreatorBtn(row, 'quest', qt);
   return row;
 }
 
@@ -7262,6 +7349,195 @@ function _renderObtainLegacy() {
   summary.style.cssText = 'font-size:11px;color:var(--muted);text-align:right;margin-top:4px;';
   summary.textContent = _obtainLegacyShown.length + ' item' + (_obtainLegacyShown.length > 1 ? 's' : '');
   listEl.appendChild(summary);
+}
+
+// ══════════════════════════════════════════════════════
+// DATA ALL PANEL
+// ══════════════════════════════════════════════════════
+
+let _dataAllLoaded  = false;
+let _dataAllData    = [];
+let _dataAllFlagSet = new Set();
+
+const _DATA_ALL_COLS = {
+  item:     { col: 'items',       nameKey: 'name',  label: '⚔️' },
+  mob:      { col: 'mobs',        nameKey: 'name',  label: '👾' },
+  pnj:      { col: 'personnages', nameKey: 'name',  label: '🧑' },
+  region:   { col: 'regions',     nameKey: 'name',  label: '📍' },
+  quest:    { col: 'quetes',      nameKey: 'titre', label: '📜' },
+  panoplie: { col: 'panoplies',   nameKey: 'label', label: '🔗' },
+};
+
+const _DATA_ALL_FLAGS = [
+  { key: 'evolutif',  label: '🔄 Évolutif',    types: ['item'],           filter: d => d.evolutif === true },
+  { key: 'event',     label: '🎊 Event',        types: ['item'],           filter: d => d.event === true },
+  { key: 'sensible',  label: '🔒 Sensible',     types: ['item','mob'],     filter: d => d.sensible === true },
+  { key: 'boss',      label: '💀 Boss',         types: ['mob'],            filter: d => d.type === 'boss' },
+  { key: 'miniboss',  label: '⚔️ Mini-Boss',   types: ['mob'],            filter: d => d.type === 'miniboss' },
+  { key: 'codex',     label: '📖 Codex',        types: ['mob','region'],   filter: d => d.codex === true },
+  { key: 'sans_lore', label: '📖 Sans lore',    types: ['item','mob'],     filter: d => !d.lore },
+  { key: 'avec_craft',label: '🔨 Avec craft',   types: ['item'],           filter: d => Array.isArray(d.craft) && d.craft.length > 0 },
+  { key: 'avec_evo',  label: '🔀 Avec évolutions', types: ['item'],        filter: d => Array.isArray(d.evolutions) && d.evolutions.length > 0 },
+  { key: 'no_palier', label: '❓ Sans palier',  types: ['item','mob','pnj','region','quest'], filter: d => !d.palier },
+];
+
+window.showDataAll = async function() {
+  _setHash('data-all');
+  document.getElementById('data-all-panel').style.display = '';
+  document.getElementById('btn-data-all').classList.add('active');
+  _buildDataAllChips();
+  if (!_dataAllLoaded) await loadDataAll();
+  else renderDataAll();
+};
+
+window.loadDataAll = async function() {
+  _dataAllLoaded = false;
+  _dataAllData   = [];
+  const listEl = document.getElementById('data-all-list');
+  if (listEl) listEl.innerHTML = '<div class="empty">Chargement…</div>';
+
+  try {
+    for (const [type, conf] of Object.entries(_DATA_ALL_COLS)) {
+      // Invalider le cache pour obtenir les données fraîches
+      const docs = await cachedDocs(conf.col);
+      for (const d of docs) {
+        _dataAllData.push({
+          _type:  type,
+          _col:   conf.col,
+          _icon:  conf.label,
+          id:     d.id,
+          name:   d[conf.nameKey] || d.name || d.id,
+          ...d
+        });
+      }
+    }
+    _dataAllLoaded = true;
+    renderDataAll();
+  } catch(e) {
+    if (listEl) listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
+  }
+};
+
+window.onDataAllTypeChange = function() {
+  _dataAllFlagSet = new Set();
+  _buildDataAllChips();
+  const typeVal = document.getElementById('data-all-type')?.value || '';
+  const catSel  = document.getElementById('data-all-category');
+  if (catSel) catSel.style.display = (typeVal === 'item') ? '' : 'none';
+  renderDataAll();
+};
+
+function _buildDataAllChips() {
+  const chipsEl = document.getElementById('data-all-chips');
+  if (!chipsEl) return;
+  const selectedType = document.getElementById('data-all-type')?.value || '';
+  chipsEl.innerHTML = '';
+
+  _DATA_ALL_FLAGS
+    .filter(f => !selectedType || f.types.includes(selectedType))
+    .forEach(f => {
+      const chip = document.createElement('button');
+      chip.className = 'filter-btn';
+      chip.style.cssText = 'font-size:11px;padding:2px 10px;border-radius:20px;';
+      chip.textContent = f.label;
+      if (_dataAllFlagSet.has(f.key)) chip.classList.add('active');
+      chip.onclick = () => {
+        if (_dataAllFlagSet.has(f.key)) _dataAllFlagSet.delete(f.key);
+        else _dataAllFlagSet.add(f.key);
+        chip.classList.toggle('active');
+        renderDataAll();
+      };
+      chipsEl.appendChild(chip);
+    });
+}
+
+window.renderDataAll = function() {
+  if (!_dataAllLoaded) return;
+  const listEl    = document.getElementById('data-all-list');
+  const countEl   = document.getElementById('data-all-count');
+  if (!listEl) return;
+
+  const searchQ    = normalize((document.getElementById('data-all-search')?.value || '').trim());
+  const typeFilter = document.getElementById('data-all-type')?.value   || '';
+  const palierFilter = document.getElementById('data-all-palier')?.value || '';
+  const catFilter  = document.getElementById('data-all-category')?.value || '';
+  const sortBy     = document.getElementById('data-all-sort')?.value    || 'name';
+
+  let results = _dataAllData;
+
+  if (typeFilter)   results = results.filter(d => d._type === typeFilter);
+  if (palierFilter) results = results.filter(d => String(d.palier) === palierFilter);
+  if (catFilter)    results = results.filter(d => d.category === catFilter);
+  if (searchQ)      results = results.filter(d =>
+    normalize(d.name || '').includes(searchQ) ||
+    normalize(d.id   || '').includes(searchQ)
+  );
+
+  for (const flagKey of _dataAllFlagSet) {
+    const def = _DATA_ALL_FLAGS.find(f => f.key === flagKey);
+    if (def) results = results.filter(d => def.filter(d));
+  }
+
+  // Sort
+  results = [...results];
+  if (sortBy === 'name')   results.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
+  else if (sortBy === 'palier') results.sort((a, b) => (a.palier || 9) - (b.palier || 9) || (a.name || '').localeCompare(b.name || '', 'fr'));
+  else if (sortBy === 'type')  results.sort((a, b) => a._type.localeCompare(b._type) || (a.name || '').localeCompare(b.name || '', 'fr'));
+
+  if (countEl) countEl.textContent = `${results.length} résultat${results.length !== 1 ? 's' : ''}`;
+
+  if (!results.length) {
+    listEl.innerHTML = '<div class="empty">Aucun résultat</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  const COL_MAP = { item:'items', mob:'mobs', pnj:'personnages', region:'regions', quest:'quetes', panoplie:'panoplies' };
+
+  results.forEach(d => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);';
+
+    const nameEl = document.createElement('span');
+    nameEl.style.cssText = 'flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    nameEl.innerHTML = `${d._icon} <b>${escHtml(d.name || d.id)}</b>`;
+
+    const idEl = document.createElement('code');
+    idEl.style.cssText = 'font-size:10px;color:var(--muted);flex-shrink:0;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    idEl.textContent = d.id;
+
+    const badgesEl = document.createElement('span');
+    badgesEl.style.cssText = 'display:flex;gap:3px;flex-shrink:0;flex-wrap:nowrap;';
+
+    if (d.palier) _daAddBadge(badgesEl, 'P'+d.palier, 'var(--accent)', 'rgba(122,90,248,.15)');
+    if (d.category) _daAddBadge(badgesEl, d.category, 'var(--muted)', 'transparent');
+    if (d.evolutif)            _daAddBadge(badgesEl, '🔄', '#60a5fa', 'rgba(96,165,250,.1)');
+    if (d.event)               _daAddBadge(badgesEl, '🎊', '#a855f7', 'rgba(168,85,247,.1)');
+    if (d.sensible)            _daAddBadge(badgesEl, '🔒', '#f87171', 'rgba(248,113,113,.1)');
+    if (d.type === 'boss')     _daAddBadge(badgesEl, 'Boss', '#f87171', 'rgba(248,113,113,.1)');
+    if (d.type === 'miniboss') _daAddBadge(badgesEl, 'Mini', '#f59e0b', 'rgba(245,158,11,.1)');
+    if (d.codex)               _daAddBadge(badgesEl, 'Codex', '#4ade80', 'rgba(74,222,128,.1)');
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-ghost';
+    editBtn.style.cssText = 'font-size:11px;padding:3px 8px;flex-shrink:0;';
+    editBtn.textContent = '✏️';
+    editBtn.title = 'Éditer dans le panneau';
+    editBtn.onclick = () => showEditor(COL_MAP[d._type] || d._type, d.id, d, d._type);
+
+    row.appendChild(nameEl);
+    row.appendChild(idEl);
+    row.appendChild(badgesEl);
+    row.appendChild(editBtn);
+    listEl.appendChild(row);
+  });
+};
+
+function _daAddBadge(container, text, color, bg) {
+  const b = document.createElement('span');
+  b.style.cssText = `font-size:10px;padding:1px 5px;border-radius:8px;color:${color};background:${bg};border:1px solid ${color}40;white-space:nowrap;flex-shrink:0;`;
+  b.textContent = text;
+  container.appendChild(b);
 }
 
 

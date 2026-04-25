@@ -953,3 +953,79 @@ a.craft-ingredient-name:hover {
   opacity: 1;
   filter: brightness(1.25);
 }
+
+/* ── Chaîne d'évolution ── */
+.evo-chain-wrap {
+  margin-bottom: 14px;
+}
+.evo-chain-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.evo-chain-link,
+.evo-chain-current {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 14px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.evo-chain-link {
+  text-decoration: none;
+  transition: filter .15s, opacity .15s;
+  opacity: .85;
+}
+.evo-chain-link:hover {
+  opacity: 1;
+  filter: brightness(1.2);
+}
+.evo-chain-current {
+  font-size: 13px;
+  cursor: default;
+}
+.evo-arrow {
+  font-size: 16px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.evo-prev-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.evo-next-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.evo-tree-root {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 6px;
+}
+.evo-tree-node {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.evo-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.evo-tree-children {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-left: 1px solid var(--border);
+  margin-left: 8px;
+  padding-top: 2px;
+}

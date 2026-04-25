@@ -37,7 +37,6 @@
       <button class="btn btn-ghost" id="btn-login" onclick="openLoginModal()" style="display:none;font-size:11px;">🔑 Connexion</button>
       <button class="btn btn-ghost" id="btn-change-pseudo" onclick="openChangePseudoModal()" style="display:none;font-size:11px;" title="Changer mon pseudo">✏️</button>
       <button class="btn btn-ghost" id="btn-logout-hdr" onclick="doLogout()" style="display:none;font-size:11px;">🚪</button>
-      <textarea id="submitter-comment" placeholder="Note pour la modération (optionnel)…" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 8px;font-size:10px;outline:none;width:150px;height:34px;resize:none;font-family:inherit;line-height:1.3;border-radius:4px;transition:border-color .15s;vertical-align:middle;"></textarea>
       <button class="btn btn-primary" id="btn-submit-discord" onclick="submitToDiscord()">◈ Soumettre</button>
       <button class="btn btn-ghost" onclick="resetForm()" style="font-size:11px;">↺ Reset</button>
     </div>
@@ -163,13 +162,12 @@
           <div class="field">
             <label>Nom affiché *</label>
             <input type="text" id="f-name" placeholder="Épée du Dragon" oninput="onNameInput()">
-          </div>
-          <div class="field" style="display:none;" aria-hidden="true">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-              <label style="margin:0">ID généré</label>
-              <span id="id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+              <span id="id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant — sera traité comme une modification</span>
               <span id="id-orphan-badge" style="display:none;font-size:11px;font-weight:700;color:var(--success);background:rgba(74,222,128,.1);border:1px solid var(--success);border-radius:10px;padding:1px 8px;cursor:default;" title="">✓ Drop orphelin</span>
             </div>
+          </div>
+          <div class="field" style="display:none;" aria-hidden="true">
             <input type="text" id="f-id" placeholder="" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
           </div>
         </div>
@@ -255,6 +253,20 @@
           </div>
         </div>
 
+
+        <!-- Évolutions (visible si item évolutif) -->
+        <div class="field" id="evolutif-evolutions-section" style="display:none;">
+          <label>🔄 Évolutions possibles <span style="color:var(--muted);font-weight:400;font-size:10px;">— items vers lesquels cet item peut évoluer</span></label>
+          <div id="evolutif-evolutions-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
+          <div id="evolutif-evolutions-drop-wrap"></div>
+        </div>
+
+        <!-- Prédécesseurs (visible si item évolutif) -->
+        <div class="field" id="evolutif-from-section" style="display:none;">
+          <label>⬆️ Évolue depuis <span style="color:var(--muted);font-weight:400;font-size:10px;">— items depuis lesquels cet item peut être obtenu par évolution</span></label>
+          <div id="evolutif-from-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
+          <div id="evolutif-from-drop-wrap"></div>
+        </div>
 
         <div class="field" id="classes-field">
           <label>Classes (vide = toutes)</label>
@@ -956,6 +968,7 @@
 
     </div><!-- /mob-form -->
 
+
   </div><!-- /formPanel -->
 
   <!-- ═══ OUTPUT ═══ -->
@@ -963,6 +976,7 @@
     <div class="out-tabs">
       <div class="out-tab active" id="tab-preview" onclick="switchTab('preview')">👁️ Preview</div>
       <div class="out-tab" id="tab-history" onclick="switchTab('history')">📋 Historique <span id="history-count" style="display:none;background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;font-size:10px;margin-left:2px;"></span></div>
+      <div class="out-tab" id="tab-leaderboard" onclick="switchTab('leaderboard')">🏆 Leaderboard</div>
     </div>
     <!-- JS Pane (caché, utilisé pour le clipboard/submit) -->
     <div id="pane-js" style="display:none;">
@@ -974,6 +988,10 @@
       <div id="validation-panel" style="display:none;padding:10px 14px;border-bottom:1px solid var(--border);flex-direction:column;gap:5px;"></div>
       <div class="preview-wrap" id="preview-wrap">
       </div>
+    </div>
+    <!-- Leaderboard Pane -->
+    <div class="out-pane" id="pane-leaderboard" style="overflow-y:auto;">
+      <div style="padding:30px;color:var(--muted);text-align:center;">Cliquez sur l'onglet pour charger.</div>
     </div>
     <!-- History Pane -->
     <div class="out-pane" id="pane-history">
@@ -1132,6 +1150,8 @@ try {
   }
   // Réinitialiser les données d'obtention avec les submissions en attente
   if (typeof initObtainData === 'function') initObtainData();
+  // Enrichir l'index items avec les soumissions en attente (pour les dropdowns évolution, craft, etc.)
+  if (typeof window._vcl_mergePendingToAllItemsIndex === 'function') window._vcl_mergePendingToAllItemsIndex();
 } catch(e) {
   console.warn('[VCL Creator] Soumissions en attente non chargées:', e);
 }
@@ -1164,6 +1184,12 @@ window._toast = toast;
 window._modal = modal;
 </script>
 
+
+<!-- ═══ NOTE DE SOUMISSION (fixe en bas de page) ═══ -->
+<div id="submit-note-bar" style="position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid var(--accent);padding:8px 20px;z-index:200;display:flex;align-items:center;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,.25);">
+  <div id="submit-note-label" style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;flex-shrink:0;">📝 Note</div>
+  <textarea id="submitter-comment" rows="1" placeholder="Note pour la modération (optionnel pour un nouvel item)…" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-size:12px;outline:none;resize:none;border-radius:6px;font-family:inherit;line-height:1.4;transition:border-color .15s;height:34px;overflow:hidden;" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';this.style.borderColor=this.value?'var(--accent)':'var(--border)'"></textarea>
+</div>
 
 <script src="creator.js"></script>
 <script>
