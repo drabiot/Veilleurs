@@ -88,7 +88,7 @@ const CURRENCIES = {
 
 //#endregion CURRENCIES
 //#region MAX_LEVEL
-const MAX_LEVEL = 14;
+const MAX_LEVEL = 18;
 
 //#endregion MAX_LEVEL
 //#region CARACTERISTIQUES
