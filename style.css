@@ -146,9 +146,9 @@ body > *:not(.ambient-bg) { position: relative; z-index: 1; }
 .header-nav {
   display: flex;
   border-top: 1px solid var(--rim);
+  border-bottom: 1px solid var(--rim);
   background: linear-gradient(180deg, rgba(20,17,12,.6) 0%, rgba(14,12,10,.8) 100%);
   width: 100%;
-  overflow-x: auto;
 }
 .nav-link {
   font-family: 'Cinzel', serif;
@@ -501,3 +501,4 @@ body > *:not(.ambient-bg) { position: relative; z-index: 1; }
   .nav-grid { grid-template-columns: 1fr; }
   .nav-card.card-featured { grid-column: span 1; }
 }
+
