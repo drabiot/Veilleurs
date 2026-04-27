@@ -469,30 +469,22 @@
         <div class="sec-head" onclick="toggleSec(this)">🧑 Identité <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="row2">
-            <div class="field">
+            <div class="field" style="grid-column:1/-1;">
               <label>Type du PNJ *</label>
-              <select id="pnj-type" onchange="onPnjTypeChange()">
-                <option value="">— Choisir un type —</option>
-                <option value="forgeron d'armes">Forgeron d'armes</option>
-                <option value="forgeron d'armures">Forgeron d'armures</option>
-                <option value="forgeron d'accessoires">Forgeron d'accessoires</option>
-                <option value="forgeron de lingots">Forgeron de lingots</option>
-                <option value="forgeron de clés">Forgeron de clés</option>
-                <option value="forgeron d'items secrets">Forgeron d'items secrets</option>
-                <option value="marchand d'équipement">Marchand d'équipement</option>
-                <option value="marchand de consommable">Marchand de consommable</option>
-                <option value="marchand d'outils">Marchand d'outils</option>
-                <option value="marchand d'accessoires">Marchand d'accessoires</option>
-                <option value="marchand itinérant">Marchand itinérant</option>
-                <option value="repreneur de butin">Repreneur de butin</option>
-                <option value="bûcheron">Bûcheron</option>
-                <option value="alchimiste">Alchimiste</option>
-                <option value="quêtes">Quêtes</option>
-                <option value="quête principale">Quête principale</option>
-                <option value="marchand occulte">Marchand occulte</option>
-                <option value="fabricant secret">Fabricant secret</option>
-                <option value="autres">Autres</option>
-              </select>
+
+              <!-- Étape 1 : Catégorie -->
+              <div id="pnj-cat-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+                <button class="r-btn" data-cat="craft"    onclick="selectPnjCategory('craft')"    style="--c:#8b5cf6;width:fit-content;">⚒️ Craft</button>
+                <button class="r-btn" data-cat="artisans" onclick="selectPnjCategory('artisans')" style="--c:#10b981;width:fit-content;">🌿 Artisans</button>
+                <button class="r-btn" data-cat="commerce" onclick="selectPnjCategory('commerce')" style="--c:#3b82f6;width:fit-content;">🛒 Commerce</button>
+                <button class="r-btn" data-cat="quetes"   onclick="selectPnjCategory('quetes')"   style="--c:#f59e0b;width:fit-content;">📜 Quêtes</button>
+                <button class="r-btn" data-cat="autres"   onclick="selectPnjCategory('autres')"   style="--c:#6b7280;width:fit-content;">💬 Autres</button>
+              </div>
+
+              <!-- Étape 2 : Type spécifique (injecté dynamiquement) -->
+              <div id="pnj-type-row" style="display:none;gap:6px;flex-wrap:wrap;padding:6px 0 2px 0;border-top:1px solid var(--border);margin-top:2px;"></div>
+
+              <input type="hidden" id="pnj-type" value="">
             </div>
             <div class="field" style="display:none;" aria-hidden="true">
               <label>ID généré</label>
@@ -541,6 +533,13 @@
                 <option value="2">Palier 2</option>
                 <option value="3">Palier 3</option>
               </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Sous-sol</label>
+            <div style="display:flex;gap:8px;margin-top:4px;">
+              <button id="pnj-underground-yes" class="btn btn-ghost btn-sm" onclick="setPnjUnderground(true)">🕳️ Oui</button>
+              <button id="pnj-underground-no"  class="btn btn-ghost btn-sm" style="background:rgba(74,222,128,.15);color:var(--success);border-color:var(--success);" onclick="setPnjUnderground(false)">✕ Non</button>
             </div>
           </div>
         </div>
@@ -620,6 +619,26 @@
               <option value="2">Palier 2</option>
               <option value="3">Palier 3</option>
             </select>
+          </div>
+          <div class="field">
+            <div class="coords-label">
+              <span>📍 Coordonnées</span>
+              <span class="req">*</span>
+            </div>
+            <div class="coords-row">
+              <div class="coord-field coord-x">
+                <span class="coord-axis">X</span>
+                <input type="number" step="1" id="reg-x" placeholder="128" oninput="update()">
+              </div>
+              <div class="coord-field coord-y">
+                <span class="coord-axis">Y</span>
+                <input type="number" step="1" id="reg-y" placeholder="64" oninput="update()">
+              </div>
+              <div class="coord-field coord-z">
+                <span class="coord-axis">Z</span>
+                <input type="number" step="1" id="reg-z" placeholder="-320" oninput="update()">
+              </div>
+            </div>
           </div>
           <div class="field" style="max-width:200px;">
             <label>Dans le Codex</label>
@@ -744,7 +763,7 @@
           <div class="row3">
             <div class="field">
               <label>Type *</label>
-              <select id="quest-type" onchange="update()">
+              <select id="quest-type" onchange="onQuestTypeChange()">
                 <option value="">— Choisir —</option>
                 <option value="main">⚔️ Principale</option>
                 <option value="sec">🗺️ Secondaire</option>
@@ -766,8 +785,29 @@
             </div>
           </div>
           <div class="field">
-            <label>NPC (optionnel)</label>
-            <input type="text" id="quest-npc" placeholder="Abraham" oninput="update()">
+            <label>NPC <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel)</span></label>
+            <div id="quest-npc-container"></div>
+            <input type="hidden" id="quest-npc">
+          </div>
+          <div class="field">
+            <div class="coords-label">
+              <span>📍 Coordonnées du départ <span style="color:var(--muted);font-size:10px;font-weight:400;">(lieu du donneur de quête)</span></span>
+              <span class="req">* obligatoire</span>
+            </div>
+            <div class="coords-row">
+              <div class="coord-field coord-x">
+                <span class="coord-axis">X</span>
+                <input type="number" step="1" id="quest-cx" placeholder="1808" oninput="update()">
+              </div>
+              <div class="coord-field coord-y">
+                <span class="coord-axis">Y</span>
+                <input type="number" step="1" id="quest-cy" placeholder="64" oninput="update()">
+              </div>
+              <div class="coord-field coord-z">
+                <span class="coord-axis">Z</span>
+                <input type="number" step="1" id="quest-cz" placeholder="-320" oninput="update()">
+              </div>
+            </div>
           </div>
           <div class="field">
             <label>Description *</label>

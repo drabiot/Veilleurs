@@ -312,6 +312,11 @@
   100% { transform: scale(1.7); opacity: 0; }
 }
 
+@keyframes guest-pin-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(224,124,80,0.35), 0 2px 10px rgba(224,124,80,0.6); }
+  50%       { box-shadow: 0 0 0 8px rgba(224,124,80,0.15), 0 2px 14px rgba(224,124,80,0.8); }
+}
+
 /* Couleurs + emoji par type */
 .marker[data-type="donjon"]                .marker-icon { background: #c47a6a; color: #c47a6a; box-shadow: 0 2px 12px rgba(196,122,106,.5); }
 .marker[data-type="zone_monstre"]          .marker-icon { background: #7a3030; color: #7a3030; box-shadow: 0 2px 12px rgba(122,48,48,.5); }

@@ -21,6 +21,8 @@ const COL_MAP = {
   quetes:     COL.quetes,
   panoplies:  COL.panoplies,
   mapMarkers: COL.mapMarkers,
+  zones:      COL.zones,
+  donjons:    COL.donjons,
 };
 
 const _data    = {};
@@ -36,6 +38,8 @@ export const store = {
   get quetes()     { return _data.quetes     ?? []; },
   get panoplies()  { return _data.panoplies  ?? []; },
   get mapMarkers() { return _data.mapMarkers ?? []; },
+  get zones()      { return _data.zones      ?? []; },
+  get donjons()    { return _data.donjons    ?? []; },
   /** Panoplies indexées par id — compatible avec le global SETS des pages legacy */
   get sets()      { return _data.sets      ?? {}; },
 

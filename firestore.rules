@@ -93,6 +93,18 @@ service cloud.firestore {
       allow write: if isContrib();
     }
 
+    // Donjons migrés depuis data.js — lecture publique, écriture contrib
+    match /donjons/{id} {
+      allow read:  if true;
+      allow write: if isContrib();
+    }
+
+    // Zones de spawn de monstres (polygones) — lecture publique, écriture contrib
+    match /zones/{id} {
+      allow read:  if true;
+      allow write: if isContrib();
+    }
+
     match /config/{id} {
       allow read:  if true;
       allow write: if isAdmin();

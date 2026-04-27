@@ -6,8 +6,10 @@ const MARKER_EMOJI = {
   quête_principale: '💬',
   quête_secondaire: '❓',
   repreneur_butin:  '🛒',
+  repreneur_armes:  '🗡️',
   marchand:         '💰',
   artisant:         '⚒️',
+  refaconneur:      '🪛',
   clef:             '🗝️',
   ressource:        '🌿',
   donjon:           '⚔️',
@@ -512,13 +514,6 @@ const FLOOR_ZONES_UNDERGROUND = {
 const FLOOR_MARKERS = {
 	//#region P1 Markers
   1: [
-		//#region P1 Markers > Donjon
-    { id: 'm1d2',  type: 'donjon',  gx: 2785, gy: 4420, spawnGx: 2813, spawnGy: 4389, spawnLayer: 'underground', name: 'Sous-Donjon Nasgul',                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-squelette' },
-    { id: 'm1d3',  type: 'donjon',  gx: 4300, gy: 3890, name: 'Donjon Mine de Geldorak',            desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-geldorak' },
-    { id: 'm1d4',  type: 'donjon',  gx: 2383, gy: 2410, name: "Donjon Labyrinthe des Déchus",       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-labyrinthe-des-dechus' },
-    { id: 'm1d5',  type: 'donjon',  gx: 1008,  gy: 1184, name: "Donjon Xal'Zirith",                 desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/donjons/donjon-xalzirith' },
-		{ id: 'm1d6', type: 'donjon',  gx: 3412, gy: 953, name: 'Tour du Kobold',  					desc: "", link: '' },
-		//#endregion P1 Markers > Donjon
 		//#region P1 Markers > Régions
     { id: 'm1r1',  type: 'région',  gx: 1801, gy: 4284, name: 'Ville de Départ',                    desc: "La ville de départ est un havre paisible dans un monde virtuel encore inconnu. C'est ici que chaque aventure commence", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/ville-de-depart' },
     { id: 'm1r2',  type: 'région',  gx: 1542, gy: 3432, name: 'Hanaka',                             desc: "Un hameau boisé niché entre les collines où les sangliers rôdent à la lisière. Berceau des premiers affrontements", link: 'https://guilde-sao.gitbook.io/watchers/paliers/carte/regions/hanaka' },
@@ -562,7 +557,7 @@ const FLOOR_MARKERS = {
     { id: 'm1a4',  type: 'artisant', gx: 1789, gy: 4609, name: 'Marchand Étrange',                  desc: "Marchand suspect trainant derrière la Cathédrale", link: '../Bestiaire/bestiaire.html#personnages/marchand_etrange_vdp' },
     { id: 'm1a5',  type: 'artisant', gx: 1787, gy: 4697, name: "Forgeron d'Accessoires en Cuivre",  desc: "Forgeron des Accessoires en Cuivre pour Débutants", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_cuivre_vdp' },
     { id: 'm1a6',  type: 'artisant', gx: 1776, gy: 4684, name: "Forgeron d'Accessoires en Fer",     desc: "Forgeron des Accessoires en Fer pour Débutants", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_fer_vdp' },
-    { id: 'm1a7',  type: 'artisant', emoji: '🪛', gx: 1776, gy: 4693, name: 'Refaçonneur',                       desc: "Permet la fabrication de ficelle en tout genre", link: '../Bestiaire/bestiaire.html#personnages/refaconneur_vdp' },
+    { id: 'm1a7',  type: 'refaconneur', gx: 1776, gy: 4693, name: 'Refaçonneur',                       desc: "Permet la fabrication de ficelle en tout genre", link: '../Bestiaire/bestiaire.html#personnages/refaconneur_vdp' },
     { id: 'm1a8',  type: 'artisant', gx: 2397, gy: 3568, name: 'Forgeron de Lingots Cuivre & Fer',  desc: "Forgeron de Lingots de Cuivre et de Fer", link: '../Bestiaire/bestiaire.html#personnages/forgeron_lingot_vdp' },
     { id: 'm1a13', type: 'artisant', emoji: '🪓', gx: 2467, gy: 4289, name: 'Bucheron',                          desc: "Bucheron permettant la Réalisation de Planches", link: '../Bestiaire/bestiaire.html#personnages/bucheron_vdp' },
     { id: 'm1a14', type: 'artisant', emoji: '⚗️', gx: 1771, gy: 4096, name: 'Alchimiste',                        desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: '../Bestiaire/bestiaire.html#personnages/alchimiste_vdp' },
@@ -576,7 +571,7 @@ const FLOOR_MARKERS = {
     { id: 'm1b5',  type: 'repreneur_butin', gx: 1598, gy: 1947, name: 'Repreneur des Mers',            desc: "Achète des ressources Maritimes", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_virelune' },
     { id: 'm1b6',  type: 'repreneur_butin', gx: 2832, gy: 4709, name: 'Repreneur de Squelette',        desc: "Achète des ressources venant des Morts", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_chateau_abandonne' },
     { id: 'm1b7',  type: 'repreneur_butin', gx: 3295, gy: 1629, name: 'Repreneur Agguerie de Tolbana', desc: "Achète des ressources digne d'un Combattant Agguerie", link: '../Bestiaire/bestiaire.html#personnages/repreneur_butin_tolbana' },
-	  { id: 'm1b8',  type: 'repreneur_butin', gx: 1488, gy: 3403, name: 'Repreneur d\'Armes', desc: "Achète des Armes de niveau 5", link: '../Bestiaire/bestiaire.html#personnages/repreneur_arme_hanaka' },
+	  { id: 'm1b8',  type: 'repreneur_armes', gx: 1488, gy: 3403, name: 'Repreneur d\'Armes', desc: "Achète des Armes de niveau 5", link: '../Bestiaire/bestiaire.html#personnages/repreneur_arme_hanaka' },
 		//#endregion P1 Markers > Repreneur Butin
 		//#region P1 Markers > Marchand
     { id: 'm1m1',  type: 'marchand', emoji: '⚔️', gx: 1788, gy: 4162, name: "Marchand d'Équipement",    desc: "Vends des Armes et objets pour les Nouveaux Arrivants", link: '../Bestiaire/bestiaire.html#personnages/repreneur_equipement_vdp' },
@@ -646,7 +641,7 @@ const FLOOR_MARKERS = {
     { id: 'm1s28', type: 'quête_secondaire',  gx: 1700, gy: 1018, name: "Gilbert",                       desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/candelia/gilbert' },
     { id: 'm1s29', type: 'quête_secondaire',  gx: 2019, gy: 877,  name: "Pierre",                        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/candelia/pierre' },
     { id: 'm1s30', type: 'quête_secondaire',  gx: 2015, gy: 834,  name: "Yannis",                        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/candelia/yannis' },
-    { id: 'm1s31', type: 'quête_secondaire',  gx: 1992, gy: 833,  name: "Roméo",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/candelia/roméo' },
+    { id: 'm1s31', type: 'quête_secondaire',  gx: 1992, gy: 833,  name: "Romeo",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/candelia/romeo' },
     { id: 'm1s32', type: 'quête_secondaire',  gx: 1957, gy: 815,  name: "Tomoko",                        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/candelia/tomoko' },
     { id: 'm1s33', type: 'quête_secondaire',  gx: 1957, gy: 793,  name: "Gilmar",                        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/candelia/gilmar' },
     { id: 'm1s34', type: 'quête_secondaire',  gx: 1984, gy: 753,  name: "Émilie",                        desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-secondaires/candelia/emilie' },
@@ -690,33 +685,6 @@ const FLOOR_MARKERS = {
     { id: 'm1p27', type: 'quête_principale', gx: 3260,  gy: 1389, name: "27 - Le Tombeau des Harald",        desc: "Allez voir le Roi de Tolbana, afin qu'il vous donne accès à la tombe de ses ancêtres et bénissent votre Parchemin pour ouvrir les Portes de la Tour du Kobold", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/e-tombeau-des-harald' },
     { id: 'm1p28', type: 'quête_principale', gx: 3260,  gy: 1389, name: "28 - Donjon: Le Kobold",            desc: "Retournez voir le roi Harald et menez une expédition punitive, afin de défaire le roi Kobold: Illfang", link: 'https://guilde-sao.gitbook.io/watchers/paliers/quetes/quetes-principales/donjon-le-kobold' },
 		//#endregion P1 Markers > Quête Principale
-		//#region P1 Markers > Boss
-		{ id: 'm1boss1', type: 'boss', emoji: '🐗', name: "Pumba Corrompu", desc: "Une bête sauvage issue des forêts du premier palier. Il charge sans relâche, animé d'une rage primitive", link: '../Bestiaire/bestiaire.html#monstres/pumba_corrompu', coords: [
-			{ gx: 1760, gy: 3525 },
-			{ gx: 1925, gy: 3525 },
-			{ gx: 1985, gy: 3635 },
-		]},
-		{ id: 'm1boss2', type: 'boss', emoji: '🐺', name: "Albal", desc: "Un loup solitaire aux yeux d'argent glacés. Son passage laisse une brume et le silence", link: '../Bestiaire/bestiaire.html#monstres/albal', coords: [
-			{ gx: 2617, gy: 3836 },
-			{ gx: 2388, gy: 3834 },
-			{ gx: 2510, gy: 3964 },
-		]},
-		{ id: 'm1boss3', type: 'boss', emoji: '🌳', name: "Gardien Colossal", desc: "Forgé dans la pierre et éveillé par la magie ancienne, il garde les terres oubliées contre toute intrusion. Ses pas seuls font trembler la forêt...", link: '../Bestiaire/bestiaire.html#monstres/gardien_colossal', coords: [
-			{ gx: 1288, gy: 3157 },
-			{ gx: 1069, gy: 3252 },
-			{ gx: 1246, gy: 2974 },
-      { gx: 4575, gy: 1608 },
-		]},
-		{ id: 'm1boss4', type: 'boss', emoji: '👑', name: "Gorbel", desc: "Un colosse gélatineux, maître des essaims de slimes. Il écrase tout sur son passage, lentement mais sûrement", link: '../Bestiaire/bestiaire.html#monstres/gorbel', coords: [
-			{ gx: 300, gy: 3200 },
-		]},
-		{ id: 'm1boss5', type: 'boss', emoji: '🐻', name: "Ours de Glace", desc: "Né dans les cavernes les plus froides des montagnes, l'Ours de Glace incarne la force brute du Nord. Son rugissement fait frissonner l'air, et son souffle glacé fige tout sur son passage", link: '../Bestiaire/bestiaire.html#monstres/ours_glace', coords: [
-			{ gx: 4000, gy: 2010 },
-		]},
-		{ id: 'm1bosskazor', type: 'boss', emoji: '⛏️', name: "Kazor", desc: "Terrible World Boss du Palier 1 qui déverse le Labyrinthe des Déchus sur l'Étage", link: '../Bestiaire/bestiaire.html#monstres/kazor', coords: [
-			{ gx: 2438, gy: 959 },
-		]},
-		//#endregion P1 Markers > Boss
 		//#region P1 Markers > Autre
 		{ id: 'm1other1',  type: 'autre', emoji: '💎', gx: 1781, gy: 4138, name: "Maître des Runes",    desc: "Donne des Quêtes Quotidiennes permettant le gains de Cols & de Runes", link: '../Bestiaire/bestiaire.html#personnages/maitre_des_runes' },
 		{ id: 'm1other2',  type: 'autre', gx: 1807, gy: 4295, name: "David Goodenough Palier 1",    desc: "Permet d'être au bon niveau suite à des Bugs de Gain d'Exp au Palier 1", link: '../Bestiaire/bestiaire.html#personnages/david_goodenough1' },
@@ -724,9 +692,6 @@ const FLOOR_MARKERS = {
 	],
 	//#endregion P1 Markers
   2: [
-		//#region P2 Markers > Donjon
-    { id: 'm2d1',  type: 'donjon',  gx: 506, gy: -724, name: 'Donjon Ruche de Melliona',                  desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/donjons/donjon-ruche-de-melliona' },
-		//#endregion P2 Markers > Donjon
 		//#region P2 Markers > Régions
     { id: 'm2r1',  type: 'région',  gx: 118, gy: -68, name: 'Lac des Taureaux',                           desc: "Un lac asséché, dont le sol craquelé est parcouru des taureaux errants", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/lac-des-taureaux' },
     { id: 'm2r2',  type: 'région',  gx: 64, gy: -348, name: 'Urbus',                                      desc: "Ville marchande prospère, garde l'entrée du palier avec ses étals animés", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/monstres/carte/urbus' },
@@ -775,7 +740,7 @@ const FLOOR_MARKERS = {
 		//#region P2 Markers > Artisant
     { id: 'm2a1', type: 'artisant', emoji: '⚗️',  gx: -570, gy: -293, name: 'Alchimiste',               desc: "Alchimiste permettant la Réalisation de Potions et Cristaux", link: '../Bestiaire/bestiaire.html#personnages/alchimiste_kaelor' },
     { id: 'm2a2', type: 'artisant', emoji: '🪓',  gx: -573, gy: -294, name: 'Bucheron',                 desc: "Bucheron permettant la Réalisation de Planches", link: '../Bestiaire/bestiaire.html#personnages/bucheron_kaelor' },
-    { id: 'm2a3', type: 'artisant', emoji: '🪛',   gx: 2,    gy: -357, name: 'Refaçonneur',              desc: "Permet la fabrication de ficelle en tout genre", link: '../Bestiaire/bestiaire.html#personnages/refaconneur_urbus' },
+    { id: 'm2a3', type: 'refaconneur',   gx: 2,    gy: -357, name: 'Refaçonneur',              desc: "Permet la fabrication de ficelle en tout genre", link: '../Bestiaire/bestiaire.html#personnages/refaconneur_urbus' },
     { id: 'm2a4', type: 'artisant',  gx: 115,  gy: -415, name: 'Forgeron d\'Accessoires Puissant',  desc: "Permet la fabrication d'Accessoires puissant", link: '../Bestiaire/bestiaire.html#personnages/forgeron_accessoires_urbus' },
     { id: 'm2a5', type: 'artisant',  gx: 124,  gy: -385, name: 'Forgeron de Lingots Bauxite & Onyx Impur',      desc: "Permet la fabrication de lingots de Bauxite et d'Onyx Impur", link: '../Bestiaire/bestiaire.html#personnages/forgeron_lingots_urbus' },
     { id: 'm2a6', type: 'artisant',  gx: 867, gy: -293, name: 'Forgeron de Lingots Onyx Pur',      desc: "Permet la fabrication de lingots d'Onyx Pur", link: '../Bestiaire/bestiaire.html#personnages/forgeron_lingots_marome' },
@@ -791,7 +756,7 @@ const FLOOR_MARKERS = {
     { id: 'm2s4',  type: 'quête_secondaire',  gx: -202, gy: -688, name: "L'Épreuve du Chasseur",                         desc: "Montrer à Typpe de quoi vous êtres capable et défaire tout les Boss du Palier 2", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/urbus/lepreuve-du-chasseur' },
     { id: 'm2s5',  type: 'quête_secondaire',  gx: -553, gy: -264, name: "Le chat Relax",                         desc: "Retrouver le chat Relax et donnez le à Itami", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/le-chat-relax' },
     { id: 'm2s6',  type: 'quête_secondaire',  gx: -610, gy: -245, name: "Aider Yûko",                         desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/aider-yuko' },
-    { id: 'm2s7',  type: 'quête_secondaire',  gx: -563, gy: -255, name: "Aider à la Cuisine",                         desc: "Aidez Mansa pour sa cuisine", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/aide-a-la-cuisine' },
+    { id: 'm2s7',  type: 'quête_secondaire',  gx: -563, gy: -255, name: "Aide à la Cuisine",                         desc: "Aidez Mansa pour sa cuisine", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/aide-a-la-cuisine' },
     { id: 'm2s8',  type: 'quête_secondaire',  gx: -585, gy: -245, name: "Le Clocher de la Sombre Messagère",                         desc: "Aidez Nora", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/le-clocher-de-la-sombre-messagere' },
     { id: 'm2s9',  type: 'quête_secondaire',  gx: -577, gy: -256, name: "Ça pique, mais ça fait du bien",                         desc: "Ramenez du Miel à Baraka", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/kaelor/ca-pique-mais-ca-fait-du-bien' },
     { id: 'm2s10', type: 'quête_secondaire',  gx: 639, gy: -263, name: "Les Bases d'une Cabane",                         desc: "Ramenez de quoi commencer la cabane de Bronn", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/marome/les-bases-dune-cabane' },
@@ -807,27 +772,19 @@ const FLOOR_MARKERS = {
     { id: 'm2s20', type: 'quête_secondaire',  gx: -432, gy: 272, name: "Nettoyer les cieux de Taran",                         desc: "Aidez Sissou à vaincre des Harpies de Feu ou de Foudre", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-secondaires/taran/nettoyer-les-cieux-de-taran' },
 		//#endregion P2 Markers > Quête Secondaire
 		//#region P2 Markers > Quête Principale
-    { id: 'm2p1',  type: 'quête_principale', gx: -28,  gy: -886, name: "1 - Le Pallier 2...",             desc: "Parlez au Maître d'Armes et Sautez dans le lac", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-palier-2...' },
+    { id: 'm2p1',  type: 'quête_principale', gx: -28,  gy: -886, name: "1 - Le Palier 2...",             desc: "Parlez au Maître d'Armes et Sautez dans le lac", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-palier-2...' },
     { id: 'm2p2',  type: 'quête_principale', gx: 13,  gy: -665, name: "2 - Parler à la femme étrange",             desc: "Parlez à la femme étrange au bord du Lac", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/parler-a-la-femme-etrange' },
     { id: 'm2p3',  type: 'quête_principale', gx: 135,  gy: -374, name: "3 - Chemin vers Urbus",             desc: "Trouvez Arteron afin de parler de la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/chemin-vers-urbus' },
     { id: 'm2p4',  type: 'quête_principale', gx: -585,  gy: -255, name: "4 - À la recherche des Ngangas",             desc: "Parler à Bantu", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/a-la-recherche-des-ngangas' },
 		{ id: 'm2p5',  type: 'quête_principale', gx: -436, gy: -442, name: "5 - Un joueur doit faire ses preuves",             desc: "Allez à la rencontre des Ngangas", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/un-joueur-doit-faire-ses-preuves' },
 		{ id: 'm2p6',  type: 'quête_principale', gx: 743, gy: -257, name: "6 - Communication avec Yaa",             desc: "Communiquer avec une des 3 statues Divine du Palier 2 pour qu'elle vous aide a luter contre la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/communication-avec-yaa' },
 		{ id: 'm2p7',  type: 'quête_principale', gx: 162, gy: -316, name: "7 - Façonneur de Clé I",             desc: "Réalisez le Donjon Ruche de Melliona", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/faconneur-de-cle-i' },
-		{ id: 'm2p8',  type: 'quête_principale', gx: 62, gy: -428, name: "8 - Retour a Urbus",             desc: "Allez à la rencontre de la deuxième statue divine après avoir informer le Maître Épéiste de votre avancé", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/retour-a-urbus' },
+		{ id: 'm2p8',  type: 'quête_principale', gx: 62, gy: -428, name: "8 - Retour à Urbus",             desc: "Allez à la rencontre de la deuxième statue divine après avoir informer le Maître Épéiste de votre avancé", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/retour-a-urbus' },
 		{ id: 'm2p9',  type: 'quête_principale', gx: 162, gy: -316, name: "9 - Donjon: Le Tombeau Oublié",             desc: "Réalisez le Donjon Tombeau du Nécromancien", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/donjon-le-tombeau-oublie' },
 		{ id: 'm2p10', type: 'quête_principale', gx: -629, gy: -296, name: "10 - Le Tribut avant le Verdict",             desc: "Convoquez la dernière statue divine afin qu'elle vous aide", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-tribut-avant-le-verdict' },
 		{ id: 'm2p11', type: 'quête_principale', gx: 62, gy: -428, name: "11 - La Facette de la Réalité",             desc: "Faites votre rapport au Maître Épéiste sur la corruption", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/la-facette-de-la-realite' },
 		{ id: 'm2p12', type: 'quête_principale', gx: -509, gy: -58, name: "12 - Le Rituel de Purification",             desc: "C'est le grand moment, invoquez les 3 statues divine afin qu'elle vous donne de quoi affronter le puissant Astérius!", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/quetes/quetes-principales/le-rituel-de-purification' },
 		//#endregion P2 Markers > Quête Principale
-		{ id: 'm2boss1', type: 'boss', emoji: '🐻', name: "Winnie, le meilleur Ami de l'Homme", desc: "Maître des sous-bois de la Forêt Sucrée, puissant mais placide... jusqu'à provocation. Ses griffes peuvent mettre à terre même les mieux protégés", link: '../Bestiaire/bestiaire.html#monstres/winnie', coords: [
-			{ gx: 578, gy: -774 },
-
-		]},
-		{ id: 'm2boss7', type: 'boss', emoji: '🐂', name: "Rugibœuf, Le Gardien", desc: "Seigneur du labyrinthe, hurle avant de charger pour briser les rangs. Frappe en arcs larges et repouse violemment ses adversaires", link: '../Bestiaire/bestiaire.html#monstres/rugiboeuf', coords: [
-			{ gx: -155, gy: 571 },
-
-		]},
 	],
   
 };
@@ -858,46 +815,8 @@ const FLOOR_MARKERS_UNDERGROUND = {
 		//#region P1 Markers Underground > Repreneur Butin
 		{ id: 'm1b9',  type: 'repreneur_butin', gx: 2415, gy: 2373, name: 'Repreneur du Donjon des Déchus', desc: "Achète des ressources provenant du Donjon du Labyrinthe des Déchus", link: '../Bestiaire/bestiaire.html#personnages/repreneur_labyrinthe' },
 		//#endregion P1 Markers Underground > Repreneur Butin
-		//#region P1 Markers Underground > Boss
-		{ id: 'm1boss6', type: 'boss', emoji: '🦈', name: "Nymbréa", desc: "Serpent mythique glissant entre les courants profonds, Nymbréa incarne la grâce et la traîtrise des eaux calmes. Ses écailles scintillent comme des perles maudites, et son regard hypnotique attire les imprudents vers les abysses", link: '../Bestiaire/bestiaire.html#monstres/nymbrea', coords: [
-			{ gx: 1410, gy: 2140 },
-		]},
-		{ id: 'm1boss7', type: 'boss', emoji: '☠️', name: "Narax", desc: "Ancien général d'une armée déchue, Narax fut ressuscité par une magie interdite. Son armure brisée résonne encore de ses exploits d'antan, hantant les terres maudites. On dit que son regard vide perce jusqu'à l'âme", link: '../Bestiaire/bestiaire.html#monstres/narax', coords: [
-			{ gx: 2721, gy: 4330 },
-		]},
-		{ id: 'm1boss8', type: 'boss', emoji: '🏇', name: "Nasgul", desc: "Entité maudite surgie des ténèbres anciennes, il rôde, invisible, prêt à déchirer l'âme des vivants", link: '../Bestiaire/bestiaire.html#monstres/nasgul', coords: [
-			{ gx: 2818, gy: 4234 },
-		]},
-		{ id: 'm1boss9', type: 'boss', emoji: '🌺', name: "Vyrmos", desc: "Entité rampante née des mines de Geldorak, Vyrmos s'imprègne des spores et de la terre humide. Sa peau est couverte de mousse vivante, et son souffle corrompt tout ce qu'il touche", link: '../Bestiaire/bestiaire.html#monstres/vyrmos', coords: [
-			{ gx: 4247, gy: 3852 },
-		]},
-		{ id: 'm1boss10', type: 'boss', emoji: '🪾', name: "Tornak", desc: "Massive et sauvage, cette créature veille sur la forêt. Elle repousse les intrus à coups de poings dévastateurs. Aucune parole, seulement la force brute de la nature", link: '../Bestiaire/bestiaire.html#monstres/tornak', coords: [
-			{ gx: 4302, gy: 3969 },
-		]},
-		{ id: 'm1boss11', type: 'boss', emoji: '🛡️', name: "Déchu", desc: "", link: '../Bestiaire/bestiaire.html#monstres/', coords: [
-			{ gx: 4305, gy: 4085 },
-		]},
-		{ id: 'm1boss12', type: 'boss', emoji: '🫧', name: "Kamila", desc: "Silencieuse au cœur du donjon, Kamilia tisse des pièges invisibles dans l'ombre. Sa morsure injecte un venin paralysant, laissant ses proies conscientes, mais incapables de fuir", link: '../Bestiaire/bestiaire.html#monstres/kamila', coords: [
-			{ gx: 986, gy: 1245 },
-		]},
-		{ id: 'm1boss13', type: 'boss', emoji: '🧪', name: "Jira", desc: "Créature silencieuse tapie entre les toiles, Jira surveille chaque recoin du donjon. Plus rapide que l'éclair, elle frappe sans prévenir, ne laissant derrière elle que le silence... et des toiles sanglantes", link: '../Bestiaire/bestiaire.html#monstres/kamila', coords: [
-			{ gx: 1190, gy: 1400 },
-		]},
-		{ id: 'm1boss14', type: 'boss', emoji: '🔥', name: "Pricilia", desc: "Créature ancienne et rusée, Pricilia tisse ses toiles dans les recoins oubliés des forêts les plus sombre. Ses proies ne voient jamais la mort... seulement ses yeux luisants", link: '../Bestiaire/bestiaire.html#monstres/pricilia', coords: [
-			{ gx: 1230, gy: 1100 },
-		]},
-		{ id: 'm1boss15', type: 'boss', emoji: '❄️', name: "Yula", desc: "Tapis dans l'obscurité humide du donjon, Yula est une araignée redoutée par les aventuriers. Ses pattes tranchantes et ses yeux luisants inspirent la terreur à quiconque croise son chemin", link: '../Bestiaire/bestiaire.html#monstres/yula', coords: [
-			{ gx: 1100, gy: 1222 },
-		]},
-		{ id: 'm1boss16', type: 'boss', emoji: '🕷️', name: "Boss Xal", desc: "", link: '../Bestiaire/bestiaire.html#monstres/', coords: [
-			{ gx: 1313, gy: 1183 },
-		]},
-		//#endregion P1 Markers Underground > Boss
 	],
   2: [
-		//#region P2 Markers Underground > Donjon
-    { id: 'm2d1u1',  type: 'donjon',  gx: 721, gy: 244, name: 'Donjon Tombeau du Nécromancien',           desc: "", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/donjons/donjon-tombeau-du-necromancien' },
-		//#endregion P2 Markers Underground > Donjon
 		//#region P2 Markers Underground > Région
     { id: 'm2r1u1',  type: 'région',  gx: -581, gy: 234, name: 'Nid de Brasier',                          desc: "Un nid enflammé, refuge des harpies de feu au cœur de terres brûlantes", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/nid-de-brasier' },
     { id: 'm2r2u1',  type: 'région',  gx: 225, gy: 295, name: 'Les Veines de Sablemor',                   desc: "Des veines de sable profondes, sombres et étroites, cachant Magnus, le redoutable boss", link: 'https://guilde-sao.gitbook.io/watchers/paliers/palier-2/carte/regions/les-veines-de-sablemor' },
@@ -923,27 +842,6 @@ const FLOOR_MARKERS_UNDERGROUND = {
 		{ id: 'm2a4u1',type: 'artisant',  gx: 725, gy: 262,   name: 'Forgeron d\'Armes du Tombeau',                 desc: "Permet la fabrication d'Armes issue du Tombeau Oublié du Nécromancien", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armes_necromancien' },
 		{ id: 'm2a5u1',type: 'artisant',  gx: 725, gy: 262,   name: 'Forgeron d\'Armures du Tombeau',                 desc: "Permet la fabrication d'Armures issue du Tombeau Oublié du Nécromancien", link: '../Bestiaire/bestiaire.html#personnages/forgeron_armures_necromancien' },
 		//#endregion P2 Markers Underground > Artisant
-		//#endregion P2 Markers Underground > Artisant
-		{ id: 'm2boss2', type: 'boss', emoji: '☠️', name: "Gardien du Sanctuaire", desc: "Sentinelle antique guidée par une volonté oubliée. Insensible à la peur, terrasse les intrus d'un seul revers", link: '../Bestiaire/bestiaire.html#monstres/gardien_sanctuaire', coords: [
-			{ gx: 0, gy: 190 },
-
-		]},
-		{ id: 'm2boss3', type: 'boss', emoji: '🧙‍♀️', name: "Velindra la Tisseuse", desc: "Enchanteresse perfide tissant maléfices et toiles alchimiques. Empoisonne, affaiblit puis s'achève d'un éclat de rire", link: '../Bestiaire/bestiaire.html#monstres/velindra', coords: [
-			{ gx: 800, gy: 300 },
-
-		]},
-		{ id: 'm2boss4', type: 'boss', emoji: '🐝', name: "Melisara, Souveraine de la Ruche", desc: "Matriarche vénérée, chef d'ochestre des essaims et gardienne du miel. Ses ordres galvanisent les abeilles et laissent peu de répit aux intrus", link: '../Bestiaire/bestiaire.html#monstres/melisara', coords: [
-			{ gx: 175, gy: -409 },
-
-		]},
-		{ id: 'm2boss5', type: 'boss', emoji: '📖', name: "Morverth l'Écorcheur d'Âmes", desc: "Maître nécromant dont les malédictions drainent la vitalité. Commande des légions d'ossements et frappe par vagues d'ombres", link: '../Bestiaire/bestiaire.html#monstres/morveth', coords: [
-			{ gx: 583, gy: -187 },
-
-		]},
-		{ id: 'm2boss6', type: 'boss', emoji: '🛡️', name: "Magnus, Colosse des Veines", desc: "Titan antique sculpté par la sédimentation et la pression du temps. Ses coups fracturent la garde et projettent des nuées de poussière", link: '../Bestiaire/bestiaire.html#monstres/magnus', coords: [
-			{ gx: 228, gy: 316 },
-
-		]},
 	],
 };
 

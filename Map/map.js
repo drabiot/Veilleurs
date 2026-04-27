@@ -131,6 +131,9 @@ function getFloorMarkers(floor) {
   return (src && src[floor]) || [];
 }
 
+/* Pin temporaire injecté depuis une URL externe (ex: quetes.html → carte) */
+let _guestPin = null;
+
 /* Expanse les markers boss (qui ont un tableau coords) en markers plats avec gx/gy */
 function getFlatFloorMarkers(floor) {
   const raw = getFloorMarkers(floor);
@@ -141,6 +144,9 @@ function getFlatFloorMarkers(floor) {
     } else {
       flat.push(m);
     }
+  }
+  if (_guestPin && _guestPin.floor === floor && (_guestPin.layer || 'surface') === currentLayer) {
+    flat.push(_guestPin);
   }
   return flat;
 }
@@ -378,6 +384,16 @@ function parseHash(hash) {
     const id    = zm[1];
     const underground = /u\d+$/.test(id);
     return { floor, layer: underground ? 'underground' : 'surface', focusId: id };
+  }
+  // Format coordonnées : #floor-1-x1808-z3650 ou #floor-1-surface-x1808-z3650
+  const cm = raw.match(/#floor-(\d+)(?:-(surface|underground))?(?:-x(-?\d+)-z(-?\d+))/);
+  if (cm) {
+    return {
+      floor: parseInt(cm[1]),
+      layer: cm[2] || 'surface',
+      gx: parseInt(cm[3]),
+      gz: parseInt(cm[4]),
+    };
   }
   const m = raw.match(/#floor-(\d+)(?:-(surface|underground))?/);
   return {
@@ -1313,6 +1329,12 @@ function renderSingleMarker(m) {
     const icon = document.createElement('div');
     icon.className   = 'marker-icon';
     icon.textContent = m.emoji || MARKER_EMOJI[m.type] || '📍';
+    if (m._isGuest) {
+      icon.style.background  = '#e07c50';
+      icon.style.boxShadow   = '0 0 0 4px rgba(224,124,80,0.35), 0 2px 10px rgba(224,124,80,0.6)';
+      icon.style.animation   = 'guest-pin-pulse 1.8s ease-in-out infinite';
+      el.style.zIndex        = '20';
+    }
     el.appendChild(icon);
   }
 
@@ -1441,7 +1463,9 @@ const TYPE_LABELS = {
   ressource:        'Ressource',
   marchand:         'Marchand',
   artisant:         'Artisant',
+  refaconneur:      'Refaçonneur',
   repreneur_butin:  'Repreneur de Butin',
+  repreneur_armes:  "Repreneur d'Armes",
   quête_principale: 'Quête Principale',
   quête_secondaire: 'Quête Secondaire',
   clef:             'Clef',
@@ -1736,9 +1760,33 @@ searchInput.addEventListener('keydown', (e) => {
 ══════════════════════════════════ */
 updateVpBounds();
 
-/* Parse le hash initial : #floor-3-underground, #floor-2 ou #m1z1, #m1r1… */
+/* Parse le hash initial : #floor-3-underground, #floor-2, #m1z1, #m1r1, #floor-1-x1808-z3650… */
 const _initHash = parseHash(window.location.hash);
 currentLayer = _initHash.layer;
+
+/* Pin temporaire depuis params URL (?pin=NomObj&floor=1&gx=X&gz=Z) */
+(function initGuestPin() {
+  const p = new URLSearchParams(window.location.search);
+  const pinName  = p.get('pin');
+  const pinFloor = parseInt(p.get('floor'));
+  const pinGx    = parseFloat(p.get('gx'));
+  const pinGz    = parseFloat(p.get('gz'));
+  if (pinName && !isNaN(pinGx) && !isNaN(pinGz) && !isNaN(pinFloor)) {
+    _guestPin = {
+      id:    '_guest_pin',
+      type:  'quête_principale',
+      layer: 'surface',
+      floor: pinFloor,
+      gx:    pinGx,
+      gy:    pinGz,
+      name:  decodeURIComponent(pinName),
+      desc:  'Objectif de quête',
+      link:  '',
+      _isGuest: true,
+    };
+  }
+})();
+
 buildLayerSwitcher();
 buildWheel();
 
@@ -1747,6 +1795,14 @@ requestAnimationFrame(() => {
   goToFloor(_initHash.floor);
   if (_initHash.focusId) {
     requestAnimationFrame(() => navigateToMapId(_initHash.focusId));
+  } else if (_initHash.gx != null && _initHash.gz != null) {
+    requestAnimationFrame(() => {
+      const img = gameToPixel(_initHash.gx, _initHash.gz);
+      panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
+      panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
+      applyTransform();
+      if (_guestPin) showTooltip(_guestPin);
+    });
   }
 });
 

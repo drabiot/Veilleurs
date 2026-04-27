@@ -664,7 +664,7 @@ window.approve = async (id) => {
       }
 
       // Invalider le store (cache + mémoire) pour forcer un re-fetch sur les pages de lecture
-      const storeKey = { item:'items', mob:'mobs', pnj:'pnj', region:'regions', quetes:'quetes', panoplie:'panoplies' }[sub.type];
+      const storeKey = { item:'items', mob:'mobs', pnj:'pnj', region:'regions', quest:'quetes', panoplie:'panoplies' }[sub.type];
       if (storeKey) {
         store.invalidate(storeKey);
         // Bump wiki_version pour notifier les autres onglets/pages
@@ -788,6 +788,10 @@ const HASH_PANELS = {
   'capture-sprites':  () => showCaptureSprites(),
   'pnj-coords':       () => showPnjCoords(),
   'data-all':         () => showDataAll(),
+  'zones':              () => showZoneEditor(),
+  'pnj-migration':        () => showPnjMigration(),
+  'zone-list':            () => showZoneList(),
+  'quest-map-migration':  () => showQuestMapMigration(),
 };
 
 function _setHash(hash) {
@@ -2632,7 +2636,7 @@ let _editorCollection = null;
 let _editorId         = null;
 let _editorOrigin     = null;
 
-const _COL_LABELS = { items:'Item', mobs:'Mob', personnages:'PNJ', regions:'Région', panoplies:'Panoplie', quetes:'Quête', items_sensible:'Item Sensible' };
+const _COL_LABELS = { items:'Item', mobs:'Mob', personnages:'PNJ', regions:'Région', panoplies:'Panoplie', quetes:'Quête', items_sensible:'Item Sensible', map_markers:'Marqueur Carte' };
 
 let _cachedRegions = null;
 let _cachedSets    = null;
@@ -3343,6 +3347,7 @@ window.editorGoBack = function() {
   if (_editorOrigin === 'migration')       { showMigration();       return; }
   if (_editorOrigin === 'data-incomplete') { showCompletion(); return; }
   if (_editorOrigin === 'completion')      { showCompletion(); return; }
+  if (_editorOrigin === 'allpins')         { showMapPanel(); switchMapTab('allpins'); return; }
   showSubmissions();
 };
 
@@ -7020,9 +7025,10 @@ window.revertObtainCoords = async function() {
 let _mapMarkersList = [];
 
 window.showMapPanel = async function showMapPanel() {
-  _showPanel('map-panel', 'btn-map-order');
   _setHash('map');
+  _showPanel('map-panel', 'btn-map-order');
   document.querySelector('.sidebar').classList.add('in-order-panel');
+  switchMapTab('markers');
   await loadMapMarkers();
 };
 
@@ -7105,8 +7111,6 @@ window.openMapMarkerForm = function openMapMarkerForm(id) {
       document.getElementById('map-form-desc').value  = m.desc  || '';
       document.getElementById('map-form-link').value  = m.link  || '';
       document.getElementById('map-form-level').value = m.level || '';
-      document.getElementById('map-form-color').value = m.color || '#ff4444';
-      document.getElementById('map-form-polygon').value = m.polygon ? JSON.stringify(m.polygon) : '';
     }
   } else {
     document.getElementById('map-form-type').value    = 'donjon';
@@ -7117,8 +7121,6 @@ window.openMapMarkerForm = function openMapMarkerForm(id) {
     document.getElementById('map-form-desc').value    = '';
     document.getElementById('map-form-link').value    = '';
     document.getElementById('map-form-level').value   = '';
-    document.getElementById('map-form-color').value   = '#ff4444';
-    document.getElementById('map-form-polygon').value = '';
   }
   onMapFormTypeChange();
   formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -7130,8 +7132,7 @@ window.closeMapMarkerForm = function closeMapMarkerForm() {
 
 window.onMapFormTypeChange = function onMapFormTypeChange() {
   const t = document.getElementById('map-form-type').value;
-  document.getElementById('map-form-donjon-fields').style.display = t === 'donjon'      ? '' : 'none';
-  document.getElementById('map-form-zone-fields').style.display   = t === 'zone_monstre' ? '' : 'none';
+  document.getElementById('map-form-donjon-fields').style.display = t === 'donjon' ? '' : 'none';
 };
 
 window.saveMapMarker = async function saveMapMarker() {
@@ -7159,14 +7160,6 @@ window.saveMapMarker = async function saveMapMarker() {
     const lvl = document.getElementById('map-form-level').value.trim();
     if (lvl) obj.level = lvl;
   }
-  if (type === 'zone_monstre') {
-    obj.color = document.getElementById('map-form-color').value;
-    const polyRaw = document.getElementById('map-form-polygon').value.trim();
-    if (polyRaw) {
-      try { obj.polygon = JSON.parse(polyRaw); } catch { toast('⚠ JSON polygone invalide', 'warning'); return; }
-    }
-  }
-
   // Nettoyer les nulls
   Object.keys(obj).forEach(k => { if (obj[k] === null) delete obj[k]; });
 
@@ -7205,6 +7198,276 @@ window.deleteMapMarker = async function deleteMapMarker(id) {
     renderMapTable();
     toast('✓ Marqueur supprimé', 'success');
   } catch (err) {
+    toast('⛔ Erreur : ' + err.message, 'error');
+  }
+};
+
+/* ══════════════════════════════════════════════════════
+   ÉDITEUR DE ZONES (polygones zone_monstre)
+══════════════════════════════════════════════════════ */
+
+let _zePoints  = [];
+let _zeFloor   = 1;
+let _zeLayer   = 'surface';
+
+window.showZoneEditor = function showZoneEditor() {
+  _setHash('zones');
+  _showPanel('zone-editor-panel', 'btn-zone-editor');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  _zeInit();
+};
+
+// ── Pan / Zoom state ──────────────────────────────────
+let _zeScale  = 0.6;
+let _zePanX   = 0;
+let _zePanY   = 0;
+let _zeDragging = false;
+let _zeDragStart = null;
+
+function _zeApplyTransform() {
+  const canvas = document.getElementById('ze-canvas');
+  if (canvas) canvas.style.transform = `translate(${_zePanX}px,${_zePanY}px) scale(${_zeScale})`;
+  const label = document.getElementById('ze-zoom-label');
+  if (label) label.textContent = Math.round(_zeScale * 100) + '%';
+}
+
+window.zeZoom = function zeZoom(factor) {
+  const vp = document.getElementById('ze-viewport');
+  if (!vp) return;
+  const newScale = Math.min(4, Math.max(0.15, _zeScale * factor));
+  const cx = vp.clientWidth  / 2;
+  const cy = vp.clientHeight / 2;
+  _zePanX  = cx - (cx - _zePanX) * (newScale / _zeScale);
+  _zePanY  = cy - (cy - _zePanY) * (newScale / _zeScale);
+  _zeScale = newScale;
+  _zeApplyTransform();
+  zeRenderSvg();
+};
+
+window.zeZoomReset = function zeZoomReset() {
+  const vp = document.getElementById('ze-viewport');
+  if (!vp) return;
+  _zeScale = Math.min(vp.clientWidth / 900, vp.clientHeight / 900);
+  _zePanX  = (vp.clientWidth  - 900 * _zeScale) / 2;
+  _zePanY  = (vp.clientHeight - 900 * _zeScale) / 2;
+  _zeApplyTransform();
+  zeRenderSvg();
+};
+
+function _zeInitPanZoom() {
+  const vp = document.getElementById('ze-viewport');
+  if (!vp || vp._zeEventsAttached) return;
+  vp._zeEventsAttached = true;
+
+  // Mouse wheel → zoom toward cursor
+  vp.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect   = vp.getBoundingClientRect();
+    const cx     = e.clientX - rect.left;
+    const cy     = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.12 : 0.89;
+    const newS   = Math.min(4, Math.max(0.15, _zeScale * factor));
+    _zePanX = cx - (cx - _zePanX) * (newS / _zeScale);
+    _zePanY = cy - (cy - _zePanY) * (newS / _zeScale);
+    _zeScale = newS;
+    _zeApplyTransform();
+    zeRenderSvg();
+  }, { passive: false });
+
+  // Right-click drag → pan
+  vp.addEventListener('mousedown', e => {
+    if (e.button !== 2) return;
+    e.preventDefault();
+    _zeDragging  = true;
+    _zeDragStart = { x: e.clientX - _zePanX, y: e.clientY - _zePanY };
+    vp.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', e => {
+    if (!_zeDragging) return;
+    _zePanX = e.clientX - _zeDragStart.x;
+    _zePanY = e.clientY - _zeDragStart.y;
+    _zeApplyTransform();
+  });
+  window.addEventListener('mouseup', e => {
+    if (e.button !== 2 || !_zeDragging) return;
+    _zeDragging = false;
+    vp.style.cursor = '';
+  });
+  vp.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Left click on SVG → add point
+  const svg = document.getElementById('ze-svg');
+  if (svg) {
+    svg.addEventListener('click', e => {
+      if (_zeDragging) return;
+      const vpRect = vp.getBoundingClientRect();
+      const px = (e.clientX - vpRect.left - _zePanX) / _zeScale;
+      const py = (e.clientY - vpRect.top  - _zePanY) / _zeScale;
+      if (px < 0 || py < 0 || px > 900 || py > 900) return;
+      const game = _zePixelToGame(px, py);
+      _zePoints.push({ px, py, gx: game.x, gy: game.y });
+      zeRenderSvg();
+      zeUpdateOutput();
+    });
+  }
+}
+
+function _zeMapSrc() {
+  return _zeLayer === 'underground'
+    ? `img/maps/floor-${_zeFloor}_underground.png`
+    : `img/maps/floor-${_zeFloor}.png`;
+}
+
+function _zeUpdateLayerButtons() {
+  const sur = document.getElementById('ze-layer-surface');
+  const sub = document.getElementById('ze-layer-underground');
+  if (!sur || !sub) return;
+  const onSurface = _zeLayer !== 'underground';
+  sur.style.background = onSurface ? 'var(--accent)' : 'transparent';
+  sur.style.color      = onSurface ? '#fff' : 'var(--muted)';
+  sub.style.background = !onSurface ? 'var(--accent)' : 'transparent';
+  sub.style.color      = !onSurface ? '#fff' : 'var(--muted)';
+}
+
+window.zeLayerChange = function zeLayerChange(layer) {
+  _zeLayer = layer;
+  const img = document.getElementById('ze-map-img');
+  if (img) img.src = _zeMapSrc();
+  _zeUpdateLayerButtons();
+};
+
+function _zeInit() {
+  _zeFloor = parseInt(document.getElementById('ze-floor')?.value || '1');
+  _zeLayer = 'surface';
+  const img = document.getElementById('ze-map-img');
+  if (img) img.src = _zeMapSrc();
+  _zeUpdateLayerButtons();
+  _zePoints   = [];
+  _zeMobsList = [];
+  const s = document.getElementById('ze-mob-search');
+  const r = document.getElementById('ze-mob-results');
+  if (s) s.value = '';
+  if (r) r.style.display = 'none';
+  _zeInitPanZoom();
+  zeZoomReset();
+  zeRenderSvg();
+  zeUpdateOutput();
+  zeRenderMobList();
+  _zeLoadMobs();
+}
+
+window.zeFloorChange = function zeFloorChange() {
+  _zeFloor = parseInt(document.getElementById('ze-floor')?.value || '1');
+  const img = document.getElementById('ze-map-img');
+  if (img) img.src = _zeMapSrc();
+};
+
+// Calibration image → jeu
+function _zeCalib() {
+  return (typeof MAP_CALIBRATION !== 'undefined') ? MAP_CALIBRATION[_zeFloor] : null;
+}
+function _zePixelToGame(px, py) {
+  const c = _zeCalib();
+  if (!c) return { x: Math.round(px), y: Math.round(py) };
+  const scale = c.radiusGame / c.radiusPixel;
+  return { x: Math.round(c.centerGame.x + (px - c.centerPixel.x) * scale), y: Math.round(c.centerGame.y + (py - c.centerPixel.y) * scale) };
+}
+
+window.zeRenderSvg = function zeRenderSvg() {
+  const svg   = document.getElementById('ze-svg');
+  if (!svg) return;
+  const color = document.getElementById('ze-color')?.value || '#ff4444';
+  svg.innerHTML = '';
+  if (_zePoints.length >= 2) {
+    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    poly.setAttribute('points', _zePoints.map(p => `${p.px},${p.py}`).join(' '));
+    poly.setAttribute('fill',            color + '44');
+    poly.setAttribute('stroke',          color);
+    poly.setAttribute('stroke-width',    String(2 / _zeScale));
+    poly.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(poly);
+  }
+  _zePoints.forEach((p, i) => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.style.cursor = 'pointer';
+    g.addEventListener('click', ev => { ev.stopPropagation(); zeRemovePoint(i); });
+    const r = 7 / _zeScale;
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', p.px); circle.setAttribute('cy', p.py);
+    circle.setAttribute('r', r); circle.setAttribute('fill', color);
+    circle.setAttribute('stroke', '#fff'); circle.setAttribute('stroke-width', String(2 / _zeScale));
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', p.px); label.setAttribute('y', p.py);
+    label.setAttribute('text-anchor', 'middle'); label.setAttribute('dominant-baseline', 'middle');
+    label.setAttribute('font-size', String(9 / _zeScale)); label.setAttribute('font-weight', '700');
+    label.setAttribute('fill', '#fff'); label.style.pointerEvents = 'none';
+    label.textContent = i + 1;
+    g.appendChild(circle); g.appendChild(label);
+    svg.appendChild(g);
+  });
+};
+
+window.zeRemovePoint = function zeRemovePoint(i) {
+  _zePoints.splice(i, 1);
+  zeRenderSvg();
+  zeUpdateOutput();
+};
+
+function zeUpdateOutput() {
+  const countEl = document.getElementById('ze-count');
+  const listEl  = document.getElementById('ze-points-list');
+  if (countEl) countEl.textContent = _zePoints.length;
+  if (listEl) {
+    listEl.innerHTML = _zePoints.map((p, i) => `
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:2px 0;">
+        <span style="color:var(--muted);min-width:16px;text-align:right;">${i + 1}.</span>
+        <span style="font-family:monospace;">X:${p.gx}&nbsp; Z:${p.gy}</span>
+        <button class="btn btn-ghost btn-sm" onclick="zeRemovePoint(${i})" style="margin-left:auto;font-size:10px;padding:1px 6px;color:var(--danger);">✕</button>
+      </div>
+    `).join('');
+  }
+  zeCheckSave();
+}
+
+window.zeCheckSave = function zeCheckSave() {
+  const btn  = document.getElementById('ze-save-btn');
+  const name = document.getElementById('ze-name')?.value?.trim();
+  if (btn) btn.disabled = !(name && _zePoints.length >= 3);
+};
+
+window.zoneEditorReset = function zoneEditorReset() {
+  _zePoints   = [];
+  _zeMobsList = [];
+  _zeLayer    = 'surface';
+  _zeUpdateLayerButtons();
+  const img = document.getElementById('ze-map-img');
+  if (img) img.src = _zeMapSrc();
+  zeRenderSvg();
+  zeUpdateOutput();
+  zeRenderMobList();
+};
+
+window.zoneEditorSave = async function zoneEditorSave() {
+  const name  = document.getElementById('ze-name')?.value?.trim();
+  const desc  = document.getElementById('ze-desc')?.value?.trim();
+  const color = document.getElementById('ze-color')?.value || '#ff4444';
+  if (!name)               { toast('⚠ Nom de zone obligatoire', 'warning'); return; }
+  if (_zePoints.length < 3){ toast('⚠ Minimum 3 points pour un polygone', 'warning'); return; }
+  const polygon = _zePoints.map(p => ({ x: p.gx, z: p.gy }));
+  const cx = Math.round(_zePoints.reduce((s, p) => s + p.gx, 0) / _zePoints.length);
+  const cy = Math.round(_zePoints.reduce((s, p) => s + p.gy, 0) / _zePoints.length);
+  const obj = { floor: _zeFloor, name, color, polygon, gx: cx, gy: cy, is_underground: _zeLayer === 'underground', createdAt: serverTimestamp() };
+  if (desc) obj.desc = desc;
+  if (_zeMobsList.length > 0) obj.mobs = _zeMobsList.map(m => m._id || m.id);
+  try {
+    const newId = `zone_${Date.now()}`;
+    await setDoc(doc(db, COL.zones, newId), obj);
+    toast('✓ Zone sauvegardée !', 'success');
+    invalidateCache(COL.zones);
+    zoneEditorReset();
+    document.getElementById('ze-name').value = '';
+    document.getElementById('ze-desc').value = '';
+  } catch(err) {
     toast('⛔ Erreur : ' + err.message, 'error');
   }
 };
@@ -7540,4 +7803,1215 @@ function _daAddBadge(container, text, color, bg) {
   container.appendChild(b);
 }
 
+// ══════════════════════════════════════════════════════
+// MIGRATION PNJ TYPES
+// ══════════════════════════════════════════════════════
+
+const PNJ_MIG_TYPES = [
+  // Craft
+  "forgeron d'armes", "forgeron d'armures", "forgeron d'accessoires",
+  "forgeron de lingots", "forgeron de clés",
+  // Artisans
+  "alchimiste", "bûcheron", "refaçonneur",
+  // Commerce
+  "repreneur de butin", "repreneur d'armes", "marchand itinérant",
+  "marchand d'équipement", "marchand de consommable", "marchand d'outils",
+  "marchand d'accessoires", "marchand occulte",
+  // Autres
+  "fabricant secret", "autres",
+  // Quêtes
+  "quête principale", "quête secondaire", "quête tertiaire",
+  "donjon",
+];
+
+let _pnjMigList    = [];
+let _pnjMigChanges = {};
+
+window.showPnjMigration = function showPnjMigration() {
+  _setHash('pnj-migration');
+  _showPanel('pnj-migration-panel', 'btn-pnj-migration');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  loadPnjMigration();
+};
+
+window.loadPnjMigration = async function loadPnjMigration() {
+  const tableEl = document.getElementById('pnjmig-table');
+  tableEl.innerHTML = '<div class="empty">Chargement…</div>';
+  _pnjMigChanges = {};
+  _pnjmigUpdateSaveBtn();
+  try {
+    const snap = await getDocs(collection(db, COL.pnj));
+    _pnjMigList = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    renderPnjMigration();
+  } catch (err) {
+    tableEl.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${err.message}</div>`;
+  }
+};
+
+window.renderPnjMigration = function renderPnjMigration() {
+  const tableEl  = document.getElementById('pnjmig-table');
+  const filter   = document.getElementById('pnjmig-filter')?.value || 'all';
+  const searchQ  = (document.getElementById('pnjmig-search')?.value || '').toLowerCase();
+  const knownSet = new Set(PNJ_MIG_TYPES);
+
+  const filtered = _pnjMigList.filter(p => {
+    const type    = (p.type || '').toLowerCase().trim();
+    const hasMissing = !type;
+    const hasUnknown = type && !knownSet.has(type);
+    if (filter === 'missing' && !hasMissing) return false;
+    if (filter === 'unknown' && !hasUnknown) return false;
+    if (searchQ && !(p.name || '').toLowerCase().includes(searchQ)) return false;
+    return true;
+  });
+
+  document.getElementById('pnjmig-count').textContent = `${filtered.length} PNJ`;
+
+  if (!filtered.length) {
+    tableEl.innerHTML = '<div class="empty">Aucun PNJ correspondant</div>';
+    return;
+  }
+
+  const rows = filtered.map(p => {
+    const currentType = _pnjMigChanges[p._id] !== undefined
+      ? _pnjMigChanges[p._id]
+      : (p.type || '');
+    const isModified  = _pnjMigChanges[p._id] !== undefined;
+    const isUnknown   = currentType && !new Set(PNJ_MIG_TYPES).has(currentType.toLowerCase());
+
+    const options = ['', ...PNJ_MIG_TYPES].map(t =>
+      `<option value="${t}" ${currentType === t ? 'selected' : ''}>${t || '— aucun —'}</option>`
+    ).join('');
+
+    const rowStyle = isModified ? 'background:rgba(245,158,11,0.12);' : '';
+    const badge    = isUnknown  ? `<span style="font-size:10px;color:#f59e0b;margin-left:4px;">[inconnu]</span>` : '';
+
+    return `<tr style="${rowStyle}">
+      <td style="padding:6px 8px;font-weight:600;font-size:13px;">${p.name || p._id}${badge}</td>
+      <td style="padding:6px 8px;font-size:12px;color:var(--muted);">${p.palier ? `Palier ${p.palier}` : '—'}</td>
+      <td style="padding:6px 8px;font-size:12px;color:var(--muted);">${p.region || '—'}</td>
+      <td style="padding:6px 8px;">
+        <select style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:12px;outline:none;${isModified?'border-color:#f59e0b;':''}"
+                data-pnj-id="${p._id}" onchange="pnjMigSetType(this)">
+          ${options}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+
+  tableEl.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);border-bottom:1px solid var(--border);">
+          <th style="text-align:left;padding:6px 8px;">Nom</th>
+          <th style="text-align:left;padding:6px 8px;">Palier</th>
+          <th style="text-align:left;padding:6px 8px;">Région</th>
+          <th style="text-align:left;padding:6px 8px;">Type</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+};
+
+window.pnjMigSetType = function pnjMigSetType(sel) {
+  const id      = sel.dataset.pnjId;
+  const newType = sel.value;
+  const p       = _pnjMigList.find(x => x._id === id);
+  if (!p) return;
+  if (newType === (p.type || '')) {
+    delete _pnjMigChanges[id];
+  } else {
+    _pnjMigChanges[id] = newType;
+  }
+  sel.style.borderColor = _pnjMigChanges[id] !== undefined ? '#f59e0b' : '';
+  const tr = sel.closest('tr');
+  if (tr) tr.style.background = _pnjMigChanges[id] !== undefined ? 'rgba(245,158,11,0.12)' : '';
+  _pnjmigUpdateSaveBtn();
+};
+
+function _pnjmigUpdateSaveBtn() {
+  const btn = document.getElementById('pnjmig-save-btn');
+  if (!btn) return;
+  const count = Object.keys(_pnjMigChanges).length;
+  btn.disabled = count === 0;
+  btn.textContent = count > 0 ? `💾 Sauvegarder (${count} modification${count > 1 ? 's' : ''})` : '💾 Sauvegarder les modifications';
+}
+
+window.savePnjMigration = async function savePnjMigration() {
+  const ids = Object.keys(_pnjMigChanges);
+  if (!ids.length) return;
+  const btn = document.getElementById('pnjmig-save-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Sauvegarde…';
+  let ok = 0, fail = 0;
+  for (const id of ids) {
+    try {
+      await setDoc(doc(db, COL.pnj, id), { type: _pnjMigChanges[id] }, { merge: true });
+      const p = _pnjMigList.find(x => x._id === id);
+      if (p) p.type = _pnjMigChanges[id];
+      delete _pnjMigChanges[id];
+      ok++;
+    } catch {
+      fail++;
+    }
+  }
+  if (fail === 0) {
+    toast(`✓ ${ok} PNJ mis à jour`, 'success');
+    delete _modCache['personnages'];
+    invalidateCache(COL.pnj);
+  } else {
+    toast(`⚠️ ${ok} OK, ${fail} erreurs`, 'warn');
+    if (ok > 0) invalidateCache(COL.pnj);
+  }
+  _pnjmigUpdateSaveBtn();
+  renderPnjMigration();
+};
+
+/* ══════════════════════════════════════════════════════
+   DONJONS — Normalisation des IDs (m1d2 → nom_du_donjon)
+══════════════════════════════════════════════════════ */
+
+window.renameDonjonIds = async function renameDonjonIds() {
+  const btn = document.getElementById('btn-rename-donjon-ids');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ En cours…'; }
+  try {
+    const snap = await getDocs(collection(db, COL.donjons));
+    const oldIdPattern = /^m\d+d\d+/;
+    const toRename = snap.docs.filter(d => oldIdPattern.test(d.id));
+    if (!toRename.length) {
+      toast('✓ Tous les IDs sont déjà normalisés', 'success');
+      if (btn) { btn.disabled = false; btn.textContent = '🔧 Normaliser IDs donjons'; }
+      return;
+    }
+    let ok = 0;
+    for (const d of toRename) {
+      const data = d.data();
+      const newId = normalize(data.name || d.id)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_|_$/g, '');
+      if (!newId || newId === d.id) continue;
+      await setDoc(doc(db, COL.donjons, newId), data);
+      await deleteDoc(doc(db, COL.donjons, d.id));
+      ok++;
+    }
+    invalidateCache(COL.donjons);
+    toast('✓ ' + ok + ' IDs normalisés', 'success');
+    if (btn) { btn.style.display = 'none'; }
+  } catch(e) {
+    toast('⛔ ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '🔧 Normaliser IDs donjons'; }
+  }
+};
+
+/* ══════════════════════════════════════════════════════
+   ÉDITEUR DE ZONES — Sélection de mobs
+══════════════════════════════════════════════════════ */
+
+let _zeMobsList = [];
+let _zeMobsDb   = [];
+
+async function _zeLoadMobs() {
+  if (_zeMobsDb.length > 0) { _zePopulateMobSelect(); return; }
+  try {
+    const snap = await getDocs(collection(db, COL.mobs));
+    _zeMobsDb = snap.docs.map(d => ({ _id: d.id, ...d.data() }))
+      .filter(m => m.name)
+      .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    _zePopulateMobSelect();
+  } catch(e) {
+    console.warn('[ZoneEditor] chargement mobs échoué', e);
+  }
+}
+
+window.zeSearchMob = function zeSearchMob() {
+  const q       = (document.getElementById('ze-mob-search')?.value || '').trim();
+  const results = document.getElementById('ze-mob-results');
+  if (!results) return;
+  if (q.length < 1) { results.style.display = 'none'; return; }
+  const addedIds = new Set(_zeMobsList.map(m => m._id || m.id));
+  const norm     = q.toLowerCase();
+  const matches  = _zeMobsDb
+    .filter(m => !addedIds.has(m._id || m.id) && (m.name || '').toLowerCase().includes(norm))
+    .slice(0, 15);
+  results.innerHTML = '';
+  if (!matches.length) {
+    const noRes = document.createElement('div');
+    noRes.style.cssText = 'padding:8px 12px;font-size:12px;color:var(--muted);';
+    noRes.textContent = 'Aucun résultat';
+    results.appendChild(noRes);
+    results.style.display = '';
+    return;
+  }
+  matches.forEach(m => {
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:8px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);';
+    div.innerHTML = '💀 <span>' + (m.name || m._id || m.id) + '</span>';
+    div.addEventListener('mouseenter', () => { div.style.background = 'var(--surface2)'; });
+    div.addEventListener('mouseleave', () => { div.style.background = ''; });
+    div.addEventListener('click', e => {
+      e.stopPropagation();
+      zeAddMob(m._id || m.id, m.name || '');
+    });
+    results.appendChild(div);
+  });
+  results.style.display = '';
+};
+
+function _zePopulateMobSelect(selectId, filter) {
+  const sel = document.getElementById(selectId || 'ze-mob-select');
+  if (!sel) return;
+  const addedIds = new Set(_zeMobsList.map(m => m._id || m.id));
+  const q = (filter || '').toLowerCase();
+  sel.innerHTML = '<option value="">— Choisir un mob —</option>' +
+    _zeMobsDb.map(m => {
+      const id = m._id || m.id;
+      if (addedIds.has(id)) return '';
+      if (q && !(m.name || '').toLowerCase().includes(q)) return '';
+      return '<option value="' + id + '">' + (m.name || id) + '</option>';
+    }).join('');
+}
+
+window.zeAddMobFromSelect = function zeAddMobFromSelect(selectId) {
+  const sel = document.getElementById(selectId || 'ze-mob-select');
+  if (!sel || !sel.value) return;
+  const id  = sel.value;
+  if (_zeMobsList.some(m => (m._id || m.id) === id)) { sel.value = ''; return; }
+  const mob = _zeMobsDb.find(m => (m._id || m.id) === id);
+  _zeMobsList.push(mob || { _id: id, name: id });
+  sel.value = '';
+  zeRenderMobList();
+  _zePopulateMobSelect(selectId);
+};
+
+window.zeAddMob = function zeAddMob(id, name) {
+  if (_zeMobsList.some(m => (m._id || m.id) === id)) return;
+  const mob = _zeMobsDb.find(m => (m._id || m.id) === id);
+  _zeMobsList.push(mob || { _id: id, name });
+  const search  = document.getElementById('ze-mob-search');
+  const results = document.getElementById('ze-mob-results');
+  if (search)  search.value = '';
+  if (results) results.style.display = 'none';
+  zeRenderMobList();
+};
+
+window.zeRemoveMob = function zeRemoveMob(id) {
+  _zeMobsList = _zeMobsList.filter(m => (m._id || m.id) !== id);
+  zeRenderMobList();
+};
+
+window.zeRenderMobList = function zeRenderMobList() {
+  const listEl = document.getElementById('ze-mob-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  if (!_zeMobsList.length) {
+    const empty = document.createElement('div');
+    empty.style.cssText = 'font-size:12px;color:var(--muted);padding:4px 0;';
+    empty.textContent = 'Aucun mob lié';
+    listEl.appendChild(empty);
+    return;
+  }
+  _zeMobsList.forEach(m => {
+    const id  = m._id || m.id;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;margin-bottom:4px;';
+    const nameEl = document.createElement('span');
+    nameEl.style.cssText = 'font-size:13px;flex:1;';
+    nameEl.textContent = '💀 ' + (m.name || id);
+    const rmBtn = document.createElement('button');
+    rmBtn.className = 'btn btn-ghost btn-sm';
+    rmBtn.style.cssText = 'font-size:10px;padding:2px 7px;color:var(--danger);';
+    rmBtn.textContent = '✕';
+    rmBtn.addEventListener('click', () => zeRemoveMob(id));
+    row.appendChild(nameEl);
+    row.appendChild(rmBtn);
+    listEl.appendChild(row);
+  });
+};
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#ze-mob-search') && !e.target.closest('#ze-mob-results')) {
+    const r = document.getElementById('ze-mob-results');
+    if (r) r.style.display = 'none';
+  }
+});
+
+/* ══════════════════════════════════════════════════════
+   LISTE DES ZONES
+══════════════════════════════════════════════════════ */
+
+let _zoneListAll  = [];
+let _zlMobsDb     = [];
+
+window.showZoneList = async function showZoneList() {
+  _setHash('zone-list');
+  _showPanel('zone-list-panel', 'btn-zone-list');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadZoneList();
+};
+
+window.loadZoneList = async function loadZoneList() {
+  const el = document.getElementById('zone-list-content');
+  el.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [snapZ, snapM] = await Promise.all([
+      getDocs(collection(db, COL.zones)),
+      getDocs(collection(db, COL.mobs)),
+    ]);
+    _zoneListAll = snapZ.docs.map(d => ({ _id: d.id, ...d.data() }));
+    _zlMobsDb    = snapM.docs.map(d => ({ _id: d.id, ...d.data() }))
+      .filter(m => m.name).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    renderZoneList();
+  } catch(e) {
+    el.innerHTML = '<div class="empty" style="color:var(--danger)">⛔ ' + e.message + '</div>';
+  }
+};
+
+window.renderZoneList = function renderZoneList() {
+  const el      = document.getElementById('zone-list-content');
+  const floorF  = document.getElementById('zl-filter-floor')?.value || '';
+  const searchF = (document.getElementById('zl-search')?.value || '').toLowerCase();
+  const mobsById = new Map(_zlMobsDb.map(m => [m._id || m.id, m]));
+
+  const filtered = _zoneListAll.filter(z => {
+    if (floorF  && String(z.floor) !== floorF) return false;
+    if (searchF && !(z.name || '').toLowerCase().includes(searchF)) return false;
+    return true;
+  }).sort((a, b) => (a.floor || 1) - (b.floor || 1) || (a.name || '').localeCompare(b.name || ''));
+
+  if (!filtered.length) { el.innerHTML = '<div class="empty">Aucune zone</div>'; return; }
+
+  el.innerHTML = '';
+  let currentFloor = null;
+  filtered.forEach(zone => {
+    // En-tête de palier
+    if (zone.floor !== currentFloor) {
+      currentFloor = zone.floor;
+      const floorHeader = document.createElement('div');
+      floorHeader.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border);';
+      floorHeader.textContent = 'Palier ' + (zone.floor || '?');
+      el.appendChild(floorHeader);
+    }
+
+    const color  = zone.color || '#e0ac60';
+    const mobIds = zone.mobs || [];
+    const card   = document.createElement('div');
+    card.id = 'zl-card-' + zone._id;
+    card.style.cssText = 'border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);cursor:pointer;';
+    const colorDot = document.createElement('span');
+    colorDot.style.cssText = 'width:14px;height:14px;border-radius:3px;flex-shrink:0;display:inline-block;background:' + color + ';';
+    const nameSpan = document.createElement('span');
+    nameSpan.style.cssText = 'flex:1;font-size:13px;font-weight:600;';
+    nameSpan.textContent = zone.name || '—';
+    const mobCount = document.createElement('span');
+    mobCount.style.cssText = 'font-size:11px;color:var(--muted);';
+    mobCount.textContent = mobIds.length + ' mob' + (mobIds.length > 1 ? 's' : '');
+    const ugBadge = document.createElement('span');
+    ugBadge.style.cssText = 'font-size:10px;padding:1px 7px;border-radius:10px;' + (zone.is_underground
+      ? 'background:rgba(139,92,246,.15);color:#a78bfa;border:1px solid rgba(139,92,246,.3);'
+      : 'background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.25);');
+    ugBadge.textContent = zone.is_underground ? '🕳️ Sous-sol' : '🌿 Surface';
+    const chevron = document.createElement('span');
+    chevron.style.cssText = 'font-size:11px;color:var(--muted);';
+    chevron.textContent = '▾';
+    header.appendChild(colorDot);
+    header.appendChild(nameSpan);
+    header.appendChild(mobCount);
+    header.appendChild(ugBadge);
+    header.appendChild(chevron);
+
+    const body = document.createElement('div');
+    body.style.cssText = 'display:none;padding:12px 14px;';
+
+    header.addEventListener('click', () => {
+      const open = body.style.display !== 'none';
+      body.style.display = open ? 'none' : '';
+      chevron.textContent = open ? '▾' : '▴';
+      if (!open) _renderZoneMobEditor(zone, body, mobsById, header, nameSpan, colorDot, mobCount, ugBadge);
+    });
+
+    card.appendChild(header);
+    card.appendChild(body);
+    el.appendChild(card);
+  });
+};
+
+function _renderZoneMobEditor(zone, body, mobsById, header, nameSpan, colorDot, mobCountSpan, ugBadge) {
+  body.innerHTML = '';
+
+  // ── Champs éditables ─────────────────────────────
+  const fieldsGrid = document.createElement('div');
+  fieldsGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 110px 48px auto;gap:8px;margin-bottom:12px;align-items:end;';
+
+  function _field(label, el) {
+    const wrap = document.createElement('div');
+    const lbl  = document.createElement('label');
+    lbl.style.cssText = 'font-size:10px;color:var(--muted);display:block;margin-bottom:3px;';
+    lbl.textContent = label;
+    wrap.appendChild(lbl);
+    wrap.appendChild(el);
+    return wrap;
+  }
+  function _input(val) {
+    const el = document.createElement('input');
+    el.type = 'text';
+    el.value = val || '';
+    el.style.cssText = 'width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
+    return el;
+  }
+
+  const nameInput = _input(zone.name);
+  const descInput = _input(zone.desc || zone.description || '');
+
+  const floorSel = document.createElement('select');
+  floorSel.style.cssText = 'width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
+  [1,2,3].forEach(n => {
+    const o = document.createElement('option');
+    o.value = n; o.textContent = 'Palier ' + n;
+    if ((zone.floor || 1) === n) o.selected = true;
+    floorSel.appendChild(o);
+  });
+
+  const colorPick = document.createElement('input');
+  colorPick.type  = 'color';
+  colorPick.value = zone.color || '#e0ac60';
+  colorPick.style.cssText = 'width:48px;height:34px;border:none;background:none;cursor:pointer;border-radius:4px;padding:0;';
+
+  const ugCheck = document.createElement('input');
+  ugCheck.type    = 'checkbox';
+  ugCheck.checked = !!zone.is_underground;
+  ugCheck.style.cssText = 'width:18px;height:18px;cursor:pointer;accent-color:var(--accent);margin-top:6px;';
+
+  const ugWrap = document.createElement('div');
+  ugWrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:3px;';
+  const ugLbl = document.createElement('label');
+  ugLbl.style.cssText = 'font-size:10px;color:var(--muted);';
+  ugLbl.textContent = 'Sous-sol';
+  ugWrap.appendChild(ugLbl);
+  ugWrap.appendChild(ugCheck);
+
+  fieldsGrid.appendChild(_field('Nom', nameInput));
+  fieldsGrid.appendChild(_field('Description', descInput));
+  fieldsGrid.appendChild(_field('Palier', floorSel));
+  fieldsGrid.appendChild(_field('Couleur', colorPick));
+  fieldsGrid.appendChild(ugWrap);
+  body.appendChild(fieldsGrid);
+
+  // Boutons Sauvegarder / Supprimer
+  const actRow = document.createElement('div');
+  actRow.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.className = 'btn';
+  saveBtn.style.cssText = 'background:var(--accent);color:#fff;font-size:12px;';
+  saveBtn.textContent = '💾 Sauvegarder';
+  saveBtn.addEventListener('click', async () => {
+    saveBtn.disabled = true;
+    const updates = {
+      name:          nameInput.value.trim(),
+      desc:          descInput.value.trim(),
+      floor:         parseInt(floorSel.value),
+      color:         colorPick.value,
+      is_underground: ugCheck.checked,
+    };
+    try {
+      await setDoc(doc(db, COL.zones, zone._id), updates, { merge: true });
+      Object.assign(zone, updates);
+      invalidateCache(COL.zones);
+      if (nameSpan)  nameSpan.textContent = zone.name || '—';
+      if (colorDot)  colorDot.style.background = zone.color;
+      if (ugBadge) {
+        ugBadge.textContent = zone.is_underground ? '🕳️ Sous-sol' : '🌿 Surface';
+        ugBadge.style.cssText = 'font-size:10px;padding:1px 7px;border-radius:10px;' + (zone.is_underground
+          ? 'background:rgba(139,92,246,.15);color:#a78bfa;border:1px solid rgba(139,92,246,.3);'
+          : 'background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.25);');
+      }
+      toast('✓ Zone mise à jour', 'success');
+    } catch(e) {
+      toast('⛔ ' + e.message, 'error');
+    }
+    saveBtn.disabled = false;
+  });
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'btn btn-reject';
+  delBtn.style.cssText = 'font-size:12px;';
+  delBtn.textContent = '🗑️ Supprimer';
+  delBtn.addEventListener('click', async () => {
+    if (!confirm('Supprimer la zone "' + (zone.name || zone._id) + '" ? Cette action est irréversible.')) return;
+    try {
+      await deleteDoc(doc(db, COL.zones, zone._id));
+      invalidateCache(COL.zones);
+      _zoneListAll = _zoneListAll.filter(z => z._id !== zone._id);
+      const card = document.getElementById('zl-card-' + zone._id);
+      if (card) card.remove();
+      toast('✓ Zone supprimée', 'success');
+    } catch(e) {
+      toast('⛔ ' + e.message, 'error');
+    }
+  });
+
+  actRow.appendChild(saveBtn);
+  actRow.appendChild(delBtn);
+  body.appendChild(actRow);
+
+  // ── Mobs liés ────────────────────────────────────
+  const mobLabel = document.createElement('div');
+  mobLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;';
+  mobLabel.textContent = 'Mobs liés';
+  body.appendChild(mobLabel);
+
+  const listWrap = document.createElement('div');
+  listWrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;margin-bottom:10px;';
+
+  const refreshMobList = () => {
+    listWrap.innerHTML = '';
+    const mobIds = zone.mobs || [];
+    if (!mobIds.length) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'font-size:12px;color:var(--muted);';
+      empty.textContent = 'Aucun mob lié';
+      listWrap.appendChild(empty);
+    } else {
+      mobIds.forEach(id => {
+        const mob  = mobsById.get(id);
+        const name = mob ? mob.name : id;
+        const row  = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;';
+        const nameEl = document.createElement('span');
+        nameEl.style.cssText = 'flex:1;font-size:13px;';
+        nameEl.textContent = '💀 ' + name;
+        const rmBtn = document.createElement('button');
+        rmBtn.className = 'btn btn-ghost btn-sm';
+        rmBtn.style.cssText = 'font-size:10px;padding:2px 7px;color:var(--danger);';
+        rmBtn.textContent = '✕';
+        rmBtn.addEventListener('click', async () => {
+          const newMobs = (zone.mobs || []).filter(m => m !== id);
+          await _zlSaveZoneMobs(zone, newMobs);
+          zone.mobs = newMobs;
+          if (mobCountSpan) mobCountSpan.textContent = newMobs.length + ' mob' + (newMobs.length > 1 ? 's' : '');
+          refreshMobList();
+          _zlRefreshAddSel();
+        });
+        row.appendChild(nameEl);
+        row.appendChild(rmBtn);
+        listWrap.appendChild(row);
+      });
+    }
+  };
+  refreshMobList();
+  body.appendChild(listWrap);
+
+  // Ajouter un mob — select dropdown
+  const addRow = document.createElement('div');
+  addRow.style.cssText = 'display:flex;gap:6px;';
+  const sel = document.createElement('select');
+  sel.style.cssText = 'flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;';
+
+  const _zlRefreshAddSel = () => {
+    sel.innerHTML = '<option value="">— Ajouter un mob —</option>' +
+      _zlMobsDb.map(m => {
+        const id = m._id || m.id;
+        if ((zone.mobs || []).includes(id)) return '';
+        return '<option value="' + id + '">' + (m.name || id) + '</option>';
+      }).join('');
+  };
+  _zlRefreshAddSel();
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn btn-ghost btn-sm';
+  addBtn.textContent = '+ Ajouter';
+  addBtn.addEventListener('click', async () => {
+    if (!sel.value) return;
+    const newMobs = [...(zone.mobs || []), sel.value];
+    await _zlSaveZoneMobs(zone, newMobs);
+    zone.mobs = newMobs;
+    if (mobCountSpan) mobCountSpan.textContent = newMobs.length + ' mob' + (newMobs.length > 1 ? 's' : '');
+    refreshMobList();
+    _zlRefreshAddSel();
+  });
+  addRow.appendChild(sel);
+  addRow.appendChild(addBtn);
+  body.appendChild(addRow);
+}
+
+async function _zlSaveZoneMobs(zone, newMobs) {
+  try {
+    await setDoc(doc(db, COL.zones, zone._id), { mobs: newMobs }, { merge: true });
+    invalidateCache(COL.zones);
+    toast('✓ Zone mise à jour', 'success');
+  } catch(e) {
+    toast('⛔ ' + e.message, 'error');
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════
+   MIGRATION ZONES HARDCODÉES (FLOOR_ZONES / FLOOR_ZONES_UNDERGROUND → Firestore)
+══════════════════════════════════════════════════════ */
+
+window.migrateHardcodedZones = async function migrateHardcodedZones() {
+  const btn = document.getElementById('btn-migrate-zones');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Migration…'; }
+
+  // Collecte toutes les zones depuis data.js via window (compat module scope)
+  const fz  = window.FLOOR_ZONES             || (typeof FLOOR_ZONES             !== 'undefined' ? FLOOR_ZONES             : null);
+  const fzu = window.FLOOR_ZONES_UNDERGROUND || (typeof FLOOR_ZONES_UNDERGROUND !== 'undefined' ? FLOOR_ZONES_UNDERGROUND : null);
+
+  const sources = [];
+  if (fz)  { for (const [floor, zones] of Object.entries(fz))  zones.forEach(z => sources.push({ ...z, floor: +floor, underground: false })); }
+  if (fzu) { for (const [floor, zones] of Object.entries(fzu)) zones.forEach(z => sources.push({ ...z, floor: +floor, underground: true  })); }
+
+  if (!sources.length) {
+    toast('⚠ Aucune zone trouvée dans data.js — data.js est-il chargé ?', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ Migrer data.js'; }
+    return;
+  }
+
+  // Vérifie lesquelles existent déjà
+  const snap = await getDocs(collection(db, COL.zones));
+  const existing = new Set(snap.docs.map(d => d.id));
+
+  let ok = 0, skip = 0, fail = 0;
+  for (const z of sources) {
+    if (existing.has(z.id)) { skip++; continue; }
+    const polygon = (z.points || []).map(p => ({ x: p.gx, z: p.gy }));
+    const cx = Math.round(polygon.reduce((s, p) => s + p.x, 0) / polygon.length);
+    const cy = Math.round(polygon.reduce((s, p) => s + p.z, 0) / polygon.length);
+    const mobs = (z.monsters || [])
+      .map(m => { const match = (m.link || '').match(/#monstres\/(.+)$/); return match ? match[1] : null; })
+      .filter(Boolean);
+    const obj = { floor: z.floor, name: z.name || '', color: z.color || '#e0ac60', polygon, gx: cx, gy: cy, mobs };
+    if (z.underground) obj.is_underground = true;
+    try {
+      await setDoc(doc(db, COL.zones, z.id), obj);
+      ok++;
+    } catch(e) {
+      fail++;
+      toast('⛔ ' + z.name + ' : ' + e.message, 'error');
+      console.error('[ZoneMig]', z.id, e);
+    }
+  }
+
+  invalidateCache(COL.zones);
+  const msg = ok + ' migrées' + (skip ? ', ' + skip + ' déjà existantes' : '') + (fail ? ', ' + fail + ' erreurs' : '');
+  toast(fail ? '⚠ ' + msg : '✓ ' + msg, fail ? 'warning' : 'success');
+  if (btn) { btn.disabled = false; btn.textContent = '⚡ Migrer data.js'; }
+  await loadZoneList();
+};
+
+/* ══════════════════════════════════════════════════════
+   CARTE — ONGLETS (Marqueurs / Tous les pins / Couleurs)
+══════════════════════════════════════════════════════ */
+
+let _allPinsList = [];
+let _pinColors   = {};
+
+window.switchMapTab = function switchMapTab(tab) {
+  ['markers', 'allpins', 'colors'].forEach(t => {
+    const div = document.getElementById('map-tab-' + t);
+    const btn = document.getElementById('map-tab-btn-' + t);
+    const active = t === tab;
+    if (div) div.style.display = active ? '' : 'none';
+    if (btn) {
+      btn.style.background = active ? 'var(--accent)' : 'transparent';
+      btn.style.color      = active ? '#fff'          : 'var(--muted)';
+    }
+  });
+  const hdr = document.getElementById('map-header-btns');
+  if (hdr) hdr.style.display = tab === 'markers' ? '' : 'none';
+
+  if (tab === 'allpins') loadAllMapPins();
+  if (tab === 'colors')  loadPinColors();
+};
+
+window.loadAllMapPins = async function loadAllMapPins() {
+  const el = document.getElementById('all-pins-content');
+  if (el) el.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [pnjSnap, mobSnap, markerSnap] = await Promise.all([
+      getDocs(collection(db, COL.pnj)),
+      getDocs(collection(db, COL.mobs)),
+      getDocs(collection(db, COL.mapMarkers)),
+    ]);
+    _allPinsList = [];
+    pnjSnap.forEach(d => {
+      const p = { _id: d.id, ...d.data(), _source: 'pnj' };
+      if (p.coords) _allPinsList.push(p);
+    });
+    mobSnap.forEach(d => {
+      const m = { _id: d.id, ...d.data(), _source: 'mob' };
+      if ((m.type || '').toLowerCase() === 'boss' && m.palier) _allPinsList.push(m);
+    });
+    markerSnap.forEach(d => {
+      _allPinsList.push({ _id: d.id, ...d.data(), _source: 'marker' });
+    });
+    // Populate type filter
+    const typeSel = document.getElementById('ap-filter-type');
+    if (typeSel) {
+      const types = [...new Set(_allPinsList.map(p => _apGetType(p)))].sort();
+      typeSel.innerHTML = '<option value="">Tous les types</option>' +
+        types.map(t => `<option value="${t}">${_AP_TYPE_LABELS[t] || t}</option>`).join('');
+    }
+    renderAllMapPins();
+  } catch(err) {
+    if (el) el.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${err.message}</div>`;
+  }
+};
+
+const _AP_PNJ_TO_TYPE = {
+  "quête principale":        "quête_principale",
+  "quête secondaire":        "quête_secondaire",
+  "quête tertiaire":         "quête_tertiaire",
+  "quêtes":                  "quête_secondaire",
+  "donjon":                  "donjon",
+  "forgeron d'armes":        "craft_armes",
+  "forgeron d'armures":      "craft_armures",
+  "forgeron d'accessoires":  "craft_accessoires",
+  "forgeron de lingots":     "craft_lingots",
+  "forgeron de clés":        "craft_cles",
+  "alchimiste":              "alchimiste",
+  "bûcheron":                "bucheron",
+  "refaçonneur":             "refaconneur",
+  "repreneur de butin":      "repreneur_butin",
+  "repreneur d'armes":       "repreneur_armes",
+  "marchand itinérant":      "marchand_itinerant",
+  "marchand d'équipement":   "marchand_equipement",
+  "marchand de consommable": "marchand_consommable",
+  "marchand d'outils":       "marchand_outils",
+  "marchand d'accessoires":  "marchand_access",
+  "marchand occulte":        "marchand_occulte",
+  "fabricant secret":        "autre",
+  "autres":                  "autre",
+};
+
+const _AP_TYPE_LABELS = {
+  région: 'Région', donjon: 'Donjon', boss: 'Boss', zone_monstre: 'Zone Monstres',
+  quête_principale: 'Quête Principale', quête_secondaire: 'Quête Secondaire', quête_tertiaire: 'Quête Tertiaire',
+  craft_armes: "Forgeron d'Armes", craft_armures: "Forgeron d'Armures",
+  craft_accessoires: "Forgeron d'Accessoires", craft_lingots: 'Forgeron de Lingots', craft_cles: 'Forgeron de Clés',
+  alchimiste: 'Alchimiste', bucheron: 'Bûcheron', refaconneur: 'Refaçonneur',
+  repreneur_butin: 'Repreneur de Butin', repreneur_armes: "Repreneur d'Armes",
+  marchand_itinerant: 'Marchand Itinérant', marchand_equipement: "Marchand d'Équipement",
+  marchand_consommable: 'Marchand de Consommable', marchand_outils: "Marchand d'Outils",
+  marchand_access: "Marchand d'Accessoires", marchand_occulte: 'Marchand Occulte', autre: 'Autre',
+};
+
+function _apGetFloor(p) { return p._source === 'pnj' ? p.palier : (p.floor ?? p.palier); }
+function _apGetType(p) {
+  if (p._source === 'pnj')    return _AP_PNJ_TO_TYPE[(p.type || '').toLowerCase()] || 'autre';
+  if (p._source === 'mob')    return 'boss';
+  return p.type || 'autre';
+}
+function _apGetGx(p) { return p.coords?.x ?? p.gx; }
+function _apGetGy(p) { return p.coords?.z ?? p.gy; }
+
+window.renderAllMapPins = function renderAllMapPins() {
+  const el = document.getElementById('all-pins-content');
+  if (!el) return;
+  const floorF  = document.getElementById('ap-filter-floor')?.value  || '';
+  const typeF   = document.getElementById('ap-filter-type')?.value   || '';
+  const searchF = (document.getElementById('ap-filter-search')?.value || '').toLowerCase();
+
+  const list = _allPinsList.filter(p => {
+    if (floorF  && String(_apGetFloor(p) ?? '') !== floorF)            return false;
+    if (typeF   && _apGetType(p) !== typeF)                            return false;
+    if (searchF && !(p.name || '').toLowerCase().includes(searchF))   return false;
+    return true;
+  });
+
+  if (!list.length) { el.innerHTML = '<div class="empty">Aucun pin</div>'; return; }
+
+  const byFloor = {};
+  for (const p of list) {
+    const f = _apGetFloor(p) ?? '?';
+    if (!byFloor[f]) byFloor[f] = {};
+    const t = _apGetType(p);
+    if (!byFloor[f][t]) byFloor[f][t] = [];
+    byFloor[f][t].push(p);
+  }
+
+  const SOURCE_LABELS = { pnj: 'PNJ', mob: 'Mob', marker: 'Marqueur' };
+  const frag = document.createDocumentFragment();
+
+  for (const floor of Object.keys(byFloor).sort((a, b) => +a - +b)) {
+    const floorHdr = document.createElement('div');
+    floorHdr.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:16px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border);';
+    floorHdr.textContent = 'Palier ' + floor;
+    frag.appendChild(floorHdr);
+
+    for (const type of Object.keys(byFloor[floor]).sort()) {
+      const pins = byFloor[floor][type];
+      const pinColor = _pinColors[type] || null;
+
+      const typeHdr = document.createElement('div');
+      typeHdr.style.cssText = 'font-size:10px;font-weight:600;color:var(--accent);margin:8px 0 4px;display:flex;align-items:center;gap:6px;';
+      const dot = document.createElement('span');
+      dot.style.cssText = `display:inline-block;width:10px;height:10px;border-radius:50%;background:${pinColor || 'var(--muted)'};flex-shrink:0;`;
+      typeHdr.appendChild(dot);
+      typeHdr.appendChild(Object.assign(document.createElement('span'), {
+        innerHTML: (_AP_TYPE_LABELS[type] || type) + ` <span style="color:var(--muted);font-weight:400;">(${pins.length})</span>`,
+      }));
+      frag.appendChild(typeHdr);
+
+      const AP_COL = { pnj: 'personnages', mob: 'mobs', marker: 'map_markers' };
+      const table = document.createElement('table');
+      table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px;';
+      table.innerHTML = `<thead><tr style="font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);">
+        <th style="text-align:left;padding:3px 6px;">Nom</th>
+        <th style="text-align:center;padding:3px 6px;">Source</th>
+        <th style="text-align:center;padding:3px 6px;">GX / GY</th>
+        <th style="padding:3px 6px;"></th>
+      </tr></thead>`;
+      const tbody = document.createElement('tbody');
+      for (const p of pins) {
+        const gx = _apGetGx(p), gy = _apGetGy(p);
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--border)';
+        tr.innerHTML = `
+          <td style="padding:4px 6px;font-weight:500;">${p.name || p._id || '—'}</td>
+          <td style="text-align:center;padding:4px 6px;color:var(--muted);">${SOURCE_LABELS[p._source] || p._source}</td>
+          <td style="text-align:center;padding:4px 6px;font-family:monospace;font-size:11px;color:var(--muted);">${gx != null ? gx + ' / ' + gy : '—'}</td>
+          <td style="padding:4px 6px;text-align:right;"></td>
+        `;
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-ghost btn-sm ed-edit-btn';
+        editBtn.style.cssText = 'font-size:11px;padding:2px 8px;';
+        editBtn.textContent = '✏️ Éditer';
+        editBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          showEditor(AP_COL[p._source] || 'personnages', p._id, p, 'allpins');
+        });
+        tr.querySelector('td:last-child').appendChild(editBtn);
+        tbody.appendChild(tr);
+      }
+      table.appendChild(tbody);
+      frag.appendChild(table);
+    }
+  }
+  el.innerHTML = '';
+  el.appendChild(frag);
+};
+
+window.loadPinColors = async function loadPinColors() {
+  const el = document.getElementById('pin-colors-content');
+  if (el) el.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const snap = await getDoc(doc(db, 'config', 'pin_type_colors'));
+    _pinColors = snap.exists() ? snap.data() : {};
+    renderPinColorForm();
+  } catch(err) {
+    if (el) el.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${err.message}</div>`;
+  }
+};
+
+window.savePinColors = async function savePinColors() {
+  const btn = document.getElementById('btn-save-pin-colors');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Sauvegarde…'; }
+  try {
+    const colors = {};
+    document.querySelectorAll('#pin-colors-content input[type="color"]').forEach(inp => {
+      colors[inp.dataset.type] = inp.value;
+    });
+    await setDoc(doc(db, 'config', 'pin_type_colors'), colors);
+    _pinColors = colors;
+    toast('✓ Couleurs sauvegardées', 'success');
+  } catch(err) {
+    toast('⛔ ' + err.message, 'error');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '💾 Sauvegarder'; }
+};
+
+function renderPinColorForm() {
+  const el = document.getElementById('pin-colors-content');
+  if (!el) return;
+
+  const CATEGORIES = [
+    { label: '🗺️ Principaux',    types: ['donjon', 'boss', 'zone_monstre'] },
+    { label: '💬 Quêtes',         types: ['quête_principale', 'quête_secondaire', 'quête_tertiaire'] },
+    { label: '⚒️ Forge / Craft',  types: ['craft_armes', 'craft_armures', 'craft_accessoires', 'craft_lingots', 'craft_cles'] },
+    { label: '🧪 Artisans',       types: ['alchimiste', 'bucheron', 'refaconneur'] },
+    { label: '🛒 Commerce',       types: ['repreneur_butin', 'repreneur_armes', 'marchand_itinerant', 'marchand_equipement', 'marchand_consommable', 'marchand_outils', 'marchand_access', 'marchand_occulte'] },
+    { label: '🦠 Autres',         types: ['autre'] },
+  ];
+
+  const DEFAULT_COLORS = {
+    donjon: '#ef4444', boss: '#dc2626', zone_monstre: '#f97316',
+    quête_principale: '#f59e0b', quête_secondaire: '#10b981', quête_tertiaire: '#06b6d4',
+    craft_armes: '#8b5cf6', craft_armures: '#7c3aed', craft_accessoires: '#a78bfa',
+    craft_lingots: '#6d28d9', craft_cles: '#4c1d95',
+    alchimiste: '#34d399', bucheron: '#65a30d', refaconneur: '#a16207',
+    repreneur_butin: '#f59e0b', repreneur_armes: '#b45309',
+    marchand_itinerant: '#eab308', marchand_equipement: '#ca8a04',
+    marchand_consommable: '#84cc16', marchand_outils: '#16a34a',
+    marchand_access: '#0891b2', marchand_occulte: '#7c3aed',
+    autre: '#6b7280',
+  };
+
+  const frag = document.createDocumentFragment();
+  for (const cat of CATEGORIES) {
+    const catHdr = document.createElement('div');
+    catHdr.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border);';
+    catHdr.textContent = cat.label;
+    frag.appendChild(catHdr);
+
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;';
+
+    for (const type of cat.types) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;';
+
+      const inp = document.createElement('input');
+      inp.type = 'color';
+      inp.value = _pinColors[type] || DEFAULT_COLORS[type] || '#888888';
+      inp.dataset.type = type;
+      inp.style.cssText = 'width:32px;height:32px;border:none;background:none;cursor:pointer;border-radius:4px;padding:0;flex-shrink:0;';
+
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'font-size:12px;flex:1;';
+      lbl.textContent = _AP_TYPE_LABELS[type] || type;
+
+      row.appendChild(inp);
+      row.appendChild(lbl);
+      grid.appendChild(row);
+    }
+    frag.appendChild(grid);
+  }
+  el.innerHTML = '';
+  el.appendChild(frag);
+}
+
+/* ══════════════════════════════════════════════════════
+   OUTIL MIGRATION QUÊTES → CARTE
+══════════════════════════════════════════════════════ */
+
+let _qmAllPins   = [];
+let _qmQuetes    = [];
+let _qmExisting  = new Set();
+let _qmMapping   = {};
+
+window.showQuestMapMigration = function showQuestMapMigration() {
+  _setHash('quest-map-migration');
+  _showPanel('quest-map-migration-panel', 'btn-quest-map-migration');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  loadQuestMapMigration();
+};
+
+window.loadQuestMapMigration = async function loadQuestMapMigration() {
+  const tableEl = document.getElementById('qm-table');
+  tableEl.innerHTML = '<div class="empty">Chargement…</div>';
+  document.getElementById('qm-save-btn').disabled = true;
+  _qmMapping = {};
+
+  try {
+    // 1) Quêtes Firestore
+    const qSnap = await getDocs(collection(db, COL.quetes));
+    _qmQuetes = qSnap.docs.map(d => ({ _id: d.id, ...d.data() }));
+
+    // 2) Map markers déjà existants de type quête_principale
+    const mmSnap = await getDocs(collection(db, COL.mapMarkers));
+    _qmExisting = new Set(
+      mmSnap.docs.map(d => d.data().sourceId).filter(Boolean)
+    );
+
+    // 3) Pins depuis data.js (déjà chargé en script classique)
+    _qmAllPins = [];
+    const _QM_TYPES = new Set(['quête_principale', 'quête_secondaire']);
+    if (typeof FLOOR_MARKERS !== 'undefined') {
+      for (const [floorStr, markers] of Object.entries(FLOOR_MARKERS)) {
+        const floor = parseInt(floorStr);
+        for (const m of markers) {
+          if (!_QM_TYPES.has(m.type)) continue;
+          _qmAllPins.push({ ...m, floor });
+        }
+      }
+    }
+
+    // 4) Auto-match par titre (retire le numéro en tête)
+    const _QM_TYPE_FS = { 'quête_principale': 'main', 'quête_secondaire': 'sec' };
+    for (const pin of _qmAllPins) {
+      if (_qmExisting.has(pin.id)) continue;
+      const pinTitle = pin.name.replace(/^\d+\s*[-–]\s*/, '').toLowerCase().trim();
+      const fsType   = _QM_TYPE_FS[pin.type];
+      const match = _qmQuetes.find(q => {
+        if (fsType && q.type && q.type !== fsType) return false;
+        const t = (q.titre || '').toLowerCase().trim();
+        return t === pinTitle || t.includes(pinTitle) || pinTitle.includes(t.split(' ').slice(0, 3).join(' '));
+      });
+      _qmMapping[pin.id] = match ? match._id : '__none__';
+    }
+
+    renderQuestMapMigration();
+    document.getElementById('qm-save-btn').disabled = false;
+  } catch (err) {
+    tableEl.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${err.message}</div>`;
+    toast('⛔ Erreur chargement : ' + err.message, 'error');
+  }
+};
+
+const _QM_TYPE_FS   = { 'quête_principale': 'main', 'quête_secondaire': 'sec' };
+const _QM_TYPE_LABEL = { 'quête_principale': '💬 Principale', 'quête_secondaire': '❓ Secondaire' };
+
+window.renderQuestMapMigration = function renderQuestMapMigration() {
+  const tableEl   = document.getElementById('qm-table');
+  const floorF    = document.getElementById('qm-filter-floor')?.value || '';
+  const typeF     = document.getElementById('qm-filter-type')?.value  || '';
+  const showExist = document.getElementById('qm-show-existing')?.checked || false;
+
+  let filtered = _qmAllPins;
+  if (floorF)     filtered = filtered.filter(p => String(p.floor) === floorF);
+  if (typeF)      filtered = filtered.filter(p => p.type === typeF);
+  if (!showExist) filtered = filtered.filter(p => !_qmExisting.has(p.id));
+
+  document.getElementById('qm-count').textContent = `${filtered.length} marqueur(s)`;
+
+  if (!filtered.length) {
+    tableEl.innerHTML = `<div class="empty">${_qmAllPins.length === 0
+      ? 'Aucun marqueur de quête dans data.js'
+      : 'Tous déjà migrés (cochez "Afficher déjà migrés" pour voir)'}</div>`;
+    return;
+  }
+
+  const t = document.createElement('table');
+  t.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;';
+  t.innerHTML = `<thead><tr style="border-bottom:1px solid var(--border);">
+    <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;">Marqueur (data.js)</th>
+    <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;">Type</th>
+    <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;">Palier</th>
+    <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;">Coords</th>
+    <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;">Quête Firestore</th>
+    <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:700;">Statut</th>
+  </tr></thead>`;
+  const tbody = document.createElement('tbody');
+
+  for (const pin of filtered) {
+    const isExist = _qmExisting.has(pin.id);
+    const tr = document.createElement('tr');
+    tr.style.cssText = `border-bottom:1px solid var(--border);${isExist ? 'opacity:0.5;' : ''}`;
+
+    // Nom
+    const tdName = document.createElement('td');
+    tdName.style.cssText = 'padding:6px 8px;font-weight:600;';
+    tdName.textContent = pin.name;
+    tr.appendChild(tdName);
+
+    // Type
+    const tdType = document.createElement('td');
+    tdType.style.cssText = 'padding:6px 8px;white-space:nowrap;font-size:11px;';
+    tdType.textContent = _QM_TYPE_LABEL[pin.type] || pin.type;
+    tr.appendChild(tdType);
+
+    // Palier
+    const tdFloor = document.createElement('td');
+    tdFloor.style.cssText = 'padding:6px 8px;white-space:nowrap;';
+    tdFloor.textContent = `Palier ${pin.floor}`;
+    tr.appendChild(tdFloor);
+
+    // Coordonnées
+    const tdCoords = document.createElement('td');
+    tdCoords.style.cssText = 'padding:6px 8px;white-space:nowrap;font-family:monospace;color:var(--muted);font-size:11px;';
+    tdCoords.textContent = `${pin.gx}, ${pin.gy}`;
+    tr.appendChild(tdCoords);
+
+    // Select quête Firestore
+    const tdSelect = document.createElement('td');
+    tdSelect.style.cssText = 'padding:6px 8px;';
+    if (!isExist) {
+      const sel = document.createElement('select');
+      sel.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:11px;outline:none;max-width:300px;width:100%;';
+      sel.innerHTML = `<option value="__none__">— Aucune (garder lien Gitbook) —</option>`;
+      const fsType = _QM_TYPE_FS[pin.type];
+      const palierQuetes = _qmQuetes
+        .filter(q => !q.palier || String(q.palier) === String(pin.floor))
+        .filter(q => !fsType || !q.type || q.type === fsType);
+      for (const q of palierQuetes) {
+        const opt = document.createElement('option');
+        opt.value = q._id;
+        opt.textContent = (q.titre || q._id).substring(0, 60);
+        if (_qmMapping[pin.id] === q._id) opt.selected = true;
+        sel.appendChild(opt);
+      }
+      sel.addEventListener('change', () => { _qmMapping[pin.id] = sel.value; _qmRefreshStatus(tr, pin, sel.value); });
+      tdSelect.appendChild(sel);
+    } else {
+      tdSelect.innerHTML = '<span style="color:var(--muted);font-size:11px;">déjà migré</span>';
+    }
+    tr.appendChild(tdSelect);
+
+    // Statut
+    const tdStatus = document.createElement('td');
+    tdStatus.style.cssText = 'padding:6px 8px;';
+    tdStatus.dataset.statusCell = '1';
+    _qmSetStatus(tdStatus, isExist, !isExist && _qmMapping[pin.id] && _qmMapping[pin.id] !== '__none__');
+    tr.appendChild(tdStatus);
+
+    tbody.appendChild(tr);
+  }
+  t.appendChild(tbody);
+  tableEl.innerHTML = '';
+  tableEl.appendChild(t);
+};
+
+function _qmSetStatus(td, isExist, hasMatch) {
+  if (isExist)       td.innerHTML = '<span style="color:#4caf50;font-size:11px;">✓ Migré</span>';
+  else if (hasMatch) td.innerHTML = '<span style="color:#e0ac60;font-size:11px;">🔗 Auto-matché</span>';
+  else               td.innerHTML = '<span style="color:var(--muted);font-size:11px;">— Sans quête</span>';
+}
+
+function _qmRefreshStatus(tr, pin, newQuestId) {
+  const td = tr.querySelector('[data-status-cell]');
+  if (td) _qmSetStatus(td, false, newQuestId && newQuestId !== '__none__');
+}
+
+window.saveQuestMapMigration = async function saveQuestMapMigration() {
+  const btn = document.getElementById('qm-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Migration en cours…';
+
+  const toMigrate = _qmAllPins.filter(p => !_qmExisting.has(p.id));
+  let ok = 0, errs = 0;
+
+  for (const pin of toMigrate) {
+    const questId = _qmMapping[pin.id];
+    const matchedQuest = questId && questId !== '__none__'
+      ? _qmQuetes.find(q => q._id === questId)
+      : null;
+
+    const docPrefix = pin.type === 'quête_secondaire' ? 'qs' : 'qp';
+    const obj = {
+      type:     pin.type,
+      floor:    pin.floor,
+      name:     pin.name,
+      gx:       pin.gx,
+      gy:       pin.gy,
+      desc:     pin.desc || '',
+      link:     matchedQuest ? `../Quetes/quetes.html#${matchedQuest._id}` : (pin.link || ''),
+      sourceId: pin.id,
+    };
+    if (matchedQuest) obj.questId = matchedQuest._id;
+
+    try {
+      await setDoc(doc(db, COL.mapMarkers, `${docPrefix}_${pin.id}`), obj);
+      _qmExisting.add(pin.id);
+      ok++;
+    } catch (e) {
+      console.error('[QuestMigration]', pin.id, e);
+      errs++;
+    }
+  }
+
+  invalidateCache(COL.mapMarkers);
+  invalidateModCache(COL.mapMarkers);
+
+  toast(
+    errs > 0 ? `⚠️ ${ok} migrés, ${errs} erreurs` : `✓ ${ok} marqueur(s) migrés`,
+    errs > 0 ? 'warn' : 'success'
+  );
+  btn.disabled = false;
+  btn.textContent = '💾 Migrer les quêtes';
+  renderQuestMapMigration();
+};
 

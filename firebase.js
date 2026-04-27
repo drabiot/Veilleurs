@@ -62,7 +62,9 @@ export const COL = {
   users:        'users',          // profils + rôles
   quetes:       'quetes',         // quêtes approuvées via modération
   panoplies:    'panoplies',      // panoplies (sets d'équipement)
-  mapMarkers:   'map_markers',    // marqueurs carte gérés via modération (donjons, ressources, zones)
+  mapMarkers:   'map_markers',    // marqueurs carte gérés via modération (donjons, ressources)
+  zones:        'zones',          // zones de spawn de monstres (polygones)
+  donjons:      'donjons',        // donjons migrés depuis data.js
 };
 
 // ── Rôles ─────────────────────────────────────────────

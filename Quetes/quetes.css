@@ -718,6 +718,30 @@ body.quetes-page { overflow: hidden; }
 }
 .obj-item.obj-blocked .obj-ck-label { cursor: default; }
 
+/* Chip coordonnées depuis un objectif */
+.obj-loc-chip {
+  flex-basis: 100%;
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 5px;
+  padding: 3px 9px;
+  background: rgba(224,172,96,0.10);
+  border: 1px solid rgba(224,172,96,0.30);
+  border-radius: 6px;
+  font-size: 11px; font-family: 'JetBrains Mono', monospace;
+  color: #c8a96e; text-decoration: none;
+  transition: background .15s, border-color .15s, color .15s;
+  width: fit-content;
+}
+.obj-loc-chip:hover {
+  background: rgba(224,172,96,0.22);
+  border-color: rgba(224,172,96,0.55);
+  color: #e0c080;
+}
+.quest-coords-chip {
+  margin-top: 0;
+  font-size: 12px;
+}
+
 /* Flèche de suite logique */
 .obj-next-arrow {
   text-align: center; font-size: 14px; color: var(--gold-dim, #c8a96e);

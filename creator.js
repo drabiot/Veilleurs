@@ -628,14 +628,15 @@ function saveForm() {
       } : null,
       // PNJ form
       pnj: creatorMode === 'pnj' ? {
-        id:           document.getElementById('pnj-id')?.value      || '',
-        type:         document.getElementById('pnj-type')?.value     || '',
-        palier:       document.getElementById('pnj-palier')?.value   || '',
-        region:       document.getElementById('pnj-region')?.value   || '',
-        regionSearch: document.getElementById('pnj-region-search')?.value || '',
-        x:            document.getElementById('pnj-x')?.value        || '',
-        y:            document.getElementById('pnj-y')?.value        || '',
-        z:            document.getElementById('pnj-z')?.value        || '',
+        id:            document.getElementById('pnj-id')?.value      || '',
+        type:          document.getElementById('pnj-type')?.value     || '',
+        palier:        document.getElementById('pnj-palier')?.value   || '',
+        region:        document.getElementById('pnj-region')?.value   || '',
+        regionSearch:  document.getElementById('pnj-region-search')?.value || '',
+        x:             document.getElementById('pnj-x')?.value        || '',
+        y:             document.getElementById('pnj-y')?.value        || '',
+        z:             document.getElementById('pnj-z')?.value        || '',
+        underground:   pnjUnderground,
       } : null,
       // Région form
       region: creatorMode === 'region' ? {
@@ -663,6 +664,9 @@ function saveForm() {
         npc:    document.getElementById('quest-npc')?.value   || '',
         desc:   document.getElementById('quest-desc')?.value  || '',
         zone:   _questZoneDrop ? _questZoneDrop.getValue() : '',
+        cx: document.getElementById('quest-cx')?.value || '',
+        cy: document.getElementById('quest-cy')?.value || '',
+        cz: document.getElementById('quest-cz')?.value || '',
         objs: questSimpleObjs.map(o => ({
           uid: o.uid, texte: o.texte, next: !!o.next,
           items: (o.items||[]).map(i => ({ uid: i.uid, itemId: i.itemId, qte: i.qte })),
@@ -775,13 +779,14 @@ function restoreForm(forcedMode) {
     // ── PNJ form ──
     if (d.pnj) {
       const p = d.pnj;
-      if (p.type)   { document.getElementById('pnj-type').value = p.type; onPnjTypeChange(); }
+      if (p.type)   { _restorePnjTypeUI(p.type); onPnjTypeChange(); }
       if (p.palier) document.getElementById('pnj-palier').value = p.palier;
       if (p.region) document.getElementById('pnj-region').value = p.region;
       if (p.regionSearch) document.getElementById('pnj-region-search').value = p.regionSearch;
       if (p.x !== '') document.getElementById('pnj-x').value = p.x;
       if (p.y !== '') document.getElementById('pnj-y').value = p.y;
       if (p.z !== '') document.getElementById('pnj-z').value = p.z;
+      setPnjUnderground(!!p.underground);
     }
 
     // ── Région form ──
@@ -793,6 +798,12 @@ function restoreForm(forcedMode) {
       if (r.lore)   document.getElementById('reg-lore').value   = r.lore;
       if (r.inCodex !== undefined && typeof setRegCodex === 'function') setRegCodex(r.inCodex);
       if (r.canTp   !== undefined && typeof setRegCanTp === 'function') setRegCanTp(r.canTp);
+      if (r.coords) {
+        const el = (id) => document.getElementById(id);
+        if (r.coords.x != null) el('reg-x').value = r.coords.x;
+        if (r.coords.y != null) el('reg-y').value = r.coords.y;
+        if (r.coords.z != null) el('reg-z').value = r.coords.z;
+      }
     }
 
     // ── Panoplie form ──
@@ -814,9 +825,12 @@ function restoreForm(forcedMode) {
       if (q.id)    document.getElementById('quest-id').value    = q.id;
       if (q.type)  { document.getElementById('quest-type').value = q.type; _customSelUpdaters['quest-type']?.(); }
       if (q.palier) { document.getElementById('quest-palier').value = String(q.palier); _customSelUpdaters['quest-palier']?.(); }
-      if (q.npc)   document.getElementById('quest-npc').value   = q.npc;
+      if (q.npc)   { document.getElementById('quest-npc').value = q.npc; window._pendingQuestNpc = q.npc; }
       if (q.desc)  document.getElementById('quest-desc').value  = q.desc;
       if (q.zone)  window._pendingQuestZone = q.zone;
+      if (q.cx != null && q.cx !== '') { const el = document.getElementById('quest-cx'); if (el) el.value = q.cx; }
+      if (q.cy != null && q.cy !== '') { const el = document.getElementById('quest-cy'); if (el) el.value = q.cy; }
+      if (q.cz != null && q.cz !== '') { const el = document.getElementById('quest-cz'); if (el) el.value = q.cz; }
       if (q.objs?.length) {
         questSimpleObjs = q.objs.map(o => ({
           uid: _qObjUid++, texte: o.texte || '', next: !!o.next,
@@ -1721,6 +1735,7 @@ async function _buildLoadDrops() {
       const pnjs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       _pnjsForObtain = pnjs; // sauvegarder pour la liste d'obtention
       initObtainData();      // rafraîchir allArtisans / allMarchands avec les PNJs Firestore
+      if (creatorMode === 'quest') initQuestNpcDrop();
       if (pnjs.length) {
         const idx = pnjs.map(p => {
           const parts = [];
@@ -2167,18 +2182,9 @@ function loadPnj(pnj) {
     document.getElementById('pnj-id').value = pnj.id;
     pnjIdLocked = true;
   }
-  if (pnj.name) {
-    const sel = document.getElementById('pnj-type');
-    // Exact match first, then case-insensitive fallback
-    const normName = pnj.name.toLowerCase().replace(/\u2019/g, "'");
-    const matchOpt = Array.from(sel.options).find(o =>
-      o.value === pnj.name || o.value.toLowerCase().replace(/\u2019/g, "'") === normName
-    );
-    if (matchOpt) {
-      sel.value = matchOpt.value;
-      _customSelUpdaters['pnj-type']?.();
-    }
-  }
+  // Restaurer le type via pnj.type (champ canonique) ou pnj.name (fallback)
+  const pnjTypeRaw = pnj.type || (pnj.name || '').toLowerCase().replace(/\u2019/g, "'");
+  if (pnjTypeRaw) _restorePnjTypeUI(pnjTypeRaw);
   if (pnj.region) {
     document.getElementById('pnj-region').value        = pnj.region;
     const regionName = _allMobRegions.find(r => r.id === pnj.region)?.name || pnj.region;
@@ -2190,6 +2196,7 @@ function loadPnj(pnj) {
     document.getElementById('pnj-y').value = pnj.coords.y ?? '';
     document.getElementById('pnj-z').value = pnj.coords.z ?? '';
   }
+  setPnjUnderground(!!pnj.is_underground);
   // Restore sells — push entries with data, then render once
   ensureAllItemsIndex();
   const sells = Array.isArray(pnj.sells) ? pnj.sells
@@ -2261,8 +2268,16 @@ function loadQuest(quest) {
   if (quest.titre)  document.getElementById('quest-titre').value = quest.titre;
   if (quest.type)   document.getElementById('quest-type').value  = quest.type;
   if (quest.palier) document.getElementById('quest-palier').value = String(quest.palier);
-  if (quest.npc)    document.getElementById('quest-npc').value   = quest.npc;
+  if (quest.npc)  { document.getElementById('quest-npc').value = quest.npc; window._pendingQuestNpc = quest.npc; }
   if (quest.desc)   document.getElementById('quest-desc').value  = quest.desc;
+  if (quest.coords) {
+    const cx = document.getElementById('quest-cx');
+    const cy = document.getElementById('quest-cy');
+    const cz = document.getElementById('quest-cz');
+    if (cx && quest.coords.x != null) cx.value = quest.coords.x;
+    if (cy && quest.coords.y != null) cy.value = quest.coords.y;
+    if (cz && quest.coords.z != null) cz.value = quest.coords.z;
+  }
 
   // Charger les objectifs
   questSimpleObjs = [];
@@ -4306,6 +4321,7 @@ async function submitToFirestore() {
     data = buildRegionObj();
     if (!data.id || !data.name) throw new Error('Nom et ID obligatoires');
     if (data.inCodex && !data.lore) throw new Error('Le lore est obligatoire pour une région Codex');
+    if (!data.coords) throw new Error('Les coordonnées sont obligatoires pour une région.');
   } else if (creatorMode === 'quest') {
     type = 'quest';
     data = buildQuestObj();
@@ -4830,8 +4846,8 @@ function buildMobObj() {
   const cx = document.getElementById('mob-x')?.value;
   const cy = document.getElementById('mob-y')?.value;
   const cz = document.getElementById('mob-z')?.value;
-  if (cx !== '' && cy !== '' && cz !== '' && cx != null && cy != null && cz != null) {
-    obj.coords = { x: +cx, y: +cy, z: +cz };
+  if (cx !== '' && cz !== '' && cx != null && cz != null) {
+    obj.coords = { x: +cx, y: (cy !== '' && cy != null) ? +cy : 0, z: +cz };
   }
   const loot = getMobLoot();
   if (loot.length) obj.loot = loot;
@@ -4867,7 +4883,8 @@ function resetMobForm() {
 // CREATOR MODE
 // ═══════════════════════════════════════════════════
 let creatorMode  = 'item';
-let pnjIdLocked  = false;
+let pnjIdLocked    = false;
+let pnjUnderground = false;
 let regIdLocked  = false;
 
 const MODE_SUBTITLES = {
@@ -4899,7 +4916,7 @@ function switchMode(mode) {
   if (mode === 'mob')    loadMobRegions();
   if (mode === 'pnj')    loadMobRegions();
   if (mode === 'region') loadRegionsCache();
-  if (mode === 'quest')  loadMobRegions().then(initQuestZoneDrop);
+  if (mode === 'quest')  loadMobRegions().then(() => { initQuestZoneDrop(); initQuestNpcDrop(); });
   if (mode === 'panoplie') { loadPanopliesCache().then(() => { renderPanopBonuses(); update(); }); }
   update();
 }
@@ -4926,14 +4943,162 @@ const PNJ_TYPE_TAGS = {
   "marchand d'accessoires":  "marchand_accessoires",
   "marchand itinérant":      "marchand_itinerant",
   "repreneur de butin":      "repreneur_butin",
+  "repreneur d'armes":       "repreneur_armes",
+  "refaçonneur":             "refaconneur",
   "bûcheron":                "bucheron",
   "alchimiste":              "alchimiste",
   "quêtes":                  "quetes",
   "quête principale":        "quete_principale",
+  "quête secondaire":        "quete_secondaire",
+  "quête tertiaire":         "quete_tertiaire",
+  "donjon":                  "donjon",
   "marchand occulte":        "marchand_occulte",
   "fabricant secret":        "fabricant_secret",
   "autres":                  "autres",
 };
+
+// Catégories UI du creator PNJ
+const PNJ_CATEGORIES = {
+  craft: [
+    "forgeron d'armes",
+    "forgeron d'armures",
+    "forgeron d'accessoires",
+    "forgeron de clés",
+  ],
+  artisans: [
+    "alchimiste",
+    "bûcheron",
+    "forgeron de lingots",
+    "refaçonneur",
+  ],
+  commerce: [
+    "repreneur de butin",
+    "repreneur d'armes",
+    "marchand itinérant",
+    "marchand d'équipement",
+    "marchand de consommable",
+    "marchand d'outils",
+    "marchand d'accessoires",
+  ],
+  quetes: [
+    "quête principale",
+    "quête secondaire",
+    "quête tertiaire",
+    "donjon",
+  ],
+  autres: [
+    "fabricant secret",
+    "marchand occulte",
+    "autres",
+  ],
+};
+
+const PNJ_CAT_COLORS = {
+  craft:    '#8b5cf6',
+  artisans: '#10b981',
+  commerce: '#3b82f6',
+  quetes:   '#f59e0b',
+  autres:   '#6b7280',
+};
+
+const PNJ_TYPE_ICONS = {
+  "forgeron d'armes":        "⚔️",
+  "forgeron d'armures":      "🛡️",
+  "forgeron d'accessoires":  "💍",
+  "forgeron de clés":        "🗝️",
+  "alchimiste":              "⚗️",
+  "bûcheron":                "🪓",
+  "forgeron de lingots":     "🔩",
+  "repreneur de butin":      "🛒",
+  "repreneur d'armes":       "⚔️",
+  "refaçonneur":             "🔧",
+  "marchand itinérant":      "💰",
+  "marchand d'équipement":   "⚔️",
+  "marchand de consommable": "🧪",
+  "marchand d'outils":       "🛠️",
+  "marchand d'accessoires":  "💍",
+  "quête principale":        "💬",
+  "quête secondaire":        "❓",
+  "quête tertiaire":         "📋",
+  "donjon":                  "🏰",
+  "fabricant secret":        "🔒",
+  "marchand occulte":        "🌙",
+  "autres":                  "💬",
+};
+
+let _pnjCurrentCat = '';
+
+function selectPnjCategory(cat) {
+  _pnjCurrentCat = cat;
+  const color = PNJ_CAT_COLORS[cat] || '#6b7280';
+
+  // Style des boutons de catégorie
+  document.querySelectorAll('#pnj-cat-row .r-btn').forEach(btn => {
+    const isActive = btn.dataset.cat === cat;
+    btn.style.setProperty('--c', isActive ? (PNJ_CAT_COLORS[btn.dataset.cat] || '#6b7280') : '#6b7280');
+    if (isActive) btn.classList.add('active'); else btn.classList.remove('active');
+  });
+
+  // Construire les boutons de type
+  const types   = PNJ_CATEGORIES[cat] || [];
+  const row     = document.getElementById('pnj-type-row');
+  const current = document.getElementById('pnj-type')?.value || '';
+  row.innerHTML = types.map(t => {
+    const icon = PNJ_TYPE_ICONS[t] || '📍';
+    const label = pnjTitleCase(t);
+    return `<button class="r-btn pnj-type-btn" data-type="${t.replace(/"/g, '&quot;')}"
+      style="--c:${color};width:fit-content;">${icon} ${label}</button>`;
+  }).join('');
+  row.querySelectorAll('.pnj-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => selectPnjType(btn.dataset.type));
+  });
+  row.style.display = types.length ? 'flex' : 'none';
+
+  // Conserver la surbrillance si le type courant est dans cette catégorie
+  if (types.includes(current)) {
+    row.querySelectorAll('.pnj-type-btn').forEach(btn => {
+      if (btn.dataset.type === current) btn.classList.add('active');
+    });
+  } else {
+    // Type hors catégorie : on le réinitialise
+    document.getElementById('pnj-type').value = '';
+    onPnjTypeChange();
+  }
+}
+
+function selectPnjType(type) {
+  document.getElementById('pnj-type').value = type;
+  document.querySelectorAll('#pnj-type-row .pnj-type-btn').forEach(btn => {
+    if (btn.dataset.type === type) btn.classList.add('active'); else btn.classList.remove('active');
+  });
+  onPnjTypeChange();
+}
+
+// Restaure la catégorie et le type dans l'UI boutons (utilisé au chargement)
+function _restorePnjTypeUI(type) {
+  if (!type) return;
+  // Trouver la catégorie
+  for (const [cat, types] of Object.entries(PNJ_CATEGORIES)) {
+    if (types.includes(type.toLowerCase())) {
+      selectPnjCategory(cat);
+      document.getElementById('pnj-type').value = type.toLowerCase();
+      document.querySelectorAll('#pnj-type-row .pnj-type-btn').forEach(btn => {
+        if (btn.dataset.type === type.toLowerCase()) btn.classList.add('active');
+      });
+      return;
+    }
+  }
+  // Type inconnu : pas de catégorie à activer mais on affiche le type quand même
+}
+
+function clearPnjType() {
+  _pnjCurrentCat = '';
+  document.querySelectorAll('#pnj-cat-row .r-btn').forEach(btn => btn.classList.remove('active'));
+  document.getElementById('pnj-type-row').style.display = 'none';
+  document.getElementById('pnj-type-row').innerHTML = '';
+  document.getElementById('pnj-type').value = '';
+  onPnjTypeChange();
+}
 
 function pnjRegionSlug(regionName) {
   if (!regionName) return '';
@@ -4954,6 +5119,29 @@ function buildPnjId() {
 
 function onPnjTypeChange() {
   if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
+  update();
+}
+
+function setPnjUnderground(val) {
+  pnjUnderground = val;
+  const yes = document.getElementById('pnj-underground-yes');
+  const no  = document.getElementById('pnj-underground-no');
+  if (!yes || !no) return;
+  if (val) {
+    yes.style.background   = 'rgba(224,172,96,.2)';
+    yes.style.color        = '#e0ac60';
+    yes.style.borderColor  = '#e0ac60';
+    no.style.background    = '';
+    no.style.color         = '';
+    no.style.borderColor   = '';
+  } else {
+    no.style.background    = 'rgba(74,222,128,.15)';
+    no.style.color         = 'var(--success)';
+    no.style.borderColor   = 'var(--success)';
+    yes.style.background   = '';
+    yes.style.color        = '';
+    yes.style.borderColor  = '';
+  }
   update();
 }
 
@@ -5153,9 +5341,10 @@ function buildPnjObj() {
 
   const obj = {};
   if (id)     obj.id     = id;
-  if (type)   { obj.name = pnjTitleCase(type); obj.tag = PNJ_TYPE_TAGS[type] || nameToId(type); }
+  if (type)   { obj.type = type; obj.name = pnjTitleCase(type); obj.tag = PNJ_TYPE_TAGS[type] || nameToId(type); }
   if (palier) obj.palier = +palier;
   if (region) obj.region = region;
+  if (pnjUnderground) obj.is_underground = true;
   if (cx !== '' && cy !== '' && cz !== '') obj.coords = { x: +cx, y: +cy, z: +cz };
   if (id) obj.images = [`../img/compendium/montages/${id}.png`];
 
@@ -5188,6 +5377,9 @@ function buildRegionObj() {
   const name   = document.getElementById('reg-name').value.trim();
   const palier = document.getElementById('reg-palier').value;
   const lore   = document.getElementById('reg-lore').value.trim();
+  const cx     = document.getElementById('reg-x')?.value;
+  const cy     = document.getElementById('reg-y')?.value;
+  const cz     = document.getElementById('reg-z')?.value;
 
   const obj = {};
   if (id)     obj.id      = id;
@@ -5197,6 +5389,9 @@ function buildRegionObj() {
   obj.images  = [];
   if (regCanTp !== null) obj.canTp = regCanTp;
   if (lore)   obj.lore    = lore;
+  if (cx !== '' && cx != null && cy !== '' && cy != null && cz !== '' && cz != null) {
+    obj.coords = { x: +cx, y: +cy, z: +cz };
+  }
 
   return obj;
 }
@@ -5375,17 +5570,17 @@ function resetPnjForm() {
   ['pnj-id','pnj-region','pnj-region-search','pnj-x','pnj-y','pnj-z'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
-  const t = document.getElementById('pnj-type');   if (t) t.value = '';
+  clearPnjType();
   const p = document.getElementById('pnj-palier'); if (p) p.selectedIndex = 0;
-  _customSelUpdaters['pnj-type']?.();
   _customSelUpdaters['pnj-palier']?.();
   document.getElementById('pnj-sells-list').innerHTML  = '';
   document.getElementById('pnj-crafts-list').innerHTML = '';
+  setPnjUnderground(false);
 }
 
 function resetRegionForm() {
   regIdLocked = false;
-  ['reg-name','reg-id','reg-lore'].forEach(id => {
+  ['reg-name','reg-id','reg-lore','reg-x','reg-y','reg-z'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const p = document.getElementById('reg-palier'); if (p) p.selectedIndex = 0;
@@ -5776,7 +5971,7 @@ function buildQuestObj() {
   const type   = document.getElementById('quest-type').value;
   const palier = document.getElementById('quest-palier').value;
   const zone   = _questZoneDrop ? _questZoneDrop.getValue() : '';
-  const npc    = document.getElementById('quest-npc').value.trim();
+  const npc    = _questNpcDrop ? (_questNpcDrop.getValue() || '') : document.getElementById('quest-npc').value.trim();
   const desc   = document.getElementById('quest-desc').value.trim();
 
   const obj = {};
@@ -5784,9 +5979,19 @@ function buildQuestObj() {
   if (type)   obj.type   = type;
   if (palier) obj.palier = +palier;
   if (titre)  obj.titre  = titre;
-  if (zone)   obj.zone   = zone;
-  obj.npc = npc;
-  if (desc)   obj.desc   = desc;
+  if (zone) obj.zone = zone;
+  if (npc)  obj.npc  = npc;
+  if (desc) obj.desc = desc;
+
+  const qcx = document.getElementById('quest-cx')?.value;
+  const qcy = document.getElementById('quest-cy')?.value;
+  const qcz = document.getElementById('quest-cz')?.value;
+  if (qcx !== '' || qcz !== '') {
+    obj.coords = {};
+    if (qcx !== '' && qcx != null) obj.coords.x = +qcx;
+    if (qcy !== '' && qcy != null) obj.coords.y = +qcy;
+    if (qcz !== '' && qcz != null) obj.coords.z = +qcz;
+  }
 
   const objs = questSimpleObjs
     .filter(o => o.texte.trim())
@@ -5797,13 +6002,18 @@ function buildQuestObj() {
       const mobs = (o.mobs || []).filter(m => m.mobId).map(m => ({ id: m.mobId, qte: +m.qte || 1 }));
       if (mobs.length) e.mobs = mobs;
       if (o.next) e.next = true;
-      if (o.location?.regionId || o.location?.regionName) {
-        e.location = {};
-        if (o.location.regionId)   e.location.regionId   = o.location.regionId;
-        if (o.location.regionName) e.location.regionName = o.location.regionName;
-        if (o.location.x !== '' && o.location.x != null) e.location.x = +o.location.x;
-        if (o.location.y !== '' && o.location.y != null) e.location.y = +o.location.y;
-        if (o.location.z !== '' && o.location.z != null) e.location.z = +o.location.z;
+      if (o.location) {
+        const hasRegion = o.location.regionId || o.location.regionName;
+        const hasX = o.location.x !== '' && o.location.x != null;
+        const hasZ = o.location.z !== '' && o.location.z != null;
+        if (hasRegion || hasX || hasZ) {
+          e.location = {};
+          if (o.location.regionId)   e.location.regionId   = o.location.regionId;
+          if (o.location.regionName) e.location.regionName = o.location.regionName;
+          if (hasX) e.location.x = +o.location.x;
+          if (o.location.y !== '' && o.location.y != null) e.location.y = +o.location.y;
+          if (hasZ) e.location.z = +o.location.z;
+        }
       }
       return e;
     });
@@ -5847,6 +6057,50 @@ function initQuestZoneDrop() {
     _questZoneDrop.setValue(window._pendingQuestZone, window._pendingQuestZone);
     window._pendingQuestZone = null;
   }
+}
+
+// ── NPC dropdown
+let _questNpcDrop = null;
+
+const QUEST_TYPE_TO_PNJ_TYPES = {
+  main: ['quête principale'],
+  sec:  ['quête secondaire', 'quêtes'],
+  ter:  ['quête tertiaire', 'quêtes'],
+};
+
+function initQuestNpcDrop() {
+  const container = document.getElementById('quest-npc-container');
+  if (!container) return;
+  const questType  = document.getElementById('quest-type')?.value || '';
+  const allPnjs    = _pnjsForObtain || [];
+  const allowedTypes = QUEST_TYPE_TO_PNJ_TYPES[questType];
+  const filteredPnjs = allowedTypes
+    ? allPnjs.filter(p => allowedTypes.includes((p.type || '').toLowerCase()))
+    : allPnjs;
+  const pnjs = filteredPnjs.map(p => ({
+    id:       p.id || p._id || '',
+    name:     p.name || p.nom || p.id || p._id || '',
+    search:   ((p.name || p.nom || '') + ' ' + (p.id || p._id || '')).toLowerCase(),
+    subtitle: p.palier ? `Palier ${p.palier}` : '',
+  }));
+  _questNpcDrop = makeSearchDrop(pnjs, '🔍 PNJ…', (id) => {
+    document.getElementById('quest-npc').value = id;
+    update();
+  }, false);
+  container.innerHTML = '';
+  container.appendChild(_questNpcDrop.element);
+  if (window._pendingQuestNpc) {
+    const pnj = allPnjs.find(p => (p.id || p._id) === window._pendingQuestNpc);
+    const pnjName = pnj ? (pnj.name || pnj.nom || window._pendingQuestNpc) : window._pendingQuestNpc;
+    _questNpcDrop.setValue(window._pendingQuestNpc, pnjName);
+    document.getElementById('quest-npc').value = window._pendingQuestNpc;
+    window._pendingQuestNpc = null;
+  }
+}
+
+function onQuestTypeChange() {
+  update();
+  initQuestNpcDrop();
 }
 
 // ── Preview
@@ -5909,6 +6163,9 @@ function renderQuestPreview(obj) {
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;font-size:11px;color:var(--muted);">
           ${obj.zone ? `<span>📍 ${esc(obj.zone)}</span>` : ''}
           ${obj.npc  ? `<span>🧑 ${esc(obj.npc)}</span>`  : ''}
+          ${obj.coords?.x != null && obj.coords?.z != null
+            ? `<span style="color:#4ade80;">🗺 X:${obj.coords.x} Z:${obj.coords.z}</span>`
+            : `<span style="color:var(--danger);font-weight:700;">⚠ Coordonnées manquantes</span>`}
         </div>
       </div>
       ${obj.desc ? `<div style="padding:10px 14px;font-size:12px;color:var(--text);line-height:1.6;border-bottom:1px solid var(--border);">${esc(obj.desc)}</div>` : ''}
@@ -5927,10 +6184,11 @@ function renderQuestPreview(obj) {
 function resetQuestForm() {
   questSimpleObjs  = [];
   questRecompenses = [];
-  ['quest-titre','quest-id','quest-npc','quest-desc'].forEach(id => {
+  ['quest-titre','quest-id','quest-npc','quest-desc','quest-cx','quest-cy','quest-cz'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   if (_questZoneDrop) _questZoneDrop.reset();
+  if (_questNpcDrop)  _questNpcDrop.reset();
   const t = document.getElementById('quest-type');   if (t) t.selectedIndex = 0;
   const p = document.getElementById('quest-palier'); if (p) p.selectedIndex = 0;
   _customSelUpdaters['quest-type']?.();

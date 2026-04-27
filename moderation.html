@@ -80,6 +80,7 @@
     <button class="filter-btn" id="btn-quest-order"    onclick="showQuestOrder()">📜 Quêtes</button>
     <button class="filter-btn" id="btn-panoplie-order" onclick="showPanoplieOrder()">🔗 Panoplies</button>
     <button class="filter-btn" id="btn-map-order"      onclick="showMapPanel()">🗺️ Carte</button>
+    <button class="filter-btn" id="btn-zone-list"      onclick="showZoneList()">💀 Zones Monstres</button>
 
     <!-- ── DIAGNOSTIC ──────────────────────────────────── -->
     <div class="sb-label">DIAGNOSTIC</div>
@@ -99,12 +100,14 @@
     <button class="filter-btn" id="btn-permissions"        onclick="showPermissions()">🔑 Permissions</button>
     <button class="filter-btn" id="btn-migration"          onclick="showMigration()">🔒 Sensible</button>
     <button class="filter-btn" id="btn-creator-validation" onclick="showCreatorValidation()">⚙️ Champs requis</button>
-    <button class="filter-btn" id="btn-migration-evolutif" onclick="showMigrationEvolutif()">🔄 Migration Évolutif</button>
 
     <!-- ── OUTILS ───────────────────────────────────────── -->
     <div class="sb-label">OUTILS</div>
     <button class="filter-btn" id="btn-calibrateur" onclick="showCalibrateur()">🎮 Calibrateur 3D</button>
     <button class="filter-btn" id="btn-capture-sprites" onclick="showCaptureSprites()">📸 Capture Sprites</button>
+    <button class="filter-btn" id="btn-zone-editor" onclick="showZoneEditor()">🗺️ Éditeur de Zones</button>
+    <button class="filter-btn" id="btn-pnj-migration" onclick="showPnjMigration()">🔄 Migration PNJ Types</button>
+    <button class="filter-btn" id="btn-quest-map-migration" onclick="showQuestMapMigration()">🗺️ Migration Quêtes → Carte</button>
   </aside>
 
   <main class="main" id="submissions-list">
@@ -270,99 +273,137 @@
 
   <!-- Panneau Carte (map_markers) -->
   <main class="main" id="map-panel" style="display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <span style="font-size:15px;font-weight:700;">🗺️ Marqueurs de carte</span>
-      <button class="btn btn-ghost" onclick="openMapMarkerForm(null)" style="font-size:12px;">+ Ajouter</button>
-    </div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
-      Gestion des marqueurs statiques (donjons, ressources, zones monstres) affichés sur map2.
-    </p>
-
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-      <select id="map-filter-floor" onchange="renderMapTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
-        <option value="">Tous les paliers</option>
-        <option value="1">Palier 1</option>
-        <option value="2">Palier 2</option>
-        <option value="3">Palier 3</option>
-      </select>
-      <select id="map-filter-type" onchange="renderMapTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
-        <option value="">Tous les types</option>
-        <option value="donjon">Donjon</option>
-        <option value="ressource">Ressource</option>
-        <option value="zone_monstre">Zone monstre</option>
-      </select>
-      <input type="search" id="map-filter-search" placeholder="🔍 Nom…" oninput="renderMapTable()"
-             style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
-    </div>
-
-    <!-- Formulaire inline -->
-    <div id="map-marker-form" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
-      <div style="font-size:13px;font-weight:600;margin-bottom:12px;" id="map-form-title">Nouveau marqueur</div>
-      <input type="hidden" id="map-form-id">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-        <div>
-          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Type *</label>
-          <select id="map-form-type" onchange="onMapFormTypeChange()" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
-            <option value="donjon">⚔️ Donjon</option>
-            <option value="ressource">🌿 Ressource</option>
-            <option value="zone_monstre">💀 Zone monstre</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Palier *</label>
-          <select id="map-form-floor" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
-            <option value="1">Palier 1</option>
-            <option value="2">Palier 2</option>
-            <option value="3">Palier 3</option>
-          </select>
-        </div>
-      </div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Nom *</label>
-        <input type="text" id="map-form-name" placeholder="Donjon de Darkhold" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-        <div>
-          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Coord X (in-game)</label>
-          <input type="number" step="0.1" id="map-form-gx" placeholder="1234.5" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
-        </div>
-        <div>
-          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Coord Z (in-game)</label>
-          <input type="number" step="0.1" id="map-form-gy" placeholder="-890.2" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
-        </div>
-      </div>
-      <!-- Champs conditionnels -->
-      <div id="map-form-donjon-fields" style="display:none;margin-bottom:10px;">
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Niveaux requis (ex: 15-20)</label>
-        <input type="text" id="map-form-level" placeholder="15-20" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
-      </div>
-      <div id="map-form-zone-fields" style="display:none;margin-bottom:10px;">
-        <div style="margin-bottom:8px;">
-          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Couleur</label>
-          <input type="color" id="map-form-color" value="#ff4444" style="width:60px;height:32px;border:none;background:none;cursor:pointer;border-radius:4px;">
-        </div>
-        <div>
-          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Polygone (JSON array [[gx,gy],…])</label>
-          <textarea id="map-form-polygon" placeholder='[[100,200],[150,250],…]' rows="3" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:12px;font-family:monospace;outline:none;resize:vertical;"></textarea>
-        </div>
-      </div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Description</label>
-        <input type="text" id="map-form-desc" placeholder="Courte description…" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
-      </div>
-      <div style="margin-bottom:10px;">
-        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Lien (guide externe)</label>
-        <input type="url" id="map-form-link" placeholder="https://…" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button class="btn btn-ghost" onclick="closeMapMarkerForm()">Annuler</button>
-        <button class="btn" style="background:var(--accent);color:#fff;" onclick="saveMapMarker()">💾 Enregistrer</button>
+      <div id="map-header-btns" style="display:flex;gap:6px;">
+        <button class="btn btn-ghost" id="btn-rename-donjon-ids" onclick="renameDonjonIds()" style="font-size:12px;">🔧 Normaliser IDs donjons</button>
+        <button class="btn btn-ghost" onclick="openMapMarkerForm(null)" style="font-size:12px;">+ Ajouter</button>
       </div>
     </div>
 
-    <div id="map-markers-table">
-      <div class="empty">Chargement…</div>
+    <!-- Onglets -->
+    <div style="display:flex;gap:2px;margin-bottom:16px;background:var(--surface2);border-radius:8px;padding:3px;">
+      <button id="map-tab-btn-markers" onclick="switchMapTab('markers')"
+        style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:#fff;">
+        📍 Marqueurs
+      </button>
+      <button id="map-tab-btn-allpins" onclick="switchMapTab('allpins')"
+        style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
+        🗺️ Tous les pins
+      </button>
+      <button id="map-tab-btn-colors" onclick="switchMapTab('colors')"
+        style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
+        🎨 Couleurs de pins
+      </button>
     </div>
+
+    <!-- Onglet Marqueurs (statiques) -->
+    <div id="map-tab-markers">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+        Gestion des marqueurs statiques (donjons, ressources) affichés sur map2.
+      </p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <select id="map-filter-floor" onchange="renderMapTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+          <option value="">Tous les paliers</option>
+          <option value="1">Palier 1</option>
+          <option value="2">Palier 2</option>
+          <option value="3">Palier 3</option>
+        </select>
+        <select id="map-filter-type" onchange="renderMapTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+          <option value="">Tous les types</option>
+          <option value="donjon">Donjon</option>
+          <option value="ressource">Ressource</option>
+        </select>
+        <input type="search" id="map-filter-search" placeholder="🔍 Nom…" oninput="renderMapTable()"
+               style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+      </div>
+      <!-- Formulaire inline -->
+      <div id="map-marker-form" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px;" id="map-form-title">Nouveau marqueur</div>
+        <input type="hidden" id="map-form-id">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Type *</label>
+            <select id="map-form-type" onchange="onMapFormTypeChange()" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+              <option value="donjon">⚔️ Donjon</option>
+              <option value="ressource">🌿 Ressource</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Palier *</label>
+            <select id="map-form-floor" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+              <option value="1">Palier 1</option>
+              <option value="2">Palier 2</option>
+              <option value="3">Palier 3</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Nom *</label>
+          <input type="text" id="map-form-name" placeholder="Donjon de Darkhold" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Coord X (in-game)</label>
+            <input type="number" step="0.1" id="map-form-gx" placeholder="1234.5" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Coord Z (in-game)</label>
+            <input type="number" step="0.1" id="map-form-gy" placeholder="-890.2" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+          </div>
+        </div>
+        <div id="map-form-donjon-fields" style="display:none;margin-bottom:10px;">
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Niveaux requis (ex: 15-20)</label>
+          <input type="text" id="map-form-level" placeholder="15-20" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Description</label>
+          <input type="text" id="map-form-desc" placeholder="Courte description…" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Lien (guide externe)</label>
+          <input type="url" id="map-form-link" placeholder="https://…" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button class="btn btn-ghost" onclick="closeMapMarkerForm()">Annuler</button>
+          <button class="btn" style="background:var(--accent);color:#fff;" onclick="saveMapMarker()">💾 Enregistrer</button>
+        </div>
+      </div>
+      <div id="map-markers-table"><div class="empty">Chargement…</div></div>
+    </div>
+
+    <!-- Onglet Tous les pins -->
+    <div id="map-tab-allpins" style="display:none;">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+        Tous les pins présents sur la carte (PNJs, boss, donjons, ressources), classés par palier et type.
+      </p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <select id="ap-filter-floor" onchange="renderAllMapPins()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+          <option value="">Tous les paliers</option>
+          <option value="1">Palier 1</option>
+          <option value="2">Palier 2</option>
+          <option value="3">Palier 3</option>
+        </select>
+        <select id="ap-filter-type" onchange="renderAllMapPins()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+          <option value="">Tous les types</option>
+        </select>
+        <input type="search" id="ap-filter-search" placeholder="🔍 Nom…" oninput="renderAllMapPins()"
+               style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+      </div>
+      <div id="all-pins-content"><div class="empty">Chargement…</div></div>
+    </div>
+
+    <!-- Onglet Couleurs de pins -->
+    <div id="map-tab-colors" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <p style="font-size:12px;color:var(--muted);margin:0;">
+          Définit la couleur de fond du pin sur la carte et dans la légende. Sauvegardé dans <code>config/pin_type_colors</code>. Les Régions restent toujours transparentes.
+        </p>
+        <button class="btn" id="btn-save-pin-colors" onclick="savePinColors()" style="background:var(--accent);color:#fff;font-size:12px;flex-shrink:0;">💾 Sauvegarder</button>
+      </div>
+      <div id="pin-colors-content"><div class="empty">Chargement…</div></div>
+    </div>
+
   </main>
 
   <!-- Panneau Webhooks Discord -->
@@ -685,6 +726,174 @@
     <iframe id="capture-iframe" style="width:100%;height:100%;border:none;" src="about:blank" title="Capture Sprites"></iframe>
   </main>
 
+  <!-- Panneau Liste des Zones -->
+  <main class="main" id="zone-list-panel" style="display:none;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:15px;font-weight:700;">📋 Liste des Zones</span>
+      <button class="btn btn-ghost" onclick="loadZoneList()" style="font-size:12px;">🔄 Rafraîchir</button>
+      <button class="btn btn-ghost" id="btn-migrate-zones" onclick="migrateHardcodedZones()" style="font-size:12px;">⚡ Migrer data.js</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <select id="zl-filter-floor" onchange="renderZoneList()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+        <option value="">Tous les paliers</option>
+        <option value="1">Palier 1</option>
+        <option value="2">Palier 2</option>
+        <option value="3">Palier 3</option>
+      </select>
+      <input type="search" id="zl-search" placeholder="🔍 Nom de zone…" oninput="renderZoneList()"
+        style="flex:1;min-width:140px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+    </div>
+    <div id="zone-list-content"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Éditeur de Zones -->
+  <main class="main" id="zone-editor-panel" style="display:none;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:15px;font-weight:700;">🗺️ Éditeur de Zones</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="zoneEditorReset()" style="font-size:12px;">🗑 Reset</button>
+        <button class="btn" id="ze-save-btn" onclick="zoneEditorSave()" style="background:var(--accent);color:#fff;font-size:12px;" disabled>💾 Sauvegarder</button>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
+      Clique sur la carte pour placer les sommets d'un polygone. Clique sur un sommet pour le supprimer. La zone est sauvegardée comme marqueur <code>zone_monstre</code> dans Firestore.
+    </p>
+
+    <!-- Paramètres de la zone -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 120px auto;gap:10px;margin-bottom:10px;align-items:end;">
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Nom de la zone *</label>
+        <input type="text" id="ze-name" placeholder="Zone des Loups" oninput="zeCheckSave()"
+          style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Description</label>
+        <input type="text" id="ze-desc" placeholder="Niveau 5-10…"
+          style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Palier</label>
+        <select id="ze-floor" onchange="zeFloorChange()"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
+          <option value="1">Palier 1</option>
+          <option value="2">Palier 2</option>
+          <option value="3">Palier 3</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Couleur</label>
+        <input type="color" id="ze-color" value="#ff4444" oninput="zeRenderSvg()"
+          style="width:48px;height:36px;border:none;background:none;cursor:pointer;border-radius:4px;">
+      </div>
+    </div>
+
+    <!-- Toggle Surface / Sous-sol -->
+    <div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px;width:fit-content;">
+      <button id="ze-layer-surface" onclick="zeLayerChange('surface')"
+        style="padding:5px 14px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:#fff;">
+        🌿 Surface
+      </button>
+      <button id="ze-layer-underground" onclick="zeLayerChange('underground')"
+        style="padding:5px 14px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
+        🕳️ Sous-sol
+      </button>
+    </div>
+
+    <!-- Contrôles zoom -->
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="zeZoom(1.25)" style="font-size:13px;padding:3px 10px;">＋</button>
+      <button class="btn btn-ghost btn-sm" onclick="zeZoom(0.8)"  style="font-size:13px;padding:3px 10px;">－</button>
+      <button class="btn btn-ghost btn-sm" onclick="zeZoomReset()" style="font-size:11px;">⟳ Reset vue</button>
+      <span id="ze-zoom-label" style="font-size:11px;color:var(--muted);margin-left:4px;">100%</span>
+      <span style="font-size:11px;color:var(--muted);margin-left:8px;">Molette = zoom · Clic droit drag = pan · Clic gauche = point</span>
+    </div>
+
+    <!-- Viewport carte -->
+    <div style="position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:12px;background:#111;height:560px;" id="ze-viewport">
+      <!-- Canvas transformable (pan + zoom) -->
+      <div id="ze-canvas" style="position:absolute;top:0;left:0;width:900px;height:900px;transform-origin:0 0;">
+        <img id="ze-map-img" src="" alt="Carte"
+          style="display:block;width:900px;height:900px;object-fit:contain;pointer-events:none;user-select:none;">
+        <svg id="ze-svg" style="position:absolute;top:0;left:0;width:900px;height:900px;z-index:2;" overflow="visible"></svg>
+      </div>
+    </div>
+
+    <!-- Points -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Points (<span id="ze-count">0</span>)</div>
+      <div id="ze-points-list" style="display:flex;flex-direction:column;gap:3px;max-height:150px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- Mobs liés -->
+    <div style="margin-top:16px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Mobs liés à cette zone</div>
+      <div style="position:relative;margin-bottom:8px;">
+        <input type="search" id="ze-mob-search" placeholder="🔍 Rechercher un mob…" oninput="zeSearchMob()" autocomplete="off"
+          style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:12px;outline:none;">
+        <div id="ze-mob-results" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:6px;max-height:200px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.5);margin-top:2px;"></div>
+      </div>
+      <div id="ze-mob-list" style="display:flex;flex-direction:column;gap:4px;"></div>
+    </div>
+  </main>
+
+  <!-- Panneau Migration PNJ Types -->
+  <main class="main" id="pnj-migration-panel" style="display:none;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:15px;font-weight:700;">🔄 Migration PNJ Types</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="loadPnjMigration()" style="font-size:12px;">🔄 Rafraîchir</button>
+        <button class="btn" id="pnjmig-save-btn" onclick="savePnjMigration()" style="background:var(--accent);color:#fff;font-size:12px;" disabled>💾 Sauvegarder les modifications</button>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
+      Liste tous les PNJs. Pour chaque PNJ, sélectionne son type. Les modifications sont marquées en jaune. Clique sur "Sauvegarder" pour tout écrire dans Firestore.
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+      <select id="pnjmig-filter" onchange="renderPnjMigration()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+        <option value="all">Tous les PNJs</option>
+        <option value="missing">Sans type uniquement</option>
+        <option value="unknown">Types inconnus uniquement</option>
+      </select>
+      <input type="search" id="pnjmig-search" placeholder="🔍 Nom…" oninput="renderPnjMigration()" style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+      <span id="pnjmig-count" style="font-size:12px;color:var(--muted);white-space:nowrap;"></span>
+    </div>
+    <div id="pnjmig-table"></div>
+  </main>
+
+  <!-- Panneau Migration Quêtes → Carte -->
+  <main class="main" id="quest-map-migration-panel" style="display:none;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:15px;font-weight:700;">🗺️ Migration Quêtes → Carte</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="loadQuestMapMigration()" style="font-size:12px;">🔄 Rafraîchir</button>
+        <button class="btn" id="qm-save-btn" onclick="saveQuestMapMigration()" style="background:var(--accent);color:#fff;font-size:12px;" disabled>💾 Migrer les quêtes</button>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
+      Migre les marqueurs de quêtes <b>principales</b> et <b>secondaires</b> depuis <code>data.js</code> vers la collection Firestore <code>map_markers</code>, pour les afficher sur <b>map2</b>.<br>
+      Pour chaque marqueur, sélectionnez la quête Firestore correspondante (auto-match tenté sur le titre). Laissez "— Aucune —" pour utiliser l'ancien lien Gitbook.
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
+      <select id="qm-filter-type" onchange="renderQuestMapMigration()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+        <option value="">Tous les types</option>
+        <option value="quête_principale">💬 Principale</option>
+        <option value="quête_secondaire">❓ Secondaire</option>
+      </select>
+      <select id="qm-filter-floor" onchange="renderQuestMapMigration()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+        <option value="">Tous les paliers</option>
+        <option value="1">Palier 1</option>
+        <option value="2">Palier 2</option>
+        <option value="3">Palier 3</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" id="qm-show-existing" onchange="renderQuestMapMigration()" style="cursor:pointer;">
+        Afficher déjà migrés
+      </label>
+      <span id="qm-count" style="font-size:12px;color:var(--muted);white-space:nowrap;"></span>
+    </div>
+    <div id="qm-table"></div>
+  </main>
+
   <!-- Panneau Data (toutes les collections) -->
   <main class="main" id="data-all-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -750,203 +959,12 @@
     <div id="data-all-list" style="display:flex;flex-direction:column;gap:4px;"></div>
   </main>
 
-  <!-- Panneau Migration Évolutif -->
-  <main class="main" id="migration-evolutif-panel" style="display:none;">
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:8px;">
-      <span style="font-size:15px;font-weight:700;">🔄 Migration — Items Évolutifs</span>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost" onclick="migAnalyze()" style="font-size:12px;">🔍 Analyser</button>
-        <button class="btn" id="mig-ev-btn-all" onclick="migRunAll()" style="display:none;background:var(--accent);color:#fff;font-size:12px;">⚡ Tout migrer</button>
-      </div>
-    </div>
-
-    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
-      Détecte les items avec l'ancien booléen <code>evolving: true</code> et les migre vers <code>evolutif: true</code>
-      (en supprimant l'ancien champ). Détecte aussi les items dont l'ID correspond au pattern évolutif
-      (<code>nom_classe_p1</code>) mais sans aucun des deux flags.
-    </p>
-
-    <!-- Stats rapides -->
-    <div id="mig-ev-stats" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:18px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:13px;"></div>
-
-    <!-- Barre de progression -->
-    <div id="mig-ev-progress" style="display:none;margin-bottom:14px;">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:5px;" id="mig-ev-progress-text">Mise à jour en cours…</div>
-      <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
-        <div id="mig-ev-progress-bar" style="height:100%;background:var(--accent);width:0%;transition:width .25s;border-radius:3px;"></div>
-      </div>
-    </div>
-
-    <!-- Listes -->
-    <div id="mig-ev-list"></div>
-
-  </main>
 </div>
 
+<script src="Map/data.js"></script>
 <script src="utils.js"></script>
 <script type="module" src="moderation.js"></script>
-<script type="module">
-import { db, collection, getDocs, doc, updateDoc, deleteField } from './firebase.js';
-
-// Pattern d'ID évolutif : se termine par _classe_pN
-const EVOLUTIF_PATTERN = /_(guerrier|assassin|archer|mage|shaman)_p\d$/;
-
-let _migPending  = []; // items avec evolving:true → à migrer
-let _migDetected = []; // items détectés par pattern ID, sans flag
-
-function _switchToPanel(id) {
-  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('btn-migration-evolutif');
-  if (btn) btn.classList.add('active');
-  const panel = document.getElementById(id);
-  if (panel) panel.style.display = '';
-}
-
-window.showMigrationEvolutif = function() {
-  _switchToPanel('migration-evolutif-panel');
-  migAnalyze();
-};
-
-window.migAnalyze = async function() {
-  const statsEl   = document.getElementById('mig-ev-stats');
-  const listEl    = document.getElementById('mig-ev-list');
-  const btnAll    = document.getElementById('mig-ev-btn-all');
-  statsEl.innerHTML = '<span style="color:var(--muted)">Chargement…</span>';
-  listEl.innerHTML  = '';
-  btnAll.style.display = 'none';
-
-  const snap  = await getDocs(collection(db, 'items'));
-  const items = snap.docs.map(d => ({ _docId: d.id, ...d.data() }));
-
-  const migrated  = items.filter(i => i.evolutif === true);
-  _migPending     = items.filter(i => i.evolving === true && !i.evolutif);
-  _migDetected    = items.filter(i => !i.evolving && !i.evolutif &&
-                      EVOLUTIF_PATTERN.test(i.id || i._docId || ''));
-
-  // Stats
-  statsEl.innerHTML =
-    `<span>✅ Déjà migrés : <b style="color:var(--success)">${migrated.length}</b></span>` +
-    `<span>⚠️ À migrer (<code>evolving</code>) : <b style="color:#f59e0b">${_migPending.length}</b></span>` +
-    `<span>🔍 Détectés par pattern ID : <b style="color:#60a5fa">${_migDetected.length}</b></span>`;
-
-  if (!_migPending.length && !_migDetected.length) {
-    listEl.innerHTML = '<div style="color:var(--success);font-size:13px;padding:12px 0;">✓ Aucun item à migrer — tout est à jour.</div>';
-    return;
-  }
-
-  btnAll.style.display = (_migPending.length > 0) ? '' : 'none';
-
-  listEl.innerHTML = '';
-
-  if (_migPending.length) {
-    listEl.appendChild(_migSection(
-      '⚠️ À migrer — <code>evolving: true</code> → <code>evolutif: true</code>',
-      _migPending,
-      true
-    ));
-  }
-
-  if (_migDetected.length) {
-    listEl.appendChild(_migSection(
-      '🔍 Détectés par pattern ID (sans flag)',
-      _migDetected,
-      true
-    ));
-  }
-};
-
-function _migSection(title, items, showBtn) {
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'margin-bottom:24px;';
-
-  const h = document.createElement('div');
-  h.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);';
-  h.innerHTML = title + ' <span style="opacity:.6;">(' + items.length + ')</span>';
-  wrap.appendChild(h);
-
-  items.forEach(item => {
-    const row = document.createElement('div');
-    row.id = 'mig-row-' + item._docId;
-    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);margin-bottom:5px;';
-
-    const nameEl = document.createElement('span');
-    nameEl.style.cssText = 'flex:1;font-size:13px;color:var(--text);';
-    nameEl.textContent = item.name || '(sans nom)';
-
-    const idEl = document.createElement('code');
-    idEl.style.cssText = 'font-size:10px;color:var(--muted);';
-    idEl.textContent = item.id || item._docId;
-
-    const tagEl = document.createElement('span');
-    tagEl.style.cssText = 'font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(245,158,11,.12);color:#f59e0b;border:1px solid rgba(245,158,11,.3);flex-shrink:0;';
-    tagEl.textContent = item.evolving ? 'evolving:true' : 'pattern';
-
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-ghost';
-    btn.style.cssText = 'font-size:11px;padding:3px 10px;flex-shrink:0;';
-    btn.textContent = '▶ Migrer';
-    btn.onclick = () => migOne(item._docId, btn, row);
-
-    row.appendChild(nameEl);
-    row.appendChild(idEl);
-    row.appendChild(tagEl);
-    row.appendChild(btn);
-    wrap.appendChild(row);
-  });
-
-  return wrap;
-}
-
-async function migOne(docId, btn, row) {
-  btn.disabled = true;
-  btn.textContent = '…';
-  try {
-    await updateDoc(doc(db, 'items', docId), {
-      evolutif: true,
-      evolving: deleteField(),
-    });
-    row.style.background = 'rgba(74,222,128,.08)';
-    row.style.borderColor = 'rgba(74,222,128,.3)';
-    btn.textContent = '✓ Migré';
-    btn.style.color = 'var(--success)';
-  } catch(e) {
-    btn.disabled = false;
-    btn.textContent = '✕ Erreur';
-    btn.style.color = 'var(--danger)';
-    console.error('[Migration] erreur sur', docId, e);
-  }
-}
-
-window.migRunAll = async function() {
-  const all   = [..._migPending, ..._migDetected];
-  const btnAll = document.getElementById('mig-ev-btn-all');
-  const progWrap = document.getElementById('mig-ev-progress');
-  const progBar  = document.getElementById('mig-ev-progress-bar');
-  const progText = document.getElementById('mig-ev-progress-text');
-
-  btnAll.disabled = true;
-  progWrap.style.display = '';
-
-  let done = 0;
-  for (const item of all) {
-    progText.textContent = `Migration ${done + 1} / ${all.length} — ${item.name || item._docId}`;
-    progBar.style.width = Math.round((done / all.length) * 100) + '%';
-    const row = document.getElementById('mig-row-' + item._docId);
-    const btn = row?.querySelector('button');
-    await migOne(item._docId, btn || document.createElement('button'), row || document.createElement('div'));
-    done++;
-  }
-
-  progBar.style.width = '100%';
-  progText.textContent = `✓ ${done} items migrés.`;
-  progText.style.color = 'var(--success)';
-  btnAll.disabled = false;
-  _migPending  = [];
-  _migDetected = [];
-};
-</script>
 <div id="img-lightbox" onclick="this.classList.remove('open')">
   <img id="img-lightbox-img" src="" alt="">
 </div>

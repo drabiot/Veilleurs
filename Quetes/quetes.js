@@ -738,12 +738,24 @@ function renderSheet(q) {
       const itemChips = o.items ? o.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
       const mobChips  = o.mobs  ? o.mobs .map(m  => renderMobChip (m.id,  m.qte )).join('') : '';
       const chips = itemChips + mobChips;
+      const locChip = (() => {
+        const loc = o.location;
+        if (!loc) return '';
+        const hasCoords = loc.x != null && loc.z != null;
+        if (!hasCoords) return '';
+        const pinName = encodeURIComponent(o.texte || 'Objectif');
+        const href    = `../Map/map.html?pin=${pinName}&floor=${q.palier}&gx=${loc.x}&gz=${loc.z}#floor-${q.palier}-x${loc.x}-z${loc.z}`;
+        const label   = loc.regionName
+          ? `📍 ${loc.regionName}`
+          : `📍 X ${loc.x} · Z ${loc.z}`;
+        return `<a class="obj-loc-chip" href="${href}" target="_blank" title="Voir sur la carte (X:${loc.x} Z:${loc.z})">${label}</a>`;
+      })();
       const objEl = `<div class="obj-item ${ck ? 'done' : ''} ${blocked ? 'obj-blocked' : ''} obj-item-${q.type}" data-oi="${i}">
         <label class="obj-ck-label">
           <input type="checkbox" class="obj-checkbox" data-oi="${i}" ${ck ? 'checked' : ''} ${blocked ? 'disabled' : ''}/>
           <span class="obj-checkmark"></span>
         </label>
-        <span class="obj-text">${formatObjectifText(o.texte)}${chips}</span>
+        <span class="obj-text">${formatObjectifText(o.texte)}${chips}${locChip}</span>
       </div>`;
       const arrowEl = o.next && i < q.objectifs.length - 1
         ? `<div class="obj-next-arrow">↓</div>`
@@ -756,10 +768,20 @@ function renderSheet(q) {
   const rewHTML = q.recompenses.map(r => renderRewardFull(r)).join('');
 
   /* Zone link conditionnel */
-  const zoneEl = mapUrl
-    ? `<a class="quest-meta-val quest-zone-link" href="${mapUrl}"
-          style="color:${zs.color};text-shadow:0 0 8px ${zs.dim}" target="_blank">🗺 ${q.zone} ↗</a>`
-    : `<span class="quest-meta-val" style="color:${zs.color}">🗺 ${q.zone}</span>`;
+  const zoneEl = q.zone
+    ? (mapUrl
+        ? `<a class="quest-meta-val quest-zone-link" href="${mapUrl}" style="color:${zs.color};text-shadow:0 0 8px ${zs.dim}" target="_blank">🗺 ${q.zone} ↗</a>`
+        : `<span class="quest-meta-val" style="color:${zs.color}">🗺 ${q.zone}</span>`)
+    : '';
+
+  /* Coordonnées de départ de la quête */
+  const questCoordsEl = (() => {
+    const c = q.coords;
+    if (!c || c.x == null || c.z == null) return '';
+    const pinName = encodeURIComponent(q.titre || 'Quête');
+    const href = `../Map/map.html?pin=${pinName}&floor=${q.palier}&gx=${c.x}&gz=${c.z}#floor-${q.palier}-x${c.x}-z${c.z}`;
+    return `<a class="obj-loc-chip quest-coords-chip" href="${href}" target="_blank" title="Voir le point de départ sur la carte">📍 X ${c.x} · Z ${c.z}</a>`;
+  })();
 
   /* Bouton "Copier le lien" */
   const shareUrl = `${location.origin}${location.pathname}#${q.id}`;
@@ -782,14 +804,9 @@ function renderSheet(q) {
             <span class="quest-meta-key">Palier</span>
             <span class="quest-meta-val">⬡ ${q.palier}</span>
           </div>
-          <div class="quest-meta-item">
-            <span class="quest-meta-key">Zone</span>
-            ${zoneEl}
-          </div>
-          <div class="quest-meta-item">
-            <span class="quest-meta-key">PNJ</span>
-            <span class="quest-meta-val">🧑 ${q.npc}</span>
-          </div>
+          ${zoneEl ? `<div class="quest-meta-item"><span class="quest-meta-key">Zone</span>${zoneEl}</div>` : ''}
+          ${q.npc  ? `<div class="quest-meta-item"><span class="quest-meta-key">PNJ</span><span class="quest-meta-val">🧑 ${q.npc}</span></div>` : ''}
+          ${questCoordsEl ? `<div class="quest-meta-item"><span class="quest-meta-key">Départ</span>${questCoordsEl}</div>` : ''}
         </div>
       </div>
     </div>
