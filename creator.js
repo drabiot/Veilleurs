@@ -827,7 +827,7 @@ function restoreForm(forcedMode) {
       if (q.palier) { document.getElementById('quest-palier').value = String(q.palier); _customSelUpdaters['quest-palier']?.(); }
       if (q.npc)   { document.getElementById('quest-npc').value = q.npc; window._pendingQuestNpc = q.npc; }
       if (q.desc)  document.getElementById('quest-desc').value  = q.desc;
-      if (q.zone)  window._pendingQuestZone = q.zone;
+      if (q.zone) window._pendingQuestZone = q.zone;
       if (q.cx != null && q.cx !== '') { const el = document.getElementById('quest-cx'); if (el) el.value = q.cx; }
       if (q.cy != null && q.cy !== '') { const el = document.getElementById('quest-cy'); if (el) el.value = q.cy; }
       if (q.cz != null && q.cz !== '') { const el = document.getElementById('quest-cz'); if (el) el.value = q.cz; }
@@ -1735,7 +1735,7 @@ async function _buildLoadDrops() {
       const pnjs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       _pnjsForObtain = pnjs; // sauvegarder pour la liste d'obtention
       initObtainData();      // rafraîchir allArtisans / allMarchands avec les PNJs Firestore
-      if (creatorMode === 'quest') initQuestNpcDrop();
+      // NPC: texte libre uniquement
       if (pnjs.length) {
         const idx = pnjs.map(p => {
           const parts = [];
@@ -2269,6 +2269,7 @@ function loadQuest(quest) {
   if (quest.type)   document.getElementById('quest-type').value  = quest.type;
   if (quest.palier) document.getElementById('quest-palier').value = String(quest.palier);
   if (quest.npc)  { document.getElementById('quest-npc').value = quest.npc; window._pendingQuestNpc = quest.npc; }
+  if (quest.zone) window._pendingQuestZone = quest.zone;
   if (quest.desc)   document.getElementById('quest-desc').value  = quest.desc;
   if (quest.coords) {
     const cx = document.getElementById('quest-cx');
@@ -4128,8 +4129,17 @@ async function submitToDiscord() {
     if (!q.id)     qErrors.push('ID manquant — remplis le titre.');
     if (!q.type)   qErrors.push('Type de quête obligatoire.');
     if (!q.titre)  qErrors.push('Titre obligatoire.');
-    if (!q.desc)   qErrors.push('Description obligatoire.');
     if (!q.palier) qErrors.push('Le palier est obligatoire.');
+    // Objectifs avec coordonnées mais sans titre
+    const objWithCoordsNoTitle = questSimpleObjs.find(o => {
+      if (!o.location) return false;
+      const hasCoords = (o.location.x !== '' && o.location.x != null) || (o.location.z !== '' && o.location.z != null);
+      return hasCoords && !o.texte.trim();
+    });
+    if (objWithCoordsNoTitle) {
+      window._toast?.('⛔ Un objectif a des coordonnées mais aucun titre. Sans titre, les coordonnées ne seront pas enregistrées.', 'error', 6000);
+      return;
+    }
     if (qErrors.length) {
       window._toast?.('⛔ ' + qErrors.join(' · '), 'error', 5000);
       return;
@@ -4328,7 +4338,6 @@ async function submitToFirestore() {
     if (!data.id)     throw new Error('ID manquant (remplis le titre)');
     if (!data.type)   throw new Error('Type de quête obligatoire');
     if (!data.titre)  throw new Error('Titre obligatoire');
-    if (!data.desc)   throw new Error('Description obligatoire');
     if (!data.palier) throw new Error('Le palier est obligatoire');
   } else if (creatorMode === 'panoplie') {
     type = 'panoplie';
@@ -4366,6 +4375,12 @@ async function submitToFirestore() {
   else if (creatorMode === 'pnj')  isModification = !!pnjIdLocked;
 
   const submitterComment = document.getElementById('submitter-comment')?.value?.trim() || '';
+
+  if (isModification && !submitterComment) {
+    window._toast?.('⛔ Pour une modification, la note de modération est obligatoire. Expliquez ce qui a changé.', 'error', 6000);
+    document.getElementById('submitter-comment')?.focus();
+    return;
+  }
 
   const docRef = await addDoc(col(db, 'submissions'), {
     type,
@@ -4916,7 +4931,7 @@ function switchMode(mode) {
   if (mode === 'mob')    loadMobRegions();
   if (mode === 'pnj')    loadMobRegions();
   if (mode === 'region') loadRegionsCache();
-  if (mode === 'quest')  loadMobRegions().then(() => { initQuestZoneDrop(); initQuestNpcDrop(); });
+  if (mode === 'quest')  loadMobRegions().then(() => { initQuestZoneDrop(); }); // NB: NPC drop volontairement retiré
   if (mode === 'panoplie') { loadPanopliesCache().then(() => { renderPanopBonuses(); update(); }); }
   update();
 }
@@ -5753,7 +5768,7 @@ function _makeQuestObjRow(obj, onRemove, onNextToggle) {
     addLocBtn.textContent = '📍 Lieu';
     addLocBtn.style.cssText = 'font-size:11px;padding:3px 9px;';
     addLocBtn.addEventListener('click', () => {
-      if (obj.location) { obj.location = null; } else { obj.location = { regionId: '', regionName: '', x: '', y: '', z: '' }; }
+      if (obj.location) { obj.location = null; } else { obj.location = { regionName: '', x: '', y: '', z: '' }; }
       renderLocationBlock();
       update();
     });
@@ -5784,43 +5799,7 @@ function _makeQuestObjRow(obj, onRemove, onNextToggle) {
     header.append(lbl, rmLoc);
     block.appendChild(header);
 
-    // Région search
-    const regRow = document.createElement('div');
-    regRow.style.cssText = 'position:relative;';
-    const regInput = document.createElement('input');
-    regInput.type = 'text';
-    regInput.placeholder = '🔍 Rechercher une région…';
-    regInput.value = loc.regionName || '';
-    regInput.autocomplete = 'off';
-    regInput.style.cssText = 'width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;transition:border-color .15s;box-sizing:border-box;';
-    const regDrop = document.createElement('div');
-    regDrop.className = 'region-drop';
-    const filterReg = () => {
-      const q = normalize(regInput.value);
-      const options = (_allMobRegions || []).filter(r => normalize(r.name || r.id || '').includes(q));
-      regDrop.innerHTML = '';
-      if (!options.length) { regDrop.classList.remove('open'); return; }
-      options.slice(0, 12).forEach(r => {
-        const item = document.createElement('div');
-        item.className = 'region-drop-item';
-        item.textContent = r.name || r.id;
-        item.addEventListener('mousedown', e => {
-          e.preventDefault();
-          loc.regionId = r.id || r.name;
-          loc.regionName = r.name || r.id;
-          regInput.value = loc.regionName;
-          regDrop.classList.remove('open');
-          update();
-        });
-        regDrop.appendChild(item);
-      });
-      regDrop.classList.add('open');
-    };
-    regInput.addEventListener('input', () => { loc.regionName = regInput.value; loc.regionId = ''; filterReg(); update(); });
-    regInput.addEventListener('focus', filterReg);
-    regInput.addEventListener('blur', () => setTimeout(() => { regDrop.classList.remove('open'); }, 150));
-    regRow.append(regInput, regDrop);
-    block.appendChild(regRow);
+    // Région search supprimée — coordonnées uniquement dans les objectifs
 
     // Coordonnées X/Y/Z
     const coordRow = document.createElement('div');
@@ -5970,8 +5949,8 @@ function buildQuestObj() {
   const titre  = document.getElementById('quest-titre').value.trim();
   const type   = document.getElementById('quest-type').value;
   const palier = document.getElementById('quest-palier').value;
-  const zone   = _questZoneDrop ? _questZoneDrop.getValue() : '';
-  const npc    = _questNpcDrop ? (_questNpcDrop.getValue() || '') : document.getElementById('quest-npc').value.trim();
+  const zone   = _questZoneDrop ? _questZoneDrop.getValue() : (document.getElementById('quest-zone-input')?.value.trim() || '');
+  const npc    = document.getElementById('quest-npc')?.value.trim() || '';
   const desc   = document.getElementById('quest-desc').value.trim();
 
   const obj = {};
@@ -6003,12 +5982,11 @@ function buildQuestObj() {
       if (mobs.length) e.mobs = mobs;
       if (o.next) e.next = true;
       if (o.location) {
-        const hasRegion = o.location.regionId || o.location.regionName;
+        const hasRegion = !!o.location.regionName;
         const hasX = o.location.x !== '' && o.location.x != null;
         const hasZ = o.location.z !== '' && o.location.z != null;
         if (hasRegion || hasX || hasZ) {
           e.location = {};
-          if (o.location.regionId)   e.location.regionId   = o.location.regionId;
           if (o.location.regionName) e.location.regionName = o.location.regionName;
           if (hasX) e.location.x = +o.location.x;
           if (o.location.y !== '' && o.location.y != null) e.location.y = +o.location.y;
@@ -6083,24 +6061,30 @@ function initQuestNpcDrop() {
     search:   ((p.name || p.nom || '') + ' ' + (p.id || p._id || '')).toLowerCase(),
     subtitle: p.palier ? `Palier ${p.palier}` : '',
   }));
-  _questNpcDrop = makeSearchDrop(pnjs, '🔍 PNJ…', (id) => {
-    document.getElementById('quest-npc').value = id;
+  _questNpcDrop = makeSearchDrop(pnjs, '🔍 Chercher un PNJ…', (id) => {
+    const pnj  = allPnjs.find(p => (p.id || p._id) === id);
+    const name = pnj ? (pnj.name || pnj.nom || id) : id;
+    document.getElementById('quest-npc').value = name;
     update();
   }, false);
   container.innerHTML = '';
   container.appendChild(_questNpcDrop.element);
   if (window._pendingQuestNpc) {
-    const pnj = allPnjs.find(p => (p.id || p._id) === window._pendingQuestNpc);
-    const pnjName = pnj ? (pnj.name || pnj.nom || window._pendingQuestNpc) : window._pendingQuestNpc;
-    _questNpcDrop.setValue(window._pendingQuestNpc, pnjName);
-    document.getElementById('quest-npc').value = window._pendingQuestNpc;
+    const raw = window._pendingQuestNpc;
+    // Résoudre l'ID → nom si possible (rétrocompatibilité avec anciens enregistrements)
+    const pnjById   = allPnjs.find(p => (p.id || p._id) === raw);
+    const pnjByName = allPnjs.find(p => (p.name || p.nom || '').toLowerCase() === raw.toLowerCase());
+    const pnj       = pnjById || pnjByName;
+    const pnjId     = pnj ? (pnj.id || pnj._id) : null;
+    const pnjName   = pnj ? (pnj.name || pnj.nom || raw) : raw;
+    if (pnjId) _questNpcDrop.setValue(pnjId, pnjName);
+    document.getElementById('quest-npc').value = pnjName;
     window._pendingQuestNpc = null;
   }
 }
 
 function onQuestTypeChange() {
   update();
-  initQuestNpcDrop();
 }
 
 // ── Preview
@@ -6188,7 +6172,6 @@ function resetQuestForm() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   if (_questZoneDrop) _questZoneDrop.reset();
-  if (_questNpcDrop)  _questNpcDrop.reset();
   const t = document.getElementById('quest-type');   if (t) t.selectedIndex = 0;
   const p = document.getElementById('quest-palier'); if (p) p.selectedIndex = 0;
   _customSelUpdaters['quest-type']?.();

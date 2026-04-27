@@ -239,9 +239,13 @@
     }
 
     try {
-      await store.load(['items', 'mobs', 'quetes', 'regions']);
+      await store.load(['items', 'mobs', 'quetes', 'regions', 'pnj']);
       DB_ITEMS.push(...store.items);
       DB_MOBS.push(...store.mobs);
+      // Index PNJ id → nom pour résoudre les anciens enregistrements
+      window._vcl_pnj_index = new Map(
+        (store.pnj || []).map(p => [p.id || p._id, p.name || p.nom || p.id || p._id])
+      );
       const existingIds = new Set(QUETES.map(q => q.id));
       const newQuetes = store.quetes
         .map(normalizeFirestoreQuest)

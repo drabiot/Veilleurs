@@ -786,8 +786,7 @@
           </div>
           <div class="field">
             <label>NPC <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel)</span></label>
-            <div id="quest-npc-container"></div>
-            <input type="hidden" id="quest-npc">
+            <input type="text" id="quest-npc" placeholder="Nom du PNJ…" autocomplete="off" oninput="update()" style="width:100%;box-sizing:border-box;">
           </div>
           <div class="field">
             <div class="coords-label">
@@ -810,7 +809,7 @@
             </div>
           </div>
           <div class="field">
-            <label>Description *</label>
+            <label>Description <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel)</span></label>
             <textarea id="quest-desc" placeholder="Prouvez votre force en éliminant les sangliers corrompus..." oninput="update()"></textarea>
           </div>
         </div>

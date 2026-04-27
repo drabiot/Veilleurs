@@ -64,7 +64,7 @@ const typeSection   = document.getElementById('type-block');
 const pnjTagSection = document.getElementById('pnj-tag-block');
 
 function getMapZone(entity) {
-  return entity.mapZone || entity.regionId || null;
+  return entity.mapZone || null;
 }
 
 /* ══════════════════════════════════
@@ -633,7 +633,7 @@ function renderMobSheet(mob) {
               <span class="mob-meta-key">Région</span>
               <span class="mob-meta-val">
                 ${escHtml(getRegionLabel(mob.region))}
-                ${getMapZone(mob) ? `<a class="region-link" href="../Map/map.html#${escHtml(getMapZone(mob))}">→ Carte</a>` : ''}
+                ${getMapZone(mob) ? `<a class="region-link" href="../Map/map.html">→ Carte</a>` : ''}
               </span>
             </div>` : ''}
           </div>
@@ -798,7 +798,7 @@ function renderPNJSheet(pnj) {
               <span class="mob-meta-key">Région</span>
               <span class="mob-meta-val">
                 ${escHtml(getRegionLabel(pnj.region))}
-                ${getMapZone(pnj) ? `<a class="region-link" href="../Map/map.html#${escHtml(getMapZone(pnj))}">→ Carte</a>` : ''}
+                ${getMapZone(pnj) ? `<a class="region-link" href="../Map/map.html">→ Carte</a>` : ''}
               </span>
             </div>` : ''}
           </div>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
-  <title>[VCL] - Carte</title>
+  <title>[VCL] - Carte </title>
   <link rel="stylesheet" href="../Patchnotes/patchnotes.css" />
   <link rel="stylesheet" href="map.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -16,13 +16,10 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
     gtag('config', 'G-1ZEKMF3QVS');
   </script>
-
 </head>
 <body class="map-page">
-
 
   <!-- Fond ambiant -->
   <div class="ambient-bg" aria-hidden="true">
@@ -53,7 +50,7 @@
         <span class="nav-icon">📜</span>
         <span class="nav-label">Patchnotes</span>
       </a>
-      <a href="../Map/map.html" class="nav-link active">
+      <a href="map.html" class="nav-link active">
         <span class="nav-icon">🗺️</span>
         <span class="nav-label">Carte</span>
       </a>
@@ -61,12 +58,12 @@
         <span class="nav-icon">📖</span>
         <span class="nav-label">Compendium</span>
       </a>
-	    <a href="../Bestiaire/bestiaire.html" class="nav-link">
+      <a href="../Bestiaire/bestiaire.html" class="nav-link">
         <span class="nav-icon">💀</span><span class="nav-label">Bestiaire</span>
       </a>
-      <a href="../Quetes/quetes.html" class="nav-link"> 
-        <span class="nav-icon">📋</span> 
-        <span class="nav-label">Quêtes </span> 
+      <a href="../Quetes/quetes.html" class="nav-link">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Quêtes</span>
       </a>
       <a href="../Atelier/atelier.html" class="nav-link"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
     </nav>
@@ -77,6 +74,8 @@
 
     <!-- ── Sidebar gauche ── -->
     <aside class="map-sidebar">
+      <button id="custom-pin-mode-btn" class="custom-pin-btn">📌 Ajouter un pin</button>
+      <div class="sidebar-sep"></div>
       <div class="sidebar-title">Légende</div>
       <div class="legend-filters" id="legend-filters">
         <label class="legend-item legend-toggle-all">
@@ -84,32 +83,31 @@
           <span class="legend-emoji" style="background:#333;">⚙️</span>
           <span>Tout sélectionner</span>
         </label>
-        <label class="legend-item legend-toggle-all">
-          <input type="checkbox" id="zone-hover-toggle" checked />
-          <span class="legend-emoji" style="background:#89ace0;">🗺️</span>
-          <span>Survol des zones</span>
-        </label>
         <div class="sidebar-sep"></div>
+
         <label class="legend-item">
-          <input type="checkbox" class="marker-filter" data-type="région" checked />
+          <input type="checkbox" class="marker-filter" data-type="région" />
           <span class="legend-emoji" style="background:#e8c8c8;">📍</span>
           <span>Régions</span>
         </label>
         <label class="legend-item">
-          <input type="checkbox" class="marker-filter" data-type="donjon" checked />
+          <input type="checkbox" class="marker-filter" data-type="donjon" />
           <span class="legend-emoji" style="background:#c47a6a;">⚔️</span>
           <span>Donjon</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="boss" />
+          <span class="legend-emoji" style="background:#6b1a1a;">☠️</span>
+          <span>Boss</span>
         </label>
         <label class="legend-item">
           <input type="checkbox" class="marker-filter" data-type="zone_monstre" />
           <span class="legend-emoji" style="background:#7a3030;">💀</span>
           <span>Monstres</span>
         </label>
-		<label class="legend-item">
-          <input type="checkbox" class="marker-filter" data-type="boss" />
-          <span class="legend-emoji" style="background:#6b1a1a;">☠️</span>
-          <span>Boss</span>
-        </label>
+
+        <div class="sidebar-sep"></div>
+        <div class="sidebar-title" style="font-size:10px;padding:2px 0;">— Quêtes —</div>
         <label class="legend-item">
           <input type="checkbox" class="marker-filter" data-type="quête_principale" />
           <span class="legend-emoji" style="background:#b8893a;">💬</span>
@@ -121,41 +119,102 @@
           <span>Quête Secondaire</span>
         </label>
         <label class="legend-item">
-          <input type="checkbox" class="marker-filter" data-type="artisant" />
+          <input type="checkbox" class="marker-filter" data-type="quête_tertiaire" />
+          <span class="legend-emoji" style="background:#a89060;">📋</span>
+          <span>Quête Tertiaire</span>
+        </label>
+
+        <div class="sidebar-sep"></div>
+        <div class="sidebar-title" style="font-size:10px;padding:2px 0;">— Craft —</div>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="craft_armes" />
           <span class="legend-emoji" style="background:#6a4daa;">⚒️</span>
-          <span>Artisant</span>
+          <span>Forgeron d'Armes</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="craft_armures" />
+          <span class="legend-emoji" style="background:#5a3d9a;">🛡️</span>
+          <span>Forgeron d'Armures</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="craft_accessoires" />
+          <span class="legend-emoji" style="background:#7a5dba;">💍</span>
+          <span>Forgeron d'Access.</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="craft_cles" />
+          <span class="legend-emoji" style="background:#f1dd6a;">🗝️</span>
+          <span>Forgeron de Clés</span>
+        </label>
+
+        <div class="sidebar-sep"></div>
+        <div class="sidebar-title" style="font-size:10px;padding:2px 0;">— Artisans —</div>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="craft_lingots" />
+          <span class="legend-emoji" style="background:#8a6dca;">🔩</span>
+          <span>Forgeron de Lingots</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="alchimiste" />
+          <span class="legend-emoji" style="background:#3d1f6e;">⚗️</span>
+          <span>Alchimiste</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="bucheron" />
+          <span class="legend-emoji" style="background:#1a4a1a;">🪓</span>
+          <span>Bûcheron</span>
         </label>
         <label class="legend-item">
           <input type="checkbox" class="marker-filter" data-type="refaconneur" />
-          <span class="legend-emoji" style="background:#7a5dba;">🪛</span>
+          <span class="legend-emoji" style="background:#a16207;">🔧</span>
           <span>Refaçonneur</span>
         </label>
+
+        <div class="sidebar-sep"></div>
+        <div class="sidebar-title" style="font-size:10px;padding:2px 0;">— Commerce —</div>
         <label class="legend-item">
           <input type="checkbox" class="marker-filter" data-type="repreneur_butin" />
           <span class="legend-emoji" style="background:#153f55;">🛒</span>
           <span>Repreneur de Butin</span>
         </label>
         <label class="legend-item">
-          <input type="checkbox" class="marker-filter" data-type="marchand" />
-          <span class="legend-emoji" style="background:#3a6e8a;">💰</span>
-          <span>Marchand</span>
-        </label>
-        <label class="legend-item">
           <input type="checkbox" class="marker-filter" data-type="repreneur_armes" />
-          <span class="legend-emoji" style="background:#1a4f6a;">🗡️</span>
+          <span class="legend-emoji" style="background:#1a4f6a;">⚔️</span>
           <span>Repreneur d'Armes</span>
         </label>
         <label class="legend-item">
-          <input type="checkbox" class="marker-filter" data-type="clef" />
-          <span class="legend-emoji" style="background:#f1dd6a;">🗝️</span>
-          <span>Clef et Secrets</span>
+          <input type="checkbox" class="marker-filter" data-type="marchand_itinerant" />
+          <span class="legend-emoji" style="background:#3a6e8a;">💰</span>
+          <span>Marchand Itinérant</span>
         </label>
         <label class="legend-item">
-          <input type="checkbox" class="marker-filter" data-type="ressource" />
-          <span class="legend-emoji" style="background:#4a7d48;">🌿</span>
-          <span>Ressource</span>
+          <input type="checkbox" class="marker-filter" data-type="marchand_equipement" />
+          <span class="legend-emoji" style="background:#1e3a6a;">⚔️</span>
+          <span>Marchand d'Équip.</span>
         </label>
-		<label class="legend-item">
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="marchand_consommable" />
+          <span class="legend-emoji" style="background:#1e4a3a;">🧪</span>
+          <span>Marchand Consommable</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="marchand_outils" />
+          <span class="legend-emoji" style="background:#3a3a1e;">🔧</span>
+          <span>Marchand d'Outils</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="marchand_access" />
+          <span class="legend-emoji" style="background:#4a1e4a;">💍</span>
+          <span>Marchand d'Access.</span>
+        </label>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="marchand_occulte" />
+          <span class="legend-emoji" style="background:#1a1a2e;">🌑</span>
+          <span>Marchand Occulte</span>
+        </label>
+
+        <div class="sidebar-sep"></div>
+        <label class="legend-item">
           <input type="checkbox" class="marker-filter" data-type="autre" />
           <span class="legend-emoji" style="background:#56d476;">🦠</span>
           <span>Autre</span>
@@ -191,17 +250,12 @@
         <div class="search-results hidden" id="search-results"></div>
       </div>
 
-      <!-- Viewport : contient la carte ET l'overlay des marqueurs -->
+      <!-- Viewport -->
       <div class="map-viewport" id="map-viewport">
-
-        <!-- Canvas zoomé : contient uniquement l'image -->
         <div class="map-canvas" id="map-canvas">
           <img id="map-svg" src="" data-missing="true" width="900" height="900" alt="Carte" draggable="false" />
         </div>
-
-        <!-- Overlay fixe : marqueurs positionnés en coords écran -->
         <div class="markers-layer" id="markers-layer"></div>
-
       </div>
 
       <!-- Tooltip -->
@@ -230,8 +284,52 @@
 
   </div>
 
-	<script src="../utils.js"></script>
-	<script src="data.js"></script>
-	<script src="map.js"></script>
+  <!-- Dialog ajout de pin perso -->
+  <div id="custom-pin-dialog" class="cpd-overlay hidden">
+    <div class="custom-pin-dialog-box">
+      <div class="cpd-title">📌 Nouveau pin</div>
+      <div class="cpd-coords" id="cpd-coords-display"></div>
+      <input type="text" id="cpd-name-input" class="cpd-input" placeholder="Nom du pin…" maxlength="60" autocomplete="off" />
+      <div class="cpd-btns">
+        <button id="cpd-cancel" class="cpd-btn cpd-cancel">Annuler</button>
+        <button id="cpd-confirm" class="cpd-btn cpd-confirm">📌 Placer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog suppression de pin perso -->
+  <div id="delete-pin-dialog" class="cpd-overlay hidden">
+    <div class="custom-pin-dialog-box">
+      <div class="cpd-title" style="color:#f87171;">🗑 Supprimer le pin</div>
+      <div class="cpd-coords" id="delete-pin-msg"></div>
+      <div class="cpd-btns">
+        <button id="delete-pin-cancel" class="cpd-btn cpd-cancel">Annuler</button>
+        <button id="delete-pin-confirm" class="cpd-btn cpd-confirm" style="background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.5);color:#f87171;">🗑 Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../utils.js"></script>
+  <script src="data.js"></script>
+  <script type="module">
+    import { store } from '../store.js';
+    import { db }    from '../firebase.js';
+    import { getDoc, doc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    await store.load(['pnj', 'regions', 'mobs', 'quetes', 'donjons', 'zones', 'mapMarkers']);
+    window._map2_pnj        = store.pnj;
+    window._map2_regions    = store.regions;
+    window._map2_mobs       = store.mobs;
+    window._map2_quetes     = store.quetes;
+    window._map2_donjons    = store.donjons;
+    window._map2_zones      = store.zones;
+    window._map2_mapMarkers = store.mapMarkers;
+    try {
+      const colorSnap = await getDoc(doc(db, 'config', 'pin_type_colors'));
+      window._map2_pin_colors = colorSnap.exists() ? colorSnap.data() : {};
+    } catch { window._map2_pin_colors = {}; }
+    window._map2DataLoaded = true;
+    window._map2Ready?.();
+  </script>
+  <script src="map2.js"></script>
 </body>
 </html>

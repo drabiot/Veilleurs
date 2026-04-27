@@ -256,16 +256,22 @@ function buildDynamicMarkers() {
 
   // Marqueurs de quêtes migrés depuis map_markers (quête_principale, _secondaire, _tertiaire)
   const QUEST_MARKER_TYPES = new Set(['quête_principale', 'quête_secondaire', 'quête_tertiaire']);
+  const MM_TYPE_NORM = {
+    main: 'quête_principale', primary: 'quête_principale',
+    sec:  'quête_secondaire', secondary: 'quête_secondaire',
+    ter:  'quête_tertiaire',  tertiary:  'quête_tertiaire',
+  };
 
-  // Index des questIds déjà couverts par un map_marker dédié (évite les doublons)
+  // Index des questIds couverts par un map_marker du bon type (évite les doublons)
   const _coveredQuestIds = new Set(
     (window._map2_mapMarkers || [])
-      .filter(mm => mm.questId)
+      .filter(mm => mm.questId && QUEST_MARKER_TYPES.has(MM_TYPE_NORM[mm.type] || mm.type))
       .map(mm => mm.questId)
   );
 
   for (const mm of (window._map2_mapMarkers || [])) {
-    if (!QUEST_MARKER_TYPES.has(mm.type)) continue;
+    const mmType = MM_TYPE_NORM[mm.type] || mm.type;
+    if (!QUEST_MARKER_TYPES.has(mmType)) continue;
     if (mm.gx == null || mm.gy == null || !mm.floor) continue;
     const f = +mm.floor;
     if (!byFloor[f]) byFloor[f] = [];
@@ -274,7 +280,7 @@ function buildDynamicMarkers() {
       : (mm.link || '../Quetes/quetes.html');
     byFloor[f].push({
       id:    mm._id || mm.id || `quest_mm_${f}_${mm.name}`,
-      type:  mm.type,
+      type:  mmType,
       layer: mm.is_underground ? 'underground' : 'surface',
       gx:    +mm.gx,
       gy:    +mm.gy,
@@ -285,7 +291,10 @@ function buildDynamicMarkers() {
   }
 
   // Quêtes Firestore avec coords directes (nouvelles quêtes créées via le creator)
-  const _FS_QUEST_TYPE = { main: 'quête_principale', sec: 'quête_secondaire', ter: 'quête_tertiaire' };
+  const _FS_QUEST_TYPE = {
+    main: 'quête_principale', sec: 'quête_secondaire', ter: 'quête_tertiaire',
+    secondary: 'quête_secondaire', tertiary: 'quête_tertiaire',
+  };
   for (const q of (window._map2_quetes || [])) {
     if (!q.coords || q.coords.x == null || q.coords.z == null) continue;
     if (!q.palier) continue;
@@ -295,6 +304,13 @@ function buildDynamicMarkers() {
     const markerType = _FS_QUEST_TYPE[q.type] || 'quête_principale';
     const f = +q.palier;
     if (!byFloor[f]) byFloor[f] = [];
+    const npcPart = (() => {
+      if (!q.npc) return '';
+      const pnjs = window._map2_pnj || [];
+      const pnjFound = pnjs.find(p => (p.id || p._id) === q.npc);
+      return `🧑 ${pnjFound ? (pnjFound.name || pnjFound.nom || q.npc) : q.npc}`;
+    })();
+    const descPart = q.desc || '';
     byFloor[f].push({
       id:    `fs_q_${qid}`,
       type:  markerType,
@@ -302,7 +318,51 @@ function buildDynamicMarkers() {
       gx:    +q.coords.x,
       gy:    +q.coords.z,
       name:  q.titre || qid,
-      desc:  q.desc  || '',
+      desc:  [npcPart, descPart].filter(Boolean).join(' — '),
+      link:  `../Quetes/quetes.html#${qid}`,
+    });
+  }
+
+  // Quêtes Firestore sans coords — fallback via région ou PNJ
+  const _regionByName = new Map((regions).map(r => [r.name, r]));
+  for (const q of (window._map2_quetes || [])) {
+    if (!q.palier) continue;
+    const qid = q.id || q._id;
+    if (!qid) continue;
+    if (_coveredQuestIds.has(qid)) continue;
+    // Skip quests already handled (have coords)
+    if (q.coords && q.coords.x != null && q.coords.z != null) continue;
+    const markerType = _FS_QUEST_TYPE[q.type] || 'quête_principale';
+    // Fallback 1 : PNJ correspondant dans la liste
+    let fallbackGx = null, fallbackGy = null;
+    if (q.npc) {
+      const pnjMatch = pnjs.find(p =>
+        (p.id || p._id) === q.npc || (p.name || p.nom) === q.npc
+      );
+      if (pnjMatch?.coords) {
+        fallbackGx = +pnjMatch.coords.x;
+        fallbackGy = +pnjMatch.coords.z;
+      }
+    }
+    // Fallback 2 : centre de la région/zone
+    if (fallbackGx == null && q.zone) {
+      const reg = _regionByName.get(q.zone);
+      if (reg?.coords) {
+        fallbackGx = +reg.coords.x;
+        fallbackGy = +reg.coords.z;
+      }
+    }
+    if (fallbackGx == null) continue; // Pas de position disponible
+    const f = +q.palier;
+    if (!byFloor[f]) byFloor[f] = [];
+    byFloor[f].push({
+      id:    `fs_q_${qid}`,
+      type:  markerType,
+      layer: 'surface',
+      gx:    fallbackGx,
+      gy:    fallbackGy,
+      name:  q.titre || qid,
+      desc:  [q.npc ? `🧑 ${q.npc}` : '', q.desc || ''].filter(Boolean).join(' — '),
       link:  `../Quetes/quetes.html#${qid}`,
     });
   }
@@ -650,51 +710,7 @@ function getQuestOrder(name) {
 }
 
 function showQuestChain(hoveredMarker) {
-  clearQuestChain();
-  const order = getQuestOrder(hoveredMarker.name);
-  if (order === null) return;
-  const allMarkers = getFloorMarkers(currentFloor).filter(m => m.type === 'quête_principale');
-  const sorted = allMarkers
-    .map(m => ({ ...m, order: getQuestOrder(m.name) }))
-    .filter(m => m.order !== null)
-    .sort((a, b) => a.order - b.order);
-  const chain = sorted.filter(m => m.order <= order);
-  if (chain.length < 2) return;
-  const screenPoints = chain.map(m => {
-    const img = gameToPixel(m.gx, m.gy);
-    return imageToScreen(img.x, img.y);
-  });
-  const svg = getQuestChainSvg();
-  const COLOR = '#f0c040';
-  for (let i = 0; i < screenPoints.length - 1; i++) {
-    const a = screenPoints[i], b = screenPoints[i + 1];
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
-    line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
-    line.setAttribute('stroke', COLOR); line.setAttribute('stroke-width', '2');
-    line.setAttribute('stroke-dasharray', '6 4'); line.setAttribute('stroke-linecap', 'round');
-    line.style.opacity = '0.75';
-    svg.appendChild(line);
-  }
-  screenPoints.forEach((pt, i) => {
-    const m = chain[i];
-    const isHovered = m.order === order;
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', pt.x); circle.setAttribute('cy', pt.y);
-    circle.setAttribute('r', isHovered ? '14' : '10');
-    circle.setAttribute('fill', isHovered ? COLOR : '#a07820');
-    circle.setAttribute('stroke', COLOR); circle.setAttribute('stroke-width', '2');
-    circle.style.opacity = isHovered ? '1' : '0.7';
-    svg.appendChild(circle);
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('x', pt.x); text.setAttribute('y', pt.y);
-    text.setAttribute('text-anchor', 'middle'); text.setAttribute('dominant-baseline', 'middle');
-    text.setAttribute('font-size', isHovered ? '10' : '8');
-    text.setAttribute('font-weight', '700'); text.setAttribute('font-family', 'JetBrains Mono, monospace');
-    text.setAttribute('fill', '#1a1000'); text.style.pointerEvents = 'none';
-    text.textContent = m.order;
-    svg.appendChild(text);
-  });
+  // Chaîne visuelle désactivée
 }
 
 /* ══════════════════════════════════
@@ -1064,6 +1080,8 @@ function renderMarkers() {
       el.classList.remove('marker-dimmed');
     });
   }
+  renderGhostPin();
+  renderCustomPins();
 }
 
 function renderSingleMarker(m) {
@@ -1430,6 +1448,14 @@ searchInput.addEventListener('input', () => {
 });
 
 mapViewport.addEventListener('click', (e) => {
+  if (_customPinMode) {
+    if (e.target.closest('.marker')) return;
+    const vp   = clientToVp(e.clientX, e.clientY);
+    const img  = screenToImage(vp.x, vp.y);
+    const game = pixelToGame(img.x, img.y);
+    addCustomPin(game.x, game.y);
+    return;
+  }
   if (!e.target.closest('.marker') && !e.target.closest('.map-searchbar')) {
     _searchFocusId = null;
     renderMarkers();
@@ -1448,6 +1474,149 @@ searchInput.addEventListener('keydown', (e) => {
 });
 
 /* ══════════════════════════════════
+   PIN FANTÔME (depuis URL params)
+══════════════════════════════════ */
+let _ghostPin = null;
+
+function parseGhostPin() {
+  const p = new URLSearchParams(window.location.search);
+  const gx = parseFloat(p.get('ghost_gx'));
+  const gz = parseFloat(p.get('ghost_gz'));
+  const floor = parseInt(p.get('ghost_floor')) || 1;
+  const name  = decodeURIComponent(p.get('ghost_name') || 'Point de quête');
+  if (isNaN(gx) || isNaN(gz)) return null;
+  return { gx, gz, floor, name };
+}
+
+function renderGhostPin() {
+  document.querySelectorAll('.ghost-pin-marker').forEach(e => e.remove());
+  if (!_ghostPin || _ghostPin.floor !== currentFloor) return;
+  const c = MAP_CALIBRATION[currentFloor];
+  if (!c) return; // pas de calibration pour cet étage
+  const s  = gameToScreen(_ghostPin.gx, _ghostPin.gz);
+  const el = document.createElement('div');
+  el.className = 'ghost-pin-marker marker';
+  el.style.left = s.x + 'px';
+  el.style.top  = s.y + 'px';
+  const icon = document.createElement('div');
+  icon.className   = 'marker-icon ghost-pin-icon';
+  icon.textContent = '📍';
+  el.appendChild(icon);
+  el.addEventListener('mouseenter', () => showTooltip({ type: 'autre', name: _ghostPin.name, desc: `X: ${Math.round(_ghostPin.gx)}  ·  Z: ${Math.round(_ghostPin.gz)}`, link: '' }));
+  el.addEventListener('mouseleave', hideTooltip);
+  markersLayer.appendChild(el);
+}
+
+/* ══════════════════════════════════
+   PINS PERSONNELS (localStorage)
+══════════════════════════════════ */
+const CUSTOM_PINS_KEY = 'vcl_map_custom_pins';
+let _customPinMode = false;
+
+function loadCustomPins() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_PINS_KEY) || '[]'); } catch { return []; }
+}
+function saveCustomPins(pins) {
+  localStorage.setItem(CUSTOM_PINS_KEY, JSON.stringify(pins));
+}
+
+function renderCustomPins() {
+  const pins = loadCustomPins().filter(p =>
+    p.floor === currentFloor && (p.layer || 'surface') === currentLayer
+  );
+  pins.forEach(pin => {
+    const s  = gameToScreen(pin.gx, pin.gz);
+    const el = document.createElement('div');
+    el.className    = 'marker custom-pin-marker';
+    el.dataset.type = 'custom';
+    el.style.left   = s.x + 'px';
+    el.style.top    = s.y + 'px';
+    const icon = document.createElement('div');
+    icon.className   = 'marker-icon';
+    icon.textContent = '📌';
+    icon.style.background = '#1a2e1a';
+    icon.style.boxShadow  = '0 2px 10px #4a8a4a88';
+    el.appendChild(icon);
+    el.addEventListener('mouseenter', () => showTooltip({ type: 'autre', name: pin.name, desc: pin.desc || 'Pin personnel — clic pour supprimer', link: '' }));
+    el.addEventListener('mouseleave', hideTooltip);
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      _showDeletePinDialog(pin.id, pin.name);
+    });
+    markersLayer.appendChild(el);
+  });
+}
+
+function toggleCustomPinMode() {
+  _customPinMode = !_customPinMode;
+  const btn = document.getElementById('custom-pin-mode-btn');
+  if (btn) btn.classList.toggle('active', _customPinMode);
+  mapViewport.style.cursor = _customPinMode ? 'crosshair' : 'grab';
+}
+
+let _pendingPinCoords = null;
+
+function addCustomPin(gx, gz) {
+  _pendingPinCoords = { gx, gz };
+  const dialog = document.getElementById('custom-pin-dialog');
+  const input  = document.getElementById('cpd-name-input');
+  const coords = document.getElementById('cpd-coords-display');
+  if (coords) coords.textContent = `X: ${Math.round(gx)}  ·  Z: ${Math.round(gz)}`;
+  if (input)  input.value = '';
+  dialog?.classList.remove('hidden');
+  setTimeout(() => input?.focus(), 40);
+}
+
+function _confirmCustomPin() {
+  const name   = document.getElementById('cpd-name-input')?.value.trim();
+  const dialog = document.getElementById('custom-pin-dialog');
+  if (name && _pendingPinCoords) {
+    const pins = loadCustomPins();
+    pins.push({
+      id: `custom_${Date.now()}`,
+      floor: currentFloor, layer: currentLayer,
+      gx: _pendingPinCoords.gx, gz: _pendingPinCoords.gz,
+      name, desc: '',
+    });
+    saveCustomPins(pins);
+    renderMarkers();
+  }
+  _pendingPinCoords = null;
+  _customPinMode = false;
+  document.getElementById('custom-pin-mode-btn')?.classList.remove('active');
+  mapViewport.style.cursor = 'grab';
+  dialog?.classList.add('hidden');
+}
+
+function _cancelCustomPin() {
+  _pendingPinCoords = null;
+  _customPinMode = false;
+  document.getElementById('custom-pin-mode-btn')?.classList.remove('active');
+  mapViewport.style.cursor = 'grab';
+  document.getElementById('custom-pin-dialog')?.classList.add('hidden');
+}
+
+let _pendingDeletePinId = null;
+function _showDeletePinDialog(pinId, pinName) {
+  _pendingDeletePinId = pinId;
+  const msg = document.getElementById('delete-pin-msg');
+  if (msg) msg.textContent = `"${pinName}"`;
+  document.getElementById('delete-pin-dialog')?.classList.remove('hidden');
+}
+function _confirmDeletePin() {
+  if (_pendingDeletePinId) {
+    saveCustomPins(loadCustomPins().filter(p => p.id !== _pendingDeletePinId));
+    renderMarkers();
+  }
+  _pendingDeletePinId = null;
+  document.getElementById('delete-pin-dialog')?.classList.add('hidden');
+}
+function _cancelDeletePin() {
+  _pendingDeletePinId = null;
+  document.getElementById('delete-pin-dialog')?.classList.add('hidden');
+}
+
+/* ══════════════════════════════════
    INIT (asynchrone — attend les données Firestore)
 ══════════════════════════════════ */
 function applyPinColorsToLegend() {
@@ -1462,17 +1631,69 @@ function applyPinColorsToLegend() {
   });
 }
 
+function focusQuestOnMap(questId) {
+  if (!questId) return;
+  const byFloor = window._map2Markers || {};
+  for (const [f, markers] of Object.entries(byFloor)) {
+    const found = markers.find(m =>
+      m.id === `fs_q_${questId}` ||
+      (m.link && m.link.includes(`#${questId}`))
+    );
+    if (!found) continue;
+    // Auto-activer le filtre correspondant au type de quête si pas encore coché
+    const filterCb = document.querySelector(`.marker-filter[data-type="${found.type}"]`);
+    if (filterCb && !filterCb.checked) {
+      filterCb.checked = true;
+      filterCb.dispatchEvent(new Event('change'));
+    }
+    const floor = +f;
+    if (floor !== currentFloor) goToFloor(floor);
+    _searchFocusId = found.id;
+    const img = gameToPixel(found.gx, found.gy);
+    panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
+    panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
+    applyTransform();
+    return;
+  }
+}
+
 function initMap() {
   buildDynamicMarkers();
   applyPinColorsToLegend();
   updateVpBounds();
+  _ghostPin = parseGhostPin();
   const _initHash = parseHash(window.location.hash);
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _questIdParam = _urlParams.get('questId');
   currentLayer = _initHash.layer;
   buildLayerSwitcher();
   buildWheel();
+  document.getElementById('custom-pin-mode-btn')?.addEventListener('click', toggleCustomPinMode);
+  // Déplacer les dialogs en fin de body pour éviter les conflits flex/overflow
+  ['custom-pin-dialog','delete-pin-dialog'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) document.body.appendChild(el);
+  });
+  document.getElementById('cpd-confirm')?.addEventListener('click', _confirmCustomPin);
+  document.getElementById('cpd-cancel')?.addEventListener('click', _cancelCustomPin);
+  document.getElementById('cpd-name-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter')  _confirmCustomPin();
+    if (e.key === 'Escape') _cancelCustomPin();
+  });
+  document.getElementById('delete-pin-confirm')?.addEventListener('click', _confirmDeletePin);
+  document.getElementById('delete-pin-cancel')?.addEventListener('click', _cancelDeletePin);
   requestAnimationFrame(() => {
     updateVpBounds();
-    goToFloor(_initHash.floor);
+    const targetFloor = (_ghostPin && _ghostPin.floor) ? _ghostPin.floor : _initHash.floor;
+    goToFloor(targetFloor);
+    if (_questIdParam) {
+      focusQuestOnMap(_questIdParam);
+    } else if (_ghostPin && _ghostPin.floor === targetFloor) {
+      const img = gameToPixel(_ghostPin.gx, _ghostPin.gz);
+      panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
+      panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
+      applyTransform();
+    }
   });
 }
 

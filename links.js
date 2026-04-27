@@ -27,5 +27,5 @@ export const LINKS = {
   quest:  (id) => `${ROOT}Quetes/quetes.html#${id}`,
 
   /** Région sur la carte */
-  region: (id) => `${ROOT}Map/map.html#region/${id}`,
+  region: (id) => `${ROOT}Map/map.html`,
 };

@@ -143,7 +143,7 @@ function inlineLinks(str) {
     }
 
     if (type === 'donjon') {
-      const page = `../Map/map.html#donjon-${escHtml(id)}`;
+      const page = `../Map/map.html`;
       return `<a class="obtain-entity-link" href="${page}" data-id="${escHtml(id)}" data-type="donjon" style="color:#e8b44a">${label}</a>`;
     }
 

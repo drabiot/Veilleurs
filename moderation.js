@@ -343,6 +343,7 @@ function buildCard(sub) {
         <button class="btn-toggle" onclick="toggleDetails('${sub._id}', this)">▾ Voir</button>
       </div>
       <div class="sub-details" id="details-${sub._id}">
+        ${sub.isModification ? `<div id="diff-${sub._id}" style="margin-bottom:10px;"><button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="loadSubDiff('${sub._id}','${sub.type}','${String(sub.data?.id||'')}')">🔍 Voir les changements</button></div>` : ''}
         <div class="sub-code" id="code-${sub._id}">${escHtml(code)}</div>
         ${editorHtml}
       </div>
@@ -363,6 +364,178 @@ function buildCard(sub) {
 }
 
 const escHtml = window.VCL.escHtml;
+
+// ── Diff soumission vs document actuel ───────────────
+const _SUB_COL_MAP = { item:'items', mob:'mobs', pnj:'pnj', region:'regions', quest:'quetes', panoplie:'panoplies' };
+const _diffDataStore = new Map(); // subId → { current, proposed }
+
+// Champs dont l'ordre de tableau est non significatif
+const _UNORDERED_ARRAY_FIELDS = new Set(['stats','craft','effects','bonuses','tags','classes','images','loot','drops','zones','objectifs','recompenses']);
+// Champs à ignorer dans le diff
+const _DIFF_SKIP_FIELDS = new Set(['_order','ordre','_contributor','_ts']);
+
+function _diffValue(v) {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'object') return JSON.stringify(v, null, 1);
+  return String(v);
+}
+
+// Sérialisation canonique : trie les clés d'objets (insensible à l'ordre des clés),
+// préserve l'ordre des éléments d'un tableau (sauf si on l'appelle via _canonicalArr).
+function _canonicalJSON(v) {
+  if (Array.isArray(v)) return '[' + v.map(_canonicalJSON).join(',') + ']';
+  if (v !== null && typeof v === 'object') {
+    const entries = Object.entries(v).sort(([a], [b]) => a.localeCompare(b));
+    return '{' + entries.map(([k, val]) => JSON.stringify(k) + ':' + _canonicalJSON(val)).join(',') + '}';
+  }
+  return JSON.stringify(v);
+}
+
+// Pour les champs de type tableau non-ordonné : trie aussi les éléments du tableau.
+function _canonicalArr(arr) {
+  return [...arr].map(_canonicalJSON).sort().join('\x00');
+}
+
+function _renderDiffView(subId, current, proposed) {
+  const allKeys = new Set([...Object.keys(current), ...Object.keys(proposed)]);
+  const sorted = [...allKeys].sort((a, b) => {
+    const ia = FIELD_ORDER.indexOf(a), ib = FIELD_ORDER.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    if (ia !== -1) return -1;
+    if (ib !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
+  const rows = [];
+  for (const k of sorted) {
+    if (k.startsWith('_') || _DIFF_SKIP_FIELDS.has(k)) continue;
+    const hasOld = k in current, hasNew = k in proposed;
+    let equal = false;
+    if (hasOld && hasNew) {
+      if (_UNORDERED_ARRAY_FIELDS.has(k) && Array.isArray(current[k]) && Array.isArray(proposed[k])) {
+        // Tableau non-ordonné : compare sans tenir compte de l'ordre des éléments
+        equal = _canonicalArr(current[k]) === _canonicalArr(proposed[k]);
+      } else {
+        // Comparaison canonique : insensible à l'ordre des clés d'objets
+        equal = _canonicalJSON(current[k]) === _canonicalJSON(proposed[k]);
+      }
+    }
+    if (!hasOld && hasNew)      rows.push({ k, kind:'added',   old:null,       new:proposed[k] });
+    else if (hasOld && !hasNew) rows.push({ k, kind:'removed', old:current[k], new:null });
+    else if (!equal)            rows.push({ k, kind:'changed', old:current[k], new:proposed[k] });
+  }
+
+  if (!rows.length) return '<div style="font-size:12px;color:var(--muted);padding:6px 0;">Aucune différence détectée entre la version actuelle et la proposition.</div>';
+
+  const pal = {
+    added:   { bg:'rgba(74,222,128,.08)',  bd:'rgba(74,222,128,.35)',  ic:'✚', col:'var(--success)' },
+    removed: { bg:'rgba(248,113,113,.08)', bd:'rgba(248,113,113,.35)', ic:'✕', col:'var(--danger)'  },
+    changed: { bg:'rgba(245,158,11,.08)',  bd:'rgba(245,158,11,.35)',  ic:'~', col:'#f59e0b'         },
+  };
+
+  const safe = subId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const rowsHtml = rows.map((r, ri) => {
+    const p = pal[r.kind];
+    let content;
+    if (r.kind === 'changed') {
+      content = `<span style="color:var(--danger);text-decoration:line-through;opacity:.7;word-break:break-all;">${escHtml(_diffValue(r.old))}</span>
+                 <span style="color:var(--muted);margin:0 4px;">→</span>
+                 <span style="color:var(--success);word-break:break-all;">${escHtml(_diffValue(r.new))}</span>`;
+    } else if (r.kind === 'added') {
+      content = `<span style="color:var(--success);word-break:break-all;">${escHtml(_diffValue(r.new))}</span>`;
+    } else {
+      content = `<span style="color:var(--danger);opacity:.8;word-break:break-all;">${escHtml(_diffValue(r.old))}</span>`;
+    }
+    return `<div data-diff-key="${escHtml(r.k)}" data-diff-kind="${r.kind}" style="display:flex;gap:8px;padding:5px 10px;background:${p.bg};border-left:3px solid ${p.bd};margin-bottom:3px;border-radius:0 4px 4px 0;align-items:center;flex-wrap:wrap;">
+      <input type="checkbox" id="diffck-${safe}-${ri}" checked title="Cocher = accepter ce changement" style="flex-shrink:0;cursor:pointer;width:14px;height:14px;accent-color:var(--accent);">
+      <span style="font-size:12px;font-weight:700;color:${p.col};width:14px;text-align:center;flex-shrink:0;">${p.ic}</span>
+      <span style="font-size:11px;font-weight:700;color:var(--muted);min-width:70px;flex-shrink:0;">${escHtml(r.k)}</span>
+      <span style="font-size:12px;flex:1;min-width:0;">${content}</span>
+    </div>`;
+  }).join('');
+
+  return `<div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;" id="diff-view-${safe}">
+    <div style="padding:6px 10px;background:var(--surface2);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:10px;">
+      <span>${rows.length} champ${rows.length > 1 ? 's' : ''} modifié${rows.length > 1 ? 's' : ''}</span>
+      <span style="font-weight:400;">
+        <span style="color:var(--success);">✚</span> ajouté ·
+        <span style="color:#f59e0b;">~</span> modifié ·
+        <span style="color:var(--danger);">✕</span> supprimé
+      </span>
+      <span style="font-size:10px;color:var(--muted);font-weight:400;">☑ = accepter le changement</span>
+    </div>
+    <div style="padding:8px;">${rowsHtml}</div>
+    <div style="padding:6px 10px;background:var(--surface2);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;">
+      <button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="applyDiffSelection('${subId}')">✔ Appliquer la sélection à la soumission</button>
+      <span style="font-size:11px;color:var(--muted);">Les changements non cochés seront revertés à la valeur actuelle.</span>
+    </div>
+  </div>`;
+}
+
+window.loadSubDiff = async function(subId, type, docId) {
+  const el = document.getElementById(`diff-${subId}`);
+  if (!el) return;
+  el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0;">Chargement du diff…</div>';
+  const colName = _SUB_COL_MAP[type];
+  if (!colName || !docId) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0;">Impossible de charger le diff (ID ou type manquant).</div>';
+    return;
+  }
+  try {
+    const snap = await getDoc(doc(db, colName, String(docId)));
+    if (!snap.exists()) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0;">Document original introuvable — traité comme ajout.</div>';
+      return;
+    }
+    const sub = allSubs.find(s => s._id === subId);
+    if (!sub) return;
+    const current  = snap.data();
+    const proposed = sub.data || {};
+    _diffDataStore.set(subId, { current, proposed });
+    el.innerHTML = _renderDiffView(subId, current, proposed);
+  } catch(e) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`;
+  }
+};
+
+window.applyDiffSelection = async function(subId) {
+  const stored = _diffDataStore.get(subId);
+  if (!stored) { toast('Diff non chargé — cliquez d\'abord sur "Voir les changements".', 'error'); return; }
+  const sub = allSubs.find(s => s._id === subId);
+  if (!sub) return;
+  const { proposed } = stored;
+  const diffEl = document.getElementById(`diff-${subId}`);
+  const rows = diffEl ? diffEl.querySelectorAll('[data-diff-key]') : [];
+
+  // Partir de la version proposée (contient tous les champs inchangés)
+  const merged = { ...proposed };
+  for (const row of rows) {
+    const k    = row.dataset.diffKey;
+    const kind = row.dataset.diffKind;
+    const cb   = row.querySelector('input[type=checkbox]');
+    if (!cb || cb.checked) continue; // accepté → pas de revert
+    // Refusé → revenir à la valeur actuelle
+    if (kind === 'added')   { delete merged[k]; }
+    if (kind === 'changed') { merged[k] = stored.current[k]; }
+    if (kind === 'removed') { merged[k] = stored.current[k]; }
+  }
+
+  sub.data = merged;
+  const codeDiv = document.getElementById(`code-${subId}`);
+  if (codeDiv) codeDiv.textContent = toJSStr(merged, 0) + ',';
+
+  try {
+    await updateDoc(doc(db, 'submissions', subId), { data: merged });
+    toast('✓ Sélection appliquée et sauvegardée', 'success');
+    // Recharger le diff avec le nouvel état
+    const type   = sub.type;
+    const docId  = String(sub.data?.id || '');
+    _diffDataStore.set(subId, { current: stored.current, proposed: merged });
+    if (diffEl) diffEl.innerHTML = _renderDiffView(subId, stored.current, merged);
+  } catch(e) {
+    toast('Erreur sauvegarde : ' + e.message, 'error');
+  }
+};
 
 // ── Copier le code ────────────────────────────────────
 // ── Image soumission : voir / changer ─────────────────
@@ -462,7 +635,7 @@ window.toggleDetails = (id, btn) => {
 };
 
 // ── Toggle éditeur inline ─────────────────────────────
-window.toggleEdit = (id) => {
+window.toggleEdit = async (id) => {
   // S'assurer que les détails sont ouverts avant d'éditer
   const details = document.getElementById(`details-${id}`);
   const toggleBtn = document.querySelector(`#card-${id} .btn-toggle`);
@@ -489,6 +662,17 @@ window.toggleEdit = (id) => {
     editor.classList.remove('open');
     btn.textContent = '✏️ Modifier';
     btn.style.background = '';
+    // Persister en Firestore pour survivre à un refresh
+    try {
+      btn.disabled = true;
+      await updateDoc(doc(db, 'submissions', id), { data: sub.data });
+      const statusEl = document.getElementById(`editor-status-${id}`);
+      if (statusEl) { statusEl.textContent = '💾 Sauvegardé'; statusEl.className = 'sub-editor-status ok'; statusEl.style.display = ''; }
+    } catch(e) {
+      toast('Erreur sauvegarde : ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
   } else {
     // Ouvrir : pre-fill JSON
     ta.value = JSON.stringify(sub.data || {}, null, 2);
@@ -2686,8 +2870,8 @@ function _typeLabel(t) {
 }
 
 const _GEN_FIELD_ORDER = [
-  'id','name','titre','type','palier','zone','npc','mapId','rarity','category','cat','lvl','set','behavior','difficulty',
-  'region','regionId','tag','inCodex','color','sensible','twoHanded','rune_slots',
+  'id','name','titre','type','palier','zone','npc','rarity','category','cat','lvl','set','behavior','difficulty',
+  'region','tag','inCodex','color','sensible','twoHanded','rune_slots',
   'images','lore','obtain','respawnDelay','spawnTime',
   'stats','classes','tags','effects','craft','loot','sells','zones','drops','morceaux','camera','attacks',
   'ordre','_order'
@@ -3040,10 +3224,6 @@ function _buildGenericForm(data, col) {
   // Auto-injecter le champ color pour les panoplies qui n'en ont pas encore
   if (col === 'panoplies' && !('color' in data)) {
     data = { ...data, color: '#b87333' };
-  }
-  // Auto-injecter mapId pour les quêtes qui n'en ont pas encore
-  if (col === 'quetes' && !('mapId' in data)) {
-    data = { ...data, mapId: '' };
   }
   // Auto-injecter obtain pour les items qui n'en ont pas encore
   if (col === 'items' && !('obtain' in data)) {
@@ -5243,10 +5423,18 @@ window.loadQuestOrphans = async function loadQuestOrphans() {
   const listEl = document.getElementById('quest-orphan-list');
   listEl.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const quetes = await cachedDocs('quetes');
-    const orphans = quetes.filter(q => !q.mapId);
+    const [quetes, pnjs] = await Promise.all([cachedDocs('quetes'), cachedDocs('pnj')]);
+    const pnjById   = new Map(pnjs.map(p => [p.id || p._id, p]));
+    const pnjByName = new Map(pnjs.map(p => [p.name || p.nom, p]));
+    const hasCoords = q => q.coords && q.coords.x != null && q.coords.z != null;
+    const hasNpcPos = q => {
+      if (!q.npc) return false;
+      const p = pnjById.get(q.npc) || pnjByName.get(q.npc);
+      return p && p.coords && p.coords.x != null;
+    };
+    const orphans = quetes.filter(q => !hasCoords(q) && !hasNpcPos(q));
     if (!orphans.length) {
-      listEl.innerHTML = '<div class="empty" style="color:#6fbf73;">✓ Toutes les quêtes ont un mapId</div>';
+      listEl.innerHTML = '<div class="empty" style="color:#6fbf73;">✓ Toutes les quêtes apparaissent sur la carte</div>';
       return;
     }
     listEl.innerHTML = '';
@@ -5268,13 +5456,12 @@ window.loadQuestOrphans = async function loadQuestOrphans() {
 
       const gh = document.createElement('div');
       gh.style.cssText = `padding:6px 10px;background:${tc}18;border-left:3px solid ${tc};border-radius:0 6px 6px 0;font-size:11px;font-weight:700;color:${tc};text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px;display:flex;align-items:center;gap:8px;`;
-      gh.innerHTML = `<span>${tl}</span><span style="font-size:10px;font-weight:400;color:var(--muted);">${group.length} sans mapId</span>`;
+      gh.innerHTML = `<span>${tl}</span><span style="font-size:10px;font-weight:400;color:var(--muted);">${group.length} sans position carte</span>`;
       listEl.appendChild(gh);
 
       group.sort((a,b) => ((a.palier||1)-(b.palier||1)) || (a.titre||'').localeCompare(b.titre||'','fr'));
       group.forEach(qt => {
         const row = _buildQuestRow(qt, 'quest-orphan');
-        // Indicateur visuel d'orphelin
         row.style.borderLeft = '3px solid var(--danger)';
         listEl.appendChild(row);
       });
@@ -5715,7 +5902,6 @@ const _CF_DEFS = {
   titre:       { type:'text',      placeholder:'Titre' },
   images:      { type:'text',      placeholder:'URL image (https://…)' },
   color:       { type:'colortext', placeholder:'#a07ae8' },
-  mapId:       { type:'text',      placeholder:'ID marqueur sur la carte' },
   npc:         { type:'text',      placeholder:'ID ou nom du PNJ donneur' },
   zone:        { type:'text',      placeholder:'ID région' },
   // Surcharges par mode
@@ -5726,7 +5912,6 @@ const _CF_DEFS = {
   'mobs:region':     { type:'dbselect', colName:'regions', labelKey:'name' },
   'quetes:type':     { type:'select', opts:[['main','⚔️ Principale'],['sec','🗺️ Secondaire'],['ter','📋 Tertiaire']] },
   'quetes:zone':     { type:'dbselect', colName:'regions', labelKey:'name' },
-  'quetes:mapId':    { type:'text',    placeholder:'ID marqueur carte' },
   'pnj:type':        { type:'select', opts:[['marchand','🛒 Marchand'],['donneur_quete','📜 Donneur quête'],['forgeron','⚒️ Forgeron'],['aubergiste','🍺 Aubergiste'],['instructeur','📚 Instructeur'],['autre','❓ Autre']] },
   'pnj:region':      { type:'dbselect', colName:'regions', labelKey:'name' },
 };
@@ -5838,7 +6023,6 @@ function _buildCompletionInput(fieldId, mode, currentValue) {
 
 const REQUIRED_ADMIN_FIELDS = {
   mob:    ['difficulty'],
-  quete:  ['mapId'],
   region: ['color'],
 };
 
@@ -5926,6 +6110,25 @@ window.loadCompletion = async () => {
     list.innerHTML = `<div class="empty">Erreur : ${e.message}</div>`;
     return;
   }
+
+  // Quêtes sans description (vérification systématique, indépendante des standards)
+  try {
+    const questDocs = await cachedDocs('quetes');
+    // Ajouter 'desc' aux quêtes déjà dans les résultats qui n'ont pas de description
+    for (const r of _completionResults) {
+      if (r.colName === 'quetes' && (!r.doc.desc || !r.doc.desc.trim())) {
+        if (!r.missing.includes('desc')) r.missing.push('desc');
+      }
+    }
+    const coveredQuestIds = new Set(_completionResults.filter(r => r.colName === 'quetes').map(r => r.doc.id || r.doc._id));
+    for (const q of questDocs) {
+      const qid = q.id || q._id;
+      if (coveredQuestIds.has(qid)) continue;
+      if (!q.desc || !q.desc.trim()) {
+        _completionResults.push({ mode: 'quetes', colName: 'quetes', doc: q, missing: ['desc'], discVal: null });
+      }
+    }
+  } catch {}
 
   // Badge sidebar
   const badge = document.getElementById('count-incomplete');

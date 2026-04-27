@@ -837,6 +837,29 @@ body.quetes-page { overflow: hidden; }
   white-space: nowrap;
   vertical-align: middle;
 }
+.coord-badge-link {
+  text-decoration: none;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.coord-badge-link:hover {
+  background: rgba(238, 208, 87, 0.24);
+  border-color: rgba(235, 185, 48, 0.7);
+  color: #f0c86a;
+}
+
+/* Badge coords dans les cartes quêtes (zone absente) — style Velka compact */
+.ctag-coords {
+  color: #c8a96e !important;
+  border-color: rgba(224,172,96,0.28) !important;
+  background: rgba(224,172,96,0.08) !important;
+  border-radius: 4px !important;
+  transition: background .15s, border-color .15s;
+}
+.ctag-coords:hover {
+  background: rgba(224,172,96,0.16) !important;
+  border-color: rgba(224,172,96,0.50) !important;
+}
 
 /* ══════════════════════════════════
    RESPONSIVE

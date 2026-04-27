@@ -67,6 +67,17 @@ const modalCloseBtn = document.getElementById('modal-close-btn');
 ══════════════════════════════════ */
 // normalize → défini dans /utils.js
 
+/* Résout un nom de PNJ : si la valeur ressemble à un ID (pas d'espace, tirets/underscores),
+   tente de le résoudre via l'index PNJ chargé depuis Firestore. */
+function resolvePnjName(npc) {
+  if (!npc) return '';
+  if (window._vcl_pnj_index) {
+    const resolved = window._vcl_pnj_index.get(npc);
+    if (resolved) return resolved;
+  }
+  return npc;
+}
+
 function getFiltered() {
   const q = normalize(searchQuery);
   return QUETES.filter(e => {
@@ -79,7 +90,7 @@ function getFiltered() {
     if (q &&
       !normalize(e.titre).includes(q) &&
       !normalize(e.zone).includes(q)  &&
-      !normalize(e.npc).includes(q)   &&
+      !normalize(resolvePnjName(e.npc)).includes(q) &&
       !normalize(e.desc).includes(q)
     ) return false;
     return true;
@@ -173,10 +184,14 @@ function renderRewardFull(r) {
    RENDU ITEM CHIP (dans objectifs)
    Style identique craft-ingredient du compendium
 ══════════════════════════════════ */
-function formatObjectifText(texte) {
-  return texte.replace(/\((-?\d+)\s*,\s*(-?\d+)\)/g, (_, x, z) =>
-    `<span class="coord-badge">📍 X:${x}, Z:${z}</span>`
-  );
+function formatObjectifText(texte, floor) {
+  return texte.replace(/\((-?\d+)\s*,\s*(-?\d+)\)/g, (_, x, z) => {
+    if (floor != null) {
+      const href = `../Map/map.html?ghost_gx=${x}&ghost_gz=${z}&ghost_floor=${floor}&ghost_name=${encodeURIComponent(`Objectif · X:${x} Z:${z}`)}#floor-${floor}-surface`;
+      return `<a class="coord-badge coord-badge-link" href="${href}" target="_blank" onclick="event.stopPropagation()">📍 X:${x}, Z:${z}</a>`;
+    }
+    return `<span class="coord-badge">📍 X:${x}, Z:${z}</span>`;
+  });
 }
 
 function renderItemChip(itemId, qte) {
@@ -500,7 +515,7 @@ function _buildGridCard(q, idx) {
   const effectiveDone    = done === total && total > 0;
   const effectiveStarted = !effectiveDone && done > 0;
   const zs     = getZoneStyle(q.zone);
-  const mapUrl = getMapUrl(q.mapId, q.zone);
+  const mapUrl = getMapUrl(q.zone);
 
   card.style.setProperty('--zone-color', zs.color);
   card.style.setProperty('--zone-dim',   zs.dim);
@@ -516,14 +531,18 @@ function _buildGridCard(q, idx) {
       </div>
       <div class="card-meta">
         <span class="ctag ctag-palier">P${q.palier}</span>
-        ${mapUrl
-          ? `<a class="ctag ctag-zone" href="${mapUrl}"
-               style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}"
-               title="Voir sur la carte" onclick="event.stopPropagation()">🗺 ${q.zone}</a>`
-          : `<span class="ctag ctag-zone" style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}">🗺 ${q.zone}</span>`
+        ${(q.zone && q.zone !== 'undefined')
+          ? (mapUrl
+            ? `<a class="ctag ctag-zone" href="${mapUrl}"
+                 style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}"
+                 title="Voir sur la carte" onclick="event.stopPropagation()">🗺 ${q.zone}</a>`
+            : `<span class="ctag ctag-zone" style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}">🗺 ${q.zone}</span>`)
+          : (q.coords && q.coords.x != null && q.coords.z != null
+            ? `<a class="ctag ctag-zone ctag-coords" href="../Map/map.html?questId=${q.id}#floor-${q.palier}-surface" target="_blank" onclick="event.stopPropagation()">📍 X ${q.coords.x} · Z ${q.coords.z}</a>`
+            : '')
         }
       </div>
-      <p class="card-desc">${q.desc}</p>
+      <p class="card-desc">${q.desc || ''}</p>
     </div>
     <div class="card-footer">
       <div class="card-rewards-footer">${rewFooter}</div>
@@ -532,7 +551,7 @@ function _buildGridCard(q, idx) {
           <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
           <span class="progress-lbl">${done}/${total}</span>
         </div>
-        <span class="card-npc">🧑 ${q.npc}</span>
+        ${q.npc ? `<span class="card-npc">🧑 ${resolvePnjName(q.npc)}</span>` : ''}
       </div>
     </div>`;
 
@@ -611,6 +630,12 @@ function openModal(q) {
 function closeModal() {
   modalOverlay.classList.remove('open');
   window._currentModalQuest = null;
+  // Fermer le popup de coordonnées s'il est ouvert
+  if (_objLocPopup) {
+    _objLocPopup.remove();
+    _objLocPopup = null;
+    document.removeEventListener('click', _dismissObjLocPopup, true);
+  }
   /* Retire le hash */
   if (window.location.hash) {
     history.pushState(null, '', window.location.pathname + window.location.search);
@@ -708,7 +733,7 @@ function bindModalCheckboxes(q) {
 /* ── Rendu fiche modal ── */
 function renderSheet(q) {
   const zs = getZoneStyle(q.zone);
-  const mapUrl = getMapUrl(q.mapId, q.zone);
+  const mapUrl = getMapUrl(q.zone);
   const { done, total, pct } = getProgress(q);
   const isDone    = done === total && total > 0;
   const isStarted = !isDone && done > 0;
@@ -727,7 +752,7 @@ function renderSheet(q) {
             <input type="checkbox" class="obj-checkbox" data-oi="${i}" data-si="${j}" ${ck ? 'checked' : ''}/>
             <span class="obj-checkmark"></span>
           </label>
-          <span class="obj-text">${formatObjectifText(sub.texte)}${chips}</span>
+          <span class="obj-text">${formatObjectifText(sub.texte, q.palier)}${chips}</span>
         </div>`;
       }).join('');
       return `<div class="obj-group"><div class="obj-group-lbl">↳ Séquence</div>${subs}</div>`;
@@ -743,19 +768,18 @@ function renderSheet(q) {
         if (!loc) return '';
         const hasCoords = loc.x != null && loc.z != null;
         if (!hasCoords) return '';
-        const pinName = encodeURIComponent(o.texte || 'Objectif');
-        const href    = `../Map/map.html?pin=${pinName}&floor=${q.palier}&gx=${loc.x}&gz=${loc.z}#floor-${q.palier}-x${loc.x}-z${loc.z}`;
         const label   = loc.regionName
           ? `📍 ${loc.regionName}`
           : `📍 X ${loc.x} · Z ${loc.z}`;
-        return `<a class="obj-loc-chip" href="${href}" target="_blank" title="Voir sur la carte (X:${loc.x} Z:${loc.z})">${label}</a>`;
+        const name = (o.texte || 'Objectif').replace(/'/g, "\'");
+        return `<span class="obj-loc-chip obj-loc-pin-btn" onclick="showObjLocPin(event,${loc.x},${loc.z},${q.palier},'${name}')" title="X:${loc.x} · Z:${loc.z} — cliquer pour voir">${label}</span>`;
       })();
       const objEl = `<div class="obj-item ${ck ? 'done' : ''} ${blocked ? 'obj-blocked' : ''} obj-item-${q.type}" data-oi="${i}">
         <label class="obj-ck-label">
           <input type="checkbox" class="obj-checkbox" data-oi="${i}" ${ck ? 'checked' : ''} ${blocked ? 'disabled' : ''}/>
           <span class="obj-checkmark"></span>
         </label>
-        <span class="obj-text">${formatObjectifText(o.texte)}${chips}${locChip}</span>
+        <span class="obj-text">${formatObjectifText(o.texte, q.palier)}${chips}${locChip}</span>
       </div>`;
       const arrowEl = o.next && i < q.objectifs.length - 1
         ? `<div class="obj-next-arrow">↓</div>`
@@ -774,13 +798,12 @@ function renderSheet(q) {
         : `<span class="quest-meta-val" style="color:${zs.color}">🗺 ${q.zone}</span>`)
     : '';
 
-  /* Coordonnées de départ de la quête */
+  /* Coordonnées de départ de la quête → renvoie au pin de la quête sur la carte */
   const questCoordsEl = (() => {
     const c = q.coords;
     if (!c || c.x == null || c.z == null) return '';
-    const pinName = encodeURIComponent(q.titre || 'Quête');
-    const href = `../Map/map.html?pin=${pinName}&floor=${q.palier}&gx=${c.x}&gz=${c.z}#floor-${q.palier}-x${c.x}-z${c.z}`;
-    return `<a class="obj-loc-chip quest-coords-chip" href="${href}" target="_blank" title="Voir le point de départ sur la carte">📍 X ${c.x} · Z ${c.z}</a>`;
+    const href = `../Map/map.html?questId=${q.id}#floor-${q.palier}-surface`;
+    return `<a class="obj-loc-chip quest-coords-chip" href="${href}" target="_blank" title="Voir sur la carte">📍 X ${c.x} · Z ${c.z}</a>`;
   })();
 
   /* Bouton "Copier le lien" */
@@ -805,7 +828,7 @@ function renderSheet(q) {
             <span class="quest-meta-val">⬡ ${q.palier}</span>
           </div>
           ${zoneEl ? `<div class="quest-meta-item"><span class="quest-meta-key">Zone</span>${zoneEl}</div>` : ''}
-          ${q.npc  ? `<div class="quest-meta-item"><span class="quest-meta-key">PNJ</span><span class="quest-meta-val">🧑 ${q.npc}</span></div>` : ''}
+          ${q.npc  ? `<div class="quest-meta-item"><span class="quest-meta-key">PNJ</span><span class="quest-meta-val">🧑 ${resolvePnjName(q.npc)}</span></div>` : ''}
           ${questCoordsEl ? `<div class="quest-meta-item"><span class="quest-meta-key">Départ</span>${questCoordsEl}</div>` : ''}
         </div>
       </div>
@@ -918,6 +941,54 @@ function setLayout() {
 }
 setLayout();
 window.addEventListener('resize', setLayout);
+
+/* ══════════════════════════════════
+   PIN POPUP OBJECTIF
+══════════════════════════════════ */
+let _objLocPopup = null;
+function _dismissObjLocPopup(e) {
+  if (_objLocPopup && !_objLocPopup.contains(e.target)) {
+    _objLocPopup.remove();
+    _objLocPopup = null;
+    document.removeEventListener('click', _dismissObjLocPopup, true);
+  }
+}
+
+window.showObjLocPin = function(e, x, z, floor, name) {
+  e.stopPropagation();
+  if (_objLocPopup) { _objLocPopup.remove(); _objLocPopup = null; }
+
+  const popup = document.createElement('div');
+  popup.style.cssText = 'position:fixed;background:var(--surface,#1a1a2e);border:1px solid var(--border,#333);border-radius:10px;padding:12px 16px;z-index:9999;box-shadow:0 6px 28px rgba(0,0,0,.6);font-size:13px;min-width:190px;pointer-events:auto;';
+
+  const href = `../Map/map.html?ghost_gx=${x}&ghost_gz=${z}&ghost_floor=${floor}&ghost_name=${encodeURIComponent(name)}#floor-${floor}-surface`;
+  popup.innerHTML = `
+    <div style="font-size:10px;font-weight:700;color:var(--muted,#888);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;">📍 Point d'objectif</div>
+    <div style="font-size:14px;font-weight:700;margin-bottom:10px;">X ${x} · Z ${z}<span style="font-size:11px;font-weight:400;color:var(--muted,#888);margin-left:6px;">Étage ${floor}</span></div>
+    <a href="${href}" target="_blank" style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--accent,#7a5af8);text-decoration:none;border:1px solid rgba(122,90,248,.3);padding:4px 10px;border-radius:6px;background:rgba(122,90,248,.08);">🗺️ Voir sur la carte →</a>
+  `;
+
+  const rect = e.currentTarget.getBoundingClientRect();
+  const top  = rect.bottom + 6;
+  let left = rect.left;
+  popup.style.top  = top  + 'px';
+  popup.style.left = left + 'px';
+  document.body.appendChild(popup);
+
+  // Ajuste si popup déborde à droite
+  const pw = popup.offsetWidth;
+  if (left + pw > window.innerWidth - 8) {
+    popup.style.left = Math.max(8, window.innerWidth - pw - 8) + 'px';
+  }
+  // Ajuste si déborde en bas
+  const ph = popup.offsetHeight;
+  if (top + ph > window.innerHeight - 8) {
+    popup.style.top = (rect.top - ph - 6) + 'px';
+  }
+
+  _objLocPopup = popup;
+  setTimeout(() => document.addEventListener('click', _dismissObjLocPopup, true), 0);
+};
 
 /* ══════════════════════════════════
    INIT

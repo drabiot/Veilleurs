@@ -169,6 +169,89 @@
 }
 
 /* ══════════════════════════════════
+   DIALOG PIN PERSO (position: fixed forcé)
+══════════════════════════════════ */
+.cpd-overlay {
+  position: fixed !important;
+  top: 0 !important; left: 0 !important;
+  width: 100vw !important; height: 100vh !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(0,0,0,0.72);
+}
+.cpd-overlay.hidden { display: none !important; }
+.custom-pin-dialog-box {
+  background: linear-gradient(160deg, #1e1a14 0%, #0f0d0a 100%);
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 12px 48px rgba(0,0,0,.85), 0 0 0 1px rgba(224,172,96,.06);
+  padding: 26px 30px 22px;
+  min-width: 300px; max-width: 400px; width: 90%;
+  position: relative; z-index: 1;
+}
+/* Compatibilité rétro : ancien nom de classe */
+.custom-pin-dialog-overlay { display: none; }
+.cpd-title {
+  font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 6px;
+}
+.cpd-coords {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  color: var(--gold-dim); margin-bottom: 18px; letter-spacing: .06em;
+}
+.cpd-input {
+  width: 100%; box-sizing: border-box;
+  background: rgba(255,255,255,.05); border: 1px solid var(--rim2);
+  color: var(--bright); font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; padding: 10px 12px; outline: none;
+  transition: border-color .15s, background .15s; margin-bottom: 18px;
+}
+.cpd-input:focus { border-color: var(--gold-dim); background: rgba(255,255,255,.08); }
+.cpd-btns { display: flex; gap: 10px; justify-content: flex-end; }
+.cpd-btn {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  padding: 8px 20px; border: 1px solid; cursor: pointer;
+  letter-spacing: .06em; transition: all .15s;
+}
+.cpd-cancel { background: transparent; border-color: var(--rim2); color: var(--muted); }
+.cpd-cancel:hover { color: var(--text); border-color: rgba(255,255,255,.3); }
+.cpd-confirm { background: rgba(224,172,96,.12); border-color: var(--gold-dim); color: var(--gold); }
+.cpd-confirm:hover { background: rgba(224,172,96,.25); }
+
+/* Bouton mode ajout de pin perso */
+.custom-pin-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--rim2);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.custom-pin-btn:hover { color: var(--gold); border-color: var(--gold-dim); }
+.custom-pin-btn.active {
+  color: var(--gold); border-color: var(--gold-dim);
+  background: var(--gold-glow);
+}
+
+/* Pin fantôme (depuis URL params quêtes) */
+.ghost-pin-icon {
+  background: rgba(224,172,96,0.25) !important;
+  border: 2px dashed rgba(224,172,96,0.8) !important;
+  box-shadow: 0 0 14px rgba(224,172,96,0.5), inset 0 0 8px rgba(224,172,96,0.15) !important;
+  animation: ghost-pulse 1.8s ease-in-out infinite;
+}
+@keyframes ghost-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.75; }
+  50%       { transform: scale(1.15); opacity: 1;    }
+}
+
+/* ══════════════════════════════════
    ZONE CENTRALE
 ══════════════════════════════════ */
 .map-main {
