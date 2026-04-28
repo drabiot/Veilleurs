@@ -17,13 +17,15 @@ const MARKER_EMOJI = {
 };
 
 const FLOOR_NAMES = {
-  1: 'Forêt',
-  2: 'Désert',
+  1: 'Villes Européennes',
+  2: 'Désert Aride',
+  3: 'Forêt Elfique'
 };
 
 const FLOOR_DATA = {
   1: { hasUnderground: true  },
-  2: { hasUnderground: true }
+  2: { hasUnderground: true },
+  3: { hasUnderground: false },
 };
 
 const FLOOR_ZONES = {
