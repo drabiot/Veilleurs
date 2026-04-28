@@ -5259,7 +5259,7 @@ const PNJ_TYPE_ICONS = {
   "quête tertiaire":         "📋",
   "donjon":                  "🏰",
   "fabricant secret":        "🔒",
-  "marchand occulte":        "🌙",
+  "marchand occulte":        "🩸",
   "autres":                  "💬",
 };
 
