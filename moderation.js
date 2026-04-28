@@ -261,6 +261,91 @@ function toJSStr(obj, depth = 0) {
   return JSON.stringify(obj);
 }
 
+function _buildPrettySummary(data, type) {
+  const esc = window.VCL.escHtml;
+  const RARITY_COLORS = { commun:'#4ade80', rare:'#60a5fa', epique:'#a78bfa', legendaire:'#e8d44a', mythique:'#f5b5e4', godlike:'#f87171', event:'#e2e8f0' };
+  const RARITY_LABELS = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+  const CAT_LABELS    = { arme:'⚔️ Arme', armure:'🛡️ Armure', accessoire:'💍 Accessoire', consommable:'🧪 Consommable', nourriture:'🍖 Nourriture', materiaux:'🧱 Matériaux', ressources:'⛏️ Ressources', outils:'🛠️ Outils', rune:'🔮 Rune', quete:'📜 Quête', donjon:'🏰 Donjon', monnaie:'🪙 Monnaie' };
+
+  const rows = [];
+  const field = (label, val, color) => {
+    if (val == null || val === '' || val === false) return;
+    rows.push(`<div style="display:flex;gap:6px;align-items:baseline;font-size:12px;padding:2px 0;">
+      <span style="color:var(--muted);min-width:90px;flex-shrink:0;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;">${esc(label)}</span>
+      <span style="color:${color||'var(--text)'};word-break:break-word;">${val}</span>
+    </div>`);
+  };
+
+  if (type === 'item') {
+    const rarColor = RARITY_COLORS[data.rarity] || 'var(--muted)';
+    if (data.rarity)   field('Rareté',   `<span style="font-weight:700;">${RARITY_LABELS[data.rarity]||data.rarity}</span>`, rarColor);
+    if (data.category) field('Catégorie', CAT_LABELS[data.category]||data.category);
+    if (data.palier)   field('Palier',   'Palier ' + data.palier);
+    if (data.lvl)      field('Niveau',   'Niveau ≥ ' + data.lvl);
+    if (data.cat)      field('Slot',     data.cat);
+    if (data.classes?.length) field('Classes', data.classes.join(', '));
+    if (data.sensible) field('', '🔒 Sensible', '#f87171');
+    if (data.event)    field('', '🎊 Event',    '#a855f7');
+    if (data.evolutif) field('', '🔄 Évolutif', '#60a5fa');
+    if (data.stats && Object.keys(data.stats).length) {
+      const statLines = Object.entries(data.stats).map(([k, v]) => {
+        const val = Array.isArray(v) ? `${v[0]}–${v[1]}` : v;
+        return `<span style="background:rgba(122,90,248,.12);border:1px solid rgba(122,90,248,.2);border-radius:4px;padding:1px 6px;font-size:11px;">${esc(k)} <b>${val}</b></span>`;
+      }).join(' ');
+      rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Stats</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;">${statLines}</div>`);
+    }
+    if (data.craft?.length) {
+      const craftLines = data.craft.map(c => `<span style="background:var(--surface3);border-radius:4px;padding:1px 6px;font-size:11px;">×${c.qty} ${esc(c.id)}</span>`).join(' ');
+      rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Craft</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;">${craftLines}</div>`);
+    }
+    if (data.obtain)  field('Obtention', esc(data.obtain).replace(/\n/g,'<br>'));
+    if (data.lore)    field('Lore', `<i style="color:var(--muted)">${esc(data.lore).slice(0,200)}${data.lore.length>200?'…':''}</i>`);
+    if (data.tags?.length) field('Tags', data.tags.map(t=>`<span style="font-size:10px;background:var(--surface3);border-radius:3px;padding:1px 5px;">${esc(t)}</span>`).join(' '));
+  } else if (type === 'mob') {
+    if (data.type)    field('Type',     data.type);
+    if (data.palier)  field('Palier',   'Palier ' + data.palier);
+    if (data.region)  field('Région',   data.region);
+    if (data.behavior)field('Comportement', data.behavior);
+    if (data.lore)    field('Lore', `<i style="color:var(--muted)">${esc(data.lore).slice(0,200)}${data.lore.length>200?'…':''}</i>`);
+    if (data.loot?.length) {
+      const lootLines = data.loot.map(l => `<span style="font-size:11px;background:var(--surface3);border-radius:4px;padding:1px 6px;">${esc(l.id)} <b style="color:var(--success)">${l.chance}%</b></span>`).join(' ');
+      rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Loot</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${lootLines}</div>`);
+    }
+  } else if (type === 'pnj') {
+    if (data.tag)    field('Type',   data.tag);
+    if (data.palier) field('Palier', 'Palier ' + data.palier);
+    if (data.region) field('Région', data.region);
+    if (data.coords) field('Coords', `X:${data.coords.x} Y:${data.coords.y} Z:${data.coords.z}`);
+  } else if (type === 'region') {
+    if (data.palier)  field('Palier', 'Palier ' + data.palier);
+    if (data.coords)  field('Coords', `X:${data.coords.x} Y:${data.coords.y} Z:${data.coords.z}`);
+    if (data.inCodex) field('Codex',  '✓ Dans le Codex', 'var(--success)');
+    if (data.lore)    field('Lore', `<i style="color:var(--muted)">${esc(data.lore).slice(0,200)}${data.lore.length>200?'…':''}</i>`);
+  } else if (type === 'quest') {
+    const QUEST_TYPE_LABELS = { main:'⚔️ Principale', sec:'🗺️ Secondaire', ter:'📋 Tertiaire' };
+    if (data.type)    field('Type',   QUEST_TYPE_LABELS[data.type]||data.type);
+    if (data.palier)  field('Palier', 'Palier ' + data.palier);
+    if (data.npc)     field('PNJ',    data.npc);
+    if (data.zone)    field('Zone',   data.zone);
+    if (data.coords)  field('Coords', `X:${data.coords.x} Y:${data.coords.y} Z:${data.coords.z}`);
+    if (data.desc)    field('Desc',   `<i style="color:var(--muted)">${esc(data.desc).slice(0,200)}</i>`);
+    if (data.objectifs?.length) {
+      const objLines = data.objectifs.map(o => `<div style="font-size:11px;display:flex;gap:5px;"><span style="color:var(--accent);">◻</span><span>${esc(o.texte||'—')}</span></div>`).join('');
+      rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Objectifs</div><div style="display:flex;flex-direction:column;gap:1px;">${objLines}</div>`);
+    }
+  } else if (type === 'panoplie') {
+    if (data.bonuses?.length) {
+      const bonLines = data.bonuses.map(b => `<span style="font-size:11px;background:var(--surface3);border-radius:4px;padding:1px 6px;">${b.pieces}×: ${esc(b.stat)} +${b.value}</span>`).join(' ');
+      rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Bonus</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${bonLines}</div>`);
+    }
+  } else {
+    return '';
+  }
+
+  if (!rows.length) return '';
+  return `<div style="padding:8px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border);">${rows.join('')}</div>`;
+}
+
 function buildCard(sub) {
   const card = document.createElement('div');
   card.className = `sub-card status-${sub.status}`;
@@ -344,7 +429,11 @@ function buildCard(sub) {
       </div>
       <div class="sub-details" id="details-${sub._id}">
         ${sub.isModification ? `<div id="diff-${sub._id}" style="margin-bottom:10px;"><button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="loadSubDiff('${sub._id}','${sub.type}','${String(sub.data?.id||'')}')">🔍 Voir les changements</button></div>` : ''}
-        <div class="sub-code" id="code-${sub._id}">${escHtml(code)}</div>
+        <div id="pretty-${sub._id}">${_buildPrettySummary(sub.data || {}, sub.type)}</div>
+        <details style="margin-top:6px;">
+          <summary style="font-size:10px;color:var(--muted);cursor:pointer;user-select:none;padding:3px 0;">⟨⟩ JSON brut</summary>
+          <div class="sub-code" id="code-${sub._id}">${escHtml(code)}</div>
+        </details>
         ${editorHtml}
       </div>
     </div>
@@ -371,8 +460,8 @@ const _diffDataStore = new Map(); // subId → { current, proposed }
 
 // Champs dont l'ordre de tableau est non significatif
 const _UNORDERED_ARRAY_FIELDS = new Set(['stats','craft','effects','bonuses','tags','classes','images','loot','drops','zones','objectifs','recompenses']);
-// Champs à ignorer dans le diff
-const _DIFF_SKIP_FIELDS = new Set(['_order','ordre','_contributor','_ts']);
+// Champs à ignorer dans le diff (images et ordre gérés en interne lors de l'approbation)
+const _DIFF_SKIP_FIELDS = new Set(['_order','ordre','_contributor','_ts','images','image','img']);
 
 function _diffValue(v) {
   if (v === null || v === undefined) return '—';
@@ -523,6 +612,8 @@ window.applyDiffSelection = async function(subId) {
   sub.data = merged;
   const codeDiv = document.getElementById(`code-${subId}`);
   if (codeDiv) codeDiv.textContent = toJSStr(merged, 0) + ',';
+  const prettyDiv = document.getElementById(`pretty-${subId}`);
+  if (prettyDiv) prettyDiv.innerHTML = _buildPrettySummary(merged, sub.type);
 
   try {
     await updateDoc(doc(db, 'submissions', subId), { data: merged });
@@ -659,6 +750,8 @@ window.toggleEdit = async (id) => {
     errDiv.style.display = 'none';
     // Mettre à jour l'aperçu
     codeDiv.textContent = toJSStr(sub.data, 0) + ',';
+    const prettyDiv = document.getElementById(`pretty-${id}`);
+    if (prettyDiv) prettyDiv.innerHTML = _buildPrettySummary(sub.data || {}, sub.type);
     editor.classList.remove('open');
     btn.textContent = '✏️ Modifier';
     btn.style.background = '';
@@ -973,6 +1066,7 @@ const HASH_PANELS = {
   'pnj-coords':       () => showPnjCoords(),
   'data-all':         () => showDataAll(),
   'zones':              () => showZoneEditor(),
+  'images':             () => showImagesTool(),
   'pnj-migration':        () => showPnjMigration(),
   'zone-list':            () => showZoneList(),
   'quest-map-migration':  () => showQuestMapMigration(),
@@ -3476,6 +3570,8 @@ window.showEditor = async function(collection, id, data, origin) {
   const btn = document.getElementById('btn-save-editor');
   btn.textContent = '💾 Sauvegarder'; btn.disabled = false;
   btn.style.background = 'var(--accent)'; btn.style.color = '#fff';
+  const btnDel = document.getElementById('btn-delete-editor');
+  if (btnDel) { btnDel.disabled = false; btnDel.textContent = '🗑️ Supprimer'; }
 
   // Charger les régions si besoin (pour la datalist)
   if (collection === 'mobs' || collection === 'personnages' || collection === 'regions') {
@@ -3528,6 +3624,7 @@ window.editorGoBack = function() {
   if (_editorOrigin === 'data-incomplete') { showCompletion(); return; }
   if (_editorOrigin === 'completion')      { showCompletion(); return; }
   if (_editorOrigin === 'allpins')         { showMapPanel(); switchMapTab('allpins'); return; }
+  if (_editorOrigin === 'data-all')        { showDataAll();        return; }
   showSubmissions();
 };
 
@@ -3613,6 +3710,8 @@ window.saveEditor = async function() {
     // Mettre à jour le cache mémoire
     _editorCacheUpdate(_editorCollection, _editorId, newData);
     _editorOrigData = { ...newData };
+    // Mettre à jour le cache data-all (force rechargement propre)
+    _dataAllLoaded = false;
 
     btn.textContent = '✔ Sauvegardé'; btn.style.background = '#14532d'; btn.style.color = 'var(--success)';
     setTimeout(() => {
@@ -3674,12 +3773,17 @@ window.deleteCurrentEntry = async function() {
     // Invalider les caches localStorage
     localStorage.removeItem(`vcl_cache_v2_${_editorCollection}`);
     localStorage.removeItem(`vcl_cache_meta_v2_${_editorCollection}`);
+    invalidateModCache(_editorCollection);
     // Retirer de la liste locale (évite d'avoir à recharger le panneau)
     if      (_editorCollection === 'mobs')        { _mobOrderData    = _mobOrderData.filter(m => m.id !== _editorId); }
     else if (_editorCollection === 'items')        { _itemOrderData   = _itemOrderData.filter(i => i.id !== _editorId); }
     else if (_editorCollection === 'personnages')  { _pnjRegions.forEach(r => { r.pnjs = r.pnjs.filter(p => p.id !== _editorId); }); }
     else if (_editorCollection === 'regions')      { _regionOrderData = _regionOrderData.filter(r => r.id !== _editorId); }
     else if (_editorCollection === 'quetes')       { _questOrderData  = _questOrderData.filter(q => q.id !== _editorId); }
+    // Retirer aussi du cache data-all (suppression en chaîne sans reload)
+    const _delId = _editorId;
+    const _delCol = _editorCollection;
+    _dataAllData = _dataAllData.filter(d => !(d.id === _delId && d._col === _delCol));
     editorGoBack();
   } catch(e) {
     btn.disabled = false; btn.textContent = '🗑️ Supprimer';
@@ -3819,6 +3923,25 @@ window.loadDiscordWebhooks = async function loadDiscordWebhooks() {
 function _renderDiscordWebhooks() {
   const list = document.getElementById('dw-list');
   list.innerHTML = '';
+
+  // ── Webhook "Nouveaux ajouts" ──────────────────────────
+  const newSubSection = document.createElement('div');
+  newSubSection.style.cssText = 'margin-bottom:24px;padding:12px 14px;background:rgba(74,222,128,.05);border:1px solid rgba(74,222,128,.2);border-radius:8px;';
+  newSubSection.innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--success);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">📬 Nouvelles soumissions</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;">
+      Webhook envoyé automatiquement quand un contributeur soumet un ajout ou une modification. Contient toute la data.
+    </p>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <input type="text" id="dw-new-submission" placeholder="https://discord.com/api/webhooks/…"
+        value="${_dwConfig?.new_submission || ''}"
+        style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:11px;outline:none;font-family:monospace;transition:border-color .15s;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;flex-shrink:0;" onclick="testNewSubmissionWebhook()">🧪 Test</button>
+    </div>
+  `;
+  list.appendChild(newSubSection);
+
   for (const cat of DW_CATEGORIES) {
     const section = document.createElement('div');
     section.style.cssText = 'margin-bottom:20px;';
@@ -3874,6 +3997,8 @@ window.saveDiscordWebhooks = async function saveDiscordWebhooks() {
     }
     const tpl = document.getElementById('dw-template')?.value?.trim() || '';
     if (tpl) data.template = tpl;
+    const newSub = document.getElementById('dw-new-submission')?.value?.trim() || '';
+    if (newSub) data.new_submission = newSub;
 
     // Persist embedFields from in-memory config
     if (_dwConfig?.embedFields) data.embedFields = _dwConfig.embedFields;
@@ -4426,6 +4551,20 @@ async function _sendSingleItemDiscord(item) {
   await window.VCL.postDiscord(`${url}?wait=false`, payload, imgBlob, imgFname);
 }
 
+window.testNewSubmissionWebhook = async function() {
+  const url = document.getElementById('dw-new-submission')?.value?.trim();
+  if (!url) { toast('⚠️ Aucun webhook configuré.', 'warning'); return; }
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: '🧪 **Test webhook** · Nouvelles soumissions · VCL Wiki Modération' })
+    });
+    if (resp.ok || resp.status === 204) toast('✓ Message de test envoyé !', 'success');
+    else { const t = await resp.text().catch(() => String(resp.status)); toast(`⛔ Erreur Discord ${resp.status} : ${t.slice(0,200)}`, 'error'); }
+  } catch(e) { toast(`⛔ Erreur réseau : ${e.message}`, 'error'); }
+};
+
 window.testDiscordWebhook = async function testDiscordWebhook(key) {
   const url = document.getElementById(`dw-${key}`)?.value?.trim();
   if (!url) { toast('⚠️ Aucun webhook configuré pour cette combinaison.', 'warning'); return; }
@@ -4870,12 +5009,23 @@ function _itemImgSrc(obj) {
     return base + rel;
   }
   if (!obj.id) return null;
-  const { id, category, palier } = obj;
+  const { id, category, palier, event: isEvent } = obj;
+  const tier = (isEvent || palier === 0) ? 'events' : (palier ? 'P' + palier : '');
+  const tp   = tier ? tier + '/' : '';
   switch (category) {
-    case 'arme':       return `${base}img/compendium/textures/weapons/${id}.png`;
-    case 'armure':     return `${base}img/compendium/textures/armors/${id}.png`;
-    case 'accessoire': return `${base}img/compendium/textures/trinkets/${palier ? 'P'+palier+'/' : ''}${id}.png`;
-    default:           return null;
+    case 'arme':        return `${base}img/compendium/textures/weapons/${tp}${id}.png`;
+    case 'armure':      return `${base}img/compendium/textures/armors/${tp}${id}.png`;
+    case 'accessoire':  return `${base}img/compendium/textures/trinkets/${tp}${id}.png`;
+    case 'outils':      return `${base}img/compendium/textures/gears/${tp}${id}.png`;
+    case 'materiaux':   return `${base}img/compendium/textures/items/Material/${tp}${id}.png`;
+    case 'ressources':  return `${base}img/compendium/textures/items/Ressources/${tp}${id}.png`;
+    case 'consommable': return `${base}img/compendium/textures/items/Consommable/${tp}${id}.png`;
+    case 'nourriture':  return `${base}img/compendium/textures/items/Nourriture/${tp}${id}.png`;
+    case 'rune':        return `${base}img/compendium/textures/items/Runes/${tp}${id}.png`;
+    case 'quete':       return `${base}img/compendium/textures/items/Quest/${tp}${id}.png`;
+    case 'donjon':      return `${base}img/compendium/textures/items/Donjon/${tp}${id}.png`;
+    case 'monnaie':     return `${base}img/compendium/textures/items/Monnaie/${tp}${id}.png`;
+    default:            return null;
   }
 }
 
@@ -5842,22 +5992,24 @@ function _sensEsc(s) {
   return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
 
-// Formule d'image identique à creator.html:3022-3033 (source de vérité partagée)
-function _sensComputeImg(category, id, palier) {
+// Formule d'image identique à creator.js / atelier.js (source de vérité partagée)
+function _sensComputeImg(category, id, palier, isEvent) {
   if (!id) return null;
-  const p = palier ? 'P' + palier + '/' : '';
+  const tier = (isEvent || palier === 0) ? 'events' : (palier ? 'P' + palier : '');
+  const tp = tier ? tier + '/' : '';
   switch (category) {
-    case 'arme':        return `../img/compendium/textures/weapons/${id}.png`;
-    case 'armure':      return `../img/compendium/textures/armors/${id}.png`;
-    case 'accessoire':  return `../img/compendium/textures/trinkets/${p}${id}.png`;
-    case 'outils':      return `../img/compendium/textures/gears/${id}.png`;
-    case 'materiaux':   return `../img/compendium/textures/items/Material/${id}.png`;
-    case 'ressources':  return `../img/compendium/textures/items/Ressources/${id}.png`;
-    case 'consommable': return `../img/compendium/textures/items/Consommable/${id}.png`;
-    case 'nourriture':  return `../img/compendium/textures/items/Nourriture/${id}.png`;
-    case 'rune':        return `../img/compendium/textures/items/Runes/${id}.png`;
-    case 'quete':       return `../img/compendium/textures/items/Quest/${id}.png`;
-    case 'donjon':      return `../img/compendium/textures/items/Donjon/${id}.png`;
+    case 'arme':        return `../img/compendium/textures/weapons/${tp}${id}.png`;
+    case 'armure':      return `../img/compendium/textures/armors/${tp}${id}.png`;
+    case 'accessoire':  return `../img/compendium/textures/trinkets/${tp}${id}.png`;
+    case 'outils':      return `../img/compendium/textures/gears/${tp}${id}.png`;
+    case 'materiaux':   return `../img/compendium/textures/items/Material/${tp}${id}.png`;
+    case 'ressources':  return `../img/compendium/textures/items/Ressources/${tp}${id}.png`;
+    case 'consommable': return `../img/compendium/textures/items/Consommable/${tp}${id}.png`;
+    case 'nourriture':  return `../img/compendium/textures/items/Nourriture/${tp}${id}.png`;
+    case 'rune':        return `../img/compendium/textures/items/Runes/${tp}${id}.png`;
+    case 'quete':       return `../img/compendium/textures/items/Quest/${tp}${id}.png`;
+    case 'donjon':      return `../img/compendium/textures/items/Donjon/${tp}${id}.png`;
+    case 'monnaie':     return `../img/compendium/textures/items/Monnaie/${tp}${id}.png`;
     default:            return null;
   }
 }
@@ -6984,7 +7136,7 @@ window.sensItemToPublic = async (hashId) => {
       for (const [k, v] of Object.entries(secret)) if (k !== '_id') merged[k] = v;
     }
     // Recalcul de l'image depuis la formule (on ne la stocke pas dans hidden)
-    const _sensImg = _sensComputeImg(merged.category, merged.id, merged.palier);
+    const _sensImg = _sensComputeImg(merged.category, merged.id, merged.palier, merged.event);
     merged.images = _sensImg ? [_sensImg] : [];
     delete merged.img;
     // Pas de flag sensible dans le doc public
@@ -7109,6 +7261,413 @@ window.sensMobToPublic = async (sourceId) => {
     e.preventDefault();
   }, { capture: true, passive: false });
 })();
+
+// ══════════════════════════════════════════════════════
+// OUTIL IMAGES
+// ══════════════════════════════════════════════════════
+let _imgConfig = null; // { token, repo, branch, templates }
+let _imgSelectedItem = null;
+let _imgFile = null;
+let _imgActiveTab = 'upload';
+
+// Templates de référence — format web (préfixe ../ requis pour les pages en sous-dossier).
+// L'upload GitHub strip le ../ avant d'envoyer au repo.
+const IMG_DEFAULT_TEMPLATES = {
+  arme:        '../img/compendium/textures/weapons/{tier}/{id}.png',
+  armure:      '../img/compendium/textures/armors/{tier}/{id}.png',
+  accessoire:  '../img/compendium/textures/trinkets/{tier}/{id}.png',
+  outils:      '../img/compendium/textures/gears/{tier}/{id}.png',
+  materiaux:   '../img/compendium/textures/items/Material/{tier}/{id}.png',
+  ressources:  '../img/compendium/textures/items/Ressources/{tier}/{id}.png',
+  consommable: '../img/compendium/textures/items/Consommable/{tier}/{id}.png',
+  nourriture:  '../img/compendium/textures/items/Nourriture/{tier}/{id}.png',
+  rune:        '../img/compendium/textures/items/Runes/{tier}/{id}.png',
+  quete:       '../img/compendium/textures/items/Quest/{tier}/{id}.png',
+  donjon:      '../img/compendium/textures/items/Donjon/{tier}/{id}.png',
+  monnaie:     '../img/compendium/textures/items/Monnaie/{tier}/{id}.png',
+};
+
+function _imgComputePath(item) {
+  const tpl = _imgConfig?.templates?.[item.category] || IMG_DEFAULT_TEMPLATES[item.category];
+  if (!tpl) return null;
+  const tier = (item.event || item.palier === 0) ? 'events' : (item.palier ? 'P' + item.palier : '');
+  const tp   = tier ? tier + '/' : '';
+  return tpl
+    .replace(/\{tier\}\//g, tp)    // "{tier}/" → "P1/" ou "" (évite le double slash)
+    .replace(/\{tier\}/g,   tier)  // "{tier}" seul → "P1" ou ""
+    .replace(/\{id\}/g,     item.id || '')
+    .replace(/\{palier\}/g, item.palier ?? '')
+    .replace(/\{cat\}/g,    item.cat || '');
+}
+
+window.showImagesTool = async function() {
+  _setHash('images');
+  _showPanel('images-tool-panel', 'btn-images-tool');
+  await loadImagesTool();
+};
+
+window.loadImagesTool = async function() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'image_paths'));
+    _imgConfig = snap.exists() ? snap.data() : {};
+    if (!_imgConfig.templates) _imgConfig.templates = { ...IMG_DEFAULT_TEMPLATES };
+    // Migrer les vieux templates (sans ../ ou avec le bug P{palier}')
+    for (const [cat, def] of Object.entries(IMG_DEFAULT_TEMPLATES)) {
+      const tpl = _imgConfig.templates[cat];
+      if (!tpl || !tpl.startsWith('../') || tpl.includes("'")) {
+        _imgConfig.templates[cat] = def;
+      }
+    }
+    // Remplir les champs config
+    const t = document.getElementById('img-config-token');
+    const r = document.getElementById('img-config-repo');
+    const b = document.getElementById('img-config-branch');
+    if (t) t.value = _imgConfig.token || '';
+    if (r) r.value = _imgConfig.repo  || '';
+    if (b) b.value = _imgConfig.branch || 'main';
+    _renderImgTemplates();
+    _buildImgItemSearch();
+  } catch(e) {
+    toast('⛔ Erreur chargement config images : ' + e.message, 'error');
+  }
+};
+
+window.saveImagesConfig = async function() {
+  const token  = document.getElementById('img-config-token')?.value?.trim() || '';
+  const repo   = document.getElementById('img-config-repo')?.value?.trim()  || '';
+  const branch = document.getElementById('img-config-branch')?.value?.trim() || 'main';
+  // Collecter les templates
+  const templates = {};
+  document.querySelectorAll('.img-tpl-input').forEach(inp => {
+    const cat = inp.dataset.cat;
+    if (cat) templates[cat] = inp.value.trim() || IMG_DEFAULT_TEMPLATES[cat];
+  });
+  _imgConfig = { ..._imgConfig, token, repo, branch, templates };
+  try {
+    await setDoc(doc(db, 'config', 'image_paths'), _imgConfig);
+    toast('✓ Config images sauvegardée', 'success');
+  } catch(e) {
+    toast('⛔ ' + e.message, 'error');
+  }
+};
+
+function _renderImgTemplates() {
+  const listEl = document.getElementById('img-templates-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  const cats = Object.keys(IMG_DEFAULT_TEMPLATES);
+  for (const cat of cats) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;align-items:center;';
+    row.innerHTML = `
+      <span style="font-size:12px;min-width:90px;flex-shrink:0;color:var(--text);">${cat}</span>
+      <input type="text" class="img-tpl-input" data-cat="${cat}"
+        value="${escHtml(_imgConfig?.templates?.[cat] || IMG_DEFAULT_TEMPLATES[cat])}"
+        style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:11px;font-family:monospace;outline:none;">
+      <button class="btn btn-ghost" style="font-size:10px;padding:3px 8px;flex-shrink:0;" onclick="this.previousElementSibling.value='${IMG_DEFAULT_TEMPLATES[cat].replace(/'/g,"\\'")}'">↺</button>
+    `;
+    listEl.appendChild(row);
+  }
+}
+
+let _imgAllItems = [];
+
+function _buildImgItemSearch() {
+  const wrap = document.getElementById('img-item-search-wrap');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="font-size:11px;color:var(--muted);">Chargement…</div>';
+  Promise.all([
+    cachedDocs(COL.items),
+    cachedDocs(COL.itemsHidden).catch(() => []),
+  ]).then(([docs, hidden]) => {
+    _imgAllItems = [
+      ...docs.map(d => ({ ...d })),
+      ...hidden.map(d => ({ ...d, sensible: true })),
+    ];
+    wrap.innerHTML = '';
+    const inp = document.createElement('input');
+    inp.type = 'search'; inp.placeholder = '🔍 Rechercher un item…';
+    inp.style.cssText = 'width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;';
+    const list = document.createElement('div');
+    list.style.cssText = 'max-height:200px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:6px;display:none;margin-top:2px;';
+    wrap.appendChild(inp); wrap.appendChild(list);
+
+    const renderList = (q) => {
+      const norm = window.VCL.normalize(q);
+      const hits = _imgAllItems.filter(d =>
+        window.VCL.normalize(d.name||'').includes(norm) || (d.id||'').includes(norm)
+      ).slice(0, 30);
+      list.innerHTML = '';
+      if (!hits.length) { list.style.display = 'none'; return; }
+      list.style.display = '';
+      hits.forEach(d => {
+        const row = document.createElement('div');
+        row.style.cssText = 'padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);';
+        row.innerHTML = `<b>${escHtml(d.name||d.id)}</b> <span style="font-size:10px;color:var(--muted);">${d.category||''} ${d.palier?'P'+d.palier:''} ${d.sensible?'🔒':''}</span>`;
+        row.addEventListener('mousedown', e => { e.preventDefault(); inp.value = d.name||d.id; list.style.display='none'; _imgSelectItem(d); });
+        list.appendChild(row);
+      });
+    };
+    inp.addEventListener('input', () => renderList(inp.value.trim()));
+    inp.addEventListener('focus', () => { if (inp.value.trim()) renderList(inp.value.trim()); });
+    inp.addEventListener('blur', () => setTimeout(() => { list.style.display = 'none'; }, 200));
+  }).catch(() => { wrap.innerHTML = '<div style="font-size:11px;color:var(--danger);">Erreur chargement items</div>'; });
+}
+
+function _imgSelectItem(item) {
+  _imgSelectedItem = item;
+  const infoEl = document.getElementById('img-item-info');
+  const detailEl = document.getElementById('img-item-detail');
+  const pathEl  = document.getElementById('img-computed-path');
+  const uploadBtn = document.getElementById('img-upload-btn');
+  if (!item) {
+    if (infoEl) infoEl.style.display = 'none';
+    if (uploadBtn) uploadBtn.disabled = true;
+    return;
+  }
+  if (detailEl) detailEl.innerHTML = `<b>${escHtml(item.name || item.id)}</b> · <code>${item.id}</code> · ${item.category || '?'} · ${item.palier ? 'P'+item.palier : '—'}`;
+  const path = _imgComputePath(item);
+  if (pathEl) pathEl.textContent = path || '(pas de template pour cette catégorie)';
+  if (infoEl) infoEl.style.display = '';
+  if (uploadBtn) uploadBtn.disabled = !_imgFile || !path;
+}
+
+window.imgFileDrop = function(e) {
+  e.preventDefault();
+  const zone = document.getElementById('img-drop-zone');
+  if (zone) zone.style.borderColor = 'var(--border)';
+  const file = e.dataTransfer?.files?.[0];
+  if (file) _imgSetFile(file);
+};
+
+window.imgFileSelect = function(file) { if (file) _imgSetFile(file); };
+
+function _imgSetFile(file) {
+  if (!file.type.startsWith('image/')) { toast('⚠️ Fichier image uniquement', 'warning'); return; }
+  _imgFile = file;
+  const preview = document.getElementById('img-drop-preview');
+  const placeholder = document.getElementById('img-drop-placeholder');
+  if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = ''; }
+  if (placeholder) placeholder.style.display = 'none';
+  const uploadBtn = document.getElementById('img-upload-btn');
+  if (uploadBtn) uploadBtn.disabled = !_imgSelectedItem || !_imgComputePath(_imgSelectedItem);
+}
+
+window.imgUploadToGithub = async function() {
+  if (!_imgSelectedItem || !_imgFile) return;
+  const path = _imgComputePath(_imgSelectedItem);
+  if (!path) { toast('⚠️ Pas de template configuré pour cette catégorie', 'warning'); return; }
+  const token  = _imgConfig?.token  || '';
+  const repo   = _imgConfig?.repo   || '';
+  const branch = _imgConfig?.branch || 'main';
+  if (!token || !repo) { toast('⚠️ Configure le token GitHub et le repo dans l\'onglet Config', 'warning'); switchImgTab('config'); return; }
+
+  const btn    = document.getElementById('img-upload-btn');
+  const status = document.getElementById('img-upload-status');
+  btn.disabled = true; btn.textContent = '⏳ Envoi…';
+  if (status) status.textContent = '';
+
+  try {
+    // Lire le fichier en base64
+    const base64 = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = e => res(e.target.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(_imgFile);
+    });
+
+    // _imgComputePath retourne un path web (../img/...) ; GitHub attend un path repo (img/...)
+    const githubPath = path.replace(/^(\.\.\/)+/, '');
+    // Vérifier si le fichier existe déjà (pour récupérer son SHA)
+    const apiBase = `https://api.github.com/repos/${repo}/contents/${githubPath}`;
+    let sha = null;
+    try {
+      const existing = await fetch(apiBase + `?ref=${branch}`, { headers: { Authorization: `token ${token}` } });
+      if (existing.ok) { const j = await existing.json(); sha = j.sha; }
+    } catch {}
+
+    const body = { message: `🖼️ Image : ${_imgSelectedItem.name || _imgSelectedItem.id}`, content: base64, branch };
+    if (sha) body.sha = sha;
+
+    const resp = await fetch(apiBase, {
+      method: 'PUT',
+      headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ message: resp.status }));
+      throw new Error(err.message || String(resp.status));
+    }
+
+    // Mettre à jour le champ images dans Firestore
+    const col = _imgSelectedItem.sensible ? COL.itemsSecret : COL.items;
+    const docId = _imgSelectedItem.sensible
+      ? String(_imgSelectedItem.id || _imgSelectedItem._id || '')
+      : String(_imgSelectedItem.id || '');
+    if (docId) {
+      try { await updateDoc(doc(db, col, docId), { images: [path] }); } catch {}
+    }
+
+    if (status) { status.textContent = `✓ Envoyé : ${path}`; status.style.color = 'var(--success)'; }
+    toast(`✓ Image envoyée sur GitHub : ${path}`, 'success');
+  } catch(e) {
+    if (status) { status.textContent = '⛔ ' + e.message; status.style.color = 'var(--danger)'; }
+    toast('⛔ Erreur upload : ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '📤 Envoyer sur GitHub';
+  }
+};
+
+window.switchImgTab = function(name) {
+  _imgActiveTab = name;
+  const tabs = ['upload', 'templates', 'normalize', 'config'];
+  for (const t of tabs) {
+    const panel = document.getElementById(`img-tab-${t}`);
+    const btn   = document.getElementById(`img-tab-btn-${t}`);
+    if (!panel || !btn) continue;
+    const active = t === name;
+    panel.style.display = active ? '' : 'none';
+    btn.style.background = active ? 'var(--accent)' : 'transparent';
+    btn.style.color = active ? '#fff' : 'var(--muted)';
+  }
+};
+
+window.previewNormalize = async function() {
+  const cat = document.getElementById('img-norm-type')?.value || '';
+  const previewEl = document.getElementById('img-norm-preview');
+  if (!previewEl) return;
+  previewEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const docs = await cachedDocs(COL.items);
+    const filtered = docs.filter(d => !cat || d.category === cat);
+    const rows = filtered.slice(0, 50).map(item => {
+      const expected = _imgComputePath(item);
+      const current  = (item.images?.[0] || item.image || item.img || '');
+      const ok = expected && current === expected;
+      return `<div style="display:flex;gap:6px;font-size:11px;padding:3px 0;border-bottom:1px solid var(--border);align-items:baseline;">
+        <span style="min-width:140px;flex-shrink:0;color:${ok?'var(--success)':'var(--text)'};">${escHtml(item.name||item.id)}</span>
+        <span style="color:${ok?'var(--success)':'var(--danger)'};font-family:monospace;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          ${current ? escHtml(current) : '<i style="opacity:.5">—</i>'} ${!ok && expected ? '→ ' + escHtml(expected) : ''}
+        </span>
+      </div>`;
+    }).join('');
+    const total = filtered.length;
+    const toFix = filtered.filter(item => {
+      const expected = _imgComputePath(item);
+      const current  = item.images?.[0] || item.image || item.img || '';
+      return expected && current !== expected;
+    }).length;
+    previewEl.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${total} items · <b style="color:var(--warn);">${toFix} à corriger</b></div>${rows}${total > 50 ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;">… ${total-50} autres</div>` : ''}`;
+  } catch(e) {
+    previewEl.innerHTML = `<div class="empty" style="color:var(--danger)">${escHtml(e.message)}</div>`;
+  }
+};
+
+window.runNormalize = async function() {
+  if (!await modal.confirm('Met à jour le champ "images" de tous les items selon les templates configurés.\n\nCette opération modifie Firestore. Continuer ?')) return;
+  const cat = document.getElementById('img-norm-type')?.value || '';
+  const previewEl = document.getElementById('img-norm-preview');
+  if (previewEl) previewEl.innerHTML = '<div class="empty">Normalisation en cours…</div>';
+  try {
+    const docs = await cachedDocs(COL.items);
+    const filtered = docs.filter(d => !cat || d.category === cat);
+    let updated = 0;
+    for (const item of filtered) {
+      const expected = _imgComputePath(item);
+      if (!expected) continue;
+      const current = item.images?.[0] || item.image || item.img || '';
+      if (current === expected) continue;
+      try {
+        await updateDoc(doc(db, COL.items, item.id), { images: [expected] });
+        invalidateModCache(COL.items);
+        updated++;
+      } catch {}
+    }
+    if (previewEl) previewEl.innerHTML = `<div style="font-size:13px;color:var(--success);padding:12px 0;">✓ ${updated} item(s) mis à jour</div>`;
+    toast(`✓ ${updated} chemins d'images normalisés`, 'success');
+  } catch(e) {
+    toast('⛔ ' + e.message, 'error');
+  }
+};
+
+// ── Migration IDs Occultes ─────────────────────────
+window.runMigrateOcculteIds = async function() {
+  if (!await modal.confirm(
+    'Renomme les IDs des items du set "occulte" en ajoutant "_p{palier}" au suffixe.\n' +
+    'Exemple : gants_occultes → gants_occultes_p1\n\n' +
+    'Cette opération est IRRÉVERSIBLE. Continuer ?'
+  )) return;
+
+  const btn = document.getElementById('btn-migrate-occulte');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Migration…'; }
+
+  try {
+    // Charger tous les items (public + sensible)
+    const [pubDocs, hidDocs] = await Promise.all([
+      cachedDocs(COL.items),
+      cachedDocs(COL.itemsHidden).catch(() => []),
+    ]);
+    const allItems = [
+      ...pubDocs.map(d => ({ ...d, _col: COL.items })),
+      ...hidDocs.map(d => ({ ...d, _col: COL.itemsHidden })),
+    ];
+
+    // Trouver les items du set "occulte" dont l'ID ne se termine pas déjà par _p{n}
+    const toMigrate = allItems.filter(it => {
+      const setId = it.set;
+      if (!setId) return false;
+      // Accepte "occulte", "set_occulte", tout ce qui contient "occulte"
+      if (!String(setId).toLowerCase().includes('occulte')) return false;
+      const id = it.id || it._id || '';
+      // Déjà migré si l'ID se termine par _p1, _p2 ou _p3
+      return !/_p[123]$/.test(id);
+    });
+
+    if (!toMigrate.length) {
+      toast('✓ Aucun item à migrer (tous déjà correctement nommés).', 'success');
+      return;
+    }
+
+    const log = [];
+    for (const item of toMigrate) {
+      const oldId = item.id || item._id || '';
+      const palier = item.palier;
+      if (!palier) { log.push(`⚠️ ${oldId} — palier manquant, ignoré`); continue; }
+      const newId = `${oldId}_p${palier}`;
+      const payload = { ...item, id: newId };
+      delete payload._col; delete payload._id;
+
+      try {
+        // Créer le nouveau doc
+        await setDoc(doc(db, item._col, newId), sanitizeForFirestore(payload));
+        // Supprimer l'ancien
+        await deleteDoc(doc(db, item._col, oldId));
+        // Pour items sensibles, aussi renommer items_secret si existe
+        if (item._col === COL.itemsHidden) {
+          try {
+            const secSnap = await getDoc(doc(db, COL.itemsSecret, oldId));
+            if (secSnap.exists()) {
+              await setDoc(doc(db, COL.itemsSecret, newId), secSnap.data());
+              await deleteDoc(doc(db, COL.itemsSecret, oldId));
+            }
+          } catch {}
+        }
+        log.push(`✓ ${oldId} → ${newId}`);
+        store.invalidate('items');
+      } catch(e) {
+        log.push(`⛔ ${oldId} : ${e.message}`);
+      }
+    }
+
+    const summary = `Migration terminée : ${toMigrate.length} item(s)\n\n${log.join('\n')}`;
+    await modal.confirm(summary);
+    toast(`✓ ${log.filter(l => l.startsWith('✓')).length} items migrés`, 'success');
+  } catch(e) {
+    toast('⛔ Erreur migration : ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔑 Migration IDs Occultes'; }
+  }
+};
 
 // ── Outils modération ──────────────────────────────
 window.showCalibrateur = function() {
@@ -7864,7 +8423,6 @@ window.loadDataAll = async function() {
 
   try {
     for (const [type, conf] of Object.entries(_DATA_ALL_COLS)) {
-      // Invalider le cache pour obtenir les données fraîches
       const docs = await cachedDocs(conf.col);
       for (const d of docs) {
         _dataAllData.push({
@@ -7877,6 +8435,26 @@ window.loadDataAll = async function() {
         });
       }
     }
+    // Ajouter les items sensibles (items_hidden + compléments items_secret)
+    // Dédupliquer par id logique : ne pas ajouter si un item avec le même id est déjà dans la liste
+    try {
+      const existingItemIds = new Set(
+        _dataAllData.filter(d => d._type === 'item').map(d => String(d.id))
+      );
+      const hiddenDocs = await cachedDocs(COL.itemsHidden);
+      const secretDocs = await cachedDocs(COL.itemsSecret).catch(() => []);
+      const secretMap  = new Map(secretDocs.map(d => [String(d.id || d._id || ''), d]));
+      for (const d of hiddenDocs) {
+        if (existingItemIds.has(String(d.id))) continue;
+        const sec = secretMap.get(String(d.id || '')) || {};
+        _dataAllData.push({
+          _type: 'item', _col: COL.itemsHidden, _icon: '⚔️',
+          id: d.id, name: d.name || d.id,
+          sensible: true,
+          ...d, ...sec,
+        });
+      }
+    } catch {}
     _dataAllLoaded = true;
     renderDataAll();
   } catch(e) {
@@ -7989,7 +8567,7 @@ window.renderDataAll = function() {
     editBtn.style.cssText = 'font-size:11px;padding:3px 8px;flex-shrink:0;';
     editBtn.textContent = '✏️';
     editBtn.title = 'Éditer dans le panneau';
-    editBtn.onclick = () => showEditor(COL_MAP[d._type] || d._type, d.id, d, d._type);
+    editBtn.onclick = () => showEditor(d.sensible ? 'items_sensible' : (d._col || COL_MAP[d._type] || d._type), d.id, d, 'data-all');
 
     row.appendChild(nameEl);
     row.appendChild(idEl);
@@ -7997,6 +8575,43 @@ window.renderDataAll = function() {
     row.appendChild(editBtn);
     listEl.appendChild(row);
   });
+};
+
+window.deleteDataDuplicates = async function() {
+  if (!_dataAllLoaded || !_dataAllData.length) {
+    toast('⚠️ Chargez d\'abord les données (🔄 Rafraîchir)', 'warning');
+    return;
+  }
+  // Trouver les doublons : même id dans la même collection
+  const seen = new Map(); // `col:id` → first entry
+  const dupes = [];
+  for (const d of _dataAllData) {
+    const key = `${d._col}:${d.id}`;
+    if (seen.has(key)) {
+      dupes.push(d);
+    } else {
+      seen.set(key, d);
+    }
+  }
+  if (!dupes.length) { toast('✓ Aucun doublon détecté.', 'success'); return; }
+  const list = dupes.map(d => `  • ${d._col}/${d.id} — ${d.name || '—'}`).join('\n');
+  if (!await modal.confirm(`${dupes.length} doublon(s) détecté(s) :\n\n${list}\n\nSupprimer ces entrées ?`)) return;
+  let deleted = 0;
+  for (const d of dupes) {
+    try {
+      await deleteDoc(doc(db, d._col, d.id));
+      _dataAllData = _dataAllData.filter(x => !(x.id === d.id && x._col === d._col && x !== seen.get(`${d._col}:${d.id}`)));
+      localStorage.removeItem(`vcl_cache_v2_${d._col}`);
+      localStorage.removeItem(`vcl_cache_meta_v2_${d._col}`);
+      invalidateModCache(d._col);
+      deleted++;
+    } catch(e) {
+      toast(`⛔ Erreur ${d.id} : ${e.message}`, 'error');
+    }
+  }
+  toast(`✓ ${deleted} doublon(s) supprimé(s)`, 'success');
+  _dataAllLoaded = false;
+  renderDataAll();
 };
 
 function _daAddBadge(container, text, color, bg) {

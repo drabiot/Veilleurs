@@ -53,6 +53,16 @@ function onForumImgDrop(e) {
 function applyCreatorConfig(cfg) {
   if (!cfg) return;
   window._vcl_lastCreatorConfig = cfg; // mémorisé pour re-apply après auth
+  // Si on vient de sessionStorage, forcer le mode sessionStorage et ne pas le changer
+  if (window._vcl_sessionMode) {
+    const m = window._vcl_sessionMode;
+    _setCreatorDisabled(false);
+    document.querySelectorAll('.mode-btn').forEach(b => { b.style.display = ''; });
+    switchMode(m);
+    // Conserver pour re-apply auth mais effacer le flag
+    window._vcl_sessionMode = null;
+    return;
+  }
   // Les contributeurs+ voient tout
   if (['contributeur', 'admin'].includes(window._vcl_role || '')) {
     document.querySelectorAll('.mode-btn').forEach(b => { b.style.display = ''; });
@@ -315,6 +325,8 @@ window.addEventListener('DOMContentLoaded', () => {
     try {
       const { type, data } = JSON.parse(editSubRaw);
       if (type && data) {
+        window._vcl_sessionMode = type; // mémorisé pour que applyCreatorConfig ne réinitialise pas le mode
+        sessionStorage.setItem('_vcl_pendingMode', type); // persiste même si _vcl_sessionMode est effacé trop tôt
         switchMode(type);
         loadFromData(data, type);
         return; // skip restoreForm — data loaded from session
@@ -597,7 +609,7 @@ function saveForm() {
       lvl:      document.getElementById('f-lvl').value,
       lore:     document.getElementById('f-lore').value,
       obtainOverride: document.getElementById('f-obtain-override').value,
-      selRarity, selClasses, selTwoHanded, selSensible, selEvent, selEvolutif, evolutifEvolutions,
+      selRarity, selClasses, selTwoHanded, selSensible, selEvent, selEvolutif, selOcculte, evolutifEvolutions,
       activeTags: [...activeTags],
       obtainSources,
       stats: (() => {
@@ -611,6 +623,11 @@ function saveForm() {
         }
         return s;
       })(),
+      craft:     getCraft(),
+      effects:   (() => { try { return getEffects(); } catch { return []; } })(),
+      threshold: { ...selThreshold },
+      runeSlots: document.getElementById('f-rune-slots')?.value || '',
+      set:       setDrop?.getValue() || '',
       // Mob form
       mob: creatorMode === 'mob' ? {
         name:      document.getElementById('mob-name')?.value || '',
@@ -625,6 +642,10 @@ function saveForm() {
         spawnTime: document.getElementById('mob-spawntime')?.value || '',
         inCodex:   mobInCodex,
         sensible:  mobSensible,
+        loot: getMobLoot(),
+        x:    document.getElementById('mob-x')?.value || '',
+        y:    document.getElementById('mob-y')?.value || '',
+        z:    document.getElementById('mob-z')?.value || '',
       } : null,
       // PNJ form
       pnj: creatorMode === 'pnj' ? {
@@ -637,6 +658,8 @@ function saveForm() {
         y:             document.getElementById('pnj-y')?.value        || '',
         z:             document.getElementById('pnj-z')?.value        || '',
         underground:   pnjUnderground,
+        sells:  pnjSells.map(s => ({ itemId: s.itemId, buy: s.buy, price: s.price })),
+        crafts: pnjCrafts.map(c => ({ resultId: c.resultId, time: c.time, quality: c.quality, ingredients: c.ingredients.map(i => ({ itemId: i.itemId, qty: i.qty })) })),
       } : null,
       // Région form
       region: creatorMode === 'region' ? {
@@ -647,6 +670,7 @@ function saveForm() {
         lore:    document.getElementById('reg-lore')?.value   || '',
         inCodex: regInCodex,
         canTp:   regCanTp,
+        coords: (() => { const x = document.getElementById('reg-x')?.value, y = document.getElementById('reg-y')?.value, z = document.getElementById('reg-z')?.value; return (x !== '' && y !== '' && z !== '') ? { x, y, z } : null; })(),
       } : null,
       // Panoplie form
       panoplie: creatorMode === 'panoplie' ? {
@@ -734,6 +758,10 @@ function restoreForm(forcedMode) {
       if (_evSec) _evSec.style.display = '';
       _initEvolutifDrop();
     }
+    if (d.selOcculte) {
+      selOcculte = true;
+      document.getElementById('occulte-btn')?.classList.add('active');
+    }
     if (d.evolutifEvolutions?.length) {
       evolutifEvolutions = d.evolutifEvolutions;
       renderEvolutifEvolutions();
@@ -758,6 +786,38 @@ function restoreForm(forcedMode) {
         if (minEl) { minEl.value = min; maxEl.value = max; onStatInput(id); }
       }
     }
+    if (d.craft?.length) {
+      ensureItemIndex();
+      for (const { qty, id } of d.craft) {
+        addCraft();
+        const entry = craftEntries[craftEntries.length - 1];
+        entry.qty = qty || 1;
+        entry.itemId = id;
+        const row = document.getElementById(`craft-${entry.uid}`);
+        if (row) row.querySelector('input[type=number]').value = qty || 1;
+        entry.drop?.setValue(id, itemIndex.find(it => it.id === id)?.name || id);
+      }
+    }
+    if (d.effects?.length) {
+      for (const eff of d.effects) {
+        addEffect();
+        const e = effectEntries[effectEntries.length - 1];
+        if (e._type)  e._type.value = eff.type  || 'heal';
+        if (e._val)   e._val.value  = eff.value ?? '';
+        if (e._unit)  e._unit.value = eff.unit  || '';
+        if (e._dur && e._durUnit) {
+          const s = eff.duration;
+          if (s == null || s === '')                    { e._dur.value = '';     e._durUnit.value = 's'; }
+          else if (s >= 3600 && s % 3600 === 0)         { e._dur.value = s/3600; e._durUnit.value = 'h'; }
+          else if (s >= 60   && s % 60   === 0)         { e._dur.value = s/60;   e._durUnit.value = 'min'; }
+          else                                          { e._dur.value = s;      e._durUnit.value = 's'; }
+        }
+        if (e._label) e._label.value = eff.label || '';
+      }
+    }
+    if (d.threshold && Object.keys(d.threshold).length) loadThreshold(d.threshold);
+    if (d.runeSlots) { const el = document.getElementById('f-rune-slots'); if (el) el.value = d.runeSlots; }
+    if (d.set) window._pendingRestoreSet = d.set;
 
     // ── Mob form ──
     if (d.mob) {
@@ -774,6 +834,24 @@ function restoreForm(forcedMode) {
       if (m.spawnTime) document.getElementById('mob-spawntime').value = m.spawnTime;
       if (m.inCodex !== undefined) setMobCodex(m.inCodex);
       if (m.sensible) { mobSensible = true; document.getElementById('mob-sensible-btn')?.classList.add('active'); }
+      if (m.x !== undefined && m.x !== '') document.getElementById('mob-x').value = m.x;
+      if (m.y !== undefined && m.y !== '') document.getElementById('mob-y').value = m.y;
+      if (m.z !== undefined && m.z !== '') document.getElementById('mob-z').value = m.z;
+      if (m.loot?.length) {
+        ensureItemIndex();
+        for (const l of m.loot) {
+          addMobLoot();
+          const entry = mobLootEntries[mobLootEntries.length - 1];
+          entry.chance = l.chance !== undefined ? l.chance : 100;
+          entry.itemId = l.id;
+          const row = document.getElementById(`mob-loot-${entry.uid}`);
+          if (row) {
+            const chInput = row.querySelectorAll('input')[1];
+            if (chInput) chInput.value = l.chance !== undefined ? l.chance : 100;
+            entry.drop?.setValue(l.id, itemIndex.find(it => it.id === l.id)?.name || l.id);
+          }
+        }
+      }
     }
 
     // ── PNJ form ──
@@ -787,6 +865,21 @@ function restoreForm(forcedMode) {
       if (p.y !== '') document.getElementById('pnj-y').value = p.y;
       if (p.z !== '') document.getElementById('pnj-z').value = p.z;
       setPnjUnderground(!!p.underground);
+      if (p.sells?.length) {
+        ensureAllItemsIndex();
+        for (const s of p.sells) pnjSells.push({ uid: pnjSellUid++, itemId: s.itemId, buy: s.buy, price: s.price });
+        renderPnjSells();
+      }
+      if (p.crafts?.length) {
+        ensureAllItemsIndex();
+        for (const c of p.crafts) {
+          pnjCrafts.push({
+            uid: pnjCraftUid++, resultId: c.resultId, time: c.time || '', quality: !!c.quality,
+            ingredients: c.ingredients?.map(i => ({ uid: pnjIngUid++, itemId: i.itemId, qty: i.qty })) || []
+          });
+        }
+        renderPnjCrafts();
+      }
     }
 
     // ── Région form ──
@@ -930,6 +1023,11 @@ let idLocked = false; // true = ID a été fixé manuellement, ne pas écraser d
 function _computeItemId() {
   const name = document.getElementById('f-name').value;
   const slug  = nameToId(name);
+  // Mode occulte : ID toujours sous forme nom_p{palier}
+  if (selOcculte) {
+    const palier = document.getElementById('f-palier').value;
+    return palier ? `${slug}_p${palier}` : slug;
+  }
   if (selEvolutif) {
     const palier = document.getElementById('f-palier').value;
     // Si un item avec le même slug existe déjà (palier différent), distinguer par palier
@@ -938,6 +1036,13 @@ function _computeItemId() {
     }
   }
   return slug;
+}
+
+function toggleOcculte() {
+  selOcculte = !selOcculte;
+  document.getElementById('occulte-btn').classList.toggle('active', selOcculte);
+  if (!idLocked) document.getElementById('f-id').value = _computeItemId();
+  update();
 }
 
 function onNameInput() {
@@ -988,6 +1093,8 @@ function initObtainData() {
     allArtisans  = flat.filter(m => m.type === 'artisant').map(toItem);
     allMarchands = flat.filter(m => m.type === 'marchand').map(toItem);
   }
+  // Compléter allDonjons avec les marqueurs Firestore (map_markers type=donjon)
+  _loadFirestoreDonjons();
   if (typeof QUETES_DATA !== 'undefined') {
     const TYPE_LABELS_Q = { main: 'Principale', sec: 'Secondaire', ter: 'Tertiaire' };
     allQuetes = QUETES_DATA.map(q => ({
@@ -1064,6 +1171,30 @@ function initObtainData() {
   onObtainTypeChange();
 }
 
+async function _loadFirestoreDonjons() {
+  const getDocs = window._vcl_getDocs;
+  const col     = window._vcl_collection;
+  const db      = window._vcl_db;
+  if (!getDocs || !col || !db) return;
+  try {
+    const snap = await getDocs(col(db, 'map_markers'));
+    const existingIds = new Set(allDonjons.map(d => d.id));
+    for (const d of snap.docs) {
+      const m = { id: d.id, ...d.data() };
+      if (m.type !== 'donjon') continue;
+      if (existingIds.has(m.id)) continue;
+      allDonjons.push({
+        id: m.id, name: m.name || m.id, desc: m.desc || m.level || '',
+        subtitle: [m.level ? 'Niv. ' + m.level : '', m.palier ? 'P' + m.palier : ''].filter(Boolean).join(' · '),
+        search: ((m.name || '') + ' ' + m.id + ' ' + (m.desc || '')).toLowerCase()
+      });
+      existingIds.add(m.id);
+    }
+    // Mettre à jour le dropdown si déjà affiché
+    if (document.getElementById('obtain-type')?.value === 'donjon') onObtainTypeChange();
+  } catch {}
+}
+
 // Seul 'autre' est en texte libre — tous les autres types utilisent un sélecteur d'entité
 const OBTAIN_TEXT_TYPES = new Set(['autre']);
 
@@ -1101,6 +1232,53 @@ function onObtainTypeChange() {
     addBtn.disabled = true;
     addBtn.style.display = '';
 
+  } else if (type === 'ressource') {
+    // Dropdown région + champs coordonnées optionnels
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;gap:5px;width:100%;';
+
+    const checkResAddBtn = () => {
+      const hasRegion = !!(obtainDrop?.getValue());
+      const cx = document.getElementById('obtain-res-x')?.value.trim();
+      const cz = document.getElementById('obtain-res-z')?.value.trim();
+      const hasCoords = cx !== '' && cx != null && cz !== '' && cz != null;
+      addBtn.disabled = !hasRegion && !hasCoords;
+    };
+
+    obtainDrop = makeSearchDrop(allRegions, OBTAIN_PLACEHOLDERS.ressource, () => {
+      hideLootPicker();
+      checkResAddBtn();
+    }, false);
+    wrap.appendChild(obtainDrop.element);
+
+    // Coords (toujours visibles — région et/ou coordonnées)
+    const coordsRow = document.createElement('div');
+    coordsRow.style.cssText = 'display:flex;gap:5px;align-items:center;margin-top:2px;';
+    coordsRow.id = 'obtain-ressource-coords';
+
+    const mkCoordInput = (id, label) => {
+      const wrap2 = document.createElement('div');
+      wrap2.style.cssText = 'display:flex;align-items:center;gap:3px;';
+      const lbl = document.createElement('span');
+      lbl.textContent = label; lbl.style.cssText = 'font-size:10px;color:var(--muted);font-weight:700;';
+      const inp = document.createElement('input');
+      inp.type = 'number'; inp.step = '1'; inp.id = id; inp.placeholder = label === 'X' ? '1808' : '-320';
+      inp.style.cssText = 'width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 6px;font-size:12px;outline:none;';
+      inp.addEventListener('input', checkResAddBtn);
+      wrap2.append(lbl, inp);
+      return wrap2;
+    };
+    const coordLbl = document.createElement('span');
+    coordLbl.style.cssText = 'font-size:10px;color:var(--muted);';
+    coordLbl.textContent = '📍 Coords :';
+    coordsRow.appendChild(coordLbl);
+    coordsRow.appendChild(mkCoordInput('obtain-res-x', 'X'));
+    coordsRow.appendChild(mkCoordInput('obtain-res-z', 'Z'));
+    wrap.appendChild(coordsRow);
+
+    container.appendChild(wrap);
+    addBtn.disabled = true;
+    addBtn.style.display = '';
   } else {
     obtainDrop = makeSearchDrop(obtainItemsForType(type), OBTAIN_PLACEHOLDERS[type], (id) => {
       if (type === 'mob') {
@@ -1206,9 +1384,22 @@ function addObtainSource() {
 
   const item = obtainItemsForType(type).find(it => it.id === id);
   if (!item) return;
-  if (obtainSources.some(s => s.id === id && s.type === type)) return;
 
-  obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc || '', subtitle: item.subtitle });
+  if (type === 'ressource') {
+    const cx = document.getElementById('obtain-res-x')?.value.trim();
+    const cz = document.getElementById('obtain-res-z')?.value.trim();
+    const coords = (cx !== '' && cx != null && cz !== '' && cz != null)
+      ? { x: Number(cx), z: Number(cz) } : null;
+    // Autoriser: région seule, coords seules, ou les deux
+    if (id) {
+      obtainSources.push({ uid: obtainUid++, type, id, name: item.name, subtitle: item.subtitle, coords });
+    } else if (coords) {
+      obtainSources.push({ uid: obtainUid++, type, id: '', name: '', subtitle: '', coords });
+    }
+  } else {
+    if (obtainSources.some(s => s.id === id && s.type === type)) return;
+    obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc || '', subtitle: item.subtitle });
+  }
   obtainDrop.reset();
   document.getElementById('obtain-add-btn').disabled = true;
   renderObtainSources();
@@ -1251,6 +1442,10 @@ function renderObtainSources() {
       if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
     } else if (s.type === 'autre' || s.type === 'coffre' || s.type === 'event' || s.type === 'exploration') {
       label += `<span style="color:var(--muted)">${s.type === 'autre' ? 'Autre' : s.type} ·</span> <b>${s.desc}</b>`;
+    } else if (s.type === 'ressource') {
+      label += `<b>${s.name}</b>`;
+      if (s.coords) label += ` <span style="color:var(--muted)">· <b>X</b> ${s.coords.x} <b>Z</b> ${s.coords.z}</span>`;
+      else if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
     } else {
       label += `<b>${s.name}</b>`;
       if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
@@ -1313,11 +1508,12 @@ function parseObtainText(text, itemId, itemName) {
       sources.push({ uid: obtainUid++, type: 'quete', id, name, desc: q?.desc || '', subtitle: q?.subtitle || '' });
       continue;
     }
-    const ressourceM = t.match(/^Récoltable dans \[region:([^|]+)\|([^\]]+)\]$/);
+    const ressourceM = t.match(/^Récoltable dans \[region:([^|]+)\|([^\]]+)\](?:\s*\[coords:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)\])?$/);
     if (ressourceM) {
-      const [, id, name] = ressourceM;
+      const [, id, name, cx, cz] = ressourceM;
       const r = allRegions.find(x => x.id === id);
-      sources.push({ uid: obtainUid++, type: 'ressource', id, name, subtitle: r?.subtitle || '' });
+      const coords = (cx != null && cz != null) ? { x: Number(cx), z: Number(cz) } : null;
+      sources.push({ uid: obtainUid++, type: 'ressource', id, name, subtitle: r?.subtitle || '', coords });
       continue;
     }
     // Anciens formats (compatibilité lecture)
@@ -1360,7 +1556,9 @@ function buildObtainText() {
   for (const a of artisans)     parts.push(`Fabricable au [npc:${a.id}|${a.name}]`);
   for (const m of marchands)    parts.push(`Achetable au [npc:${m.id}|${m.name}]`);
   for (const q of quetes)       parts.push(`Récompense de la quête [quest:${q.id}|${q.name}]`);
-  for (const r of ressources)   parts.push(`Récoltable dans [region:${r.id}|${r.name}]`);
+  for (const r of ressources)   parts.push(r.coords
+    ? `Récoltable dans [region:${r.id}|${r.name}] [coords:${r.coords.x},${r.coords.z}]`
+    : `Récoltable dans [region:${r.id}|${r.name}]`);
   for (const a of autres)       parts.push(`Autre source — ${a.desc}`);
   // Anciens formats
   for (const c of coffres)      parts.push(`Trouvable dans un coffre — ${c.desc}`);
@@ -1477,6 +1675,7 @@ let selSensible  = false;
 let selEvent     = false;
 let selTwoHanded = false;
 let selEvolutif  = false;
+let selOcculte   = false;
 
 function toggleSensible() {
   selSensible = !selSensible;
@@ -1497,7 +1696,7 @@ function onPalierChange() {
   if (p) activeTags.add(`Palier ${p}`);
   syncPresetTagButtons();
   renderCustomTags();
-  if (selEvolutif && !idLocked) document.getElementById('f-id').value = _computeItemId();
+  if ((selEvolutif || selOcculte) && !idLocked) document.getElementById('f-id').value = _computeItemId();
   update();
 }
 
@@ -1832,39 +2031,53 @@ function initLoadSearchForAllModes() {
   // PNJ / Région / Panoplie — built from _buildLoadDrops() after _pageInit
   _buildLoadDrops();
 
-  // Quête (chargement Firestore à la demande)
+  // Quête — s'initialise depuis QUETES_DATA si disponible, sinon depuis Firestore
+  _buildQuestLoadDrop();
+}
+
+let _questDropBuilt = false;
+
+async function _buildQuestLoadDrop() {
   const questWrap = document.getElementById('load-quest-search-wrap');
-  if (questWrap) {
-    const hint = document.createElement('div');
-    hint.style.cssText = 'font-size:12px;color:var(--muted);padding:6px 0;cursor:pointer;';
-    hint.textContent = '🔍 Cliquer pour charger les quêtes…';
-    questWrap.appendChild(hint);
-    hint.addEventListener('click', async () => {
-      hint.textContent = 'Chargement…';
-      try {
-        const db  = window._vcl_db;
-        const col = window._vcl_collection;
-        const get = window._vcl_getDocs;
-        if (!db || !col || !get) { hint.textContent = 'Firestore non disponible.'; return; }
-        const snap = await get(col(db, 'quetes'));
-        const quests = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
-        const idx = quests.map(q => ({
-          id: q.id || q._id, name: q.titre || q.id || q._id,
-          subtitle: [q.type||'', q.palier ? 'P'+q.palier : ''].filter(Boolean).join(' · '),
-          search: ((q.titre||'') + ' ' + (q.id||q._id||'')).toLowerCase(),
-          _raw: q
-        }));
-        questWrap.innerHTML = '';
-        const drop = makeSearchDrop(idx, 'Rechercher une quête à éditer…', id => {
-          if (!id) return;
-          const entry = idx.find(q => (q.id||q._id) === id);
-          if (entry) loadQuest(entry._raw);
-        });
-        questWrap.appendChild(drop.element);
-      } catch(e) {
-        hint.textContent = '⛔ Erreur : ' + e.message;
-      }
-    }, { once: true });
+  if (!questWrap || _questDropBuilt) return;
+
+  // Essayer d'abord depuis QUETES_DATA (déjà en mémoire)
+  const buildFromData = (quests) => {
+    const idx = quests.map(q => ({
+      id: q.id || q._id, name: q.titre || q.name || q.id || q._id,
+      subtitle: [q.type ? { main:'Principale',sec:'Secondaire',ter:'Tertiaire' }[q.type]||q.type : '', q.palier ? 'P'+q.palier : ''].filter(Boolean).join(' · '),
+      search: ((q.titre||q.name||'') + ' ' + (q.id||q._id||'')).toLowerCase(),
+      _raw: q
+    }));
+    questWrap.innerHTML = '';
+    const drop = makeSearchDrop(idx, 'Rechercher une quête à éditer…', id => {
+      if (!id) return;
+      switchMode('quest');
+      const entry = idx.find(el => el.id === id);
+      if (entry) loadQuest(entry._raw);
+    });
+    questWrap.appendChild(drop.element);
+    _questDropBuilt = true;
+  };
+
+  if (typeof QUETES_DATA !== 'undefined' && QUETES_DATA.length) {
+    buildFromData(QUETES_DATA);
+    return;
+  }
+
+  // Fallback : charger depuis Firestore
+  const db  = window._vcl_db;
+  const col = window._vcl_collection;
+  const get = window._vcl_getDocs;
+  if (!db || !col || !get) {
+    questWrap.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:4px 0;">Firestore non disponible</div>';
+    return;
+  }
+  try {
+    const snap = await get(col(db, 'quetes'));
+    buildFromData(snap.docs.map(d => ({ _id: d.id, ...d.data() })));
+  } catch(e) {
+    questWrap.innerHTML = `<div style="font-size:11px;color:var(--danger);padding:4px 0;">⛔ ${e.message}</div>`;
   }
 }
 
@@ -2085,7 +2298,7 @@ function resetFormSilent() {
   _skipSave = true;
   document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel textarea').forEach(i => i.value = '');
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
-  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvent = false; selEvolutif = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
+  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvent = false; selEvolutif = false; selOcculte = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
   const _evSec = document.getElementById('evolutif-evolutions-section');
   if (_evSec) _evSec.style.display = 'none';
   const _evList = document.getElementById('evolutif-evolutions-list');
@@ -2100,6 +2313,7 @@ function resetFormSilent() {
   const _noteTA = document.getElementById('submitter-comment');
   if (_noteTA) { _noteTA.value = ''; _noteTA.placeholder = 'Note pour la modération (optionnel pour un nouvel item)…'; _noteTA.style.height = '34px'; _noteTA.style.borderColor = 'var(--border)'; }
   document.getElementById('evolutif-btn')?.classList.remove('active');
+  document.getElementById('occulte-btn')?.classList.remove('active');
   resetThresholdInputs();
   const rarityField = document.getElementById('rarity-field');
   if (rarityField) rarityField.classList.add('unset');
@@ -2264,7 +2478,8 @@ function loadRegion(reg) {
 
 function loadQuest(quest) {
   switchMode('quest');
-  if (quest.id)     document.getElementById('quest-id').value    = quest.id;
+  const questId = quest.id || quest._id;
+  if (questId)      document.getElementById('quest-id').value    = questId;
   if (quest.titre)  document.getElementById('quest-titre').value = quest.titre;
   if (quest.type)   document.getElementById('quest-type').value  = quest.type;
   if (quest.palier) document.getElementById('quest-palier').value = String(quest.palier);
@@ -2624,6 +2839,11 @@ function buildSetSelect() {
   setDrop = makeSearchDrop(setItems, 'Rechercher un set…', () => update());
   container.innerHTML = '';
   container.appendChild(setDrop.element);
+  if (window._pendingRestoreSet) {
+    const found = setItems.find(s => s.id === window._pendingRestoreSet);
+    if (found) setDrop.setValue(found.id, found.name);
+    window._pendingRestoreSet = null;
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -2658,27 +2878,7 @@ function ensureItemIndex() {
     }
   }
 
-  // Afficher la barre des orphelins
-  if (orphanIds.length) {
-    const bar  = document.getElementById('orphan-ids-bar');
-    const list = document.getElementById('orphan-ids-list');
-    if (bar && list) {
-      list.innerHTML = '';
-      orphanIds.forEach(id => {
-        const chip = document.createElement('button');
-        chip.className = 'btn btn-ghost btn-sm';
-        chip.style.cssText = 'font-size:11px;padding:3px 8px;border-color:#4a3a10;color:#e8d44a;';
-        chip.textContent = id;
-        chip.onclick = () => {
-          addCraftEntry(id, id);
-          chip.style.opacity = '0.4';
-          chip.disabled = true;
-        };
-        list.appendChild(chip);
-      });
-      bar.style.display = '';
-    }
-  }
+  // IDs orphelins enregistrés dans itemIndex mais barre UI masquée
 
   // Merge pending items into craft index
   const knownItemIds = new Set(itemIndex.map(i => i.id));
@@ -3452,18 +3652,21 @@ function buildObj() {
   if (palier)                obj.palier   = +palier;
   if (lvl)                   obj.lvl      = +lvl;
   {
+    const tier = selEvent ? 'events' : (palier ? 'P' + palier : '');
+    const tp   = tier ? tier + '/' : '';
     const CAT_IMG = {
-      arme:        id ? `../img/compendium/textures/weapons/${id}.png`                          : null,
-      armure:      id ? `../img/compendium/textures/armors/${id}.png`                           : null,
-      accessoire:  id ? `../img/compendium/textures/trinkets/${palier ? 'P'+palier+'/' : ''}${id}.png` : null,
-      outils:      id ? `../img/compendium/textures/gears/${id}.png`                            : null,
-      materiaux:   id ? `../img/compendium/textures/items/Material/${id}.png`                   : null,
-      ressources:  id ? `../img/compendium/textures/items/Ressources/${id}.png`                 : null,
-      consommable: id ? `../img/compendium/textures/items/Consommable/${id}.png`                : null,
-      nourriture:  id ? `../img/compendium/textures/items/Nourriture/${id}.png`                 : null,
-      rune:        id ? `../img/compendium/textures/items/Runes/${id}.png`                      : null,
-      quete:       id ? `../img/compendium/textures/items/Quest/${id}.png`                      : null,
-      donjon:      id ? `../img/compendium/textures/items/Donjon/${id}.png`                     : null,
+      arme:        id ? `../img/compendium/textures/weapons/${tp}${id}.png`                     : null,
+      armure:      id ? `../img/compendium/textures/armors/${tp}${id}.png`                      : null,
+      accessoire:  id ? `../img/compendium/textures/trinkets/${tp}${id}.png`                    : null,
+      outils:      id ? `../img/compendium/textures/gears/${tp}${id}.png`                       : null,
+      materiaux:   id ? `../img/compendium/textures/items/Material/${tp}${id}.png`              : null,
+      ressources:  id ? `../img/compendium/textures/items/Ressources/${tp}${id}.png`            : null,
+      consommable: id ? `../img/compendium/textures/items/Consommable/${tp}${id}.png`           : null,
+      nourriture:  id ? `../img/compendium/textures/items/Nourriture/${tp}${id}.png`            : null,
+      rune:        id ? `../img/compendium/textures/items/Runes/${tp}${id}.png`                 : null,
+      quete:       id ? `../img/compendium/textures/items/Quest/${tp}${id}.png`                 : null,
+      donjon:      id ? `../img/compendium/textures/items/Donjon/${tp}${id}.png`                : null,
+      monnaie:     id ? `../img/compendium/textures/items/Monnaie/${tp}${id}.png`               : null,
     };
     const _imgUrl = (category && CAT_IMG[category]) || null;
     if (_imgUrl) obj.images = [_imgUrl];
@@ -3675,9 +3878,13 @@ function isDuplicate(id) {
     const original = ITEMS.find(it => it.name === editingName);
     if (original && (original.id || original._id) === id) return false;
     // En mode édition on ne vérifie pas les soumissions en attente
-    return ITEMS.some(it => (it.id || it._id) === id);
+    if (ITEMS.some(it => (it.id || it._id) === id)) return true;
+    // Vérifier aussi les items sensibles chargés dans allItemsIndex
+    return allItemsIndex.some(it => String(it.id) === String(id) && it.subtitle?.includes('Sensible'));
   }
   if (typeof ITEMS !== 'undefined' && ITEMS.some(it => (it.id || it._id) === id)) return true;
+  // Vérifier les items sensibles (chargés dans allItemsIndex via enrichAdminItems)
+  if (allItemsIndex.some(it => String(it.id) === String(id) && it.subtitle?.includes('Sensible'))) return true;
   // Vérifier aussi les soumissions en attente (items non encore approuvés)
   const pending = window._vcl_pendingItems || [];
   return pending.some(s => s.data?.id === id);
@@ -3844,6 +4051,17 @@ function update() {
   renderValidation();
   renderPreview();
   if (dup) document.getElementById('f-id').style.borderColor = 'var(--danger)';
+  // Badges CRAFT et STATS
+  const craftCount = getCraft().length;
+  const craftBadge = document.getElementById('craft-badge');
+  const craftSec   = document.getElementById('craft-section');
+  if (craftBadge) { craftBadge.textContent = craftCount + (craftCount === 1 ? ' ingrédient' : ' ingrédients'); craftBadge.style.display = craftCount ? '' : 'none'; }
+  if (craftSec)   craftSec.classList.toggle('has-items', craftCount > 0);
+  const statCount  = document.querySelectorAll('.stat-row.has-val').length;
+  const statsBadge = document.getElementById('stats-badge');
+  const statsSec   = document.getElementById('stats-section');
+  if (statsBadge) { statsBadge.textContent = statCount + (statCount === 1 ? ' stat' : ' stats'); statsBadge.style.display = statCount ? '' : 'none'; }
+  if (statsSec)   statsSec.classList.toggle('has-items', statCount > 0);
 }
 
 async function copyCode() {
@@ -4255,31 +4473,6 @@ async function submitToDiscord() {
   try {
     await submitToFirestore();
 
-    // Post forum Discord (best-effort, n'empêche pas la soumission si ça rate)
-    const obj   = buildObj();
-    const color = RARITY_COLORS_HEX[obj.rarity] || 0x7a7a90;
-    // Détermine le nom de fichier image (MIME → extension)
-    const _imgExt = forumImageFile
-      ? ({ 'image/png':'png','image/jpeg':'jpg','image/gif':'gif','image/webp':'webp' }[forumImageFile.type]
-         || forumImageFile.name?.split('.').pop() || 'png')
-      : null;
-    const _imgFname = _imgExt ? `image.${_imgExt}` : null;
-
-    // _discordSend → utilise window.VCL.postDiscord (défini dans /utils.js)
-    const _discordSend = (url, payload, file, fname) =>
-      window.VCL.postDiscord(url, payload, file, fname).catch(() => {});
-
-    // Post forum si équipement
-    const forumUrl = getForumWebhook(obj);
-    if (forumUrl) {
-      const cardEmbed = buildItemCardEmbed(obj, color, _imgFname);
-      _discordSend(
-        forumUrl + '?wait=true',
-        { thread_name: obj.name, embeds: [cardEmbed] },
-        forumImageFile, _imgFname
-      );
-    }
-
   } catch (err) {
     window._toast?.('⛔ Erreur de soumission : ' + err.message, 'error');
   } finally {
@@ -4423,6 +4616,35 @@ async function submitToFirestore() {
   m.textContent = '✓ Soumis ! En attente de validation.';
   m.classList.add('show');
   setTimeout(() => { m.classList.remove('show'); m.textContent = '✓ Copié !'; }, 3500);
+
+  // Notifier le webhook "Nouvelles soumissions" (best-effort)
+  _notifyNewSubmissionWebhook(data, type, isModification, getAuthor()).catch(() => {});
+}
+
+async function _notifyNewSubmissionWebhook(data, type, isModification, author) {
+  const url = window._vcl_newSubWebhook;
+  if (!url) return;
+  // Ne pas envoyer si c'est un admin qui soumet
+  if (window._vcl_role === 'admin') return;
+  const name = data.name || data.titre || data.label || data.id || '?';
+  const typeLabel = { item:'Item', mob:'Mob', pnj:'PNJ', region:'Région', quest:'Quête', panoplie:'Panoplie' }[type] || type;
+  const action = isModification ? '✏️ Modification' : '✨ Nouvel ajout';
+  const dataStr = JSON.stringify(data, null, 2);
+  const chunks = [];
+  for (let i = 0; i < dataStr.length; i += 1900) chunks.push(dataStr.slice(i, i + 1900));
+  const embeds = [{
+    title: `${action} — ${name}`,
+    description: `**Type :** ${typeLabel}${author ? `\n**Auteur :** ${author}` : ''}\n\`\`\`json\n${chunks[0]}\n\`\`\``,
+    color: isModification ? 0xf59e0b : 0x4ade80,
+  }];
+  for (let i = 1; i < chunks.length; i++) {
+    embeds.push({ description: `\`\`\`json\n${chunks[i]}\n\`\`\`` });
+  }
+  await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ embeds }),
+  });
 }
 
 // Close dropdowns on outside click
@@ -6183,6 +6405,8 @@ function resetQuestForm() {
 function _revealLayout() {
   const layout = document.getElementById('main-layout');
   if (layout) layout.style.visibility = '';
+  const pendingMode = sessionStorage.getItem('_vcl_pendingMode');
+  if (pendingMode) { sessionStorage.removeItem('_vcl_pendingMode'); switchMode(pendingMode); }
 }
 
 // ═══════════════════════════════════════════════════

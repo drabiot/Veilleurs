@@ -1476,8 +1476,9 @@ function loadAccessoriesForClass(classId) {
         if (!item.stats) return false;
         const val = item.stats[sid];
         if (val === undefined) return false;
+        // Ignorer les valeurs négatives (ex: malus de vitesse)
         const v = Array.isArray(val) ? val[1] : val;
-        return v !== 0;
+        return v > 0;
       });
     };
 
@@ -1490,6 +1491,14 @@ function loadAccessoriesForClass(classId) {
           (!q || normalize(item.name).includes(q)) &&
           statsFilter(item);
       });
+      // Injecter les runes sensibles du cache (même logique que les autres items sensibles)
+      if (q) {
+        _hiddenCache.forEach(function(item) {
+          if (item.cat !== 'rune' && item.category !== 'rune') return;
+          if (normalize(item.name) !== q) return;
+          if (!runes.some(function(v) { return v.id === item.id; })) runes.push(item);
+        });
+      }
       runes.sort(function(a, b) {
         if ((a.palier || 0) !== (b.palier || 0)) return (a.palier || 0) - (b.palier || 0);
         return (a.ordre ?? 999) - (b.ordre ?? 999);
@@ -1569,8 +1578,9 @@ function loadAccessoriesForClass(classId) {
     if (q) {
       _hiddenCache.forEach(function(item) {
         if (normalize(item.name) !== q) return;
+        const isRune = item.cat === 'rune' || item.category === 'rune';
         if (activeSlot && !SLOTS_BY_ID.get(activeSlot)?.cats.includes(item.cat)) return;
-        if (!activeSlot && !_equipCats.has(item.cat)) return;
+        if (!activeSlot && !_equipCats.has(item.cat) && !isRune) return;
         if (!visible.some(function(v) { return v.id === item.id; })) visible.push(item);
       });
     }
@@ -2107,21 +2117,23 @@ function loadAccessoriesForClass(classId) {
   const _sensibleTried = new Set(); // noms normalisés déjà tentés
   const _hiddenCache   = new Map(); // id → item, jamais exposé dans ITEMS global
   let _sensibleTimer = null;
-  function _sensibleImg(category, id, palier) {
+  function _sensibleImg(category, id, palier, isEvent) {
     if (!id) return null;
-    const p = palier ? 'P' + palier + '\'' : '';
+    const tier = (isEvent || palier === 0) ? 'events' : (palier ? 'P' + palier : '');
+    const tp = tier ? tier + '/' : '';
     switch (category) {
-      case 'arme':        return '../img/compendium/textures/weapons/' + id + '.png';
-      case 'armure':      return '../img/compendium/textures/armors/' + id + '.png';
-      case 'accessoire':  return '../img/compendium/textures/trinkets/' + p + id + '.png';
-      case 'outils':      return '../img/compendium/textures/gears/' + id + '.png';
-      case 'materiaux':   return '../img/compendium/textures/items/Material/' + id + '.png';
-      case 'ressources':  return '../img/compendium/textures/items/Ressources/' + id + '.png';
-      case 'consommable': return '../img/compendium/textures/items/Consommable/' + id + '.png';
-      case 'nourriture':  return '../img/compendium/textures/items/Nourriture/' + id + '.png';
-      case 'rune':        return '../img/compendium/textures/items/Runes/' + id + '.png';
-      case 'quete':       return '../img/compendium/textures/items/Quest/' + id + '.png';
-      case 'donjon':      return '../img/compendium/textures/items/Donjon/' + id + '.png';
+      case 'arme':        return `../img/compendium/textures/weapons/${tp}${id}.png`;
+      case 'armure':      return `../img/compendium/textures/armors/${tp}${id}.png`;
+      case 'accessoire':  return `../img/compendium/textures/trinkets/${tp}${id}.png`;
+      case 'outils':      return `../img/compendium/textures/gears/${tp}${id}.png`;
+      case 'materiaux':   return `../img/compendium/textures/items/Material/${tp}${id}.png`;
+      case 'ressources':  return `../img/compendium/textures/items/Ressources/${tp}${id}.png`;
+      case 'consommable': return `../img/compendium/textures/items/Consommable/${tp}${id}.png`;
+      case 'nourriture':  return `../img/compendium/textures/items/Nourriture/${tp}${id}.png`;
+      case 'rune':        return `../img/compendium/textures/items/Runes/${tp}${id}.png`;
+      case 'quete':       return `../img/compendium/textures/items/Quest/${tp}${id}.png`;
+      case 'donjon':      return `../img/compendium/textures/items/Donjon/${tp}${id}.png`;
+      case 'monnaie':     return `../img/compendium/textures/items/Monnaie/${tp}${id}.png`;
       default:            return null;
     }
   }
@@ -2144,7 +2156,7 @@ function loadAccessoriesForClass(classId) {
         }
         // Fallback image calculée si toujours aucun champ image
         if (!hit.images?.length && !hit.image && !hit.img) {
-          const builtImg = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier);
+          const builtImg = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier, hit.event);
           if (builtImg) { hit.img = builtImg; hit.images = [builtImg]; }
         }
         _hiddenCache.set(hit.id, hit);
@@ -2317,7 +2329,7 @@ function loadAccessoriesForClass(classId) {
                       if (secret) Object.assign(hit, secret);
                     }
                     if (!hit.images?.length && !hit.image && !hit.img) {
-                      const builtImg = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier);
+                      const builtImg = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier, hit.event);
                       if (builtImg) { hit.img = builtImg; hit.images = [builtImg]; }
                     }
                     _hiddenCache.set(hit.id, hit);

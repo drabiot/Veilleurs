@@ -135,6 +135,10 @@ body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono',
 .sec-head.collapsed .chev { transform: rotate(-90deg); }
 .sec-body { padding: 14px; display: flex; flex-direction: column; gap: 11px; }
 .sec-body.hidden { display: none; }
+#craft-section.has-items { border-color: rgba(215,175,95,.5); }
+#craft-section.has-items > .sec-head { background: rgba(215,175,95,.08); color: rgba(215,175,95,.9); }
+#stats-section.has-items { border-color: rgba(122,90,248,.4); }
+#stats-section.has-items > .sec-head { background: rgba(122,90,248,.08); color: var(--accent); }
 
 /* ── FIELDS ── */
 .field { display: flex; flex-direction: column; gap: 4px; }

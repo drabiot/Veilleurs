@@ -191,6 +191,7 @@
             <button id="sensible-btn"  class="r-btn" style="--c:#f87171;width:fit-content;"  onclick="toggleSensible()">🔒 Sensible</button>
             <button id="event-btn"     class="r-btn" style="--c:#a855f7;width:fit-content;"  onclick="toggleEvent()">🎊 Event</button>
             <button id="evolutif-btn"  class="r-btn" style="--c:#60a5fa;width:fit-content;"  onclick="toggleEvolutif()">🔄 Évolutif</button>
+            <button id="occulte-btn"   class="r-btn" style="--c:#e8d44a;width:fit-content;"  onclick="toggleOcculte()" title="Génère un ID de forme nom_palier (ex: gants_occultes_2) pour détecter les doublons inter-paliers">✦ Occulte</button>
           </div>
         </div>
 
@@ -284,7 +285,7 @@
     <!-- STATS -->
     <div class="section" id="stats-section" style="display:none">
       <div class="sec-head" onclick="toggleSec(this)">
-        📊 Stats
+        📊 Stats <span id="stats-badge" style="display:none;font-size:10px;background:rgba(122,90,248,.2);color:var(--accent);border:1px solid rgba(122,90,248,.3);border-radius:8px;padding:1px 7px;font-weight:700;margin-left:4px;letter-spacing:.02em;"></span>
         <span style="margin-left:8px;font-size:10px;color:var(--muted);text-transform:none;letter-spacing:0;font-weight:400;">
           Min seul = valeur fixe · Min + Max = plage aléatoire [min, max]
         </span>
@@ -334,8 +335,8 @@
     </div>
 
     <!-- CRAFT -->
-    <div class="section">
-      <div class="sec-head" onclick="toggleSec(this)">🔨 Craft <span class="chev">▾</span></div>
+    <div class="section" id="craft-section">
+      <div class="sec-head" onclick="toggleSec(this)">🔨 Craft <span id="craft-badge" style="display:none;font-size:10px;background:rgba(215,175,95,.2);color:#e8d44a;border:1px solid rgba(215,175,95,.3);border-radius:8px;padding:1px 7px;font-weight:700;margin-left:4px;letter-spacing:.02em;"></span><span class="chev">▾</span></div>
       <div class="sec-body">
         <div class="hint">Ingrédients pour fabriquer cet item. Recherche par nom dans tous les items existants.</div>
         <div id="orphan-ids-bar" style="display:none;margin-bottom:8px;padding:7px 10px;background:#1e1a10;border:1px solid #4a3a10;border-radius:7px;">
@@ -1145,7 +1146,7 @@ try {
     window.MOBS = store.mobs;
     window._pageInit?.();
   }
-  if (store.quetes.length)    { window.QUETES_DATA = store.quetes; }
+  if (store.quetes.length)    { window.QUETES_DATA = store.quetes; if (typeof _buildQuestLoadDrop === 'function') _buildQuestLoadDrop(); }
   if (typeof initObtainData === 'function') initObtainData();
   if (typeof SETS !== 'undefined') {
     Object.assign(SETS, store.sets);
@@ -1171,6 +1172,11 @@ try {
 } catch(e) {
   console.warn('[VCL Creator] Config validation non chargée:', e);
 }
+// Charger le webhook "nouvelles soumissions"
+try {
+  const snapDw = await getDoc(doc(db, 'config', 'discord_webhooks'));
+  if (snapDw.exists()) window._vcl_newSubWebhook = snapDw.data()?.new_submission || null;
+} catch(e) {}
 // Charger les soumissions en attente (pour les afficher dans les dropdowns)
 try {
   window._vcl_pendingRegions = [];

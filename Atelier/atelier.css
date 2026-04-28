@@ -1035,7 +1035,7 @@ html, body {
   padding-top: var(--header-h, -90px);
   z-index: 100;
   pointer-events: none;
-  width: 14px;
+  width: 22px;
 }
 
 .craft-drawer-tab {
@@ -1044,13 +1044,13 @@ html, body {
   top: 50%;
   left: 0;
   transform: translateY(-50%);
-  width: 14px;
-  height: 140px;
+  width: 22px;
+  height: 160px;
   overflow: hidden;
-  background: linear-gradient(180deg, rgba(30,22,14,.99) 0%, rgba(20,15,9,.99) 100%);
-  border: 1px solid var(--rim);
+  background: linear-gradient(180deg, rgba(36,26,14,.99) 0%, rgba(22,16,9,.99) 100%);
+  border: 1px solid var(--gold-dim);
   border-left: none;
-  color: var(--muted);
+  color: var(--gold-dim);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -1058,26 +1058,34 @@ html, body {
   justify-content: center;
   padding: 6px 0;
   transition: color .15s, background .15s, border-color .15s;
+  box-shadow: 2px 0 8px rgba(0,0,0,.4);
 }
 
 .craft-drawer-tab:hover,
 .craft-drawer.open .craft-drawer-tab {
   color: var(--gold);
-  background: linear-gradient(180deg, rgba(40,28,14,.99) 0%, rgba(24,18,10,.99) 100%);
-  border-color: var(--rim2);
+  background: linear-gradient(180deg, rgba(44,30,14,.99) 0%, rgba(28,18,8,.99) 100%);
+  border-color: var(--gold);
+  box-shadow: 2px 0 12px rgba(224,172,96,.25);
 }
 
 .cdt-label {
   font-family: 'Cinzel', serif;
-  font-size: 6px;
-  font-weight: 600;
-  letter-spacing: .18em;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: inherit;
   writing-mode: vertical-rl;
   text-orientation: mixed;
   transform: rotate(180deg);
   white-space: nowrap;
+}
+.cdt-icon, .sdt-icon {
+  font-size: 14px;
+  line-height: 1;
+  display: block;
+  margin-bottom: 3px;
 }
 
 .craft-drawer-tab::before,
@@ -1330,7 +1338,7 @@ html, body {
   bottom: 0;
   z-index: 100;
   pointer-events: none;
-  width: 14px;
+  width: 22px;
 }
 
 .stats-drawer-tab {
@@ -1339,12 +1347,12 @@ html, body {
   top: 50%;
   right: 0;
   transform: translateY(-50%);
-  width: 14px;
-  height: 140px;
-  background: linear-gradient(180deg, rgba(30,22,14,.99) 0%, rgba(20,15,9,.99) 100%);
-  border: 1px solid var(--rim);
+  width: 22px;
+  height: 160px;
+  background: linear-gradient(180deg, rgba(36,26,14,.99) 0%, rgba(22,16,9,.99) 100%);
+  border: 1px solid var(--gold-dim);
   border-right: none;
-  color: var(--muted);
+  color: var(--gold-dim);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -1352,20 +1360,22 @@ html, body {
   justify-content: center;
   padding: 6px 0;
   transition: color .15s, background .15s, border-color .15s;
+  box-shadow: -2px 0 8px rgba(0,0,0,.4);
 }
 
 .stats-drawer-tab:hover,
 .stats-drawer.open .stats-drawer-tab {
   color: var(--gold);
-  background: linear-gradient(180deg, rgba(40,28,14,.99) 0%, rgba(24,18,10,.99) 100%);
+  background: linear-gradient(180deg, rgba(44,30,14,.99) 0%, rgba(28,18,8,.99) 100%);
   border-color: var(--gold);
+  box-shadow: -2px 0 12px rgba(224,172,96,.25);
 }
 
 .stats-drawer-tab .sdt-label {
   font-family: 'Cinzel', serif;
-  font-size: 6px;
-  font-weight: 600;
-  letter-spacing: .18em;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .12em;
   text-transform: uppercase;
   color: inherit;
   writing-mode: vertical-rl;
