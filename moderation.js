@@ -1740,15 +1740,36 @@ async function loadPnjOrder() {
       cachedDocs('regions'),
     ]);
 
-    // Grouper tous les PNJ par région (clé = p.region || '')
-    const byRegion = {};
-    pnjs.forEach(p => {
-      const key = p.region || '';
-      if (!byRegion[key]) byRegion[key] = [];
-      byRegion[key].push(p);
+    // Index canonique des régions par id ET par nom normalisé. `pnj.region` stocke
+    // habituellement l'id snake_case ("ville_de_depart") mais peut aussi contenir
+    // le nom humain selon les anciennes données — on accepte les deux.
+    const regById       = new Map();
+    const regByNormName = new Map();
+    _regDocsRaw.forEach(r => {
+      const name = r.name || r.id;
+      regById.set(r.id, { id: r.id, name });
+      regByNormName.set(normalize(name), { id: r.id, name });
     });
-    // Trier par ordre admin (champ `ordre`), puis alphabétiquement en fallback
-    Object.values(byRegion).forEach(arr => arr.sort((a, b) => {
+
+    // Grouper les PNJ par id canonique de région
+    const byRegionId = {};
+    pnjs.forEach(p => {
+      const raw = p.region || '';
+      if (!raw) {
+        (byRegionId[''] ||= []).push(p);
+        return;
+      }
+      const canon = regById.get(raw) ?? regByNormName.get(normalize(raw));
+      if (canon) {
+        (byRegionId[canon.id] ||= []).push(p);
+      } else {
+        // Région inconnue : préfixe pour distinguer des ids réels
+        (byRegionId['__raw__' + raw] ||= []).push(p);
+      }
+    });
+
+    // Trier les PNJ dans chaque groupe par ordre admin puis alpha
+    Object.values(byRegionId).forEach(arr => arr.sort((a, b) => {
       const ao = a.ordre ?? null, bo = b.ordre ?? null;
       if (ao !== null && bo !== null) return ao - bo;
       if (ao !== null) return -1;
@@ -1760,26 +1781,24 @@ async function loadPnjOrder() {
     const regDocs = [..._regDocsRaw].sort((a, b) => (a.ordre ?? 9999) - (b.ordre ?? 9999));
 
     // Construire _pnjRegions :
-    // 1. Régions connues (dans leur ordre), avec leurs PNJ
-    const knownNames = new Set();
+    // 1. Régions connues — clé = doc.id, libellé = doc.name (humain)
     _pnjRegions = regDocs.map(r => {
       const name = r.name || r.id;
-      knownNames.add(name);
-      return { id: r.id, name, pnjs: byRegion[name] || [] };
+      return { id: r.id, name, pnjs: byRegionId[r.id] || [] };
     });
 
-    // 2. Régions inconnues (présentes dans les PNJ mais pas dans la collection regions)
-    //    triées alphabétiquement, ajoutées à la fin
-    const unknownNames = Object.keys(byRegion)
-      .filter(k => k !== '' && !knownNames.has(k))
+    // 2. Régions inconnues (référence brute non résolue), triées alphabétiquement
+    const unknownKeys = Object.keys(byRegionId)
+      .filter(k => k.startsWith('__raw__'))
       .sort((a, b) => a.localeCompare(b, 'fr'));
-    unknownNames.forEach(name => {
-      _pnjRegions.push({ id: '__unknown__' + name, name, pnjs: byRegion[name] });
+    unknownKeys.forEach(k => {
+      const rawName = k.slice('__raw__'.length);
+      _pnjRegions.push({ id: '__unknown__' + rawName, name: rawName, pnjs: byRegionId[k] });
     });
 
     // 3. PNJ sans région
-    if (byRegion['']?.length) {
-      _pnjRegions.push({ id: '__none__', name: '', pnjs: byRegion[''] });
+    if (byRegionId['']?.length) {
+      _pnjRegions.push({ id: '__none__', name: '', pnjs: byRegionId[''] });
     }
 
     renderPnjOrder();
@@ -1808,8 +1827,7 @@ function _makePnjRegionGroup(group, gi, palierPnjs, palier) {
     <span style="font-size:11px;color:var(--muted);font-weight:400;">${palierPnjs.length} PNJ</span>
     <button data-toggle style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;padding:0 2px;line-height:1;" title="${collapsed?'Dérouler':'Réduire'}">${collapsed?'▶':'▼'}</button>`;
 
-  header.addEventListener('click', e => {
-    if (e.target.closest('[draggable]') && e.target !== header) return;
+  header.addEventListener('click', () => {
     if (_pnjCollapsed.has(group.id)) _pnjCollapsed.delete(group.id);
     else _pnjCollapsed.add(group.id);
     renderPnjOrder();
@@ -7593,8 +7611,9 @@ window.runNormalize = async function() {
 // ── Migration IDs Occultes ─────────────────────────
 window.runMigrateOcculteIds = async function() {
   if (!await modal.confirm(
-    'Renomme les IDs des items du set "occulte" en ajoutant "_p{palier}" au suffixe.\n' +
-    'Exemple : gants_occultes → gants_occultes_p1\n\n' +
+    'Pour les 12 items occultes ciblés (liste explicite, PNJs non concernés) :\n' +
+    ' • renomme les IDs en ajoutant "_p{palier}" si pas déjà fait\n' +
+    ' • ajoute le booléen occulte: true s\'il manque\n\n' +
     'Cette opération est IRRÉVERSIBLE. Continuer ?'
   )) return;
 
@@ -7612,56 +7631,84 @@ window.runMigrateOcculteIds = async function() {
       ...hidDocs.map(d => ({ ...d, _col: COL.itemsHidden })),
     ];
 
-    // Trouver les items du set "occulte" dont l'ID ne se termine pas déjà par _p{n}
-    const toMigrate = allItems.filter(it => {
-      const setId = it.set;
-      if (!setId) return false;
-      // Accepte "occulte", "set_occulte", tout ce qui contient "occulte"
-      if (!String(setId).toLowerCase().includes('occulte')) return false;
-      const id = it.id || it._id || '';
-      // Déjà migré si l'ID se termine par _p1, _p2 ou _p3
-      return !/_p[123]$/.test(id);
+    // Liste explicite des IDs à flagger (PNJs en collection personnages
+    // ne sont pas concernés — on ne lit que items / items_hidden)
+    const OCCULTE_TARGET_IDS = new Set([
+      'amulette_occulte_p1',
+      'anneau_occulte_p1',
+      'anneau_occulte_p2',
+      'bracelet_occulte_p1',
+      'bracelet_occulte_p2',
+      'capuche_occulte_p1',
+      'crane_occulte_p1',
+      'gants_occultes_p1',
+      'parchemin_occulte_p2',
+      'poignard_occulte_p2',
+      'robe_occulte_p1',
+      'sablier_occulte_p2',
+    ]);
+    const occulteItems = allItems.filter(it => {
+      const id = String(it.id || it._id || '');
+      return OCCULTE_TARGET_IDS.has(id);
     });
 
-    if (!toMigrate.length) {
-      toast('✓ Aucun item à migrer (tous déjà correctement nommés).', 'success');
+    if (!occulteItems.length) {
+      toast('✓ Aucun item occulte trouvé.', 'success');
       return;
     }
 
     const log = [];
-    for (const item of toMigrate) {
+    let renamedCount = 0;
+    let flaggedCount = 0;
+    for (const item of occulteItems) {
       const oldId = item.id || item._id || '';
       const palier = item.palier;
-      if (!palier) { log.push(`⚠️ ${oldId} — palier manquant, ignoré`); continue; }
-      const newId = `${oldId}_p${palier}`;
-      const payload = { ...item, id: newId };
-      delete payload._col; delete payload._id;
+      const idNeedsRename = !/_p[123]$/.test(oldId);
+      const flagNeedsAdd  = item.occulte !== true;
+
+      if (!idNeedsRename && !flagNeedsAdd) continue;
 
       try {
-        // Créer le nouveau doc
-        await setDoc(doc(db, item._col, newId), sanitizeForFirestore(payload));
-        // Supprimer l'ancien
-        await deleteDoc(doc(db, item._col, oldId));
-        // Pour items sensibles, aussi renommer items_secret si existe
-        if (item._col === COL.itemsHidden) {
-          try {
-            const secSnap = await getDoc(doc(db, COL.itemsSecret, oldId));
-            if (secSnap.exists()) {
-              await setDoc(doc(db, COL.itemsSecret, newId), secSnap.data());
-              await deleteDoc(doc(db, COL.itemsSecret, oldId));
-            }
-          } catch {}
+        if (idNeedsRename) {
+          if (!palier) { log.push(`⚠️ ${oldId} — palier manquant, ignoré`); continue; }
+          const newId = `${oldId}_p${palier}`;
+          const payload = { ...item, id: newId, occulte: true };
+          delete payload._col; delete payload._id;
+          await setDoc(doc(db, item._col, newId), sanitizeForFirestore(payload));
+          await deleteDoc(doc(db, item._col, oldId));
+          // Pour items sensibles, aussi renommer items_secret si existe
+          if (item._col === COL.itemsHidden) {
+            try {
+              const secSnap = await getDoc(doc(db, COL.itemsSecret, oldId));
+              if (secSnap.exists()) {
+                await setDoc(doc(db, COL.itemsSecret, newId), secSnap.data());
+                await deleteDoc(doc(db, COL.itemsSecret, oldId));
+              }
+            } catch {}
+          }
+          renamedCount++;
+          if (flagNeedsAdd) flaggedCount++;
+          log.push(`✓ ${oldId} → ${newId} (+ occulte: true)`);
+        } else {
+          // ID déjà bon, on ajoute juste le booléen
+          await updateDoc(doc(db, item._col, oldId), { occulte: true });
+          flaggedCount++;
+          log.push(`✓ ${oldId} (+ occulte: true)`);
         }
-        log.push(`✓ ${oldId} → ${newId}`);
         store.invalidate('items');
       } catch(e) {
         log.push(`⛔ ${oldId} : ${e.message}`);
       }
     }
 
-    const summary = `Migration terminée : ${toMigrate.length} item(s)\n\n${log.join('\n')}`;
+    if (!renamedCount && !flaggedCount) {
+      toast('✓ Tous les items occultes sont déjà à jour.', 'success');
+      return;
+    }
+
+    const summary = `Migration terminée : ${renamedCount} renommage(s), ${flaggedCount} ajout(s) du flag\n\n${log.join('\n')}`;
     await modal.confirm(summary);
-    toast(`✓ ${log.filter(l => l.startsWith('✓')).length} items migrés`, 'success');
+    toast(`✓ ${renamedCount} renommé(s), ${flaggedCount} flagué(s)`, 'success');
   } catch(e) {
     toast('⛔ Erreur migration : ' + e.message, 'error');
   } finally {

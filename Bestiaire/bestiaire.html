@@ -313,6 +313,8 @@
       store.populateGlobals();
       // Index région id → nom lisible, pour l'affichage des mobs
       window._regionIndex = new Map(store.regions.map(r => [r.id, r.name || r.id]));
+      // Index région id → ordre (manuel via panel modération), pour le tri des PNJ
+      window._regionOrderIndex = new Map(store.regions.map(r => [r.id, r.ordre ?? 9999]));
     } catch (err) {
       console.error('[Bestiaire] Erreur Firestore :', err);
     }

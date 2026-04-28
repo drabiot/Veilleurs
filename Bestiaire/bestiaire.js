@@ -190,13 +190,43 @@ function getFiltered() {
     }
     return true;
   });
-  filtered.sort((a, b) => {
-    if (a.palier !== b.palier) return a.palier - b.palier;
-    if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
-    if (a.ordre != null) return -1;
-    if (b.ordre != null) return 1;
-    return normalize(a.name).localeCompare(normalize(b.name));
-  });
+  if (activeTab === 'personnages') {
+    // Tri PNJ aligné sur le panel modération : palier → ordre des régions (manuel)
+    //                                          → ordre des PNJ → nom
+    // Les régions sont identifiées par `region` (= name humain), pas par id.
+    // _regionOrderIndex est indexé par id ; on cherche d'abord par id, sinon par name.
+    const regionOrderByName = (() => {
+      if (!window._regionOrderIndex || !window._regionIndex) return null;
+      const map = new Map();
+      for (const [id, ordre] of window._regionOrderIndex) {
+        const name = window._regionIndex.get(id) || id;
+        map.set(name, ordre);
+        map.set(id, ordre);
+      }
+      return map;
+    })();
+    const regOrd = (e) => {
+      if (!e.region) return 9999;
+      return regionOrderByName?.get(e.region) ?? 9999;
+    };
+    filtered.sort((a, b) => {
+      if (a.palier !== b.palier) return a.palier - b.palier;
+      const ra = regOrd(a), rb = regOrd(b);
+      if (ra !== rb) return ra - rb;
+      if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
+      if (a.ordre != null) return -1;
+      if (b.ordre != null) return 1;
+      return normalize(a.name).localeCompare(normalize(b.name));
+    });
+  } else {
+    filtered.sort((a, b) => {
+      if (a.palier !== b.palier) return a.palier - b.palier;
+      if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
+      if (a.ordre != null) return -1;
+      if (b.ordre != null) return 1;
+      return normalize(a.name).localeCompare(normalize(b.name));
+    });
+  }
   return filtered;
 }
 
@@ -867,10 +897,32 @@ document.querySelectorAll('.type-filter-cb').forEach(cb => {
   });
 });
 
+// Filtres PNJ : 1er clic = exclusif (n'affiche que ce tag), clics suivants = additif.
+// Si la sélection devient vide, on revient à l'état "tous affichés".
+const _allPnjTags = new Set(Object.keys(typeof PNJ_TAG_LABELS !== 'undefined' ? PNJ_TAG_LABELS : {}));
+let _pnjTagsAllState = true;
+
+function _syncPnjTagCheckboxes() {
+  document.querySelectorAll('.pnj-tag-filter-cb').forEach(c => {
+    c.checked = activePnjTags.has(c.value);
+  });
+}
+
 document.querySelectorAll('.pnj-tag-filter-cb').forEach(cb => {
   cb.addEventListener('change', () => {
-    if (cb.checked) activePnjTags.add(cb.value);
-    else            activePnjTags.delete(cb.value);
+    const value = cb.value;
+    if (_pnjTagsAllState) {
+      activePnjTags = new Set([value]);
+      _pnjTagsAllState = false;
+    } else {
+      if (activePnjTags.has(value)) activePnjTags.delete(value);
+      else                          activePnjTags.add(value);
+      if (activePnjTags.size === 0) {
+        activePnjTags = new Set(_allPnjTags);
+        _pnjTagsAllState = true;
+      }
+    }
+    _syncPnjTagCheckboxes();
     updateCounts();
     buildGrid();
   });

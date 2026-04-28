@@ -191,7 +191,7 @@
             <button id="sensible-btn"  class="r-btn" style="--c:#f87171;width:fit-content;"  onclick="toggleSensible()">🔒 Sensible</button>
             <button id="event-btn"     class="r-btn" style="--c:#a855f7;width:fit-content;"  onclick="toggleEvent()">🎊 Event</button>
             <button id="evolutif-btn"  class="r-btn" style="--c:#60a5fa;width:fit-content;"  onclick="toggleEvolutif()">🔄 Évolutif</button>
-            <button id="occulte-btn"   class="r-btn" style="--c:#e8d44a;width:fit-content;"  onclick="toggleOcculte()" title="Génère un ID de forme nom_palier (ex: gants_occultes_2) pour détecter les doublons inter-paliers">✦ Occulte</button>
+            <button id="occulte-btn"   class="r-btn" style="--c:#e8d44a;width:fit-content;"  onclick="toggleOcculte()" title="Marque l'item comme occulte (occulte: true) et génère un ID de forme nom_p{palier} (ex: amulette_occulte_p1) pour distinguer les paliers">✦ Occulte</button>
           </div>
         </div>
 
@@ -1105,10 +1105,6 @@ onAuthStateChanged(auth, async user => {
       if (pseudo && authorInput) { authorInput.value = pseudo; saveAuthor(); }
       const modBtn = document.getElementById('btn-moderation');
       if (modBtn) modBtn.style.display = ['contributeur','admin'].includes(role) ? '' : 'none';
-      // Enrichir la liste d'items avec les sensibles pour les contributeurs/admins
-      if (['contributeur','admin'].includes(role)) {
-        window._vcl_enrichAdminItems?.();
-      }
       // Re-appliquer la config maintenant qu'on connaît le rôle
       if (window._vcl_lastCreatorConfig !== undefined && typeof applyCreatorConfig === 'function') {
         applyCreatorConfig(window._vcl_lastCreatorConfig);

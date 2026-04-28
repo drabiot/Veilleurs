@@ -295,6 +295,19 @@ const PRESET_TAG_GROUPS = [
 ];
 
 // ═══════════════════════════════════════════════════
+// LORE — auto-correction (majuscule + point final)
+// ═══════════════════════════════════════════════════
+function normalizeLore(s) {
+  if (s == null) return '';
+  let out = String(s).trim();
+  if (!out) return '';
+  out = out.charAt(0).toUpperCase() + out.slice(1);
+  // Ajoute un point si pas déjà terminé par . ! ? … (avec éventuel guillemet/parenthèse fermant)
+  if (!/[.!?…][»"'’)\]]?$/.test(out)) out += '.';
+  return out;
+}
+
+// ═══════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
@@ -314,6 +327,19 @@ window.addEventListener('DOMContentLoaded', () => {
   initCustomSelects();
   buildOrphanSection();
   buildEffectTemplates();
+
+  // Auto-correction des lores au blur (majuscule initiale + point final)
+  ['f-lore','mob-lore','reg-lore'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('blur', () => {
+      const fixed = normalizeLore(el.value);
+      if (fixed !== el.value) {
+        el.value = fixed;
+        if (typeof update === 'function') update();
+      }
+    });
+  });
 
   loadAuthor();
   loadHistory();
@@ -1877,40 +1903,7 @@ function initLoadSearch() {
     if (entry) loadItem(entry._raw);
   });
   wrap.appendChild(loadDrop.element);
-
-  // Si admin/contributeur déjà connu, enrichir avec items sensibles
-  if (['contributeur','admin'].includes(window._vcl_role || '')) {
-    _enrichAdminItems();
-  }
 }
-
-async function _enrichAdminItems() {
-  const getDocs = window._vcl_getDocs;
-  const col     = window._vcl_collection;
-  const db      = window._vcl_db;
-  if (!getDocs || !col || !db || !allItemsIndex.length) return;
-  try {
-    const snap = await getDocs(col(db, 'items_hidden'));
-    const existingIds = new Set(allItemsIndex.map(i => String(i.id)));
-    const rarityLabel = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
-    let added = false;
-    for (const d of snap.docs) {
-      const h = { id: d.id, ...d.data() };
-      if (!h.id || existingIds.has(String(h.id))) continue;
-      allItemsIndex.push({
-        id: h.id,
-        name: h.name || h.id,
-        subtitle: [rarityLabel[h.rarity] || h.rarity, h.category, h.palier ? 'P'+h.palier : '', '🔒 Sensible'].filter(Boolean).join(' · '),
-        search: ((h.name || '') + ' ' + h.id + ' sensible').toLowerCase(),
-        _raw: h,
-      });
-      existingIds.add(String(h.id));
-      added = true;
-    }
-    if (added) initLoadSearch();
-  } catch {}
-}
-window._vcl_enrichAdminItems = _enrichAdminItems;
 
 // ── Load search for all modes ──────────────────────────
 let _pnjDropBuilt      = false;
@@ -2179,6 +2172,12 @@ function loadItem(item) {
   if (item.evolutif || item.evolving) {
     selEvolutif = true;
     document.getElementById('evolutif-btn')?.classList.add('active');
+  }
+
+  // Occulte
+  if (item.occulte) {
+    selOcculte = true;
+    document.getElementById('occulte-btn')?.classList.add('active');
   }
   const _evSection = document.getElementById('evolutif-evolutions-section');
   if (_evSection) _evSection.style.display = selEvolutif ? '' : 'none';
@@ -3635,7 +3634,7 @@ function buildObj() {
   const palier   = document.getElementById('f-palier').value;
   const lvl      = document.getElementById('f-lvl').value;
   const set      = setDrop ? setDrop.getValue() : '';
-  const lore     = document.getElementById('f-lore').value.trim();
+  const lore     = normalizeLore(document.getElementById('f-lore').value);
   const obtain   = buildObtainText();
   const stats    = getStats();
   const craft    = getCraft();
@@ -3676,6 +3675,7 @@ function buildObj() {
   if (selEvolutif)                               obj.evolutif    = true;
   if (selEvolutif && evolutifEvolutions.length)  obj.evolutions  = evolutifEvolutions.map(e => e.id);
   if (selEvolutif && evolutifEvolvedFrom.length) obj.evolvedFrom = evolutifEvolvedFrom.map(e => e.id);
+  if (selOcculte)                                obj.occulte     = true;
   const runeSlots = parseInt(document.getElementById('f-rune-slots').value);
   if (runeSlots > 0)             obj.rune_slots = runeSlots;
   if (selSensible)               obj.sensible  = true;
@@ -3878,13 +3878,9 @@ function isDuplicate(id) {
     const original = ITEMS.find(it => it.name === editingName);
     if (original && (original.id || original._id) === id) return false;
     // En mode édition on ne vérifie pas les soumissions en attente
-    if (ITEMS.some(it => (it.id || it._id) === id)) return true;
-    // Vérifier aussi les items sensibles chargés dans allItemsIndex
-    return allItemsIndex.some(it => String(it.id) === String(id) && it.subtitle?.includes('Sensible'));
+    return ITEMS.some(it => (it.id || it._id) === id);
   }
   if (typeof ITEMS !== 'undefined' && ITEMS.some(it => (it.id || it._id) === id)) return true;
-  // Vérifier les items sensibles (chargés dans allItemsIndex via enrichAdminItems)
-  if (allItemsIndex.some(it => String(it.id) === String(id) && it.subtitle?.includes('Sensible'))) return true;
   // Vérifier aussi les soumissions en attente (items non encore approuvés)
   const pending = window._vcl_pendingItems || [];
   return pending.some(s => s.data?.id === id);
@@ -5064,7 +5060,7 @@ function buildMobObj() {
   const type      = document.getElementById('mob-type').value;
   const behavior  = document.getElementById('mob-behavior').value;
   const palier    = document.getElementById('mob-palier').value;
-  const lore      = document.getElementById('mob-lore').value.trim();
+  const lore      = normalizeLore(document.getElementById('mob-lore').value);
   const spawnTime = document.getElementById('mob-spawntime').value.trim();
   const regionId = document.getElementById('mob-region').value;
 
@@ -5613,7 +5609,7 @@ function buildRegionObj() {
   const id     = document.getElementById('reg-id').value.trim();
   const name   = document.getElementById('reg-name').value.trim();
   const palier = document.getElementById('reg-palier').value;
-  const lore   = document.getElementById('reg-lore').value.trim();
+  const lore   = normalizeLore(document.getElementById('reg-lore').value);
   const cx     = document.getElementById('reg-x')?.value;
   const cy     = document.getElementById('reg-y')?.value;
   const cz     = document.getElementById('reg-z')?.value;
