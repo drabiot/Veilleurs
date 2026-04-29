@@ -105,6 +105,7 @@
     <div class="sb-label">OUTILS</div>
     <button class="filter-btn" id="btn-images-tool" onclick="showImagesTool()">🖼️ Images</button>
     <button class="filter-btn" id="btn-migrate-occulte" onclick="runMigrateOcculteIds()">🔑 Migration IDs Occultes</button>
+    <button class="filter-btn" id="btn-backfill-sensible" onclick="runBackfillSensibleFlag()">🔒 Backfill flag sensible</button>
     <button class="filter-btn" id="btn-calibrateur" onclick="showCalibrateur()">🎮 Calibrateur 3D</button>
     <button class="filter-btn" id="btn-capture-sprites" onclick="showCaptureSprites()">📸 Capture Sprites</button>
     <button class="filter-btn" id="btn-zone-editor" onclick="showZoneEditor()">🗺️ Éditeur de Zones</button>
@@ -899,7 +900,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <span style="font-size:15px;font-weight:700;">🖼️ Images</span>
       <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost" onclick="loadImagesTool()" style="font-size:12px;">🔄 Rafraîchir</button>
+        <button class="btn btn-ghost" onclick="resetImagesTool()" style="font-size:12px;">🔄 Rafraîchir</button>
         <button class="btn" onclick="saveImagesConfig()" style="background:var(--accent);color:#fff;font-size:12px;">💾 Config</button>
       </div>
     </div>
@@ -910,13 +911,9 @@
         style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:#fff;">
         📤 Upload
       </button>
-      <button id="img-tab-btn-templates" onclick="switchImgTab('templates')"
+      <button id="img-tab-btn-textures" onclick="switchImgTab('textures')"
         style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
-        📁 Templates
-      </button>
-      <button id="img-tab-btn-normalize" onclick="switchImgTab('normalize')"
-        style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
-        🔧 Normaliser
+        🎨 Texture Pack
       </button>
       <button id="img-tab-btn-config" onclick="switchImgTab('config')"
         style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
@@ -947,6 +944,7 @@
                ondrop="imgFileDrop(event)">
             <div id="img-drop-placeholder" style="color:var(--muted);font-size:13px;">📋 Glisse une image ici ou clique pour choisir</div>
             <img id="img-drop-preview" style="display:none;max-height:120px;max-width:100%;border-radius:4px;" alt="">
+            <div id="img-resize-info" style="font-size:11px;margin-top:6px;text-align:center;"></div>
           </div>
           <input type="file" id="img-file-input" accept="image/png,image/jpg,image/jpeg,image/webp" style="display:none;" onchange="imgFileSelect(this.files[0])">
         </div>
@@ -957,34 +955,40 @@
       </div>
     </div>
 
-    <!-- Tab Templates -->
-    <div id="img-tab-templates" style="display:none;">
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;">
-        Définit le chemin GitHub pour chaque catégorie d'item. Variables : <code>{id}</code> = ID de l'item, <code>{palier}</code> = palier, <code>{cat}</code> = slot interne.
-      </p>
-      <div id="img-templates-list" style="display:flex;flex-direction:column;gap:6px;"></div>
-    </div>
-
-    <!-- Tab Normaliser -->
-    <div id="img-tab-normalize" style="display:none;">
-      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5;">
-        Analyse tous les items et met à jour leur champ <code>images</code> pour correspondre au chemin calculé par les templates.
-      </p>
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <select id="img-norm-type" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
-          <option value="">Toutes catégories</option>
-          <option value="arme">⚔️ Arme</option>
-          <option value="armure">🛡️ Armure</option>
-          <option value="accessoire">💍 Accessoire</option>
-          <option value="materiaux">🧱 Matériaux</option>
-          <option value="ressources">⛏️ Ressources</option>
-          <option value="consommable">🧪 Consommable</option>
-          <option value="rune">🔮 Rune</option>
-        </select>
-        <button class="btn btn-ghost" onclick="previewNormalize()" style="font-size:12px;">👁️ Prévisualiser</button>
-        <button class="btn" onclick="runNormalize()" style="background:var(--warn);color:#fff;font-size:12px;">⚡ Normaliser</button>
+    <!-- Tab Texture Pack -->
+    <div id="img-tab-textures" style="display:none;">
+      <!-- Barre d'outils -->
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+        <button class="btn" onclick="document.getElementById('tpk-zip-input').click()" style="background:var(--accent);color:#fff;font-size:12px;">📦 Charger ZIP</button>
+        <input type="file" id="tpk-zip-input" accept=".zip" style="display:none;" onchange="tpkLoadZip(this.files[0])">
+        <button class="btn btn-ghost" id="tpk-gh-btn" onclick="tpkRefreshGithub()" style="font-size:12px;" disabled>🔄 GitHub</button>
+        <button class="btn btn-ghost" id="tpk-visual-btn" onclick="tpkVisualMatch()" style="font-size:12px;" disabled>🔍 Match visuel</button>
+        <button class="btn btn-ghost" id="tpk-save-ref-btn" onclick="tpkSaveReference()" style="font-size:12px;" disabled>📌 Référence</button>
+        <span id="tpk-stats" style="font-size:11px;color:var(--muted);margin-left:auto;"></span>
       </div>
-      <div id="img-norm-preview" style="font-size:12px;"></div>
+      <!-- Recherche globale -->
+      <input type="search" id="tpk-search" placeholder="🔍 Filtrer par nom…" oninput="tpkRender()"
+        style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:12px;outline:none;margin-bottom:10px;">
+      <!-- Bannière mode liaison -->
+      <div id="tpk-link-banner" style="display:none;padding:8px 12px;margin-bottom:8px;background:color-mix(in srgb,var(--warn) 12%,var(--surface2));border:1px solid var(--warn);border-radius:6px;font-size:11px;color:var(--text);"></div>
+      <!-- Deux colonnes -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;">
+        <!-- Gauche : à trier -->
+        <div>
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+            ⬜ À trier <span id="tpk-left-count" style="font-size:11px;font-weight:400;color:var(--muted);"></span>
+          </div>
+          <div id="tpk-left" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:5px;"></div>
+          <button id="tpk-left-more" onclick="tpkLeftMore()" style="display:none;width:100%;margin-top:8px;padding:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;color:var(--text);">Afficher plus…</button>
+        </div>
+        <!-- Droite : arbre GitHub -->
+        <div>
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+            ✅ Organisé <span id="tpk-right-count" style="font-size:11px;font-weight:400;color:var(--muted);"></span>
+          </div>
+          <div id="tpk-right" style="overflow-y:auto;max-height:600px;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Tab Config -->
@@ -1007,6 +1011,12 @@
           <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Branche</label>
           <input type="text" id="img-config-branch" placeholder="main"
             style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:12px;font-family:monospace;outline:none;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Redimensionnement automatique (pixels, carré)</label>
+          <input type="number" id="img-config-resize" placeholder="256" min="16" max="1024" step="16" value="256"
+            style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:12px;font-family:monospace;outline:none;">
+          <div style="font-size:10px;color:var(--muted);margin-top:3px;">Ex : 64, 128, 256. L'image sera recadrée en carré et convertie en PNG.</div>
         </div>
       </div>
     </div>
@@ -1083,6 +1093,34 @@
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<!-- Modal confirmation match visuel -->
+<div id="tpk-match-modal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.7);overflow-y:auto;">
+  <div style="max-width:900px;margin:40px auto;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <span style="font-size:14px;font-weight:700;">🔍 Confirmer les correspondances visuelles</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="tpkMatchSelectAll(true)" style="font-size:11px;">Tout cocher</button>
+        <button class="btn btn-ghost" onclick="tpkMatchSelectAll(false)" style="font-size:11px;">Tout décocher</button>
+        <button class="btn" onclick="tpkMatchApply()" style="background:var(--accent);color:#fff;font-size:12px;">✓ Appliquer <span id="tpk-match-apply-count"></span></button>
+        <button class="btn btn-ghost" onclick="document.getElementById('tpk-match-modal').style.display='none'" style="font-size:12px;">Annuler</button>
+      </div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:14px;">Vérifie visuellement chaque paire. Coche uniquement celles qui sont réellement la même texture (même image, noms différents).</p>
+    <div id="tpk-match-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;"></div>
+  </div>
+</div>
+
+<!-- Lightbox texture pack -->
+<div id="tpk-lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);" onmousedown="tpkLbBgDown(event)">
+  <div id="tpk-lb-wrap" style="position:absolute;inset:0;overflow:hidden;">
+    <img id="tpk-lb-img" draggable="false" style="position:absolute;top:50%;left:50%;image-rendering:pixelated;cursor:grab;user-select:none;" alt="">
+  </div>
+  <div id="tpk-lb-name" style="position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,.55);pointer-events:none;"></div>
+  <button onclick="tpkLbClose()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:16px;cursor:pointer;padding:3px 10px;border-radius:4px;line-height:1.6;">✕</button>
+  <div style="position:absolute;bottom:20px;right:16px;font-size:10px;color:rgba(255,255,255,.3);pointer-events:none;">Molette : zoom · Glisser : déplacer · Esc : fermer</div>
+</div>
 <script src="Map/data.js"></script>
 <script src="utils.js"></script>
 <script type="module" src="moderation.js"></script>

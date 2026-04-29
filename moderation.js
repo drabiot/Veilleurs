@@ -30,7 +30,8 @@ const _modCache = {};
 async function cachedDocs(colName) {
   if (_modCache[colName]) return _modCache[colName];
   const snap = await getDocs(collection(db, colName));
-  _modCache[colName] = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  // _docKey = clé Firestore réelle (peut différer de data.id, ex. items_hidden où la clé est le hash du nom)
+  _modCache[colName] = snap.docs.map(d => ({ _docKey: d.id, id: d.id, ...d.data() }));
   return _modCache[colName];
 }
 function invalidateModCache(colName) {
@@ -894,16 +895,15 @@ window.approve = async (id) => {
       }
       const hash = await hashName(sub.data.name);
       if (!hash) throw new Error('Nom manquant pour hash');
-      await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore(gameplay));
+      await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore({ ...gameplay, sensible: true }));
       // items_secret sert aussi de point d'ancrage pour le _contributor (créé même si vide)
-      await setDoc(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore({ ...secret, _contributor: _contribField }));
+      await setDoc(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore({ ...secret, _contributor: _contribField, sensible: true }));
       // Nettoyer toute version publique existante
       try { await deleteDoc(doc(db, COL.items, String(dataId))); } catch {}
       store.invalidate('items');
     } else if (sub.type === 'mob' && isSensible) {
       // Mob sensible → doc complet dans mobs_secret, jamais dans mobs
-      const payload = { _order: Date.now(), _contributor: _contribField, ...sub.data };
-      delete payload.sensible;
+      const payload = { _order: Date.now(), _contributor: _contribField, ...sub.data, sensible: true };
       await setDoc(doc(db, COL.mobsSecret, String(dataId)), sanitizeForFirestore(payload));
       try { await deleteDoc(doc(db, COL.mobs, String(dataId))); } catch {}
       store.invalidate('mobs');
@@ -3668,19 +3668,26 @@ window.saveEditor = async function() {
       }
       const hash = await hashName(newData.name);
       if (!hash) throw new Error('Nom manquant pour recalculer le hash');
-      // Si le nom a changé, supprimer l'ancien doc items_hidden
+      // Si le nom (donc le hash) a changé, supprimer l'ancien doc items_hidden (keyé par hash)
       if (hash !== _editorId) {
         try { await deleteDoc(doc(db, COL.itemsHidden, _editorId)); } catch {}
       }
-      await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore(gameplay));
+      await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore({ ...gameplay, sensible: true }));
       const itemId = String(newData.id || '');
+      const oldItemId = String(_editorOrigData?.id || '');
+      // Si le publicId a changé, supprimer l'ancien doc items_secret (keyé par publicId) → évite l'orphelin
+      if (oldItemId && oldItemId !== itemId) {
+        try { await deleteDoc(doc(db, COL.itemsSecret, oldItemId)); } catch {}
+      }
       if (itemId) {
         if (Object.keys(secret).length) {
-          await setDoc(doc(db, COL.itemsSecret, itemId), sanitizeForFirestore(secret));
+          await setDoc(doc(db, COL.itemsSecret, itemId), sanitizeForFirestore({ ...secret, sensible: true }));
         } else {
           try { await deleteDoc(doc(db, COL.itemsSecret, itemId)); } catch {}
         }
       }
+      invalidateModCache(COL.itemsHidden);
+      invalidateModCache(COL.itemsSecret);
       // Mettre à jour _sensState en mémoire
       const merged = { ...gameplay, ...secret };
       const idx = _sensState.itemsHidden.findIndex(x => x._id === _editorId);
@@ -3688,6 +3695,8 @@ window.saveEditor = async function() {
       else _sensState.itemsHidden.push({ _id: hash, ...merged });
       _editorId = hash;
       _editorOrigData = { ...newData };
+      // Forcer rechargement propre du panel data-all (sinon affiche encore l'ancien hash)
+      _dataAllLoaded = false;
       btn.textContent = '✔ Sauvegardé'; btn.style.background = '#14532d'; btn.style.color = 'var(--success)';
       setTimeout(() => { btn.disabled = false; btn.textContent = '💾 Sauvegarder'; btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; }, 2500);
       return;
@@ -3779,11 +3788,24 @@ window.deleteCurrentEntry = async function() {
   btn.disabled = true; btn.textContent = '⏳';
   try {
     if (_editorCollection === 'items_sensible') {
-      // Supprimer items_hidden (par hash) + items_secret (par id)
+      // Supprimer items_hidden (par hash). Pour items_secret (par publicId) : seulement
+      // s'il n'existe pas d'autre items_hidden avec le même publicId (cas doublon),
+      // sinon on priverait le sibling de ses données secrètes.
       await deleteDoc(doc(db, COL.itemsHidden, _editorId));
       const itemId = String(_editorOrigData?.id || '');
-      if (itemId) try { await deleteDoc(doc(db, COL.itemsSecret, itemId)); } catch {}
+      if (itemId) {
+        invalidateModCache(COL.itemsHidden);
+        const remaining = await cachedDocs(COL.itemsHidden).catch(() => []);
+        const hasSibling = remaining.some(d => d._docKey !== _editorId && String(d.id || '') === itemId);
+        if (!hasSibling) {
+          try { await deleteDoc(doc(db, COL.itemsSecret, itemId)); } catch {}
+          invalidateModCache(COL.itemsSecret);
+        }
+      } else {
+        invalidateModCache(COL.itemsHidden);
+      }
       _sensState.itemsHidden = _sensState.itemsHidden.filter(x => x._id !== _editorId);
+      _dataAllData = _dataAllData.filter(d => !(d._col === COL.itemsHidden && d._docKey === _editorId));
       editorGoBack();
       return;
     }
@@ -6417,7 +6439,7 @@ async function _appendBrokenImagesSection() {
   imgHeader.textContent = '🖼️ Images — vérification en cours…';
   list.appendChild(imgHeader);
   try {
-    const itemDocs = await cachedDocs('items').catch(() => []);
+    const itemDocs = await _loadItemDocsForImageCheck();
     const broken = await _checkBrokenImages(itemDocs, (done, total) => {
       imgHeader.textContent = `🖼️ Images — ${done} / ${total} vérifiées…`;
     });
@@ -6426,15 +6448,17 @@ async function _appendBrokenImagesSection() {
     } else {
       imgHeader.textContent = `🖼️ Images cassées — ${broken.length} item${broken.length > 1 ? 's' : ''}`;
       for (const { doc: d, brokenUrls } of broken) {
+        const sens = d._sensible === true;
+        const editKey = sens ? (d._docKey || '') : (d.id || '');
         const card = document.createElement('div');
         card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;';
         card.innerHTML = `
-          <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.id||'—')}</span>
+          <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.id||'—')}${sens ? ' <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;vertical-align:middle;">🔒 Sensible</span>' : ''}</span>
           <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
           <div style="width:100%;display:flex;flex-direction:column;gap:3px;">
             ${brokenUrls.map(u => `<span style="font-size:11px;color:var(--danger);font-family:monospace;word-break:break-all;">⛔ ${escHtml(u)}</span>`).join('')}
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="showEditor('items','${escHtml(d.id||'')}',null,'completion')" style="font-size:11px;">✏️ Éditer</button>
+          <button class="btn btn-ghost btn-sm" onclick="_openItemForCompletion('${escHtml(editKey)}',${sens},'completion')" style="font-size:11px;">✏️ Éditer</button>
         `;
         list.appendChild(card);
       }
@@ -6783,6 +6807,45 @@ async function _checkBrokenImages(docs, onProgress) {
   return broken;
 }
 
+// Charge tous les items à vérifier : publics + (admin) sensibles fusionnés.
+// Les images d'un item sensible peuvent vivre dans items_hidden OU items_secret selon le split gameplay/secret.
+async function _loadItemDocsForImageCheck() {
+  const pub = await cachedDocs('items').catch(() => []);
+  if (currentRole !== 'admin') return pub;
+  const [hidden, secret] = await Promise.all([
+    cachedDocs(COL.itemsHidden).catch(() => []),
+    cachedDocs(COL.itemsSecret).catch(() => []),
+  ]);
+  const secretById = new Map(secret.map(s => [String(s.id), s]));
+  const seen = new Set();
+  const sensible = [];
+  for (const h of hidden) {
+    const s = h.id ? (secretById.get(String(h.id)) || {}) : {};
+    sensible.push({ ...h, ...s, _docKey: h._docKey, _sensible: true });
+    if (h.id) seen.add(String(h.id));
+  }
+  for (const s of secret) {
+    if (!seen.has(String(s.id))) sensible.push({ ...s, _sensible: true });
+  }
+  return [...pub, ...sensible];
+}
+
+// Ouvre le bon éditeur pour un item public ou sensible depuis la liste "À compléter".
+window._openItemForCompletion = async function(key, sensible, origin) {
+  if (!sensible) { showEditor('items', key, null, origin || 'completion'); return; }
+  const [hidden, secret] = await Promise.all([
+    cachedDocs(COL.itemsHidden).catch(() => []),
+    cachedDocs(COL.itemsSecret).catch(() => []),
+  ]);
+  const h = hidden.find(x => x._docKey === key);
+  if (!h) { toast('⛔ Item sensible introuvable.', 'error'); return; }
+  const s = h.id ? (secret.find(x => String(x._docKey) === String(h.id)) || {}) : {};
+  const merged = {};
+  for (const [k, v] of Object.entries(h)) { if (k !== '_docKey') merged[k] = v; }
+  for (const [k, v] of Object.entries(s)) { if (k !== '_docKey') merged[k] = v; }
+  showEditor('items_sensible', key, merged, origin || 'completion');
+};
+
 function _fieldEmpty(d, fieldId) {
   if (fieldId === 'coords') return !d.coords || d.coords.x == null;
   // img et images sont interchangeables : si l'un est rempli, l'autre n'est pas manquant
@@ -6909,7 +6972,7 @@ window.loadDataIncomplete = async () => {
   list.appendChild(imgHeader);
 
   try {
-    const itemDocs = await cachedDocs('items').catch(() => []);
+    const itemDocs = await _loadItemDocsForImageCheck();
     const broken = await _checkBrokenImages(itemDocs, (done, total) => {
       imgHeader.textContent = `🖼️ Images — ${done} / ${total} vérifiées…`;
     });
@@ -6919,15 +6982,17 @@ window.loadDataIncomplete = async () => {
     } else {
       imgHeader.textContent = `🖼️ Images cassées — ${broken.length} item${broken.length > 1 ? 's' : ''}`;
       for (const { doc: d, brokenUrls } of broken) {
+        const sens = d._sensible === true;
+        const editKey = sens ? (d._docKey || '') : (d.id || '');
         const card = document.createElement('div');
         card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;';
         card.innerHTML = `
-          <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.id||'—')}</span>
+          <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.id||'—')}${sens ? ' <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;vertical-align:middle;">🔒 Sensible</span>' : ''}</span>
           <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
           <div style="width:100%;display:flex;flex-direction:column;gap:3px;">
             ${brokenUrls.map(u => `<span style="font-size:11px;color:var(--danger);font-family:monospace;word-break:break-all;">⛔ ${escHtml(u)}</span>`).join('')}
           </div>
-          <button class="btn btn-ghost btn-sm" onclick="showEditor('items','${escHtml(d.id||'')}',null,'data-incomplete')" style="font-size:11px;">✏️ Éditer</button>
+          <button class="btn btn-ghost btn-sm" onclick="_openItemForCompletion('${escHtml(editKey)}',${sens},'data-incomplete')" style="font-size:11px;">✏️ Éditer</button>
         `;
         list.appendChild(card);
       }
@@ -7124,9 +7189,9 @@ window.sensItemToSensible = async (sourceId) => {
     const hash = await hashName(item.name);
     if (!hash) throw new Error('hash vide');
 
-    await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore(gameplay));
+    await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore({ ...gameplay, sensible: true }));
     if (Object.keys(secret).length) {
-      await setDoc(doc(db, COL.itemsSecret, sourceId), sanitizeForFirestore(secret));
+      await setDoc(doc(db, COL.itemsSecret, sourceId), sanitizeForFirestore({ ...secret, sensible: true }));
     }
     await deleteDoc(doc(db, COL.items, sourceId));
 
@@ -7182,7 +7247,7 @@ window.sensMobToSensible = async (sourceId) => {
   try {
     const payload = {};
     for (const [k, v] of Object.entries(mob)) if (k !== '_id') payload[k] = v;
-    delete payload.sensible; // on garde pas le flag, la collection suffit
+    payload.sensible = true;
 
     await setDoc(doc(db, COL.mobsSecret, sourceId), sanitizeForFirestore(payload));
     await deleteDoc(doc(db, COL.mobs, sourceId));
@@ -7286,6 +7351,7 @@ window.sensMobToPublic = async (sourceId) => {
 let _imgConfig = null; // { token, repo, branch, templates }
 let _imgSelectedItem = null;
 let _imgFile = null;
+let _imgResize = 256;
 let _imgActiveTab = 'upload';
 
 // Templates de référence — format web (préfixe ../ requis pour les pages en sous-dossier).
@@ -7304,6 +7370,25 @@ const IMG_DEFAULT_TEMPLATES = {
   donjon:      '../img/compendium/textures/items/Donjon/{tier}/{id}.png',
   monnaie:     '../img/compendium/textures/items/Monnaie/{tier}/{id}.png',
 };
+
+function _imgResizeToCanvas(file, size) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement('canvas');
+      canvas.width = size; canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, size, size);
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png');
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
 
 function _imgComputePath(item) {
   const tpl = _imgConfig?.templates?.[item.category] || IMG_DEFAULT_TEMPLATES[item.category];
@@ -7343,6 +7428,9 @@ window.loadImagesTool = async function() {
     if (t) t.value = _imgConfig.token || '';
     if (r) r.value = _imgConfig.repo  || '';
     if (b) b.value = _imgConfig.branch || 'main';
+    const s = document.getElementById('img-config-resize');
+    if (s) s.value = _imgConfig.resizeSize ?? 256;
+    _imgResize = _imgConfig.resizeSize ?? 256;
     _renderImgTemplates();
     _buildImgItemSearch();
   } catch(e) {
@@ -7351,16 +7439,18 @@ window.loadImagesTool = async function() {
 };
 
 window.saveImagesConfig = async function() {
-  const token  = document.getElementById('img-config-token')?.value?.trim() || '';
-  const repo   = document.getElementById('img-config-repo')?.value?.trim()  || '';
-  const branch = document.getElementById('img-config-branch')?.value?.trim() || 'main';
+  const token      = document.getElementById('img-config-token')?.value?.trim() || '';
+  const repo       = document.getElementById('img-config-repo')?.value?.trim()  || '';
+  const branch     = document.getElementById('img-config-branch')?.value?.trim() || 'main';
+  const resizeSize = parseInt(document.getElementById('img-config-resize')?.value || '256', 10) || 256;
   // Collecter les templates
   const templates = {};
   document.querySelectorAll('.img-tpl-input').forEach(inp => {
     const cat = inp.dataset.cat;
     if (cat) templates[cat] = inp.value.trim() || IMG_DEFAULT_TEMPLATES[cat];
   });
-  _imgConfig = { ..._imgConfig, token, repo, branch, templates };
+  _imgConfig = { ..._imgConfig, token, repo, branch, templates, resizeSize };
+  _imgResize = resizeSize;
   try {
     await setDoc(doc(db, 'config', 'image_paths'), _imgConfig);
     toast('✓ Config images sauvegardée', 'success');
@@ -7462,13 +7552,25 @@ window.imgFileSelect = function(file) { if (file) _imgSetFile(file); };
 
 function _imgSetFile(file) {
   if (!file.type.startsWith('image/')) { toast('⚠️ Fichier image uniquement', 'warning'); return; }
-  _imgFile = file;
+  const size = _imgResize || 256;
   const preview = document.getElementById('img-drop-preview');
   const placeholder = document.getElementById('img-drop-placeholder');
+  const sizeInfo = document.getElementById('img-resize-info');
   if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = ''; }
   if (placeholder) placeholder.style.display = 'none';
-  const uploadBtn = document.getElementById('img-upload-btn');
-  if (uploadBtn) uploadBtn.disabled = !_imgSelectedItem || !_imgComputePath(_imgSelectedItem);
+  if (sizeInfo) { sizeInfo.textContent = '⏳ Redimensionnement…'; sizeInfo.style.color = 'var(--muted)'; }
+  _imgResizeToCanvas(file, size).then(blob => {
+    _imgFile = new File([blob], file.name.replace(/\.[^.]+$/, '.png'), { type: 'image/png' });
+    if (preview) preview.src = URL.createObjectURL(blob);
+    if (sizeInfo) { sizeInfo.textContent = `✓ Redimensionné : ${size}×${size} px`; sizeInfo.style.color = 'var(--success)'; }
+    const uploadBtn = document.getElementById('img-upload-btn');
+    if (uploadBtn) uploadBtn.disabled = !_imgSelectedItem || !_imgComputePath(_imgSelectedItem);
+  }).catch(() => {
+    _imgFile = file;
+    if (sizeInfo) { sizeInfo.textContent = '⚠️ Redimensionnement échoué'; sizeInfo.style.color = 'var(--warn)'; }
+    const uploadBtn = document.getElementById('img-upload-btn');
+    if (uploadBtn) uploadBtn.disabled = !_imgSelectedItem || !_imgComputePath(_imgSelectedItem);
+  });
 }
 
 window.imgUploadToGithub = async function() {
@@ -7513,8 +7615,11 @@ window.imgUploadToGithub = async function() {
       body: JSON.stringify(body),
     });
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({ message: resp.status }));
-      throw new Error(err.message || String(resp.status));
+      const err = await resp.json().catch(() => ({ message: String(resp.status) }));
+      const msg = resp.status === 404
+        ? 'Repo introuvable ou accès refusé — vérifiez le repo et le token dans Config'
+        : (err.message || String(resp.status));
+      throw new Error(msg);
     }
 
     // Mettre à jour le champ images dans Firestore
@@ -7536,9 +7641,30 @@ window.imgUploadToGithub = async function() {
   }
 };
 
+window.resetImagesTool = async function() {
+  _imgSelectedItem = null;
+  _imgFile = null;
+  const preview     = document.getElementById('img-drop-preview');
+  const placeholder = document.getElementById('img-drop-placeholder');
+  const sizeInfo    = document.getElementById('img-resize-info');
+  const itemInfo    = document.getElementById('img-item-info');
+  const fileInput   = document.getElementById('img-file-input');
+  if (preview)     { preview.src = ''; preview.style.display = 'none'; }
+  if (placeholder) placeholder.style.display = '';
+  if (sizeInfo)    sizeInfo.textContent = '';
+  if (itemInfo)    itemInfo.style.display = 'none';
+  if (fileInput)   fileInput.value = '';
+  const uploadBtn = document.getElementById('img-upload-btn');
+  if (uploadBtn)   uploadBtn.disabled = true;
+  const status = document.getElementById('img-upload-status');
+  if (status)      status.textContent = '';
+  switchImgTab('upload');
+  await loadImagesTool();
+};
+
 window.switchImgTab = function(name) {
   _imgActiveTab = name;
-  const tabs = ['upload', 'templates', 'normalize', 'config'];
+  const tabs = ['upload', 'textures', 'config'];
   for (const t of tabs) {
     const panel = document.getElementById(`img-tab-${t}`);
     const btn   = document.getElementById(`img-tab-btn-${t}`);
@@ -7548,6 +7674,619 @@ window.switchImgTab = function(name) {
     btn.style.background = active ? 'var(--accent)' : 'transparent';
     btn.style.color = active ? '#fff' : 'var(--muted)';
   }
+};
+
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+
+let _lbScale = 1, _lbTx = 0, _lbTy = 0;
+let _lbDrag = false, _lbDragX = 0, _lbDragY = 0;
+
+window.tpkOpenLightbox = function(url, name) {
+  const lb  = document.getElementById('tpk-lightbox');
+  const img = document.getElementById('tpk-lb-img');
+  const nm  = document.getElementById('tpk-lb-name');
+  if (!lb || !img) return;
+  _lbTx = 0; _lbTy = 0; _lbScale = 1;
+  img.src = '';
+  img.onload = () => {
+    const fit = Math.min(window.innerWidth, window.innerHeight) * 0.65;
+    _lbScale = Math.max(1, Math.round(fit / Math.max(img.naturalWidth, img.naturalHeight)));
+    _lbUpdate();
+  };
+  img.src = url;
+  if (nm) nm.textContent = name || '';
+  lb.style.display = '';
+};
+
+window.tpkLbClose = function() {
+  const lb = document.getElementById('tpk-lightbox');
+  if (lb) lb.style.display = 'none';
+};
+
+window.tpkLbBgDown = function(e) {
+  if (e.target === document.getElementById('tpk-lightbox') ||
+      e.target === document.getElementById('tpk-lb-wrap')) tpkLbClose();
+};
+
+function _lbUpdate() {
+  const img = document.getElementById('tpk-lb-img');
+  if (img) img.style.transform = `translate(calc(-50% + ${_lbTx}px), calc(-50% + ${_lbTy}px)) scale(${_lbScale})`;
+}
+
+// Drag
+document.addEventListener('mousedown', e => {
+  const img = document.getElementById('tpk-lb-img');
+  if (e.target !== img) return;
+  _lbDrag = true;
+  _lbDragX = e.clientX - _lbTx;
+  _lbDragY = e.clientY - _lbTy;
+  img.style.cursor = 'grabbing';
+  e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+  if (!_lbDrag) return;
+  _lbTx = e.clientX - _lbDragX;
+  _lbTy = e.clientY - _lbDragY;
+  _lbUpdate();
+});
+document.addEventListener('mouseup', () => {
+  if (_lbDrag) {
+    _lbDrag = false;
+    const img = document.getElementById('tpk-lb-img');
+    if (img) img.style.cursor = 'grab';
+  }
+});
+
+// Zoom molette (centré sur le curseur)
+document.addEventListener('wheel', e => {
+  const lb = document.getElementById('tpk-lightbox');
+  if (!lb || lb.style.display === 'none') return;
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+  const prevScale = _lbScale;
+  _lbScale = Math.max(0.25, Math.min(40, _lbScale * factor));
+  // Ajuster la translation pour zoomer vers le curseur
+  const wrap = document.getElementById('tpk-lb-wrap');
+  if (wrap) {
+    const rect = wrap.getBoundingClientRect();
+    const cx = e.clientX - rect.left - rect.width  / 2;
+    const cy = e.clientY - rect.top  - rect.height / 2;
+    _lbTx += cx * (1 - _lbScale / prevScale);
+    _lbTy += cy * (1 - _lbScale / prevScale);
+  }
+  _lbUpdate();
+}, { passive: false });
+
+// ESC
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const lb = document.getElementById('tpk-lightbox');
+    if (lb && lb.style.display !== 'none') tpkLbClose();
+  }
+});
+
+// ── Texture Pack ──────────────────────────────────────────────────────────────
+
+const TPK_REF_KEY   = 'tpk_reference_filenames';
+const TPK_LINKS_KEY = 'tpk_manual_links';
+const TPK_PAGE      = 60;
+
+let _tpkFiles     = []; // { path, basename, url, isNew, githubPath, matchType }
+let _tpkGhFiles   = []; // all github image paths (sorted)
+let _tpkGhMap     = new Map(); // lowercase basename → github path
+let _tpkGhSha     = new Map(); // github path → sha (for blob API)
+let _tpkGhInverse = new Map(); // github path → { url, matchType, tpkFile }
+let _tpkManual    = new Map(); // tpk path → github path (manual links)
+let _tpkLinkSrc   = null;     // tpk file being linked
+let _tpkLeftVis   = [];
+let _tpkLeftPage  = 0;
+let _tpkFolders   = {};       // folderPath → collapsed bool
+
+// ── Persistance liens manuels ────────────────────────────────────────────────
+
+function _tpkLoadManual() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TPK_LINKS_KEY) || '{}');
+    _tpkManual = new Map();
+    for (const [k, v] of Object.entries(raw)) {
+      // Normalise les anciennes clés (full path) vers basename
+      const base = k.includes('/') ? k.split('/').pop().replace(/\.[^.]+$/, '').toLowerCase() : k;
+      if (!_tpkManual.has(base)) _tpkManual.set(base, v);
+    }
+  } catch { _tpkManual = new Map(); }
+}
+function _tpkSaveManual() {
+  localStorage.setItem(TPK_LINKS_KEY, JSON.stringify(Object.fromEntries(_tpkManual)));
+}
+
+// ── Chargement ZIP ───────────────────────────────────────────────────────────
+
+window.tpkLoadZip = async function(file) {
+  if (!file) return;
+  const statsEl = document.getElementById('tpk-stats');
+  if (statsEl) statsEl.textContent = '⏳ Lecture du ZIP…';
+  _tpkLinkSrc = null;
+  _tpkLoadManual();
+  try {
+    const zip  = await JSZip.loadAsync(file);
+    const ref  = new Set(JSON.parse(localStorage.getItem(TPK_REF_KEY) || '[]'));
+    const tasks = [];
+    zip.forEach((relPath, entry) => {
+      if (entry.dir) return;
+      const low = relPath.toLowerCase();
+      if (!low.endsWith('.png') && !low.endsWith('.jpg') && !low.endsWith('.jpeg')) return;
+      tasks.push(entry.async('blob').then(blob => ({
+        path: relPath,
+        basename: relPath.split('/').pop().replace(/\.[^.]+$/, '').toLowerCase(),
+        url: URL.createObjectURL(blob),
+        isNew: ref.size > 0 && !ref.has(relPath),
+        githubPath: null, matchType: null,
+      })));
+    });
+    _tpkFiles = await Promise.all(tasks);
+    _tpkFiles.sort((a, b) => a.path.localeCompare(b.path));
+    document.getElementById('tpk-save-ref-btn').disabled = false;
+    const vBtn = document.getElementById('tpk-visual-btn');
+    if (vBtn) vBtn.disabled = false;
+    if (_tpkGhMap.size === 0) await _tpkFetchGhTree();
+    _tpkApplyMatch();
+    tpkRender();
+  } catch(e) {
+    if (statsEl) statsEl.textContent = '⛔ ' + e.message;
+    toast('⛔ Erreur ZIP : ' + e.message, 'error');
+  }
+};
+
+// ── GitHub tree ──────────────────────────────────────────────────────────────
+
+async function _tpkFetchGhTree() {
+  const token  = _imgConfig?.token  || '';
+  const repo   = _imgConfig?.repo   || '';
+  const branch = _imgConfig?.branch || 'main';
+  if (!token || !repo) return;
+  const ghBtn = document.getElementById('tpk-gh-btn');
+  if (ghBtn) { ghBtn.disabled = true; ghBtn.textContent = '⏳…'; }
+  try {
+    const resp = await fetch(
+      `https://api.github.com/repos/${repo}/git/trees/${branch}?recursive=1`,
+      { headers: { Authorization: `token ${token}` } }
+    );
+    if (!resp.ok) throw new Error(resp.status);
+    const data = await resp.json();
+    _tpkGhMap.clear(); _tpkGhFiles = []; _tpkGhSha.clear();
+    (data.tree || []).forEach(node => {
+      if (node.type !== 'blob') return;
+      const low = node.path.toLowerCase();
+      if (!low.endsWith('.png') && !low.endsWith('.jpg') && !low.endsWith('.jpeg')) return;
+      const base = node.path.split('/').pop().replace(/\.[^.]+$/, '').toLowerCase();
+      _tpkGhMap.set(base, node.path);
+      _tpkGhSha.set(node.path, node.sha);
+      _tpkGhFiles.push(node.path);
+    });
+    _tpkGhFiles.sort();
+    if (ghBtn) { ghBtn.disabled = false; ghBtn.textContent = '🔄 GitHub'; }
+    toast(`✓ ${_tpkGhFiles.length} fichiers GitHub`, 'success');
+  } catch(e) {
+    if (ghBtn) { ghBtn.disabled = false; ghBtn.textContent = '🔄 GitHub'; }
+    toast('⛔ Erreur GitHub : ' + e.message, 'error');
+  }
+}
+
+window.tpkRefreshGithub = async function() {
+  _tpkGhMap.clear(); _tpkGhFiles = [];
+  await _tpkFetchGhTree();
+  _tpkApplyMatch();
+  tpkRender();
+};
+
+// ── Matching (auto + manuel) ─────────────────────────────────────────────────
+
+function _tpkApplyMatch() {
+  _tpkGhInverse.clear();
+  for (const f of _tpkFiles) {
+    const manual = _tpkManual.get(f.path);
+    const auto   = _tpkGhMap.get(f.basename);
+    if (manual === '__none__') {
+      // Blacklisté : faux positif confirmé par hash visuel
+      f.githubPath = null; f.matchType = null;
+    } else if (manual) {
+      f.githubPath = manual; f.matchType = 'manual';
+      _tpkGhInverse.set(manual, { url: f.url, matchType: 'manual', tpkFile: f });
+    } else if (auto && !_tpkGhInverse.has(auto)) {
+      f.githubPath = auto; f.matchType = 'auto';
+      _tpkGhInverse.set(auto, { url: f.url, matchType: 'auto', tpkFile: f });
+    } else {
+      f.githubPath = null; f.matchType = null;
+    }
+  }
+}
+
+// ── Rendu gauche (grille) ────────────────────────────────────────────────────
+
+window.tpkRender = function() {
+  const q = (document.getElementById('tpk-search')?.value || '').toLowerCase();
+  _tpkLeftVis = _tpkFiles.filter(f => !f.githubPath && (!q || f.path.toLowerCase().includes(q)));
+  _tpkLeftVis.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0) || a.path.localeCompare(b.path));
+
+  const newCount = _tpkFiles.filter(f => f.isNew && !f.githubPath).length;
+  const statsEl = document.getElementById('tpk-stats');
+  if (statsEl) statsEl.textContent = `${_tpkFiles.length} textures · ${_tpkGhInverse.size} matchées · ${_tpkLeftVis.length} à trier${newCount ? ` · ${newCount} nouvelles` : ''}`;
+
+  const lc = document.getElementById('tpk-left-count');
+  const rc = document.getElementById('tpk-right-count');
+  if (lc) lc.textContent = `(${_tpkLeftVis.length})`;
+  if (rc) rc.textContent = `(${_tpkGhInverse.size}/${_tpkGhFiles.length})`;
+
+  const banner = document.getElementById('tpk-link-banner');
+  if (banner) {
+    if (_tpkLinkSrc) {
+      banner.style.display = '';
+      banner.textContent = `🔗 Mode liaison actif — clique sur le "?" correspondant à droite pour lier "${_tpkLinkSrc.path.split('/').pop()}" · reclique sur la texture pour annuler`;
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  const leftEl = document.getElementById('tpk-left');
+  const leftMore = document.getElementById('tpk-left-more');
+  if (leftEl) leftEl.innerHTML = '';
+  if (leftMore) leftMore.style.display = 'none';
+  _tpkLeftPage = 0;
+  tpkLeftMore();
+  _tpkRenderTree(q);
+};
+
+window.tpkLeftMore = function() {
+  const el  = document.getElementById('tpk-left');
+  const btn = document.getElementById('tpk-left-more');
+  if (!el) return;
+  _tpkLeftVis.slice(_tpkLeftPage * TPK_PAGE, (_tpkLeftPage + 1) * TPK_PAGE)
+    .forEach(f => el.appendChild(_tpkMakeLeftCell(f)));
+  _tpkLeftPage++;
+  if (btn) btn.style.display = _tpkLeftPage * TPK_PAGE < _tpkLeftVis.length ? '' : 'none';
+};
+
+function _tpkMakeLeftCell(f) {
+  const name = f.path.split('/').pop();
+  const selected = _tpkLinkSrc === f;
+  const border = selected ? 'var(--warn)' : f.isNew ? 'var(--accent)' : 'var(--border)';
+  const bg     = selected ? 'color-mix(in srgb,var(--warn) 15%,var(--surface2))'
+                          : f.isNew ? 'color-mix(in srgb,var(--accent) 10%,var(--surface2))' : 'var(--surface2)';
+  const cell = document.createElement('div');
+  cell.title = f.path;
+  cell.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 3px;border-radius:6px;border:2px solid ${border};background:${bg};position:relative;`;
+  const img = document.createElement('img');
+  img.src = f.url;
+  img.style.cssText = 'width:52px;height:52px;object-fit:contain;image-rendering:pixelated;cursor:zoom-in;display:block;';
+  img.addEventListener('click', e => { e.stopPropagation(); tpkOpenLightbox(f.url, name); });
+  cell.appendChild(img);
+  cell.insertAdjacentHTML('beforeend', `
+    <span style="font-size:9px;color:var(--muted);word-break:break-all;text-align:center;line-height:1.2;max-width:68px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escHtml(name)}</span>
+    ${f.isNew ? '<span style="font-size:8px;color:var(--accent);font-weight:700;">NEW</span>' : ''}`);
+  const linkBtn = document.createElement('button');
+  linkBtn.textContent = '🔗';
+  linkBtn.title = selected ? 'Annuler liaison' : 'Lier manuellement à un fichier GitHub';
+  linkBtn.style.cssText = `position:absolute;top:2px;right:2px;background:${selected ? 'var(--warn)' : 'rgba(0,0,0,.35)'};border:none;border-radius:3px;color:#fff;font-size:9px;padding:1px 3px;cursor:pointer;line-height:1.4;`;
+  linkBtn.addEventListener('click', e => { e.stopPropagation(); _tpkLinkSrc = _tpkLinkSrc === f ? null : f; tpkRender(); });
+  cell.appendChild(linkBtn);
+  return cell;
+}
+
+// ── Rendu droit (arbre dossiers GitHub) ─────────────────────────────────────
+
+function _tpkBuildNode(paths) {
+  const root = {};
+  for (const p of paths) {
+    const parts = p.split('/');
+    let cur = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!cur[parts[i]]) cur[parts[i]] = { __files: [] };
+      cur = cur[parts[i]];
+    }
+    if (!cur.__files) cur.__files = [];
+    cur.__files.push(p);
+  }
+  return root;
+}
+
+function _tpkRenderTree(q) {
+  const el = document.getElementById('tpk-right');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!_tpkGhFiles.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:6px;">Configure le token GitHub puis charge un ZIP.</div>';
+    return;
+  }
+  const files = q ? _tpkGhFiles.filter(p => p.toLowerCase().includes(q)) : _tpkGhFiles;
+  _tpkRenderNode(_tpkBuildNode(files), '', el, 0, !!q);
+}
+
+function _tpkRenderNode(node, prefix, container, depth, forceExpand) {
+  const indent = depth * 16;
+  for (const [key, child] of Object.entries(node)) {
+    if (key === '__files') continue;
+    const fp = prefix ? `${prefix}/${key}` : key;
+    const collapsed = forceExpand ? false : (_tpkFolders[fp] ?? (depth >= 1));
+    const wrap = document.createElement('div');
+    const header = document.createElement('div');
+    header.style.cssText = `display:flex;align-items:center;gap:4px;padding:2px 4px 2px ${indent + 2}px;cursor:pointer;border-radius:4px;font-size:11px;color:var(--text);user-select:none;`;
+    header.innerHTML = `<span style="font-size:9px;opacity:.5;">${collapsed ? '▶' : '▼'}</span><span>📁</span><span>${escHtml(key)}</span>`;
+    header.addEventListener('click', () => {
+      _tpkFolders[fp] = !(_tpkFolders[fp] ?? (depth >= 1));
+      _tpkRenderTree((document.getElementById('tpk-search')?.value || '').toLowerCase());
+    });
+    wrap.appendChild(header);
+    if (!collapsed) {
+      const inner = document.createElement('div');
+      _tpkRenderNode(child, fp, inner, depth + 1, forceExpand);
+      wrap.appendChild(inner);
+    }
+    container.appendChild(wrap);
+  }
+  const files = node.__files || [];
+  if (!files.length) return;
+  const row = document.createElement('div');
+  row.style.cssText = `padding-left:${indent + 18}px;display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 6px;`;
+  files.forEach(ghPath => row.appendChild(_tpkMakeGhCell(ghPath)));
+  container.appendChild(row);
+}
+
+function _tpkMakeGhCell(ghPath) {
+  const match    = _tpkGhInverse.get(ghPath);
+  const name     = ghPath.split('/').pop();
+  const isTarget = _tpkLinkSrc !== null && !match;
+  const cell     = document.createElement('div');
+  cell.title = match
+    ? `${ghPath}\n← ${match.tpkFile.path}${match.matchType === 'manual' ? '\n(lien manuel — clic droit pour supprimer)' : ''}`
+    : ghPath;
+  const border  = match ? (match.matchType === 'manual' ? 'var(--warn)' : 'var(--border)')
+                        : isTarget ? 'var(--accent)' : 'var(--border)';
+  const bg      = isTarget ? 'color-mix(in srgb,var(--accent) 8%,var(--surface2))' : 'var(--surface2)';
+  const opacity = match ? '1' : isTarget ? '1' : '0.4';
+  cell.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 3px;border-radius:5px;cursor:${isTarget ? 'crosshair' : match ? 'pointer' : 'default'};border:1px solid ${border};background:${bg};opacity:${opacity};width:58px;flex-shrink:0;`;
+  const badge = match?.matchType === 'manual' ? '<span style="font-size:7px;color:var(--warn);font-weight:700;">MANUEL</span>' : '';
+  cell.innerHTML = `<span style="font-size:8px;color:var(--muted);word-break:break-all;text-align:center;line-height:1.2;max-width:56px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escHtml(name)}</span>${badge}`;
+  if (match) {
+    const img = document.createElement('img');
+    img.src = match.url;
+    img.style.cssText = 'width:44px;height:44px;object-fit:contain;image-rendering:pixelated;cursor:zoom-in;display:block;';
+    img.addEventListener('click', e => { e.stopPropagation(); tpkOpenLightbox(match.url, name); });
+    cell.insertBefore(img, cell.firstChild);
+    cell.addEventListener('click', () => navigator.clipboard?.writeText(ghPath).then(() => toast(`📋 ${ghPath}`, 'success')));
+    if (match.matchType === 'manual') {
+      cell.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        _tpkManual.delete(match.tpkFile.path);
+        _tpkSaveManual();
+        _tpkApplyMatch();
+        tpkRender();
+        toast('✗ Lien manuel supprimé', 'success');
+      });
+    }
+  } else {
+    const placeholder = document.createElement('div');
+    placeholder.style.cssText = 'width:44px;height:44px;background:var(--surface2);border-radius:3px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--muted);';
+    placeholder.textContent = '?';
+    cell.insertBefore(placeholder, cell.firstChild);
+    if (isTarget) {
+      cell.addEventListener('click', () => {
+        _tpkManual.set(_tpkLinkSrc.path, ghPath);
+        _tpkSaveManual();
+        _tpkLinkSrc = null;
+        _tpkApplyMatch();
+        tpkRender();
+        toast(`✓ Lié : ${name}`, 'success');
+      });
+    }
+  }
+  return cell;
+}
+
+// ── Perceptual hashing (dHash 8×8 = 64 bits) ─────────────────────────────────
+
+function _tpkHash(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const W = 9, H = 8;
+        const c = document.createElement('canvas');
+        c.width = W; c.height = H;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, W, H);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, W, H);
+        const px = ctx.getImageData(0, 0, W, H).data;
+        const hash = new Uint8Array(8);
+        let bit = 0;
+        for (let y = 0; y < H; y++) {
+          for (let x = 0; x < W - 1; x++) {
+            const i = (y * W + x) * 4;
+            const g1 = px[i] * 0.299 + px[i+1] * 0.587 + px[i+2] * 0.114;
+            const g2 = px[i+4] * 0.299 + px[i+5] * 0.587 + px[i+6] * 0.114;
+            if (g1 > g2) hash[bit >> 3] |= 1 << (bit & 7);
+            bit++;
+          }
+        }
+        resolve(hash);
+      } catch(e) { reject(e); }
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function _tpkHamming(h1, h2) {
+  let d = 0;
+  for (let i = 0; i < 8; i++) {
+    let x = h1[i] ^ h2[i];
+    while (x) { d += x & 1; x >>>= 1; }
+  }
+  return d;
+}
+
+let _tpkMatchCandidates = []; // { tpkFile, ghPath, tpkUrl, ghUrl, dist, remove }
+
+window.tpkVisualMatch = async function() {
+  const autoMatched = _tpkFiles.filter(f => f.matchType === 'auto');
+  const unmatched   = _tpkFiles.filter(f => !f.githubPath);
+  const allTpk      = [...autoMatched, ...unmatched];
+  if (!allTpk.length) { toast('Rien à analyser', 'info'); return; }
+
+  const token   = _imgConfig?.token || '';
+  const repo    = _imgConfig?.repo  || '';
+  const statsEl = document.getElementById('tpk-stats');
+  const btn     = document.getElementById('tpk-visual-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳…'; }
+
+  try {
+    // 1. Hash texture pack
+    if (statsEl) statsEl.textContent = `⏳ Hash textures (${allTpk.length})…`;
+    const tpkHashes = new Map();
+    for (const f of allTpk) {
+      try { tpkHashes.set(f, await _tpkHash(f.url)); } catch {}
+    }
+
+    // 2. Télécharger images GitHub nécessaires
+    const ghToFetch = new Set([
+      ..._tpkGhFiles.filter(p => !_tpkGhInverse.has(p)),
+      ...autoMatched.map(f => f.githubPath).filter(Boolean),
+    ]);
+    const ghHashes  = new Map();
+    const ghBlobUrl = new Map(); // pour affichage dans le modal
+    const ghPaths   = [...ghToFetch];
+    const BATCH     = 8;
+    for (let i = 0; i < ghPaths.length; i += BATCH) {
+      if (statsEl) statsEl.textContent = `⏳ GitHub (${i}/${ghPaths.length})…`;
+      await Promise.all(ghPaths.slice(i, i + BATCH).map(async ghPath => {
+        try {
+          const sha  = _tpkGhSha.get(ghPath);
+          if (!sha) return;
+          const resp = await fetch(
+            `https://api.github.com/repos/${repo}/git/blobs/${sha}`,
+            { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.raw' } }
+          );
+          if (!resp.ok) return;
+          const blob    = await resp.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          ghBlobUrl.set(ghPath, blobUrl);
+          ghHashes.set(ghPath, await _tpkHash(blobUrl));
+        } catch {}
+      }));
+    }
+
+    // 3. Construire les candidats à confirmer
+    _tpkMatchCandidates = [];
+
+    // Faux positifs auto (à retirer)
+    for (const f of autoMatched) {
+      const th = tpkHashes.get(f);
+      const gh = ghHashes.get(f.githubPath);
+      if (!th || !gh) continue;
+      const dist = _tpkHamming(th, gh);
+      if (dist > 6) { // probable faux positif → proposer la suppression
+        _tpkMatchCandidates.push({ tpkFile: f, ghPath: f.githubPath, tpkUrl: f.url, ghUrl: ghBlobUrl.get(f.githubPath), dist, remove: true });
+      }
+    }
+
+    // Nouveaux matchs potentiels
+    _tpkApplyMatch();
+    const stillUnmatched = _tpkFiles.filter(f => !f.githubPath);
+    const stillFreeGh    = _tpkGhFiles.filter(p => !_tpkGhInverse.has(p) && ghHashes.has(p));
+    const pairs = [];
+    for (const f of stillUnmatched) {
+      const th = tpkHashes.get(f);
+      if (!th) continue;
+      for (const ghPath of stillFreeGh) {
+        const gh = ghHashes.get(ghPath);
+        if (!gh) continue;
+        pairs.push({ f, ghPath, dist: _tpkHamming(th, gh) });
+      }
+    }
+    pairs.sort((a, b) => a.dist - b.dist);
+    const usedGh  = new Set();
+    const usedTpk = new Set();
+    for (const { f, ghPath, dist } of pairs) {
+      if (dist > 8) break;
+      if (usedTpk.has(f) || usedGh.has(ghPath)) continue;
+      _tpkMatchCandidates.push({ tpkFile: f, ghPath, tpkUrl: f.url, ghUrl: ghBlobUrl.get(ghPath), dist, remove: false });
+      usedTpk.add(f); usedGh.add(ghPath);
+    }
+
+    if (!_tpkMatchCandidates.length) {
+      toast('Aucune correspondance trouvée', 'info');
+      return;
+    }
+    _tpkShowMatchModal();
+  } catch(e) {
+    toast('⛔ ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔍 Match visuel'; }
+  }
+};
+
+function _tpkShowMatchModal() {
+  const grid  = document.getElementById('tpk-match-grid');
+  const modal = document.getElementById('tpk-match-modal');
+  if (!grid || !modal) return;
+  grid.innerHTML = '';
+
+  _tpkMatchCandidates.forEach((c, i) => {
+    const tpkName = c.tpkFile.path.split('/').pop();
+    const ghName  = c.ghPath.split('/').pop();
+    const card    = document.createElement('label');
+    card.style.cssText = `display:flex;gap:10px;align-items:center;padding:10px;border-radius:8px;border:2px solid ${c.remove ? 'var(--danger,#e55)' : 'var(--border)'};background:var(--surface2);cursor:pointer;`;
+    card.innerHTML = `
+      <input type="checkbox" data-idx="${i}" ${c.remove ? '' : 'checked'} onchange="tpkMatchUpdateCount()" style="accent-color:var(--accent);width:16px;height:16px;flex-shrink:0;">
+      <img src="${c.tpkUrl}" style="width:48px;height:48px;object-fit:contain;image-rendering:pixelated;flex-shrink:0;" title="${c.tpkFile.path}">
+      <span style="font-size:16px;color:var(--muted);">${c.remove ? '✕' : '→'}</span>
+      <img src="${c.ghUrl || ''}" style="width:48px;height:48px;object-fit:contain;image-rendering:pixelated;flex-shrink:0;${!c.ghUrl ? 'opacity:.3' : ''}" title="${c.ghPath}">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${c.tpkFile.path}">${tpkName}</div>
+        <div style="font-size:9px;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${c.ghPath}">${c.remove ? '✕ ' : '→ '}${ghName}</div>
+        <div style="font-size:8px;color:var(--muted);opacity:.6;">dist: ${c.dist}/64${c.remove ? ' · faux positif ?' : ''}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  tpkMatchUpdateCount();
+  modal.style.display = '';
+}
+
+window.tpkMatchUpdateCount = function() {
+  const checked = document.querySelectorAll('#tpk-match-grid input[type=checkbox]:checked').length;
+  const el = document.getElementById('tpk-match-apply-count');
+  if (el) el.textContent = `(${checked})`;
+};
+
+window.tpkMatchSelectAll = function(val) {
+  document.querySelectorAll('#tpk-match-grid input[type=checkbox]').forEach(cb => { cb.checked = val; });
+  tpkMatchUpdateCount();
+};
+
+window.tpkMatchApply = function() {
+  document.querySelectorAll('#tpk-match-grid input[type=checkbox]:checked').forEach(cb => {
+    const c = _tpkMatchCandidates[+cb.dataset.idx];
+    if (!c) return;
+    if (c.remove) _tpkManual.set(c.tpkFile.path, '__none__');
+    else          _tpkManual.set(c.tpkFile.path, c.ghPath);
+  });
+  _tpkSaveManual();
+  _tpkApplyMatch();
+  tpkRender();
+  document.getElementById('tpk-match-modal').style.display = 'none';
+  toast(`✓ Correspondances appliquées`, 'success');
+};
+
+window.tpkSaveReference = function() {
+  const paths = _tpkFiles.map(f => f.path);
+  localStorage.setItem(TPK_REF_KEY, JSON.stringify(paths));
+  _tpkFiles.forEach(f => { f.isNew = false; });
+  tpkRender();
+  toast(`✓ Référence sauvegardée (${paths.length} textures)`, 'success');
 };
 
 window.previewNormalize = async function() {
@@ -7662,6 +8401,9 @@ window.runMigrateOcculteIds = async function() {
     let flaggedCount = 0;
     for (const item of occulteItems) {
       const oldId = item.id || item._id || '';
+      // docKey = clé Firestore réelle. Pour items_hidden c'est le hash du nom (≠ publicId).
+      // Pour items, c'est le publicId.
+      const docKey = item._docKey || oldId;
       const palier = item.palier;
       const idNeedsRename = !/_p[123]$/.test(oldId);
       const flagNeedsAdd  = item.occulte !== true;
@@ -7673,11 +8415,13 @@ window.runMigrateOcculteIds = async function() {
           if (!palier) { log.push(`⚠️ ${oldId} — palier manquant, ignoré`); continue; }
           const newId = `${oldId}_p${palier}`;
           const payload = { ...item, id: newId, occulte: true };
-          delete payload._col; delete payload._id;
-          await setDoc(doc(db, item._col, newId), sanitizeForFirestore(payload));
-          await deleteDoc(doc(db, item._col, oldId));
-          // Pour items sensibles, aussi renommer items_secret si existe
+          delete payload._col; delete payload._id; delete payload._docKey;
+
           if (item._col === COL.itemsHidden) {
+            // items_hidden est keyé par hash : on n'écrit/supprime QUE via docKey,
+            // jamais via publicId (sinon on crée un doc parasite)
+            await setDoc(doc(db, item._col, docKey), sanitizeForFirestore(payload));
+            // items_secret est keyé par publicId : renommer oldId → newId
             try {
               const secSnap = await getDoc(doc(db, COL.itemsSecret, oldId));
               if (secSnap.exists()) {
@@ -7685,17 +8429,22 @@ window.runMigrateOcculteIds = async function() {
                 await deleteDoc(doc(db, COL.itemsSecret, oldId));
               }
             } catch {}
+          } else {
+            // items : la clé EST le publicId, donc rename = setDoc(newId) + deleteDoc(oldId)
+            await setDoc(doc(db, item._col, newId), sanitizeForFirestore(payload));
+            await deleteDoc(doc(db, item._col, oldId));
           }
           renamedCount++;
           if (flagNeedsAdd) flaggedCount++;
           log.push(`✓ ${oldId} → ${newId} (+ occulte: true)`);
         } else {
-          // ID déjà bon, on ajoute juste le booléen
-          await updateDoc(doc(db, item._col, oldId), { occulte: true });
+          // ID déjà bon, on ajoute juste le booléen — utiliser docKey (hash pour items_hidden)
+          await updateDoc(doc(db, item._col, docKey), { occulte: true });
           flaggedCount++;
           log.push(`✓ ${oldId} (+ occulte: true)`);
         }
         store.invalidate('items');
+        invalidateModCache(item._col);
       } catch(e) {
         log.push(`⛔ ${oldId} : ${e.message}`);
       }
@@ -7713,6 +8462,49 @@ window.runMigrateOcculteIds = async function() {
     toast('⛔ Erreur migration : ' + e.message, 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '🔑 Migration IDs Occultes'; }
+  }
+};
+
+// ── Backfill flag sensible ─────────────────────────
+// Ajoute sensible: true à tous les docs des collections "secrètes"
+// (items_hidden, items_secret, mobs_secret) qui ne l'ont pas.
+window.runBackfillSensibleFlag = async function() {
+  if (!await modal.confirm(
+    'Ajoute sensible: true à tous les docs de items_hidden, items_secret et mobs_secret qui ne l\'ont pas.\n\nContinuer ?'
+  )) return;
+
+  const btn = document.getElementById('btn-backfill-sensible');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Backfill…'; }
+
+  try {
+    const targets = [COL.itemsHidden, COL.itemsSecret, COL.mobsSecret];
+    let updated = 0;
+    let alreadyOk = 0;
+    const log = [];
+    for (const colName of targets) {
+      let docs;
+      try { docs = await cachedDocs(colName); }
+      catch(e) { log.push(`⛔ ${colName} : ${e.message}`); continue; }
+      for (const d of docs) {
+        if (d.sensible === true) { alreadyOk++; continue; }
+        // _docKey = clé Firestore réelle (hash pour items_hidden, publicId ailleurs)
+        const docKey = d._docKey || d.id;
+        try {
+          await updateDoc(doc(db, colName, docKey), { sensible: true });
+          updated++;
+        } catch(e) {
+          log.push(`⛔ ${colName}/${docKey} : ${e.message}`);
+        }
+      }
+      invalidateModCache(colName);
+    }
+    const summary = `Backfill terminé : ${updated} doc(s) mis à jour, ${alreadyOk} déjà OK.${log.length ? '\n\n' + log.join('\n') : ''}`;
+    await modal.confirm(summary);
+    toast(`✓ ${updated} doc(s) mis à jour`, 'success');
+  } catch(e) {
+    toast('⛔ Erreur backfill : ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔒 Backfill flag sensible'; }
   }
 };
 
@@ -8462,51 +9254,72 @@ window.showDataAll = async function() {
   else renderDataAll();
 };
 
+let _loadDataAllInFlight = null;
 window.loadDataAll = async function() {
-  _dataAllLoaded = false;
-  _dataAllData   = [];
-  const listEl = document.getElementById('data-all-list');
-  if (listEl) listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  // Garde anti-réentrance : si un load est déjà en cours, on retourne sa promesse
+  // → évite que deux clics rapides (ou hash routing + bouton) doublent _dataAllData
+  if (_loadDataAllInFlight) return _loadDataAllInFlight;
+  _loadDataAllInFlight = (async () => {
+    _dataAllLoaded = false;
+    _dataAllData   = [];
+    const listEl = document.getElementById('data-all-list');
+    if (listEl) listEl.innerHTML = '<div class="empty">Chargement…</div>';
 
-  try {
-    for (const [type, conf] of Object.entries(_DATA_ALL_COLS)) {
-      const docs = await cachedDocs(conf.col);
-      for (const d of docs) {
-        _dataAllData.push({
-          _type:  type,
-          _col:   conf.col,
-          _icon:  conf.label,
-          id:     d.id,
-          name:   d[conf.nameKey] || d.name || d.id,
-          ...d
-        });
-      }
-    }
-    // Ajouter les items sensibles (items_hidden + compléments items_secret)
-    // Dédupliquer par id logique : ne pas ajouter si un item avec le même id est déjà dans la liste
     try {
-      const existingItemIds = new Set(
-        _dataAllData.filter(d => d._type === 'item').map(d => String(d.id))
-      );
-      const hiddenDocs = await cachedDocs(COL.itemsHidden);
-      const secretDocs = await cachedDocs(COL.itemsSecret).catch(() => []);
-      const secretMap  = new Map(secretDocs.map(d => [String(d.id || d._id || ''), d]));
-      for (const d of hiddenDocs) {
-        if (existingItemIds.has(String(d.id))) continue;
-        const sec = secretMap.get(String(d.id || '')) || {};
-        _dataAllData.push({
-          _type: 'item', _col: COL.itemsHidden, _icon: '⚔️',
-          id: d.id, name: d.name || d.id,
-          sensible: true,
-          ...d, ...sec,
-        });
+      for (const [type, conf] of Object.entries(_DATA_ALL_COLS)) {
+        const docs = await cachedDocs(conf.col);
+        for (const d of docs) {
+          _dataAllData.push({
+            _type:  type,
+            _col:   conf.col,
+            _icon:  conf.label,
+            _docKey: d._docKey,
+            id:     d.id,
+            name:   d[conf.nameKey] || d.name || d.id,
+            ...d
+          });
+        }
       }
-    } catch {}
-    _dataAllLoaded = true;
-    renderDataAll();
-  } catch(e) {
-    if (listEl) listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
-  }
+      // Ajouter les items sensibles (items_hidden + compléments items_secret)
+      // Dédupliquer par id logique : ne pas ajouter si un item avec le même id est déjà dans la liste
+      try {
+        const existingItemIds = new Set(
+          _dataAllData.filter(d => d._type === 'item').map(d => String(d.id))
+        );
+        const hiddenDocs = await cachedDocs(COL.itemsHidden);
+        const secretDocs = await cachedDocs(COL.itemsSecret).catch(() => []);
+        const secretMap  = new Map(secretDocs.map(d => [String(d.id || d._id || ''), d]));
+        for (const d of hiddenDocs) {
+          if (existingItemIds.has(String(d.id))) continue;
+          const sec = secretMap.get(String(d.id || '')) || {};
+          _dataAllData.push({
+            _type: 'item', _col: COL.itemsHidden, _icon: '⚔️',
+            _docKey: d._docKey,                      // hash réel (clé Firestore)
+            id: d.id, name: d.name || d.id,
+            sensible: true,
+            ...d, ...sec,
+            _docKey: d._docKey,                      // re-protéger après spread (sec.id ne doit pas écraser)
+          });
+        }
+      } catch {}
+
+      // Filet de sécurité : dédup finale par (collection, clé Firestore réelle)
+      const _seen = new Set();
+      _dataAllData = _dataAllData.filter(d => {
+        const k = `${d._col}::${d._docKey || d.id}`;
+        if (_seen.has(k)) return false;
+        _seen.add(k);
+        return true;
+      });
+
+      _dataAllLoaded = true;
+      renderDataAll();
+    } catch(e) {
+      if (listEl) listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
+    }
+  })();
+  try { await _loadDataAllInFlight; }
+  finally { _loadDataAllInFlight = null; }
 };
 
 window.onDataAllTypeChange = function() {
@@ -8614,7 +9427,11 @@ window.renderDataAll = function() {
     editBtn.style.cssText = 'font-size:11px;padding:3px 8px;flex-shrink:0;';
     editBtn.textContent = '✏️';
     editBtn.title = 'Éditer dans le panneau';
-    editBtn.onclick = () => showEditor(d.sensible ? 'items_sensible' : (d._col || COL_MAP[d._type] || d._type), d.id, d, 'data-all');
+    editBtn.onclick = () => showEditor(
+      d.sensible ? 'items_sensible' : (d._col || COL_MAP[d._type] || d._type),
+      d.sensible ? (d._docKey || d.id) : d.id,    // items sensibles : passer le hash (clé Firestore), pas le publicId
+      d, 'data-all'
+    );
 
     row.appendChild(nameEl);
     row.appendChild(idEl);

@@ -328,18 +328,6 @@ window.addEventListener('DOMContentLoaded', () => {
   buildOrphanSection();
   buildEffectTemplates();
 
-  // Auto-correction des lores au blur (majuscule initiale + point final)
-  ['f-lore','mob-lore','reg-lore'].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('blur', () => {
-      const fixed = normalizeLore(el.value);
-      if (fixed !== el.value) {
-        el.value = fixed;
-        if (typeof update === 'function') update();
-      }
-    });
-  });
 
   loadAuthor();
   loadHistory();
@@ -654,8 +642,8 @@ function saveForm() {
       threshold: { ...selThreshold },
       runeSlots: document.getElementById('f-rune-slots')?.value || '',
       set:       setDrop?.getValue() || '',
-      // Mob form
-      mob: creatorMode === 'mob' ? {
+      // Mob form (sauvegardé en permanence pour ne pas perdre les données en changeant de mode)
+      mob: {
         name:      document.getElementById('mob-name')?.value || '',
         id:        document.getElementById('mob-id')?.value   || '',
         idLocked:  mobIdLocked,
@@ -672,9 +660,9 @@ function saveForm() {
         x:    document.getElementById('mob-x')?.value || '',
         y:    document.getElementById('mob-y')?.value || '',
         z:    document.getElementById('mob-z')?.value || '',
-      } : null,
+      },
       // PNJ form
-      pnj: creatorMode === 'pnj' ? {
+      pnj: {
         id:            document.getElementById('pnj-id')?.value      || '',
         type:          document.getElementById('pnj-type')?.value     || '',
         palier:        document.getElementById('pnj-palier')?.value   || '',
@@ -686,9 +674,9 @@ function saveForm() {
         underground:   pnjUnderground,
         sells:  pnjSells.map(s => ({ itemId: s.itemId, buy: s.buy, price: s.price })),
         crafts: pnjCrafts.map(c => ({ resultId: c.resultId, time: c.time, quality: c.quality, ingredients: c.ingredients.map(i => ({ itemId: i.itemId, qty: i.qty })) })),
-      } : null,
+      },
       // Région form
-      region: creatorMode === 'region' ? {
+      region: {
         name:    document.getElementById('reg-name')?.value   || '',
         id:      document.getElementById('reg-id')?.value     || '',
         idLocked: regIdLocked,
@@ -697,16 +685,16 @@ function saveForm() {
         inCodex: regInCodex,
         canTp:   regCanTp,
         coords: (() => { const x = document.getElementById('reg-x')?.value, y = document.getElementById('reg-y')?.value, z = document.getElementById('reg-z')?.value; return (x !== '' && y !== '' && z !== '') ? { x, y, z } : null; })(),
-      } : null,
+      },
       // Panoplie form
-      panoplie: creatorMode === 'panoplie' ? {
+      panoplie: {
         label:    document.getElementById('panop-label')?.value || '',
         id:       document.getElementById('panop-id')?.value    || '',
         idLocked: panopIdLocked,
         bonuses:  panopBonuses.map(b => ({ pieces: b.pieces, stat: b.stat, value: b.value })),
-      } : null,
+      },
       // Quest form
-      quest: creatorMode === 'quest' ? {
+      quest: {
         titre:  document.getElementById('quest-titre')?.value || '',
         id:     document.getElementById('quest-id')?.value   || '',
         type:   document.getElementById('quest-type')?.value  || '',
@@ -724,7 +712,7 @@ function saveForm() {
           location: o.location ? { ...o.location } : null,
         })),
         rews: questRecompenses.map(r => ({ uid: r.uid, type: r.type, value: r.value, itemId: r.itemId, qte: r.qte })),
-      } : null,
+      },
     };
     localStorage.setItem('vcl_form_v2', JSON.stringify(data));
   } catch(e) {}
@@ -938,7 +926,7 @@ function restoreForm(forcedMode) {
     }
 
     // ── Quest form ──
-    if (d.quest && d._mode === 'quest') {
+    if (d.quest) {
       const q = d.quest;
       if (q.titre) document.getElementById('quest-titre').value = q.titre;
       if (q.id)    document.getElementById('quest-id').value    = q.id;

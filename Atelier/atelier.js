@@ -1770,6 +1770,7 @@ function loadAccessoriesForClass(classId) {
 		buildLevel = 1;
 		caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
 
+		const sensiblePending = [];
 		try {
 			const raw = localStorage.getItem(getBuildKey(idx));
 			if (raw) {
@@ -1778,9 +1779,16 @@ function loadAccessoriesForClass(classId) {
 					Object.entries(parsed.slots).forEach(function(e) {
 						const slotId = e[0];
 						const entry  = e[1];
-						const itemId = typeof entry === 'string' ? entry : entry.id;
-						const item   = ITEMS.find(function(i) { return i.id === itemId; });
-						if (item) equipped[slotId] = item;
+						const itemId   = typeof entry === 'string' ? entry : entry.id;
+						const itemName = typeof entry === 'string' ? null  : entry.name;
+						const item     = ITEMS.find(function(i) { return i.id === itemId; });
+						if (item) {
+							equipped[slotId] = item;
+						} else if (itemId && _hiddenCache.has(itemId)) {
+							equipped[slotId] = _hiddenCache.get(itemId);
+						} else if (itemName) {
+							sensiblePending.push({ slotId: slotId, name: itemName });
+						}
 					});
 					if (parsed.runes) {
 						Object.entries(parsed.runes).forEach(function(e) {
@@ -1816,6 +1824,38 @@ function loadAccessoriesForClass(classId) {
 		renderItemList();
 		updateBuildTabs();
 		window.dispatchEvent(new CustomEvent('vcl:stuffChanged'));
+
+		// Restauration asynchrone des items sensibles (absents de ITEMS et du cache)
+		if (sensiblePending.length) {
+			const pendingForBuild = idx;
+			sensiblePending.forEach(function(pending) {
+				(function(slotId, rawName) {
+					var api = window.VCL_DB;
+					if (!api || !api.getHiddenByName) return;
+					api.getHiddenByName(api.COL.itemsHidden, rawName).then(async function(hit) {
+						if (!hit) return;
+						if (!_hiddenCache.has(hit.id)) {
+							if (hit.id && api.getSecretById) {
+								const secret = await api.getSecretById(api.COL.itemsSecret, hit.id);
+								if (secret) Object.assign(hit, secret);
+							}
+							if (!hit.images?.length && !hit.image && !hit.img) {
+								const builtImg = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier, hit.event);
+								if (builtImg) { hit.img = builtImg; hit.images = [builtImg]; }
+							}
+							_hiddenCache.set(hit.id, hit);
+						}
+						// L'utilisateur a peut-être changé de build entre-temps : ne réinjecte que si on est encore sur le bon
+						if (activeBuildIndex !== pendingForBuild) return;
+						equipped[slotId] = _hiddenCache.get(hit.id);
+						buildGrid();
+						renderStats();
+						renderPickerInfo();
+						window.dispatchEvent(new CustomEvent('vcl:stuffChanged'));
+					}).catch(function() {});
+				})(pending.slotId, pending.name);
+			});
+		}
 	}
 
 	function buildBuildTabs() {
