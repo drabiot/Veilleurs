@@ -2,59 +2,68 @@
    Les Veilleurs au Clair de Lune — app.js
 ═══════════════════════════════════════════════ */
 
+import { listenCollection, COL } from './firebase.js';
+
 window._pageInit = () => {
-  const usersList = window.VCL_USERS_LIST || [];
-  
-  // 1. On crée une map [UID] -> [Pseudo] pour un accès rapide
-  const userMap = {};
-  usersList.forEach(u => {
-    // On prend 'pseudo' ou 'displayName' selon ta structure Firestore
-    if (u._id) userMap[u._id] = u.pseudo || u.displayName || "Membre";
-  });
+  // On crée un objet pour stocker nos données vivantes
+  const liveData = {
+    items: [], itemsSecret: [], mobs: [], mobsSecret: [],
+    pnj: [], quetes: [], regions: [], panoplies: [], users: []
+  };
 
-  const sources = [
-    window.VCL_ITEMS, window.VCL_ITEMS_SECRET,
-    window.VCL_MOBS, window.VCL_MOBS_SECRET,
-    window.VCL_PERSONNAGES, window.VCL_QUETES,
-    window.VCL_REGIONS, window.VCL_PANOPLIES
-  ];
+  // La fonction qui recalcule et dessine le tableau
+  const refreshLeaderboard = () => {
+    const userMap = {};
+    liveData.users.forEach(u => {
+      if (u._id) userMap[u._id] = u.pseudo || u.displayName || "Membre";
+    });
 
-  const allData = sources.flat().filter(Boolean);
-  const tbody = document.getElementById('leaderboard-body');
-  if (!tbody) return;
+    const allData = [
+      ...liveData.items, ...liveData.itemsSecret,
+      ...liveData.mobs, ...liveData.mobsSecret,
+      ...liveData.pnj, ...liveData.quetes,
+      ...liveData.regions, ...liveData.panoplies
+    ].filter(Boolean);
 
-  // 2. Calcul des contributions avec ta priorité UID > Name
-  const counts = allData.reduce((acc, curr) => {
-    const contrib = curr._contributor;
-    if (!contrib) return acc;
+    const counts = allData.reduce((acc, curr) => {
+      const contrib = curr._contributor;
+      if (!contrib) return acc;
 
-    let finalName = "Anonyme";
+      let finalName = (contrib.uid && userMap[contrib.uid]) 
+                      ? userMap[contrib.uid] 
+                      : (contrib.name || "Anonyme");
 
-    if (contrib.uid && userMap[contrib.uid]) {
-      // Priorité 1 : On a un UID et il existe dans la collection Users
-      finalName = userMap[contrib.uid];
-    } else if (contrib.name) {
-      // Priorité 2 : Pas d'UID ou user inconnu, on prend le nom enregistré
-      finalName = contrib.name;
-    }
+      if (finalName !== "Anonyme") {
+        acc[finalName] = (acc[finalName] || 0) + 1;
+      }
+      return acc;
+    }, {});
 
-    if (finalName !== "Anonyme") {
-      acc[finalName] = (acc[finalName] || 0) + 1;
-    }
-    return acc;
-  }, {});
+    const sorted = Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
 
-  // 3. Tri et affichage (Top 10)
-  const sorted = Object.entries(counts)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
+    const tbody = document.getElementById('leaderboard-body');
+    if (!tbody) return;
 
-  tbody.innerHTML = sorted.map((user, i) => `
-    <tr>
-      <td>${i === 0 ? '✨ #1' : '#' + (i + 1)}</td>
-      <td style="${i === 0 ? 'color: var(--gold); font-weight: bold;' : ''}">${user.name}</td>
-      <td>${user.count}</td>
-    </tr>
-  `).join('');
+    tbody.innerHTML = sorted.map((user, i) => `
+      <tr>
+        <td>${i === 0 ? '✨ #1' : '#' + (i + 1)}</td>
+        <td style="${i === 0 ? 'color: var(--gold); font-weight: bold;' : ''}">${user.name}</td>
+        <td>${user.count}</td>
+      </tr>
+    `).join('');
+  };
+
+  // On lance les écouteurs temps réel sur chaque collection
+  listenCollection(COL.items, (d) => { liveData.items = d; refreshLeaderboard(); });
+  listenCollection(COL.users, (d) => { liveData.users = d; refreshLeaderboard(); });
+  listenCollection(COL.mobs,  (d) => { liveData.mobs = d;  refreshLeaderboard(); });
+  listenCollection(COL.quetes, (d) => { liveData.quetes = d; refreshLeaderboard(); });
+  listenCollection(COL.panoplies, (d) => { liveData.panoplies = d; refreshLeaderboard(); });
+  listenCollection(COL.mobsSecret, (d) => { liveData.mobsSecret = d; refreshLeaderboard(); });
+  listenCollection(COL.itemsSecret, (d) => { liveData.itemsSecret = d; refreshLeaderboard(); });
+  listenCollection(COL.regions, (d) => { liveData.regions = d; refreshLeaderboard(); });
+  listenCollection(COL.pnj, (d) => { liveData.pnj = d; refreshLeaderboard(); });
 };
