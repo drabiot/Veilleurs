@@ -207,7 +207,9 @@ const EFFECT_META = {
 	saturation:     			{ icon: '🍖',  	color: '#cc4c11', label: 'Saturation',       		prefix: 'Offre ' },
   cooldown: 						{ icon: '⏱️',  	color: '#888888', label: 'Cooldown',        		 	prefix: ''  },
 	use: 									{ icon: '🧪',  	color: '#7db0ca', label: 'Utilisations',     		prefix: ''  },
-	level: 								{ icon: '❓',  	color: '#c43c28', label: 'Niveau Requis',   		  prefix: 'Niveau '  }
+	level: 								{ icon: '❓',  	color: '#c43c28', label: 'Niveau Requis',   		  prefix: 'Niveau '  },
+  durabilite: 					{ icon: '⛏️',  	color: '#5ad18a', label: 'Durabilité',   		  prefix: 'Durabilité '  },
+  puissance_recolte: 		{ icon: '💪',  	color: '#e86652', label: 'Puissance de Récolte',   		  prefix: 'Puissance de Récolte '  }
 };
 
 //#endregion EFFECT_META
