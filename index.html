@@ -101,11 +101,6 @@
 
 		<h1 class="hero-title">Veilleurs au<br/>Clair de Lune</h1>
 		<div class="hero-title-sub">[ VCL ]</div>
-
-		<div class="hero-divider">
-		<div class="hero-divider-line"></div>
-		<span class="hero-ornament">✦</span>
-		<div class="hero-divider-line r"></div>
 		</div>
 
 		<p class="hero-quote">
@@ -115,35 +110,26 @@
 
 
 		<section class="leaderboard-section">
-		<div class="hero-divider">
+
+		<div class="leaderboard-container">
+			<div class="podium-row" id="podium-row">
+				<div class="loading" id="podium-loading" style="width:100%; text-align:center; color:var(--muted); font-style:italic; padding: 32px 0;">
+				Synchronisation avec les archives...
+				</div>
+			</div>
+					<div class="hero-divider">
 			<div class="hero-divider-line"></div>
 			<span class="hero-ornament">Hall of Fame</span>
 			<div class="hero-divider-line r"></div>
-		</div>
-
-		<div class="leaderboard-container">
-			<table class="leaderboard-table">
-			<thead>
-				<tr>
-				<th>Rang</th>
-				<th>Veilleur</th>
-				<th>Contributions</th>
-				</tr>
-			</thead>
-			<tbody id="leaderboard-body">
-				<tr class="loading">
-				<td colspan="3">Synchronisation avec les archives...</td>
-				</tr>
-			</tbody>
-			</table>
-		</div>
+			</div>
+			<div class="lb-list" id="lb-list" style="display:none;">
+				<div class="lb-list-header">
+					<span>Rang</span><span>Veilleur</span><span>Contributions</span>
+				</div>
+				<div id="leaderboard-body"></div>
+			</div>
+			</div>
 		</section>
-
-	<!-- ══════════════════════ FOOTER ══════════════════════ -->
-	<footer class="site-footer">
-		<span class="footer-guild">Veilleurs au Clair de Lune ©</span>
-		<span class="footer-date" id="footer-date"></span>
-	</footer>
 
 	<script type="module" src="db-loader.js"></script>
 	<script type="module" src="app.js"></script>
