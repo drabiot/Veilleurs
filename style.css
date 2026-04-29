@@ -534,6 +534,62 @@ body > *:not(.ambient-bg) { position: relative; z-index: 1; }
 .footer-date { font-size: 11px; color: var(--muted); font-style: italic; }
 
 /* ══════════════════════════════════
+   LEADERBOARD
+══════════════════════════════════ */
+.leaderboard-section {
+    width: 100%;
+    max-width: 820px;
+    margin-top: 60px;
+    opacity: 0;
+    animation: fade-up .6s ease 1.2s both;
+}
+
+.leaderboard-container {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--deep) 100%);
+    border: 1px solid var(--rim);
+    padding: 20px;
+    position: relative;
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+}
+
+.leaderboard-table th {
+    text-align: left;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    padding: 12px;
+    border-bottom: 1px solid var(--rim);
+}
+
+.leaderboard-table td {
+    padding: 12px;
+    color: var(--text);
+    border-bottom: 1px solid rgba(46, 36, 24, 0.5);
+}
+
+/* Effet sur le Top 3 */
+.leaderboard-table tr:nth-child(1) td:nth-child(2) { color: var(--gold); font-weight: bold; }
+.leaderboard-table tr:nth-child(1) td:nth-child(1) { color: var(--gold); }
+
+.leaderboard-table tr:hover td {
+    background: rgba(224, 172, 96, 0.05);
+    color: var(--bright);
+}
+
+.loading {
+    text-align: center;
+    color: var(--muted);
+    font-style: italic;
+}
+
+/* ══════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════ */
 @media (max-width: 640px) {
