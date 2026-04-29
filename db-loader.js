@@ -11,7 +11,8 @@ window.VCL_DB = { getHiddenByName, COL };
 
 (async () => {
   try {
-    const [items, itemsSec, mobs, mobsSec, pnj, quetes, regions, panoplies, users] = await Promise.all([
+	const users = await loadCollection(COL.users, 0);
+    const [items, itemsSec, mobs, mobsSec, pnj, quetes, regions, panoplies] = await Promise.all([
       loadCollection(COL.items),
       loadCollection(COL.itemsSecret).catch(() => []),
       loadCollection(COL.mobs),
@@ -20,7 +21,6 @@ window.VCL_DB = { getHiddenByName, COL };
       loadCollection(COL.quetes),
       loadCollection(COL.regions),
       loadCollection(COL.panoplies).catch(() => []),
-      loadCollection(COL.users), // On charge les profils utilisateurs
     ]);
 
     // On expose tout
