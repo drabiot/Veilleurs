@@ -65,6 +65,7 @@ export const COL = {
   mapMarkers:   'map_markers',    // marqueurs carte gérés via modération (donjons, ressources)
   zones:        'zones',          // zones de spawn de monstres (polygones)
   donjons:      'donjons',        // donjons migrés depuis data.js
+  submissions: 'submissions',
 };
 
 // ── Rôles ─────────────────────────────────────────────
