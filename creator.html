@@ -154,6 +154,33 @@
       <button class="btn btn-ghost btn-sm" onclick="clearEditingMode()">✕ Nouveau item</button>
     </div>
 
+    <!-- SCREENSHOTS -->
+    <div class="section" style="border-color:#e8a838;">
+      <div class="sec-head" style="background:rgba(232,168,56,.1);color:#e8a838;" onclick="toggleSec(this)">
+        📸 Screenshots
+        <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;margin-left:6px;">— optionnel mais fortement recommandé</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="sec-body">
+        <div class="hint" style="color:#c8922a;border-left:3px solid #e8a838;padding-left:8px;background:rgba(232,168,56,.07);">
+          📋 Joins un screen de <b>l'infobulle</b> et/ou du <b>sprite</b> de l'item — ça nous permet de vérifier le nom exact, les stats et le sprite avant de valider ta soumission.
+        </div>
+        <div id="screens-drop-zone"
+             style="border:2px dashed rgba(232,168,56,.35);border-radius:8px;padding:18px 12px;text-align:center;cursor:pointer;transition:border-color .15s;margin-top:10px;min-height:60px;"
+             onclick="document.getElementById('screens-file-input').click()"
+             ondragover="event.preventDefault();this.style.borderColor='#e8a838'"
+             ondragleave="this.style.borderColor='rgba(232,168,56,.35)'"
+             ondrop="onScreensDrop(event)">
+          <div id="screens-placeholder" style="color:var(--muted);font-size:12px;pointer-events:none;">
+            📋 Colle (Ctrl+V), glisse-dépose ou <u>clique</u> pour ajouter des screenshots
+          </div>
+          <div id="screens-preview-list" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px;"></div>
+        </div>
+        <input type="file" id="screens-file-input" accept="image/*" multiple style="display:none" onchange="onScreensFile(this.files)">
+        <div id="screens-count" style="font-size:11px;color:var(--muted);margin-top:6px;display:none;"></div>
+      </div>
+    </div>
+
     <!-- IDENTITÉ -->
     <div class="section">
       <div class="sec-head" onclick="toggleSec(this)">📋 Identité <span class="chev">▾</span></div>
@@ -1196,6 +1223,13 @@ try {
 } catch(e) {
   console.warn('[VCL Creator] Soumissions en attente non chargées:', e);
 }
+// Charger les IDs des items sensibles approuvés (items_hidden) pour la détection de doublons
+try {
+  const hiddenSnap = await getDocs(collection(db, 'items_hidden'));
+  window._vcl_sensibleItemIds = new Set(hiddenSnap.docs.map(d => d.data().id).filter(Boolean));
+} catch(e) {
+  window._vcl_sensibleItemIds = new Set();
+}
 // Écoute temps réel : invalider le cache quand une approbation est publiée
 // Note : ne recharge pas allItemsIndex (l'utilisateur voit les nouveaux items après F5)
 onSnapshot(doc(db, 'config', 'wiki_version'), async snap => {
@@ -1233,6 +1267,70 @@ window._modal = modal;
 </div>
 
 <script src="creator.js"></script>
+<script>
+(function() {
+  window._creatorScreenshots = [];
+
+  function addScreens(files) {
+    for (const f of files) {
+      if (!f.type.startsWith('image/')) continue;
+      window._creatorScreenshots.push(f);
+      renderScreenPreview(f, window._creatorScreenshots.length - 1);
+    }
+    updateScreensUI();
+  }
+
+  function renderScreenPreview(file, idx) {
+    const list = document.getElementById('screens-preview-list');
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;display:inline-block;';
+    wrap.dataset.idx = idx;
+    const img = document.createElement('img');
+    img.style.cssText = 'height:80px;max-width:130px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:block;';
+    img.src = URL.createObjectURL(file);
+    const btn = document.createElement('button');
+    btn.textContent = '✕';
+    btn.style.cssText = 'position:absolute;top:-6px;right:-6px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;line-height:1;padding:0;z-index:1;';
+    btn.onclick = function(e) { e.stopPropagation(); removeScreen(idx); };
+    wrap.appendChild(img);
+    wrap.appendChild(btn);
+    list.appendChild(wrap);
+  }
+
+  function removeScreen(idx) {
+    window._creatorScreenshots.splice(idx, 1);
+    const list = document.getElementById('screens-preview-list');
+    list.innerHTML = '';
+    window._creatorScreenshots.forEach((f, i) => renderScreenPreview(f, i));
+    updateScreensUI();
+  }
+
+  function updateScreensUI() {
+    const n = window._creatorScreenshots.length;
+    const ph = document.getElementById('screens-placeholder');
+    const cnt = document.getElementById('screens-count');
+    if (ph) ph.style.display = n ? 'none' : '';
+    if (cnt) { cnt.style.display = n ? '' : 'none'; cnt.textContent = n + ' screenshot' + (n > 1 ? 's' : '') + ' ajouté' + (n > 1 ? 's' : ''); }
+  }
+
+  window.onScreensDrop = function(e) {
+    e.preventDefault();
+    e.currentTarget.style.borderColor = 'rgba(232,168,56,.35)';
+    addScreens(e.dataTransfer.files);
+  };
+  window.onScreensFile = function(files) { addScreens(files); };
+
+  // Paste global — only when in item mode
+  document.addEventListener('paste', function(e) {
+    if (document.activeElement && ['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imgs = Array.from(items).filter(i => i.type.startsWith('image/'));
+    if (!imgs.length) return;
+    imgs.forEach(i => { const f = i.getAsFile(); if (f) addScreens([f]); });
+  });
+})();
+</script>
 <script>
   (function() {
     function setHeaderH() {

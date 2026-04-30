@@ -296,12 +296,16 @@
         style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
         🎨 Couleurs de pins
       </button>
+      <button id="map-tab-btn-emojis" onclick="switchMapTab('emojis')"
+        style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
+        😀 Emojis de pins
+      </button>
     </div>
 
     <!-- Onglet Marqueurs (statiques) -->
     <div id="map-tab-markers">
       <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
-        Gestion des marqueurs statiques (donjons, ressources) affichés sur map2.
+        Gestion des marqueurs statiques (donjons, ressources) affichés sur map.
       </p>
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <select id="map-filter-floor" onchange="renderMapTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
@@ -365,6 +369,11 @@
           <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Lien (guide externe)</label>
           <input type="url" id="map-form-link" placeholder="https://…" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
         </div>
+        <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+          <label style="font-size:11px;color:var(--muted);white-space:nowrap;">Couleur du fond</label>
+          <input type="color" id="map-form-color" value="#444444" style="width:48px;height:32px;border:none;background:none;cursor:pointer;border-radius:4px;flex-shrink:0;">
+          <button type="button" onclick="document.getElementById('map-form-color').value='#444444'" style="font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;">↩ défaut</button>
+        </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
           <button class="btn btn-ghost" onclick="closeMapMarkerForm()">Annuler</button>
           <button class="btn" style="background:var(--accent);color:#fff;" onclick="saveMapMarker()">💾 Enregistrer</button>
@@ -403,6 +412,17 @@
         <button class="btn" id="btn-save-pin-colors" onclick="savePinColors()" style="background:var(--accent);color:#fff;font-size:12px;flex-shrink:0;">💾 Sauvegarder</button>
       </div>
       <div id="pin-colors-content"><div class="empty">Chargement…</div></div>
+    </div>
+
+    <!-- Onglet Emojis de pins -->
+    <div id="map-tab-emojis" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <p style="font-size:12px;color:var(--muted);margin:0;">
+          Personnalise l'emoji affiché pour chaque type de pin. Sauvegardé dans <code>config/pin_type_emojis</code>. Pour un pin individuel, édite le champ Emoji dans l'onglet "Tous les pins".
+        </p>
+        <button class="btn" id="btn-save-pin-emojis" onclick="savePinEmojis()" style="background:var(--accent);color:#fff;font-size:12px;flex-shrink:0;">💾 Sauvegarder</button>
+      </div>
+      <div id="pin-emojis-content"><div class="empty">Chargement…</div></div>
     </div>
 
   </main>
@@ -871,7 +891,7 @@
       </div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
-      Migre les marqueurs de quêtes <b>principales</b> et <b>secondaires</b> depuis <code>data.js</code> vers la collection Firestore <code>map_markers</code>, pour les afficher sur <b>map2</b>.<br>
+      Migre les marqueurs de quêtes <b>principales</b> et <b>secondaires</b> depuis <code>data.js</code> vers la collection Firestore <code>map_markers</code>, pour les afficher sur <b>map</b>.<br>
       Pour chaque marqueur, sélectionnez la quête Firestore correspondante (auto-match tenté sur le titre). Laissez "— Aucune —" pour utiliser l'ancien lien Gitbook.
     </p>
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">

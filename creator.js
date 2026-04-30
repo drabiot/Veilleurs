@@ -447,7 +447,7 @@ async function doSavePseudo() {
   err.style.display = 'none';
   if (!pseudo) { err.textContent = 'Le pseudo est obligatoire.'; err.style.display = ''; return; }
   if (pseudo.length < 2)  { err.textContent = 'Pseudo trop court (2 caractères min).'; err.style.display = ''; return; }
-  if (!/^[\w\- ]+$/i.test(pseudo)) { err.textContent = 'Pseudo invalide (lettres, chiffres, - et _ seulement).'; err.style.display = ''; return; }
+  if (!/^[\w\- \[\]]+$/i.test(pseudo)) { err.textContent = 'Pseudo invalide (lettres, chiffres, espace, -, _, [ et ] seulement).'; err.style.display = ''; return; }
   const user = window._vcl_auth?.currentUser;
   if (!user) { err.textContent = 'Session expirée, réessaie.'; err.style.display = ''; return; }
   try {
@@ -509,8 +509,8 @@ async function doChangePseudo() {
   const password  = document.getElementById('change-pseudo-password').value;
 
   if (!newPseudo) { err.textContent = 'Le pseudo est obligatoire.'; err.style.display = ''; return; }
-  if (!/^[\w\- ]{2,32}$/.test(newPseudo)) {
-    err.textContent = 'Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_).';
+  if (!/^[\w\- \[\]]{2,32}$/.test(newPseudo)) {
+    err.textContent = 'Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_/[/]).';
     err.style.display = '';
     return;
   }
@@ -523,7 +523,7 @@ async function doChangePseudo() {
     closeLoginModal();
   } catch (e) {
     const code = e?.code || e?.message || '';
-    const msg  = code === 'invalid-pseudo'       ? 'Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_).'
+    const msg  = code === 'invalid-pseudo'       ? 'Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_/[/]).'
               : code === 'pseudo-taken'          ? 'Ce pseudo est déjà utilisé.'
               : code === 'password-required'     ? 'Mot de passe obligatoire pour ré-authentifier.'
               : code === 'auth/wrong-password'   ? 'Mot de passe incorrect.'
@@ -3869,6 +3869,8 @@ function isDuplicate(id) {
     return ITEMS.some(it => (it.id || it._id) === id);
   }
   if (typeof ITEMS !== 'undefined' && ITEMS.some(it => (it.id || it._id) === id)) return true;
+  // Items sensibles approuvés (stockés dans items_hidden, absents de ITEMS)
+  if (window._vcl_sensibleItemIds?.has(id)) return true;
   // Vérifier aussi les soumissions en attente (items non encore approuvés)
   const pending = window._vcl_pendingItems || [];
   return pending.some(s => s.data?.id === id);
@@ -4526,18 +4528,20 @@ async function submitToFirestore() {
   // Nettoyer pour Firestore
   const clean = sanitizeForFirestore(JSON.parse(JSON.stringify(data)));
 
-  // Lire l'image en base64 si présente (limite ~700KB pour rester sous le 1MB Firestore)
-  let forumImageData = null;
-  if (forumImageFile) {
-    try {
-      forumImageData = await new Promise((res, rej) => {
-        const r = new FileReader();
-        r.onload  = e => res(e.target.result);
-        r.onerror = () => rej(new Error('Lecture image échouée'));
-        r.readAsDataURL(forumImageFile);
-      });
-      if (forumImageData.length > 700_000) forumImageData = null; // trop grand
-    } catch { forumImageData = null; }
+  // Lire les screenshots en base64 (max 3 images, max 400KB chacune)
+  const screenshots = [];
+  if (window._creatorScreenshots?.length) {
+    for (const f of window._creatorScreenshots.slice(0, 3)) {
+      try {
+        const b64 = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload  = e => res(e.target.result);
+          r.onerror = () => rej();
+          r.readAsDataURL(f);
+        });
+        if (b64.length <= 400_000) screenshots.push(b64);
+      } catch {}
+    }
   }
 
   let isModification = false;
@@ -4571,11 +4575,22 @@ async function submitToFirestore() {
     comment:           '',
     isModification,
     submitter_comment: submitterComment,
-    ...(forumImageData ? { forum_image: forumImageData } : {}),
+    ...(screenshots.length ? { screenshots } : {}),
   });
 
   const code = creatorMode === 'item' ? toJS(data, 0) + ',' : toJS(data, 0) + ',';
   addToHistory(data, code);
+
+  // Clear screenshots
+  window._creatorScreenshots = [];
+  const _scrList = document.getElementById('screens-preview-list');
+  if (_scrList) _scrList.innerHTML = '';
+  const _scrPh = document.getElementById('screens-placeholder');
+  if (_scrPh) _scrPh.style.display = '';
+  const _scrCnt = document.getElementById('screens-count');
+  if (_scrCnt) { _scrCnt.style.display = 'none'; _scrCnt.textContent = ''; }
+  const _scrFi = document.getElementById('screens-file-input');
+  if (_scrFi) _scrFi.value = '';
 
   if (creatorMode === 'item') {
     document.getElementById('editing-banner').style.display = 'none';
@@ -6418,10 +6433,25 @@ async function loadCreatorLeaderboard() {
         const name = c.name || null;
         if (!name || /^invit[ée]?$/i.test(name.trim())) continue;
         const key = c.uid || ('__' + name);
-        if (!byKey[key]) byKey[key] = { name, count: 0 };
+        if (!byKey[key]) byKey[key] = { name, uid: c.uid || null, count: 0 };
         byKey[key].count++;
       }
     } catch {}
+  }
+  // Fetch current pseudo from users/{uid} to reflect name changes
+  const getDoc = window._vcl_getDoc;
+  const docRef = window._vcl_doc;
+  if (getDoc && docRef) {
+    await Promise.all(
+      Object.values(byKey)
+        .filter(e => e.uid)
+        .map(async e => {
+          try {
+            const snap = await getDoc(docRef(db, 'users', e.uid));
+            if (snap.exists()) e.name = snap.data()?.pseudo || e.name;
+          } catch {}
+        })
+    );
   }
   const ranked = Object.values(byKey).sort((a, b) => b.count - a.count).slice(0, 10);
   pane.innerHTML = '';

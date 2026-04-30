@@ -42,6 +42,7 @@ const TYPE_LABELS = {
   région:             'Région',
   donjon:             'Donjon',
   boss:               'Boss',
+  mini_boss:          'Mini-Boss',
   zone_monstre:       'Zone Monstres',
   quête_principale:   'Quête Principale',
   quête_secondaire:   'Quête Secondaire',
@@ -51,6 +52,7 @@ const TYPE_LABELS = {
   craft_accessoires:  'Forgeron d\'Accessoires',
   craft_lingots:      'Forgeron de Lingots',
   craft_cles:         'Forgeron de Clés',
+  craft_runes:        'Artisan de Runes',
   alchimiste:          'Alchimiste',
   bucheron:            'Bûcheron',
   refaconneur:         'Refaçonneur',
@@ -65,10 +67,11 @@ const TYPE_LABELS = {
   autre:               'Autre',
 };
 
-const _MAP2_EMOJI = {
+const _map_EMOJI = {
   région:             '📍',
   donjon:             '⚔️',
   boss:               '☠️',
+  mini_boss:          '💀',
   zone_monstre:       '💀',
   quête_principale:   '💬',
   quête_secondaire:   '❓',
@@ -78,6 +81,7 @@ const _MAP2_EMOJI = {
   craft_accessoires:  '💍',
   craft_lingots:      '🔩',
   craft_cles:         '🗝️',
+  craft_runes:        '🔮',
   alchimiste:          '⚗️',
   bucheron:            '🪓',
   refaconneur:         '🔧',
@@ -91,6 +95,13 @@ const _MAP2_EMOJI = {
   marchand_occulte:    '🩸',
   autre:               '🦠',
 };
+
+function _getMarkerEmoji(m) {
+  return m.emoji
+    || (window._map_pin_emojis || {})[m.type]
+    || _map_EMOJI[m.type]
+    || '📍';
+}
 
 // Mappage pnj.type → marker type
 const PNJ_TO_MARKER_TYPE = {
@@ -115,6 +126,10 @@ const PNJ_TO_MARKER_TYPE = {
   "marchand d'outils":       "marchand_outils",
   "marchand d'accessoires":  "marchand_access",
   "marchand occulte":        "marchand_occulte",
+  "artisant_runes":          "craft_runes",
+  "artisan de runes":        "craft_runes",
+  "artisan_runes":           "craft_runes",
+  "artisan runes":           "craft_runes",
   "fabricant secret":        "autre",
   "autres":                  "autre",
 };
@@ -123,11 +138,11 @@ const PNJ_TO_MARKER_TYPE = {
    CONSTRUCTION DES MARKERS DYNAMIQUES
 ══════════════════════════════════ */
 function buildDynamicMarkers() {
-  const pnjs    = window._map2_pnj     || [];
-  const regions = window._map2_regions || [];
-  const mobs    = window._map2_mobs    || [];
-  const quetes  = window._map2_quetes  || [];
-  const donjons = window._map2_donjons || [];
+  const pnjs    = window._map_pnj     || [];
+  const regions = window._map_regions || [];
+  const mobs    = window._map_mobs    || [];
+  const quetes  = window._map_quetes  || [];
+  const donjons = window._map_donjons || [];
 
   // Index quêtes par pnj id ET pnj name (compat texte libre)
   const questsByRef = new Map();
@@ -157,6 +172,7 @@ function buildDynamicMarkers() {
       id:     p.id || p._id,
       type:   markerType,
       layer:  p.is_underground ? 'underground' : 'surface',
+      emoji:  p.emoji || undefined,
       gx:     p.coords.x,
       gy:     p.coords.z,
       name:   p.name || p.type,
@@ -174,7 +190,7 @@ function buildDynamicMarkers() {
     byFloor[f].push({
       id:    r.id || r._id,
       type:  'région',
-      layer: 'surface',
+      layer: r.is_underground ? 'underground' : 'surface',
       gx:    r.coords.x,
       gy:    r.coords.z,
       name:  r.name,
@@ -186,7 +202,8 @@ function buildDynamicMarkers() {
   // Boss — Firestore mobs (migrated + creator, coords:{x,z} ou map_spawns:[{x,z}])
   const _fsBossIds = new Set();
   for (const m of mobs) {
-    if ((m.type || '').toLowerCase() !== 'boss') continue;
+    const _mtype = (m.type || '').toLowerCase();
+    if (_mtype !== 'boss' && _mtype !== 'mini_boss') continue;
     if (!m.palier) continue;
     const f     = +m.palier;
     const id    = m.id || m._id;
@@ -200,8 +217,9 @@ function buildDynamicMarkers() {
     spawns.forEach((s, si) => {
       byFloor[f].push({
         id:    si === 0 ? id : `${id}_${si}`,
-        type:  'boss',
+        type:  _mtype === 'mini_boss' ? 'mini_boss' : 'boss',
         layer,
+        emoji: m.emoji || undefined,
         gx:    s.x,
         gy:    s.z,
         name:  m.name,
@@ -245,7 +263,7 @@ function buildDynamicMarkers() {
     byFloor[f].push({
       id:    d._id || d.id || `donjon_db_${d.name}`,
       type:  'donjon',
-      layer: 'surface',
+      layer: d.is_underground ? 'underground' : 'surface',
       gx:    d.gx,
       gy:    d.gy,
       name:  d.name || 'Donjon',
@@ -264,12 +282,12 @@ function buildDynamicMarkers() {
 
   // Index des questIds couverts par un map_marker du bon type (évite les doublons)
   const _coveredQuestIds = new Set(
-    (window._map2_mapMarkers || [])
+    (window._map_mapMarkers || [])
       .filter(mm => mm.questId && QUEST_MARKER_TYPES.has(MM_TYPE_NORM[mm.type] || mm.type))
       .map(mm => mm.questId)
   );
 
-  for (const mm of (window._map2_mapMarkers || [])) {
+  for (const mm of (window._map_mapMarkers || [])) {
     const mmType = MM_TYPE_NORM[mm.type] || mm.type;
     if (!QUEST_MARKER_TYPES.has(mmType)) continue;
     if (mm.gx == null || mm.gy == null || !mm.floor) continue;
@@ -295,7 +313,7 @@ function buildDynamicMarkers() {
     main: 'quête_principale', sec: 'quête_secondaire', ter: 'quête_tertiaire',
     secondary: 'quête_secondaire', tertiary: 'quête_tertiaire',
   };
-  for (const q of (window._map2_quetes || [])) {
+  for (const q of (window._map_quetes || [])) {
     if (!q.coords || q.coords.x == null || q.coords.z == null) continue;
     if (!q.palier) continue;
     const qid = q.id || q._id;
@@ -306,7 +324,7 @@ function buildDynamicMarkers() {
     if (!byFloor[f]) byFloor[f] = [];
     const npcPart = (() => {
       if (!q.npc) return '';
-      const pnjs = window._map2_pnj || [];
+      const pnjs = window._map_pnj || [];
       const pnjFound = pnjs.find(p => (p.id || p._id) === q.npc);
       return `🧑 ${pnjFound ? (pnjFound.name || pnjFound.nom || q.npc) : q.npc}`;
     })();
@@ -325,7 +343,7 @@ function buildDynamicMarkers() {
 
   // Quêtes Firestore sans coords — fallback via région ou PNJ
   const _regionByName = new Map((regions).map(r => [r.name, r]));
-  for (const q of (window._map2_quetes || [])) {
+  for (const q of (window._map_quetes || [])) {
     if (!q.palier) continue;
     const qid = q.id || q._id;
     if (!qid) continue;
@@ -358,7 +376,7 @@ function buildDynamicMarkers() {
     byFloor[f].push({
       id:    `fs_q_${qid}`,
       type:  markerType,
-      layer: 'surface',
+      layer: q.is_underground ? 'underground' : 'surface',
       gx:    fallbackGx,
       gy:    fallbackGy,
       name:  q.titre || qid,
@@ -367,11 +385,11 @@ function buildDynamicMarkers() {
     });
   }
 
-  window._map2Markers = byFloor;
+  window._mapMarkers = byFloor;
 }
 
 function getFloorMarkers(floor) {
-  return (window._map2Markers || {})[floor] || [];
+  return (window._mapMarkers || {})[floor] || [];
 }
 
 function getFlatFloorMarkers(floor) {
@@ -748,21 +766,21 @@ let _zoneCleanupFns = new Map();
 function renderZones() {
   const svg    = getZoneSvg();
   svg.innerHTML = '';
-  document.querySelectorAll('.monster-pin-map2').forEach(p => p.remove());
+  document.querySelectorAll('.monster-pin-map').forEach(p => p.remove());
   _zoneCleanupFns.clear();
   _activeZoneId = null;
 
-  const zones  = (window._map2_zones || []).filter(z =>
+  const zones  = (window._map_zones || []).filter(z =>
     +z.floor === currentFloor &&
     (currentLayer === 'underground' ? !!z.is_underground : !z.is_underground)
   );
   const zoneOn = isZoneMonstresEnabled();
-  const mobsById = new Map((window._map2_mobs || []).map(m => [m.id || m._id, m]));
+  const mobsById = new Map((window._map_mobs || []).map(m => [m.id || m._id, m]));
 
-  let zoneTooltip = document.getElementById('zone-tooltip-map2');
+  let zoneTooltip = document.getElementById('zone-tooltip-map');
   if (!zoneTooltip) {
     zoneTooltip = document.createElement('div');
-    zoneTooltip.id        = 'zone-tooltip-map2';
+    zoneTooltip.id        = 'zone-tooltip-map';
     zoneTooltip.className = 'map-tooltip hidden';
     zoneTooltip.style.cssText = 'position:absolute;bottom:16px;right:16px;pointer-events:none;min-width:180px;';
     document.querySelector('.map-main').appendChild(zoneTooltip);
@@ -826,7 +844,7 @@ function renderZones() {
       poly.setAttribute('fill', isZoneMonstresEnabled() ? color + '55' : color + '2a');
       label.style.opacity = isZoneMonstresEnabled() ? '1' : '0';
       zoneTooltip.classList.add('hidden');
-      document.querySelectorAll('.monster-pin-map2').forEach(p => p.remove());
+      document.querySelectorAll('.monster-pin-map').forEach(p => p.remove());
       _activeZoneId = null;
     };
     _zoneCleanupFns.set(zone._id || zone.id, cleanup);
@@ -853,7 +871,7 @@ function renderZones() {
           const mgy = cy + deployR * Math.sin(angle);
           const s   = gameToScreen(mgx, mgy);
           const pin = document.createElement('div');
-          pin.className    = 'marker monster-pin-map2';
+          pin.className    = 'marker monster-pin-map';
           pin.dataset.type = 'zone_monstre';
           pin.style.left   = s.x + 'px';
           pin.style.top    = s.y + 'px';
@@ -934,7 +952,7 @@ function renderZones() {
         poly.setAttribute('fill', isZoneMonstresEnabled() ? color + '55' : color + '2a');
         lbl.style.opacity = isZoneMonstresEnabled() ? '1' : '0';
         zoneTooltip.classList.add('hidden');
-        document.querySelectorAll('.monster-pin-map2').forEach(p => p.remove());
+        document.querySelectorAll('.monster-pin-map').forEach(p => p.remove());
         _activeZoneId = null;
       };
       _zoneCleanupFns.set(zone.id, cleanup);
@@ -950,7 +968,7 @@ function renderZones() {
             const angle = (i / count) * 2 * Math.PI - Math.PI / 2;
             const s = gameToScreen(cx + deployR * Math.cos(angle), cy + deployR * Math.sin(angle));
             const pin = document.createElement('div');
-            pin.className = 'marker monster-pin-map2'; pin.dataset.type = 'zone_monstre';
+            pin.className = 'marker monster-pin-map'; pin.dataset.type = 'zone_monstre';
             pin.style.left = s.x + 'px'; pin.style.top = s.y + 'px';
             const icon = document.createElement('div');
             icon.className = 'marker-icon'; icon.textContent = mob.emoji || '💀';
@@ -1014,12 +1032,12 @@ function renderZones() {
 }
 
 function refreshZonePositions() {
-  const zones = (window._map2_zones || []).filter(z => +z.floor === currentFloor);
+  const zones = (window._map_zones || []).filter(z => +z.floor === currentFloor);
   zones.forEach(z => {
     if (z._refreshPoly)  z._refreshPoly();
     if (z._refreshLabel) z._refreshLabel();
   });
-  document.querySelectorAll('.monster-pin-map2').forEach(p => p.remove());
+  document.querySelectorAll('.monster-pin-map').forEach(p => p.remove());
   if (_activeZoneId) {
     const z = zones.find(z => (z._id || z.id) === _activeZoneId);
     if (z && z._activate) z._activate();
@@ -1033,7 +1051,7 @@ function renderMarkers() {
   clearQuestChain();
   markersLayer.innerHTML = '';
   document.querySelectorAll('.cluster-expanded').forEach(n => n.remove());
-  document.querySelectorAll('.monster-pin-map2').forEach(p => p.remove());
+  document.querySelectorAll('.monster-pin-map').forEach(p => p.remove());
   if (mapViewport._zoneHoverHandler2) {
     mapViewport.removeEventListener('mousemove', mapViewport._zoneHoverHandler2);
     mapViewport._zoneHoverHandler2 = null;
@@ -1044,7 +1062,10 @@ function renderMarkers() {
   document.querySelectorAll('.marker-filter').forEach(cb => {
     filterState[cb.dataset.type] = cb.checked;
   });
-  const isTypeVisible = (type) => filterState[type] !== false;
+  const isTypeVisible = (type) => {
+    if (type === 'mini_boss') return filterState['boss'] !== false;
+    return filterState[type] !== false;
+  };
 
   const markers = getFlatFloorMarkers(currentFloor);
 
@@ -1094,8 +1115,8 @@ function renderSingleMarker(m) {
 
   const icon = document.createElement('div');
   icon.className   = 'marker-icon';
-  icon.textContent = _MAP2_EMOJI[m.type] || '📍';
-  const pinColor = m.type !== 'région' ? (window._map2_pin_colors || {})[m.type] : null;
+  icon.textContent = _getMarkerEmoji(m);
+  const pinColor = m.type !== 'région' ? (window._map_pin_colors || {})[m.type] : null;
   if (pinColor) { icon.style.background = pinColor; icon.style.boxShadow = `0 2px 10px ${pinColor}88`; }
   el.appendChild(icon);
 
@@ -1166,8 +1187,8 @@ function renderCluster(group) {
 
       const icon = document.createElement('div');
       icon.className   = 'marker-icon marker-icon-sm';
-      icon.textContent = _MAP2_EMOJI[m.type] || '📍';
-      const subPinColor = m.type !== 'région' ? (window._map2_pin_colors || {})[m.type] : null;
+      icon.textContent = _getMarkerEmoji(m);
+      const subPinColor = m.type !== 'région' ? (window._map_pin_colors || {})[m.type] : null;
       if (subPinColor) { icon.style.background = subPinColor; icon.style.boxShadow = `0 2px 8px ${subPinColor}88`; }
       sub.appendChild(icon);
 
@@ -1394,13 +1415,13 @@ const searchResults = document.getElementById('search-results');
 function getAllMarkers() {
   const all = [];
   const seen = new Set();
-  const byFloor = window._map2Markers || {};
+  const byFloor = window._mapMarkers || {};
   for (const [floor, markers] of Object.entries(byFloor)) {
     for (const m of markers) {
       const key = m.id;
       if (seen.has(key)) continue;
       seen.add(key);
-      all.push({ ...m, floor: parseInt(floor), layer: 'surface' });
+      all.push({ ...m, floor: parseInt(floor) });
     }
   }
   return all;
@@ -1425,13 +1446,15 @@ searchInput.addEventListener('input', () => {
       const item = document.createElement('div');
       item.className = 'search-result-item';
       item.innerHTML = `
-        <span class="search-result-emoji">${_MAP2_EMOJI[m.type] || '📍'}</span>
+        <span class="search-result-emoji">${_getMarkerEmoji(m)}</span>
         <div class="search-result-info">
           <span class="search-result-name">${m.name}</span>
           <span class="search-result-meta">${TYPE_LABELS[m.type] || m.type} · Étage ${m.floor}</span>
         </div>`;
       item.addEventListener('click', () => {
         if (m.floor !== currentFloor) goToFloor(m.floor);
+        const targetLayer = m.layer || 'surface';
+        if (targetLayer !== currentLayer) goToLayer(targetLayer);
         const img = gameToPixel(m.gx, m.gy);
         panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
         panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
@@ -1620,7 +1643,7 @@ function _cancelDeletePin() {
    INIT (asynchrone — attend les données Firestore)
 ══════════════════════════════════ */
 function applyPinColorsToLegend() {
-  const colors = window._map2_pin_colors || {};
+  const colors = window._map_pin_colors || {};
   document.querySelectorAll('#legend-filters input.marker-filter[data-type]').forEach(cb => {
     const type = cb.dataset.type;
     if (type === 'région') return;
@@ -1633,7 +1656,7 @@ function applyPinColorsToLegend() {
 
 function focusQuestOnMap(questId) {
   if (!questId) return;
-  const byFloor = window._map2Markers || {};
+  const byFloor = window._mapMarkers || {};
   for (const [f, markers] of Object.entries(byFloor)) {
     const found = markers.find(m =>
       m.id === `fs_q_${questId}` ||
@@ -1648,6 +1671,8 @@ function focusQuestOnMap(questId) {
     }
     const floor = +f;
     if (floor !== currentFloor) goToFloor(floor);
+    const fqLayer = found.layer || 'surface';
+    if (fqLayer !== currentLayer) goToLayer(fqLayer);
     _searchFocusId = found.id;
     const img = gameToPixel(found.gx, found.gy);
     panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
@@ -1697,11 +1722,11 @@ function initMap() {
   });
 }
 
-window._map2Ready = () => {
-  if (window._map2DataLoaded) initMap();
+window._mapReady = () => {
+  if (window._mapDataLoaded) initMap();
 };
 
-if (window._map2DataLoaded) initMap();
+if (window._mapDataLoaded) initMap();
 
 window.addEventListener('popstate', (e) => {
   const state = e.state || parseHash();
