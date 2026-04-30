@@ -361,7 +361,7 @@ export async function changePseudoSecurely(newPseudo, { password } = {}) {
   if (!user) throw new Error('no-current-user');
 
   const pseudo = String(newPseudo || '').trim();
-  if (!/^[A-Za-z0-9 _-]{2,32}$/.test(pseudo)) throw new Error('invalid-pseudo');
+  if (!/^[A-Za-z0-9 _\-\[\]]{2,32}$/.test(pseudo)) throw new Error('invalid-pseudo');
 
   // Unicité : query users where pseudo == pseudo
   const q = query(collection(db, COL.users), where('pseudo', '==', pseudo));

@@ -146,9 +146,13 @@
           <span class="legend-emoji" style="background:#f1dd6a;">🗝️</span>
           <span>Forgeron de Clés</span>
         </label>
-
         <div class="sidebar-sep"></div>
         <div class="sidebar-title" style="font-size:10px;padding:2px 0;">— Artisans —</div>
+        <label class="legend-item">
+          <input type="checkbox" class="marker-filter" data-type="craft_runes" />
+          <span class="legend-emoji" style="background:#3a1a6e;">🔮</span>
+          <span>Artisan de Runes</span>
+        </label>
         <label class="legend-item">
           <input type="checkbox" class="marker-filter" data-type="craft_lingots" />
           <span class="legend-emoji" style="background:#8a6dca;">🔩</span>
@@ -316,20 +320,24 @@
     import { db }    from '../firebase.js';
     import { getDoc, doc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
     await store.load(['pnj', 'regions', 'mobs', 'quetes', 'donjons', 'zones', 'mapMarkers']);
-    window._map2_pnj        = store.pnj;
-    window._map2_regions    = store.regions;
-    window._map2_mobs       = store.mobs;
-    window._map2_quetes     = store.quetes;
-    window._map2_donjons    = store.donjons;
-    window._map2_zones      = store.zones;
-    window._map2_mapMarkers = store.mapMarkers;
+    window._map_pnj        = store.pnj;
+    window._map_regions    = store.regions;
+    window._map_mobs       = store.mobs;
+    window._map_quetes     = store.quetes;
+    window._map_donjons    = store.donjons;
+    window._map_zones      = store.zones;
+    window._map_mapMarkers = store.mapMarkers;
     try {
       const colorSnap = await getDoc(doc(db, 'config', 'pin_type_colors'));
-      window._map2_pin_colors = colorSnap.exists() ? colorSnap.data() : {};
-    } catch { window._map2_pin_colors = {}; }
-    window._map2DataLoaded = true;
-    window._map2Ready?.();
+      window._map_pin_colors = colorSnap.exists() ? colorSnap.data() : {};
+    } catch { window._map_pin_colors = {}; }
+    try {
+      const emojiSnap = await getDoc(doc(db, 'config', 'pin_type_emojis'));
+      window._map_pin_emojis = emojiSnap.exists() ? emojiSnap.data() : {};
+    } catch { window._map_pin_emojis = {}; }
+    window._mapDataLoaded = true;
+    window._mapReady?.();
   </script>
-  <script src="map2.js"></script>
+  <script src="map.js"></script>
 </body>
 </html>

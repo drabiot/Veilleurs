@@ -1000,9 +1000,9 @@ function loadAccessoriesForClass(classId) {
     /* ── Bonus des runes ── */
     Object.entries(equippedRunes).forEach(function(entry) {
       const runeId = entry[1];
-      const rune = RUNES_BY_ID.get(runeId);
+      const rune = RUNES_BY_ID.get(runeId) || _hiddenCache.get(runeId);
       if (!rune) return;
-      Object.entries(rune.stats).forEach(function(sv) {
+      Object.entries(rune.stats || {}).forEach(function(sv) {
         const sid = sv[0]; const val = sv[1];
         if (!(sid in mins)) return;
         mins[sid] += val;
@@ -1013,10 +1013,10 @@ function loadAccessoriesForClass(classId) {
     /* ── Bonus des caractéristiques ── */
 		CARACTERISTIQUES.forEach(function(car) {
 				if (!car.stats) return;
-				
+
 				// Points alloués manuellement
 				let pts = caracterPoints[car.id] || 0;
-				
+
 				// ← Ajouter les buffs de tous les items équipés (non bloqués)
 				Object.entries(equipped).forEach(function(entry) {
 						const slotId = entry[0];
@@ -1031,7 +1031,7 @@ function loadAccessoriesForClass(classId) {
             const runeId  = entry[1];
             const slotId  = runeKey.split('_rune_')[0];
             if (blockedSlots.has(slotId)) return;
-            const rune = RUNES_BY_ID.get(runeId);
+            const rune = RUNES_BY_ID.get(runeId) || _hiddenCache.get(runeId);
             if (rune && rune.buff) pts += rune.buff[car.id] || 0;
         });
 				
@@ -1453,7 +1453,7 @@ function loadAccessoriesForClass(classId) {
 					const runeId  = entry[1];
 					const slotId = runeKey.split('_rune_')[0];
 					if (blockedSlots.has(slotId)) return;
-					const rune = RUNES_BY_ID.get(runeId);
+					const rune = RUNES_BY_ID.get(runeId) || _hiddenCache.get(runeId);
 					if (rune && rune.buff) bonus += rune.buff[carId] || 0;
 			});
 

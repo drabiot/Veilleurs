@@ -369,7 +369,6 @@ function buildCard(sub) {
         <div class="sub-editor-status" id="editor-status-${sub._id}"></div>
       </div>
     `;
-    const hasImg = !!sub.forum_image;
     actionsHtml = `
       <input type="text" class="sub-comment" id="comment-${sub._id}" placeholder="Commentaire (optionnel)">
       <button class="btn btn-ghost"   id="btn-edit-${sub._id}" onclick="toggleEdit('${sub._id}')" style="font-size:12px;">✏️ Modifier</button>
@@ -377,25 +376,6 @@ function buildCard(sub) {
       <button class="btn btn-approve" onclick="approve('${sub._id}')">✓ Approuver</button>
       <button class="btn btn-reject"  onclick="reject('${sub._id}')">✕ Rejeter</button>
     `;
-    if (sub.type === 'item') {
-      actionsHtml += `
-        <div class="mod-img-row">
-          <div class="mod-img-zone${hasImg ? ' has-img' : ''}" id="mod-img-zone-${sub._id}"
-               ondragover="event.preventDefault();this.classList.add('drag-over')"
-               ondragleave="this.classList.remove('drag-over')"
-               ondrop="modImgDrop('${sub._id}',event)">
-            <img class="mod-img-preview" id="mod-img-preview-${sub._id}" style="display:none" alt="">
-            <span class="mod-img-placeholder" id="mod-img-placeholder-${sub._id}"${hasImg ? ' style="display:none"' : ''}>🖼️ Glisse une image ici</span>
-          </div>
-          <div class="mod-img-actions">
-            <button class="btn btn-ghost btn-sm" onclick="modImgPaste('${sub._id}')" style="font-size:11px;">📋 Coller</button>
-            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('mod-img-input-${sub._id}').click()" style="font-size:11px;">📁 Fichier</button>
-            <button class="mod-img-clear" id="mod-img-clear-${sub._id}" onclick="modImgClear('${sub._id}')"${hasImg ? '' : ' style="display:none"'}>✕ Supprimer</button>
-          </div>
-          <input type="file" id="mod-img-input-${sub._id}" accept="image/*" style="display:none" onchange="modImgFile('${sub._id}',this.files[0])">
-        </div>
-      `;
-    }
   } else if (sub.comment) {
     actionsHtml = `<div class="review-comment">💬 ${escHtml(sub.comment)}</div>`;
   }
@@ -431,6 +411,7 @@ function buildCard(sub) {
       <div class="sub-details" id="details-${sub._id}">
         ${sub.isModification ? `<div id="diff-${sub._id}" style="margin-bottom:10px;"><button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="loadSubDiff('${sub._id}','${sub.type}','${String(sub.data?.id||'')}')">🔍 Voir les changements</button></div>` : ''}
         <div id="pretty-${sub._id}">${_buildPrettySummary(sub.data || {}, sub.type)}</div>
+        <div id="screens-${sub._id}"></div>
         <details style="margin-top:6px;">
           <summary style="font-size:10px;color:var(--muted);cursor:pointer;user-select:none;padding:3px 0;">⟨⟩ JSON brut</summary>
           <div class="sub-code" id="code-${sub._id}">${escHtml(code)}</div>
@@ -440,13 +421,21 @@ function buildCard(sub) {
     </div>
   `;
 
-  // Initialiser le preview image hors innerHTML (évite de mettre le base64 dans le template)
-  if (sub.forum_image && sub.type === 'item' && sub.status === 'pending') {
-    const img = card.querySelector(`#mod-img-preview-${sub._id}`);
-    if (img) {
-      img.src = sub.forum_image;
-      img.style.display = 'block';
-      img.onclick = e => { e.stopPropagation(); openLightbox(sub.forum_image); };
+  // Afficher les screenshots soumis (nouveau: sub.screenshots[], legacy: sub.forum_image)
+  const allScreens = sub.screenshots?.length ? sub.screenshots
+    : sub.forum_image ? [sub.forum_image]
+    : [];
+  if (allScreens.length) {
+    const wrap = card.querySelector(`#screens-${sub._id}`);
+    if (wrap) {
+      wrap.style.cssText = 'margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;';
+      allScreens.forEach(src => {
+        const img = document.createElement('img');
+        img.style.cssText = 'max-height:180px;max-width:100%;border-radius:6px;border:1px solid var(--border);cursor:zoom-in;object-fit:contain;background:var(--surface2);';
+        img.src = src;
+        img.onclick = e => { e.stopPropagation(); openLightbox(src); };
+        wrap.appendChild(img);
+      });
     }
   }
 
@@ -9116,7 +9105,7 @@ window.renderMapTable = function renderMapTable() {
   const rows = filtered.map(m => `
     <tr>
       <td>${TYPE_EMOJI[m.type] || '📍'} ${m.type || '—'}</td>
-      <td style="font-weight:600;">${m.name || '—'}</td>
+      <td style="font-weight:600;">${m.color ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${m.color};margin-right:5px;vertical-align:middle;"></span>` : ''}${m.name || '—'}</td>
       <td style="text-align:center;">${m.floor ?? '—'}</td>
       <td style="font-family:monospace;font-size:11px;color:var(--muted);">${m.gx ?? '—'} / ${m.gy ?? '—'}</td>
       <td style="white-space:nowrap;">
@@ -9159,6 +9148,7 @@ window.openMapMarkerForm = function openMapMarkerForm(id) {
       document.getElementById('map-form-desc').value  = m.desc  || '';
       document.getElementById('map-form-link').value  = m.link  || '';
       document.getElementById('map-form-level').value = m.level || '';
+      document.getElementById('map-form-color').value = m.color || '#444444';
     }
   } else {
     document.getElementById('map-form-type').value    = 'donjon';
@@ -9169,6 +9159,7 @@ window.openMapMarkerForm = function openMapMarkerForm(id) {
     document.getElementById('map-form-desc').value    = '';
     document.getElementById('map-form-link').value    = '';
     document.getElementById('map-form-level').value   = '';
+    document.getElementById('map-form-color').value   = '#444444';
   }
   onMapFormTypeChange();
   formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -9194,6 +9185,7 @@ window.saveMapMarker = async function saveMapMarker() {
   if (!type)  { toast('⚠ Le type est obligatoire', 'warning'); return; }
   if (isNaN(floor)) { toast('⚠ Palier invalide', 'warning'); return; }
 
+  const colorVal = document.getElementById('map-form-color').value;
   const obj = {
     type,
     floor,
@@ -9202,6 +9194,7 @@ window.saveMapMarker = async function saveMapMarker() {
     link:  document.getElementById('map-form-link').value.trim() || null,
     gx:    gxVal !== '' ? parseFloat(gxVal) : null,
     gy:    gyVal !== '' ? parseFloat(gyVal) : null,
+    color: colorVal !== '#444444' ? colorVal : null,
   };
 
   if (type === 'donjon') {
@@ -10639,7 +10632,7 @@ let _allPinsList = [];
 let _pinColors   = {};
 
 window.switchMapTab = function switchMapTab(tab) {
-  ['markers', 'allpins', 'colors'].forEach(t => {
+  ['markers', 'allpins', 'colors', 'emojis'].forEach(t => {
     const div = document.getElementById('map-tab-' + t);
     const btn = document.getElementById('map-tab-btn-' + t);
     const active = t === tab;
@@ -10654,6 +10647,7 @@ window.switchMapTab = function switchMapTab(tab) {
 
   if (tab === 'allpins') loadAllMapPins();
   if (tab === 'colors')  loadPinColors();
+  if (tab === 'emojis')  loadPinEmojis();
 };
 
 window.loadAllMapPins = async function loadAllMapPins() {
@@ -10717,7 +10711,7 @@ const _AP_PNJ_TO_TYPE = {
 };
 
 const _AP_TYPE_LABELS = {
-  région: 'Région', donjon: 'Donjon', boss: 'Boss', zone_monstre: 'Zone Monstres',
+  région: 'Région', donjon: 'Donjon', boss: 'Boss', mini_boss: 'Mini-Boss', zone_monstre: 'Zone Monstres',
   quête_principale: 'Quête Principale', quête_secondaire: 'Quête Secondaire', quête_tertiaire: 'Quête Tertiaire',
   craft_armes: "Forgeron d'Armes", craft_armures: "Forgeron d'Armures",
   craft_accessoires: "Forgeron d'Accessoires", craft_lingots: 'Forgeron de Lingots', craft_cles: 'Forgeron de Clés',
@@ -10790,6 +10784,7 @@ window.renderAllMapPins = function renderAllMapPins() {
       table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px;';
       table.innerHTML = `<thead><tr style="font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);">
         <th style="text-align:left;padding:3px 6px;">Nom</th>
+        <th style="text-align:center;padding:3px 6px;">Emoji</th>
         <th style="text-align:center;padding:3px 6px;">Source</th>
         <th style="text-align:center;padding:3px 6px;">GX / GY</th>
         <th style="padding:3px 6px;"></th>
@@ -10801,10 +10796,23 @@ window.renderAllMapPins = function renderAllMapPins() {
         tr.style.borderBottom = '1px solid var(--border)';
         tr.innerHTML = `
           <td style="padding:4px 6px;font-weight:500;">${p.name || p._id || '—'}</td>
+          <td style="text-align:center;padding:4px 6px;"></td>
           <td style="text-align:center;padding:4px 6px;color:var(--muted);">${SOURCE_LABELS[p._source] || p._source}</td>
           <td style="text-align:center;padding:4px 6px;font-family:monospace;font-size:11px;color:var(--muted);">${gx != null ? gx + ' / ' + gy : '—'}</td>
           <td style="padding:4px 6px;text-align:right;"></td>
         `;
+        // Emoji individuel inline
+        const emojiInp = document.createElement('input');
+        emojiInp.type = 'text';
+        emojiInp.value = p.emoji || '';
+        emojiInp.placeholder = _DEFAULT_EMOJIS[_apGetType(p)] || '?';
+        emojiInp.title = 'Emoji individuel (vide = utilise le défaut du type)';
+        emojiInp.style.cssText = 'width:36px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:16px;text-align:center;padding:2px 2px;';
+        emojiInp.addEventListener('change', () => {
+          saveIndividualPinEmoji(p._source, p._id, emojiInp.value.trim());
+        });
+        tr.querySelectorAll('td')[1].appendChild(emojiInp);
+
         const editBtn = document.createElement('button');
         editBtn.className = 'btn btn-ghost btn-sm ed-edit-btn';
         editBtn.style.cssText = 'font-size:11px;padding:2px 8px;';
@@ -10858,7 +10866,7 @@ function renderPinColorForm() {
   if (!el) return;
 
   const CATEGORIES = [
-    { label: '🗺️ Principaux',    types: ['donjon', 'boss', 'zone_monstre'] },
+    { label: '🗺️ Principaux',    types: ['donjon', 'boss', 'mini_boss', 'zone_monstre'] },
     { label: '💬 Quêtes',         types: ['quête_principale', 'quête_secondaire', 'quête_tertiaire'] },
     { label: '⚒️ Forge / Craft',  types: ['craft_armes', 'craft_armures', 'craft_accessoires', 'craft_lingots', 'craft_cles'] },
     { label: '🧪 Artisans',       types: ['alchimiste', 'bucheron', 'refaconneur'] },
@@ -10867,7 +10875,7 @@ function renderPinColorForm() {
   ];
 
   const DEFAULT_COLORS = {
-    donjon: '#ef4444', boss: '#dc2626', zone_monstre: '#f97316',
+    donjon: '#ef4444', boss: '#dc2626', mini_boss: '#f97316', zone_monstre: '#fb923c',
     quête_principale: '#f59e0b', quête_secondaire: '#10b981', quête_tertiaire: '#06b6d4',
     craft_armes: '#8b5cf6', craft_armures: '#7c3aed', craft_accessoires: '#a78bfa',
     craft_lingots: '#6d28d9', craft_cles: '#4c1d95',
@@ -10905,6 +10913,122 @@ function renderPinColorForm() {
 
       row.appendChild(inp);
       row.appendChild(lbl);
+      grid.appendChild(row);
+    }
+    frag.appendChild(grid);
+  }
+  el.innerHTML = '';
+  el.appendChild(frag);
+}
+
+/* ══════════════════════════════════════════════════════
+   EMOJIS DE PINS (par type + individuel)
+══════════════════════════════════════════════════════ */
+
+let _pinEmojis = {};
+
+const _DEFAULT_EMOJIS = {
+  région: '📍', donjon: '⚔️', boss: '☠️', mini_boss: '💀', zone_monstre: '💀',
+  quête_principale: '💬', quête_secondaire: '❓', quête_tertiaire: '📋',
+  craft_armes: '⚒️', craft_armures: '🛡️', craft_accessoires: '💍',
+  craft_lingots: '🔩', craft_cles: '🗝️', craft_runes: '🔮',
+  alchimiste: '⚗️', bucheron: '🪓', refaconneur: '🔧',
+  repreneur_butin: '🛒', repreneur_armes: '⚔️',
+  marchand_itinerant: '💰', marchand_equipement: '⚔️',
+  marchand_consommable: '🧪', marchand_outils: '🔧',
+  marchand_access: '💍', marchand_occulte: '🩸', autre: '🦠',
+};
+
+window.loadPinEmojis = async function loadPinEmojis() {
+  const el = document.getElementById('pin-emojis-content');
+  if (el) el.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const snap = await getDoc(doc(db, 'config', 'pin_type_emojis'));
+    _pinEmojis = snap.exists() ? snap.data() : {};
+    renderPinEmojiForm();
+  } catch(err) {
+    if (el) el.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${err.message}</div>`;
+  }
+};
+
+window.savePinEmojis = async function savePinEmojis() {
+  const btn = document.getElementById('btn-save-pin-emojis');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Sauvegarde…'; }
+  try {
+    const emojis = {};
+    document.querySelectorAll('#pin-emojis-content input[data-type]').forEach(inp => {
+      if (inp.value.trim()) emojis[inp.dataset.type] = inp.value.trim();
+    });
+    await setDoc(doc(db, 'config', 'pin_type_emojis'), emojis);
+    _pinEmojis = emojis;
+    toast('✓ Emojis sauvegardés', 'success');
+  } catch(err) {
+    toast('⛔ ' + err.message, 'error');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '💾 Sauvegarder'; }
+};
+
+window.saveIndividualPinEmoji = async function saveIndividualPinEmoji(source, id, emoji) {
+  const COL_MAP = { pnj: COL.pnj, mob: COL.mobs, marker: COL.mapMarkers };
+  const col = COL_MAP[source];
+  if (!col || !id) return;
+  try {
+    const patch = emoji ? { emoji } : { emoji: deleteField() };
+    await updateDoc(doc(db, col, id), patch);
+    toast('✓ Emoji mis à jour', 'success');
+  } catch(err) {
+    toast('⛔ ' + err.message, 'error');
+  }
+};
+
+const _EMOJI_CATEGORIES = [
+  { label: '🗺️ Principaux',   types: ['donjon', 'boss', 'mini_boss', 'zone_monstre'] },
+  { label: '💬 Quêtes',        types: ['quête_principale', 'quête_secondaire', 'quête_tertiaire'] },
+  { label: '⚒️ Forge / Craft', types: ['craft_armes', 'craft_armures', 'craft_accessoires', 'craft_lingots', 'craft_cles', 'craft_runes'] },
+  { label: '🧪 Artisans',      types: ['alchimiste', 'bucheron', 'refaconneur'] },
+  { label: '🛒 Commerce',      types: ['repreneur_butin', 'repreneur_armes', 'marchand_itinerant', 'marchand_equipement', 'marchand_consommable', 'marchand_outils', 'marchand_access', 'marchand_occulte'] },
+  { label: '🦠 Autres',        types: ['région', 'autre'] },
+];
+
+function renderPinEmojiForm() {
+  const el = document.getElementById('pin-emojis-content');
+  if (!el) return;
+  const frag = document.createDocumentFragment();
+
+  for (const cat of _EMOJI_CATEGORIES) {
+    const catHdr = document.createElement('div');
+    catHdr.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border);';
+    catHdr.textContent = cat.label;
+    frag.appendChild(catHdr);
+
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;';
+
+    for (const type of cat.types) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;';
+
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = _pinEmojis[type] || _DEFAULT_EMOJIS[type] || '';
+      inp.dataset.type = type;
+      inp.placeholder = _DEFAULT_EMOJIS[type] || '?';
+      inp.style.cssText = 'width:40px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:18px;text-align:center;padding:2px 4px;flex-shrink:0;';
+
+      const resetBtn = document.createElement('button');
+      resetBtn.className = 'btn btn-ghost btn-sm';
+      resetBtn.textContent = '↩';
+      resetBtn.title = 'Réinitialiser au défaut';
+      resetBtn.style.cssText = 'font-size:11px;padding:2px 6px;flex-shrink:0;';
+      resetBtn.addEventListener('click', () => { inp.value = _DEFAULT_EMOJIS[type] || ''; });
+
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'font-size:12px;flex:1;';
+      lbl.textContent = _AP_TYPE_LABELS[type] || type;
+
+      row.appendChild(inp);
+      row.appendChild(lbl);
+      row.appendChild(resetBtn);
       grid.appendChild(row);
     }
     frag.appendChild(grid);
