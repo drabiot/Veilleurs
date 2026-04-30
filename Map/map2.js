@@ -88,7 +88,7 @@ const _MAP2_EMOJI = {
   marchand_consommable:'🧪',
   marchand_outils:     '🔧',
   marchand_access:     '💍',
-  marchand_occulte:    '🌑',
+  marchand_occulte:    '🩸',
   autre:               '🦠',
 };
 

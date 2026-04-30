@@ -7680,17 +7680,115 @@ window.switchImgTab = function(name) {
 
 let _lbScale = 1, _lbTx = 0, _lbTy = 0;
 let _lbDrag = false, _lbDragX = 0, _lbDragY = 0;
+let _lbUseCanvas = false;
+let _lbSpriteInterval = null, _lbSpriteFrame = 0, _lbSpriteFrames = 0;
+let _lbSpriteW = 0, _lbSpriteH = 0, _lbSpriteVert = true, _lbSpriteImg = null;
 
-window.tpkOpenLightbox = function(url, name) {
-  const lb  = document.getElementById('tpk-lightbox');
+function _lbActiveEl() {
+  return document.getElementById(_lbUseCanvas ? 'tpk-lb-canvas' : 'tpk-lb-img');
+}
+function _lbSetCursor(c) {
   const img = document.getElementById('tpk-lb-img');
-  const nm  = document.getElementById('tpk-lb-name');
+  const cvs = document.getElementById('tpk-lb-canvas');
+  if (img) img.style.cursor = c;
+  if (cvs) cvs.style.cursor = c;
+}
+
+
+// ── Dessin face avant skin (partagé lightbox + thumbnails) ───────────────────
+// Dessine la face avant du personnage dans cvs (adapté à toute taille de canvas)
+function _drawSkinFront(img, cvs, W, H) {
+  const CW = cvs.width, CH = cvs.height;
+  const sc = Math.min(CW / 16, CH / 32);
+  const ox = ((CW - 16 * sc) / 2) | 0;
+  const oy = ((CH - 32 * sc) / 2) | 0;
+  const ctx = cvs.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  const b = (sx,sy,sw,sh,dx,dy) =>
+    ctx.drawImage(img, sx, sy, sw, sh, ox+dx*sc, oy+dy*sc, sw*sc, sh*sc);
+  const bf = (sx,sy,sw,sh,dx,dy) => {
+    ctx.save();
+    ctx.translate(ox+(dx+sw)*sc, oy+dy*sc);
+    ctx.scale(-1,1);
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw*sc, sh*sc);
+    ctx.restore();
+  };
+  b(8,8,8,8,4,0); b(20,20,8,12,4,8); b(44,20,4,12,0,8); b(4,20,4,12,4,20);
+  if (H >= 64) { b(36,52,4,12,12,8); b(20,52,4,12,8,20); }
+  else         { bf(44,20,4,12,12,8); bf(4,20,4,12,8,20); }
+  b(40,8,8,8,4,0); b(20,36,8,12,4,8); b(44,36,4,12,0,8); b(4,36,4,12,4,20);
+  if (H >= 64) { b(52,52,4,12,12,8); b(4,52,4,12,8,20); }
+}
+
+function _lbDrawSkin(img, cvs, W, H) {
+  cvs.width = 128; cvs.height = 256; // 8× scale for lightbox
+  const ctx = cvs.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#18181f';
+  ctx.fillRect(0, 0, cvs.width, cvs.height);
+  _drawSkinFront(img, cvs, W, H);
+}
+
+function _lbDrawSpriteFrame() {
+  const cvs = document.getElementById('tpk-lb-canvas');
+  if (!cvs || !_lbSpriteImg) return;
+  const ctx = cvs.getContext('2d');
+  ctx.clearRect(0, 0, cvs.width, cvs.height);
+  if (_lbSpriteVert) {
+    ctx.drawImage(_lbSpriteImg, 0, _lbSpriteFrame * _lbSpriteH, _lbSpriteW, _lbSpriteH, 0, 0, _lbSpriteW, _lbSpriteH);
+  } else {
+    ctx.drawImage(_lbSpriteImg, _lbSpriteFrame * _lbSpriteW, 0, _lbSpriteW, _lbSpriteH, 0, 0, _lbSpriteW, _lbSpriteH);
+  }
+}
+
+// fullPath optionnel — chemin ZIP ou GitHub complet, utilisé pour détecter les skins
+window.tpkOpenLightbox = function(url, name, fullPath) {
+  const lb    = document.getElementById('tpk-lightbox');
+  const img   = document.getElementById('tpk-lb-img');
+  const cvs   = document.getElementById('tpk-lb-canvas');
+  const nm    = document.getElementById('tpk-lb-name');
+  const badge = document.getElementById('tpk-lb-badge');
   if (!lb || !img) return;
-  _lbTx = 0; _lbTy = 0; _lbScale = 1;
+  _lbTx = 0; _lbTy = 0; _lbScale = 1; _lbUseCanvas = false;
+  if (_lbSpriteInterval) { clearInterval(_lbSpriteInterval); _lbSpriteInterval = null; }
+  img.style.display = ''; if (cvs) cvs.style.display = 'none';
+  if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
   img.src = '';
   img.onload = () => {
+    const W = img.naturalWidth, H = img.naturalHeight;
+    const isVertStrip  = H >= W * 2 && H % W === 0;
+    const isHorizStrip = W >= H * 2 && W % H === 0;
+    // Skin MC : 64×64 ou 64×32 ET chemin contient un indicateur connu
+    const pathLow = (fullPath || name || '').toLowerCase();
+    const isSkin = W === 64 && (H === 64 || H === 32)
+      && /skin|player|steve|alex|char(?:_|$)|humanoid|entity\/player/.test(pathLow);
+    if (isSkin && cvs) {
+      _lbUseCanvas = true;
+      img.style.display = 'none';
+      _lbDrawSkin(img, cvs, W, H);
+      cvs.style.display = '';
+      if (badge) { badge.textContent = `🧑 Skin MC (${W}×${H})`; badge.style.display = ''; }
+    } else if ((isVertStrip || isHorizStrip) && cvs) {
+      _lbUseCanvas = true;
+      img.style.display = 'none';
+      _lbSpriteImg = img;
+      _lbSpriteVert = isVertStrip;
+      if (isVertStrip) { _lbSpriteW = W; _lbSpriteH = W; _lbSpriteFrames = H / W; }
+      else             { _lbSpriteW = H; _lbSpriteH = H; _lbSpriteFrames = W / H; }
+      _lbSpriteFrame = 0;
+      cvs.width = _lbSpriteW; cvs.height = _lbSpriteH;
+      cvs.style.display = '';
+      _lbDrawSpriteFrame();
+      _lbSpriteInterval = setInterval(() => {
+        _lbSpriteFrame = (_lbSpriteFrame + 1) % _lbSpriteFrames;
+        _lbDrawSpriteFrame();
+      }, 80);
+      if (badge) { badge.textContent = `🎞️ Spritesheet — ${_lbSpriteFrames} frames`; badge.style.display = ''; }
+    }
+    const ew = _lbUseCanvas ? (cvs?.width  || W) : W;
+    const eh = _lbUseCanvas ? (cvs?.height || H) : H;
     const fit = Math.min(window.innerWidth, window.innerHeight) * 0.65;
-    _lbScale = Math.max(1, Math.round(fit / Math.max(img.naturalWidth, img.naturalHeight)));
+    _lbScale = Math.max(1, Math.round(fit / Math.max(ew, eh)));
     _lbUpdate();
   };
   img.src = url;
@@ -7701,6 +7799,7 @@ window.tpkOpenLightbox = function(url, name) {
 window.tpkLbClose = function() {
   const lb = document.getElementById('tpk-lightbox');
   if (lb) lb.style.display = 'none';
+  if (_lbSpriteInterval) { clearInterval(_lbSpriteInterval); _lbSpriteInterval = null; }
 };
 
 window.tpkLbBgDown = function(e) {
@@ -7709,18 +7808,18 @@ window.tpkLbBgDown = function(e) {
 };
 
 function _lbUpdate() {
-  const img = document.getElementById('tpk-lb-img');
-  if (img) img.style.transform = `translate(calc(-50% + ${_lbTx}px), calc(-50% + ${_lbTy}px)) scale(${_lbScale})`;
+  const el = _lbActiveEl();
+  if (el) el.style.transform = `translate(calc(-50% + ${_lbTx}px), calc(-50% + ${_lbTy}px)) scale(${_lbScale})`;
 }
 
 // Drag
 document.addEventListener('mousedown', e => {
-  const img = document.getElementById('tpk-lb-img');
-  if (e.target !== img) return;
+  const el = _lbActiveEl();
+  if (e.target !== el) return;
   _lbDrag = true;
   _lbDragX = e.clientX - _lbTx;
   _lbDragY = e.clientY - _lbTy;
-  img.style.cursor = 'grabbing';
+  _lbSetCursor('grabbing');
   e.preventDefault();
 });
 document.addEventListener('mousemove', e => {
@@ -7732,8 +7831,7 @@ document.addEventListener('mousemove', e => {
 document.addEventListener('mouseup', () => {
   if (_lbDrag) {
     _lbDrag = false;
-    const img = document.getElementById('tpk-lb-img');
-    if (img) img.style.cursor = 'grab';
+    _lbSetCursor('grab');
   }
 });
 
@@ -7767,9 +7865,11 @@ document.addEventListener('keydown', e => {
 
 // ── Texture Pack ──────────────────────────────────────────────────────────────
 
-const TPK_REF_KEY   = 'tpk_reference_filenames';
-const TPK_LINKS_KEY = 'tpk_manual_links';
-const TPK_PAGE      = 60;
+const TPK_REF_KEY        = 'tpk_reference_filenames';
+const TPK_LINKS_KEY      = 'tpk_manual_links';
+const TPK_VFOLDERS_KEY   = 'vcl_tpk_vfolders';
+const TPK_VFLIST_KEY     = 'vcl_tpk_vfolder_list';
+const TPK_PAGE           = 60;
 
 let _tpkFiles     = []; // { path, basename, url, isNew, githubPath, matchType }
 let _tpkGhFiles   = []; // all github image paths (sorted)
@@ -7779,8 +7879,12 @@ let _tpkGhInverse = new Map(); // github path → { url, matchType, tpkFile }
 let _tpkManual    = new Map(); // tpk path → github path (manual links)
 let _tpkLinkSrc   = null;     // tpk file being linked
 let _tpkLeftVis   = [];
-let _tpkLeftPage  = 0;
-let _tpkFolders   = {};       // folderPath → collapsed bool
+let _tpkLeftPage  = 0;        // index (pas page) dans _tpkLeftVis
+let _tpkFolders   = {};       // folderPath → collapsed bool (panel droit)
+let _tpkLeftFolders = {};     // folderPath → collapsed bool (panel gauche)
+let _tpkVFolders    = {};     // basename → virtual folder name
+let _tpkVFolderList = [];     // ordered list of virtual folder names (always includes 'inutile')
+let _tpkVFCollapsed = {};     // virtual folder name → collapsed bool
 
 // ── Persistance liens manuels ────────────────────────────────────────────────
 
@@ -7799,6 +7903,19 @@ function _tpkSaveManual() {
   localStorage.setItem(TPK_LINKS_KEY, JSON.stringify(Object.fromEntries(_tpkManual)));
 }
 
+function _tpkLoadVFolders() {
+  try {
+    _tpkVFolders = JSON.parse(localStorage.getItem(TPK_VFOLDERS_KEY) || '{}');
+    const raw = JSON.parse(localStorage.getItem(TPK_VFLIST_KEY) || '[]');
+    _tpkVFolderList = Array.isArray(raw) ? raw : [];
+    if (!_tpkVFolderList.includes('inutile')) _tpkVFolderList.unshift('inutile');
+  } catch { _tpkVFolders = {}; _tpkVFolderList = ['inutile']; }
+}
+function _tpkSaveVFolders() {
+  localStorage.setItem(TPK_VFOLDERS_KEY, JSON.stringify(_tpkVFolders));
+  localStorage.setItem(TPK_VFLIST_KEY, JSON.stringify(_tpkVFolderList));
+}
+
 // ── Chargement ZIP ───────────────────────────────────────────────────────────
 
 window.tpkLoadZip = async function(file) {
@@ -7807,6 +7924,7 @@ window.tpkLoadZip = async function(file) {
   if (statsEl) statsEl.textContent = '⏳ Lecture du ZIP…';
   _tpkLinkSrc = null;
   _tpkLoadManual();
+  _tpkLoadVFolders();
   try {
     const zip  = await JSZip.loadAsync(file);
     const ref  = new Set(JSON.parse(localStorage.getItem(TPK_REF_KEY) || '[]'));
@@ -7884,7 +8002,7 @@ window.tpkRefreshGithub = async function() {
 function _tpkApplyMatch() {
   _tpkGhInverse.clear();
   for (const f of _tpkFiles) {
-    const manual = _tpkManual.get(f.path);
+    const manual = _tpkManual.get(f.basename);
     const auto   = _tpkGhMap.get(f.basename);
     if (manual === '__none__') {
       // Blacklisté : faux positif confirmé par hash visuel
@@ -7901,20 +8019,106 @@ function _tpkApplyMatch() {
   }
 }
 
+// ── Animation thumbnails (boucle RAF partagée) ───────────────────────────────
+
+let _tpkAnimCells = []; // { type, cvs, img/imgs, w, h, vert, frames, frame, interval, lastTick }
+let _tpkAnimRAF   = null;
+
+function _tpkStartAnimLoop() {
+  if (_tpkAnimRAF) return;
+  function loop(ts) {
+    _tpkAnimRAF = requestAnimationFrame(loop);
+    let alive = false;
+    for (const a of _tpkAnimCells) {
+      if (!a.cvs.isConnected) continue;
+      alive = true;
+      if (ts - (a.lastTick || 0) < a.interval) continue;
+      a.lastTick = ts;
+      a.frame = (a.frame + 1) % a.frames;
+      const ctx = a.cvs.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, a.cvs.width, a.cvs.height);
+      if (a.type === 'sprite') {
+        if (a.vert) ctx.drawImage(a.img, 0, a.frame*a.h, a.w, a.h, 0, 0, a.cvs.width, a.cvs.height);
+        else        ctx.drawImage(a.img, a.frame*a.w, 0, a.w, a.h, 0, 0, a.cvs.width, a.cvs.height);
+      } else if (a.type === 'pair') {
+        ctx.drawImage(a.imgs[a.frame], 0, 0, a.cvs.width, a.cvs.height);
+      }
+    }
+    if (!alive) { cancelAnimationFrame(_tpkAnimRAF); _tpkAnimRAF = null; _tpkAnimCells = []; }
+  }
+  _tpkAnimRAF = requestAnimationFrame(loop);
+}
+
+function _tpkStopAnimLoop() {
+  if (_tpkAnimRAF) { cancelAnimationFrame(_tpkAnimRAF); _tpkAnimRAF = null; }
+  _tpkAnimCells = [];
+}
+
 // ── Rendu gauche (grille) ────────────────────────────────────────────────────
 
 window.tpkRender = function() {
+  _tpkStopAnimLoop();
   const q = (document.getElementById('tpk-search')?.value || '').toLowerCase();
-  _tpkLeftVis = _tpkFiles.filter(f => !f.githubPath && (!q || f.path.toLowerCase().includes(q)));
-  _tpkLeftVis.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0) || a.path.localeCompare(b.path));
+  const unmatchedAll = _tpkFiles.filter(f => !f.githubPath && (!q || f.path.toLowerCase().includes(q)));
+  const unmatched = unmatchedAll.filter(f => !_tpkVFolders[f.basename]);
+  unmatched.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0) || a.path.localeCompare(b.path));
 
-  const newCount = _tpkFiles.filter(f => f.isNew && !f.githubPath).length;
+  // Grouper les paires base + _e, puis classer par dossier
+  const baseMap = new Map(unmatched.map(f => [f.basename, f]));
+  const paired  = new Set();
+  const rawEntries = [];
+  for (const f of unmatched) {
+    if (paired.has(f)) continue;
+    const eFile = baseMap.get(f.basename + '_e');
+    if (eFile && !paired.has(eFile)) {
+      paired.add(f); paired.add(eFile);
+      rawEntries.push({ pair: [f, eFile] });
+    } else if (f.basename.endsWith('_e')) {
+      const base = baseMap.get(f.basename.slice(0, -2));
+      if (base && !paired.has(base)) {
+        paired.add(f); paired.add(base);
+        rawEntries.push({ pair: [base, f] });
+      } else {
+        rawEntries.push({ single: f });
+      }
+    } else {
+      rawEntries.push({ single: f });
+    }
+  }
+
+  // Grouper par dossier ZIP
+  const byFolder = new Map();
+  for (const entry of rawEntries) {
+    const f = entry.pair ? entry.pair[0] : entry.single;
+    const parts = f.path.split('/');
+    const folder = parts.length > 1 ? parts.slice(0, -1).join('/') : '';
+    if (!byFolder.has(folder)) byFolder.set(folder, []);
+    byFolder.get(folder).push(entry);
+  }
+  _tpkLeftVis = [];
+  for (const [folder, entries] of [...byFolder.entries()].sort()) {
+    const collapsed = _tpkLeftFolders[folder] ?? false;
+    if (folder) _tpkLeftVis.push({ folder, count: entries.length, collapsed });
+    if (!collapsed) _tpkLeftVis.push(...entries);
+  }
+
+  const newCount     = _tpkFiles.filter(f => f.isNew && !f.githubPath).length;
+  const manualCount  = [..._tpkManual.values()].filter(v => v !== '__none__').length;
+  const vfolderCount = unmatchedAll.length - unmatched.length;
   const statsEl = document.getElementById('tpk-stats');
-  if (statsEl) statsEl.textContent = `${_tpkFiles.length} textures · ${_tpkGhInverse.size} matchées · ${_tpkLeftVis.length} à trier${newCount ? ` · ${newCount} nouvelles` : ''}`;
+  if (statsEl) statsEl.textContent = [
+    `${_tpkFiles.length} textures`,
+    `${_tpkGhInverse.size} matchées`,
+    `${unmatched.length} à trier`,
+    vfolderCount  ? `${vfolderCount} en dossiers` : '',
+    newCount      ? `${newCount} nouvelles`        : '',
+    manualCount   ? `${manualCount} liens manuels` : '',
+  ].filter(Boolean).join(' · ');
 
   const lc = document.getElementById('tpk-left-count');
   const rc = document.getElementById('tpk-right-count');
-  if (lc) lc.textContent = `(${_tpkLeftVis.length})`;
+  if (lc) lc.textContent = `(${unmatched.length})`;
   if (rc) rc.textContent = `(${_tpkGhInverse.size}/${_tpkGhFiles.length})`;
 
   const banner = document.getElementById('tpk-link-banner');
@@ -7934,17 +8138,199 @@ window.tpkRender = function() {
   _tpkLeftPage = 0;
   tpkLeftMore();
   _tpkRenderTree(q);
+  _tpkRenderVFolders();
 };
 
 window.tpkLeftMore = function() {
   const el  = document.getElementById('tpk-left');
   const btn = document.getElementById('tpk-left-more');
   if (!el) return;
-  _tpkLeftVis.slice(_tpkLeftPage * TPK_PAGE, (_tpkLeftPage + 1) * TPK_PAGE)
-    .forEach(f => el.appendChild(_tpkMakeLeftCell(f)));
-  _tpkLeftPage++;
-  if (btn) btn.style.display = _tpkLeftPage * TPK_PAGE < _tpkLeftVis.length ? '' : 'none';
+  let shown = 0;
+  while (_tpkLeftPage < _tpkLeftVis.length && shown < TPK_PAGE) {
+    const entry = _tpkLeftVis[_tpkLeftPage++];
+    if (entry.folder !== undefined) {
+      el.appendChild(_tpkMakeFolderHeaderLeft(entry));
+    } else {
+      el.appendChild(entry.pair ? _tpkMakePairCell(entry.pair[0], entry.pair[1]) : _tpkMakeLeftCell(entry.single));
+      shown++;
+    }
+  }
+  if (btn) btn.style.display = _tpkLeftPage < _tpkLeftVis.length ? '' : 'none';
 };
+
+function _tpkMakeFolderHeaderLeft(entry) {
+  const div = document.createElement('div');
+  div.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;gap:5px;padding:5px 3px 3px;margin-top:4px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);cursor:pointer;user-select:none;';
+  div.innerHTML = `<span style="font-size:9px;opacity:.55;">${entry.collapsed ? '▶' : '▼'}</span><span>📁 ${escHtml(entry.folder)}</span><span style="opacity:.4;">(${entry.count})</span>`;
+  div.addEventListener('click', () => {
+    _tpkLeftFolders[entry.folder] = !entry.collapsed;
+    tpkRender();
+  });
+  return div;
+}
+
+// ── Dossiers virtuels (local, non-GitHub) ───────────────────────────────────
+
+function _tpkRenderVFolders() {
+  const el = document.getElementById('tpk-left-vfolders');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!_tpkVFolderList.length) return;
+  const q = (document.getElementById('tpk-search')?.value || '').toLowerCase();
+
+  for (const folderName of _tpkVFolderList) {
+    const folderFiles = _tpkFiles.filter(f =>
+      !f.githubPath &&
+      _tpkVFolders[f.basename] === folderName &&
+      (!q || f.path.toLowerCase().includes(q))
+    );
+
+    const collapsed = _tpkVFCollapsed[folderName] ?? true;
+    const section   = document.createElement('div');
+    section.style.cssText = 'margin-top:10px;';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display:flex;align-items:center;gap:5px;padding:5px 3px;border-top:1px solid var(--border);font-size:11px;font-weight:700;cursor:pointer;user-select:none;';
+    const icon = folderName === 'inutile' ? '🚫' : '📁';
+    header.innerHTML = `<span style="font-size:9px;opacity:.55;">${collapsed ? '▶' : '▼'}</span><span>${icon} ${escHtml(folderName)}</span><span style="font-size:10px;font-weight:400;color:var(--muted);">(${folderFiles.length})</span>`;
+    header.addEventListener('click', () => {
+      _tpkVFCollapsed[folderName] = !collapsed;
+      _tpkRenderVFolders();
+    });
+
+    if (folderName !== 'inutile') {
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '🗑️';
+      delBtn.title = 'Supprimer ce dossier (les textures retournent à "À trier")';
+      delBtn.style.cssText = 'margin-left:auto;background:none;border:none;cursor:pointer;font-size:11px;padding:0 4px;opacity:.45;';
+      delBtn.addEventListener('click', e => { e.stopPropagation(); tpkDeleteVFolder(folderName); });
+      header.appendChild(delBtn);
+    }
+    section.appendChild(header);
+
+    if (!collapsed) {
+      if (folderFiles.length === 0) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'font-size:11px;color:var(--muted);padding:8px 4px;text-align:center;opacity:.5;';
+        empty.textContent = 'Vide';
+        section.appendChild(empty);
+      } else {
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:5px;padding-top:6px;';
+        for (const f of folderFiles) grid.appendChild(_tpkMakeLeftCell(f));
+        section.appendChild(grid);
+      }
+    }
+    el.appendChild(section);
+  }
+}
+
+function _tpkShowVFolderMenu(e, f) {
+  document.querySelectorAll('.tpk-ctx-menu').forEach(m => m.remove());
+  const current = _tpkVFolders[f.basename];
+  const menu    = document.createElement('div');
+  menu.className = 'tpk-ctx-menu';
+  const left = Math.min(e.clientX, window.innerWidth  - 180);
+  const top  = Math.min(e.clientY, window.innerHeight - 200);
+  menu.style.cssText = `position:fixed;left:${left}px;top:${top}px;background:var(--surface);border:1px solid var(--border);border-radius:7px;z-index:9999;padding:4px 0;min-width:160px;box-shadow:0 4px 18px rgba(0,0,0,.4);`;
+
+  const addItem = (html, onClick, color) => {
+    const item = document.createElement('div');
+    item.innerHTML = html;
+    item.style.cssText = `padding:6px 12px;font-size:12px;cursor:pointer;color:${color || 'var(--text)'};white-space:nowrap;`;
+    item.addEventListener('mouseenter', () => item.style.background = 'var(--surface2)');
+    item.addEventListener('mouseleave', () => item.style.background = '');
+    item.addEventListener('mousedown', ev => { ev.stopPropagation(); menu.remove(); onClick(); });
+    menu.appendChild(item);
+  };
+  const addSep = () => { const s = document.createElement('div'); s.style.cssText = 'height:1px;background:var(--border);margin:3px 0;'; menu.appendChild(s); };
+
+  if (current) {
+    addItem(`✕ Retirer de <b>${escHtml(current)}</b>`, () => {
+      delete _tpkVFolders[f.basename];
+      _tpkSaveVFolders();
+      tpkRender();
+    }, 'var(--danger)');
+    addSep();
+  }
+
+  for (const name of _tpkVFolderList) {
+    if (name === current) continue;
+    const icon = name === 'inutile' ? '🚫' : '📁';
+    addItem(`${icon} ${escHtml(name)}`, () => {
+      _tpkVFolders[f.basename] = name;
+      _tpkSaveVFolders();
+      tpkRender();
+    });
+  }
+
+  document.body.appendChild(menu);
+  const close = ev => { if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('mousedown', close); } };
+  setTimeout(() => document.addEventListener('mousedown', close), 0);
+}
+
+window.tpkCreateVFolder = function() {
+  const name = window.prompt('Nom du nouveau dossier :', '');
+  if (!name || !name.trim()) return;
+  const clean = name.trim().toLowerCase();
+  if (_tpkVFolderList.includes(clean)) { toast('Ce dossier existe déjà', 'warning'); return; }
+  _tpkVFolderList.push(clean);
+  _tpkVFCollapsed[clean] = false;
+  _tpkSaveVFolders();
+  _tpkRenderVFolders();
+};
+
+window.tpkDeleteVFolder = function(folderName) {
+  if (folderName === 'inutile') return;
+  for (const k of Object.keys(_tpkVFolders)) {
+    if (_tpkVFolders[k] === folderName) delete _tpkVFolders[k];
+  }
+  _tpkVFolderList = _tpkVFolderList.filter(n => n !== folderName);
+  _tpkSaveVFolders();
+  tpkRender();
+};
+
+// Détecte le type de texture d'un fichier pour le rendu dans la grille
+function _tpkDetectType(f) {
+  const W = f._w, H = f._h;
+  if (!W || !H) return 'normal';
+  if (W === 64 && (H === 64 || H === 32) &&
+      /skin|player|steve|alex|char(?:_|$)|humanoid|entity\/player/.test(f.path.toLowerCase())) return 'skin';
+  if (H >= W * 2 && H % W === 0) return 'sprite-vert';
+  if (W >= H * 2 && W % H === 0) return 'sprite-horiz';
+  return 'normal';
+}
+
+function _tpkMakeThumbCanvas(f, size) {
+  const cvs = document.createElement('canvas');
+  cvs.width = size; cvs.height = size;
+  cvs.style.cssText = `width:${size}px;height:${size}px;image-rendering:pixelated;cursor:zoom-in;display:block;`;
+  cvs.addEventListener('click', e => { e.stopPropagation(); tpkOpenLightbox(f.url, f.path.split('/').pop(), f.path); });
+  const tmpImg = new Image();
+  tmpImg.src = f.url;
+  tmpImg.onload = () => {
+    f._w = tmpImg.naturalWidth; f._h = tmpImg.naturalHeight;
+    const type = _tpkDetectType(f);
+    const ctx = cvs.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, size, size);
+    if (type === 'skin') {
+      ctx.fillStyle = '#18181f'; ctx.fillRect(0, 0, size, size);
+      _drawSkinFront(tmpImg, cvs, f._w, f._h);
+    } else if (type === 'sprite-vert' || type === 'sprite-horiz') {
+      const vert   = type === 'sprite-vert';
+      const fw = vert ? f._w : f._h;
+      const fh = vert ? f._w : f._h;
+      const frames = vert ? f._h / f._w : f._w / f._h;
+      ctx.drawImage(tmpImg, 0, 0, fw, fh, 0, 0, size, size);
+      _tpkAnimCells.push({ type:'sprite', cvs, img:tmpImg, w:fw, h:fh, vert, frames, frame:0, interval:80, lastTick:0 });
+      _tpkStartAnimLoop();
+    } else {
+      ctx.drawImage(tmpImg, 0, 0, size, size);
+    }
+  };
+  return cvs;
+}
 
 function _tpkMakeLeftCell(f) {
   const name = f.path.split('/').pop();
@@ -7955,11 +8341,7 @@ function _tpkMakeLeftCell(f) {
   const cell = document.createElement('div');
   cell.title = f.path;
   cell.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 3px;border-radius:6px;border:2px solid ${border};background:${bg};position:relative;`;
-  const img = document.createElement('img');
-  img.src = f.url;
-  img.style.cssText = 'width:52px;height:52px;object-fit:contain;image-rendering:pixelated;cursor:zoom-in;display:block;';
-  img.addEventListener('click', e => { e.stopPropagation(); tpkOpenLightbox(f.url, name); });
-  cell.appendChild(img);
+  cell.appendChild(_tpkMakeThumbCanvas(f, 52));
   cell.insertAdjacentHTML('beforeend', `
     <span style="font-size:9px;color:var(--muted);word-break:break-all;text-align:center;line-height:1.2;max-width:68px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escHtml(name)}</span>
     ${f.isNew ? '<span style="font-size:8px;color:var(--accent);font-weight:700;">NEW</span>' : ''}`);
@@ -7969,6 +8351,53 @@ function _tpkMakeLeftCell(f) {
   linkBtn.style.cssText = `position:absolute;top:2px;right:2px;background:${selected ? 'var(--warn)' : 'rgba(0,0,0,.35)'};border:none;border-radius:3px;color:#fff;font-size:9px;padding:1px 3px;cursor:pointer;line-height:1.4;`;
   linkBtn.addEventListener('click', e => { e.stopPropagation(); _tpkLinkSrc = _tpkLinkSrc === f ? null : f; tpkRender(); });
   cell.appendChild(linkBtn);
+  cell.addEventListener('contextmenu', e => { e.preventDefault(); _tpkShowVFolderMenu(e, f); });
+  return cell;
+}
+
+function _tpkMakePairCell(fb, fe) {
+  const cell = document.createElement('div');
+  cell.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 3px;border-radius:6px;border:2px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface2));position:relative;';
+  cell.title = fb.path + '\n+ ' + fe.path;
+
+  // Canvas animé base ↔ emissive (une frame par seconde)
+  const cvs = document.createElement('canvas');
+  cvs.width = 52; cvs.height = 52;
+  cvs.style.cssText = 'width:52px;height:52px;image-rendering:pixelated;cursor:zoom-in;display:block;';
+  cvs.addEventListener('click', e => { e.stopPropagation(); tpkOpenLightbox(fb.url, fb.path.split('/').pop(), fb.path); });
+
+  let imgB = null, imgE = null;
+  const tryReg = () => {
+    if (!imgB || !imgE) return;
+    const ctx = cvs.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, 52, 52);
+    ctx.drawImage(imgB, 0, 0, 52, 52);
+    _tpkAnimCells.push({ type:'pair', cvs, imgs:[imgB, imgE], frames:2, frame:0, interval:1000, lastTick:0 });
+    _tpkStartAnimLoop();
+  };
+  const lb = new Image(); lb.src = fb.url; lb.onload = () => { imgB = lb; tryReg(); };
+  const le = new Image(); le.src = fe.url; le.onload = () => { imgE = le; tryReg(); };
+
+  cell.appendChild(cvs);
+  const nm = fb.path.split('/').pop().replace(/\.[^.]+$/, '');
+  cell.insertAdjacentHTML('beforeend', `
+    <span style="font-size:9px;color:var(--muted);text-align:center;overflow:hidden;max-width:68px;white-space:nowrap;text-overflow:ellipsis;">${escHtml(nm)}</span>
+    <span style="font-size:7px;color:var(--accent);">+_e</span>`);
+  const lnkRow = document.createElement('div');
+  lnkRow.style.cssText = 'display:flex;gap:3px;';
+  const makeLnk = f => {
+    const sel = _tpkLinkSrc === f;
+    const b = document.createElement('button');
+    b.textContent = '🔗';
+    b.title = (sel ? 'Annuler' : 'Lier') + ' ' + f.path.split('/').pop();
+    b.style.cssText = `background:${sel?'var(--warn)':'rgba(0,0,0,.35)'};border:none;border-radius:3px;color:#fff;font-size:9px;padding:1px 4px;cursor:pointer;`;
+    b.addEventListener('click', e => { e.stopPropagation(); _tpkLinkSrc = _tpkLinkSrc === f ? null : f; tpkRender(); });
+    return b;
+  };
+  lnkRow.appendChild(makeLnk(fb));
+  lnkRow.appendChild(makeLnk(fe));
+  cell.appendChild(lnkRow);
   return cell;
 }
 
@@ -8037,26 +8466,44 @@ function _tpkMakeGhCell(ghPath) {
   const isTarget = _tpkLinkSrc !== null && !match;
   const cell     = document.createElement('div');
   cell.title = match
-    ? `${ghPath}\n← ${match.tpkFile.path}${match.matchType === 'manual' ? '\n(lien manuel — clic droit pour supprimer)' : ''}`
+    ? `${ghPath}\n← ${match.tpkFile.path}${match.matchType === 'manual' ? '\n(lien manuel)' : ' (auto)'}`
     : ghPath;
   const border  = match ? (match.matchType === 'manual' ? 'var(--warn)' : 'var(--border)')
                         : isTarget ? 'var(--accent)' : 'var(--border)';
   const bg      = isTarget ? 'color-mix(in srgb,var(--accent) 8%,var(--surface2))' : 'var(--surface2)';
   const opacity = match ? '1' : isTarget ? '1' : '0.4';
-  cell.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 3px;border-radius:5px;cursor:${isTarget ? 'crosshair' : match ? 'pointer' : 'default'};border:1px solid ${border};background:${bg};opacity:${opacity};width:58px;flex-shrink:0;`;
+  cell.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 3px;border-radius:5px;cursor:${isTarget ? 'crosshair' : match ? 'pointer' : 'default'};border:1px solid ${border};background:${bg};opacity:${opacity};width:58px;flex-shrink:0;position:relative;`;
   const badge = match?.matchType === 'manual' ? '<span style="font-size:7px;color:var(--warn);font-weight:700;">MANUEL</span>' : '';
   cell.innerHTML = `<span style="font-size:8px;color:var(--muted);word-break:break-all;text-align:center;line-height:1.2;max-width:56px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escHtml(name)}</span>${badge}`;
   if (match) {
     const img = document.createElement('img');
     img.src = match.url;
     img.style.cssText = 'width:44px;height:44px;object-fit:contain;image-rendering:pixelated;cursor:zoom-in;display:block;';
-    img.addEventListener('click', e => { e.stopPropagation(); tpkOpenLightbox(match.url, name); });
+    img.addEventListener('click', e => { e.stopPropagation(); tpkOpenLightbox(match.url, name, ghPath); });
     cell.insertBefore(img, cell.firstChild);
     cell.addEventListener('click', () => navigator.clipboard?.writeText(ghPath).then(() => toast(`📋 ${ghPath}`, 'success')));
+    // Bouton delink visible (✕)
+    const delBtn = document.createElement('button');
+    delBtn.textContent = '✕';
+    delBtn.title = match.matchType === 'manual' ? 'Supprimer lien manuel' : 'Exclure du match auto';
+    delBtn.style.cssText = 'position:absolute;top:1px;left:1px;background:rgba(180,0,0,.75);border:none;border-radius:3px;color:#fff;font-size:8px;padding:0 3px;cursor:pointer;line-height:1.6;z-index:1;';
+    delBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (match.matchType === 'manual') {
+        _tpkManual.delete(match.tpkFile.basename);
+      } else {
+        _tpkManual.set(match.tpkFile.basename, '__none__');
+      }
+      _tpkSaveManual();
+      _tpkApplyMatch();
+      tpkRender();
+      toast('✗ Lien supprimé', 'success');
+    });
+    cell.appendChild(delBtn);
     if (match.matchType === 'manual') {
       cell.addEventListener('contextmenu', e => {
         e.preventDefault();
-        _tpkManual.delete(match.tpkFile.path);
+        _tpkManual.delete(match.tpkFile.basename);
         _tpkSaveManual();
         _tpkApplyMatch();
         tpkRender();
@@ -8070,7 +8517,7 @@ function _tpkMakeGhCell(ghPath) {
     cell.insertBefore(placeholder, cell.firstChild);
     if (isTarget) {
       cell.addEventListener('click', () => {
-        _tpkManual.set(_tpkLinkSrc.path, ghPath);
+        _tpkManual.set(_tpkLinkSrc.basename, ghPath);
         _tpkSaveManual();
         _tpkLinkSrc = null;
         _tpkApplyMatch();
@@ -8082,7 +8529,7 @@ function _tpkMakeGhCell(ghPath) {
   return cell;
 }
 
-// ── Perceptual hashing (dHash 8×8 = 64 bits) ─────────────────────────────────
+// ── Perceptual hashing (dHash 16×16 = 256 bits) ──────────────────────────────
 
 function _tpkHash(url) {
   return new Promise((resolve, reject) => {
@@ -8090,7 +8537,7 @@ function _tpkHash(url) {
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
-        const W = 9, H = 8;
+        const W = 17, H = 16;
         const c = document.createElement('canvas');
         c.width = W; c.height = H;
         const ctx = c.getContext('2d');
@@ -8100,7 +8547,7 @@ function _tpkHash(url) {
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, W, H);
         const px = ctx.getImageData(0, 0, W, H).data;
-        const hash = new Uint8Array(8);
+        const hash = new Uint8Array(32); // 256 bits
         let bit = 0;
         for (let y = 0; y < H; y++) {
           for (let x = 0; x < W - 1; x++) {
@@ -8121,7 +8568,7 @@ function _tpkHash(url) {
 
 function _tpkHamming(h1, h2) {
   let d = 0;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < h1.length; i++) {
     let x = h1[i] ^ h2[i];
     while (x) { d += x & 1; x >>>= 1; }
   }
@@ -8187,7 +8634,7 @@ window.tpkVisualMatch = async function() {
       const gh = ghHashes.get(f.githubPath);
       if (!th || !gh) continue;
       const dist = _tpkHamming(th, gh);
-      if (dist > 6) { // probable faux positif → proposer la suppression
+      if (dist > 10) { // probable faux positif → proposer la suppression
         _tpkMatchCandidates.push({ tpkFile: f, ghPath: f.githubPath, tpkUrl: f.url, ghUrl: ghBlobUrl.get(f.githubPath), dist, remove: true });
       }
     }
@@ -8271,8 +8718,8 @@ window.tpkMatchApply = function() {
   document.querySelectorAll('#tpk-match-grid input[type=checkbox]:checked').forEach(cb => {
     const c = _tpkMatchCandidates[+cb.dataset.idx];
     if (!c) return;
-    if (c.remove) _tpkManual.set(c.tpkFile.path, '__none__');
-    else          _tpkManual.set(c.tpkFile.path, c.ghPath);
+    if (c.remove) _tpkManual.set(c.tpkFile.basename, '__none__');
+    else          _tpkManual.set(c.tpkFile.basename, c.ghPath);
   });
   _tpkSaveManual();
   _tpkApplyMatch();

@@ -207,6 +207,8 @@ body.bestiaire-page {
 
 .bfilter-forgeron  { background: #c8783c; box-shadow: 0 0 5px #c8783c66; }
 .bfilter-marchand  { background: #c9a84c; box-shadow: 0 0 5px #c9a84c66; }
+.bfilter-marchand_occulte { background: #e05555; box-shadow: 0 0 5px #e0555566; }
+.bfilter-artisan_runes { background: #3da7c8; box-shadow: 0 0 5px #3da7c866; }
 .bfilter-bucheron  { background: #5aad64; box-shadow: 0 0 5px #5aad6466; }
 .bfilter-alchimiste{ background: #9b6bc9; box-shadow: 0 0 5px #9b6bc966; }
 .bfilter-quetes    { background: #5899e0; box-shadow: 0 0 5px #5899e066; }

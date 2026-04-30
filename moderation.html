@@ -977,9 +977,11 @@
         <div>
           <div style="font-size:12px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
             ⬜ À trier <span id="tpk-left-count" style="font-size:11px;font-weight:400;color:var(--muted);"></span>
+            <button onclick="tpkCreateVFolder()" title="Créer un dossier local" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:10px;padding:2px 6px;cursor:pointer;">＋ Dossier</button>
           </div>
           <div id="tpk-left" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:5px;"></div>
           <button id="tpk-left-more" onclick="tpkLeftMore()" style="display:none;width:100%;margin-top:8px;padding:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;color:var(--text);">Afficher plus…</button>
+          <div id="tpk-left-vfolders"></div>
         </div>
         <!-- Droite : arbre GitHub -->
         <div>
@@ -1116,8 +1118,10 @@
 <div id="tpk-lightbox" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.88);" onmousedown="tpkLbBgDown(event)">
   <div id="tpk-lb-wrap" style="position:absolute;inset:0;overflow:hidden;">
     <img id="tpk-lb-img" draggable="false" style="position:absolute;top:50%;left:50%;image-rendering:pixelated;cursor:grab;user-select:none;" alt="">
+    <canvas id="tpk-lb-canvas" style="position:absolute;top:50%;left:50%;image-rendering:pixelated;cursor:grab;user-select:none;display:none;"></canvas>
   </div>
   <div id="tpk-lb-name" style="position:absolute;bottom:20px;left:0;right:0;text-align:center;font-size:11px;color:rgba(255,255,255,.55);pointer-events:none;"></div>
+  <div id="tpk-lb-badge" style="position:absolute;top:14px;left:16px;font-size:11px;color:rgba(255,255,255,.75);pointer-events:none;background:rgba(0,0,0,.45);padding:3px 9px;border-radius:4px;display:none;"></div>
   <button onclick="tpkLbClose()" style="position:absolute;top:12px;right:14px;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:16px;cursor:pointer;padding:3px 10px;border-radius:4px;line-height:1.6;">✕</button>
   <div style="position:absolute;bottom:20px;right:16px;font-size:10px;color:rgba(255,255,255,.3);pointer-events:none;">Molette : zoom · Glisser : déplacer · Esc : fermer</div>
 </div>

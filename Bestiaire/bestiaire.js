@@ -178,6 +178,12 @@ window.addEventListener('popstate', (e) => {
 ══════════════════════════════════ */
 function getList() { return activeTab === 'monstres' ? MOBS : PERSONNAGES; }
 
+function getPnjEffectiveTag(e) {
+  if (e.occulte === true) return 'marchand_occulte';
+  if (e.type === 'artisan_runes' || e.type === 'artisan_runes') return 'artisan_runes';
+  return e.tag;
+}
+
 function getFiltered() {
   const q = normalize(searchQuery);
   const filtered = getList().filter(e => {
@@ -186,10 +192,12 @@ function getFiltered() {
     if (activeTab === 'monstres') {
       if (!activeTypes.has(e.type)) return false;
     } else {
-      if (e.tag && !activePnjTags.has(e.tag)) return false;
+      const tag = getPnjEffectiveTag(e);
+      if (tag && !activePnjTags.has(tag)) return false;
     }
     return true;
   });
+
   if (activeTab === 'personnages') {
     // Tri PNJ aligné sur le panel modération : palier → ordre des régions (manuel)
     //                                          → ordre des PNJ → nom
@@ -250,15 +258,19 @@ function updateCounts() {
     const filtered = q ? list.filter(e =>
       normalize(e.name).includes(q) || normalize(e.region||'').includes(q)
     ) : list;
-    Object.keys(PNJ_TAG_LABELS).forEach(tag => {
+        Object.keys(PNJ_TAG_LABELS).forEach(tag => {
       const el = document.getElementById(`count-${tag}`);
-      if (el) el.textContent = filtered.filter(e => e.tag === tag).length;
+      if (el) el.textContent = filtered.filter(e => getPnjEffectiveTag(e) === tag).length;
     });
-    const groupExtras = { forgeron: ['refaconneur', 'fabricant_cles', 'fabricant_secrets'], marchand: ['repreneur_butin'] };
+    const groupExtras = { forgeron: ['refaconneur', 'fabricant_cles', 'fabricant_secrets'], marchand: ['repreneur_butin', 'marchand_occulte'] };
     ['forgeron', 'marchand'].forEach(cat => {
       const el = document.getElementById(`group-count-${cat}`);
-      if (el) el.textContent = filtered.filter(e => e.tag && (e.tag.startsWith(cat) || (groupExtras[cat]||[]).includes(e.tag))).length;
+      if (el) el.textContent = filtered.filter(e => {
+        const tag = getPnjEffectiveTag(e);
+        return tag && (tag.startsWith(cat) || (groupExtras[cat]||[]).includes(tag));
+      }).length;
     });
+
   }
 }
 
@@ -350,9 +362,11 @@ function buildGrid() {
     const phStyle = _eImg ? 'style="display:none"' : '';
     const ph = `<span class="card-img-placeholder" ${phStyle}>${isMob ? '👾' : '🧑'}</span>`;
 
-    const typeKey   = isMob ? e.type : (e.tag || 'pnj');
-    const typeLabel = isMob ? (TYPE_LABELS[e.type]||e.type) : (PNJ_TAG_LABELS[e.tag]||e.tag||'PNJ');
-    const typeBadge = `<span class="card-type-badge badge-${typeKey}" style="${!isMob && e.tag ? `background:${PNJ_TAG_COLORS[e.tag]}22;color:${PNJ_TAG_COLORS[e.tag]};border-color:${PNJ_TAG_COLORS[e.tag]}55` : ''}">${typeLabel}</span>`;
+        const effTag = isMob ? null : getPnjEffectiveTag(e);
+    const typeKey   = isMob ? e.type : (effTag || 'pnj');
+    const typeLabel = isMob ? (TYPE_LABELS[e.type]||e.type) : (PNJ_TAG_LABELS[effTag]||effTag||'PNJ');
+    const typeBadge = `<span class="card-type-badge badge-${typeKey}" style="${!isMob && effTag ? `background:${PNJ_TAG_COLORS[effTag]}22;color:${PNJ_TAG_COLORS[effTag]};border-color:${PNJ_TAG_COLORS[effTag]}55` : ''}">${typeLabel}</span>`;
+
     const palierBadge = `<span class="card-palier-badge">P${e.palier}</span>`;
 	const codexBadge = (isMob && e.inCodex) ? `<span class="card-codex-badge">📖</span>` : '';
 
@@ -696,7 +710,9 @@ function renderMobSheet(mob) {
 
 /* ── Fiche PNJ ── */
 function renderPNJSheet(pnj) {
+  const effTag = getPnjEffectiveTag(pnj);
   let sellsHTML = '';
+
   // Filtrer les ventes pointant vers un item sensible (absent de la collection publique)
   const visibleSells = (pnj.sells || []).filter(s => !!findItem(s.id));
   if (visibleSells.length > 0) {
@@ -813,11 +829,12 @@ function renderPNJSheet(pnj) {
             ${(pnj.images?.[0] || pnj.img) ? `<img src="${pnj.images?.[0] || pnj.img}" alt="${escHtml(pnj.name)}">` : '<span class="mob-img-placeholder">🧑</span>'}
           </div>
         </div>
-        <div class="mob-header-info">
+                <div class="mob-header-info">
           <div class="mob-name">${escHtml(pnj.name)}</div>
           <div class="mob-badge-row">
-            <span class="mob-type-badge" style="background:${pnj.tag ? PNJ_TAG_COLORS[pnj.tag]+'22' : 'rgba(100,80,30,.85)'};color:${pnj.tag ? PNJ_TAG_COLORS[pnj.tag] : '#ffd9a0'};border:1px solid ${pnj.tag ? PNJ_TAG_COLORS[pnj.tag]+'55' : '#c06c2055'};">${PNJ_TAG_LABELS[pnj.tag]||pnj.tag||'PNJ'}</span>
+            <span class="mob-type-badge" style="background:${effTag ? PNJ_TAG_COLORS[effTag]+'22' : 'rgba(100,80,30,.85)'};color:${effTag ? PNJ_TAG_COLORS[effTag] : '#ffd9a0'};border:1px solid ${effTag ? PNJ_TAG_COLORS[effTag]+'55' : '#c06c2055'};">${PNJ_TAG_LABELS[effTag]||effTag||'PNJ'}</span>
           </div>
+
           <div class="mob-meta-row">
             <div class="mob-meta-item">
               <span class="mob-meta-key">Palier</span>
