@@ -373,6 +373,8 @@ export async function changePseudoSecurely(newPseudo, { password } = {}) {
 
   // Update Firestore
   await updateDoc(doc(db, COL.users, user.uid), { pseudo });
+  // Sync leaderboard pseudo map
+  try { await setDoc(doc(db, 'config', 'pseudos'), { [user.uid]: pseudo }, { merge: true }); } catch {}
   // Update Firebase Auth displayName (best effort)
   try { await updateProfile(user, { displayName: pseudo }); } catch {}
 

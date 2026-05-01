@@ -7,7 +7,9 @@ service cloud.firestore {
     }
 
     function userRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : 'visiteur';
     }
 
     function isAdmin()       { return isAuth() && userRole() == 'admin'; }
@@ -72,17 +74,18 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read:   if isAuth() && (request.auth.uid == uid || isAdmin());
+      allow get:    if isAuth() && (request.auth.uid == uid || isAdmin());
+      allow list:   if isAuth();  // pseudo uniqueness check (changePseudoSecurely)
       // Création du propre profil à l'inscription (rôle forcé à 'membre', pas d'autres champs)
       allow create: if isAuth()
                     && request.auth.uid == uid
                     && request.resource.data.role == 'membre'
-                    && request.resource.data.keys().hasOnly(['pseudo','role']);
-      // Self-update : l'utilisateur peut modifier uniquement son pseudo (jamais son rôle)
+                    && request.resource.data.keys().hasOnly(['pseudo','role','email']);
+      // Self-update : l'utilisateur peut modifier son pseudo et son email (jamais son rôle)
       allow update: if isAdmin()
                     || (isAuth()
                         && request.auth.uid == uid
-                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pseudo'])
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pseudo','email'])
                         && request.resource.data.pseudo is string);
       allow delete: if isAdmin();
     }
@@ -107,6 +110,29 @@ service cloud.firestore {
 
     match /config/{id} {
       allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    // Pseudo lookup map for leaderboard — users can update their own entry only
+    match /config/pseudos {
+      allow read: if true;
+      allow create: if isAuth()
+                    && request.resource.data.keys().hasOnly([request.auth.uid]);
+      allow update: if isAuth()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly([request.auth.uid]);
+      allow delete: if isAdmin();
+    }
+
+    // Corbeille — contribs peuvent écrire (soft-delete), admins gèrent
+    match /trash/{id} {
+      allow read:   if isContrib();
+      allow create: if isContrib();
+      allow delete: if isContrib();
+    }
+
+    // Posts Discord trackés (thread_id / message_id) — admin only
+    match /discord_posts/{id} {
+      allow read:  if isAdmin();
       allow write: if isAdmin();
     }
 

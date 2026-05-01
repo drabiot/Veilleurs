@@ -48,6 +48,11 @@ function isQuestDone(q) {
   return done === total && total > 0;
 }
 
+function isQuestStarted(q) {
+  const { done, total } = getProgress(q);
+  return done > 0 && done < total;
+}
+
 /* ══════════════════════════════════
    DOM
 ══════════════════════════════════ */
@@ -85,8 +90,9 @@ function getFiltered() {
     if (activePalier !== 'all' && e.palier !== activePalier) return false;
     if (activeZones.size > 0 && !activeZones.has(e.zone)) return false;
     const done = isQuestDone(e);
-    if (activeStatut === 'todo' && done)  return false;
-    if (activeStatut === 'done' && !done) return false;
+    if (activeStatut === 'todo'  && done)                  return false;
+    if (activeStatut === 'done'  && !done)                 return false;
+    if (activeStatut === 'wip'   && !isQuestStarted(e))   return false;
     if (q &&
       !normalize(e.titre).includes(q) &&
       !normalize(e.zone).includes(q)  &&
@@ -323,7 +329,8 @@ function buildZoneFilters() {
 function updateStatutCounts() {
   const base = getTabQuests();
   document.getElementById('cnt-all').textContent  = base.length;
-  document.getElementById('cnt-todo').textContent = base.filter(q => !isQuestDone(q)).length;
+  document.getElementById('cnt-todo').textContent = base.filter(q => !isQuestDone(q) && !isQuestStarted(q)).length;
+  document.getElementById('cnt-wip').textContent  = base.filter(q =>  isQuestStarted(q)).length;
   document.getElementById('cnt-done').textContent = base.filter(q =>  isQuestDone(q)).length;
 }
 
@@ -437,6 +444,32 @@ function buildFeasiblePanel() {
 }
 
 /* ══════════════════════════════════
+   ITEMS REQUIS (objectifs)
+══════════════════════════════════ */
+function getQuestRequiredItems(q) {
+  const items = [];
+  const seen  = new Set();
+  q.objectifs.flat().forEach(o => {
+    if (!o.items) return;
+    o.items.forEach(it => {
+      if (!seen.has(it.id)) { seen.add(it.id); items.push(it); }
+    });
+  });
+  return items;
+}
+
+function renderCardItemIcon(it) {
+  const item   = dbItem(it.id);
+  const color  = item ? rarityColor(item.rarity) : '#888';
+  const name   = item ? item.name : it.id;
+  const imgSrc = item ? getItemImg(item) : null;
+  const qtyBadge = (it.qte && it.qte > 1) ? `<span class="card-item-qty">×${it.qte}</span>` : '';
+  const inner   = imgSrc ? `<img src="${imgSrc}" alt="${name}">` : '📦';
+  const tipText = name + (it.qte > 1 ? ` ×${it.qte}` : '');
+  return `<span class="card-item-icon" data-tip="${tipText}" style="--chip-color:${color}">${inner}${qtyBadge}</span>`;
+}
+
+/* ══════════════════════════════════
    GRILLE — cartes hauteur fixe
 ══════════════════════════════════ */
 function _questXP(q)   { const r = (q.recompenses||[]).find(x => x.type === 'exp');  return r ? rewardVal(r, 'xp')   : 0; }
@@ -520,7 +553,12 @@ function _buildGridCard(q, idx) {
   card.style.setProperty('--zone-color', zs.color);
   card.style.setProperty('--zone-dim',   zs.dim);
 
-  const rewFooter = q.recompenses.slice(0, 3).map(r => rewardMiniTag(r)).join('');
+  const rewFooter  = q.recompenses.slice(0, 3).map(r => rewardMiniTag(r)).join('');
+  const reqItems   = getQuestRequiredItems(q);
+  const itemsRow   = reqItems.length > 0
+    ? `<div class="card-items-row">${reqItems.slice(0, 6).map(it => renderCardItemIcon(it)).join('')}${reqItems.length > 6 ? `<span class="card-items-more">+${reqItems.length - 6}</span>` : ''}</div>`
+    : '';
+  if (reqItems.length > 0) card.classList.add('has-items');
 
   card.innerHTML = `
     <div class="type-stripe"></div>
@@ -543,6 +581,7 @@ function _buildGridCard(q, idx) {
         }
       </div>
       <p class="card-desc">${q.desc || ''}</p>
+      ${itemsRow}
     </div>
     <div class="card-footer">
       <div class="card-rewards-footer">${rewFooter}</div>
@@ -554,6 +593,13 @@ function _buildGridCard(q, idx) {
         ${q.npc ? `<span class="card-npc">🧑 ${resolvePnjName(q.npc)}</span>` : ''}
       </div>
     </div>`;
+
+  // Tooltips sur les icônes items (mouseenter/leave = pas de bubbling)
+  card.querySelectorAll('.card-item-icon[data-tip]').forEach(icon => {
+    const color = icon.style.getPropertyValue('--chip-color') || '#c8a96e';
+    icon.addEventListener('mouseenter', () => _tip.show(icon, icon.dataset.tip, color));
+    icon.addEventListener('mouseleave', () => _tip.hide());
+  });
 
   card.addEventListener('mousedown', e => e.preventDefault());
   card.addEventListener('click', () => openModal(q));
@@ -682,6 +728,13 @@ function updateNextBlocking(q) {
     }
   });
 }
+
+window.questToggleAll = function(qid) {
+  const q = getQuestById(qid);
+  if (!q) return;
+  const { done, total } = getProgress(q);
+  questCheckAll(qid, done < total);
+};
 
 window.questCheckAll = function(qid, checked) {
   const q = getQuestById(qid);
@@ -847,8 +900,9 @@ function renderSheet(q) {
       <div class="quest-section">
         <div class="quest-section-title">Objectifs</div>
         <div class="quest-check-all-row">
-          <button class="quest-check-all-btn" onclick="questCheckAll('${q.id}', true)">✓ Tout cocher</button>
-          <button class="quest-check-all-btn" onclick="questCheckAll('${q.id}', false)">○ Tout décocher</button>
+          <button class="quest-check-all-btn quest-toggle-all-btn" onclick="questToggleAll('${q.id}')">
+            ${isDone ? '○ Tout décocher' : '✓ Tout cocher'}
+          </button>
         </div>
         <div class="obj-list">${objsHTML}</div>
       </div>
@@ -989,6 +1043,57 @@ window.showObjLocPin = function(e, x, z, floor, name) {
   _objLocPopup = popup;
   setTimeout(() => document.addEventListener('click', _dismissObjLocPopup, true), 0);
 };
+
+/* ══════════════════════════════════
+   TOOLTIP ITEMS (body-level, bypass overflow:hidden)
+══════════════════════════════════ */
+/* ══════════════════════════════════
+   TOOLTIP ITEMS — singleton body-level
+══════════════════════════════════ */
+const _tip = (() => {
+  let el        = null;
+  let hideTimer = null;
+
+  function getEl() {
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'vcl-item-tip';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  return {
+    show(anchor, text, color) {
+      clearTimeout(hideTimer);
+      const t = getEl();
+      t.classList.remove('visible');
+      t.textContent = text;
+      t.style.color       = color;
+      t.style.borderColor = color + '55';
+      t.style.left = '-9999px';
+      t.style.top  = '0px';          // top:0 pour forcer le rendu vertical correct
+      void t.offsetWidth;            // force layout synchrone
+      const tw = t.offsetWidth;
+      const th = t.offsetHeight;
+      const r  = anchor.getBoundingClientRect();
+      let left = Math.round(r.left + r.width / 2 - tw / 2);
+      let top  = Math.round(r.top - th - 8);
+      if (left < 6) left = 6;
+      if (left + tw > window.innerWidth - 6) left = window.innerWidth - tw - 6;
+      if (top < 6) top = Math.round(r.bottom + 8);
+      t.style.left = left + 'px';
+      t.style.top  = top  + 'px';
+      requestAnimationFrame(() => t.classList.add('visible'));
+    },
+    hide() {
+      clearTimeout(hideTimer);
+      if (!el) return;
+      el.classList.remove('visible');
+      hideTimer = setTimeout(() => { el?.remove(); el = null; }, 120);
+    }
+  };
+})();
 
 /* ══════════════════════════════════
    INIT

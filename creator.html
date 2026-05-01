@@ -84,6 +84,7 @@
         <div style="flex:1;height:1px;background:var(--border)"></div>
       </div>
       <div class="mfield"><label>Identifiant <span style="color:var(--danger)">*</span></label><input type="text" id="reg-pseudo" placeholder="ex : identifiant" maxlength="32" autocomplete="username"></div>
+      <div class="mfield"><label>Pseudo affiché <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel — permet [VCL], espaces…)</span></label><input type="text" id="reg-display-name" placeholder="ex: [VCL] MonPseudo" maxlength="32" autocomplete="off"></div>
       <div class="mfield"><label>Mot de passe</label><input type="password" id="reg-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
       <button class="btn btn-primary" onclick="doRegister()" style="width:100%;justify-content:center;">✨ Créer mon compte</button>
     </div>
@@ -1129,6 +1130,7 @@ onAuthStateChanged(auth, async user => {
       const pseudo = data.pseudo || null;
       const role   = data.role   || 'membre';
       window._vcl_role = role;
+      if (pseudo && status) status.textContent = pseudo;
       if (pseudo && authorInput) { authorInput.value = pseudo; saveAuthor(); }
       const modBtn = document.getElementById('btn-moderation');
       if (modBtn) modBtn.style.display = ['contributeur','admin'].includes(role) ? '' : 'none';
