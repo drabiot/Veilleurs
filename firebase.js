@@ -12,7 +12,7 @@ import { initializeFirestore, getFirestore,
          doc, getDoc, collection, getDocs, onSnapshot,
          setDoc, addDoc, updateDoc, deleteDoc, deleteField,
          serverTimestamp,
-         query, where, orderBy }                  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+         query, where, orderBy, limit }           from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getAuth, onAuthStateChanged,
          signInWithEmailAndPassword, signOut,
          createUserWithEmailAndPassword,
@@ -232,26 +232,40 @@ export async function hashName(name) {
 }
 
 /**
- * Lookup d'un item/mob caché par nom exact (après normalisation).
- * Fait un getDoc ciblé (pas de list) — autorisé au public par les règles.
- * Retourne l'objet désanitisé (avec _id = docId = hash) ou null.
- * Pas de cache localStorage : on ne veut pas persister les hits côté visiteur.
+ * Lookup d'items cachés par nom exact (champ nameHash = hash(normalize(name))).
+ * Retourne un tableau (plusieurs items peuvent partager le même nom).
+ * Doc key = item.id depuis la migration — plus de collision par nom.
  */
-const _hiddenLookupCache = new Map(); // mémoire uniquement, par (col+hash)
+const _hiddenLookupCache = new Map(); // mémoire uniquement
 export async function getHiddenByName(colName, name) {
   const hash = await hashName(name);
-  if (!hash) return null;
-  const cacheKey = `${colName}/${hash}`;
+  if (!hash) return [];
+  const cacheKey = `${colName}/name/${hash}`;
   if (_hiddenLookupCache.has(cacheKey)) return _hiddenLookupCache.get(cacheKey);
   try {
-    const snap = await getDoc(doc(db, colName, hash));
-    const data = snap.exists()
-      ? desanitizeFromFirestore({ _id: snap.id, ...snap.data() })
-      : null;
+    const q = query(collection(db, colName), where('nameHash', '==', hash), limit(10));
+    const snap = await getDocs(q);
+    const data = snap.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
     _hiddenLookupCache.set(cacheKey, data);
     return data;
   } catch (err) {
     console.warn(`[getHiddenByName] ${colName}:`, err);
+    return [];
+  }
+}
+
+/** Lookup d'un item caché par son id (= clé Firestore depuis la migration). Getdoc direct, sans query. */
+export async function getHiddenById(colName, id) {
+  if (!id) return null;
+  const cacheKey = `${colName}/id/${id}`;
+  if (_hiddenLookupCache.has(cacheKey)) return _hiddenLookupCache.get(cacheKey);
+  try {
+    const snap = await getDoc(doc(db, colName, String(id)));
+    const data = snap.exists() ? desanitizeFromFirestore({ _id: snap.id, ...snap.data() }) : null;
+    _hiddenLookupCache.set(cacheKey, data);
+    return data;
+  } catch (err) {
+    console.warn(`[getHiddenById] ${colName}:`, err);
     return null;
   }
 }
