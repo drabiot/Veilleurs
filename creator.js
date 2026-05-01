@@ -1758,14 +1758,15 @@ function onCatSlotChange() {
 
 function onCatChange() {
   const cat = document.getElementById('f-category').value;
-  const isEquip = ['arme','armure','accessoire'].includes(cat);
-  const hasStats = ['arme','armure','accessoire','rune'].includes(cat);
-  const isCons  = ['consommable','nourriture'].includes(cat);
-  const isArme  = cat === 'arme';
-  document.getElementById('stats-section').style.display     = hasStats ? '' : 'none';
-  document.getElementById('threshold-section').style.display = isEquip  ? '' : 'none';
-  document.getElementById('extras-section').style.display    = isEquip  ? '' : 'none';
-  if (isEquip) buildBuffGrid();
+  const isEquip    = ['arme','armure','accessoire'].includes(cat);
+  const hasExtras  = ['arme','armure','accessoire','rune'].includes(cat);
+  const hasStats   = ['arme','armure','accessoire','rune'].includes(cat);
+  const isCons     = ['consommable','nourriture'].includes(cat);
+  const isArme     = cat === 'arme';
+  document.getElementById('stats-section').style.display     = hasStats   ? '' : 'none';
+  document.getElementById('threshold-section').style.display = isEquip    ? '' : 'none';
+  document.getElementById('extras-section').style.display    = hasExtras  ? '' : 'none';
+  if (hasExtras) buildBuffGrid();
   document.getElementById('effects-section').style.display   = isCons   ? '' : 'none';
   document.getElementById('classes-field').style.display     = isEquip  ? '' : 'none';
   document.getElementById('twohanded-field').style.display      = isArme           ? '' : 'none';
