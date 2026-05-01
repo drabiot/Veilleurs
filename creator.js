@@ -115,6 +115,7 @@ let activeTags   = new Set();
 let craftUid     = 0;
 let effectUid    = 0;
 let selThreshold = {}; // { force:20, dexterite:15, ... }
+let selBuff      = {}; // { force:2, esprit:1, ... }
 
 const THRESHOLD_ATTRS = [
   { id:'force',        label:'Force',       icon:'⚔️' },
@@ -210,10 +211,91 @@ function loadThreshold(thr) {
   }
 }
 
+function buildBuffGrid() {
+  const grid = document.getElementById('extras-grid');
+  if (!grid || grid.dataset.built === '1') return;
+  grid.dataset.built = '1';
+  THRESHOLD_ATTRS.forEach(a => {
+    const color = THRESHOLD_COLORS[a.id] || '#888';
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = `display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;border-left:3px solid ${color};transition:border-color .15s,box-shadow .15s;`;
+
+    const icon = document.createElement('div');
+    icon.style.cssText = `width:34px;height:34px;border-radius:50%;background:${color}1a;border:1.5px solid ${color}55;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;`;
+    icon.textContent = a.icon;
+
+    const body = document.createElement('div');
+    body.style.cssText = 'flex:1;display:flex;flex-direction:column;gap:4px;min-width:0;';
+
+    const lbl = document.createElement('div');
+    lbl.style.cssText = `font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`;
+    lbl.textContent = a.label;
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:5px;';
+
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.min = '0'; inp.placeholder = '—';
+    inp.id = `buff-${a.id}`;
+    inp.style.cssText = `flex:1;min-width:0;background:var(--surface3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font-size:13px;font-family:inherit;text-align:center;outline:none;transition:border-color .15s;`;
+
+    const unit = document.createElement('span');
+    unit.style.cssText = `font-size:10px;color:${color};font-weight:700;white-space:nowrap;opacity:.8;`;
+    unit.textContent = 'pt';
+
+    inp.addEventListener('focus', () => {
+      inp.style.borderColor = color;
+      wrap.style.borderColor = color;
+      wrap.style.boxShadow = `0 0 0 2px ${color}22`;
+    });
+    inp.addEventListener('blur', () => {
+      inp.style.borderColor = 'var(--border)';
+      wrap.style.borderColor = 'var(--border)';
+      wrap.style.boxShadow = '';
+    });
+    inp.addEventListener('input', () => {
+      const v = parseInt(inp.value);
+      if (v > 0) selBuff[a.id] = v;
+      else delete selBuff[a.id];
+      if (typeof update === 'function') update();
+    });
+
+    row.appendChild(inp);
+    row.appendChild(unit);
+    body.appendChild(lbl);
+    body.appendChild(row);
+    wrap.appendChild(icon);
+    wrap.appendChild(body);
+    grid.appendChild(wrap);
+  });
+}
+
+function resetBuffInputs() {
+  selBuff = {};
+  THRESHOLD_ATTRS.forEach(a => {
+    const el = document.getElementById(`buff-${a.id}`);
+    if (el) el.value = '';
+  });
+}
+
+function loadBuff(buff) {
+  resetBuffInputs();
+  if (!buff || typeof buff !== 'object') return;
+  for (const [k, v] of Object.entries(buff)) {
+    const n = parseInt(v);
+    if (!n || n <= 0) continue;
+    selBuff[k] = n;
+    const el = document.getElementById(`buff-${k}`);
+    if (el) el.value = n;
+  }
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', buildThresholdGrid);
+  document.addEventListener('DOMContentLoaded', () => { buildThresholdGrid(); buildBuffGrid(); });
 } else {
   buildThresholdGrid();
+  buildBuffGrid();
 }
 
 const pendingOrphans = new Map(); // id → displayName (tapé par l'user)
@@ -1682,6 +1764,8 @@ function onCatChange() {
   const isArme  = cat === 'arme';
   document.getElementById('stats-section').style.display     = hasStats ? '' : 'none';
   document.getElementById('threshold-section').style.display = isEquip  ? '' : 'none';
+  document.getElementById('extras-section').style.display    = isEquip  ? '' : 'none';
+  if (isEquip) buildBuffGrid();
   document.getElementById('effects-section').style.display   = isCons   ? '' : 'none';
   document.getElementById('classes-field').style.display     = isEquip  ? '' : 'none';
   document.getElementById('twohanded-field').style.display      = isArme           ? '' : 'none';
@@ -2272,6 +2356,8 @@ function loadItem(item) {
 
   // Threshold (prérequis d'attributs)
   if (item.threshold) loadThreshold(item.threshold);
+  // Extras (points d'attribut donnés par l'item)
+  if (item.buff) loadBuff(item.buff);
 
   // Lore
   if (item.lore) document.getElementById('f-lore').value = item.lore;
@@ -2322,6 +2408,7 @@ function resetFormSilent() {
   document.getElementById('evolutif-btn')?.classList.remove('active');
   document.getElementById('occulte-btn')?.classList.remove('active');
   resetThresholdInputs();
+  resetBuffInputs();
   const rarityField = document.getElementById('rarity-field');
   if (rarityField) rarityField.classList.add('unset');
   document.getElementById('sensible-btn').classList.remove('active');
@@ -3692,6 +3779,7 @@ function buildObj() {
   if (selClasses.length)     obj.classes  = [...selClasses];
   if (effects.length)        obj.effects  = effects;
   if (Object.keys(selThreshold).length) obj.threshold = { ...selThreshold };
+  if (Object.keys(selBuff).length)      obj.buff      = { ...selBuff };
   if (lore)                  obj.lore     = lore;
   if (tagsArr.length)        obj.tags     = tagsArr;
   if (obtain)                obj.obtain   = obtain;
