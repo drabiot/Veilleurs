@@ -47,13 +47,15 @@ const STAT_GROUPS = [
       { id:'reduction_chutes',    label:'Réduction de Chutes',             icon:'🦘',  unit:'%',  max:100  },
       { id:'tenacite',            label:'Ténacité',                        icon:'🏋️',  unit:'%',  max:100  },
       { id:'res_recul',           label:'Résistance au Recul',             icon:'🔒',  unit:'%',  max:100  },
+      { id:'chance_parade',       label:'Chance de Parade',                icon:'⚜️',  unit:'%',  max:100  },
     ]
   },
   {
     label: 'Mobilité & Ressources',
     stats: [
       { id:'hate',                label:'Hâte',                            icon:'🌀',  unit:'%',  max:100  },
-      { id:'vitesse_deplacement', label:'Vitesse de Déplacement',          icon:'💨',  unit:'/s', max:100  },
+      { id:'vitesse_deplacement', label:'Vitesse de Déplacement',          icon:'💨',  unit:'',   max:100  },
+      { id:'vitesse_accroupi',    label:'Vitesse Accroupi',                icon:'🐾',  unit:'',   max:50   },
       { id:'mana',                label:'Mana',                            icon:'💧',  unit:'',   max:1000 },
       { id:'stamina',             label:'Stamina',                         icon:'👟',  unit:'',   max:1000 },
     ]
@@ -64,6 +66,7 @@ const STAT_GROUPS = [
       { id:'vol_vie',             label:'Vol de Vie',                      icon:'🩸',  unit:'%',   max:100  },
       { id:'omnivamp',            label:'Omnivampirisme',                  icon:'👄',  unit:'%',   max:100  },
       { id:'soin_bonus',          label:'Soin Bonus',                      icon:'✳️',  unit:'',   max:500  },
+      { id:'puissance_soin',      label:'Puissance de Soin',               icon:'💚',  unit:'',   max:500  },
       { id:'regen_sante',         label:'Régénération Santé',              icon:'💓',  unit:'/s', max:200  },
       { id:'regen_mana',          label:'Régénération Mana',               icon:'💦',  unit:'/s', max:200  },
       { id:'regen_stamina',       label:'Régénération Stamina',            icon:'👟',  unit:'/s', max:200  },

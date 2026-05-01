@@ -91,6 +91,40 @@ export const modal = {
   },
 
   /**
+   * Dialogue à 3 choix : btn1 / btn2 / annuler.
+   * @param {string} message
+   * @param {{ btn1?: string, btn2?: string, cancelLabel?: string, danger?: boolean }} [opts]
+   * @returns {Promise<'btn1'|'btn2'|null>}
+   */
+  choice(message, opts = {}) {
+    const {
+      btn1        = 'Option 1',
+      btn2        = 'Option 2',
+      cancelLabel = 'Annuler',
+      danger      = false,
+    } = opts;
+    return new Promise(resolve => {
+      const overlay = makeOverlay();
+      const btnColor = danger ? 'var(--danger,#c0392b)' : 'var(--accent,#7c5cbf)';
+      overlay.innerHTML = `
+        <div class="vcl-modal-card">
+          <div class="vcl-modal-msg">${message}</div>
+          <div class="vcl-modal-btns">
+            <button class="btn btn-ghost" id="_vcl-cancel">${cancelLabel}</button>
+            <button class="btn btn-ghost" id="_vcl-btn2">${btn2}</button>
+            <button class="btn" id="_vcl-btn1" style="background:${btnColor};color:#fff;">${btn1}</button>
+          </div>
+        </div>
+      `;
+      const close = val => { overlay.remove(); resolve(val); };
+      overlay.querySelector('#_vcl-btn1').addEventListener('click', () => close('btn1'));
+      overlay.querySelector('#_vcl-btn2').addEventListener('click', () => close('btn2'));
+      overlay.querySelector('#_vcl-cancel').addEventListener('click', () => close(null));
+      overlay.addEventListener('click', e => { if (e.target === overlay) close(null); });
+    });
+  },
+
+  /**
    * Alerte asynchrone (un seul bouton OK).
    * @param {string} message
    * @param {{ label?: string }} [opts]
