@@ -1000,6 +1000,8 @@
         <button class="btn btn-ghost" id="tpk-gh-btn" onclick="tpkRefreshGithub()" style="font-size:12px;" disabled>🔄 GitHub</button>
         <button class="btn btn-ghost" id="tpk-visual-btn" onclick="tpkVisualMatch()" style="font-size:12px;" disabled>🔍 Match visuel</button>
         <button class="btn btn-ghost" id="tpk-save-ref-btn" onclick="tpkSaveReference()" style="font-size:12px;" disabled>📌 Référence</button>
+        <button class="btn btn-ghost" onclick="tpkCollapseAll(false)" style="font-size:12px;" title="Déplier tous les dossiers">▼ Tout</button>
+        <button class="btn btn-ghost" onclick="tpkCollapseAll(true)" style="font-size:12px;" title="Replier tous les dossiers">▶ Tout</button>
         <span id="tpk-stats" style="font-size:11px;color:var(--muted);margin-left:auto;"></span>
       </div>
       <!-- Recherche globale -->
@@ -1015,8 +1017,13 @@
             ⬜ À trier <span id="tpk-left-count" style="font-size:11px;font-weight:400;color:var(--muted);"></span>
             <button onclick="tpkCreateVFolder()" title="Créer un dossier local" style="margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:10px;padding:2px 6px;cursor:pointer;">＋ Dossier</button>
           </div>
+          <div id="tpk-sel-bar" style="display:none;padding:5px 8px;margin-bottom:6px;background:color-mix(in srgb,var(--accent) 15%,var(--surface2));border:1px solid var(--accent);border-radius:6px;align-items:center;gap:8px;font-size:11px;">
+            <span id="tpk-sel-count" style="flex:1;font-weight:600;color:var(--accent);"></span>
+            <button class="btn" onclick="tpkSelToInutile()" style="background:var(--accent);color:#fff;font-size:11px;padding:2px 8px;">🚫 Inutile</button>
+            <button class="btn btn-ghost" onclick="tpkSelToIllisible()" style="font-size:11px;padding:2px 8px;">❓ Illisible</button>
+            <button class="btn btn-ghost" onclick="tpkSelClear()" style="font-size:11px;padding:2px 6px;" title="Désélectionner tout">✕</button>
+          </div>
           <div id="tpk-left" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:5px;"></div>
-          <button id="tpk-left-more" onclick="tpkLeftMore()" style="display:none;width:100%;margin-top:8px;padding:6px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:11px;color:var(--text);">Afficher plus…</button>
           <div id="tpk-left-vfolders"></div>
         </div>
         <!-- Droite : arbre GitHub -->

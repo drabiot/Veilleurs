@@ -327,10 +327,12 @@ const STAT_DEFS = [
     { id:'reduction_chutes',   label:'Réduction Chutes %'                         },
     { id:'tenacite',           label:'Ténacité %',                color:'#50a8e8' },
     { id:'res_recul',          label:'Résistance Recul %'                         },
+    { id:'chance_parade',      label:'Chance de Parade %'                         },
   ]},
   { group:'Mobilité & Ressources', stats:[
     { id:'hate',               label:'Hâte %',                   color:'#50a8e8' },
-    { id:'vitesse_deplacement',label:'Vitesse Déplacement /s',    color:'#e8d44a' },
+    { id:'vitesse_deplacement',label:'Vitesse Déplacement',       color:'#e8d44a' },
+    { id:'vitesse_accroupi',   label:'Vitesse Accroupi',          color:'#e8d44a' },
     { id:'mana',               label:'Mana',                      color:'#50d8e8' },
     { id:'stamina',            label:'Stamina',                   color:'#e8c040' },
   ]},
@@ -338,6 +340,7 @@ const STAT_DEFS = [
     { id:'vol_vie',            label:'Vol de Vie %',              color:'#a03030' },
     { id:'omnivamp',           label:'Omnivampirisme %',          color:'#a03030' },
     { id:'soin_bonus',         label:'Soin Bonus',                color:'#50e050' },
+    { id:'puissance_soin',     label:'Puissance de Soin',         color:'#50e050' },
     { id:'regen_sante',        label:'Régén. Santé /s',          color:'#e85050' },
     { id:'regen_mana',         label:'Régén. Mana /s',           color:'#50d8e8' },
     { id:'regen_stamina',      label:'Régén. Stamina /s',        color:'#e8a030' },
@@ -4551,8 +4554,18 @@ async function submitToDiscord() {
     const itemId   = document.getElementById('f-id').value.trim();
     const itemName = document.getElementById('f-name').value.trim();
     if (isDuplicate(itemId)) {
-      const yes = await window._modal?.confirm(`⚠️ L'item "${itemName}" existe déjà dans la base.\nVotre soumission sera traitée comme une modification. Continuer ?`);
-      if (!yes) return;
+      const action = await window._modal?.choice(
+        `⚠️ L'ID <strong>${itemId}</strong> existe déjà dans la base.\nS'agit-il d'une modification de l'item existant, ou d'un nouvel item différent ?`,
+        { btn1: '✏️ Modification', btn2: '➕ Ajout (nouvel item)', cancelLabel: 'Annuler' }
+      );
+      if (!action) return;
+      if (action === 'btn2') {
+        let suffix = 2;
+        let newId = `${itemId}_v${suffix}`;
+        while (isDuplicate(newId)) { suffix++; newId = `${itemId}_v${suffix}`; }
+        document.getElementById('f-id').value = newId;
+        update();
+      }
     } else {
       const pendingItem = await hasPendingSubmission('item', itemName);
       if (pendingItem) {

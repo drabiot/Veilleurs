@@ -8293,7 +8293,8 @@ const TPK_PAGE           = 60;
 
 let _tpkFiles     = []; // { path, basename, url, isNew, githubPath, matchType }
 let _tpkGhFiles   = []; // all github image paths (sorted)
-let _tpkGhMap     = new Map(); // lowercase basename → github path
+let _tpkGhMap     = new Map(); // lowercase basename → github path (last wins, kept for compat)
+let _tpkGhMapAll  = new Map(); // lowercase basename → [github path, ...] (all matches)
 let _tpkGhSha     = new Map(); // github path → sha (for blob API)
 let _tpkGhInverse = new Map(); // github path → { url, matchType, tpkFile }
 let _tpkManual    = new Map(); // tpk path → github path (manual links)
@@ -8303,8 +8304,12 @@ let _tpkLeftPage  = 0;        // index (pas page) dans _tpkLeftVis
 let _tpkFolders   = {};       // folderPath → collapsed bool (panel droit)
 let _tpkLeftFolders = {};     // folderPath → collapsed bool (panel gauche)
 let _tpkVFolders    = {};     // basename → virtual folder name
-let _tpkVFolderList = [];     // ordered list of virtual folder names (always includes 'inutile')
+let _tpkVFolderList = [];     // ordered list of virtual folder names (always includes 'inutile', 'illisible')
+const TPK_PERMANENT = ['inutile', 'illisible'];
+function _tpkVFolderIcon(name) { return name === 'inutile' ? '🚫' : name === 'illisible' ? '❓' : '📁'; }
 let _tpkVFCollapsed = {};     // virtual folder name → collapsed bool
+let _tpkModelMap    = {};     // basename → 'block3d' (has 3D model)
+let _tpkSelected    = new Set(); // basenames selected for bulk action
 
 // ── Persistance liens manuels ────────────────────────────────────────────────
 
@@ -8328,8 +8333,10 @@ function _tpkLoadVFolders() {
     _tpkVFolders = JSON.parse(localStorage.getItem(TPK_VFOLDERS_KEY) || '{}');
     const raw = JSON.parse(localStorage.getItem(TPK_VFLIST_KEY) || '[]');
     _tpkVFolderList = Array.isArray(raw) ? raw : [];
-    if (!_tpkVFolderList.includes('inutile')) _tpkVFolderList.unshift('inutile');
-  } catch { _tpkVFolders = {}; _tpkVFolderList = ['inutile']; }
+    for (const p of [...TPK_PERMANENT].reverse()) {
+      if (!_tpkVFolderList.includes(p)) _tpkVFolderList.unshift(p);
+    }
+  } catch { _tpkVFolders = {}; _tpkVFolderList = [...TPK_PERMANENT]; }
 }
 function _tpkSaveVFolders() {
   localStorage.setItem(TPK_VFOLDERS_KEY, JSON.stringify(_tpkVFolders));
@@ -8363,6 +8370,35 @@ window.tpkLoadZip = async function(file) {
     });
     _tpkFiles = await Promise.all(tasks);
     _tpkFiles.sort((a, b) => a.path.localeCompare(b.path));
+
+    // Parse JSON model files to detect 3D block models
+    _tpkModelMap = {};
+    _tpkSelected.clear();
+    const modelTasks = [];
+    zip.forEach((relPath, entry) => {
+      if (entry.dir || !relPath.toLowerCase().endsWith('.json')) return;
+      modelTasks.push(entry.async('string').then(text => ({ relPath, text })));
+    });
+    const modelRaws = await Promise.all(modelTasks);
+    for (const { relPath, text } of modelRaws) {
+      try {
+        const data = JSON.parse(text);
+        const texs = data.textures || {};
+        const has3d = !!data.elements ||
+          /block\/(cube|orientable|column|slab|stairs|fence|wall|door|trapdoor)/.test(data.parent || '') ||
+          relPath.toLowerCase().includes('/models/block/');
+        for (const texRef of Object.values(texs)) {
+          const bname = String(texRef).split('/').pop().replace(/\.[^.]+$/, '').toLowerCase();
+          if (has3d && !_tpkModelMap[bname]) _tpkModelMap[bname] = 'block3d';
+        }
+      } catch {}
+    }
+    // Also treat any texture in textures/block/ as 3D
+    for (const f of _tpkFiles) {
+      if (f.path.toLowerCase().includes('/textures/block/') || f.path.toLowerCase().startsWith('textures/block/')) {
+        if (!_tpkModelMap[f.basename]) _tpkModelMap[f.basename] = 'block3d';
+      }
+    }
     document.getElementById('tpk-save-ref-btn').disabled = false;
     const vBtn = document.getElementById('tpk-visual-btn');
     if (vBtn) vBtn.disabled = false;
@@ -8391,13 +8427,15 @@ async function _tpkFetchGhTree() {
     );
     if (!resp.ok) throw new Error(resp.status);
     const data = await resp.json();
-    _tpkGhMap.clear(); _tpkGhFiles = []; _tpkGhSha.clear();
+    _tpkGhMap.clear(); _tpkGhMapAll.clear(); _tpkGhFiles = []; _tpkGhSha.clear();
     (data.tree || []).forEach(node => {
       if (node.type !== 'blob') return;
       const low = node.path.toLowerCase();
       if (!low.endsWith('.png') && !low.endsWith('.jpg') && !low.endsWith('.jpeg')) return;
       const base = node.path.split('/').pop().replace(/\.[^.]+$/, '').toLowerCase();
       _tpkGhMap.set(base, node.path);
+      if (!_tpkGhMapAll.has(base)) _tpkGhMapAll.set(base, []);
+      _tpkGhMapAll.get(base).push(node.path);
       _tpkGhSha.set(node.path, node.sha);
       _tpkGhFiles.push(node.path);
     });
@@ -8411,7 +8449,7 @@ async function _tpkFetchGhTree() {
 }
 
 window.tpkRefreshGithub = async function() {
-  _tpkGhMap.clear(); _tpkGhFiles = [];
+  _tpkGhMap.clear(); _tpkGhMapAll.clear(); _tpkGhFiles = [];
   await _tpkFetchGhTree();
   _tpkApplyMatch();
   tpkRender();
@@ -8419,22 +8457,46 @@ window.tpkRefreshGithub = async function() {
 
 // ── Matching (auto + manuel) ─────────────────────────────────────────────────
 
+function _tpkPathScore(zipPath, ghPath) {
+  const z = zipPath.toLowerCase().split('/').slice(0, -1).reverse();
+  const g = ghPath.toLowerCase().split('/').slice(0, -1).reverse();
+  let score = 0;
+  for (let i = 0; i < Math.min(z.length, g.length); i++) {
+    if (z[i] === g[i]) score++;
+    else break;
+  }
+  return score;
+}
+
+function _tpkBestGhPath(zipFile, candidates) {
+  if (!candidates || !candidates.length) return null;
+  if (candidates.length === 1) return candidates[0];
+  return candidates.reduce((best, p) =>
+    _tpkPathScore(zipFile.path, p) > _tpkPathScore(zipFile.path, best) ? p : best,
+    candidates[0]
+  );
+}
+
 function _tpkApplyMatch() {
   _tpkGhInverse.clear();
   for (const f of _tpkFiles) {
-    const manual = _tpkManual.get(f.basename);
-    const auto   = _tpkGhMap.get(f.basename);
+    const manual     = _tpkManual.get(f.basename);
+    const candidates = _tpkGhMapAll.get(f.basename) || [];
     if (manual === '__none__') {
-      // Blacklisté : faux positif confirmé par hash visuel
       f.githubPath = null; f.matchType = null;
     } else if (manual) {
       f.githubPath = manual; f.matchType = 'manual';
       _tpkGhInverse.set(manual, { url: f.url, matchType: 'manual', tpkFile: f });
-    } else if (auto && !_tpkGhInverse.has(auto)) {
-      f.githubPath = auto; f.matchType = 'auto';
-      _tpkGhInverse.set(auto, { url: f.url, matchType: 'auto', tpkFile: f });
     } else {
-      f.githubPath = null; f.matchType = null;
+      // Pick the GitHub path that best matches this ZIP file's folder structure
+      const available = candidates.filter(p => !_tpkGhInverse.has(p));
+      const auto = _tpkBestGhPath(f, available);
+      if (auto) {
+        f.githubPath = auto; f.matchType = 'auto';
+        _tpkGhInverse.set(auto, { url: f.url, matchType: 'auto', tpkFile: f });
+      } else {
+        f.githubPath = null; f.matchType = null;
+      }
     }
   }
 }
@@ -8443,6 +8505,7 @@ function _tpkApplyMatch() {
 
 let _tpkAnimCells = []; // { type, cvs, img/imgs, w, h, vert, frames, frame, interval, lastTick }
 let _tpkAnimRAF   = null;
+let _tpkScrollObs = null; // IntersectionObserver for infinite scroll
 
 function _tpkStartAnimLoop() {
   if (_tpkAnimRAF) return;
@@ -8475,6 +8538,64 @@ function _tpkStopAnimLoop() {
   _tpkAnimCells = [];
 }
 
+// ── Sélection multiple ───────────────────────────────────────────────────────
+
+function _tpkUpdateSelBar() {
+  const bar   = document.getElementById('tpk-sel-bar');
+  const count = document.getElementById('tpk-sel-count');
+  if (!bar) return;
+  const n = _tpkSelected.size;
+  bar.style.display = n > 0 ? 'flex' : 'none';
+  if (count) count.textContent = `${n} sélectionné${n > 1 ? 's' : ''}`;
+}
+
+function _tpkSetChk(chk, sel) {
+  chk.style.borderColor = sel ? 'var(--accent)' : 'rgba(255,255,255,0.35)';
+  chk.style.background  = sel ? 'var(--accent)' : 'rgba(0,0,0,0.45)';
+  chk.innerHTML = sel ? '<span style="color:#fff;font-size:8px;line-height:1;font-weight:700;">✓</span>' : '';
+}
+
+function _tpkSelMoveTo(targetFolder) {
+  if (!_tpkSelected.size) return;
+  const panel = document.getElementById('images-tool-panel');
+  const scrollTop = panel ? panel.scrollTop : 0;
+  for (const bn of _tpkSelected) _tpkVFolders[bn] = targetFolder;
+  _tpkSelected.clear();
+  _tpkSaveVFolders();
+  tpkRender();
+  if (panel) panel.scrollTop = scrollTop;
+}
+window.tpkSelToInutile   = () => _tpkSelMoveTo('inutile');
+window.tpkSelToIllisible = () => _tpkSelMoveTo('illisible');
+
+window.tpkSelClear = function() {
+  _tpkSelected.clear();
+  document.querySelectorAll('.tpk-cell-chk').forEach(chk => _tpkSetChk(chk, false));
+  document.querySelectorAll('.tpk-cell').forEach(c => { c.style.outline = ''; });
+  _tpkUpdateSelBar();
+};
+
+function _tpkBuildRawEntries(files) {
+  const baseMap = new Map(files.map(f => [f.basename, f]));
+  const paired  = new Set();
+  const entries = [];
+  for (const f of files) {
+    if (paired.has(f)) continue;
+    const eFile = baseMap.get(f.basename + '_e');
+    if (eFile && !paired.has(eFile)) {
+      paired.add(f); paired.add(eFile);
+      entries.push({ pair: [f, eFile] });
+    } else if (f.basename.endsWith('_e')) {
+      const base = baseMap.get(f.basename.slice(0, -2));
+      if (base && !paired.has(base)) {
+        paired.add(f); paired.add(base);
+        entries.push({ pair: [base, f] });
+      } else { entries.push({ single: f }); }
+    } else { entries.push({ single: f }); }
+  }
+  return entries;
+}
+
 // ── Rendu gauche (grille) ────────────────────────────────────────────────────
 
 window.tpkRender = function() {
@@ -8482,41 +8603,34 @@ window.tpkRender = function() {
   const q = (document.getElementById('tpk-search')?.value || '').toLowerCase();
   const unmatchedAll = _tpkFiles.filter(f => !f.githubPath && (!q || f.path.toLowerCase().includes(q)));
   const unmatched = unmatchedAll.filter(f => !_tpkVFolders[f.basename]);
-  unmatched.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0) || a.path.localeCompare(b.path));
+  unmatched.sort((a, b) => a.path.localeCompare(b.path));
+  // Clean up selection: remove items no longer in unmatched
+  const unmatchedSet = new Set(unmatched.map(f => f.basename));
+  for (const bn of [..._tpkSelected]) { if (!unmatchedSet.has(bn)) _tpkSelected.delete(bn); }
+  _tpkUpdateSelBar();
 
-  // Grouper les paires base + _e, puis classer par dossier
-  const baseMap = new Map(unmatched.map(f => [f.basename, f]));
-  const paired  = new Set();
-  const rawEntries = [];
-  for (const f of unmatched) {
-    if (paired.has(f)) continue;
-    const eFile = baseMap.get(f.basename + '_e');
-    if (eFile && !paired.has(eFile)) {
-      paired.add(f); paired.add(eFile);
-      rawEntries.push({ pair: [f, eFile] });
-    } else if (f.basename.endsWith('_e')) {
-      const base = baseMap.get(f.basename.slice(0, -2));
-      if (base && !paired.has(base)) {
-        paired.add(f); paired.add(base);
-        rawEntries.push({ pair: [base, f] });
-      } else {
-        rawEntries.push({ single: f });
-      }
-    } else {
-      rawEntries.push({ single: f });
-    }
+  // Séparer nouveau vs existant
+  const newFiles     = unmatched.filter(f => f.isNew);
+  const regularFiles = unmatched.filter(f => !f.isNew);
+
+  _tpkLeftVis = [];
+
+  // ── Section NOUVEAU ──
+  if (newFiles.length > 0) {
+    const newCollapsed = _tpkLeftFolders['__new__'] ?? false;
+    _tpkLeftVis.push({ newSection: true, count: newFiles.length, collapsed: newCollapsed });
+    if (!newCollapsed) _tpkLeftVis.push(..._tpkBuildRawEntries(newFiles));
   }
 
-  // Grouper par dossier ZIP
+  // ── Dossiers ZIP (fichiers existants) ──
   const byFolder = new Map();
-  for (const entry of rawEntries) {
+  for (const entry of _tpkBuildRawEntries(regularFiles)) {
     const f = entry.pair ? entry.pair[0] : entry.single;
     const parts = f.path.split('/');
     const folder = parts.length > 1 ? parts.slice(0, -1).join('/') : '';
     if (!byFolder.has(folder)) byFolder.set(folder, []);
     byFolder.get(folder).push(entry);
   }
-  _tpkLeftVis = [];
   for (const [folder, entries] of [...byFolder.entries()].sort()) {
     const collapsed = _tpkLeftFolders[folder] ?? false;
     if (folder) _tpkLeftVis.push({ folder, count: entries.length, collapsed });
@@ -8551,10 +8665,9 @@ window.tpkRender = function() {
     }
   }
 
+  if (_tpkScrollObs) { _tpkScrollObs.disconnect(); _tpkScrollObs = null; }
   const leftEl = document.getElementById('tpk-left');
-  const leftMore = document.getElementById('tpk-left-more');
   if (leftEl) leftEl.innerHTML = '';
-  if (leftMore) leftMore.style.display = 'none';
   _tpkLeftPage = 0;
   tpkLeftMore();
   _tpkRenderTree(q);
@@ -8562,21 +8675,69 @@ window.tpkRender = function() {
 };
 
 window.tpkLeftMore = function() {
-  const el  = document.getElementById('tpk-left');
-  const btn = document.getElementById('tpk-left-more');
+  const el = document.getElementById('tpk-left');
   if (!el) return;
   let shown = 0;
   while (_tpkLeftPage < _tpkLeftVis.length && shown < TPK_PAGE) {
     const entry = _tpkLeftVis[_tpkLeftPage++];
-    if (entry.folder !== undefined) {
+    if (entry.newSection) {
+      el.appendChild(_tpkMakeNewSectionHeader(entry));
+    } else if (entry.folder !== undefined) {
       el.appendChild(_tpkMakeFolderHeaderLeft(entry));
     } else {
       el.appendChild(entry.pair ? _tpkMakePairCell(entry.pair[0], entry.pair[1]) : _tpkMakeLeftCell(entry.single));
       shown++;
     }
   }
-  if (btn) btn.style.display = _tpkLeftPage < _tpkLeftVis.length ? '' : 'none';
+  if (_tpkLeftPage < _tpkLeftVis.length) {
+    const sentinel = document.createElement('div');
+    sentinel.style.cssText = 'height:4px;grid-column:1/-1;';
+    el.appendChild(sentinel);
+    if (_tpkScrollObs) _tpkScrollObs.disconnect();
+    _tpkScrollObs = new IntersectionObserver(entries => {
+      if (!entries[0].isIntersecting) return;
+      _tpkScrollObs.disconnect(); _tpkScrollObs = null;
+      sentinel.remove();
+      tpkLeftMore();
+    }, { root: document.getElementById('images-tool-panel'), rootMargin: '300px', threshold: 0 });
+    _tpkScrollObs.observe(sentinel);
+  }
 };
+
+function _tpkMakeNewSectionHeader(entry) {
+  const div = document.createElement('div');
+  div.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;gap:6px;padding:6px 4px 4px;margin-top:2px;border-top:2px solid var(--accent);font-size:11px;font-weight:700;color:var(--accent);cursor:pointer;user-select:none;';
+  div.innerHTML = `<span style="font-size:9px;opacity:.7;">${entry.collapsed ? '▶' : '▼'}</span><span>✨ NOUVEAU</span><span style="font-size:10px;font-weight:400;opacity:.7;">(${entry.count})</span>`;
+  div.addEventListener('click', () => {
+    _tpkLeftFolders['__new__'] = !entry.collapsed;
+    tpkRender();
+  });
+  // Checkbox sélection globale section NOUVEAU
+  const newFiles = _tpkFiles.filter(f => f.isNew && !f.githubPath && !_tpkVFolders[f.basename]);
+  const allSel = newFiles.length > 0 && newFiles.every(f => _tpkSelected.has(f.basename));
+  const chk = document.createElement('div');
+  chk.style.cssText = `width:12px;height:12px;border:2px solid ${allSel?'var(--accent)':'rgba(200,200,200,0.35)'};border-radius:2px;background:${allSel?'var(--accent)':'rgba(0,0,0,0.35)'};cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;`;
+  if (allSel) chk.innerHTML = '<span style="color:#fff;font-size:8px;line-height:1;font-weight:700;">✓</span>';
+  chk.addEventListener('click', e => {
+    e.stopPropagation();
+    const files = _tpkFiles.filter(f => f.isNew && !f.githubPath && !_tpkVFolders[f.basename]);
+    const nowAll = files.length > 0 && files.every(f => _tpkSelected.has(f.basename));
+    const basenames = new Set(files.map(f => f.basename));
+    for (const f of files) { if (nowAll) _tpkSelected.delete(f.basename); else _tpkSelected.add(f.basename); }
+    const newSel = !nowAll;
+    document.querySelectorAll('.tpk-cell-chk').forEach(c => {
+      if (basenames.has(c.dataset.basename)) {
+        _tpkSetChk(c, newSel);
+        const cell = c.closest('.tpk-cell');
+        if (cell) cell.style.outline = newSel ? '2px solid var(--accent)' : '';
+      }
+    });
+    _tpkSetChk(chk, newSel);
+    _tpkUpdateSelBar();
+  });
+  div.insertBefore(chk, div.firstChild);
+  return div;
+}
 
 function _tpkMakeFolderHeaderLeft(entry) {
   const div = document.createElement('div');
@@ -8586,6 +8747,47 @@ function _tpkMakeFolderHeaderLeft(entry) {
     _tpkLeftFolders[entry.folder] = !entry.collapsed;
     tpkRender();
   });
+  // Checkbox sélection dossier
+  const folderFiles = _tpkFiles.filter(f => !f.githubPath && !_tpkVFolders[f.basename] && f.path.startsWith(entry.folder + '/'));
+  const allSel = folderFiles.length > 0 && folderFiles.every(f => _tpkSelected.has(f.basename));
+  const folderChk = document.createElement('div');
+  folderChk.style.cssText = `width:12px;height:12px;border:2px solid ${allSel?'var(--accent)':'rgba(200,200,200,0.35)'};border-radius:2px;background:${allSel?'var(--accent)':'rgba(0,0,0,0.35)'};cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;`;
+  if (allSel) folderChk.innerHTML = '<span style="color:#fff;font-size:8px;line-height:1;font-weight:700;">✓</span>';
+  folderChk.addEventListener('click', e => {
+    e.stopPropagation();
+    const files = _tpkFiles.filter(f => !f.githubPath && !_tpkVFolders[f.basename] && f.path.startsWith(entry.folder + '/'));
+    const nowAllSel = files.length > 0 && files.every(f => _tpkSelected.has(f.basename));
+    const basenames = new Set(files.map(f => f.basename));
+    for (const f of files) { if (nowAllSel) _tpkSelected.delete(f.basename); else _tpkSelected.add(f.basename); }
+    const newSel = !nowAllSel;
+    // Update visible cell checkboxes for this folder
+    document.querySelectorAll('.tpk-cell-chk').forEach(chk => {
+      if (basenames.has(chk.dataset.basename)) {
+        _tpkSetChk(chk, newSel);
+        const c = chk.closest('.tpk-cell');
+        if (c) { c.style.outline = newSel ? '2px solid var(--accent)' : ''; }
+      }
+    });
+    _tpkSetChk(folderChk, newSel);
+    _tpkUpdateSelBar();
+  });
+  div.insertBefore(folderChk, div.firstChild);
+  const inutileBtn = document.createElement('button');
+  inutileBtn.textContent = '🚫';
+  inutileBtn.title = 'Tout mettre dans "inutile"';
+  inutileBtn.style.cssText = 'margin-left:auto;background:none;border:none;cursor:pointer;font-size:10px;padding:0 3px;opacity:.5;line-height:1;flex-shrink:0;';
+  inutileBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    const panel = document.getElementById('images-tool-panel');
+    const scrollTop = panel ? panel.scrollTop : 0;
+    const prefix = entry.folder + '/';
+    const affected = _tpkFiles.filter(f => !f.githubPath && f.path.startsWith(prefix));
+    for (const f of affected) _tpkVFolders[f.basename] = 'inutile';
+    _tpkSaveVFolders();
+    tpkRender();
+    if (panel) panel.scrollTop = scrollTop;
+  });
+  div.appendChild(inutileBtn);
   return div;
 }
 
@@ -8611,14 +8813,14 @@ function _tpkRenderVFolders() {
 
     const header = document.createElement('div');
     header.style.cssText = 'display:flex;align-items:center;gap:5px;padding:5px 3px;border-top:1px solid var(--border);font-size:11px;font-weight:700;cursor:pointer;user-select:none;';
-    const icon = folderName === 'inutile' ? '🚫' : '📁';
+    const icon = _tpkVFolderIcon(folderName);
     header.innerHTML = `<span style="font-size:9px;opacity:.55;">${collapsed ? '▶' : '▼'}</span><span>${icon} ${escHtml(folderName)}</span><span style="font-size:10px;font-weight:400;color:var(--muted);">(${folderFiles.length})</span>`;
     header.addEventListener('click', () => {
       _tpkVFCollapsed[folderName] = !collapsed;
       _tpkRenderVFolders();
     });
 
-    if (folderName !== 'inutile') {
+    if (!TPK_PERMANENT.includes(folderName)) {
       const delBtn = document.createElement('button');
       delBtn.textContent = '🗑️';
       delBtn.title = 'Supprimer ce dossier (les textures retournent à "À trier")';
@@ -8676,7 +8878,7 @@ function _tpkShowVFolderMenu(e, f) {
 
   for (const name of _tpkVFolderList) {
     if (name === current) continue;
-    const icon = name === 'inutile' ? '🚫' : '📁';
+    const icon = _tpkVFolderIcon(name);
     addItem(`${icon} ${escHtml(name)}`, () => {
       _tpkVFolders[f.basename] = name;
       _tpkSaveVFolders();
@@ -8701,7 +8903,7 @@ window.tpkCreateVFolder = function() {
 };
 
 window.tpkDeleteVFolder = function(folderName) {
-  if (folderName === 'inutile') return;
+  if (TPK_PERMANENT.includes(folderName)) return;
   for (const k of Object.keys(_tpkVFolders)) {
     if (_tpkVFolders[k] === folderName) delete _tpkVFolders[k];
   }
@@ -8710,10 +8912,31 @@ window.tpkDeleteVFolder = function(folderName) {
   tpkRender();
 };
 
+window.tpkCollapseAll = function(val) {
+  // Section NOUVEAU
+  _tpkLeftFolders['__new__'] = val;
+  // Left ZIP panel — direct parent folders of all unmatched files
+  for (const f of _tpkFiles) {
+    const parts = f.path.split('/');
+    if (parts.length > 1) _tpkLeftFolders[parts.slice(0, -1).join('/')] = val;
+  }
+  // Right GitHub panel — all folder paths in tree
+  for (const p of _tpkGhFiles) {
+    const parts = p.split('/');
+    for (let i = 1; i < parts.length; i++) {
+      _tpkFolders[parts.slice(0, i).join('/')] = val;
+    }
+  }
+  // Virtual folders
+  for (const name of _tpkVFolderList) _tpkVFCollapsed[name] = val;
+  tpkRender();
+};
+
 // Détecte le type de texture d'un fichier pour le rendu dans la grille
 function _tpkDetectType(f) {
   const W = f._w, H = f._h;
   if (!W || !H) return 'normal';
+  if (_tpkModelMap[f.basename]) return 'model3d';
   if (W === 64 && (H === 64 || H === 32) &&
       /skin|player|steve|alex|char(?:_|$)|humanoid|entity\/player/.test(f.path.toLowerCase())) return 'skin';
   if (H >= W * 2 && H % W === 0) return 'sprite-vert';
@@ -8737,6 +8960,17 @@ function _tpkMakeThumbCanvas(f, size) {
     if (type === 'skin') {
       ctx.fillStyle = '#18181f'; ctx.fillRect(0, 0, size, size);
       _drawSkinFront(tmpImg, cvs, f._w, f._h);
+    } else if (type === 'model3d') {
+      ctx.drawImage(tmpImg, 0, 0, size, size);
+      // Badge 3D overlay
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(0, size - 11, size, 11);
+      ctx.fillStyle = '#7ecfff';
+      ctx.font = `bold ${Math.max(7, size/7.5)|0}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('3D', size/2, size - 5.5);
+      ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
     } else if (type === 'sprite-vert' || type === 'sprite-horiz') {
       const vert   = type === 'sprite-vert';
       const fw = vert ? f._w : f._h;
@@ -8752,23 +8986,44 @@ function _tpkMakeThumbCanvas(f, size) {
   return cvs;
 }
 
+
 function _tpkMakeLeftCell(f) {
-  const name = f.path.split('/').pop();
-  const selected = _tpkLinkSrc === f;
-  const border = selected ? 'var(--warn)' : f.isNew ? 'var(--accent)' : 'var(--border)';
-  const bg     = selected ? 'color-mix(in srgb,var(--warn) 15%,var(--surface2))'
-                          : f.isNew ? 'color-mix(in srgb,var(--accent) 10%,var(--surface2))' : 'var(--surface2)';
+  const name     = f.path.split('/').pop();
+  const linking  = _tpkLinkSrc === f;
+  const isSel    = _tpkSelected.has(f.basename);
+  const border   = linking ? 'var(--warn)' : isSel ? 'var(--accent)' : f.isNew ? 'var(--accent)' : 'var(--border)';
+  const bg       = linking ? 'color-mix(in srgb,var(--warn) 15%,var(--surface2))'
+                 : isSel   ? 'color-mix(in srgb,var(--accent) 18%,var(--surface2))'
+                 : f.isNew ? 'color-mix(in srgb,var(--accent) 10%,var(--surface2))' : 'var(--surface2)';
   const cell = document.createElement('div');
+  cell.className = 'tpk-cell';
   cell.title = f.path;
-  cell.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 3px;border-radius:6px;border:2px solid ${border};background:${bg};position:relative;`;
+  cell.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 3px;border-radius:6px;border:2px solid ${border};background:${bg};position:relative;${isSel ? 'outline:2px solid var(--accent);outline-offset:1px;' : ''}`;
   cell.appendChild(_tpkMakeThumbCanvas(f, 52));
   cell.insertAdjacentHTML('beforeend', `
     <span style="font-size:9px;color:var(--muted);word-break:break-all;text-align:center;line-height:1.2;max-width:68px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">${escHtml(name)}</span>
     ${f.isNew ? '<span style="font-size:8px;color:var(--accent);font-weight:700;">NEW</span>' : ''}`);
+  // Checkbox sélection (top-left)
+  const chk = document.createElement('div');
+  chk.className = 'tpk-cell-chk';
+  chk.dataset.basename = f.basename;
+  chk.style.cssText = `position:absolute;top:2px;left:2px;width:13px;height:13px;border:2px solid ${isSel?'var(--accent)':'rgba(255,255,255,0.35)'};border-radius:3px;background:${isSel?'var(--accent)':'rgba(0,0,0,0.45)'};cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;flex-shrink:0;`;
+  if (isSel) chk.innerHTML = '<span style="color:#fff;font-size:8px;line-height:1;font-weight:700;">✓</span>';
+  chk.addEventListener('click', e => {
+    e.stopPropagation();
+    const now = !_tpkSelected.has(f.basename);
+    if (now) _tpkSelected.add(f.basename); else _tpkSelected.delete(f.basename);
+    _tpkSetChk(chk, now);
+    cell.style.outline = now ? '2px solid var(--accent)' : '';
+    cell.style.background = now ? 'color-mix(in srgb,var(--accent) 18%,var(--surface2))' : bg;
+    _tpkUpdateSelBar();
+  });
+  cell.appendChild(chk);
+  // Bouton liaison (top-right)
   const linkBtn = document.createElement('button');
   linkBtn.textContent = '🔗';
-  linkBtn.title = selected ? 'Annuler liaison' : 'Lier manuellement à un fichier GitHub';
-  linkBtn.style.cssText = `position:absolute;top:2px;right:2px;background:${selected ? 'var(--warn)' : 'rgba(0,0,0,.35)'};border:none;border-radius:3px;color:#fff;font-size:9px;padding:1px 3px;cursor:pointer;line-height:1.4;`;
+  linkBtn.title = linking ? 'Annuler liaison' : 'Lier manuellement à un fichier GitHub';
+  linkBtn.style.cssText = `position:absolute;top:2px;right:2px;background:${linking ? 'var(--warn)' : 'rgba(0,0,0,.35)'};border:none;border-radius:3px;color:#fff;font-size:9px;padding:1px 3px;cursor:pointer;line-height:1.4;`;
   linkBtn.addEventListener('click', e => { e.stopPropagation(); _tpkLinkSrc = _tpkLinkSrc === f ? null : f; tpkRender(); });
   cell.appendChild(linkBtn);
   cell.addEventListener('contextmenu', e => { e.preventDefault(); _tpkShowVFolderMenu(e, f); });
