@@ -1800,7 +1800,7 @@ function loadAccessoriesForClass(classId) {
 						} else if (itemId && _hiddenCache.has(itemId)) {
 							equipped[slotId] = _hiddenCache.get(itemId);
 						} else if (itemName) {
-							sensiblePending.push({ slotId: slotId, name: itemName });
+							sensiblePending.push({ slotId: slotId, name: itemName, id: itemId });
 						}
 					});
 					if (parsed.runes) {
@@ -1842,10 +1842,15 @@ function loadAccessoriesForClass(classId) {
 		if (sensiblePending.length) {
 			const pendingForBuild = idx;
 			sensiblePending.forEach(function(pending) {
-				(function(slotId, rawName) {
+				(function(slotId, rawName, savedId) {
 					var api = window.VCL_DB;
 					if (!api || !api.getHiddenByName) return;
-					api.getHiddenByName(api.COL.itemsHidden, rawName).then(async function(hit) {
+					const fetchHidden = api.getHiddenById
+						? api.getHiddenById(api.COL.itemsHidden, savedId).then(function(h) {
+							return h || api.getHiddenByName(api.COL.itemsHidden, rawName).then(function(hits) { return hits && hits[0] || null; });
+						  })
+						: api.getHiddenByName(api.COL.itemsHidden, rawName).then(function(hits) { return hits && hits[0] || null; });
+					fetchHidden.then(async function(hit) {
 						if (!hit) return;
 						if (!_hiddenCache.has(hit.id)) {
 							if (hit.id && api.getSecretById) {
@@ -1866,7 +1871,7 @@ function loadAccessoriesForClass(classId) {
 						renderPickerInfo();
 						window.dispatchEvent(new CustomEvent('vcl:stuffChanged'));
 					}).catch(function() {});
-				})(pending.slotId, pending.name);
+				})(pending.slotId, pending.name, pending.id);
 			});
 		}
 	}
@@ -2198,21 +2203,20 @@ function loadAccessoriesForClass(classId) {
     const api = window.VCL_DB;
     if (!api || !api.getHiddenByName) return;
     try {
-      const hit = await api.getHiddenByName(api.COL.itemsHidden, rawName);
-      if (!hit) return;
-      if (!_hiddenCache.has(hit.id)) {
-        // Tenter de récupérer le flavor (images, lore…) depuis items_secret
-        // Silencieux si refusé (non-contrib)
-        if (hit.id && api.getSecretById) {
-          const secret = await api.getSecretById(api.COL.itemsSecret, hit.id);
-          if (secret) Object.assign(hit, secret);
+      const hits = await api.getHiddenByName(api.COL.itemsHidden, rawName);
+      if (!hits || !hits.length) return;
+      for (const hit of hits) {
+        if (!_hiddenCache.has(hit.id)) {
+          if (hit.id && api.getSecretById) {
+            const secret = await api.getSecretById(api.COL.itemsSecret, hit.id);
+            if (secret) Object.assign(hit, secret);
+          }
+          if (!hit.images?.length && !hit.image && !hit.img) {
+            const builtImg = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier, hit.event);
+            if (builtImg) { hit.img = builtImg; hit.images = [builtImg]; }
+          }
+          _hiddenCache.set(hit.id, hit);
         }
-        // Fallback image calculée si toujours aucun champ image
-        if (!hit.images?.length && !hit.image && !hit.img) {
-          const builtImg = _sensibleImg(hit.category || hit.cat, hit.id, hit.palier, hit.event);
-          if (builtImg) { hit.img = builtImg; hit.images = [builtImg]; }
-        }
-        _hiddenCache.set(hit.id, hit);
       }
       // Ne re-render que si la recherche courante correspond encore (nom exact)
       if (normalize(filterQ) === q) renderItemList();
@@ -2320,7 +2324,7 @@ function loadAccessoriesForClass(classId) {
         const parsed = JSON.parse(raw);
         if (parsed.sig === SIG && (parsed.v === 1 || parsed.v === 2) && parsed.slots) {
 
-          const sensiblePending = []; // { slotId, name } à résoudre en async
+          const sensiblePending = []; // { slotId, name, id } à résoudre en async
 
           Object.entries(parsed.slots).forEach(function(e) {
             const slotId = e[0];
@@ -2333,7 +2337,7 @@ function loadAccessoriesForClass(classId) {
               equipped[slotId] = item;
             } else if (itemName) {
               // Item non trouvé dans ITEMS → potentiellement sensible
-              sensiblePending.push({ slotId: slotId, name: itemName });
+              sensiblePending.push({ slotId: slotId, name: itemName, id: itemId });
             }
           });
 
@@ -2371,10 +2375,15 @@ function loadAccessoriesForClass(classId) {
           // Restauration asynchrone des items sensibles
           if (sensiblePending.length) {
             sensiblePending.forEach(function(pending) {
-              (function(slotId, rawName) {
+              (function(slotId, rawName, savedId) {
                 var api = window.VCL_DB;
                 if (!api || !api.getHiddenByName) return;
-                api.getHiddenByName(api.COL.itemsHidden, rawName).then(async function(hit) {
+                const fetchHidden = api.getHiddenById
+                  ? api.getHiddenById(api.COL.itemsHidden, savedId).then(function(h) {
+                      return h || api.getHiddenByName(api.COL.itemsHidden, rawName).then(function(hits) { return hits && hits[0] || null; });
+                    })
+                  : api.getHiddenByName(api.COL.itemsHidden, rawName).then(function(hits) { return hits && hits[0] || null; });
+                fetchHidden.then(async function(hit) {
                   if (!hit) return;
                   if (!_hiddenCache.has(hit.id)) {
                     if (hit.id && api.getSecretById) {
@@ -2392,7 +2401,7 @@ function loadAccessoriesForClass(classId) {
                   renderStats();
                   renderPickerInfo();
                 }).catch(function() {});
-              })(pending.slotId, pending.name);
+              })(pending.slotId, pending.name, pending.id);
             });
           }
         }

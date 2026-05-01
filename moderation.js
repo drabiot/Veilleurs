@@ -890,7 +890,7 @@ window.approve = async (id) => {
     const _contribField = { uid: sub.submittedBy || null, name: _contribName };
 
     if (sub.type === 'item' && isSensible) {
-      // Item sensible → split gameplay (items_hidden par hash) + flavor (items_secret par id)
+      // Item sensible → split gameplay (items_hidden par item.id) + flavor (items_secret par id)
       const gameplayKeys = await getItemGameplayKeys();
       const gameplay = {};
       const secret   = {};
@@ -899,9 +899,9 @@ window.approve = async (id) => {
         if (gameplayKeys.includes(k)) gameplay[k] = v;
         else                          secret[k]   = v;
       }
-      const hash = await hashName(sub.data.name);
-      if (!hash) throw new Error('Nom manquant pour hash');
-      await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore({ ...gameplay, sensible: true }));
+      const nameHash = await hashName(sub.data.name);
+      if (!nameHash) throw new Error('Nom manquant pour hash');
+      await setDoc(doc(db, COL.itemsHidden, String(dataId)), sanitizeForFirestore({ ...gameplay, nameHash, sensible: true }));
       // items_secret sert aussi de point d'ancrage pour le _contributor (créé même si vide)
       await setDoc(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore({ ...secret, _contributor: _contribField, sensible: true }));
       // Nettoyer toute version publique existante
@@ -938,10 +938,7 @@ window.approve = async (id) => {
       // Si l'entité était précédemment sensible, nettoyer les collections cachées
       if (sub.type === 'item') {
         try { await deleteDoc(doc(db, COL.itemsSecret, String(dataId))); } catch {}
-        try {
-          const hash = await hashName(sub.data.name);
-          if (hash) await deleteDoc(doc(db, COL.itemsHidden, hash));
-        } catch {}
+        try { await deleteDoc(doc(db, COL.itemsHidden, String(dataId))); } catch {}
       } else if (sub.type === 'mob') {
         try { await deleteDoc(doc(db, COL.mobsSecret, String(dataId))); } catch {}
       }
@@ -3662,15 +3659,16 @@ window.saveEditor = async function() {
         if (gameplayKeys.includes(k)) gameplay[k] = v;
         else                          secret[k]   = v;
       }
-      const hash = await hashName(newData.name);
-      if (!hash) throw new Error('Nom manquant pour recalculer le hash');
-      // Si le nom (donc le hash) a changé, supprimer l'ancien doc items_hidden (keyé par hash)
-      if (hash !== _editorId) {
+      const nameHash = await hashName(newData.name);
+      if (!nameHash) throw new Error('Nom manquant pour hash');
+      const itemId    = String(newData.id || '');
+      const oldItemId = String(_editorOrigData?.id || _editorId || '');
+      const newHiddenDocId = itemId || _editorId;
+      // Si l'id item a changé, supprimer l'ancien doc items_hidden (keyé par item.id)
+      if (newHiddenDocId !== _editorId) {
         try { await deleteDoc(doc(db, COL.itemsHidden, _editorId)); } catch {}
       }
-      await setDoc(doc(db, COL.itemsHidden, hash), sanitizeForFirestore({ ...gameplay, sensible: true }));
-      const itemId = String(newData.id || '');
-      const oldItemId = String(_editorOrigData?.id || '');
+      await setDoc(doc(db, COL.itemsHidden, newHiddenDocId), sanitizeForFirestore({ ...gameplay, nameHash, sensible: true }));
       // Si le publicId a changé, supprimer l'ancien doc items_secret (keyé par publicId) → évite l'orphelin
       if (oldItemId && oldItemId !== itemId) {
         try { await deleteDoc(doc(db, COL.itemsSecret, oldItemId)); } catch {}
@@ -3687,9 +3685,9 @@ window.saveEditor = async function() {
       // Mettre à jour _sensState en mémoire
       const merged = { ...gameplay, ...secret };
       const idx = _sensState.itemsHidden.findIndex(x => x._id === _editorId);
-      if (idx >= 0) _sensState.itemsHidden[idx] = { _id: hash, ...merged };
-      else _sensState.itemsHidden.push({ _id: hash, ...merged });
-      _editorId = hash;
+      if (idx >= 0) _sensState.itemsHidden[idx] = { _id: newHiddenDocId, ...merged };
+      else _sensState.itemsHidden.push({ _id: newHiddenDocId, ...merged });
+      _editorId = newHiddenDocId;
       _editorOrigData = { ...newData };
       // Forcer rechargement propre du panel data-all (sinon affiche encore l'ancien hash)
       _dataAllLoaded = false;
@@ -3803,22 +3801,14 @@ window.deleteCurrentEntry = async function() {
     try { await addDoc(collection(db, 'trash'), trashPayload); } catch(te) { console.warn('[Trash] Sauvegarde corbeille échouée:', te); }
 
     if (_editorCollection === 'items_sensible') {
-      // Supprimer items_hidden (par hash). Pour items_secret (par publicId) : seulement
-      // s'il n'existe pas d'autre items_hidden avec le même publicId (cas doublon),
-      // sinon on priverait le sibling de ses données secrètes.
+      // items_hidden keyé par item.id — un doc par item, pas de sibling possible
       await deleteDoc(doc(db, COL.itemsHidden, _editorId));
-      const itemId = String(_editorOrigData?.id || '');
+      const itemId = String(_editorOrigData?.id || _editorId || '');
       if (itemId) {
-        invalidateModCache(COL.itemsHidden);
-        const remaining = await cachedDocs(COL.itemsHidden).catch(() => []);
-        const hasSibling = remaining.some(d => d._docKey !== _editorId && String(d.id || '') === itemId);
-        if (!hasSibling) {
-          try { await deleteDoc(doc(db, COL.itemsSecret, itemId)); } catch {}
-          invalidateModCache(COL.itemsSecret);
-        }
-      } else {
-        invalidateModCache(COL.itemsHidden);
+        try { await deleteDoc(doc(db, COL.itemsSecret, itemId)); } catch {}
       }
+      invalidateModCache(COL.itemsHidden);
+      invalidateModCache(COL.itemsSecret);
       _sensState.itemsHidden = _sensState.itemsHidden.filter(x => x._id !== _editorId);
       _dataAllData = _dataAllData.filter(d => !(d._col === COL.itemsHidden && d._docKey === _editorId));
       editorGoBack();
@@ -3914,7 +3904,11 @@ window.restoreFromTrash = async function restoreFromTrash(trashId) {
   if (!targetCol || !targetId) { toast('⛔ Données de restauration incomplètes.', 'error'); return; }
   try {
     if (targetCol === 'items_sensible') {
-      await setDoc(doc(db, COL.itemsHidden, targetId), sanitizeForFirestore(item.data || {}));
+      const restoreData = { ...(item.data || {}) };
+      if (!restoreData.nameHash && restoreData.name) {
+        try { restoreData.nameHash = await hashName(restoreData.name); } catch {}
+      }
+      await setDoc(doc(db, COL.itemsHidden, targetId), sanitizeForFirestore(restoreData));
       await deleteDoc(doc(db, 'trash', trashId));
       localStorage.removeItem(`vcl_cache_v2_${COL.itemsHidden}`);
       localStorage.removeItem(`vcl_cache_meta_v2_${COL.itemsHidden}`);
@@ -10306,7 +10300,7 @@ window.renderDataAll = function() {
     editBtn.title = 'Éditer dans le panneau';
     editBtn.onclick = () => showEditor(
       d.sensible ? 'items_sensible' : (d._col || COL_MAP[d._type] || d._type),
-      d.sensible ? (d._docKey || d.id) : d.id,    // items sensibles : passer le hash (clé Firestore), pas le publicId
+      d.sensible ? (d._docKey || d.id) : d.id,    // items sensibles : _docKey = item.id (clé Firestore depuis migration)
       d, 'data-all'
     );
 

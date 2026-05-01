@@ -26,11 +26,11 @@ service cloud.firestore {
       allow write: if isContrib();
     }
 
-    // Items sensibles — gameplay stocké sous hash(normalize(name))
-    // get public (si on connaît le hash), list réservé aux contributeurs
-    match /items_hidden/{hashId} {
+    // Items sensibles — gameplay stocké sous item.id, nameHash = hash(normalize(name))
+    // get public (par item.id), list public limité (query nameHash pour picker atelier)
+    match /items_hidden/{id} {
       allow get:   if true;
-      allow list:  if isContrib();
+      allow list:  if isContrib() || request.query.limit <= 10;
       allow write: if isContrib();
     }
 
