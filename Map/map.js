@@ -42,7 +42,6 @@ const TYPE_LABELS = {
   région:             'Région',
   donjon:             'Donjon',
   boss:               'Boss',
-  mini_boss:          'Mini-Boss',
   zone_monstre:       'Zone Monstres',
   quête_principale:   'Quête Principale',
   quête_secondaire:   'Quête Secondaire',
@@ -71,7 +70,6 @@ const _map_EMOJI = {
   région:             '📍',
   donjon:             '⚔️',
   boss:               '☠️',
-  mini_boss:          '💀',
   zone_monstre:       '💀',
   quête_principale:   '💬',
   quête_secondaire:   '❓',
@@ -81,7 +79,7 @@ const _map_EMOJI = {
   craft_accessoires:  '💍',
   craft_lingots:      '🔩',
   craft_cles:         '🗝️',
-  craft_runes:        '🔮',
+  craft_runes:        '💎',
   alchimiste:          '⚗️',
   bucheron:            '🪓',
   refaconneur:         '🔧',
@@ -95,13 +93,6 @@ const _map_EMOJI = {
   marchand_occulte:    '🩸',
   autre:               '🦠',
 };
-
-function _getMarkerEmoji(m) {
-  return m.emoji
-    || (window._map_pin_emojis || {})[m.type]
-    || _map_EMOJI[m.type]
-    || '📍';
-}
 
 // Mappage pnj.type → marker type
 const PNJ_TO_MARKER_TYPE = {
@@ -126,7 +117,6 @@ const PNJ_TO_MARKER_TYPE = {
   "marchand d'outils":       "marchand_outils",
   "marchand d'accessoires":  "marchand_access",
   "marchand occulte":        "marchand_occulte",
-  "artisant_runes":          "craft_runes",
   "artisan de runes":        "craft_runes",
   "artisan_runes":           "craft_runes",
   "artisan runes":           "craft_runes",
@@ -172,7 +162,6 @@ function buildDynamicMarkers() {
       id:     p.id || p._id,
       type:   markerType,
       layer:  p.is_underground ? 'underground' : 'surface',
-      emoji:  p.emoji || undefined,
       gx:     p.coords.x,
       gy:     p.coords.z,
       name:   p.name || p.type,
@@ -190,7 +179,7 @@ function buildDynamicMarkers() {
     byFloor[f].push({
       id:    r.id || r._id,
       type:  'région',
-      layer: r.is_underground ? 'underground' : 'surface',
+      layer: 'surface',
       gx:    r.coords.x,
       gy:    r.coords.z,
       name:  r.name,
@@ -202,8 +191,7 @@ function buildDynamicMarkers() {
   // Boss — Firestore mobs (migrated + creator, coords:{x,z} ou map_spawns:[{x,z}])
   const _fsBossIds = new Set();
   for (const m of mobs) {
-    const _mtype = (m.type || '').toLowerCase();
-    if (_mtype !== 'boss' && _mtype !== 'mini_boss') continue;
+    if ((m.type || '').toLowerCase() !== 'boss') continue;
     if (!m.palier) continue;
     const f     = +m.palier;
     const id    = m.id || m._id;
@@ -217,9 +205,8 @@ function buildDynamicMarkers() {
     spawns.forEach((s, si) => {
       byFloor[f].push({
         id:    si === 0 ? id : `${id}_${si}`,
-        type:  _mtype === 'mini_boss' ? 'mini_boss' : 'boss',
+        type:  'boss',
         layer,
-        emoji: m.emoji || undefined,
         gx:    s.x,
         gy:    s.z,
         name:  m.name,
@@ -263,7 +250,7 @@ function buildDynamicMarkers() {
     byFloor[f].push({
       id:    d._id || d.id || `donjon_db_${d.name}`,
       type:  'donjon',
-      layer: d.is_underground ? 'underground' : 'surface',
+      layer: 'surface',
       gx:    d.gx,
       gy:    d.gy,
       name:  d.name || 'Donjon',
@@ -376,7 +363,7 @@ function buildDynamicMarkers() {
     byFloor[f].push({
       id:    `fs_q_${qid}`,
       type:  markerType,
-      layer: q.is_underground ? 'underground' : 'surface',
+      layer: 'surface',
       gx:    fallbackGx,
       gy:    fallbackGy,
       name:  q.titre || qid,
@@ -1062,10 +1049,7 @@ function renderMarkers() {
   document.querySelectorAll('.marker-filter').forEach(cb => {
     filterState[cb.dataset.type] = cb.checked;
   });
-  const isTypeVisible = (type) => {
-    if (type === 'mini_boss') return filterState['boss'] !== false;
-    return filterState[type] !== false;
-  };
+  const isTypeVisible = (type) => filterState[type] !== false;
 
   const markers = getFlatFloorMarkers(currentFloor);
 
@@ -1115,7 +1099,7 @@ function renderSingleMarker(m) {
 
   const icon = document.createElement('div');
   icon.className   = 'marker-icon';
-  icon.textContent = _getMarkerEmoji(m);
+  icon.textContent = _map_EMOJI[m.type] || '📍';
   const pinColor = m.type !== 'région' ? (window._map_pin_colors || {})[m.type] : null;
   if (pinColor) { icon.style.background = pinColor; icon.style.boxShadow = `0 2px 10px ${pinColor}88`; }
   el.appendChild(icon);
@@ -1187,7 +1171,7 @@ function renderCluster(group) {
 
       const icon = document.createElement('div');
       icon.className   = 'marker-icon marker-icon-sm';
-      icon.textContent = _getMarkerEmoji(m);
+      icon.textContent = _map_EMOJI[m.type] || '📍';
       const subPinColor = m.type !== 'région' ? (window._map_pin_colors || {})[m.type] : null;
       if (subPinColor) { icon.style.background = subPinColor; icon.style.boxShadow = `0 2px 8px ${subPinColor}88`; }
       sub.appendChild(icon);
@@ -1421,7 +1405,7 @@ function getAllMarkers() {
       const key = m.id;
       if (seen.has(key)) continue;
       seen.add(key);
-      all.push({ ...m, floor: parseInt(floor) });
+      all.push({ ...m, floor: parseInt(floor), layer: 'surface' });
     }
   }
   return all;
@@ -1446,15 +1430,13 @@ searchInput.addEventListener('input', () => {
       const item = document.createElement('div');
       item.className = 'search-result-item';
       item.innerHTML = `
-        <span class="search-result-emoji">${_getMarkerEmoji(m)}</span>
+        <span class="search-result-emoji">${_map_EMOJI[m.type] || '📍'}</span>
         <div class="search-result-info">
           <span class="search-result-name">${m.name}</span>
           <span class="search-result-meta">${TYPE_LABELS[m.type] || m.type} · Étage ${m.floor}</span>
         </div>`;
       item.addEventListener('click', () => {
         if (m.floor !== currentFloor) goToFloor(m.floor);
-        const targetLayer = m.layer || 'surface';
-        if (targetLayer !== currentLayer) goToLayer(targetLayer);
         const img = gameToPixel(m.gx, m.gy);
         panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
         panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
@@ -1671,8 +1653,6 @@ function focusQuestOnMap(questId) {
     }
     const floor = +f;
     if (floor !== currentFloor) goToFloor(floor);
-    const fqLayer = found.layer || 'surface';
-    if (fqLayer !== currentLayer) goToLayer(fqLayer);
     _searchFocusId = found.id;
     const img = gameToPixel(found.gx, found.gy);
     panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);

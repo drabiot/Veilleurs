@@ -451,7 +451,7 @@ async function doSavePseudo() {
   const user = window._vcl_auth?.currentUser;
   if (!user) { err.textContent = 'Session expirée, réessaie.'; err.style.display = ''; return; }
   try {
-    await window._vcl_setDoc(window._vcl_doc(window._vcl_db, 'users', user.uid), { pseudo, role: 'membre' });
+    await window._vcl_setDoc(window._vcl_doc(window._vcl_db, 'users', user.uid), { pseudo, role: 'membre', email: user.email || '' });
     const authorInput = document.getElementById('author-input');
     if (authorInput) { authorInput.value = pseudo; saveAuthor(); }
     closeLoginModal();
@@ -537,28 +537,32 @@ async function doChangePseudo() {
 }
 
 async function doRegister() {
-  const identifiant = document.getElementById('reg-pseudo').value.trim();
-  const pw          = document.getElementById('reg-password').value;
-  const err         = document.getElementById('modal-error');
-  err.style.display = 'none';
+  const identifiant  = document.getElementById('reg-pseudo').value.trim();
+  const displayName  = (document.getElementById('reg-display-name')?.value || '').trim();
+  const pw           = document.getElementById('reg-password').value;
+  const err          = document.getElementById('modal-error');
+  err.style.display  = 'none';
 
   // Validation identifiant : 2-32 caractères, lettres/chiffres/tirets/underscores (pas d'espaces)
   if (!identifiant) { err.textContent = "L'identifiant est obligatoire."; err.style.display = ''; return; }
   if (identifiant.length < 2)  { err.textContent = 'Identifiant trop court (2 caractères min).'; err.style.display = ''; return; }
   if (identifiant.length > 32) { err.textContent = 'Identifiant trop long (32 caractères max).'; err.style.display = ''; return; }
   if (!/^[\w\-]+$/i.test(identifiant)) { err.textContent = 'Identifiant invalide (lettres, chiffres, - et _ seulement, sans espaces).'; err.style.display = ''; return; }
+  // Validation pseudo affiché (si renseigné)
+  if (displayName && !/^[\w\- \[\]]{2,32}$/i.test(displayName)) { err.textContent = 'Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_/[/]).'; err.style.display = ''; return; }
   if (!pw) { err.textContent = 'Mot de passe obligatoire.'; err.style.display = ''; return; }
   if (pw.length < 6) { err.textContent = 'Mot de passe trop court (6 caractères min).'; err.style.display = ''; return; }
 
-  const email = toEmail(identifiant);
+  const pseudo = displayName || identifiant;
+  const email  = toEmail(identifiant);
 
   try {
     const cred = await window._vcl_register(email, pw);
-    // Sauvegarder l'identifiant dans Firestore — retry si le token n'est pas encore propagé
+    // Sauvegarder le pseudo dans Firestore — retry si le token n'est pas encore propagé
     const saveProfile = async () => {
       await window._vcl_setDoc(
         window._vcl_doc(window._vcl_db, 'users', cred.user.uid),
-        { pseudo: identifiant, role: 'membre' }
+        { pseudo, role: 'membre' }
       );
     };
     try {
@@ -571,7 +575,7 @@ async function doRegister() {
     }
     // Connexion directe — pas de vérification email requise
     const authorInput = document.getElementById('author-input');
-    if (authorInput) { authorInput.value = identifiant; saveAuthor(); }
+    if (authorInput) { authorInput.value = pseudo; saveAuthor(); }
     closeLoginModal();
   } catch (e) {
     const msg = e.code === 'auth/email-already-in-use' ? 'Cet identifiant est déjà utilisé.'
@@ -1247,52 +1251,40 @@ function onObtainTypeChange() {
     addBtn.style.display = '';
 
   } else if (type === 'ressource') {
-    // Dropdown région + champs coordonnées optionnels
+    // Coordonnées uniquement — auto-ajout au blur si les deux champs sont remplis
+    obtainDrop = null;
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;flex-direction:column;gap:5px;width:100%;';
+    wrap.style.cssText = 'display:flex;gap:5px;align-items:center;width:100%;flex-wrap:wrap;';
 
-    const checkResAddBtn = () => {
-      const hasRegion = !!(obtainDrop?.getValue());
+    const tryAutoAdd = () => {
       const cx = document.getElementById('obtain-res-x')?.value.trim();
       const cz = document.getElementById('obtain-res-z')?.value.trim();
-      const hasCoords = cx !== '' && cx != null && cz !== '' && cz != null;
-      addBtn.disabled = !hasRegion && !hasCoords;
+      if (cx !== '' && cx != null && cz !== '' && cz != null) addObtainSource();
     };
 
-    obtainDrop = makeSearchDrop(allRegions, OBTAIN_PLACEHOLDERS.ressource, () => {
-      hideLootPicker();
-      checkResAddBtn();
-    }, false);
-    wrap.appendChild(obtainDrop.element);
-
-    // Coords (toujours visibles — région et/ou coordonnées)
-    const coordsRow = document.createElement('div');
-    coordsRow.style.cssText = 'display:flex;gap:5px;align-items:center;margin-top:2px;';
-    coordsRow.id = 'obtain-ressource-coords';
-
-    const mkCoordInput = (id, label) => {
+    const mkCoordInput = (id, label, placeholder) => {
       const wrap2 = document.createElement('div');
       wrap2.style.cssText = 'display:flex;align-items:center;gap:3px;';
       const lbl = document.createElement('span');
       lbl.textContent = label; lbl.style.cssText = 'font-size:10px;color:var(--muted);font-weight:700;';
       const inp = document.createElement('input');
-      inp.type = 'number'; inp.step = '1'; inp.id = id; inp.placeholder = label === 'X' ? '1808' : '-320';
+      inp.type = 'number'; inp.step = '1'; inp.id = id; inp.placeholder = placeholder;
       inp.style.cssText = 'width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 6px;font-size:12px;outline:none;';
-      inp.addEventListener('input', checkResAddBtn);
+      inp.addEventListener('blur', tryAutoAdd);
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); tryAutoAdd(); } });
       wrap2.append(lbl, inp);
       return wrap2;
     };
     const coordLbl = document.createElement('span');
-    coordLbl.style.cssText = 'font-size:10px;color:var(--muted);';
-    coordLbl.textContent = '📍 Coords :';
-    coordsRow.appendChild(coordLbl);
-    coordsRow.appendChild(mkCoordInput('obtain-res-x', 'X'));
-    coordsRow.appendChild(mkCoordInput('obtain-res-z', 'Z'));
-    wrap.appendChild(coordsRow);
+    coordLbl.style.cssText = 'font-size:10px;color:var(--muted);white-space:nowrap;';
+    coordLbl.textContent = '📍 Coordonnées :';
+    wrap.appendChild(coordLbl);
+    wrap.appendChild(mkCoordInput('obtain-res-x', 'X', '1808'));
+    wrap.appendChild(mkCoordInput('obtain-res-z', 'Z', '-320'));
 
     container.appendChild(wrap);
     addBtn.disabled = true;
-    addBtn.style.display = '';
+    addBtn.style.display = 'none';
   } else {
     obtainDrop = makeSearchDrop(obtainItemsForType(type), OBTAIN_PLACEHOLDERS[type], (id) => {
       if (type === 'mob') {
@@ -1393,24 +1385,28 @@ function addObtainSource() {
     return;
   }
 
+  if (type === 'ressource') {
+    const cx = document.getElementById('obtain-res-x')?.value.trim();
+    const cz = document.getElementById('obtain-res-z')?.value.trim();
+    if (!cx || !cz) return;
+    obtainSources.push({ uid: obtainUid++, type: 'ressource', id: '', name: '', subtitle: '', coords: { x: Number(cx), z: Number(cz) } });
+    const xEl = document.getElementById('obtain-res-x');
+    const zEl = document.getElementById('obtain-res-z');
+    if (xEl) xEl.value = '';
+    if (zEl) zEl.value = '';
+    document.getElementById('obtain-add-btn').disabled = true;
+    renderObtainSources();
+    update();
+    return;
+  }
+
   const id = obtainDrop ? obtainDrop.getValue() : '';
   if (!id) return;
 
   const item = obtainItemsForType(type).find(it => it.id === id);
   if (!item) return;
 
-  if (type === 'ressource') {
-    const cx = document.getElementById('obtain-res-x')?.value.trim();
-    const cz = document.getElementById('obtain-res-z')?.value.trim();
-    const coords = (cx !== '' && cx != null && cz !== '' && cz != null)
-      ? { x: Number(cx), z: Number(cz) } : null;
-    // Autoriser: région seule, coords seules, ou les deux
-    if (id) {
-      obtainSources.push({ uid: obtainUid++, type, id, name: item.name, subtitle: item.subtitle, coords });
-    } else if (coords) {
-      obtainSources.push({ uid: obtainUid++, type, id: '', name: '', subtitle: '', coords });
-    }
-  } else {
+  {
     if (obtainSources.some(s => s.id === id && s.type === type)) return;
     obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc || '', subtitle: item.subtitle });
   }
@@ -1457,14 +1453,24 @@ function renderObtainSources() {
     } else if (s.type === 'autre' || s.type === 'coffre' || s.type === 'event' || s.type === 'exploration') {
       label += `<span style="color:var(--muted)">${s.type === 'autre' ? 'Autre' : s.type} ·</span> <b>${s.desc}</b>`;
     } else if (s.type === 'ressource') {
-      label += `<b>${s.name}</b>`;
-      if (s.coords) label += ` <span style="color:var(--muted)">· <b>X</b> ${s.coords.x} <b>Z</b> ${s.coords.z}</span>`;
-      else if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
+      if (s.coords) {
+        label += `📍 <b>X</b> ${s.coords.x} <b>Z</b> ${s.coords.z}`;
+      } else if (s.name) {
+        label += `<b>${s.name}</b>`;
+        if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
+      }
     } else {
       label += `<b>${s.name}</b>`;
       if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
     }
-    chip.innerHTML = `<span>${label}</span><button class="btn-icon" onclick="removeObtainSource(${s.uid})">✕</button>`;
+    let extraBtns = '';
+    if (s.type === 'ressource' && s.coords) {
+      const floor = document.getElementById('f-palier')?.value || '1';
+      const ghostName = encodeURIComponent(`Ressource · X:${s.coords.x} Z:${s.coords.z}`);
+      const mapHref = `Map/map.html?ghost_gx=${s.coords.x}&ghost_gz=${s.coords.z}&ghost_floor=${encodeURIComponent(floor)}&ghost_name=${ghostName}#floor-${floor}-surface`;
+      extraBtns = `<a href="${mapHref}" target="_blank" class="btn-icon" title="Voir sur la carte" style="text-decoration:none;font-size:14px;">🗺️</a>`;
+    }
+    chip.innerHTML = `<span>${label}</span>${extraBtns}<button class="btn-icon" onclick="removeObtainSource(${s.uid})">✕</button>`;
     list.appendChild(chip);
   }
 }
@@ -1522,6 +1528,12 @@ function parseObtainText(text, itemId, itemName) {
       sources.push({ uid: obtainUid++, type: 'quete', id, name, desc: q?.desc || '', subtitle: q?.subtitle || '' });
       continue;
     }
+    const ressourceCoordsM = t.match(/^Récoltable aux coordonnées \[coords:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)\]$/);
+    if (ressourceCoordsM) {
+      const [, cx, cz] = ressourceCoordsM;
+      sources.push({ uid: obtainUid++, type: 'ressource', id: '', name: '', subtitle: '', coords: { x: Number(cx), z: Number(cz) } });
+      continue;
+    }
     const ressourceM = t.match(/^Récoltable dans \[region:([^|]+)\|([^\]]+)\](?:\s*\[coords:(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)\])?$/);
     if (ressourceM) {
       const [, id, name, cx, cz] = ressourceM;
@@ -1570,9 +1582,15 @@ function buildObtainText() {
   for (const a of artisans)     parts.push(`Fabricable au [npc:${a.id}|${a.name}]`);
   for (const m of marchands)    parts.push(`Achetable au [npc:${m.id}|${m.name}]`);
   for (const q of quetes)       parts.push(`Récompense de la quête [quest:${q.id}|${q.name}]`);
-  for (const r of ressources)   parts.push(r.coords
-    ? `Récoltable dans [region:${r.id}|${r.name}] [coords:${r.coords.x},${r.coords.z}]`
-    : `Récoltable dans [region:${r.id}|${r.name}]`);
+  for (const r of ressources) {
+    if (r.coords && !r.id) {
+      parts.push(`Récoltable aux coordonnées [coords:${r.coords.x},${r.coords.z}]`);
+    } else if (r.coords && r.id) {
+      parts.push(`Récoltable dans [region:${r.id}|${r.name}] [coords:${r.coords.x},${r.coords.z}]`);
+    } else if (r.id) {
+      parts.push(`Récoltable dans [region:${r.id}|${r.name}]`);
+    }
+  }
   for (const a of autres)       parts.push(`Autre source — ${a.desc}`);
   // Anciens formats
   for (const c of coffres)      parts.push(`Trouvable dans un coffre — ${c.desc}`);
@@ -2102,6 +2120,8 @@ function loadPanoplie(p) {
 function loadItem(item) {
   switchMode('item');
   resetFormSilent();
+  craftEntries = [];
+  document.getElementById('craft-list').innerHTML = '';
 
   // Bannière
   document.getElementById('editing-name').textContent = item.name || item.id;
@@ -5027,7 +5047,7 @@ function renderPnjRegionDropdown() {
 function selectPnjRegion(r) {
   const name = r.name || r.id;
   document.getElementById('pnj-region-search').value = name;
-  document.getElementById('pnj-region').value        = name;
+  document.getElementById('pnj-region').value        = r.id;
   document.getElementById('pnj-region-dropdown').classList.remove('open');
   if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
   update();

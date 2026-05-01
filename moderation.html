@@ -94,6 +94,7 @@
 
     <!-- ── ADMIN ───────────────────────────────────────── -->
     <div class="sb-label">ADMIN</div>
+    <button class="filter-btn" id="btn-trash"              onclick="showTrash()">🗑️ Corbeille <span class="filter-count" id="count-trash" style="display:none;">0</span></button>
     <button class="filter-btn" id="btn-users"              onclick="showUsersPanel()">👥 Membres</button>
     <button class="filter-btn" id="btn-leaderboard"        onclick="showLeaderboard()">🏆 Leaderboard</button>
     <button class="filter-btn" id="btn-discord-webhooks"   onclick="showDiscordWebhooks()">🔔 Webhooks Discord</button>
@@ -225,6 +226,21 @@
       Quêtes <b>sans coordonnées et sans PNJ positionné</b> — invisibles sur la carte interactive.
     </p>
     <div id="quest-orphan-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Corbeille -->
+  <main class="main" id="trash-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🗑️ Corbeille</span>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-ghost" onclick="loadTrash()" style="font-size:12px;">🔄 Rafraîchir</button>
+        <button class="btn btn-reject" id="btn-empty-trash" onclick="emptyTrash()" style="font-size:12px;display:none;">🗑️ Vider définitivement</button>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      Éléments supprimés récemment. Cliquer <b>Restaurer</b> pour remettre l'entrée dans sa collection d'origine. La corbeille se purge automatiquement après 30 jours.
+    </p>
+    <div id="trash-list"><div class="empty">Chargement…</div></div>
   </main>
 
   <!-- Panneau Ordre des régions -->

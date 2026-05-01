@@ -35,13 +35,24 @@ async function loadLeaderboard() {
         if (excludedIds.has(entryId)) continue;
         const uid  = c.uid  || null;
         const name = c.name || 'Inconnu';
-        if (name === 'Anonyme' || name === 'Inconnu') continue;
+        if (!uid && (name === 'Anonyme' || name === 'Inconnu')) continue;
         const key = uid || ('__' + name);
         if (!byKey[key]) byKey[key] = { uid, name, count: 0 };
         byKey[key].count++;
       }
     } catch {}
   }
+
+  // Resolve current pseudo from single config/pseudos map
+  try {
+    const pseudoSnap = await getDoc(doc(db, 'config', 'pseudos'));
+    if (pseudoSnap.exists()) {
+      const pseudoMap = pseudoSnap.data();
+      for (const e of Object.values(byKey)) {
+        if (e.uid && pseudoMap[e.uid]) e.name = pseudoMap[e.uid];
+      }
+    }
+  } catch {}
 
   const sorted = Object.values(byKey)
     .sort((a, b) => b.count - a.count)

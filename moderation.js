@@ -1,7 +1,7 @@
 import { db, auth, onAuthStateChanged,
          login, logout, loginWithGoogle,
          ROLES, roleLevel, hasRole, COL,
-         collection, getDocs, getDoc, doc, updateDoc, setDoc,
+         collection, getDocs, getDoc, doc, updateDoc, setDoc, addDoc,
          deleteDoc, deleteField, serverTimestamp, orderBy, query,
          hashName, getItemGameplayKeys,
          sanitizeForFirestore, desanitizeFromFirestore,
@@ -45,11 +45,17 @@ onAuthStateChanged(auth, async user => {
     return;
   }
   currentUser = user;
-  // Lire le rôle
-  try {
-    const snap = await getDoc(doc(db, 'users', user.uid));
-    currentRole = snap.exists() ? (snap.data().role || 'membre') : 'membre';
-  } catch { currentRole = 'membre'; }
+  // Lire le rôle (retry once — auth token may not have propagated to Firestore yet)
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      currentRole = snap.exists() ? (snap.data().role || 'membre') : 'membre';
+      break;
+    } catch {
+      if (attempt === 0) await new Promise(r => setTimeout(r, 800));
+      else currentRole = 'membre';
+    }
+  }
 
   if (!hasRole(currentRole, 'contributeur')) {
     showAuthWall('⛔ Accès réservé aux contributeurs.');
@@ -71,6 +77,10 @@ onAuthStateChanged(auth, async user => {
     const snapU = await getDoc(doc(db, 'users', user.uid));
     const pseudo = snapU.exists() ? (snapU.data().pseudo || null) : null;
     document.getElementById('header-user').textContent = '👤 ' + (pseudo || user.email);
+    // backfill email si absent
+    if (snapU.exists() && !snapU.data().email && user.email) {
+      updateDoc(doc(db, 'users', user.uid), { email: user.email }).catch(() => {});
+    }
   } catch { document.getElementById('header-user').textContent = '👤 ' + user.email; }
   document.getElementById('header-role').textContent   = currentRole;
   document.getElementById('btn-logout').style.display  = '';
@@ -160,9 +170,12 @@ window.loadSubmissions = async () => {
       if (tb !== ta) return tb - ta;
       return a._id < b._id ? -1 : a._id > b._id ? 1 : 0; // tiebreaker stable
     });
-    // Pré-charger les pseudos de tous les auteurs (non-bloquant)
+    // Pré-charger les pseudos et les panoplies (pour labels sets dans résumé)
     const uids = [...new Set(allSubs.flatMap(s => [s.submittedBy, s.reviewedBy].filter(Boolean)))];
-    try { await fetchUserNames(uids); } catch {}
+    await Promise.all([
+      fetchUserNames(uids).catch(() => {}),
+      cachedDocs('panoplies').catch(() => {}),
+    ]);
     updateCounts();
     renderSubs();
   } catch(e) {
@@ -285,6 +298,10 @@ function _buildPrettySummary(data, type) {
     if (data.lvl)      field('Niveau',   'Niveau ≥ ' + data.lvl);
     if (data.cat)      field('Slot',     data.cat);
     if (data.classes?.length) field('Classes', data.classes.join(', '));
+    if (data.set) {
+      const pano = (_modCache['panoplies'] || []).find(p => p.id === data.set);
+      field('Set', esc(pano?.label || data.set), '#d7af5f');
+    }
     if (data.sensible) field('', '🔒 Sensible', '#f87171');
     if (data.event)    field('', '🎊 Event',    '#a855f7');
     if (data.evolutif) field('', '🔄 Évolutif', '#60a5fa');
@@ -1037,6 +1054,7 @@ const HASH_PANELS = {
   'quest-order':    () => showQuestOrder(),
   'panoplie-order': () => showPanoplieOrder(),
   'map':            () => showMapPanel(),
+  'trash':          () => showTrash(),
   'ghost-ids':      () => showGhostIds(),
   'region-orphans': () => showRegionOrphans(),
   'mob-orphans':    () => showMobOrphans(),
@@ -2163,7 +2181,7 @@ function renderRegionOrder() {
   if (!paliers.length) { listEl.innerHTML = '<div class="empty">Aucune région</div>'; return; }
   if (!_regionCollapseInit) { _regionCollapseInit = true; paliers.forEach(p => _regionPalierCollapsed.add(p)); }
 
-  const isSameGroup = (a, b) => (a.palier||1) === (b.palier||1) && (a.inCodex === false) === (b.inCodex === false);
+  const isSameGroup = (a, b) => (a.palier||1) === (b.palier||1);
 
   paliers.forEach(palier => {
     const palierRegions = _regionOrderData.filter(r => (r.palier||1) === palier);
@@ -2189,76 +2207,65 @@ function renderRegionOrder() {
     body.className = 'palier-section-body';
     body.style.display = collapsed ? 'none' : '';
 
-    const subGroups = [
-      { label: 'Codex',      filter: r => r.inCodex !== false },
-      { label: 'Hors Codex', filter: r => r.inCodex === false },
-    ];
+    palierRegions.forEach(r => {
+      const palierIdx  = palierRegions.indexOf(r);
+      const row = document.createElement('div');
+      row.className  = 'mob-order-row';
+      row.draggable  = true;
+      row.dataset.id = r.id;
+      const horsCodexBadge = r.inCodex === false
+        ? `<span class="mob-order-tag" style="background:rgba(248,113,113,.12);color:#f87171;border-color:rgba(248,113,113,.3);">Hors Codex</span>`
+        : '';
+      row.innerHTML  = `
+        <span class="mob-order-handle">⠿</span>
+        <input type="number" class="mob-order-index" value="${palierIdx+1}" min="1" max="${palierRegions.length}" title="Position dans ce palier">
+        <span class="mob-order-name">${r.name||r.id}</span>
+        ${horsCodexBadge}
+        <span class="mob-order-tag">P${r.palier||1}</span>
+        <button class="ed-edit-btn" title="Modifier : ${r.name||r.id}\nID : ${r.id}" draggable="false">✏️</button>`;
 
-    subGroups.forEach(({ label, filter }) => {
-      const groupRegions = palierRegions.filter(filter);
-      if (!groupRegions.length) return;
-
-      const sh = document.createElement('div');
-      sh.style.cssText = 'padding:4px 10px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:4px;';
-      sh.textContent = label;
-      body.appendChild(sh);
-
-      groupRegions.forEach(r => {
-        const groupIdx = groupRegions.indexOf(r);
-        const row = document.createElement('div');
-        row.className  = 'mob-order-row';
-        row.draggable  = true;
-        row.dataset.id = r.id;
-        row.innerHTML  = `
-          <span class="mob-order-handle">⠿</span>
-          <input type="number" class="mob-order-index" value="${groupIdx+1}" min="1" max="${groupRegions.length}" title="Position dans ce groupe">
-          <span class="mob-order-name">${r.name||r.id}</span>
-          <span class="mob-order-tag">P${r.palier||1}</span>
-          <button class="ed-edit-btn" title="Modifier : ${r.name||r.id}\nID : ${r.id}" draggable="false">✏️</button>`;
-
-        const indexInput = row.querySelector('.mob-order-index');
-        indexInput.addEventListener('click', e => e.stopPropagation());
-        indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
-        indexInput.addEventListener('change', () => {
-          let toGroupIdx = parseInt(indexInput.value, 10) - 1;
-          toGroupIdx = Math.max(0, Math.min(groupRegions.length - 1, toGroupIdx));
-          if (toGroupIdx === groupIdx) { indexInput.value = groupIdx + 1; return; }
-          const fromGlobal = _regionOrderData.indexOf(r);
-          const [removed]  = _regionOrderData.splice(fromGlobal, 1);
-          const nowGroup   = _regionOrderData.filter(filter).filter(x => (x.palier||1) === palier);
-          const insertAt   = toGroupIdx < nowGroup.length
-            ? _regionOrderData.indexOf(nowGroup[toGroupIdx])
-            : (_regionOrderData.indexOf(nowGroup[nowGroup.length-1]) + 1 || _regionOrderData.length);
-          _regionOrderData.splice(insertAt, 0, removed);
-          _regionOrderDirty = true;
-          document.getElementById('btn-save-region-order').disabled = false;
-          renderRegionOrder();
-        });
-
-        row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('regions', r.id, r, 'region'); });
-        _addCreatorBtn(row, 'region', r);
-        row.addEventListener('dragstart', e => { if (e.target.closest('.ed-edit-btn')) { e.preventDefault(); return; } _regionDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
-        row.addEventListener('dragend',   () => { row.classList.remove('dragging'); _regionDragSrc = null; });
-        row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
-        row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
-        row.addEventListener('drop', e => {
-          e.preventDefault(); row.classList.remove('drag-over');
-          if (!_regionDragSrc || _regionDragSrc === row) return;
-          const fromR = _regionOrderData.find(x => x.id === _regionDragSrc.dataset.id);
-          const toR   = _regionOrderData.find(x => x.id === row.dataset.id);
-          if (!fromR || !toR || !isSameGroup(fromR, toR)) return;
-          const fromIdx = _regionOrderData.findIndex(x => x.id === _regionDragSrc.dataset.id);
-          const toIdx   = _regionOrderData.findIndex(x => x.id === row.dataset.id);
-          if (fromIdx === -1 || toIdx === -1) return;
-          const [moved] = _regionOrderData.splice(fromIdx, 1);
-          _regionOrderData.splice(toIdx, 0, moved);
-          _regionOrderDirty = true;
-          document.getElementById('btn-save-region-order').disabled = false;
-          renderRegionOrder();
-        });
-
-        body.appendChild(row);
+      const indexInput = row.querySelector('.mob-order-index');
+      indexInput.addEventListener('click', e => e.stopPropagation());
+      indexInput.addEventListener('keydown', e => { if (e.key==='Enter') { e.preventDefault(); indexInput.blur(); } });
+      indexInput.addEventListener('change', () => {
+        let toIdx = parseInt(indexInput.value, 10) - 1;
+        toIdx = Math.max(0, Math.min(palierRegions.length - 1, toIdx));
+        if (toIdx === palierIdx) { indexInput.value = palierIdx + 1; return; }
+        const fromGlobal = _regionOrderData.indexOf(r);
+        const [removed]  = _regionOrderData.splice(fromGlobal, 1);
+        const nowGroup   = _regionOrderData.filter(x => (x.palier||1) === palier);
+        const insertAt   = toIdx < nowGroup.length
+          ? _regionOrderData.indexOf(nowGroup[toIdx])
+          : (_regionOrderData.indexOf(nowGroup[nowGroup.length-1]) + 1 || _regionOrderData.length);
+        _regionOrderData.splice(insertAt, 0, removed);
+        _regionOrderDirty = true;
+        document.getElementById('btn-save-region-order').disabled = false;
+        renderRegionOrder();
       });
+
+      row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('regions', r.id, r, 'region'); });
+      _addCreatorBtn(row, 'region', r);
+      row.addEventListener('dragstart', e => { if (e.target.closest('.ed-edit-btn')) { e.preventDefault(); return; } _regionDragSrc = row; row.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+      row.addEventListener('dragend',   () => { row.classList.remove('dragging'); _regionDragSrc = null; });
+      row.addEventListener('dragover',  e => { e.preventDefault(); row.classList.add('drag-over'); });
+      row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+      row.addEventListener('drop', e => {
+        e.preventDefault(); row.classList.remove('drag-over');
+        if (!_regionDragSrc || _regionDragSrc === row) return;
+        const fromR = _regionOrderData.find(x => x.id === _regionDragSrc.dataset.id);
+        const toR   = _regionOrderData.find(x => x.id === row.dataset.id);
+        if (!fromR || !toR || !isSameGroup(fromR, toR)) return;
+        const fromIdx = _regionOrderData.findIndex(x => x.id === _regionDragSrc.dataset.id);
+        const toIdx2  = _regionOrderData.findIndex(x => x.id === row.dataset.id);
+        if (fromIdx === -1 || toIdx2 === -1) return;
+        const [moved] = _regionOrderData.splice(fromIdx, 1);
+        _regionOrderData.splice(toIdx2, 0, moved);
+        _regionOrderDirty = true;
+        document.getElementById('btn-save-region-order').disabled = false;
+        renderRegionOrder();
+      });
+
+      body.appendChild(row);
     });
 
     section.appendChild(body);
@@ -3694,6 +3701,12 @@ window.saveEditor = async function() {
     // Renommage d'ID → recréer le document (toutes collections)
     const rawNewId = (newData.id != null ? String(newData.id).trim() : '');
     const newDocId = rawNewId || _editorId;
+
+    const _editorContrib = _editorOrigData?._contributor || null;
+    const _selfContrib = currentUser
+      ? { uid: currentUser.uid, name: _userNames.get(currentUser.uid) || currentUser.displayName || currentUser.email || 'Inconnu' }
+      : null;
+
     if (newDocId !== _editorId) {
       // Vérifier qu'aucun document n'existe déjà avec cet ID
       const clashSnap = await getDoc(doc(db, _editorCollection, newDocId));
@@ -3702,7 +3715,8 @@ window.saveEditor = async function() {
       }
       const currentSnap = await getDoc(doc(db, _editorCollection, _editorId));
       const existing = currentSnap.exists() ? currentSnap.data() : {};
-      await setDoc(doc(db, _editorCollection, newDocId), { ...existing, ...newData, id: newDocId });
+      const contributor = existing._contributor || _editorContrib || _selfContrib;
+      await setDoc(doc(db, _editorCollection, newDocId), { ...existing, ...newData, id: newDocId, ...( contributor ? { _contributor: contributor } : {}) });
       await deleteDoc(doc(db, _editorCollection, _editorId));
       _editorCacheRename(_editorCollection, _editorId, newDocId, newData);
       _editorId = newDocId;
@@ -3713,6 +3727,7 @@ window.saveEditor = async function() {
       Object.keys(_editorOrigData).forEach(k => {
         if (!(k in newData) && k !== '_order') patch[k] = deleteField();
       });
+      if (!_editorContrib && _selfContrib) patch._contributor = _selfContrib;
       await updateDoc(doc(db, _editorCollection, _editorId), patch);
     }
 
@@ -3772,10 +3787,21 @@ function _editorCacheUpdate(col, id, newData) {
 // ── Delete entry (depuis l'éditeur) ──────────────────
 window.deleteCurrentEntry = async function() {
   const typeName = _COL_LABELS[_editorCollection] || _editorCollection;
-  if (!await modal.confirm(`Supprimer définitivement ce ${typeName} "${_editorId}" ?\n\nCette action est irréversible.`)) return;
+  if (!await modal.confirm(`Supprimer ce ${typeName} "${_editorId}" ?\n\nL'entrée sera placée en corbeille (restaurable depuis l'onglet Admin > Corbeille).`)) return;
   const btn = document.getElementById('btn-delete-editor');
   btn.disabled = true; btn.textContent = '⏳';
   try {
+    // Sauvegarder en corbeille avant suppression
+    const trashPayload = sanitizeForFirestore({
+      originalCollection: _editorCollection,
+      originalId: _editorId,
+      deletedAt: serverTimestamp(),
+      deletedBy: currentUser?.uid || null,
+      deletedByName: _userNames.get(currentUser?.uid) || currentUser?.email || 'Inconnu',
+      data: _editorOrigData || {}
+    });
+    try { await addDoc(collection(db, 'trash'), trashPayload); } catch(te) { console.warn('[Trash] Sauvegarde corbeille échouée:', te); }
+
     if (_editorCollection === 'items_sensible') {
       // Supprimer items_hidden (par hash). Pour items_secret (par publicId) : seulement
       // s'il n'existe pas d'autre items_hidden avec le même publicId (cas doublon),
@@ -3816,6 +3842,118 @@ window.deleteCurrentEntry = async function() {
     editorGoBack();
   } catch(e) {
     btn.disabled = false; btn.textContent = '🗑️ Supprimer';
+    toast('⛔ Erreur : ' + e.message, 'error');
+  }
+};
+
+// ════════════════════════════════════════
+//   CORBEILLE
+// ════════════════════════════════════════
+
+window.showTrash = async () => {
+  _setHash('trash');
+  document.getElementById('trash-panel').style.display = '';
+  document.getElementById('btn-trash').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadTrash();
+};
+
+window.loadTrash = async function loadTrash() {
+  const listEl = document.getElementById('trash-list');
+  const emptyBtn = document.getElementById('btn-empty-trash');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const snap = await getDocs(collection(db, 'trash'));
+    const items = snap.docs.map(d => ({ _trashId: d.id, ...d.data() }));
+    items.sort((a, b) => {
+      const ta = a.deletedAt?.seconds || 0;
+      const tb = b.deletedAt?.seconds || 0;
+      return tb - ta;
+    });
+    const countEl = document.getElementById('count-trash');
+    if (countEl) { countEl.textContent = items.length; countEl.style.display = items.length ? '' : 'none'; }
+    if (emptyBtn) emptyBtn.style.display = items.length ? '' : 'none';
+    if (!items.length) { listEl.innerHTML = '<div class="empty">Corbeille vide.</div>'; return; }
+    listEl.innerHTML = '';
+    const COL_LABELS_TRASH = { ...(_COL_LABELS || {}), items:'Item', mobs:'Mob', personnages:'PNJ', regions:'Région', panoplies:'Panoplie', quetes:'Quête', items_sensible:'Item Sensible' };
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;flex-wrap:wrap;';
+      const colLabel = COL_LABELS_TRASH[item.originalCollection] || item.originalCollection || '?';
+      const itemName = item.data?.name || item.data?.label || item.data?.titre || item.originalId || '?';
+      const deletedDate = item.deletedAt?.seconds
+        ? new Date(item.deletedAt.seconds * 1000).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
+        : '—';
+      row.innerHTML = `
+        <div style="flex:1;min-width:180px;">
+          <div style="font-size:13px;font-weight:700;color:var(--text);">${escHtml(itemName)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">
+            <b>${escHtml(colLabel)}</b> · ID : <code style="font-size:10px;">${escHtml(item.originalId || '?')}</code>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:1px;">
+            Supprimé le ${escHtml(deletedDate)} par <b>${escHtml(item.deletedByName || '?')}</b>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button class="btn btn-approve" style="font-size:12px;" onclick="restoreFromTrash('${escHtml(item._trashId)}')">↩ Restaurer</button>
+          <button class="btn btn-reject"  style="font-size:12px;" onclick="permanentDeleteTrash('${escHtml(item._trashId)}')">🗑️ Supprimer</button>
+        </div>`;
+      listEl.appendChild(row);
+    });
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
+  }
+};
+
+window.restoreFromTrash = async function restoreFromTrash(trashId) {
+  const snap = await getDoc(doc(db, 'trash', trashId));
+  if (!snap.exists()) { toast('⛔ Entrée introuvable en corbeille.', 'error'); return; }
+  const item = snap.data();
+  const targetCol = item.originalCollection;
+  const targetId  = item.originalId;
+  if (!targetCol || !targetId) { toast('⛔ Données de restauration incomplètes.', 'error'); return; }
+  try {
+    if (targetCol === 'items_sensible') {
+      await setDoc(doc(db, COL.itemsHidden, targetId), sanitizeForFirestore(item.data || {}));
+      await deleteDoc(doc(db, 'trash', trashId));
+      localStorage.removeItem(`vcl_cache_v2_${COL.itemsHidden}`);
+      localStorage.removeItem(`vcl_cache_meta_v2_${COL.itemsHidden}`);
+      invalidateModCache(COL.itemsHidden);
+      toast(`✓ "${targetId}" restauré dans items_hidden.`, 'success');
+      loadTrash();
+      return;
+    }
+    await setDoc(doc(db, targetCol, targetId), sanitizeForFirestore(item.data || {}));
+    await deleteDoc(doc(db, 'trash', trashId));
+    localStorage.removeItem(`vcl_cache_v2_${targetCol}`);
+    localStorage.removeItem(`vcl_cache_meta_v2_${targetCol}`);
+    invalidateModCache(targetCol);
+    toast(`✓ "${targetId}" restauré dans ${targetCol}.`, 'success');
+    loadTrash();
+  } catch(e) {
+    toast('⛔ Erreur restauration : ' + e.message, 'error');
+  }
+};
+
+window.permanentDeleteTrash = async function permanentDeleteTrash(trashId) {
+  if (!await modal.confirm('Supprimer définitivement cette entrée de la corbeille ? Cette action est irréversible.')) return;
+  try {
+    await deleteDoc(doc(db, 'trash', trashId));
+    toast('✓ Supprimé définitivement.', 'success');
+    loadTrash();
+  } catch(e) {
+    toast('⛔ Erreur : ' + e.message, 'error');
+  }
+};
+
+window.emptyTrash = async function emptyTrash() {
+  if (!await modal.confirm('Vider toute la corbeille ? Toutes les entrées seront supprimées définitivement et irrécupérables.')) return;
+  try {
+    const snap = await getDocs(collection(db, 'trash'));
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+    toast('✓ Corbeille vidée.', 'success');
+    loadTrash();
+  } catch(e) {
     toast('⛔ Erreur : ' + e.message, 'error');
   }
 };
@@ -4003,14 +4141,79 @@ function _renderDiscordWebhooks() {
       testBtn.textContent = '🧪 Test';
       testBtn.addEventListener('click', () => testDiscordWebhook(key));
 
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn btn-ghost';
+      delBtn.title = 'Supprimer tous les posts Discord de ce webhook';
+      delBtn.style.cssText = 'font-size:11px;padding:5px 8px;flex-shrink:0;color:var(--danger);';
+      delBtn.textContent = '🗑️';
+      delBtn.addEventListener('click', () => deleteWebhookPosts(key, input.value.trim()));
+
       row.appendChild(label);
       row.appendChild(input);
       row.appendChild(testBtn);
+      row.appendChild(delBtn);
       section.appendChild(row);
     }
     list.appendChild(section);
   }
 }
+
+window.deleteWebhookPosts = async function deleteWebhookPosts(key, url) {
+  if (!url) { toast('⚠ Aucun webhook configuré pour ce palier', 'warning'); return; }
+  if (!await modal.confirm(`Supprimer tous les posts Discord pour « ${key} » ?\n(supprime uniquement les messages sur Discord, les données Firestore sont conservées)`)) return;
+
+  const match = url.match(/webhooks\/(\d+)\/([^/?]+)/);
+  if (!match) { toast('⛔ URL webhook invalide', 'error'); return; }
+  const [, whId, whToken] = match;
+
+  const snap = await getDocs(collection(db, 'discord_posts'));
+  console.log('[dwDelete] total docs:', snap.docs.length, snap.docs.map(d => d.data()));
+  const posts = snap.docs.map(d => ({ _id: d.id, ...d.data() })).filter(p => p.webhookKey === key);
+  console.log('[dwDelete] key filter:', key, '→ matched:', posts.length);
+
+  if (!posts.length) {
+    toast('Aucun post tracké pour ce webhook. Les posts envoyés avant l\'activation du tracking ne sont pas supprimables automatiquement.', 'warning');
+    return;
+  }
+
+  const WORKER_URL = 'https://veilleurs.paulrobinpro49.workers.dev';
+  const WORKER_SECRET = 's3+/M21~hZ$)';
+
+  let deleted = 0, failed = 0;
+  for (const post of posts) {
+    try {
+      // Supprimer le message webhook
+      let delUrl = `https://discord.com/api/webhooks/${whId}/${whToken}/messages/${post.messageId}`;
+      if (post.threadId) delUrl += `?thread_id=${post.threadId}`;
+      const r = await fetch(delUrl, { method: 'DELETE' });
+      if (!r.ok && r.status !== 404) {
+        const body = await r.text().catch(() => '');
+        const json = JSON.parse(body || '{}');
+        if (json.code === 10003) {
+          await deleteDoc(doc(db, 'discord_posts', post._id)).catch(() => {});
+          deleted++; continue;
+        }
+        console.warn('[deleteWebhookPosts] message delete failed', r.status, body);
+        failed++; continue;
+      }
+      // Supprimer le thread forum via Cloudflare Worker
+      if (post.threadId) {
+        const rt = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ threadId: post.threadId, secret: WORKER_SECRET }),
+        });
+        if (!rt.ok) {
+          const body = await rt.text().catch(() => '');
+          console.warn('[deleteWebhookPosts] thread delete failed', rt.status, body);
+        }
+      }
+      await deleteDoc(doc(db, 'discord_posts', post._id)).catch(() => {});
+      deleted++;
+    } catch(e) { console.error('[deleteWebhookPosts] error', e); failed++; }
+  }
+  toast(`${deleted} post(s) supprimé(s)${failed ? `, ${failed} échec(s) — voir console` : ''}.`, deleted ? 'success' : 'error');
+};
 
 window.saveDiscordWebhooks = async function saveDiscordWebhooks() {
   const btn = document.getElementById('dw-save-btn');
@@ -4392,6 +4595,7 @@ window.dwPublishUnsentSend = async function() {
   for (const sub of subs) {
     const liveItem = _cachedItems.find(it => it.id === sub.data?.id);
     const setId = sub.data?.set || liveItem?.set || null;
+    console.log('[dw-group]', sub.data?.name, '| sub.data.set:', sub.data?.set, '| liveItem.set:', liveItem?.set, '| setId:', setId);
     if (setId) {
       if (!setGroups.has(setId)) setGroups.set(setId, []);
       setGroups.get(setId).push(sub);
@@ -4399,6 +4603,7 @@ window.dwPublishUnsentSend = async function() {
       soloSubs.push(sub);
     }
   }
+  console.log('[dw-group] setGroups:', [...setGroups.keys()], '| soloSubs:', soloSubs.length);
 
   let done = 0, failed = 0;
   const total = soloSubs.length + setGroups.size;
@@ -4511,22 +4716,50 @@ window.dwPublishSelected = async function() {
 
   const ids   = checks.map(c => c.dataset.id);
   const items = _dwPublishItems.filter(it => ids.includes(it._id || it.id));
+
+  // Grouper par set
+  const setGroups = new Map();
+  const soloItems = [];
+  for (const item of items) {
+    const setId = item.set || null;
+    if (setId) {
+      if (!setGroups.has(setId)) setGroups.set(setId, []);
+      setGroups.get(setId).push(item);
+    } else {
+      soloItems.push(item);
+    }
+  }
+
+  const total = soloItems.length + setGroups.size;
   let done = 0;
 
-  for (const item of items) {
-    progText.textContent = `Envoi ${done + 1} / ${items.length} — ${item.name || ''}…`;
-    progBar.style.width  = `${Math.round(done / items.length * 100)}%`;
+  for (const item of soloItems) {
+    progText.textContent = `Envoi ${done + 1} / ${total} — ${item.name || ''}…`;
+    progBar.style.width  = `${Math.round(done / total * 100)}%`;
     try {
       await _sendSingleItemDiscord(item);
     } catch(e) {
       toast(`⛔ Erreur pour « ${item.name} » : ${e.message}`, 'error');
     }
     done++;
-    if (done < items.length) await new Promise(r => setTimeout(r, 1100));
+    if (done < total) await new Promise(r => setTimeout(r, 1100));
+  }
+
+  for (const [setId, setItems] of setGroups) {
+    const label = setItems[0].name || setId;
+    progText.textContent = `Envoi ${done + 1} / ${total} — Set ${label}…`;
+    progBar.style.width  = `${Math.round(done / total * 100)}%`;
+    try {
+      await _sendSetGroupItemsDiscord(setItems);
+    } catch(e) {
+      toast(`⛔ Erreur set « ${setId} » : ${e.message}`, 'error');
+    }
+    done++;
+    if (done < total) await new Promise(r => setTimeout(r, 1100));
   }
 
   progBar.style.width  = '100%';
-  progText.textContent = `✓ ${done} item${done>1?'s':''} envoyé${done>1?'s':''} !`;
+  progText.textContent = `✓ ${done} envoi${done>1?'s':''} réussi${done>1?'s':''} !`;
   setTimeout(() => { prog.style.display = 'none'; btn.disabled = false; }, 3000);
 };
 
@@ -4577,7 +4810,18 @@ async function _sendSingleItemDiscord(item) {
       .replace(/\{niveau\}/g,    item.lvl          || '')
       .replace(/\{classes\}/g,   (item.classes || []).map(c => CLS_LABEL[c] || c).join(', '));
   }
-  await window.VCL.postDiscord(`${url}?wait=false`, payload, imgBlob, imgFname);
+  const discordRes = await window.VCL.postDiscord(`${url}?wait=true`, payload, imgBlob, imgFname)
+    .then(r => r.ok ? r.json() : null).catch(() => null);
+  if (discordRes?.id && itemId) {
+    try {
+      await setDoc(doc(db, 'discord_posts', `${key}_item_${itemId}`), {
+        itemId: String(itemId), itemName: item.name || '', webhookKey: key, webhookUrl: url,
+        messageId: discordRes.id,
+        threadId: discordRes.channel_id || null,
+        sentAt: new Date().toISOString(),
+      });
+    } catch(e) { console.warn('discord_posts save failed:', e); }
+  }
 }
 
 window.testNewSubmissionWebhook = async function() {
@@ -4841,6 +5085,7 @@ async function _extractSubBlob(sub) {
 }
 
 async function sendApprovalWebhook(sub) {
+  console.log('[saw] called, type:', sub.type, 'cat:', sub.data?.category, 'palier:', sub.data?.palier);
   if (sub.type !== 'item') return;
   const cat = sub.data?.category;
   if (!['arme', 'armure', 'accessoire'].includes(cat)) return;
@@ -4910,11 +5155,28 @@ async function sendApprovalWebhook(sub) {
       .replace(/\{classes\}/g,   (sub.data.classes || []).map(c => CLS_LABEL[c] || c).join(', '));
   }
 
-  await window.VCL.postDiscord(`${url}?wait=false`, payload, imgBlob, imgFname);
+  const discordRes = await window.VCL.postDiscord(`${url}?wait=true`, payload, imgBlob, imgFname)
+    .then(r => { console.log('[discord] status', r.status); return r.ok ? r.json() : r.text().then(t => { console.warn('[discord] body', t); return null; }); })
+    .catch(e => { console.error('[discord] fetch error', e); return null; });
+  console.log('[discord] discordRes', discordRes);
+  console.log('[discord] id check:', discordRes?.id);
+  if (discordRes?.id) {
+    console.log('[discord] saving to firestore, key:', key, 'subId:', sub._id);
+    try {
+      await setDoc(doc(db, 'discord_posts', `${key}_${sub._id}`), {
+        subId: sub._id, subName: sub.data.name || '', webhookKey: key, webhookUrl: url,
+        messageId: discordRes.id,
+        threadId: discordRes.channel_id || null,
+        sentAt: new Date().toISOString(),
+      });
+      console.log('[discord] firestore saved!');
+    } catch(e) { console.warn('[discord] discord_posts save failed:', e); }
+  }
 }
 
 // ── Envoi groupé d'un set (plusieurs embeds dans un seul post) ──
 async function _sendSetGroupDiscord(subs) {
+  console.log('[sgd] called, subs:', subs.length);
   if (!subs.length) return;
   if (!_dwConfig) {
     const snap = await getDoc(doc(db, 'config', 'discord_webhooks'));
@@ -4975,23 +5237,159 @@ async function _sendSetGroupDiscord(subs) {
     embeds.push(_buildApprovalEmbed(subDataForEmbed, indexedFname, _dwConfig.embedFields || null, itemNames, contributorName));
   }
 
-  // Discord : max 10 embeds par message
-  const payload = { thread_name: threadName, embeds: embeds.slice(0, 10) };
-  const appliedTags = _resolveTagRules(first.data, (_dwConfig.tagRules || {})[key] || []);
-  if (appliedTags.length) payload.applied_tags = appliedTags;
+  // Vérifier si un thread Discord existe déjà pour ce set
+  let existingThreadId = null;
+  try {
+    const existingSnap = await getDoc(doc(db, 'discord_posts', `${key}_${setId}`));
+    if (existingSnap.exists()) existingThreadId = existingSnap.data().threadId || null;
+  } catch {}
 
+  // Discord : max 10 embeds par message
+  let fetchUrl, payload;
+  if (existingThreadId) {
+    // Poster dans le thread existant (pas de thread_name, pas de applied_tags)
+    fetchUrl = `${url}?thread_id=${existingThreadId}&wait=true`;
+    payload  = { embeds: embeds.slice(0, 10) };
+  } else {
+    // Créer un nouveau thread
+    fetchUrl = `${url}?wait=true`;
+    payload  = { thread_name: threadName, embeds: embeds.slice(0, 10) };
+    const appliedTags = _resolveTagRules(first.data, (_dwConfig.tagRules || {})[key] || []);
+    if (appliedTags.length) payload.applied_tags = appliedTags;
+  }
+
+  let discordRes = null;
   if (files.length) {
     const p  = { ...payload, attachments: files.map((f, i) => ({ id: i, filename: f.fname })) };
     const fd = new FormData();
     fd.append('payload_json', JSON.stringify(p));
     files.forEach((f, i) => fd.append(`files[${i}]`, f.blob, f.fname));
-    await fetch(`${url}?wait=false`, { method: 'POST', body: fd });
+    const r = await fetch(fetchUrl, { method: 'POST', body: fd });
+    if (r.ok) discordRes = await r.json();
   } else {
-    await fetch(`${url}?wait=false`, {
+    const r = await fetch(fetchUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    if (r.ok) discordRes = await r.json();
+  }
+
+  // Sauvegarder dans discord_posts seulement si nouveau thread créé
+  if (!existingThreadId && discordRes?.id) {
+    try {
+      await setDoc(doc(db, 'discord_posts', `${key}_${setId}`), {
+        setId, setName: threadName, webhookKey: key, webhookUrl: url,
+        messageId: discordRes.id,
+        threadId: discordRes.channel_id || null,
+        sentAt: new Date().toISOString(),
+      });
+    } catch(e) { console.warn('discord_posts save failed:', e); }
+  }
+}
+
+// Variante de _sendSetGroupDiscord pour items déjà publiés (pas des submissions)
+async function _sendSetGroupItemsDiscord(items) {
+  if (!items.length) return;
+  if (!_dwConfig) {
+    const snap = await getDoc(doc(db, 'config', 'discord_webhooks'));
+    _dwConfig = snap.exists() ? snap.data() : {};
+  }
+
+  const first  = items[0];
+  const cat    = first.category;
+  const palier = first.palier;
+  if (!cat || !palier) throw new Error('Catégorie ou palier manquant');
+  const key = first.rarity === 'event' ? `${cat}_event` : `${cat}_${palier}`;
+  const url = _dwConfig[key];
+  if (!url) throw new Error(`Aucun webhook configuré pour ${key}`);
+
+  const setId = first.set;
+  let threadName = setId;
+  if (_dwConfig._setCache?.[setId]) {
+    threadName = _dwConfig._setCache[setId];
+  } else {
+    try {
+      const snap = await getDoc(doc(db, 'panoplies', setId));
+      if (snap.exists()) {
+        threadName = snap.data().label || setId;
+        if (!_dwConfig._setCache) _dwConfig._setCache = {};
+        _dwConfig._setCache[setId] = threadName;
+      }
+    } catch {}
+  }
+
+  const [itemNames, mobsPublic, mobsSecret, pnjs] = await Promise.all([
+    _getItemNamesCache(),
+    cachedDocs(COL.mobs),
+    cachedDocs(COL.mobsSecret).catch(() => []),
+    cachedDocs(COL.pnj).catch(() => []),
+  ]);
+  const allMobs = [...mobsPublic, ...mobsSecret];
+
+  const embeds = [];
+  const files  = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const { blob: imgBlob, fname: imgFname } = await _fetchItemImgBlob(item);
+    const indexedFname = (imgBlob && imgFname)
+      ? `image_${i}.${imgFname.split('.').pop() || 'png'}`
+      : null;
+    if (imgBlob && indexedFname) files.push({ blob: imgBlob, fname: indexedFname });
+
+    const itemForEmbed = item.obtain ? { ...item, obtain:
+      _enrichObtainWithPnjCoords(
+        _enrichObtainWithMobChances(item.obtain, item.id, allMobs),
+        pnjs)
+    } : item;
+    embeds.push(_buildApprovalEmbed(itemForEmbed, indexedFname, _dwConfig.embedFields || null, itemNames, null));
+  }
+
+  // Vérifier si thread existant pour ce set
+  let existingThreadId = null;
+  try {
+    const existingSnap = await getDoc(doc(db, 'discord_posts', `${key}_${setId}`));
+    if (existingSnap.exists()) existingThreadId = existingSnap.data().threadId || null;
+  } catch {}
+
+  let fetchUrl, payload;
+  if (existingThreadId) {
+    fetchUrl = `${url}?thread_id=${existingThreadId}&wait=true`;
+    payload  = { embeds: embeds.slice(0, 10) };
+  } else {
+    fetchUrl = `${url}?wait=true`;
+    payload  = { thread_name: threadName, embeds: embeds.slice(0, 10) };
+    const appliedTags = _resolveTagRules(first, (_dwConfig.tagRules || {})[key] || []);
+    if (appliedTags.length) payload.applied_tags = appliedTags;
+  }
+
+  let discordRes = null;
+  if (files.length) {
+    const p  = { ...payload, attachments: files.map((f, i) => ({ id: i, filename: f.fname })) };
+    const fd = new FormData();
+    fd.append('payload_json', JSON.stringify(p));
+    files.forEach((f, i) => fd.append(`files[${i}]`, f.blob, f.fname));
+    const r = await fetch(fetchUrl, { method: 'POST', body: fd });
+    if (r.ok) discordRes = await r.json();
+  } else {
+    const r = await fetch(fetchUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (r.ok) discordRes = await r.json();
+  }
+
+  if (!existingThreadId && discordRes?.id) {
+    try {
+      await setDoc(doc(db, 'discord_posts', `${key}_${setId}`), {
+        setId, setName: threadName, webhookKey: key, webhookUrl: url,
+        messageId: discordRes.id,
+        threadId: discordRes.channel_id || null,
+        sentAt: new Date().toISOString(),
+      });
+    } catch(e) { console.warn('discord_posts save failed:', e); }
   }
 }
 
@@ -5812,8 +6210,10 @@ function renderUsers(users) {
     row.innerHTML = `
       <span class="user-pseudo">${escHtml(u.pseudo || '—')}</span>
       <span class="user-uid">${escHtml(u.uid)}</span>
+      <span class="user-email" style="font-size:11px;color:var(--muted);">${escHtml(u.email || '—')}</span>
       <span class="user-role-badge" style="color:${roleColor[u.role] || 'var(--muted)'};">${escHtml(u.role || 'membre')}</span>
       <select class="user-role-sel" onchange="setUserRole('${escHtml(u.uid)}', this.value, this)">${sel}</select>
+      <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px;color:var(--danger);border-color:var(--danger);" onclick="deleteUserAccount('${escHtml(u.uid)}', '${escHtml(u.pseudo || u.uid)}')">🗑️</button>
     `;
     list.appendChild(row);
   });
@@ -5838,6 +6238,18 @@ window.setUserRole = async (uid, newRole, sel) => {
     toast('Erreur : ' + e.message, 'error');
   } finally {
     sel.disabled = false;
+  }
+};
+
+window.deleteUserAccount = async (uid, pseudo) => {
+  if (!confirm(`Supprimer le compte de « ${pseudo} » ?\n\nCela supprime uniquement le document Firestore (pas le compte Firebase Auth).`)) return;
+  try {
+    await deleteDoc(doc(db, 'users', uid));
+    _allUsers = _allUsers.filter(u => u.uid !== uid);
+    renderUsers(_allUsers);
+    toast(`Compte « ${pseudo} » supprimé.`, 'success');
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'error');
   }
 };
 
@@ -5902,6 +6314,31 @@ window.loadLeaderboard = async () => {
       }
     } catch {}
   }
+
+  // Resolve current pseudo for uid-based entries
+  await Promise.all(
+    Object.values(byKey)
+      .filter(e => e.uid)
+      .map(async e => {
+        try {
+          const snap = await getDoc(doc(db, COL.users, e.uid));
+          if (snap.exists() && snap.data().pseudo) e.name = snap.data().pseudo;
+        } catch {}
+      })
+  );
+
+  // Merge anon entries ('__name') into uid entries with same name
+  for (const anonKey of Object.keys(byKey)) {
+    if (!anonKey.startsWith('__')) continue;
+    const anonName = anonKey.slice(2);
+    const uidEntry = Object.values(byKey).find(e => e.uid && e.name === anonName);
+    if (uidEntry) {
+      uidEntry.subs.push(...byKey[anonKey].subs);
+      delete byKey[anonKey];
+    }
+  }
+
+  console.log('[LB] byKey:', Object.fromEntries(Object.entries(byKey).map(([k,v]) => [k, { uid: v.uid, name: v.name, count: v.subs.length }])));
 
   const ranked = Object.values(byKey).sort((a, b) => b.subs.length - a.subs.length);
   listEl.innerHTML = '';
