@@ -594,13 +594,6 @@ function _buildGridCard(q, idx) {
       </div>
     </div>`;
 
-  // Tooltips sur les icônes items (mouseenter/leave = pas de bubbling)
-  card.querySelectorAll('.card-item-icon[data-tip]').forEach(icon => {
-    const color = icon.style.getPropertyValue('--chip-color') || '#c8a96e';
-    icon.addEventListener('mouseenter', () => _tip.show(icon, icon.dataset.tip, color));
-    icon.addEventListener('mouseleave', () => _tip.hide());
-  });
-
   card.addEventListener('mousedown', e => e.preventDefault());
   card.addEventListener('click', () => openModal(q));
   queteGrid.appendChild(card);
@@ -676,6 +669,8 @@ function openModal(q) {
 function closeModal() {
   modalOverlay.classList.remove('open');
   window._currentModalQuest = null;
+  _tipAnchor = null;
+  _tip.hide();
   // Fermer le popup de coordonnées s'il est ouvert
   if (_objLocPopup) {
     _objLocPopup.remove();
@@ -1094,6 +1089,29 @@ const _tip = (() => {
     }
   };
 })();
+
+/* ══════════════════════════════════
+   TOOLTIP DÉLÉGATION (sur queteGrid)
+   Persiste à travers les rebuilds de grille et les ouvertures/fermetures de modal
+══════════════════════════════════ */
+let _tipAnchor = null;
+
+queteGrid.addEventListener('mouseover', e => {
+  const icon = e.target.closest('.card-item-icon[data-tip]');
+  if (icon === _tipAnchor) return;
+  _tipAnchor = icon;
+  if (!icon) { _tip.hide(); return; }
+  const color = icon.style.getPropertyValue('--chip-color') || '#c8a96e';
+  _tip.show(icon, icon.dataset.tip, color);
+});
+
+queteGrid.addEventListener('mouseout', e => {
+  if (!_tipAnchor) return;
+  if (!_tipAnchor.contains(e.relatedTarget)) {
+    _tipAnchor = null;
+    _tip.hide();
+  }
+});
 
 /* ══════════════════════════════════
    INIT

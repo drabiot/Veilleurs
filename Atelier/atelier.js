@@ -486,6 +486,8 @@ function loadAccessoriesForClass(classId) {
       controls.appendChild(btnMinus);
       controls.appendChild(val);
       const buffSpan = document.createElement('span');
+      buffSpan.id = 'car-buff-' + car.id;
+      buffSpan.style.cssText = 'font-size:10px;font-weight:700;color:' + (car.color || '#4ade80') + ';min-width:28px;text-align:left;display:none;';
 			controls.appendChild(buffSpan);
 
 			controls.appendChild(btnPlus);
@@ -530,9 +532,20 @@ function loadAccessoriesForClass(classId) {
     }
 
     CARACTERISTIQUES.forEach(function(car) {
-    const valEl = document.getElementById('car-val-' + car.id);
-    if (valEl) valEl.value = caracterPoints[car.id] + getBuffBonus(car.id)
-		});
+      const valEl   = document.getElementById('car-val-' + car.id);
+      const buffEl  = document.getElementById('car-buff-' + car.id);
+      const bonus   = getBuffBonus(car.id);
+      if (valEl) valEl.value = caracterPoints[car.id] + bonus;
+      if (buffEl) {
+        if (bonus > 0) {
+          buffEl.textContent = '+' + bonus;
+          buffEl.style.display = '';
+        } else {
+          buffEl.textContent = '';
+          buffEl.style.display = 'none';
+        }
+      }
+    });
   }
 
   function changeLevelBy(delta) {
