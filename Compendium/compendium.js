@@ -827,6 +827,25 @@ function renderNpcHeader(recette, index) {
    AFFICHAGE FICHE ITEM
 ══════════════════════════════════ */
 
+function isQualityOnly(item) {
+  return !!item.quality && !item.lore && !item.obtain;
+}
+
+function resolveMedia(item, qualityMode = false) {
+  if (item.model) return [item.model];
+  
+  if (qualityMode && item.quality?.images?.length) {
+    return item.quality.images;
+  }
+  
+  // Fallback : images de base, ou images qualité si pas de base
+  const baseImages = getItemImages(item); // ta fonction existante
+  if (baseImages.length) return baseImages;
+  if (item.quality?.images?.length) return item.quality.images;
+  
+  return [];
+}
+
 /* Formate une durée en secondes vers une chaîne lisible :
    45 → "45 s", 60 → "1 min", 90 → "1 min 30", 3600 → "1 h", 5400 → "1 h 30" */
 function formatDuration(sec) {
@@ -974,6 +993,46 @@ function renderEvolutionChain(item) {
     </div>`;
 }
 
+function rebuildSlideshowUI(color, name) {
+  const wrap = document.querySelector('.slideshow-controls');
+  if (!wrap) return;
+  const hasSlideshow = _slideMedia.length > 1;
+  wrap.style.display = hasSlideshow ? '' : 'none';
+  const dotsEl    = wrap.querySelector('.slide-dots');
+  const counterEl = wrap.querySelector('#slide-counter');
+  if (dotsEl) dotsEl.innerHTML = _slideMedia.map((_, i) =>
+    `<span class="slide-dot${i === 0 ? ' active' : ''}"></span>`).join('');
+  if (counterEl) counterEl.textContent = `1 / ${_slideMedia.length}`;
+  if (hasSlideshow) {
+    bindSlideshowButtons(color, name);
+    startSlideshow(color, name);
+  }
+}
+
+function bindSlideshowButtons(color, name) {
+  document.getElementById('slide-prev')?.addEventListener('click', e => {
+    e.stopPropagation();
+    goToSlide(_slideIndex - 1, color, name);
+    if (!_slidePaused) startSlideshow(color, name);
+  });
+  document.getElementById('slide-next')?.addEventListener('click', e => {
+    e.stopPropagation();
+    goToSlide(_slideIndex + 1, color, name);
+    if (!_slidePaused) startSlideshow(color, name);
+  });
+  document.getElementById('slide-pause')?.addEventListener('click', e => {
+    e.stopPropagation();
+    togglePause(color, name);
+  });
+  document.querySelectorAll('.slide-dot').forEach((dot, i) => {
+    dot.addEventListener('click', () => {
+      goToSlide(i, color, name);
+      if (!_slidePaused) startSlideshow(color, name);
+    });
+  });
+  startSlideshow(color, name);
+}
+
 function showItem(id, initialQuality = false) {
   const item = ITEMS_BY_ID.get(id);
   if (!item) return;
@@ -986,10 +1045,12 @@ function showItem(id, initialQuality = false) {
     el.classList.toggle('active', el.dataset.id === id);
   });
 
-  // ── État du toggle (false = Normal, true = Qualité)
-  let qualityMode = initialQuality && !!item.quality;
+  const qualityOnly = isQualityOnly(item);
+  const hasQuality  = !!item.quality;
 
-  // ── Données selon le mode actif
+  // Si qualité uniquement → on force le mode qualité, pas de toggle
+  let qualityMode = qualityOnly ? true : (initialQuality && hasQuality);
+
   function getVariant() {
     if (qualityMode && item.quality) {
       return {
@@ -1000,32 +1061,37 @@ function showItem(id, initialQuality = false) {
     return { lore: item.lore, obtain: item.obtain };
   }
 
-  // ── Craft selon le mode actif
   function getCraft() {
     if (qualityMode && item.quality) return item.quality.craft ?? item.craft ?? null;
     return item.craft ?? null;
   }
 
+  // ── Media : dépend du mode actif
+  function refreshMedia() {
+    _slideMedia  = resolveMedia(item, qualityMode);
+    _slideIndex  = 0;
+    _slidePaused = false;
+  }
+
+  refreshMedia();
+
   const color  = rarityColor(item.rarity);
   const rlabel = rarityLabel(item.rarity);
   const cdata  = catData(item.category);
-
-  _slideMedia  = resolveMedia(item);
-  _slideIndex  = 0;
-  _slidePaused = false;
-
   const hasSlideshow = _slideMedia.length > 1;
-  const hasQuality   = !!item.quality;
+
+  // Toggle uniquement si l'item a les deux versions
+  const showToggle = hasQuality && !qualityOnly;
 
   const slideshowControls = hasSlideshow ? `
     <div class="slideshow-controls">
-      <button class="slide-btn" id="slide-prev" title="Précédent">‹</button>
+      <button class="slide-btn" id="slide-prev">‹</button>
       <div class="slide-dots">
         ${_slideMedia.map((_, i) => `<span class="slide-dot${i === 0 ? ' active' : ''}"></span>`).join('')}
       </div>
       <span id="slide-counter" class="slide-counter">1 / ${_slideMedia.length}</span>
-      <button class="slide-btn" id="slide-pause" title="Pause / Lecture">⏸</button>
-      <button class="slide-btn" id="slide-next" title="Suivant">›</button>
+      <button class="slide-btn" id="slide-pause">⏸</button>
+      <button class="slide-btn" id="slide-next">›</button>
     </div>` : '';
 
   function mediaTypeLabel(m) {
@@ -1034,16 +1100,17 @@ function showItem(id, initialQuality = false) {
     return '';
   }
 
-  const qualityToggle = hasQuality ? `
+  const qualityToggle = showToggle ? `
     <div class="quality-toggle" id="quality-toggle">
       <span class="quality-toggle-label" id="qt-normal">Normal</span>
-      <button class="qt-switch" id="qt-switch" title="Basculer vers la version Qualité" aria-pressed="false">
+      <button class="qt-switch" id="qt-switch" aria-pressed="false">
         <span class="qt-thumb"></span>
       </button>
       <span class="quality-toggle-label" id="qt-quality">✦ Qualité</span>
     </div>` : '';
 
-  // ── Injection HTML complète
+  const v = getVariant();
+
   itemDisplay.innerHTML = `
     <div class="item-sheet">
       <div class="item-header">
@@ -1063,37 +1130,37 @@ function showItem(id, initialQuality = false) {
             ${rlabel}
           </div>
           ${qualityToggle}
-          <blockquote class="item-lore" id="item-lore-text">${parseText(item.lore)}</blockquote>
+          <blockquote class="item-lore" id="item-lore-text">${parseText(v.lore)}</blockquote>
         </div>
       </div>
 
       <div class="item-sep"></div>
       ${renderEvolutionChain(item)}
       <div class="item-section-title">Comment obtenir cet item</div>
-      <div class="item-obtain" id="item-obtain-text">${parseText(item.obtain)}</div>
-      ${(item.craft || item.effects) ? `
+      <div class="item-obtain" id="item-obtain-text">${parseText(v.obtain)}</div>
+      ${(item.craft || item.effects || item.quality?.craft || item.quality?.effects) ? `
       <div class="effects-craft-titles" id="effects-craft-titles">
-        <div class="item-section-title">${item.craft ? 'Craft' : ''}</div>
-        <div class="item-section-title">${item.effects ? 'Effets' : ''}</div>
+        <div class="item-section-title">${(getCraft()) ? 'Craft' : ''}</div>
+        <div class="item-section-title">${(item.effects || item.quality?.effects) ? 'Effets' : ''}</div>
       </div>
       <div class="effects-craft-row">
-        <div id="item-craft-wrap">${renderCraft(item.craft ?? null)}</div>
-        <div id="item-effects-wrap">${renderEffects(item.effects ?? null)}</div>
+        <div id="item-craft-wrap">${renderCraft(getCraft())}</div>
+        <div id="item-effects-wrap">${renderEffects(
+          (qualityMode && item.quality?.effects) ? item.quality.effects : (item.effects ?? null)
+        )}</div>
       </div>` : ''}
       <div class="item-sep"></div>
-
       <div class="item-tags">
         ${(item.tags || []).map(t => `<span class="item-tag">${t}</span>`).join('')}
       </div>
     </div>`;
 
-  // ── Bind les liens craft initiaux
   bindCraftLinks();
   bindCraftTabs();
   bindEntityLinks();
 
-  // ── Logique toggle Normal / Qualité
-  if (hasQuality) {
+  // ── Toggle Normal / Qualité (seulement si les deux versions existent)
+  if (showToggle) {
     const switchBtn = document.getElementById('qt-switch');
     const loreEl    = document.getElementById('item-lore-text');
     const obtainEl  = document.getElementById('item-obtain-text');
@@ -1101,8 +1168,7 @@ function showItem(id, initialQuality = false) {
     const labelNorm = document.getElementById('qt-normal');
     const labelQual = document.getElementById('qt-quality');
 
-    switchBtn.addEventListener('click', () => {
-      qualityMode = !qualityMode;
+    function applyToggleState() {
       switchBtn.classList.toggle('active', qualityMode);
       switchBtn.setAttribute('aria-pressed', qualityMode);
       labelNorm.classList.toggle('qt-active', !qualityMode);
@@ -1112,42 +1178,42 @@ function showItem(id, initialQuality = false) {
       const v = getVariant();
       loreEl.innerHTML   = parseText(v.lore);
       obtainEl.innerHTML = parseText(v.obtain);
-
-      // ── Mise à jour du craft selon la version
       craftWrap.innerHTML = renderCraft(getCraft());
+
       const effectsWrap = document.getElementById('item-effects-wrap');
-        if (effectsWrap) {
-          const qualEffects = qualityMode && item.quality?.effects ? item.quality.effects : item.effects;
-          effectsWrap.innerHTML = renderEffects(qualEffects ?? null);
-        }
+      if (effectsWrap) {
+        effectsWrap.innerHTML = renderEffects(
+          (qualityMode && item.quality?.effects) ? item.quality.effects : (item.effects ?? null)
+        );
+      }
+
+      // ── Recharger les images selon la version active
+      stopSlideshow();
+      stopWebGL();
+      refreshMedia();
+      if (_slideMedia.length > 0) renderMedia(_slideMedia[0], color, item.name);
+      // Reconstruire les dots si le nb d'images change
+      rebuildSlideshowUI(color, item.name);
+
       bindCraftLinks();
       bindCraftTabs();
       bindEntityLinks();
+    }
+
+    switchBtn.addEventListener('click', () => {
+      qualityMode = !qualityMode;
+      applyToggleState();
     });
 
     // État initial
-    if (qualityMode) {
-      switchBtn.classList.add('active');
-      switchBtn.setAttribute('aria-pressed', 'true');
-      labelQual.classList.add('qt-active');
-      const v = getVariant();
-      loreEl.innerHTML   = parseText(v.lore);
-      obtainEl.innerHTML = parseText(v.obtain);
-      craftWrap.innerHTML = renderCraft(getCraft());
-      const effectsWrap = document.getElementById('item-effects-wrap');
-      if (effectsWrap) effectsWrap.innerHTML = renderEffects(item.quality?.effects ?? item.effects ?? null);
-      bindCraftLinks();
-      bindCraftTabs();
-      bindEntityLinks();
-    } else {
-      labelNorm.classList.add('qt-active');
-    }
+    if (qualityMode) applyToggleState();
+    else labelNorm.classList.add('qt-active');
   }
 
-  // ── Média & slideshow
-  if (_slideMedia.length > 0) {
-    renderMedia(_slideMedia[0], color, item.name);
-  }
+  // ── Média initial
+  if (_slideMedia.length > 0) renderMedia(_slideMedia[0], color, item.name);
+  if (hasSlideshow) bindSlideshowButtons(color, item.name);
+
 
   if (hasSlideshow) {
     document.getElementById('slide-prev').addEventListener('click', (e) => {
