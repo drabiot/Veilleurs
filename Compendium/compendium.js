@@ -1124,7 +1124,7 @@ function showItem(id, initialQuality = false) {
           ${slideshowControls}
         </div>
         <div class="item-info">
-          <h2 class="item-name">${escHtml(item.name)}</h2>
+          <h2 class="item-name" id="item-name-text">${escHtml(item.quality?.name && qualityMode ? item.quality.name : item.name)}</h2>
           <div class="item-rarity-badge" style="color:${color}; border-color:${color};">
             <span class="item-rarity-dot" style="background:${color};"></span>
             ${rlabel}
@@ -1178,6 +1178,8 @@ function showItem(id, initialQuality = false) {
       const v = getVariant();
       loreEl.innerHTML   = parseText(v.lore);
       obtainEl.innerHTML = parseText(v.obtain);
+      const nameEl = document.getElementById('item-name-text');
+      if (nameEl) nameEl.textContent = (qualityMode && item.quality?.name) ? item.quality.name : item.name;
       craftWrap.innerHTML = renderCraft(getCraft());
 
       const effectsWrap = document.getElementById('item-effects-wrap');
