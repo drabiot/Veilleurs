@@ -186,11 +186,20 @@ const EFFECT_META = {
 	degats_physique:    	{ icon: '💪',  	color: '#eebe22', label: 'Force Accrue',     		prefix: 'Boost les Dégâts Physique de ' },
 	degats_armes:    			{ icon: '⚔️',  	color: '#f36d14', label: 'Force Accrue',     		prefix: 'Boost les Dégâts d\'Armes de ' },
 	degats_arcane:   			{ icon: '🔮',  	color: '#c24cda', label: 'Puissance Arcanique',  prefix: 'Boost les Dégâts Magique de ' },
+  boost_sante:    			{ icon: '❤️',  	color: '#d83c3c', label: 'Santé Renforcée',     		prefix: 'Boost la Santé Max de ' },
+  boost_regen_vie:    	{ icon: '💓',  	color: '#e07171', label: 'Régénération de Santé Renforcée',     		prefix: 'Boost la Régénération de Santé Max de ' },
 	boost_mana:    				{ icon: '💧',  	color: '#3676ac', label: 'Mana Renforcé',     		prefix: 'Boost le Mana Max de ' },
+  boost_regen_mana:    	{ icon: '💦',  	color: '#89c4fb', label: 'Régénération de Mana Renforcée',     		prefix: 'Boost la Régénération de Mana Max de ' },
 	boost_stamina:    		{ icon: '👟',  	color: '#ddb225', label: 'Endurance Renforcé',     		prefix: 'Boost la Stamina Max de ' },
+  boost_regen_stamina:  { icon: '💨',  	color: '#ffe188', label: 'Régénération de Stamina Renforcée',     		prefix: 'Boost la Régénération de Stamina Max de ' },
 	coups_critique:				{ icon: '🎯',  	color: '#d3b327', label: 'Coûp Critique',  			prefix: 'Boost les Chances Crtique de ' },
-	degats_critique:				{ icon: '💢',  	color: '#e4c84b', label: 'Dégât Critique',  			prefix: 'Boost les Dégâts Critique de ' },
+	degats_critique:			{ icon: '💢',  	color: '#e4c84b', label: 'Dégât Critique',  			prefix: 'Boost les Dégâts Critique de ' },
 	vol_vie:							{ icon: '🩸',  	color: '#db2727', label: 'Soif de Sang',  				prefix: 'Boost le Vol de Vie de ' },
+  vitesse_deplacement:	{ icon: '🏃',  	color: '#5f89fd', label: 'Vitesse de Déplacement',  				prefix: 'Boost la Vitesse de Déplacement de ' },
+  agilite:	            { icon: '💨',  	color: '#b8c8f4', label: 'Agilité',  				prefix: 'Boost les chances d\'Esquive de ' },
+  resistance_recul:	    { icon: '💨',  	color: '#b8c8f4', label: 'Résistance au Recul',  				prefix: 'Boost la résistance au recul de ' },
+  maitrise_blocage:	    { icon: '🛡️',  	color: '#cdc0d6', label: 'Maîtrise du Blocage',  				prefix: 'Boost la maîtrise du blocage de ' },
+  puissance_blocage :	  { icon: '💪',  	color: '#e06c95', label: 'Puissance du Blocage',  				prefix: 'Boost la puissance du blocage de ' },
 	
 
 	health_heal:  				{ icon: '💓',  	color: '#a01212', label: 'Healing',  						prefix: 'Vous rends ' },
@@ -211,6 +220,7 @@ const EFFECT_META = {
   cooldown: 						{ icon: '⏱️',  	color: '#888888', label: 'Cooldown',        		 	prefix: ''  },
 	use: 									{ icon: '🧪',  	color: '#7db0ca', label: 'Utilisations',     		prefix: ''  },
 	level: 								{ icon: '❓',  	color: '#c43c28', label: 'Niveau Requis',   		  prefix: 'Niveau '  },
+  reparation: 					{ icon: '⚒️',  	color: '#f0c137', label: 'Réparation',   		  prefix: 'Réparation '  },
   durabilite: 					{ icon: '⛏️',  	color: '#5ad18a', label: 'Durabilité',   		  prefix: 'Durabilité '  },
   puissance_recolte: 		{ icon: '💪',  	color: '#e86652', label: 'Puissance de Récolte',   		  prefix: 'Puissance de Récolte '  }
 };
