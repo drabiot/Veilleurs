@@ -3310,44 +3310,32 @@ function _genValueHtml(key, val, col) {
   return `<input class="ed-input" data-gf-type="string" value="${_ee(str)}"${listAttr} autocomplete="off">`;
 }
 
-function _buildGenericForm(data, col) {
-  // Normaliser img / image → images (tableau)
-  if ('img' in data || 'image' in data) {
-    const existing = data.images && data.images.length ? data.images : null;
-    if (!existing) {
-      const src = data.img || data.image;
-      data = { ...data, images: src ? [src] : [] };
-    }
-    const { img, image, ...rest } = data;
-    data = rest;
-  }
+const QUALITY_FIELDS = ['lore', 'obtain', 'craft', 'effects', 'images'];
 
-  // Auto-injecter le champ color pour les régions qui n'en ont pas encore
-  if (col === 'regions' && !('color' in data)) {
-    data = { ...data, color: _makeColorObj('#9a9ab0') };
-  }
-  // Auto-injecter le champ color pour les panoplies qui n'en ont pas encore
-  if (col === 'panoplies' && !('color' in data)) {
-    data = { ...data, color: '#b87333' };
-  }
-  // Auto-injecter obtain pour les items qui n'en ont pas encore
-  if (col === 'items' && !('obtain' in data)) {
-    data = { ...data, obtain: '' };
-  }
-  // Normaliser coords pour les PNJ → toujours un objet {x,y,z} avec null si absent
-  if (col === 'personnages') {
-    const c = data.coords;
-    if (c == null || typeof c === 'string') {
-      data = { ...data, coords: { x: null, y: null, z: null } };
-    }
-  }
-  // Auto-injecter stats pour les catégories qui en ont (arme, armure, accessoire, rune)
-  if (col === 'items' && !('stats' in data) && ['arme','armure','accessoire','rune'].includes(data.category)) {
-    data = { ...data, stats: {} };
-  }
+function _renderQualityFields(qualityData, col) {
+  // On affiche les champs déjà présents dans quality + les absents avec valeur vide
+  const rows = QUALITY_FIELDS.map(key => {
+    const val = key in qualityData ? qualityData[key] : null;
+    const t   = _typeOf(val);
+    const isEmpty = val === null || val === undefined;
 
-  _editorOrigData = { ...data };
+    return `<div class="ed-gen-row ed-quality-row" data-gf-orig-key="${_ee(key)}" data-gf-ns="quality">
+      <div class="ed-gen-keycell">
+        <span class="ed-gen-keylbl" style="cursor:default;">
+          ${_ee(key)}
+          ${isEmpty ? `<span style="font-size:10px;color:var(--muted);margin-left:4px;">(hérité)</span>` : ''}
+        </span>
+      </div>
+      <span class="ed-gen-type" style="color:${_typeColor(isEmpty ? 'null' : t)};">${_typeLabel(isEmpty ? 'null' : t)}</span>
+      <div class="ed-gen-val">${_genValueHtml(key, val, col)}</div>
+      <span></span>
+    </div>`;
+  }).join('');
 
+  return rows;
+}
+
+function _renderFormFields(data, col, ns) {
   const entries = Object.entries(data).sort(([ak, av], [bk, bv]) => {
     const ia = _GEN_FIELD_ORDER.indexOf(ak), ib = _GEN_FIELD_ORDER.indexOf(bk);
     const ta = _typeOf(av), tb = _typeOf(bv);
@@ -3360,10 +3348,11 @@ function _buildGenericForm(data, col) {
     return ak.localeCompare(bk);
   });
 
-  const rowsHtml = entries.map(([key, val]) => {
+  return entries.map(([key, val]) => {
     const t = _typeOf(val);
     const isFixed = key === '_order' || key === 'id';
-    return `<div class="ed-gen-row" data-gf-orig-key="${_ee(key)}">
+    const nsAttr  = ns ? `data-gf-ns="${ns}"` : '';
+    return `<div class="ed-gen-row" data-gf-orig-key="${_ee(key)}" ${nsAttr}>
       <div class="ed-gen-keycell">
         ${isFixed
           ? `<span class="ed-gen-keylbl" style="cursor:default;color:var(--muted);">${_ee(key)}</span>`
@@ -3371,15 +3360,203 @@ function _buildGenericForm(data, col) {
       </div>
       <span class="ed-gen-type" style="color:${_typeColor(t)};">${_typeLabel(t)}</span>
       <div class="ed-gen-val">${_genValueHtml(key, val, col)}</div>
-      ${isFixed ? '<span></span>' : `<button type="button" class="ed-gen-delbtn" onclick="edDelGenRow(this)" title="Supprimer ce champ">✕</button>`}
+      ${isFixed ? '<span></span>' : `<button type="button" class="ed-gen-delbtn" onclick="edDelGenRow(this)" title="Supprimer">✕</button>`}
     </div>`;
   }).join('');
+}
 
-  return `<div id="ed-gen-fields" style="display:flex;flex-direction:column;gap:4px;">
-    ${rowsHtml}
-  </div>
-  <datalist id="ed-dl-sets"></datalist>
-  <button type="button" onclick="edAddGenField()" class="btn btn-ghost" style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ</button>`;
+window.edSwitchTab = function(tab) {
+  document.querySelectorAll('.ed-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('ed-tab-base').style.display    = tab === 'base'    ? '' : 'none';
+  document.getElementById('ed-tab-quality').style.display = tab === 'quality' ? '' : 'none';
+};
+
+window.edCreateQuality = function() {
+  // Remplace le bouton "+" par un vrai onglet et injecte le panneau quality vide
+  const tabsEl = document.querySelector('.ed-tabs');
+  const draftBtn = tabsEl.querySelector('.ed-tab-create-quality');
+  if (draftBtn) {
+    draftBtn.outerHTML = `<button type="button" class="ed-tab-btn" data-tab="quality"
+      onclick="edSwitchTab('quality')">✦ Qualité</button>`;
+  }
+
+  const qualityPanel = document.getElementById('ed-tab-quality');
+  qualityPanel.innerHTML = `
+    <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">
+      Seuls les champs renseignés ici <strong>remplacent</strong> la version normale.
+      Les champs vides héritent de la version normale.
+    </p>
+    <div id="ed-gen-fields-quality" style="display:flex;flex-direction:column;gap:4px;">
+      ${_renderQualityFields({}, 'items')}
+    </div>
+    <button type="button" onclick="edRemoveQuality()" class="btn btn-ghost"
+            style="font-size:12px;padding:6px 14px;margin-top:16px;color:var(--danger);border-color:var(--danger);">
+      🗑 Supprimer la version qualité
+    </button>`;
+
+  _initFormExtras('#ed-tab-quality');
+  edSwitchTab('quality');
+};
+
+window.edRemoveQuality = async function() {
+  if (!await modal.confirm('Supprimer la version qualité de cet item ?')) return;
+  const qualityPanel = document.getElementById('ed-tab-quality');
+  qualityPanel.innerHTML = '';
+
+  const tabsEl = document.querySelector('.ed-tabs');
+  const qualTabBtn = tabsEl.querySelector('[data-tab="quality"]');
+  if (qualTabBtn) {
+    qualTabBtn.outerHTML = `<button type="button" class="ed-tab-btn ed-tab-create-quality"
+      onclick="edCreateQuality()" style="color:var(--muted);border-style:dashed;">＋ Ajouter version qualité</button>`;
+  }
+  edSwitchTab('base');
+};
+
+function _initFormExtras(scope = '#editor-form') {
+  document.querySelectorAll(`${scope} .ed-json-ta`).forEach(ta => {
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+    ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; });
+  });
+  document.querySelectorAll(`${scope} [data-gf-type="bool"]`).forEach(cb => {
+    cb.addEventListener('change', function () {
+      const lbl = this.closest('label')?.querySelector('.ed-gen-bool-txt');
+      if (lbl) lbl.textContent = this.checked ? 'true' : 'false';
+    });
+  });
+}
+
+function _collectGenericForm() {
+  const result  = {};
+  const quality = {};
+
+  document.querySelectorAll('#ed-gen-fields .ed-gen-row, #ed-gen-fields-quality .ed-quality-row').forEach(row => {
+    const ns     = row.dataset.gfNs || 'base';
+    const target = ns === 'quality' ? quality : result;
+
+    const keyInput = row.querySelector('.ed-gen-key-input');
+    const keyLbl   = row.querySelector('.ed-gen-keylbl');
+    const newKeyEl = row.querySelector('.ed-gen-new-key');
+    const key = (keyInput ? keyInput.value.trim() : (keyLbl ? keyLbl.textContent.replace(/\(hérité\)/g,'').trim() : ''));
+    const effectiveKey = newKeyEl ? newKeyEl.value.trim() : key;
+    if (!effectiveKey) return;
+
+    const el = row.querySelector('[data-gf-type]');
+    if (!el) return;
+
+    const t = el.dataset.gfType;
+    if (t === 'bool')   { target[effectiveKey] = el.checked; return; }
+    if (t === 'number') { const v = el.value.trim(); if (v !== '') target[effectiveKey] = +v; return; }
+    if (t === 'coords-x') {
+      const xEl = row.querySelector('[data-gf-type="coords-x"]');
+      const yEl = row.querySelector('[data-gf-type="coords-y"]');
+      const zEl = row.querySelector('[data-gf-type="coords-z"]');
+      const x = xEl?.value.trim(), y = yEl?.value.trim(), z = zEl?.value.trim();
+      target[effectiveKey] = { x: x!==''?+x:null, y: y!==''?+y:null, z: z!==''?+z:null };
+      return;
+    }
+    if (t === 'json') {
+      const v = el.value.trim();
+      if (!v) { target[effectiveKey] = null; return; }
+      target[effectiveKey] = JSON.parse(v);
+      return;
+    }
+    // string vide dans quality → on ne l'inclut pas (hérité)
+    if (ns === 'quality' && el.value === '') return;
+    target[effectiveKey] = el.value;
+  });
+
+  // Réintégrer quality dans result si l'onglet qualité est présent
+  const qualityPanel = document.getElementById('ed-gen-fields-quality');
+  if (qualityPanel && Object.keys(quality).length > 0) {
+    result.quality = quality;
+  }
+
+  // Preserve readonly
+  if (_editorOrigData) {
+    if ('id' in _editorOrigData && !('id' in result)) result.id = _editorOrigData.id;
+    if ('_order' in _editorOrigData) result._order = _editorOrigData._order;
+  }
+
+  return result;
+}
+
+function _buildGenericForm(data, col) {
+  // Normaliser img / image → images
+  if ('img' in data || 'image' in data) {
+    const existing = data.images?.length ? data.images : null;
+    if (!existing) {
+      const src = data.img || data.image;
+      data = { ...data, images: src ? [src] : [] };
+    }
+    const { img, image, ...rest } = data;
+    data = rest;
+  }
+
+  // Injections auto (inchangées)
+  if (col === 'regions'     && !('color'  in data)) data = { ...data, color: _makeColorObj('#9a9ab0') };
+  if (col === 'panoplies'   && !('color'  in data)) data = { ...data, color: '#b87333' };
+  if (col === 'items'       && !('obtain' in data)) data = { ...data, obtain: '' };
+  if (col === 'personnages') {
+    const c = data.coords;
+    if (c == null || typeof c === 'string') data = { ...data, coords: { x: null, y: null, z: null } };
+  }
+  if (col === 'items' && !('stats' in data) && ['arme','armure','accessoire','rune'].includes(data.category)) {
+    data = { ...data, stats: {} };
+  }
+
+  _editorOrigData = { ...data };
+
+  // Séparer les données base vs quality
+  const { quality: qualityData, ...baseData } = data;
+  const hasQuality = qualityData != null && typeof qualityData === 'object';
+
+  // Si c'est pas un item, on rend le form générique classique sans onglets
+  if (col !== 'items') {
+    return _renderFormFields(baseData, col, '') + `
+      <datalist id="ed-dl-sets"></datalist>
+      <button type="button" onclick="edAddGenField()" class="btn btn-ghost"
+              style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ</button>`;
+  }
+
+  // ── Onglets Normal / Qualité ───────────────────────
+  const qualityTabBtn = hasQuality
+    ? `<button type="button" class="ed-tab-btn" data-tab="quality" onclick="edSwitchTab('quality')">✦ Qualité</button>`
+    : `<button type="button" class="ed-tab-btn ed-tab-create-quality" onclick="edCreateQuality()"
+              style="color:var(--muted);border-style:dashed;">＋ Ajouter version qualité</button>`;
+
+  return `
+    <div class="ed-tabs" style="display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:8px;">
+      <button type="button" class="ed-tab-btn active" data-tab="base" onclick="edSwitchTab('base')">Normal</button>
+      ${qualityTabBtn}
+    </div>
+
+    <!-- Panneau Base -->
+    <div id="ed-tab-base" class="ed-tab-panel">
+      <div id="ed-gen-fields" style="display:flex;flex-direction:column;gap:4px;">
+        ${_renderFormFields(baseData, col, 'base')}
+      </div>
+      <datalist id="ed-dl-sets"></datalist>
+      <button type="button" onclick="edAddGenField()" class="btn btn-ghost"
+              style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ</button>
+    </div>
+
+    <!-- Panneau Qualité -->
+    <div id="ed-tab-quality" class="ed-tab-panel" style="display:none;">
+      ${hasQuality ? `
+        <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">
+          Seuls les champs renseignés ici <strong>remplacent</strong> la version normale.
+          Les champs vides héritent de la version normale.
+        </p>
+        <div id="ed-gen-fields-quality" style="display:flex;flex-direction:column;gap:4px;">
+          ${_renderQualityFields(qualityData, col)}
+        </div>
+        <button type="button" onclick="edRemoveQuality()" class="btn btn-ghost"
+                style="font-size:12px;padding:6px 14px;margin-top:16px;color:var(--danger);border-color:var(--danger);">
+          🗑 Supprimer la version qualité
+        </button>
+      ` : ''}
+    </div>`;
 }
 
 function _collectGenericForm() {
@@ -3605,20 +3782,7 @@ window.showEditor = async function(collection, id, data, origin) {
   // Peupler la datalist des sets (items et items_sensible)
   if (collection === 'items' || collection === 'items_sensible') await _populateSetDatalist();
 
-  // Auto-resize des JSON textareas
-  document.querySelectorAll('#editor-form .ed-json-ta').forEach(ta => {
-    ta.style.height = 'auto';
-    ta.style.height = ta.scrollHeight + 'px';
-    ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; });
-  });
-
-  // Sync labels des booleans
-  document.querySelectorAll('#editor-form [data-gf-type="bool"]').forEach(cb => {
-    cb.addEventListener('change', function () {
-      const lbl = this.closest('label')?.querySelector('.ed-gen-bool-txt');
-      if (lbl) lbl.textContent = this.checked ? 'true' : 'false';
-    });
-  });
+  _initFormExtras('#editor-form')
 };
 
 window.editorGoBack = function() {
