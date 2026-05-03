@@ -3317,7 +3317,7 @@ function _genValueHtml(key, val, col) {
   return `<input class="ed-input" data-gf-type="string" value="${_ee(str)}"${listAttr} autocomplete="off">`;
 }
 
-const QUALITY_FIELDS = ['lore', 'obtain', 'craft', 'effects', 'images'];
+const QUALITY_FIELDS = ['lore', 'obtain', 'craft', 'effects', 'images', 'name'];
 
 function _renderFormFields(data, col, ns) {
   const entries = Object.entries(data).sort(([ak, av], [bk, bv]) => {
