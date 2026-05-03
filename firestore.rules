@@ -27,10 +27,9 @@ service cloud.firestore {
     }
 
     // Items sensibles — gameplay stocké sous item.id, nameHash = hash(normalize(name))
-    // get public (par item.id), list public limité (query nameHash pour picker atelier)
+    // Lecture publique : get par item.id + list pour query nameHash (picker atelier)
     match /items_hidden/{id} {
-      allow get:   if true;
-      allow list:  if isContrib() || request.query.limit <= 10;
+      allow read:  if true;
       allow write: if isContrib();
     }
 
