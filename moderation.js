@@ -3020,6 +3020,13 @@ function _makeColorObj(hex) {
   return { color: hex, dim: `rgba(${r},${g},${b},.35)`, glow: `rgba(${r},${g},${b},.08)` };
 }
 
+function isQualityOnly(data) {
+  if (!data.quality) return false;
+  // Un item "qualité uniquement" n'a aucun champ de contenu hors quality, id, et métadonnées
+  const CONTENT_FIELDS = ['lore', 'obtain', 'craft', 'effects', 'images'];
+  return !CONTENT_FIELDS.some(f => f in data && data[f] != null && data[f] !== '' && !(Array.isArray(data[f]) && data[f].length === 0));
+}
+
 function _cpUpdate(id, h, s, v) {
   h = ((h % 360) + 360) % 360;
   s = Math.max(0, Math.min(100, s));
@@ -3455,6 +3462,51 @@ window.edAddGenFieldQuality = function() {
   row.querySelector('.ed-gen-new-key').focus();
 };
 
+window.edAddGenField = function() {
+  // Toujours cibler le panneau BASE, jamais quality
+  const container = document.getElementById('ed-gen-fields');
+  if (!container) return;
+  const row = document.createElement('div');
+  row.className = 'ed-gen-row ed-gen-newrow';
+  row.dataset.gfNs = 'base';  // ← ajout important
+  row.innerHTML = `
+    <input class="ed-gen-new-key ed-input" placeholder="nom_du_champ" style="font-family:monospace;font-size:12px;">
+    <select class="ed-gen-new-type ed-input" style="font-size:11px;padding:5px 4px;">
+      <option value="string">str</option>
+      <option value="number">int</option>
+      <option value="bool">bool</option>
+      <option value="json">array/map</option>
+    </select>
+    <div class="ed-gen-val">
+      <input class="ed-input" data-gf-type="string" placeholder="valeur…">
+    </div>
+    <button type="button" class="ed-gen-delbtn" onclick="edDelGenRow(this)" title="Annuler">✕</button>`;
+
+  const typeSelect = row.querySelector('.ed-gen-new-type');
+  const valDiv     = row.querySelector('.ed-gen-val');
+  typeSelect.addEventListener('change', () => {
+    const t = typeSelect.value;
+    if (t === 'bool') {
+      valDiv.innerHTML = `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0;">
+        <input type="checkbox" data-gf-type="bool" style="accent-color:var(--accent);width:15px;height:15px;">
+        <span class="ed-gen-bool-txt" style="font-size:12px;color:var(--muted);">false</span>
+      </label>`;
+      valDiv.querySelector('input').addEventListener('change', function() {
+        this.closest('label').querySelector('.ed-gen-bool-txt').textContent = this.checked ? 'true' : 'false';
+      });
+    } else if (t === 'json') {
+      valDiv.innerHTML = `<textarea class="ed-json-ta" data-gf-type="json" spellcheck="false" placeholder="[] ou {}" style="min-height:50px;"></textarea>`;
+    } else if (t === 'number') {
+      valDiv.innerHTML = `<input class="ed-input" type="number" data-gf-type="number" placeholder="0">`;
+    } else {
+      valDiv.innerHTML = `<input class="ed-input" data-gf-type="string" placeholder="valeur…">`;
+    }
+  });
+
+  container.appendChild(row);
+  row.querySelector('.ed-gen-new-key').focus();
+};
+
 function _initFormExtras(scope = '#editor-form') {
   document.querySelectorAll(`${scope} .ed-json-ta`).forEach(ta => {
     ta.style.height = 'auto';
@@ -3508,13 +3560,17 @@ function _buildGenericForm(data, col) {
 
   // Séparer les données base vs quality
   const { quality: qualityData, ...baseData } = data;
-  const hasQuality = qualityData != null && typeof qualityData === 'object';
+  const hasQuality   = qualityData != null && typeof qualityData === 'object';
+  const qualityOnly  = hasQuality && isQualityOnly(data);
+
+  // Si qualité uniquement → on injecte un onglet base vide mais on affiche quality par défaut
+  const defaultTab   = qualityOnly ? 'quality' : 'base';
 
   // Si c'est pas un item, on rend le form générique classique sans onglets
   if (col !== 'items') {
     return _renderFormFields(baseData, col, '') + `
       <datalist id="ed-dl-sets"></datalist>
-      <button type="button" onclick="edAddGenFieldQuality()" class="btn btn-ghost"
+      <button type="button" onclick="edAddGenField()" class="btn btn-ghost"
               style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ</button>`;
   }
 
@@ -3526,7 +3582,7 @@ function _buildGenericForm(data, col) {
 
   return `
     <div class="ed-tabs" style="display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:8px;">
-      <button type="button" class="ed-tab-btn active" data-tab="base" onclick="edSwitchTab('base')">Normal</button>
+      <button type="button" class="ed-tab-btn ${defaultTab === 'base' ? 'active' : ''}" data-tab="base" onclick="edSwitchTab('base')">Normal</button>
       ${qualityTabBtn}
     </div>
 
@@ -3536,7 +3592,7 @@ function _buildGenericForm(data, col) {
         ${_renderFormFields(baseData, col, 'base')}
       </div>
       <datalist id="ed-dl-sets"></datalist>
-      <button type="button" onclick="edAddGenFieldQuality()" class="btn btn-ghost"
+      <button type="button" onclick="edAddGenField()" class="btn btn-ghost"
               style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ</button>
     </div>
 
@@ -3786,6 +3842,12 @@ window.showEditor = async function(collection, id, data, origin) {
   // Construire le formulaire générique (items_sensible traité comme items)
   const formCollection = collection === 'items_sensible' ? 'items' : collection;
   document.getElementById('editor-form').innerHTML = _buildGenericForm(data, formCollection);
+
+
+  // Basculer sur l'onglet qualité si l'item n'a pas de version normale
+  if (isQualityOnly(data)) {
+    edSwitchTab('quality');
+  }
 
   // Initialiser le color picker si présent (régions)
   const cpEl = document.querySelector('#editor-form .ed-color-picker[data-init-hex]');
