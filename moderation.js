@@ -3514,7 +3514,7 @@ function _buildGenericForm(data, col) {
   if (col !== 'items') {
     return _renderFormFields(baseData, col, '') + `
       <datalist id="ed-dl-sets"></datalist>
-      <button type="button" onclick="edAddGenField()" class="btn btn-ghost"
+      <button type="button" onclick="edAddGenFieldQuality()" class="btn btn-ghost"
               style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ</button>`;
   }
 
@@ -3536,7 +3536,7 @@ function _buildGenericForm(data, col) {
         ${_renderFormFields(baseData, col, 'base')}
       </div>
       <datalist id="ed-dl-sets"></datalist>
-      <button type="button" onclick="edAddGenField()" class="btn btn-ghost"
+      <button type="button" onclick="edAddGenFieldQuality()" class="btn btn-ghost"
               style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ</button>
     </div>
 
@@ -3550,6 +3550,9 @@ function _buildGenericForm(data, col) {
         <div id="ed-gen-fields-quality" style="display:flex;flex-direction:column;gap:4px;">
           ${_renderQualityFields(qualityData, col)}
         </div>
+        <button type="button" onclick="edAddGenFieldQuality()" class="btn btn-ghost"
+          style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ qualité</button>
+        <button type="button" onclick="edRemoveQuality()" ...>
         <button type="button" onclick="edRemoveQuality()" class="btn btn-ghost"
                 style="font-size:12px;padding:6px 14px;margin-top:16px;color:var(--danger);border-color:var(--danger);">
           🗑 Supprimer la version qualité
