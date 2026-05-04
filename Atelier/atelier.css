@@ -86,8 +86,9 @@ html, body {
   padding: 10px 24px;
   display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px;
 }
-.header-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.header-left  { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .header-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+
 .btn-add-item {
   display: inline-block;
   padding: 5px 13px;
