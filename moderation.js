@@ -595,44 +595,47 @@ window.loadSubDiff = async function(subId, type, docId) {
 };
 
 window.applyDiffSelection = async function(subId) {
-  const stored = _diffDataStore.get(subId);
-  if (!stored) { toast('Diff non chargé — cliquez d\'abord sur "Voir les changements".', 'error'); return; }
-  const sub = allSubs.find(s => s._id === subId);
-  if (!sub) return;
-  const { proposed } = stored;
-  const diffEl = document.getElementById(`diff-${subId}`);
-  const rows = diffEl ? diffEl.querySelectorAll('[data-diff-key]') : [];
+    const stored = _diffDataStore.get(subId);
+    if (!stored) { toast('Erreur: Diff non chargé', 'error'); return; }
 
-  // Partir de la version proposée (contient tous les champs inchangés)
-  const merged = { ...proposed };
-  for (const row of rows) {
-    const k    = row.dataset.diffKey;
-    const kind = row.dataset.diffKind;
-    const cb   = row.querySelector('input[type=checkbox]');
-    if (!cb || cb.checked) continue; // accepté → pas de revert
-    // Refusé → revenir à la valeur actuelle
-    if (kind === 'added')   { delete merged[k]; }
-    if (kind === 'changed') { merged[k] = stored.current[k]; }
-    if (kind === 'removed') { merged[k] = stored.current[k]; }
-  }
+    const { current, proposed } = stored;
+    
+    // On clone la proposition (qui contient tes onglets base + quality)
+    let merged = JSON.parse(JSON.stringify(proposed));
 
-  sub.data = merged;
-  const codeDiv = document.getElementById(`code-${subId}`);
-  if (codeDiv) codeDiv.textContent = toJSStr(merged, 0) + ',';
-  const prettyDiv = document.getElementById(`pretty-${subId}`);
-  if (prettyDiv) prettyDiv.innerHTML = _buildPrettySummary(merged, sub.type);
+    // On applique les modifs des cases à cocher
+    const diffEl = document.getElementById(`diff-${subId}`);
+    if (diffEl) {
+        const rows = diffEl.querySelectorAll('[data-diff-key]');
+        rows.forEach(row => {
+            const k = row.dataset.diffKey;
+            const cb = row.querySelector('input[type=checkbox]');
+            if (cb && !cb.checked) {
+                // Si décoché, on remet la valeur de 'current'
+                merged[k] = current[k];
+                if (current[k] === undefined) delete merged[k];
+            }
+        });
+    }
 
-  try {
-    await updateDoc(doc(db, 'submissions', subId), { data: merged });
-    toast('✓ Sélection appliquée et sauvegardée', 'success');
-    // Recharger le diff avec le nouvel état
-    const type   = sub.type;
-    const docId  = String(sub.data?.id || '');
-    _diffDataStore.set(subId, { current: stored.current, proposed: merged });
-    if (diffEl) diffEl.innerHTML = _renderDiffView(subId, stored.current, merged);
-  } catch(e) {
-    toast('Erreur sauvegarde : ' + e.message, 'error');
-  }
+    // Sécurité Coordonnées / ID
+    if (current.coords && !merged.coords) merged.coords = current.coords;
+    if (current.id && !merged.id) merged.id = current.id;
+
+    try {
+        const cleaned = sanitizeForFirestore(merged);
+        await updateDoc(doc(db, 'submissions', subId), { data: cleaned });
+        
+        // Mise à jour de la liste locale pour que tes onglets reflètent le changement
+        const idx = allSubs.findIndex(s => s._id === subId);
+        if (idx !== -1) allSubs[idx].data = merged;
+
+        toast('✓ Sauvegardé avec succès !');
+        renderSubs(); // Rafraîchit l'affichage
+    } catch (e) {
+        console.error(e);
+        toast('Erreur save: ' + e.message, 'error');
+    }
 };
 
 // ── Copier le code ────────────────────────────────────
@@ -3317,6 +3320,8 @@ function _genValueHtml(key, val, col) {
   return `<input class="ed-input" data-gf-type="string" value="${_ee(str)}"${listAttr} autocomplete="off">`;
 }
 
+//here
+
 const QUALITY_FIELDS = ['lore', 'obtain', 'craft', 'effects', 'images', 'name'];
 
 function _renderFormFields(data, col, ns) {
@@ -3618,58 +3623,143 @@ function _buildGenericForm(data, col) {
 }
 
 function _collectGenericForm() {
-  const result  = {};
-  const quality = {};
-
-  document.querySelectorAll('#ed-gen-fields .ed-gen-row, #ed-gen-fields-quality .ed-quality-row').forEach(row => {
-    const ns     = row.dataset.gfNs || 'base';
-    const target = ns === 'quality' ? quality : result;
-
-    const keyInput = row.querySelector('.ed-gen-key-input');
-    const keyLbl   = row.querySelector('.ed-gen-keylbl');
-    const newKeyEl = row.querySelector('.ed-gen-new-key');
-    const key = (keyInput ? keyInput.value.trim() : (keyLbl ? keyLbl.textContent.replace(/\(hérité\)/g,'').trim() : ''));
-    const effectiveKey = newKeyEl ? newKeyEl.value.trim() : key;
-    if (!effectiveKey) return;
-
-    const el = row.querySelector('[data-gf-type]');
-    if (!el) return;
-
-    const t = el.dataset.gfType;
-    if (t === 'bool')   { target[effectiveKey] = el.checked; return; }
-    if (t === 'number') { const v = el.value.trim(); if (v !== '') target[effectiveKey] = +v; return; }
-    if (t === 'coords-x') {
-      const xEl = row.querySelector('[data-gf-type="coords-x"]');
-      const yEl = row.querySelector('[data-gf-type="coords-y"]');
-      const zEl = row.querySelector('[data-gf-type="coords-z"]');
-      const x = xEl?.value.trim(), y = yEl?.value.trim(), z = zEl?.value.trim();
-      target[effectiveKey] = { x: x!==''?+x:null, y: y!==''?+y:null, z: z!==''?+z:null };
-      return;
-    }
-    if (t === 'json') {
-      const v = el.value.trim();
-      if (!v) { target[effectiveKey] = null; return; }
-      target[effectiveKey] = JSON.parse(v);
-      return;
-    }
-    // string vide dans quality → on ne l'inclut pas (hérité)
-    if (ns === 'quality' && el.value === '') return;
-    target[effectiveKey] = el.value;
+  // On repart de l'original (indispensable pour les panoplies et PNJ)
+  const result = { ...(_editorOrigData || {}) };
+  
+  // 1. On ramasse TOUT ce qui est Base / Dynamique
+  // On cible tous les champs qui ne sont PAS dans l'onglet qualité
+  const allRows = document.querySelectorAll('.ed-gen-row, .ed-gen-newrow');
+  allRows.forEach(row => {
+    if (row.closest('#ed-tab-quality')) return; // On saute si c'est dans l'onglet qualité
+    const data = _innerExtract(row);
+    if (data) result[data.key] = data.value;
   });
 
-  // Réintégrer quality dans result si l'onglet qualité est présent
-  const qualityPanel = document.getElementById('ed-gen-fields-quality');
-  if (qualityPanel && Object.keys(quality).length > 0) {
-    result.quality = quality;
-  }
+  // 2. On traite la QUALITÉ uniquement si l'onglet est présent
+  const qPanel = document.getElementById('ed-tab-quality');
+  if (qPanel) {
+    // On initialise l'objet quality (fusion)
+    const newQ = { ...(result.quality || {}) };
+    
+    qPanel.querySelectorAll('.ed-quality-row').forEach(row => {
+      const data = _innerExtract(row);
+      if (data) {
+        if (data.value === "" || data.value === null) delete newQ[data.key];
+        else newQ[data.key] = data.value;
+      }
+    });
 
-  // Preserve readonly
-  if (_editorOrigData) {
-    if ('id' in _editorOrigData && !('id' in result)) result.id = _editorOrigData.id;
-    if ('_order' in _editorOrigData) result._order = _editorOrigData._order;
+    if (Object.keys(newQ).length > 0) result.quality = newQ;
+    else delete result.quality;
   }
 
   return result;
+}
+
+function _innerExtract(row) {
+  const el = row.querySelector('[data-gf-type]');
+  if (!el) return null;
+
+  const keyLbl = row.querySelector('.ed-gen-keylbl');
+  const keyIn  = row.querySelector('.ed-gen-key-input');
+  const newKey = row.querySelector('.ed-gen-new-key');
+  
+  let key = (keyIn ? keyIn.value : (keyLbl ? keyLbl.textContent : '')).trim();
+  key = key.replace(/\(hérité\)/g, '').trim();
+  const effectiveKey = newKey ? newKey.value.trim() : key;
+  
+  if (!effectiveKey) return null;
+
+  const t = el.dataset.gfType;
+  let val;
+  if (t === 'bool') val = el.checked;
+  else if (t === 'number') val = el.value === '' ? null : Number(el.value);
+  else if (t === 'json') {
+    try { val = el.value.trim() ? JSON.parse(el.value) : null; }
+    catch(e) { val = null; }
+  }
+  else if (t === 'coords-x') {
+    const x = row.querySelector('[data-gf-type="coords-x"]')?.value;
+    const y = row.querySelector('[data-gf-type="coords-y"]')?.value;
+    const z = row.querySelector('[data-gf-type="coords-z"]')?.value;
+    val = { x: x===''?null:Number(x), y: y===''?null:Number(y), z: z===''?null:Number(z) };
+  }
+  else { val = el.value; }
+
+  return { key: effectiveKey, value: val };
+}
+
+
+// Fonction utilitaire pour extraire la valeur d'une ligne (Base ou Qualité)
+function _extractDataFromRow(row) {
+  const keyInput = row.querySelector('.ed-gen-key-input');
+  const keyLbl = row.querySelector('.ed-gen-keylbl');
+  const newKeyEl = row.querySelector('.ed-gen-new-key');
+  
+  const key = (keyInput ? keyInput.value.trim() : (keyLbl ? keyLbl.textContent.replace(/\(hérité\)/g,'').trim() : ''));
+  const effectiveKey = newKeyEl ? newKeyEl.value.trim() : key;
+  
+  if (!effectiveKey) return null;
+
+  const el = row.querySelector('[data-gf-type]');
+  if (!el) return null;
+
+  const t = el.dataset.gfType;
+  let val;
+
+  if (t === 'bool') val = el.checked;
+  else if (t === 'number') val = el.value === '' ? null : +el.value;
+  else if (t === 'json') {
+    try { val = el.value.trim() ? JSON.parse(el.value) : null; } 
+    catch(e) { val = null; }
+  } 
+  else if (t === 'coords-x') {
+    const x = row.querySelector('[data-gf-type="coords-x"]')?.value;
+    const y = row.querySelector('[data-gf-type="coords-y"]')?.value;
+    const z = row.querySelector('[data-gf-type="coords-z"]')?.value;
+    val = { x: x===''?null:+x, y: y===''?null:+y, z: z===''?null:+z };
+  }
+  else {
+    val = el.value;
+  }
+
+  return { key: effectiveKey, value: val };
+}
+
+// Fonction helper pour éviter la répétition et les erreurs de parsing
+function _extractValueFromRow(row) {
+  const keyInput = row.querySelector('.ed-gen-key-input');
+  const keyLbl = row.querySelector('.ed-gen-keylbl');
+  const newKeyEl = row.querySelector('.ed-gen-new-key');
+  
+  const key = (keyInput ? keyInput.value.trim() : (keyLbl ? keyLbl.textContent.replace(/\(hérité\)/g,'').trim() : ''));
+  const effectiveKey = newKeyEl ? newKeyEl.value.trim() : key;
+  
+  if (!effectiveKey) return null;
+
+  const el = row.querySelector('[data-gf-type]');
+  if (!el) return null;
+
+  const t = el.dataset.gfType;
+  let value;
+
+  if (t === 'bool') value = el.checked;
+  else if (t === 'number') value = el.value === '' ? null : +el.value;
+  else if (t === 'json') {
+    try { value = el.value.trim() ? JSON.parse(el.value) : null; } 
+    catch(e) { value = null; }
+  } 
+  else if (t === 'coords-x') {
+    const x = row.querySelector('[data-gf-type="coords-x"]')?.value;
+    const y = row.querySelector('[data-gf-type="coords-y"]')?.value;
+    const z = row.querySelector('[data-gf-type="coords-z"]')?.value;
+    value = { x: x===''?null:+x, y: y===''?null:+y, z: z===''?null:+z };
+  }
+  else {
+    value = el.value;
+  }
+
+  return { key: effectiveKey, value: value };
 }
 
 window.edRenameField = function(lbl) {
@@ -3962,14 +4052,21 @@ window.saveEditor = async function() {
       _editorCacheRename(_editorCollection, _editorId, newDocId, newData);
       _editorId = newDocId;
     } else {
-      // Patch : nouvelles valeurs + deleteField() pour les champs supprimés
-      const patch = {};
-      Object.entries(newData).forEach(([k, v]) => { patch[k] = v; });
+      // On prépare le patch à partir de newData
+      const patch = { ...newData };
+
+      // Suppression UNIQUEMENT des champs qui ont réellement disparu du formulaire
+      // On ignore 'quality' ici car il est géré globalement dans newData
       Object.keys(_editorOrigData).forEach(k => {
-        if (!(k in newData) && k !== '_order') patch[k] = deleteField();
+        if (!(k in newData) && k !== '_order') {
+          patch[k] = deleteField();
+        }
       });
+
       if (!_editorContrib && _selfContrib) patch._contributor = _selfContrib;
-      await updateDoc(doc(db, _editorCollection, _editorId), patch);
+
+      // Nettoyage pour Firestore (évite les undefined/null selon tes besoins)
+      await updateDoc(doc(db, _editorCollection, _editorId), sanitizeForFirestore(patch));
     }
 
     // Invalider les caches localStorage et session
