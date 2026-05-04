@@ -3573,7 +3573,10 @@ function _buildGenericForm(data, col) {
 
   // Si c'est pas un item, on rend le form générique classique sans onglets
   if (col !== 'items') {
-    return _renderFormFields(baseData, col, '') + `
+    return `
+      <div id="ed-gen-fields" style="display:flex;flex-direction:column;gap:4px;">
+        ${_renderFormFields(baseData, col, '')}
+      </div>
       <datalist id="ed-dl-sets"></datalist>
       <button type="button" onclick="edAddGenField()" class="btn btn-ghost"
               style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ</button>`;
@@ -3835,47 +3838,6 @@ window.edSelectRegion = function(e, el) {
   if (dd) dd.style.display = 'none';
 };
 
-window.edAddGenField = function() {
-  const container = document.getElementById('ed-gen-fields');
-  const row = document.createElement('div');
-  row.className = 'ed-gen-row ed-gen-newrow';
-  row.innerHTML = `
-    <input class="ed-gen-new-key ed-input" placeholder="nom_du_champ" style="font-family:monospace;font-size:12px;">
-    <select class="ed-gen-new-type ed-input" style="font-size:11px;padding:5px 4px;">
-      <option value="string">str</option>
-      <option value="number">int</option>
-      <option value="bool">bool</option>
-      <option value="json">array/map</option>
-    </select>
-    <div class="ed-gen-val">
-      <input class="ed-input" data-gf-type="string" placeholder="valeur…">
-    </div>
-    <button type="button" class="ed-gen-delbtn" onclick="edDelGenRow(this)" title="Annuler">✕</button>`;
-
-  const typeSelect = row.querySelector('.ed-gen-new-type');
-  const valDiv     = row.querySelector('.ed-gen-val');
-  typeSelect.addEventListener('change', () => {
-    const t = typeSelect.value;
-    if (t === 'bool') {
-      valDiv.innerHTML = `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0;">
-        <input type="checkbox" data-gf-type="bool" style="accent-color:var(--accent);width:15px;height:15px;">
-        <span class="ed-gen-bool-txt" style="font-size:12px;color:var(--muted);">false</span>
-      </label>`;
-      valDiv.querySelector('input').addEventListener('change', function () {
-        this.closest('label').querySelector('.ed-gen-bool-txt').textContent = this.checked ? 'true' : 'false';
-      });
-    } else if (t === 'json') {
-      valDiv.innerHTML = `<textarea class="ed-json-ta" data-gf-type="json" spellcheck="false" placeholder="[] ou {}" style="min-height:50px;"></textarea>`;
-    } else if (t === 'number') {
-      valDiv.innerHTML = `<input class="ed-input" type="number" data-gf-type="number" placeholder="0">`;
-    } else {
-      valDiv.innerHTML = `<input class="ed-input" data-gf-type="string" placeholder="valeur…">`;
-    }
-  });
-
-  container.appendChild(row);
-  row.querySelector('.ed-gen-new-key').focus();
-};
 
 window.showEditor = async function(collection, id, data, origin) {
   document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
