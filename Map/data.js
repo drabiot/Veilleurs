@@ -1,6 +1,6 @@
 const FLOOR_COUNT = 100;
 
-const FLOOR_NAMES = {
+var FLOOR_NAMES = { // var pour permettre la mise à jour depuis Firestore (config/paliers)
   1: 'Villes Européennes',
   2: 'Désert Aride',
   3: 'Forêt Elfique'

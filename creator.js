@@ -66,7 +66,7 @@ function applyCreatorConfig(cfg) {
   // Les contributeurs+ voient tout
   if (['contributeur', 'admin'].includes(window._vcl_role || '')) {
     document.querySelectorAll('.mode-btn').forEach(b => { b.style.display = ''; });
-    for (const selId of ['f-palier', 'mob-palier', 'pnj-palier', 'reg-palier']) {
+    for (const selId of PALIER_SELECT_IDS) {
       const sel = document.getElementById(selId);
       if (sel) sel.querySelectorAll('option').forEach(o => o.hidden = false);
     }
@@ -92,7 +92,7 @@ function applyCreatorConfig(cfg) {
   }
   // Paliers masqués
   const hiddenPaliers = new Set(cfg.hiddenPaliers || []);
-  for (const selId of ['f-palier', 'mob-palier', 'pnj-palier', 'reg-palier']) {
+  for (const selId of PALIER_SELECT_IDS) {
     const sel = document.getElementById(selId);
     if (!sel) continue;
     for (const opt of sel.querySelectorAll('option[value]')) {
@@ -103,6 +103,41 @@ function applyCreatorConfig(cfg) {
     }
   }
 }
+
+// IDs de tous les selects palier dans le Creator
+const PALIER_SELECT_IDS = ['f-palier', 'mob-palier', 'pnj-palier', 'reg-palier', 'quest-palier'];
+
+// Fallback si config Firestore non disponible
+const _DEFAULT_PALIERS = [
+  { id: 1, label: 'Palier 1', color: '#4ade80' },
+  { id: 2, label: 'Palier 2', color: '#f59e0b' },
+  { id: 3, label: 'Palier 3', color: '#f87171' },
+];
+
+function populatePalierSelects(paliers) {
+  if (!Array.isArray(paliers) || !paliers.length) return;
+  window._vcl_paliers = paliers;
+  for (const selId of PALIER_SELECT_IDS) {
+    const sel = document.getElementById(selId);
+    if (!sel) continue;
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">—</option>';
+    for (const p of paliers) {
+      const opt = document.createElement('option');
+      opt.value = String(p.id);
+      opt.textContent = p.label;
+      sel.appendChild(opt);
+    }
+    if (currentVal && paliers.some(p => String(p.id) === currentVal)) sel.value = currentVal;
+  }
+}
+window.populatePalierSelects = populatePalierSelects;
+
+function applyGameConfig(maxLevel) {
+  const lvlInput = document.getElementById('f-lvl');
+  if (lvlInput && maxLevel) lvlInput.max = String(maxLevel);
+}
+window.applyGameConfig = applyGameConfig;
 
 // ═══════════════════════════════════════════════════
 // STATE
@@ -1810,8 +1845,8 @@ function toggleEvent() {
 }
 
 function onPalierChange() {
-  // Remove all palier tags
-  ['Palier 1','Palier 2','Palier 3'].forEach(t => activeTags.delete(t));
+  // Remove all palier tags (liste dynamique depuis config Firestore, fallback statique)
+  (window._vcl_paliers || _DEFAULT_PALIERS).forEach(p => activeTags.delete(p.label));
   const p = document.getElementById('f-palier').value;
   if (p) activeTags.add(`Palier ${p}`);
   syncPresetTagButtons();
@@ -3542,7 +3577,8 @@ function renderRegionPreview() {
     return;
   }
 
-  const PALIER_COLORS = { 1:'#4ade80', 2:'#f59e0b', 3:'#f87171' };
+  const PALIER_COLORS = {};
+  (window._vcl_paliers || _DEFAULT_PALIERS).forEach(p => { PALIER_COLORS[p.id] = p.color; });
   const pc = PALIER_COLORS[obj.palier] || '#9a9ab0';
 
   let h = `<div class="mob-card">`;
@@ -4271,6 +4307,8 @@ const FORUM_WEBHOOKS = {
 
 function getForumWebhook(obj) {
   const key = obj.rarity === 'event' ? `${obj.category}_event` : `${obj.category}_${obj.palier}`;
+  // Utiliser la config Firestore si disponible (chargée par creator.html), sinon fallback local
+  if (window._vcl_discordWebhooks) return window._vcl_discordWebhooks[key] || null;
   return FORUM_WEBHOOKS[key] || null;
 }
 

@@ -332,7 +332,7 @@ export function invalidateCache(colName) {
 // ── Exports Firestore bruts (pour les pages qui en ont besoin) ──
 export { doc, getDoc, collection, getDocs, onSnapshot, setDoc, addDoc,
          updateDoc, deleteDoc, deleteField, serverTimestamp,
-         query, where, orderBy };
+         query, where, orderBy, limit };
 
 // ── Exports Auth bruts (pour listeners réactifs côté pages) ──
 export { onAuthStateChanged,

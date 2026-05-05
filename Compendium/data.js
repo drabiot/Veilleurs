@@ -91,7 +91,7 @@ const CURRENCIES = {
 
 //#endregion CURRENCIES
 //#region MAX_LEVEL
-const MAX_LEVEL = 18;
+var MAX_LEVEL = 18; // var pour permettre la surcharge depuis Firestore (config/game)
 
 //#endregion MAX_LEVEL
 //#region CARACTERISTIQUES

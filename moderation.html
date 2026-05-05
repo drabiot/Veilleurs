@@ -48,8 +48,9 @@
       <div class="filter-label">Statut</div>
       <button class="filter-btn active" data-status="pending"  onclick="setFilter('status','pending')">⏳ En attente  <span class="filter-count" id="count-pending">0</span></button>
       <button class="filter-btn"        data-status="approved" onclick="setFilter('status','approved')">✓ Approuvés   <span class="filter-count" id="count-approved">0</span></button>
-      <button class="filter-btn"        data-status="rejected" onclick="setFilter('status','rejected')">✕ Rejetés     <span class="filter-count" id="count-rejected">0</span></button>
-      <button class="filter-btn"        data-status="all"      onclick="setFilter('status','all')">📋 Tous          <span class="filter-count" id="count-all">0</span></button>
+      <button class="filter-btn"        data-status="rejected"          onclick="setFilter('status','rejected')">✕ Rejetés     <span class="filter-count" id="count-rejected">0</span></button>
+      <button class="filter-btn"        data-status="changes_requested" onclick="setFilter('status','changes_requested')">💬 Modif. demandées <span class="filter-count" id="count-changes-requested">0</span></button>
+      <button class="filter-btn"        data-status="all"               onclick="setFilter('status','all')">📋 Tous          <span class="filter-count" id="count-all">0</span></button>
     </div>
     <div class="filter-group">
       <select id="filter-type-select" onchange="setFilter('type', this.value)"
@@ -93,20 +94,22 @@
     <button class="filter-btn" id="btn-obtain-legacy"   onclick="showObtainLegacy()">🗂️ Obtentions libres <span class="filter-count" id="count-obtain-legacy" style="display:none;">0</span></button>
 
     <!-- ── ADMIN ───────────────────────────────────────── -->
-    <div class="sb-label">ADMIN</div>
-    <button class="filter-btn" id="btn-trash"              onclick="showTrash()">🗑️ Corbeille <span class="filter-count" id="count-trash" style="display:none;">0</span></button>
-    <button class="filter-btn" id="btn-users"              onclick="showUsersPanel()">👥 Membres</button>
-    <button class="filter-btn" id="btn-leaderboard"        onclick="showLeaderboard()">🏆 Leaderboard</button>
-    <button class="filter-btn" id="btn-discord-webhooks"   onclick="showDiscordWebhooks()">🔔 Webhooks Discord</button>
-    <button class="filter-btn" id="btn-permissions"        onclick="showPermissions()">🔑 Permissions</button>
-    <button class="filter-btn" id="btn-migration"          onclick="showMigration()">🔒 Sensible</button>
-    <button class="filter-btn" id="btn-creator-validation" onclick="showCreatorValidation()">⚙️ Champs requis</button>
+    <div class="sb-label" id="sec-admin" data-min-role="admin">ADMIN</div>
+    <button class="filter-btn" id="btn-trash"              data-min-role="admin" onclick="showTrash()">🗑️ Corbeille <span class="filter-count" id="count-trash" style="display:none;">0</span></button>
+    <button class="filter-btn" id="btn-users"              data-min-role="admin" onclick="showUsersPanel()">👥 Membres</button>
+    <button class="filter-btn" id="btn-leaderboard"        data-min-role="admin" onclick="showLeaderboard()">🏆 Leaderboard</button>
+    <button class="filter-btn" id="btn-discord-webhooks"   data-min-role="admin" onclick="showDiscordWebhooks()">🔔 Webhooks Discord</button>
+    <button class="filter-btn" id="btn-permissions"        data-min-role="admin" onclick="showPermissions()">🔑 Permissions</button>
+    <button class="filter-btn" id="btn-migration"          data-min-role="admin" onclick="showMigration()">🔒 Sensible</button>
+    <button class="filter-btn" id="btn-creator-validation" data-min-role="admin" onclick="showCreatorValidation()">⚙️ Champs requis</button>
+    <button class="filter-btn" id="btn-game-config"        data-min-role="admin" onclick="showGameConfig()">🌍 Config Jeu</button>
+    <button class="filter-btn" id="btn-audit-log"          data-min-role="admin" onclick="showAuditLog()">📋 Journal d'audit</button>
 
     <!-- ── OUTILS ───────────────────────────────────────── -->
     <div class="sb-label">OUTILS</div>
     <button class="filter-btn" id="btn-images-tool" onclick="showImagesTool()">🖼️ Images</button>
-    <button class="filter-btn" id="btn-migrate-occulte" onclick="runMigrateOcculteIds()">🔑 Migration IDs Occultes</button>
-    <button class="filter-btn" id="btn-backfill-sensible" onclick="runBackfillSensibleFlag()">🔒 Backfill flag sensible</button>
+    <button class="filter-btn" id="btn-migrate-occulte"    data-min-role="admin" onclick="runMigrateOcculteIds()">🔑 Migration IDs Occultes</button>
+    <button class="filter-btn" id="btn-backfill-sensible"  data-min-role="admin" onclick="runBackfillSensibleFlag()">🔒 Backfill flag sensible</button>
     <button class="filter-btn" id="btn-calibrateur" onclick="showCalibrateur()">🎮 Calibrateur 3D</button>
     <button class="filter-btn" id="btn-capture-sprites" onclick="showCaptureSprites()">📸 Capture Sprites</button>
     <button class="filter-btn" id="btn-zone-editor" onclick="showZoneEditor()">🗺️ Éditeur de Zones</button>
@@ -122,13 +125,50 @@
       <span style="font-size:15px;font-weight:700;">👥 Membres</span>
       <button class="btn btn-ghost" onclick="loadUsers()" style="font-size:12px;">🔄 Rafraîchir</button>
     </div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Seuls les admins peuvent modifier les rôles.</p>
-    <div id="users-search-wrap" style="margin-bottom:10px;">
-      <input id="users-search" type="text" placeholder="Rechercher par pseudo…"
-        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;"
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">Seuls les admins peuvent modifier les rôles et suspendre des membres.</p>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+      <input id="users-search" type="text" placeholder="🔍 Rechercher par pseudo, email, UID…"
+        style="flex:1;min-width:160px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;"
         oninput="filterUsers()">
+      <select id="users-role-filter" onchange="filterUsers()"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;outline:none;">
+        <option value="">Tous les rôles</option>
+        <option value="membre">Membre</option>
+        <option value="contributeur">Contributeur</option>
+        <option value="admin">Admin</option>
+      </select>
     </div>
     <div id="users-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Journal d'audit -->
+  <main class="main" id="audit-log-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">📋 Journal d'audit</span>
+      <button class="btn btn-ghost" onclick="loadAuditLog()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+      Historique de toutes les actions de modération (approbations, rejets, changements de rôle, suppressions, suspensions).
+    </p>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <select id="audit-filter-action" onchange="renderAuditLog()"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;">
+        <option value="">Toutes les actions</option>
+        <option value="approve">✅ Approbations</option>
+        <option value="reject">✕ Rejets</option>
+        <option value="changes_requested">💬 Modifs demandées</option>
+        <option value="delete">🗑️ Suppressions</option>
+        <option value="role_change">🔑 Changements de rôle</option>
+        <option value="suspend">🚫 Suspensions</option>
+        <option value="unsuspend">✓ Levées de suspension</option>
+      </select>
+      <input type="search" id="audit-filter-actor" placeholder="🔍 Filtrer par modérateur…" oninput="renderAuditLog()"
+        style="flex:1;min-width:140px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;">
+    </div>
+    <div id="audit-log-list"><div class="empty">Chargement…</div></div>
+    <div id="audit-log-more" style="display:none;text-align:center;margin-top:12px;">
+      <button class="btn btn-ghost" onclick="loadAuditLogMore()" style="font-size:12px;">Charger plus…</button>
+    </div>
   </main>
 
   <!-- Panneau Ordre des mobs -->
@@ -326,9 +366,7 @@
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <select id="map-filter-floor" onchange="renderMapTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
           <option value="">Tous les paliers</option>
-          <option value="1">Palier 1</option>
-          <option value="2">Palier 2</option>
-          <option value="3">Palier 3</option>
+          <!-- options peuplées dynamiquement par _populateAllPalierSelects() -->
         </select>
         <select id="map-filter-type" onchange="renderMapTable()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
           <option value="">Tous les types</option>
@@ -353,9 +391,7 @@
           <div>
             <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Palier *</label>
             <select id="map-form-floor" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
-              <option value="1">Palier 1</option>
-              <option value="2">Palier 2</option>
-              <option value="3">Palier 3</option>
+              <!-- options peuplées dynamiquement par _populateAllPalierSelects() -->
             </select>
           </div>
         </div>
@@ -406,9 +442,7 @@
       <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <select id="ap-filter-floor" onchange="renderAllMapPins()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
           <option value="">Tous les paliers</option>
-          <option value="1">Palier 1</option>
-          <option value="2">Palier 2</option>
-          <option value="3">Palier 3</option>
+          <!-- options peuplées dynamiquement par _populateAllPalierSelects() -->
         </select>
         <select id="ap-filter-type" onchange="renderAllMapPins()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
           <option value="">Tous les types</option>
@@ -538,9 +572,7 @@
           <select id="dw-pub-palier" onchange="dwPublishFilter()"
             style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
             <option value="">Tous paliers</option>
-            <option value="1">Palier 1</option>
-            <option value="2">Palier 2</option>
-            <option value="3">Palier 3</option>
+            <!-- options peuplées dynamiquement par _populateAllPalierSelects() -->
           </select>
           <input id="dw-pub-search" type="search" placeholder="🔍 Rechercher un item…" oninput="dwPublishFilter()"
             style="flex:1;min-width:150px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
@@ -701,6 +733,17 @@
     <div id="obtain-legacy-list"><div class="empty">Chargement…</div></div>
   </main>
 
+  <!-- Panneau Config Jeu (paliers + MAX_LEVEL) -->
+  <main class="main" id="game-config-panel" style="display:none;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <h2 style="margin:0;font-size:18px;font-weight:700;">🌍 Configuration du Jeu</h2>
+      <button class="btn" id="gc-save-btn" onclick="saveGameConfig()" style="background:var(--accent);color:#fff;font-weight:600;">💾 Sauvegarder</button>
+    </div>
+    <div id="gc-content">
+      <!-- généré par _renderGameConfig() -->
+    </div>
+  </main>
+
   <!-- Panneau Config champs requis (Creator Validation) -->
   <main class="main" id="creator-validation-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -773,9 +816,7 @@
     <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
       <select id="zl-filter-floor" onchange="renderZoneList()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
         <option value="">Tous les paliers</option>
-        <option value="1">Palier 1</option>
-        <option value="2">Palier 2</option>
-        <option value="3">Palier 3</option>
+        <!-- options peuplées dynamiquement par _populateAllPalierSelects() -->
       </select>
       <input type="search" id="zl-search" placeholder="🔍 Nom de zone…" oninput="renderZoneList()"
         style="flex:1;min-width:140px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
@@ -812,9 +853,7 @@
         <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Palier</label>
         <select id="ze-floor" onchange="zeFloorChange()"
           style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:13px;outline:none;">
-          <option value="1">Palier 1</option>
-          <option value="2">Palier 2</option>
-          <option value="3">Palier 3</option>
+          <!-- options peuplées dynamiquement par _populateAllPalierSelects() -->
         </select>
       </div>
       <div>
@@ -918,9 +957,7 @@
       </select>
       <select id="qm-filter-floor" onchange="renderQuestMapMigration()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
         <option value="">Tous les paliers</option>
-        <option value="1">Palier 1</option>
-        <option value="2">Palier 2</option>
-        <option value="3">Palier 3</option>
+        <!-- options peuplées dynamiquement par _populateAllPalierSelects() -->
       </select>
       <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
         <input type="checkbox" id="qm-show-existing" onchange="renderQuestMapMigration()" style="cursor:pointer;">
@@ -1098,9 +1135,7 @@
       <select id="data-all-palier" onchange="renderDataAll()"
         style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
         <option value="">Tous paliers</option>
-        <option value="1">Palier 1</option>
-        <option value="2">Palier 2</option>
-        <option value="3">Palier 3</option>
+        <!-- options peuplées dynamiquement par _populateAllPalierSelects() -->
       </select>
       <select id="data-all-category" onchange="renderDataAll()" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
         <option value="">Toutes catégories</option>

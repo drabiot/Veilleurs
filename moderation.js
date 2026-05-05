@@ -2,7 +2,7 @@ import { db, auth, onAuthStateChanged,
          login, logout, loginWithGoogle,
          ROLES, roleLevel, hasRole, COL,
          collection, getDocs, getDoc, doc, updateDoc, setDoc, addDoc,
-         deleteDoc, deleteField, serverTimestamp, orderBy, query,
+         deleteDoc, deleteField, serverTimestamp, orderBy, query, limit,
          hashName, getItemGameplayKeys,
          sanitizeForFirestore, desanitizeFromFirestore,
          invalidateCache }
@@ -38,6 +38,26 @@ function invalidateModCache(colName) {
   delete _modCache[colName];
 }
 
+// ── Journal d'audit ───────────────────────────────────
+// Écrit silencieusement une entrée dans audit_log — ne bloque jamais l'action principale.
+async function _writeAudit(action, targetType, targetId, targetName, metadata = {}) {
+  try {
+    const actorPseudo = _userNames.get(currentUser?.uid) || currentUser?.email || '?';
+    await addDoc(collection(db, 'audit_log'), {
+      action,
+      actorUid:    currentUser?.uid  || null,
+      actorPseudo,
+      targetType,
+      targetId:    String(targetId   || ''),
+      targetName:  String(targetName || ''),
+      metadata,
+      createdAt:   serverTimestamp(),
+    });
+  } catch(e) {
+    console.warn('[audit]', e);
+  }
+}
+
 // ── Auth ──────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   if (!user) {
@@ -45,11 +65,13 @@ onAuthStateChanged(auth, async user => {
     return;
   }
   currentUser = user;
-  // Lire le rôle (retry once — auth token may not have propagated to Firestore yet)
+  // Lire le rôle + vérifier la suspension (retry once — auth token may not have propagated to Firestore yet)
+  let _userData = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
-      currentRole = snap.exists() ? (snap.data().role || 'membre') : 'membre';
+      _userData   = snap.exists() ? snap.data() : null;
+      currentRole = _userData?.role || 'membre';
       break;
     } catch {
       if (attempt === 0) await new Promise(r => setTimeout(r, 800));
@@ -57,18 +79,29 @@ onAuthStateChanged(auth, async user => {
     }
   }
 
+  // Vérifier la suspension avant toute chose
+  if (_userData?.suspended) {
+    const reason = _userData.suspendedReason ? ` : ${_userData.suspendedReason}` : '.';
+    showAuthWall(`🚫 Compte suspendu${reason}`);
+    return;
+  }
+
   if (!hasRole(currentRole, 'contributeur')) {
     showAuthWall('⛔ Accès réservé aux contributeurs.');
     return;
   }
 
-  // Masquer les sections admin-only pour tout rôle non-admin (contributeur, modo, etc.)
+  // Masquer les éléments admin-only pour tout rôle non-admin.
+  // La liste est pilotée par l'attribut data-min-role dans moderation.html —
+  // ajouter data-min-role="admin" sur un bouton suffit, sans toucher au JS.
   if (currentRole !== 'admin') {
-    ['btn-users', 'btn-discord-webhooks', 'btn-permissions', 'btn-migration', 'btn-creator-validation', 'btn-migration-evolutif', 'sec-admin'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = 'none';
+    document.querySelectorAll('[data-min-role="admin"]').forEach(el => {
+      el.style.display = 'none';
     });
   }
+
+  // Appliquer les permissions configurables des outils du panel (peut ré-afficher des éléments admin-by-default)
+  await _applyToolPermissions();
 
   document.getElementById('auth-wall').style.display   = 'none';
   document.getElementById('main-layout').style.display = 'grid';
@@ -85,9 +118,40 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('header-role').textContent   = currentRole;
   document.getElementById('btn-logout').style.display  = '';
 
+  // Charger la config dynamique des paliers avant de router
+  await _loadPaliersConfig();
+  _populateAllPalierSelects();
+
   // Hash routing — navigue vers le panel correspondant au hash initial
   _routeToHash();
 });
+
+// Maps tool permission IDs → button ID(s) in the sidebar.
+// Default roles: 'admin' for privileged tools, 'contributeur' for the rest.
+const MOD_TOOL_BUTTONS = {
+  tool_trash:       { btns: ['btn-trash'],                             defaultRole: 'admin' },
+  tool_leaderboard: { btns: ['btn-leaderboard'],                       defaultRole: 'admin' },
+  tool_audit_log:   { btns: ['btn-audit-log'],                         defaultRole: 'admin' },
+  tool_map:         { btns: ['btn-map-order'],                         defaultRole: 'contributeur' },
+  tool_zones:       { btns: ['btn-zone-list', 'btn-zone-editor'],       defaultRole: 'contributeur' },
+  tool_diagnostic:  { btns: ['btn-ghost-ids', 'btn-region-orphans'],   defaultRole: 'contributeur' },
+  tool_capture:     { btns: ['btn-capture-sprites'],                   defaultRole: 'contributeur' },
+};
+
+async function _applyToolPermissions() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'permissions'));
+    const minRole = snap.exists() ? (snap.data().minRole || {}) : {};
+    for (const [permId, { btns, defaultRole }] of Object.entries(MOD_TOOL_BUTTONS)) {
+      const required = minRole[permId] || defaultRole;
+      const visible = hasRole(currentRole, required);
+      for (const btnId of btns) {
+        const el = document.getElementById(btnId);
+        if (el) el.style.display = visible ? '' : 'none';
+      }
+    }
+  } catch {} // silencieux — fallback sur data-min-role
+}
 
 function showAuthWall(msg) {
   document.getElementById('auth-wall').style.display   = 'flex';
@@ -190,7 +254,8 @@ function updateCounts() {
   document.getElementById('count-approved').textContent = allSubs.filter(s => s.status === 'approved').length;
   // Title badge
   document.title = nPending > 0 ? `(${nPending}) Modération — VCL` : 'Modération — VCL';
-  document.getElementById('count-rejected').textContent = allSubs.filter(s => s.status === 'rejected').length;
+  document.getElementById('count-rejected').textContent           = allSubs.filter(s => s.status === 'rejected').length;
+  document.getElementById('count-changes-requested').textContent  = allSubs.filter(s => s.status === 'changes_requested').length;
 }
 
 // ── Filters ───────────────────────────────────────────
@@ -207,6 +272,26 @@ window.setFilter = (key, val) => {
   renderSubs();
 };
 
+function _buildStatsBar() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); weekAgo.setHours(0, 0, 0, 0);
+  const toDate = ts => { if (!ts) return null; return ts.toDate ? ts.toDate() : new Date(ts); };
+
+  const approvedToday = allSubs.filter(s => { const d = toDate(s.reviewedAt); return s.status === 'approved' && d && d >= today; }).length;
+  const approvedWeek  = allSubs.filter(s => { const d = toDate(s.reviewedAt); return s.status === 'approved' && d && d >= weekAgo; }).length;
+  const nPending = allSubs.filter(s => s.status === 'pending').length;
+
+  const TYPE_LABELS = { item: 'Items', mob: 'Mobs', pnj: 'PNJ', region: 'Régions', quest: 'Quêtes', panoplie: 'Panoplies' };
+  const typeCounts = {};
+  for (const s of allSubs.filter(s => s.status === 'pending')) typeCounts[s.type] = (typeCounts[s.type] || 0) + 1;
+  const typeParts = Object.entries(typeCounts).filter(([, n]) => n > 0).map(([t, n]) => `${TYPE_LABELS[t] || t} ${n}`).join(' · ');
+
+  const bar = document.createElement('div');
+  bar.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-bottom:14px;padding:10px 14px;background:var(--surface2,#2a2a3e);border-radius:6px;font-size:12px;color:var(--text-muted,#aaa);border:1px solid var(--border,#333);';
+  bar.innerHTML = `<span>📥 En attente : <strong style="color:var(--warn,#f59e0b)">${nPending}</strong></span><span>✅ Approuvées aujourd'hui : <strong style="color:var(--success,#4ade80)">${approvedToday}</strong></span><span>📅 Cette semaine : <strong style="color:var(--success,#4ade80)">${approvedWeek}</strong></span>${typeParts ? `<span style="margin-left:auto;opacity:.75">⏳ ${typeParts}</span>` : ''}`;
+  return bar;
+}
+
 function renderSubs() {
   const list = document.getElementById('submissions-list');
   let subs = allSubs;
@@ -219,17 +304,38 @@ function renderSubs() {
       normalize(s.data?.id || '').includes(q)
     );
   }
-  if (!subs.length) { list.innerHTML = '<div class="empty">Aucune soumission dans cette catégorie.</div>'; return; }
 
   list.innerHTML = '';
+  list.appendChild(_buildStatsBar());
+
+  if (!subs.length) {
+    list.insertAdjacentHTML('beforeend', '<div class="empty">Aucune soumission dans cette catégorie.</div>');
+    return;
+  }
+
+  const bulkBar = document.createElement('div');
+  bulkBar.style.cssText = 'display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;';
+
+  if (filterStatus === 'pending') {
+    const approveAllBtn = document.createElement('button');
+    approveAllBtn.className = 'btn';
+    approveAllBtn.style.cssText = 'font-size:12px;background:var(--success,#4ade80);color:#111;';
+    approveAllBtn.textContent = `✅ Tout approuver (${subs.length})`;
+    approveAllBtn.addEventListener('click', () => bulkApproveSubs());
+    bulkBar.appendChild(approveAllBtn);
+  }
+
   if (filterStatus === 'approved' || filterStatus === 'rejected') {
     const bulkBtn = document.createElement('button');
     bulkBtn.className = 'btn btn-danger';
-    bulkBtn.style.cssText = 'margin-bottom:12px;font-size:12px;';
+    bulkBtn.style.cssText = 'font-size:12px;';
     bulkBtn.textContent = `🗑️ Tout supprimer (${subs.length})`;
     bulkBtn.addEventListener('click', () => bulkDeleteSubs(filterStatus));
-    list.appendChild(bulkBtn);
+    bulkBar.appendChild(bulkBtn);
   }
+
+  if (bulkBar.children.length) list.appendChild(bulkBar);
+
   for (const sub of subs) {
     list.appendChild(buildCard(sub));
   }
@@ -374,11 +480,11 @@ function buildCard(sub) {
   const ts   = sub.submittedAt?.toDate ? sub.submittedAt.toDate().toLocaleString('fr-FR') : '—';
   const code = toJSStr(sub.data || {}, 0) + ',';
 
-  const statusLabel = { pending:'⏳ En attente', approved:'✓ Approuvé', rejected:'✕ Rejeté' }[sub.status] || sub.status;
+  const statusLabel = { pending:'⏳ En attente', approved:'✓ Approuvé', rejected:'✕ Rejeté', changes_requested:'💬 Modif. demandées' }[sub.status] || sub.status;
 
   let actionsHtml = '';
   let editorHtml  = '';
-  if (sub.status === 'pending') {
+  if (sub.status === 'pending' || sub.status === 'changes_requested') {
     editorHtml = `
       <div class="sub-editor" id="editor-${sub._id}">
         <textarea class="sub-editor-ta" id="editor-ta-${sub._id}" spellcheck="false" oninput="onEditorInput('${sub._id}')"></textarea>
@@ -386,10 +492,15 @@ function buildCard(sub) {
         <div class="sub-editor-status" id="editor-status-${sub._id}"></div>
       </div>
     `;
+    const changeNotice = sub.status === 'changes_requested' && sub.changeRequestComment
+      ? `<div style="margin-bottom:6px;padding:8px 10px;background:rgba(245,158,11,.12);border-left:3px solid var(--warn,#f59e0b);border-radius:4px;font-size:12px;color:var(--warn,#f59e0b);">💬 ${escHtml(sub.changeRequestComment)}</div>`
+      : '';
     actionsHtml = `
+      ${changeNotice}
       <input type="text" class="sub-comment" id="comment-${sub._id}" placeholder="Commentaire (optionnel)">
       <button class="btn btn-ghost"   id="btn-edit-${sub._id}" onclick="toggleEdit('${sub._id}')" style="font-size:12px;">✏️ Modifier</button>
       <button class="btn btn-ghost"   onclick="openInCreator('${sub._id}')" style="font-size:12px;" title="Ouvre cette soumission dans le Creator pour l'éditer">⚙️ Creator</button>
+      <button class="btn btn-ghost"   onclick="requestChanges('${sub._id}')" style="font-size:12px;color:var(--warn,#f59e0b);">💬 Demander modifs</button>
       <button class="btn btn-approve" onclick="approve('${sub._id}')">✓ Approuver</button>
       <button class="btn btn-reject"  onclick="reject('${sub._id}')">✕ Rejeter</button>
     `;
@@ -979,6 +1090,7 @@ window.approve = async (id) => {
     sub.comment    = comment;
     sub.reviewedBy = currentUser.uid;
     if (isDiscordItem) sub.discord_sent = false;
+    _writeAudit('approve', 'submission', id, sub.data?.name || sub.data?.titre || sub.data?.id || id, { type: sub.type, comment });
     updateCounts();
     renderSubs();
   } catch(e) {
@@ -1006,6 +1118,7 @@ window.reject = async (id) => {
     sub.status     = 'rejected';
     sub.comment    = comment;
     sub.reviewedBy = currentUser.uid;
+    _writeAudit('reject', 'submission', id, sub.data?.name || sub.data?.titre || sub.data?.id || id, { type: sub.type, comment });
     updateCounts();
     renderSubs();
 
@@ -1025,6 +1138,53 @@ window.reject = async (id) => {
     toast('⛔ Erreur : ' + e.message, 'error');
     if (btn) { btn.disabled = false; btn.textContent = '✕ Rejeter'; }
   }
+};
+
+// ── Request changes ───────────────────────────────────
+window.requestChanges = async (id) => {
+  const sub = allSubs.find(s => s._id === id);
+  if (!sub) return;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:10000;';
+  overlay.innerHTML = `
+    <div style="background:var(--surface,#1e1e2e);border:1px solid var(--border,#333);border-radius:8px;padding:22px 20px 18px;max-width:420px;width:90%;font-family:'JetBrains Mono',monospace;">
+      <div style="font-size:13px;color:var(--text,#ddd);margin-bottom:12px;">💬 Indiquer les modifications demandées :</div>
+      <textarea id="_vcl-cr-ta" style="width:100%;min-height:80px;box-sizing:border-box;background:var(--surface2,#2a2a3e);border:1px solid var(--border,#444);border-radius:4px;color:var(--text,#ddd);font-size:12px;padding:8px;resize:vertical;" placeholder="Ex : merci d'ajouter le lore et l'image…"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+        <button class="btn btn-ghost" id="_vcl-cr-cancel" style="font-size:12px;">Annuler</button>
+        <button class="btn" id="_vcl-cr-ok" style="font-size:12px;background:var(--warn,#f59e0b);color:#111;">💬 Envoyer</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  await new Promise(resolve => {
+    overlay.querySelector('#_vcl-cr-cancel').addEventListener('click', () => { overlay.remove(); resolve(); });
+    overlay.addEventListener('click', e => { if (e.target === overlay) { overlay.remove(); resolve(); } });
+    overlay.querySelector('#_vcl-cr-ok').addEventListener('click', async () => {
+      const comment = overlay.querySelector('#_vcl-cr-ta').value.trim();
+      if (!comment) { overlay.querySelector('#_vcl-cr-ta').style.border = '1px solid var(--danger,#e74c3c)'; return; }
+      overlay.querySelector('#_vcl-cr-ok').disabled = true;
+      try {
+        await updateDoc(doc(db, 'submissions', id), {
+          status: 'changes_requested',
+          changeRequestComment: comment,
+          reviewedBy: currentUser.uid,
+          reviewedAt: serverTimestamp(),
+        });
+        sub.status = 'changes_requested';
+        sub.changeRequestComment = comment;
+        sub.reviewedBy = currentUser.uid;
+        _writeAudit('changes_requested', 'submission', id, sub.data?.name || sub.data?.titre || sub.data?.id || id, { comment });
+        updateCounts();
+        renderSubs();
+        toast('💬 Modifications demandées', 'info');
+      } catch(e) { toast('⛔ Erreur : ' + e.message, 'error'); }
+      overlay.remove();
+      resolve();
+    });
+  });
 };
 
 // ── Mob order panel ───────────────────────────────────
@@ -1077,6 +1237,8 @@ const HASH_PANELS = {
   'pnj-migration':        () => showPnjMigration(),
   'zone-list':            () => showZoneList(),
   'quest-map-migration':  () => showQuestMapMigration(),
+  'game-config':          () => showGameConfig(),
+  'audit-log':            () => showAuditLog(),
 };
 
 function _setHash(hash) {
@@ -1147,29 +1309,7 @@ window.showSubmissions = function showSubmissions() {
 
 window.showMobOrder = async () => {
   _setHash('mob-order');
-  document.getElementById('users-panel').style.display         = 'none';
-  document.getElementById('submissions-list').style.display    = 'none';
-  document.getElementById('item-order-panel').style.display    = 'none';
-  document.getElementById('discord-webhooks-panel').style.display = 'none';
-  document.getElementById('permissions-panel').style.display      = 'none';
-  document.getElementById('btn-discord-webhooks').classList.remove('active');
-  document.getElementById('pnj-order-panel').style.display     = 'none';
-  document.getElementById('ghost-id-panel').style.display      = 'none';
-  document.getElementById('region-order-panel').style.display  = 'none';
-  document.getElementById('panoplie-order-panel').style.display = 'none';
-  document.getElementById('quest-order-panel').style.display   = 'none';
-  document.getElementById('region-orphan-panel').style.display = 'none';
-  document.getElementById('mob-orphan-panel').style.display    = 'none';
-  document.getElementById('quest-orphan-panel').style.display  = 'none';
-  document.getElementById('editor-panel').style.display        = 'none';
-
-  document.getElementById('mob-order-panel').style.display     = '';
-  document.getElementById('btn-item-order').classList.remove('active');
-  document.getElementById('btn-pnj-order').classList.remove('active');
-  document.getElementById('btn-ghost-ids').classList.remove('active');
-  document.getElementById('btn-region-order').classList.remove('active');
-  document.getElementById('btn-quest-order').classList.remove('active');
-
+  document.getElementById('mob-order-panel').style.display = '';
   document.getElementById('btn-mob-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadMobOrder();
@@ -1386,29 +1526,7 @@ function itemTag(item) {
 
 window.showItemOrder = async () => {
   _setHash('item-order');
-  document.getElementById('users-panel').style.display         = 'none';
-  document.getElementById('submissions-list').style.display    = 'none';
-  document.getElementById('mob-order-panel').style.display     = 'none';
-  document.getElementById('discord-webhooks-panel').style.display = 'none';
-  document.getElementById('permissions-panel').style.display      = 'none';
-  document.getElementById('btn-discord-webhooks').classList.remove('active');
-  document.getElementById('pnj-order-panel').style.display     = 'none';
-  document.getElementById('ghost-id-panel').style.display      = 'none';
-  document.getElementById('region-order-panel').style.display  = 'none';
-  document.getElementById('panoplie-order-panel').style.display = 'none';
-  document.getElementById('quest-order-panel').style.display   = 'none';
-  document.getElementById('region-orphan-panel').style.display = 'none';
-  document.getElementById('mob-orphan-panel').style.display    = 'none';
-  document.getElementById('quest-orphan-panel').style.display  = 'none';
-  document.getElementById('editor-panel').style.display        = 'none';
-
-  document.getElementById('item-order-panel').style.display    = '';
-  document.getElementById('btn-mob-order').classList.remove('active');
-  document.getElementById('btn-pnj-order').classList.remove('active');
-  document.getElementById('btn-ghost-ids').classList.remove('active');
-  document.getElementById('btn-region-order').classList.remove('active');
-  document.getElementById('btn-quest-order').classList.remove('active');
-
+  document.getElementById('item-order-panel').style.display = '';
   document.getElementById('btn-item-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadItemOrder();
@@ -1708,29 +1826,7 @@ let _pnjPalierCollapsed = new Set(); // paliers réduits
 
 window.showPnjOrder = async () => {
   _setHash('pnj-order');
-  document.getElementById('users-panel').style.display         = 'none';
-  document.getElementById('submissions-list').style.display    = 'none';
-  document.getElementById('mob-order-panel').style.display     = 'none';
-  document.getElementById('discord-webhooks-panel').style.display = 'none';
-  document.getElementById('permissions-panel').style.display      = 'none';
-  document.getElementById('btn-discord-webhooks').classList.remove('active');
-  document.getElementById('item-order-panel').style.display    = 'none';
-  document.getElementById('ghost-id-panel').style.display      = 'none';
-  document.getElementById('region-order-panel').style.display  = 'none';
-  document.getElementById('panoplie-order-panel').style.display = 'none';
-  document.getElementById('quest-order-panel').style.display   = 'none';
-  document.getElementById('region-orphan-panel').style.display = 'none';
-  document.getElementById('mob-orphan-panel').style.display    = 'none';
-  document.getElementById('quest-orphan-panel').style.display  = 'none';
-  document.getElementById('editor-panel').style.display        = 'none';
-
-  document.getElementById('pnj-order-panel').style.display     = '';
-  document.getElementById('btn-mob-order').classList.remove('active');
-  document.getElementById('btn-item-order').classList.remove('active');
-  document.getElementById('btn-ghost-ids').classList.remove('active');
-  document.getElementById('btn-region-order').classList.remove('active');
-  document.getElementById('btn-quest-order').classList.remove('active');
-
+  document.getElementById('pnj-order-panel').style.display = '';
   document.getElementById('btn-pnj-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadPnjOrder();
@@ -2102,29 +2198,7 @@ let _regionCollapseInit    = false;
 
 window.showRegionOrder = async () => {
   _setHash('region-order');
-  document.getElementById('users-panel').style.display         = 'none';
-  document.getElementById('submissions-list').style.display    = 'none';
-  document.getElementById('mob-order-panel').style.display     = 'none';
-  document.getElementById('item-order-panel').style.display    = 'none';
-  document.getElementById('discord-webhooks-panel').style.display = 'none';
-  document.getElementById('permissions-panel').style.display      = 'none';
-  document.getElementById('btn-discord-webhooks').classList.remove('active');
-  document.getElementById('pnj-order-panel').style.display     = 'none';
-  document.getElementById('ghost-id-panel').style.display      = 'none';
-  document.getElementById('region-orphan-panel').style.display = 'none';
-  document.getElementById('mob-orphan-panel').style.display    = 'none';
-  document.getElementById('quest-orphan-panel').style.display  = 'none';
-  document.getElementById('editor-panel').style.display        = 'none';
-
-  document.getElementById('region-order-panel').style.display  = '';
-  document.getElementById('btn-mob-order').classList.remove('active');
-  document.getElementById('btn-item-order').classList.remove('active');
-  document.getElementById('btn-pnj-order').classList.remove('active');
-  document.getElementById('btn-ghost-ids').classList.remove('active');
-  document.getElementById('btn-region-orphans').classList.remove('active');
-  document.getElementById('btn-mob-orphans').classList.remove('active');
-  document.getElementById('btn-quest-orphans').classList.remove('active');
-
+  document.getElementById('region-order-panel').style.display = '';
   document.getElementById('btn-region-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadRegionOrder();
@@ -2304,16 +2378,6 @@ let _panoplieDragSrc    = null;
 
 window.showPanoplieOrder = async () => {
   _setHash('panoplie-order');
-  ['users-panel','submissions-list','mob-order-panel','item-order-panel',
-   'pnj-order-panel','region-order-panel','quest-order-panel',
-   'discord-webhooks-panel','permissions-panel','ghost-id-panel',
-   'region-orphan-panel','mob-orphan-panel','quest-orphan-panel','editor-panel'
-  ].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-  ['btn-mob-order','btn-item-order','btn-pnj-order','btn-region-order',
-   'btn-quest-order','btn-ghost-ids','btn-region-orphans','btn-mob-orphans',
-   'btn-quest-orphans','btn-discord-webhooks','btn-permissions'
-  ].forEach(id => document.getElementById(id)?.classList.remove('active'));
-
   document.getElementById('panoplie-order-panel').style.display = '';
   document.getElementById('btn-panoplie-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -2485,32 +2549,7 @@ window.importSetsToFirestore = async () => {
 // ── Ghost ID tracker ─────────────────────────────────
 window.showGhostIds = async () => {
   _setHash('ghost-ids');
-  document.getElementById('users-panel').style.display        = 'none';
-  document.getElementById('submissions-list').style.display   = 'none';
-  document.getElementById('mob-order-panel').style.display    = 'none';
-  document.getElementById('discord-webhooks-panel').style.display = 'none';
-  document.getElementById('permissions-panel').style.display      = 'none';
-  document.getElementById('btn-discord-webhooks').classList.remove('active');
-  document.getElementById('item-order-panel').style.display   = 'none';
-  document.getElementById('pnj-order-panel').style.display    = 'none';
-  document.getElementById('region-order-panel').style.display  = 'none';
-  document.getElementById('panoplie-order-panel').style.display = 'none';
-  document.getElementById('quest-order-panel').style.display   = 'none';
-  document.getElementById('region-orphan-panel').style.display = 'none';
-  document.getElementById('mob-orphan-panel').style.display    = 'none';
-  document.getElementById('quest-orphan-panel').style.display  = 'none';
-  document.getElementById('editor-panel').style.display        = 'none';
-
-  document.getElementById('ghost-id-panel').style.display      = '';
-  document.getElementById('btn-mob-order').classList.remove('active');
-  document.getElementById('btn-item-order').classList.remove('active');
-  document.getElementById('btn-pnj-order').classList.remove('active');
-  document.getElementById('btn-region-order').classList.remove('active');
-  document.getElementById('btn-quest-order').classList.remove('active');
-  document.getElementById('btn-region-orphans').classList.remove('active');
-  document.getElementById('btn-mob-orphans').classList.remove('active');
-  document.getElementById('btn-quest-orphans').classList.remove('active');
-
+  document.getElementById('ghost-id-panel').style.display = '';
   document.getElementById('btn-ghost-ids').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadGhostIds();
@@ -2521,32 +2560,7 @@ window.showGhostIds = async () => {
 // ══════════════════════════════════════════════════════
 window.showRegionOrphans = async () => {
   _setHash('region-orphans');
-  document.getElementById('users-panel').style.display         = 'none';
-  document.getElementById('submissions-list').style.display    = 'none';
-  document.getElementById('mob-order-panel').style.display     = 'none';
-  document.getElementById('discord-webhooks-panel').style.display = 'none';
-  document.getElementById('permissions-panel').style.display      = 'none';
-  document.getElementById('btn-discord-webhooks').classList.remove('active');
-  document.getElementById('item-order-panel').style.display    = 'none';
-  document.getElementById('pnj-order-panel').style.display     = 'none';
-  document.getElementById('ghost-id-panel').style.display      = 'none';
-  document.getElementById('region-order-panel').style.display  = 'none';
-  document.getElementById('panoplie-order-panel').style.display = 'none';
-  document.getElementById('quest-order-panel').style.display   = 'none';
-  document.getElementById('mob-orphan-panel').style.display    = 'none';
-  document.getElementById('quest-orphan-panel').style.display  = 'none';
-  document.getElementById('editor-panel').style.display        = 'none';
-
   document.getElementById('region-orphan-panel').style.display = '';
-  document.getElementById('btn-mob-order').classList.remove('active');
-  document.getElementById('btn-item-order').classList.remove('active');
-  document.getElementById('btn-pnj-order').classList.remove('active');
-  document.getElementById('btn-ghost-ids').classList.remove('active');
-  document.getElementById('btn-region-order').classList.remove('active');
-  document.getElementById('btn-quest-order').classList.remove('active');
-  document.getElementById('btn-mob-orphans').classList.remove('active');
-  document.getElementById('btn-quest-orphans').classList.remove('active');
-
   document.getElementById('btn-region-orphans').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadRegionOrphans();
@@ -2712,30 +2726,7 @@ window.loadRegionOrphans = async function loadRegionOrphans() {
 // ══════════════════════════════════════════════════════
 window.showMobOrphans = async () => {
   _setHash('mob-orphans');
-  document.getElementById('users-panel').style.display         = 'none';
-  document.getElementById('submissions-list').style.display    = 'none';
-  document.getElementById('mob-order-panel').style.display     = 'none';
-  document.getElementById('discord-webhooks-panel').style.display = 'none';
-  document.getElementById('permissions-panel').style.display      = 'none';
-  document.getElementById('btn-discord-webhooks').classList.remove('active');
-  document.getElementById('item-order-panel').style.display    = 'none';
-  document.getElementById('pnj-order-panel').style.display     = 'none';
-  document.getElementById('ghost-id-panel').style.display      = 'none';
-  document.getElementById('region-order-panel').style.display  = 'none';
-  document.getElementById('panoplie-order-panel').style.display = 'none';
-  document.getElementById('quest-order-panel').style.display   = 'none';
-  document.getElementById('region-orphan-panel').style.display = 'none';
-  document.getElementById('editor-panel').style.display        = 'none';
-
-  document.getElementById('mob-orphan-panel').style.display    = '';
-  document.getElementById('btn-mob-order').classList.remove('active');
-  document.getElementById('btn-item-order').classList.remove('active');
-  document.getElementById('btn-pnj-order').classList.remove('active');
-  document.getElementById('btn-ghost-ids').classList.remove('active');
-  document.getElementById('btn-region-order').classList.remove('active');
-  document.getElementById('btn-quest-order').classList.remove('active');
-  document.getElementById('btn-region-orphans').classList.remove('active');
-
+  document.getElementById('mob-orphan-panel').style.display = '';
   document.getElementById('btn-mob-orphans').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadMobOrphans();
@@ -4254,9 +4245,49 @@ window.emptyTrash = async function emptyTrash() {
   }
 };
 
-// ⚠️ Ajouter ici les nouveaux paliers quand ils sont créés dans le creator
-const CREATOR_PALIERS = [1, 2, 3];
+let CREATOR_PALIERS = [1, 2, 3]; // mis à jour dynamiquement depuis Firestore config/paliers
+let _paliersConfig = []; // données complètes { id, label, color, floorName }
 let _ccConfig = null;
+
+async function _loadPaliersConfig() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'paliers'));
+    if (snap.exists() && Array.isArray(snap.data().paliers) && snap.data().paliers.length) {
+      _paliersConfig = snap.data().paliers;
+      CREATOR_PALIERS = _paliersConfig.map(p => p.id);
+      // Mettre à jour les options du champ palier dans le completion panel
+      // _CF_DEFS est initialisé plus bas dans le module, mais cette fonction est appelée
+      // de manière asynchrone (après login), donc _CF_DEFS est déjà défini.
+      _CF_DEFS.palier.opts = _paliersConfig.map(p => [p.id, p.label]);
+    }
+  } catch(e) {
+    console.warn('[mod] config/paliers non chargée:', e);
+  }
+}
+
+function _populateAllPalierSelects() {
+  const paliers = _paliersConfig.length ? _paliersConfig
+    : [{ id:1, label:'Palier 1' }, { id:2, label:'Palier 2' }, { id:3, label:'Palier 3' }];
+  const selectIds = [
+    'map-filter-floor', 'map-form-floor', 'ap-filter-floor', 'dw-pub-palier',
+    'zl-filter-floor', 'ze-floor', 'qm-filter-floor', 'data-all-palier'
+  ];
+  for (const id of selectIds) {
+    const sel = document.getElementById(id);
+    if (!sel) continue;
+    const currentVal = sel.value;
+    const firstOpt = sel.options[0]?.value === '' ? sel.options[0].cloneNode(true) : null;
+    sel.innerHTML = '';
+    if (firstOpt) sel.appendChild(firstOpt);
+    for (const p of paliers) {
+      const opt = document.createElement('option');
+      opt.value = String(p.id);
+      opt.textContent = p.label;
+      sel.appendChild(opt);
+    }
+    if (currentVal) sel.value = currentVal;
+  }
+}
 
 async function _saveCreatorConfig() {
   try {
@@ -4317,20 +4348,7 @@ let _dwActivetab = 'webhooks';
 
 window.showDiscordWebhooks = async () => {
   _setHash('webhooks');
-  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-
   document.getElementById('discord-webhooks-panel').style.display = '';
-  document.getElementById('btn-mob-order').classList.remove('active');
-  document.getElementById('btn-item-order').classList.remove('active');
-  document.getElementById('btn-pnj-order').classList.remove('active');
-  document.getElementById('btn-ghost-ids').classList.remove('active');
-  document.getElementById('btn-region-order').classList.remove('active');
-  document.getElementById('btn-quest-order').classList.remove('active');
-  document.getElementById('btn-region-orphans').classList.remove('active');
-  document.getElementById('btn-mob-orphans').classList.remove('active');
-  document.getElementById('btn-quest-orphans').classList.remove('active');
-
   document.getElementById('btn-discord-webhooks').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadDiscordWebhooks();
@@ -5185,14 +5203,21 @@ const PERM_SECTIONS = [
     { id: '_edit_direct', label: 'Écriture directe en base', desc: 'Items, mobs, PNJ, régions…',    fixed: 'contributeur' },
     { id: '_admin',       label: 'Configuration admin',      desc: 'Permissions, webhooks, rôles',   fixed: 'admin' },
   ]},
+  { title: 'Panel de modération — Outils (configurable)', perms: [
+    { id: 'tool_trash',       label: '🗑️ Corbeille',          desc: 'Voir et restaurer les éléments supprimés',   defaultRole: 'admin' },
+    { id: 'tool_leaderboard', label: '🏆 Classement',          desc: 'Voir le leaderboard des contributions',      defaultRole: 'admin' },
+    { id: 'tool_audit_log',   label: '📋 Journal d\'audit',    desc: 'Historique des actions de modération',        defaultRole: 'admin' },
+    { id: 'tool_map',         label: '🗺️ Carte (marqueurs)',   desc: 'Gestion des marqueurs sur la carte',          defaultRole: 'contributeur' },
+    { id: 'tool_zones',       label: '📍 Zones de spawn',      desc: 'Liste et éditeur de polygones de zones',      defaultRole: 'contributeur' },
+    { id: 'tool_diagnostic',  label: '🔍 Diagnostic',          desc: 'IDs fantômes, régions orphelines…',           defaultRole: 'contributeur' },
+    { id: 'tool_capture',     label: '📸 Capture Sprites',     desc: 'Outil de capture d\'images de sprites',       defaultRole: 'contributeur' },
+  ]},
 ];
 
 let _permConfig = null;
 
 window.showPermissions = async () => {
   _setHash('permissions');
-  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('permissions-panel').style.display = '';
   document.getElementById('btn-permissions').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -5332,7 +5357,7 @@ function _buildPermRow(perm) {
     return row;
   }
 
-  const current = _permConfig[perm.id] ?? 'visiteur';
+  const current = _permConfig[perm.id] ?? (perm.defaultRole || 'visiteur');
   const seg = document.createElement('div');
   seg.style.cssText = 'display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0;';
 
@@ -6084,6 +6109,41 @@ window.bulkDeleteSubs = async (status) => {
   }
 };
 
+// ── Bulk approve submissions ──────────────────────────
+window.bulkApproveSubs = async () => {
+  let targets = allSubs.filter(s => s.status === 'pending');
+  if (filterType   !== 'all') targets = targets.filter(s => s.type === filterType);
+  if (filterSearch) {
+    const q = normalize(filterSearch);
+    targets = targets.filter(s =>
+      normalize(s.data?.name || s.data?.titre || s.data?.label || '').includes(q) ||
+      normalize(s.data?.id || '').includes(q)
+    );
+  }
+  if (!targets.length) return;
+  if (!await modal.confirm(
+    `Approuver <b>${targets.length}</b> soumission${targets.length > 1 ? 's' : ''} en attente ?<br>` +
+    `Chaque soumission sera publiée dans la base de données.`,
+    { confirmLabel: `✅ Approuver les ${targets.length}` }
+  )) return;
+
+  let done = 0, errors = 0;
+  for (const sub of [...targets]) {
+    try {
+      await window.approve(sub._id);
+      done++;
+    } catch(e) {
+      errors++;
+      console.error('[bulkApprove]', sub._id, e);
+    }
+  }
+  toast(
+    errors ? `⚠️ ${done} approuvées, ${errors} erreur${errors > 1 ? 's' : ''}.` :
+             `✅ ${done} soumission${done > 1 ? 's' : ''} approuvée${done > 1 ? 's' : ''}.`,
+    errors ? 'warning' : 'success'
+  );
+};
+
 // ── Delete submission ─────────────────────────────────
 window.deleteSub = async (id) => {
   const sub = allSubs.find(s => s._id === id);
@@ -6118,34 +6178,7 @@ const QUEST_TYPE_COLORS_MOD = { main: '#e07c50',        sec: '#6aaad4',        t
 
 window.showQuestOrder = async () => {
   _setHash('quest-order');
-  document.getElementById('users-panel').style.display         = 'none';
-  document.getElementById('submissions-list').style.display    = 'none';
-  document.getElementById('mob-order-panel').style.display     = 'none';
-  document.getElementById('item-order-panel').style.display    = 'none';
-  document.getElementById('discord-webhooks-panel').style.display = 'none';
-  document.getElementById('permissions-panel').style.display      = 'none';
-  document.getElementById('btn-discord-webhooks').classList.remove('active');
-  document.getElementById('pnj-order-panel').style.display     = 'none';
-  document.getElementById('ghost-id-panel').style.display      = 'none';
-  document.getElementById('region-order-panel').style.display  = 'none';
-  document.getElementById('panoplie-order-panel').style.display = 'none';
-  document.getElementById('quest-order-panel').style.display   = 'none';
-  document.getElementById('region-orphan-panel').style.display = 'none';
-  document.getElementById('mob-orphan-panel').style.display    = 'none';
-  document.getElementById('quest-orphan-panel').style.display  = 'none';
-  document.getElementById('editor-panel').style.display        = 'none';
-
-  document.getElementById('quest-order-panel').style.display   = '';
-  document.getElementById('btn-mob-order').classList.remove('active');
-  document.getElementById('btn-item-order').classList.remove('active');
-  document.getElementById('btn-pnj-order').classList.remove('active');
-  document.getElementById('btn-ghost-ids').classList.remove('active');
-  document.getElementById('btn-region-order').classList.remove('active');
-  document.getElementById('btn-quest-order').classList.remove('active');
-  document.getElementById('btn-region-orphans').classList.remove('active');
-  document.getElementById('btn-mob-orphans').classList.remove('active');
-  document.getElementById('btn-quest-orphans').classList.remove('active');
-
+  document.getElementById('quest-order-panel').style.display = '';
   document.getElementById('btn-quest-order').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadQuestOrder();
@@ -6275,17 +6308,6 @@ window.renderQuestOrder = function renderQuestOrder() {
 
 window.showQuestOrphans = async () => {
   _setHash('quest-orphans');
-  // Cacher tous les panneaux
-  ['submissions-list','mob-order-panel','item-order-panel','pnj-order-panel',
-   'ghost-id-panel','region-order-panel','quest-order-panel','panoplie-order-panel',
-   'region-orphan-panel','mob-orphan-panel','quest-orphan-panel',
-   'editor-panel','discord-webhooks-panel','permissions-panel'
-  ].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
-  ['btn-mob-order','btn-item-order','btn-pnj-order','btn-ghost-ids',
-   'btn-region-order','btn-quest-order','btn-panoplie-order','btn-region-orphans','btn-mob-orphans',
-   'btn-quest-orphans','btn-discord-webhooks','btn-permissions'
-  ].forEach(id => { document.getElementById(id)?.classList.remove('active'); });
-
   document.getElementById('quest-orphan-panel').style.display = '';
   document.getElementById('btn-quest-orphans').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -6465,9 +6487,6 @@ let _allUsers = [];
 
 window.showUsersPanel = async () => {
   _setHash('members');
-  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector('.sidebar').classList.remove('in-order-panel');
   document.getElementById('users-panel').style.display = '';
   document.getElementById('btn-users').classList.add('active');
   await loadUsers();
@@ -6493,22 +6512,44 @@ function renderUsers(users) {
 
   const roleColor = { membre: 'var(--muted)', contributeur: '#60a5fa', admin: 'var(--danger)' };
 
+  // Contribution count depuis allSubs (déjà en mémoire)
+  const contribCount = new Map();
+  for (const s of allSubs) {
+    if (s.status === 'approved' && s.submittedBy) {
+      contribCount.set(s.submittedBy, (contribCount.get(s.submittedBy) || 0) + 1);
+    }
+  }
+
   list.innerHTML = '';
   users.forEach(u => {
     const row = document.createElement('div');
     row.className = 'user-row';
     row.dataset.uid = u.uid;
 
+    const isSuspended = !!u.suspended;
+    const count       = contribCount.get(u.uid) || 0;
     const sel = ROLES_LIST.map(r =>
       `<option value="${r}"${r === u.role ? ' selected' : ''}>${r}</option>`
     ).join('');
 
+    const suspBadge = isSuspended
+      ? `<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;flex-shrink:0;" title="${escHtml(u.suspendedReason || '')}">🚫 Suspendu</span>`
+      : '';
+    const suspBtn = isSuspended
+      ? `<button class="btn btn-ghost" style="font-size:11px;padding:2px 8px;color:var(--success,#4ade80);border-color:var(--success,#4ade80);" onclick="unsuspendUser('${escHtml(u.uid)}', '${escHtml(u.pseudo || u.uid)}')">✓ Lever</button>`
+      : `<button class="btn btn-ghost" style="font-size:11px;padding:2px 8px;color:var(--warn,#f59e0b);border-color:var(--warn,#f59e0b);" onclick="suspendUser('${escHtml(u.uid)}', '${escHtml(u.pseudo || u.uid)}')">🚫 Suspendre</button>`;
+
+    const countBadge = count > 0
+      ? `<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(122,90,248,.12);color:var(--accent);border:1px solid rgba(122,90,248,.25);margin-left:4px;">${count} contrib.</span>`
+      : '';
+
     row.innerHTML = `
-      <span class="user-pseudo">${escHtml(u.pseudo || '—')}</span>
+      <span class="user-pseudo">${escHtml(u.pseudo || '—')} ${suspBadge}${countBadge}</span>
       <span class="user-uid">${escHtml(u.uid)}</span>
       <span class="user-email" style="font-size:11px;color:var(--muted);">${escHtml(u.email || '—')}</span>
       <span class="user-role-badge" style="color:${roleColor[u.role] || 'var(--muted)'};">${escHtml(u.role || 'membre')}</span>
       <select class="user-role-sel" onchange="setUserRole('${escHtml(u.uid)}', this.value, this)">${sel}</select>
+      ${suspBtn}
       <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px;color:var(--danger);border-color:var(--danger);" onclick="deleteUserAccount('${escHtml(u.uid)}', '${escHtml(u.pseudo || u.uid)}')">🗑️</button>
     `;
     list.appendChild(row);
@@ -6516,8 +6557,55 @@ function renderUsers(users) {
 }
 
 window.filterUsers = () => {
-  const q = document.getElementById('users-search').value.trim().toLowerCase();
-  renderUsers(q ? _allUsers.filter(u => (u.pseudo || '').toLowerCase().includes(q)) : _allUsers);
+  const q    = (document.getElementById('users-search')?.value || '').trim().toLowerCase();
+  const role = document.getElementById('users-role-filter')?.value || '';
+  let filtered = _allUsers;
+  if (q) filtered = filtered.filter(u =>
+    (u.pseudo || '').toLowerCase().includes(q) ||
+    (u.email  || '').toLowerCase().includes(q) ||
+    (u.uid    || '').toLowerCase().includes(q)
+  );
+  if (role) filtered = filtered.filter(u => (u.role || 'membre') === role);
+  renderUsers(filtered);
+};
+
+window.suspendUser = async (uid, pseudo) => {
+  const reason = window.prompt(`Raison de la suspension pour « ${pseudo} » (facultatif) :`, '');
+  if (reason === null) return; // annulé
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      suspended:        true,
+      suspendedReason:  reason || '',
+      suspendedAt:      serverTimestamp(),
+      suspendedBy:      currentUser.uid,
+    });
+    const u = _allUsers.find(x => x.uid === uid);
+    if (u) { u.suspended = true; u.suspendedReason = reason || ''; }
+    renderUsers(_allUsers);
+    _writeAudit('suspend', 'user', uid, pseudo, { reason: reason || '' });
+    toast(`🚫 ${pseudo} suspendu.`, 'success');
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
+
+window.unsuspendUser = async (uid, pseudo) => {
+  if (!await modal.confirm(`Lever la suspension de <b>${escHtml(pseudo)}</b> ?`, { confirmLabel: 'Lever la suspension' })) return;
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      suspended:       deleteField(),
+      suspendedReason: deleteField(),
+      suspendedAt:     deleteField(),
+      suspendedBy:     deleteField(),
+    });
+    const u = _allUsers.find(x => x.uid === uid);
+    if (u) { delete u.suspended; delete u.suspendedReason; }
+    renderUsers(_allUsers);
+    _writeAudit('unsuspend', 'user', uid, pseudo, {});
+    toast(`✓ Suspension de ${pseudo} levée.`, 'success');
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
 };
 
 window.setUserRole = async (uid, newRole, sel) => {
@@ -6527,8 +6615,10 @@ window.setUserRole = async (uid, newRole, sel) => {
   try {
     await updateDoc(doc(db, 'users', uid), { role: newRole });
     const u = _allUsers.find(x => x.uid === uid);
+    const pseudo = u?.pseudo || uid;
     if (u) u.role = newRole;
     sel.dataset.prev = newRole;
+    _writeAudit('role_change', 'user', uid, pseudo, { prevRole: prev, newRole });
   } catch (e) {
     sel.value = prev;
     toast('Erreur : ' + e.message, 'error');
@@ -6538,7 +6628,12 @@ window.setUserRole = async (uid, newRole, sel) => {
 };
 
 window.deleteUserAccount = async (uid, pseudo) => {
-  if (!confirm(`Supprimer le compte de « ${pseudo} » ?\n\nCela supprime uniquement le document Firestore (pas le compte Firebase Auth).`)) return;
+  if (!await modal.confirm(
+    `Supprimer le profil de <b>${escHtml(pseudo)}</b> ?<br><br>` +
+    `⚠️ Cela supprime uniquement le document Firestore (pseudo, rôle, email).<br>` +
+    `Le compte Firebase Auth <b>n'est pas supprimé</b> — l'utilisateur pourra se reconnecter et créera un nouveau profil.`,
+    { danger: true, confirmLabel: 'Supprimer le profil' }
+  )) return;
   try {
     await deleteDoc(doc(db, 'users', uid));
     _allUsers = _allUsers.filter(u => u.uid !== uid);
@@ -6568,9 +6663,6 @@ const _LB_SCAN_COLS = [
 
 window.showLeaderboard = async () => {
   _setHash('leaderboard');
-  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector('.sidebar').classList.remove('in-order-panel');
   document.getElementById('leaderboard-panel').style.display = '';
   document.getElementById('btn-leaderboard').classList.add('active');
   await loadLeaderboard();
@@ -6776,11 +6868,92 @@ function _sensComputeImg(category, id, palier, isEvent) {
   }
 }
 
+/* ══════════════════════════════════════════════════════
+   JOURNAL D'AUDIT
+══════════════════════════════════════════════════════ */
+let _auditAll   = [];
+let _auditLimit = 50;
+
+const AUDIT_ACTION_LABELS = {
+  approve:           '✅ Approbation',
+  reject:            '✕ Rejet',
+  changes_requested: '💬 Modifs demandées',
+  delete:            '🗑️ Suppression',
+  bulk_delete:       '🗑️ Suppression groupée',
+  role_change:       '🔑 Changement de rôle',
+  suspend:           '🚫 Suspension',
+  unsuspend:         '✓ Levée de suspension',
+};
+
+window.showAuditLog = async () => {
+  if (currentRole !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
+  _setHash('audit-log');
+  document.getElementById('audit-log-panel').style.display = '';
+  document.getElementById('btn-audit-log').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadAuditLog();
+};
+
+window.loadAuditLog = async function loadAuditLog() {
+  const listEl = document.getElementById('audit-log-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const q = query(collection(db, 'audit_log'), orderBy('createdAt', 'desc'), limit(200));
+    const snap = await getDocs(q);
+    _auditAll = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    _auditLimit = 50;
+    renderAuditLog();
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
+  }
+};
+
+window.renderAuditLog = function() {
+  const listEl    = document.getElementById('audit-log-list');
+  const moreEl    = document.getElementById('audit-log-more');
+  const actionF   = document.getElementById('audit-filter-action')?.value || '';
+  const actorF    = (document.getElementById('audit-filter-actor')?.value || '').trim().toLowerCase();
+
+  let rows = _auditAll;
+  if (actionF) rows = rows.filter(r => r.action === actionF);
+  if (actorF)  rows = rows.filter(r => (r.actorPseudo || '').toLowerCase().includes(actorF));
+
+  if (!rows.length) { listEl.innerHTML = '<div class="empty">Aucune entrée.</div>'; if (moreEl) moreEl.style.display = 'none'; return; }
+
+  const shown = rows.slice(0, _auditLimit);
+  if (moreEl) moreEl.style.display = rows.length > _auditLimit ? '' : 'none';
+
+  listEl.innerHTML = '';
+  for (const entry of shown) {
+    const ts = entry.createdAt?.toDate?.()?.toLocaleString('fr-FR') || '—';
+    const actionLabel = AUDIT_ACTION_LABELS[entry.action] || entry.action;
+    const metaStr = entry.action === 'role_change'
+      ? `${entry.metadata?.prevRole || '?'} → <b>${escHtml(entry.metadata?.newRole || '?')}</b>`
+      : entry.metadata?.comment
+        ? `<span style="color:var(--muted);font-style:italic;">"${escHtml(entry.metadata.comment)}"</span>`
+        : entry.metadata?.type ? escHtml(entry.metadata.type) : '';
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:12px;flex-wrap:wrap;';
+    row.innerHTML = `
+      <span style="color:var(--muted);white-space:nowrap;flex-shrink:0;min-width:130px;">${escHtml(ts)}</span>
+      <span style="font-weight:700;flex-shrink:0;min-width:150px;">${actionLabel}</span>
+      <span style="flex:1;min-width:120px;">${escHtml(entry.targetName || entry.targetId || '—')}</span>
+      <span style="color:var(--accent);flex-shrink:0;">${escHtml(entry.actorPseudo || '—')}</span>
+      ${metaStr ? `<span style="width:100%;padding-left:142px;">${metaStr}</span>` : ''}
+    `;
+    listEl.appendChild(row);
+  }
+};
+
+window.loadAuditLogMore = function() {
+  _auditLimit += 50;
+  renderAuditLog();
+};
+
 window.showMigration = async () => {
   if (currentRole !== 'admin') return;
   _setHash('migration');
-  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('migration-panel').style.display = '';
   document.getElementById('btn-migration').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -6944,8 +7117,6 @@ let _completionResults = [];
 
 window.showCompletion = async () => {
   _setHash('completion');
-  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('completion-panel').style.display = '';
   document.getElementById('btn-completion').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -7364,8 +7535,6 @@ function _cvSubData(mode, subcat) {
 window.showCreatorValidation = async () => {
   if (currentRole !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
   _setHash('creator-validation');
-  document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('creator-validation-panel').style.display = '';
   document.getElementById('btn-creator-validation').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
@@ -11450,7 +11619,7 @@ function _renderZoneMobEditor(zone, body, mobsById, header, nameSpan, colorDot, 
   delBtn.style.cssText = 'font-size:12px;';
   delBtn.textContent = '🗑️ Supprimer';
   delBtn.addEventListener('click', async () => {
-    if (!confirm('Supprimer la zone "' + (zone.name || zone._id) + '" ? Cette action est irréversible.')) return;
+    if (!await modal.confirm(`Supprimer la zone <b>${escHtml(zone.name || zone._id)}</b> ?<br>Cette action est irréversible.`, { danger: true, confirmLabel: 'Supprimer' })) return;
     try {
       await deleteDoc(doc(db, COL.zones, zone._id));
       invalidateCache(COL.zones);
@@ -12254,5 +12423,171 @@ window.saveQuestMapMigration = async function saveQuestMapMigration() {
   btn.disabled = false;
   btn.textContent = '💾 Migrer les quêtes';
   renderQuestMapMigration();
+};
+
+// ── Config Jeu (paliers + MAX_LEVEL) ────────────────────
+let _gcPaliers  = [];
+let _gcMaxLevel = 18;
+
+window.showGameConfig = async () => {
+  if (currentRole !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
+  _setHash('game-config');
+  document.getElementById('game-config-panel').style.display = '';
+  document.getElementById('btn-game-config').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await _loadGameConfigData();
+};
+
+async function _loadGameConfigData() {
+  const content = document.getElementById('gc-content');
+  content.innerHTML = '<div style="color:var(--muted);font-size:13px;">Chargement…</div>';
+  try {
+    const [snapP, snapG] = await Promise.all([
+      getDoc(doc(db, 'config', 'paliers')),
+      getDoc(doc(db, 'config', 'game')),
+    ]);
+    _gcPaliers  = snapP.exists() && Array.isArray(snapP.data().paliers) && snapP.data().paliers.length
+      ? snapP.data().paliers.map(p => ({ ...p }))
+      : [{ id:1, label:'Palier 1', color:'#4ade80', floorName:'Villes Européennes' },
+         { id:2, label:'Palier 2', color:'#f59e0b', floorName:'Désert Aride' },
+         { id:3, label:'Palier 3', color:'#f87171', floorName:'Forêt Elfique' }];
+    _gcMaxLevel = snapG.exists() && typeof snapG.data().maxLevel === 'number'
+      ? snapG.data().maxLevel : 18;
+    _renderGameConfig();
+  } catch(e) {
+    content.innerHTML = `<div style="color:var(--danger);">Erreur chargement : ${e.message}</div>`;
+  }
+}
+
+function _renderGameConfig() {
+  const content = document.getElementById('gc-content');
+  const S = {
+    section:  'margin-bottom:28px;',
+    h:        'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:12px;',
+    row:      'display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;',
+    inp:      'background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:13px;outline:none;',
+    label:    'font-size:11px;color:var(--muted);width:70px;flex-shrink:0;',
+  };
+
+  let html = `
+    <div style="${S.section}">
+      <div style="${S.h}">Paliers</div>
+      <div id="gc-paliers-list">`;
+
+  for (let i = 0; i < _gcPaliers.length; i++) {
+    const p = _gcPaliers[i];
+    html += `
+        <div style="${S.row}" id="gc-palier-row-${i}">
+          <span style="${S.label}">ID</span>
+          <input type="number" min="1" max="99" value="${p.id}" style="${S.inp}width:64px;"
+            data-gc="id" data-idx="${i}" oninput="gcUpdatePalier(${i},'id',+this.value)">
+          <span style="${S.label}">Label</span>
+          <input type="text" value="${p.label}" style="${S.inp}flex:1;"
+            data-gc="label" data-idx="${i}" oninput="gcUpdatePalier(${i},'label',this.value)">
+          <span style="${S.label}">Couleur</span>
+          <input type="color" value="${p.color || '#888888'}" style="width:40px;height:32px;border:none;background:none;cursor:pointer;border-radius:4px;padding:0;"
+            data-gc="color" data-idx="${i}" oninput="gcUpdatePalier(${i},'color',this.value)">
+          <span style="${S.label}">Zone</span>
+          <input type="text" value="${p.floorName || ''}" placeholder="Nom de la zone" style="${S.inp}flex:1;"
+            data-gc="floorName" data-idx="${i}" oninput="gcUpdatePalier(${i},'floorName',this.value)">
+          <button class="btn btn-ghost" style="color:var(--danger);font-size:12px;padding:5px 8px;flex-shrink:0;"
+            onclick="gcRemovePalier(${i})" title="Supprimer ce palier">🗑️</button>
+        </div>`;
+  }
+
+  html += `
+      </div>
+      <button class="btn btn-ghost" onclick="gcAddPalier()" style="font-size:12px;margin-top:4px;">+ Ajouter un palier</button>
+    </div>
+
+    <div style="${S.section}">
+      <div style="${S.h}">Paramètres de jeu</div>
+      <div style="${S.row}">
+        <span style="${S.label}">Niveau max</span>
+        <input type="number" id="gc-maxlevel" min="1" max="99" value="${_gcMaxLevel}"
+          style="${S.inp}width:80px;" oninput="_gcMaxLevel=+this.value">
+        <span style="font-size:12px;color:var(--muted);">Niveau maximum des items et personnages</span>
+      </div>
+    </div>`;
+
+  content.innerHTML = html;
+}
+
+window.gcUpdatePalier = (idx, field, val) => { _gcPaliers[idx][field] = val; };
+
+window.gcAddPalier = () => {
+  const maxId = _gcPaliers.reduce((m, p) => Math.max(m, p.id), 0);
+  _gcPaliers.push({ id: maxId + 1, label: `Palier ${maxId + 1}`, color: '#a78bfa', floorName: '' });
+  _renderGameConfig();
+};
+
+window.gcRemovePalier = async (idx) => {
+  const p = _gcPaliers[idx];
+  if (_gcPaliers.length <= 1) { toast('⚠️ Impossible de supprimer le dernier palier', 'warning'); return; }
+  if (!await modal.confirm(`Supprimer "${p.label}" ?\nLes données existantes qui référencent ce palier ne seront pas affectées.`)) return;
+  _gcPaliers.splice(idx, 1);
+  _renderGameConfig();
+};
+
+window.saveGameConfig = async () => {
+  const btn = document.getElementById('gc-save-btn');
+  btn.disabled = true; btn.textContent = '⏳';
+
+  // Validation
+  const ids = _gcPaliers.map(p => p.id);
+  if (new Set(ids).size !== ids.length) {
+    toast('⚠️ Les IDs de palier doivent être uniques', 'warning');
+    btn.disabled = false; btn.textContent = '💾 Sauvegarder';
+    return;
+  }
+  if (_gcPaliers.some(p => !p.label?.trim())) {
+    toast('⚠️ Tous les paliers doivent avoir un label', 'warning');
+    btn.disabled = false; btn.textContent = '💾 Sauvegarder';
+    return;
+  }
+  const maxLv = +document.getElementById('gc-maxlevel').value;
+  if (!maxLv || maxLv < 1 || maxLv > 99) {
+    toast('⚠️ Niveau max invalide (1–99)', 'warning');
+    btn.disabled = false; btn.textContent = '💾 Sauvegarder';
+    return;
+  }
+
+  try {
+    const newPalierIds = ids.filter(id => !CREATOR_PALIERS.includes(id));
+
+    await Promise.all([
+      setDoc(doc(db, 'config', 'paliers'), { paliers: _gcPaliers }),
+      setDoc(doc(db, 'config', 'game'),    { maxLevel: maxLv }),
+    ]);
+
+    // Créer des entrées webhook vides pour les nouveaux paliers
+    if (newPalierIds.length) {
+      const snapDw = await getDoc(doc(db, 'config', 'discord_webhooks'));
+      const current = snapDw.exists() ? snapDw.data() : {};
+      const updates = {};
+      for (const pid of newPalierIds) {
+        for (const cat of DW_CATEGORIES) {
+          const key = `${cat.id}_${pid}`;
+          if (!(key in current)) updates[key] = '';
+        }
+      }
+      if (Object.keys(updates).length) {
+        await setDoc(doc(db, 'config', 'discord_webhooks'), { ...current, ...updates });
+        toast(`✓ ${Object.keys(updates).length} entrée(s) webhook créée(s) pour le(s) nouveau(x) palier(s)`, 'success');
+      }
+    }
+
+    // Mettre à jour l'état en mémoire
+    _paliersConfig  = _gcPaliers.map(p => ({ ...p }));
+    CREATOR_PALIERS = _paliersConfig.map(p => p.id);
+    _CF_DEFS.palier.opts = _paliersConfig.map(p => [p.id, p.label]);
+    _populateAllPalierSelects();
+
+    toast('✓ Configuration sauvegardée', 'success');
+  } catch(e) {
+    toast(`⛔ Erreur : ${e.message}`, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Sauvegarder';
+  }
 };
 
