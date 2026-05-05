@@ -267,9 +267,7 @@
             <label>Palier</label>
             <select id="f-palier" onchange="onPalierChange()">
               <option value="">—</option>
-              <option value="1">Palier 1</option>
-              <option value="2">Palier 2</option>
-              <option value="3">Palier 3</option>
+              <!-- options peuplées dynamiquement par populatePalierSelects() -->
             </select>
           </div>
           <div class="field">
@@ -572,9 +570,7 @@
               <label>Palier</label>
               <select id="pnj-palier" onchange="update()">
                 <option value="">—</option>
-                <option value="1">Palier 1</option>
-                <option value="2">Palier 2</option>
-                <option value="3">Palier 3</option>
+                <!-- options peuplées dynamiquement par populatePalierSelects() -->
               </select>
             </div>
           </div>
@@ -658,9 +654,7 @@
             <label>Palier *</label>
             <select id="reg-palier" onchange="update()">
               <option value="">—</option>
-              <option value="1">Palier 1</option>
-              <option value="2">Palier 2</option>
-              <option value="3">Palier 3</option>
+              <!-- options peuplées dynamiquement par populatePalierSelects() -->
             </select>
           </div>
           <div class="field">
@@ -817,9 +811,7 @@
               <label>Palier</label>
               <select id="quest-palier" onchange="onQuestPalierChange()">
                 <option value="">—</option>
-                <option value="1">Palier 1</option>
-                <option value="2">Palier 2</option>
-                <option value="3">Palier 3</option>
+                <!-- options peuplées dynamiquement par populatePalierSelects() -->
               </select>
             </div>
             <div class="field">
@@ -979,9 +971,7 @@
               <label>Palier</label>
               <select id="mob-palier" onchange="onMobPalierChange()">
                 <option value="">—</option>
-                <option value="1">Palier 1</option>
-                <option value="2">Palier 2</option>
-                <option value="3">Palier 3</option>
+                <!-- options peuplées dynamiquement par populatePalierSelects() -->
               </select>
             </div>
             <div class="field">
@@ -1173,6 +1163,7 @@ onAuthStateChanged(auth, async user => {
 <script type="module">
 import { store } from './store.js';
 import { loadCollection, doc, getDoc, getDocs, collection, query, where, onSnapshot, db } from './firebase.js';
+import { loadPaliersConfig, loadMaxLevel } from './config-loader.js';
 
 // Expose store.invalidate() et loadCollection() pour les scripts classiques
 window._vcl_store          = store;
@@ -1195,7 +1186,20 @@ try {
 } catch(e) {
   console.warn('[VCL Creator] Données indisponibles depuis Firestore.', e);
 }
-// Charger la config creator (visibilité outils / paliers)
+// Charger les paliers et MAX_LEVEL depuis Firestore, peupler les selects
+try {
+  const [paliers, maxLevel] = await Promise.all([
+    loadPaliersConfig(db, getDoc, doc),
+    loadMaxLevel(db, getDoc, doc),
+  ]);
+  window._vcl_paliers   = paliers;
+  window._vcl_maxLevel  = maxLevel;
+  if (typeof populatePalierSelects === 'function') populatePalierSelects(paliers);
+  if (typeof applyGameConfig       === 'function') applyGameConfig(maxLevel);
+} catch(e) {
+  console.warn('[VCL Creator] Config paliers/game non chargée:', e);
+}
+// Charger la config creator (visibilité outils / paliers) — après populatePalierSelects
 try {
   const snap = await getDoc(doc(db, 'config', 'creator'));
   if (snap.exists() && typeof applyCreatorConfig === 'function') applyCreatorConfig(snap.data());
@@ -1211,10 +1215,13 @@ try {
 } catch(e) {
   console.warn('[VCL Creator] Config validation non chargée:', e);
 }
-// Charger le webhook "nouvelles soumissions"
+// Charger les webhooks Discord (accès complet pour getForumWebhook)
 try {
   const snapDw = await getDoc(doc(db, 'config', 'discord_webhooks'));
-  if (snapDw.exists()) window._vcl_newSubWebhook = snapDw.data()?.new_submission || null;
+  if (snapDw.exists()) {
+    window._vcl_discordWebhooks = snapDw.data();
+    window._vcl_newSubWebhook   = snapDw.data()?.new_submission || null;
+  }
 } catch(e) {}
 // Charger les soumissions en attente (pour les afficher dans les dropdowns)
 try {

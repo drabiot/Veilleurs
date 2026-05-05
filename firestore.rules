@@ -135,6 +135,14 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Journal d'audit — écriture contrib (toute action de modération), lecture admin uniquement
+    match /audit_log/{id} {
+      allow read:   if isAdmin();
+      allow create: if isContrib();
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
     match /submissions/{id} {
       // Tout le monde peut soumettre (invités inclus) — pseudo et type obligatoires
       // Les contributeurs+ contournent les restrictions du creator

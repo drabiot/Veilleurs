@@ -229,8 +229,14 @@
   <script src="atelier.js"></script>
   <script type="module">
     import { store } from '../store.js';
-    import { getHiddenByName, getHiddenById, getSecretById, COL } from '../firebase.js';
+    import { getHiddenByName, getHiddenById, getSecretById, COL, db, getDoc, doc } from '../firebase.js';
+    import { loadMaxLevel } from '../config-loader.js';
     window.VCL_DB = { getHiddenByName, getHiddenById, getSecretById, COL };
+    // Charger MAX_LEVEL depuis Firestore avant d'initialiser l'atelier
+    try {
+      const maxLevel = await loadMaxLevel(db, getDoc, doc);
+      if (maxLevel !== MAX_LEVEL) window.MAX_LEVEL = maxLevel;
+    } catch(e) {}
     try {
       await store.load(['items', 'panoplies']);
       store.populateGlobals();

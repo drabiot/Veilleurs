@@ -335,6 +335,13 @@
       const emojiSnap = await getDoc(doc(db, 'config', 'pin_type_emojis'));
       window._map_pin_emojis = emojiSnap.exists() ? emojiSnap.data() : {};
     } catch { window._map_pin_emojis = {}; }
+    // Mettre à jour FLOOR_NAMES depuis Firestore si de nouveaux paliers existent
+    try {
+      const pSnap = await getDoc(doc(db, 'config', 'paliers'));
+      if (pSnap.exists() && Array.isArray(pSnap.data().paliers)) {
+        pSnap.data().paliers.forEach(p => { if (p.floorName) window.FLOOR_NAMES[p.id] = p.floorName; });
+      }
+    } catch(e) {}
     window._mapDataLoaded = true;
     window._mapReady?.();
   </script>
