@@ -207,7 +207,7 @@ function buildDynamicMarkers() {
       gx:     p.coords.x,
       gy:     p.coords.z,
       name:   p.name || p.type,
-      desc:   questDesc || p.lore || p.description || p.tag || '',
+      desc:   questDesc || p.instructions || p.lore || p.description || p.tag || '',
       link:   linked.length ? questLink : `../Bestiaire/bestiaire.html#personnages/${p._id || p.id}`,
       quests: linked,
     });
@@ -1905,6 +1905,26 @@ function focusQuestOnMap(questId) {
   }
 }
 
+function focusPnjOnMap(pnjId) {
+  if (!pnjId) return;
+  const byFloor = window._mapMarkers || {};
+  for (const [f, markers] of Object.entries(byFloor)) {
+    const found = markers.find(m => m.id === pnjId);
+    if (!found) continue;
+    // Forcer le bon layer avant goToFloor (qui utilise currentLayer pour l'image)
+    if (found.layer === 'underground') currentLayer = 'underground';
+    else currentLayer = 'surface';
+    updateLayerBtn();
+    goToFloor(+f);
+    _searchFocusId = found.id;
+    const img = gameToPixel(found.gx, found.gy);
+    panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
+    panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
+    applyTransform();
+    return;
+  }
+}
+
 function initMap() {
   buildDynamicMarkers();
   applyPinColorsToLegend();
@@ -1913,6 +1933,7 @@ function initMap() {
   const _initHash = parseHash(window.location.hash);
   const _urlParams = new URLSearchParams(window.location.search);
   const _questIdParam = _urlParams.get('questId');
+  const _pnjIdParam   = _urlParams.get('pnjId');
   currentLayer = _initHash.layer;
   buildLayerSwitcher();
   buildWheel();
@@ -1976,7 +1997,9 @@ function initMap() {
     updateVpBounds();
     const targetFloor = (_ghostPin && _ghostPin.floor) ? _ghostPin.floor : _initHash.floor;
     goToFloor(targetFloor);
-    if (_questIdParam) {
+    if (_pnjIdParam) {
+      focusPnjOnMap(_pnjIdParam); // surcharge layer + goToFloor si underground
+    } else if (_questIdParam) {
       focusQuestOnMap(_questIdParam);
     } else if (_ghostPin && _ghostPin.floor === targetFloor) {
       const img = gameToPixel(_ghostPin.gx, _ghostPin.gz);

@@ -56,6 +56,13 @@ service cloud.firestore {
       allow write: if isContrib();
     }
 
+    // PNJs sensibles — doc complet, contrib only (jamais visible au public)
+    // Bascule sensible ↔ non-sensible = déplacement entre pnj_secret et personnages
+    match /pnj_secret/{id} {
+      allow read:  if isContrib();
+      allow write: if isContrib();
+    }
+
     match /regions/{id} {
       allow read:  if true;
       allow write: if isContrib();

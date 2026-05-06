@@ -1263,8 +1263,8 @@ function initObtainData() {
       const pName = p.name || p.nom || pId;
       const entry = {
         id: pId, name: pName, desc: p.region || '',
-        subtitle: [p.palier ? 'P'+p.palier : '', p.region || ''].filter(Boolean).join(' · '),
-        search: (pName + ' ' + pId + ' ' + (p.region || '')).toLowerCase()
+        subtitle: [p.palier ? 'P'+p.palier : '', pId, p.instructions || ''].filter(Boolean).join(' · '),
+        search: (pName + ' ' + pId + ' ' + (p.region || '') + ' ' + (p.instructions || '')).toLowerCase()
       };
       if (_artisanTags.has(tag) && !_existArtIds.has(pId)) {
         allArtisans.push(entry); _existArtIds.add(pId);
@@ -2052,21 +2052,29 @@ async function _buildLoadDrops() {
     try {
       await loadRegionsCache();
       const regNameMap = new Map((_regionsCache || []).map(r => [r.id || r._id, r.name || r.id || r._id]));
-      const snap = await getDocs(col(db, 'personnages'));
-      const pnjs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const [snapPub, snapSec] = await Promise.all([
+        getDocs(col(db, 'personnages')),
+        getDocs(col(db, 'pnj_secret')).catch(() => ({ docs: [] })),
+      ]);
+      const pnjs = [
+        ...snapPub.docs.map(d => ({ id: d.id, ...d.data() })),
+        ...snapSec.docs.map(d => ({ id: d.id, ...d.data() })),
+      ];
       _pnjsForObtain = pnjs; // sauvegarder pour la liste d'obtention
       initObtainData();      // rafraîchir allArtisans / allMarchands avec les PNJs Firestore
       // NPC: texte libre uniquement
       if (pnjs.length) {
         const idx = pnjs.map(p => {
           const parts = [];
+          const pId2 = p.id || p._id || '';
           if (p.palier) parts.push('P' + p.palier);
-          if (p.region) parts.push(regNameMap.get(p.region) || p.region);
+          if (pId2) parts.push(pId2);
+          if (p.instructions) parts.push(p.instructions);
           return {
-            id:       p.id || p._id,
-            name:     p.name || p.nom || p.id || p._id,
+            id:       pId2,
+            name:     p.name || p.nom || pId2,
             subtitle: parts.join(' · '),
-            search:   ((p.name || p.nom || '') + ' ' + (p.region || '') + ' ' + (p.id || p._id || '')).toLowerCase(),
+            search:   ((p.name || p.nom || '') + ' ' + (p.region || '') + ' ' + pId2 + ' ' + (p.instructions || '')).toLowerCase(),
             _raw: p
           };
         });
@@ -2551,6 +2559,7 @@ function loadPnj(pnj) {
     document.getElementById('pnj-z').value = pnj.coords.z ?? '';
   }
   setPnjUnderground(!!pnj.is_underground);
+  if (pnj.sensible) { pnjSensible = true; document.getElementById('pnj-sensible-btn')?.classList.add('active'); }
   // Restore sells — push entries with data, then render once
   ensureAllItemsIndex();
   const sells = Array.isArray(pnj.sells) ? pnj.sells
@@ -4889,6 +4898,8 @@ function setRegCodex(val) {
 // ═══════════════════════════════════════════════════
 // MOB — STATE
 // ═══════════════════════════════════════════════════
+let pnjSensible     = false;
+
 let mobIdLocked     = false;
 let mobInCodex      = true;
 let mobSensible     = false;
@@ -4916,6 +4927,12 @@ function setBehavior(val) {
   ['agressif','neutre','passif'].forEach(b => {
     document.getElementById('beh-' + b).classList.toggle('active', b === val);
   });
+  update();
+}
+
+function togglePnjSensible() {
+  pnjSensible = !pnjSensible;
+  document.getElementById('pnj-sensible-btn').classList.toggle('active', pnjSensible);
   update();
 }
 
@@ -5550,13 +5567,13 @@ function pnjRegionSlug(regionName) {
 }
 
 function buildPnjId() {
-  const displayName = document.getElementById('pnj-display-name')?.value?.trim();
-  const type        = document.getElementById('pnj-type').value;
-  const palier      = document.getElementById('pnj-palier').value;
-  const region      = document.getElementById('pnj-region').value.trim();
-  const nameSlug    = nameToId(displayName || type);
-  const regionSlug  = pnjRegionSlug(region);
-  const parts = [nameSlug, palier, regionSlug].filter(Boolean);
+  const type       = document.getElementById('pnj-type').value;
+  const palier     = document.getElementById('pnj-palier').value;
+  const region     = document.getElementById('pnj-region').value.trim();
+  const typeSlug   = nameToId(type);
+  const regionSlug = pnjRegionSlug(region);
+  const palierSlug = palier ? `p${palier}` : '';
+  const parts = [typeSlug, palierSlug, regionSlug].filter(Boolean);
   return parts.join('_');
 }
 
@@ -5569,7 +5586,6 @@ function onPnjTypeChange() {
 }
 
 function onPnjDisplayNameInput() {
-  if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
   update();
 }
 
@@ -5806,6 +5822,7 @@ function buildPnjObj() {
   if (cx !== '' && cy !== '' && cz !== '') obj.coords = { x: +cx, y: +cy, z: +cz };
   if (id) obj.images = [`../img/compendium/montages/${id}.png`];
   if (instructions) obj.instructions = instructions;
+  if (pnjSensible) obj.sensible = true;
 
   const sells = pnjSells.filter(s => s.itemId).map(s => {
     const e = { id: s.itemId };
@@ -6025,7 +6042,8 @@ function renderPanopliePreview() {
 // PNJ / RÉGION — RESET
 // ═══════════════════════════════════════════════════
 function resetPnjForm() {
-  pnjSells = []; pnjCrafts = []; pnjIdLocked = false;
+  pnjSells = []; pnjCrafts = []; pnjIdLocked = false; pnjSensible = false;
+  const sensBtn = document.getElementById('pnj-sensible-btn'); if (sensBtn) sensBtn.classList.remove('active');
   ['pnj-id','pnj-region','pnj-region-search','pnj-x','pnj-y','pnj-z','pnj-display-name','pnj-instructions'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
