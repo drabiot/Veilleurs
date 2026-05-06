@@ -1285,7 +1285,7 @@ function refreshCurrentPanel() {
     item:           () => { delete _modCache['items'];       loadItemOrder();     },
     pnj:            () => { delete _modCache['personnages']; loadPnjOrder();      },
     panoplie:       () => { delete _modCache['panoplies'];   loadPanoplieOrder(); },
-    map:            () => { delete _modCache['map_markers']; loadMapMarkers(); },
+    map:            () => { switchMapTab('allpins'); },
     'ghost-ids':    () => loadGhostIds(),
     'region-orphans': () => loadRegionOrphans(),
     'mob-orphans':  () => loadMobOrphans(),
@@ -5685,24 +5685,40 @@ async function _sendSetGroupItemsDiscord(items) {
     if (appliedTags.length) payload.applied_tags = appliedTags;
   }
 
+  const _doFetch = async (fUrl, fPayload) => {
+    if (files.length) {
+      const p  = { ...fPayload, attachments: files.map((f, i) => ({ id: i, filename: f.fname })) };
+      const fd = new FormData();
+      fd.append('payload_json', JSON.stringify(p));
+      files.forEach((f, i) => fd.append(`files[${i}]`, f.blob, f.fname));
+      return fetch(fUrl, { method: 'POST', body: fd });
+    }
+    return fetch(fUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fPayload) });
+  };
+
   let discordRes = null;
-  if (files.length) {
-    const p  = { ...payload, attachments: files.map((f, i) => ({ id: i, filename: f.fname })) };
-    const fd = new FormData();
-    fd.append('payload_json', JSON.stringify(p));
-    files.forEach((f, i) => fd.append(`files[${i}]`, f.blob, f.fname));
-    const r = await fetch(fetchUrl, { method: 'POST', body: fd });
-    if (r.ok) discordRes = await r.json();
-  } else {
-    const r = await fetch(fetchUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (r.ok) discordRes = await r.json();
+  let usedExistingThread = !!existingThreadId;
+  let r = await _doFetch(fetchUrl, payload);
+
+  if (!r.ok && existingThreadId) {
+    // Thread probablement archivé — recréer un nouveau thread
+    console.warn(`[dwPublish] thread ${existingThreadId} inaccessible (${r.status}), tentative de recréation…`);
+    const fallbackUrl     = `${url}?wait=true`;
+    const fallbackPayload = { thread_name: threadName, embeds: embeds.slice(0, 10) };
+    const appliedTags = _resolveTagRules(first, (_dwConfig.tagRules || {})[key] || []);
+    if (appliedTags.length) fallbackPayload.applied_tags = appliedTags;
+    r = await _doFetch(fallbackUrl, fallbackPayload);
+    usedExistingThread = false;
   }
 
-  if (!existingThreadId && discordRes?.id) {
+  if (r.ok) {
+    discordRes = await r.json();
+  } else {
+    const body = await r.text().catch(() => '');
+    throw new Error(`Discord ${r.status} : ${body.slice(0, 200)}`);
+  }
+
+  if (!usedExistingThread && discordRes?.id) {
     try {
       await setDoc(doc(db, 'discord_posts', `${key}_${setId}`), {
         setId, setName: threadName, webhookKey: key, webhookUrl: url,
@@ -10216,184 +10232,22 @@ window.revertObtainCoords = async function() {
    OUTIL CARTE — Gestion des map_markers (Firestore)
 ══════════════════════════════════════════════════════ */
 
-let _mapMarkersList = [];
-
-window.showMapPanel = async function showMapPanel() {
+window.showMapPanel = function showMapPanel() {
   _setHash('map');
   _showPanel('map-panel', 'btn-map-order');
   document.querySelector('.sidebar').classList.add('in-order-panel');
-  switchMapTab('markers');
-  await loadMapMarkers();
+  switchMapTab('allpins');
 };
 
-async function loadMapMarkers() {
-  const tableEl = document.getElementById('map-markers-table');
-  tableEl.innerHTML = '<div class="empty">Chargement…</div>';
-  try {
-    const snap = await getDocs(collection(db, COL.mapMarkers));
-    _mapMarkersList = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
-    renderMapTable();
-  } catch (err) {
-    tableEl.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${err.message}</div>`;
-    toast('⛔ Erreur chargement map_markers : ' + err.message, 'error');
-  }
-}
-
-window.renderMapTable = function renderMapTable() {
-  const tableEl = document.getElementById('map-markers-table');
-  const floorF  = document.getElementById('map-filter-floor')?.value || '';
-  const typeF   = document.getElementById('map-filter-type')?.value  || '';
-  const searchF = (document.getElementById('map-filter-search')?.value || '').toLowerCase();
-
-  const filtered = _mapMarkersList.filter(m => {
-    if (floorF  && String(m.floor) !== floorF)           return false;
-    if (typeF   && m.type !== typeF)                      return false;
-    if (searchF && !(m.name || '').toLowerCase().includes(searchF)) return false;
-    return true;
-  });
-
-  if (!filtered.length) {
-    tableEl.innerHTML = '<div class="empty">Aucun marqueur</div>';
-    return;
-  }
-
-  const TYPE_EMOJI = { donjon: '⚔️', ressource: '🌿', zone_monstre: '💀' };
-
-  const rows = filtered.map(m => `
-    <tr>
-      <td>${TYPE_EMOJI[m.type] || '📍'} ${m.type || '—'}</td>
-      <td style="font-weight:600;">${m.color ? `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${m.color};margin-right:5px;vertical-align:middle;"></span>` : ''}${m.name || '—'}</td>
-      <td style="text-align:center;">${m.floor ?? '—'}</td>
-      <td style="font-family:monospace;font-size:11px;color:var(--muted);">${m.gx ?? '—'} / ${m.gy ?? '—'}</td>
-      <td style="white-space:nowrap;">
-        <button class="btn btn-ghost btn-sm" onclick="openMapMarkerForm(${JSON.stringify(m._id)})" style="font-size:11px;padding:3px 8px;">✏️</button>
-        <button class="btn btn-ghost btn-sm" onclick="deleteMapMarker(${JSON.stringify(m._id)})" style="font-size:11px;padding:3px 8px;color:var(--danger);">🗑️</button>
-      </td>
-    </tr>
-  `).join('');
-
-  tableEl.innerHTML = `
-    <table style="width:100%;border-collapse:collapse;font-size:13px;">
-      <thead>
-        <tr style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);border-bottom:1px solid var(--border);">
-          <th style="text-align:left;padding:6px 8px;">Type</th>
-          <th style="text-align:left;padding:6px 8px;">Nom</th>
-          <th style="text-align:center;padding:6px 8px;">Palier</th>
-          <th style="text-align:left;padding:6px 8px;">Coords (X / Z)</th>
-          <th style="padding:6px 8px;"></th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-  `;
-};
-
-window.openMapMarkerForm = function openMapMarkerForm(id) {
-  const formEl = document.getElementById('map-marker-form');
-  formEl.style.display = '';
-  document.getElementById('map-form-title').textContent = id ? 'Modifier le marqueur' : 'Nouveau marqueur';
-  document.getElementById('map-form-id').value = id || '';
-
-  if (id) {
-    const m = _mapMarkersList.find(x => x._id === id);
-    if (m) {
-      document.getElementById('map-form-type').value  = m.type  || 'donjon';
-      document.getElementById('map-form-floor').value = String(m.floor ?? 1);
-      document.getElementById('map-form-name').value  = m.name  || '';
-      document.getElementById('map-form-gx').value    = m.gx    ?? '';
-      document.getElementById('map-form-gy').value    = m.gy    ?? '';
-      document.getElementById('map-form-desc').value  = m.desc  || '';
-      document.getElementById('map-form-link').value  = m.link  || '';
-      document.getElementById('map-form-level').value = m.level || '';
-      document.getElementById('map-form-color').value = m.color || '#444444';
-    }
-  } else {
-    document.getElementById('map-form-type').value    = 'donjon';
-    document.getElementById('map-form-floor').value   = '1';
-    document.getElementById('map-form-name').value    = '';
-    document.getElementById('map-form-gx').value      = '';
-    document.getElementById('map-form-gy').value      = '';
-    document.getElementById('map-form-desc').value    = '';
-    document.getElementById('map-form-link').value    = '';
-    document.getElementById('map-form-level').value   = '';
-    document.getElementById('map-form-color').value   = '#444444';
-  }
-  onMapFormTypeChange();
-  formEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-};
-
-window.closeMapMarkerForm = function closeMapMarkerForm() {
-  document.getElementById('map-marker-form').style.display = 'none';
-};
-
-window.onMapFormTypeChange = function onMapFormTypeChange() {
-  const t = document.getElementById('map-form-type').value;
-  document.getElementById('map-form-donjon-fields').style.display = t === 'donjon' ? '' : 'none';
-};
-
-window.saveMapMarker = async function saveMapMarker() {
-  const name  = document.getElementById('map-form-name').value.trim();
-  const type  = document.getElementById('map-form-type').value;
-  const floor = parseInt(document.getElementById('map-form-floor').value);
-  const gxVal = document.getElementById('map-form-gx').value;
-  const gyVal = document.getElementById('map-form-gy').value;
-
-  if (!name)  { toast('⚠ Le nom est obligatoire', 'warning'); return; }
-  if (!type)  { toast('⚠ Le type est obligatoire', 'warning'); return; }
-  if (isNaN(floor)) { toast('⚠ Palier invalide', 'warning'); return; }
-
-  const colorVal = document.getElementById('map-form-color').value;
-  const obj = {
-    type,
-    floor,
-    name,
-    desc:  document.getElementById('map-form-desc').value.trim() || null,
-    link:  document.getElementById('map-form-link').value.trim() || null,
-    gx:    gxVal !== '' ? parseFloat(gxVal) : null,
-    gy:    gyVal !== '' ? parseFloat(gyVal) : null,
-    color: colorVal !== '#444444' ? colorVal : null,
-  };
-
-  if (type === 'donjon') {
-    const lvl = document.getElementById('map-form-level').value.trim();
-    if (lvl) obj.level = lvl;
-  }
-  // Nettoyer les nulls
-  Object.keys(obj).forEach(k => { if (obj[k] === null) delete obj[k]; });
-
-  try {
-    const existingId = document.getElementById('map-form-id').value;
-    if (existingId) {
-      await setDoc(doc(db, COL.mapMarkers, existingId), obj, { merge: true });
-      const idx = _mapMarkersList.findIndex(m => m._id === existingId);
-      if (idx !== -1) _mapMarkersList[idx] = { _id: existingId, ...obj };
-      toast('✓ Marqueur mis à jour', 'success');
-    } else {
-      const newId = `${type}_${Date.now()}`;
-      await setDoc(doc(db, COL.mapMarkers, newId), obj);
-      _mapMarkersList.push({ _id: newId, ...obj });
-      toast('✓ Marqueur créé', 'success');
-    }
-    invalidateModCache(COL.mapMarkers);
-    invalidateCache(COL.mapMarkers);
-    closeMapMarkerForm();
-    renderMapTable();
-  } catch (err) {
-    toast('⛔ Erreur : ' + err.message, 'error');
-  }
-};
+/* Marqueurs tab removed — map_markers are managed via allpins tab */
 
 window.deleteMapMarker = async function deleteMapMarker(id) {
-  const m = _mapMarkersList.find(x => x._id === id);
-  if (!m) return;
-  const confirmed = await modal.confirm(`Supprimer "${m.name}" ?`, 'Cette action est irréversible.');
+  const confirmed = await modal.confirm(`Supprimer ce marqueur ?`, 'Cette action est irréversible.');
   if (!confirmed) return;
   try {
     await deleteDoc(doc(db, COL.mapMarkers, id));
-    _mapMarkersList = _mapMarkersList.filter(x => x._id !== id);
     invalidateModCache(COL.mapMarkers);
     invalidateCache(COL.mapMarkers);
-    renderMapTable();
     toast('✓ Marqueur supprimé', 'success');
   } catch (err) {
     toast('⛔ Erreur : ' + err.message, 'error');
@@ -11246,43 +11100,6 @@ window.savePnjMigration = async function savePnjMigration() {
 };
 
 /* ══════════════════════════════════════════════════════
-   DONJONS — Normalisation des IDs (m1d2 → nom_du_donjon)
-══════════════════════════════════════════════════════ */
-
-window.renameDonjonIds = async function renameDonjonIds() {
-  const btn = document.getElementById('btn-rename-donjon-ids');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ En cours…'; }
-  try {
-    const snap = await getDocs(collection(db, COL.donjons));
-    const oldIdPattern = /^m\d+d\d+/;
-    const toRename = snap.docs.filter(d => oldIdPattern.test(d.id));
-    if (!toRename.length) {
-      toast('✓ Tous les IDs sont déjà normalisés', 'success');
-      if (btn) { btn.disabled = false; btn.textContent = '🔧 Normaliser IDs donjons'; }
-      return;
-    }
-    let ok = 0;
-    for (const d of toRename) {
-      const data = d.data();
-      const newId = normalize(data.name || d.id)
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_|_$/g, '');
-      if (!newId || newId === d.id) continue;
-      await setDoc(doc(db, COL.donjons, newId), data);
-      await deleteDoc(doc(db, COL.donjons, d.id));
-      ok++;
-    }
-    invalidateCache(COL.donjons);
-    toast('✓ ' + ok + ' IDs normalisés', 'success');
-    if (btn) { btn.style.display = 'none'; }
-  } catch(e) {
-    toast('⛔ ' + e.message, 'error');
-    if (btn) { btn.disabled = false; btn.textContent = '🔧 Normaliser IDs donjons'; }
-  }
-};
-
-/* ══════════════════════════════════════════════════════
    ÉDITEUR DE ZONES — Sélection de mobs
 ══════════════════════════════════════════════════════ */
 
@@ -11785,11 +11602,22 @@ window.migrateHardcodedZones = async function migrateHardcodedZones() {
    CARTE — ONGLETS (Marqueurs / Tous les pins / Couleurs)
 ══════════════════════════════════════════════════════ */
 
+let _pinCategories = null;
+
+const _DEFAULT_CATEGORIES = [
+  { id: 'cat-principaux', label: '🗺️ Principaux',   types: ['donjon', 'boss', 'zone_monstre'] },
+  { id: 'cat-quetes',     label: '💬 Quêtes',         types: ['quête_principale', 'quête_secondaire', 'quête_tertiaire'] },
+  { id: 'cat-craft',      label: '⚒️ Forge / Craft',  types: ['craft_armes', 'craft_armures', 'craft_accessoires', 'craft_lingots', 'craft_cles'] },
+  { id: 'cat-artisans',   label: '🧪 Artisans',       types: ['craft_runes', 'alchimiste', 'bucheron', 'refaconneur'] },
+  { id: 'cat-commerce',   label: '🛒 Commerce',       types: ['repreneur_butin', 'repreneur_armes', 'marchand_itinerant', 'marchand_equipement', 'marchand_consommable', 'marchand_outils', 'marchand_access', 'marchand_occulte'] },
+  { id: 'cat-autres',     label: '🦠 Autres',         types: ['région', 'autre'] },
+];
+
 let _allPinsList = [];
 let _pinColors   = {};
 
 window.switchMapTab = function switchMapTab(tab) {
-  ['markers', 'allpins', 'colors', 'emojis'].forEach(t => {
+  ['allpins', 'colors', 'emojis', 'categories'].forEach(t => {
     const div = document.getElementById('map-tab-' + t);
     const btn = document.getElementById('map-tab-btn-' + t);
     const active = t === tab;
@@ -11799,22 +11627,24 @@ window.switchMapTab = function switchMapTab(tab) {
       btn.style.color      = active ? '#fff'          : 'var(--muted)';
     }
   });
-  const hdr = document.getElementById('map-header-btns');
-  if (hdr) hdr.style.display = tab === 'markers' ? '' : 'none';
 
-  if (tab === 'allpins') loadAllMapPins();
-  if (tab === 'colors')  loadPinColors();
-  if (tab === 'emojis')  loadPinEmojis();
+  if (tab === 'allpins')    loadAllMapPins();
+  if (tab === 'colors')     loadPinColors();
+  if (tab === 'emojis')     loadPinEmojis();
+  if (tab === 'categories') loadPinCategories();
 };
 
 window.loadAllMapPins = async function loadAllMapPins() {
   const el = document.getElementById('all-pins-content');
   if (el) el.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const [pnjSnap, mobSnap, markerSnap] = await Promise.all([
+    const [pnjSnap, mobSnap, markerSnap, donjonSnap, regionSnap, queteSnap] = await Promise.all([
       getDocs(collection(db, COL.pnj)),
       getDocs(collection(db, COL.mobs)),
       getDocs(collection(db, COL.mapMarkers)),
+      getDocs(collection(db, COL.donjons)),
+      getDocs(collection(db, COL.regions)),
+      getDocs(collection(db, COL.quetes)),
     ]);
     _allPinsList = [];
     pnjSnap.forEach(d => {
@@ -11827,6 +11657,18 @@ window.loadAllMapPins = async function loadAllMapPins() {
     });
     markerSnap.forEach(d => {
       _allPinsList.push({ _id: d.id, ...d.data(), _source: 'marker' });
+    });
+    donjonSnap.forEach(d => {
+      const donjon = { _id: d.id, ...d.data(), _source: 'donjon' };
+      if (donjon.gx != null && donjon.gy != null && donjon.floor) _allPinsList.push(donjon);
+    });
+    regionSnap.forEach(d => {
+      const r = { _id: d.id, ...d.data(), _source: 'region' };
+      if (r.coords && r.palier) _allPinsList.push(r);
+    });
+    queteSnap.forEach(d => {
+      const q = { _id: d.id, ...d.data(), _source: 'quete' };
+      if (q.coords?.x != null && q.palier) _allPinsList.push(q);
     });
     // Populate type filter
     const typeSel = document.getElementById('ap-filter-type');
@@ -11872,21 +11714,37 @@ const _AP_TYPE_LABELS = {
   quête_principale: 'Quête Principale', quête_secondaire: 'Quête Secondaire', quête_tertiaire: 'Quête Tertiaire',
   craft_armes: "Forgeron d'Armes", craft_armures: "Forgeron d'Armures",
   craft_accessoires: "Forgeron d'Accessoires", craft_lingots: 'Forgeron de Lingots', craft_cles: 'Forgeron de Clés',
-  alchimiste: 'Alchimiste', bucheron: 'Bûcheron', refaconneur: 'Refaçonneur',
+  craft_runes: 'Maître des Runes', alchimiste: 'Alchimiste', bucheron: 'Bûcheron', refaconneur: 'Refaçonneur',
   repreneur_butin: 'Repreneur de Butin', repreneur_armes: "Repreneur d'Armes",
   marchand_itinerant: 'Marchand Itinérant', marchand_equipement: "Marchand d'Équipement",
   marchand_consommable: 'Marchand de Consommable', marchand_outils: "Marchand d'Outils",
   marchand_access: "Marchand d'Accessoires", marchand_occulte: 'Marchand Occulte', autre: 'Autre',
 };
 
-function _apGetFloor(p) { return p._source === 'pnj' ? p.palier : (p.floor ?? p.palier); }
+function _apGetFloor(p) {
+  if (p._source === 'donjon') return p.floor;
+  if (p._source === 'pnj' || p._source === 'region' || p._source === 'quete') return p.palier;
+  return p.floor ?? p.palier;
+}
 function _apGetType(p) {
   if (p._source === 'pnj')    return _AP_PNJ_TO_TYPE[(p.type || '').toLowerCase()] || 'autre';
   if (p._source === 'mob')    return 'boss';
+  if (p._source === 'donjon') return 'donjon';
+  if (p._source === 'region') return 'région';
+  if (p._source === 'quete') {
+    const QT = { main: 'quête_principale', sec: 'quête_secondaire', ter: 'quête_tertiaire', secondary: 'quête_secondaire', tertiary: 'quête_tertiaire' };
+    return QT[p.type] || 'quête_principale';
+  }
   return p.type || 'autre';
 }
-function _apGetGx(p) { return p.coords?.x ?? p.gx; }
-function _apGetGy(p) { return p.coords?.z ?? p.gy; }
+function _apGetGx(p) {
+  if (p._source === 'donjon') return p.gx;
+  return p.coords?.x ?? p.gx;
+}
+function _apGetGy(p) {
+  if (p._source === 'donjon') return p.gy;
+  return p.coords?.z ?? p.gy;
+}
 
 window.renderAllMapPins = function renderAllMapPins() {
   const el = document.getElementById('all-pins-content');
@@ -11913,7 +11771,7 @@ window.renderAllMapPins = function renderAllMapPins() {
     byFloor[f][t].push(p);
   }
 
-  const SOURCE_LABELS = { pnj: 'PNJ', mob: 'Mob', marker: 'Marqueur' };
+  const SOURCE_LABELS = { pnj: 'PNJ', mob: 'Mob', marker: 'Marqueur', donjon: 'Donjon', region: 'Région', quete: 'Quête' };
   const frag = document.createDocumentFragment();
 
   for (const floor of Object.keys(byFloor).sort((a, b) => +a - +b)) {
@@ -11926,17 +11784,19 @@ window.renderAllMapPins = function renderAllMapPins() {
       const pins = byFloor[floor][type];
       const pinColor = _pinColors[type] || null;
 
+      const typeEmoji = _pinEmojis[type] || _DEFAULT_EMOJIS[type] || '📍';
       const typeHdr = document.createElement('div');
       typeHdr.style.cssText = 'font-size:10px;font-weight:600;color:var(--accent);margin:8px 0 4px;display:flex;align-items:center;gap:6px;';
       const dot = document.createElement('span');
-      dot.style.cssText = `display:inline-block;width:10px;height:10px;border-radius:50%;background:${pinColor || 'var(--muted)'};flex-shrink:0;`;
+      dot.style.cssText = `display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:${pinColor || '#555'};font-size:12px;flex-shrink:0;`;
+      dot.textContent = typeEmoji;
       typeHdr.appendChild(dot);
       typeHdr.appendChild(Object.assign(document.createElement('span'), {
         innerHTML: (_AP_TYPE_LABELS[type] || type) + ` <span style="color:var(--muted);font-weight:400;">(${pins.length})</span>`,
       }));
       frag.appendChild(typeHdr);
 
-      const AP_COL = { pnj: 'personnages', mob: 'mobs', marker: 'map_markers' };
+      const AP_COL = { pnj: 'personnages', mob: 'mobs', marker: 'map_markers', donjon: 'donjons', region: 'regions', quete: 'quetes' };
       const table = document.createElement('table');
       table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;margin-bottom:4px;';
       table.innerHTML = `<thead><tr style="font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);">
@@ -11949,6 +11809,7 @@ window.renderAllMapPins = function renderAllMapPins() {
       const tbody = document.createElement('tbody');
       for (const p of pins) {
         const gx = _apGetGx(p), gy = _apGetGy(p);
+        const pFloor = _apGetFloor(p);
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid var(--border)';
         tr.innerHTML = `
@@ -11956,7 +11817,7 @@ window.renderAllMapPins = function renderAllMapPins() {
           <td style="text-align:center;padding:4px 6px;"></td>
           <td style="text-align:center;padding:4px 6px;color:var(--muted);">${SOURCE_LABELS[p._source] || p._source}</td>
           <td style="text-align:center;padding:4px 6px;font-family:monospace;font-size:11px;color:var(--muted);">${gx != null ? gx + ' / ' + gy : '—'}</td>
-          <td style="padding:4px 6px;text-align:right;"></td>
+          <td style="padding:4px 6px;text-align:right;white-space:nowrap;"></td>
         `;
         // Emoji individuel inline
         const emojiInp = document.createElement('input');
@@ -11970,6 +11831,19 @@ window.renderAllMapPins = function renderAllMapPins() {
         });
         tr.querySelectorAll('td')[1].appendChild(emojiInp);
 
+        const lastTd = tr.querySelector('td:last-child');
+
+        if (gx != null && gy != null && pFloor != null) {
+          const mapLink = document.createElement('a');
+          mapLink.className = 'btn btn-ghost btn-sm';
+          mapLink.style.cssText = 'font-size:11px;padding:2px 6px;text-decoration:none;margin-right:4px;';
+          mapLink.title = 'Voir sur la carte';
+          mapLink.textContent = '🗺️';
+          mapLink.target = '_blank';
+          mapLink.href = `Map/map.html?ghost_gx=${gx}&ghost_gz=${gy}&ghost_floor=${pFloor}&ghost_name=${encodeURIComponent(p.name || '')}#floor-${pFloor}-surface`;
+          lastTd.appendChild(mapLink);
+        }
+
         const editBtn = document.createElement('button');
         editBtn.className = 'btn btn-ghost btn-sm ed-edit-btn';
         editBtn.style.cssText = 'font-size:11px;padding:2px 8px;';
@@ -11978,7 +11852,7 @@ window.renderAllMapPins = function renderAllMapPins() {
           e.stopPropagation();
           showEditor(AP_COL[p._source] || 'personnages', p._id, p, 'allpins');
         });
-        tr.querySelector('td:last-child').appendChild(editBtn);
+        lastTd.appendChild(editBtn);
         tbody.appendChild(tr);
       }
       table.appendChild(tbody);
@@ -11993,7 +11867,10 @@ window.loadPinColors = async function loadPinColors() {
   const el = document.getElementById('pin-colors-content');
   if (el) el.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const snap = await getDoc(doc(db, 'config', 'pin_type_colors'));
+    const [snap] = await Promise.all([
+      getDoc(doc(db, 'config', 'pin_type_colors')),
+      _ensureCategoriesLoaded(),
+    ]);
     _pinColors = snap.exists() ? snap.data() : {};
     renderPinColorForm();
   } catch(err) {
@@ -12022,20 +11899,13 @@ function renderPinColorForm() {
   const el = document.getElementById('pin-colors-content');
   if (!el) return;
 
-  const CATEGORIES = [
-    { label: '🗺️ Principaux',    types: ['donjon', 'boss', 'mini_boss', 'zone_monstre'] },
-    { label: '💬 Quêtes',         types: ['quête_principale', 'quête_secondaire', 'quête_tertiaire'] },
-    { label: '⚒️ Forge / Craft',  types: ['craft_armes', 'craft_armures', 'craft_accessoires', 'craft_lingots', 'craft_cles'] },
-    { label: '🧪 Artisans',       types: ['alchimiste', 'bucheron', 'refaconneur'] },
-    { label: '🛒 Commerce',       types: ['repreneur_butin', 'repreneur_armes', 'marchand_itinerant', 'marchand_equipement', 'marchand_consommable', 'marchand_outils', 'marchand_access', 'marchand_occulte'] },
-    { label: '🦠 Autres',         types: ['autre'] },
-  ];
+  const CATEGORIES = (_pinCategories || _DEFAULT_CATEGORIES).filter(c => c.types.length > 0);
 
   const DEFAULT_COLORS = {
-    donjon: '#ef4444', boss: '#dc2626', mini_boss: '#f97316', zone_monstre: '#fb923c',
+    donjon: '#ef4444', boss: '#dc2626', zone_monstre: '#fb923c',
     quête_principale: '#f59e0b', quête_secondaire: '#10b981', quête_tertiaire: '#06b6d4',
     craft_armes: '#8b5cf6', craft_armures: '#7c3aed', craft_accessoires: '#a78bfa',
-    craft_lingots: '#6d28d9', craft_cles: '#4c1d95',
+    craft_lingots: '#6d28d9', craft_cles: '#4c1d95', craft_runes: '#3a1a6e',
     alchimiste: '#34d399', bucheron: '#65a30d', refaconneur: '#a16207',
     repreneur_butin: '#f59e0b', repreneur_armes: '#b45309',
     marchand_itinerant: '#eab308', marchand_equipement: '#ca8a04',
@@ -12100,7 +11970,10 @@ window.loadPinEmojis = async function loadPinEmojis() {
   const el = document.getElementById('pin-emojis-content');
   if (el) el.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const snap = await getDoc(doc(db, 'config', 'pin_type_emojis'));
+    const [snap] = await Promise.all([
+      getDoc(doc(db, 'config', 'pin_type_emojis')),
+      _ensureCategoriesLoaded(),
+    ]);
     _pinEmojis = snap.exists() ? snap.data() : {};
     renderPinEmojiForm();
   } catch(err) {
@@ -12138,21 +12011,12 @@ window.saveIndividualPinEmoji = async function saveIndividualPinEmoji(source, id
   }
 };
 
-const _EMOJI_CATEGORIES = [
-  { label: '🗺️ Principaux',   types: ['donjon', 'boss', 'mini_boss', 'zone_monstre'] },
-  { label: '💬 Quêtes',        types: ['quête_principale', 'quête_secondaire', 'quête_tertiaire'] },
-  { label: '⚒️ Forge / Craft', types: ['craft_armes', 'craft_armures', 'craft_accessoires', 'craft_lingots', 'craft_cles', 'craft_runes'] },
-  { label: '🧪 Artisans',      types: ['alchimiste', 'bucheron', 'refaconneur'] },
-  { label: '🛒 Commerce',      types: ['repreneur_butin', 'repreneur_armes', 'marchand_itinerant', 'marchand_equipement', 'marchand_consommable', 'marchand_outils', 'marchand_access', 'marchand_occulte'] },
-  { label: '🦠 Autres',        types: ['région', 'autre'] },
-];
-
 function renderPinEmojiForm() {
   const el = document.getElementById('pin-emojis-content');
   if (!el) return;
   const frag = document.createDocumentFragment();
 
-  for (const cat of _EMOJI_CATEGORIES) {
+  for (const cat of (_pinCategories || _DEFAULT_CATEGORIES).filter(c => c.types.length > 0)) {
     const catHdr = document.createElement('div');
     catHdr.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border);';
     catHdr.textContent = cat.label;
@@ -12192,6 +12056,243 @@ function renderPinEmojiForm() {
   }
   el.innerHTML = '';
   el.appendChild(frag);
+}
+
+/* ══════════════════════════════════════════════════════
+   CATÉGORIES DE PINS (config/pin_categories)
+══════════════════════════════════════════════════════ */
+
+async function _ensureCategoriesLoaded() {
+  if (_pinCategories !== null) return;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'pin_categories'));
+    _pinCategories = (snap.exists() && Array.isArray(snap.data().categories))
+      ? snap.data().categories
+      : _DEFAULT_CATEGORIES.map(c => ({ ...c, types: [...c.types] }));
+  } catch {
+    _pinCategories = _DEFAULT_CATEGORIES.map(c => ({ ...c, types: [...c.types] }));
+  }
+}
+
+window.loadPinCategories = async function loadPinCategories() {
+  const el = document.getElementById('pin-categories-content');
+  if (el) el.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const snap = await getDoc(doc(db, 'config', 'pin_categories'));
+    _pinCategories = (snap.exists() && Array.isArray(snap.data().categories))
+      ? snap.data().categories
+      : _DEFAULT_CATEGORIES.map(c => ({ ...c, types: [...c.types] }));
+    renderCategoryEditor();
+  } catch(err) {
+    if (el) el.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${err.message}</div>`;
+  }
+};
+
+window.savePinCategories = async function savePinCategories() {
+  _pinCategories = _readCategoryEditorState();
+  const btn = document.getElementById('btn-save-pin-categories');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Sauvegarde…'; }
+  try {
+    await setDoc(doc(db, 'config', 'pin_categories'), { categories: _pinCategories });
+    toast('✓ Catégories sauvegardées', 'success');
+  } catch(err) {
+    toast('⛔ ' + err.message, 'error');
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '💾 Sauvegarder'; }
+};
+
+function _readCategoryEditorState() {
+  const cards = document.querySelectorAll('#pin-categories-content .cat-card');
+  const result = [];
+  cards.forEach(card => {
+    const id    = card.dataset.catId;
+    const label = card.querySelector('.cat-label-input')?.value?.trim() || '';
+    const types = [...card.querySelectorAll('.cat-type-chip[data-type]')].map(c => c.dataset.type);
+    result.push({ id, label, types });
+  });
+  return result;
+}
+
+function renderCategoryEditor() {
+  const el = document.getElementById('pin-categories-content');
+  if (!el) return;
+
+  const cats = _pinCategories || _DEFAULT_CATEGORIES;
+  const allKnownTypes = [...new Set([
+    ...Object.keys(_AP_TYPE_LABELS),
+    ...cats.flatMap(c => c.types),
+  ])].sort();
+
+  el.innerHTML = '';
+
+  const dl = document.createElement('datalist');
+  dl.id = 'known-pin-types-list';
+  allKnownTypes.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.label = _AP_TYPE_LABELS[t] || t;
+    dl.appendChild(opt);
+  });
+  el.appendChild(dl);
+
+  const addCatBtn = document.createElement('button');
+  addCatBtn.className = 'btn btn-ghost';
+  addCatBtn.style.cssText = 'font-size:12px;margin-bottom:12px;';
+  addCatBtn.textContent = '+ Nouvelle catégorie';
+  addCatBtn.addEventListener('click', () => _addNewCategory());
+  el.appendChild(addCatBtn);
+
+  const container = document.createElement('div');
+  container.id = 'cat-list';
+  container.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+  cats.forEach((cat, idx) => container.appendChild(_buildCategoryCard(cat, idx, cats.length)));
+  el.appendChild(container);
+}
+
+function _buildCategoryCard(cat, idx, total) {
+  const card = document.createElement('div');
+  card.className = 'cat-card';
+  card.dataset.catId = cat.id;
+  card.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;';
+
+  const hdr = document.createElement('div');
+  hdr.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:8px;';
+
+  const labelInp = document.createElement('input');
+  labelInp.className = 'cat-label-input';
+  labelInp.type = 'text';
+  labelInp.value = cat.label;
+  labelInp.placeholder = 'Nom de la catégorie…';
+  labelInp.style.cssText = 'flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px;font-weight:600;outline:none;min-width:0;';
+  hdr.appendChild(labelInp);
+
+  if (idx > 0) {
+    const upBtn = document.createElement('button');
+    upBtn.className = 'btn btn-ghost btn-sm';
+    upBtn.textContent = '▲';
+    upBtn.title = 'Monter';
+    upBtn.style.cssText = 'font-size:10px;padding:3px 6px;flex-shrink:0;';
+    upBtn.addEventListener('click', () => _moveCat(idx, -1));
+    hdr.appendChild(upBtn);
+  }
+  if (idx < total - 1) {
+    const downBtn = document.createElement('button');
+    downBtn.className = 'btn btn-ghost btn-sm';
+    downBtn.textContent = '▼';
+    downBtn.title = 'Descendre';
+    downBtn.style.cssText = 'font-size:10px;padding:3px 6px;flex-shrink:0;';
+    downBtn.addEventListener('click', () => _moveCat(idx, 1));
+    hdr.appendChild(downBtn);
+  }
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'btn btn-ghost btn-sm';
+  delBtn.textContent = '🗑️';
+  delBtn.title = 'Supprimer cette catégorie';
+  delBtn.style.cssText = 'font-size:10px;padding:3px 6px;flex-shrink:0;color:var(--danger);';
+  delBtn.addEventListener('click', () => _deleteCat(idx));
+  hdr.appendChild(delBtn);
+
+  card.appendChild(hdr);
+
+  const typesArea = document.createElement('div');
+  typesArea.className = 'cat-types-area';
+  typesArea.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
+  cat.types.forEach(type => typesArea.appendChild(_buildTypeChip(type)));
+  card.appendChild(typesArea);
+
+  const addRow = document.createElement('div');
+  addRow.style.cssText = 'display:flex;gap:4px;margin-top:8px;';
+
+  const typeInput = document.createElement('input');
+  typeInput.type = 'text';
+  typeInput.placeholder = 'type de pin… (ex: boss)';
+  typeInput.setAttribute('list', 'known-pin-types-list');
+  typeInput.style.cssText = 'flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:4px 8px;font-size:11px;outline:none;min-width:0;';
+
+  const addTypeBtn = document.createElement('button');
+  addTypeBtn.className = 'btn btn-ghost btn-sm';
+  addTypeBtn.textContent = '+ Ajouter';
+  addTypeBtn.style.cssText = 'font-size:11px;padding:3px 8px;flex-shrink:0;';
+  addTypeBtn.addEventListener('click', () => {
+    const val = typeInput.value.trim();
+    if (!val) return;
+    if (typesArea.querySelector(`.cat-type-chip[data-type="${CSS.escape(val)}"]`)) {
+      toast('Ce type est déjà dans cette catégorie', 'error'); return;
+    }
+    typesArea.appendChild(_buildTypeChip(val));
+    typeInput.value = '';
+    typeInput.focus();
+  });
+  typeInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addTypeBtn.click(); } });
+
+  addRow.appendChild(typeInput);
+  addRow.appendChild(addTypeBtn);
+  card.appendChild(addRow);
+
+  return card;
+}
+
+function _buildTypeChip(type) {
+  const chip = document.createElement('span');
+  chip.className = 'cat-type-chip';
+  chip.dataset.type = type;
+  chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 6px 2px 4px;background:var(--surface);border:1px solid var(--border);border-radius:4px;font-size:11px;';
+
+  const color = (_pinColors || {})[type] || null;
+  const dot = document.createElement('span');
+  dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:2px;background:${color || '#666'};flex-shrink:0;`;
+  chip.appendChild(dot);
+
+  const emoji = (_pinEmojis || {})[type] || _DEFAULT_EMOJIS[type] || '📍';
+  const emojiSpan = document.createElement('span');
+  emojiSpan.textContent = emoji;
+  chip.appendChild(emojiSpan);
+
+  const lblSpan = document.createElement('span');
+  lblSpan.textContent = _AP_TYPE_LABELS[type] || type;
+  chip.appendChild(lblSpan);
+
+  const removeBtn = document.createElement('button');
+  removeBtn.style.cssText = 'background:none;border:none;cursor:pointer;color:var(--muted);padding:0 0 0 2px;font-size:12px;line-height:1;flex-shrink:0;';
+  removeBtn.textContent = '×';
+  removeBtn.title = 'Retirer de cette catégorie';
+  removeBtn.addEventListener('click', () => chip.remove());
+  chip.appendChild(removeBtn);
+
+  return chip;
+}
+
+function _moveCat(idx, dir) {
+  const state = _readCategoryEditorState();
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= state.length) return;
+  [state[idx], state[newIdx]] = [state[newIdx], state[idx]];
+  _pinCategories = state;
+  renderCategoryEditor();
+}
+
+function _deleteCat(idx) {
+  if (!confirm('Supprimer cette catégorie ?')) return;
+  const state = _readCategoryEditorState();
+  state.splice(idx, 1);
+  _pinCategories = state;
+  renderCategoryEditor();
+}
+
+function _addNewCategory() {
+  const state = _readCategoryEditorState();
+  state.push({ id: 'cat-' + Date.now(), label: '', types: [] });
+  _pinCategories = state;
+  renderCategoryEditor();
+  requestAnimationFrame(() => {
+    const cards = document.querySelectorAll('#pin-categories-content .cat-card');
+    const last = cards[cards.length - 1];
+    if (last) {
+      last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      last.querySelector('.cat-label-input')?.focus();
+    }
+  });
 }
 
 /* ══════════════════════════════════════════════════════

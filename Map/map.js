@@ -94,6 +94,48 @@ const _map_EMOJI = {
   autre:               '🦠',
 };
 
+/* ══════════════════════════════════
+   COULEURS DE PINS PAR DÉFAUT
+   (fusionnées avec Firestore au chargement)
+══════════════════════════════════ */
+const DEFAULT_PIN_COLORS = {
+  donjon:              '#c47a6a',
+  boss:                '#6b1a1a',
+  zone_monstre:        '#7a3030',
+  quête_principale:    '#b8893a',
+  quête_secondaire:    '#d4b57e',
+  quête_tertiaire:     '#a89060',
+  craft_armes:         '#6a4daa',
+  craft_armures:       '#5a3d9a',
+  craft_accessoires:   '#7a5dba',
+  craft_cles:          '#f1dd6a',
+  craft_runes:         '#3a1a6e',
+  craft_lingots:       '#8a6dca',
+  alchimiste:          '#3d1f6e',
+  bucheron:            '#1a4a1a',
+  refaconneur:         '#a16207',
+  repreneur_butin:     '#153f55',
+  repreneur_armes:     '#1a4f6a',
+  marchand_itinerant:  '#3a6e8a',
+  marchand_equipement: '#1e3a6a',
+  marchand_consommable:'#1e4a3a',
+  marchand_outils:     '#3a3a1e',
+  marchand_access:     '#4a1e4a',
+  marchand_occulte:    '#1a1a2e',
+  autre:               '#2a4a2a',
+};
+
+function getPinColor(type) {
+  if (type === 'région') return null;
+  const fs = window._map_pin_colors || {};
+  return fs[type] || DEFAULT_PIN_COLORS[type] || _typeToHsl(type);
+}
+function _typeToHsl(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  return `hsl(${Math.abs(h) % 360},35%,20%)`;
+}
+
 // Mappage pnj.type → marker type
 const PNJ_TO_MARKER_TYPE = {
   "quête principale":        "quête_principale",
@@ -159,14 +201,14 @@ function buildDynamicMarkers() {
       ? `../Quetes/quetes.html#${linked[0].id}`
       : '../Quetes/quetes.html';
     byFloor[f].push({
-      id:     p.id || p._id,
+      id:     p._id || p.id,
       type:   markerType,
       layer:  p.is_underground ? 'underground' : 'surface',
       gx:     p.coords.x,
       gy:     p.coords.z,
       name:   p.name || p.type,
-      desc:   questDesc || p.tag || '',
-      link:   linked.length ? questLink : `../Bestiaire/bestiaire.html#personnages/${p.id || p._id}`,
+      desc:   questDesc || p.lore || p.description || p.tag || '',
+      link:   linked.length ? questLink : `../Bestiaire/bestiaire.html#personnages/${p._id || p.id}`,
       quests: linked,
     });
   }
@@ -177,9 +219,9 @@ function buildDynamicMarkers() {
     const f = +r.palier;
     if (!byFloor[f]) byFloor[f] = [];
     byFloor[f].push({
-      id:    r.id || r._id,
+      id:    r._id || r.id,
       type:  'région',
-      layer: 'surface',
+      layer: r.is_underground ? 'underground' : 'surface',
       gx:    r.coords.x,
       gy:    r.coords.z,
       name:  r.name,
@@ -191,7 +233,8 @@ function buildDynamicMarkers() {
   // Boss — Firestore mobs (migrated + creator, coords:{x,z} ou map_spawns:[{x,z}])
   const _fsBossIds = new Set();
   for (const m of mobs) {
-    if ((m.type || '').toLowerCase() !== 'boss') continue;
+    const _mType = (m.type || '').toLowerCase();
+    if (_mType !== 'boss' && _mType !== 'mini_boss') continue;
     if (!m.palier) continue;
     const f     = +m.palier;
     const id    = m.id || m._id;
@@ -748,6 +791,8 @@ function isZoneMonstresEnabled() {
 }
 
 let _activeZoneId   = null;
+let _activeZoneObj  = null;
+let _hoveredMarker  = null;
 let _zoneCleanupFns = new Map();
 
 function renderZones() {
@@ -769,7 +814,7 @@ function renderZones() {
     zoneTooltip = document.createElement('div');
     zoneTooltip.id        = 'zone-tooltip-map';
     zoneTooltip.className = 'map-tooltip hidden';
-    zoneTooltip.style.cssText = 'position:absolute;bottom:16px;right:16px;pointer-events:none;min-width:180px;';
+    zoneTooltip.style.cssText = 'position:absolute;bottom:16px;right:16px;left:auto;pointer-events:none;min-width:180px;max-width:280px;';
     document.querySelector('.map-main').appendChild(zoneTooltip);
   }
   zoneTooltip.classList.add('hidden');
@@ -832,7 +877,8 @@ function renderZones() {
       label.style.opacity = isZoneMonstresEnabled() ? '1' : '0';
       zoneTooltip.classList.add('hidden');
       document.querySelectorAll('.monster-pin-map').forEach(p => p.remove());
-      _activeZoneId = null;
+      _activeZoneId  = null;
+      _activeZoneObj = null;
     };
     _zoneCleanupFns.set(zone._id || zone.id, cleanup);
 
@@ -841,7 +887,8 @@ function renderZones() {
         const prev = _zoneCleanupFns.get(_activeZoneId);
         if (prev) prev();
       }
-      _activeZoneId = zone._id || zone.id;
+      _activeZoneId  = zone._id || zone.id;
+      _activeZoneObj = zone;
       poly.style.opacity = '1';
       poly.setAttribute('fill', color + '55');
       label.style.opacity = '1';
@@ -881,10 +928,15 @@ function renderZones() {
         });
       }
 
-      zoneTooltip.innerHTML = `
-        <div class="tooltip-type">Zone Monstres</div>
+      const zoneBody = `<div class="tooltip-type">Zone Monstres</div>
         <div class="tooltip-name" style="color:${color}">${zone.name || ''}</div>
         <div class="tooltip-desc">${resolvedMobs.map(m => m.name || m.id).join(' · ') || 'Aucun mob lié'}</div>`;
+      if (_hoveredMarker && (_hoveredMarker.type === 'boss' || _hoveredMarker.type === 'mini_boss' || _hoveredMarker.type === 'zone_monstre')) {
+        const hl = TYPE_LABELS[_hoveredMarker.type] || _hoveredMarker.type;
+        zoneTooltip.innerHTML = `<div class="tooltip-type" style="color:#e0c87a">${hl}</div><div class="tooltip-name">${_hoveredMarker.name}</div><hr style="border:none;border-top:1px solid rgba(255,255,255,.15);margin:6px 0 4px;">` + zoneBody;
+      } else {
+        zoneTooltip.innerHTML = zoneBody;
+      }
       zoneTooltip.classList.remove('hidden');
     };
     zone._activate = activate;
@@ -940,13 +992,15 @@ function renderZones() {
         lbl.style.opacity = isZoneMonstresEnabled() ? '1' : '0';
         zoneTooltip.classList.add('hidden');
         document.querySelectorAll('.monster-pin-map').forEach(p => p.remove());
-        _activeZoneId = null;
+        _activeZoneId  = null;
+        _activeZoneObj = null;
       };
       _zoneCleanupFns.set(zone.id, cleanup);
 
       zone._activate = () => {
         if (_activeZoneId && _activeZoneId !== zone.id) { const fn = _zoneCleanupFns.get(_activeZoneId); if (fn) fn(); }
-        _activeZoneId = zone.id;
+        _activeZoneId  = zone.id;
+        _activeZoneObj = zone;
         poly.style.opacity = '1'; poly.setAttribute('fill', color + '55'); lbl.style.opacity = '1';
         const monsters = zone.monsters || [];
         if (monsters.length) {
@@ -967,7 +1021,13 @@ function renderZones() {
             markersLayer.appendChild(pin);
           });
         }
-        zoneTooltip.innerHTML = `<div class="tooltip-type">Zone Monstres</div><div class="tooltip-name" style="color:${color}">${zone.name || ''}</div><div class="tooltip-desc">${monsters.map(m => m.name).join(' · ') || 'Aucun mob'}</div>`;
+        const zoneBody = `<div class="tooltip-type">Zone Monstres</div><div class="tooltip-name" style="color:${color}">${zone.name || ''}</div><div class="tooltip-desc">${monsters.map(m => m.name).join(' · ') || 'Aucun mob'}</div>`;
+        if (_hoveredMarker && (_hoveredMarker.type === 'boss' || _hoveredMarker.type === 'mini_boss' || _hoveredMarker.type === 'zone_monstre')) {
+          const hl = TYPE_LABELS[_hoveredMarker.type] || _hoveredMarker.type;
+          zoneTooltip.innerHTML = `<div class="tooltip-type" style="color:#e0c87a">${hl}</div><div class="tooltip-name">${_hoveredMarker.name}</div><hr style="border:none;border-top:1px solid rgba(255,255,255,.15);margin:6px 0 4px;">` + zoneBody;
+        } else {
+          zoneTooltip.innerHTML = zoneBody;
+        }
         zoneTooltip.classList.remove('hidden');
       };
 
@@ -1010,6 +1070,7 @@ function renderZones() {
           if (fn) fn();
         }
         _lastZoneHover = hitId;
+        _activeZoneObj = hit || null;
         if (hit && hit._activate) hit._activate();
       });
     };
@@ -1100,17 +1161,27 @@ function renderSingleMarker(m) {
   const icon = document.createElement('div');
   icon.className   = 'marker-icon';
   icon.textContent = _map_EMOJI[m.type] || '📍';
-  const pinColor = m.type !== 'région' ? (window._map_pin_colors || {})[m.type] : null;
+  const pinColor = getPinColor(m.type);
   if (pinColor) { icon.style.background = pinColor; icon.style.boxShadow = `0 2px 10px ${pinColor}88`; }
   el.appendChild(icon);
+
+  const isBossType = m.type === 'boss' || m.type === 'mini_boss' || m.type === 'zone_monstre';
 
   el.addEventListener('mouseenter', () => {
     showTooltip(m);
     if (m.type === 'quête_principale') showQuestChain(m);
+    if (isBossType) {
+      _hoveredMarker = m;
+      if (_activeZoneObj && _activeZoneObj._activate) _activeZoneObj._activate();
+    }
   });
   el.addEventListener('mouseleave', () => {
     hideTooltip();
     if (m.type === 'quête_principale') clearQuestChain();
+    if (isBossType) {
+      _hoveredMarker = null;
+      if (_activeZoneObj && _activeZoneObj._activate) _activeZoneObj._activate();
+    }
   });
   el.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1172,17 +1243,26 @@ function renderCluster(group) {
       const icon = document.createElement('div');
       icon.className   = 'marker-icon marker-icon-sm';
       icon.textContent = _map_EMOJI[m.type] || '📍';
-      const subPinColor = m.type !== 'région' ? (window._map_pin_colors || {})[m.type] : null;
+      const subPinColor = getPinColor(m.type);
       if (subPinColor) { icon.style.background = subPinColor; icon.style.boxShadow = `0 2px 8px ${subPinColor}88`; }
       sub.appendChild(icon);
 
+      const _subIsBoss = m.type === 'boss' || m.type === 'mini_boss' || m.type === 'zone_monstre';
       sub.addEventListener('mouseenter', () => {
         showTooltip(m);
         if (m.type === 'quête_principale') showQuestChain(m);
+        if (_subIsBoss) {
+          _hoveredMarker = m;
+          if (_activeZoneObj && _activeZoneObj._activate) _activeZoneObj._activate();
+        }
       });
       sub.addEventListener('mouseleave', () => {
         hideTooltip();
         if (m.type === 'quête_principale') clearQuestChain();
+        if (_subIsBoss) {
+          _hoveredMarker = null;
+          if (_activeZoneObj && _activeZoneObj._activate) _activeZoneObj._activate();
+        }
       });
       sub.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1458,7 +1538,9 @@ mapViewport.addEventListener('click', (e) => {
     const vp   = clientToVp(e.clientX, e.clientY);
     const img  = screenToImage(vp.x, vp.y);
     const game = pixelToGame(img.x, img.y);
-    addCustomPin(game.x, game.y);
+    _customPinMode = false;
+    mapViewport.style.cursor = 'grab';
+    openNewPinDialog(game.x, game.y);
     return;
   }
   if (!e.target.closest('.marker') && !e.target.closest('.map-searchbar')) {
@@ -1516,7 +1598,16 @@ function renderGhostPin() {
    PINS PERSONNELS (localStorage)
 ══════════════════════════════════ */
 const CUSTOM_PINS_KEY = 'vcl_map_custom_pins';
-let _customPinMode = false;
+let _customPinMode = false; // true = mode placement manuel (crosshair)
+
+const PIN_PRESET_COLORS = [
+  '#1a2e1a', '#2e1a1a', '#1a1a2e', '#2e281a',
+  '#1a2a2e', '#2e1a2e', '#303030', '#1a4a4a',
+];
+const PIN_PRESET_EMOJIS = ['📌', '⭐', '❗', '❓', '🏠', '⚔️', '💎', '🔥', '🎯', '🗺️'];
+
+let _selectedPinColor = '#1a2e1a';
+let _selectedPinEmoji = '📌';
 
 function loadCustomPins() {
   try { return JSON.parse(localStorage.getItem(CUSTOM_PINS_KEY) || '[]'); } catch { return []; }
@@ -1538,9 +1629,10 @@ function renderCustomPins() {
     el.style.top    = s.y + 'px';
     const icon = document.createElement('div');
     icon.className   = 'marker-icon';
-    icon.textContent = '📌';
-    icon.style.background = '#1a2e1a';
-    icon.style.boxShadow  = '0 2px 10px #4a8a4a88';
+    icon.textContent = pin.emoji || '📌';
+    const pinC = pin.color || '#1a2e1a';
+    icon.style.background = pinC;
+    icon.style.boxShadow  = `0 2px 10px ${pinC}88`;
     el.appendChild(icon);
     el.addEventListener('mouseenter', () => showTooltip({ type: 'autre', name: pin.name, desc: pin.desc || 'Pin personnel — clic pour supprimer', link: '' }));
     el.addEventListener('mouseleave', hideTooltip);
@@ -1552,53 +1644,111 @@ function renderCustomPins() {
   });
 }
 
-function toggleCustomPinMode() {
-  _customPinMode = !_customPinMode;
-  const btn = document.getElementById('custom-pin-mode-btn');
-  if (btn) btn.classList.toggle('active', _customPinMode);
-  mapViewport.style.cursor = _customPinMode ? 'crosshair' : 'grab';
+function _buildPinCustomizeUI() {
+  const colorRow = document.getElementById('cpd-color-row');
+  const emojiRow = document.getElementById('cpd-emoji-row');
+  if (!colorRow || !emojiRow) return;
+
+  colorRow.innerHTML = '';
+  PIN_PRESET_COLORS.forEach(c => {
+    const sw = document.createElement('button');
+    sw.className = 'cpd-color-swatch' + (c === _selectedPinColor ? ' active' : '');
+    sw.style.background = c;
+    sw.dataset.color = c;
+    sw.addEventListener('click', () => {
+      _selectedPinColor = c;
+      colorRow.querySelectorAll('.cpd-color-swatch').forEach(b => b.classList.remove('active'));
+      sw.classList.add('active');
+    });
+    colorRow.appendChild(sw);
+  });
+  const colorCustom = document.createElement('input');
+  colorCustom.type = 'color';
+  colorCustom.className = 'cpd-color-custom';
+  colorCustom.value = _selectedPinColor;
+  colorCustom.title = 'Couleur personnalisée';
+  colorCustom.addEventListener('input', e => {
+    _selectedPinColor = e.target.value;
+    colorRow.querySelectorAll('.cpd-color-swatch').forEach(b => b.classList.remove('active'));
+  });
+  colorRow.appendChild(colorCustom);
+
+  emojiRow.innerHTML = '';
+  PIN_PRESET_EMOJIS.forEach(em => {
+    const btn = document.createElement('button');
+    btn.className = 'cpd-emoji-btn' + (em === _selectedPinEmoji ? ' active' : '');
+    btn.textContent = em;
+    btn.addEventListener('click', () => {
+      _selectedPinEmoji = em;
+      emojiRow.querySelectorAll('.cpd-emoji-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+    emojiRow.appendChild(btn);
+  });
 }
 
-let _pendingPinCoords = null;
-
-function addCustomPin(gx, gz) {
-  _pendingPinCoords = { gx, gz };
-  const dialog = document.getElementById('custom-pin-dialog');
-  const input  = document.getElementById('cpd-name-input');
-  const coords = document.getElementById('cpd-coords-display');
-  if (coords) coords.textContent = `X: ${Math.round(gx)}  ·  Z: ${Math.round(gz)}`;
-  if (input)  input.value = '';
-  dialog?.classList.remove('hidden');
-  setTimeout(() => input?.focus(), 40);
+function openNewPinDialog(gx, gz) {
+  _selectedPinColor = '#1a2e1a';
+  _selectedPinEmoji = '📌';
+  const xEl   = document.getElementById('cpd-x-input');
+  const zEl   = document.getElementById('cpd-z-input');
+  const nameEl = document.getElementById('cpd-name-input');
+  if (xEl)   xEl.value   = gx != null ? Math.round(gx) : '';
+  if (zEl)   zEl.value   = gz != null ? Math.round(gz) : '';
+  if (nameEl) nameEl.value = '';
+  _buildPinCustomizeUI();
+  document.getElementById('custom-pin-dialog')?.classList.remove('hidden');
+  setTimeout(() => nameEl?.focus(), 40);
 }
 
 function _confirmCustomPin() {
-  const name   = document.getElementById('cpd-name-input')?.value.trim();
-  const dialog = document.getElementById('custom-pin-dialog');
-  if (name && _pendingPinCoords) {
-    const pins = loadCustomPins();
-    pins.push({
-      id: `custom_${Date.now()}`,
-      floor: currentFloor, layer: currentLayer,
-      gx: _pendingPinCoords.gx, gz: _pendingPinCoords.gz,
-      name, desc: '',
-    });
-    saveCustomPins(pins);
-    renderMarkers();
+  const name = document.getElementById('cpd-name-input')?.value.trim();
+  const xRaw = document.getElementById('cpd-x-input')?.value;
+  const zRaw = document.getElementById('cpd-z-input')?.value;
+  const gx   = parseFloat(xRaw);
+  const gz   = parseFloat(zRaw);
+
+  if (!name) {
+    document.getElementById('cpd-name-input')?.focus();
+    return;
   }
-  _pendingPinCoords = null;
+  if (isNaN(gx) || isNaN(gz)) {
+    const xEl = document.getElementById('cpd-x-input');
+    if (xEl) { xEl.style.borderColor = '#f87171'; setTimeout(() => { xEl.style.borderColor = ''; }, 1500); }
+    return;
+  }
+
+  const pins = loadCustomPins();
+  pins.push({
+    id:     `custom_${Date.now()}`,
+    floor:  currentFloor,
+    layer:  currentLayer,
+    gx, gz,
+    name,
+    desc:   '',
+    color:  _selectedPinColor,
+    emoji:  _selectedPinEmoji,
+  });
+  saveCustomPins(pins);
+  renderMarkers();
+
   _customPinMode = false;
-  document.getElementById('custom-pin-mode-btn')?.classList.remove('active');
   mapViewport.style.cursor = 'grab';
-  dialog?.classList.add('hidden');
+  document.getElementById('custom-pin-dialog')?.classList.add('hidden');
 }
 
 function _cancelCustomPin() {
-  _pendingPinCoords = null;
   _customPinMode = false;
-  document.getElementById('custom-pin-mode-btn')?.classList.remove('active');
   mapViewport.style.cursor = 'grab';
   document.getElementById('custom-pin-dialog')?.classList.add('hidden');
+}
+
+/* ── Export / Import pins ── */
+function exportCustomPins() {
+  const pins = loadCustomPins();
+  const ta = document.getElementById('pin-export-ta');
+  if (ta) ta.value = JSON.stringify(pins, null, 2);
+  document.getElementById('pin-export-dialog')?.classList.remove('hidden');
 }
 
 let _pendingDeletePinId = null;
@@ -1624,15 +1774,108 @@ function _cancelDeletePin() {
 /* ══════════════════════════════════
    INIT (asynchrone — attend les données Firestore)
 ══════════════════════════════════ */
+function _addLegendChangeListener(cb) {
+  cb.addEventListener('change', () => {
+    const all      = document.querySelectorAll('.marker-filter');
+    const toggleAll = document.getElementById('toggle-all-filters');
+    const allOn    = [...all].every(c => c.checked);
+    const none     = [...all].every(c => !c.checked);
+    if (toggleAll) { toggleAll.checked = allOn; toggleAll.indeterminate = !allOn && !none; }
+    renderMarkers();
+  });
+}
+
 function applyPinColorsToLegend() {
-  const colors = window._map_pin_colors || {};
+  const container = document.getElementById('legend-filters');
+  if (!container) return;
+
+  const cats = window._map_pin_categories;
+  if (cats && cats.length) {
+    // Full legend rebuild from Firestore categories
+    const fsColors = window._map_pin_colors || {};
+    const fsEmojis = window._map_pin_emojis || {};
+
+    // Keep toggle-all label (index 0) + first separator (index 1); remove the rest
+    while (container.children.length > 2) {
+      container.removeChild(container.children[2]);
+    }
+
+    for (const cat of cats) {
+      if (!cat.types || !cat.types.length) continue;
+
+      const sep = document.createElement('div');
+      sep.className = 'sidebar-sep';
+      container.appendChild(sep);
+
+      if (cat.label) {
+        const title = document.createElement('div');
+        title.className = 'sidebar-title';
+        title.style.cssText = 'font-size:10px;padding:2px 0;';
+        title.textContent = `— ${cat.label} —`;
+        container.appendChild(title);
+      }
+
+      for (const type of cat.types) {
+        const color = getPinColor(type);
+        const emoji = fsEmojis[type] || _map_EMOJI[type] || '📍';
+        const label = TYPE_LABELS[type] || type;
+
+        const item = document.createElement('label');
+        item.className = 'legend-item';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'marker-filter';
+        cb.dataset.type = type;
+
+        const dot = document.createElement('span');
+        dot.className = 'legend-emoji';
+        if (color && type !== 'région') { dot.style.background = color; dot.style.boxShadow = `0 0 6px ${color}88`; }
+        dot.textContent = emoji;
+
+        const span = document.createElement('span');
+        span.textContent = label;
+
+        item.appendChild(cb);
+        item.appendChild(dot);
+        item.appendChild(span);
+        container.appendChild(item);
+        _addLegendChangeListener(cb);
+      }
+    }
+    return;
+  }
+
+  // Legacy: update colors on existing static legend items
   document.querySelectorAll('#legend-filters input.marker-filter[data-type]').forEach(cb => {
     const type = cb.dataset.type;
     if (type === 'région') return;
-    const color = colors[type];
+    const color = getPinColor(type);
     if (!color) return;
     const dot = cb.nextElementSibling;
     if (dot) { dot.style.background = color; dot.style.boxShadow = `0 0 6px ${color}88`; }
+  });
+
+  // Add Firestore types not in the static HTML
+  const knownTypes = new Set(
+    [...document.querySelectorAll('#legend-filters input.marker-filter[data-type]')].map(cb => cb.dataset.type)
+  );
+  const fsColors = window._map_pin_colors || {};
+  const fsEmojis = window._map_pin_emojis || {};
+  Object.keys(fsColors).forEach(type => {
+    if (knownTypes.has(type)) return;
+    const color = fsColors[type];
+    const emoji = fsEmojis[type] || '📍';
+    const label = TYPE_LABELS[type] || type;
+    const item = document.createElement('label');
+    item.className = 'legend-item';
+    item.innerHTML =
+      `<input type="checkbox" class="marker-filter" data-type="${type}" />` +
+      `<span class="legend-emoji" style="background:${color}">${emoji}</span>` +
+      `<span>${label}</span>`;
+    container.appendChild(item);
+    _addLegendChangeListener(item.querySelector('input'));
+    knownTypes.add(type);
   });
 }
 
@@ -1673,9 +1916,9 @@ function initMap() {
   currentLayer = _initHash.layer;
   buildLayerSwitcher();
   buildWheel();
-  document.getElementById('custom-pin-mode-btn')?.addEventListener('click', toggleCustomPinMode);
+  document.getElementById('custom-pin-mode-btn')?.addEventListener('click', () => openNewPinDialog());
   // Déplacer les dialogs en fin de body pour éviter les conflits flex/overflow
-  ['custom-pin-dialog','delete-pin-dialog'].forEach(id => {
+  ['custom-pin-dialog','delete-pin-dialog','pin-export-dialog','pin-import-dialog'].forEach(id => {
     const el = document.getElementById(id);
     if (el) document.body.appendChild(el);
   });
@@ -1685,8 +1928,50 @@ function initMap() {
     if (e.key === 'Enter')  _confirmCustomPin();
     if (e.key === 'Escape') _cancelCustomPin();
   });
+  // Bouton "placer manuellement" dans le dialog
+  document.getElementById('cpd-manual-btn')?.addEventListener('click', () => {
+    document.getElementById('custom-pin-dialog')?.classList.add('hidden');
+    _customPinMode = true;
+    mapViewport.style.cursor = 'crosshair';
+  });
   document.getElementById('delete-pin-confirm')?.addEventListener('click', _confirmDeletePin);
   document.getElementById('delete-pin-cancel')?.addEventListener('click', _cancelDeletePin);
+  // Export / Import pins
+  document.getElementById('pin-export-btn')?.addEventListener('click', exportCustomPins);
+  document.getElementById('pin-export-close')?.addEventListener('click', () => {
+    document.getElementById('pin-export-dialog')?.classList.add('hidden');
+  });
+  document.getElementById('pin-export-copy')?.addEventListener('click', () => {
+    const ta = document.getElementById('pin-export-ta');
+    if (!ta) return;
+    ta.select();
+    document.execCommand('copy');
+    const btn = document.getElementById('pin-export-copy');
+    if (btn) { btn.textContent = '✓ Copié !'; setTimeout(() => { btn.textContent = '📋 Copier'; }, 1600); }
+  });
+  document.getElementById('pin-import-btn')?.addEventListener('click', () => {
+    const ta = document.getElementById('pin-import-ta');
+    const errEl = document.getElementById('pin-import-error');
+    if (ta) ta.value = '';
+    if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+    document.getElementById('pin-import-dialog')?.classList.remove('hidden');
+  });
+  document.getElementById('pin-import-cancel')?.addEventListener('click', () => {
+    document.getElementById('pin-import-dialog')?.classList.add('hidden');
+  });
+  document.getElementById('pin-import-confirm')?.addEventListener('click', () => {
+    const ta = document.getElementById('pin-import-ta');
+    const errEl = document.getElementById('pin-import-error');
+    try {
+      const pins = JSON.parse(ta?.value || '');
+      if (!Array.isArray(pins)) throw new Error('Format invalide');
+      saveCustomPins(pins);
+      renderMarkers();
+      document.getElementById('pin-import-dialog')?.classList.add('hidden');
+    } catch {
+      if (errEl) { errEl.textContent = '✕ JSON invalide — vérifiez le contenu.'; errEl.style.display = 'block'; }
+    }
+  });
   requestAnimationFrame(() => {
     updateVpBounds();
     const targetFloor = (_ghostPin && _ghostPin.floor) ? _ghostPin.floor : _initHash.floor;

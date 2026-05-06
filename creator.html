@@ -532,6 +532,10 @@
               <input type="text" id="pnj-id" placeholder="forgeron_armes_tolbana" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
             </div>
           </div>
+          <div class="field" style="margin-top:6px;">
+            <label>Nom affiché <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel — remplace le nom généré par le type)</span></label>
+            <input type="text" id="pnj-display-name" placeholder="Nom personnalisé…" oninput="onPnjDisplayNameInput()">
+          </div>
           <!-- Coordonnées -->
           <div class="field" style="margin-top:2px;">
             <div class="coords-label">
@@ -568,7 +572,7 @@
             </div>
             <div class="field">
               <label>Palier</label>
-              <select id="pnj-palier" onchange="update()">
+              <select id="pnj-palier" onchange="onPnjPalierChange()">
                 <option value="">—</option>
                 <!-- options peuplées dynamiquement par populatePalierSelects() -->
               </select>
@@ -580,6 +584,10 @@
               <button id="pnj-underground-yes" class="btn btn-ghost btn-sm" onclick="setPnjUnderground(true)">🕳️ Oui</button>
               <button id="pnj-underground-no"  class="btn btn-ghost btn-sm" style="background:rgba(74,222,128,.15);color:var(--success);border-color:var(--success);" onclick="setPnjUnderground(false)">✕ Non</button>
             </div>
+          </div>
+          <div class="field" style="margin-top:6px;">
+            <label>Instructions <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel — comment accéder à ce PNJ)</span></label>
+            <textarea id="pnj-instructions" placeholder="Ex : Accessible uniquement après la quête X, dans la salle secrète derrière le tableau…" rows="3" oninput="update()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;resize:vertical;font-family:inherit;transition:border-color .15s;box-sizing:border-box;"></textarea>
           </div>
         </div>
       </div>

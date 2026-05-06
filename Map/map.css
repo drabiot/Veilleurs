@@ -219,6 +219,72 @@
 .cpd-cancel:hover { color: var(--text); border-color: rgba(255,255,255,.3); }
 .cpd-confirm { background: rgba(224,172,96,.12); border-color: var(--gold-dim); color: var(--gold); }
 .cpd-confirm:hover { background: rgba(224,172,96,.25); }
+.cpd-manual {
+  width: 100%; margin-top: 8px; background: rgba(255,255,255,.04);
+  border-color: var(--rim2); color: var(--muted);
+}
+.cpd-manual:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+/* Section coordonnées */
+.cpd-coord-section { margin-bottom: 14px; }
+.cpd-coord-row { display: flex; gap: 10px; margin-bottom: 6px; }
+.cpd-coord-field { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.cpd-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: .1em; color: var(--gold-dim); text-transform: uppercase;
+}
+.cpd-coord-input {
+  width: 100%; box-sizing: border-box;
+  background: rgba(255,255,255,.05); border: 1px solid var(--rim2);
+  color: var(--bright); font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; padding: 7px 10px; outline: none;
+  transition: border-color .15s;
+}
+.cpd-coord-input:focus { border-color: var(--gold-dim); }
+
+/* Personnalisation couleur / emoji */
+.cpd-customize-section { margin-bottom: 16px; }
+.cpd-customize-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: .1em; color: var(--gold-dim); text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.cpd-color-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.cpd-color-swatch {
+  width: 22px; height: 22px; border: 2px solid transparent;
+  cursor: pointer; border-radius: 2px; transition: border-color .12s, transform .12s;
+  flex-shrink: 0; padding: 0;
+}
+.cpd-color-swatch:hover { transform: scale(1.15); }
+.cpd-color-swatch.active { border-color: var(--gold); box-shadow: 0 0 6px var(--gold-dim); }
+.cpd-color-custom {
+  width: 22px; height: 22px; border: 1px solid var(--rim2);
+  cursor: pointer; background: none; padding: 0; border-radius: 2px;
+  flex-shrink: 0;
+}
+.cpd-emoji-row { display: flex; gap: 4px; flex-wrap: wrap; }
+.cpd-emoji-btn {
+  font-size: 16px; line-height: 1; padding: 4px 5px;
+  background: rgba(255,255,255,.04); border: 1px solid var(--rim2);
+  cursor: pointer; transition: background .12s, border-color .12s; border-radius: 2px;
+}
+.cpd-emoji-btn:hover { background: rgba(255,255,255,.1); }
+.cpd-emoji-btn.active { border-color: var(--gold-dim); background: var(--gold-glow); }
+
+/* Textarea export/import */
+.cpd-ta {
+  height: 120px; resize: vertical; font-size: 10px;
+  line-height: 1.5; margin-bottom: 14px;
+}
+.cpd-import-error {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: #f87171; margin-bottom: 8px;
+}
+
+/* Boutons export/import sidebar */
+.cpd-io-btns { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.cpd-io-btn { font-size: 9px !important; padding: 4px 8px !important; opacity: .75; }
+.cpd-io-btn:hover { opacity: 1; }
 
 /* Bouton mode ajout de pin perso */
 .custom-pin-btn {
@@ -342,7 +408,7 @@
   opacity: 0 !important;
 }
 
-/* Couche des marqueurs — couvre tout le viewport */
+/* Couche des marqueurs — couvre tout le viewport, au-dessus du SVG de zones (z:1) */
 .markers-layer {
   position: absolute;
   top: 0;
@@ -350,6 +416,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
+  z-index: 2;
 }
 
 /* Marqueur individuel — ancré par le bas au centre */

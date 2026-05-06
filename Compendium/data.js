@@ -257,7 +257,28 @@ function getItemImages(item) {
   if (item.images && item.images.length) return item.images;
   if (item.image) return [item.image];
   if (item.img)   return [item.img];
-  return [];
+  // Fallback : générer le chemin depuis la catégorie + id
+  const id  = item.id ?? item._id;
+  const cat = item.category || item.cat;
+  if (!id || !cat) return [];
+  const tier = (item.event || item.palier === 0) ? 'events' : (item.palier ? 'P' + item.palier : '');
+  const tp   = tier ? tier + '/' : '';
+  const base = '../img/compendium/textures/';
+  const paths = {
+    arme:        base + 'weapons/'                 + tp + id + '.png',
+    armure:      base + 'armors/'                  + tp + id + '.png',
+    accessoire:  base + 'trinkets/'                + tp + id + '.png',
+    outils:      base + 'gears/'                   + tp + id + '.png',
+    rune:        base + 'items/Runes/'             + tp + id + '.png',
+    materiaux:   base + 'items/Material/'          + tp + id + '.png',
+    ressources:  base + 'items/Ressources/'        + tp + id + '.png',
+    consommable: base + 'items/Consommable/'       + tp + id + '.png',
+    nourriture:  base + 'items/Nourriture/'        + tp + id + '.png',
+    quete:       base + 'items/Quest/'             + tp + id + '.png',
+    donjon:      base + 'items/Donjon/'            + tp + id + '.png',
+    monnaie:     base + 'items/Monnaie/'           + tp + id + '.png',
+  };
+  return paths[cat] ? [paths[cat]] : [];
 }
 function getItemImg(item) {
   const imgs = getItemImages(item);

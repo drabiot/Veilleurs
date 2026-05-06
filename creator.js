@@ -2532,6 +2532,13 @@ function loadPnj(pnj) {
   // Restaurer le type via pnj.type (champ canonique) ou pnj.name (fallback)
   const pnjTypeRaw = pnj.type || (pnj.name || '').toLowerCase().replace(/\u2019/g, "'");
   if (pnjTypeRaw) _restorePnjTypeUI(pnjTypeRaw);
+  // Restaurer le nom affich\u00e9 si diff\u00e9rent du nom g\u00e9n\u00e9r\u00e9 par le type
+  const autoName = pnjTypeRaw ? pnjTitleCase(pnjTypeRaw) : '';
+  const nameDisplayEl = document.getElementById('pnj-display-name');
+  if (nameDisplayEl) nameDisplayEl.value = (pnj.name && pnj.name !== autoName) ? pnj.name : '';
+  // Restaurer les instructions
+  const instrEl = document.getElementById('pnj-instructions');
+  if (instrEl) instrEl.value = pnj.instructions || '';
   if (pnj.region) {
     document.getElementById('pnj-region').value        = pnj.region;
     const regionName = _allMobRegions.find(r => r.id === pnj.region)?.name || pnj.region;
@@ -5543,17 +5550,30 @@ function pnjRegionSlug(regionName) {
 }
 
 function buildPnjId() {
-  const type       = document.getElementById('pnj-type').value;
-  const region     = document.getElementById('pnj-region').value.trim();
-  const typeSlug   = PNJ_TYPE_TAGS[type] || nameToId(type);
-  const regionSlug = pnjRegionSlug(region);
-  if (!typeSlug && !regionSlug) return '';
-  if (!regionSlug) return typeSlug;
-  if (!typeSlug)   return regionSlug;
-  return typeSlug + '_' + regionSlug;
+  const displayName = document.getElementById('pnj-display-name')?.value?.trim();
+  const type        = document.getElementById('pnj-type').value;
+  const palier      = document.getElementById('pnj-palier').value;
+  const region      = document.getElementById('pnj-region').value.trim();
+  const nameSlug    = nameToId(displayName || type);
+  const regionSlug  = pnjRegionSlug(region);
+  const parts = [nameSlug, palier, regionSlug].filter(Boolean);
+  return parts.join('_');
 }
 
 function onPnjTypeChange() {
+  const type   = document.getElementById('pnj-type').value;
+  const nameEl = document.getElementById('pnj-display-name');
+  if (nameEl) nameEl.placeholder = type ? pnjTitleCase(type) : 'Nom personnalisé…';
+  if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
+  update();
+}
+
+function onPnjDisplayNameInput() {
+  if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
+  update();
+}
+
+function onPnjPalierChange() {
   if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
   update();
 }
@@ -5767,22 +5787,25 @@ function pnjTitleCase(str) {
 }
 
 function buildPnjObj() {
-  const id     = document.getElementById('pnj-id').value.trim();
-  const type   = document.getElementById('pnj-type').value;
-  const palier = document.getElementById('pnj-palier').value;
-  const region = document.getElementById('pnj-region').value.trim();
-  const cx     = document.getElementById('pnj-x').value;
-  const cy     = document.getElementById('pnj-y').value;
-  const cz     = document.getElementById('pnj-z').value;
+  const id          = document.getElementById('pnj-id').value.trim();
+  const type        = document.getElementById('pnj-type').value;
+  const displayName = document.getElementById('pnj-display-name')?.value?.trim() || '';
+  const palier      = document.getElementById('pnj-palier').value;
+  const region      = document.getElementById('pnj-region').value.trim();
+  const cx          = document.getElementById('pnj-x').value;
+  const cy          = document.getElementById('pnj-y').value;
+  const cz          = document.getElementById('pnj-z').value;
+  const instructions = document.getElementById('pnj-instructions')?.value?.trim() || '';
 
   const obj = {};
   if (id)     obj.id     = id;
-  if (type)   { obj.type = type; obj.name = pnjTitleCase(type); obj.tag = PNJ_TYPE_TAGS[type] || nameToId(type); }
+  if (type)   { obj.type = type; obj.name = displayName || pnjTitleCase(type); obj.tag = PNJ_TYPE_TAGS[type] || nameToId(type); }
   if (palier) obj.palier = +palier;
   if (region) obj.region = region;
   if (pnjUnderground) obj.is_underground = true;
   if (cx !== '' && cy !== '' && cz !== '') obj.coords = { x: +cx, y: +cy, z: +cz };
   if (id) obj.images = [`../img/compendium/montages/${id}.png`];
+  if (instructions) obj.instructions = instructions;
 
   const sells = pnjSells.filter(s => s.itemId).map(s => {
     const e = { id: s.itemId };
@@ -6003,7 +6026,7 @@ function renderPanopliePreview() {
 // ═══════════════════════════════════════════════════
 function resetPnjForm() {
   pnjSells = []; pnjCrafts = []; pnjIdLocked = false;
-  ['pnj-id','pnj-region','pnj-region-search','pnj-x','pnj-y','pnj-z'].forEach(id => {
+  ['pnj-id','pnj-region','pnj-region-search','pnj-x','pnj-y','pnj-z','pnj-display-name','pnj-instructions'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   clearPnjType();
