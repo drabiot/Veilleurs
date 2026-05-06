@@ -14,6 +14,7 @@
   let filterStats	= new Set();
   const NUM_BUILDS   = 3;
 	let activeBuildIndex = 0;
+  let _rlTimer = null; // debounce renderItemList
 
   /* ══ HELPER ID ══ */
   function getItemId(item) { return item && (item.id ?? item._id) || null; }
@@ -397,6 +398,10 @@ function loadAccessoriesForClass(classId) {
 		const delta = val - buildLevel;
 		if (delta !== 0) changeLevelBy(delta);
 	});
+	lvlNum.addEventListener('input', function() {
+		// Debounce rapid +/- key holds
+		clearTimeout(_rlTimer);
+	});
 	
     const lvlMax = document.createElement('span');
     lvlMax.className = 'level-max';
@@ -467,14 +472,15 @@ function loadAccessoriesForClass(classId) {
     const avail    = getAvailablePoints();
     const bonus    = getBuffBonus(car.id);
     const current  = caracterPoints[car.id] || 0;
-    const requested = (parseInt(this.value) || 0) - bonus; // ← soustraire le buff
+    const requested = (parseInt(this.value) || 0) - bonus;
     const delta    = requested - current;
     const clamped  = delta > 0 ? current + Math.min(delta, avail) : Math.max(0, requested);
     caracterPoints[car.id] = clamped;
-    this.value = clamped + bonus; // ← réafficher le total
-    updateLevelUI();
-    renderStats();
-    saveToStorage();	
+    this.value = clamped + bonus;
+    renderStats(); // calls updateLevelUI internally
+    clearTimeout(_rlTimer);
+    _rlTimer = setTimeout(renderItemList, 80);
+    saveToStorage();
 		});
 
       const btnPlus = document.createElement('button');
@@ -642,7 +648,8 @@ function loadAccessoriesForClass(classId) {
 
     updateLevelUI();
     renderStats();
-    renderItemList();
+    clearTimeout(_rlTimer);
+    _rlTimer = setTimeout(renderItemList, 80);
     saveToStorage();
 	updateSkinClass();
   }
@@ -655,9 +662,9 @@ function loadAccessoriesForClass(classId) {
     if (delta < 0 && current <= 0) return;
 
     caracterPoints[carId] = current + delta;
-    updateLevelUI();
-    renderStats();
-	renderItemList();
+    renderStats(); // calls updateLevelUI internally
+    clearTimeout(_rlTimer);
+    _rlTimer = setTimeout(renderItemList, 80);
     saveToStorage();
   }
 
@@ -826,7 +833,7 @@ function loadAccessoriesForClass(classId) {
         for (let i = 0; i < runeCount; i++) {
           const runeKey = slotDef.id + '_rune_' + i;
           const runeId  = equippedRunes[runeKey];
-          const rune    = runeId ? RUNES_BY_ID.get(runeId) : null;
+          const rune    = runeId ? (RUNES_BY_ID.get(runeId) || _hiddenCache.get(runeId)) : null;
           const orb = document.createElement('div');
           const isActiveOrb = activeRuneSlot === runeKey;
           orb.className = 'rune-orb' +

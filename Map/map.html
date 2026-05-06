@@ -75,6 +75,10 @@
     <!-- ── Sidebar gauche ── -->
     <aside class="map-sidebar">
       <button id="custom-pin-mode-btn" class="custom-pin-btn">📌 Ajouter un pin</button>
+      <div class="cpd-io-btns">
+        <button id="pin-export-btn" class="custom-pin-btn cpd-io-btn">📤 Exporter mes pins</button>
+        <button id="pin-import-btn" class="custom-pin-btn cpd-io-btn">📥 Importer des pins</button>
+      </div>
       <div class="sidebar-sep"></div>
       <div class="sidebar-title">Légende</div>
       <div class="legend-filters" id="legend-filters">
@@ -150,7 +154,7 @@
         <div class="sidebar-title" style="font-size:10px;padding:2px 0;">— Artisans —</div>
         <label class="legend-item">
           <input type="checkbox" class="marker-filter" data-type="craft_runes" />
-          <span class="legend-emoji" style="background:#3a1a6e;">🔮</span>
+          <span class="legend-emoji" style="background:#3a1a6e;">💎</span>
           <span>Artisan de Runes</span>
         </label>
         <label class="legend-item">
@@ -292,11 +296,61 @@
   <div id="custom-pin-dialog" class="cpd-overlay hidden">
     <div class="custom-pin-dialog-box">
       <div class="cpd-title">📌 Nouveau pin</div>
-      <div class="cpd-coords" id="cpd-coords-display"></div>
+
+      <!-- Coordonnées -->
+      <div class="cpd-coord-section">
+        <div class="cpd-coord-row">
+          <div class="cpd-coord-field">
+            <label class="cpd-label">X</label>
+            <input type="number" id="cpd-x-input" class="cpd-coord-input" placeholder="—" />
+          </div>
+          <div class="cpd-coord-field">
+            <label class="cpd-label">Z</label>
+            <input type="number" id="cpd-z-input" class="cpd-coord-input" placeholder="—" />
+          </div>
+        </div>
+        <button id="cpd-manual-btn" class="cpd-btn cpd-manual">🖱 Placer le pin manuellement</button>
+      </div>
+
+      <!-- Nom -->
       <input type="text" id="cpd-name-input" class="cpd-input" placeholder="Nom du pin…" maxlength="60" autocomplete="off" />
+
+      <!-- Personnalisation -->
+      <div class="cpd-customize-section">
+        <div class="cpd-customize-label">Couleur</div>
+        <div class="cpd-color-row" id="cpd-color-row"></div>
+        <div class="cpd-customize-label" style="margin-top:8px">Emoji</div>
+        <div class="cpd-emoji-row" id="cpd-emoji-row"></div>
+      </div>
+
       <div class="cpd-btns">
         <button id="cpd-cancel" class="cpd-btn cpd-cancel">Annuler</button>
         <button id="cpd-confirm" class="cpd-btn cpd-confirm">📌 Placer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog export pins -->
+  <div id="pin-export-dialog" class="cpd-overlay hidden">
+    <div class="custom-pin-dialog-box" style="max-width:460px">
+      <div class="cpd-title">📤 Exporter mes pins</div>
+      <textarea id="pin-export-ta" class="cpd-input cpd-ta" readonly placeholder="(aucun pin)"></textarea>
+      <div class="cpd-btns">
+        <button id="pin-export-close" class="cpd-btn cpd-cancel">Fermer</button>
+        <button id="pin-export-copy" class="cpd-btn cpd-confirm">📋 Copier</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog import pins -->
+  <div id="pin-import-dialog" class="cpd-overlay hidden">
+    <div class="custom-pin-dialog-box" style="max-width:460px">
+      <div class="cpd-title">📥 Importer des pins</div>
+      <textarea id="pin-import-ta" class="cpd-input cpd-ta" placeholder="Collez le JSON exporté ici…"></textarea>
+      <div id="pin-import-error" class="cpd-import-error" style="display:none"></div>
+      <div class="cpd-btns">
+        <button id="pin-import-cancel" class="cpd-btn cpd-cancel">Annuler</button>
+        <button id="pin-import-confirm" class="cpd-btn cpd-confirm">📥 Importer</button>
       </div>
     </div>
   </div>
@@ -335,6 +389,11 @@
       const emojiSnap = await getDoc(doc(db, 'config', 'pin_type_emojis'));
       window._map_pin_emojis = emojiSnap.exists() ? emojiSnap.data() : {};
     } catch { window._map_pin_emojis = {}; }
+    try {
+      const catSnap = await getDoc(doc(db, 'config', 'pin_categories'));
+      window._map_pin_categories = (catSnap.exists() && Array.isArray(catSnap.data().categories))
+        ? catSnap.data().categories : null;
+    } catch { window._map_pin_categories = null; }
     // Mettre à jour FLOOR_NAMES depuis Firestore si de nouveaux paliers existent
     try {
       const pSnap = await getDoc(doc(db, 'config', 'paliers'));
