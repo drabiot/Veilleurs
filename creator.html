@@ -589,6 +589,12 @@
             <label>Instructions <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel — comment accéder à ce PNJ)</span></label>
             <textarea id="pnj-instructions" placeholder="Ex : Accessible uniquement après la quête X, dans la salle secrète derrière le tableau…" rows="3" oninput="update()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;resize:vertical;font-family:inherit;transition:border-color .15s;box-sizing:border-box;"></textarea>
           </div>
+          <div class="field" style="margin-top:6px;">
+            <label>Drapeaux</label>
+            <div style="margin-top:4px;">
+              <button id="pnj-sensible-btn" class="r-btn" style="--c:#f87171;width:fit-content;" onclick="togglePnjSensible()">🔒 Sensible</button>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -187,6 +187,7 @@ function getPnjEffectiveTag(e) {
 function getFiltered() {
   const q = normalize(searchQuery);
   const filtered = getList().filter(e => {
+    if (e.sensible) return false;
     if (q && !normalize(e.name).includes(q) && !normalize(getRegionLabel(e.region||'')).includes(q) && !normalize(e.region||'').includes(q) && !normalize(e.lore||'').includes(q)) return false;
     if (activePalier !== 'all' && e.palier !== activePalier) return false;
     if (activeTab === 'monstres') {
@@ -819,6 +820,12 @@ function renderPNJSheet(pnj) {
       <blockquote class="mob-lore">${escHtml(pnj.lore).replace(/\n/g,'<br>')}</blockquote>
     </div>` : '';
 
+  const instructionsHTML = pnj.instructions ? `
+    <div class="mob-section full-width">
+      <div class="mob-section-title">📍 Accès</div>
+      <p class="mob-lore" style="font-style:normal;margin:0;">${escHtml(pnj.instructions).replace(/\n/g,'<br>')}</p>
+    </div>` : '';
+
   modalContent.innerHTML = `
     <div class="mob-sheet">
       <div class="mob-header">
@@ -845,13 +852,14 @@ function renderPNJSheet(pnj) {
               <span class="mob-meta-key">Région</span>
               <span class="mob-meta-val">
                 ${escHtml(getRegionLabel(pnj.region))}
-                ${getMapZone(pnj) ? `<a class="region-link" href="../Map/map.html">→ Carte</a>` : ''}
+                ${(pnj.coords && !pnj.sensible) ? `<a class="region-link" href="../Map/map.html?pnjId=${encodeURIComponent(pnj.id)}">→ Carte</a>` : ''}
               </span>
             </div>` : ''}
           </div>
         </div>
       </div>
       <div class="mob-body-grid">
+        ${instructionsHTML}
         ${sellsHTML}
 		${craftHTML}
         ${loreHTML}

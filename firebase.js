@@ -58,6 +58,7 @@ export const COL = {
   mobs:         'mobs',
   mobsSecret:   'mobs_secret',    // mobs sensibles (doc complet), contrib only
   pnj:          'personnages',
+  pnjSecret:    'pnj_secret',       // PNJs sensibles (doc complet), contrib only
   regions:      'regions',
   users:        'users',          // profils + rôles
   quetes:       'quetes',         // quêtes approuvées via modération

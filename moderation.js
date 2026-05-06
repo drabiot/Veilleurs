@@ -941,7 +941,7 @@ window.openEditorInCreator = function() {
   const COL_TO_TYPE = {
     'items':'item', 'items_sensible':'item',
     'mobs':'mob', 'mobs_secret':'mob',
-    'personnages':'pnj',
+    'personnages':'pnj', 'pnj_secret':'pnj',
     'regions':'region',
     'quetes':'quest',
     'panoplies':'panoplie',
@@ -1027,6 +1027,12 @@ window.approve = async (id) => {
       await setDoc(doc(db, COL.mobsSecret, String(dataId)), sanitizeForFirestore(payload));
       try { await deleteDoc(doc(db, COL.mobs, String(dataId))); } catch {}
       store.invalidate('mobs');
+    } else if (sub.type === 'pnj' && isSensible) {
+      // PNJ sensible → doc complet dans pnj_secret, jamais dans personnages
+      const payload = { _order: Date.now(), _contributor: _contribField, ...sub.data, sensible: true };
+      await setDoc(doc(db, COL.pnjSecret, String(dataId)), sanitizeForFirestore(payload));
+      try { await deleteDoc(doc(db, COL.pnj, String(dataId))); } catch {}
+      store.invalidate('pnj');
     } else {
       // Flux standard
       let dataToWrite = { _order: Date.now(), ...sub.data, _contributor: _contribField };
@@ -1055,6 +1061,8 @@ window.approve = async (id) => {
         try { await deleteDoc(doc(db, COL.itemsHidden, String(dataId))); } catch {}
       } else if (sub.type === 'mob') {
         try { await deleteDoc(doc(db, COL.mobsSecret, String(dataId))); } catch {}
+      } else if (sub.type === 'pnj') {
+        try { await deleteDoc(doc(db, COL.pnjSecret, String(dataId))); } catch {}
       }
 
       // Invalider le store (cache + mémoire) pour forcer un re-fetch sur les pages de lecture
@@ -6856,6 +6864,8 @@ const _sensState = {
   itemsPublic: [],          // docs de items
   mobsSecret: [],           // docs de mobs_secret
   mobsPublic: [],           // docs de mobs
+  pnjSecret: [],            // docs de pnj_secret
+  pnjPublic: [],            // docs de personnages
 };
 
 function _sensEsc(s) {
@@ -7914,12 +7924,14 @@ window.sensReload = async () => {
   document.getElementById('sens-loading').textContent = 'Chargement…';
   document.getElementById('sens-content').style.display = 'none';
   try {
-    const [ih, is, ip, ms, mp] = await Promise.all([
+    const [ih, is, ip, ms, mp, ps, pp] = await Promise.all([
       getDocs(collection(db, COL.itemsHidden)),
       getDocs(collection(db, COL.itemsSecret)),
       getDocs(collection(db, COL.items)),
       getDocs(collection(db, COL.mobsSecret)),
       getDocs(collection(db, COL.mobs)),
+      getDocs(collection(db, COL.pnjSecret)),
+      getDocs(collection(db, COL.pnj)),
     ]);
     _sensState.itemsHidden = ih.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
     _sensState.itemsSecretById = new Map(
@@ -7928,6 +7940,8 @@ window.sensReload = async () => {
     _sensState.itemsPublic = ip.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
     _sensState.mobsSecret = ms.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
     _sensState.mobsPublic = mp.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+    _sensState.pnjSecret = ps.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+    _sensState.pnjPublic = pp.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
 
     // Sort alphabétique pour confort
     const byName = (a, b) => normalize(a.name || a._id).localeCompare(normalize(b.name || b._id), 'fr');
@@ -7935,6 +7949,8 @@ window.sensReload = async () => {
     _sensState.itemsPublic.sort(byName);
     _sensState.mobsSecret.sort(byName);
     _sensState.mobsPublic.sort(byName);
+    _sensState.pnjSecret.sort(byName);
+    _sensState.pnjPublic.sort(byName);
 
     _sensRenderAll();
     document.getElementById('sens-loading').style.display = 'none';
@@ -7950,6 +7966,8 @@ function _sensRenderAll() {
   _sensRenderItemsPublic();
   _sensRenderMobsHidden();
   _sensRenderMobsPublic();
+  _sensRenderPnjHidden();
+  _sensRenderPnjPublic();
 }
 
 // ─── Rendu ───────────────────────────────────────────────
@@ -8181,6 +8199,102 @@ window.sensMobToPublic = async (sourceId) => {
     await deleteDoc(doc(db, COL.mobsSecret, sourceId));
 
     store.invalidate('mobs');
+    await sensReload();
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'error');
+    console.error(err);
+  }
+};
+
+function _sensPnjRow(pnj, btnHtml) {
+  const id  = _sensEsc(pnj.id || pnj._id);
+  const name = _sensEsc(pnj.name || pnj._id);
+  const type = _sensEsc(pnj.type || pnj.tag || '—');
+  const pal  = pnj.palier != null ? 'P' + _sensEsc(pnj.palier) : '—';
+  return `<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--border);font-size:12px;">
+    <div style="flex:1;min-width:0;">
+      <div style="color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
+      <div style="color:var(--muted);font-size:11px;">${id} · ${type} · ${pal}</div>
+    </div>
+    ${btnHtml}
+  </div>`;
+}
+
+function _sensRenderPnjHidden() {
+  const list = _sensState.pnjSecret;
+  document.getElementById('sens-pnj-hidden-count').textContent = list.length + ' PNJ';
+  const el = document.getElementById('sens-pnj-hidden-list');
+  if (!list.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;">Aucun PNJ sensible.</div>';
+    return;
+  }
+  el.innerHTML = list.map(pnj => {
+    const btn = `<button class="btn btn-ghost" onclick="sensPnjToPublic('${_sensEsc(pnj._id)}')" style="font-size:11px;padding:3px 10px;">🔓 Rendre public</button>`;
+    return _sensPnjRow(pnj, btn);
+  }).join('');
+}
+
+function _sensRenderPnjPublic() {
+  const list = _sensState.pnjPublic;
+  document.getElementById('sens-pnj-public-count').textContent = list.length + ' PNJ';
+  window.sensFilterPnjPublic();
+}
+
+window.sensFilterPnjPublic = function() {
+  const q = normalize(document.getElementById('sens-pnj-search').value.trim());
+  const el = document.getElementById('sens-pnj-public-list');
+  if (!q) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;font-size:12px;">Tape un nom pour filtrer…</div>';
+    return;
+  }
+  const matches = _sensState.pnjPublic.filter(pnj =>
+    normalize(pnj.name || '').includes(q) || normalize(pnj._id || '').includes(q)
+  ).slice(0, 30);
+  if (!matches.length) {
+    el.innerHTML = '<div style="color:var(--muted);padding:6px 0;font-size:12px;">Aucun résultat.</div>';
+    return;
+  }
+  el.innerHTML = matches.map(pnj => {
+    const btn = `<button class="btn btn-ghost" onclick="sensPnjToSensible('${_sensEsc(pnj._id)}')" style="font-size:11px;padding:3px 10px;color:var(--danger);border-color:var(--danger);">🔒 Rendre sensible</button>`;
+    return _sensPnjRow(pnj, btn);
+  }).join('');
+};
+
+// PNJ public → sensible : doc entier vers pnj_secret
+window.sensPnjToSensible = async (sourceId) => {
+  const pnj = _sensState.pnjPublic.find(x => x._id === sourceId);
+  if (!pnj) { toast('PNJ introuvable.', 'info'); return; }
+  if (!await modal.confirm(`Rendre "${pnj.name || sourceId}" sensible ?\n\nIl disparaîtra complètement du bestiaire.`)) return;
+  try {
+    const payload = {};
+    for (const [k, v] of Object.entries(pnj)) if (k !== '_id') payload[k] = v;
+    payload.sensible = true;
+
+    await setDoc(doc(db, COL.pnjSecret, sourceId), sanitizeForFirestore(payload));
+    await deleteDoc(doc(db, COL.pnj, sourceId));
+
+    store.invalidate('pnj');
+    await sensReload();
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'error');
+    console.error(err);
+  }
+};
+
+// PNJ sensible → public : doc entier vers personnages
+window.sensPnjToPublic = async (sourceId) => {
+  const pnj = _sensState.pnjSecret.find(x => x._id === sourceId);
+  if (!pnj) { toast('PNJ sensible introuvable.', 'info'); return; }
+  if (!await modal.confirm(`Rendre "${pnj.name || sourceId}" public ?\n\nIl redeviendra visible dans le bestiaire.`)) return;
+  try {
+    const payload = {};
+    for (const [k, v] of Object.entries(pnj)) if (k !== '_id') payload[k] = v;
+    delete payload.sensible;
+
+    await setDoc(doc(db, COL.pnj, sourceId), sanitizeForFirestore(payload));
+    await deleteDoc(doc(db, COL.pnjSecret, sourceId));
+
+    store.invalidate('pnj');
     await sensReload();
   } catch (err) {
     toast('Erreur : ' + err.message, 'error');

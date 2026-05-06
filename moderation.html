@@ -546,13 +546,13 @@
   <!-- Panneau Sensible (admin only) -->
   <main class="main" id="migration-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:15px;font-weight:700;">🔒 Items & mobs sensibles</span>
+      <span style="font-size:15px;font-weight:700;">🔒 Items, mobs & PNJ sensibles</span>
       <button class="btn btn-ghost" onclick="sensReload()" style="font-size:12px;">🔄 Rafraîchir</button>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
-      Bascule des items/mobs entre public et sensible.
+      Bascule des items/mobs/PNJ entre public et sensible.
       Un item sensible n'apparaît dans l'atelier qu'en tapant son nom exact.
-      Un mob sensible est totalement invisible au public.
+      Un mob ou PNJ sensible est totalement invisible au public.
     </p>
 
 <div id="sens-loading" style="color:var(--muted);font-size:13px;padding:14px 0;">Chargement…</div>
@@ -591,7 +591,7 @@
       </div>
 
       <!-- AJOUTER UN MOB -->
-      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:24px;">
         <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
           <span style="font-size:14px;font-weight:700;">➕ Rendre un mob sensible</span>
           <span id="sens-mobs-public-count" style="margin-left:auto;font-size:12px;color:var(--muted);">—</span>
@@ -601,6 +601,29 @@
             oninput="sensFilterMobsPublic()"
             style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:7px 10px;font-size:12px;font-family:inherit;margin-bottom:10px;">
           <div id="sens-mobs-public-list"></div>
+        </div>
+      </div>
+
+      <!-- PNJ SENSIBLES -->
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:14px;">
+        <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+          <span style="font-size:14px;font-weight:700;">🔒 PNJ sensibles actuels</span>
+          <span id="sens-pnj-hidden-count" style="margin-left:auto;font-size:12px;color:var(--muted);">—</span>
+        </div>
+        <div style="padding:10px 14px;" id="sens-pnj-hidden-list"></div>
+      </div>
+
+      <!-- AJOUTER UN PNJ -->
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+        <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;">
+          <span style="font-size:14px;font-weight:700;">➕ Rendre un PNJ sensible</span>
+          <span id="sens-pnj-public-count" style="margin-left:auto;font-size:12px;color:var(--muted);">—</span>
+        </div>
+        <div style="padding:10px 14px;">
+          <input type="text" id="sens-pnj-search" placeholder="Rechercher un PNJ public par nom…"
+            oninput="sensFilterPnjPublic()"
+            style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:7px 10px;font-size:12px;font-family:inherit;margin-bottom:10px;">
+          <div id="sens-pnj-public-list"></div>
         </div>
       </div>
     </div>
