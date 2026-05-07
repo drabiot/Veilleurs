@@ -39,7 +39,7 @@ function currentItems() {
 	});
   const filtered = q.length >= 1
     ? ITEMS.filter(item =>
-        normalize(String(item.name  || '')).includes(norm) ||
+        normalize(String(item.name || item.quality?.name || '')).includes(norm) ||
         normalize(String(item.lore  || '')).includes(norm) ||
         normalize(catData(item.category).label || '').includes(norm) ||
         (item.tags || []).some(t => t != null && normalize(String(t)).includes(norm))
@@ -68,7 +68,7 @@ function buildSidebarAlpha(items) {
     const color = rarityColor(item.rarity);
     link.innerHTML = `
       <span class="sidebar-item-dot" style="background:${color}"></span>
-      ${escHtml(item.name)}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
+      ${escHtml(item.name || item.quality?.name || '')}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
     link.addEventListener('click', (e) => {
       e.preventDefault();
       showItem(item.id);
@@ -331,7 +331,7 @@ function buildSidebar(items, expandAll = false) {
           const color = rarityColor(item.rarity);
           link.innerHTML = `
           <span class="sidebar-item-dot" style="background:${color}"></span>
-          ${escHtml(item.name)}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
+          ${escHtml(item.name || item.quality?.name || '')}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
 
           link.addEventListener('click', (e) => {
             e.preventDefault();
