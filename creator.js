@@ -3141,10 +3141,10 @@ const EFFECT_TYPES = [
 ];
 
 const EFFECT_TEMPLATES = [
-  { label:'❤️ Soin',         effects:[{ type:'heal',    value:50  }] },
-  { label:'💧 Mana',         effects:[{ type:'mana',    value:30  }] },
-  { label:'👟 Stamina',      effects:[{ type:'stamina', value:40  }] },
-  { label:'🍖 Nourriture',   effects:[{ type:'feed',    value:30  }, { type:'regen', value:2, unit:'PV/s' }] },
+  { label:'❤️ Potion de Soin',         effects:[{type:'level', value:1}, { type:'heal', value:10, unit:'PV'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
+  { label:'💧 Potion de Mana',         effects:[{type:'level', value:1}, { type:'mana', value:10, unit:'PV'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
+  { label:'👟 Potion de Stamina',      effects:[{type:'level', value:1}, { type:'stamina', value:5, unit:'PV'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
+  { label:'🍖 Nourriture',   effects:[{ type:'feed',    value:5  }] },
   { label:'💓 Régén. soin',  effects:[{ type:'regen',   value:5,  unit:'PV/s' }] },
   { label:'💪 Buff force',   effects:[{ type:'buff',    value:10, unit:'% dégâts' }] },
   { label:'☠️ Poison',       effects:[{ type:'debuff',  value:5,  unit:'dégâts/s' }] },
