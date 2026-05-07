@@ -3142,8 +3142,8 @@ const EFFECT_TYPES = [
 
 const EFFECT_TEMPLATES = [
   { label:'❤️ Potion de Soin',         effects:[{type:'level', value:1}, { type:'heal', value:10, unit:'PV'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
-  { label:'💧 Potion de Mana',         effects:[{type:'level', value:1}, { type:'mana', value:10, unit:'PV'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
-  { label:'👟 Potion de Stamina',      effects:[{type:'level', value:1}, { type:'stamina', value:5, unit:'PV'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
+  { label:'💧 Potion de Mana',         effects:[{type:'level', value:1}, { type:'mana', value:10, unit:'Mana'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
+  { label:'👟 Potion de Stamina',      effects:[{type:'level', value:1}, { type:'stamina', value:5, unit:'Stamina'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
   { label:'🍖 Nourriture',   effects:[{ type:'feed',    value:5  }] },
   { label:'💓 Régén. soin',  effects:[{ type:'regen',   value:5,  unit:'PV/s' }] },
   { label:'💪 Buff force',   effects:[{ type:'buff',    value:10, unit:'% dégâts' }] },
