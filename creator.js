@@ -3103,6 +3103,7 @@ const EFFECT_TYPES = [
   'regen',
   'mana',
   'stamina',
+  'degats_attaque',
   'degats_physique',
   'degats_armes',
   'degats_arcane',
@@ -3114,6 +3115,8 @@ const EFFECT_TYPES = [
   'boost_regen_stamina',
   'coups_critique',
   'degats_critique',
+  'comp_coups_critique',
+  'comp_degats_critique',
   'vol_vie',
   'vitesse_deplacement',
   'agilite',
@@ -3137,18 +3140,21 @@ const EFFECT_TYPES = [
   'level',
   'reparation',
   'durabilite',
-  'puissance_recolte'
+  'puissance_recolte' 
 ];
 
 const EFFECT_TEMPLATES = [
-  { label:'❤️ Potion de Soin',         effects:[{type:'level', value:1}, { type:'heal', value:10, unit:'PV'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
-  { label:'💧 Potion de Mana',         effects:[{type:'level', value:1}, { type:'mana', value:10, unit:'Mana'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
-  { label:'👟 Potion de Stamina',      effects:[{type:'level', value:1}, { type:'stamina', value:5, unit:'Stamina'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
-  { label:'🍖 Nourriture',   effects:[{ type:'feed',    value:5  }] },
-  { label:'💓 Régén. soin',  effects:[{ type:'regen',   value:5,  unit:'PV/s' }] },
-  { label:'💪 Buff force',   effects:[{ type:'buff',    value:10, unit:'% dégâts' }] },
-  { label:'☠️ Poison',       effects:[{ type:'debuff',  value:5,  unit:'dégâts/s' }] },
-  { label:'🧪 Plein soins',  effects:[{ type:'heal',    value:100 }, { type:'mana', value:50 }, { type:'stamina', value:50 }] },
+	{ label:'🍖 Nourriture',				            effects:[{type:'feed', value:5  }] },
+  { label:'❤️ Potion de Soin',			          effects:[{type:'level', value:1}, { type:'heal', value:10, unit:'PV'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
+  { label:'💧 Potion de Mana',			          effects:[{type:'level', value:1}, { type:'mana', value:10, unit:'Mana'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
+  { label:'👟 Potion de Stamina',		          effects:[{type:'level', value:1}, { type:'stamina', value:5, unit:'Stamina'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
+  { label:'💨 Fortifiant d\'Endurance',			  effects:[{type:'level', value:8}, { type:'vitesse_deplacement', value:0.025, duration:900}, { type:'boost_mana', value:5, duration:900}, { type:'boost_stamina', value:2.5, duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
+  { label:'📚 Fortifiant de Connaissance',    effects:[{type:'level', value:8}, { type:'degats_arcane', value:2, unit:'%', duration:900}, { type:'comp_degats_critique', value:2, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
+  { label:'⚔️ Fortifiant de Férocité',        effects:[{type:'level', value:8}, { type:'degats_attaque', value:2, unit:'%', duration:900}, { type:'degats_critique', value:2, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
+  { label:'💓 Fortifiant de Vitalité',        effects:[{type:'level', value:8}, { type:'boost_sante', value:10, duration:900}, { type:'boost_regen_vie', value:0.2, unit:'/s', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
+  { label:'⏳ Fortifiant de Patiente',        effects:[{type:'level', value:8}, { type:'agilite', value:2, unit:'%', duration:900}, { type:'boost_regen_mana', value:0.2, unit:'/s', duration:900}, { type:'boost_regen_stamina', value:0.1, unit:'/s', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
+  { label:'🛡️ Fortifiant de Résistance',      effects:[{type:'level', value:8}, { type:'resistance_recul', value:2, unit:'%', duration:900}, { type:'maitrise_blocage', value:2, unit:'%', duration:900}, { type:'puissance_blocage', value:2, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
+  
 ];
 
 function buildEffectTemplates() {
