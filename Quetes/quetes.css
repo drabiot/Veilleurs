@@ -803,6 +803,7 @@ body.quetes-page { overflow: hidden; }
 .quest-coords-chip {
   margin-top: 0;
   font-size: 12px;
+  flex-basis: auto;
 }
 
 /* Flèche de suite logique */
