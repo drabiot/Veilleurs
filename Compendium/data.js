@@ -28,7 +28,7 @@ const STAT_GROUPS = [
       { id:'degats_magique',      label:'Dégâts Magiques',                 icon:'📖',  unit:'%',  max:100  },
       { id:'degats_competence',   label:'Dégâts de Compétence',            icon:'✨',  unit:'%',  max:100  },
       { id:'degats_projectile',   label:'Dégâts de Projectile',            icon:'🏹',  unit:'%',  max:100  },
-      { id:'vitesse_attaque',     label:'Vitesse d\'Attaque',              icon:'💨',  unit:'',   max:200  },
+      { id:'vitesse_attaque',     label:'Vitesse d\'Attaque',              icon:'💨',  unit:'',   max:100  },
       { id:'crit_chance',         label:'Chance Coups Critiques',          icon:'🎯',  unit:'%',  max:100  },
       { id:'crit_degats',         label:'Dégâts Coups Critiques',          icon:'💢',  unit:'%',  max:100  },
       { id:'crit_comp_chance',    label:'Chance Critique Compétence',      icon:'🎯',  unit:'%',  max:100  },
@@ -38,10 +38,10 @@ const STAT_GROUPS = [
   {
     label: 'Défensif',
     stats: [
-      { id:'defense',             label:'Défense',                         icon:'🛡️',  unit:'',   max:1000 },
+      { id:'defense',             label:'Défense',                         icon:'🛡️',  unit:'',   max:200 },
 	  	{ id:'maitrise_bloc',       label:'Maîtrise de Blocage',             icon:'🧱',  unit:'%',   max:100 },
 	  	{ id:'puissance_bloc',      label:'Puissance de Blocage',            icon:'💪',  unit:'%',   max:100 },
-      { id:'sante',               label:'Santé',                           icon:'❤️',  unit:'',   max:2000 },
+      { id:'sante',               label:'Santé',                           icon:'❤️',  unit:'',   max:1000 },
       { id:'esquive',             label:'Esquive',                         icon:'💨',  unit:'%',  max:100  },
       { id:'reduction_degats',    label:'Réduction de Dégâts',             icon:'🔰',  unit:'%',  max:100  },
       { id:'reduction_chutes',    label:'Réduction de Chutes',             icon:'🦘',  unit:'%',  max:100  },
@@ -54,8 +54,8 @@ const STAT_GROUPS = [
     label: 'Mobilité & Ressources',
     stats: [
       { id:'hate',                label:'Hâte',                            icon:'🌀',  unit:'%',  max:100  },
-      { id:'vitesse_deplacement', label:'Vitesse de Déplacement',          icon:'💨',  unit:'',   max:100  },
-      { id:'vitesse_accroupi',    label:'Vitesse Accroupi',                icon:'🐾',  unit:'',   max:50   },
+      { id:'vitesse_deplacement', label:'Vitesse de Déplacement',          icon:'💨',  unit:'%',  max:100  },
+      { id:'vitesse_accroupi',    label:'Vitesse Accroupi',                icon:'🐾',  unit:'',   max:250   },
       { id:'mana',                label:'Mana',                            icon:'💧',  unit:'',   max:1000 },
       { id:'stamina',             label:'Stamina',                         icon:'👟',  unit:'',   max:1000 },
     ]
@@ -65,11 +65,11 @@ const STAT_GROUPS = [
     stats: [
       { id:'vol_vie',             label:'Vol de Vie',                      icon:'🩸',  unit:'%',   max:100  },
       { id:'omnivamp',            label:'Omnivampirisme',                  icon:'👄',  unit:'%',   max:100  },
-      { id:'soin_bonus',          label:'Soin Bonus',                      icon:'✳️',  unit:'',   max:500  },
-      { id:'puissance_soin',      label:'Puissance de Soin',               icon:'💚',  unit:'',   max:500  },
-      { id:'regen_sante',         label:'Régénération Santé',              icon:'💓',  unit:'/s', max:200  },
-      { id:'regen_mana',          label:'Régénération Mana',               icon:'💦',  unit:'/s', max:200  },
-      { id:'regen_stamina',       label:'Régénération Stamina',            icon:'👟',  unit:'/s', max:200  },
+      { id:'soin_bonus',          label:'Soin Bonus',                      icon:'✳️',  unit:'',   max:100  },
+      { id:'puissance_soin',      label:'Puissance de Soin',               icon:'💚',  unit:'',   max:100  },
+      { id:'regen_sante',         label:'Régénération Santé',              icon:'💓',  unit:'/s', max:100  },
+      { id:'regen_mana',          label:'Régénération Mana',               icon:'💦',  unit:'/s', max:100  },
+      { id:'regen_stamina',       label:'Régénération Stamina',            icon:'👟',  unit:'/s', max:100  },
     ]
   },
 ];

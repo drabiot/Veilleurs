@@ -9,7 +9,7 @@ const ZOOM_MIN          = 0.4;
 const ZOOM_MAX          = 10;
 const ZOOM_FACTOR       = 1.15;
 const ITEM_HEIGHT       = 32;
-const CLUSTER_RADIUS_PX = 30;
+const CLUSTER_RADIUS_PX = 27;
 
 let isPanning      = false;
 let panLastX       = 0;
