@@ -547,8 +547,11 @@ function _buildGridCard(q, idx) {
   const { done, total, pct } = getProgress(q);
   const effectiveDone    = done === total && total > 0;
   const effectiveStarted = !effectiveDone && done > 0;
-  const zs     = getZoneStyle(q.zone);
-  const mapUrl = getMapUrl(q.zone);
+  const zs      = getZoneStyle(q.zone);
+  const mapUrl  = getMapUrl(q.zone);
+  const cardZoneHref = q.id
+    ? `../Map/map.html?questId=${q.id}#floor-${q.palier}-surface`
+    : mapUrl;
 
   card.style.setProperty('--zone-color', zs.color);
   card.style.setProperty('--zone-dim',   zs.dim);
@@ -570,8 +573,8 @@ function _buildGridCard(q, idx) {
       <div class="card-meta">
         <span class="ctag ctag-palier">P${q.palier}</span>
         ${(q.zone && q.zone !== 'undefined')
-          ? (mapUrl
-            ? `<a class="ctag ctag-zone" href="${mapUrl}"
+          ? (cardZoneHref
+            ? `<a class="ctag ctag-zone" href="${cardZoneHref}"
                  style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}"
                  title="Voir sur la carte" onclick="event.stopPropagation()">🗺 ${q.zone}</a>`
             : `<span class="ctag ctag-zone" style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}">🗺 ${q.zone}</span>`)
@@ -840,9 +843,12 @@ function renderSheet(q) {
   const rewHTML = q.recompenses.map(r => renderRewardFull(r)).join('');
 
   /* Zone link conditionnel */
+  const zoneHref = q.id
+    ? `../Map/map.html?questId=${q.id}#floor-${q.palier}-surface`
+    : mapUrl;
   const zoneEl = q.zone
-    ? (mapUrl
-        ? `<a class="quest-meta-val quest-zone-link" href="${mapUrl}" style="color:${zs.color};text-shadow:0 0 8px ${zs.dim}" target="_blank">🗺 ${q.zone} ↗</a>`
+    ? (zoneHref
+        ? `<a class="quest-meta-val quest-zone-link" href="${zoneHref}" style="color:${zs.color};text-shadow:0 0 8px ${zs.dim}" target="_blank">🗺 ${q.zone} ↗</a>`
         : `<span class="quest-meta-val" style="color:${zs.color}">🗺 ${q.zone}</span>`)
     : '';
 
