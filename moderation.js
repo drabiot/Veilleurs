@@ -516,6 +516,9 @@ function buildCard(sub) {
   const modBadge = sub.isModification
     ? `<span class="sub-type" style="background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3);">✏️ Modif</span>`
     : `<span class="sub-type" style="background:rgba(74,222,128,.12);color:var(--success);border:1px solid rgba(74,222,128,.3);">✨ Ajout</span>`;
+  const chasseBadge = sub.fromTableauDeChasse
+    ? `<span class="sub-type" style="background:rgba(215,175,95,.12);color:#d7af5f;border:1px solid rgba(215,175,95,.3);" title="Soumission issue du tableau de chasse">🎯 Chasse</span>`
+    : '';
 
   const preservedHtml = '';
 
@@ -527,6 +530,7 @@ function buildCard(sub) {
     <div class="sub-head">
       <span class="sub-type">${typeLabels[sub.type] || sub.type}</span>
       ${modBadge}
+      ${chasseBadge}
       <span class="sub-name">${escHtml(name)}</span>
       <span class="sub-meta">${ts}</span>
       <span class="sub-meta">par <b>${escHtml(userName(sub.submittedBy, sub.submitterName))}</b></span>
@@ -7832,6 +7836,33 @@ const REQUIRED_ADMIN_FIELDS = {
 };
 
 let _completionResults = [];
+let _tdcData = {};
+let _completionIgnored = null;
+let _subsByDoc = {}; // { [colName~docId]: submission } — dernière sub par doc // { [mode]: Set<string> } — null = non chargé
+
+async function _loadCompletionIgnored() {
+  if (_completionIgnored !== null) return;
+  _completionIgnored = {};
+  try {
+    const snap = await getDoc(doc(db, 'config', 'completion_ignored'));
+    if (snap.exists()) {
+      for (const [mode, ids] of Object.entries(snap.data())) {
+        _completionIgnored[mode] = new Set(Array.isArray(ids) ? ids : []);
+      }
+    }
+  } catch {}
+  for (const mode of Object.keys(QUALITY_COL_MAP)) {
+    if (!_completionIgnored[mode]) _completionIgnored[mode] = new Set();
+  }
+}
+
+async function _saveCompletionIgnored() {
+  const payload = {};
+  for (const [m, ids] of Object.entries(_completionIgnored || {})) {
+    if (ids.size) payload[m] = [...ids];
+  }
+  await setDoc(doc(db, 'config', 'completion_ignored'), payload);
+}
 
 window.showCompletion = async () => {
   _setHash('completion');
@@ -7844,6 +7875,8 @@ window.showCompletion = async () => {
 window.loadCompletion = async () => {
   const list = document.getElementById('completion-list');
   list.innerHTML = '<div class="empty">Chargement…</div>';
+  _completionIgnored = null; // forcer rechargement
+  await _loadCompletionIgnored();
 
   // Charger quality standards depuis Firestore
   let standards = {};
@@ -7933,9 +7966,10 @@ window.loadCompletion = async () => {
     }
   } catch {}
 
-  // Badge sidebar
+  // Badge sidebar (exclut les ignorés)
+  const _activeCount = _completionResults.filter(r => !_completionIgnored?.[r.mode]?.has(r.doc.id || '')).length;
   const badge = document.getElementById('count-incomplete');
-  if (badge) { badge.textContent = _completionResults.length; badge.style.display = _completionResults.length ? '' : 'none'; }
+  if (badge) { badge.textContent = _activeCount; badge.style.display = _activeCount ? '' : 'none'; }
 
   // Filtre dynamique : uniquement les champs qui ont au moins un manquant
   const allMissingFields = [...new Set(_completionResults.flatMap(r => r.missing))].sort();
@@ -7948,14 +7982,118 @@ window.loadCompletion = async () => {
     if (filterBar) filterBar.style.display = allMissingFields.length > 1 ? 'flex' : 'none';
   }
 
+  // Charger la sélection du tableau de chasse
+  try {
+    const tdcSnap = await getDoc(doc(db, 'config', 'tableau_de_chasse'));
+    _tdcData = tdcSnap.exists() ? tdcSnap.data() : {};
+  } catch { _tdcData = {}; }
+
+  // Construire lookup soumissions par doc (depuis allSubs global)
+  _subsByDoc = {};
+  for (const sub of (window.allSubs || [])) {
+    const colName = _SUB_COL_MAP[sub.type];
+    const id = sub.data?.id;
+    if (!colName || !id) continue;
+    const key = colName + '~' + id;
+    const existing = _subsByDoc[key];
+    // Garder la plus récente (par submittedAt)
+    if (!existing || (sub.submittedAt?.seconds || 0) > (existing.submittedAt?.seconds || 0)) {
+      _subsByDoc[key] = sub;
+    }
+  }
+
+  // Auto-retirer du TDC : items complets (plus dans _completionResults) OU submission approuvée
+  const _incompleteKeys = new Set(_completionResults.map(r => r.mode + '~' + (r.doc.id || '')));
+  let _tdcModified = false;
+  for (const [mode, ids] of Object.entries(_tdcData)) {
+    if (!Array.isArray(ids)) continue;
+    const colName = QUALITY_COL_MAP[mode];
+    const filtered = ids.filter(id => {
+      if (!_incompleteKeys.has(mode + '~' + id)) return false; // plus de champs manquants
+      const sub = _subsByDoc[colName + '~' + id];
+      if (sub?.status === 'approved') return false; // submission acceptée
+      return true;
+    });
+    if (filtered.length !== ids.length) { _tdcData[mode] = filtered; _tdcModified = true; }
+  }
+  if (_tdcModified) {
+    try { await setDoc(doc(db, 'config', 'tableau_de_chasse'), _tdcData); } catch {}
+  }
+
   renderCompletion(); // inclut _appendBrokenImagesSection en fin
 };
+
+function _buildCompletionCard(mode, colName, d, missing, discVal, { ignored = false } = {}) {
+  const safeId    = (d.id || '').replace(/[^a-zA-Z0-9_-]/g, '_') || Math.random().toString(36).slice(2);
+  const subcatLbl = discVal ? _subcatLabel(mode, discVal) : null;
+  const docId     = d.id || '';
+  const sub       = _subsByDoc[(QUALITY_COL_MAP[mode] || colName) + '~' + docId];
+  const hasPending = !ignored && (sub?.status === 'pending' || sub?.status === 'changes_requested');
+
+  const card = document.createElement('div');
+  card.style.cssText = `background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;${ignored ? 'opacity:.55;' : ''}${hasPending ? 'border-left:3px solid var(--warn);' : ''}`;
+
+  const headRow = document.createElement('div');
+  headRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;';
+  headRow.innerHTML = `
+    ${!ignored ? `<label class="tdc-check" title="Ajouter au tableau de chasse"><input type="checkbox" data-mode="${escHtml(mode)}" data-id="${escHtml(docId)}"${(_tdcData[mode]||[]).includes(docId) ? ' checked' : ''} onchange="saveTableauDeChasse()">🎯</label>` : ''}
+    <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:8px;background:var(--surface3);color:var(--muted);flex-shrink:0;">${escHtml(mode)}</span>
+    ${subcatLbl ? `<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:rgba(122,90,248,.12);color:var(--accent);border:1px solid rgba(122,90,248,.25);flex-shrink:0;">${escHtml(subcatLbl)}</span>` : ''}
+    <span style="font-size:14px;font-weight:700;">${escHtml(d.name||d.titre||d.label||docId||'—')}</span>
+    <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(docId)}</span>
+    ${hasPending
+      ? `<span style="font-size:11px;color:var(--warn);font-weight:600;flex:1;min-width:0;">⏳ Vérification en cours — soumission en attente de modération</span>`
+      : `<span style="font-size:11px;color:var(--muted);flex:1;min-width:0;">${ignored ? '🚫 Ignoré · ' : ''}Manque : ${missing.map(f => `<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;">${escHtml(f)}</code>`).join(' ')}</span>`
+    }
+    ${!ignored && !hasPending ? `<button class="btn btn-ghost btn-sm" onclick="showEditor('${escHtml(colName)}','${escHtml(docId)}',null,'completion')" style="font-size:11px;flex-shrink:0;">✏️ Éditer</button>` : ''}
+    ${!ignored && !hasPending && mode === 'items' ? `<button class="btn btn-ghost btn-sm" onclick="openCompletionInCreator('${escHtml(colName)}','${escHtml(docId)}')" style="font-size:11px;flex-shrink:0;" title="Ouvrir dans le Creator">⚙️ Creator</button>` : ''}
+    ${!ignored
+      ? `<button class="btn btn-ghost btn-sm" onclick="window.ignoreCompletionDoc('${escHtml(mode)}','${escHtml(docId)}',this)" style="font-size:11px;flex-shrink:0;color:var(--muted);" title="Marquer comme exception — ne plus afficher dans À compléter">🚫 Ignorer</button>`
+      : `<button class="btn btn-ghost btn-sm" onclick="window.unignoreCompletionDoc('${escHtml(mode)}','${escHtml(docId)}',this)" style="font-size:11px;flex-shrink:0;" title="Réintégrer dans À compléter">↩️ Réactiver</button>`
+    }
+  `;
+  card.appendChild(headRow);
+
+  if (!ignored && !hasPending) {
+    const fieldsWrap = document.createElement('div');
+    fieldsWrap.id = `completion-fields-${safeId}`;
+    fieldsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;';
+    for (const f of missing) {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+      const lbl = document.createElement('label');
+      lbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;';
+      lbl.textContent = f;
+      wrap.appendChild(lbl);
+      wrap.appendChild(_buildCompletionInput(f, mode, d[f] != null ? d[f] : undefined));
+      fieldsWrap.appendChild(wrap);
+    }
+    card.appendChild(fieldsWrap);
+
+    const saveRow = document.createElement('div');
+    saveRow.style.cssText = 'margin-top:10px;display:flex;align-items:center;gap:8px;';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn btn-ghost btn-sm';
+    saveBtn.style.cssText = 'font-size:12px;';
+    saveBtn.textContent = '💾 Sauvegarder';
+    saveBtn.setAttribute('onclick', `saveCompletionFields('${escHtml(mode)}','${escHtml(docId)}',this)`);
+    const statusEl = document.createElement('span');
+    statusEl.id = `completion-status-${safeId}`;
+    statusEl.style.cssText = 'font-size:11px;';
+    saveRow.appendChild(saveBtn);
+    saveRow.appendChild(statusEl);
+    card.appendChild(saveRow);
+  }
+
+  return card;
+}
 
 window.renderCompletion = function renderCompletion() {
   const list        = document.getElementById('completion-list');
   const filterField = document.getElementById('completion-filter-field')?.value || '';
 
-  let results = _completionResults;
+  const isIgnored = r => _completionIgnored?.[r.mode]?.has(r.doc.id || '');
+  let results = _completionResults.filter(r => !isIgnored(r));
   if (filterField) results = results.filter(r => r.missing.includes(filterField));
 
   list.innerHTML = '';
@@ -7968,7 +8106,6 @@ window.renderCompletion = function renderCompletion() {
     return;
   }
 
-  // Grouper par mode
   const byMode = {};
   for (const r of results) {
     if (!byMode[r.mode]) byMode[r.mode] = [];
@@ -7980,66 +8117,86 @@ window.renderCompletion = function renderCompletion() {
     header.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;margin-top:12px;';
     header.textContent = `${QUALITY_MODE_LABELS[mode] || mode} — ${rows.length} incomplet${rows.length > 1 ? 's' : ''}`;
     list.appendChild(header);
-
     for (const { colName, doc: d, missing, discVal } of rows) {
-      const safeId    = (d.id || '').replace(/[^a-zA-Z0-9_-]/g, '_') || Math.random().toString(36).slice(2);
-      const subcatLbl = discVal ? _subcatLabel(mode, discVal) : null;
-      const docId     = d.id || '';
-
-      const card = document.createElement('div');
-      card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;';
-
-      // Ligne d'en-tête
-      const headRow = document.createElement('div');
-      headRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;';
-      headRow.innerHTML = `
-        <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:8px;background:var(--surface3);color:var(--muted);flex-shrink:0;">${escHtml(mode)}</span>
-        ${subcatLbl ? `<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:rgba(122,90,248,.12);color:var(--accent);border:1px solid rgba(122,90,248,.25);flex-shrink:0;">${escHtml(subcatLbl)}</span>` : ''}
-        <span style="font-size:14px;font-weight:700;">${escHtml(d.name||d.titre||d.label||docId||'—')}</span>
-        <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(docId)}</span>
-        <span style="font-size:11px;color:var(--warn);flex:1;min-width:0;">Manque : ${missing.map(f => `<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;">${escHtml(f)}</code>`).join(' ')}</span>
-        <button class="btn btn-ghost btn-sm" onclick="showEditor('${escHtml(colName)}','${escHtml(docId)}',null,'completion')" style="font-size:11px;flex-shrink:0;">✏️ Éditer</button>
-        ${mode === 'items' ? `<button class="btn btn-ghost btn-sm" onclick="openCompletionInCreator('${escHtml(colName)}','${escHtml(docId)}')" style="font-size:11px;flex-shrink:0;" title="Ouvrir dans le Creator">⚙️ Creator</button>` : ''}
-      `;
-      card.appendChild(headRow);
-
-      // Champs inline guidés
-      const fieldsWrap = document.createElement('div');
-      fieldsWrap.id = `completion-fields-${safeId}`;
-      fieldsWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;';
-
-      for (const f of missing) {
-        const wrap = document.createElement('div');
-        wrap.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
-        const lbl = document.createElement('label');
-        lbl.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;';
-        lbl.textContent = f;
-        wrap.appendChild(lbl);
-        const inputEl = _buildCompletionInput(f, mode, d[f] != null ? d[f] : undefined);
-        wrap.appendChild(inputEl);
-        fieldsWrap.appendChild(wrap);
-      }
-      card.appendChild(fieldsWrap);
-
-      // Bouton sauvegarder
-      const saveRow = document.createElement('div');
-      saveRow.style.cssText = 'margin-top:10px;display:flex;align-items:center;gap:8px;';
-      const saveBtn = document.createElement('button');
-      saveBtn.className = 'btn btn-ghost btn-sm';
-      saveBtn.style.cssText = 'font-size:12px;';
-      saveBtn.textContent = '💾 Sauvegarder';
-      saveBtn.setAttribute('onclick', `saveCompletionFields('${escHtml(mode)}','${escHtml(docId)}',this)`);
-      const statusEl = document.createElement('span');
-      statusEl.id = `completion-status-${safeId}`;
-      statusEl.style.cssText = 'font-size:11px;';
-      saveRow.appendChild(saveBtn);
-      saveRow.appendChild(statusEl);
-      card.appendChild(saveRow);
-      list.appendChild(card);
+      list.appendChild(_buildCompletionCard(mode, colName, d, missing, discVal));
     }
   }
 
   _appendBrokenImagesSection();
+};
+
+function _appendIgnoredSection() {
+  const list = document.getElementById('completion-list');
+  if (!list) return;
+  const ignoredRows = _completionResults.filter(r => _completionIgnored?.[r.mode]?.has(r.doc.id || ''));
+  if (!ignoredRows.length) return;
+
+  const header = document.createElement('div');
+  header.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;margin-top:16px;cursor:pointer;display:flex;align-items:center;gap:6px;';
+  header.innerHTML = `<span id="ignored-chevron">▶</span> 🚫 Ignorés — ${ignoredRows.length} exception${ignoredRows.length > 1 ? 's' : ''}`;
+  list.appendChild(header);
+
+  const body = document.createElement('div');
+  body.id = 'ignored-section-body';
+  body.style.display = 'none';
+  list.appendChild(body);
+
+  header.onclick = () => {
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : '';
+    document.getElementById('ignored-chevron').textContent = open ? '▶' : '▼';
+  };
+
+  for (const { colName, doc: d, missing, discVal, mode } of ignoredRows) {
+    body.appendChild(_buildCompletionCard(mode, colName, d, missing, discVal, { ignored: true }));
+  }
+}
+
+window.ignoreCompletionDoc = async (mode, docId, btn) => {
+  if (!_completionIgnored) _completionIgnored = {};
+  if (!_completionIgnored[mode]) _completionIgnored[mode] = new Set();
+  _completionIgnored[mode].add(docId);
+  if (btn) btn.disabled = true;
+  try {
+    await _saveCompletionIgnored();
+    const activeCount = _completionResults.filter(r => !_completionIgnored?.[r.mode]?.has(r.doc.id || '')).length;
+    const badge = document.getElementById('count-incomplete');
+    if (badge) { badge.textContent = activeCount; badge.style.display = activeCount ? '' : 'none'; }
+    renderCompletion();
+  } catch(e) {
+    toast('⛔ ' + e.message, 'error');
+    _completionIgnored[mode].delete(docId);
+    if (btn) btn.disabled = false;
+  }
+};
+
+window.unignoreCompletionDoc = async (mode, docId, btn) => {
+  _completionIgnored?.[mode]?.delete(docId);
+  if (btn) btn.disabled = true;
+  try {
+    await _saveCompletionIgnored();
+    const activeCount = _completionResults.filter(r => !_completionIgnored?.[r.mode]?.has(r.doc.id || '')).length;
+    const badge = document.getElementById('count-incomplete');
+    if (badge) { badge.textContent = activeCount; badge.style.display = activeCount ? '' : 'none'; }
+    renderCompletion();
+  } catch(e) {
+    toast('⛔ ' + e.message, 'error');
+    if (btn) btn.disabled = false;
+  }
+};
+
+window.saveTableauDeChasse = async function() {
+  const result = { items: [], mobs: [], pnj: [], regions: [], quetes: [], panoplies: [] };
+  document.querySelectorAll('#completion-list input[type=checkbox][data-mode]').forEach(cb => {
+    const m = cb.dataset.mode;
+    if (cb.checked && result[m] !== undefined) result[m].push(cb.dataset.id);
+  });
+  try {
+    await setDoc(doc(db, 'config', 'tableau_de_chasse'), result);
+    _tdcData = result;
+  } catch(e) {
+    toast('⛔ Tableau de chasse : ' + e.message, 'error');
+  }
 };
 
 async function _appendBrokenImagesSection() {
@@ -8077,6 +8234,7 @@ async function _appendBrokenImagesSection() {
   } catch {
     imgHeader.textContent = '🖼️ Images — erreur lors de la vérification';
   }
+  _appendIgnoredSection();
 }
 
 window.saveCompletionFields = async (mode, docId, btn) => {
@@ -8109,10 +8267,9 @@ window.saveCompletionFields = async (mode, docId, btn) => {
     if (btn) btn.disabled = true;
     await updateDoc(doc(db, colName, docId), patch);
     invalidateModCache(colName);
-    if (status) { status.textContent = '✓ Sauvegardé'; status.style.color = 'var(--success)'; }
+    await loadCompletion();
   } catch(e) {
     if (status) { status.textContent = '⛔ ' + e.message; status.style.color = 'var(--danger)'; }
-  } finally {
     if (btn) btn.disabled = false;
   }
 };
@@ -8239,6 +8396,8 @@ const QUALITY_SUBCATEGORIES = {
 let _cvData    = {};
 let _cvMode    = 'items';
 let _cvSubMode = {}; // mode → sous-catégorie sélectionnée dans l'UI
+let _cvDirty   = false;
+let _cvStats   = {}; // { [mode]: { [fieldId]: count } } — nb docs manquant ce champ
 
 function _cvModeData(mode) {
   if (!_cvData[mode]) _cvData[mode] = { required: new Set(), byCategory: {} };
@@ -8252,6 +8411,7 @@ function _cvSubData(mode, subcat) {
 
 window.showCreatorValidation = async () => {
   if (currentRole !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
+  _cvStats = {};
   _setHash('creator-validation');
   document.getElementById('creator-validation-panel').style.display = '';
   document.getElementById('btn-creator-validation').classList.add('active');
@@ -8280,71 +8440,130 @@ window.loadCreatorValidation = async () => {
   }
 };
 
+async function _computeCvStats(mode) {
+  if (_cvStats[mode]) return;
+  const col = QUALITY_COL_MAP[mode];
+  if (!col) return;
+  await _loadCompletionIgnored();
+  const allDocs = await cachedDocs(col);
+  const ignoredSet = _completionIgnored?.[mode] || new Set();
+  const docs = allDocs.filter(d => !ignoredSet.has(d.id || ''));
+  const fields = QUALITY_FIELD_SCHEMA[mode] || [];
+  const discriminant = QUALITY_DISCRIMINANT[mode];
+  const subCats = QUALITY_SUBCATEGORIES[mode] || [];
+
+  // global counts (ignorés exclus)
+  const global = {};
+  for (const f of fields) global[f.id] = docs.filter(d => _fieldEmpty(d, f.id)).length;
+
+  // per-subcategory counts
+  const byCategory = {};
+  if (discriminant && subCats.length) {
+    for (const sc of subCats) {
+      const subset = docs.filter(d => d[discriminant] === sc.id);
+      const counts = {};
+      for (const f of fields) counts[f.id] = subset.filter(d => _fieldEmpty(d, f.id)).length;
+      byCategory[sc.id] = counts;
+    }
+  }
+
+  _cvStats[mode] = { global, byCategory };
+}
+
 function _renderCvFieldGrid(fields, reqSet, scope, subcat) {
   const subcatAttr = subcat ? ` data-subcat="${subcat}"` : '';
-  return `
-    <div style="display:grid;grid-template-columns:1fr 80px;gap:6px;padding:0 4px;margin-bottom:6px;border-bottom:1px solid var(--border);padding-bottom:6px;">
-      <span style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Champ</span>
-      <span style="font-size:10px;font-weight:700;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:.06em;">Requis</span>
-    </div>
-    ${fields.map(f => `
-      <label style="display:grid;grid-template-columns:1fr 80px;gap:6px;align-items:center;padding:8px 4px;border-bottom:1px solid var(--border);cursor:pointer;">
-        <span style="font-size:13px;">${f.label || f.id}</span>
-        <div style="text-align:center;">
-          <input type="checkbox" data-mode="${_cvMode}" data-scope="${scope}" data-field="${f.id}"${subcatAttr}
-            style="width:16px;height:16px;cursor:pointer;"
-            ${reqSet.has(f.id) ? 'checked' : ''} onchange="window._onCvToggle(this)">
-        </div>
-      </label>
-    `).join('')}
-  `;
+  const modeStats = _cvStats[_cvMode] || {};
+  return fields.map(f => {
+    const counts = scope === 'bycat' && subcat
+      ? modeStats.byCategory?.[subcat]
+      : modeStats.global;
+    const count = counts?.[f.id];
+    const impactHtml = count != null
+      ? `<span class="cv-field-impact${count > 0 ? ' has-missing' : ''}" title="${count} doc${count !== 1 ? 's' : ''} manquant ce champ">${count}</span>`
+      : `<span class="cv-field-impact">—</span>`;
+    return `<div class="cv-field-row">
+      <span class="cv-field-label">${f.label || f.id}</span>
+      ${impactHtml}
+      <div class="cv-field-toggle-wrap">
+        <button class="perm-toggle ${reqSet.has(f.id) ? 'on' : 'off'}"
+          data-mode="${_cvMode}" data-scope="${scope}" data-field="${f.id}"${subcatAttr}
+          onclick="window._onCvToggle(this)" title="${reqSet.has(f.id) ? 'Requis' : 'Optionnel'}">
+        </button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function _renderCvUI() {
   const tabsEl = document.getElementById('cv-tabs');
   if (!tabsEl) return;
-  tabsEl.innerHTML = Object.entries(QUALITY_MODE_LABELS).map(([m, lbl]) =>
-    `<button class="btn btn-ghost btn-sm${m === _cvMode ? ' active' : ''}" onclick="window._setCvMode('${m}')">${lbl}</button>`
-  ).join('');
+
+  tabsEl.innerHTML = Object.entries(QUALITY_MODE_LABELS).map(([m, lbl]) => {
+    const reqCount = _cvData[m]?.required?.size || 0;
+    return `<button class="cv-mode-tab${m === _cvMode ? ' active' : ''}" onclick="window._setCvMode('${m}')">
+      ${lbl} <span class="cv-mode-req-count">${reqCount}</span>
+    </button>`;
+  }).join('');
 
   const grid    = document.getElementById('cv-grid');
   const fields  = QUALITY_FIELD_SCHEMA[_cvMode] || [];
   const md      = _cvModeData(_cvMode);
   const subCats = QUALITY_SUBCATEGORIES[_cvMode] || [];
-  let html = '';
+  const globalCount = md.required.size;
 
-  html += `<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 4px 8px;margin-bottom:4px;">Toujours requis</div>`;
-  html += _renderCvFieldGrid(fields, md.required, 'global', null);
+  let html = `<div class="cv-section">
+    <div class="cv-section-header">
+      <span class="cv-section-title">Toujours requis</span>
+      ${globalCount ? `<span class="cv-section-count">${globalCount} champ${globalCount > 1 ? 's' : ''}</span>` : ''}
+    </div>
+    ${_renderCvFieldGrid(fields, md.required, 'global', null)}
+  </div>`;
 
   if (subCats.length) {
     const selSub = _cvSubMode[_cvMode] || subCats[0].id;
     if (!_cvSubMode[_cvMode]) _cvSubMode[_cvMode] = selSub;
     const subReq = _cvSubData(_cvMode, selSub);
+    const subCount = subReq.size;
 
-    html += `<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:18px 4px 8px;margin-bottom:4px;">Par catégorie</div>`;
-    html += `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px;">
-      ${subCats.map(sc =>
-        `<button class="btn btn-ghost btn-sm${sc.id === selSub ? ' active' : ''}"
-          onclick="window._setCvSubMode('${sc.id}')" style="font-size:11px;">${sc.label}</button>`
-      ).join('')}
+    html += `<div class="cv-section">
+      <div class="cv-section-header">
+        <span class="cv-section-title">Par catégorie</span>
+        ${subCount ? `<span class="cv-section-count">${subCount} champ${subCount > 1 ? 's' : ''}</span>` : ''}
+      </div>
+      <div class="cv-subcat-bar">
+        ${subCats.map(sc => `<button class="cv-subcat-btn${sc.id === selSub ? ' active' : ''}"
+          onclick="window._setCvSubMode('${sc.id}')">${sc.label}</button>`).join('')}
+      </div>
+      ${_renderCvFieldGrid(fields, subReq, 'bycat', selSub)}
     </div>`;
-    html += _renderCvFieldGrid(fields, subReq, 'bycat', selSub);
   }
 
   grid.innerHTML = html;
+
+  if (!_cvStats[_cvMode]) {
+    _computeCvStats(_cvMode).then(() => _renderCvUI());
+  }
 }
 
 window._setCvMode    = (m)  => { _cvMode = m; _renderCvUI(); };
 window._setCvSubMode = (sc) => { _cvSubMode[_cvMode] = sc; _renderCvUI(); };
-window._onCvToggle   = (cb) => {
-  const { mode, scope, field, subcat } = cb.dataset;
+window._onCvToggle   = (btn) => {
+  const { mode, scope, field, subcat } = btn.dataset;
+  const isOn = btn.classList.contains('on');
+  btn.classList.toggle('on', !isOn);
+  btn.classList.toggle('off', isOn);
+  btn.title = !isOn ? 'Requis' : 'Optionnel';
   if (scope === 'global') {
     const req = _cvModeData(mode).required;
-    cb.checked ? req.add(field) : req.delete(field);
+    !isOn ? req.add(field) : req.delete(field);
   } else {
     const req = _cvSubData(mode, subcat);
-    cb.checked ? req.add(field) : req.delete(field);
+    !isOn ? req.add(field) : req.delete(field);
   }
+  _cvDirty = true;
+  const saveBtn = document.getElementById('btn-save-creator-validation');
+  if (saveBtn) saveBtn.classList.add('cv-save-dirty');
+  _renderCvUI();
 };
 
 window.saveCreatorValidation = async () => {
@@ -8366,6 +8585,8 @@ window.saveCreatorValidation = async () => {
     await setDoc(doc(db, 'config', 'data_quality_standards'), payload);
     if (status) { status.textContent = '✓ Sauvegardé'; status.style.color = 'var(--success)'; status.style.display = ''; }
     toast('✓ Champs requis sauvegardés', 'success');
+    _cvDirty = false;
+    if (btn) { btn.classList.remove('cv-save-dirty'); }
   } catch(e) {
     if (status) { status.textContent = '⛔ ' + e.message; status.style.color = 'var(--danger)'; status.style.display = ''; }
   } finally {
