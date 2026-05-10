@@ -516,6 +516,99 @@ select:focus, select:hover { border-color: var(--accent); }
 .mob-card-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
 .mob-card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
 
+/* ── TUTORIAL ── */
+
+/* Full-dark overlay for no-target steps (welcome, etc.) */
+.tuto-overlay-dark {
+  position: fixed; inset: 0; z-index: 898;
+  background: rgba(0,0,0,.68); cursor: pointer;
+}
+
+/* Spotlight: transparent box positioned over target, box-shadow IS the overlay */
+@keyframes tuto-spotlight-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 9999px rgba(0,0,0,.68),
+                0 0 0 2px var(--accent),
+                0 0 20px rgba(215,175,95,.5),
+                0 0 40px rgba(215,175,95,.15);
+  }
+  50% {
+    box-shadow: 0 0 0 9999px rgba(0,0,0,.68),
+                0 0 0 2px var(--accent),
+                0 0 40px rgba(215,175,95,.85),
+                0 0 80px rgba(215,175,95,.3);
+  }
+}
+.tuto-spotlight {
+  position: fixed; z-index: 900;
+  pointer-events: none;
+  border-radius: 6px;
+  background: transparent;
+  animation: tuto-spotlight-pulse 1.8s ease-in-out infinite;
+}
+.tuto-card {
+  position: fixed; z-index: 901;
+  background: var(--surface2); border: 1px solid var(--accent);
+  border-radius: 8px; padding: 16px; max-width: 320px; min-width: 240px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+  font-family: 'JetBrains Mono', Consolas, monospace;
+}
+.tuto-title { color: var(--accent); font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+.tuto-body  { color: var(--text); font-size: 12px; line-height: 1.6; }
+.tuto-nav   { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; gap: 6px; }
+.tuto-progress { color: var(--muted); font-size: 10px; text-align: center; margin-top: 8px; letter-spacing: .04em; }
+.tuto-btn-skip {
+  background: none; border: 1px solid var(--border); color: var(--muted);
+  padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-family: inherit;
+  transition: border-color .15s, color .15s;
+}
+.tuto-btn-skip:hover { border-color: var(--danger); color: var(--danger); }
+.tuto-btn-nav {
+  background: none; border: 1px solid var(--border); color: var(--text);
+  padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-family: inherit;
+  transition: border-color .15s, color .15s;
+}
+.tuto-btn-nav:hover { border-color: var(--accent); color: var(--accent); }
+.tuto-btn-primary { background: rgba(215,175,95,.15); border-color: var(--accent); color: var(--accent); }
+.tuto-btn-primary:hover { background: rgba(215,175,95,.25); }
+
+/* Guide button */
+.btn-guide-tuto {
+  background: rgba(215,175,95,.1);
+  color: var(--accent);
+  border: 1px solid rgba(215,175,95,.45);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  font-family: 'JetBrains Mono', monospace;
+  padding: 5px 13px;
+}
+.btn-guide-tuto:hover {
+  background: rgba(215,175,95,.2) !important;
+  border-color: var(--accent) !important;
+  filter: none !important;
+}
+
+/* Guide dropdown */
+.guide-menu {
+  position: fixed; z-index: 910;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 0; min-width: 200px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+}
+.guide-menu-title {
+  font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .08em; padding: 4px 14px 8px;
+}
+.guide-menu-item {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; color: var(--text); font-size: 12px;
+  padding: 6px 14px; cursor: pointer; font-family: inherit;
+  transition: background .1s, color .1s;
+}
+.guide-menu-item:hover { background: rgba(215,175,95,.1); color: var(--accent); }
+.guide-menu-sep { height: 1px; background: var(--border); margin: 4px 0; }
+
 /* ── HISTORY ── */
 .hist-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .hist-item > div[style*="width:100%"] { order: 99; }
