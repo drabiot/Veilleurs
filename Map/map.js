@@ -130,6 +130,14 @@ function getPinColor(type) {
   const fs = window._map_pin_colors || {};
   return fs[type] || DEFAULT_PIN_COLORS[type] || _typeToHsl(type);
 }
+function getPinEmoji(m) {
+  if (m.emoji) return m.emoji;
+  const t = m.type;
+  return (window._map_pin_emojis || {})[t] || _map_EMOJI[t] || '📍';
+}
+function getTypeLabel(type) {
+  return TYPE_LABELS[type] || (window._map_custom_type_labels || {})[type] || type;
+}
 function _typeToHsl(str) {
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
@@ -165,6 +173,11 @@ const PNJ_TO_MARKER_TYPE = {
   "fabricant secret":        "autre",
   "autres":                  "autre",
 };
+
+// Étendre PNJ_TO_MARKER_TYPE avec les types custom (identity mapping)
+for (const ct of (window._map_custom_type_labels ? Object.keys(window._map_custom_type_labels) : [])) {
+  if (!PNJ_TO_MARKER_TYPE[ct]) PNJ_TO_MARKER_TYPE[ct] = ct;
+}
 
 /* ══════════════════════════════════
    CONSTRUCTION DES MARKERS DYNAMIQUES
@@ -412,6 +425,27 @@ function buildDynamicMarkers() {
       name:  q.titre || qid,
       desc:  [q.npc ? `🧑 ${q.npc}` : '', q.desc || ''].filter(Boolean).join(' — '),
       link:  `../Quetes/quetes.html#${qid}`,
+    });
+  }
+
+  // Marqueurs génériques (types personnalisés, non-quête) depuis map_markers
+  const QUEST_TYPES_HANDLED = new Set(['quête_principale', 'quête_secondaire', 'quête_tertiaire']);
+  for (const mm of (window._map_mapMarkers || [])) {
+    const mmType = MM_TYPE_NORM[mm.type] || mm.type;
+    if (QUEST_TYPES_HANDLED.has(mmType)) continue;
+    if (mm.gx == null || mm.gy == null || !mm.floor) continue;
+    const f = +mm.floor;
+    if (!byFloor[f]) byFloor[f] = [];
+    byFloor[f].push({
+      id:    mm._id || mm.id || `custom_${f}_${mm.name}`,
+      type:  mmType,
+      layer: mm.is_underground ? 'underground' : 'surface',
+      gx:    +mm.gx,
+      gy:    +mm.gy,
+      name:  mm.name || '',
+      desc:  mm.desc || '',
+      emoji: mm.emoji || undefined,
+      link:  mm.link || undefined,
     });
   }
 
@@ -932,7 +966,7 @@ function renderZones() {
         <div class="tooltip-name" style="color:${color}">${zone.name || ''}</div>
         <div class="tooltip-desc">${resolvedMobs.map(m => m.name || m.id).join(' · ') || 'Aucun mob lié'}</div>`;
       if (_hoveredMarker && (_hoveredMarker.type === 'boss' || _hoveredMarker.type === 'mini_boss' || _hoveredMarker.type === 'zone_monstre')) {
-        const hl = TYPE_LABELS[_hoveredMarker.type] || _hoveredMarker.type;
+        const hl = getTypeLabel(_hoveredMarker.type);
         zoneTooltip.innerHTML = `<div class="tooltip-type" style="color:#e0c87a">${hl}</div><div class="tooltip-name">${_hoveredMarker.name}</div><hr style="border:none;border-top:1px solid rgba(255,255,255,.15);margin:6px 0 4px;">` + zoneBody;
       } else {
         zoneTooltip.innerHTML = zoneBody;
@@ -1023,7 +1057,7 @@ function renderZones() {
         }
         const zoneBody = `<div class="tooltip-type">Zone Monstres</div><div class="tooltip-name" style="color:${color}">${zone.name || ''}</div><div class="tooltip-desc">${monsters.map(m => m.name).join(' · ') || 'Aucun mob'}</div>`;
         if (_hoveredMarker && (_hoveredMarker.type === 'boss' || _hoveredMarker.type === 'mini_boss' || _hoveredMarker.type === 'zone_monstre')) {
-          const hl = TYPE_LABELS[_hoveredMarker.type] || _hoveredMarker.type;
+          const hl = getTypeLabel(_hoveredMarker.type);
           zoneTooltip.innerHTML = `<div class="tooltip-type" style="color:#e0c87a">${hl}</div><div class="tooltip-name">${_hoveredMarker.name}</div><hr style="border:none;border-top:1px solid rgba(255,255,255,.15);margin:6px 0 4px;">` + zoneBody;
         } else {
           zoneTooltip.innerHTML = zoneBody;
@@ -1160,7 +1194,7 @@ function renderSingleMarker(m) {
 
   const icon = document.createElement('div');
   icon.className   = 'marker-icon';
-  icon.textContent = _map_EMOJI[m.type] || '📍';
+  icon.textContent = getPinEmoji(m);
   const pinColor = getPinColor(m.type);
   if (pinColor) { icon.style.background = pinColor; icon.style.boxShadow = `0 2px 10px ${pinColor}88`; }
   el.appendChild(icon);
@@ -1242,7 +1276,7 @@ function renderCluster(group) {
 
       const icon = document.createElement('div');
       icon.className   = 'marker-icon marker-icon-sm';
-      icon.textContent = _map_EMOJI[m.type] || '📍';
+      icon.textContent = getPinEmoji(m);
       const subPinColor = getPinColor(m.type);
       if (subPinColor) { icon.style.background = subPinColor; icon.style.boxShadow = `0 2px 8px ${subPinColor}88`; }
       sub.appendChild(icon);
@@ -1301,7 +1335,7 @@ let _tooltipHideTimer = null;
 
 function showTooltip(marker) {
   clearTimeout(_tooltipHideTimer);
-  tooltipType.textContent = TYPE_LABELS[marker.type] || marker.type;
+  tooltipType.textContent = getTypeLabel(marker.type);
   tooltipName.textContent = marker.name;
   tooltipDesc.textContent = marker.desc || '';
   if (marker.link) {
@@ -1499,7 +1533,7 @@ searchInput.addEventListener('input', () => {
   const matches = getAllMarkers().filter(m =>
     normalize(m.name).includes(norm) ||
     normalize(m.desc || '').includes(norm) ||
-    normalize(TYPE_LABELS[m.type] || m.type).includes(norm)
+    normalize(getTypeLabel(m.type)).includes(norm)
   ).slice(0, 12);
 
   searchResults.innerHTML = '';

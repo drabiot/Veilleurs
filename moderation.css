@@ -185,3 +185,103 @@ header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .sub-editor-status { font-size: 11px; margin-top: 4px; }
 .sub-editor-status.ok  { color: var(--success); }
 .sub-editor-status.err { color: var(--danger); }
+
+/* ── Permissions — layout Discord ────────────────────── */
+#permissions-panel { padding: 0 !important; overflow: hidden !important; }
+
+#perm-layout { display: flex; height: 100%; min-height: 0; }
+
+#perm-sidebar {
+  width: 220px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto; padding: 12px 0;
+}
+
+.perm-sidebar-header {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em;
+  padding: 0 14px 8px;
+}
+
+.perm-role-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; cursor: pointer;
+  transition: background .1s; font-size: 13px;
+  border-left: 3px solid transparent;
+}
+.perm-role-item:hover { background: var(--surface2); }
+.perm-role-item.active {
+  background: rgba(122,90,248,.12);
+  border-left-color: var(--accent);
+  color: var(--text);
+}
+
+.perm-role-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0; color: #000;
+}
+
+.perm-add-role-btn, .perm-tech-btn {
+  margin: 4px 10px; padding: 7px 12px;
+  border: 1px dashed var(--border); border-radius: 6px;
+  background: transparent; color: var(--muted); cursor: pointer;
+  font-size: 12px; text-align: left; font-family: inherit;
+  transition: border-color .1s, color .1s;
+}
+.perm-add-role-btn:hover, .perm-tech-btn:hover {
+  border-color: var(--accent); color: var(--accent);
+}
+.perm-tech-btn { margin-top: auto; }
+
+#perm-detail { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
+.perm-role-header {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 16px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--border); flex-wrap: wrap;
+}
+.perm-role-title { font-size: 18px; font-weight: 700; }
+.perm-role-tier-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 4px; text-transform: uppercase; display: inline-block; margin-top: 4px;
+}
+
+.perm-space-section { margin-bottom: 28px; }
+.perm-space-title {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em;
+  padding-bottom: 6px; border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+
+.perm-toggle-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 12px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 8px;
+  margin-bottom: 6px;
+}
+.perm-toggle-row.server-side { border-left: 2px solid rgba(251,191,36,.4); }
+.perm-server-badge { font-size: 13px; flex-shrink: 0; cursor: help; }
+.perm-toggle-info { flex: 1; }
+.perm-toggle-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.perm-toggle-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.perm-toggle {
+  width: 40px; height: 22px; border-radius: 11px;
+  cursor: pointer; position: relative; flex-shrink: 0;
+  transition: background .15s; padding: 0;
+}
+.perm-toggle.on  { background: #4ade80; border: none; }
+.perm-toggle.off { background: var(--surface3); border: 1px solid var(--border); }
+.perm-toggle::after {
+  content: ''; position: absolute; top: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; transition: left .15s;
+}
+.perm-toggle.on::after  { left: 21px; }
+.perm-toggle.off::after { left: 3px; }
+.perm-toggle:disabled { cursor: default; opacity: .6; }
+
+.perm-lock-icon { font-size: 12px; color: var(--muted); flex-shrink: 0; }

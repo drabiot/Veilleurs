@@ -12,9 +12,10 @@ service cloud.firestore {
         : 'visiteur';
     }
 
-    function isAdmin()       { return isAuth() && userRole() == 'admin'; }
-    function isContrib()     { return isAuth() && userRole() in ['contributeur', 'admin']; }
-    function isMembre()      { return isAuth() && userRole() in ['membre', 'contributeur', 'admin']; }
+    // Rôles personnalisés inclus automatiquement selon leur tier de base
+    function isAdmin()   { return isAuth() && userRole() in ['admin']; }
+    function isContrib() { return isAuth() && userRole() in ['contributeur', 'admin', 'contributeur']; }
+    function isMembre()  { return isAuth() && userRole() in ['membre', 'contributeur', 'admin', 'membre', 'contributeur', 'compagnons_de_la_flamme']; }
 
     function creatorToolEnabled(toolType) {
       return !exists(/databases/$(database)/documents/config/creator)
@@ -26,16 +27,13 @@ service cloud.firestore {
       allow write: if isContrib();
     }
 
-    // Items sensibles — gameplay stocké sous item.id, nameHash = hash(normalize(name))
-    // Lecture publique : get par item.id + list pour query nameHash (picker atelier)
     match /items_hidden/{id} {
       allow read:  if true;
       allow write: if isContrib();
     }
 
-    // Items sensibles — contenu flavor (lore, obtain, craft…), contrib only
     match /items_secret/{id} {
-      allow read:  if isContrib();
+      allow read:  if isAdmin();
       allow write: if isContrib();
     }
 
@@ -44,10 +42,8 @@ service cloud.firestore {
       allow write: if isContrib();
     }
 
-    // Mobs sensibles — doc complet, contrib only (jamais visible au public)
-    // Bascule sensible ↔ non-sensible = déplacement entre mobs_secret et mobs
     match /mobs_secret/{id} {
-      allow read:  if isContrib();
+      allow read:  if isAdmin();
       allow write: if isContrib();
     }
 
@@ -56,10 +52,8 @@ service cloud.firestore {
       allow write: if isContrib();
     }
 
-    // PNJs sensibles — doc complet, contrib only (jamais visible au public)
-    // Bascule sensible ↔ non-sensible = déplacement entre pnj_secret et personnages
     match /pnj_secret/{id} {
-      allow read:  if isContrib();
+      allow read:  if isAdmin();
       allow write: if isContrib();
     }
 
@@ -73,7 +67,6 @@ service cloud.firestore {
       allow write: if isContrib();
     }
 
-    // Panoplies — lecture publique, écriture admin uniquement
     match /panoplies/{id} {
       allow read:  if true;
       allow write: if isAdmin();
@@ -81,13 +74,11 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow get:    if isAuth() && (request.auth.uid == uid || isAdmin());
-      allow list:   if isAuth();  // pseudo uniqueness check (changePseudoSecurely)
-      // Création du propre profil à l'inscription (rôle forcé à 'membre', pas d'autres champs)
+      allow list:   if isAuth();
       allow create: if isAuth()
                     && request.auth.uid == uid
                     && request.resource.data.role == 'membre'
                     && request.resource.data.keys().hasOnly(['pseudo','role','email']);
-      // Self-update : l'utilisateur peut modifier son pseudo et son email (jamais son rôle)
       allow update: if isAdmin()
                     || (isAuth()
                         && request.auth.uid == uid
@@ -96,19 +87,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Marqueurs carte (donjons, ressources, zones) — lecture publique, écriture contrib
     match /map_markers/{id} {
       allow read:  if true;
       allow write: if isContrib();
     }
 
-    // Donjons migrés depuis data.js — lecture publique, écriture contrib
     match /donjons/{id} {
       allow read:  if true;
       allow write: if isContrib();
     }
 
-    // Zones de spawn de monstres (polygones) — lecture publique, écriture contrib
     match /zones/{id} {
       allow read:  if true;
       allow write: if isContrib();
@@ -119,7 +107,6 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Pseudo lookup map for leaderboard — users can update their own entry only
     match /config/pseudos {
       allow read: if true;
       allow create: if isAuth()
@@ -129,20 +116,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Corbeille — contribs peuvent écrire (soft-delete), admins gèrent
     match /trash/{id} {
       allow read:   if isContrib();
       allow create: if isContrib();
       allow delete: if isContrib();
     }
 
-    // Posts Discord trackés (thread_id / message_id) — admin only
     match /discord_posts/{id} {
       allow read:  if isAdmin();
       allow write: if isAdmin();
     }
 
-    // Journal d'audit — écriture contrib (toute action de modération), lecture admin uniquement
     match /audit_log/{id} {
       allow read:   if isAdmin();
       allow create: if isContrib();
@@ -151,16 +135,12 @@ service cloud.firestore {
     }
 
     match /submissions/{id} {
-      // Tout le monde peut soumettre (invités inclus) — pseudo et type obligatoires
-      // Les contributeurs+ contournent les restrictions du creator
       allow create: if request.resource.data.submitterName is string
                     && request.resource.data.submitterName.size() >= 2
                     && request.resource.data.type in ['item','mob','pnj','region','quest','panoplie']
                     && request.resource.data.status == 'pending'
                     && (isContrib() || creatorToolEnabled(request.resource.data.type));
-      // Les contributeurs+ voient tout ; un user connecté voit ses propres soumissions
       allow read:   if isContrib() || (isAuth() && resource.data.submittedBy == request.auth.uid);
-      // Seuls les contributeurs/admin peuvent modifier (approuver/rejeter)
       allow update: if isContrib();
       allow delete: if isContrib();
     }

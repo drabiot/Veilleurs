@@ -6,6 +6,7 @@
   <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
   <title>[VCL] - Atelier</title>
   <link rel="stylesheet" href="atelier.css" />
+  <link rel="stylesheet" href="../auth-widget.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
@@ -229,7 +230,10 @@
   <script src="atelier.js"></script>
   <script type="module">
     import { store } from '../store.js';
-    import { getHiddenByName, getHiddenById, getSecretById, COL, db, getDoc, doc } from '../firebase.js';
+    import { getHiddenByName, getHiddenById, getSecretById, COL, db, getDoc, doc,
+             desanitizeFromFirestore, hasRole } from '../firebase.js';
+    import { collection, getDocs }
+      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
     import { loadMaxLevel } from '../config-loader.js';
     window.VCL_DB = { getHiddenByName, getHiddenById, getSecretById, COL };
     // Charger MAX_LEVEL depuis Firestore avant d'initialiser l'atelier
@@ -244,6 +248,35 @@
       console.error('[Atelier] Erreur Firestore :', err);
     }
     window._pageInit?.();
+
+    let _secretLoaded = false;
+    async function _canViewSecretItems(baseRole) {
+      let minRole = 'contributeur';
+      try {
+        const snap = await getDoc(doc(db, 'config', 'permissions'));
+        if (snap.exists()) minRole = snap.data().minRole?.view_items_secret ?? minRole;
+      } catch {}
+      return hasRole(baseRole, minRole);
+    }
+    async function _loadSecretItems() {
+      if (_secretLoaded) return;
+      _secretLoaded = true;
+      try {
+        const snap = await getDocs(collection(db, COL.itemsHidden));
+        const existing = new Set(ITEMS.map(i => i.id || i._id));
+        let added = false;
+        for (const d of snap.docs) {
+          const item = desanitizeFromFirestore({ _id: d.id, ...d.data() });
+          if (!existing.has(item.id || item._id)) { ITEMS.push(item); added = true; }
+        }
+        if (added) window._atelierRefreshPicker?.();
+      } catch (e) { console.warn('[Atelier] items sensibles:', e); }
+    }
+    document.addEventListener('vcl:auth-ready', async e => {
+      if (await _canViewSecretItems(e.detail.baseRole)) await _loadSecretItems();
+    }, { once: true });
+    if (window._vcl_base_role && await _canViewSecretItems(window._vcl_base_role)) await _loadSecretItems();
   </script>
+  <script type="module" src="../auth-widget.js"></script>
 </body>
 </html>

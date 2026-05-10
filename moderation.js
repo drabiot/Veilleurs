@@ -454,7 +454,12 @@ function _buildPrettySummary(data, type) {
     if (data.coords)  field('Coords', `X:${data.coords.x} Y:${data.coords.y} Z:${data.coords.z}`);
     if (data.desc)    field('Desc',   `<i style="color:var(--muted)">${esc(data.desc).slice(0,200)}</i>`);
     if (data.objectifs?.length) {
-      const objLines = data.objectifs.map(o => `<div style="font-size:11px;display:flex;gap:5px;"><span style="color:var(--accent);">◻</span><span>${esc(o.texte||'—')}</span></div>`).join('');
+      const objLines = data.objectifs.map(o => {
+        let line = `<div style="font-size:11px;display:flex;gap:5px;"><span style="color:var(--accent);">◻</span><span>${esc(o.texte||'—')}</span></div>`;
+        if (o.items?.length) o.items.forEach(it => { line += `<div style="font-size:10px;color:var(--muted);padding-left:14px;">→ item: <code>${esc(it.id||it.itemId||'?')}</code> ×${it.qte||1}</div>`; });
+        if (o.mobs?.length)  o.mobs.forEach(m  => { line += `<div style="font-size:10px;color:var(--muted);padding-left:14px;">→ mob: <code>${esc(m.id||m.mobId||'?')}</code> ×${m.qte||1}</div>`; });
+        return line;
+      }).join('');
       rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Objectifs</div><div style="display:flex;flex-direction:column;gap:1px;">${objLines}</div>`);
     }
   } else if (type === 'panoplie') {
@@ -4091,14 +4096,14 @@ window.deleteCurrentEntry = async function() {
   btn.disabled = true; btn.textContent = '⏳';
   try {
     // Sauvegarder en corbeille avant suppression
-    const trashPayload = sanitizeForFirestore({
+    const trashPayload = {
       originalCollection: _editorCollection,
       originalId: _editorId,
       deletedAt: serverTimestamp(),
       deletedBy: currentUser?.uid || null,
       deletedByName: _userNames.get(currentUser?.uid) || currentUser?.email || 'Inconnu',
-      data: _editorOrigData || {}
-    });
+      data: sanitizeForFirestore(_editorOrigData || {})
+    };
     try { await addDoc(collection(db, 'trash'), trashPayload); } catch(te) { console.warn('[Trash] Sauvegarde corbeille échouée:', te); }
 
     if (_editorCollection === 'items_sensible') {
@@ -4309,7 +4314,7 @@ window.toggleCreatorTool = async function(toolId) {
   if (!_ccConfig) return;
   _ccConfig.tools = _ccConfig.tools || {};
   _ccConfig.tools[toolId] = _ccConfig.tools[toolId] === false ? true : false;
-  _renderPermissions();
+  _renderPermsForRole(_selectedRoleId);
   await _saveCreatorConfig();
 };
 
@@ -4318,7 +4323,7 @@ window.toggleCreatorPalier = async function(p) {
   const hidden = new Set(_ccConfig.hiddenPaliers || []);
   if (hidden.has(p)) hidden.delete(p); else hidden.add(p);
   _ccConfig.hiddenPaliers = [...hidden];
-  _renderPermissions();
+  _renderPermsForRole(_selectedRoleId);
   await _saveCreatorConfig();
 };
 
@@ -5191,38 +5196,55 @@ const PERM_ROLE_LABELS = { visiteur: 'Visiteur', membre: 'Membre', contributeur:
 const PERM_ROLE_COLORS = { visiteur: '#4ade80', membre: '#60a5fa', contributeur: '#f59e0b', admin: '#f87171' };
 
 const PERM_SECTIONS = [
-  { title: 'Wiki — Pages publiques', perms: [
-    { id: 'view_compendium', label: 'Compendium',  desc: 'Liste et détail des items' },
-    { id: 'view_bestiaire',  label: 'Bestiaire',   desc: 'Mobs, PNJ et encyclopédie' },
-    { id: 'view_atelier',    label: 'Atelier',     desc: 'Simulateur de builds' },
-    { id: 'view_map',        label: 'Carte',       desc: 'Carte interactive du monde' },
-    { id: 'view_quetes',     label: 'Quêtes',      desc: 'Encyclopédie des quêtes' },
+  { space: 'wiki', title: '🌐 Wiki', perms: [
+    { id: 'view_compendium',   label: 'Compendium',        desc: 'Liste et détail des items',                                    defaultRole: 'visiteur' },
+    { id: 'view_bestiaire',    label: 'Bestiaire',         desc: 'Mobs, PNJ et encyclopédie',                                    defaultRole: 'visiteur' },
+    { id: 'view_atelier',      label: 'Atelier',           desc: 'Simulateur de builds',                                         defaultRole: 'visiteur' },
+    { id: 'view_map',          label: 'Carte',             desc: 'Carte interactive du monde',                                   defaultRole: 'visiteur' },
+    { id: 'view_quetes',       label: 'Quêtes',            desc: 'Encyclopédie des quêtes',                                      defaultRole: 'visiteur' },
+    { id: 'view_items_secret', label: 'Items secrets',     desc: 'Données cachées des items — dans les rules Firestore',          defaultRole: 'contributeur', serverSide: true },
+    { id: 'view_mobs_secret',  label: 'Mobs & PNJ secrets',desc: 'Données cachées des mobs/PNJ — dans les rules Firestore',      defaultRole: 'contributeur', serverSide: true },
   ]},
-  { title: 'Contributions (Creator)', perms: [
-    { id: 'submit_item',   label: 'Soumettre un item',    desc: 'Armes, armures, accessoires…' },
-    { id: 'submit_mob',    label: 'Soumettre un mob',     desc: 'Monstres et créatures' },
-    { id: 'submit_pnj',    label: 'Soumettre un PNJ',     desc: 'Personnages non-joueurs' },
-    { id: 'submit_region', label: 'Soumettre une région', desc: 'Zones et territoires' },
-    { id: 'submit_quest',  label: 'Soumettre une quête',  desc: 'Quêtes du jeu' },
+  { space: 'creator', title: '🛠️ Creator', perms: [
+    { id: 'submit_item',    label: 'Soumettre un item',      desc: 'Armes, armures, accessoires…',  defaultRole: 'membre' },
+    { id: 'submit_mob',     label: 'Soumettre un mob',       desc: 'Monstres et créatures',         defaultRole: 'membre' },
+    { id: 'submit_pnj',     label: 'Soumettre un PNJ',       desc: 'Personnages non-joueurs',       defaultRole: 'membre' },
+    { id: 'submit_region',  label: 'Soumettre une région',   desc: 'Zones et territoires',          defaultRole: 'membre' },
+    { id: 'submit_quest',   label: 'Soumettre une quête',    desc: 'Quêtes du jeu',                 defaultRole: 'membre' },
+    { id: 'submit_panoplie',label: 'Soumettre une panoplie', desc: 'Ensembles d\'équipement',       defaultRole: 'contributeur' },
   ]},
-  { title: 'Modération — fixe (règles Firestore)', perms: [
-    { id: '_mod_panel',   label: 'Panel modération',         desc: 'Soumissions, éditeur, outils',   fixed: 'contributeur' },
-    { id: '_approve',     label: 'Approuver / Rejeter',      desc: 'Modérer les soumissions',        fixed: 'contributeur' },
-    { id: '_edit_direct', label: 'Écriture directe en base', desc: 'Items, mobs, PNJ, régions…',    fixed: 'contributeur' },
-    { id: '_admin',       label: 'Configuration admin',      desc: 'Permissions, webhooks, rôles',   fixed: 'admin' },
-  ]},
-  { title: 'Panel de modération — Outils (configurable)', perms: [
-    { id: 'tool_trash',       label: '🗑️ Corbeille',          desc: 'Voir et restaurer les éléments supprimés',   defaultRole: 'admin' },
-    { id: 'tool_leaderboard', label: '🏆 Classement',          desc: 'Voir le leaderboard des contributions',      defaultRole: 'admin' },
-    { id: 'tool_audit_log',   label: '📋 Journal d\'audit',    desc: 'Historique des actions de modération',        defaultRole: 'admin' },
-    { id: 'tool_map',         label: '🗺️ Carte (marqueurs)',   desc: 'Gestion des marqueurs sur la carte',          defaultRole: 'contributeur' },
-    { id: 'tool_zones',       label: '📍 Zones de spawn',      desc: 'Liste et éditeur de polygones de zones',      defaultRole: 'contributeur' },
-    { id: 'tool_diagnostic',  label: '🔍 Diagnostic',          desc: 'IDs fantômes, régions orphelines…',           defaultRole: 'contributeur' },
-    { id: 'tool_capture',     label: '📸 Capture Sprites',     desc: 'Outil de capture d\'images de sprites',       defaultRole: 'contributeur' },
+  { space: 'moderation', title: '🛡️ Modération', perms: [
+    { id: '_mod_panel',      label: 'Accès au panel',          desc: 'Lire les soumissions — dans les rules Firestore',           defaultRole: 'contributeur', serverSide: true },
+    { id: '_approve',        label: 'Approuver / Rejeter',     desc: 'Modifier les soumissions — dans les rules Firestore',        defaultRole: 'contributeur', serverSide: true },
+    { id: '_edit_direct',    label: 'Écriture directe',        desc: 'Écrire items, mobs, régions… — sync avec les collection perms', defaultRole: 'contributeur', serverSide: true },
+    { id: 'tool_map',        label: '🗺️ Gestion carte',        desc: 'Marqueurs sur la carte',            defaultRole: 'contributeur' },
+    { id: 'tool_zones',      label: '📍 Zones de spawn',       desc: 'Liste et éditeur de polygones',     defaultRole: 'contributeur' },
+    { id: 'tool_diagnostic', label: '🔍 Diagnostic',           desc: 'IDs fantômes, régions orphelines',  defaultRole: 'contributeur' },
+    { id: 'tool_capture',    label: '📸 Capture Sprites',      desc: 'Capture d\'images de sprites',      defaultRole: 'contributeur' },
+    { id: '_users',          label: 'Gestion membres',         desc: 'Modifier les rôles utilisateurs — dans les rules Firestore', defaultRole: 'admin',         serverSide: true },
+    { id: 'tool_trash',      label: '🗑️ Corbeille',            desc: 'Restaurer les éléments supprimés',  defaultRole: 'admin' },
+    { id: 'tool_leaderboard',label: '🏆 Classement',           desc: 'Leaderboard des contributions',     defaultRole: 'admin' },
+    { id: 'tool_audit_log',  label: '📋 Journal d\'audit',     desc: 'Historique des actions',            defaultRole: 'admin' },
+    { id: '_webhooks',       label: '🔔 Discord webhooks',     desc: 'Posts Discord — dans les rules Firestore',                  defaultRole: 'admin',         serverSide: true },
+    { id: '_permissions',    label: '🔑 Permissions',          desc: 'Config Firestore — dans les rules Firestore',               defaultRole: 'admin',         serverSide: true },
+    { id: '_admin',          label: '⚙️ Configuration admin',  desc: 'Migration, config jeu — dans les rules Firestore',          defaultRole: 'admin',         serverSide: true },
   ]},
 ];
 
-let _permConfig = null;
+let _permConfig    = null;
+let _selectedRoleId = 'admin';
+
+function _effectiveLevel(roleId) {
+  if (PERM_ROLES_ALL.includes(roleId)) return roleLevel(roleId);
+  const cr = _customRoles.find(r => r.id === roleId);
+  return cr ? roleLevel(cr.baseTier || 'visiteur') : 0;
+}
+
+function _roleHasPerm(roleId, perm) {
+  if (roleId === 'admin') return true;
+  const minRole = _permConfig?.[perm.id] ?? (perm.defaultRole || 'visiteur');
+  return _effectiveLevel(roleId) >= roleLevel(minRole);
+}
 
 window.showPermissions = async () => {
   _setHash('permissions');
@@ -5234,167 +5256,807 @@ window.showPermissions = async () => {
 
 window.loadPermissions = async function() {
   const loading = document.getElementById('perm-loading');
-  const content = document.getElementById('perm-content');
+  const layout  = document.getElementById('perm-layout');
+  const tech    = document.getElementById('perm-tech-panel');
   loading.style.display = ''; loading.textContent = 'Chargement…';
-  content.style.display = 'none';
+  if (layout) layout.style.display = 'none';
+  if (tech)   tech.style.display   = 'none';
   try {
     const [permSnap, ccSnap] = await Promise.all([
       getDoc(doc(db, 'config', 'permissions')),
       getDoc(doc(db, 'config', 'creator')),
     ]);
-    _permConfig = permSnap.exists() ? (permSnap.data().minRole || {}) : {};
-    _ccConfig   = ccSnap.exists() ? ccSnap.data() : {};
-    _renderPermissions();
+    const permData  = permSnap.exists() ? permSnap.data() : {};
+    _permConfig     = permData.minRole     || {};
+    _colPermConfig  = permData.collections || {};
+    _ccConfig       = ccSnap.exists() ? ccSnap.data() : {};
+    await loadRoles();
+    _renderPermsSidebar();
+    _renderPermsForRole(_selectedRoleId);
+    _renderCollectionPerms();
     loading.style.display = 'none';
-    content.style.display = '';
+    if (layout) layout.style.display = '';
   } catch(e) { loading.textContent = `Erreur : ${e.message}`; }
 };
 
-function _renderPermissions() {
-  const content = document.getElementById('perm-content');
-  content.innerHTML = '';
+function _renderPermsSidebar() {
+  const list = document.getElementById('perm-role-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const adminD = TIER_DEFAULTS.admin;
+  const managed = MANAGED_TIERS.slice().reverse()
+    .map(id => _customRoles.find(r => r.id === id)).filter(Boolean);
+  const customs = _customRoles.filter(r => !MANAGED_TIERS.includes(r.id));
+  const allDisplay = [{ id: 'admin', label: adminD.label, emoji: adminD.emoji, color: adminD.color }, ...managed, ...customs];
+  for (const role of allDisplay) {
+    const item = document.createElement('div');
+    item.className = 'perm-role-item' + (role.id === _selectedRoleId ? ' active' : '');
+    item.dataset.roleId = role.id;
+    item.onclick = () => _selectRole(role.id);
+    const avatar = document.createElement('div');
+    avatar.className = 'perm-role-avatar';
+    avatar.style.background = role.color || '#888';
+    avatar.textContent = role.emoji || '?';
+    const name = document.createElement('span');
+    name.textContent = role.label;
+    item.append(avatar, name);
+    list.appendChild(item);
+  }
+}
 
-  // Sections rôle-minimum
-  for (const section of PERM_SECTIONS) {
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'margin-bottom:24px;';
-    const title = document.createElement('div');
-    title.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;';
-    title.textContent = section.title;
-    wrap.appendChild(title);
-    const rows = document.createElement('div');
-    rows.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
-    for (const perm of section.perms) rows.appendChild(_buildPermRow(perm));
-    wrap.appendChild(rows);
-    content.appendChild(wrap);
+function _selectRole(roleId) {
+  _selectedRoleId = roleId;
+  document.querySelectorAll('.perm-role-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.roleId === roleId);
+  });
+  _renderPermsForRole(roleId);
+  // Close edit form when switching roles
+  const editEl = document.getElementById('perm-role-edit');
+  if (editEl) editEl.style.display = 'none';
+}
+
+function _renderPermsForRole(roleId) {
+  const headerEl = document.getElementById('perm-role-header');
+  const editEl   = document.getElementById('perm-role-edit');
+  const spacesEl = document.getElementById('perm-spaces');
+  if (!headerEl || !spacesEl) return;
+
+  const isAdminRole   = roleId === 'admin';
+  const isManagedTier = MANAGED_TIERS.includes(roleId);
+  const isCustom      = !isAdminRole && !isManagedTier;
+
+  let roleData;
+  if (isAdminRole) {
+    roleData = { id: 'admin', ...TIER_DEFAULTS.admin };
+  } else {
+    roleData = _customRoles.find(r => r.id === roleId) || { id: roleId, label: roleId, emoji: '?', color: '#888', baseTier: 'visiteur' };
   }
 
-  // Section Creator — Outils actifs
-  const ccTools = (_ccConfig || {}).tools || {};
+  // ── Header ──────────────────────────────────────
+  headerEl.className = 'perm-role-header';
+  headerEl.innerHTML = '';
+
+  const bigAvatar = document.createElement('div');
+  bigAvatar.id = 'perm-big-avatar';
+  bigAvatar.style.cssText = `width:44px;height:44px;border-radius:50%;background:${roleData.color||'#888'};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;`;
+  bigAvatar.textContent = roleData.emoji || '?';
+
+  const titleBlock = document.createElement('div');
+  titleBlock.style.cssText = 'flex:1;';
+  const titleEl = document.createElement('div');
+  titleEl.className = 'perm-role-title';
+  titleEl.textContent = roleData.label;
+  titleBlock.appendChild(titleEl);
+
+  if (isAdminRole) {
+    const badge = document.createElement('span');
+    badge.className = 'perm-role-tier-badge';
+    badge.style.cssText = 'background:rgba(248,113,113,.15);color:#f87171;';
+    badge.textContent = '🔒 Fixe';
+    titleBlock.appendChild(badge);
+  } else if (isManagedTier) {
+    const td = TIER_DEFAULTS[roleId] || {};
+    const badge = document.createElement('span');
+    badge.className = 'perm-role-tier-badge';
+    badge.style.cssText = `background:${(td.color||'#888')}22;color:${td.color||'#888'};`;
+    badge.textContent = `tier ${roleId}`;
+    titleBlock.appendChild(badge);
+  } else {
+    const tierKey = roleData.baseTier || 'visiteur';
+    const td = TIER_DEFAULTS[tierKey] || {};
+    const badge = document.createElement('span');
+    badge.className = 'perm-role-tier-badge';
+    badge.style.cssText = `background:${(td.color||'#888')}22;color:${td.color||'#888'};`;
+    badge.textContent = `base: ${tierKey}`;
+    titleBlock.appendChild(badge);
+  }
+
+  const actionsDiv = document.createElement('div');
+  actionsDiv.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
+
+  if (isCustom) {
+    const tierSel = document.createElement('div');
+    tierSel.style.cssText = 'display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;';
+    for (const t of MANAGED_TIERS) {
+      const td = TIER_DEFAULTS[t];
+      const isActive = roleData.baseTier === t;
+      const btn = document.createElement('button');
+      btn.style.cssText = `padding:4px 10px;font-size:11px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;`
+                        + `background:${isActive ? td.color : 'var(--surface3)'};color:${isActive ? '#000' : 'var(--muted)'};transition:background .12s,color .12s;`;
+      btn.textContent = td.label;
+      btn.title = `Tier de base : ${t}`;
+      btn.onclick = () => _setCustomRoleBaseTier(roleId, t);
+      tierSel.appendChild(btn);
+    }
+    actionsDiv.appendChild(tierSel);
+  }
+
+  if (!isAdminRole) {
+    const editBtn = document.createElement('button');
+    editBtn.id = 'perm-edit-toggle-btn';
+    editBtn.className = 'btn btn-ghost';
+    editBtn.style.cssText = 'font-size:11px;';
+    editBtn.textContent = '✏️ Éditer';
+    editBtn.onclick = () => {
+      const isOpen = editEl && editEl.style.display !== 'none';
+      if (editEl) editEl.style.display = isOpen ? 'none' : '';
+      editBtn.textContent = isOpen ? '✏️ Éditer' : '✕ Fermer';
+    };
+    actionsDiv.appendChild(editBtn);
+  }
+
+  if (isCustom) {
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-ghost';
+    delBtn.style.cssText = 'font-size:11px;color:var(--danger);border-color:rgba(248,113,113,.4);';
+    delBtn.textContent = '✕ Supprimer';
+    delBtn.onclick = () => deleteRole(roleId);
+    actionsDiv.appendChild(delBtn);
+  }
+
+  headerEl.append(bigAvatar, titleBlock, actionsDiv);
+
+  // ── Inline edit form ─────────────────────────────
+  if (editEl) {
+    editEl.innerHTML = '';
+    editEl.style.display = 'none';
+    if (!isAdminRole) {
+      editEl.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:20px;';
+      const INS = 'background:var(--surface3);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:7px 10px;font-size:12px;font-family:inherit;';
+      const row1 = document.createElement('div');
+      row1.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;';
+      const inputLabel = Object.assign(document.createElement('input'), { type:'text', value:roleData.label, maxLength:32, placeholder:'Nom' });
+      inputLabel.style.cssText = INS + 'flex:1;';
+      const inputEmoji = Object.assign(document.createElement('input'), { type:'text', value:roleData.emoji||'', maxLength:4, placeholder:'Emoji' });
+      inputEmoji.style.cssText = INS + 'width:60px;text-align:center;';
+      const inputColor = Object.assign(document.createElement('input'), { type:'color', value:roleData.color||'#888' });
+      inputColor.style.cssText = 'border:1px solid var(--border);border-radius:4px;height:33px;width:50px;cursor:pointer;';
+      const syncAvatar = () => {
+        const av = document.getElementById('perm-big-avatar');
+        if (av) { av.style.background = inputColor.value; av.textContent = inputEmoji.value || roleData.emoji; }
+      };
+      inputEmoji.oninput = syncAvatar; inputColor.oninput = syncAvatar;
+      row1.append(inputLabel, inputEmoji, inputColor);
+      const row2 = document.createElement('div');
+      row2.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;';
+      const cancelBtn = Object.assign(document.createElement('button'), { className:'btn btn-ghost', textContent:'Annuler' });
+      cancelBtn.style.cssText = 'font-size:11px;';
+      cancelBtn.onclick = () => {
+        editEl.style.display = 'none';
+        const tb = document.getElementById('perm-edit-toggle-btn');
+        if (tb) tb.textContent = '✏️ Éditer';
+      };
+      const saveBtn = Object.assign(document.createElement('button'), { className:'btn btn-approve', textContent:'✓ Sauvegarder' });
+      saveBtn.style.cssText = 'font-size:11px;';
+      saveBtn.onclick = async () => {
+        const newLabel = inputLabel.value.trim() || roleData.label;
+        const newEmoji = inputEmoji.value.trim() || roleData.emoji;
+        const newColor = inputColor.value;
+        const cr = _customRoles.find(r => r.id === roleId);
+        if (cr) { cr.label = newLabel; cr.emoji = newEmoji; cr.color = newColor; }
+        await _saveRoles();
+        _renderPermsSidebar();
+        _renderPermsForRole(roleId);
+        toast(`✅ Rôle "${newLabel}" mis à jour`, 'success');
+      };
+      row2.append(cancelBtn, saveBtn);
+      editEl.append(row1, row2);
+    }
+  }
+
+  // ── Permission spaces ─────────────────────────────
+  spacesEl.innerHTML = '';
+  for (const section of PERM_SECTIONS) {
+    const secEl = document.createElement('div');
+    secEl.className = 'perm-space-section';
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'perm-space-title';
+    titleDiv.textContent = section.title;
+    secEl.appendChild(titleDiv);
+    for (const perm of section.perms) {
+      secEl.appendChild(_buildPermToggleRow(perm, roleId, isAdminRole));
+    }
+    if (section.space === 'creator') {
+      secEl.appendChild(_buildCreatorConfigSection());
+    }
+    spacesEl.appendChild(secEl);
+  }
+}
+
+function _buildPermToggleRow(perm, roleId, isAdminRole) {
+  const hasIt = isAdminRole || _roleHasPerm(roleId, perm);
+  const row = document.createElement('div');
+  row.className = 'perm-toggle-row' + (perm.serverSide ? ' server-side' : '');
+  const info = document.createElement('div');
+  info.className = 'perm-toggle-info';
+  info.innerHTML = `<div class="perm-toggle-label">${perm.label}</div><div class="perm-toggle-desc">${perm.desc}</div>`;
+  row.appendChild(info);
+  if (perm.serverSide) {
+    const badge = document.createElement('span');
+    badge.className = 'perm-server-badge';
+    badge.title = 'Nécessite un redéploiement des rules Firestore pour prendre effet';
+    badge.textContent = '🛡️';
+    row.appendChild(badge);
+  }
+  const toggle = document.createElement('button');
+  toggle.className = `perm-toggle ${hasIt ? 'on' : 'off'}`;
+  if (isAdminRole) {
+    toggle.disabled = true;
+  } else {
+    toggle.onclick = () => {
+      const currentLevel = _effectiveLevel(roleId);
+      if (hasIt) {
+        const newLevel = Math.min(currentLevel + 1, PERM_ROLES_ALL.length - 1);
+        _setPermission(perm.id, PERM_ROLES_ALL[newLevel]);
+      } else {
+        _setPermission(perm.id, PERM_ROLES_ALL[currentLevel]);
+      }
+      if (perm.serverSide) _showRulesDeployBanner();
+    };
+  }
+  row.appendChild(toggle);
+  return row;
+}
+
+function _showRulesDeployBanner() {
+  let banner = document.getElementById('perm-deploy-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'perm-deploy-banner';
+    banner.style.cssText = 'position:sticky;top:0;z-index:10;background:#78350f;border-bottom:1px solid #f59e0b;color:#fbbf24;padding:8px 14px;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;';
+    banner.innerHTML = `<span>⚠️ Permissions serveur modifiées — pensez à regénérer et déployer les rules Firestore.</span>`;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost';
+    btn.style.cssText = 'font-size:11px;color:#fbbf24;border-color:rgba(251,191,36,.4);flex-shrink:0;';
+    btn.textContent = '📋 Générer les rules';
+    btn.onclick = () => { showGenerateRulesModal(); };
+    banner.appendChild(btn);
+    const detail = document.getElementById('perm-detail');
+    if (detail) detail.prepend(banner);
+  }
+}
+
+function _buildCreatorConfigSection() {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-top:10px;';
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'btn btn-ghost';
+  toggleBtn.style.cssText = 'font-size:11px;width:100%;text-align:left;';
+  toggleBtn.textContent = '⚙️ Config Creator (outils & paliers) ▸';
+  wrap.appendChild(toggleBtn);
+  const body = document.createElement('div');
+  body.style.cssText = 'display:none;margin-top:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;';
+  toggleBtn.onclick = () => {
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : '';
+    toggleBtn.textContent = open ? '⚙️ Config Creator (outils & paliers) ▸' : '⚙️ Config Creator (outils & paliers) ▾';
+  };
+  // Outils actifs
+  const toolsLabel = document.createElement('div');
+  toolsLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;';
+  toolsLabel.textContent = 'Outils actifs';
+  body.appendChild(toolsLabel);
   const CC_TOOLS = [
-    { id: 'item',     label: '⚔️ Items',     desc: 'Soumission d\'items dans le Creator' },
-    { id: 'mob',      label: '👾 Mobs',      desc: 'Soumission de mobs dans le Creator' },
-    { id: 'pnj',      label: '🧑 PNJ',       desc: 'Soumission de PNJ dans le Creator' },
-    { id: 'region',   label: '📍 Régions',   desc: 'Soumission de régions dans le Creator' },
-    { id: 'quest',    label: '📜 Quêtes',    desc: 'Soumission de quêtes dans le Creator' },
-    { id: 'panoplie', label: '🔗 Panoplies', desc: 'Soumission de panoplies dans le Creator' },
+    { id:'item',     label:'⚔️ Items' },
+    { id:'mob',      label:'👾 Mobs' },
+    { id:'pnj',      label:'🧑 PNJ' },
+    { id:'region',   label:'📍 Régions' },
+    { id:'quest',    label:'📜 Quêtes' },
+    { id:'panoplie', label:'🔗 Panoplies' },
   ];
-  const toolsWrap = document.createElement('div');
-  toolsWrap.style.cssText = 'margin-bottom:24px;';
-  const toolsTitle = document.createElement('div');
-  toolsTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;';
-  toolsTitle.textContent = 'Creator — Outils actifs';
-  toolsWrap.appendChild(toolsTitle);
-  const toolsRows = document.createElement('div');
-  toolsRows.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  const ccTools = (_ccConfig||{}).tools || {};
+  const toolsGrid = document.createElement('div');
+  toolsGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;';
   for (const t of CC_TOOLS) {
     const on = ccTools[t.id] !== false;
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;';
-    const info = document.createElement('div');
-    info.style.cssText = 'flex:1;min-width:140px;';
-    info.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--text);">${t.label}</div>`
-                   + `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${t.desc}</div>`;
     const btn = document.createElement('button');
     btn.className = 'btn btn-sm btn-ghost';
     btn.style.cssText = on
-      ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);flex-shrink:0;'
-      : 'color:var(--danger);border-color:rgba(248,113,113,.4);flex-shrink:0;';
-    btn.textContent = on ? '✓ Actif' : '✕ Désactivé';
+      ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);'
+      : 'color:var(--danger);border-color:rgba(248,113,113,.4);';
+    btn.textContent = `${t.label} ${on ? '✓' : '✕'}`;
     btn.onclick = () => toggleCreatorTool(t.id);
-    row.appendChild(info);
-    row.appendChild(btn);
-    toolsRows.appendChild(row);
+    toolsGrid.appendChild(btn);
   }
-  toolsWrap.appendChild(toolsRows);
-  content.appendChild(toolsWrap);
-
-  // Section Creator — Paliers visibles
-  const hidden = new Set((_ccConfig || {}).hiddenPaliers || []);
-  const paliersWrap = document.createElement('div');
-  paliersWrap.style.cssText = 'margin-bottom:24px;';
-  const paliersTitle = document.createElement('div');
-  paliersTitle.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:10px;';
-  paliersTitle.textContent = 'Creator — Paliers visibles';
-  paliersWrap.appendChild(paliersTitle);
-  const paliersRows = document.createElement('div');
-  paliersRows.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+  body.appendChild(toolsGrid);
+  // Paliers visibles
+  const paliersLabel = document.createElement('div');
+  paliersLabel.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;';
+  paliersLabel.textContent = 'Paliers visibles dans le Creator';
+  body.appendChild(paliersLabel);
+  const hidden = new Set((_ccConfig||{}).hiddenPaliers || []);
+  const paliersGrid = document.createElement('div');
+  paliersGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;';
   for (const p of CREATOR_PALIERS) {
     const visible = !hidden.has(p);
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;';
-    const info = document.createElement('div');
-    info.style.cssText = 'flex:1;';
-    info.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--text);">Palier ${p}</div>`;
     const btn = document.createElement('button');
     btn.className = 'btn btn-sm btn-ghost';
     btn.style.cssText = visible
-      ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);flex-shrink:0;'
-      : 'color:var(--danger);border-color:rgba(248,113,113,.4);flex-shrink:0;';
-    btn.textContent = visible ? '✓ Visible' : '✕ Masqué';
+      ? 'background:rgba(74,222,128,.15);color:#4ade80;border-color:rgba(74,222,128,.4);'
+      : 'color:var(--danger);border-color:rgba(248,113,113,.4);';
+    btn.textContent = `P${p} ${visible ? '✓' : '✕'}`;
     btn.onclick = () => toggleCreatorPalier(p);
-    row.appendChild(info);
-    row.appendChild(btn);
-    paliersRows.appendChild(row);
+    paliersGrid.appendChild(btn);
   }
-  paliersWrap.appendChild(paliersRows);
-  content.appendChild(paliersWrap);
-}
-
-function _buildPermRow(perm) {
-  const row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap;';
-
-  const info = document.createElement('div');
-  info.style.cssText = 'flex:1;min-width:140px;';
-  info.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--text);">${perm.label}</div>`
-                 + `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${perm.desc}</div>`;
-  row.appendChild(info);
-
-  if (perm.fixed) {
-    const badge = document.createElement('span');
-    const col = PERM_ROLE_COLORS[perm.fixed] || '#888';
-    badge.style.cssText = `padding:4px 12px;font-size:11px;font-weight:700;background:${col};color:#000;border-radius:6px;`;
-    badge.textContent = PERM_ROLE_LABELS[perm.fixed] + '+';
-    const lock = document.createElement('span');
-    lock.style.cssText = 'font-size:12px;color:var(--muted);';
-    lock.textContent = '🔒';
-    lock.title = 'Géré par les règles Firestore — non modifiable ici';
-    row.appendChild(badge);
-    row.appendChild(lock);
-    return row;
-  }
-
-  const current = _permConfig[perm.id] ?? (perm.defaultRole || 'visiteur');
-  const seg = document.createElement('div');
-  seg.style.cssText = 'display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;flex-shrink:0;';
-
-  for (const role of PERM_ROLES_ALL) {
-    const btn = document.createElement('button');
-    const active = role === current;
-    const col = PERM_ROLE_COLORS[role];
-    btn.style.cssText = `padding:5px 10px;font-size:11px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;`
-                      + `background:${active ? col : 'var(--surface3)'};color:${active ? '#000' : 'var(--muted)'};`
-                      + `transition:background .12s,color .12s;`;
-    btn.textContent = PERM_ROLE_LABELS[role];
-    btn.title = `Rôle minimum : ${role}`;
-    btn.onclick = () => _setPermission(perm.id, role);
-    seg.appendChild(btn);
-  }
-  row.appendChild(seg);
-  return row;
+  body.appendChild(paliersGrid);
+  wrap.appendChild(body);
+  return wrap;
 }
 
 window._setPermission = async function(permId, role) {
   if (!_permConfig) return;
   _permConfig[permId] = role;
-  _renderPermissions();
+  _renderPermsForRole(_selectedRoleId);
   try {
-    await setDoc(doc(db, 'config', 'permissions'), { minRole: _permConfig });
+    await setDoc(doc(db, 'config', 'permissions'), { minRole: _permConfig, collections: _colPermConfig || {} });
   } catch(e) {
-    toast(`⛔ Erreur sauvegarde permissions : ${e.message}`, "error");
+    toast(`⛔ Erreur sauvegarde permissions : ${e.message}`, 'error');
   }
 };
+
+window._setCustomRoleBaseTier = async function(roleId, newTier) {
+  const cr = _customRoles.find(r => r.id === roleId);
+  if (!cr) return;
+  cr.baseTier = newTier;
+  await _saveRoles();
+  _renderPermsSidebar();
+  _renderPermsForRole(roleId);
+  toast(`✅ Tier de "${cr.label}" changé en ${newTier}`, 'success');
+};
+
+window.togglePermTech = function() {
+  const layout = document.getElementById('perm-layout');
+  const tech   = document.getElementById('perm-tech-panel');
+  if (!layout || !tech) return;
+  const showingTech = tech.style.display !== 'none';
+  tech.style.display   = showingTech ? 'none' : '';
+  layout.style.display = showingTech ? '' : 'none';
+};
+
+// ── Permissions Firestore par collection ──────────────
+const FIRESTORE_COLLECTIONS = [
+  { id: 'items',         label: '⚔️ Items',             defaultRead: 'public',       defaultWrite: 'contributeur' },
+  { id: 'items_hidden',  label: '🗂️ Items (données)',    defaultRead: 'public',       defaultWrite: 'contributeur' },
+  { id: 'items_secret',  label: '🔒 Items (secrets)',    defaultRead: 'contributeur', defaultWrite: 'contributeur' },
+  { id: 'mobs',          label: '👾 Mobs',               defaultRead: 'public',       defaultWrite: 'contributeur' },
+  { id: 'mobs_secret',   label: '🔒 Mobs (secrets)',     defaultRead: 'contributeur', defaultWrite: 'contributeur' },
+  { id: 'personnages',   label: '🧑 PNJ / Personnages',  defaultRead: 'public',       defaultWrite: 'contributeur' },
+  { id: 'pnj_secret',    label: '🔒 PNJ (secrets)',      defaultRead: 'contributeur', defaultWrite: 'contributeur' },
+  { id: 'regions',       label: '📍 Régions',            defaultRead: 'public',       defaultWrite: 'contributeur' },
+  { id: 'quetes',        label: '📜 Quêtes',             defaultRead: 'public',       defaultWrite: 'contributeur' },
+  { id: 'panoplies',     label: '🔗 Panoplies',          defaultRead: 'public',       defaultWrite: 'admin' },
+  { id: 'map_markers',   label: '🗺️ Marqueurs carte',   defaultRead: 'public',       defaultWrite: 'contributeur' },
+  { id: 'donjons',       label: '🏰 Donjons',            defaultRead: 'public',       defaultWrite: 'contributeur' },
+  { id: 'zones',         label: '💀 Zones de spawn',     defaultRead: 'public',       defaultWrite: 'contributeur' },
+  { id: 'trash',         label: '🗑️ Corbeille',          defaultRead: 'contributeur', defaultWrite: 'contributeur' },
+  { id: 'discord_posts', label: '🔔 Posts Discord',      defaultRead: 'admin',        defaultWrite: 'admin' },
+  { id: 'audit_log',     label: '📋 Audit log',          defaultRead: 'admin',        defaultWrite: 'contributeur', splitWrite: true },
+  { id: 'config',        label: '⚙️ Config',             defaultRead: 'public',       defaultWrite: 'admin' },
+];
+const COL_READ_OPTS  = ['public', 'membre', 'contributeur', 'admin'];
+const COL_WRITE_OPTS = ['membre', 'contributeur', 'admin'];
+const COL_OPT_LABELS = { public: 'Public', membre: 'Membre', contributeur: 'Contrib.', admin: 'Admin' };
+const COL_OPT_COLORS = { public: '#4ade80', membre: '#60a5fa', contributeur: '#f59e0b', admin: '#f87171' };
+
+let _colPermConfig = null;
+
+function _renderCollectionPerms() {
+  const wrap = document.getElementById('collection-perm-content');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+
+  const titleEl = document.createElement('div');
+  titleEl.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:8px;';
+  titleEl.textContent = 'Permissions Firestore — Collections';
+  wrap.appendChild(titleEl);
+
+  const note = document.createElement('p');
+  note.style.cssText = 'font-size:11px;color:var(--muted);margin-bottom:12px;';
+  note.innerHTML = 'Lecture/écriture par collection. Après modification → <b>📋 Générer les rules Firestore</b> et appliquer dans la console Firebase. <code>users</code>, <code>submissions</code>, <code>config/pseudos</code> non modifiables (logique complexe).';
+  wrap.appendChild(note);
+
+  const grid = document.createElement('div');
+  grid.style.cssText = 'display:flex;flex-direction:column;gap:6px;';
+
+  for (const col of FIRESTORE_COLLECTIONS) {
+    const cfg       = (_colPermConfig || {})[col.id] || {};
+    const readRole  = cfg.read  || col.defaultRead;
+    const writeRole = cfg.write || col.defaultWrite;
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;flex-wrap:wrap;';
+
+    const info = document.createElement('div');
+    info.style.cssText = 'flex:1;min-width:140px;';
+    info.innerHTML = `<div style="font-size:13px;font-weight:600;color:var(--text);">${col.label}</div>`
+                   + `<div style="font-size:10px;color:var(--muted);margin-top:1px;font-family:monospace;">${col.id}</div>`;
+    row.appendChild(info);
+
+    const mkSeg = (opts, current, op) => {
+      const outer = document.createElement('div');
+      outer.style.cssText = 'display:flex;flex-direction:column;gap:3px;align-items:center;';
+      const lbl = document.createElement('div');
+      lbl.style.cssText = 'font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;';
+      lbl.textContent = op === 'read' ? 'Lecture' : (col.splitWrite ? 'Créer*' : 'Écrire');
+      const seg = document.createElement('div');
+      seg.style.cssText = 'display:flex;border:1px solid var(--border);border-radius:6px;overflow:hidden;';
+      for (const opt of opts) {
+        const btn = document.createElement('button');
+        const active = opt === current;
+        const c = COL_OPT_COLORS[opt];
+        btn.style.cssText = `padding:4px 8px;font-size:10px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;`
+                          + `background:${active ? c : 'var(--surface3)'};color:${active ? '#000' : 'var(--muted)'};transition:background .12s,color .12s;`;
+        btn.textContent = COL_OPT_LABELS[opt];
+        btn.onclick = () => _setCollectionPerm(col.id, op, opt);
+        seg.appendChild(btn);
+      }
+      outer.appendChild(lbl);
+      outer.appendChild(seg);
+      return outer;
+    };
+
+    row.appendChild(mkSeg(COL_READ_OPTS,  readRole,  'read'));
+    row.appendChild(mkSeg(COL_WRITE_OPTS, writeRole, 'write'));
+    grid.appendChild(row);
+  }
+
+  const note2 = document.createElement('p');
+  note2.style.cssText = 'font-size:10px;color:var(--muted);margin-top:8px;';
+  note2.textContent = '* audit_log : Créer = rôle sélectionné, Supprimer = admin toujours, Mettre à jour = jamais.';
+  wrap.appendChild(grid);
+  wrap.appendChild(note2);
+}
+
+window._setCollectionPerm = async function(colId, op, role) {
+  if (_colPermConfig === null) _colPermConfig = {};
+  if (!_colPermConfig[colId]) _colPermConfig[colId] = {};
+  _colPermConfig[colId][op] = role;
+  _renderCollectionPerms();
+  try {
+    await setDoc(doc(db, 'config', 'permissions'), { minRole: _permConfig || {}, collections: _colPermConfig });
+  } catch(e) {
+    toast(`⛔ Erreur sauvegarde collection perms : ${e.message}`, 'error');
+  }
+};
+
+// ── Gestion des Rôles ─────────────────────────────────
+// admin = fixe. visiteur/membre/contributeur = éditables comme des rôles custom.
+const TIER_FIRESTORE = ['visiteur', 'membre', 'contributeur', 'admin'];
+const TIER_DEFAULTS = {
+  visiteur:     { label: 'Visiteur',     emoji: '👤', color: '#4ade80' },
+  membre:       { label: 'Membre',       emoji: '⭐', color: '#60a5fa' },
+  contributeur: { label: 'Contributeur', emoji: '🔨', color: '#f59e0b' },
+  admin:        { label: 'Admin',        emoji: '👑', color: '#f87171' },
+};
+// IDs des tiers Firestore non-admin gérés comme rôles standards
+const MANAGED_TIERS = ['visiteur', 'membre', 'contributeur'];
+
+let _customRoles  = []; // tous les rôles (managed tiers + custom), sauf admin
+let _selectedTier = 'contributeur';
+
+// Assure que les 3 tiers gérés sont dans _customRoles avec leurs defaults
+function _ensureManagedTiers() {
+  for (const id of MANAGED_TIERS) {
+    if (!_customRoles.find(r => r.id === id)) {
+      const d = TIER_DEFAULTS[id];
+      _customRoles.unshift({ id, label: d.label, emoji: d.emoji, color: d.color, baseTier: id });
+    }
+  }
+  // Tri : managed tiers en premier, custom ensuite
+  _customRoles.sort((a, b) => {
+    const ai = MANAGED_TIERS.indexOf(a.id), bi = MANAGED_TIERS.indexOf(b.id);
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+    return 0;
+  });
+}
+
+function _getTierDisplay(id) {
+  const cr = _customRoles.find(r => r.id === id);
+  if (cr) return { label: cr.label, emoji: cr.emoji, color: cr.color };
+  return TIER_DEFAULTS[id] || { label: id, emoji: '?', color: '#888' };
+}
+
+window.loadRoles = async function() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'customRoles'));
+    _customRoles = snap.exists() ? (snap.data().roles || []) : [];
+    _ensureManagedTiers();
+  } catch(e) { console.error('loadRoles:', e.message); }
+};
+
+window.showCreateRoleForm = function showCreateRoleForm() {
+  const form = document.getElementById('perm-create-form');
+  if (!form) return;
+  form.style.display = '';
+  document.getElementById('role-new-label').value = '';
+  document.getElementById('role-new-emoji').value = '';
+  document.getElementById('role-new-color').value = '#f59e0b';
+  _selectedTier = 'contributeur';
+
+  // Render tier selector
+  const tierEl = document.getElementById('role-new-tier');
+  tierEl.innerHTML = '';
+  for (const [t, d] of Object.entries(TIER_DEFAULTS)) {
+    if (t === 'admin') continue;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm btn-ghost';
+    btn.style.cssText = `border-color:${t === _selectedTier ? d.color : 'var(--border)'};color:${t === _selectedTier ? d.color : 'var(--muted)'};`;
+    btn.textContent = d.label;
+    btn.onclick = () => {
+      _selectedTier = t;
+      const keys = Object.keys(TIER_DEFAULTS).filter(k => k !== 'admin');
+      document.querySelectorAll('#role-new-tier button').forEach((b, i) => {
+        const tier = keys[i];
+        const td = TIER_DEFAULTS[tier];
+        b.style.borderColor = tier === t ? td.color : 'var(--border)';
+        b.style.color = tier === t ? td.color : 'var(--muted)';
+      });
+    };
+    tierEl.appendChild(btn);
+  }
+  document.getElementById('role-new-label').focus();
+};
+
+window.hideCreateRoleForm = function() {
+  const form = document.getElementById('perm-create-form');
+  if (form) form.style.display = 'none';
+};
+
+window.createRole = async function() {
+  const label = document.getElementById('role-new-label').value.trim();
+  const emoji = document.getElementById('role-new-emoji').value.trim() || '⭐';
+  const color = document.getElementById('role-new-color').value;
+  if (!label) { toast('⚠️ Nom du rôle requis', 'error'); return; }
+  const id = label.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9_]/g,'_');
+  if (_customRoles.find(r => r.id === id)) { toast('⚠️ Un rôle avec cet identifiant existe déjà', 'error'); return; }
+  _customRoles.push({ id, label, emoji, color, baseTier: _selectedTier });
+  await _saveRoles();
+  hideCreateRoleForm();
+  _selectedRoleId = id;
+  _renderPermsSidebar();
+  _renderPermsForRole(id);
+  toast(`✅ Rôle "${label}" créé`, 'success');
+};
+
+window.deleteRole = async function(id) {
+  if (!confirm(`Supprimer le rôle "${id}" ? Les utilisateurs avec ce rôle devront être réassignés.`)) return;
+  _customRoles = _customRoles.filter(r => r.id !== id);
+  await _saveRoles();
+  _selectedRoleId = 'admin';
+  _renderPermsSidebar();
+  _renderPermsForRole('admin');
+  toast('✅ Rôle supprimé', 'success');
+};
+
+async function _saveRoles() {
+  try {
+    await setDoc(doc(db, 'config', 'customRoles'), {
+      roles: _customRoles,
+    });
+  } catch(e) {
+    toast(`⛔ Erreur sauvegarde rôles : ${e.message}`, 'error');
+  }
+}
+
+window.showGenerateRulesModal = function() {
+  const modal = document.getElementById('rules-modal');
+  if (!modal) return;
+  const output = document.getElementById('rules-output');
+  output.value = _generateRules();
+  modal.style.display = 'flex';
+};
+
+window.closeRulesModal = function() {
+  document.getElementById('rules-modal').style.display = 'none';
+};
+
+window.copyGeneratedRules = function() {
+  const ta = document.getElementById('rules-output');
+  ta.select();
+  navigator.clipboard.writeText(ta.value).then(() => toast('📋 Rules copiées', 'success'));
+};
+
+function _roleToFirestoreRule(role) {
+  if (role === 'public')       return 'true';
+  if (role === 'membre')       return 'isMembre()';
+  if (role === 'contributeur') return 'isContrib()';
+  if (role === 'admin')        return 'isAdmin()';
+  return 'false';
+}
+
+function _colRule(id, op) {
+  const col = FIRESTORE_COLLECTIONS.find(c => c.id === id);
+  const cfg = (_colPermConfig || {})[id] || {};
+  if (op === 'read')  return _roleToFirestoreRule(cfg.read  || col?.defaultRead  || 'public');
+  return _roleToFirestoreRule(cfg.write || col?.defaultWrite || 'contributeur');
+}
+
+function _permRule(permId, defaultRole) {
+  return _roleToFirestoreRule(_permConfig?.[permId] ?? defaultRole);
+}
+
+function _generateRules() {
+  // Regroupe les rôles custom par tier
+  const contribExtra = _customRoles.filter(r => r.baseTier === 'contributeur' || r.baseTier === 'admin').map(r => `'${r.id}'`);
+  const adminExtra   = _customRoles.filter(r => r.baseTier === 'admin').map(r => `'${r.id}'`);
+  const membreExtra  = _customRoles.filter(r => ['membre','contributeur','admin'].includes(r.baseTier)).map(r => `'${r.id}'`);
+
+  const contribList = ["'contributeur'", "'admin'", ...new Set(contribExtra)].join(', ');
+  const adminList   = ["'admin'", ...new Set(adminExtra)].join(', ');
+  const membreList  = ["'membre'", "'contributeur'", "'admin'", ...new Set(membreExtra)].join(', ');
+
+  return `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function userRole() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : 'visiteur';
+    }
+
+    // Rôles personnalisés inclus automatiquement selon leur tier de base
+    function isAdmin()   { return isAuth() && userRole() in [${adminList}]; }
+    function isContrib() { return isAuth() && userRole() in [${contribList}]; }
+    function isMembre()  { return isAuth() && userRole() in [${membreList}]; }
+
+    function creatorToolEnabled(toolType) {
+      return !exists(/databases/$(database)/documents/config/creator)
+        || get(/databases/$(database)/documents/config/creator).data.get('tools', {}).get(toolType, true) != false;
+    }
+
+    match /items/{id} {
+      allow read:  if ${_colRule('items','read')};
+      allow write: if ${_colRule('items','write')};
+    }
+
+    match /items_hidden/{id} {
+      allow read:  if ${_colRule('items_hidden','read')};
+      allow write: if ${_colRule('items_hidden','write')};
+    }
+
+    match /items_secret/{id} {
+      allow read:  if ${_permRule('view_items_secret', 'contributeur')};
+      allow write: if ${_colRule('items_secret','write')};
+    }
+
+    match /mobs/{id} {
+      allow read:  if ${_colRule('mobs','read')};
+      allow write: if ${_colRule('mobs','write')};
+    }
+
+    match /mobs_secret/{id} {
+      allow read:  if ${_permRule('view_mobs_secret', 'contributeur')};
+      allow write: if ${_colRule('mobs_secret','write')};
+    }
+
+    match /personnages/{id} {
+      allow read:  if ${_colRule('personnages','read')};
+      allow write: if ${_colRule('personnages','write')};
+    }
+
+    match /pnj_secret/{id} {
+      allow read:  if ${_permRule('view_mobs_secret', 'contributeur')};
+      allow write: if ${_colRule('pnj_secret','write')};
+    }
+
+    match /regions/{id} {
+      allow read:  if ${_colRule('regions','read')};
+      allow write: if ${_colRule('regions','write')};
+    }
+
+    match /quetes/{id} {
+      allow read:  if ${_colRule('quetes','read')};
+      allow write: if ${_colRule('quetes','write')};
+    }
+
+    match /panoplies/{id} {
+      allow read:  if ${_colRule('panoplies','read')};
+      allow write: if ${_colRule('panoplies','write')};
+    }
+
+    match /users/{uid} {
+      allow get:    if isAuth() && (request.auth.uid == uid || ${_permRule('_users', 'admin')});
+      allow list:   if isAuth();
+      allow create: if isAuth()
+                    && request.auth.uid == uid
+                    && request.resource.data.role == 'membre'
+                    && request.resource.data.keys().hasOnly(['pseudo','role','email']);
+      allow update: if ${_permRule('_users', 'admin')}
+                    || (isAuth()
+                        && request.auth.uid == uid
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pseudo','email'])
+                        && request.resource.data.pseudo is string);
+      allow delete: if ${_permRule('_users', 'admin')};
+    }
+
+    match /map_markers/{id} {
+      allow read:  if ${_colRule('map_markers','read')};
+      allow write: if ${_colRule('map_markers','write')};
+    }
+
+    match /donjons/{id} {
+      allow read:  if ${_colRule('donjons','read')};
+      allow write: if ${_colRule('donjons','write')};
+    }
+
+    match /zones/{id} {
+      allow read:  if ${_colRule('zones','read')};
+      allow write: if ${_colRule('zones','write')};
+    }
+
+    match /config/{id} {
+      allow read:  if ${_colRule('config','read')};
+      allow write: if ${_colRule('config','write')};
+    }
+
+    match /config/pseudos {
+      allow read: if true;
+      allow create: if isAuth()
+                    && request.resource.data.keys().hasOnly([request.auth.uid]);
+      allow update: if isAuth()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly([request.auth.uid]);
+      allow delete: if isAdmin();
+    }
+
+    match /trash/{id} {
+      allow read:   if ${_colRule('trash','read')};
+      allow create: if ${_colRule('trash','write')};
+      allow delete: if ${_colRule('trash','write')};
+    }
+
+    match /discord_posts/{id} {
+      allow read:  if ${_colRule('discord_posts','read')};
+      allow write: if ${_colRule('discord_posts','write')};
+    }
+
+    match /audit_log/{id} {
+      allow read:   if ${_colRule('audit_log','read')};
+      allow create: if ${_colRule('audit_log','write')};
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    match /submissions/{id} {
+      allow create: if request.resource.data.submitterName is string
+                    && request.resource.data.submitterName.size() >= 2
+                    && request.resource.data.type in ['item','mob','pnj','region','quest','panoplie']
+                    && request.resource.data.status == 'pending'
+                    && (${_permRule('_mod_panel', 'contributeur')} || creatorToolEnabled(request.resource.data.type));
+      allow read:   if ${_permRule('_mod_panel', 'contributeur')} || (isAuth() && resource.data.submittedBy == request.auth.uid);
+      allow update: if ${_permRule('_approve', 'contributeur')};
+      allow delete: if ${_permRule('_approve', 'contributeur')};
+    }
+
+  }
+}`;
+}
 
 async function _extractSubBlob(sub) {
   if (sub.forum_image) {
@@ -6509,10 +7171,38 @@ window.saveQuestOrder = async () => {
 const ROLES_LIST = ROLES.filter(r => r !== 'visiteur');
 let _allUsers = [];
 
+function _assignableRoles() {
+  const custom = _customRoles.filter(r => r.id !== 'visiteur');
+  return [...custom, { id: 'admin', label: 'Admin', emoji: '👑', color: '#f87171' }];
+}
+
+function _roleSortKey(role) {
+  if (role === 'admin') return 100;
+  const mi = MANAGED_TIERS.indexOf(role);
+  if (mi !== -1) return mi + 1;
+  const cr = _customRoles.find(r => r.id === role);
+  return cr ? (MANAGED_TIERS.indexOf(cr.baseTier || 'membre') + 1) : 0;
+}
+
+function _renderUsersRoleFilter() {
+  const sel = document.getElementById('users-role-filter');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">Tous les rôles</option>';
+  for (const r of _assignableRoles()) {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = `${r.emoji || ''} ${r.label}`;
+    sel.appendChild(opt);
+  }
+  sel.value = prev;
+}
+
 window.showUsersPanel = async () => {
   _setHash('members');
   document.getElementById('users-panel').style.display = '';
   document.getElementById('btn-users').classList.add('active');
+  if (_customRoles.every(r => MANAGED_TIERS.includes(r.id))) await loadRoles();
   await loadUsers();
 };
 
@@ -6522,7 +7212,7 @@ window.loadUsers = async () => {
   try {
     const snap = await getDocs(collection(db, 'users'));
     _allUsers = snap.docs.map(d => ({ uid: d.id, ...d.data() }))
-      .sort((a, b) => ROLES_LIST.indexOf(b.role) - ROLES_LIST.indexOf(a.role)
+      .sort((a, b) => _roleSortKey(b.role) - _roleSortKey(a.role)
                    || (a.pseudo || '').localeCompare(b.pseudo || ''));
     renderUsers(_allUsers);
   } catch (e) {
@@ -6534,7 +7224,7 @@ function renderUsers(users) {
   const list = document.getElementById('users-list');
   if (!users.length) { list.innerHTML = '<div class="empty">Aucun membre.</div>'; return; }
 
-  const roleColor = { membre: 'var(--muted)', contributeur: '#60a5fa', admin: 'var(--danger)' };
+  _renderUsersRoleFilter();
 
   // Contribution count depuis allSubs (déjà en mémoire)
   const contribCount = new Map();
@@ -6544,6 +7234,7 @@ function renderUsers(users) {
     }
   }
 
+  const assignable = _assignableRoles();
   list.innerHTML = '';
   users.forEach(u => {
     const row = document.createElement('div');
@@ -6552,8 +7243,9 @@ function renderUsers(users) {
 
     const isSuspended = !!u.suspended;
     const count       = contribCount.get(u.uid) || 0;
-    const sel = ROLES_LIST.map(r =>
-      `<option value="${r}"${r === u.role ? ' selected' : ''}>${r}</option>`
+    const roleDisplay = _getTierDisplay(u.role || 'membre');
+    const sel = assignable.map(r =>
+      `<option value="${r.id}"${r.id === u.role ? ' selected' : ''}>${r.emoji ? r.emoji + ' ' : ''}${r.label}</option>`
     ).join('');
 
     const suspBadge = isSuspended
@@ -6571,7 +7263,7 @@ function renderUsers(users) {
       <span class="user-pseudo">${escHtml(u.pseudo || '—')} ${suspBadge}${countBadge}</span>
       <span class="user-uid">${escHtml(u.uid)}</span>
       <span class="user-email" style="font-size:11px;color:var(--muted);">${escHtml(u.email || '—')}</span>
-      <span class="user-role-badge" style="color:${roleColor[u.role] || 'var(--muted)'};">${escHtml(u.role || 'membre')}</span>
+      <span class="user-role-badge" style="color:${roleDisplay.color || 'var(--muted)'};">${escHtml(roleDisplay.emoji ? roleDisplay.emoji + ' ' : '')}${escHtml(roleDisplay.label || u.role || 'membre')}</span>
       <select class="user-role-sel" onchange="setUserRole('${escHtml(u.uid)}', this.value, this)">${sel}</select>
       ${suspBtn}
       <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px;color:var(--danger);border-color:var(--danger);" onclick="deleteUserAccount('${escHtml(u.uid)}', '${escHtml(u.pseudo || u.uid)}')">🗑️</button>
@@ -6633,7 +7325,7 @@ window.unsuspendUser = async (uid, pseudo) => {
 };
 
 window.setUserRole = async (uid, newRole, sel) => {
-  if (!ROLES_LIST.includes(newRole)) return;
+  if (!_assignableRoles().some(r => r.id === newRole)) return;
   const prev = sel.dataset.prev || sel.querySelector('option[selected]')?.value || sel.value;
   sel.disabled = true;
   try {
@@ -11731,7 +12423,7 @@ let _allPinsList = [];
 let _pinColors   = {};
 
 window.switchMapTab = function switchMapTab(tab) {
-  ['allpins', 'colors', 'emojis', 'categories'].forEach(t => {
+  ['allpins', 'colors', 'emojis', 'pintypes', 'categories'].forEach(t => {
     const div = document.getElementById('map-tab-' + t);
     const btn = document.getElementById('map-tab-btn-' + t);
     const active = t === tab;
@@ -11745,6 +12437,7 @@ window.switchMapTab = function switchMapTab(tab) {
   if (tab === 'allpins')    loadAllMapPins();
   if (tab === 'colors')     loadPinColors();
   if (tab === 'emojis')     loadPinEmojis();
+  if (tab === 'pintypes')   loadPinTypes();
   if (tab === 'categories') loadPinCategories();
 };
 
@@ -11984,6 +12677,7 @@ window.loadPinColors = async function loadPinColors() {
     const [snap] = await Promise.all([
       getDoc(doc(db, 'config', 'pin_type_colors')),
       _ensureCategoriesLoaded(),
+      _ensureCustomTypesLoaded(),
     ]);
     _pinColors = snap.exists() ? snap.data() : {};
     renderPinColorForm();
@@ -12013,8 +12707,6 @@ function renderPinColorForm() {
   const el = document.getElementById('pin-colors-content');
   if (!el) return;
 
-  const CATEGORIES = (_pinCategories || _DEFAULT_CATEGORIES).filter(c => c.types.length > 0);
-
   const DEFAULT_COLORS = {
     donjon: '#ef4444', boss: '#dc2626', zone_monstre: '#fb923c',
     quête_principale: '#f59e0b', quête_secondaire: '#10b981', quête_tertiaire: '#06b6d4',
@@ -12028,36 +12720,51 @@ function renderPinColorForm() {
     autre: '#6b7280',
   };
 
-  const frag = document.createDocumentFragment();
-  for (const cat of CATEGORIES) {
-    const catHdr = document.createElement('div');
-    catHdr.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border);';
-    catHdr.textContent = cat.label;
-    frag.appendChild(catHdr);
+  const cats = (_pinCategories || _DEFAULT_CATEGORIES).filter(c => c.types.length > 0);
+  const categorized = new Set(cats.flatMap(c => c.types));
+  const uncategorized = Object.keys(_AP_TYPE_LABELS).filter(t => !categorized.has(t));
 
+  function makeColorRow(type) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;';
+    const inp = document.createElement('input');
+    inp.type = 'color';
+    inp.value = _pinColors[type] || DEFAULT_COLORS[type] || '#888888';
+    inp.dataset.type = type;
+    inp.style.cssText = 'width:32px;height:32px;border:none;background:none;cursor:pointer;border-radius:4px;padding:0;flex-shrink:0;';
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:12px;flex:1;';
+    lbl.textContent = _AP_TYPE_LABELS[type] || type;
+    row.appendChild(inp);
+    row.appendChild(lbl);
+    return row;
+  }
+
+  function makeSectionHeader(text) {
+    const h = document.createElement('div');
+    h.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border);';
+    h.textContent = text;
+    return h;
+  }
+
+  const frag = document.createDocumentFragment();
+
+  for (const cat of cats) {
+    frag.appendChild(makeSectionHeader(cat.label));
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;';
-
-    for (const type of cat.types) {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;';
-
-      const inp = document.createElement('input');
-      inp.type = 'color';
-      inp.value = _pinColors[type] || DEFAULT_COLORS[type] || '#888888';
-      inp.dataset.type = type;
-      inp.style.cssText = 'width:32px;height:32px;border:none;background:none;cursor:pointer;border-radius:4px;padding:0;flex-shrink:0;';
-
-      const lbl = document.createElement('span');
-      lbl.style.cssText = 'font-size:12px;flex:1;';
-      lbl.textContent = _AP_TYPE_LABELS[type] || type;
-
-      row.appendChild(inp);
-      row.appendChild(lbl);
-      grid.appendChild(row);
-    }
+    cat.types.forEach(t => grid.appendChild(makeColorRow(t)));
     frag.appendChild(grid);
   }
+
+  if (uncategorized.length > 0) {
+    frag.appendChild(makeSectionHeader('🏷️ Personnalisés'));
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;';
+    uncategorized.sort().forEach(t => grid.appendChild(makeColorRow(t)));
+    frag.appendChild(grid);
+  }
+
   el.innerHTML = '';
   el.appendChild(frag);
 }
@@ -12087,6 +12794,7 @@ window.loadPinEmojis = async function loadPinEmojis() {
     const [snap] = await Promise.all([
       getDoc(doc(db, 'config', 'pin_type_emojis')),
       _ensureCategoriesLoaded(),
+      _ensureCustomTypesLoaded(),
     ]);
     _pinEmojis = snap.exists() ? snap.data() : {};
     renderPinEmojiForm();
@@ -12128,46 +12836,60 @@ window.saveIndividualPinEmoji = async function saveIndividualPinEmoji(source, id
 function renderPinEmojiForm() {
   const el = document.getElementById('pin-emojis-content');
   if (!el) return;
+
+  const cats = (_pinCategories || _DEFAULT_CATEGORIES).filter(c => c.types.length > 0);
+  const categorized = new Set(cats.flatMap(c => c.types));
+  const uncategorized = Object.keys(_AP_TYPE_LABELS).filter(t => !categorized.has(t));
+
+  function makeEmojiRow(type) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;';
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.value = _pinEmojis[type] || _DEFAULT_EMOJIS[type] || '';
+    inp.dataset.type = type;
+    inp.placeholder = _DEFAULT_EMOJIS[type] || '?';
+    inp.style.cssText = 'width:40px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:18px;text-align:center;padding:2px 4px;flex-shrink:0;';
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'btn btn-ghost btn-sm';
+    resetBtn.textContent = '↩';
+    resetBtn.title = 'Réinitialiser au défaut';
+    resetBtn.style.cssText = 'font-size:11px;padding:2px 6px;flex-shrink:0;';
+    resetBtn.addEventListener('click', () => { inp.value = _DEFAULT_EMOJIS[type] || ''; });
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:12px;flex:1;';
+    lbl.textContent = _AP_TYPE_LABELS[type] || type;
+    row.appendChild(inp);
+    row.appendChild(lbl);
+    row.appendChild(resetBtn);
+    return row;
+  }
+
+  function makeSectionHeader(text) {
+    const h = document.createElement('div');
+    h.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border);';
+    h.textContent = text;
+    return h;
+  }
+
   const frag = document.createDocumentFragment();
 
-  for (const cat of (_pinCategories || _DEFAULT_CATEGORIES).filter(c => c.types.length > 0)) {
-    const catHdr = document.createElement('div');
-    catHdr.style.cssText = 'font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border);';
-    catHdr.textContent = cat.label;
-    frag.appendChild(catHdr);
-
+  for (const cat of cats) {
+    frag.appendChild(makeSectionHeader(cat.label));
     const grid = document.createElement('div');
     grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;';
-
-    for (const type of cat.types) {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;';
-
-      const inp = document.createElement('input');
-      inp.type = 'text';
-      inp.value = _pinEmojis[type] || _DEFAULT_EMOJIS[type] || '';
-      inp.dataset.type = type;
-      inp.placeholder = _DEFAULT_EMOJIS[type] || '?';
-      inp.style.cssText = 'width:40px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:18px;text-align:center;padding:2px 4px;flex-shrink:0;';
-
-      const resetBtn = document.createElement('button');
-      resetBtn.className = 'btn btn-ghost btn-sm';
-      resetBtn.textContent = '↩';
-      resetBtn.title = 'Réinitialiser au défaut';
-      resetBtn.style.cssText = 'font-size:11px;padding:2px 6px;flex-shrink:0;';
-      resetBtn.addEventListener('click', () => { inp.value = _DEFAULT_EMOJIS[type] || ''; });
-
-      const lbl = document.createElement('span');
-      lbl.style.cssText = 'font-size:12px;flex:1;';
-      lbl.textContent = _AP_TYPE_LABELS[type] || type;
-
-      row.appendChild(inp);
-      row.appendChild(lbl);
-      row.appendChild(resetBtn);
-      grid.appendChild(row);
-    }
+    cat.types.forEach(t => grid.appendChild(makeEmojiRow(t)));
     frag.appendChild(grid);
   }
+
+  if (uncategorized.length > 0) {
+    frag.appendChild(makeSectionHeader('🏷️ Personnalisés'));
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;';
+    uncategorized.sort().forEach(t => grid.appendChild(makeEmojiRow(t)));
+    frag.appendChild(grid);
+  }
+
   el.innerHTML = '';
   el.appendChild(frag);
 }
@@ -12407,6 +13129,168 @@ function _addNewCategory() {
       last.querySelector('.cat-label-input')?.focus();
     }
   });
+}
+
+/* ══════════════════════════════════════════════════════
+   ONGLET TYPES DE PINS — liste et création de types
+   (config/custom_pin_types + types natifs _AP_TYPE_LABELS)
+══════════════════════════════════════════════════════ */
+
+let _customPinTypes = [];
+
+window.loadPinTypes = async function loadPinTypes() {
+  const el = document.getElementById('pin-types-content');
+  if (el) el.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const snap = await getDoc(doc(db, 'config', 'custom_pin_types'));
+    _customPinTypes = (snap.exists() && Array.isArray(snap.data().types)) ? snap.data().types : [];
+    _mergeCustomPinTypes();
+    renderPinTypesList();
+  } catch(err) {
+    if (el) el.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${err.message}</div>`;
+  }
+};
+
+function _mergeCustomPinTypes() {
+  for (const ct of _customPinTypes) {
+    if (!ct.id) continue;
+    _AP_TYPE_LABELS[ct.id] = ct.label || ct.id;
+    // Mapping PNJ type → pin type (identity pour les types custom)
+    _AP_PNJ_TO_TYPE[ct.id] = ct.id;
+  }
+}
+
+async function _ensureCustomTypesLoaded() {
+  if (_customPinTypes.length > 0) return;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'custom_pin_types'));
+    _customPinTypes = (snap.exists() && Array.isArray(snap.data().types)) ? snap.data().types : [];
+    _mergeCustomPinTypes();
+  } catch { _customPinTypes = []; }
+}
+
+function renderPinTypesList() {
+  const el = document.getElementById('pin-types-content');
+  if (!el) return;
+  el.innerHTML = '';
+
+  // Formulaire création
+  el.appendChild(_buildAddPinTypeForm());
+
+  // Table — types natifs + custom
+  const table = document.createElement('table');
+  table.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;margin-top:4px;';
+  table.innerHTML = `<thead><tr style="font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);">
+    <th style="text-align:left;padding:5px 8px;">Nom</th>
+    <th style="text-align:left;padding:5px 8px;font-family:monospace;">ID</th>
+    <th style="padding:5px 8px;"></th>
+  </tr></thead>`;
+  const tbody = document.createElement('tbody');
+
+  // Types natifs (lecture seule)
+  for (const [id, label] of Object.entries(_AP_TYPE_LABELS).sort((a,b) => a[1].localeCompare(b[1]))) {
+    const isCustom = _customPinTypes.some(ct => ct.id === id);
+    if (isCustom) continue; // affiché dans la section custom ci-dessous
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid var(--border)';
+    tr.innerHTML = `
+      <td style="padding:5px 8px;">${label}</td>
+      <td style="padding:5px 8px;font-family:monospace;font-size:11px;color:var(--muted);">${id}</td>
+      <td style="padding:5px 8px;text-align:right;"><span style="font-size:10px;color:var(--muted);padding:2px 5px;border:1px solid var(--border);border-radius:4px;">natif</span></td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // Types custom (supprimables)
+  for (const ct of _customPinTypes) {
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid var(--border)';
+    tr.innerHTML = `
+      <td style="padding:5px 8px;font-weight:500;">${ct.label || ct.id}</td>
+      <td style="padding:5px 8px;font-family:monospace;font-size:11px;color:var(--accent);">${ct.id}</td>
+      <td style="padding:5px 8px;text-align:right;"></td>
+    `;
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-ghost btn-sm';
+    delBtn.style.cssText = 'font-size:11px;padding:2px 6px;color:var(--danger);';
+    delBtn.textContent = '🗑️';
+    delBtn.title = 'Supprimer ce type';
+    delBtn.addEventListener('click', async () => {
+      if (!confirm(`Supprimer le type "${ct.id}" ?`)) return;
+      _customPinTypes = _customPinTypes.filter(c => c.id !== ct.id);
+      try {
+        await setDoc(doc(db, 'config', 'custom_pin_types'), { types: _customPinTypes });
+        delete _AP_TYPE_LABELS[ct.id];
+        toast('✓ Type supprimé', 'success');
+        renderPinTypesList();
+      } catch(err) { toast('⛔ ' + err.message, 'error'); }
+    });
+    tr.querySelector('td:last-child').appendChild(delBtn);
+    tbody.appendChild(tr);
+  }
+
+  table.appendChild(tbody);
+  el.appendChild(table);
+}
+
+function _buildAddPinTypeForm() {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:12px;font-weight:700;margin-bottom:8px;';
+  title.textContent = '+ Nouveau type de pin';
+  wrap.appendChild(title);
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;align-items:flex-end;';
+  const inputStyle = 'background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;box-sizing:border-box;';
+
+  function field(lbl, inp) {
+    const w = document.createElement('div');
+    w.style.flex = '1';
+    const l = document.createElement('label');
+    l.style.cssText = 'font-size:10px;color:var(--muted);display:block;margin-bottom:2px;';
+    l.textContent = lbl;
+    w.appendChild(l);
+    inp.style.cssText = inputStyle + 'width:100%;';
+    w.appendChild(inp);
+    return w;
+  }
+
+  const labelInp = Object.assign(document.createElement('input'), { type:'text', placeholder:'Nom affiché *  (ex: Crates)' });
+  const idInp    = Object.assign(document.createElement('input'), { type:'text', placeholder:'ID *  (ex: crates)' });
+  idInp.style.fontFamily = 'monospace';
+
+  row.appendChild(field('Nom *', labelInp));
+  row.appendChild(field('ID *', idInp));
+
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn';
+  addBtn.style.cssText = 'background:var(--accent);color:#fff;font-size:12px;flex-shrink:0;align-self:flex-end;';
+  addBtn.textContent = '✓ Ajouter';
+  addBtn.addEventListener('click', async () => {
+    const label = labelInp.value.trim();
+    const id    = idInp.value.trim().toLowerCase().replace(/\s+/g, '_');
+    if (!label) { toast('⛔ Nom requis', 'error'); return; }
+    if (!id)    { toast('⛔ ID requis', 'error'); return; }
+    if (_AP_TYPE_LABELS[id]) { toast(`⛔ ID "${id}" déjà utilisé`, 'error'); return; }
+
+    _customPinTypes.push({ id, label });
+    try {
+      await setDoc(doc(db, 'config', 'custom_pin_types'), { types: _customPinTypes });
+      _AP_TYPE_LABELS[id] = label;
+      toast(`✓ Type "${label}" créé`, 'success');
+      renderPinTypesList();
+    } catch(err) {
+      _customPinTypes.pop();
+      toast('⛔ ' + err.message, 'error');
+    }
+  });
+
+  row.appendChild(addBtn);
+  wrap.appendChild(row);
+  return wrap;
 }
 
 /* ══════════════════════════════════════════════════════

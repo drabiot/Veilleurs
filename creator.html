@@ -404,8 +404,7 @@
             <select id="obtain-type" onchange="onObtainTypeChange()" style="height:38px;">
               <option value="mob">🗡️ Drop de Mob</option>
               <option value="donjon">🏰 Donjon</option>
-              <option value="artisant">🔨 Forgeron / Artisan</option>
-              <option value="marchand">🛒 Marchand</option>
+              <option value="pnj">🧑 PNJ</option>
               <option value="quete">📜 Quête</option>
               <option value="ressource">🌿 Ressource</option>
               <option value="autre">💬 Autre</option>
@@ -533,7 +532,7 @@
             </div>
           </div>
           <div class="field" style="margin-top:6px;">
-            <label>Nom affiché <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel — remplace le nom généré par le type)</span></label>
+            <label>Nom affiché <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel)</span></label>
             <input type="text" id="pnj-display-name" placeholder="Nom personnalisé…" oninput="onPnjDisplayNameInput()">
           </div>
           <!-- Coordonnées -->
@@ -1062,7 +1061,6 @@
     <div class="out-tabs">
       <div class="out-tab active" id="tab-preview" onclick="switchTab('preview')">👁️ Preview</div>
       <div class="out-tab" id="tab-history" onclick="switchTab('history')">📋 Historique <span id="history-count" style="display:none;background:var(--accent);color:#fff;border-radius:8px;padding:0 5px;font-size:10px;margin-left:2px;"></span></div>
-      <div class="out-tab" id="tab-leaderboard" onclick="switchTab('leaderboard')">🏆 Leaderboard</div>
     </div>
     <!-- JS Pane (caché, utilisé pour le clipboard/submit) -->
     <div id="pane-js" style="display:none;">
@@ -1074,10 +1072,6 @@
       <div id="validation-panel" style="display:none;padding:10px 14px;border-bottom:1px solid var(--border);flex-direction:column;gap:5px;"></div>
       <div class="preview-wrap" id="preview-wrap">
       </div>
-    </div>
-    <!-- Leaderboard Pane -->
-    <div class="out-pane" id="pane-leaderboard" style="overflow-y:auto;">
-      <div style="padding:30px;color:var(--muted);text-align:center;">Cliquez sur l'onglet pour charger.</div>
     </div>
     <!-- History Pane -->
     <div class="out-pane" id="pane-history">
@@ -1228,6 +1222,18 @@ try {
   if (snapVal.exists()) window._vcl_creatorValidation = snapVal.data();
 } catch(e) {
   console.warn('[VCL Creator] Config validation non chargée:', e);
+}
+// Charger les types de pins personnalisés (pour le picker PNJ)
+try {
+  const snapCt = await getDoc(doc(db, 'config', 'custom_pin_types'));
+  window._customPinTypes = (snapCt.exists() && Array.isArray(snapCt.data().types)) ? snapCt.data().types : [];
+} catch(e) { window._customPinTypes = []; }
+// Injecter les types custom dans la catégorie "autres" existante
+for (const ct of window._customPinTypes) {
+  if (ct.id && !PNJ_CATEGORIES.autres.includes(ct.id)) {
+    PNJ_CATEGORIES.autres.push(ct.id);
+    PNJ_TYPE_ICONS[ct.id] = '🏷️';
+  }
 }
 // Charger les webhooks Discord (accès complet pour getForumWebhook)
 try {
