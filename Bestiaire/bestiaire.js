@@ -187,7 +187,7 @@ function getPnjEffectiveTag(e) {
 function getFiltered() {
   const q = normalize(searchQuery);
   const filtered = getList().filter(e => {
-    if (e.sensible) return false;
+    if (e.sensible && !window._vcl_can_view_sensible) return false;
     if (q && !normalize(e.name).includes(q) && !normalize(getRegionLabel(e.region||'')).includes(q) && !normalize(e.region||'').includes(q) && !normalize(e.lore||'').includes(q)) return false;
     if (activePalier !== 'all' && e.palier !== activePalier) return false;
     if (activeTab === 'monstres') {
@@ -972,3 +972,4 @@ window._pageInit = function () {
   refreshAll();
   applyHash();
 };
+window._vcl_bestiaire_refresh = () => refreshAll();

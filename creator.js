@@ -1222,11 +1222,18 @@ function initObtainData() {
   }
   if (typeof FLOOR_MARKERS !== 'undefined') {
     const flat = Object.values(FLOOR_MARKERS).flat();
-    const toItem = m => ({
-      id: m.id, name: m.name, desc: m.desc || '',
-      subtitle: m.desc || m.id,
-      search: (m.name + ' ' + m.id + ' ' + (m.desc || '')).toLowerCase()
-    });
+    const toItem = m => {
+      const coords = m.gx != null ? { x: m.gx, z: m.gy } : null;
+      const coordStr = coords ? `${coords.x} ${coords.z}` : '';
+      const subtitleParts = [m.desc || m.id];
+      if (coords) subtitleParts.push(`📍 X${coords.x} Z${coords.z}`);
+      return {
+        id: m.id, name: m.name, desc: m.desc || '',
+        subtitle: subtitleParts.join(' · '),
+        coords,
+        search: (m.name + ' ' + m.id + ' ' + (m.desc || '') + ' ' + coordStr).toLowerCase()
+      };
+    };
     allDonjons   = flat.filter(m => m.type === 'donjon').map(toItem);
     allArtisans  = flat.filter(m => m.type === 'artisant').map(toItem);
     allMarchands = flat.filter(m => m.type === 'marchand').map(toItem);
@@ -1261,10 +1268,15 @@ function initObtainData() {
       const pId  = p.id   || p._id || '';
       if (!pId) continue;
       const pName = p.name || p.nom || pId;
+      const pCoords = p.coords ? { x: p.coords.x, z: p.coords.z } : null;
+      const pCoordStr = pCoords ? `${pCoords.x} ${pCoords.z}` : '';
+      const subtitleParts = [p.palier ? 'P'+p.palier : '', p.region || '', p.instructions || ''].filter(Boolean);
+      if (pCoords) subtitleParts.push(`📍 X${pCoords.x} Z${pCoords.z}`);
       const entry = {
         id: pId, name: pName, desc: p.region || '',
-        subtitle: [p.palier ? 'P'+p.palier : '', pId, p.instructions || ''].filter(Boolean).join(' · '),
-        search: (pName + ' ' + pId + ' ' + (p.region || '') + ' ' + (p.instructions || '')).toLowerCase()
+        subtitle: subtitleParts.join(' · '),
+        coords: pCoords,
+        search: (pName + ' ' + pId + ' ' + (p.region || '') + ' ' + (p.instructions || '') + ' ' + pCoordStr).toLowerCase()
       };
       if (_artisanTags.has(tag) && !_existArtIds.has(pId)) {
         allArtisans.push(entry); _existArtIds.add(pId);
@@ -1337,15 +1349,14 @@ async function _loadFirestoreDonjons() {
 const OBTAIN_TEXT_TYPES = new Set(['autre']);
 
 function obtainItemsForType(type) {
-  return { mob: allMobs, donjon: allDonjons, artisant: allArtisans, marchand: allMarchands, quete: allQuetes, ressource: allRegions }[type] || [];
+  return { mob: allMobs, donjon: allDonjons, pnj: [...allArtisans, ...allMarchands], quete: allQuetes, ressource: allRegions }[type] || [];
 }
 
 const OBTAIN_PLACEHOLDERS = {
   mob:       'Rechercher un mob…',
   donjon:    'Rechercher un donjon…',
-  artisant:  'Rechercher un forgeron / artisan…',
+  pnj:       'Rechercher un PNJ (forgeron, marchand…)…',
   quete:     'Rechercher une quête…',
-  marchand:  'Rechercher un marchand…',
   ressource: 'Rechercher une région…',
   autre:     'Pour des cas particuliers, détaillez ici précisément le moyen d\'obtention de cet item.',
 };
@@ -1528,7 +1539,7 @@ function addObtainSource() {
 
   {
     if (obtainSources.some(s => s.id === id && s.type === type)) return;
-    obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc || '', subtitle: item.subtitle });
+    obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc || '', subtitle: item.subtitle, coords: item.coords || null });
   }
   obtainDrop.reset();
   document.getElementById('obtain-add-btn').disabled = true;
@@ -1547,7 +1558,7 @@ function removeObtainSource(uid) {
   update();
 }
 
-const OBTAIN_ICONS = { mob:'🗡️', donjon:'🏰', artisant:'🔨', marchand:'🛒', quete:'📜', ressource:'🌿', autre:'💬', coffre:'🎁', event:'🎊', exploration:'🗺️' };
+const OBTAIN_ICONS = { mob:'🗡️', donjon:'🏰', pnj:'🧑', artisant:'🔨', marchand:'🛒', quete:'📜', ressource:'🌿', autre:'💬', coffre:'🎁', event:'🎊', exploration:'🗺️' };
 
 function renderObtainSources() {
   const list = document.getElementById('obtain-sources-list');
@@ -1579,11 +1590,21 @@ function renderObtainSources() {
         label += `<b>${s.name}</b>`;
         if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
       }
+    } else if (s.type === 'pnj') {
+      label += `<b>${s.name}</b>`;
+      if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
+      if (s.coords) label += ` <span style="color:var(--muted);font-size:10px;">📍 X${s.coords.x} Z${s.coords.z}</span>`;
     } else {
       label += `<b>${s.name}</b>`;
       if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
     }
     let extraBtns = '';
+    if (s.type === 'pnj' && s.coords) {
+      const floor = document.getElementById('f-palier')?.value || '1';
+      const ghostName = encodeURIComponent(`${s.name} · X:${s.coords.x} Z:${s.coords.z}`);
+      const mapHref = `Map/map.html?ghost_gx=${s.coords.x}&ghost_gz=${s.coords.z}&ghost_floor=${encodeURIComponent(floor)}&ghost_name=${ghostName}#floor-${floor}-surface`;
+      extraBtns = `<a href="${mapHref}" target="_blank" class="btn-icon" title="Voir sur la carte" style="text-decoration:none;font-size:14px;">🗺️</a>`;
+    }
     if (s.type === 'ressource' && s.coords) {
       const floor = document.getElementById('f-palier')?.value || '1';
       const ghostName = encodeURIComponent(`Ressource · X:${s.coords.x} Z:${s.coords.z}`);
@@ -1631,14 +1652,14 @@ function parseObtainText(text, itemId, itemName) {
     if (artM) {
       const [, id, name] = artM;
       const a = allArtisans.find(x => x.id === id);
-      sources.push({ uid: obtainUid++, type: 'artisant', id, name, desc: a?.desc || '', subtitle: a?.subtitle || '' });
+      sources.push({ uid: obtainUid++, type: 'pnj', id, name, desc: a?.desc || '', subtitle: a?.subtitle || '', coords: a?.coords || null });
       continue;
     }
     const marchM = t.match(/^Achetable au \[npc:([^|]+)\|([^\]]+)\]$/);
     if (marchM) {
       const [, id, name] = marchM;
       const mx = allMarchands.find(x => x.id === id);
-      sources.push({ uid: obtainUid++, type: 'marchand', id, name, desc: mx?.desc || '', subtitle: mx?.subtitle || '' });
+      sources.push({ uid: obtainUid++, type: 'pnj', id, name, desc: mx?.desc || '', subtitle: mx?.subtitle || '', coords: mx?.coords || null });
       continue;
     }
     const queteM = t.match(/^Récompense de la quête \[quest:([^|]+)\|([^\]]+)\]$/);
@@ -1681,6 +1702,7 @@ function buildObtainText() {
   const parts = [];
   const mobs        = obtainSources.filter(s => s.type === 'mob');
   const donjons     = obtainSources.filter(s => s.type === 'donjon');
+  const pnjs        = obtainSources.filter(s => s.type === 'pnj');
   const artisans    = obtainSources.filter(s => s.type === 'artisant');
   const marchands   = obtainSources.filter(s => s.type === 'marchand');
   const quetes      = obtainSources.filter(s => s.type === 'quete');
@@ -1699,6 +1721,7 @@ function buildObtainText() {
     parts.push('Obtenable en tuant:\n' + lines.join('\n'));
   }
   for (const d of donjons)      parts.push(`Obtenable en récompense du [npc:${d.id}|${d.name}]`);
+  for (const p of pnjs)         parts.push(allArtisans.some(a => a.id === p.id) ? `Fabricable au [npc:${p.id}|${p.name}]` : `Achetable au [npc:${p.id}|${p.name}]`);
   for (const a of artisans)     parts.push(`Fabricable au [npc:${a.id}|${a.name}]`);
   for (const m of marchands)    parts.push(`Achetable au [npc:${m.id}|${m.name}]`);
   for (const q of quetes)       parts.push(`Récompense de la quête [quest:${q.id}|${q.name}]`);
@@ -3403,11 +3426,10 @@ function _renderObtainInline(text) {
 // escHtml → défini dans /utils.js
 
 function switchTab(tab) {
-  ['preview','history','leaderboard'].forEach(t => {
+  ['preview','history'].forEach(t => {
     document.getElementById('tab-'+t)?.classList.toggle('active', t === tab);
     document.getElementById('pane-'+t)?.classList.toggle('active', t === tab);
   });
-  if (tab === 'leaderboard') loadCreatorLeaderboard();
 }
 
 function renderPreview() {
@@ -5494,24 +5516,25 @@ const PNJ_TYPE_ICONS = {
 
 let _pnjCurrentCat = '';
 
+
 function selectPnjCategory(cat) {
   _pnjCurrentCat = cat;
-  const color = PNJ_CAT_COLORS[cat] || '#6b7280';
+  const color = PNJ_CAT_COLORS[cat] || '#a855f7';
 
   // Style des boutons de catégorie
   document.querySelectorAll('#pnj-cat-row .r-btn').forEach(btn => {
     const isActive = btn.dataset.cat === cat;
-    btn.style.setProperty('--c', isActive ? (PNJ_CAT_COLORS[btn.dataset.cat] || '#6b7280') : '#6b7280');
+    btn.style.setProperty('--c', isActive ? (PNJ_CAT_COLORS[btn.dataset.cat] || '#a855f7') : '#6b7280');
     if (isActive) btn.classList.add('active'); else btn.classList.remove('active');
   });
 
-  // Construire les boutons de type
   const types   = PNJ_CATEGORIES[cat] || [];
   const row     = document.getElementById('pnj-type-row');
   const current = document.getElementById('pnj-type')?.value || '';
   row.innerHTML = types.map(t => {
-    const icon = PNJ_TYPE_ICONS[t] || '📍';
-    const label = pnjTitleCase(t);
+    const icon  = PNJ_TYPE_ICONS[t] || '📍';
+    const custom = (window._customPinTypes || []).find(ct => ct.id === t);
+    const label = custom ? (custom.label || t) : pnjTitleCase(t);
     return `<button class="r-btn pnj-type-btn" data-type="${t.replace(/"/g, '&quot;')}"
       style="--c:${color};width:fit-content;">${icon} ${label}</button>`;
   }).join('');
@@ -5526,7 +5549,6 @@ function selectPnjCategory(cat) {
       if (btn.dataset.type === current) btn.classList.add('active');
     });
   } else {
-    // Type hors catégorie : on le réinitialise
     document.getElementById('pnj-type').value = '';
     onPnjTypeChange();
   }
@@ -5543,18 +5565,17 @@ function selectPnjType(type) {
 // Restaure la catégorie et le type dans l'UI boutons (utilisé au chargement)
 function _restorePnjTypeUI(type) {
   if (!type) return;
-  // Trouver la catégorie
+  const typeLower = type.toLowerCase();
   for (const [cat, types] of Object.entries(PNJ_CATEGORIES)) {
-    if (types.includes(type.toLowerCase())) {
+    if (types.includes(typeLower)) {
       selectPnjCategory(cat);
-      document.getElementById('pnj-type').value = type.toLowerCase();
+      document.getElementById('pnj-type').value = typeLower;
       document.querySelectorAll('#pnj-type-row .pnj-type-btn').forEach(btn => {
-        if (btn.dataset.type === type.toLowerCase()) btn.classList.add('active');
+        if (btn.dataset.type === typeLower) btn.classList.add('active');
       });
       return;
     }
   }
-  // Type inconnu : pas de catégorie à activer mais on affiche le type quand même
 }
 
 function clearPnjType() {
@@ -6578,7 +6599,16 @@ function renderQuestPreview(obj) {
       </div>`;
       if (o.items?.length) {
         o.items.forEach(it => {
-          objHtml += `<div style="font-size:11px;color:var(--muted);padding-left:18px;">→ ${esc(it.id)} ×${it.qte}</div>`;
+          const itemId = it.id||it.itemId||'?';
+          const itemName = (typeof ITEMS !== 'undefined' && ITEMS.find(i => i.id === itemId)?.name) || itemId;
+          objHtml += `<div style="font-size:11px;color:var(--muted);padding-left:18px;">→ ${esc(itemName)} ×${it.qte||1}</div>`;
+        });
+      }
+      if (o.mobs?.length) {
+        o.mobs.forEach(m => {
+          const mobId = m.id||m.mobId||'?';
+          const mobName = (typeof MOBS !== 'undefined' && MOBS.find(mb => mb.id === mobId)?.name) || mobId;
+          objHtml += `<div style="font-size:11px;color:var(--muted);padding-left:18px;">→ ${esc(mobName)} ×${m.qte||1}</div>`;
         });
       }
       if (o.next && idx < obj.objectifs.length - 1) {

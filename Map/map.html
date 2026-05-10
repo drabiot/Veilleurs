@@ -7,6 +7,7 @@
   <title>[VCL] - Carte </title>
   <link rel="stylesheet" href="../Patchnotes/patchnotes.css" />
   <link rel="stylesheet" href="map.css" />
+  <link rel="stylesheet" href="../auth-widget.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
@@ -394,6 +395,12 @@
       window._map_pin_categories = (catSnap.exists() && Array.isArray(catSnap.data().categories))
         ? catSnap.data().categories : null;
     } catch { window._map_pin_categories = null; }
+    try {
+      const ctSnap = await getDoc(doc(db, 'config', 'custom_pin_types'));
+      const ctypes = (ctSnap.exists() && Array.isArray(ctSnap.data().types)) ? ctSnap.data().types : [];
+      window._map_custom_type_labels = {};
+      for (const ct of ctypes) { if (ct.id) window._map_custom_type_labels[ct.id] = ct.label || ct.id; }
+    } catch { window._map_custom_type_labels = {}; }
     // Mettre à jour FLOOR_NAMES depuis Firestore si de nouveaux paliers existent
     try {
       const pSnap = await getDoc(doc(db, 'config', 'paliers'));
@@ -405,5 +412,6 @@
     window._mapReady?.();
   </script>
   <script src="map.js"></script>
+  <script type="module" src="../auth-widget.js"></script>
 </body>
 </html>

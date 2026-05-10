@@ -7,6 +7,7 @@
   <title>[VCL] - Bestiaire</title>
   <link rel="stylesheet" href="../Patchnotes/patchnotes.css" />
   <link rel="stylesheet" href="bestiaire.css" />
+  <link rel="stylesheet" href="../auth-widget.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
@@ -319,17 +320,58 @@
   <script src="bestiaire.js"></script>
   <script type="module">
     import { store } from '../store.js';
+    import { db, COL, desanitizeFromFirestore, hasRole } from '../firebase.js';
+    import { collection, getDocs, getDoc, doc }
+      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+    let _sensitiveLoaded = false;
+
+    async function _canViewSensitiveMobs(baseRole) {
+      let minRole = 'contributeur';
+      try {
+        const snap = await getDoc(doc(db, 'config', 'permissions'));
+        if (snap.exists()) minRole = snap.data().minRole?.view_mobs_secret ?? minRole;
+      } catch {}
+      return hasRole(baseRole, minRole);
+    }
+
+    async function _loadSensitiveMobs() {
+      if (_sensitiveLoaded) return;
+      _sensitiveLoaded = true;
+      try {
+        const [ms, ps] = await Promise.all([
+          getDocs(collection(db, COL.mobsSecret)),
+          getDocs(collection(db, COL.pnjSecret)),
+        ]);
+        const existMobs = new Set(MOBS.map(m => m.id || m._id));
+        for (const d of ms.docs) {
+          const mob = desanitizeFromFirestore({ _id: d.id, ...d.data() });
+          if (!existMobs.has(mob.id || mob._id)) MOBS.push(mob);
+        }
+        const existPnj = new Set(PERSONNAGES.map(p => p.id || p._id));
+        for (const d of ps.docs) {
+          const pnj = desanitizeFromFirestore({ _id: d.id, ...d.data() });
+          if (!existPnj.has(pnj.id || pnj._id)) PERSONNAGES.push(pnj);
+        }
+        window._vcl_bestiaire_refresh?.();
+      } catch (e) { console.warn('[Bestiaire] mobs sensibles:', e); }
+    }
+
     try {
       await store.load(['items', 'mobs', 'pnj', 'regions']);
       store.populateGlobals();
-      // Index région id → nom lisible, pour l'affichage des mobs
       window._regionIndex = new Map(store.regions.map(r => [r.id, r.name || r.id]));
-      // Index région id → ordre (manuel via panel modération), pour le tri des PNJ
       window._regionOrderIndex = new Map(store.regions.map(r => [r.id, r.ordre ?? 9999]));
     } catch (err) {
       console.error('[Bestiaire] Erreur Firestore :', err);
     }
     window._pageInit?.();
+
+    document.addEventListener('vcl:auth-ready', async e => {
+      if (await _canViewSensitiveMobs(e.detail.baseRole)) await _loadSensitiveMobs();
+    }, { once: true });
+    if (window._vcl_base_role && await _canViewSensitiveMobs(window._vcl_base_role)) await _loadSensitiveMobs();
   </script>
+  <script type="module" src="../auth-widget.js"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@
   <title>[VCL] - Compendium</title>
   <link rel="stylesheet" href="../Patchnotes/patchnotes.css" />
   <link rel="stylesheet" href="compendium.css" />
+  <link rel="stylesheet" href="../auth-widget.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
@@ -111,6 +112,38 @@
   <script src="compendium.js"></script>
   <script type="module">
     import { store } from '../store.js';
+    import { db, COL, desanitizeFromFirestore, hasRole } from '../firebase.js';
+    import { collection, getDocs, getDoc, doc }
+      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+    let _sensitiveLoaded = false;
+
+    async function _canViewSensitiveItems(baseRole) {
+      let minRole = 'contributeur';
+      try {
+        const snap = await getDoc(doc(db, 'config', 'permissions'));
+        if (snap.exists()) minRole = snap.data().minRole?.view_items_secret ?? minRole;
+      } catch {}
+      return hasRole(baseRole, minRole);
+    }
+
+    async function _loadSensitiveItems() {
+      if (_sensitiveLoaded) return;
+      _sensitiveLoaded = true;
+      try {
+        const snap = await getDocs(collection(db, COL.itemsSecret));
+        const existing = new Set(ITEMS.map(i => i.id || i._id));
+        for (const d of snap.docs) {
+          const item = desanitizeFromFirestore({ _id: d.id, ...d.data() });
+          if (!existing.has(item.id || item._id)) {
+            item._sensible_visible = true;
+            ITEMS.push(item);
+          }
+        }
+        window._pageInit?.();
+      } catch (e) { console.warn('[Compendium] items sensibles:', e); }
+    }
+
     try {
       await store.load(['items', 'mobs', 'pnj', 'panoplies']);
       store.populateGlobals();
@@ -118,6 +151,12 @@
       console.error('[Compendium] Erreur Firestore :', err);
     }
     window._pageInit?.();
+
+    document.addEventListener('vcl:auth-ready', async e => {
+      if (await _canViewSensitiveItems(e.detail.baseRole)) await _loadSensitiveItems();
+    }, { once: true });
+    if (window._vcl_base_role && await _canViewSensitiveItems(window._vcl_base_role)) await _loadSensitiveItems();
   </script>
+  <script type="module" src="../auth-widget.js"></script>
 </body>
 </html>

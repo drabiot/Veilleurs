@@ -2429,6 +2429,7 @@ function loadAccessoriesForClass(classId) {
   }
 
   window._pageInit = init;
+  window._atelierRefreshPicker = function() { renderItemList(); };
 
 })();
 
