@@ -3425,12 +3425,291 @@ function _renderObtainInline(text) {
 
 // escHtml → défini dans /utils.js
 
+let _chasseLoaded = false;
+const _chasseDocMap = new Map(); // key: `${mode}:${id}` → { data, modeCreator }
+let _chasseOrigin = null;        // { mode, id, name } when form loaded from chasse
 function switchTab(tab) {
-  ['preview','history'].forEach(t => {
+  ['preview','history','chasse'].forEach(t => {
     document.getElementById('tab-'+t)?.classList.toggle('active', t === tab);
     document.getElementById('pane-'+t)?.classList.toggle('active', t === tab);
   });
+  if (tab === 'chasse' && !_chasseLoaded) { _chasseLoaded = true; loadTableauDeChasse(); }
 }
+
+// ── TABLEAU DE CHASSE ──────────────────────────────────────
+
+const _CHASSE_TYPES = [
+  { mode: 'items',     label: '⚔️ Items',     colName: 'items',       disc: 'category' },
+  { mode: 'mobs',      label: '👾 Mobs',       colName: 'mobs',        disc: 'type' },
+  { mode: 'pnj',       label: '🧑 PNJ',        colName: 'personnages', disc: null },
+  { mode: 'regions',   label: '📍 Régions',    colName: 'regions',     disc: null },
+  { mode: 'quetes',    label: '📜 Quêtes',     colName: 'quetes',      disc: 'type' },
+  { mode: 'panoplies', label: '🔗 Panoplies',  colName: 'panoplies',   disc: null },
+];
+
+function _chasseFieldEmpty(d, fieldId) {
+  if (fieldId === 'coords') return !d.coords || d.coords.x == null;
+  if (fieldId === 'img' || fieldId === 'images' || fieldId === 'image') {
+    const hasImg    = d.img    != null && d.img    !== '';
+    const hasImage  = d.image  != null && d.image  !== '';
+    const hasImages = Array.isArray(d.images) && d.images.length > 0 && d.images.some(x => x != null && x !== '');
+    return !hasImg && !hasImage && !hasImages;
+  }
+  const v = d[fieldId];
+  if (v == null || v === '') return true;
+  if (Array.isArray(v) && v.length === 0) return true;
+  return false;
+}
+
+async function loadTableauDeChasse() {
+  const listEl = document.getElementById('chasse-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div class="ic-empty" style="padding:30px 10px;">Chargement…</div>';
+
+  const db       = window._vcl_db;
+  const _doc     = window._vcl_doc;
+  const _getDoc  = window._vcl_getDoc;
+  const _getDocs = window._vcl_getDocs;
+  const _col     = window._vcl_collection;
+  if (!db || !_getDoc || !_doc) {
+    listEl.innerHTML = '<div class="ic-empty" style="padding:30px 10px;">Non disponible (non connecté).</div>';
+    return;
+  }
+
+  let tdcIds = {}, standards = {};
+  try {
+    const [tdcSnap, stdSnap] = await Promise.all([
+      _getDoc(_doc(db, 'config', 'tableau_de_chasse')),
+      _getDoc(_doc(db, 'config', 'data_quality_standards')),
+    ]);
+    tdcIds    = tdcSnap.exists()  ? tdcSnap.data()  : {};
+    if (stdSnap.exists()) {
+      const _normF = f => (f === 'img' || f === 'image') ? 'images' : f;
+      for (const [mode, cfg] of Object.entries(stdSnap.data())) {
+        const normReq = [...new Set((cfg.required || []).map(_normF))];
+        const normByCat = {};
+        for (const [sc, scfg] of Object.entries(cfg.byCategory || {})) {
+          normByCat[sc] = { required: [...new Set((scfg.required || []).map(_normF))] };
+        }
+        standards[mode] = { required: normReq, byCategory: normByCat };
+      }
+    }
+  } catch(e) {
+    listEl.innerHTML = `<div class="ic-empty" style="padding:30px 10px;">Erreur : ${escHtml(e.message)}</div>`;
+    return;
+  }
+
+  // Cache local pour collections Firestore (régions, PNJ)
+  const _fsCache = {};
+  async function _fetchCol(colName) {
+    if (_fsCache[colName]) return _fsCache[colName];
+    const snap = await _getDocs(_col(db, colName));
+    const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    _fsCache[colName] = docs;
+    return docs;
+  }
+
+  _chasseDocMap.clear();
+  const groups = [];
+
+  for (const { mode, label, colName, disc } of _CHASSE_TYPES) {
+    const ids = (tdcIds[mode] || []).filter(Boolean);
+    if (!ids.length) continue;
+
+    // Récupérer les docs du bon endroit
+    let allDocs = [];
+    if (mode === 'items')     allDocs = (typeof ITEMS       !== 'undefined' ? ITEMS       : []);
+    else if (mode === 'mobs') allDocs = (typeof MOBS        !== 'undefined' ? MOBS        : []);
+    else if (mode === 'quetes') allDocs = (typeof QUETES_DATA !== 'undefined' ? QUETES_DATA : []);
+    else if (mode === 'panoplies') {
+      allDocs = typeof SETS !== 'undefined'
+        ? Object.entries(SETS).map(([k, v]) => ({ id: k, ...v }))
+        : [];
+    } else {
+      try { allDocs = await _fetchCol(colName); } catch { allDocs = []; }
+    }
+
+    const std = standards[mode] || { required: [], byCategory: {} };
+    const cards = [];
+
+    for (const id of ids) {
+      const d = allDocs.find(x => (x.id || x._id) === id);
+      if (!d) { cards.push({ id, name: id, missing: [], notFound: true }); continue; }
+
+      const normD = (!d.images?.length && (d.img || d.image))
+        ? { ...d, images: [d.img || d.image].filter(Boolean) }
+        : d;
+
+      const missing = (std.required || []).filter(f => _chasseFieldEmpty(normD, f));
+      const discVal = disc ? (d[disc] || null) : null;
+      if (disc && !discVal && Object.keys(std.byCategory || {}).length) {
+        if (!missing.includes(disc)) missing.push(disc);
+      } else if (discVal && std.byCategory?.[discVal]) {
+        for (const f of (std.byCategory[discVal].required || [])) {
+          if (!missing.includes(f) && _chasseFieldEmpty(normD, f)) missing.push(f);
+        }
+      }
+
+      const name = d.name || d.titre || d.label || id;
+      const modeCreator = { items:'item', mobs:'mob', pnj:'pnj', regions:'region', quetes:'quest', panoplies:'panoplie' }[mode] || mode;
+      _chasseDocMap.set(`${mode}:${id}`, { data: d, modeCreator, name, missing });
+      cards.push({ id, name, missing });
+    }
+
+    groups.push({ mode, label, cards });
+  }
+
+  renderTableauDeChasse(groups);
+}
+
+function renderTableauDeChasse(groups) {
+  const listEl = document.getElementById('chasse-list');
+  if (!listEl) return;
+
+  const hasAny = groups.some(g => g.cards.length > 0);
+  if (!hasAny) {
+    listEl.innerHTML = '<div class="ic-empty" style="padding:30px 10px;">Tableau de chasse vide.</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  for (const { mode, label, cards } of groups) {
+    if (!cards.length) continue;
+    const group = document.createElement('div');
+    group.className = 'chasse-group';
+
+    const header = document.createElement('div');
+    header.className = 'chasse-group-header';
+    header.textContent = `${label} (${cards.length})`;
+    group.appendChild(header);
+
+    for (const { id, name, missing, notFound } of cards) {
+      const card = document.createElement('div');
+      card.className = 'chasse-card';
+      const entry = _chasseDocMap.get(`${mode}:${id}`);
+      const modeCreator = entry?.modeCreator || ({ items:'item', mobs:'mob', pnj:'pnj', regions:'region', quetes:'quest', panoplies:'panoplie' }[mode] || mode);
+      card.title = `Charger dans le formulaire`;
+      card.onclick = () => {
+        if (entry) {
+          _chasseOrigin = { mode, id, name, missing: entry.missing || [] };
+          switchMode(modeCreator);
+          loadFromData(entry.data, modeCreator);
+          _applyChasseHighlights();
+        } else {
+          switchMode(modeCreator);
+        }
+        switchTab('preview');
+      };
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'chasse-name';
+      nameEl.textContent = notFound ? `[introuvable] ${name}` : name;
+      if (notFound) nameEl.style.color = 'var(--muted)';
+
+      const idEl = document.createElement('span');
+      idEl.className = 'chasse-id';
+      idEl.textContent = id;
+
+      card.appendChild(nameEl);
+      card.appendChild(idEl);
+
+      if (missing.length) {
+        const missingEl = document.createElement('span');
+        missingEl.className = 'chasse-missing';
+        missingEl.textContent = '⚠ ' + missing.join(', ');
+        card.appendChild(missingEl);
+      }
+
+      group.appendChild(card);
+    }
+
+    listEl.appendChild(group);
+  }
+}
+
+const _CHASSE_FIELD_SELECTORS = {
+  items: {
+    name:     '#f-name',
+    lore:     '#f-lore',
+    images:   '#screens-drop-zone',
+    rarity:   '#rarity-field',
+    category: '#f-category',
+    palier:   '#f-palier',
+    lvl:      '#f-lvl',
+    obtain:   '#obtain-type',
+    stats:    '#stats-section .sec-head',
+    effects:  '#effects-section .sec-head',
+  },
+  mobs: {
+    name:   '#mob-name',
+    lore:   '#mob-lore',
+    palier: '#mob-palier',
+    region: '#mob-region-search',
+    coords: '#mob-x',
+    images: '#mob-img',
+  },
+  pnj: {
+    name:   '#pnj-display-name',
+    palier: '#pnj-palier',
+    region: '#pnj-region-search',
+    coords: '#pnj-x',
+  },
+  regions: {
+    name:   '#reg-name',
+    lore:   '#reg-lore',
+    palier: '#reg-palier',
+    coords: '#reg-x',
+    images: '#reg-img',
+  },
+  quetes: {
+    titre:  '#quest-titre',
+    desc:   '#quest-desc',
+    palier: '#quest-palier',
+    type:   '#quest-type',
+    zone:   '#quest-zone-container',
+    coords: '#quest-cx',
+  },
+  panoplies: {
+    label: '#panop-label',
+  },
+};
+
+function _applyChasseHighlights() {
+  document.querySelectorAll('.chasse-field-highlight').forEach(el => el.classList.remove('chasse-field-highlight'));
+  if (!_chasseOrigin?.missing?.length) return;
+
+  const selMap = _CHASSE_FIELD_SELECTORS[_chasseOrigin.mode] || {};
+  for (const field of _chasseOrigin.missing) {
+    const sel = selMap[field];
+    if (!sel) continue;
+    const el = document.querySelector(sel);
+    if (!el) continue;
+    const target = el.closest('.field, .sec-body') || el;
+    target.classList.add('chasse-field-highlight');
+  }
+}
+
+function _renderChassePanel() {
+  const banner = document.getElementById('chasse-preview-banner');
+  if (!banner) return;
+  if (!_chasseOrigin || !_chasseOrigin.missing?.length) {
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+    return;
+  }
+  banner.style.display = '';
+  banner.innerHTML = `
+    <div class="chasse-banner">
+      <div class="chasse-banner-title">🎯 Tableau de chasse — <span style="font-weight:400;color:var(--muted);">${escHtml(_chasseOrigin.name)}</span></div>
+      <div class="chasse-banner-fields">
+        ${_chasseOrigin.missing.map(f =>
+          `<span class="chasse-banner-field">${escHtml(f)}</span>`
+        ).join('')}
+      </div>
+    </div>`;
+}
+
+// ── FIN TABLEAU DE CHASSE ──────────────────────────────────
 
 function renderPreview() {
   const wrap = document.getElementById('preview-wrap');
@@ -4189,6 +4468,7 @@ function update() {
     const dupBadge = document.getElementById('mob-id-duplicate-badge');
     if (dupBadge) dupBadge.style.display = isMobDuplicate(obj.id) ? '' : 'none';
     renderMobPreview();
+    _renderChassePanel();
     return;
   }
   // ── PNJ mode ──
@@ -4203,6 +4483,7 @@ function update() {
     document.getElementById('validation-panel').style.display   = 'none';
     if (empty) document.getElementById('preview-wrap').innerHTML = '';
     else renderPnjPreview();
+    _renderChassePanel();
     return;
   }
   // ── Région mode ──
@@ -4219,6 +4500,7 @@ function update() {
     if (regDupBadge) regDupBadge.style.display = isRegionDuplicate(obj.id) ? '' : 'none';
     if (empty) document.getElementById('preview-wrap').innerHTML = '';
     else renderRegionPreview();
+    _renderChassePanel();
     return;
   }
   // ── Quête mode ──
@@ -4232,6 +4514,7 @@ function update() {
     document.getElementById('id-orphan-badge').style.display    = 'none';
     document.getElementById('validation-panel').style.display   = 'none';
     renderQuestPreview(empty ? null : obj);
+    _renderChassePanel();
     return;
   }
   // ── Panoplie mode ──
@@ -4248,6 +4531,7 @@ function update() {
     if (dupBadge) dupBadge.style.display = isPanoplieDuplicate(obj.id) ? '' : 'none';
     if (empty) document.getElementById('preview-wrap').innerHTML = '';
     else renderPanopliePreview();
+    _renderChassePanel();
     return;
   }
   // ── Item mode (original) ──
@@ -4257,6 +4541,7 @@ function update() {
     document.getElementById('id-duplicate-badge').style.display = 'none';
     document.getElementById('validation-panel').style.display = 'none';
     document.getElementById('preview-wrap').innerHTML = '';
+    _renderChassePanel();
     return;
   }
   const dup = isDuplicate(obj.id);
@@ -4280,6 +4565,7 @@ function update() {
   const statsSec   = document.getElementById('stats-section');
   if (statsBadge) { statsBadge.textContent = statCount + (statCount === 1 ? ' stat' : ' stats'); statsBadge.style.display = statCount ? '' : 'none'; }
   if (statsSec)   statsSec.classList.toggle('has-items', statCount > 0);
+  _renderChassePanel();
 }
 
 async function copyCode() {
@@ -4820,7 +5106,11 @@ async function submitToFirestore() {
     isModification,
     submitter_comment: submitterComment,
     ...(screenshots.length ? { screenshots } : {}),
+    ...(_chasseOrigin ? { fromTableauDeChasse: true } : {}),
   });
+  _chasseOrigin = null;
+  _renderChassePanel();
+  _applyChasseHighlights();
 
   const code = creatorMode === 'item' ? toJS(data, 0) + ',' : toJS(data, 0) + ',';
   addToHistory(data, code);
