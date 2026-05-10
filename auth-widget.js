@@ -5,11 +5,11 @@
    Dispatch : 'vcl:auth-ready' sur document avec detail {uid, role, baseRole}
 ══════════════════════════════════════════════════════ */
 
-import { auth, db, getUserRole, login, loginWithGoogle, logout, hasRole, ROLES }
+import { auth, db, getUserRole, login, register, loginWithGoogle, logout, hasRole, ROLES }
   from './firebase.js';
-import { onAuthStateChanged }
+import { onAuthStateChanged, updateProfile }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { doc, getDoc }
+import { doc, getDoc, setDoc }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 // ── Display config ───────────────────────────────────
@@ -78,17 +78,76 @@ function _injectWidget() {
   overlay.innerHTML = `
     <div class="vcl-auth-modal-box" role="dialog" aria-modal="true">
       <button class="vcl-auth-close-btn" id="vcl-modal-close" title="Fermer">✕</button>
-      <div class="vcl-auth-modal-title">🌙 Connexion</div>
+      <div class="vcl-auth-modal-logo">🌙</div>
+      <div class="vcl-auth-tabs" id="vcl-auth-tabs">
+        <button class="vcl-auth-tab active" id="vcl-tab-login">Connexion</button>
+        <button class="vcl-auth-tab" id="vcl-tab-register">Créer un compte</button>
+      </div>
+
       <div class="vcl-auth-error" id="vcl-auth-error"></div>
-      <input class="vcl-auth-input" id="vcl-auth-email" type="text"
-             placeholder="Identifiant ou e-mail" autocomplete="email" />
-      <input class="vcl-auth-input" id="vcl-auth-password" type="password"
-             placeholder="Mot de passe" autocomplete="current-password" />
-      <button class="vcl-auth-primary-btn" id="vcl-auth-submit">🔑 Se connecter</button>
-      <div class="vcl-auth-divider">— ou —</div>
-      <button class="vcl-auth-google-btn" id="vcl-auth-google">🌐 Continuer avec Google</button>
+
+      <!-- Panel : connexion -->
+      <div id="vcl-panel-login">
+        <div class="vcl-auth-field">
+          <label class="vcl-auth-label">Identifiant ou e-mail</label>
+          <input class="vcl-auth-input" id="vcl-auth-email" type="text"
+                 placeholder="pseudo ou adresse@mail.com" autocomplete="email" />
+        </div>
+        <div class="vcl-auth-field">
+          <label class="vcl-auth-label">Mot de passe</label>
+          <input class="vcl-auth-input" id="vcl-auth-password" type="password"
+                 placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <button class="vcl-auth-primary-btn" id="vcl-auth-submit">Se connecter</button>
+        <div class="vcl-auth-divider"><span>ou</span></div>
+        <button class="vcl-auth-google-btn" id="vcl-auth-google">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="">
+          Continuer avec Google
+        </button>
+      </div>
+
+      <!-- Panel : inscription -->
+      <div id="vcl-panel-register" style="display:none">
+        <button class="vcl-auth-google-btn" id="vcl-reg-google">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18" alt="">
+          Continuer avec Google
+        </button>
+        <div class="vcl-auth-divider"><span>ou</span></div>
+        <div class="vcl-auth-field">
+          <label class="vcl-auth-label">Identifiant <span style="color:#f87171">*</span></label>
+          <input class="vcl-auth-input" id="vcl-reg-pseudo" type="text"
+                 placeholder="lettres, chiffres, - et _" maxlength="32" autocomplete="username" />
+        </div>
+        <div class="vcl-auth-field">
+          <label class="vcl-auth-label">Pseudo affiché <span class="vcl-auth-optional">optionnel</span></label>
+          <input class="vcl-auth-input" id="vcl-reg-display" type="text"
+                 placeholder="[VCL] MonPseudo" maxlength="32" autocomplete="off" />
+        </div>
+        <div class="vcl-auth-field">
+          <label class="vcl-auth-label">Mot de passe <span style="color:#f87171">*</span></label>
+          <input class="vcl-auth-input" id="vcl-reg-password" type="password"
+                 placeholder="6 caractères min" autocomplete="new-password" />
+        </div>
+        <button class="vcl-auth-primary-btn" id="vcl-reg-submit">Créer mon compte</button>
+      </div>
+
+      <!-- Panel : pseudo Google (première connexion) -->
+      <div id="vcl-panel-pseudo" style="display:none">
+        <div class="vcl-auth-hint">Bienvenue ! Choisis ton identifiant :</div>
+        <div class="vcl-auth-field">
+          <label class="vcl-auth-label">Identifiant <span style="color:#f87171">*</span></label>
+          <input class="vcl-auth-input" id="vcl-google-pseudo" type="text"
+                 placeholder="lettres, chiffres, - et _" maxlength="32" autocomplete="username" />
+        </div>
+        <div class="vcl-auth-field">
+          <label class="vcl-auth-label">Pseudo affiché <span class="vcl-auth-optional">optionnel</span></label>
+          <input class="vcl-auth-input" id="vcl-google-display" type="text"
+                 placeholder="[VCL] MonPseudo" maxlength="32" autocomplete="off" />
+        </div>
+        <button class="vcl-auth-primary-btn" id="vcl-pseudo-submit">Valider</button>
+      </div>
     </div>`;
-  document.body.appendChild(overlay);
+  document.documentElement.appendChild(overlay);
 }
 
 function _injectModLink() {
@@ -136,19 +195,42 @@ function _showError(msg) {
 function _wireEvents() {
   const overlay = document.getElementById('vcl-auth-overlay');
 
-  document.getElementById('vcl-login-btn').onclick = () => {
+  const _switchTab = (tab) => {
+    const isLogin = tab === 'login';
+    document.getElementById('vcl-tab-login').classList.toggle('active', isLogin);
+    document.getElementById('vcl-tab-register').classList.toggle('active', !isLogin);
+    document.getElementById('vcl-panel-login').style.display    = isLogin ? '' : 'none';
+    document.getElementById('vcl-panel-register').style.display = isLogin ? 'none' : '';
+    document.getElementById('vcl-panel-pseudo').style.display   = 'none';
+    document.getElementById('vcl-auth-tabs').style.display      = '';
     _showError('');
+  };
+
+  const _showPseudoPanel = () => {
+    document.getElementById('vcl-panel-login').style.display    = 'none';
+    document.getElementById('vcl-panel-register').style.display = 'none';
+    document.getElementById('vcl-panel-pseudo').style.display   = '';
+    document.getElementById('vcl-auth-tabs').style.display      = 'none';
+    _showError('');
+    document.getElementById('vcl-google-pseudo').focus();
+  };
+
+  document.getElementById('vcl-login-btn').onclick = () => {
+    _switchTab('login');
     overlay.classList.remove('hidden');
     document.getElementById('vcl-auth-email').focus();
   };
   document.getElementById('vcl-modal-close').onclick = () => overlay.classList.add('hidden');
   overlay.onclick = e => { if (e.target === overlay) overlay.classList.add('hidden'); };
   document.getElementById('vcl-logout-btn').onclick = () => logout();
+  document.getElementById('vcl-tab-login').onclick    = () => _switchTab('login');
+  document.getElementById('vcl-tab-register').onclick = () => _switchTab('register');
 
+  // ── Connexion ──
   const doLogin = async () => {
     let email = document.getElementById('vcl-auth-email').value.trim();
     if (email && !email.includes('@')) email += '@veilleurs.wiki';
-    const pwd   = document.getElementById('vcl-auth-password').value;
+    const pwd = document.getElementById('vcl-auth-password').value;
     if (!email || !pwd) { _showError('Remplissez tous les champs.'); return; }
     _showError('');
     const btn = document.getElementById('vcl-auth-submit');
@@ -161,18 +243,88 @@ function _wireEvents() {
         .includes(e.code) ? 'Identifiants incorrects.' : e.message);
     } finally { btn.disabled = false; }
   };
-
   document.getElementById('vcl-auth-submit').onclick = doLogin;
   document.getElementById('vcl-auth-password').addEventListener('keydown',
     e => { if (e.key === 'Enter') doLogin(); });
 
-  document.getElementById('vcl-auth-google').onclick = async () => {
+  // ── Google (login + register panels) ──
+  const doGoogle = async () => {
     _showError('');
     try {
-      await loginWithGoogle();
-      overlay.classList.add('hidden');
+      const cred = await loginWithGoogle();
+      const snap = await getDoc(doc(db, 'users', cred.user.uid));
+      if (!snap.exists()) {
+        _showPseudoPanel();
+      } else {
+        overlay.classList.add('hidden');
+      }
     } catch (e) { _showError(e.message); }
   };
+  document.getElementById('vcl-auth-google').onclick = doGoogle;
+  document.getElementById('vcl-reg-google').onclick  = doGoogle;
+
+  // ── Inscription ──
+  const doRegister = async () => {
+    const identifiant = document.getElementById('vcl-reg-pseudo').value.trim();
+    const displayName = document.getElementById('vcl-reg-display').value.trim();
+    const pw          = document.getElementById('vcl-reg-password').value;
+
+    if (!identifiant)                           { _showError("Identifiant obligatoire."); return; }
+    if (identifiant.length < 2)                 { _showError("Identifiant trop court (2 min)."); return; }
+    if (!/^[\w\-]+$/i.test(identifiant))        { _showError("Identifiant invalide (lettres, chiffres, - et _)."); return; }
+    if (displayName && !/^[\w\- \[\]]{2,32}$/i.test(displayName)) { _showError("Pseudo invalide."); return; }
+    if (!pw)                                    { _showError("Mot de passe obligatoire."); return; }
+    if (pw.length < 6)                          { _showError("Mot de passe trop court (6 min)."); return; }
+
+    const pseudo = displayName || identifiant;
+    const email  = identifiant + '@veilleurs.wiki';
+    const btn    = document.getElementById('vcl-reg-submit');
+    btn.disabled = true;
+    _showError('');
+    try {
+      const cred = await register(email, pw);
+      const saveProfile = async () =>
+        setDoc(doc(db, 'users', cred.user.uid), { pseudo, role: 'membre' });
+      try { await saveProfile(); }
+      catch { await new Promise(r => setTimeout(r, 1000)); try { await saveProfile(); } catch {} }
+      try { await updateProfile(cred.user, { displayName: pseudo }); } catch {}
+      overlay.classList.add('hidden');
+    } catch (e) {
+      _showError(e.code === 'auth/email-already-in-use' ? 'Cet identifiant est déjà utilisé.'
+               : e.code === 'auth/weak-password'        ? 'Mot de passe trop faible (6 min).'
+               : e.message);
+    } finally { btn.disabled = false; }
+  };
+  document.getElementById('vcl-reg-submit').onclick = doRegister;
+  document.getElementById('vcl-reg-password').addEventListener('keydown',
+    e => { if (e.key === 'Enter') doRegister(); });
+
+  // ── Pseudo Google (première connexion) ──
+  const doSavePseudo = async () => {
+    const identifiant = document.getElementById('vcl-google-pseudo').value.trim();
+    const displayName = document.getElementById('vcl-google-display').value.trim();
+
+    if (!identifiant)                    { _showError("Identifiant obligatoire."); return; }
+    if (identifiant.length < 2)          { _showError("Identifiant trop court (2 min)."); return; }
+    if (!/^[\w\-]+$/i.test(identifiant)) { _showError("Identifiant invalide (lettres, chiffres, - et _)."); return; }
+    if (displayName && !/^[\w\- \[\]]{2,32}$/i.test(displayName)) { _showError("Pseudo invalide."); return; }
+
+    const pseudo = displayName || identifiant;
+    const user   = auth.currentUser;
+    const btn    = document.getElementById('vcl-pseudo-submit');
+    btn.disabled = true;
+    _showError('');
+    try {
+      await setDoc(doc(db, 'users', user.uid), { pseudo, role: 'membre', email: user.email || '' });
+      try { await updateProfile(user, { displayName: pseudo }); } catch {}
+      overlay.classList.add('hidden');
+    } catch (e) {
+      _showError(e.message);
+    } finally { btn.disabled = false; }
+  };
+  document.getElementById('vcl-pseudo-submit').onclick = doSavePseudo;
+  document.getElementById('vcl-google-pseudo').addEventListener('keydown',
+    e => { if (e.key === 'Enter') doSavePseudo(); });
 }
 
 // ── Globals & event ──────────────────────────────────

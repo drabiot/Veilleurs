@@ -631,13 +631,24 @@ select:focus, select:hover { border-color: var(--accent); }
 .forum-img-clear { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.7); border: none; color: #fff; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 13px; line-height: 22px; text-align: center; }
 
 /* ── LOGIN MODAL ── */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; display: flex; align-items: center; justify-content: center; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.78); backdrop-filter: blur(6px); z-index: 200; display: flex; align-items: center; justify-content: center; animation: modal-fade-in .2s ease; }
 .modal-overlay.hidden { display: none; }
-.modal-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 320px; display: flex; flex-direction: column; gap: 12px; }
-.btn-google { background: var(--surface2); color: var(--text); border: 1px solid var(--border); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; padding: 8px 12px; border-radius: 6px; cursor: pointer; transition: background .15s; }
-.btn-google:hover { background: var(--surface3); }
-.modal-card h2 { font-size: 15px; font-weight: 700; color: var(--accent); }
-.mfield { display: flex; flex-direction: column; gap: 4px; }
-.mfield label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.mfield input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 8px 10px; font-size: 13px; outline: none; transition: border-color .15s; }
-.mfield input:focus { border-color: var(--accent); }
+@keyframes modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
+.modal-card {
+  background: linear-gradient(160deg, #100d08 0%, #0a0806 100%);
+  border: 1px solid rgba(215,175,95,.2);
+  border-radius: 14px;
+  padding: 28px;
+  width: 340px;
+  display: flex; flex-direction: column; gap: 12px;
+  box-shadow: 0 0 0 1px rgba(215,175,95,.05), 0 24px 60px rgba(0,0,0,.75);
+  animation: modal-slide-up .22s ease;
+}
+@keyframes modal-slide-up { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.btn-google { background: rgba(255,255,255,.05); color: rgba(255,255,255,.8); border: 1px solid rgba(255,255,255,.1); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 14px; border-radius: 8px; cursor: pointer; transition: background .15s, border-color .15s, color .15s; font-family: 'JetBrains Mono', monospace; }
+.btn-google:hover { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); color: rgba(255,255,255,.95); }
+.modal-card h2 { font-size: 15px; font-weight: 700; color: var(--accent); font-family: 'Cinzel', serif; letter-spacing: .06em; }
+.mfield { display: flex; flex-direction: column; gap: 5px; }
+.mfield label { font-size: 10px; font-weight: 700; color: rgba(215,175,95,.55); text-transform: uppercase; letter-spacing: .08em; font-family: 'JetBrains Mono', monospace; }
+.mfield input { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 13px; outline: none; transition: border-color .2s, box-shadow .2s; font-family: 'JetBrains Mono', monospace; width: 100%; box-sizing: border-box; }
+.mfield input:focus { border-color: rgba(215,175,95,.45); box-shadow: 0 0 0 3px rgba(215,175,95,.08); }
