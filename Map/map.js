@@ -2,6 +2,7 @@
    ÉTAT
 ══════════════════════════════════ */
 const MAP_SIZE          = 900;
+const VCL_CURSOR = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\'%3E%3Cpath d=\'M2 2L2 16L6.5 12.5L10 20L12.5 19L9 11L15 11Z\' fill=\'none\' stroke=\'%23000\' stroke-width=\'3\' stroke-linejoin=\'round\' stroke-linecap=\'round\'/%3E%3Cpath d=\'M2 2L2 16L6.5 12.5L10 20L12.5 19L9 11L15 11Z\' fill=\'%23f0e8d0\' stroke=\'%231a0e05\' stroke-width=\'1\' stroke-linejoin=\'round\'/%3E%3C/svg%3E") 2 2, crosshair';
 let   currentFloor      = 1;
 let   currentLayer      = 'surface';
 let   zoomLevel         = 1;
@@ -1426,7 +1427,7 @@ mapViewport.addEventListener('wheel', (e) => {
 mapViewport.addEventListener('mousedown', (e) => {
   if (e.target.closest('.marker')) return;
   isPanning = true; panLastX = e.clientX; panLastY = e.clientY;
-  mapViewport.style.cursor = 'grabbing';
+  mapViewport.style.cursor = VCL_CURSOR;
 });
 window.addEventListener('mousemove', (e) => {
   if (!isPanning) return;
@@ -1435,7 +1436,7 @@ window.addEventListener('mousemove', (e) => {
   panLastX = e.clientX; panLastY = e.clientY;
   applyTransform();
 });
-window.addEventListener('mouseup', () => { isPanning = false; mapViewport.style.cursor = 'grab'; });
+window.addEventListener('mouseup', () => { isPanning = false; mapViewport.style.cursor = VCL_CURSOR; });
 
 mapViewport.addEventListener('touchstart', (e) => {
   const t = e.touches[0]; isPanning = true; panLastX = t.clientX; panLastY = t.clientY;
@@ -1531,9 +1532,9 @@ searchInput.addEventListener('input', () => {
 
   const norm    = normalize(query);
   const matches = getAllMarkers().filter(m =>
-    normalize(m.name).includes(norm) ||
-    normalize(m.desc || '').includes(norm) ||
-    normalize(getTypeLabel(m.type)).includes(norm)
+    fuzzyMatch(norm, m.name) ||
+    fuzzyMatch(norm, m.desc || '') ||
+    fuzzyMatch(norm, getTypeLabel(m.type))
   ).slice(0, 12);
 
   searchResults.innerHTML = '';
@@ -1573,7 +1574,7 @@ mapViewport.addEventListener('click', (e) => {
     const img  = screenToImage(vp.x, vp.y);
     const game = pixelToGame(img.x, img.y);
     _customPinMode = false;
-    mapViewport.style.cursor = 'grab';
+    mapViewport.style.cursor = VCL_CURSOR;
     openNewPinDialog(game.x, game.y);
     return;
   }
@@ -1767,13 +1768,13 @@ function _confirmCustomPin() {
   renderMarkers();
 
   _customPinMode = false;
-  mapViewport.style.cursor = 'grab';
+  mapViewport.style.cursor = VCL_CURSOR;
   document.getElementById('custom-pin-dialog')?.classList.add('hidden');
 }
 
 function _cancelCustomPin() {
   _customPinMode = false;
-  mapViewport.style.cursor = 'grab';
+  mapViewport.style.cursor = VCL_CURSOR;
   document.getElementById('custom-pin-dialog')?.classList.add('hidden');
 }
 

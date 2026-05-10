@@ -7,7 +7,39 @@
 
 /** Retire accents + lowercase — utilisé par les filtres de recherche */
 function normalize(str) {
-  return String(str ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return String(str ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+/** Distance de Levenshtein — helper interne pour fuzzyMatch */
+function _editDist(a, b) {
+  if (Math.abs(a.length - b.length) > 4) return 99;
+  const dp = Array.from({length: a.length + 1}, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  return dp[a.length][b.length];
+}
+
+/**
+ * Correspondance floue : tolère fautes de frappe et espaces multiples.
+ * exact=true → inclus uniquement si la cible contient la requête telle quelle (items sensibles).
+ */
+function fuzzyMatch(query, target, exact = false) {
+  const nq = normalize(String(query ?? '')).replace(/\s+/g, ' ').trim();
+  const nt = normalize(String(target ?? '')).replace(/\s+/g, ' ').trim();
+  if (!nq) return true;
+  if (nt.includes(nq)) return true;
+  if (exact) return false;
+  const tokens = nq.split(' ').filter(t => t.length >= 2);
+  if (!tokens.length) return false;
+  const targetWords = nt.split(' ');
+  return tokens.every(token => {
+    if (nt.includes(token)) return true;
+    const maxDist = token.length <= 5 ? 1 : token.length <= 8 ? 2 : 3;
+    return targetWords.some(w => _editDist(token, w) <= maxDist);
+  });
 }
 
 /** Table des raretés — source unique de vérité */
@@ -52,4 +84,4 @@ function postDiscord(url, payload, file, fname) {
 }
 
 // Namespace pour accès depuis les modules ES (où `const` top-level n'est pas visible)
-window.VCL = { normalize, RARITIES, getRarityColor, escHtml, postDiscord };
+window.VCL = { normalize, fuzzyMatch, RARITIES, getRarityColor, escHtml, postDiscord };

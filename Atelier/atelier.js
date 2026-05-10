@@ -1484,7 +1484,7 @@ function loadAccessoriesForClass(classId) {
     if (!item.set) return false;
     const setDef = SETS[item.set];
     if (!setDef) return false;
-    return normalize(setDef.label).includes(normalizedQuery);
+    return fuzzyMatch(normalizedQuery, setDef.label);
   }
 
   function renderItemList() {
@@ -1508,7 +1508,7 @@ function loadAccessoriesForClass(classId) {
         return (item.cat === 'rune' || item.category === 'rune') &&
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
-          (!q || normalize(item.name).includes(q)) &&
+          (!q || fuzzyMatch(q, item.name)) &&
           statsFilter(item);
       });
       // Injecter les runes sensibles du cache (même logique que les autres items sensibles)
@@ -1573,7 +1573,7 @@ function loadAccessoriesForClass(classId) {
           itemAllowedForClass(item, activeClass) &&
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
-          (!q || normalize(item.name).includes(q) || matchesSetSearch(item, q)) &&
+          (!q || fuzzyMatch(q, item.name) || matchesSetSearch(item, q)) &&
           statsFilter(item);
       });
     } else {
@@ -1589,7 +1589,7 @@ function loadAccessoriesForClass(classId) {
         itemAllowedForClass(item, activeClass) &&
         (!filterRar  || item.rarity === filterRar) &&
         (filterTier === null || item.palier === filterTier) &&
-        (!q || normalize(item.name).includes(q) || matchesSetSearch(item, q)) &&
+        (!q || fuzzyMatch(q, item.name) || matchesSetSearch(item, q)) &&
         statsFilter(item);
       });
     }
@@ -2018,14 +2018,18 @@ function loadAccessoriesForClass(classId) {
   }
 
   /* ══ EXPORT ══ */
-  document.getElementById('btn-export').addEventListener('click', function() {
+  function _isSecretItem(item) {
+    const id = getItemId(item);
+    return _hiddenCache.has(id) || window._hiddenItemIds?.has(id);
+  }
+  function _buildExportPayload(includeSecret) {
     const name = document.getElementById('inp-name').value.trim() || 'Mon Stuff';
     const equippedIds = {};
     Object.entries(equipped).forEach(function(e) {
       const item = e[1];
-      if (item && !_hiddenCache.has(getItemId(item))) equippedIds[e[0]] = getItemId(item);
+      if (item && (includeSecret || !_isSecretItem(item))) equippedIds[e[0]] = getItemId(item);
     });
-    const payload = {
+    return {
       v: 1,
       sig: SIG,
 			buildIndex: activeBuildIndex,
@@ -2036,11 +2040,39 @@ function loadAccessoriesForClass(classId) {
       slots: equippedIds,
       runes: equippedRunes,
     };
+  }
+  function _refreshExportTA() {
+    const includeSecret = document.getElementById('chk-export-secret')?.checked;
+    const payload = _buildExportPayload(includeSecret);
     const ta = document.getElementById('modal-ta-export');
     if (ta) ta.value = '```json\n' + JSON.stringify(payload, null, 2) + '\n```';
+  }
+  document.getElementById('btn-export').addEventListener('click', function() {
+    const name = document.getElementById('inp-name').value.trim() || 'Mon Stuff';
+    // Détecter les items secrets équipés
+    const secretItems = [];
+    Object.entries(equipped).forEach(function(e) {
+      const item = e[1];
+      if (item && _isSecretItem(item)) secretItems.push(item);
+    });
+    const section = document.getElementById('export-secret-section');
+    const list    = document.getElementById('export-secret-list');
+    const chk     = document.getElementById('chk-export-secret');
+    if (section && list && chk) {
+      if (secretItems.length) {
+        section.style.display = 'flex';
+        list.innerHTML = secretItems.map(it => `<span>◻ ${it.name || it._id || getItemId(it)}</span>`).join('');
+      } else {
+        section.style.display = 'none';
+        chk.checked = false;
+        list.innerHTML = '';
+      }
+    }
+    _refreshExportTA();
     document.getElementById('modal-title').textContent = '◈ Exporter — ' + name;
     openModal('export');
   });
+  document.getElementById('chk-export-secret')?.addEventListener('change', _refreshExportTA);
 
   document.getElementById('btn-copy').addEventListener('click', function() {
     const ta = document.getElementById('modal-ta-export');

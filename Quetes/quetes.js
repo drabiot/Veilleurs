@@ -94,10 +94,10 @@ function getFiltered() {
     if (activeStatut === 'done'  && !done)                 return false;
     if (activeStatut === 'wip'   && !isQuestStarted(e))   return false;
     if (q &&
-      !normalize(e.titre).includes(q) &&
-      !normalize(e.zone).includes(q)  &&
-      !normalize(resolvePnjName(e.npc)).includes(q) &&
-      !normalize(e.desc).includes(q)
+      !fuzzyMatch(q, e.titre) &&
+      !fuzzyMatch(q, e.zone)  &&
+      !fuzzyMatch(q, resolvePnjName(e.npc)) &&
+      !fuzzyMatch(q, e.desc)
     ) return false;
     return true;
   });

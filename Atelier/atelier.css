@@ -252,6 +252,13 @@ html, body {
 .action-btn.primary       { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow); }
 .action-btn.primary:hover { background: rgba(224,172,96,.2); border-color: var(--gold); }
 .action-btn.danger:hover  { color: #d9614a; border-color: rgba(217,97,74,.4); background: rgba(217,97,74,.07); }
+.export-secret-toggle {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--muted);
+  cursor: pointer; padding: 2px 0; user-select: none;
+}
+.export-secret-toggle input { accent-color: var(--gold); cursor: pointer; }
+.export-secret-toggle:hover { color: var(--text); }
 
 /* ============================================================
    CENTRE

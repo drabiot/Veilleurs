@@ -188,7 +188,7 @@ function getFiltered() {
   const q = normalize(searchQuery);
   const filtered = getList().filter(e => {
     if (e.sensible && !window._vcl_can_view_sensible) return false;
-    if (q && !normalize(e.name).includes(q) && !normalize(getRegionLabel(e.region||'')).includes(q) && !normalize(e.region||'').includes(q) && !normalize(e.lore||'').includes(q)) return false;
+    if (q && !fuzzyMatch(q, e.name, e.sensible === true) && !fuzzyMatch(q, getRegionLabel(e.region||'')) && !fuzzyMatch(q, e.region||'') && !fuzzyMatch(q, e.lore||'', e.sensible === true)) return false;
     if (activePalier !== 'all' && e.palier !== activePalier) return false;
     if (activeTab === 'monstres') {
       if (!activeTypes.has(e.type)) return false;
@@ -247,7 +247,7 @@ function updateCounts() {
     const list = MOBS.filter(e => activePalier === 'all' || e.palier === activePalier);
     const q    = normalize(searchQuery);
     const filtered = q ? list.filter(e =>
-      normalize(e.name).includes(q) || normalize(e.region||'').includes(q)
+      fuzzyMatch(q, e.name) || fuzzyMatch(q, e.region||'')
     ) : list;
     ['boss','mini_boss','monstre','sbire'].forEach(t => {
       const el = document.getElementById(`count-${t}`);
@@ -257,7 +257,7 @@ function updateCounts() {
     const list = PERSONNAGES.filter(e => activePalier === 'all' || e.palier === activePalier);
     const q    = normalize(searchQuery);
     const filtered = q ? list.filter(e =>
-      normalize(e.name).includes(q) || normalize(e.region||'').includes(q)
+      fuzzyMatch(q, e.name) || fuzzyMatch(q, e.region||'')
     ) : list;
         Object.keys(PNJ_TAG_LABELS).forEach(tag => {
       const el = document.getElementById(`count-${tag}`);

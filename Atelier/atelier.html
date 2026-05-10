@@ -196,6 +196,13 @@
 
       <div id="modal-zone-export" style="display:none; flex-direction:column; gap:12px">
         <p class="modal-hint">Copiez ce JSON pour sauvegarder ou partager votre build. Vous pourrez le réimporter à tout moment.</p>
+        <div id="export-secret-section" style="display:none; flex-direction:column; gap:6px; padding:8px 10px; background:rgba(212,181,126,.06); border:1px solid rgba(212,181,126,.15); border-radius:6px;">
+          <label class="export-secret-toggle">
+            <input type="checkbox" id="chk-export-secret" />
+            <span>Inclure les items secrets</span>
+          </label>
+          <div id="export-secret-list" style="font-size:10px; color:var(--muted); padding-left:18px; display:flex; flex-direction:column; gap:2px;"></div>
+        </div>
         <textarea class="modal-ta" id="modal-ta-export" readonly></textarea>
         <div class="modal-foot"><button id="btn-copy" class="action-btn primary">◈ Copier</button></div>
       </div>
@@ -265,10 +272,15 @@
       try {
         const snap = await getDocs(collection(db, COL.itemsHidden));
         const existing = new Set(ITEMS.map(i => i.id || i._id));
+        window._hiddenItemIds = window._hiddenItemIds || new Set();
         let added = false;
         for (const d of snap.docs) {
           const item = desanitizeFromFirestore({ _id: d.id, ...d.data() });
-          if (!existing.has(item.id || item._id)) { ITEMS.push(item); added = true; }
+          if (!existing.has(item.id || item._id)) {
+            ITEMS.push(item);
+            window._hiddenItemIds.add(item.id || item._id);
+            added = true;
+          }
         }
         if (added) window._atelierRefreshPicker?.();
       } catch (e) { console.warn('[Atelier] items sensibles:', e); }

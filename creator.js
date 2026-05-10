@@ -469,9 +469,11 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   const _validModes = ['item','mob','pnj','region','quest','panoplie'];
-  const _urlMode = _params.has('mode') && _validModes.includes(_params.get('mode')) ? _params.get('mode') : null;
-  if (_urlMode) switchMode(_urlMode);
-  restoreForm(_urlMode);
+  const _hashMode   = location.hash.slice(1);
+  const _urlMode    = _params.has('mode') && _validModes.includes(_params.get('mode')) ? _params.get('mode') : null;
+  const _initMode   = (_validModes.includes(_hashMode) ? _hashMode : null) || _urlMode;
+  if (_initMode) switchMode(_initMode);
+  restoreForm(_initMode);
 
   // Pré-remplir depuis le tracker d'IDs fantômes (moderation.html)
   if (_params.has('ghostid')) {
@@ -731,7 +733,7 @@ function getAuthor() {
 // ═══════════════════════════════════════════════════
 // PERSISTANCE FORMULAIRE
 // ═══════════════════════════════════════════════════
-let _skipSave = false; // évite de sauvegarder pendant un reset
+let _skipSave = true; // true until restoreForm() completes — blocks saveForm() during early init and external scripts
 
 function saveForm() {
   if (_skipSave) return;
@@ -788,6 +790,9 @@ function saveForm() {
       // PNJ form
       pnj: {
         id:            document.getElementById('pnj-id')?.value      || '',
+        idLocked:      pnjIdLocked,
+        displayName:   document.getElementById('pnj-display-name')?.value  || '',
+        instructions:  document.getElementById('pnj-instructions')?.value  || '',
         type:          document.getElementById('pnj-type')?.value     || '',
         palier:        document.getElementById('pnj-palier')?.value   || '',
         region:        document.getElementById('pnj-region')?.value   || '',
@@ -796,6 +801,7 @@ function saveForm() {
         y:             document.getElementById('pnj-y')?.value        || '',
         z:             document.getElementById('pnj-z')?.value        || '',
         underground:   pnjUnderground,
+        sensible:      pnjSensible,
         sells:  pnjSells.map(s => ({ itemId: s.itemId, buy: s.buy, price: s.price })),
         crafts: pnjCrafts.map(c => ({ resultId: c.resultId, time: c.time, quality: c.quality, ingredients: c.ingredients.map(i => ({ itemId: i.itemId, qty: i.qty })) })),
       },
@@ -869,7 +875,7 @@ function restoreForm(forcedMode) {
       onCatChange();
     }
     if (d.cat)    document.getElementById('f-cat').value    = d.cat;
-    if (d.palier) document.getElementById('f-palier').value = d.palier;
+    if (d.palier) { document.getElementById('f-palier').value = d.palier; _customSelUpdaters['f-palier']?.(); }
     if (d.lvl)    document.getElementById('f-lvl').value    = d.lvl;
     if (d.lore)   document.getElementById('f-lore').value   = d.lore;
     if (d.obtainOverride) {
@@ -995,8 +1001,13 @@ function restoreForm(forcedMode) {
     // ── PNJ form ──
     if (d.pnj) {
       const p = d.pnj;
+      if (p.idLocked && p.id) { document.getElementById('pnj-id').value = p.id; pnjIdLocked = true; }
+      else if (p.id) document.getElementById('pnj-id').value = p.id;
+      if (p.displayName)  document.getElementById('pnj-display-name').value  = p.displayName;
+      if (p.instructions) document.getElementById('pnj-instructions').value  = p.instructions;
+      if (p.sensible) { pnjSensible = true; document.getElementById('pnj-sensible-btn')?.classList.add('active'); }
       if (p.type)   { _restorePnjTypeUI(p.type); onPnjTypeChange(); }
-      if (p.palier) document.getElementById('pnj-palier').value = p.palier;
+      if (p.palier) { document.getElementById('pnj-palier').value = p.palier; _customSelUpdaters['pnj-palier']?.(); }
       if (p.region) document.getElementById('pnj-region').value = p.region;
       if (p.regionSearch) document.getElementById('pnj-region-search').value = p.regionSearch;
       if (p.x !== '') document.getElementById('pnj-x').value = p.x;
@@ -1025,7 +1036,7 @@ function restoreForm(forcedMode) {
       const r = d.region;
       if (r.name)  { document.getElementById('reg-name').value = r.name; onRegNameInput(); }
       if (r.idLocked && r.id) { document.getElementById('reg-id').value = r.id; regIdLocked = true; }
-      if (r.palier) document.getElementById('reg-palier').value = r.palier;
+      if (r.palier) { document.getElementById('reg-palier').value = r.palier; _customSelUpdaters['reg-palier']?.(); }
       if (r.lore)   document.getElementById('reg-lore').value   = r.lore;
       if (r.inCodex !== undefined && typeof setRegCodex === 'function') setRegCodex(r.inCodex);
       if (r.canTp   !== undefined && typeof setRegCanTp === 'function') setRegCanTp(r.canTp);
@@ -1276,6 +1287,7 @@ function initObtainData() {
         id: pId, name: pName, desc: p.region || '',
         subtitle: subtitleParts.join(' · '),
         coords: pCoords,
+        palier: p.palier || null,
         search: (pName + ' ' + pId + ' ' + (p.region || '') + ' ' + (p.instructions || '') + ' ' + pCoordStr).toLowerCase()
       };
       if (_artisanTags.has(tag) && !_existArtIds.has(pId)) {
@@ -1539,7 +1551,7 @@ function addObtainSource() {
 
   {
     if (obtainSources.some(s => s.id === id && s.type === type)) return;
-    obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc || '', subtitle: item.subtitle, coords: item.coords || null });
+    obtainSources.push({ uid: obtainUid++, type, id, name: item.name, desc: item.desc || '', subtitle: item.subtitle, coords: item.coords || null, palier: item.palier || null });
   }
   obtainDrop.reset();
   document.getElementById('obtain-add-btn').disabled = true;
@@ -1593,16 +1605,13 @@ function renderObtainSources() {
     } else if (s.type === 'pnj') {
       label += `<b>${s.name}</b>`;
       if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
-      if (s.coords) label += ` <span style="color:var(--muted);font-size:10px;">📍 X${s.coords.x} Z${s.coords.z}</span>`;
     } else {
       label += `<b>${s.name}</b>`;
       if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
     }
     let extraBtns = '';
-    if (s.type === 'pnj' && s.coords) {
-      const floor = document.getElementById('f-palier')?.value || '1';
-      const ghostName = encodeURIComponent(`${s.name} · X:${s.coords.x} Z:${s.coords.z}`);
-      const mapHref = `Map/map.html?ghost_gx=${s.coords.x}&ghost_gz=${s.coords.z}&ghost_floor=${encodeURIComponent(floor)}&ghost_name=${ghostName}#floor-${floor}-surface`;
+    if (s.type === 'pnj') {
+      const mapHref = `Map/map.html?pnjId=${encodeURIComponent(s.id)}`;
       extraBtns = `<a href="${mapHref}" target="_blank" class="btn-icon" title="Voir sur la carte" style="text-decoration:none;font-size:14px;">🗺️</a>`;
     }
     if (s.type === 'ressource' && s.coords) {
@@ -2901,7 +2910,7 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
     q = q.toLowerCase();
     const results = q.length < 1
       ? []
-      : items.filter(it => it.search.includes(q)).slice(0, 40);
+      : items.filter(it => it.sensible ? it.search.includes(q) : fuzzyMatch(q, it.search)).slice(0, 40);
     list.innerHTML = '';
     focusedIdx = -1;
     if (q.length >= 1 && !results.length) {
@@ -3606,12 +3615,7 @@ function renderTableauDeChasse(groups) {
       nameEl.textContent = notFound ? `[introuvable] ${name}` : name;
       if (notFound) nameEl.style.color = 'var(--muted)';
 
-      const idEl = document.createElement('span');
-      idEl.className = 'chasse-id';
-      idEl.textContent = id;
-
       card.appendChild(nameEl);
-      card.appendChild(idEl);
 
       if (missing.length) {
         const missingEl = document.createElement('span');
@@ -3988,7 +3992,7 @@ function filterStats() {
 
   rows.forEach(row => {
     const text = (row.querySelector('label')?.textContent || '').toLowerCase();
-    row.style.display = (!q || text.includes(q)) ? '' : 'none';
+    row.style.display = (!q || fuzzyMatch(q, text)) ? '' : 'none';
   });
 
   // Hide group labels when all their rows are hidden
@@ -5382,13 +5386,13 @@ function renderMobRegionDropdown() {
 
   let filtered = _allMobRegions;
   if (palier) filtered = filtered.filter(r => String(r.palier||'') === palier);
-  if (q)      filtered = filtered.filter(r => normalize(r.name||r.id||'').includes(q));
+  if (q)      filtered = filtered.filter(r => fuzzyMatch(q, r.name||r.id||''));
 
   // Pending regions from submissions
   const pendingRegions = (window._vcl_pendingRegions || [])
     .filter(s => {
       const name = s.data?.name || '';
-      if (q && !normalize(name).includes(q)) return false;
+      if (q && !fuzzyMatch(q, name)) return false;
       if (palier && String(s.data?.palier||'') !== palier) return false;
       return true;
     })
@@ -5497,10 +5501,10 @@ function renderPnjRegionDropdown() {
   const q = normalize((document.getElementById('pnj-region-search')?.value || '').trim());
 
   let filtered = _allMobRegions;
-  if (q) filtered = filtered.filter(r => normalize(r.name || r.id || '').includes(q));
+  if (q) filtered = filtered.filter(r => fuzzyMatch(q, r.name || r.id || ''));
 
   const pendingRegions = (window._vcl_pendingRegions || [])
-    .filter(s => !q || normalize(s.data?.name || '').includes(q))
+    .filter(s => !q || fuzzyMatch(q, s.data?.name || ''))
     .map(s => ({ ...s.data, _pendingId: s._pendingId, _isPending: true }));
 
   dropdown.innerHTML = '';
@@ -5676,6 +5680,7 @@ const MODE_SUBTITLES = {
 
 function switchMode(mode) {
   creatorMode = mode;
+  { const _p = new URLSearchParams(location.search); _p.delete('mode'); const _qs = _p.toString() ? '?' + _p.toString() : ''; history.replaceState(null, '', location.pathname + _qs + '#' + mode); }
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.getElementById('item-form').style.display   = mode === 'item'   ? 'flex' : 'none';
   document.getElementById('mob-form').style.display    = mode === 'mob'    ? 'flex' : 'none';

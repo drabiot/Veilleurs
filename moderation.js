@@ -300,8 +300,8 @@ function renderSubs() {
   if (filterSearch) {
     const q = normalize(filterSearch);
     subs = subs.filter(s =>
-      normalize(s.data?.name || s.data?.titre || s.data?.label || '').includes(q) ||
-      normalize(s.data?.id || '').includes(q)
+      fuzzyMatch(q, s.data?.name || s.data?.titre || s.data?.label || '') ||
+      fuzzyMatch(q, s.data?.id || '')
     );
   }
 
@@ -456,6 +456,7 @@ function _buildPrettySummary(data, type) {
     if (data.objectifs?.length) {
       const objLines = data.objectifs.map(o => {
         let line = `<div style="font-size:11px;display:flex;gap:5px;"><span style="color:var(--accent);">◻</span><span>${esc(o.texte||'—')}</span></div>`;
+        if (o.location?.x != null || o.location?.z != null) line += `<div style="font-size:10px;color:var(--muted);padding-left:14px;">📍 X ${o.location?.x ?? '?'} · Z ${o.location?.z ?? '?'}</div>`;
         if (o.items?.length) o.items.forEach(it => { line += `<div style="font-size:10px;color:var(--muted);padding-left:14px;">→ item: <code>${esc(it.id||it.itemId||'?')}</code> ×${it.qte||1}</div>`; });
         if (o.mobs?.length)  o.mobs.forEach(m  => { line += `<div style="font-size:10px;color:var(--muted);padding-left:14px;">→ mob: <code>${esc(m.id||m.mobId||'?')}</code> ×${m.qte||1}</div>`; });
         return line;
@@ -1363,7 +1364,7 @@ function renderMobOrder() {
 
   // ── Mode recherche : liste plate, positions globales, pas de drag ──
   if (searchQ) {
-    const visible = _mobOrderData.filter(m => normalize(m.name).includes(searchQ));
+    const visible = _mobOrderData.filter(m => fuzzyMatch(searchQ, m.name));
     if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
     visible.forEach(mob => {
       const row = document.createElement('div');
@@ -1593,7 +1594,7 @@ function renderItemOrder() {
 
   // ── Mode recherche : liste plate avec position globale ──
   if (searchQ) {
-    const visible = _itemOrderData.filter(it => normalize(it.name).includes(searchQ));
+    const visible = _itemOrderData.filter(it => fuzzyMatch(searchQ, it.name));
     if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
     visible.forEach(item => {
       const row = document.createElement('div');
@@ -2087,7 +2088,7 @@ function renderPnjOrder() {
     const posMap  = new Map();
     let pos = 1;
     paliers.forEach(pal => _pnjRegions.forEach(g => g.pnjs.filter(p => (p.palier||1)===pal).forEach(p => posMap.set(p.id, pos++))));
-    const results = allPnjs.filter(p => normalize(p.name).includes(searchQ));
+    const results = allPnjs.filter(p => fuzzyMatch(searchQ, p.name));
     if (!results.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
     results.forEach(p => {
       const row = document.createElement('div');
@@ -2248,7 +2249,7 @@ function renderRegionOrder() {
   listEl.innerHTML = '';
 
   if (searchQ) {
-    const visible = _regionOrderData.filter(r => normalize(r.name||r.id||'').includes(searchQ));
+    const visible = _regionOrderData.filter(r => fuzzyMatch(searchQ, r.name||r.id||''));
     if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
     visible.forEach(r => {
       const row = document.createElement('div');
@@ -2427,7 +2428,7 @@ window.renderPanoplieOrder = function renderPanoplieOrder() {
   listEl.innerHTML = '';
 
   const items = searchQ
-    ? _panoplieOrderData.filter(p => normalize((p.label||'') + ' ' + (p.id||'')).includes(searchQ))
+    ? _panoplieOrderData.filter(p => fuzzyMatch(searchQ, (p.label||'') + ' ' + (p.id||'')))
     : _panoplieOrderData;
 
   if (!items.length) { listEl.innerHTML = '<div class="empty">Aucune panoplie</div>'; return; }
@@ -6806,8 +6807,8 @@ window.bulkApproveSubs = async () => {
   if (filterSearch) {
     const q = normalize(filterSearch);
     targets = targets.filter(s =>
-      normalize(s.data?.name || s.data?.titre || s.data?.label || '').includes(q) ||
-      normalize(s.data?.id || '').includes(q)
+      fuzzyMatch(q, s.data?.name || s.data?.titre || s.data?.label || '') ||
+      fuzzyMatch(q, s.data?.id || '')
     );
   }
   if (!targets.length) return;
@@ -6909,9 +6910,9 @@ window.renderQuestOrder = function renderQuestOrder() {
   // ── Mode recherche : liste plate, pas de drag ──
   if (q) {
     const visible = _questOrderData.filter(qt =>
-      normalize(qt.titre||qt.id||'').includes(q) ||
-      normalize(qt.zone||'').includes(q) ||
-      normalize(qt.npc||'').includes(q)
+      fuzzyMatch(q, qt.titre||qt.id||'') ||
+      fuzzyMatch(q, qt.zone||'') ||
+      fuzzyMatch(q, qt.npc||'')
     );
     listEl.innerHTML = '';
     if (!visible.length) { listEl.innerHTML = '<div class="empty">Aucun résultat</div>'; return; }
@@ -7277,13 +7278,13 @@ function renderUsers(users) {
 }
 
 window.filterUsers = () => {
-  const q    = (document.getElementById('users-search')?.value || '').trim().toLowerCase();
+  const q    = normalize((document.getElementById('users-search')?.value || '').trim());
   const role = document.getElementById('users-role-filter')?.value || '';
   let filtered = _allUsers;
   if (q) filtered = filtered.filter(u =>
-    (u.pseudo || '').toLowerCase().includes(q) ||
-    (u.email  || '').toLowerCase().includes(q) ||
-    (u.uid    || '').toLowerCase().includes(q)
+    fuzzyMatch(q, u.pseudo || '') ||
+    fuzzyMatch(q, u.email  || '') ||
+    fuzzyMatch(q, u.uid    || '')
   );
   if (role) filtered = filtered.filter(u => (u.role || 'membre') === role);
   renderUsers(filtered);
@@ -9437,7 +9438,7 @@ function _buildImgItemSearch() {
     const renderList = (q) => {
       const norm = window.VCL.normalize(q);
       const hits = _imgAllItems.filter(d =>
-        window.VCL.normalize(d.name||'').includes(norm) || (d.id||'').includes(norm)
+        window.VCL.fuzzyMatch(norm, d.name||'') || window.VCL.fuzzyMatch(norm, d.id||'')
       ).slice(0, 30);
       list.innerHTML = '';
       if (!hits.length) { list.style.display = 'none'; return; }
@@ -11851,8 +11852,8 @@ window.renderDataAll = function() {
   if (palierFilter) results = results.filter(d => String(d.palier) === palierFilter);
   if (catFilter)    results = results.filter(d => d.category === catFilter);
   if (searchQ)      results = results.filter(d =>
-    normalize(d.name || '').includes(searchQ) ||
-    normalize(d.id   || '').includes(searchQ)
+    fuzzyMatch(searchQ, d.name || '') ||
+    fuzzyMatch(searchQ, d.id   || '')
   );
 
   for (const flagKey of _dataAllFlagSet) {
