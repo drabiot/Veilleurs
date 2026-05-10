@@ -144,8 +144,12 @@ export class SearchDrop {
     const nq = _norm(q);
     if (!nq) return [];
     if (this._opts.filterFn) return this._opts.filterFn(this._data, nq).slice(0, this._opts.maxResults);
+    const fm = window.VCL?.fuzzyMatch;
+    const sensKey = this._opts.sensibleKey ?? 'sensible';
     return this._data
-      .filter(item => _norm(item[this._opts.labelKey]).includes(nq))
+      .filter(item => fm
+        ? fm(nq, item[this._opts.labelKey], item[sensKey] === true)
+        : _norm(item[this._opts.labelKey]).includes(nq))
       .slice(0, this._opts.maxResults);
   }
 

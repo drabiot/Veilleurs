@@ -39,10 +39,10 @@ function currentItems() {
 	});
   const filtered = q.length >= 1
     ? ITEMS.filter(item =>
-        normalize(String(item.name || item.quality?.name || '')).includes(norm) ||
-        normalize(String(item.lore  || '')).includes(norm) ||
-        normalize(catData(item.category).label || '').includes(norm) ||
-        (item.tags || []).some(t => t != null && normalize(String(t)).includes(norm))
+        fuzzyMatch(norm, item.name || item.quality?.name || '', item.sensible === true) ||
+        fuzzyMatch(norm, item.lore  || '', item.sensible === true) ||
+        fuzzyMatch(norm, catData(item.category).label || '', item.sensible === true) ||
+        (item.tags || []).some(t => t != null && fuzzyMatch(norm, String(t), item.sensible === true))
       )
     : ITEMS.slice();
   return filtered;
