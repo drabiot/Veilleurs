@@ -180,6 +180,10 @@ for (const ct of (window._map_custom_type_labels ? Object.keys(window._map_custo
   if (!PNJ_TO_MARKER_TYPE[ct]) PNJ_TO_MARKER_TYPE[ct] = ct;
 }
 
+function setUndergroundGlow(active) {
+  document.getElementById('map-svg')?.classList.toggle('underground-active', active);
+}
+
 /* ══════════════════════════════════
    CONSTRUCTION DES MARKERS DYNAMIQUES
 ══════════════════════════════════ */
@@ -603,6 +607,7 @@ function loadMapImage(n, layer) {
 function goToLayer(layer) {
   if (layer === currentLayer) return;
   currentLayer = layer;
+  setUndergroundGlow(currentLayer === 'underground');
   updateLayerBtn();
   loadMapImage(currentFloor, currentLayer);
   history.replaceState({ floor: currentFloor, layer: currentLayer }, '', `#floor-${currentFloor}-${currentLayer}`);
@@ -1970,10 +1975,12 @@ function initMap() {
   const _questIdParam = _urlParams.get('questId');
   const _pnjIdParam   = _urlParams.get('pnjId');
   currentLayer = _initHash.layer;
+
+  setUndergroundGlow(currentLayer === 'underground');
+
   buildLayerSwitcher();
   buildWheel();
   document.getElementById('custom-pin-mode-btn')?.addEventListener('click', () => openNewPinDialog());
-  // Déplacer les dialogs en fin de body pour éviter les conflits flex/overflow
   ['custom-pin-dialog','delete-pin-dialog','pin-export-dialog','pin-import-dialog'].forEach(id => {
     const el = document.getElementById(id);
     if (el) document.body.appendChild(el);

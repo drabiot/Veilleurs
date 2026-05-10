@@ -398,8 +398,14 @@
   height: 900px;
   border: none;
   filter: drop-shadow(0 0 30px rgba(224,172,96,.06));
-  transition: opacity .3s ease;
+  transition: opacity .3s ease, filter .5s ease;
 }
+#map-svg.underground-active {
+  filter:
+    drop-shadow(0 0 2px rgba(255, 255, 255, 0.55))
+    drop-shadow(0 0 8px rgba(210, 220, 235, 0.28));
+}
+
 #map-svg[data-missing] {
   border: none;
   box-shadow: none;
