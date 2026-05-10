@@ -33,7 +33,7 @@ service cloud.firestore {
     }
 
     match /items_secret/{id} {
-      allow read:  if isAdmin();
+      allow read:  if isMembre();
       allow write: if isContrib();
     }
 
@@ -43,7 +43,7 @@ service cloud.firestore {
     }
 
     match /mobs_secret/{id} {
-      allow read:  if isAdmin();
+      allow read:  if isMembre();
       allow write: if isContrib();
     }
 
@@ -53,7 +53,7 @@ service cloud.firestore {
     }
 
     match /pnj_secret/{id} {
-      allow read:  if isAdmin();
+      allow read:  if isMembre();
       allow write: if isContrib();
     }
 

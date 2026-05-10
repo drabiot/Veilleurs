@@ -80,8 +80,8 @@ function _injectWidget() {
       <button class="vcl-auth-close-btn" id="vcl-modal-close" title="Fermer">✕</button>
       <div class="vcl-auth-modal-title">🌙 Connexion</div>
       <div class="vcl-auth-error" id="vcl-auth-error"></div>
-      <input class="vcl-auth-input" id="vcl-auth-email" type="email"
-             placeholder="Adresse e-mail" autocomplete="email" />
+      <input class="vcl-auth-input" id="vcl-auth-email" type="text"
+             placeholder="Identifiant ou e-mail" autocomplete="email" />
       <input class="vcl-auth-input" id="vcl-auth-password" type="password"
              placeholder="Mot de passe" autocomplete="current-password" />
       <button class="vcl-auth-primary-btn" id="vcl-auth-submit">🔑 Se connecter</button>
@@ -146,7 +146,8 @@ function _wireEvents() {
   document.getElementById('vcl-logout-btn').onclick = () => logout();
 
   const doLogin = async () => {
-    const email = document.getElementById('vcl-auth-email').value.trim();
+    let email = document.getElementById('vcl-auth-email').value.trim();
+    if (email && !email.includes('@')) email += '@veilleurs.wiki';
     const pwd   = document.getElementById('vcl-auth-password').value;
     if (!email || !pwd) { _showError('Remplissez tous les champs.'); return; }
     _showError('');

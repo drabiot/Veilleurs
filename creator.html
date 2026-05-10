@@ -30,6 +30,7 @@
     </div>
     <div class="header-right">
       <a href="Compendium/compendium.html" class="btn btn-ghost" style="font-size:11px;">📖 Compendium</a>
+      <button id="btn-guide" class="btn btn-guide-tuto" onclick="openGuideMenu()" title="Tutoriel interactif">✦ Guide</button>
       <a href="moderation.html" id="btn-moderation" class="btn btn-ghost" style="display:none;font-size:11px;">🛡️ Modération</a>
       <input type="text" id="author-input" placeholder="👤 Pseudo…" oninput="saveAuthor()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 10px;font-size:11px;outline:none;width:110px;transition:border-color .15s;font-family:inherit;" title="Pseudo affiché dans la soumission Discord">
       <span class="copy-msg" id="copy-msg">✓ Copié !</span>
@@ -183,7 +184,7 @@
     </div>
 
     <!-- IDENTITÉ -->
-    <div class="section">
+    <div class="section" data-tuto="item-identity">
       <div class="sec-head" onclick="toggleSec(this)">📋 Identité <span class="chev">▾</span></div>
       <div class="sec-body">
         <div class="row2">
@@ -389,7 +390,7 @@
     </div>
 
     <!-- LORE & OBTAIN -->
-    <div class="section">
+    <div class="section" data-tuto="item-lore">
       <div class="sec-head" onclick="toggleSec(this)">📖 Lore & Obtention <span class="chev">▾</span></div>
       <div class="sec-body">
         <div class="field">
@@ -505,7 +506,7 @@
       </div>
 
       <!-- Identité PNJ -->
-      <div class="section">
+      <div class="section" data-tuto="pnj-identity">
         <div class="sec-head" onclick="toggleSec(this)">🧑 Identité <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="row2">
@@ -598,7 +599,7 @@
       </div>
 
       <!-- Ventes -->
-      <div class="section">
+      <div class="section" data-tuto="pnj-ventes">
         <div class="sec-head" onclick="toggleSec(this)">🛒 Ventes <span class="chev">▾</span></div>
         <div class="sec-body">
           <div style="display:grid;grid-template-columns:1fr 78px 78px 28px;gap:6px;padding:0 2px;margin-bottom:4px;">
@@ -647,7 +648,7 @@
       </div>
 
       <!-- Identité Région -->
-      <div class="section">
+      <div class="section" data-tuto="region-identity">
         <div class="sec-head" onclick="toggleSec(this)">📍 Identité <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="row2">
@@ -742,7 +743,7 @@
       </div>
 
       <!-- Identité Panoplie -->
-      <div class="section">
+      <div class="section" data-tuto="panoplie-identity">
         <div class="sec-head" onclick="toggleSec(this)">🔗 Identité <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="row2">
@@ -763,7 +764,7 @@
       </div>
 
       <!-- Bonus -->
-      <div class="section">
+      <div class="section" data-tuto="panoplie-bonus">
         <div class="sec-head" onclick="toggleSec(this)">✨ Bonus par nombre de pièces <span class="chev">▾</span></div>
         <div class="sec-body">
           <div id="panop-bonuses-list"></div>
@@ -797,7 +798,7 @@
       </div>
 
       <!-- IDENTITÉ -->
-      <div class="section">
+      <div class="section" data-tuto="quest-identity">
         <div class="sec-head" onclick="toggleSec(this)">📜 Identité <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="row2">
@@ -864,7 +865,7 @@
       </div>
 
       <!-- OBJECTIFS -->
-      <div class="section">
+      <div class="section" data-tuto="quest-objectives">
         <div class="sec-head" onclick="toggleSec(this)">🎯 Objectifs <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="hint">Liste d'objectifs. Activez → Suite pour indiquer une suite logique entre deux étapes.</div>
@@ -876,7 +877,7 @@
       </div>
 
       <!-- RÉCOMPENSES -->
-      <div class="section">
+      <div class="section" data-tuto="quest-rewards">
         <div class="sec-head" onclick="toggleSec(this)">🏆 Récompenses <span class="chev">▾</span></div>
         <div class="sec-body">
           <div id="quest-rew-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px;"></div>
@@ -909,7 +910,7 @@
       </div>
 
       <!-- Identité Mob -->
-      <div class="section">
+      <div class="section" data-tuto="mob-identity">
         <div class="sec-head" onclick="toggleSec(this)">👾 Identité <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="row2">
@@ -1037,7 +1038,7 @@
       </div>
 
       <!-- Loot Mob -->
-      <div class="section">
+      <div class="section" data-tuto="mob-loot">
         <div class="sec-head" onclick="toggleSec(this)">🎁 Loot <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="hint">Items droppés par ce mob. Chance en % (0–100). Les IDs non encore définis sont acceptés — ils apparaîtront dans le tracker d'IDs fantômes.</div>
@@ -1385,5 +1386,6 @@ window._modal = modal;
     new ResizeObserver(setHeaderH).observe(document.querySelector('.site-header'));
   })();
 </script>
+<script src="components/tutorial.js"></script>
 </body>
 </html>
