@@ -132,12 +132,20 @@
       if (_sensitiveLoaded) return;
       _sensitiveLoaded = true;
       try {
-        const snap = await getDocs(collection(db, COL.itemsSecret));
-        const existing = new Set(ITEMS.map(i => i.id || i._id));
-        for (const d of snap.docs) {
-          const item = desanitizeFromFirestore({ _id: d.id, ...d.data() });
-          if (!existing.has(item.id || item._id)) {
-            item._sensible_visible = true;
+        const [hiddenSnap, secretSnap] = await Promise.all([
+          getDocs(collection(db, COL.itemsHidden)),
+          getDocs(collection(db, COL.itemsSecret)),
+        ]);
+        const secretById = new Map(
+          secretSnap.docs.map(d => [d.id, desanitizeFromFirestore(d.data())])
+        );
+        const existing = new Set(ITEMS.map(i => String(i.id || i._id)));
+        for (const d of hiddenSnap.docs) {
+          const hidden = desanitizeFromFirestore({ _id: d.id, ...d.data() });
+          const itemId = String(hidden.id || '');
+          const secret = itemId ? (secretById.get(itemId) || {}) : {};
+          const item = { ...hidden, ...secret, _sensible_visible: true };
+          if (!existing.has(String(hidden.id || hidden._id))) {
             ITEMS.push(item);
           }
         }

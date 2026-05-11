@@ -445,23 +445,6 @@
     </div>
 
 
-    <!-- TAGS -->
-    <div class="section">
-      <div class="sec-head" onclick="toggleSec(this)">🏷️ Tags <span class="chev">▾</span></div>
-      <div class="sec-body">
-        <div class="hint">Clique sur un tag pour l'ajouter/retirer. Tu peux aussi en taper un custom et appuyer sur Entrée.</div>
-
-        <div class="preset-tags" id="preset-tags-container"></div>
-
-        <div class="field" style="margin-top:6px">
-          <label>Tags personnalisés</label>
-          <div class="tag-custom-area" id="tag-area" onclick="document.getElementById('tag-input').focus()">
-            <input type="text" class="tag-text-input" id="tag-input" placeholder="Tag custom… (Entrée pour valider)" onkeydown="onTagKey(event)">
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- IMAGE DISCORD (désactivé) -->
     <div class="section" id="forum-img-section" style="display:none;">
       <div class="sec-head" onclick="toggleSec(this)">🖼️ Image Discord <span id="forum-img-badge" style="display:none;font-size:10px;font-weight:400;color:var(--accent);"> · 1 image</span> <span class="chev">▾</span></div>
@@ -1109,7 +1092,17 @@ import { db, auth, onAuthStateChanged,
          login, logout, register, loginWithGoogle, sendVerificationEmail,
          collection, getDocs, addDoc, serverTimestamp,
          doc, getDoc, setDoc, sanitizeForFirestore,
+         hasRole,
          changePseudoSecurely } from './firebase.js';
+
+async function _canViewItemsSecret(baseRole) {
+  let minRole = 'contributeur';
+  try {
+    const snap = await getDoc(doc(db, 'config', 'permissions'));
+    if (snap.exists()) minRole = snap.data().minRole?.view_items_secret ?? minRole;
+  } catch {}
+  return hasRole(baseRole, minRole);
+}
 
 window._vcl_changePseudoSecurely = changePseudoSecurely;
 
@@ -1160,6 +1153,10 @@ onAuthStateChanged(auth, async user => {
       if (window._vcl_lastCreatorConfig !== undefined && typeof applyCreatorConfig === 'function') {
         applyCreatorConfig(window._vcl_lastCreatorConfig);
       }
+      // Injecter les items sensibles dans l'index si déjà chargés
+      if (await _canViewItemsSecret(role) && window._vcl_hiddenItemsLoaded && typeof window._vcl_appendHiddenItemsToIndex === 'function') {
+        window._vcl_appendHiddenItemsToIndex(window._vcl_hiddenItemsLoaded);
+      }
     } catch {}
     if (authorInput) authorInput.style.display = 'none';
   } else {
@@ -1180,7 +1177,7 @@ onAuthStateChanged(auth, async user => {
 <!-- Module 2 : Chargement des données via store.js -->
 <script type="module">
 import { store } from './store.js';
-import { loadCollection, doc, getDoc, getDocs, collection, query, where, onSnapshot, db } from './firebase.js';
+import { loadCollection, doc, getDoc, getDocs, collection, query, where, onSnapshot, db, hasRole } from './firebase.js';
 import { loadPaliersConfig, loadMaxLevel } from './config-loader.js';
 
 // Expose store.invalidate() et loadCollection() pour les scripts classiques
@@ -1253,6 +1250,11 @@ try {
     window._vcl_newSubWebhook   = snapDw.data()?.new_submission || null;
   }
 } catch(e) {}
+// Charger les règles de tags automatiques
+try {
+  const tagRulesSnap = await getDoc(doc(db, 'config', 'tag_rules'));
+  window._creator_tag_rules = tagRulesSnap.exists() ? (tagRulesSnap.data().rules || []) : [];
+} catch { window._creator_tag_rules = []; }
 // Charger les soumissions en attente (pour les afficher dans les dropdowns)
 try {
   window._vcl_pendingRegions = [];
@@ -1276,10 +1278,16 @@ try {
 } catch(e) {
   console.warn('[VCL Creator] Soumissions en attente non chargées:', e);
 }
-// Charger les IDs des items sensibles approuvés (items_hidden) pour la détection de doublons
+// Charger les items sensibles (items_hidden) — IDs pour détection de doublons + index pour dropdowns
 try {
   const hiddenSnap = await getDocs(collection(db, 'items_hidden'));
-  window._vcl_sensibleItemIds = new Set(hiddenSnap.docs.map(d => d.data().id).filter(Boolean));
+  const hiddenItems = hiddenSnap.docs.map(d => ({ _id: d.id, ...d.data() }));
+  window._vcl_sensibleItemIds   = new Set(hiddenItems.map(it => it.id).filter(Boolean));
+  window._vcl_hiddenItemsLoaded = hiddenItems;
+  // Injecter si le rôle est déjà connu (auth a déjà résolu) — sinon le callback onAuthStateChanged le fera
+  if (window._vcl_role && hasRole(window._vcl_role, 'contributeur') && typeof window._vcl_appendHiddenItemsToIndex === 'function') {
+    window._vcl_appendHiddenItemsToIndex(hiddenItems);
+  }
 } catch(e) {
   window._vcl_sensibleItemIds = new Set();
 }

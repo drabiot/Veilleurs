@@ -404,17 +404,6 @@ const RARITY_TAG_MAP = {
 };
 
 // ═══════════════════════════════════════════════════
-// PRESET TAGS
-// ═══════════════════════════════════════════════════
-const PRESET_TAG_GROUPS = [
-  { label:'Type', tags:['Arme','Épée','Dague','Hache','Lance','Marteau','Hallebarde','Arc','Bâton','Bouclier','Casque','Plastron','Jambières','Bottes','Gants','Anneau','Amulette','Bracelet','Artefact'] },
-  { label:'Classe', tags:['Guerrier','Assassin','Archer','Mage','Shaman'] },
-  { label:'Palier', tags:['Palier 1','Palier 2','Palier 3'] },
-  { label:'Rareté', tags:['Commun','Rare','Épique','Légendaire','Mythique','Godlike','Event'] },
-  { label:'Autre', tags:['Consommable','Nourriture','Matériau','Ressource','Outil','Rune','Donjon','Quête','Set','Boss','World Boss','Event'] },
-];
-
-// ═══════════════════════════════════════════════════
 // LORE — auto-correction (majuscule + point final)
 // ═══════════════════════════════════════════════════
 function normalizeLore(s) {
@@ -439,7 +428,6 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   buildStatsUI();
-  buildPresetTags();
   buildSetSelect();
   initObtainData();
   initLoadSearch();
@@ -2039,6 +2027,27 @@ function ensureAllItemsIndex() {
   }));
 }
 
+function appendHiddenItemsToIndex(hiddenItems) {
+  if (!Array.isArray(hiddenItems) || !hiddenItems.length) return;
+  ensureAllItemsIndex();
+  const rarityLabel = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+  const existingIds = new Set(allItemsIndex.map(i => String(i.id)));
+  for (const it of hiddenItems) {
+    const id = it.id || it._id;
+    if (!id || existingIds.has(String(id))) continue;
+    allItemsIndex.push({
+      id,
+      name: it.name || id,
+      subtitle: ['🔒', rarityLabel[it.rarity] || it.rarity, it.category, it.palier ? 'P'+it.palier : ''].filter(Boolean).join(' · '),
+      search: ('🔒 ' + (it.name || '') + ' ' + id + ' ' + (it.category || '')).toLowerCase(),
+      _sensible: true,
+      _raw: it
+    });
+    existingIds.add(String(id));
+  }
+}
+window._vcl_appendHiddenItemsToIndex = appendHiddenItemsToIndex;
+
 function ensureAllMobsIndex() {
   if (allMobsIndex.length || typeof MOBS === 'undefined') return;
   allMobsIndex = MOBS.map(m => {
@@ -2311,6 +2320,17 @@ function loadItem(item) {
     const palierSel = document.getElementById('f-palier');
     palierSel.value = String(item.palier);
     _customSelUpdaters['f-palier']?.();
+    // Guard: if palier options not yet loaded, re-apply after palier selects are populated
+    if (palierSel.value !== String(item.palier)) {
+      const _pendingPalier = item.palier;
+      const _origPopulate = window.populatePalierSelects;
+      window.populatePalierSelects = function(paliers) {
+        _origPopulate(paliers);
+        const s = document.getElementById('f-palier');
+        if (s) { s.value = String(_pendingPalier); _customSelUpdaters['f-palier']?.(); }
+        window.populatePalierSelects = _origPopulate;
+      };
+    }
   }
   if (item.lvl) document.getElementById('f-lvl').value = String(item.lvl);
 
@@ -2456,8 +2476,6 @@ function loadItem(item) {
   // Tags
   if (item.tags?.length) {
     activeTags = new Set(item.tags);
-    document.querySelectorAll('.p-tag').forEach(b => b.classList.toggle('active', activeTags.has(b.dataset.tag)));
-    renderCustomTags();
   }
 
   refreshCustomSelects();
@@ -3291,79 +3309,23 @@ function getEffects() {
 // ═══════════════════════════════════════════════════
 // TAGS
 // ═══════════════════════════════════════════════════
-function buildPresetTags() {
-  const container = document.getElementById('preset-tags-container');
-  for (const { label, tags } of PRESET_TAG_GROUPS) {
-    const glabel = document.createElement('span');
-    glabel.className = 'preset-group-label';
-    glabel.textContent = label;
-    container.appendChild(glabel);
-
-    for (const tag of tags) {
-      const btn = document.createElement('button');
-      btn.className = 'p-tag';
-      btn.textContent = tag;
-      btn.dataset.tag = tag;
-      btn.addEventListener('click', () => {
-        if (activeTags.has(tag)) {
-          activeTags.delete(tag);
-          btn.classList.remove('active');
-        } else {
-          activeTags.add(tag);
-          btn.classList.add('active');
-        }
-        renderCustomTags();
-        update();
-      });
-      container.appendChild(btn);
-    }
-  }
-}
-
-function onTagKey(e) {
-  if ((e.key === 'Enter' || e.key === ',') && e.target.value.trim()) {
-    e.preventDefault();
-    addCustomTag(e.target.value.trim());
-    e.target.value = '';
-  } else if (e.key === 'Backspace' && !e.target.value) {
-    // remove last custom (non-preset) tag
-    const customTags = [...activeTags].filter(t => !isPresetTag(t));
-    if (customTags.length) {
-      activeTags.delete(customTags[customTags.length - 1]);
-      renderCustomTags();
-      update();
-    }
-  }
-}
-
-function isPresetTag(t) {
-  return PRESET_TAG_GROUPS.some(g => g.tags.includes(t));
-}
-
-function addCustomTag(val) {
-  activeTags.add(val);
-  renderCustomTags();
-  update();
-}
-
 function renderCustomTags() {
-  const area = document.getElementById('tag-area');
-  const input = document.getElementById('tag-input');
-  area.querySelectorAll('.tag-chip').forEach(c => c.remove());
-  // Only show custom (non-preset) tags as chips
-  for (const t of activeTags) {
-    if (isPresetTag(t)) continue;
-    const chip = document.createElement('span');
-    chip.className = 'tag-chip';
-    chip.innerHTML = `${t} <button onclick="removeCustomTag('${t.replace(/'/g,"\\'")}')">×</button>`;
-    area.insertBefore(chip, input);
-  }
+  // UI supprimée — tags gérés par Modération
 }
 
-function removeCustomTag(t) {
-  activeTags.delete(t);
-  renderCustomTags();
-  update();
+function _getAutoTagsFromRules(itemData) {
+  const rules = window._creator_tag_rules || [];
+  const tags = [];
+  for (const rule of rules) {
+    if (!rule.tag) continue;
+    const val = itemData[rule.field];
+    if (val == null || val === '') continue;
+    const match = Array.isArray(val)
+      ? val.map(String).includes(String(rule.value))
+      : String(val) === String(rule.value);
+    if (match && !tags.includes(rule.tag)) tags.push(rule.tag);
+  }
+  return tags;
 }
 
 // ═══════════════════════════════════════════════════
@@ -4141,7 +4103,8 @@ function buildObj() {
   const stats    = getStats();
   const craft    = getCraft();
   const effects  = getEffects();
-  const tagsArr  = [...activeTags];
+  const _ruleItem = { rarity: selRarity, category, classes: selClasses, palier: palier ? +palier : null, cat };
+  const tagsArr  = [...new Set([...activeTags, ..._getAutoTagsFromRules(_ruleItem)])];
 
   const obj = {};
   if (id)                    obj.id       = id;

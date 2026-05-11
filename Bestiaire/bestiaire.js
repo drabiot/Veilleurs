@@ -1,4 +1,4 @@
-/* ══════════════════════════════════════════════════════════════
+﻿/* ══════════════════════════════════════════════════════════════
    BESTIAIRE — Veilleurs au Clair de Lune
 ══════════════════════════════════════════════════════════════ */
 
@@ -393,7 +393,7 @@ function buildGrid() {
 			${codexBadge}
 		</div>
 		<div class="card-info">
-			<div class="card-name">${escHtml(e.name)}</div>
+			<div class="card-name">${escHtml(e.name)}${e.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">&#x1F512;</span>' : ''}</div>
 			${behaviorHTML}
 		</div>`;
 
@@ -654,7 +654,7 @@ function renderMobSheet(mob) {
         </div>
         <div class="mob-header-info">
           <div class="mob-name-row">
-            <div class="mob-name">${escHtml(mob.name)}</div>
+            <div class="mob-name">${escHtml(mob.name)}${mob.sensible ? ' <span style="font-size:11px;opacity:.65" title="Visible grâce à votre rôle">🔒</span>' : ''}</div>
             ${spawnBadgeHTML}
           </div>
           <div class="mob-badge-row">
@@ -714,14 +714,15 @@ function renderPNJSheet(pnj) {
   const effTag = getPnjEffectiveTag(pnj);
   let sellsHTML = '';
 
-  // Filtrer les ventes pointant vers un item sensible (absent de la collection publique)
-  const visibleSells = (pnj.sells || []).filter(s => !!findItem(s.id));
+  const _findItemOrSensitive = (id) => findItem(id) || (window._vcl_can_view_sensible && window._sensitiveItemsById?.get(id));
+  // Inclure les items sensibles si l'utilisateur est autorisé
+  const visibleSells = (pnj.sells || []).filter(s => !!_findItemOrSensitive(s.id));
   if (visibleSells.length > 0) {
     const hasPriceCol = visibleSells.some(s => s.price != null);
     const hasBuyCol   = visibleSells.some(s => s.buy   != null);
 
     const rows = visibleSells.map(s => {
-      const item  = findItem(s.id);
+      const item  = _findItemOrSensitive(s.id);
       const name  = item ? item.name : s.id;
       const color = item ? getRarityColor(item.rarity) : '#8c8c8c';
       const img   = item ? (getItemImg(item) || '') : '';
@@ -736,10 +737,11 @@ function renderPNJSheet(pnj) {
         ? `<span class="pnj-val pnj-val-achat${s.buy == null ? ' pnj-val-empty' : ''}">${s.buy != null ? `${s.buy} cols` : '—'}</span>`
         : '';
       const qualityBadge = s.quality ? ' <span class="loot-quality-badge">✦</span>' : '';
+      const sensTag = !findItem(s.id) && item ? ' <span style="font-size:9px;opacity:0.65" title="Visible grâce à votre rôle">🔒</span>' : '';
       return `
         <a class="loot-row${s.quality ? ' loot-row-quality' : ''}" href="${href}">
           ${imgPart}
-          <span class="loot-name" style="color:${color}">${escHtml(name)}${qualityBadge}</span>
+          <span class="loot-name" style="color:${color}">${escHtml(name)}${qualityBadge}${sensTag}</span>
           ${priceVal}${buyVal}
         </a>`;
     }).join('');
@@ -763,14 +765,21 @@ function renderPNJSheet(pnj) {
   }
 
   let craftHTML = '';
-  // Masquer les recettes dont le résultat est sensible (absent de la collection publique)
-  const visibleCraft = (pnj.craft || []).filter(r => !!findItem(r.id));
+  // Inclure les recettes sensibles si l'utilisateur est autorisé
+  const visibleCraft = (pnj.craft || []).filter(r => !!_findItemOrSensitive(r.id));
   if (visibleCraft.length > 0) {
     const rows = visibleCraft.map(recipe => {
-      const result      = findItem(recipe.id);
-      const resultName  = result ? result.name : recipe.id;
+      const result      = _findItemOrSensitive(recipe.id);
+      const resultName  = result
+        ? (recipe.quality ? (result.quality?.name || result.name) : result.name)
+        : recipe.id;
       const resultColor = result ? getRarityColor(result.rarity) : '#8c8c8c';
-      const resultImg   = result ? (getItemImg(result) || '') : '';
+      const resultImg   = result
+        ? (recipe.quality
+            ? (result.quality?.images?.[0] || result.quality?.image || getItemImg(result) || '')
+            : (getItemImg(result) || ''))
+        : '';
+      const resultSensTag = !findItem(recipe.id) && result ? ' <span style="font-size:9px;opacity:0.65" title="Visible grâce à votre rôle">🔒</span>' : '';
       const resultHref  = result ? `../Compendium/compendium.html#${escHtml(result.id)}${recipe.quality ? '-quality' : ''}` : '#';
       const resultImgPart = resultImg
         ? `<div class="loot-img-wrap"><img src="${resultImg}" alt="${escHtml(resultName)}" onerror="this.style.display='none'"></div>`
@@ -778,7 +787,7 @@ function renderPNJSheet(pnj) {
       const qualityBadge = recipe.quality ? ' <span class="loot-quality-badge">✦</span>' : '';
 
       const ingsHTML = (recipe.ingredients || []).map(c => {
-        const ing      = findItem(c.id);
+        const ing      = _findItemOrSensitive(c.id);
         const ingName  = ing ? ing.name : c.id;
         const ingColor = ing ? getRarityColor(ing.rarity) : '#8c8c8c';
         const ingImg   = ing ? (getItemImg(ing) || '') : '';
@@ -798,7 +807,7 @@ function renderPNJSheet(pnj) {
         <div class="craft-recipe-row">
           <a class="craft-result-cell${recipe.quality ? ' loot-row-quality' : ''}" href="${resultHref}">
             ${resultImgPart}
-            <span class="loot-name" style="color:${resultColor}">${escHtml(resultName)}${qualityBadge}</span>
+            <span class="loot-name" style="color:${resultColor}">${escHtml(resultName)}${qualityBadge}${resultSensTag}</span>
             ${recipe.time ? `<span class="craft-timer">⏱ ${escHtml(recipe.time)}</span>` : ''}
           </a>
           <div class="craft-ings-col">
@@ -837,7 +846,7 @@ function renderPNJSheet(pnj) {
           </div>
         </div>
                 <div class="mob-header-info">
-          <div class="mob-name">${escHtml(pnj.name)}</div>
+          <div class="mob-name">${escHtml(pnj.name)}${pnj.sensible ? ' <span style="font-size:11px;opacity:.65" title="Visible grâce à votre rôle">🔒</span>' : ''}</div>
           <div class="mob-badge-row">
             <span class="mob-type-badge" style="background:${effTag ? PNJ_TAG_COLORS[effTag]+'22' : 'rgba(100,80,30,.85)'};color:${effTag ? PNJ_TAG_COLORS[effTag] : '#ffd9a0'};border:1px solid ${effTag ? PNJ_TAG_COLORS[effTag]+'55' : '#c06c2055'};">${PNJ_TAG_LABELS[effTag]||effTag||'PNJ'}</span>
           </div>

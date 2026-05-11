@@ -137,7 +137,9 @@ function getPinEmoji(m) {
   return (window._map_pin_emojis || {})[t] || _map_EMOJI[t] || '📍';
 }
 function getTypeLabel(type) {
-  return TYPE_LABELS[type] || (window._map_custom_type_labels || {})[type] || type;
+  return TYPE_LABELS[type]
+    || (window._map_type_labels || {})[type]
+    || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 function _typeToHsl(str) {
   let h = 0;
@@ -462,7 +464,7 @@ function getFloorMarkers(floor) {
 }
 
 function getFlatFloorMarkers(floor) {
-  return getFloorMarkers(floor).filter(m => (m.layer || 'surface') === currentLayer);
+  return getFloorMarkers(floor);
 }
 
 function getFlatOtherLayerMarkers() {
@@ -495,6 +497,42 @@ function floorHasUnderground(n) {
   return false;
 }
 
+function ensureDungeonOverlay() {
+  let ov = document.getElementById('dungeon-overlay');
+  if (!ov) {
+    ov = document.createElement('img');
+    ov.id  = 'dungeon-overlay';
+    ov.alt = '';
+    ov.style.cssText = `
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain; pointer-events: none;
+      opacity: 0; transition: opacity 0.35s ease; z-index: 3;
+      filter: drop-shadow(0 0 8px #a855f7aa) drop-shadow(0 0 16px #7c3aed66);
+    `;
+    const mapImg = document.getElementById('map-svg');
+    mapImg.parentElement.appendChild(ov);
+  }
+  return ov;
+}
+
+function updateDungeonOverlay() {
+  const ov = ensureDungeonOverlay();
+  if (currentLayer === 'underground' && floorHasDungeon(currentFloor) && isDungeonFilterActive()) {
+    const src = `../img/maps/floor-${currentFloor}_dungeon.png`;
+    if (ov.getAttribute('src') !== src) {
+      ov.style.opacity = '0';
+      ov.src = src;
+      ov.onload  = () => { ov.style.opacity = '1'; };
+      ov.onerror = () => { ov.style.opacity = '0'; };
+    } else {
+      ov.style.opacity = '1';
+    }
+  } else {
+    ov.style.opacity = '0';
+  }
+}
+
 function updateGhostOverlay() {
   const ghost  = ensureGhostOverlay();
   const mapImg = document.getElementById('map-svg');
@@ -507,6 +545,16 @@ function updateGhostOverlay() {
     ghost.style.opacity = '0';
     mapImg.style.zIndex = '';
   }
+}
+
+function floorHasDungeon(n) {
+  if (typeof FLOOR_DATA !== 'undefined' && FLOOR_DATA[n]) return !!FLOOR_DATA[n].hasDungeon;
+  return false;
+}
+
+function isDungeonFilterActive() {
+  const cb = document.querySelector('.marker-filter[data-type="donjon"]');
+  return cb ? cb.checked : false;
 }
 
 function buildLayerSwitcher() {
@@ -522,7 +570,7 @@ function buildLayerSwitcher() {
     { layer: 'surface',     label: 'Surface',  icon: '⛰️' },
     { layer: 'underground', label: 'Sous-sol', icon: '🕳️' },
   ];
-  tabs.forEach(({ layer, label, icon }) => {
+  tabs.forEach(({ layer, label, icon }, i) => {
     const btn = document.createElement('button');
     btn.dataset.layer = layer;
     btn.innerHTML = `<span style="font-size:13px;line-height:1">${icon}</span><span>${label}</span>`;
@@ -533,14 +581,18 @@ function buildLayerSwitcher() {
       border-right: 1px solid rgba(224,172,96,0.2);
       transition: background 0.15s, color 0.15s; white-space: nowrap; user-select: none;
     `;
-    if (layer === 'underground') btn.style.borderRight = 'none';
+    if (i === tabs.length - 1) btn.style.borderRight = 'none';
     container.appendChild(btn);
   });
   updateLayerTabStyles(container);
   container.addEventListener('click', (e) => {
     const btn = e.target.closest('button[data-layer]');
     if (!btn) return;
-    goToLayer(btn.dataset.layer);
+    const clickedLayer = btn.dataset.layer;
+    const targetLayer = (clickedLayer !== 'surface' && clickedLayer === currentLayer)
+      ? 'surface'
+      : clickedLayer;
+    goToLayer(targetLayer);
     updateLayerTabStyles(container);
   });
   const searchbar = document.querySelector('.map-searchbar');
@@ -574,11 +626,13 @@ function updateLayerBtnVisibility() {
   if (!container) return;
   const hasUnder = floorHasUnderground(currentFloor);
   container.style.display = hasUnder ? 'flex' : 'none';
+  container.querySelector('button[data-layer="underground"]')?.style.setProperty('display', hasUnder ? '' : 'none');
   if (!hasUnder && currentLayer === 'underground') {
     currentLayer = 'surface';
     updateLayerBtn();
     updateGhostOverlay();
   }
+  updateDungeonOverlay();
 }
 
 function loadMapImage(n, layer) {
@@ -610,6 +664,7 @@ function goToLayer(layer) {
   setUndergroundGlow(currentLayer === 'underground');
   updateLayerBtn();
   loadMapImage(currentFloor, currentLayer);
+  updateDungeonOverlay();
   history.replaceState({ floor: currentFloor, layer: currentLayer }, '', `#floor-${currentFloor}-${currentLayer}`);
   renderMarkers();
   hideTooltip();
@@ -1195,6 +1250,7 @@ function renderSingleMarker(m) {
   el.className    = 'marker';
   el.dataset.type = m.type;
   el.dataset.id   = m.id;
+  if ((m.layer || 'surface') !== currentLayer) el.classList.add('marker-other-layer');
   el.style.left   = (m.sx ?? gameToScreen(m.gx, m.gy).x) + 'px';
   el.style.top    = (m.sy ?? gameToScreen(m.gx, m.gy).y) + 'px';
 
@@ -1392,6 +1448,8 @@ document.querySelectorAll('.marker-filter').forEach(cb => {
     const none  = [...all].every(c => !c.checked);
     toggleAll.checked       = allOn;
     toggleAll.indeterminate = !allOn && !none;
+    // Le filtre "donjon" contrôle la visibilité du tab Donjon
+    if (cb.dataset.type === 'donjon') updateLayerBtnVisibility();
     renderMarkers();
   });
 });
@@ -1553,7 +1611,7 @@ searchInput.addEventListener('input', () => {
         <span class="search-result-emoji">${_map_EMOJI[m.type] || '📍'}</span>
         <div class="search-result-info">
           <span class="search-result-name">${m.name}</span>
-          <span class="search-result-meta">${TYPE_LABELS[m.type] || m.type} · Étage ${m.floor}</span>
+          <span class="search-result-meta">${getTypeLabel(m.type)} · Étage ${m.floor}</span>
         </div>`;
       item.addEventListener('click', () => {
         if (m.floor !== currentFloor) goToFloor(m.floor);
@@ -1657,9 +1715,7 @@ function saveCustomPins(pins) {
 }
 
 function renderCustomPins() {
-  const pins = loadCustomPins().filter(p =>
-    p.floor === currentFloor && (p.layer || 'surface') === currentLayer
-  );
+  const pins = loadCustomPins().filter(p => p.floor === currentFloor);
   pins.forEach(pin => {
     const s  = gameToScreen(pin.gx, pin.gz);
     const el = document.createElement('div');
@@ -1667,6 +1723,7 @@ function renderCustomPins() {
     el.dataset.type = 'custom';
     el.style.left   = s.x + 'px';
     el.style.top    = s.y + 'px';
+    if ((pin.layer || 'surface') !== currentLayer) el.classList.add('marker-other-layer');
     const icon = document.createElement('div');
     icon.className   = 'marker-icon';
     icon.textContent = pin.emoji || '📌';
@@ -1822,6 +1879,7 @@ function _addLegendChangeListener(cb) {
     const none     = [...all].every(c => !c.checked);
     if (toggleAll) { toggleAll.checked = allOn; toggleAll.indeterminate = !allOn && !none; }
     renderMarkers();
+    updateDungeonOverlay();
   });
 }
 
@@ -1847,18 +1905,21 @@ function applyPinColorsToLegend() {
       sep.className = 'sidebar-sep';
       container.appendChild(sep);
 
+      const details = document.createElement('details');
+      details.open = true;
+      details.className = 'legend-group';
+
       if (cat.label) {
-        const title = document.createElement('div');
-        title.className = 'sidebar-title';
-        title.style.cssText = 'font-size:10px;padding:2px 0;';
-        title.textContent = `— ${cat.label} —`;
-        container.appendChild(title);
+        const summary = document.createElement('summary');
+        summary.className = 'legend-group-summary';
+        summary.textContent = cat.label;
+        details.appendChild(summary);
       }
 
       for (const type of cat.types) {
         const color = getPinColor(type);
         const emoji = fsEmojis[type] || _map_EMOJI[type] || '📍';
-        const label = TYPE_LABELS[type] || type;
+        const label = getTypeLabel(type);
 
         const item = document.createElement('label');
         item.className = 'legend-item';
@@ -1879,9 +1940,11 @@ function applyPinColorsToLegend() {
         item.appendChild(cb);
         item.appendChild(dot);
         item.appendChild(span);
-        container.appendChild(item);
+        details.appendChild(item);
         _addLegendChangeListener(cb);
       }
+
+      container.appendChild(details);
     }
     return;
   }

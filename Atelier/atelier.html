@@ -277,6 +277,10 @@
         for (const d of snap.docs) {
           const item = desanitizeFromFirestore({ _id: d.id, ...d.data() });
           if (!existing.has(item.id || item._id)) {
+            if (!item.images?.length && !item.image && !item.img && window._atelierSensibleImg) {
+              const p = window._atelierSensibleImg(item.category || item.cat, item.id || item._id, item.palier, item.event);
+              if (p) { item.img = p; item.images = [p]; }
+            }
             ITEMS.push(item);
             window._hiddenItemIds.add(item.id || item._id);
             added = true;

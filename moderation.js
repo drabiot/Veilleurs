@@ -510,6 +510,11 @@ function buildCard(sub) {
       <button class="btn btn-approve" onclick="approve('${sub._id}')">✓ Approuver</button>
       <button class="btn btn-reject"  onclick="reject('${sub._id}')">✕ Rejeter</button>
     `;
+  } else if (sub.status === 'rejected') {
+    actionsHtml = `
+      ${sub.comment ? `<div class="review-comment">💬 ${escHtml(sub.comment)}</div>` : ''}
+      <button class="btn btn-ghost" onclick="restorePending('${sub._id}')" style="font-size:12px;">🔄 Remettre en attente</button>
+    `;
   } else if (sub.comment) {
     actionsHtml = `<div class="review-comment">💬 ${escHtml(sub.comment)}</div>`;
   }
@@ -1158,6 +1163,30 @@ window.reject = async (id) => {
   }
 };
 
+// ── Restore to pending ────────────────────────────────
+window.restorePending = async (id) => {
+  const sub = allSubs.find(s => s._id === id);
+  if (!sub) return;
+  try {
+    await updateDoc(doc(db, 'submissions', id), {
+      status:     'pending',
+      reviewedBy: null,
+      reviewedAt: null,
+      comment:    null,
+    });
+    sub.status     = 'pending';
+    sub.reviewedBy = null;
+    sub.reviewedAt = null;
+    sub.comment    = null;
+    _writeAudit('restore_pending', 'submission', id, sub.data?.name || sub.data?.titre || sub.data?.id || id, { type: sub.type });
+    updateCounts();
+    renderSubs();
+    toast('🔄 Soumission remise en attente.', 'success');
+  } catch(e) {
+    toast('⛔ Erreur : ' + e.message, 'error');
+  }
+};
+
 // ── Request changes ───────────────────────────────────
 window.requestChanges = async (id) => {
   const sub = allSubs.find(s => s._id === id);
@@ -1257,6 +1286,7 @@ const HASH_PANELS = {
   'quest-map-migration':  () => showQuestMapMigration(),
   'game-config':          () => showGameConfig(),
   'audit-log':            () => showAuditLog(),
+  'tags':                 () => showTagsPanel(),
 };
 
 function _setHash(hash) {
@@ -2937,7 +2967,7 @@ let _editorCollection = null;
 let _editorId         = null;
 let _editorOrigin     = null;
 
-const _COL_LABELS = { items:'Item', mobs:'Mob', personnages:'PNJ', regions:'Région', panoplies:'Panoplie', quetes:'Quête', items_sensible:'Item Sensible', map_markers:'Marqueur Carte' };
+const _COL_LABELS = { items:'Item', mobs:'Mob', personnages:'PNJ', regions:'Région', panoplies:'Panoplie', quetes:'Quête', items_sensible:'Item Sensible', mobs_secret:'Mob Sensible', pnj_secret:'PNJ Sensible', map_markers:'Marqueur Carte' };
 
 let _cachedRegions = null;
 let _cachedSets    = null;
@@ -3641,10 +3671,18 @@ function _collectGenericForm() {
   // 1. On ramasse TOUT ce qui est Base / Dynamique
   // On cible tous les champs qui ne sont PAS dans l'onglet qualité
   const allRows = document.querySelectorAll('.ed-gen-row, .ed-gen-newrow');
+  const _criticalFields = new Set(['palier', 'region', 'category', 'rarity']);
   allRows.forEach(row => {
     if (row.closest('#ed-tab-quality')) return; // On saute si c'est dans l'onglet qualité
     const data = _innerExtract(row);
-    if (data) result[data.key] = data.value;
+    if (data) {
+      // Préserver les champs critiques si la valeur collectée est vide/null mais qu'on avait une valeur originale
+      if (_criticalFields.has(data.key) && (data.value === null || data.value === '') && _editorOrigData?.[data.key] != null) {
+        result[data.key] = _editorOrigData[data.key];
+      } else {
+        result[data.key] = data.value;
+      }
+    }
   });
 
   // 2. On traite la QUALITÉ uniquement si l'onglet est présent
@@ -3896,12 +3934,14 @@ window.showEditor = async function(collection, id, data, origin) {
   if (btnDel) { btnDel.disabled = false; btnDel.textContent = '🗑️ Supprimer'; }
 
   // Charger les régions si besoin (pour la datalist)
-  if (collection === 'mobs' || collection === 'personnages' || collection === 'regions') {
+  if (collection === 'mobs' || collection === 'personnages' || collection === 'regions' ||
+      collection === 'mobs_secret' || collection === 'pnj_secret') {
     await _loadRegionsForEditor();
   }
 
-  // Construire le formulaire générique (items_sensible traité comme items)
-  const formCollection = collection === 'items_sensible' ? 'items' : collection;
+  // Construire le formulaire générique (variantes sensibles traitées comme leur collection publique)
+  const _colAlias = { items_sensible: 'items', mobs_secret: 'mobs', pnj_secret: 'personnages' };
+  const formCollection = _colAlias[collection] ?? collection;
   document.getElementById('editor-form').innerHTML = _buildGenericForm(data, formCollection);
 
 
@@ -3967,8 +4007,8 @@ window.saveEditor = async function() {
       if (!nameHash) throw new Error('Nom manquant pour hash');
       const itemId    = String(newData.id || '');
       const oldItemId = String(_editorOrigData?.id || _editorId || '');
-      const newHiddenDocId = itemId || _editorId;
-      // Si l'id item a changé, supprimer l'ancien doc items_hidden (keyé par item.id)
+      // items_hidden est TOUJOURS keyé par hash du nom (jamais par item.id)
+      const newHiddenDocId = nameHash;
       if (newHiddenDocId !== _editorId) {
         try { await deleteDoc(doc(db, COL.itemsHidden, _editorId)); } catch {}
       }
@@ -4049,6 +4089,13 @@ window.saveEditor = async function() {
 
     // Mettre à jour le cache mémoire
     _editorCacheUpdate(_editorCollection, _editorId, newData);
+    if (_editorCollection === 'mobs_secret') {
+      const idx = _sensState.mobsSecret.findIndex(x => x._id === _editorId);
+      if (idx >= 0) Object.assign(_sensState.mobsSecret[idx], newData);
+    } else if (_editorCollection === 'pnj_secret') {
+      const idx = _sensState.pnjSecret.findIndex(x => x._id === _editorId);
+      if (idx >= 0) Object.assign(_sensState.pnjSecret[idx], newData);
+    }
     _editorOrigData = { ...newData };
     // Mettre à jour le cache data-all (force rechargement propre)
     _dataAllLoaded = false;
@@ -7497,6 +7544,11 @@ window.showLeaderboardUser = function(u) {
     titleEl.textContent = `${u.name} — ${n} contribution${n > 1 ? 's' : ''}`;
   };
   updateTitle();
+  const migrateBtn = document.getElementById('btn-lb-migrate');
+  if (migrateBtn) {
+    migrateBtn.style.display = u.uid ? 'none' : '';
+    migrateBtn._lbUser = u;
+  }
 
   const TYPE_ICON  = { item:'⚔️', mob:'👾', pnj:'🧑', region:'📍', quest:'📜', panoplie:'🔗' };
   const TYPE_LABEL = { item:'Item', mob:'Mob', pnj:'PNJ', region:'Région', quest:'Quête', panoplie:'Panoplie' };
@@ -7550,6 +7602,108 @@ async function _lbExclude(entryId, userData, updateTitle, renderRows) {
     toast('⛔ ' + e.message, 'error');
   }
 }
+
+// ═══════════════════════════════════════════════════════
+// LEADERBOARD — Migration contributeur anonyme → compte
+// ═══════════════════════════════════════════════════════
+let _lbMigrateSource = null;
+let _lbMigrateTarget = null;
+
+window.openLbMigrateDialog = function() {
+  const btn = document.getElementById('btn-lb-migrate');
+  const u = btn?._lbUser;
+  if (!u) return;
+  _lbMigrateSource = u;
+  _lbMigrateTarget = null;
+  const infoEl = document.getElementById('lb-migrate-info');
+  if (infoEl) infoEl.textContent = `Contributions de "${u.name}" (${u.subs.length}) à rattacher à un compte.`;
+  const searchEl = document.getElementById('lb-migrate-user-search');
+  if (searchEl) searchEl.value = '';
+  const resultsEl = document.getElementById('lb-migrate-user-results');
+  if (resultsEl) { resultsEl.innerHTML = ''; resultsEl.style.display = 'none'; }
+  const selectedEl = document.getElementById('lb-migrate-selected');
+  if (selectedEl) selectedEl.textContent = '';
+  const confirmBtn = document.getElementById('btn-lb-migrate-confirm');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = '🔀 Confirmer'; }
+  const dlg = document.getElementById('lb-migrate-dialog');
+  if (dlg) dlg.style.display = 'flex';
+};
+
+window.closeLbMigrateDialog = function() {
+  const dlg = document.getElementById('lb-migrate-dialog');
+  if (dlg) dlg.style.display = 'none';
+  _lbMigrateSource = null;
+  _lbMigrateTarget = null;
+};
+
+window.lbMigrateSearchUsers = async function(query) {
+  const resultsEl = document.getElementById('lb-migrate-user-results');
+  if (!resultsEl) return;
+  const q = (query || '').trim().toLowerCase();
+  if (!q) { resultsEl.style.display = 'none'; resultsEl.innerHTML = ''; return; }
+  if (!window._allUsersCache) {
+    try {
+      const snap = await getDocs(collection(db, 'users'));
+      window._allUsersCache = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+    } catch { window._allUsersCache = []; }
+  }
+  const matches = window._allUsersCache.filter(u => {
+    const pseudo = (u.pseudo || u.displayName || '').toLowerCase();
+    const email = (u.email || '').toLowerCase();
+    return pseudo.includes(q) || email.includes(q);
+  }).slice(0, 8);
+  if (!matches.length) {
+    resultsEl.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--muted);">Aucun résultat</div>';
+    resultsEl.style.display = '';
+    return;
+  }
+  resultsEl.innerHTML = '';
+  matches.forEach(u => {
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:8px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);';
+    row.textContent = `${u.pseudo || u.displayName || '—'} (${u.email || u.uid})`;
+    row.addEventListener('mouseenter', () => { row.style.background = 'var(--surface2)'; });
+    row.addEventListener('mouseleave', () => { row.style.background = ''; });
+    row.addEventListener('click', () => {
+      _lbMigrateTarget = u;
+      const selectedEl = document.getElementById('lb-migrate-selected');
+      if (selectedEl) selectedEl.textContent = `→ ${u.pseudo || u.displayName || u.uid}`;
+      const confirmBtn = document.getElementById('btn-lb-migrate-confirm');
+      if (confirmBtn) confirmBtn.disabled = false;
+      resultsEl.style.display = 'none';
+      const searchEl = document.getElementById('lb-migrate-user-search');
+      if (searchEl) searchEl.value = u.pseudo || u.displayName || '';
+    });
+    resultsEl.appendChild(row);
+  });
+  resultsEl.style.display = '';
+};
+
+window.confirmLbMigrate = async function() {
+  if (!_lbMigrateSource || !_lbMigrateTarget) return;
+  const confirmBtn = document.getElementById('btn-lb-migrate-confirm');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = '⏳ Migration…'; }
+  const anonName = _lbMigrateSource.name;
+  const targetUid = _lbMigrateTarget.uid;
+  const targetName = _lbMigrateTarget.pseudo || _lbMigrateTarget.displayName || anonName;
+  let updated = 0, errors = 0;
+  for (const { col } of _LB_SCAN_COLS) {
+    try {
+      const snap = await getDocs(collection(db, col));
+      for (const d of snap.docs) {
+        const c = d.data()._contributor;
+        if (!c || c.uid !== null || c.name !== anonName) continue;
+        try {
+          await updateDoc(doc(db, col, d.id), { '_contributor.uid': targetUid, '_contributor.name': targetName });
+          updated++;
+        } catch { errors++; }
+      }
+    } catch { errors++; }
+  }
+  closeLbMigrateDialog();
+  toast(`${updated} contribution(s) migrée(s) vers ${targetName}.${errors ? ` ${errors} erreur(s).` : ''}`, updated > 0 ? 'success' : 'warning');
+  await loadLeaderboard();
+};
 
 // ═══════════════════════════════════════════════════════
 // SENSIBLE — Liste & toggle (admin only)
@@ -7681,6 +7835,219 @@ window.showMigration = async () => {
   document.getElementById('btn-migration').classList.add('active');
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await sensReload();
+};
+
+// ═══════════════════════════════════════════════════════
+// TAGS — Règles automatiques de tags sur items
+// ═══════════════════════════════════════════════════════
+const ITEM_TAG_FIELDS = [
+  { id: 'category', label: 'Catégorie', values: ['arme','armure','accessoire','consommable','nourriture','materiaux','ressources','outils','rune','quete','donjon','monnaie'] },
+  { id: 'rarity',   label: 'Rareté',   values: ['commun','rare','epique','legendaire','mythique','godlike','event'] },
+  { id: 'classes',  label: 'Classe',   values: ['guerrier','assassin','archer','mage','shaman'] },
+  { id: 'palier',   label: 'Palier',   values: ['1','2','3','4','5','6','7','8','9','10'] },
+  { id: 'cat',      label: 'Cat/Slot', values: [] },
+  { id: 'type',     label: 'Type',     values: [] },
+  { id: 'slot',     label: 'Slot',     values: [] },
+  { id: 'sensible',  label: 'Sensible',  values: ['true','false'] },
+  { id: 'twoHanded', label: 'Deux mains', values: ['true','false'] },
+];
+
+const SEL_STYLE = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;';
+
+let _tagRules = [];
+
+window.showTagsPanel = function() {
+  _setHash('tags');
+  document.getElementById('tags-panel').style.display = '';
+  document.getElementById('btn-tags')?.classList.add('active');
+  _initTagRuleForm();
+  loadTagRules();
+};
+
+function _initTagRuleForm() {
+  const fieldSel = document.getElementById('tag-rule-field');
+  if (!fieldSel || fieldSel.options.length > 0) return;
+  ITEM_TAG_FIELDS.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.id;
+    opt.textContent = f.label;
+    fieldSel.appendChild(opt);
+  });
+  updateTagRuleValueOptions();
+}
+
+window.updateTagRuleValueOptions = function() {
+  const fieldEl = document.getElementById('tag-rule-field');
+  const wrap    = document.getElementById('tag-rule-value-wrap');
+  if (!fieldEl || !wrap) return;
+  const field = ITEM_TAG_FIELDS.find(f => f.id === fieldEl.value);
+  const label = wrap.querySelector('label');
+  wrap.innerHTML = '';
+  if (label) wrap.appendChild(label); else {
+    const l = document.createElement('label');
+    l.style.cssText = 'font-size:11px;color:var(--muted);';
+    l.textContent = 'Valeur';
+    wrap.appendChild(l);
+  }
+  if (field && field.values.length > 0) {
+    const sel = document.createElement('select');
+    sel.id = 'tag-rule-value';
+    sel.style.cssText = SEL_STYLE + 'width:150px;';
+    field.values.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      sel.appendChild(opt);
+    });
+    wrap.appendChild(sel);
+  } else {
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.id = 'tag-rule-value';
+    inp.placeholder = 'valeur…';
+    inp.style.cssText = SEL_STYLE + 'width:140px;';
+    wrap.appendChild(inp);
+  }
+};
+
+window.loadTagRules = async function() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'tag_rules'));
+    _tagRules = snap.exists() ? (snap.data().rules || []) : [];
+  } catch { _tagRules = []; }
+  renderTagRulesList();
+};
+
+function renderTagRulesList() {
+  const listEl = document.getElementById('tag-rules-list');
+  if (!listEl) return;
+  if (!_tagRules.length) {
+    listEl.innerHTML = '<div style="font-size:12px;color:var(--muted);">Aucune règle définie.</div>';
+    return;
+  }
+  listEl.innerHTML = '';
+  _tagRules.forEach((rule, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid var(--border);font-size:12px;';
+    const fieldLabel = ITEM_TAG_FIELDS.find(f => f.id === rule.field)?.label || rule.field;
+    row.innerHTML = `
+      <span style="color:var(--muted);min-width:80px;">${escHtml(fieldLabel)}</span>
+      <span style="color:var(--text);">=</span>
+      <span style="font-weight:600;min-width:80px;">${escHtml(String(rule.value))}</span>
+      <span style="color:var(--muted);">→ 🏷️</span>
+      <span style="color:var(--accent);font-weight:600;">${escHtml(rule.tag)}</span>
+      <button class="btn btn-ghost" onclick="deleteTagRule(${i})" style="font-size:11px;padding:2px 8px;margin-left:auto;">✕</button>
+    `;
+    listEl.appendChild(row);
+  });
+}
+
+window.addTagRule = async function() {
+  const field = document.getElementById('tag-rule-field')?.value;
+  const value = (document.getElementById('tag-rule-value')?.value || '').trim();
+  const tag   = (document.getElementById('tag-rule-tag')?.value  || '').trim();
+  if (!field || !value || !tag) { toast('Remplis tous les champs.', 'warning'); return; }
+  _tagRules.push({ field, value, tag });
+  await _saveTagRules();
+  renderTagRulesList();
+  if (document.getElementById('tag-rule-value')) document.getElementById('tag-rule-value').value = '';
+  if (document.getElementById('tag-rule-tag'))   document.getElementById('tag-rule-tag').value   = '';
+};
+
+window.deleteTagRule = async function(index) {
+  _tagRules.splice(index, 1);
+  await _saveTagRules();
+  renderTagRulesList();
+};
+
+async function _saveTagRules() {
+  await setDoc(doc(db, 'config', 'tag_rules'), { rules: _tagRules });
+}
+
+window.seedDefaultTagRules = async function() {
+  const defaults = [
+    // Rareté
+    { field: 'rarity', value: 'commun',     tag: 'Commun' },
+    { field: 'rarity', value: 'rare',       tag: 'Rare' },
+    { field: 'rarity', value: 'epique',     tag: 'Épique' },
+    { field: 'rarity', value: 'legendaire', tag: 'Légendaire' },
+    { field: 'rarity', value: 'mythique',   tag: 'Mythique' },
+    { field: 'rarity', value: 'godlike',    tag: 'Godlike' },
+    { field: 'rarity', value: 'event',      tag: 'Event' },
+    // Classe
+    { field: 'classes', value: 'guerrier',  tag: 'Guerrier' },
+    { field: 'classes', value: 'assassin',  tag: 'Assassin' },
+    { field: 'classes', value: 'archer',    tag: 'Archer' },
+    { field: 'classes', value: 'mage',      tag: 'Mage' },
+    { field: 'classes', value: 'shaman',    tag: 'Shaman' },
+    // Slot
+    { field: 'category', value: 'anneau',   tag: 'Anneau' },
+    { field: 'category', value: 'amulette', tag: 'Amulette' },
+    { field: 'category', value: 'bracelet', tag: 'Bracelet' },
+    { field: 'category', value: 'artefact', tag: 'Artefact' },
+    { field: 'category', value: 'casque',   tag: 'Casque' },
+    { field: 'category', value: 'plastron', tag: 'Plastron' },
+    { field: 'category', value: 'jambières',tag: 'Jambières' },
+    { field: 'category', value: 'bottes',   tag: 'Bottes' },
+    { field: 'category', value: 'gants',    tag: 'Gants' },
+    { field: 'category', value: 'arme_s',   tag: 'Bouclier' },
+    // Catégorie item
+    { field: 'cat', value: 'materiaux',     tag: 'Matériau' },
+    { field: 'cat', value: 'ressources',    tag: 'Ressource' },
+    { field: 'cat', value: 'consommable',   tag: 'Consommable' },
+    { field: 'cat', value: 'nourriture',    tag: 'Nourriture' },
+    { field: 'cat', value: 'outils',        tag: 'Outil' },
+    { field: 'cat', value: 'rune',          tag: 'Rune' },
+    { field: 'cat', value: 'quete',         tag: 'Quête' },
+    { field: 'cat', value: 'donjon',        tag: 'Donjon' },
+    // Palier
+    { field: 'palier', value: '1',  tag: 'Palier 1' },
+    { field: 'palier', value: '2',  tag: 'Palier 2' },
+    { field: 'palier', value: '3',  tag: 'Palier 3' },
+    { field: 'palier', value: '4',  tag: 'Palier 4' },
+    { field: 'palier', value: '5',  tag: 'Palier 5' },
+    { field: 'palier', value: '6',  tag: 'Palier 6' },
+    { field: 'palier', value: '7',  tag: 'Palier 7' },
+    { field: 'palier', value: '8',  tag: 'Palier 8' },
+    { field: 'palier', value: '9',  tag: 'Palier 9' },
+    { field: 'palier', value: '10', tag: 'Palier 10' },
+  ];
+  // merge: keep existing rules not in defaults, add defaults not already present
+  const existing = _tagRules.filter(r => !defaults.some(d => d.field === r.field && d.value === r.value && d.tag === r.tag));
+  _tagRules = [...existing, ...defaults];
+  await _saveTagRules();
+  renderTagRulesList();
+  toast(`✅ ${defaults.length} règles par défaut chargées.`, 'success');
+};
+
+window.applyTagRules = async function() {
+  const statusEl = document.getElementById('tag-apply-status');
+  if (statusEl) statusEl.textContent = '⏳ Application en cours…';
+  let updated = 0, errors = 0;
+  for (const col of ['items', 'items_secret']) {
+    try {
+      const snap = await getDocs(collection(db, col));
+      for (const d of snap.docs) {
+        const data = d.data();
+        const currentTags = Array.isArray(data.tags) ? [...data.tags] : [];
+        const newTags = [...currentTags];
+        for (const rule of _tagRules) {
+          const val = data[rule.field];
+          const match = Array.isArray(val)
+            ? val.map(String).includes(String(rule.value))
+            : String(val) === String(rule.value);
+          if (match && !newTags.includes(rule.tag)) newTags.push(rule.tag);
+        }
+        if (newTags.length !== currentTags.length || newTags.some((t, i) => t !== currentTags[i])) {
+          try {
+            await updateDoc(doc(db, col, d.id), { tags: newTags });
+            updated++;
+          } catch { errors++; }
+        }
+      }
+    } catch { errors++; }
+  }
+  if (statusEl) statusEl.textContent = `✅ ${updated} item(s) mis à jour.${errors ? ` ${errors} erreur(s).` : ''}`;
 };
 
 // ── Sidebar section toggle ─────────────────────────────
@@ -8943,6 +9310,22 @@ window.sensEditItem = async function(hashId) {
   await showEditor('items_sensible', hashId, merged, 'migration');
 };
 
+window.sensEditMob = async function(mobId) {
+  const mob = _sensState.mobsSecret.find(x => x._id === mobId);
+  if (!mob) return;
+  const data = {};
+  for (const [k, v] of Object.entries(mob)) { if (k !== '_id') data[k] = v; }
+  await showEditor('mobs_secret', mobId, data, 'migration');
+};
+
+window.sensEditPnj = async function(pnjId) {
+  const pnj = _sensState.pnjSecret.find(x => x._id === pnjId);
+  if (!pnj) return;
+  const data = {};
+  for (const [k, v] of Object.entries(pnj)) { if (k !== '_id') data[k] = v; }
+  await showEditor('pnj_secret', pnjId, data, 'migration');
+};
+
 function _sensRenderItemsPublic() {
   const list = _sensState.itemsPublic;
   document.getElementById('sens-items-public-count').textContent = list.length + ' item(s)';
@@ -8978,8 +9361,11 @@ function _sensRenderMobsHidden() {
     return;
   }
   el.innerHTML = list.map(mob => {
-    const btn = `<button class="btn btn-ghost" onclick="sensMobToPublic('${_sensEsc(mob._id)}')" style="font-size:11px;padding:3px 10px;">🔓 Rendre public</button>`;
-    return _sensMobRow(mob, btn);
+    const id = _sensEsc(mob._id);
+    const btns = `
+      <button class="btn btn-ghost" onclick="sensEditMob('${id}')" style="font-size:11px;padding:3px 10px;">✏️ Éditer</button>
+      <button class="btn btn-ghost" onclick="sensMobToPublic('${id}')" style="font-size:11px;padding:3px 10px;">🔓 Rendre public</button>`;
+    return _sensMobRow(mob, btns);
   }).join('');
 }
 
@@ -9143,8 +9529,11 @@ function _sensRenderPnjHidden() {
     return;
   }
   el.innerHTML = list.map(pnj => {
-    const btn = `<button class="btn btn-ghost" onclick="sensPnjToPublic('${_sensEsc(pnj._id)}')" style="font-size:11px;padding:3px 10px;">🔓 Rendre public</button>`;
-    return _sensPnjRow(pnj, btn);
+    const id = _sensEsc(pnj._id);
+    const btns = `
+      <button class="btn btn-ghost" onclick="sensEditPnj('${id}')" style="font-size:11px;padding:3px 10px;">✏️ Éditer</button>
+      <button class="btn btn-ghost" onclick="sensPnjToPublic('${id}')" style="font-size:11px;padding:3px 10px;">🔓 Rendre public</button>`;
+    return _sensPnjRow(pnj, btns);
   }).join('');
 }
 

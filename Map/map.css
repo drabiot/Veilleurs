@@ -109,6 +109,32 @@
   border: 1px solid rgba(0,0,0,.3);
 }
 
+/* Groupes légende repliables */
+.legend-group { border: none; padding: 0; margin: 0; }
+.legend-group-summary {
+  list-style: none;
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  cursor: pointer;
+  padding: 2px 0;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.legend-group-summary::-webkit-details-marker { display: none; }
+.legend-group-summary::before {
+  content: '▶';
+  font-size: 8px;
+  transition: transform .15s;
+  display: inline-block;
+}
+.legend-group[open] .legend-group-summary::before { transform: rotate(90deg); }
+
 /* Groupes de filtres (map) */
 .filter-group-label {
   font-size: 9px;
@@ -492,6 +518,8 @@
 
 .marker.hidden-marker { display: none; }
 .marker.marker-dimmed { opacity: 0.15; pointer-events: none; transition: opacity .2s; }
+.marker.marker-other-layer { opacity: 0.3; filter: grayscale(70%) brightness(0.75); transition: opacity .2s, filter .2s; }
+.marker.marker-other-layer:hover { opacity: 0.65; filter: grayscale(30%) brightness(0.9); }
 
 /* Icône splitée — deux couleurs côte à côte */
 .marker-icon-split {
