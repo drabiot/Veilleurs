@@ -64,7 +64,7 @@ function applyCreatorConfig(cfg) {
     return;
   }
   // Les contributeurs+ voient tout
-  if (['contributeur', 'admin'].includes(window._vcl_role || '')) {
+  if (['contributeur', 'admin'].includes(window._vcl_base_role || window._vcl_role || '')) {
     document.querySelectorAll('.mode-btn').forEach(b => { b.style.display = ''; });
     for (const selId of PALIER_SELECT_IDS) {
       const sel = document.getElementById(selId);

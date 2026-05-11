@@ -1104,6 +1104,19 @@ async function _canViewItemsSecret(baseRole) {
   return hasRole(baseRole, minRole);
 }
 
+let _customRolesCache = null;
+async function _resolveBaseRole(role) {
+  const STD = ['visiteur', 'membre', 'contributeur', 'admin'];
+  if (STD.includes(role)) return role;
+  try {
+    if (!_customRolesCache) {
+      const snap = await getDoc(doc(db, 'config', 'customRoles'));
+      _customRolesCache = snap.exists() ? (snap.data().roles || []) : [];
+    }
+    return _customRolesCache.find(r => r.id === role)?.baseTier || 'visiteur';
+  } catch { return 'visiteur'; }
+}
+
 window._vcl_changePseudoSecurely = changePseudoSecurely;
 
 window._vcl_sanitize        = sanitizeForFirestore;
@@ -1143,18 +1156,20 @@ onAuthStateChanged(auth, async user => {
       const snap = await getDoc(doc(db, 'users', user.uid));
       const data  = snap.exists() ? snap.data() : {};
       const pseudo = data.pseudo || null;
-      const role   = data.role   || 'membre';
-      window._vcl_role = role;
+      const role     = data.role || 'membre';
+      const baseRole = await _resolveBaseRole(role);
+      window._vcl_role      = role;
+      window._vcl_base_role = baseRole;
       if (pseudo && status) status.textContent = pseudo;
       if (pseudo && authorInput) { authorInput.value = pseudo; saveAuthor(); }
       const modBtn = document.getElementById('btn-moderation');
-      if (modBtn) modBtn.style.display = ['contributeur','admin'].includes(role) ? '' : 'none';
+      if (modBtn) modBtn.style.display = hasRole(baseRole, 'contributeur') ? '' : 'none';
       // Re-appliquer la config maintenant qu'on connaît le rôle
       if (window._vcl_lastCreatorConfig !== undefined && typeof applyCreatorConfig === 'function') {
         applyCreatorConfig(window._vcl_lastCreatorConfig);
       }
       // Injecter les items sensibles dans l'index si déjà chargés
-      if (await _canViewItemsSecret(role) && window._vcl_hiddenItemsLoaded && typeof window._vcl_appendHiddenItemsToIndex === 'function') {
+      if (await _canViewItemsSecret(baseRole) && window._vcl_hiddenItemsLoaded && typeof window._vcl_appendHiddenItemsToIndex === 'function') {
         window._vcl_appendHiddenItemsToIndex(window._vcl_hiddenItemsLoaded);
       }
     } catch {}
@@ -1285,7 +1300,7 @@ try {
   window._vcl_sensibleItemIds   = new Set(hiddenItems.map(it => it.id).filter(Boolean));
   window._vcl_hiddenItemsLoaded = hiddenItems;
   // Injecter si le rôle est déjà connu (auth a déjà résolu) — sinon le callback onAuthStateChanged le fera
-  if (window._vcl_role && hasRole(window._vcl_role, 'contributeur') && typeof window._vcl_appendHiddenItemsToIndex === 'function') {
+  if (window._vcl_role && hasRole(window._vcl_base_role || window._vcl_role, 'contributeur') && typeof window._vcl_appendHiddenItemsToIndex === 'function') {
     window._vcl_appendHiddenItemsToIndex(hiddenItems);
   }
 } catch(e) {

@@ -14,8 +14,8 @@ service cloud.firestore {
 
     // Rôles personnalisés inclus automatiquement selon leur tier de base
     function isAdmin()   { return isAuth() && userRole() in ['admin']; }
-    function isContrib() { return isAuth() && userRole() in ['contributeur', 'admin', 'contributeur']; }
-    function isMembre()  { return isAuth() && userRole() in ['membre', 'contributeur', 'admin', 'membre', 'contributeur', 'compagnons_de_la_flamme']; }
+    function isContrib() { return isAuth() && userRole() in ['contributeur', 'admin', 'contributeur', 'compagnon_de_l_aube']; }
+    function isMembre()  { return isAuth() && userRole() in ['membre', 'contributeur', 'admin', 'membre', 'contributeur', 'compagnon_de_l_aube']; }
 
     function creatorToolEnabled(toolType) {
       return !exists(/databases/$(database)/documents/config/creator)
@@ -33,7 +33,7 @@ service cloud.firestore {
     }
 
     match /items_secret/{id} {
-      allow read:  if isMembre();
+      allow read:  if isContrib();
       allow write: if isContrib();
     }
 
@@ -43,7 +43,7 @@ service cloud.firestore {
     }
 
     match /mobs_secret/{id} {
-      allow read:  if isMembre();
+      allow read:  if isContrib();
       allow write: if isContrib();
     }
 
@@ -53,7 +53,7 @@ service cloud.firestore {
     }
 
     match /pnj_secret/{id} {
-      allow read:  if isMembre();
+      allow read:  if isContrib();
       allow write: if isContrib();
     }
 
@@ -139,10 +139,10 @@ service cloud.firestore {
                     && request.resource.data.submitterName.size() >= 2
                     && request.resource.data.type in ['item','mob','pnj','region','quest','panoplie']
                     && request.resource.data.status == 'pending'
-                    && (isContrib() || creatorToolEnabled(request.resource.data.type));
-      allow read:   if isContrib() || (isAuth() && resource.data.submittedBy == request.auth.uid);
-      allow update: if isContrib();
-      allow delete: if isContrib();
+                    && (isAdmin() || creatorToolEnabled(request.resource.data.type));
+      allow read:   if isAdmin() || (isAuth() && resource.data.submittedBy == request.auth.uid);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
   }
