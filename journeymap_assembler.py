@@ -15,7 +15,7 @@ except Exception:
 # CONFIGURATION
 # ─────────────────────────────────────────────────────────────
 
-PARENT_DIR = "/home/tchartie/Downloads/hnttkw7"
+PARENT_DIR = ""
 TILES_DIRS = []
 TILES_DIR = ""
 OUTPUT_DIR = ""
