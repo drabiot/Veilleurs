@@ -120,7 +120,7 @@ function populatePalierSelects(paliers) {
   for (const selId of PALIER_SELECT_IDS) {
     const sel = document.getElementById(selId);
     if (!sel) continue;
-    const currentVal = sel.value;
+    const currentVal = sel.value || sel.dataset.vclPending || '';
     sel.innerHTML = '<option value="">—</option>';
     for (const p of paliers) {
       const opt = document.createElement('option');
@@ -128,8 +128,12 @@ function populatePalierSelects(paliers) {
       opt.textContent = p.label;
       sel.appendChild(opt);
     }
-    if (currentVal && paliers.some(p => String(p.id) === currentVal)) sel.value = currentVal;
+    if (currentVal && paliers.some(p => String(p.id) === currentVal)) {
+      sel.value = currentVal;
+      delete sel.dataset.vclPending;
+    }
   }
+  refreshCustomSelects();
 }
 window.populatePalierSelects = populatePalierSelects;
 
@@ -863,7 +867,7 @@ function restoreForm(forcedMode) {
       onCatChange();
     }
     if (d.cat)    document.getElementById('f-cat').value    = d.cat;
-    if (d.palier) { document.getElementById('f-palier').value = d.palier; _customSelUpdaters['f-palier']?.(); }
+    if (d.palier) _setPalierValue('f-palier', d.palier);
     if (d.lvl)    document.getElementById('f-lvl').value    = d.lvl;
     if (d.lore)   document.getElementById('f-lore').value   = d.lore;
     if (d.obtainOverride) {
@@ -959,7 +963,7 @@ function restoreForm(forcedMode) {
       mobIdLocked = !!m.idLocked;
       if (m.type)      setMobType(m.type);
       if (m.behavior)  setBehavior(m.behavior);
-      if (m.palier)    { document.getElementById('mob-palier').value = m.palier; _customSelUpdaters['mob-palier']?.(); }
+      if (m.palier)    _setPalierValue('mob-palier', m.palier);
       if (m.region)    { document.getElementById('mob-region').value = m.region; }
       if (m.regionSearch) document.getElementById('mob-region-search').value = m.regionSearch;
       if (m.lore)      document.getElementById('mob-lore').value = m.lore;
@@ -995,7 +999,7 @@ function restoreForm(forcedMode) {
       if (p.instructions) document.getElementById('pnj-instructions').value  = p.instructions;
       if (p.sensible) { pnjSensible = true; document.getElementById('pnj-sensible-btn')?.classList.add('active'); }
       if (p.type)   { _restorePnjTypeUI(p.type); onPnjTypeChange(); }
-      if (p.palier) { document.getElementById('pnj-palier').value = p.palier; _customSelUpdaters['pnj-palier']?.(); }
+      if (p.palier) _setPalierValue('pnj-palier', p.palier);
       if (p.region) document.getElementById('pnj-region').value = p.region;
       if (p.regionSearch) document.getElementById('pnj-region-search').value = p.regionSearch;
       if (p.x !== '') document.getElementById('pnj-x').value = p.x;
@@ -1024,7 +1028,7 @@ function restoreForm(forcedMode) {
       const r = d.region;
       if (r.name)  { document.getElementById('reg-name').value = r.name; onRegNameInput(); }
       if (r.idLocked && r.id) { document.getElementById('reg-id').value = r.id; regIdLocked = true; }
-      if (r.palier) { document.getElementById('reg-palier').value = r.palier; _customSelUpdaters['reg-palier']?.(); }
+      if (r.palier) _setPalierValue('reg-palier', r.palier);
       if (r.lore)   document.getElementById('reg-lore').value   = r.lore;
       if (r.inCodex !== undefined && typeof setRegCodex === 'function') setRegCodex(r.inCodex);
       if (r.canTp   !== undefined && typeof setRegCanTp === 'function') setRegCanTp(r.canTp);
@@ -2015,6 +2019,16 @@ let allItemsIndex = [];
 let allMobsIndex  = [];
 let loadDrop = null;
 
+function _setPalierValue(elId, val) {
+  if (!val) return;
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const s = String(val);
+  el.value = s;
+  if (el.value !== s) el.dataset.vclPending = s;
+  _customSelUpdaters[elId]?.();
+}
+
 function ensureAllItemsIndex() {
   if (allItemsIndex.length || typeof ITEMS === 'undefined') return;
   const rarityLabel = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
@@ -2045,6 +2059,9 @@ function appendHiddenItemsToIndex(hiddenItems) {
     });
     existingIds.add(String(id));
   }
+  if (pnjCrafts?.length && document.getElementById('pnj-crafts-list') && typeof renderPnjCrafts === 'function') renderPnjCrafts();
+  if (pnjSells?.length  && document.getElementById('pnj-sells-list')  && typeof renderPnjSells  === 'function') renderPnjSells();
+  if (!loadDrop && typeof initLoadSearch === 'function') initLoadSearch();
 }
 window._vcl_appendHiddenItemsToIndex = appendHiddenItemsToIndex;
 
@@ -2316,22 +2333,7 @@ function loadItem(item) {
     catSlotSel.value = String(item.cat);
     _customSelUpdaters['f-cat']?.();
   }
-  if (item.palier != null) {
-    const palierSel = document.getElementById('f-palier');
-    palierSel.value = String(item.palier);
-    _customSelUpdaters['f-palier']?.();
-    // Guard: if palier options not yet loaded, re-apply after palier selects are populated
-    if (palierSel.value !== String(item.palier)) {
-      const _pendingPalier = item.palier;
-      const _origPopulate = window.populatePalierSelects;
-      window.populatePalierSelects = function(paliers) {
-        _origPopulate(paliers);
-        const s = document.getElementById('f-palier');
-        if (s) { s.value = String(_pendingPalier); _customSelUpdaters['f-palier']?.(); }
-        window.populatePalierSelects = _origPopulate;
-      };
-    }
-  }
+  if (item.palier != null) _setPalierValue('f-palier', item.palier);
   if (item.lvl) document.getElementById('f-lvl').value = String(item.lvl);
 
   // Set
@@ -2536,7 +2538,7 @@ function loadMob(mob) {
   if (mob.spawnTime)document.getElementById('mob-spawntime').value = mob.spawnTime;
   if (mob.type)     setMobType(mob.type);
   if (mob.behavior) setBehavior(mob.behavior);
-  if (mob.palier)   document.getElementById('mob-palier').value = String(mob.palier);
+  if (mob.palier)   _setPalierValue('mob-palier', mob.palier);
   if (mob.inCodex !== undefined) setMobCodex(mob.inCodex);
   if (mob.sensible) { mobSensible = true; document.getElementById('mob-sensible-btn').classList.add('active'); }
   if (mob.region) {
@@ -2602,7 +2604,7 @@ function loadPnj(pnj) {
     const regionName = _allMobRegions.find(r => r.id === pnj.region)?.name || pnj.region;
     document.getElementById('pnj-region-search').value = regionName;
   }
-  if (pnj.palier) document.getElementById('pnj-palier').value = String(pnj.palier);
+  if (pnj.palier) _setPalierValue('pnj-palier', pnj.palier);
   if (pnj.coords) {
     document.getElementById('pnj-x').value = pnj.coords.x ?? '';
     document.getElementById('pnj-y').value = pnj.coords.y ?? '';
@@ -2658,7 +2660,7 @@ function loadRegion(reg) {
   if (reg.id)     { document.getElementById('reg-id').value   = reg.id;   regIdLocked = true; }
   if (reg.name)   document.getElementById('reg-name').value = reg.name;
   if (reg.lore)   document.getElementById('reg-lore').value = reg.lore;
-  if (reg.palier) document.getElementById('reg-palier').value = String(reg.palier);
+  if (reg.palier) _setPalierValue('reg-palier', reg.palier);
   if (reg.inCodex !== undefined) setRegCodex(reg.inCodex);
   if (reg.canTp   !== undefined) setRegCanTp(reg.canTp);
   // Bannière édition
@@ -5926,7 +5928,7 @@ function renderPnjSells() {
     const drop = makeSearchDrop(allItemsIndex, 'Item…', id => { s.itemId = id; update(); }, true);
     if (s.itemId) {
       const f = allItemsIndex.find(it => it.id === s.itemId);
-      if (f) drop.setValue(s.itemId, f.name);
+      drop.setValue(s.itemId, f ? f.name : s.itemId);
     }
     s.drop = drop;
 
@@ -5992,7 +5994,7 @@ function renderPnjCrafts() {
     }, true);
     if (c.resultId) {
       const f = allItemsIndex.find(it => it.id === c.resultId);
-      if (f) resDrop.setValue(c.resultId, f.name);
+      resDrop.setValue(c.resultId, f ? f.name : c.resultId);
     }
     c.resDrop = resDrop;
 
@@ -6042,7 +6044,7 @@ function renderPnjCrafts() {
       const ingDrop = makeSearchDrop(allItemsIndex, 'Ingrédient…', id => { ing.itemId = id; update(); }, true);
       if (ing.itemId) {
         const f = allItemsIndex.find(it => it.id === ing.itemId);
-        if (f) ingDrop.setValue(ing.itemId, f.name);
+        ingDrop.setValue(ing.itemId, f ? f.name : ing.itemId);
       }
 
       const rmIng = document.createElement('button');
