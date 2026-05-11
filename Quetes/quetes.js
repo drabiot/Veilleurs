@@ -1059,7 +1059,7 @@ const _tip = (() => {
     if (!el) {
       el = document.createElement('div');
       el.className = 'vcl-item-tip';
-      document.body.appendChild(el);
+      document.documentElement.appendChild(el);
     }
     return el;
   }

@@ -61,20 +61,25 @@ function buildSidebarAlpha(items) {
   }
 
   sorted.forEach(item => {
-    const link = document.createElement('a');
-    link.className  = 'sidebar-item sidebar-item-flat';
-    link.href       = `#${item.id}`;
-    link.dataset.id = item.id;
     const color = rarityColor(item.rarity);
-    link.innerHTML = `
-      <span class="sidebar-item-dot" style="background:${color}"></span>
-      ${escHtml(item.name || item.quality?.name || '')}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      showItem(item.id);
-      history.pushState({ item: item.id }, '', `#${item.id}`);
-    });
-    sidebarTree.appendChild(link);
+    const qualityOnly = isQualityOnly(item);
+
+    if (!qualityOnly) {
+      const link = document.createElement('a');
+      link.className  = 'sidebar-item sidebar-item-flat';
+      link.href       = `#${item.id}`;
+      link.dataset.id = item.id;
+      link.innerHTML = `
+        <span class="sidebar-item-dot" style="background:${color}"></span>
+        ${escHtml(item.name || '')}`;
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        showItem(item.id, false);
+        history.pushState({ item: item.id }, '', `#${item.id}`);
+      });
+      sidebarTree.appendChild(link);
+    }
+
   });
 
   /* Remettre l'item actif */
@@ -100,6 +105,7 @@ function rarityRank(key) {
 
 // Index O(1) pour les lookups d'items (peuplé dans initCompendium après Firestore).
 const ITEMS_BY_ID = new Map();
+const CRAFTED_BY = new Map();
 
 function rarityColor(rarityKey) {
   return (RARITIES[rarityKey] || { color: '#666' }).color;
@@ -323,23 +329,26 @@ function buildSidebar(items, expandAll = false) {
 
         /* ── Items ── */
         catItems.forEach(item => {
-          const link = document.createElement('a');
-          link.className  = 'sidebar-item';
-          link.href       = `#${item.id}`;
-          link.dataset.id = item.id;
-
           const color = rarityColor(item.rarity);
-          link.innerHTML = `
-          <span class="sidebar-item-dot" style="background:${color}"></span>
-          ${escHtml(item.name || item.quality?.name || '')}${item.quality ? ' <span class="sidebar-quality-badge">✦</span>' : ''}`;
+          const qualityOnly = isQualityOnly(item);
 
-          link.addEventListener('click', (e) => {
-            e.preventDefault();
-            showItem(item.id);
-            history.pushState({ item: item.id }, '', `#${item.id}`);
-          });
+          // ─ Entrée normale (sauf si quality-only)
+          if (!qualityOnly) {
+            const link = document.createElement('a');
+            link.className  = 'sidebar-item';
+            link.href       = `#${item.id}`;
+            link.dataset.id = item.id;
+            link.innerHTML = `
+              <span class="sidebar-item-dot" style="background:${color}"></span>
+              ${escHtml(item.name || '')}`;
+            link.addEventListener('click', (e) => {
+              e.preventDefault();
+              showItem(item.id, false);
+              history.pushState({ item: item.id }, '', `#${item.id}`);
+            });
+            cbody.appendChild(link);
+          }
 
-          cbody.appendChild(link);
         });
 
         cb.appendChild(ch);
@@ -823,6 +832,26 @@ function renderNpcHeader(recette, index) {
     </div>`;
 }
 
+function renderUsedIn(itemId) {
+  const users = CRAFTED_BY.get(itemId);
+  if (!users || users.length === 0) return '';
+  const links = users.map(u => {
+    const c = rarityColor(u.rarity);
+    const imgSrc = getItemImg(u);
+    const imgHtml = imgSrc
+      ? `<img class="craft-ingredient-img" src="${imgSrc}" alt="${escHtml(u.name)}">`
+      : `<span class="craft-ingredient-emoji">${catData(u.category).emoji || '📦'}</span>`;
+    return `<div class="craft-ingredient-row">
+      <span class="craft-ingredient-visual">${imgHtml}</span>
+      <a class="craft-ingredient-name" href="#${escHtml(u.id)}" data-id="${escHtml(u.id)}" style="color:${c};">${escHtml(u.name)}</a>
+    </div>`;
+  }).join('');
+  return `<div class="used-in-wrap">
+    <div class="item-section-title" style="margin-top:12px;margin-bottom:8px;">🔨 Utilisé pour fabriquer</div>
+    ${links}
+  </div>`;
+}
+
 /* ══════════════════════════════════
    AFFICHAGE FICHE ITEM
 ══════════════════════════════════ */
@@ -1041,8 +1070,9 @@ function showItem(id, initialQuality = false) {
   stopWebGL();
   placeholder.style.display = 'none';
 
+  const _activeDataId = initialQuality ? `${id}-quality` : id;
   document.querySelectorAll('.sidebar-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.id === id);
+    el.classList.toggle('active', el.dataset.id === _activeDataId);
   });
 
   const qualityOnly = isQualityOnly(item);
@@ -1150,6 +1180,7 @@ function showItem(id, initialQuality = false) {
         )}</div>
       </div>` : ''}
       <div class="item-sep"></div>
+      ${renderUsedIn(item.id)}
       <div class="item-tags">
         ${(item.tags || []).map(t => `<span class="item-tag">${t}</span>`).join('')}
       </div>
@@ -1276,7 +1307,36 @@ window.addEventListener('popstate', () => {
 function initCompendium() {
   // Indexer une fois les items chargés depuis Firestore
   ITEMS_BY_ID.clear();
-  for (const it of ITEMS) ITEMS_BY_ID.set(it.id, it);
+  for (const it of ITEMS) {
+    ITEMS_BY_ID.set(it.id, it);
+    if (it.quality && it.quality.id) ITEMS_BY_ID.set(it.quality.id, it);
+  }
+  CRAFTED_BY.clear();
+  for (const item of ITEMS) {
+    const craftLists = [];
+    if (item.craft) craftLists.push(item.craft);
+    if (item.quality?.craft) craftLists.push(item.quality.craft);
+    for (const craftList of craftLists) {
+      if (!craftList || !craftList.length) continue;
+      const isNewFmt = !Array.isArray(craftList[0]) && craftList[0].items !== undefined;
+      const isNested = Array.isArray(craftList[0]);
+      let recettes;
+      if (isNewFmt) {
+        recettes = craftList;
+      } else {
+        const raw = isNested ? craftList : [craftList];
+        recettes = raw.map(items => ({ items }));
+      }
+      for (const recette of recettes) {
+        for (const entry of (recette.items || [])) {
+          if (!entry.id) continue;
+          if (!CRAFTED_BY.has(entry.id)) CRAFTED_BY.set(entry.id, []);
+          const list = CRAFTED_BY.get(entry.id);
+          if (!list.find(it => it.id === item.id)) list.push(item);
+        }
+      }
+    }
+  }
 
   buildSidebar(ITEMS);
   document.querySelector('.glossary-subtitle').innerHTML =

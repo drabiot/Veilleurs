@@ -98,6 +98,7 @@
     <button class="filter-btn" id="btn-trash"              data-min-role="admin" onclick="showTrash()">🗑️ Corbeille <span class="filter-count" id="count-trash" style="display:none;">0</span></button>
     <button class="filter-btn" id="btn-users"              data-min-role="admin" onclick="showUsersPanel()">👥 Membres</button>
     <button class="filter-btn" id="btn-leaderboard"        data-min-role="admin" onclick="showLeaderboard()">🏆 Leaderboard</button>
+    <button class="filter-btn" id="btn-tags"              data-min-role="admin" onclick="showTagsPanel()">🏷️  Tags</button>
     <button class="filter-btn" id="btn-discord-webhooks"   data-min-role="admin" onclick="showDiscordWebhooks()">🔔 Webhooks Discord</button>
     <button class="filter-btn" id="btn-permissions"        data-min-role="admin" onclick="showPermissions()">🔑 Permissions</button>
     <button class="filter-btn" id="btn-migration"          data-min-role="admin" onclick="showMigration()">🔒 Sensible</button>
@@ -791,13 +792,65 @@
     </p>
     <div id="leaderboard-list"><div class="empty">Chargement…</div></div>
     <div id="leaderboard-user-detail" style="display:none;margin-top:16px;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <button class="btn btn-ghost" onclick="document.getElementById('leaderboard-user-detail').style.display='none';document.getElementById('leaderboard-list').style.display='';" style="font-size:12px;">← Retour</button>
-        <span id="leaderboard-user-title" style="font-size:14px;font-weight:700;"></span>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <button class="btn btn-ghost"
+onclick="document.getElementById('leaderboard-user-detail').style.display='none';document.getElementById('leaderboard-list').style.display='';"
+style="font-size:12px;">← Retour</button>
+        <span id="leaderboard-user-title" style="font-size:14px;font-weight:700;flex:1;"></span>
+        <button class="btn btn-ghost" id="btn-lb-migrate" style="font-size:12px;display:none;" onclick="openLbMigrateDialog()">🔀 Migrer contributions</button>
       </div>
       <div id="leaderboard-user-subs"></div>
     </div>
   </main>
+
+  <!-- Panneau Tags -->
+  <main class="main" id="tags-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+      <span style="font-size:15px;font-weight:700;">🏷️  Règles de Tags</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:11px;color:var(--muted);">Champ</label>
+        <select id="tag-rule-field" onchange="updateTagRuleValueOptions()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+          <!-- peuplé par JS -->
+        </select>
+      </div>
+      <div id="tag-rule-value-wrap" style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:11px;color:var(--muted);">Valeur</label>
+        <!-- peuplé dynamiquement par updateTagRuleValueOptions() -->
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <label style="font-size:11px;color:var(--muted);">Tag à ajouter</label>
+        <input type="text" id="tag-rule-tag" placeholder="ex: Arme" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;width:140px;">
+      </div>
+      <button class="btn" onclick="addTagRule()" style="background:var(--accent);color:#fff;font-size:12px;">+ Ajouter</button>
+    </div>
+    <div id="tag-rules-list" style="margin-bottom:16px;"></div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <button class="btn" onclick="applyTagRules()" style="background:var(--accent);color:#fff;font-size:12px;">▶ Appliquer toutes les règles</button>
+      <button class="btn btn-ghost" onclick="seedDefaultTagRules()" style="font-size:12px;">📋 Règles par défaut</button>
+      <span id="tag-apply-status" style="font-size:12px;color:var(--muted);"></span>
+    </div>
+  </main>
+
+  <!-- Dialog migration leaderboard -->
+  <div id="lb-migrate-dialog" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.75);align-items:center;justify-content:center;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:440px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.6);">
+      <h3 style="margin:0 0 8px;font-size:15px;">🔀 Migrer des contributions</h3>
+      <p id="lb-migrate-info" style="font-size:12px;color:var(--muted);margin-bottom:14px;"></p>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:12px;display:block;margin-bottom:4px;">Compte cible</label>
+        <input type="text" id="lb-migrate-user-search" placeholder="Rechercher pseudo, email…" oninput="lbMigrateSearchUsers(this.value)"
+          style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;">
+        <div id="lb-migrate-user-results" style="margin-top:4px;max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;display:none;background:var(--surface);"></div>
+      </div>
+      <div id="lb-migrate-selected" style="font-size:12px;color:var(--accent);margin-bottom:14px;min-height:18px;"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-ghost" onclick="closeLbMigrateDialog()" style="font-size:12px;">Annuler</button>
+        <button class="btn" id="btn-lb-migrate-confirm" onclick="confirmLbMigrate()" style="background:var(--accent);color:#fff;font-size:12px;" disabled>🔀 Confirmer</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Panneau Éditeur -->
   <main class="main" id="editor-panel" style="display:none;">

@@ -7,9 +7,9 @@ var FLOOR_NAMES = { // var pour permettre la mise à jour depuis Firestore (conf
 };
 
 const FLOOR_DATA = {
-  1: { hasUnderground: true  },
-  2: { hasUnderground: true },
-  3: { hasUnderground: true },
+  1: { hasUnderground: true, hasDungeon: false },
+  2: { hasUnderground: true, hasDungeon: false },
+  3: { hasUnderground: true, hasDungeon: false },
 };
 
 const MAP_CALIBRATION = {

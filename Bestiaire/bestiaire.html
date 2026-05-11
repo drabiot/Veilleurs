@@ -339,10 +339,12 @@
     async function _loadSensitiveMobs() {
       if (_sensitiveLoaded) return;
       _sensitiveLoaded = true;
+      window._vcl_can_view_sensible = true;
       try {
-        const [ms, ps] = await Promise.all([
+        const [ms, ps, is] = await Promise.all([
           getDocs(collection(db, COL.mobsSecret)),
           getDocs(collection(db, COL.pnjSecret)),
+          getDocs(collection(db, COL.itemsHidden)),
         ]);
         const existMobs = new Set(MOBS.map(m => m.id || m._id));
         for (const d of ms.docs) {
@@ -353,6 +355,12 @@
         for (const d of ps.docs) {
           const pnj = desanitizeFromFirestore({ _id: d.id, ...d.data() });
           if (!existPnj.has(pnj.id || pnj._id)) PERSONNAGES.push(pnj);
+        }
+        window._sensitiveItemsById = new Map();
+        for (const d of is.docs) {
+          const item = desanitizeFromFirestore({ _id: d.id, ...d.data() });
+          const id = item.id || item._id;
+          if (id) window._sensitiveItemsById.set(id, item);
         }
         window._vcl_bestiaire_refresh?.();
       } catch (e) { console.warn('[Bestiaire] mobs sensibles:', e); }

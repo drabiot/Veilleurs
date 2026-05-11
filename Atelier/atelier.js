@@ -1302,7 +1302,7 @@ function loadAccessoriesForClass(classId) {
     }
 
     renderStats();
-    if (activeSlot === slotId) renderItemList();
+    if (!activeSlot || activeSlot === slotId) renderItemList();
 	}
 
   /* ══ PICKER — FILTRES ══ */
@@ -1377,7 +1377,16 @@ function loadAccessoriesForClass(classId) {
   }
 
 	function buildItemStatsHTML(item) {
-			const entries = Object.entries(item.stats || {}).filter(function(e) {
+			const statsObj = item.stats || {};
+			const orderedEntries = [];
+			const seen = new Set();
+			for (const group of STAT_GROUPS) {
+				for (const stat of group.stats) {
+					if (stat.id in statsObj) { orderedEntries.push([stat.id, statsObj[stat.id]]); seen.add(stat.id); }
+				}
+			}
+			for (const pair of Object.entries(statsObj)) { if (!seen.has(pair[0])) orderedEntries.push(pair); }
+			const entries = orderedEntries.filter(function(e) {
 					const v = Array.isArray(e[1]) ? e[1][1] : e[1];
 					return v !== 0;
 			});
@@ -1642,7 +1651,7 @@ function loadAccessoriesForClass(classId) {
         '</div>' +
         '<div class="item-meta">' +
           '<div class="item-meta-top">' +
-            '<div class="item-meta-name">' + item.name + '</div>' +
+            '<div class="item-meta-name">' + item.name + (_isSecretItem(item) ? ' <span class="sensible-tag" title="Visible grâce à votre rôle">🔒</span>' : '') + '</div>' +
             buildItemLevelBadgeHTML(item) +
           '</div>' +
         '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · Palier ' + item.palier + '</div>' +
@@ -2234,6 +2243,8 @@ function loadAccessoriesForClass(classId) {
       default:            return null;
     }
   }
+  window._atelierSensibleImg = _sensibleImg;
+
   async function _trySensibleLookup(rawName) {
     const q = normalize(rawName);
     if (!q || q.length < 3) return;
