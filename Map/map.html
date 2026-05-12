@@ -111,7 +111,6 @@
           <span class="legend-emoji" style="background:#7a3030;">💀</span>
           <span>Monstres</span>
         </label>
-
         <div class="sidebar-sep"></div>
         <details class="legend-group" open>
           <summary class="legend-group-summary">— Quêtes —</summary>
@@ -233,11 +232,19 @@
         </details>
 
         <div class="sidebar-sep"></div>
-        <label class="legend-item">
-          <input type="checkbox" class="marker-filter" data-type="autre" />
-          <span class="legend-emoji" style="background:#56d476;">🦠</span>
-          <span>Autre</span>
-        </label>
+        <details class="legend-group" open>
+          <summary class="legend-group-summary">— Autres —</summary>
+          <label class="legend-item">
+            <input type="checkbox" class="marker-filter" data-type="passage" id="filter-passage" />
+            <span class="legend-emoji" style="background:#1a3a5c;">🚪</span>
+            <span>Passages</span>
+          </label>
+          <label class="legend-item">
+            <input type="checkbox" class="marker-filter" data-type="autre" />
+            <span class="legend-emoji" style="background:#56d476;">🦠</span>
+            <span>Autre</span>
+          </label>
+        </details>
       </div>
 
       <div class="sidebar-sep"></div>
@@ -265,7 +272,7 @@
         <span class="map-topbar-name" id="floor-name-display">Forêt</span>
       </div>
       <div class="map-searchbar">
-        <input type="text" id="search-input" class="search-input" placeholder="🔍  Rechercher un marqueur…" autocomplete="off" />
+        <input type="text" id="search-input" class="search-input" placeholder="🔍  Rechercher un marqueur…" autocomplete="new-password" />
         <div class="search-results hidden" id="search-results"></div>
       </div>
 
@@ -324,7 +331,7 @@
       </div>
 
       <!-- Nom -->
-      <input type="text" id="cpd-name-input" class="cpd-input" placeholder="Nom du pin…" maxlength="60" autocomplete="off" />
+      <input type="text" id="cpd-name-input" class="cpd-input" placeholder="Nom du pin…" maxlength="60" autocomplete="new-password" />
 
       <!-- Personnalisation -->
       <div class="cpd-customize-section">

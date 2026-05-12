@@ -10,10 +10,15 @@ header { background: var(--surface); border-bottom: 1px solid var(--border); pad
 header h1 { font-size: 17px; font-weight: 700; color: var(--accent); }
 .hbtns { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 
-.layout { display: grid; grid-template-columns: 220px 1fr; flex: 1; overflow: hidden; }
-.layout > aside { grid-column: 1; grid-row: 1; overflow-y: auto; height: 100%; }
-.sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.layout { display: grid; grid-template-columns: 220px 1fr; flex: 1; overflow: hidden; transition: grid-template-columns .2s ease; }
+.layout > aside { grid-column: 1; grid-row: 1; overflow-y: auto; overflow-x: hidden; height: 100%; min-width: 0; }
+.sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 16px; display: flex; flex-direction: column; gap: 8px; width: 220px; min-width: 0; transition: padding .2s ease, width .2s ease; }
 .main { grid-column: 2; grid-row: 1; padding: 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; height: 100%; }
+
+/* Sidebar collapsed */
+body.sidebar-hidden .layout { grid-template-columns: 0 1fr; }
+body.sidebar-hidden .layout > aside { overflow: hidden; }
+body.sidebar-hidden .sidebar { padding: 0; width: 0; border-right: none; overflow: hidden; }
 
 /* Sidebar filters */
 .filter-group { display: flex; flex-direction: column; gap: 4px; }

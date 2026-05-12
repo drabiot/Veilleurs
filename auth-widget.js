@@ -191,6 +191,15 @@ function _showError(msg) {
   el.style.display = msg ? '' : 'none';
 }
 
+// ── Cookie helpers ───────────────────────────────────
+function _saveEmailCookie(raw) {
+  document.cookie = `vcl_email=${encodeURIComponent(raw)}; max-age=31536000; SameSite=Lax; path=/`;
+}
+function _readEmailCookie() {
+  const entry = document.cookie.split('; ').find(r => r.startsWith('vcl_email='));
+  return entry ? decodeURIComponent(entry.slice('vcl_email='.length)) : '';
+}
+
 // ── Events ───────────────────────────────────────────
 function _wireEvents() {
   const overlay = document.getElementById('vcl-auth-overlay');
@@ -215,6 +224,13 @@ function _wireEvents() {
     document.getElementById('vcl-google-pseudo').focus();
   };
 
+  // Préfill email depuis cookie
+  const _savedEmail = _readEmailCookie();
+  if (_savedEmail) {
+    const _emailEl = document.getElementById('vcl-auth-email');
+    if (_emailEl) _emailEl.value = _savedEmail;
+  }
+
   document.getElementById('vcl-login-btn').onclick = () => {
     _switchTab('login');
     overlay.classList.remove('hidden');
@@ -237,6 +253,7 @@ function _wireEvents() {
     btn.disabled = true;
     try {
       await login(email, pwd);
+      _saveEmailCookie(document.getElementById('vcl-auth-email').value.trim());
       overlay.classList.add('hidden');
     } catch (e) {
       _showError(['auth/wrong-password','auth/user-not-found','auth/invalid-credential']

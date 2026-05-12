@@ -127,6 +127,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /secrets/{id} {
+      allow read:  if isAdmin();
+      allow write: if isAdmin();
+    }
+
     match /audit_log/{id} {
       allow read:   if isAdmin();
       allow create: if isContrib();
@@ -140,8 +145,12 @@ service cloud.firestore {
                     && request.resource.data.type in ['item','mob','pnj','region','quest','panoplie']
                     && request.resource.data.status == 'pending'
                     && (isAdmin() || creatorToolEnabled(request.resource.data.type));
-      allow read:   if isAdmin() || (isAuth() && resource.data.submittedBy == request.auth.uid);
-      allow update: if isAdmin();
+      allow read:   if isAdmin()
+                    || (isAuth() && resource.data.submittedBy == request.auth.uid)
+                    || (isContrib() && resource.data.status == 'pending');
+      allow update: if isAdmin()
+                    || (isContrib() && resource.data.status == 'pending' && request.resource.data.status == 'pending')
+                    || (isAuth() && resource.data.submittedBy == request.auth.uid && resource.data.status == 'pending' && request.resource.data.status == 'pending');
       allow delete: if isAdmin();
     }
 

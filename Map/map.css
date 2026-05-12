@@ -432,6 +432,12 @@
     drop-shadow(0 0 8px rgba(210, 220, 235, 0.28));
 }
 
+#map-svg.dungeon-active {
+  filter:
+    drop-shadow(0 0 4px rgba(168, 85, 247, 0.7))
+    drop-shadow(0 0 18px rgba(124, 58, 237, 0.4));
+}
+
 #map-svg[data-missing] {
   border: none;
   box-shadow: none;

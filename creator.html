@@ -321,7 +321,7 @@
       </div>
       <div class="sec-body">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <input type="text" id="stat-search" placeholder="🔍 Rechercher une stat…" oninput="filterStats()" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+          <input type="text" id="stat-search" placeholder="🔍 Rechercher une stat…" autocomplete="new-password" oninput="filterStats()" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
           <button class="btn btn-ghost btn-sm" onclick="clearStats()" style="white-space:nowrap;flex-shrink:0;">🗑 Vider</button>
         </div>
         <div style="display:grid;grid-template-columns:1fr 78px 16px 78px;gap:6px;padding:0 8px;margin-bottom:2px;">
@@ -387,6 +387,11 @@
         </div>
         <div id="craft-list" style="display:flex;flex-direction:column;gap:8px;"></div>
         <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:4px" onclick="addCraft()">+ Ajouter un ingrédient</button>
+        <div class="field" id="craft-cd-row" style="display:none;margin-top:10px;">
+          <label>⏱ CD de craft <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="f-craft-cd" placeholder="ex: 24h, 7j, aucun" oninput="update()">
+          <div class="field-hint">Délai avant de pouvoir recrafter cet item. Mettez « aucun » si pas de restriction.</div>
+        </div>
       </div>
     </div>
 
@@ -546,7 +551,7 @@
             <div class="field">
               <label>Région</label>
               <div style="position:relative;">
-                <input type="text" id="pnj-region-search" placeholder="🔍 Rechercher une région…" autocomplete="off"
+                <input type="text" id="pnj-region-search" placeholder="🔍 Rechercher une région…" autocomplete="new-password"
                        oninput="filterPnjRegionList()" onfocus="openPnjRegionList()"
                        onblur="setTimeout(closePnjRegionList,150)" onkeydown="regionDropKeydown(event,'pnj-region-dropdown')"
                        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;">
@@ -819,7 +824,7 @@
           </div>
           <div class="field">
             <label>NPC <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel)</span></label>
-            <input type="text" id="quest-npc" placeholder="Nom du PNJ…" autocomplete="off" oninput="update()" style="width:100%;box-sizing:border-box;">
+            <input type="text" id="quest-npc" placeholder="Nom du PNJ…" autocomplete="new-password" oninput="update()" style="width:100%;box-sizing:border-box;">
           </div>
           <div class="field">
             <div class="coords-label">
@@ -980,7 +985,7 @@
           <div class="field">
             <label>Région</label>
             <div style="position:relative;">
-              <input type="text" id="mob-region-search" placeholder="🔍 Rechercher une région…" autocomplete="off"
+              <input type="text" id="mob-region-search" placeholder="🔍 Rechercher une région…" autocomplete="new-password"
                      oninput="filterMobRegionList()" onfocus="openMobRegionList()"
                      onblur="setTimeout(closeMobRegionList,150)" onkeydown="regionDropKeydown(event,'mob-region-dropdown')"
                      style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;transition:border-color .15s;">
@@ -1090,7 +1095,7 @@
 <script type="module">
 import { db, auth, onAuthStateChanged,
          login, logout, register, loginWithGoogle, sendVerificationEmail,
-         collection, getDocs, addDoc, serverTimestamp,
+         collection, getDocs, addDoc, serverTimestamp, query, where,
          doc, getDoc, setDoc, sanitizeForFirestore,
          hasRole,
          changePseudoSecurely } from './firebase.js';
@@ -1134,6 +1139,8 @@ window._vcl_sendVerification  = sendVerificationEmail;
 window._vcl_setDoc    = setDoc;
 window._vcl_doc       = doc;
 window._vcl_getDoc    = getDoc;
+window._vcl_query     = query;
+window._vcl_where     = where;
 
 // Suivi de l'état auth — met à jour l'UI
 onAuthStateChanged(auth, async user => {
@@ -1172,6 +1179,8 @@ onAuthStateChanged(auth, async user => {
       if (await _canViewItemsSecret(baseRole) && window._vcl_hiddenItemsLoaded && typeof window._vcl_appendHiddenItemsToIndex === 'function') {
         window._vcl_appendHiddenItemsToIndex(window._vcl_hiddenItemsLoaded);
       }
+      // Recharger les soumissions pending avec le bon filtre sensible
+      window._vcl_appendPendingToIndices?.();
     } catch {}
     if (authorInput) authorInput.style.display = 'none';
   } else {

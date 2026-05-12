@@ -2,7 +2,7 @@ import { db, auth, onAuthStateChanged,
          login, logout, loginWithGoogle,
          ROLES, roleLevel, hasRole, COL,
          collection, getDocs, getDoc, doc, updateDoc, setDoc, addDoc,
-         deleteDoc, deleteField, serverTimestamp, orderBy, query, limit,
+         deleteDoc, deleteField, serverTimestamp, orderBy, where, query, limit,
          hashName, getItemGameplayKeys,
          sanitizeForFirestore, desanitizeFromFirestore,
          invalidateCache }
@@ -13,6 +13,20 @@ import { store }  from './store.js';
 
 // Helpers partagés — utils.js est chargé en classic script avant ce module
 const { normalize } = window.VCL;
+
+// Chargement du secret worker depuis Firestore (jamais exposé dans le code)
+let _cachedWorkerSecret = null;
+async function _getWorkerSecret() {
+  if (_cachedWorkerSecret) return _cachedWorkerSecret;
+  try {
+    const snap = await getDoc(doc(db, 'secrets', 'worker'));
+    if (snap.exists()) {
+      _cachedWorkerSecret = snap.data().workerSecret;
+      return _cachedWorkerSecret;
+    }
+  } catch (e) { console.error('[getWorkerSecret]', e); }
+  throw new Error('Secret worker introuvable dans Firestore (secrets/worker.workerSecret)');
+}
 const _WIKI_ROOT = new URL('.', import.meta.url).href;
 
 let currentUser = null;
@@ -105,6 +119,7 @@ onAuthStateChanged(auth, async user => {
 
   document.getElementById('auth-wall').style.display   = 'none';
   document.getElementById('main-layout').style.display = 'grid';
+  if (localStorage.getItem('vcl_sidebar_hidden')) document.body.classList.add('sidebar-hidden');
   // Afficher le pseudo si disponible, sinon l'email
   try {
     const snapU = await getDoc(doc(db, 'users', user.uid));
@@ -194,6 +209,11 @@ window.doLoginGoogle = async () => {
 window.doLogout = async () => {
   await logout();
   location.reload();
+};
+
+window.toggleSidebar = function toggleSidebar() {
+  const hidden = document.body.classList.toggle('sidebar-hidden');
+  localStorage.setItem('vcl_sidebar_hidden', hidden ? '1' : '');
 };
 
 // ── Load submissions ──────────────────────────────────
@@ -589,12 +609,14 @@ const escHtml = window.VCL.escHtml;
 
 // ── Diff soumission vs document actuel ───────────────
 const _SUB_COL_MAP = { item:'items', mob:'mobs', pnj:'pnj', region:'regions', quest:'quetes', panoplie:'panoplies' };
+// Collections de fallback pour les documents sensibles (fusionnées si plusieurs)
+const _SUB_FALLBACK_COLS = { item: ['items_hidden', 'items_secret'], mob: ['mobs_secret'], pnj: ['pnj_secret'] };
 const _diffDataStore = new Map(); // subId → { current, proposed }
 
 // Champs dont l'ordre de tableau est non significatif
 const _UNORDERED_ARRAY_FIELDS = new Set(['stats','craft','effects','bonuses','tags','classes','images','loot','drops','zones','objectifs','recompenses']);
-// Champs à ignorer dans le diff (images et ordre gérés en interne lors de l'approbation)
-const _DIFF_SKIP_FIELDS = new Set(['_order','ordre','_contributor','_ts','images','image','img']);
+// Champs à ignorer dans le diff (régénérés ou gérés en interne lors de l'approbation)
+const _DIFF_SKIP_FIELDS = new Set(['_order','ordre','_contributor','_ts','images','image','img','nameHash']);
 
 function _diffValue(v) {
   if (v === null || v === undefined) return '—';
@@ -705,14 +727,36 @@ window.loadSubDiff = async function(subId, type, docId) {
   }
   try {
     const snap = await getDoc(doc(db, colName, String(docId)));
-    if (!snap.exists()) {
+    let current = snap.exists() ? snap.data() : null;
+
+    if (!current) {
+      // Fallback : collections sensibles (items_hidden + items_secret, mobs_secret, pnj_secret)
+      const fallbacks = _SUB_FALLBACK_COLS[type] || [];
+      for (const fbCol of fallbacks) {
+        const fb = await getDoc(doc(db, fbCol, String(docId)));
+        if (fb.exists()) current = current ? { ...current, ...fb.data() } : fb.data();
+      }
+    }
+
+    if (!current) {
       el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:4px 0;">Document original introuvable — traité comme ajout.</div>';
       return;
     }
     const sub = allSubs.find(s => s._id === subId);
     if (!sub) return;
-    const current  = snap.data();
-    const proposed = sub.data || {};
+    let proposed = sub.data || {};
+    // Modification d'item sensible : les champs items_secret absents de la soumission
+    // seront préservés à l'approbation → les refléter dans le proposed du diff
+    if (sub.isModification && type === 'item' && sub.data?.sensible) {
+      const gameplayKeys = await getItemGameplayKeys().catch(() => []);
+      const merged = { ...proposed };
+      for (const [k, v] of Object.entries(current)) {
+        if (k.startsWith('_') || k === 'sensible' || k === 'nameHash') continue;
+        if (gameplayKeys.includes(k)) continue; // gameplay : pas de merge (soumission fait foi)
+        if (!(k in merged)) merged[k] = v;
+      }
+      proposed = merged;
+    }
     _diffDataStore.set(subId, { current, proposed });
     el.innerHTML = _renderDiffView(subId, current, proposed);
   } catch(e) {
@@ -1028,6 +1072,18 @@ window.approve = async (id) => {
         if (gameplayKeys.includes(k)) gameplay[k] = v;
         else                          secret[k]   = v;
       }
+      // Modification : préserver les champs items_secret non soumis (ex: craft absent du formulaire)
+      if (sub.isModification) {
+        try {
+          const existingSecret = await getDoc(doc(db, COL.itemsSecret, String(dataId)));
+          if (existingSecret.exists()) {
+            for (const [k, v] of Object.entries(existingSecret.data())) {
+              if (k.startsWith('_') || k === 'sensible') continue;
+              if (!(k in secret)) secret[k] = v;
+            }
+          }
+        } catch {}
+      }
       const nameHash = await hashName(sub.data.name);
       if (!nameHash) throw new Error('Nom manquant pour hash');
       await setDoc(doc(db, COL.itemsHidden, String(dataId)), sanitizeForFirestore({ ...gameplay, nameHash, sensible: true }));
@@ -1157,6 +1213,7 @@ window.reject = async (id) => {
         toast(`⚠️ ${refs.length} soumission(s) en attente référencent cet élément.`, 'warning', 6000);
       }
     }
+    _refreshOrphanCount();
   } catch(e) {
     toast('⛔ Erreur : ' + e.message, 'error');
     if (btn) { btn.disabled = false; btn.textContent = '✕ Rejeter'; }
@@ -1261,8 +1318,10 @@ const HASH_PANELS = {
   'quest-order':    () => showQuestOrder(),
   'panoplie-order': () => showPanoplieOrder(),
   'map':            () => showMapPanel(),
+  'passages':       () => { showMapPanel(); switchMapTab('passages'); },
   'trash':          () => showTrash(),
   'ghost-ids':      () => showGhostIds(),
+  'orphan-ids':     () => showOrphanIds(),
   'region-orphans': () => showRegionOrphans(),
   'mob-orphans':    () => showMobOrphans(),
   'quest-orphans':  () => showQuestOrphans(),
@@ -1283,6 +1342,7 @@ const HASH_PANELS = {
   'images':             () => showImagesTool(),
   'pnj-migration':        () => showPnjMigration(),
   'zone-list':            () => showZoneList(),
+  'effects-tool':         () => showEffectsTool(),
   'quest-map-migration':  () => showQuestMapMigration(),
   'game-config':          () => showGameConfig(),
   'audit-log':            () => showAuditLog(),
@@ -1316,6 +1376,7 @@ function _showPanel(panelId, btnId) {
 function _routeToHash() {
   const hash = location.hash.slice(1) || 'submissions';
   loadSubmissions(); // toujours charger les soumissions en fond
+  _refreshOrphanCount(); // badge IDs orphelins
   const fn = HASH_PANELS[hash];
   if (fn) fn();
 }
@@ -1335,6 +1396,7 @@ function refreshCurrentPanel() {
     panoplie:       () => { delete _modCache['panoplies'];   loadPanoplieOrder(); },
     map:            () => { switchMapTab('allpins'); },
     'ghost-ids':    () => loadGhostIds(),
+    'orphan-ids':   () => loadOrphanIds(),
     'region-orphans': () => loadRegionOrphans(),
     'mob-orphans':  () => loadMobOrphans(),
     'quest-orphans': () => loadQuestOrphans(),
@@ -1370,6 +1432,14 @@ async function loadMobOrder() {
   document.getElementById('btn-save-order').disabled = true;
   try {
     const mobs = [...(await cachedDocs('mobs'))];
+    // Contributeurs+ : inclure les mobs sensibles
+    if (hasRole(currentRole, 'contributeur')) {
+      const secret = await cachedDocs(COL.mobsSecret).catch(() => []);
+      const existingIds = new Set(mobs.map(m => String(m.id)));
+      for (const s of secret) {
+        if (!existingIds.has(String(s.id))) mobs.push({ ...s, _sensible: true });
+      }
+    }
     // Tri initial : ordre existant → palier → type → nom
     mobs.sort((a, b) => {
       if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
@@ -1404,10 +1474,10 @@ function renderMobOrder() {
       row.innerHTML = `
         <span class="mob-order-handle" style="color:var(--border);">⠿</span>
         <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
-        <span class="mob-order-name">${mob.name||mob.id}</span>
+        <span class="mob-order-name">${mob.name||mob.id}${mob._sensible ? ' <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;vertical-align:middle;">🔒</span>' : ''}</span>
         <span class="mob-order-tag">${mobTag(mob)}</span>
         <button class="ed-edit-btn" title="Modifier : ${mob.name||mob.id}\nID : ${mob.id}">✏️</button>`;
-      row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('mobs', mob.id, mob, 'mob'); });
+      row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor(mob._sensible ? 'mobs_secret' : 'mobs', mob.id, mob, 'mob'); });
       _addCreatorBtn(row, 'mob', mob);
       listEl.appendChild(row);
     });
@@ -1452,7 +1522,7 @@ function renderMobOrder() {
       row.innerHTML  = `
         <span class="mob-order-handle">⠿</span>
         <input type="number" class="mob-order-index" value="${palierIdx+1}" min="1" max="${palierMobs.length}" title="Position dans ce palier">
-        <span class="mob-order-name">${mob.name||mob.id}</span>
+        <span class="mob-order-name">${mob.name||mob.id}${mob._sensible ? ' <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;vertical-align:middle;">🔒</span>' : ''}</span>
         <span class="mob-order-tag">${mobTag(mob)}</span>
         <button class="ed-edit-btn" title="Modifier : ${mob.name||mob.id}\nID : ${mob.id}" draggable="false">✏️</button>`;
 
@@ -1494,7 +1564,7 @@ function renderMobOrder() {
         document.getElementById('btn-save-order').disabled = false;
         renderMobOrder();
       });
-      row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('mobs', mob.id, mob, 'mob'); });
+      row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor(mob._sensible ? 'mobs_secret' : 'mobs', mob.id, mob, 'mob'); });
       _addCreatorBtn(row, 'mob', mob);
 
       body.appendChild(row);
@@ -1588,8 +1658,8 @@ async function loadItemOrder() {
   try {
     let items = [...(await cachedDocs('items'))];
 
-    // Admins : inclure aussi les items sensibles (items_hidden)
-    if (currentRole === 'admin') {
+    // Contributeurs+ : inclure les items sensibles (items_hidden)
+    if (hasRole(currentRole, 'contributeur')) {
       const hidden = await cachedDocs(COL.itemsHidden).catch(() => []);
       const existingIds = new Set(items.map(i => String(i.id)));
       for (const h of hidden) {
@@ -1886,10 +1956,19 @@ async function loadPnjOrder() {
   _pnjDirty = false;
   document.getElementById('btn-save-pnj-order').disabled = true;
   try {
-    const [pnjs, _regDocsRaw] = await Promise.all([
+    const [_pnjPublic, _regDocsRaw] = await Promise.all([
       cachedDocs('personnages'),
       cachedDocs('regions'),
     ]);
+    const pnjs = [..._pnjPublic];
+    // Contributeurs+ : inclure les PNJ sensibles
+    if (hasRole(currentRole, 'contributeur')) {
+      const secret = await cachedDocs(COL.pnjSecret).catch(() => []);
+      const existingIds = new Set(pnjs.map(p => String(p.id)));
+      for (const s of secret) {
+        if (!existingIds.has(String(s.id))) pnjs.push({ ...s, _sensible: true });
+      }
+    }
 
     // Index canonique des régions par id ET par nom normalisé. `pnj.region` stocke
     // habituellement l'id snake_case ("ville_de_depart") mais peut aussi contenir
@@ -2031,7 +2110,7 @@ function _makePnjRegionGroup(group, gi, palierPnjs, palier) {
     row.innerHTML = `
       <span class="mob-order-handle">⠿</span>
       <input type="number" class="mob-order-index" value="${pnjIdx+1}" min="1" max="${palierPnjs.length}" title="Position dans cette région">
-      <span class="mob-order-name">${pnj.name||pnj.id}</span>
+      <span class="mob-order-name">${pnj.name||pnj.id}${pnj._sensible ? ' <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;vertical-align:middle;">🔒</span>' : ''}</span>
       <button class="ed-edit-btn" title="Modifier : ${pnj.name||pnj.id}\nID : ${pnj.id}" draggable="false">✏️</button>`;
 
     const indexInput = row.querySelector('.mob-order-index');
@@ -2061,7 +2140,7 @@ function _makePnjRegionGroup(group, gi, palierPnjs, palier) {
       renderPnjOrder();
     });
 
-    row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor('personnages', pnj.id, pnj, 'pnj'); });
+    row.querySelector('.ed-edit-btn').addEventListener('click', e => { e.stopPropagation(); showEditor(pnj._sensible ? 'pnj_secret' : 'personnages', pnj.id, pnj, 'pnj'); });
     _addCreatorBtn(row, 'pnj', pnj);
     row.addEventListener('dragstart', e => {
       if (e.target.closest('.ed-edit-btn') || _pnjDragSrc) return;
@@ -2604,6 +2683,152 @@ window.showGhostIds = async () => {
 };
 
 // ══════════════════════════════════════════════════════
+// IDs ORPHELINS (soumissions pending → IDs rejetés)
+// ══════════════════════════════════════════════════════
+window.showOrphanIds = async () => {
+  _setHash('orphan-ids');
+  document.getElementById('orphan-ids-panel').style.display = '';
+  document.getElementById('btn-orphan-ids').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadOrphanIds();
+};
+
+async function loadOrphanIds() {
+  const listEl = document.getElementById('orphan-ids-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [rejectedSnap, pendingSnap] = await Promise.all([
+      getDocs(query(collection(db, 'submissions'), where('status', '==', 'rejected'))),
+      getDocs(query(collection(db, 'submissions'), where('status', '==', 'pending'))),
+    ]);
+
+    // Map rejectedId → submission doc info
+    const rejectedMap = new Map();
+    for (const d of rejectedSnap.docs) {
+      const data = d.data();
+      const rid = data?.data?.id;
+      if (rid) rejectedMap.set(rid, { subId: d.id, name: data?.data?.name || rid, type: data?.type || '?' });
+    }
+
+    if (rejectedMap.size === 0) {
+      listEl.innerHTML = '<div class="empty">✓ Aucun ID orphelin détecté.</div>';
+      _updateOrphanBadge(0);
+      return;
+    }
+
+    // Orphans: { orphanId → [{ pendingSubId, pendingName, context, rejectedName }] }
+    const orphans = {};
+
+    for (const d of pendingSnap.docs) {
+      const sub = d.data();
+      const subName = sub.data?.name || sub.data?.id || '(soumission)';
+      const check = (id, ctx) => {
+        if (!id || !rejectedMap.has(id)) return;
+        (orphans[id] ??= []).push({
+          pendingSubId: d.id,
+          pendingName: subName,
+          pendingType: sub.type,
+          context: ctx,
+          rejectedName: rejectedMap.get(id).name,
+          rejectedSubId: rejectedMap.get(id).subId,
+        });
+      };
+      for (const c of (sub.data?.craft || []))       check(c.id, 'Craft');
+      for (const ev of (sub.data?.evolutions || []))  check(ev,   'Évolution');
+      for (const fv of (sub.data?.evolvedFrom || [])) check(fv,   'Évolué de');
+      if (sub.data?.obtain) {
+        const re = /\[(?!npc:)([\w]+)\|[^\]]*\]\[/g;
+        let mo;
+        while ((mo = re.exec(sub.data.obtain)) !== null) check(mo[1], 'Obtention');
+      }
+    }
+
+    const orphanIds = Object.keys(orphans).sort();
+    _updateOrphanBadge(orphanIds.length);
+
+    if (!orphanIds.length) {
+      listEl.innerHTML = '<div class="empty">✓ Aucun ID orphelin détecté.</div>';
+      return;
+    }
+
+    const summary = document.createElement('div');
+    summary.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:12px;';
+    summary.textContent = `${orphanIds.length} ID${orphanIds.length > 1 ? 's' : ''} orphelin${orphanIds.length > 1 ? 's' : ''} — soumissions en attente avec références invalides`;
+    listEl.innerHTML = '';
+    listEl.appendChild(summary);
+
+    const table = document.createElement('table');
+    table.className = 'ghost-table';
+    table.innerHTML = `<thead><tr><th>ID orphelin</th><th>Soumission en attente</th><th>Contexte</th><th>Soumission rejetée</th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+
+    for (const id of orphanIds) {
+      for (const entry of orphans[id]) {
+        const tr = document.createElement('tr');
+        tr.style.cssText = 'background:rgba(248,113,113,.05);';
+        tr.innerHTML = `
+          <td><span class="ghost-id">${escHtml(id)}</span></td>
+          <td>
+            <span style="font-size:11px;">${escHtml(entry.pendingName)}</span>
+            <a href="#" onclick="event.preventDefault();_goToSubmission(${JSON.stringify(entry.pendingSubId)})"
+               style="display:block;font-size:10px;color:var(--accent);">voir soumission →</a>
+          </td>
+          <td><span style="font-size:11px;color:var(--muted);">${escHtml(entry.context)}</span></td>
+          <td>
+            <span style="font-size:11px;color:#f87171;">${escHtml(entry.rejectedName)}</span>
+            <span style="display:block;font-size:10px;color:var(--muted);">rejetée</span>
+          </td>`;
+        tbody.appendChild(tr);
+      }
+    }
+    table.appendChild(tbody);
+    listEl.appendChild(table);
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty">Erreur : ${escHtml(e.message)}</div>`;
+  }
+}
+
+async function _refreshOrphanCount() {
+  try {
+    const [rejSnap, pendSnap] = await Promise.all([
+      getDocs(query(collection(db, 'submissions'), where('status', '==', 'rejected'))),
+      getDocs(query(collection(db, 'submissions'), where('status', '==', 'pending'))),
+    ]);
+    const rejectedIds = new Set(rejSnap.docs.map(d => d.data()?.data?.id).filter(Boolean));
+    if (!rejectedIds.size) { _updateOrphanBadge(0); return; }
+    const orphanIds = new Set();
+    for (const d of pendSnap.docs) {
+      const sub = d.data();
+      for (const c of (sub.data?.craft || []))       if (rejectedIds.has(c.id))  orphanIds.add(c.id);
+      for (const ev of (sub.data?.evolutions || []))  if (rejectedIds.has(ev))    orphanIds.add(ev);
+      for (const fv of (sub.data?.evolvedFrom || [])) if (rejectedIds.has(fv))    orphanIds.add(fv);
+      if (sub.data?.obtain) {
+        const re = /\[(?!npc:)([\w]+)\|[^\]]*\]\[/g;
+        let mo;
+        while ((mo = re.exec(sub.data.obtain)) !== null) if (rejectedIds.has(mo[1])) orphanIds.add(mo[1]);
+      }
+    }
+    _updateOrphanBadge(orphanIds.size);
+  } catch {}
+}
+
+function _updateOrphanBadge(count) {
+  const badge = document.getElementById('count-orphan-ids');
+  if (!badge) return;
+  if (count > 0) { badge.textContent = count; badge.style.display = ''; }
+  else badge.style.display = 'none';
+}
+
+window._goToSubmission = function(subId) {
+  setFilter('status', 'pending');
+  renderSubs();
+  setTimeout(() => {
+    const card = document.getElementById('card-' + subId);
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 150);
+};
+
+// ══════════════════════════════════════════════════════
 // RÉGIONS ORPHELINES
 // ══════════════════════════════════════════════════════
 window.showRegionOrphans = async () => {
@@ -2911,6 +3136,52 @@ async function loadGhostIds() {
       }
     }
 
+    // 4. IDs de soumissions rejetées référencés dans des soumissions en attente
+    try {
+      const [rejectedSnap, pendingSnap] = await Promise.all([
+        getDocs(query(collection(db, 'submissions'), where('status', '==', 'rejected'))),
+        getDocs(query(collection(db, 'submissions'), where('status', '==', 'pending'))),
+      ]);
+      const rejectedIds = new Set(
+        rejectedSnap.docs.map(d => d.data()?.data?.id).filter(Boolean)
+      );
+      if (rejectedIds.size > 0) {
+        for (const d of pendingSnap.docs) {
+          const sub = d.data();
+          const subName = sub.data?.name || sub.data?.id || '(soumission)';
+          // craft ingredients
+          for (const c of (sub.data?.craft || [])) {
+            if (c.id && rejectedIds.has(c.id) && !definedItemIds.has(c.id)) {
+              (refs[c.id] ??= []).push({ label: `Craft (soumission en attente) : ${subName}`, type: 'rejected' });
+            }
+          }
+          // evolutions
+          for (const evId of (sub.data?.evolutions || [])) {
+            if (rejectedIds.has(evId) && !definedItemIds.has(evId)) {
+              (refs[evId] ??= []).push({ label: `Évolution (soumission en attente) : ${subName}`, type: 'rejected' });
+            }
+          }
+          // evolvedFrom
+          for (const fId of (sub.data?.evolvedFrom || [])) {
+            if (rejectedIds.has(fId) && !definedItemIds.has(fId)) {
+              (refs[fId] ??= []).push({ label: `Évolué de (soumission en attente) : ${subName}`, type: 'rejected' });
+            }
+          }
+          // obtain string — mob refs
+          if (sub.data?.obtain) {
+            const reObt = /\[(?!npc:)([\w]+)\|[^\]]*\]\[/g;
+            let mo;
+            while ((mo = reObt.exec(sub.data.obtain)) !== null) {
+              const mobId = mo[1];
+              if (rejectedIds.has(mobId) && !definedMobIds.has(mobId)) {
+                (refs[mobId] ??= []).push({ label: `Obtention (soumission en attente) : ${subName}`, type: 'rejected' });
+              }
+            }
+          }
+        }
+      }
+    } catch(e) { console.warn('[loadGhostIds] rejected scan error', e); }
+
     const ghostIds = Object.keys(refs).sort();
     listEl.innerHTML = '';
 
@@ -2931,20 +3202,26 @@ async function loadGhostIds() {
 
     for (const id of ghostIds) {
       const entries = refs[id];
-      // Un ID est un mob fantôme si toutes ses références viennent de mob-obtain
-      const isMob = entries.every(e => e.type === 'mob-obtain');
+      // Un ID est un mob fantôme si toutes ses références viennent de mob-obtain ou rejected mob
+      const isMob = entries.every(e => e.type === 'mob-obtain' || (e.type === 'rejected' && e.label.includes('Obtention')));
+      const isRejected = entries.some(e => e.type === 'rejected');
       const tr = document.createElement('tr');
+      if (isRejected) tr.style.cssText = 'background:rgba(248,113,113,.05);';
       const refsHtml = entries.map(e =>
         `<span class="ghost-type-${e.type}">${escHtml(e.label)}</span>`
       ).join('<br>');
-      const typeCell = isMob
-        ? `<span style="font-size:10px;font-weight:700;color:var(--warn);background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 7px;">Mob</span>`
-        : `<span style="font-size:10px;font-weight:700;color:var(--accent);background:rgba(122,90,248,.1);border:1px solid rgba(122,90,248,.3);border-radius:8px;padding:2px 7px;">Item</span>`;
-      const actionCell = isMob
-        ? `<a href="creator.html?ghostid=${encodeURIComponent(id)}&ghosttype=mob" target="_blank"
-             class="btn btn-ghost" style="font-size:11px;padding:4px 10px;text-decoration:none;">👾 Créer le mob</a>`
-        : `<a href="creator.html?ghostid=${encodeURIComponent(id)}" target="_blank"
-             class="btn btn-ghost" style="font-size:11px;padding:4px 10px;text-decoration:none;">✏️ Créer l'item</a>`;
+      const typeCell = isRejected
+        ? `<span style="font-size:10px;font-weight:700;color:#f87171;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);border-radius:8px;padding:2px 7px;">🚫 Rejet</span>`
+        : isMob
+          ? `<span style="font-size:10px;font-weight:700;color:var(--warn);background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 7px;">Mob</span>`
+          : `<span style="font-size:10px;font-weight:700;color:var(--accent);background:rgba(122,90,248,.1);border:1px solid rgba(122,90,248,.3);border-radius:8px;padding:2px 7px;">Item</span>`;
+      const actionCell = isRejected
+        ? `<span style="font-size:11px;color:var(--muted);">Soumission rejetée — à corriger</span>`
+        : isMob
+          ? `<a href="creator.html?ghostid=${encodeURIComponent(id)}&ghosttype=mob" target="_blank"
+               class="btn btn-ghost" style="font-size:11px;padding:4px 10px;text-decoration:none;">👾 Créer le mob</a>`
+          : `<a href="creator.html?ghostid=${encodeURIComponent(id)}" target="_blank"
+               class="btn btn-ghost" style="font-size:11px;padding:4px 10px;text-decoration:none;">✏️ Créer l'item</a>`;
       tr.innerHTML = `
         <td>${typeCell}</td>
         <td><span class="ghost-id">${escHtml(id)}</span></td>
@@ -4556,7 +4833,7 @@ window.deleteWebhookPosts = async function deleteWebhookPosts(key, url) {
   }
 
   const WORKER_URL = 'https://veilleurs.paulrobinpro49.workers.dev';
-  const WORKER_SECRET = 's3+/M21~hZ$)';
+  const WORKER_SECRET = await _getWorkerSecret();
 
   let deleted = 0, failed = 0;
   for (const post of posts) {
@@ -12103,7 +12380,7 @@ const _DATA_ALL_COLS = {
 const _DATA_ALL_FLAGS = [
   { key: 'evolutif',  label: '🔄 Évolutif',    types: ['item'],           filter: d => d.evolutif === true },
   { key: 'event',     label: '🎊 Event',        types: ['item'],           filter: d => d.event === true },
-  { key: 'sensible',  label: '🔒 Sensible',     types: ['item','mob'],     filter: d => d.sensible === true },
+  { key: 'sensible',  label: '🔒 Sensible',     types: ['item','mob','pnj'], filter: d => d.sensible === true },
   { key: 'boss',      label: '💀 Boss',         types: ['mob'],            filter: d => d.type === 'boss' },
   { key: 'miniboss',  label: '⚔️ Mini-Boss',   types: ['mob'],            filter: d => d.type === 'miniboss' },
   { key: 'codex',     label: '📖 Codex',        types: ['mob','region'],   filter: d => d.codex === true },
@@ -12167,6 +12444,34 @@ window.loadDataAll = async function() {
             sensible: true,
             ...d, ...sec,
             _docKey: d._docKey,                      // re-protéger après spread (sec.id ne doit pas écraser)
+          });
+        }
+      } catch {}
+
+      // Mobs sensibles
+      try {
+        const existingMobIds = new Set(_dataAllData.filter(d => d._type === 'mob').map(d => String(d.id)));
+        const secretMobs = await cachedDocs(COL.mobsSecret).catch(() => []);
+        for (const d of secretMobs) {
+          if (existingMobIds.has(String(d.id))) continue;
+          _dataAllData.push({
+            _type: 'mob', _col: COL.mobsSecret, _icon: '👾',
+            _docKey: d._docKey, id: d.id, name: d.name || d.id,
+            sensible: true, ...d, _docKey: d._docKey,
+          });
+        }
+      } catch {}
+
+      // PNJ sensibles
+      try {
+        const existingPnjIds = new Set(_dataAllData.filter(d => d._type === 'pnj').map(d => String(d.id)));
+        const secretPnjs = await cachedDocs(COL.pnjSecret).catch(() => []);
+        for (const d of secretPnjs) {
+          if (existingPnjIds.has(String(d.id))) continue;
+          _dataAllData.push({
+            _type: 'pnj', _col: COL.pnjSecret, _icon: '🧑',
+            _docKey: d._docKey, id: d.id, name: d.name || d.id,
+            sensible: true, ...d, _docKey: d._docKey,
           });
         }
       } catch {}
@@ -12295,11 +12600,14 @@ window.renderDataAll = function() {
     editBtn.style.cssText = 'font-size:11px;padding:3px 8px;flex-shrink:0;';
     editBtn.textContent = '✏️';
     editBtn.title = 'Éditer dans le panneau';
-    editBtn.onclick = () => showEditor(
-      d.sensible ? 'items_sensible' : (d._col || COL_MAP[d._type] || d._type),
-      d.sensible ? (d._docKey || d.id) : d.id,    // items sensibles : _docKey = item.id (clé Firestore depuis migration)
-      d, 'data-all'
-    );
+    editBtn.onclick = () => {
+      let col;
+      if (d.sensible && d._type === 'item') col = 'items_sensible';
+      else if (d.sensible && d._type === 'mob') col = 'mobs_secret';
+      else if (d.sensible && d._type === 'pnj') col = 'pnj_secret';
+      else col = d._col || COL_MAP[d._type] || d._type;
+      showEditor(col, d.sensible ? (d._docKey || d.id) : d.id, d, 'data-all');
+    };
 
     row.appendChild(nameEl);
     row.appendChild(idEl);
@@ -13027,14 +13335,14 @@ const _DEFAULT_CATEGORIES = [
   { id: 'cat-craft',      label: '⚒️ Forge / Craft',  types: ['craft_armes', 'craft_armures', 'craft_accessoires', 'craft_lingots', 'craft_cles'] },
   { id: 'cat-artisans',   label: '🧪 Artisans',       types: ['craft_runes', 'alchimiste', 'bucheron', 'refaconneur'] },
   { id: 'cat-commerce',   label: '🛒 Commerce',       types: ['repreneur_butin', 'repreneur_armes', 'marchand_itinerant', 'marchand_equipement', 'marchand_consommable', 'marchand_outils', 'marchand_access', 'marchand_occulte'] },
-  { id: 'cat-autres',     label: '🦠 Autres',         types: ['région', 'autre'] },
+  { id: 'cat-autres',     label: '🦠 Autres',         types: ['région', 'passage', 'autre'] },
 ];
 
 let _allPinsList = [];
 let _pinColors   = {};
 
 window.switchMapTab = function switchMapTab(tab) {
-  ['allpins', 'colors', 'emojis', 'pintypes', 'categories'].forEach(t => {
+  ['allpins', 'colors', 'emojis', 'pintypes', 'categories', 'passages'].forEach(t => {
     const div = document.getElementById('map-tab-' + t);
     const btn = document.getElementById('map-tab-btn-' + t);
     const active = t === tab;
@@ -13050,6 +13358,258 @@ window.switchMapTab = function switchMapTab(tab) {
   if (tab === 'emojis')     loadPinEmojis();
   if (tab === 'pintypes')   loadPinTypes();
   if (tab === 'categories') loadPinCategories();
+  if (tab === 'passages')   loadPassages();
+};
+
+// ── PASSAGES ──────────────────────────────────────────
+let _passagesList = [];       // cache local des passages chargés
+let _allMarkersForPg = [];    // cache pour la recherche de pins liés
+let _pgLinks = [];            // liens en cours de création (tableau d'objets {id, name})
+
+window.loadPassages = async function loadPassages() {
+  const el = document.getElementById('passages-list-content');
+  if (el) el.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const snap = await getDocs(query(
+      collection(db, COL.mapMarkers),
+      where('type', '==', 'passage')
+    ));
+    _passagesList = snap.docs.map(d => ({ _docKey: d.id, ...d.data() }));
+
+    // Charger tous les pins linkables depuis toutes les collections
+    const [allMarkersSnap, pnjSnap, mobSnap, donjonSnap, queteSnap] = await Promise.all([
+      getDocs(collection(db, COL.mapMarkers)),
+      getDocs(collection(db, COL.pnj)),
+      getDocs(collection(db, COL.mobs)),
+      getDocs(collection(db, COL.donjons)),
+      getDocs(collection(db, COL.quetes)),
+    ]);
+    _allMarkersForPg = [];
+    allMarkersSnap.docs.forEach(d => {
+      const data = d.data();
+      if (data.type === 'passage') return;
+      _allMarkersForPg.push({ id: d.id, name: data.name || d.id, floor: data.floor, type: data.type || 'marker' });
+    });
+    pnjSnap.docs.forEach(d => {
+      const data = d.data();
+      if (!data.coords && data.gx == null) return;
+      const floor = data.coords?.palier ?? data.palier ?? data.floor;
+      _allMarkersForPg.push({ id: d.id, name: data.name || d.id, floor, type: data.role || 'pnj' });
+    });
+    mobSnap.docs.forEach(d => {
+      const data = d.data();
+      if ((data.type || '').toLowerCase() !== 'boss' || !data.palier) return;
+      _allMarkersForPg.push({ id: d.id, name: data.name || d.id, floor: data.palier, type: 'boss' });
+    });
+    donjonSnap.docs.forEach(d => {
+      const data = d.data();
+      if (data.gx == null || !data.floor) return;
+      _allMarkersForPg.push({ id: d.id, name: data.name || d.id, floor: data.floor, type: 'donjon' });
+    });
+    queteSnap.docs.forEach(d => {
+      const data = d.data();
+      const floor = data.coords?.palier ?? data.palier;
+      if (!floor) return;
+      _allMarkersForPg.push({ id: d.id, name: data.name || d.id, floor, type: 'quête' });
+    });
+
+    // Peupler le filtre palier
+    const floors = [...new Set(_passagesList.map(p => p.floor).filter(Boolean))].sort((a, b) => +a - +b);
+    const sel = document.getElementById('pg-filter-floor');
+    if (sel) {
+      sel.innerHTML = '<option value="">Tous les paliers</option>' +
+        floors.map(f => `<option value="${f}">Palier ${f}</option>`).join('');
+    }
+
+    renderPassageList();
+  } catch (err) {
+    if (el) el.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${err.message}</div>`;
+  }
+};
+
+window.renderPassageList = function renderPassageList() {
+  const el = document.getElementById('passages-list-content');
+  if (!el) return;
+  const floorF  = document.getElementById('pg-filter-floor')?.value || '';
+  const searchF = (document.getElementById('pg-filter-search')?.value || '').toLowerCase();
+
+  const list = _passagesList.filter(p => {
+    if (floorF  && String(p.floor ?? '') !== floorF) return false;
+    if (searchF && !(p.name || '').toLowerCase().includes(searchF)) return false;
+    return true;
+  });
+
+  if (!list.length) { el.innerHTML = '<div class="empty">Aucun passage</div>'; return; }
+
+  const byFloor = {};
+  for (const p of list) {
+    const f = p.floor ?? '?';
+    if (!byFloor[f]) byFloor[f] = [];
+    byFloor[f].push(p);
+  }
+
+  let html = '';
+  for (const floor of Object.keys(byFloor).sort((a, b) => +a - +b)) {
+    html += `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:16px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--border);">Palier ${floor}</div>`;
+    for (const p of byFloor[floor]) {
+      const links = (p.links || []);
+      const linksHtml = links.length
+        ? links.map(id => {
+            const m = _allMarkersForPg.find(x => x.id === id);
+            return `<span style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:1px 6px;font-size:11px;">${escHtml(m?.name || id)}</span>`;
+          }).join(' ')
+        : '<span style="color:var(--muted);font-size:11px;">Aucun pin lié</span>';
+
+      const mapHref = `Map/map.html?ghost_gx=${p.gx}&ghost_gz=${p.gy}&ghost_floor=${p.floor}&ghost_name=${encodeURIComponent(p.name || '')}#floor-${p.floor}-surface`;
+      html += `
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--surface);">
+          <span style="font-size:20px;margin-top:2px;">🚪</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:13px;">${escHtml(p.name || p._docKey)}</div>
+            ${p.desc ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;">${escHtml(p.desc)}</div>` : ''}
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">GX ${p.gx ?? '—'} / GY ${p.gy ?? '—'}${p.layer ? ' · ' + escHtml(p.layer) : ''}</div>
+            <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">${linksHtml}</div>
+          </div>
+          <div style="display:flex;gap:4px;flex-shrink:0;">
+            <a href="${mapHref}" target="_blank" class="btn btn-ghost btn-sm" style="font-size:11px;padding:3px 8px;text-decoration:none;" title="Voir sur la carte">🗺️</a>
+            <button class="btn btn-ghost btn-sm" onclick="deletePassage('${escHtml(p._docKey)}')"
+              style="font-size:11px;padding:3px 8px;color:var(--danger);" title="Supprimer">🗑️</button>
+          </div>
+        </div>`;
+    }
+  }
+  el.innerHTML = html;
+};
+
+window.pgValidate = function pgValidate() {
+  const name  = document.getElementById('pg-name')?.value.trim();
+  const gx    = document.getElementById('pg-gx')?.value.trim();
+  const gy    = document.getElementById('pg-gy')?.value.trim();
+  const floor = document.getElementById('pg-floor')?.value.trim();
+  const btn   = document.getElementById('pg-save-btn');
+  if (btn) btn.disabled = !(name && gx !== '' && gy !== '' && floor);
+};
+
+window.pgReset = function pgReset() {
+  ['pg-name', 'pg-gx', 'pg-gy', 'pg-floor', 'pg-layer', 'pg-desc', 'pg-link-input'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  _pgLinks = [];
+  const ll = document.getElementById('pg-links-list');
+  if (ll) ll.innerHTML = '';
+  const err = document.getElementById('pg-create-error');
+  if (err) err.style.display = 'none';
+  const details = document.getElementById('passage-create-details');
+  if (details) details.open = false;
+  pgValidate();
+};
+
+window.pgSearchPins = function pgSearchPins(val) {
+  const res = document.getElementById('pg-link-results');
+  if (!res) return;
+  const q = val.trim().toLowerCase();
+  if (!q) { res.style.display = 'none'; return; }
+
+  const matches = _allMarkersForPg
+    .filter(m => !_pgLinks.find(l => l.id === m.id))
+    .filter(m => (m.name || m.id).toLowerCase().includes(q))
+    .slice(0, 12);
+
+  if (!matches.length) { res.style.display = 'none'; return; }
+
+  res.innerHTML = matches.map(m =>
+    `<div style="padding:6px 10px;cursor:pointer;font-size:12px;" onmousedown="pgAddLink('${escHtml(m.id)}','${escHtml(m.name || m.id)}')"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      📍 ${escHtml(m.name || m.id)} <span style="color:var(--muted);font-size:11px;">· P${m.floor ?? '?'}</span>
+    </div>`
+  ).join('');
+  res.style.display = '';
+};
+
+window.pgAddLink = function pgAddLink(id, name) {
+  if (_pgLinks.find(l => l.id === id)) return;
+  _pgLinks.push({ id, name });
+  _renderPgLinks();
+  const inp = document.getElementById('pg-link-input');
+  const res = document.getElementById('pg-link-results');
+  if (inp) inp.value = '';
+  if (res) res.style.display = 'none';
+};
+
+window.pgRemoveLink = function pgRemoveLink(id) {
+  _pgLinks = _pgLinks.filter(l => l.id !== id);
+  _renderPgLinks();
+};
+
+function _renderPgLinks() {
+  const ll = document.getElementById('pg-links-list');
+  if (!ll) return;
+  ll.innerHTML = _pgLinks.map(l =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;">
+      ${escHtml(l.name || l.id)}
+      <button onclick="pgRemoveLink('${escHtml(l.id)}')"
+        style="background:none;border:none;cursor:pointer;color:var(--danger);padding:0;font-size:12px;line-height:1;">×</button>
+    </span>`
+  ).join('');
+}
+
+window.saveNewPassage = async function saveNewPassage() {
+  const name  = document.getElementById('pg-name')?.value.trim();
+  const gx    = parseFloat(document.getElementById('pg-gx')?.value);
+  const gy    = parseFloat(document.getElementById('pg-gy')?.value);
+  const floor = parseInt(document.getElementById('pg-floor')?.value, 10);
+  const layer = document.getElementById('pg-layer')?.value.trim() || null;
+  const desc  = document.getElementById('pg-desc')?.value.trim() || null;
+  const errEl = document.getElementById('pg-create-error');
+  const btn   = document.getElementById('pg-save-btn');
+
+  if (!name || isNaN(gx) || isNaN(gy) || isNaN(floor)) {
+    if (errEl) { errEl.textContent = 'Nom, GX, GY et Palier sont requis.'; errEl.style.display = ''; }
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Création…';
+
+  try {
+    const docId = 'passage_' + Date.now();
+    const obj = {
+      type: 'passage',
+      name,
+      gx,
+      gy,
+      floor,
+      links: _pgLinks.map(l => l.id),
+    };
+    if (layer) obj.layer = layer;
+    if (desc)  obj.desc  = desc;
+
+    await setDoc(doc(db, COL.mapMarkers, docId), obj);
+    invalidateCache(COL.mapMarkers);
+    invalidateModCache(COL.mapMarkers);
+    toast('Passage créé !', 'success');
+    pgReset();
+    await loadPassages();
+  } catch (err) {
+    if (errEl) { errEl.textContent = '⛔ ' + err.message; errEl.style.display = ''; }
+    btn.disabled = false;
+    btn.textContent = '💾 Créer le passage';
+  }
+};
+
+window.deletePassage = async function deletePassage(docKey) {
+  if (!confirm(`Supprimer ce passage ?`)) return;
+  try {
+    await deleteDoc(doc(db, COL.mapMarkers, docKey));
+    invalidateCache(COL.mapMarkers);
+    invalidateModCache(COL.mapMarkers);
+    _passagesList = _passagesList.filter(p => p._docKey !== docKey);
+    renderPassageList();
+    toast('Passage supprimé.', 'success');
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'error');
+  }
 };
 
 window.loadAllMapPins = async function loadAllMapPins() {
@@ -13136,7 +13696,8 @@ const _AP_TYPE_LABELS = {
   repreneur_butin: 'Repreneur de Butin', repreneur_armes: "Repreneur d'Armes",
   marchand_itinerant: 'Marchand Itinérant', marchand_equipement: "Marchand d'Équipement",
   marchand_consommable: 'Marchand de Consommable', marchand_outils: "Marchand d'Outils",
-  marchand_access: "Marchand d'Accessoires", marchand_occulte: 'Marchand Occulte', autre: 'Autre',
+  marchand_access: "Marchand d'Accessoires", marchand_occulte: 'Marchand Occulte',
+  passage: 'Passage', autre: 'Autre',
 };
 
 function _apGetFloor(p) {
@@ -13328,7 +13889,7 @@ function renderPinColorForm() {
     marchand_itinerant: '#eab308', marchand_equipement: '#ca8a04',
     marchand_consommable: '#84cc16', marchand_outils: '#16a34a',
     marchand_access: '#0891b2', marchand_occulte: '#7c3aed',
-    autre: '#6b7280',
+    passage: '#1a3a5c', autre: '#6b7280',
   };
 
   const cats = (_pinCategories || _DEFAULT_CATEGORIES).filter(c => c.types.length > 0);
@@ -13395,7 +13956,8 @@ const _DEFAULT_EMOJIS = {
   repreneur_butin: '🛒', repreneur_armes: '⚔️',
   marchand_itinerant: '💰', marchand_equipement: '⚔️',
   marchand_consommable: '🧪', marchand_outils: '🔧',
-  marchand_access: '💍', marchand_occulte: '🩸', autre: '🦠',
+  marchand_access: '💍', marchand_occulte: '🩸',
+  passage: '🚪', autre: '🦠',
 };
 
 window.loadPinEmojis = async function loadPinEmojis() {
@@ -14299,5 +14861,262 @@ window.saveGameConfig = async () => {
   } finally {
     btn.disabled = false; btn.textContent = '💾 Sauvegarder';
   }
+};
+
+// ══════════════════════════════════════════════════════
+// OUTIL EFFETS
+// ══════════════════════════════════════════════════════
+const _EFFECT_SEED_TYPES = [
+  { id:'heal',                 icon:'❤️',  color:'#e05252', label:'Points de vie',                        prefix:'+' },
+  { id:'regen',                icon:'💓',  color:'#ce7b7b', label:'Régénération',                         prefix:'Régénération ' },
+  { id:'mana',                 icon:'💧',  color:'#5b8dee', label:'Mana',                                 prefix:'+' },
+  { id:'stamina',              icon:'👟',  color:'#f4d745', label:'Stamina',                              prefix:'+' },
+  { id:'degats_attaque',       icon:'⚔️',  color:'#e7d189', label:'Force Accrue',                         prefix:"Boost les Dégâts d'Attaque de " },
+  { id:'degats_physique',      icon:'💪',  color:'#eebe22', label:'Force Accrue',                         prefix:'Boost les Dégâts Physique de ' },
+  { id:'degats_armes',         icon:'⚔️',  color:'#f36d14', label:'Force Accrue',                         prefix:"Boost les Dégâts d'Armes de " },
+  { id:'degats_arcane',        icon:'🔮',  color:'#c24cda', label:'Puissance Arcanique',                  prefix:'Boost les Dégâts Magique de ' },
+  { id:'boost_sante',          icon:'❤️',  color:'#d83c3c', label:'Santé Accrue',                         prefix:'Boost la Santé Max de ' },
+  { id:'boost_regen_vie',      icon:'💓',  color:'#e07171', label:'Régénération de Santé Accrue',         prefix:'Boost la Régénération de Santé Max de ' },
+  { id:'boost_mana',           icon:'💧',  color:'#3676ac', label:'Mana Accrue',                          prefix:'Boost le Mana Max de ' },
+  { id:'boost_regen_mana',     icon:'💦',  color:'#89c4fb', label:'Régénération de Mana Accrue',          prefix:'Boost la Régénération de Mana Max de ' },
+  { id:'boost_stamina',        icon:'👟',  color:'#ddb225', label:'Endurance Accrue',                     prefix:'Boost la Stamina Max de ' },
+  { id:'boost_regen_stamina',  icon:'💨',  color:'#ffe188', label:'Régénération de Stamina Accrue',       prefix:'Boost la Régénération de Stamina Max de ' },
+  { id:'coups_critique',       icon:'🎯',  color:'#d3b327', label:'Coup Critique',                        prefix:'Boost les Chances Critique de ' },
+  { id:'degats_critique',      icon:'💢',  color:'#e4c84b', label:'Dégât Critique',                       prefix:'Boost les Dégâts Critique de ' },
+  { id:'comp_coups_critique',  icon:'🎯',  color:'#d663cd', label:'Coup Critique de Compétence',          prefix:'Boost les Chances Critique de Compétence de ' },
+  { id:'comp_degats_critique', icon:'💢',  color:'#b14299', label:'Dégât Critique de Compétence',         prefix:'Boost les Dégâts Critique de Compétence de ' },
+  { id:'vol_vie',              icon:'🩸',  color:'#db2727', label:'Soif de Sang',                         prefix:'Boost le Vol de Vie de ' },
+  { id:'vitesse_deplacement',  icon:'🏃',  color:'#5f89fd', label:'Vitesse de Déplacement',               prefix:'Boost la Vitesse de Déplacement de ' },
+  { id:'agilite',              icon:'💨',  color:'#b8c8f4', label:'Agilité',                              prefix:"Boost les chances d'Esquive de " },
+  { id:'resistance_recul',     icon:'💨',  color:'#b8c8f4', label:'Résistance au Recul',                  prefix:'Boost la résistance au recul de ' },
+  { id:'maitrise_blocage',     icon:'🛡️',  color:'#cdc0d6', label:'Maîtrise du Blocage',                 prefix:'Boost la maîtrise du blocage de ' },
+  { id:'puissance_blocage',    icon:'💪',  color:'#e06c95', label:'Puissance du Blocage',                 prefix:'Boost la puissance du blocage de ' },
+  { id:'health_heal',          icon:'💓',  color:'#a01212', label:'Healing',                              prefix:'Vous rend ' },
+  { id:'mana_heal',            icon:'💦',  color:'#247ca5', label:'Mana',                                 prefix:'Vous rend ' },
+  { id:'stamina_heal',         icon:'💨',  color:'#e4c84b', label:'Stamina',                              prefix:'Vous rend ' },
+  { id:'dexterite_attribut',   icon:'🏹',  color:'#e3cb5f', label:'Augmentation Dextérité',               prefix:"Augmente votre attribut de Dextérité de " },
+  { id:'force_attribut',       icon:'⚔️',  color:'#d97f43', label:'Augmentation Force',                   prefix:"Augmente votre attribut de Force de " },
+  { id:'esprit_attribut',      icon:'🌿',  color:'#62d435', label:"Augmentation Esprit",                  prefix:"Augmente votre attribut d'Esprit de " },
+  { id:'intelligence_attribut',icon:'🔮',  color:'#a152a8', label:'Augmentation Intelligence',            prefix:"Augmente votre attribut d'Intelligence de " },
+  { id:'vitalite_attribut',    icon:'❤️',  color:'#e91b1b', label:'Augmentation Vitalité',                prefix:"Augmente votre attribut de Vitalité de " },
+  { id:'defense_attribut',     icon:'🛡️',  color:'#c7c7c7', label:'Augmentation Défense',                prefix:"Augmente votre attribut de Défense de " },
+  { id:'resurection',          icon:'✳️',  color:'#4faa39', label:'Résurrection',                         prefix:'Vous permet de réanimer un camarade au combat dans les ' },
+  { id:'feed',                 icon:'🍖',  color:'#8d520b', label:'Nourriture',                           prefix:'Restaure ' },
+  { id:'saturation',           icon:'🍖',  color:'#cc4c11', label:'Saturation',                           prefix:'Offre ' },
+  { id:'cooldown',             icon:'⏱️',  color:'#888888', label:'Cooldown',                             prefix:'' },
+  { id:'use',                  icon:'🧪',  color:'#7db0ca', label:'Utilisations',                         prefix:'' },
+  { id:'level',                icon:'❓',  color:'#c43c28', label:'Niveau Requis',                        prefix:'Niveau ' },
+  { id:'reparation',           icon:'⚒️',  color:'#f0c137', label:'Réparation',                           prefix:'Réparation ' },
+  { id:'durabilite',           icon:'⛏️',  color:'#5ad18a', label:'Durabilité',                           prefix:'Durabilité ' },
+  { id:'puissance_recolte',    icon:'💪',  color:'#e86652', label:'Puissance de Récolte',                 prefix:'Puissance de Récolte ' },
+];
+
+const _EFFECT_SEED_TEMPLATES = [
+  { label:'🍖 Nourriture',               effects:[{type:'feed',value:5}] },
+  { label:'❤️ Potion de Soin',            effects:[{type:'level',value:1},{type:'heal',value:10,unit:'PV'},{type:'cooldown',value:15,unit:'s'},{type:'use',value:1}] },
+  { label:'💧 Potion de Mana',            effects:[{type:'level',value:1},{type:'mana',value:10,unit:'Mana'},{type:'cooldown',value:15,unit:'s'},{type:'use',value:1}] },
+  { label:'👟 Potion de Stamina',         effects:[{type:'level',value:1},{type:'stamina',value:5,unit:'Stamina'},{type:'cooldown',value:15,unit:'s'},{type:'use',value:1}] },
+  { label:"💨 Fortifiant d'Endurance",    effects:[{type:'level',value:8},{type:'vitesse_deplacement',value:0.025,duration:900},{type:'boost_mana',value:5,duration:900},{type:'boost_stamina',value:2.5,duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
+  { label:'📚 Fortifiant de Connaissance',effects:[{type:'level',value:8},{type:'degats_arcane',value:2,unit:'%',duration:900},{type:'comp_degats_critique',value:2,unit:'%',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
+  { label:'⚔️ Fortifiant de Férocité',   effects:[{type:'level',value:8},{type:'degats_attaque',value:2,unit:'%',duration:900},{type:'degats_critique',value:2,unit:'%',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
+  { label:'💓 Fortifiant de Vitalité',   effects:[{type:'level',value:8},{type:'boost_sante',value:10,duration:900},{type:'boost_regen_vie',value:0.2,unit:'/s',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
+  { label:'⏳ Fortifiant de Patience',   effects:[{type:'level',value:8},{type:'agilite',value:2,unit:'%',duration:900},{type:'boost_regen_mana',value:0.2,unit:'/s',duration:900},{type:'boost_regen_stamina',value:0.1,unit:'/s',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
+  { label:'🛡️ Fortifiant de Résistance', effects:[{type:'level',value:8},{type:'resistance_recul',value:2,unit:'%',duration:900},{type:'maitrise_blocage',value:2,unit:'%',duration:900},{type:'puissance_blocage',value:2,unit:'%',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
+];
+
+let _effectsData = { types: [], templates: [] };
+let _effectsDirty = false;
+
+window.showEffectsTool = async () => {
+  _setHash('effects-tool');
+  document.getElementById('effects-tool-panel').style.display = '';
+  document.getElementById('btn-effects-tool').classList.add('active');
+  await loadEffectTypes();
+};
+
+async function loadEffectTypes() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'effect_types'));
+    if (snap.exists()) {
+      const d = snap.data();
+      _effectsData = {
+        types:     (d.types     || []).map(t => ({ ...t })),
+        templates: (d.templates || []).map(t => ({ ...t })),
+      };
+    } else {
+      await seedEffectTypes(false);
+    }
+  } catch(e) {
+    toast(`⛔ Erreur chargement effets : ${e.message}`, 'error');
+  }
+  renderEffectTypes();
+}
+
+window.seedEffectTypes = async function seedEffectTypes(confirm = true) {
+  if (confirm) {
+    const yes = await modal.confirm('Réinitialiser les types d\'effets depuis le code ? Les modifications Firestore seront écrasées.');
+    if (!yes) return;
+  }
+  _effectsData = {
+    types:     _EFFECT_SEED_TYPES.map(t => ({ ...t })),
+    templates: _EFFECT_SEED_TEMPLATES.map(t => ({ label: t.label, effects: JSON.parse(JSON.stringify(t.effects)) })),
+  };
+  _effectsDirty = true;
+  document.getElementById('btn-save-effects').disabled = false;
+  renderEffectTypes();
+  toast('Types réinitialisés depuis le code — n\'oublie pas de sauvegarder.', 'info');
+};
+
+window.saveEffectTypes = async function saveEffectTypes() {
+  const btn = document.getElementById('btn-save-effects');
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    await setDoc(doc(db, 'config', 'effect_types'), sanitizeForFirestore({
+      types:     _effectsData.types,
+      templates: _effectsData.templates,
+    }));
+    _effectsDirty = false;
+    btn.textContent = '💾 Sauvegarder';
+    toast('✓ Effets sauvegardés', 'success');
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '💾 Sauvegarder';
+    toast(`⛔ Erreur : ${e.message}`, 'error');
+  }
+};
+
+window.switchEffectsTab = function switchEffectsTab(tab) {
+  document.getElementById('effects-types-tab').style.display     = tab === 'types'     ? '' : 'none';
+  document.getElementById('effects-templates-tab').style.display = tab === 'templates' ? '' : 'none';
+  document.getElementById('effects-tab-types').style.background     = tab === 'types'     ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('effects-tab-templates').style.background = tab === 'templates' ? 'var(--accent)' : 'var(--surface2)';
+  document.getElementById('effects-tab-types').style.color     = tab === 'types'     ? '#fff' : 'var(--text)';
+  document.getElementById('effects-tab-templates').style.color = tab === 'templates' ? '#fff' : 'var(--text)';
+};
+
+function _markEffectsDirty() {
+  _effectsDirty = true;
+  document.getElementById('btn-save-effects').disabled = false;
+}
+
+function renderEffectTypes() {
+  // ── Types ──
+  const listEl = document.getElementById('effects-type-list');
+  listEl.innerHTML = '';
+  if (!_effectsData.types.length) {
+    listEl.innerHTML = '<div class="empty">Aucun type. Cliquer "Réinitialiser depuis le code".</div>';
+  } else {
+    const tbl = document.createElement('table');
+    tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;';
+    tbl.innerHTML = `<thead><tr style="color:var(--muted);font-size:10px;text-transform:uppercase;">
+      <th style="padding:4px 6px;text-align:left;">ID</th>
+      <th style="padding:4px 6px;text-align:left;">Icône</th>
+      <th style="padding:4px 6px;text-align:left;">Couleur</th>
+      <th style="padding:4px 6px;text-align:left;width:160px;">Label</th>
+      <th style="padding:4px 6px;text-align:left;">Préfixe</th>
+      <th style="padding:4px 2px;"></th>
+    </tr></thead>`;
+    const tbody = document.createElement('tbody');
+    _effectsData.types.forEach((t, i) => {
+      const tr = document.createElement('tr');
+      tr.style.cssText = 'border-top:1px solid var(--border);';
+      tr.innerHTML = `
+        <td style="padding:4px 6px;color:var(--muted);font-family:monospace;">${escHtml(t.id)}</td>
+        <td style="padding:4px 6px;">
+          <input type="text" value="${escHtml(t.icon||'')}" maxlength="4"
+            style="width:44px;background:var(--surface3);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:3px 5px;font-size:14px;text-align:center;"
+            data-field="icon" data-idx="${i}">
+        </td>
+        <td style="padding:4px 6px;">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <div style="width:14px;height:14px;border-radius:3px;background:${escHtml(t.color||'#888')};flex-shrink:0;"></div>
+            <input type="text" value="${escHtml(t.color||'')}" maxlength="9"
+              style="width:80px;background:var(--surface3);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:3px 5px;font-size:12px;font-family:monospace;"
+              data-field="color" data-idx="${i}">
+          </div>
+        </td>
+        <td style="padding:4px 6px;">
+          <input type="text" value="${escHtml(t.label||'')}"
+            style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:3px 5px;font-size:12px;"
+            data-field="label" data-idx="${i}">
+        </td>
+        <td style="padding:4px 6px;">
+          <input type="text" value="${escHtml(t.prefix||'')}"
+            style="width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:3px 5px;font-size:12px;"
+            data-field="prefix" data-idx="${i}">
+        </td>
+        <td style="padding:4px 2px;text-align:right;">
+          <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px;color:var(--danger);" data-del="${i}">✕</button>
+        </td>`;
+      // Events
+      tr.querySelectorAll('input[data-field]').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const idx = +inp.dataset.idx;
+          const field = inp.dataset.field;
+          _effectsData.types[idx][field] = inp.value;
+          if (field === 'color') {
+            const swatch = tr.querySelector('div[style*="border-radius:3px"]');
+            if (swatch) swatch.style.background = inp.value;
+          }
+          _markEffectsDirty();
+        });
+      });
+      tr.querySelector('[data-del]').addEventListener('click', () => {
+        _effectsData.types.splice(i, 1);
+        _markEffectsDirty();
+        renderEffectTypes();
+      });
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    listEl.appendChild(tbl);
+  }
+
+  // ── Templates ──
+  const tplEl = document.getElementById('effects-template-list');
+  tplEl.innerHTML = '';
+  _effectsData.templates.forEach((tpl, ti) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:6px;margin-bottom:4px;';
+    row.innerHTML = `
+      <input type="text" value="${escHtml(tpl.label)}" placeholder="Label template"
+        style="flex:1;background:var(--surface3);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:4px 8px;font-size:12px;">
+      <span style="font-size:11px;color:var(--muted);">${tpl.effects.length} effet(s)</span>
+      <button class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px;color:var(--danger);" data-del-tpl="${ti}">✕</button>`;
+    row.querySelector('input').addEventListener('input', e => {
+      _effectsData.templates[ti].label = e.target.value;
+      _markEffectsDirty();
+    });
+    row.querySelector('[data-del-tpl]').addEventListener('click', () => {
+      _effectsData.templates.splice(ti, 1);
+      _markEffectsDirty();
+      renderEffectTypes();
+    });
+    tplEl.appendChild(row);
+  });
+}
+
+window.addEffectType = function addEffectType() {
+  const id     = document.getElementById('new-effect-id').value.trim();
+  const icon   = document.getElementById('new-effect-icon').value.trim();
+  const color  = document.getElementById('new-effect-color').value.trim();
+  const label  = document.getElementById('new-effect-label').value.trim();
+  const prefix = document.getElementById('new-effect-prefix').value.trim();
+  if (!id) { toast('ID obligatoire', 'warning'); return; }
+  if (_effectsData.types.some(t => t.id === id)) { toast('ID déjà existant', 'warning'); return; }
+  _effectsData.types.push({ id, icon, color, label, prefix });
+  _markEffectsDirty();
+  document.getElementById('new-effect-id').value = '';
+  document.getElementById('new-effect-icon').value = '';
+  document.getElementById('new-effect-color').value = '';
+  document.getElementById('new-effect-label').value = '';
+  document.getElementById('new-effect-prefix').value = '';
+  renderEffectTypes();
+};
+
+window.addEffectTemplate = function addEffectTemplate() {
+  _effectsData.templates.push({ label: 'Nouveau template', effects: [] });
+  _markEffectsDirty();
+  renderEffectTypes();
+  switchEffectsTab('templates');
 };
 
