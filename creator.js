@@ -2065,6 +2065,85 @@ function appendHiddenItemsToIndex(hiddenItems) {
 }
 window._vcl_appendHiddenItemsToIndex = appendHiddenItemsToIndex;
 
+async function appendPendingToIndices() {
+  const getDocs = window._vcl_getDocs;
+  const col     = window._vcl_collection;
+  const query   = window._vcl_query;
+  const where   = window._vcl_where;
+  const db      = window._vcl_db;
+  if (!getDocs || !col || !query || !where || !db) return;
+
+  const canViewSensible = !!window._vcl_can_view_sensible;
+  let pendingDocs;
+  try {
+    const snap = await getDocs(query(col(db, 'submissions'), where('status', '==', 'pending')));
+    pendingDocs = snap.docs.map(d => d.data());
+  } catch { return; }
+
+  const byType = { item: [], mob: [], pnj: [], region: [], quest: [] };
+  for (const sub of pendingDocs) {
+    if (!sub.data?.id) continue;
+    if (sub.data.sensible && !canViewSensible) continue;
+    if (byType[sub.type]) byType[sub.type].push(sub);
+  }
+
+  // Items → allItemsIndex
+  if (byType.item.length) {
+    ensureAllItemsIndex();
+    const rl = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
+    const existing = new Set(allItemsIndex.map(i => String(i.id)));
+    for (const sub of byType.item) {
+      const it = sub.data;
+      const id = String(it.id);
+      if (existing.has(id)) continue;
+      allItemsIndex.push({
+        id: it.id,
+        name: it.name || it.id,
+        subtitle: ['⏳', it.sensible ? '🔒' : null, rl[it.rarity] || it.rarity, it.category].filter(Boolean).join(' · '),
+        search: ('⏳ ' + (it.name || '') + ' ' + id + ' ' + (it.category || '')).toLowerCase(),
+        _pending: true, _raw: it
+      });
+      existing.add(id);
+    }
+    if (!loadDrop && typeof initLoadSearch === 'function') initLoadSearch();
+    if (pnjCrafts?.length && document.getElementById('pnj-crafts-list')) renderPnjCrafts?.();
+    if (pnjSells?.length  && document.getElementById('pnj-sells-list'))  renderPnjSells?.();
+  }
+
+  // Mobs → allMobsIndex
+  if (byType.mob.length) {
+    ensureAllMobsIndex();
+    const existing = new Set(allMobsIndex.map(m => String(m.id)));
+    for (const sub of byType.mob) {
+      const m = sub.data;
+      const id = String(m.id);
+      if (existing.has(id)) continue;
+      allMobsIndex.push({
+        id: m.id,
+        name: m.name || m.id,
+        subtitle: ['⏳', m.type || '', m.palier ? 'P'+m.palier : ''].filter(Boolean).join(' · '),
+        search: ('⏳ ' + (m.name || '') + ' ' + id).toLowerCase(),
+        _pending: true, _raw: m
+      });
+      existing.add(id);
+    }
+  }
+
+  // PNJ / région / quête → stockés pour les drop builders
+  window._pendingSubs = byType;
+
+  if (byType.pnj.length || byType.region.length) {
+    _pnjDropBuilt = false;
+    _regDropBuilt = false;
+    _buildLoadDrops();
+  }
+  if (byType.quest.length) {
+    _questDropBuilt = false;
+    _buildQuestLoadDrop();
+  }
+}
+window._vcl_appendPendingToIndices = appendPendingToIndices;
+
 function ensureAllMobsIndex() {
   if (allMobsIndex.length || typeof MOBS === 'undefined') return;
   allMobsIndex = MOBS.map(m => {
@@ -2136,6 +2215,14 @@ async function _buildLoadDrops() {
             _raw: p
           };
         });
+        for (const sub of (window._pendingSubs?.pnj || [])) {
+          const p = sub.data, pId = p.id || p._id || '';
+          if (!pId || idx.some(i => i.id === pId)) continue;
+          idx.push({ id: pId, name: p.name || p.nom || pId,
+            subtitle: ['⏳', p.palier ? 'P'+p.palier : '', pId].filter(Boolean).join(' · '),
+            search: ('⏳ ' + (p.name || p.nom || '') + ' ' + pId).toLowerCase(),
+            _pending: true, _raw: p });
+        }
         pnjWrap.innerHTML = '';
         const drop = makeSearchDrop(idx, 'Rechercher un PNJ à éditer…', id => {
           if (!id) return;
@@ -2160,6 +2247,14 @@ async function _buildLoadDrops() {
         search: ((r.name || '') + ' ' + (r.id || r._id || '')).toLowerCase(),
         _raw: r
       }));
+      for (const sub of (window._pendingSubs?.region || [])) {
+        const r = sub.data, rId = r.id || r._id || '';
+        if (!rId || idx.some(i => i.id === rId)) continue;
+        idx.push({ id: rId, name: r.name || rId,
+          subtitle: ['⏳', r.palier ? 'P'+r.palier : ''].filter(Boolean).join(' · '),
+          search: ('⏳ ' + (r.name || '') + ' ' + rId).toLowerCase(),
+          _pending: true, _raw: r });
+      }
       regWrap.innerHTML = '';
       const drop = makeSearchDrop(idx, 'Rechercher une région à éditer…', id => {
         if (!id) return;
@@ -2233,8 +2328,8 @@ async function _buildQuestLoadDrop() {
   const buildFromData = (quests) => {
     const idx = quests.map(q => ({
       id: q.id || q._id, name: q.titre || q.name || q.id || q._id,
-      subtitle: [q.type ? { main:'Principale',sec:'Secondaire',ter:'Tertiaire' }[q.type]||q.type : '', q.palier ? 'P'+q.palier : ''].filter(Boolean).join(' · '),
-      search: ((q.titre||q.name||'') + ' ' + (q.id||q._id||'')).toLowerCase(),
+      subtitle: [q._pending ? '⏳' : null, q.type ? { main:'Principale',sec:'Secondaire',ter:'Tertiaire' }[q.type]||q.type : '', q.palier ? 'P'+q.palier : ''].filter(Boolean).join(' · '),
+      search: (q._pending ? '⏳ ' : '') + ((q.titre||q.name||'') + ' ' + (q.id||q._id||'')).toLowerCase(),
       _raw: q
     }));
     questWrap.innerHTML = '';
@@ -2248,8 +2343,10 @@ async function _buildQuestLoadDrop() {
     _questDropBuilt = true;
   };
 
+  const pendingQ = (window._pendingSubs?.quest || []).map(s => ({ ...s.data, _pending: true }));
+
   if (typeof QUETES_DATA !== 'undefined' && QUETES_DATA.length) {
-    buildFromData(QUETES_DATA);
+    buildFromData([...QUETES_DATA, ...pendingQ]);
     return;
   }
 
@@ -2263,7 +2360,7 @@ async function _buildQuestLoadDrop() {
   }
   try {
     const snap = await get(col(db, 'quetes'));
-    buildFromData(snap.docs.map(d => ({ _id: d.id, ...d.data() })));
+    buildFromData([...snap.docs.map(d => ({ _id: d.id, ...d.data() })), ...pendingQ]);
   } catch(e) {
     questWrap.innerHTML = `<div style="font-size:11px;color:var(--danger);padding:4px 0;">⛔ ${e.message}</div>`;
   }
@@ -2432,6 +2529,10 @@ function loadItem(item) {
       if (row) row.querySelector('input[type=number]').value = qty || 1;
       const name = itemIndex.find(it => it.id === id)?.name || id;
       entry.drop?.setValue(id, name);
+    }
+    if (item.craft_cd) {
+      const cdEl = document.getElementById('f-craft-cd');
+      if (cdEl) cdEl.value = item.craft_cd;
     }
   }
 
@@ -2933,36 +3034,49 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
       : items.filter(it => it.sensible ? it.search.includes(q) : fuzzyMatch(q, it.search)).slice(0, 40);
     list.innerHTML = '';
     focusedIdx = -1;
-    if (q.length >= 1 && !results.length) {
+    if (q.length >= 1) {
+      if (results.length) {
+        results.forEach(it => {
+          const di = document.createElement('div');
+          di.className = 'drop-item';
+          di.innerHTML = `<span class="drop-item-name">${escHtml(it.name)}</span><span class="drop-item-id">${escHtml(it.subtitle || it.id)}</span>`;
+          di.addEventListener('mousedown', ev => { ev.preventDefault(); pick(it); });
+          list.appendChild(di);
+        });
+      } else if (!allowCreate) {
+        list.innerHTML = '<div class="drop-empty">Aucun résultat.</div>';
+      }
       if (allowCreate) {
-        const suggestedId = nameToId(inp.value);
+        const baseId = nameToId(inp.value);
+        const existingIds = new Set(items.map(it => it.id));
+        let finalId = baseId;
+        if (existingIds.has(finalId)) {
+          let suffix = 1;
+          while (existingIds.has(`${baseId}_${suffix}`)) suffix++;
+          finalId = `${baseId}_${suffix}`;
+        }
+        if (results.length) {
+          const sep = document.createElement('div');
+          sep.style.cssText = 'height:1px;background:rgba(255,255,255,.1);margin:3px 0;pointer-events:none;';
+          list.appendChild(sep);
+        }
         const di = document.createElement('div');
         di.className = 'drop-item';
         di.style.cssText = 'border-left:3px solid #d7af5f;';
-        di.innerHTML = `<span class="drop-item-name" style="color:#d7af5f;">➕ Créer « ${escHtml(inp.value)} »</span><span class="drop-item-id" style="color:#d7af5f;">→ ${escHtml(suggestedId)} · orphelin</span>`;
+        di.innerHTML = `<span class="drop-item-name" style="color:#d7af5f;">➕ Créer « ${escHtml(inp.value)} »</span><span class="drop-item-id" style="color:#d7af5f;">→ ${escHtml(finalId)} · orphelin</span>`;
         di.addEventListener('mousedown', ev => {
           ev.preventDefault();
           const originalName = inp.value;
-          if (createEntityType !== 'item') addPendingOrphan(suggestedId, originalName, createEntityType);
-          selectedId = suggestedId;
+          if (createEntityType !== 'item') addPendingOrphan(finalId, originalName, createEntityType);
+          selectedId = finalId;
           inp.value = originalName;
           inp.classList.remove('selected-item');
           inp.classList.add('orphan-item');
           list.classList.remove('open');
-          onSelect(suggestedId, originalName);
+          onSelect(finalId, originalName);
         });
         list.appendChild(di);
-      } else {
-        list.innerHTML = '<div class="drop-empty">Aucun résultat.</div>';
       }
-    } else {
-      results.forEach(it => {
-        const di = document.createElement('div');
-        di.className = 'drop-item';
-        di.innerHTML = `<span class="drop-item-name">${escHtml(it.name)}</span><span class="drop-item-id">${escHtml(it.subtitle || it.id)}</span>`;
-        di.addEventListener('mousedown', ev => { ev.preventDefault(); pick(it); });
-        list.appendChild(di);
-      });
     }
     const willOpen = q.length >= 1;
     if (willOpen) positionDrop(list, wrap);
@@ -4156,6 +4270,8 @@ function buildObj() {
   if (tagsArr.length)        obj.tags     = tagsArr;
   if (obtain)                obj.obtain   = obtain;
   if (craft.length)          obj.craft    = craft;
+  const craft_cd = document.getElementById('f-craft-cd')?.value.trim();
+  if (craft.length && craft_cd) obj.craft_cd = craft_cd;
   return obj;
 }
 
@@ -4212,6 +4328,9 @@ function validateForm() {
   if (isEquip && !cat)    warnings.push({ field:'f-cat',    msg:'Slot (cat) non sélectionné' });
   if (!palier)            errors.push ({ field:'f-palier', msg:'Palier obligatoire' });
   if (isEquip && !lvl)    warnings.push({ field:'f-lvl',    msg:'Niveau requis non renseigné' });
+  const craftCount = getCraft().length;
+  const craftCd    = document.getElementById('f-craft-cd')?.value.trim();
+  if (craftCount > 0 && !craftCd) errors.push({ field:'f-craft-cd', msg:'CD de craft obligatoire (ex: 24h, aucun)' });
 
   return { errors, warnings };
 }
@@ -4529,6 +4648,8 @@ function update() {
   const craftSec   = document.getElementById('craft-section');
   if (craftBadge) { craftBadge.textContent = craftCount + (craftCount === 1 ? ' ingrédient' : ' ingrédients'); craftBadge.style.display = craftCount ? '' : 'none'; }
   if (craftSec)   craftSec.classList.toggle('has-items', craftCount > 0);
+  const craftCdRow = document.getElementById('craft-cd-row');
+  if (craftCdRow) craftCdRow.style.display = craftCount > 0 ? '' : 'none';
   const statCount  = document.querySelectorAll('.stat-row.has-val').length;
   const statsBadge = document.getElementById('stats-badge');
   const statsSec   = document.getElementById('stats-section');
@@ -5062,21 +5183,60 @@ async function submitToFirestore() {
     return;
   }
 
-  const docRef = await addDoc(col(db, 'submissions'), {
-    type,
-    status:            'pending',
-    data:              clean,
-    submittedBy:       user ? user.uid : null,
-    submitterName:     getAuthor() || (user ? user.displayName || user.email : null) || null,
-    submittedAt:       serverTimestamp(),
-    reviewedBy:        null,
-    reviewedAt:        null,
-    comment:           '',
-    isModification,
-    submitter_comment: submitterComment,
-    ...(screenshots.length ? { screenshots } : {}),
-    ...(_chasseOrigin ? { fromTableauDeChasse: true } : {}),
-  });
+  // Chercher une soumission pending existante avec le même type+id → la remplacer
+  const getDocs2  = window._vcl_getDocs;
+  const setDocFn  = window._vcl_setDoc;
+  const docFn     = window._vcl_doc;
+  const queryFn   = window._vcl_query;
+  const whereFn   = window._vcl_where;
+  let replaced = false;
+  if (getDocs2 && queryFn && whereFn && setDocFn && docFn && data.id) {
+    try {
+      const pendingSnap = await getDocs2(queryFn(col(db, 'submissions'), whereFn('status', '==', 'pending')));
+      const existingDoc = pendingSnap.docs.find(d => {
+        const s = d.data();
+        return s.type === type && s.data?.id === data.id;
+      });
+      if (existingDoc) {
+        await setDocFn(docFn(db, 'submissions', existingDoc.id), {
+          type,
+          status:            'pending',
+          data:              clean,
+          submittedBy:       user ? user.uid : null,
+          submitterName:     getAuthor() || (user ? user.displayName || user.email : null) || null,
+          submittedAt:       existingDoc.data().submittedAt,
+          updatedAt:         serverTimestamp(),
+          reviewedBy:        null,
+          reviewedAt:        null,
+          comment:           '',
+          isModification,
+          submitter_comment: submitterComment,
+          ...(screenshots.length ? { screenshots } : {}),
+          ...(_chasseOrigin ? { fromTableauDeChasse: true } : {}),
+        });
+        replaced = true;
+      }
+    } catch(e) {
+      console.warn('[submitToFirestore] replace pending:', e);
+    }
+  }
+  if (!replaced) {
+    await addDoc(col(db, 'submissions'), {
+      type,
+      status:            'pending',
+      data:              clean,
+      submittedBy:       user ? user.uid : null,
+      submitterName:     getAuthor() || (user ? user.displayName || user.email : null) || null,
+      submittedAt:       serverTimestamp(),
+      reviewedBy:        null,
+      reviewedAt:        null,
+      comment:           '',
+      isModification,
+      submitter_comment: submitterComment,
+      ...(screenshots.length ? { screenshots } : {}),
+      ...(_chasseOrigin ? { fromTableauDeChasse: true } : {}),
+    });
+  }
   _chasseOrigin = null;
   _renderChassePanel();
   _applyChasseHighlights();
@@ -5115,7 +5275,7 @@ async function submitToFirestore() {
   update();
 
   const m = document.getElementById('copy-msg');
-  m.textContent = '✓ Soumis ! En attente de validation.';
+  m.textContent = replaced ? '✓ Soumission mise à jour !' : '✓ Soumis ! En attente de validation.';
   m.classList.add('show');
   setTimeout(() => { m.classList.remove('show'); m.textContent = '✓ Copié !'; }, 3500);
 
@@ -7050,6 +7210,7 @@ window._pageInit = function() {
   _buildLoadDrops();
   initObtainData();  // recharge la liste de mobs pour le loot picker
   buildOrphanSection();
+  appendPendingToIndices().catch(e => console.warn('[pending]', e));
 };
 
 // ── Autocomplete off (sauf champs auth) ────────────────

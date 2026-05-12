@@ -64,6 +64,7 @@ const TYPE_LABELS = {
   marchand_outils:     'Marchand d\'Outils',
   marchand_access:     'Marchand d\'Accessoires',
   marchand_occulte:    'Marchand Occulte',
+  passage:             'Passage',
   autre:               'Autre',
 };
 
@@ -92,6 +93,7 @@ const _map_EMOJI = {
   marchand_outils:     '🔧',
   marchand_access:     '💍',
   marchand_occulte:    '🩸',
+  passage:             '🚪',
   autre:               '🦠',
 };
 
@@ -124,6 +126,7 @@ const DEFAULT_PIN_COLORS = {
   marchand_access:     '#4a1e4a',
   marchand_occulte:    '#1a1a2e',
   autre:               '#2a4a2a',
+  passage:             '#1a3a5c',
 };
 
 function getPinColor(type) {
@@ -184,6 +187,10 @@ for (const ct of (window._map_custom_type_labels ? Object.keys(window._map_custo
 
 function setUndergroundGlow(active) {
   document.getElementById('map-svg')?.classList.toggle('underground-active', active);
+}
+
+function setDungeonGlow(active) {
+  document.getElementById('map-svg')?.classList.toggle('dungeon-active', active);
 }
 
 /* ══════════════════════════════════
@@ -443,7 +450,7 @@ function buildDynamicMarkers() {
     if (mm.gx == null || mm.gy == null || !mm.floor) continue;
     const f = +mm.floor;
     if (!byFloor[f]) byFloor[f] = [];
-    byFloor[f].push({
+    const entry = {
       id:    mm._id || mm.id || `custom_${f}_${mm.name}`,
       type:  mmType,
       layer: mm.is_underground ? 'underground' : 'surface',
@@ -453,7 +460,9 @@ function buildDynamicMarkers() {
       desc:  mm.desc || '',
       emoji: mm.emoji || undefined,
       link:  mm.link || undefined,
-    });
+    };
+    if (mmType === 'passage' && mm.links?.length) entry.links = mm.links;
+    byFloor[f].push(entry);
   }
 
   window._mapMarkers = byFloor;
@@ -517,20 +526,7 @@ function ensureDungeonOverlay() {
 }
 
 function updateDungeonOverlay() {
-  const ov = ensureDungeonOverlay();
-  if (currentLayer === 'underground' && floorHasDungeon(currentFloor) && isDungeonFilterActive()) {
-    const src = `../img/maps/floor-${currentFloor}_dungeon.png`;
-    if (ov.getAttribute('src') !== src) {
-      ov.style.opacity = '0';
-      ov.src = src;
-      ov.onload  = () => { ov.style.opacity = '1'; };
-      ov.onerror = () => { ov.style.opacity = '0'; };
-    } else {
-      ov.style.opacity = '1';
-    }
-  } else {
-    ov.style.opacity = '0';
-  }
+  ensureDungeonOverlay().style.opacity = '0';
 }
 
 function updateGhostOverlay() {
@@ -569,6 +565,7 @@ function buildLayerSwitcher() {
   const tabs = [
     { layer: 'surface',     label: 'Surface',  icon: '⛰️' },
     { layer: 'underground', label: 'Sous-sol', icon: '🕳️' },
+    { layer: 'donjon',      label: 'Donjon',   icon: '🏰' },
   ];
   tabs.forEach(({ layer, label, icon }, i) => {
     const btn = document.createElement('button');
@@ -608,11 +605,15 @@ function buildLayerSwitcher() {
 function updateLayerTabStyles(container) {
   container.querySelectorAll('button[data-layer]').forEach(btn => {
     const active = btn.dataset.layer === currentLayer;
+    const isDonjon = btn.dataset.layer === 'donjon';
+    const accentColor = isDonjon ? '#a855f7' : '#E0AC60';
     btn.style.background = active
-      ? 'linear-gradient(135deg, rgba(224,172,96,0.28) 0%, rgba(180,130,60,0.18) 100%)'
+      ? (isDonjon
+          ? 'linear-gradient(135deg, rgba(168,85,247,0.28) 0%, rgba(124,58,237,0.18) 100%)'
+          : 'linear-gradient(135deg, rgba(224,172,96,0.28) 0%, rgba(180,130,60,0.18) 100%)')
       : 'rgba(14,12,10,0.6)';
-    btn.style.color     = active ? '#E0AC60' : 'rgba(255,255,255,0.38)';
-    btn.style.boxShadow = active ? 'inset 0 -2px 0 #E0AC60' : 'none';
+    btn.style.color     = active ? accentColor : 'rgba(255,255,255,0.38)';
+    btn.style.boxShadow = active ? `inset 0 -2px 0 ${accentColor}` : 'none';
   });
 }
 
@@ -627,11 +628,15 @@ function updateLayerBtnVisibility() {
   const hasUnder = floorHasUnderground(currentFloor);
   container.style.display = hasUnder ? 'flex' : 'none';
   container.querySelector('button[data-layer="underground"]')?.style.setProperty('display', hasUnder ? '' : 'none');
-  if (!hasUnder && currentLayer === 'underground') {
+  if (!hasUnder && (currentLayer === 'underground' || currentLayer === 'donjon')) {
     currentLayer = 'surface';
+    setUndergroundGlow(false);
+    setDungeonGlow(false);
     updateLayerBtn();
     updateGhostOverlay();
   }
+  const showDonjon = floorHasDungeon(currentFloor) && (currentLayer === 'underground' || currentLayer === 'donjon');
+  container.querySelector('button[data-layer="donjon"]')?.style.setProperty('display', showDonjon ? '' : 'none');
   updateDungeonOverlay();
 }
 
@@ -645,6 +650,16 @@ function loadMapImage(n, layer) {
     mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
     mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
     ghost.src           = `../img/maps/floor-${n}.png`;
+    ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
+    ghost.style.zIndex  = '0';
+    ghost.style.opacity = '0.10';
+  } else if (layer === 'donjon') {
+    mapImg.style.opacity = '0';
+    mapImg.style.zIndex  = '1';
+    mapImg.src = `../img/maps/floor-${n}_donjon.png`;
+    mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
+    mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
+    ghost.src           = `../img/maps/floor-${n}_underground.png`;
     ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
     ghost.style.zIndex  = '0';
     ghost.style.opacity = '0.10';
@@ -662,7 +677,9 @@ function goToLayer(layer) {
   if (layer === currentLayer) return;
   currentLayer = layer;
   setUndergroundGlow(currentLayer === 'underground');
+  setDungeonGlow(currentLayer === 'donjon');
   updateLayerBtn();
+  updateLayerBtnVisibility();
   loadMapImage(currentFloor, currentLayer);
   updateDungeonOverlay();
   history.replaceState({ floor: currentFloor, layer: currentLayer }, '', `#floor-${currentFloor}-${currentLayer}`);
@@ -675,7 +692,7 @@ function goToLayer(layer) {
 ══════════════════════════════════ */
 function parseHash(hash) {
   const raw = hash || window.location.hash;
-  const m = raw.match(/#floor-(\d+)(?:-(surface|underground))?/);
+  const m = raw.match(/#floor-(\d+)(?:-(surface|underground|donjon))?/);
   return {
     floor: m ? parseInt(m[1]) : 1,
     layer: (m && m[2]) ? m[2] : 'surface',
@@ -854,6 +871,174 @@ function getQuestOrder(name) {
 
 function showQuestChain(hoveredMarker) {
   // Chaîne visuelle désactivée
+}
+
+/* ══════════════════════════════════
+   PASSAGES — liens visuels animés
+══════════════════════════════════ */
+function renderPassageLinks(markers, filterState) {
+  const svg = getQuestChainSvg();
+  svg.innerHTML = '';
+  document.querySelectorAll('.passage-overlay-pin').forEach(el => el.remove());
+
+  if (!document.getElementById('passage-link-style')) {
+    const style = document.createElement('style');
+    style.id = 'passage-link-style';
+    style.textContent = `
+      @keyframes passage-dash { to { stroke-dashoffset: -20; } }
+      .passage-link { animation: passage-dash 1.2s linear infinite; }
+      .passage-overlay-pin {
+        position: absolute; transform: translate(-50%,-100%);
+        pointer-events: none; z-index: 20;
+      }
+      .passage-overlay-icon {
+        width: 28px; height: 28px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 15px; background: #1a3a5c;
+        box-shadow: 0 0 10px #60b8ff, 0 2px 10px rgba(0,0,0,.6);
+        border: 2px solid #a8d8ff;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const filterOn = filterState['passage'] === true;
+
+  // Index tous les markers de tous les paliers pour retrouver les destinations
+  const allFloorMarkers = Object.values(window._mapMarkers || {}).flat();
+  const globalById = new Map();
+  for (const m of allFloorMarkers) globalById.set(m.id, m);
+  for (const m of markers) if (!globalById.has(m.id)) globalById.set(m.id, m);
+
+  const passageMarkers = markers.filter(m => m.type === 'passage' && m.links?.length);
+  if (!passageMarkers.length) return;
+
+  // Index inverse : targetId → liste de passageIds
+  const targetToPassages = new Map();
+  for (const p of passageMarkers) {
+    for (const tid of (p.links || [])) {
+      if (!targetToPassages.has(tid)) targetToPassages.set(tid, []);
+      targetToPassages.get(tid).push(p.id);
+    }
+  }
+
+  // Groupes SVG + overlay pins par passage
+  // passageId → { g (SVG group), overlayEls (destins autres paliers + passage pin si filtre off) }
+  const passageGroups = new Map();
+
+  for (const passage of passageMarkers) {
+    const ps = gameToScreen(passage.gx, passage.gy);
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.id = `passage-g-${passage.id}`;
+    g.style.visibility = filterOn ? 'visible' : 'hidden';
+    const overlayEls = [];
+
+    // Si le filtre est désactivé, le pin passage n'est pas dans le DOM —
+    // on crée un overlay qu'on affiche au survol d'un pin lié
+    if (!filterOn) {
+      const passageEmoji = getPinEmoji(passage);
+      const passagePin = document.createElement('div');
+      passagePin.className = 'passage-overlay-pin';
+      passagePin.style.left = ps.x + 'px';
+      passagePin.style.top  = ps.y + 'px';
+      passagePin.style.display = 'none';
+      passagePin.innerHTML = `<div class="passage-overlay-icon" title="${passage.name || ''}">${passageEmoji}</div>`;
+      markersLayer.parentElement.appendChild(passagePin);
+      overlayEls.push(passagePin);
+    }
+
+    for (const targetId of (passage.links || [])) {
+      const target = globalById.get(targetId);
+      if (!target) continue;
+
+      const ts = gameToScreen(target.gx, target.gy);
+      const dx = ts.x - ps.x, dy = ts.y - ps.y;
+      if (Math.sqrt(dx*dx + dy*dy) < 2) continue;
+
+      // Glow
+      const glow = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      glow.setAttribute('x1', ps.x); glow.setAttribute('y1', ps.y);
+      glow.setAttribute('x2', ts.x); glow.setAttribute('y2', ts.y);
+      glow.setAttribute('stroke', '#60b8ff');
+      glow.setAttribute('stroke-width', '6');
+      glow.setAttribute('stroke-opacity', '0.2');
+      glow.setAttribute('stroke-linecap', 'round');
+      g.appendChild(glow);
+
+      // Ligne animée
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', ps.x); line.setAttribute('y1', ps.y);
+      line.setAttribute('x2', ts.x); line.setAttribute('y2', ts.y);
+      line.setAttribute('stroke', '#a8d8ff');
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('stroke-opacity', '0.8');
+      line.setAttribute('stroke-linecap', 'round');
+      line.setAttribute('stroke-dasharray', '6 4');
+      line.setAttribute('class', 'passage-link');
+      g.appendChild(line);
+
+      // Emoji milieu
+      const mid = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      mid.setAttribute('x', (ps.x + ts.x) / 2);
+      mid.setAttribute('y', (ps.y + ts.y) / 2 - 4);
+      mid.setAttribute('text-anchor', 'middle');
+      mid.setAttribute('font-size', '14');
+      mid.setAttribute('filter', 'drop-shadow(0 0 3px #60b8ff)');
+      mid.textContent = '🚪';
+      g.appendChild(mid);
+
+      // Overlay destination si pin absent du palier actuel
+      const onCurrentFloor = markers.some(m => m.id === targetId);
+      if (!onCurrentFloor) {
+        const emoji = getPinEmoji(target);
+        const pin = document.createElement('div');
+        pin.className = 'passage-overlay-pin';
+        pin.style.left = ts.x + 'px';
+        pin.style.top  = ts.y + 'px';
+        pin.style.display = filterOn ? '' : 'none';
+        pin.innerHTML = `<div class="passage-overlay-icon" title="${target.name || targetId}">${emoji}</div>`;
+        markersLayer.parentElement.appendChild(pin);
+        overlayEls.push(pin);
+      }
+    }
+
+    svg.appendChild(g);
+    passageGroups.set(passage.id, { g, overlayEls });
+  }
+
+  // Helpers show/hide
+  function showPassage(id) {
+    const pg = passageGroups.get(id);
+    if (!pg) return;
+    pg.g.style.visibility = 'visible';
+    pg.overlayEls.forEach(el => el.style.display = '');
+  }
+  function hidePassage(id) {
+    if (filterOn) return;
+    const pg = passageGroups.get(id);
+    if (!pg) return;
+    pg.g.style.visibility = 'hidden';
+    pg.overlayEls.forEach(el => el.style.display = 'none');
+  }
+
+  // Hover sur les pins passage (filtre activé → pins dans le DOM)
+  if (filterOn) {
+    for (const passage of passageMarkers) {
+      const el = markersLayer.querySelector(`.marker[data-id="${passage.id}"]`);
+      if (!el) continue;
+      el.addEventListener('mouseenter', () => showPassage(passage.id));
+      el.addEventListener('mouseleave', () => hidePassage(passage.id));
+    }
+  }
+
+  // Hover sur les pins destination → affiche le passage lié
+  markersLayer.querySelectorAll('.marker').forEach(el => {
+    const tid = el.dataset.id;
+    const linked = targetToPassages.get(tid);
+    if (!linked) return;
+    el.addEventListener('mouseenter', () => linked.forEach(showPassage));
+    el.addEventListener('mouseleave', () => linked.forEach(hidePassage));
+  });
 }
 
 /* ══════════════════════════════════
@@ -1243,6 +1428,7 @@ function renderMarkers() {
   }
   renderGhostPin();
   renderCustomPins();
+  renderPassageLinks(markers, filterState);
 }
 
 function renderSingleMarker(m) {
