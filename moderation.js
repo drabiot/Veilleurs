@@ -12,7 +12,7 @@ import { modal }  from './components/modal.js';
 import { store }  from './store.js';
 
 // Helpers partagés — utils.js est chargé en classic script avant ce module
-const { normalize } = window.VCL;
+const { normalize, fuzzyMatch } = window.VCL;
 
 // Chargement du secret worker depuis Firestore (jamais exposé dans le code)
 let _cachedWorkerSecret = null;
@@ -2721,11 +2721,25 @@ async function loadDeadLinks() {
 
     const EXCLUDED_IDS = new Set(['cols']);
 
+    const itemNameMap = new Map();
+    for (const i of [...items, ...hiddenItems]) {
+      if (i.id && i.name) itemNameMap.set(i.id, i.name);
+    }
+
     // Pool d'entités par type cible pour la recherche de correction
     const ENTITY_POOL = {
       item:      [...items, ...hiddenItems].filter(i => i.id).map(i => ({ id: i.id, name: i.name || i.id })),
       mob:       mobs.map(m => ({ id: m.id, name: m.name || m.id })),
-      pnj:       pnjs.map(p => ({ id: p.id, name: p.nom || p.name || p.id })),
+      pnj:       pnjs.map(p => {
+        const name = p.nom || p.name || p.id;
+        const craftIds = p.crafts?.length
+          ? p.crafts.map(c => c.resultId).filter(Boolean)
+          : (Array.isArray(p.craft) ? p.craft
+              : p.craft && typeof p.craft === 'object' ? Object.values(p.craft) : [])
+            .map(c => c.id).filter(Boolean);
+        const craftNames = craftIds.map(id => itemNameMap.get(id) || '').filter(Boolean).join(' ');
+        return { id: p.id, name, search: normalize(name + ' ' + craftNames) };
+      }),
       'quête':   quetes.map(q => ({ id: q.id, name: q.titre || q.name || q.id })),
       panoplie:  panoplies.map(p => ({ id: p.id, name: p.label || p.id })),
     };
@@ -2917,7 +2931,7 @@ async function loadDeadLinks() {
       function renderDropdown(q) {
         const norm = normalize(q);
         const results = norm
-          ? pool.filter(e => normalize(e.name).includes(norm) || normalize(e.id).includes(norm))
+          ? pool.filter(e => normalize(e.search || e.name).includes(norm) || normalize(e.id).includes(norm))
           : pool.slice(0, 40);
         dropdown.innerHTML = '';
         if (!results.length) {
@@ -13827,7 +13841,6 @@ window.loadPassages = async function loadPassages() {
     });
     pnjSnap.docs.forEach(d => {
       const data = d.data();
-      if (!data.coords && data.gx == null) return;
       const floor = data.coords?.palier ?? data.palier ?? data.floor;
       _allMarkersForPg.push({ id: d.id, name: data.name || d.id, floor, type: data.role || 'pnj' });
     });
@@ -13940,15 +13953,23 @@ window.pgReset = function pgReset() {
   pgValidate();
 };
 
-window.pgSearchPins = function pgSearchPins(val) {
+window.pgSearchPins = async function pgSearchPins(val) {
   const res = document.getElementById('pg-link-results');
   if (!res) return;
-  const q = val.trim().toLowerCase();
+  const q = val.trim();
   if (!q) { res.style.display = 'none'; return; }
+
+  if (!_allMarkersForPg.length) {
+    res.innerHTML = '<div style="padding:8px 10px;font-size:12px;color:var(--muted);">⏳ Chargement…</div>';
+    res.style.display = '';
+    await loadPassages();
+    if (document.getElementById('pg-link-input')?.value !== val) return;
+  }
+  const nq = normalize(q);
 
   const matches = _allMarkersForPg
     .filter(m => !_pgLinks.find(l => l.id === m.id))
-    .filter(m => (m.name || m.id).toLowerCase().includes(q))
+    .filter(m => fuzzyMatch(nq, normalize(m.name || m.id)))
     .slice(0, 12);
 
   if (!matches.length) { res.style.display = 'none'; return; }
