@@ -1,158 +1,158 @@
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
 
-    function isAuth() {
-      return request.auth != null;
+      function isAuth() {
+        return request.auth != null;
+      }
+
+      function userRole() {
+        return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+          : 'visiteur';
+      }
+
+      // Rôles personnalisés inclus automatiquement selon leur tier de base
+      function isAdmin()   { return isAuth() && userRole() in ['admin']; }
+      function isContrib() { return isAuth() && userRole() in ['contributeur', 'admin', 'contributeur', 'compagnon_de_l_aube']; }
+      function isMembre()  { return isAuth() && userRole() in ['membre', 'contributeur', 'admin', 'membre', 'contributeur', 'compagnon_de_l_aube']; }
+
+      function creatorToolEnabled(toolType) {
+        return !exists(/databases/$(database)/documents/config/creator)
+          || get(/databases/$(database)/documents/config/creator).data.get('tools', {}).get(toolType, true) != false;
+      }
+
+      match /items/{id} {
+        allow read:  if true;
+        allow write: if isContrib();
+      }
+
+      match /items_hidden/{id} {
+        allow read:  if true;
+        allow write: if isContrib();
+      }
+
+      match /items_secret/{id} {
+        allow read:  if isContrib();
+        allow write: if isContrib();
+      }
+
+      match /mobs/{id} {
+        allow read:  if true;
+        allow write: if isContrib();
+      }
+
+      match /mobs_secret/{id} {
+        allow read:  if isContrib();
+        allow write: if isContrib();
+      }
+
+      match /personnages/{id} {
+        allow read:  if true;
+        allow write: if isContrib();
+      }
+
+      match /pnj_secret/{id} {
+        allow read:  if isContrib();
+        allow write: if isContrib();
+      }
+
+      match /regions/{id} {
+        allow read:  if true;
+        allow write: if isContrib();
+      }
+
+      match /quetes/{id} {
+        allow read:  if true;
+        allow write: if isContrib();
+      }
+
+      match /panoplies/{id} {
+        allow read:  if true;
+        allow write: if isAdmin();
+      }
+
+      match /users/{uid} {
+        allow get:    if isAuth() && (request.auth.uid == uid || isAdmin());
+        allow list:   if isAuth();
+        allow create: if isAuth()
+                      && request.auth.uid == uid
+                      && request.resource.data.role == 'membre'
+                      && request.resource.data.keys().hasOnly(['pseudo','role','email']);
+        allow update: if isAdmin()
+                      || (isAuth()
+                          && request.auth.uid == uid
+                          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pseudo','email'])
+                          && request.resource.data.pseudo is string);
+        allow delete: if isAdmin();
+      }
+
+      match /map_markers/{id} {
+        allow read:  if true;
+        allow write: if isContrib();
+      }
+
+      match /donjons/{id} {
+        allow read:  if true;
+        allow write: if isContrib();
+      }
+
+      match /zones/{id} {
+        allow read:  if true;
+        allow write: if isContrib();
+      }
+
+      match /config/{id} {
+        allow read:  if true;
+        allow write: if isAdmin();
+      }
+
+      match /config/pseudos {
+        allow read: if true;
+        allow create: if isAuth()
+                      && request.resource.data.keys().hasOnly([request.auth.uid]);
+        allow update: if isAuth()
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly([request.auth.uid]);
+        allow delete: if isAdmin();
+      }
+
+      match /trash/{id} {
+        allow read:   if isContrib();
+        allow create: if isContrib();
+        allow delete: if isContrib();
+      }
+
+      match /discord_posts/{id} {
+        allow read:  if isAdmin();
+        allow write: if isAdmin();
+      }
+
+      match /secrets/{id} {
+        allow read:  if isAdmin();
+        allow write: if isAdmin();
+      }
+
+      match /audit_log/{id} {
+        allow read:   if isAdmin();
+        allow create: if isContrib();
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
+
+      match /submissions/{id} {
+        allow create: if request.resource.data.submitterName is string
+                      && request.resource.data.submitterName.size() >= 2
+                      && request.resource.data.type in ['item','mob','pnj','region','quest','panoplie']
+                      && request.resource.data.status == 'pending'
+                      && (isAdmin() || creatorToolEnabled(request.resource.data.type));
+        allow read:   if isAdmin()
+                      || (isAuth() && resource.data.submittedBy == request.auth.uid)
+                      || (isContrib() && resource.data.status == 'pending');
+        allow update: if isAdmin()
+                      || (isContrib() && resource.data.status == 'pending' && request.resource.data.status == 'pending')
+                      || (isAuth() && resource.data.submittedBy == request.auth.uid && resource.data.status == 'pending' && request.resource.data.status == 'pending');
+        allow delete: if isAdmin();
+      }
+
     }
-
-    function userRole() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
-        : 'visiteur';
-    }
-
-    // Rôles personnalisés inclus automatiquement selon leur tier de base
-    function isAdmin()   { return isAuth() && userRole() in ['admin']; }
-    function isContrib() { return isAuth() && userRole() in ['contributeur', 'admin', 'contributeur', 'compagnon_de_l_aube']; }
-    function isMembre()  { return isAuth() && userRole() in ['membre', 'contributeur', 'admin', 'membre', 'contributeur', 'compagnon_de_l_aube']; }
-
-    function creatorToolEnabled(toolType) {
-      return !exists(/databases/$(database)/documents/config/creator)
-        || get(/databases/$(database)/documents/config/creator).data.get('tools', {}).get(toolType, true) != false;
-    }
-
-    match /items/{id} {
-      allow read:  if true;
-      allow write: if isContrib();
-    }
-
-    match /items_hidden/{id} {
-      allow read:  if true;
-      allow write: if isContrib();
-    }
-
-    match /items_secret/{id} {
-      allow read:  if isContrib();
-      allow write: if isContrib();
-    }
-
-    match /mobs/{id} {
-      allow read:  if true;
-      allow write: if isContrib();
-    }
-
-    match /mobs_secret/{id} {
-      allow read:  if isContrib();
-      allow write: if isContrib();
-    }
-
-    match /personnages/{id} {
-      allow read:  if true;
-      allow write: if isContrib();
-    }
-
-    match /pnj_secret/{id} {
-      allow read:  if isContrib();
-      allow write: if isContrib();
-    }
-
-    match /regions/{id} {
-      allow read:  if true;
-      allow write: if isContrib();
-    }
-
-    match /quetes/{id} {
-      allow read:  if true;
-      allow write: if isContrib();
-    }
-
-    match /panoplies/{id} {
-      allow read:  if true;
-      allow write: if isAdmin();
-    }
-
-    match /users/{uid} {
-      allow get:    if isAuth() && (request.auth.uid == uid || isAdmin());
-      allow list:   if isAuth();
-      allow create: if isAuth()
-                    && request.auth.uid == uid
-                    && request.resource.data.role == 'membre'
-                    && request.resource.data.keys().hasOnly(['pseudo','role','email']);
-      allow update: if isAdmin()
-                    || (isAuth()
-                        && request.auth.uid == uid
-                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pseudo','email'])
-                        && request.resource.data.pseudo is string);
-      allow delete: if isAdmin();
-    }
-
-    match /map_markers/{id} {
-      allow read:  if true;
-      allow write: if isContrib();
-    }
-
-    match /donjons/{id} {
-      allow read:  if true;
-      allow write: if isContrib();
-    }
-
-    match /zones/{id} {
-      allow read:  if true;
-      allow write: if isContrib();
-    }
-
-    match /config/{id} {
-      allow read:  if true;
-      allow write: if isAdmin();
-    }
-
-    match /config/pseudos {
-      allow read: if true;
-      allow create: if isAuth()
-                    && request.resource.data.keys().hasOnly([request.auth.uid]);
-      allow update: if isAuth()
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly([request.auth.uid]);
-      allow delete: if isAdmin();
-    }
-
-    match /trash/{id} {
-      allow read:   if isContrib();
-      allow create: if isContrib();
-      allow delete: if isContrib();
-    }
-
-    match /discord_posts/{id} {
-      allow read:  if isAdmin();
-      allow write: if isAdmin();
-    }
-
-    match /secrets/{id} {
-      allow read:  if isAdmin();
-      allow write: if isAdmin();
-    }
-
-    match /audit_log/{id} {
-      allow read:   if isAdmin();
-      allow create: if isContrib();
-      allow update: if false;
-      allow delete: if isAdmin();
-    }
-
-    match /submissions/{id} {
-      allow create: if request.resource.data.submitterName is string
-                    && request.resource.data.submitterName.size() >= 2
-                    && request.resource.data.type in ['item','mob','pnj','region','quest','panoplie']
-                    && request.resource.data.status == 'pending'
-                    && (isAdmin() || creatorToolEnabled(request.resource.data.type));
-      allow read:   if isAdmin()
-                    || (isAuth() && resource.data.submittedBy == request.auth.uid)
-                    || (isContrib() && resource.data.status == 'pending');
-      allow update: if isAdmin()
-                    || (isContrib() && resource.data.status == 'pending' && request.resource.data.status == 'pending')
-                    || (isAuth() && resource.data.submittedBy == request.auth.uid && resource.data.status == 'pending' && request.resource.data.status == 'pending');
-      allow delete: if isAdmin();
-    }
-
   }
-}

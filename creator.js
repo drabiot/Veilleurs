@@ -1266,6 +1266,8 @@ function initObtainData() {
     const _marchandTags = new Set(['marchand_equipement','marchand_consommable','marchand_outils','marchand_accessoires','marchand_itinerant','repreneur_butin','marchand_occulte']);
     const _existArtIds = new Set(allArtisans.map(a => a.id));
     const _existMchIds = new Set(allMarchands.map(m => m.id));
+    const _obtainItemMap = {};
+    if (typeof ITEMS !== 'undefined') ITEMS.forEach(it => { _obtainItemMap[it.id || it._id] = it.name || ''; });
     for (const p of _pnjsForObtain) {
       const tag  = p.tag  || '';
       const pId  = p.id   || p._id || '';
@@ -1275,12 +1277,16 @@ function initObtainData() {
       const pCoordStr = pCoords ? `${pCoords.x} ${pCoords.z}` : '';
       const subtitleParts = [p.palier ? 'P'+p.palier : '', p.region || '', p.instructions || ''].filter(Boolean);
       if (pCoords) subtitleParts.push(`📍 X${pCoords.x} Z${pCoords.z}`);
+      const _pCraftIds = p.crafts?.length
+        ? p.crafts.map(c => c.resultId).filter(Boolean)
+        : (Array.isArray(p.craft) ? p.craft : p.craft && typeof p.craft === 'object' ? Object.values(p.craft) : []).map(c => c.id).filter(Boolean);
+      const pCraftNames = _pCraftIds.map(id => _obtainItemMap[id] || id.replace(/_/g, ' ')).join(' ');
       const entry = {
         id: pId, name: pName, desc: p.region || '',
         subtitle: subtitleParts.join(' · '),
         coords: pCoords,
         palier: p.palier || null,
-        search: (pName + ' ' + pId + ' ' + (p.region || '') + ' ' + (p.instructions || '') + ' ' + pCoordStr).toLowerCase()
+        search: normalize(pName + ' ' + pId + ' ' + (p.region || '') + ' ' + (p.instructions || '') + ' ' + pCoordStr + ' ' + pCraftNames)
       };
       if (_artisanTags.has(tag) && !_existArtIds.has(pId)) {
         allArtisans.push(entry); _existArtIds.add(pId);
@@ -2201,17 +2207,26 @@ async function _buildLoadDrops() {
       initObtainData();      // rafraîchir allArtisans / allMarchands avec les PNJs Firestore
       // NPC: texte libre uniquement
       if (pnjs.length) {
+        const _pnjItemMap = {};
+        if (typeof ITEMS !== 'undefined') ITEMS.forEach(it => { _pnjItemMap[it.id || it._id] = it.name || ''; });
         const idx = pnjs.map(p => {
           const parts = [];
           const pId2 = p.id || p._id || '';
           if (p.palier) parts.push('P' + p.palier);
           if (pId2) parts.push(pId2);
           if (p.instructions) parts.push(p.instructions);
+          const _craftIds = p.crafts?.length
+            ? p.crafts.map(c => c.resultId).filter(Boolean)
+            : (Array.isArray(p.craft) ? p.craft : p.craft && typeof p.craft === 'object' ? Object.values(p.craft) : []).map(c => c.id).filter(Boolean);
+          const craftNames = _craftIds.map(id => _pnjItemMap[id] || id.replace(/_/g, ' ')).join(' ');
+          const coordStr = p.coords
+            ? `${Math.round(p.coords.x ?? 0)} ${Math.round(p.coords.z ?? 0)}`
+            : (p.gx != null ? `${Math.round(p.gx)} ${Math.round(p.gy ?? 0)}` : '');
           return {
             id:       pId2,
             name:     p.name || p.nom || pId2,
             subtitle: parts.join(' · '),
-            search:   ((p.name || p.nom || '') + ' ' + (p.region || '') + ' ' + pId2 + ' ' + (p.instructions || '')).toLowerCase(),
+            search:   normalize((p.name || p.nom || '') + ' ' + (p.region || '') + ' ' + pId2 + ' ' + (p.instructions || '') + ' ' + craftNames + ' ' + coordStr),
             _raw: p
           };
         });
