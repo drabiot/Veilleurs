@@ -144,7 +144,7 @@
           const hidden = desanitizeFromFirestore({ _id: d.id, ...d.data() });
           const itemId = String(hidden.id || '');
           const secret = itemId ? (secretById.get(itemId) || {}) : {};
-          const item = { ...hidden, ...secret, _sensible_visible: true };
+          const item = { ...hidden, ...secret, sensible: true };
           if (!existing.has(String(hidden.id || hidden._id))) {
             ITEMS.push(item);
           }

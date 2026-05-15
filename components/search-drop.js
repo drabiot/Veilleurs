@@ -93,7 +93,10 @@ export class SearchDrop {
     this._input.type = 'text';
     this._input.className = 'vcl-sd-input';
     this._input.placeholder = this._opts.placeholder;
-    this._input.autocomplete = 'new-password';
+    this._input.autocomplete = 'off';
+    this._input.readOnly = true;
+    this._input.addEventListener('focus', () => { this._input.readOnly = false; });
+    this._input.addEventListener('blur',  () => { this._input.readOnly = true;  });
 
     this._drop = document.createElement('div');
     this._drop.className = 'vcl-sd-dropdown';

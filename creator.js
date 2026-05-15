@@ -2643,7 +2643,9 @@ function loadMob(mob) {
   if (mob.inCodex !== undefined) setMobCodex(mob.inCodex);
   if (mob.sensible) { mobSensible = true; document.getElementById('mob-sensible-btn').classList.add('active'); }
   if (mob.region) {
-    document.getElementById('mob-region').value = mob.region;
+    const regionEl = document.getElementById('mob-region');
+    regionEl.value = mob.region;
+    regionEl._pendingRegion = mob.region;
     const regionName = _allMobRegions.find(r => r.id === mob.region)?.name || mob.region;
     document.getElementById('mob-region-search').value = regionName;
   }
@@ -2701,7 +2703,9 @@ function loadPnj(pnj) {
   const instrEl = document.getElementById('pnj-instructions');
   if (instrEl) instrEl.value = pnj.instructions || '';
   if (pnj.region) {
-    document.getElementById('pnj-region').value        = pnj.region;
+    const pnjRegionEl = document.getElementById('pnj-region');
+    pnjRegionEl.value = pnj.region;
+    pnjRegionEl._pendingRegion = pnj.region;
     const regionName = _allMobRegions.find(r => r.id === pnj.region)?.name || pnj.region;
     document.getElementById('pnj-region-search').value = regionName;
   }
@@ -3020,6 +3024,10 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
   const inp = document.createElement('input');
   inp.type = 'text';
   inp.placeholder = placeholder;
+  inp.autocomplete = 'off';
+  inp.readOnly = true;
+  inp.addEventListener('focus', () => { inp.readOnly = false; });
+  inp.addEventListener('blur',  () => { inp.readOnly = true;  });
 
   const list = document.createElement('div');
   list.className = 'drop-list';
@@ -5722,6 +5730,17 @@ async function loadMobRegions() {
     });
     _allMobRegions = regions;
     allMobsIndex   = []; // force rebuild with region names
+    // Appliquer les noms de région en attente (chargés avant que _allMobRegions soit prêt)
+    for (const [elId, searchId] of [['mob-region', 'mob-region-search'], ['pnj-region', 'pnj-region-search']]) {
+      const el = document.getElementById(elId);
+      if (el?._pendingRegion) {
+        const name = regions.find(r => r.id === el._pendingRegion)?.name;
+        if (name) {
+          document.getElementById(searchId).value = name;
+          delete el._pendingRegion;
+        }
+      }
+    }
   } catch(e) { console.warn('[Mob] Régions non chargées:', e); }
 }
 

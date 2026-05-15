@@ -325,32 +325,42 @@
     import { collection, getDocs, getDoc, doc }
       from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-    let _sensitiveLoaded = false;
+    let _sensitiveMobsLoaded = false;
+    let _sensitivePnjLoaded  = false;
 
-    async function _canViewSensitiveMobs(baseRole) {
+    async function _getMinRole(key) {
       let minRole = 'contributeur';
       try {
         const snap = await getDoc(doc(db, 'config', 'permissions'));
-        if (snap.exists()) minRole = snap.data().minRole?.view_mobs_secret ?? minRole;
+        if (snap.exists()) minRole = snap.data().minRole?.[key] ?? minRole;
       } catch {}
-      return hasRole(baseRole, minRole);
+      return minRole;
     }
 
     async function _loadSensitiveMobs() {
-      if (_sensitiveLoaded) return;
-      _sensitiveLoaded = true;
+      if (_sensitiveMobsLoaded) return;
+      _sensitiveMobsLoaded = true;
       window._vcl_can_view_sensible = true;
       try {
-        const [ms, ps, is] = await Promise.all([
-          getDocs(collection(db, COL.mobsSecret)),
-          getDocs(collection(db, COL.pnjSecret)),
-          getDocs(collection(db, COL.itemsHidden)),
-        ]);
+        const snap = await getDocs(collection(db, COL.mobsSecret));
         const existMobs = new Set(MOBS.map(m => m.id || m._id));
-        for (const d of ms.docs) {
+        for (const d of snap.docs) {
           const mob = desanitizeFromFirestore({ _id: d.id, ...d.data() });
           if (!existMobs.has(mob.id || mob._id)) MOBS.push(mob);
         }
+        window._vcl_bestiaire_refresh?.();
+      } catch (e) { console.warn('[Bestiaire] mobs sensibles:', e); }
+    }
+
+    async function _loadSensitivePnjs() {
+      if (_sensitivePnjLoaded) return;
+      _sensitivePnjLoaded = true;
+      window._vcl_can_view_sensible_pnj = true;
+      try {
+        const [ps, is] = await Promise.all([
+          getDocs(collection(db, COL.pnjSecret)),
+          getDocs(collection(db, COL.itemsHidden)),
+        ]);
         const existPnj = new Set(PERSONNAGES.map(p => p.id || p._id));
         for (const d of ps.docs) {
           const pnj = desanitizeFromFirestore({ _id: d.id, ...d.data() });
@@ -363,7 +373,16 @@
           if (id) window._sensitiveItemsById.set(id, item);
         }
         window._vcl_bestiaire_refresh?.();
-      } catch (e) { console.warn('[Bestiaire] mobs sensibles:', e); }
+      } catch (e) { console.warn('[Bestiaire] PNJ sensibles:', e); }
+    }
+
+    async function _initSensitive(baseRole) {
+      const [canMob, canPnj] = await Promise.all([
+        _getMinRole('view_mobs_secret').then(r => hasRole(baseRole, r)),
+        _getMinRole('view_pnj_secret').then(r => hasRole(baseRole, r)),
+      ]);
+      if (canMob) _loadSensitiveMobs();
+      if (canPnj) _loadSensitivePnjs();
     }
 
     try {
@@ -377,9 +396,9 @@
     window._pageInit?.();
 
     document.addEventListener('vcl:auth-ready', async e => {
-      if (await _canViewSensitiveMobs(e.detail.baseRole)) await _loadSensitiveMobs();
+      await _initSensitive(e.detail.baseRole);
     }, { once: true });
-    if (window._vcl_base_role && await _canViewSensitiveMobs(window._vcl_base_role)) await _loadSensitiveMobs();
+    if (window._vcl_base_role) await _initSensitive(window._vcl_base_role);
   </script>
   <script type="module" src="../auth-widget.js"></script>
   <script src="../report-widget.js"></script>

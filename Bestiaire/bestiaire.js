@@ -142,7 +142,7 @@ function applyHash() {
 
   if (entityId) {
     const list   = activeTab === 'monstres' ? MOBS : PERSONNAGES;
-    const entity = list.find(e => e.id === entityId);
+    const entity = list.find(e => (e.id || e._id) === entityId) || list.find(e => (e.id || e._id)?.startsWith(entityId + '_'));
     if (entity) openModal(entity, /* pushHistory = */ false);
   }
 }
@@ -169,7 +169,7 @@ window.addEventListener('popstate', (e) => {
   }
 
   const list   = (state.tab === 'monstres' ? MOBS : PERSONNAGES);
-  const entity = list.find(e => e.id === state.entityId);
+  const entity = list.find(e => (e.id || e._id) === state.entityId) || list.find(e => (e.id || e._id)?.startsWith(state.entityId + '_'));
   if (entity) openModal(entity, false);
 });
 
@@ -187,7 +187,10 @@ function getPnjEffectiveTag(e) {
 function getFiltered() {
   const q = normalize(searchQuery);
   const filtered = getList().filter(e => {
-    if (e.sensible && !window._vcl_can_view_sensible) return false;
+    if (e.sensible) {
+      const canSee = activeTab === 'monstres' ? window._vcl_can_view_sensible : window._vcl_can_view_sensible_pnj;
+      if (!canSee) return false;
+    }
     if (q && !fuzzyMatch(q, e.name, e.sensible === true) && !fuzzyMatch(q, getRegionLabel(e.region||'')) && !fuzzyMatch(q, e.region||'') && !fuzzyMatch(q, e.lore||'', e.sensible === true)) return false;
     if (activePalier !== 'all' && e.palier !== activePalier) return false;
     if (activeTab === 'monstres') {
@@ -439,7 +442,7 @@ function openModal(entity, pushHistory = true) {
   modalOverlay.classList.add('open');
 
   if (pushHistory) {
-    pushHash(activeTab, entity.id);
+    pushHash(activeTab, entity.id || entity._id);
   }
 }
 
@@ -714,7 +717,7 @@ function renderPNJSheet(pnj) {
   const effTag = getPnjEffectiveTag(pnj);
   let sellsHTML = '';
 
-  const _findItemOrSensitive = (id) => findItem(id) || (window._vcl_can_view_sensible && window._sensitiveItemsById?.get(id));
+  const _findItemOrSensitive = (id) => findItem(id) || (window._vcl_can_view_sensible_pnj && window._sensitiveItemsById?.get(id));
   // Inclure les items sensibles si l'utilisateur est autorisé
   const visibleSells = (pnj.sells || []).filter(s => !!_findItemOrSensitive(s.id));
   if (visibleSells.length > 0) {
@@ -981,4 +984,4 @@ window._pageInit = function () {
   refreshAll();
   applyHash();
 };
-window._vcl_bestiaire_refresh = () => refreshAll();
+window._vcl_bestiaire_refresh = () => { refreshAll(); applyHash(); };
