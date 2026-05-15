@@ -534,6 +534,7 @@ function buildCard(sub) {
     actionsHtml = `
       ${sub.comment ? `<div class="review-comment">💬 ${escHtml(sub.comment)}</div>` : ''}
       <button class="btn btn-ghost" onclick="restorePending('${sub._id}')" style="font-size:12px;">🔄 Remettre en attente</button>
+      <button class="btn btn-ghost" onclick="openInCreator('${sub._id}')" style="font-size:12px;" title="Ouvre dans le Creator pour corriger">⚙️ Creator</button>
     `;
   } else if (sub.comment) {
     actionsHtml = `<div class="review-comment">💬 ${escHtml(sub.comment)}</div>`;
@@ -568,7 +569,6 @@ function buildCard(sub) {
       <div class="sub-actions">
         ${actionsHtml}
         <button class="btn btn-copy" onclick="copyCode('${sub._id}')">📋 Copier</button>
-        ${currentRole === 'admin' || sub.status === 'pending' ? `<button class="btn btn-copy" onclick="deleteSub('${sub._id}')" style="color:var(--danger);border-color:var(--danger);">🗑️</button>` : ''}
         <button class="btn-toggle" onclick="toggleDetails('${sub._id}', this)">▾ Voir</button>
       </div>
       <div class="sub-details" id="details-${sub._id}">
@@ -990,7 +990,7 @@ window.onEditorInput = (id) => {
 // ── Ouvrir dans Creator ────────────────────────────────
 window.openInCreator = (id) => {
   const sub = allSubs.find(s => s._id === id);
-  if (!sub || sub.status !== 'pending') return;
+  if (!sub || !['pending', 'changes_requested', 'rejected'].includes(sub.status)) return;
   sessionStorage.setItem('editSub', JSON.stringify({ type: sub.type, data: sub.data }));
   window.open('creator.html');
 };
@@ -1092,18 +1092,21 @@ window.approve = async (id) => {
       // Nettoyer toute version publique existante
       try { await deleteDoc(doc(db, COL.items, String(dataId))); } catch {}
       store.invalidate('items');
+      setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: 'items' }, { merge: true }).catch(() => {});
     } else if (sub.type === 'mob' && isSensible) {
       // Mob sensible → doc complet dans mobs_secret, jamais dans mobs
       const payload = { _order: Date.now(), _contributor: _contribField, ...sub.data, sensible: true };
       await setDoc(doc(db, COL.mobsSecret, String(dataId)), sanitizeForFirestore(payload));
       try { await deleteDoc(doc(db, COL.mobs, String(dataId))); } catch {}
       store.invalidate('mobs');
+      setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: 'mobs' }, { merge: true }).catch(() => {});
     } else if (sub.type === 'pnj' && isSensible) {
       // PNJ sensible → doc complet dans pnj_secret, jamais dans personnages
       const payload = { _order: Date.now(), _contributor: _contribField, ...sub.data, sensible: true };
       await setDoc(doc(db, COL.pnjSecret, String(dataId)), sanitizeForFirestore(payload));
       try { await deleteDoc(doc(db, COL.pnj, String(dataId))); } catch {}
       store.invalidate('pnj');
+      setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: 'personnages' }, { merge: true }).catch(() => {});
     } else {
       // Flux standard
       let dataToWrite = { _order: Date.now(), ...sub.data, _contributor: _contribField };
@@ -1120,6 +1123,8 @@ window.approve = async (id) => {
             if (existing.ordre  != null) dataToWrite.ordre  = existing.ordre;
             if (existing.images?.length) dataToWrite.images = existing.images;
             else if (existing.image)     dataToWrite.image  = existing.image;
+          } else {
+            toast(`⚠️ Modification approuvée comme nouvel ajout — "${dataId}" n'existait pas encore.`, 'warning', 6000);
           }
         } catch {}
       }
@@ -1321,6 +1326,7 @@ const HASH_PANELS = {
   'passages':       () => { showMapPanel(); switchMapTab('passages'); },
   'trash':          () => showTrash(),
   'ghost-ids':      () => showGhostIds(),
+  'dead-links':     () => showDeadLinks(),
   'orphan-ids':     () => showOrphanIds(),
   'region-orphans': () => showRegionOrphans(),
   'mob-orphans':    () => showMobOrphans(),
@@ -1396,6 +1402,7 @@ function refreshCurrentPanel() {
     panoplie:       () => { delete _modCache['panoplies'];   loadPanoplieOrder(); },
     map:            () => { switchMapTab('allpins'); },
     'ghost-ids':    () => loadGhostIds(),
+    'dead-links':   () => loadDeadLinks(),
     'orphan-ids':   () => loadOrphanIds(),
     'region-orphans': () => loadRegionOrphans(),
     'mob-orphans':  () => loadMobOrphans(),
@@ -2681,6 +2688,399 @@ window.showGhostIds = async () => {
   document.querySelector('.sidebar').classList.add('in-order-panel');
   await loadGhostIds();
 };
+
+// ══════════════════════════════════════════════════════
+// LIENS MORTS (données publiées → IDs inexistants)
+// ══════════════════════════════════════════════════════
+window.showDeadLinks = async () => {
+  _setHash('dead-links');
+  document.getElementById('dead-links-panel').style.display = '';
+  document.getElementById('btn-dead-links').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadDeadLinks();
+};
+
+async function loadDeadLinks() {
+  const listEl = document.getElementById('dead-links-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [items, hiddenItems, mobs, pnjs, quetes, panoplies] = await Promise.all([
+      cachedDocs('items'),
+      cachedDocs('items_hidden').catch(() => []),
+      cachedDocs('mobs'),
+      cachedDocs('personnages'),
+      cachedDocs('quetes'),
+      cachedDocs('panoplies'),
+    ]);
+
+    const itemIds     = new Set([...items.map(i => i.id), ...hiddenItems.map(h => h.id).filter(Boolean)]);
+    const mobIds      = new Set(mobs.map(m => m.id));
+    const pnjIds      = new Set(pnjs.map(p => p.id));
+    const questIds    = new Set(quetes.map(q => q.id));
+    const panoplieIds = new Set(panoplies.map(p => p.id));
+
+    const EXCLUDED_IDS = new Set(['cols']);
+
+    // Pool d'entités par type cible pour la recherche de correction
+    const ENTITY_POOL = {
+      item:      [...items, ...hiddenItems].filter(i => i.id).map(i => ({ id: i.id, name: i.name || i.id })),
+      mob:       mobs.map(m => ({ id: m.id, name: m.name || m.id })),
+      pnj:       pnjs.map(p => ({ id: p.id, name: p.nom || p.name || p.id })),
+      'quête':   quetes.map(q => ({ id: q.id, name: q.titre || q.name || q.id })),
+      panoplie:  panoplies.map(p => ({ id: p.id, name: p.label || p.id })),
+    };
+
+    // { srcType, srcId, srcName, field, refId, targetType }
+    const broken = [];
+
+    function addBroken(srcType, srcId, srcName, field, refId, targetType) {
+      broken.push({ srcType, srcId, srcName, field, refId, targetType });
+    }
+
+    // ── Items ──────────────────────────────────────────
+    for (const item of items) {
+      const name = item.name || item.id;
+
+      // craft (flat: [{id,qty}], new format: [{name, npcId, items:[{id,qty}]}])
+      for (const c of (item.craft || [])) {
+        if (c.id && !itemIds.has(c.id) && !EXCLUDED_IDS.has(c.id))
+          addBroken('item', item.id, name, 'craft', c.id, 'item');
+        for (const ing of (c.items || [])) {
+          if (ing.id && !itemIds.has(ing.id) && !EXCLUDED_IDS.has(ing.id))
+            addBroken('item', item.id, name, 'craft', ing.id, 'item');
+        }
+      }
+
+      // obtain — format [ref|label] où ref = "type:id" ou juste "id"
+      if (item.obtain) {
+        const reObtain = /\[([^\]|]+)\|[^\]]+\]/g;
+        let mo;
+        while ((mo = reObtain.exec(item.obtain)) !== null) {
+          const ref = mo[1];
+          const colonIdx = ref.indexOf(':');
+          let type, id;
+          if (colonIdx !== -1) { type = ref.slice(0, colonIdx); id = ref.slice(colonIdx + 1); }
+          else { type = null; id = ref; }
+          if (!id) continue;
+          if (type === 'donjon') continue;
+          if (type === 'npc') {
+            if (!pnjIds.has(id)) addBroken('item', item.id, name, 'obtain (npc)', id, 'pnj');
+          } else if (type === 'quest') {
+            if (!questIds.has(id)) addBroken('item', item.id, name, 'obtain (quête)', id, 'quête');
+          } else if (type === 'item') {
+            if (!itemIds.has(id) && !EXCLUDED_IDS.has(id)) addBroken('item', item.id, name, 'obtain (item)', id, 'item');
+          } else {
+            if (!itemIds.has(id) && !mobIds.has(id) && !EXCLUDED_IDS.has(id))
+              addBroken('item', item.id, name, 'obtain (mob)', id, 'mob');
+          }
+        }
+      }
+
+      for (const evId of (item.evolutions || [])) {
+        if (!itemIds.has(evId)) addBroken('item', item.id, name, 'evolutions', evId, 'item');
+      }
+      for (const fId of (item.evolvedFrom || [])) {
+        if (!itemIds.has(fId)) addBroken('item', item.id, name, 'evolvedFrom', fId, 'item');
+      }
+      if (item.set && !panoplieIds.has(item.set))
+        addBroken('item', item.id, name, 'set', item.set, 'panoplie');
+    }
+
+    // ── Mobs ───────────────────────────────────────────
+    for (const mob of mobs) {
+      const name = mob.name || mob.id;
+      for (const loot of (mob.loot || [])) {
+        if (loot.id && !itemIds.has(loot.id) && !EXCLUDED_IDS.has(loot.id))
+          addBroken('mob', mob.id, name, 'loot', loot.id, 'item');
+      }
+    }
+
+    // ── Quêtes ─────────────────────────────────────────
+    for (const q of quetes) {
+      const name = q.titre || q.name || q.id;
+      if (q.npc && !pnjIds.has(q.npc))
+        addBroken('quête', q.id, name, 'npc', q.npc, 'pnj');
+      for (const obj of (q.objectifs || [])) {
+        for (const it of (obj.items || [])) {
+          const id = it.id || it.itemId;
+          if (id && !itemIds.has(id) && !EXCLUDED_IDS.has(id))
+            addBroken('quête', q.id, name, 'objectif.items', id, 'item');
+        }
+        for (const mb of (obj.mobs || [])) {
+          const id = mb.id || mb.mobId;
+          if (id && !mobIds.has(id))
+            addBroken('quête', q.id, name, 'objectif.mobs', id, 'mob');
+        }
+      }
+      for (const r of (q.recompenses || [])) {
+        if (r.itemId && !itemIds.has(r.itemId) && !EXCLUDED_IDS.has(r.itemId))
+          addBroken('quête', q.id, name, 'recompense.item', r.itemId, 'item');
+      }
+    }
+
+    // Dédoublonnage exact
+    const seen = new Set();
+    const deduped = broken.filter(b => {
+      const key = `${b.srcType}|${b.srcId}|${b.field}|${b.refId}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    listEl.innerHTML = '';
+    if (!deduped.length) {
+      listEl.innerHTML = '<div class="empty">✓ Aucun lien mort — toutes les références sont valides.</div>';
+      return;
+    }
+
+    const summary = document.createElement('div');
+    summary.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:12px;';
+    summary.textContent = `${deduped.length} lien${deduped.length > 1 ? 's' : ''} mort${deduped.length > 1 ? 's' : ''} trouvé${deduped.length > 1 ? 's' : ''}`;
+    listEl.appendChild(summary);
+
+    const TYPE_EMOJI = { item: '⚔️', mob: '👾', pnj: '🧑', 'quête': '📜', panoplie: '🔗' };
+
+    const table = document.createElement('table');
+    table.className = 'ghost-table';
+    table.innerHTML = `<thead><tr><th>Source</th><th>Champ</th><th>ID manquant</th><th>Cible</th><th></th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+
+    for (const b of deduped) {
+      const srcEmoji = TYPE_EMOJI[b.srcType] || '📄';
+      const tgtEmoji = TYPE_EMOJI[b.targetType] || '📄';
+
+      // ── Ligne principale ────────────────────────────
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <span style="font-size:10px;color:var(--muted);">${srcEmoji} ${escHtml(b.srcType)}</span><br>
+          <span style="font-weight:500;">${escHtml(b.srcName)}</span><br>
+          <span class="ghost-id" style="font-size:10px;">${escHtml(b.srcId)}</span>
+        </td>
+        <td><code style="font-size:11px;color:var(--accent);">${escHtml(b.field)}</code></td>
+        <td><span class="ghost-id">${escHtml(b.refId)}</span></td>
+        <td><span style="font-size:11px;">${tgtEmoji} ${escHtml(b.targetType)}</span></td>
+        <td style="white-space:nowrap;"></td>`;
+
+      const actTd = tr.querySelector('td:last-child');
+      const fixBtn = document.createElement('button');
+      fixBtn.className = 'btn btn-ghost';
+      fixBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+      fixBtn.textContent = '✏️ Corriger';
+
+      // ── Ligne de correction (masquée par défaut) ────
+      const fixTr = document.createElement('tr');
+      fixTr.style.cssText = 'display:none;background:rgba(122,90,248,.04);';
+      const fixTd = document.createElement('td');
+      fixTd.colSpan = 5;
+      fixTd.style.cssText = 'padding:8px 12px;border-top:none;';
+
+      // Recherche dans le pool de la cible
+      const pool = ENTITY_POOL[b.targetType] || [];
+      let selectedId = null;
+
+      const label = document.createElement('span');
+      label.style.cssText = 'font-size:12px;color:var(--muted);margin-right:6px;';
+      label.textContent = 'Remplacer par :';
+
+      const searchWrap = document.createElement('div');
+      searchWrap.style.cssText = 'position:relative;display:inline-block;';
+
+      const searchInput = document.createElement('input');
+      searchInput.type = 'text';
+      searchInput.placeholder = `🔍 ${tgtEmoji} Chercher…`;
+      searchInput.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;outline:none;width:240px;';
+
+      const dropdown = document.createElement('div');
+      dropdown.style.cssText = 'display:none;position:absolute;top:100%;left:0;z-index:200;width:320px;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--surface);box-shadow:0 4px 16px rgba(0,0,0,.3);';
+
+      const applyBtn = document.createElement('button');
+      applyBtn.className = 'btn';
+      applyBtn.style.cssText = 'background:var(--accent);color:#fff;font-size:11px;padding:4px 12px;margin-left:6px;opacity:.4;cursor:not-allowed;';
+      applyBtn.textContent = '✓ Appliquer';
+      applyBtn.disabled = true;
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn btn-ghost';
+      cancelBtn.style.cssText = 'font-size:11px;padding:4px 10px;margin-left:4px;';
+      cancelBtn.textContent = '✕';
+
+      function selectEntity(e) {
+        selectedId = e.id;
+        searchInput.value = `${e.name}  [${e.id}]`;
+        dropdown.style.display = 'none';
+        applyBtn.disabled = false;
+        applyBtn.style.opacity = '1';
+        applyBtn.style.cursor = '';
+      }
+
+      function renderDropdown(q) {
+        const norm = normalize(q);
+        const results = norm
+          ? pool.filter(e => normalize(e.name).includes(norm) || normalize(e.id).includes(norm))
+          : pool.slice(0, 40);
+        dropdown.innerHTML = '';
+        if (!results.length) {
+          const empty = document.createElement('div');
+          empty.style.cssText = 'padding:8px 12px;font-size:12px;color:var(--muted);';
+          empty.textContent = 'Aucun résultat';
+          dropdown.appendChild(empty);
+        } else {
+          for (const e of results.slice(0, 60)) {
+            const row = document.createElement('div');
+            row.style.cssText = 'padding:6px 12px;font-size:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);';
+            row.innerHTML = `<span style="font-weight:500;">${escHtml(e.name)}</span><span style="font-size:10px;color:var(--muted);font-family:monospace;">${escHtml(e.id)}</span>`;
+            row.addEventListener('mouseenter', () => { row.style.background = 'var(--surface2)'; });
+            row.addEventListener('mouseleave', () => { row.style.background = ''; });
+            row.addEventListener('mousedown', ev => { ev.preventDefault(); selectEntity(e); });
+            dropdown.appendChild(row);
+          }
+        }
+        dropdown.style.display = '';
+      }
+
+      searchInput.addEventListener('focus', () => renderDropdown(searchInput.value));
+      searchInput.addEventListener('input', () => {
+        selectedId = null;
+        applyBtn.disabled = true;
+        applyBtn.style.opacity = '.4';
+        applyBtn.style.cursor = 'not-allowed';
+        renderDropdown(searchInput.value);
+      });
+      searchInput.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 150));
+
+      applyBtn.addEventListener('click', async () => {
+        if (!selectedId) return;
+        applyBtn.disabled = true;
+        applyBtn.textContent = '⏳';
+        try {
+          await _applyDeadLinkFix(b, selectedId);
+          toast(`✓ Lien corrigé : ${b.refId} → ${selectedId}`, 'success');
+          await _writeAudit('dead_link_fix', b.srcType, b.srcId, b.srcName, { field: b.field, oldRef: b.refId, newRef: selectedId });
+          loadDeadLinks();
+        } catch(e) {
+          toast('⛔ ' + e.message, 'error');
+          applyBtn.disabled = false;
+          applyBtn.textContent = '✓ Appliquer';
+        }
+      });
+
+      cancelBtn.addEventListener('click', () => {
+        fixTr.style.display = 'none';
+        fixBtn.textContent = '✏️ Corriger';
+      });
+
+      fixBtn.addEventListener('click', () => {
+        const open = fixTr.style.display !== 'none';
+        if (open) { fixTr.style.display = 'none'; fixBtn.textContent = '✏️ Corriger'; }
+        else {
+          // Fermer les autres fix rows ouverts
+          tbody.querySelectorAll('tr[data-fix-row]').forEach(r => { r.style.display = 'none'; });
+          tbody.querySelectorAll('button[data-fix-btn]').forEach(b => { b.textContent = '✏️ Corriger'; });
+          fixTr.style.display = '';
+          fixBtn.textContent = '▲ Fermer';
+          searchInput.focus();
+          renderDropdown('');
+        }
+      });
+      fixBtn.dataset.fixBtn = '1';
+      fixTr.dataset.fixRow = '1';
+
+      searchWrap.appendChild(searchInput);
+      searchWrap.appendChild(dropdown);
+
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;flex-wrap:wrap;gap:4px;';
+      row.appendChild(label);
+      row.appendChild(searchWrap);
+      row.appendChild(applyBtn);
+      row.appendChild(cancelBtn);
+      fixTd.appendChild(row);
+      fixTr.appendChild(fixTd);
+
+      actTd.appendChild(fixBtn);
+      tbody.appendChild(tr);
+      tbody.appendChild(fixTr);
+    }
+
+    table.appendChild(tbody);
+    listEl.appendChild(table);
+
+  } catch(e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
+  }
+}
+
+async function _applyDeadLinkFix(b, newId) {
+  const COL_SRC = { item: 'items', mob: 'mobs', 'quête': 'quetes' };
+  const colName = COL_SRC[b.srcType];
+  if (!colName) throw new Error('Type source non supporté : ' + b.srcType);
+
+  const snap = await getDoc(doc(db, colName, b.srcId));
+  if (!snap.exists()) throw new Error('Document source introuvable');
+  const data = snap.data();
+  let patch = {};
+
+  if (b.field === 'craft') {
+    const craft = JSON.parse(JSON.stringify(data.craft || []));
+    for (const c of craft) {
+      if (c.id === b.refId) c.id = newId;
+      for (const ing of (c.items || [])) if (ing.id === b.refId) ing.id = newId;
+    }
+    patch = { craft };
+
+  } else if (b.field.startsWith('obtain')) {
+    let obtain = data.obtain || '';
+    obtain = obtain.replace(/\[([^\]|]+)\|([^\]]+)\]/g, (match, ref, lbl) => {
+      const colonIdx = ref.indexOf(':');
+      const id = colonIdx !== -1 ? ref.slice(colonIdx + 1) : ref;
+      if (id !== b.refId) return match;
+      const prefix = colonIdx !== -1 ? ref.slice(0, colonIdx + 1) : '';
+      return `[${prefix}${newId}|${lbl}]`;
+    });
+    patch = { obtain };
+
+  } else if (b.field === 'evolutions') {
+    patch = { evolutions: (data.evolutions || []).map(id => id === b.refId ? newId : id) };
+
+  } else if (b.field === 'evolvedFrom') {
+    patch = { evolvedFrom: (data.evolvedFrom || []).map(id => id === b.refId ? newId : id) };
+
+  } else if (b.field === 'set') {
+    patch = { set: newId };
+
+  } else if (b.field === 'loot') {
+    patch = { loot: (data.loot || []).map(l => l.id === b.refId ? { ...l, id: newId } : l) };
+
+  } else if (b.field === 'npc') {
+    patch = { npc: newId };
+
+  } else if (b.field === 'objectif.items') {
+    const objectifs = JSON.parse(JSON.stringify(data.objectifs || []));
+    for (const obj of objectifs)
+      for (const it of (obj.items || []))
+        if ((it.id || it.itemId) === b.refId) { it.id = newId; if ('itemId' in it) it.itemId = newId; }
+    patch = { objectifs };
+
+  } else if (b.field === 'objectif.mobs') {
+    const objectifs = JSON.parse(JSON.stringify(data.objectifs || []));
+    for (const obj of objectifs)
+      for (const mb of (obj.mobs || []))
+        if ((mb.id || mb.mobId) === b.refId) { mb.id = newId; if ('mobId' in mb) mb.mobId = newId; }
+    patch = { objectifs };
+
+  } else if (b.field === 'recompense.item') {
+    const recompenses = JSON.parse(JSON.stringify(data.recompenses || []));
+    for (const r of recompenses) if (r.itemId === b.refId) r.itemId = newId;
+    patch = { recompenses };
+
+  } else {
+    throw new Error('Champ non supporté : ' + b.field);
+  }
+
+  await updateDoc(doc(db, colName, b.srcId), sanitizeForFirestore(patch));
+  invalidateModCache(colName);
+}
 
 // ══════════════════════════════════════════════════════
 // IDs ORPHELINS (soumissions pending → IDs rejetés)
@@ -7701,6 +8101,7 @@ const _LB_SCAN_COLS = [
   { col: COL.mobs,        type: 'mob'      },
   { col: COL.mobsSecret,  type: 'mob'      },
   { col: COL.pnj,         type: 'pnj'      },
+  { col: COL.pnjSecret,   type: 'pnj'      },
   { col: 'regions',       type: 'region'   },
   { col: 'quetes',        type: 'quest'    },
   { col: 'panoplies',     type: 'panoplie' },
@@ -7779,6 +8180,27 @@ window.loadLeaderboard = async () => {
     _renderLbRows(ranked, listEl, false);
   } else {
     listEl.innerHTML = '<div class="empty">Aucune contribution trouvée.</div>';
+  }
+
+  // Section exclusions
+  if (excludedIds.size > 0) {
+    const excSection = document.createElement('div');
+    excSection.style.cssText = 'margin-top:16px;border-top:1px solid var(--border);padding-top:12px;';
+    excSection.innerHTML = `<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">🚫 Contributions exclues (${excludedIds.size})</div>`;
+    for (const entryId of excludedIds) {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px;';
+      const docId = entryId.includes('/') ? entryId.slice(entryId.indexOf('/') + 1) : entryId;
+      row.innerHTML = `<span style="flex:1;color:var(--muted);font-family:monospace;">${escHtml(docId)}</span>`;
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-ghost';
+      btn.style.cssText = 'font-size:10px;padding:2px 6px;flex-shrink:0;';
+      btn.textContent = '↩ Réintégrer';
+      btn.addEventListener('click', () => _lbUnexclude(entryId));
+      row.appendChild(btn);
+      excSection.appendChild(row);
+    }
+    listEl.appendChild(excSection);
   }
 };
 
@@ -7863,6 +8285,19 @@ window.showLeaderboardUser = function(u) {
   };
   renderRows();
 };
+
+async function _lbUnexclude(entryId) {
+  try {
+    const ref = doc(db, 'config', 'leaderboard_excluded');
+    const snap = await getDoc(ref);
+    const existing = snap.exists() ? (snap.data().ids || []) : [];
+    await setDoc(ref, { ids: existing.filter(id => id !== entryId) });
+    toast('Contribution réintégrée.', 'success');
+    await loadLeaderboard();
+  } catch(e) {
+    toast('⛔ ' + e.message, 'error');
+  }
+}
 
 async function _lbExclude(entryId, userData, updateTitle, renderRows) {
   try {

@@ -85,3 +85,12 @@ function postDiscord(url, payload, file, fname) {
 
 // Namespace pour accès depuis les modules ES (où `const` top-level n'est pas visible)
 window.VCL = { normalize, fuzzyMatch, RARITIES, getRarityColor, escHtml, postDiscord };
+
+// Empêche Chrome d'afficher les suggestions d'email/mdp sur les champs de recherche
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('input[autocomplete="new-password"]').forEach(inp => {
+    inp.setAttribute('readonly', '');
+    inp.addEventListener('focus', () => inp.removeAttribute('readonly'));
+    inp.addEventListener('blur',  () => inp.setAttribute('readonly', ''));
+  });
+});

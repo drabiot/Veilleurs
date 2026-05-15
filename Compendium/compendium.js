@@ -71,7 +71,7 @@ function buildSidebarAlpha(items) {
       link.dataset.id = item.id;
       link.innerHTML = `
         <span class="sidebar-item-dot" style="background:${color}"></span>
-        ${escHtml(item.name || '')}`;
+        ${escHtml(item.name || '')}${item.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}`;
       link.addEventListener('click', (e) => {
         e.preventDefault();
         showItem(item.id, false);
@@ -340,7 +340,7 @@ function buildSidebar(items, expandAll = false) {
             link.dataset.id = item.id;
             link.innerHTML = `
               <span class="sidebar-item-dot" style="background:${color}"></span>
-              ${escHtml(item.name || '')}`;
+              ${escHtml(item.name || '')}${item.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}`;
             link.addEventListener('click', (e) => {
               e.preventDefault();
               showItem(item.id, false);
@@ -790,8 +790,10 @@ function renderNpcHeader(recette, index) {
 
   const section  = recette.npcSection || 'personnages'; // défaut : personnages
   const npcItem  = ITEMS_BY_ID.get(recette.npcId);
-  const npcMob   = (typeof MOBS  !== 'undefined') && MOBS.find(m => m.id === recette.npcId);
-  const npc      = npcItem || npcMob;
+  const _findById = (arr, id) => arr?.find(m => (m.id || m._id) === id) || arr?.find(m => (m.id || m._id)?.startsWith(id + '_'));
+  const npcMob   = (typeof MOBS  !== 'undefined') && _findById(MOBS, recette.npcId);
+  const npcPnj   = (typeof PERSONNAGES !== 'undefined') && _findById(PERSONNAGES, recette.npcId);
+  const npc      = npcItem || npcMob || npcPnj;
   const npcName  = npc ? (npc.name || label) : label;
   const npcImg   = npc ? getItemImg(npc) : null;
   const npcColor = npcItem ? rarityColor(npcItem.rarity) : 'var(--gold)';
@@ -967,7 +969,10 @@ function bindEntityLinks() {
         showItem(id);
         history.pushState({ item: id }, '', `#${id}`);
       } else {
-        window.location.href = `../Bestiaire/bestiaire.html#${section}/${id}`;
+        const resolvedList = section === 'personnages' ? (typeof PERSONNAGES !== 'undefined' ? PERSONNAGES : []) : (typeof MOBS !== 'undefined' ? MOBS : []);
+        const resolved = resolvedList.find(e => (e.id || e._id) === id) || resolvedList.find(e => (e.id || e._id)?.startsWith(id + '_'));
+        const targetId = resolved ? (resolved.id || resolved._id) : id;
+        window.location.href = `../Bestiaire/bestiaire.html#${section}/${targetId}`;
       }
     });
   });
@@ -1154,11 +1159,12 @@ function showItem(id, initialQuality = false) {
           ${slideshowControls}
         </div>
         <div class="item-info">
-          <h2 class="item-name" id="item-name-text">${escHtml(item.quality?.name && qualityMode ? item.quality.name : item.name)}</h2>
+          <h2 class="item-name" id="item-name-text">${escHtml(item.quality?.name && qualityMode ? item.quality.name : item.name)}${item.sensible ? ' <span style="font-size:13px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}</h2>
           <div class="item-rarity-badge" style="color:${color}; border-color:${color};">
             <span class="item-rarity-dot" style="background:${color};"></span>
             ${rlabel}
           </div>
+          ${item.palier != null ? `<div style="font-size:11px;color:var(--muted);opacity:.65;margin-top:3px;letter-spacing:.04em;">⬡ Palier ${item.palier}</div>` : ''}
           ${qualityToggle}
           <blockquote class="item-lore" id="item-lore-text">${parseText(v.lore)}</blockquote>
         </div>

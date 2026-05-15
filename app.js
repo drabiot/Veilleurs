@@ -11,6 +11,7 @@ const _LB_SCAN_COLS = [
   { col: COL.mobs,        type: 'mob'      },
   { col: COL.mobsSecret,  type: 'mob'      },
   { col: COL.pnj,         type: 'pnj'      },
+  { col: COL.pnjSecret,   type: 'pnj'      },
   { col: COL.regions,     type: 'region'   },
   { col: COL.quetes,      type: 'quest'    },
   { col: COL.panoplies,   type: 'panoplie' },
