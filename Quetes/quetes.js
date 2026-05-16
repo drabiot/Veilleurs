@@ -200,7 +200,7 @@ function formatObjectifText(texte, floor) {
   });
 }
 
-function renderItemChip(itemId, qte) {
+function renderItemChip(itemId, qte, quality) {
   const item   = dbItem(itemId);
   const color  = item ? rarityColor(item.rarity) : '#888';
   const name   = item ? item.name : itemId;
@@ -214,12 +214,18 @@ function renderItemChip(itemId, qte) {
     ? `<span class="chip-qty">×${qte}</span>`
     : '';
 
-  const href = `../Compendium/compendium.html#${itemId}`;
+  const qualBadge = quality
+    ? `<span style="font-size:9px;font-weight:700;color:#4ade80;background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.35);border-radius:6px;padding:0 4px;line-height:1.6;white-space:nowrap;">✦ Qualité</span>`
+    : '';
+
+  const href = quality
+    ? `../Compendium/compendium.html#${itemId}-quality`
+    : `../Compendium/compendium.html#${itemId}`;
   return `<a class="item-chip" href="${href}" target="_blank"
-     style="--chip-color:${color}" title="Voir dans le Compendium — ${name}">
+     style="--chip-color:${color}" title="${quality ? '[Qualité] ' : ''}Voir dans le Compendium — ${name}">
     <span class="chip-visual">${visual}</span>
     <span class="chip-name" style="color:${color}">${name}</span>
-    ${qty}
+    ${qualBadge}${qty}
   </a>`;
 }
 
@@ -464,9 +470,10 @@ function renderCardItemIcon(it) {
   const name   = item ? item.name : it.id;
   const imgSrc = item ? getItemImg(item) : null;
   const qtyBadge = (it.qte && it.qte > 1) ? `<span class="card-item-qty">×${it.qte}</span>` : '';
+  const qualBadge = it.quality ? `<span style="position:absolute;bottom:0;right:0;font-size:8px;line-height:1;color:#4ade80;font-weight:900;">✦</span>` : '';
   const inner   = imgSrc ? `<img src="${imgSrc}" alt="${name}">` : '📦';
-  const tipText = name + (it.qte > 1 ? ` ×${it.qte}` : '');
-  return `<span class="card-item-icon" data-tip="${tipText}" style="--chip-color:${color}">${inner}${qtyBadge}</span>`;
+  const tipText = (it.quality ? '[Qualité] ' : '') + name + (it.qte > 1 ? ` ×${it.qte}` : '');
+  return `<span class="card-item-icon" data-tip="${tipText}" style="--chip-color:${color};position:relative;">${inner}${qtyBadge}${qualBadge}</span>`;
 }
 
 /* ══════════════════════════════════
@@ -795,7 +802,7 @@ function renderSheet(q) {
       // Héritage : tableau de sous-objectifs (ancien système phases)
       const subs = o.map((sub, j) => {
         const ck    = getCk(q.id, i, j);
-        const itemChips = sub.items ? sub.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
+        const itemChips = sub.items ? sub.items.map(it => renderItemChip(it.id, it.qte, it.quality)).join('') : '';
         const mobChips  = sub.mobs  ? sub.mobs .map(m  => renderMobChip (m.id,  m.qte )).join('') : '';
         const chips = itemChips + mobChips;
         return `<div class="obj-item obj-sub ${ck ? 'done' : ''} obj-item-${q.type}">
@@ -811,7 +818,7 @@ function renderSheet(q) {
       const ck    = getCk(q.id, i);
       // Blocage cumulatif : bloqué tant qu'un objectif antérieur avec next:true n'est pas coché
       const blocked = isObjectiveBlocked(q, i);
-      const itemChips = o.items ? o.items.map(it => renderItemChip(it.id, it.qte)).join('') : '';
+      const itemChips = o.items ? o.items.map(it => renderItemChip(it.id, it.qte, it.quality)).join('') : '';
       const mobChips  = o.mobs  ? o.mobs .map(m  => renderMobChip (m.id,  m.qte )).join('') : '';
       const chips = itemChips + mobChips;
       const locChip = (() => {

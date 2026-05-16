@@ -1254,6 +1254,8 @@ window.requestChanges = async (id) => {
   const sub = allSubs.find(s => s._id === id);
   if (!sub) return;
 
+  const sharedComment = document.getElementById(`comment-${id}`)?.value?.trim() || '';
+
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:10000;';
   overlay.innerHTML = `
@@ -1267,6 +1269,7 @@ window.requestChanges = async (id) => {
     </div>
   `;
   document.body.appendChild(overlay);
+  if (sharedComment) overlay.querySelector('#_vcl-cr-ta').value = sharedComment;
 
   await new Promise(resolve => {
     overlay.querySelector('#_vcl-cr-cancel').addEventListener('click', () => { overlay.remove(); resolve(); });
@@ -1279,11 +1282,13 @@ window.requestChanges = async (id) => {
         await updateDoc(doc(db, 'submissions', id), {
           status: 'changes_requested',
           changeRequestComment: comment,
+          comment,
           reviewedBy: currentUser.uid,
           reviewedAt: serverTimestamp(),
         });
         sub.status = 'changes_requested';
         sub.changeRequestComment = comment;
+        sub.comment = comment;
         sub.reviewedBy = currentUser.uid;
         _writeAudit('changes_requested', 'submission', id, sub.data?.name || sub.data?.titre || sub.data?.id || id, { comment });
         updateCounts();

@@ -1058,7 +1058,7 @@ function restoreForm(forcedMode) {
       if (q.titre) document.getElementById('quest-titre').value = q.titre;
       if (q.id)    document.getElementById('quest-id').value    = q.id;
       if (q.type)  { document.getElementById('quest-type').value = q.type; _customSelUpdaters['quest-type']?.(); }
-      if (q.palier) { document.getElementById('quest-palier').value = String(q.palier); _customSelUpdaters['quest-palier']?.(); }
+      if (q.palier) _setPalierValue('quest-palier', q.palier);
       if (q.npc)   { document.getElementById('quest-npc').value = q.npc; window._pendingQuestNpc = q.npc; }
       if (q.desc)  document.getElementById('quest-desc').value  = q.desc;
       if (q.zone) window._pendingQuestZone = q.zone;
@@ -1068,7 +1068,7 @@ function restoreForm(forcedMode) {
       if (q.objs?.length) {
         questSimpleObjs = q.objs.map(o => ({
           uid: _qObjUid++, texte: o.texte || '', next: !!o.next,
-          items: (o.items||[]).map(i => ({ uid: _qItemUid++, itemId: i.itemId, qte: i.qte||1 })),
+          items: (o.items||[]).map(i => ({ uid: _qItemUid++, itemId: i.itemId, qte: i.qte||1, quality: !!i.quality })),
           mobs:  (o.mobs ||[]).map(m => ({ uid: _qItemUid++, mobId: m.mobId,  qte: m.qte||1 })),
           location: o.location ? { ...o.location } : null,
         }));
@@ -2445,7 +2445,10 @@ function loadItem(item) {
     catSlotSel.value = String(item.cat);
     _customSelUpdaters['f-cat']?.();
   }
-  if (item.palier != null) _setPalierValue('f-palier', item.palier);
+  if (item.palier != null) {
+    _setPalierValue('f-palier', item.palier);
+    document.getElementById('f-palier')?.dispatchEvent(new Event('change', { bubbles: true }));
+  }
   if (item.lvl) document.getElementById('f-lvl').value = String(item.lvl);
 
   // Set
@@ -2591,9 +2594,10 @@ function loadItem(item) {
     }
   }
 
-  // Tags
-  if (item.tags?.length) {
-    activeTags = new Set(item.tags);
+  // Tags — DB items use `tags`, history items (buildObj) use `activeTags`
+  const _tagsToLoad = item.activeTags || item.tags;
+  if (_tagsToLoad?.length) {
+    activeTags = new Set(_tagsToLoad);
   }
 
   refreshCustomSelects();
@@ -2803,7 +2807,7 @@ function loadQuest(quest) {
   if (questId)      document.getElementById('quest-id').value    = questId;
   if (quest.titre)  document.getElementById('quest-titre').value = quest.titre;
   if (quest.type)   document.getElementById('quest-type').value  = quest.type;
-  if (quest.palier) document.getElementById('quest-palier').value = String(quest.palier);
+  if (quest.palier) _setPalierValue('quest-palier', quest.palier);
   if (quest.npc)  { document.getElementById('quest-npc').value = quest.npc; window._pendingQuestNpc = quest.npc; }
   if (quest.zone) window._pendingQuestZone = quest.zone;
   if (quest.desc)   document.getElementById('quest-desc').value  = quest.desc;
@@ -2823,7 +2827,7 @@ function loadQuest(quest) {
       questSimpleObjs.push({
         uid:      _qObjUid++,
         texte:    o.texte || '',
-        items:    (o.items || []).map(i => ({ uid: _qItemUid++, itemId: i.id, qte: i.qte || 1 })),
+        items:    (o.items || []).map(i => ({ uid: _qItemUid++, itemId: i.id, qte: i.qte || 1, quality: !!i.quality })),
         mobs:     (o.mobs  || []).map(m => ({ uid: _qItemUid++, mobId: m.id, qte: m.qte || 1 })),
         next:     !!o.next,
         location: o.location || null,
@@ -3188,7 +3192,12 @@ function buildSetSelect() {
 // CRAFT
 // ═══════════════════════════════════════════════════
 let itemIndex = [];
-const CRAFT_CATEGORIES = new Set(['materiaux','ressources','monnaie','donjon','quete','arme','armure','accessoire']);
+const CRAFT_CATEGORIES = new Set(['materiaux','ressources','monnaie','donjon','quete','arme','armure','accessoire','consommable','nourriture']);
+
+// Entrées virtuelles toujours disponibles dans les recettes (items sans ID fixe dans ITEMS)
+const CRAFT_VIRTUAL_ITEMS = [
+  { id: 'potion_qualite', name: '🧪 Potion [qualité]', search: 'potion qualite consommable soin mana stamina' },
+];
 
 function ensureItemIndex() {
   if (itemIndex.length) return;
@@ -3200,6 +3209,12 @@ function ensureItemIndex() {
       name: it.name || it.id,
       search: ((it.name || '') + ' ' + it.id).toLowerCase()
     }));
+
+  // Ajouter les entrées virtuelles si elles ne sont pas déjà dans ITEMS
+  const knownVirtual = new Set(itemIndex.map(i => i.id));
+  for (const v of CRAFT_VIRTUAL_ITEMS) {
+    if (!knownVirtual.has(v.id)) itemIndex.push({ ...v });
+  }
 
   // Ajouter les IDs orphelins (référencés en craft mais absents de ITEMS)
   const knownIds = new Set(ITEMS.map(i => i.id));
@@ -3544,6 +3559,7 @@ function switchTab(tab) {
     document.getElementById('pane-'+t)?.classList.toggle('active', t === tab);
   });
   if (tab === 'chasse' && !_chasseLoaded) { _chasseLoaded = true; loadTableauDeChasse(); }
+  if (tab === 'history') _refreshHistoryStatuses();
 }
 
 // ── TABLEAU DE CHASSE ──────────────────────────────────────
@@ -4136,6 +4152,31 @@ function loadHistory() {
     if (!raw) return;
     sessionHistory = JSON.parse(raw);
     renderHistory();
+    _refreshHistoryStatuses();
+  } catch(e) {}
+}
+
+async function _refreshHistoryStatuses() {
+  const getDoc = window._vcl_getDoc;
+  const docFn  = window._vcl_doc;
+  const db     = window._vcl_db;
+  const user   = window._vcl_auth?.currentUser;
+  if (!getDoc || !docFn || !db || !user) return;
+  const entries = sessionHistory.filter(h => h.firestoreId);
+  if (!entries.length) return;
+  try {
+    const snaps = await Promise.all(entries.map(h => getDoc(docFn(db, 'submissions', h.firestoreId))));
+    snaps.forEach(snap => {
+      if (!snap.exists()) return;
+      const d = snap.data();
+      const entry = sessionHistory.find(h => h.firestoreId === snap.id);
+      if (!entry) return;
+      entry._status               = d.status;
+      entry._comment              = d.comment || '';
+      entry._changeRequestComment = d.changeRequestComment || '';
+    });
+    saveHistory();
+    renderHistory();
   } catch(e) {}
 }
 
@@ -4147,9 +4188,9 @@ function _guessEntryType(obj) {
   return 'item';
 }
 
-function addToHistory(obj, code) {
+function addToHistory(obj, code, firestoreId) {
   const idx = sessionHistory.findIndex(h => h.obj.id === obj.id);
-  const entry = { ts: Date.now(), _type: creatorMode, obj: JSON.parse(JSON.stringify(obj)), code };
+  const entry = { ts: Date.now(), _type: creatorMode, obj: JSON.parse(JSON.stringify(obj)), code, firestoreId: firestoreId || null };
   if (idx >= 0) sessionHistory[idx] = entry;
   else sessionHistory.unshift(entry);
   saveHistory();
@@ -4162,6 +4203,21 @@ async function clearHistory() {
   sessionHistory = [];
   saveHistory();
   renderHistory();
+}
+
+const _HIST_STATUS_CFG = {
+  pending:           { label: 'En attente',        bg: '#2a2a45', color: '#9090c0', border: '#3a3a65' },
+  approved:          { label: '✓ Acceptée',         bg: '#0f2a1a', color: '#4ade80', border: '#1a4a2a' },
+  rejected:          { label: '✕ Refusée',          bg: '#2a0f0f', color: '#f87171', border: '#4a1a1a' },
+  changes_requested: { label: '↩ Modifs demandées', bg: '#2a1f00', color: '#fbbf24', border: '#4a3a00' },
+};
+
+function _histStatusBadge(entry) {
+  const cfg = _HIST_STATUS_CFG[entry._status];
+  if (!cfg) return '';
+  const tooltip = (entry._status === 'changes_requested' ? entry._changeRequestComment : entry._comment) || '';
+  const tip = tooltip ? ` title="${escHtml(tooltip)}"` : '';
+  return `<span${tip} style="display:inline-block;margin-left:6px;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:600;background:${cfg.bg};color:${cfg.color};border:1px solid ${cfg.border};cursor:default;">${cfg.label}</span>`;
 }
 
 function renderHistory() {
@@ -4183,36 +4239,26 @@ function renderHistory() {
     const rl    = RARITY_LABELS[obj.rarity] || '';
     const time  = new Date(ts).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
     const meta  = [typeLabel, rl || obj.category || obj.type, obj.palier ? 'P'+obj.palier : ''].filter(Boolean).join(' · ');
+    const statusBadge = _histStatusBadge(entry);
+    const changeNote  = (entry._status === 'changes_requested' && entry._changeRequestComment)
+      ? `<div style="margin-top:5px;padding:5px 8px;background:#1a1200;border-left:2px solid #fbbf24;border-radius:0 4px 4px 0;font-size:11px;color:#fbbf24;line-height:1.4;">💬 ${escHtml(entry._changeRequestComment)}</div>`
+      : '';
 
     const div = document.createElement('div');
     div.className = 'hist-item';
     div.innerHTML = `
       <span class="hist-dot" style="background:${color}"></span>
-      <div class="hist-info">
+      <div class="hist-info" style="min-width:0;flex:1;">
         <div class="hist-name">${escHtml(obj.name || obj.titre || obj.label || obj.id || '—')}</div>
-        <div class="hist-meta">${escHtml(meta)} <span style="margin-left:6px;opacity:.5">${time}</span></div>
+        <div class="hist-meta">${escHtml(meta)} <span style="margin-left:6px;opacity:.5">${time}</span>${statusBadge}</div>
+        ${changeNote}
       </div>
       <div class="hist-actions">
-        <button class="hist-code-toggle btn btn-ghost btn-sm" title="Voir le JSON soumis">{ }</button>
-        <button class="btn btn-ghost btn-sm" title="Recharger dans le formulaire">↩</button>
+        <button class="btn btn-ghost btn-sm hist-reload-btn" title="Recharger dans le formulaire">↩</button>
         <button class="btn-icon" title="Supprimer de l'historique">✕</button>
       </div>`;
 
-    // Code JSON expansible
-    const codeWrap = document.createElement('div');
-    codeWrap.style.cssText = 'display:none;width:100%;margin-top:4px;';
-    const pre = document.createElement('pre');
-    pre.style.cssText = 'background:#0d1117;color:#c9d1d9;padding:10px 12px;border-radius:6px;font-size:11px;font-family:monospace;overflow-x:auto;white-space:pre;line-height:1.5;margin:0;cursor:text;';
-    pre.textContent = entry.code || toJS(entry.obj, 0) + ',';
-    codeWrap.appendChild(pre);
-    div.appendChild(codeWrap);
-
-    div.querySelector('.hist-code-toggle').addEventListener('click', () => {
-      const open = codeWrap.style.display !== 'none';
-      codeWrap.style.display = open ? 'none' : '';
-      div.querySelector('.hist-code-toggle').style.color = open ? '' : 'var(--accent)';
-    });
-    div.querySelector('.btn-ghost:not(.hist-code-toggle)').addEventListener('click', () => {
+    div.querySelector('.hist-reload-btn').addEventListener('click', () => {
       const type = entry._type || _guessEntryType(entry.obj);
       loadByType(type, entry.obj);
       switchTab('preview');
@@ -5213,6 +5259,7 @@ async function submitToFirestore() {
   const queryFn   = window._vcl_query;
   const whereFn   = window._vcl_where;
   let replaced = false;
+  let firestoreId = null;
   if (getDocs2 && queryFn && whereFn && setDocFn && docFn && data.id) {
     try {
       const pendingSnap = await getDocs2(queryFn(col(db, 'submissions'), whereFn('status', '==', 'pending')));
@@ -5237,6 +5284,7 @@ async function submitToFirestore() {
           ...(screenshots.length ? { screenshots } : {}),
           ...(_chasseOrigin ? { fromTableauDeChasse: true } : {}),
         });
+        firestoreId = existingDoc.id;
         replaced = true;
       }
     } catch(e) {
@@ -5244,7 +5292,7 @@ async function submitToFirestore() {
     }
   }
   if (!replaced) {
-    await addDoc(col(db, 'submissions'), {
+    const docRef = await addDoc(col(db, 'submissions'), {
       type,
       status:            'pending',
       data:              clean,
@@ -5259,13 +5307,14 @@ async function submitToFirestore() {
       ...(screenshots.length ? { screenshots } : {}),
       ...(_chasseOrigin ? { fromTableauDeChasse: true } : {}),
     });
+    firestoreId = docRef.id;
   }
   _chasseOrigin = null;
   _renderChassePanel();
   _applyChasseHighlights();
 
   const code = creatorMode === 'item' ? toJS(data, 0) + ',' : toJS(data, 0) + ',';
-  addToHistory(data, code);
+  addToHistory(data, code, firestoreId);
 
   // Clear screenshots
   window._creatorScreenshots = [];
@@ -6577,15 +6626,62 @@ function onQuestPalierChange() {
 // ── Mode toggle objectifs
 
 // ── Row builder : item requis dans un objectif
+const _QUAL_CATEGORIES = new Set(['consommable', 'nourriture']);
+
+function _itemHasQuality(id) {
+  if (!id) return false;
+  const it = allItemsIndex.find(x => x.id === id);
+  return it ? _QUAL_CATEGORIES.has(it._raw?.category) : false;
+}
+
+function _applyQualBtnState(qualBtn, active) {
+  if (active) {
+    qualBtn.style.background = 'rgba(74,222,128,.15)';
+    qualBtn.style.color      = '#4ade80';
+    qualBtn.style.borderColor = '#4ade80';
+  } else {
+    qualBtn.style.background  = '';
+    qualBtn.style.color       = '';
+    qualBtn.style.borderColor = '';
+  }
+}
+
 function _makeQuestItemRow(item, onRemove) {
   const row = document.createElement('div');
-  row.style.cssText = 'display:grid;grid-template-columns:1fr 60px auto;gap:5px;align-items:start;';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 60px auto auto;gap:5px;align-items:start;';
 
   ensureAllItemsIndex();
-  const drop = makeSearchDrop(allItemsIndex, 'Item…', id => { item.itemId = id; update(); }, true);
+
+  const qualBtn = document.createElement('button');
+  qualBtn.className = 'btn btn-ghost btn-sm';
+  qualBtn.textContent = '✦ Q';
+  qualBtn.title = 'Version qualité de l\'item (quality: true)';
+  qualBtn.style.cssText = 'font-size:11px;padding:3px 7px;white-space:nowrap;display:none;';
+  _applyQualBtnState(qualBtn, !!item.quality);
+  qualBtn.addEventListener('click', () => {
+    item.quality = !item.quality;
+    _applyQualBtnState(qualBtn, item.quality);
+    update();
+  });
+
+  const drop = makeSearchDrop(allItemsIndex, 'Item…', id => {
+    item.itemId = id;
+    if (_itemHasQuality(id)) {
+      qualBtn.style.display = '';
+    } else {
+      item.quality = false;
+      qualBtn.style.display = 'none';
+      _applyQualBtnState(qualBtn, false);
+    }
+    update();
+  }, true);
+
   if (item.itemId) {
     const f = allItemsIndex.find(it => it.id === item.itemId);
-    if (f) drop.setValue(item.itemId, f.name);
+    if (f) {
+      drop.setValue(item.itemId, f.name);
+      if (_itemHasQuality(item.itemId)) qualBtn.style.display = '';
+    }
   }
 
   const qteEl = document.createElement('input');
@@ -6598,7 +6694,7 @@ function _makeQuestItemRow(item, onRemove) {
   rm.className = 'btn-icon'; rm.textContent = '✕';
   rm.addEventListener('click', onRemove);
 
-  row.append(drop.element, qteEl, rm);
+  row.append(drop.element, qteEl, qualBtn, rm);
   return row;
 }
 
@@ -6919,7 +7015,7 @@ function buildQuestObj() {
     .filter(o => o.texte.trim())
     .map(o => {
       const e = { texte: o.texte.trim() };
-      const items = o.items.filter(i => i.itemId).map(i => ({ id: i.itemId, qte: +i.qte || 1 }));
+      const items = o.items.filter(i => i.itemId).map(i => { const e = { id: i.itemId, qte: +i.qte || 1 }; if (i.quality) e.quality = true; return e; });
       if (items.length) e.items = items;
       const mobs = (o.mobs || []).filter(m => m.mobId).map(m => ({ id: m.mobId, qte: +m.qte || 1 }));
       if (mobs.length) e.mobs = mobs;
@@ -7055,7 +7151,8 @@ function renderQuestPreview(obj) {
         o.items.forEach(it => {
           const itemId = it.id||it.itemId||'?';
           const itemName = (typeof ITEMS !== 'undefined' && ITEMS.find(i => i.id === itemId)?.name) || itemId;
-          objHtml += `<div style="font-size:11px;color:var(--muted);padding-left:18px;">→ ${esc(itemName)} ×${it.qte||1}</div>`;
+          const qualTag = it.quality ? ' <span style="color:#4ade80;font-size:10px;font-weight:700;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);border-radius:8px;padding:0 5px;vertical-align:middle;">✦ Qualité</span>' : '';
+          objHtml += `<div style="font-size:11px;color:var(--muted);padding-left:18px;">→ ${esc(itemName)}${qualTag} ×${it.qte||1}</div>`;
         });
       }
       if (o.mobs?.length) {
