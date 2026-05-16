@@ -1358,6 +1358,7 @@ const HASH_PANELS = {
   'game-config':          () => showGameConfig(),
   'audit-log':            () => showAuditLog(),
   'tags':                 () => showTagsPanel(),
+  'statistiques':         () => showStatistiques(),
 };
 
 function _setHash(hash) {
@@ -2697,6 +2698,7 @@ window.showGhostIds = async () => {
 // ══════════════════════════════════════════════════════
 // LIENS MORTS (données publiées → IDs inexistants)
 // ══════════════════════════════════════════════════════
+let _deadLinksSnapshot = null; // { deduped, ENTITY_POOL }
 window.showDeadLinks = async () => {
   _setHash('dead-links');
   document.getElementById('dead-links-panel').style.display = '';
@@ -2737,13 +2739,22 @@ async function loadDeadLinks() {
       mob:       mobs.map(m => ({ id: m.id, name: m.name || m.id })),
       pnj:       pnjs.map(p => {
         const name = p.nom || p.name || p.id;
-        const craftIds = p.crafts?.length
-          ? p.crafts.map(c => c.resultId).filter(Boolean)
-          : (Array.isArray(p.craft) ? p.craft
-              : p.craft && typeof p.craft === 'object' ? Object.values(p.craft) : [])
-            .map(c => c.id).filter(Boolean);
-        const craftNames = craftIds.map(id => itemNameMap.get(id) || '').filter(Boolean).join(' ');
-        return { id: p.id, name, search: normalize(name + ' ' + craftNames) };
+        const allIds = [];
+        // craft[] (format Firestore) : c.id = résultat
+        const craftArr = Array.isArray(p.craft) ? p.craft
+          : p.craft && typeof p.craft === 'object' ? Object.values(p.craft) : [];
+        for (const c of craftArr) { if (c.id) allIds.push(c.id); }
+        // crafts[] (format submission) : c.resultId = résultat
+        for (const c of (p.crafts || [])) {
+          if (c.resultId) allIds.push(c.resultId);
+          else if (c.id)  allIds.push(c.id);
+        }
+        // sells[] : items vendus par le marchand
+        for (const s of (p.sells || [])) { if (s.id) allIds.push(s.id); }
+        const itemNames = [...new Set(allIds)]
+          .map(id => itemNameMap.get(id) || id.replace(/_/g, ' ')).filter(Boolean).join(' ');
+        const extra = p.instructions || '';
+        return { id: p.id, name, search: normalize(name + ' ' + itemNames + ' ' + extra) };
       }),
       'quête':   quetes.map(q => ({ id: q.id, name: q.titre || q.name || q.id })),
       panoplie:  panoplies.map(p => ({ id: p.id, name: p.label || p.id })),
@@ -2846,11 +2857,20 @@ async function loadDeadLinks() {
       return true;
     });
 
+    _deadLinksSnapshot = { deduped, ENTITY_POOL };
+
     listEl.innerHTML = '';
     if (!deduped.length) {
+      _deadLinksSnapshot = null;
+      const autoBtn = document.getElementById('dead-links-auto-btn');
+      if (autoBtn) autoBtn.style.display = 'none';
       listEl.innerHTML = '<div class="empty">✓ Aucun lien mort — toutes les références sont valides.</div>';
       return;
     }
+
+    // Afficher le bouton auto-fix
+    const autoBtn = document.getElementById('dead-links-auto-btn');
+    if (autoBtn) autoBtn.style.display = '';
 
     const summary = document.createElement('div');
     summary.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:12px;';
@@ -3100,6 +3120,61 @@ async function _applyDeadLinkFix(b, newId) {
   await updateDoc(doc(db, colName, b.srcId), sanitizeForFirestore(patch));
   invalidateModCache(colName);
 }
+
+window._autoFixDeadLinks = async function() {
+  if (!_deadLinksSnapshot?.deduped?.length) {
+    toast('Aucun lien mort chargé', 'error');
+    return;
+  }
+  const { deduped, ENTITY_POOL } = _deadLinksSnapshot;
+  const autoBtn = document.getElementById('dead-links-auto-btn');
+  if (autoBtn) { autoBtn.disabled = true; autoBtn.textContent = '⏳ Correction…'; }
+
+  let fixed = 0, skipped = 0;
+  for (const b of deduped) {
+    const pool = ENTITY_POOL[b.targetType] || [];
+    // refId est un ID avec underscores (ex: forgeron_armes_tolbana)
+    // → convertir en mots puis utiliser fuzzyMatch (token par token, tolère Levenshtein)
+    const normWords = b.refId.replace(/_/g, ' ');
+    const normId    = normalize(b.refId);
+    let results = pool.filter(e => {
+      const eId = normalize(e.id);
+      return fuzzyMatch(normWords, e.search || e.name)
+          || eId.includes(normId)
+          || normId.includes(eId);
+    });
+
+    // Fallback : si pas exactement 1 résultat, chercher par srcName (ex: "Pièce d'Onyx Pur")
+    // Utilise includes() — même logique que le dropdown manuel — pas fuzzyMatch (trop permissif)
+    if (results.length !== 1 && b.srcName) {
+      const normSrc = normalize(b.srcName);
+      const fallback = pool.filter(e =>
+        normalize(e.search || e.name).includes(normSrc) || normalize(e.id).includes(normSrc)
+      );
+      if (fallback.length === 1) results = fallback;
+    }
+    if (results.length === 1) {
+      try {
+        await _applyDeadLinkFix(b, results[0].id);
+        await _writeAudit('dead_link_fix', b.srcType, b.srcId, b.srcName,
+          { field: b.field, oldRef: b.refId, newRef: results[0].id, auto: true });
+        fixed++;
+      } catch { skipped++; }
+    } else {
+      skipped++;
+    }
+  }
+
+  if (autoBtn) { autoBtn.disabled = false; autoBtn.textContent = '⚡ Auto-corriger tout'; }
+
+  const msg = fixed > 0
+    ? `✓ ${fixed} lien${fixed > 1 ? 's' : ''} corrigé${fixed > 1 ? 's' : ''} automatiquement` +
+      (skipped > 0 ? `, ${skipped} nécessite${skipped > 1 ? 'nt' : ''} correction manuelle` : '')
+    : `Aucun lien auto-corrigeable (${skipped} nécessite${skipped > 1 ? 'nt' : ''} correction manuelle)`;
+  toast(msg, fixed > 0 ? 'success' : 'info');
+
+  if (fixed > 0) await loadDeadLinks();
+};
 
 // ══════════════════════════════════════════════════════
 // IDs ORPHELINS (soumissions pending → IDs rejetés)
@@ -8557,6 +8632,130 @@ window.renderAuditLog = function() {
 window.loadAuditLogMore = function() {
   _auditLimit += 50;
   renderAuditLog();
+};
+
+// ══════════════════════════════════════════════════════
+// STATISTIQUES
+// ══════════════════════════════════════════════════════
+window.showStatistiques = function() {
+  if (currentRole !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
+  _setHash('statistiques');
+  document.getElementById('panel-statistiques').style.display = '';
+  document.getElementById('btn-statistiques').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  loadStatistiques();
+};
+
+window.loadStatistiques = async function loadStatistiques() {
+  const container = document.getElementById('stats-content');
+  container.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const snap = await getDocs(collection(db, 'page_views'));
+    const docs = snap.docs.map(d => d.data());
+
+    if (!docs.length) {
+      container.innerHTML = '<div class="empty">Aucune donnée — visitez les pages wiki pour générer des statistiques.</div>';
+      return;
+    }
+
+    const today = new Date();
+    const cutoff7  = new Date(today); cutoff7.setDate(today.getDate() - 7);
+    const cutoff30 = new Date(today); cutoff30.setDate(today.getDate() - 30);
+
+    let total = 0, total7 = 0, total30 = 0;
+    const byDate = {}, bySection = {}, byMonth = {};
+
+    for (const d of docs) {
+      const count = d.count || 0;
+      const date  = d.date;
+      const section = d.section || 'inconnu';
+      total += count;
+      const dt = new Date(date + 'T00:00:00');
+      if (dt >= cutoff7)  total7  += count;
+      if (dt >= cutoff30) total30 += count;
+      byDate[date] = (byDate[date] || 0) + count;
+      bySection[section] = (bySection[section] || 0) + count;
+      const month = date.slice(0, 7);
+      if (!byMonth[month]) byMonth[month] = {};
+      byMonth[month][section] = (byMonth[month][section] || 0) + count;
+    }
+
+    const SECTION_COLORS = {
+      compendium: '#7a5af8', bestiaire: '#f87171', map: '#4ade80',
+      quetes: '#fbbf24', atelier: '#60a5fa', patchnotes: '#a78bfa',
+    };
+    const SECTION_LABELS = {
+      compendium: '⚔️ Compendium', bestiaire: '💀 Bestiaire', map: '🗺️ Carte',
+      quetes: '📜 Quêtes', atelier: '🔨 Atelier', patchnotes: '📰 Patchnotes',
+    };
+
+    const sections = Object.keys(bySection).sort((a, b) => bySection[b] - bySection[a]);
+    const maxSection = Math.max(...Object.values(bySection), 1);
+
+    const last30 = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today); d.setDate(today.getDate() - i);
+      last30.push(d.toISOString().slice(0, 10));
+    }
+    const maxDay = Math.max(...last30.map(d => byDate[d] || 0), 1);
+
+    const months = Object.keys(byMonth).sort().reverse();
+
+    const fmt = n => n.toLocaleString('fr-FR');
+
+    const dailyBars = last30.map(date => {
+      const count = byDate[date] || 0;
+      const pct = Math.round(count / maxDay * 100);
+      return `<div class="stats-bar-row">
+        <div class="stats-bar-label">${escHtml(date.slice(5))}</div>
+        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${pct}%">${count > 0 ? fmt(count) : ''}</div></div>
+      </div>`;
+    }).join('');
+
+    const sectionBars = sections.map(s => {
+      const count = bySection[s] || 0;
+      const pct   = Math.round(count / maxSection * 100);
+      const color = SECTION_COLORS[s] || '#7a7a90';
+      const label = SECTION_LABELS[s] || s;
+      return `<div class="stats-sec-row">
+        <div class="stats-sec-label">${escHtml(label)}</div>
+        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${pct}%;background:${color}">${fmt(count)}</div></div>
+      </div>`;
+    }).join('');
+
+    const monthRows = months.map(m => {
+      const mData = byMonth[m] || {};
+      const mTotal = Object.values(mData).reduce((a, b) => a + b, 0);
+      const cells = sections.map(s => `<td style="text-align:right;">${fmt(mData[s] || 0)}</td>`).join('');
+      return `<tr><td style="font-weight:600;">${escHtml(m)}</td>${cells}<td style="font-weight:700;text-align:right;">${fmt(mTotal)}</td></tr>`;
+    }).join('');
+
+    const thSections = sections.map(s => `<th style="text-align:right;">${escHtml(SECTION_LABELS[s] || s)}</th>`).join('');
+
+    container.innerHTML = `
+      <div class="stats-cards">
+        <div class="stats-card"><div class="stats-card-val">${fmt(total7)}</div><div class="stats-card-lbl">7 derniers jours</div></div>
+        <div class="stats-card"><div class="stats-card-val">${fmt(total30)}</div><div class="stats-card-lbl">30 derniers jours</div></div>
+        <div class="stats-card"><div class="stats-card-val">${fmt(total)}</div><div class="stats-card-lbl">All-time</div></div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-section-title">Visites par jour — 30 derniers jours</div>
+        <div class="stats-barchart">${dailyBars}</div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-section-title">Répartition par section</div>
+        ${sectionBars}
+      </div>
+      <div class="stats-section">
+        <div class="stats-section-title">Tableau mensuel</div>
+        <table class="stats-table">
+          <thead><tr><th>Mois</th>${thSections}<th style="text-align:right;">Total</th></tr></thead>
+          <tbody>${monthRows}</tbody>
+        </table>
+      </div>`;
+  } catch(e) {
+    container.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
+  }
 };
 
 window.showMigration = async () => {

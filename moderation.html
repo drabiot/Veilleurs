@@ -110,6 +110,7 @@
     <button class="filter-btn" id="btn-creator-validation" data-min-role="admin" onclick="showCreatorValidation()">⚙️ Champs requis</button>
     <button class="filter-btn" id="btn-game-config"        data-min-role="admin" onclick="showGameConfig()">🌍 Config Jeu</button>
     <button class="filter-btn" id="btn-audit-log"          data-min-role="admin" onclick="showAuditLog()">📋 Journal d'audit</button>
+    <button class="filter-btn" id="btn-statistiques"       data-min-role="admin" onclick="showStatistiques()">📊 Statistiques</button>
 
     <!-- ── OUTILS ───────────────────────────────────────── -->
     <div class="sb-label">OUTILS</div>
@@ -208,13 +209,29 @@
   <main class="main" id="dead-links-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <span style="font-size:15px;font-weight:700;">💀 Liens morts</span>
-      <button class="btn btn-ghost" onclick="loadDeadLinks()" style="font-size:12px;">🔄 Rafraîchir</button>
+      <div style="display:flex;gap:6px;">
+        <button class="btn" id="dead-links-auto-btn" onclick="_autoFixDeadLinks()" style="background:var(--warn);color:#000;font-size:11px;padding:5px 12px;display:none;">⚡ Auto-corriger tout</button>
+        <button class="btn btn-ghost" onclick="loadDeadLinks()" style="font-size:12px;">🔄 Rafraîchir</button>
+      </div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
       Références croisées dans les données <b>publiées</b> (items, mobs, quêtes) pointant vers un ID inexistant dans la base.<br>
       Couvre : craft, loot, obtain, évolutions, set, objectifs de quête, récompenses, PNJ de quête.
     </p>
     <div id="dead-links-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Statistiques -->
+  <main class="main" id="panel-statistiques" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">📊 Statistiques</span>
+      <button class="btn btn-ghost" onclick="loadStatistiques()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      Visites par section du wiki. Un visit est compté une fois par session de navigateur par section.<br>
+      Les données sont collectées depuis le déploiement du tracking — les visites antérieures ne sont pas incluses.
+    </p>
+    <div id="stats-content"><div class="empty">Chargement…</div></div>
   </main>
 
   <!-- Panneau IDs orphelins -->
