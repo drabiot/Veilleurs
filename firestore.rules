@@ -139,6 +139,11 @@
         allow delete: if isAdmin();
       }
 
+      match /page_views/{docId} {
+        allow read:  if isAdmin();
+        allow write: if true;
+      }
+
       match /submissions/{id} {
         allow create: if request.resource.data.submitterName is string
                       && request.resource.data.submitterName.size() >= 2

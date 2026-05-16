@@ -389,8 +389,9 @@
   <script src="data.js"></script>
   <script type="module">
     import { store } from '../store.js';
-    import { db }    from '../firebase.js';
+    import { db, logPageView }    from '../firebase.js';
     import { getDoc, doc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    logPageView('map');
     await store.load(['pnj', 'regions', 'mobs', 'quetes', 'donjons', 'zones', 'mapMarkers']);
     window._map_pnj        = store.pnj;
     window._map_regions    = store.regions;

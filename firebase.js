@@ -11,7 +11,7 @@ import { initializeFirestore, getFirestore,
          persistentLocalCache, persistentMultipleTabManager,
          doc, getDoc, collection, getDocs, onSnapshot,
          setDoc, addDoc, updateDoc, deleteDoc, deleteField,
-         serverTimestamp,
+         serverTimestamp, increment,
          query, where, orderBy, limit }           from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getAuth, onAuthStateChanged,
          signInWithEmailAndPassword, signOut,
@@ -124,6 +124,18 @@ export async function sendVerificationEmail() {
 
 export async function logout() {
   return signOut(auth);
+}
+
+/** Enregistre une visite de page — une seule fois par session par section */
+export async function logPageView(section) {
+  const key = 'pv_' + section;
+  if (sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, '1');
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    await setDoc(doc(db, 'page_views', section + '_' + today),
+      { section, date: today, count: increment(1) }, { merge: true });
+  } catch { /* silently fail */ }
 }
 
 // ── Data helpers ─────────────────────────────────────
