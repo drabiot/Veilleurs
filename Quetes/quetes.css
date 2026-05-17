@@ -198,6 +198,16 @@ body.quetes-page { overflow: hidden; }
   flex-direction: column;
   padding: 4px 0 8px;
 }
+.inv-empty-msg {
+  padding: 16px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1.7;
+  text-align: center;
+  opacity: .6;
+}
 .inv-row {
   display: flex;
   align-items: center;
@@ -207,6 +217,13 @@ body.quetes-page { overflow: hidden; }
   transition: background .12s;
 }
 .inv-row:hover { background: rgba(255,255,255,.02); }
+.inv-row--full { background: rgba(125,184,122,.05); }
+.inv-row--full:hover { background: rgba(125,184,122,.09); }
+.inv-row--full .inv-label { color: #7db87a !important; }
+.inv-row--full .inv-input { color: #7db87a; border-color: rgba(125,184,122,.35); }
+.inv-row--full .inv-sep,
+.inv-row--full .inv-need { color: rgba(125,184,122,.6); }
+
 .inv-visual { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .inv-img    { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
 .inv-emoji  { font-size: 14px; }
@@ -214,15 +231,101 @@ body.quetes-page { overflow: hidden; }
   flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 10px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+.inv-progress {
+  display: flex; align-items: center; gap: 2px; flex-shrink: 0;
+}
+.inv-sep  { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+.inv-need { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); min-width: 14px; }
 .inv-input {
-  width: 44px; background: rgba(255,255,255,.05); border: 1px solid var(--rim2);
+  width: 32px; background: rgba(255,255,255,.05); border: 1px solid var(--rim2);
   color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  text-align: right; padding: 2px 4px; outline: none; flex-shrink: 0;
+  text-align: right; padding: 2px 3px; outline: none; flex-shrink: 0;
   -moz-appearance: textfield;
 }
 .inv-input::-webkit-inner-spin-button,
 .inv-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 .inv-input:focus { border-color: var(--gold-dim); background: rgba(255,255,255,.08); }
+
+/* Checkbox inventaire */
+.inv-check-label { display: flex; align-items: center; flex-shrink: 0; cursor: pointer; }
+.inv-check-label input { display: none; }
+.inv-checkmark {
+  width: 13px; height: 13px; border: 1px solid var(--rim2);
+  background: rgba(255,255,255,.03); display: flex; align-items: center; justify-content: center;
+  transition: background .15s, border-color .15s; flex-shrink: 0;
+}
+.inv-check-label input:checked + .inv-checkmark {
+  background: rgba(125,184,122,.18); border-color: #7db87a;
+}
+.inv-check-label input:checked + .inv-checkmark::after {
+  content: '✓'; color: #7db87a; font-size: 9px; line-height: 1;
+}
+.inv-check-label:hover .inv-checkmark { border-color: var(--gold-dim); }
+
+.inv-have {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  color: var(--text); text-align: right; min-width: 14px;
+}
+.inv-row--full .inv-have { color: #7db87a; }
+.inv-craft-row.inv-row--full .inv-have { color: #7db87a; }
+
+.inv-completable-btn {
+  background: transparent; border: none; padding: 0 1px;
+  font-size: 13px; cursor: pointer; flex-shrink: 0;
+  opacity: .85; transition: opacity .15s, transform .15s; line-height: 1;
+}
+.inv-completable-btn:hover { opacity: 1; transform: scale(1.25); }
+
+/* Craft expand */
+.inv-craft-toggle {
+  background: transparent; border: 1px solid var(--rim); padding: 1px 4px;
+  font-size: 10px; cursor: pointer; color: var(--muted); flex-shrink: 0;
+  transition: color .15s, border-color .15s, background .15s, transform .15s;
+  line-height: 1.4;
+}
+.inv-craft-toggle:hover { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow); }
+.inv-craft-toggle.open { color: var(--gold); border-color: var(--gold-dim); background: rgba(224,172,96,.08); }
+
+.inv-craft-section {
+  background: rgba(255,255,255,.015);
+  border-left: 2px solid rgba(224,172,96,.2);
+  margin-left: 12px;
+}
+.inv-craft-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 12px 4px 6px;
+  border-bottom: 1px solid rgba(255,255,255,.02);
+  transition: background .12s;
+}
+.inv-craft-row:last-child { border-bottom: none; }
+.inv-craft-row:hover { background: rgba(255,255,255,.02); }
+.inv-craft-row.inv-row--full { background: rgba(125,184,122,.05); }
+.inv-craft-row.inv-row--full .inv-label { color: #7db87a !important; }
+.inv-craft-row.inv-row--full .inv-input { color: #7db87a; border-color: rgba(125,184,122,.35); }
+.inv-craft-row.inv-row--full .inv-sep,
+.inv-craft-row.inv-row--full .inv-need { color: rgba(125,184,122,.6); }
+.inv-craft-indent {
+  font-size: 10px; color: rgba(224,172,96,.35); flex-shrink: 0; line-height: 1;
+}
+
+.inv-ctrl-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px; border-bottom: 1px solid var(--rim);
+  background: rgba(224,172,96,.04);
+}
+.inv-ctrl-count {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  color: var(--gold-dim); letter-spacing: .06em;
+}
+.inv-reset-btn {
+  background: transparent; border: 1px solid var(--rim);
+  color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  padding: 2px 7px; cursor: pointer; letter-spacing: .04em;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.inv-reset-btn:hover {
+  color: #e07070; border-color: rgba(224,112,112,.4); background: rgba(224,112,112,.07);
+}
 
 #feasible-panel { padding: 6px 10px 8px; border-top: 1px solid var(--rim); }
 .feasible-title {
@@ -374,6 +477,9 @@ body.quetes-page { overflow: hidden; }
 .quete-card.sec  .card-title { color: var(--quete-sec); }
 .quete-card.ter  .card-title { color: var(--quete-ter); }
 
+.card-top-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;
+}
 .card-badge {
   font-family: 'JetBrains Mono', monospace; font-size: 8px; font-weight: 700;
   letter-spacing: .08em; text-transform: uppercase;
@@ -382,6 +488,61 @@ body.quetes-page { overflow: hidden; }
 .badge-todo { color: #d4a840; border-color: #d4a84044; background: rgba(212,168,64,.06); }
 .badge-done { color: #7db87a; border-color: #7db87a44; background: rgba(125,184,122,.06); }
 .badge-wip  { color: #7aabdc; border-color: #7aabdc44; background: rgba(122,171,220,.06); }
+
+/* Bouton suivi (🎯) */
+.card-track-btn {
+  background: transparent; border: 1px solid transparent; padding: 1px 4px; font-size: 12px;
+  cursor: pointer; opacity: .18; line-height: 1; flex-shrink: 0;
+  transition: opacity .15s, transform .12s, border-color .15s, background .15s;
+  border-radius: 3px;
+}
+.quete-card:hover .card-track-btn { opacity: .55; }
+.quete-card:hover .card-track-btn:hover {
+  opacity: 1; transform: scale(1.1);
+  border-color: rgba(224,172,96,.4); background: rgba(224,172,96,.08);
+}
+.card-track-btn.tracked {
+  opacity: 1 !important;
+  border-color: rgba(224,172,96,.45) !important;
+  background: rgba(224,172,96,.1) !important;
+}
+
+/* Bouton terminée (✓/↩) */
+.card-done-btn {
+  background: rgba(255,255,255,.04); border: 1px solid var(--rim2);
+  color: rgba(255,255,255,.35); font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  padding: 2px 7px; cursor: pointer; flex-shrink: 0;
+  opacity: .45; transition: opacity .15s, color .15s, border-color .15s, background .15s;
+  white-space: nowrap;
+}
+.quete-card:hover .card-done-btn { opacity: 1; color: var(--muted); }
+.card-done-btn:hover {
+  color: #7db87a; border-color: rgba(125,184,122,.45); background: rgba(125,184,122,.1);
+}
+
+/* Carte suivie */
+.quete-card.is-tracked {
+  border-color: rgba(224,172,96,.45);
+  box-shadow: 0 0 0 1px rgba(224,172,96,.12), inset 0 0 30px rgba(224,172,96,.03);
+}
+.quete-card.is-tracked .type-stripe {
+  background: var(--gold);
+  box-shadow: 2px 0 10px rgba(224,172,96,.5);
+}
+.quete-card.is-tracked::before,
+.quete-card.is-tracked::after { opacity: .55; }
+
+/* Bouton bulk */
+.bulk-complete-btn {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .04em;
+  padding: 6px 12px; border: 1px solid var(--rim2);
+  background: rgba(255,255,255,.03); color: var(--muted);
+  cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+  white-space: nowrap;
+}
+.bulk-complete-btn:hover {
+  color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow);
+}
 
 /* Meta tags */
 .card-meta { display: flex; flex-wrap: wrap; gap: 5px; flex-shrink: 0; }

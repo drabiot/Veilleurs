@@ -166,6 +166,8 @@
           <p class="quetes-subtitle" id="main-subtitle">// PRINCIPALES · VEILLEURS AU CLAIR DE LUNE</p>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
+          <button id="track-all-btn" class="bulk-complete-btn" onclick="trackAllVisible()">🎯 Suivre affichées</button>
+          <button id="bulk-complete-btn" class="bulk-complete-btn" onclick="bulkComplete()">✓ Tout terminer</button>
           <select id="quest-sort" class="quest-sort">
             <option value="default">Ordre par défaut</option>
             <option value="profit">💰 Rentabilité (XP + Cols)</option>
@@ -257,6 +259,18 @@
       window._vcl_pnj_index = new Map(
         (store.pnj || []).map(p => [p.id || p._id, p.name || p.nom || p.id || p._id])
       );
+      // Index craft PNJ : itemId → [{id, qty}] (première recette trouvée)
+      window._vcl_pnj_craft_index = new Map();
+      for (const p of (store.pnj || [])) {
+        for (const recipe of (p.crafts || [])) {
+          if (!recipe.resultId || !Array.isArray(recipe.ingredients) || !recipe.ingredients.length) continue;
+          if (!window._vcl_pnj_craft_index.has(recipe.resultId)) {
+            window._vcl_pnj_craft_index.set(recipe.resultId,
+              recipe.ingredients.map(i => ({ id: i.itemId || i.id, qty: i.qty || 1 })).filter(i => i.id)
+            );
+          }
+        }
+      }
       const existingIds = new Set(QUETES.map(q => q.id));
       const newQuetes = store.quetes
         .map(normalizeFirestoreQuest)

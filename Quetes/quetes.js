@@ -21,6 +21,7 @@ let activePalier = 'all';
 let activeZones  = new Set();
 let activeStatut = 'all';
 let searchQuery  = '';
+let currentVisible = [];
 
 /* ══════════════════════════════════
    PERSISTANCE CHECKBOXES
@@ -44,14 +45,216 @@ function getProgress(q) {
 }
 
 function isQuestDone(q) {
+  if (localStorage.getItem(`vcl_force_done_${q.id}`)) return true;
   const { done, total } = getProgress(q);
   return done === total && total > 0;
 }
 
 function isQuestStarted(q) {
+  if (isQuestDone(q)) return false;
+  if (localStorage.getItem(`vcl_force_wip_${q.id}`)) return true;
   const { done, total } = getProgress(q);
   return done > 0 && done < total;
 }
+
+/* ══════════════════════════════════
+   TRACKING & FORCE STATUS
+══════════════════════════════════ */
+function getTrackedIds() {
+  try { return new Set(JSON.parse(localStorage.getItem('vcl_tracked_quests') || '[]')); }
+  catch { return new Set(); }
+}
+function setTrackedIds(set) {
+  localStorage.setItem('vcl_tracked_quests', JSON.stringify([...set]));
+}
+
+function forceQuestDone(q) {
+  const { total } = getProgress(q);
+  if (total === 0) {
+    localStorage.setItem(`vcl_force_done_${q.id}`, '1');
+  } else {
+    q.objectifs.forEach((o, i) => {
+      if (Array.isArray(o)) o.forEach((_, j) => setCk(q.id, i, j, true));
+      else setCk(q.id, i, undefined, true);
+    });
+  }
+}
+
+function forceQuestUndone(q) {
+  localStorage.removeItem(`vcl_force_done_${q.id}`);
+  localStorage.removeItem(`vcl_force_wip_${q.id}`);
+  q.objectifs.forEach((o, i) => {
+    if (Array.isArray(o)) o.forEach((_, j) => localStorage.removeItem(ckKey(q.id, i, j)));
+    else localStorage.removeItem(ckKey(q.id, i));
+  });
+}
+
+function _updateCardBadge(card, q) {
+  const badge = card.querySelector('.card-badge');
+  if (!badge) return;
+  const done    = isQuestDone(q);
+  const started = !done && isQuestStarted(q);
+  badge.className   = `card-badge ${done ? 'badge-done' : started ? 'badge-wip' : 'badge-todo'}`;
+  badge.textContent = done ? 'Terminée' : started ? 'En cours' : 'À faire';
+}
+
+function _updateBulkBtn() {
+  const btn = document.getElementById('bulk-complete-btn');
+  if (!btn) return;
+  if (currentVisible.length === 0) { btn.textContent = '✓ Tout terminer'; return; }
+  btn.textContent = currentVisible.every(q => isQuestDone(q)) ? '↩ Tout annuler' : '✓ Tout terminer';
+}
+
+function _updateTrackAllBtn() {
+  const btn = document.getElementById('track-all-btn');
+  if (!btn) return;
+  if (currentVisible.length === 0) { btn.textContent = '🎯 Suivre affichées'; return; }
+  const ids = getTrackedIds();
+  const allTracked = currentVisible.every(q => ids.has(q.id));
+  btn.textContent = allTracked ? '🎯 Ne plus suivre' : '🎯 Suivre affichées';
+}
+
+window.toggleTracked = function(questId) {
+  const ids = getTrackedIds();
+  const wasTracked = ids.has(questId);
+  const q = getQuestById(questId);
+  if (wasTracked) {
+    ids.delete(questId);
+    localStorage.removeItem(`vcl_force_wip_${questId}`);
+    if (q) clearQuestInventory(q);
+  } else {
+    if (q && isQuestDone(q)) return; // pas de suivi sur quête terminée
+    ids.add(questId);
+    if (q && !isQuestDone(q)) localStorage.setItem(`vcl_force_wip_${questId}`, '1');
+  }
+  setTrackedIds(ids);
+  const isTracked = ids.has(questId);
+  const card = queteGrid.querySelector(`.quete-card[data-id="${questId}"]`);
+  if (card) {
+    card.classList.toggle('is-tracked', isTracked);
+    const btn = card.querySelector('.card-track-btn');
+    if (btn) { btn.classList.toggle('tracked', isTracked); btn.title = isTracked ? 'Ne plus suivre' : 'Suivre cette quête'; }
+    const q = getQuestById(questId);
+    if (q) _updateCardBadge(card, q);
+  }
+  buildInventoryPanel();
+  updateStatutCounts();
+};
+
+window.toggleQuestDone = function(questId) {
+  const q = getQuestById(questId);
+  if (!q) return;
+  if (isQuestDone(q)) {
+    forceQuestUndone(q);
+  } else {
+    forceQuestDone(q);
+    clearQuestInventory(q);
+    // Untrack quest once marked done
+    const ids = getTrackedIds();
+    if (ids.has(questId)) {
+      ids.delete(questId);
+      localStorage.removeItem(`vcl_force_wip_${questId}`);
+      setTrackedIds(ids);
+    }
+  }
+  const card = queteGrid.querySelector(`.quete-card[data-id="${questId}"]`);
+  if (card) {
+    const { done, total, pct } = getProgress(q);
+    const isDone = isQuestDone(q);
+    _updateCardBadge(card, q);
+    const fill = card.querySelector('.progress-fill');
+    const lbl  = card.querySelector('.progress-lbl');
+    const btn  = card.querySelector('.card-done-btn');
+    const trackBtn = card.querySelector('.card-track-btn');
+    if (fill) fill.style.width = (isDone ? 100 : pct) + '%';
+    if (lbl)  lbl.textContent  = isDone ? `${total}/${total}` : `${done}/${total}`;
+    if (btn)  { btn.textContent = isDone ? '↩' : '✓'; btn.title = isDone ? 'Marquer à faire' : 'Marquer terminée'; }
+    if (isDone && trackBtn) trackBtn.remove();
+    else if (!isDone && !trackBtn) {
+      const topRight = card.querySelector('.card-top-right');
+      if (topRight) {
+        const nb = document.createElement('button');
+        nb.className = 'card-track-btn';
+        nb.title = 'Suivre cette quête';
+        nb.textContent = '🎯';
+        nb.onclick = (e) => { e.stopPropagation(); toggleTracked(questId); };
+        topRight.insertBefore(nb, topRight.querySelector('.card-badge').nextSibling);
+      }
+    }
+  }
+  updateStatutCounts();
+  buildInventoryPanel();
+  _updateBulkBtn();
+};
+
+window.bulkComplete = function() {
+  if (currentVisible.length === 0) return;
+  const allDone = currentVisible.every(q => isQuestDone(q));
+  if (!allDone) {
+    // Marking done → untrack those quests
+    const ids = getTrackedIds();
+    currentVisible.forEach(q => {
+      forceQuestDone(q);
+      clearQuestInventory(q);
+      if (ids.has(q.id)) { ids.delete(q.id); localStorage.removeItem(`vcl_force_wip_${q.id}`); }
+    });
+    setTrackedIds(ids);
+  } else {
+    currentVisible.forEach(q => forceQuestUndone(q));
+  }
+  buildGrid();
+  updateStatutCounts();
+  buildInventoryPanel();
+};
+
+window.trackAllVisible = function() {
+  const ids = getTrackedIds();
+  const allTracked = currentVisible.length > 0 && currentVisible.every(q => ids.has(q.id));
+  currentVisible.forEach(q => {
+    if (allTracked) {
+      ids.delete(q.id);
+      localStorage.removeItem(`vcl_force_wip_${q.id}`);
+      clearQuestInventory(q);
+    } else {
+      if (isQuestDone(q)) return; // pas de suivi sur quête terminée
+      ids.add(q.id);
+      if (!isQuestDone(q)) localStorage.setItem(`vcl_force_wip_${q.id}`, '1');
+    }
+  });
+  setTrackedIds(ids);
+  buildGrid();
+  updateStatutCounts();
+  buildInventoryPanel();
+  _updateTrackAllBtn();
+};
+
+window.resetTracked = function() {
+  const ids = getTrackedIds();
+  // Clear inv counters for all items in tracked quests (incl. craft ingredients)
+  const toClear = new Set();
+  ids.forEach(qid => {
+    const q = getQuestById(qid);
+    if (!q) return;
+    q.objectifs.flat().forEach(o => {
+      if (!o.items) return;
+      o.items.forEach(it => {
+        toClear.add(it.id);
+        const ings = getIngsById(it.id);
+        if (ings) ings.forEach(ing => ing.id && toClear.add(ing.id));
+      });
+    });
+  });
+  toClear.forEach(id => localStorage.removeItem(`vcl_inv_${id}`));
+  // Clear per-parent craft ingredient storage
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('vcl_inv_craft_'))
+    .forEach(k => localStorage.removeItem(k));
+  ids.forEach(qid => localStorage.removeItem(`vcl_force_wip_${qid}`));
+  localStorage.removeItem('vcl_tracked_quests');
+  buildGrid();
+  updateStatutCounts();
+  buildInventoryPanel();
+};
 
 /* ══════════════════════════════════
    DOM
@@ -364,6 +567,119 @@ function setInvItem(id, val) {
   localStorage.setItem(`vcl_inv_${id}`, Math.max(0, parseInt(val, 10) || 0));
 }
 
+/* Agrège les items requis des quêtes suivies (objectifs seulement, pas récompenses) */
+function getTrackedItems() {
+  const trackedIds = getTrackedIds();
+  const map = new Map(); // itemId → { need, quests: Set<questId> }
+  QUETES.forEach(q => {
+    if (!trackedIds.has(q.id)) return;
+    const seen = new Set();
+    q.objectifs.flat().forEach(o => {
+      if (!o.items) return;
+      o.items.forEach(it => {
+        if (seen.has(it.id)) return;
+        seen.add(it.id);
+        const entry = map.get(it.id) || { need: 0, quests: new Set() };
+        entry.need += (it.qte || 1);
+        entry.quests.add(q.id);
+        map.set(it.id, entry);
+      });
+    });
+  });
+  return map;
+}
+
+function isQuestItemComplete(q) {
+  const allObjs = q.objectifs.flat();
+  const hasItems = allObjs.some(o => o.items?.length);
+  if (!hasItems) return false;
+  const seen = new Set();
+  for (const o of allObjs) {
+    if (!o.items) continue;
+    for (const it of o.items) {
+      if (seen.has(it.id)) continue;
+      seen.add(it.id);
+      const need = it.qte || 1;
+      const have = parseInt(localStorage.getItem(`vcl_inv_${it.id}`) || '0', 10);
+      if (have >= need) continue;
+      // Accepter si les ingrédients de craft couvrent le besoin
+      const itData = dbItem(it.id);
+      if (itData && allIngredientsFullForCraft(itData, it.id, need)) continue;
+      return false;
+    }
+  }
+  return true;
+}
+
+/* ══════════════════════════════════
+   CRAFT EXPAND (inventaire)
+══════════════════════════════════ */
+const _expandedCraftItems = new Set();
+
+/* Normalise item.craft → tableau plat [{id, qty}] ou null.
+   Fallback : cherche dans l'index craft PNJ (_vcl_pnj_craft_index) si item.craft absent. */
+function getCraftIngredients(item) {
+  const craft = item?.craft;
+  if (craft && Array.isArray(craft) && craft.length > 0) {
+    const first = craft[0];
+    if (first.items !== undefined && Array.isArray(first.items)) return first.items.length ? first.items : null;
+    if (Array.isArray(first)) return first.length ? first : null;
+    return craft;
+  }
+  // Craft stocké sur le PNJ, pas sur l'item
+  if (item?.id && window._vcl_pnj_craft_index?.has(item.id)) {
+    const ings = window._vcl_pnj_craft_index.get(item.id);
+    return ings.length ? ings : null;
+  }
+  return null;
+}
+
+/* Stockage per-parent : vcl_inv_craft_{parentId}_{ingId} — évite la contamination croisée */
+function getCraftIngHave(parentId, ingId) {
+  return parseInt(localStorage.getItem(`vcl_inv_craft_${parentId}_${ingId}`) || '0', 10);
+}
+function setCraftIngHave(parentId, ingId, val) {
+  localStorage.setItem(`vcl_inv_craft_${parentId}_${ingId}`, Math.max(0, parseInt(val, 10) || 0));
+}
+
+/* Retourne les ingrédients craft pour un itemId, même si l'item n'est pas dans DB_ITEMS */
+function getIngsById(itemId) {
+  const item = dbItem(itemId);
+  const fromItem = getCraftIngredients(item);
+  if (fromItem) return fromItem;
+  const fromPnj = window._vcl_pnj_craft_index?.get(itemId);
+  return (fromPnj && fromPnj.length) ? fromPnj : null;
+}
+
+function allIngredientsFullForCraft(item, itemId, itemNeed) {
+  const ings = getIngsById(itemId);
+  if (!ings) return false;
+  return ings.every(ing => {
+    if (!ing.id) return true;
+    const need = (ing.qty ?? ing.qte ?? 1) * itemNeed;
+    return getCraftIngHave(itemId, ing.id) >= need;
+  });
+}
+
+function clearQuestInventory(q) {
+  q.objectifs.flat().forEach(o => {
+    if (!o.items) return;
+    o.items.forEach(it => {
+      setInvItem(it.id, 0);
+      const ings = getIngsById(it.id);
+      if (ings) ings.forEach(ing => {
+        if (ing.id) localStorage.removeItem(`vcl_inv_craft_${it.id}_${ing.id}`);
+      });
+    });
+  });
+}
+
+window.toggleCraftExpand = function(id) {
+  if (_expandedCraftItems.has(id)) _expandedCraftItems.delete(id);
+  else _expandedCraftItems.add(id);
+  buildInventoryPanel();
+};
+
 function getFeasibleQuests() {
   const inv = getInventory();
   return QUETES.filter(q => {
@@ -373,7 +689,12 @@ function getFeasibleQuests() {
     if (!hasItems) return false;
     return allObjs.every(o => {
       if (!o.items) return true;
-      return o.items.every(it => (inv[it.id] || 0) >= it.qte);
+      return o.items.every(it => {
+        const need = it.qte || 1;
+        if ((inv[it.id] || 0) >= need) return true;
+        const itData = dbItem(it.id);
+        return itData ? allIngredientsFullForCraft(itData, it.id, need) : false;
+      });
     });
   });
 }
@@ -381,34 +702,152 @@ function getFeasibleQuests() {
 function buildInventoryPanel() {
   const panel = document.getElementById('inv-panel');
   if (!panel) return;
-  const inv = getInventory();
-  const ids = getAllQuestItemIds();
+
+  const trackedIds = getTrackedIds();
+
+  if (trackedIds.size === 0) {
+    panel.innerHTML = '<div class="inv-empty-msg">🎯 Sélectionnez des quêtes<br>pour suivre vos items</div>';
+    const fp = document.getElementById('feasible-panel');
+    if (fp) fp.innerHTML = '';
+    return;
+  }
+
+  const itemMap = getTrackedItems();
+
+  /* Quelles quêtes suivies sont completables (tous leurs items ok) ? */
+  const completableQuests = new Set();
+  trackedIds.forEach(qid => {
+    const q = getQuestById(qid);
+    if (!q || isQuestDone(q)) return;
+    if (isQuestItemComplete(q)) completableQuests.add(qid);
+  });
+
   panel.innerHTML = '';
 
-  ids.forEach(id => {
+  /* Bannière de contrôle (après le clear) */
+  const ctrl = document.createElement('div');
+  ctrl.className = 'inv-ctrl-bar';
+  ctrl.innerHTML = `
+    <span class="inv-ctrl-count">${trackedIds.size} quête${trackedIds.size > 1 ? 's' : ''} suivie${trackedIds.size > 1 ? 's' : ''}</span>
+    <button class="inv-reset-btn" onclick="resetTracked()" title="Vider la sélection">✕ Tout effacer</button>`;
+  panel.appendChild(ctrl);
+
+  if (itemMap.size === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'inv-empty-msg';
+    empty.innerHTML = 'Aucun item requis<br>pour les quêtes sélectionnées';
+    panel.appendChild(empty);
+    buildFeasiblePanel();
+    return;
+  }
+
+  itemMap.forEach(({ need, quests }, id) => {
     const item   = dbItem(id);
     const name   = item ? item.name : id;
     const color  = item ? rarityColor(item.rarity) : '#888';
-    const imgSrc = item ? (getItemImg(item)) : null;
+    const imgSrc = item ? getItemImg(item) : null;
+    const have   = parseInt(localStorage.getItem(`vcl_inv_${id}`) || '0', 10);
+
+    const craftIngs  = getIngsById(id);
+    const craftFull  = craftIngs ? allIngredientsFullForCraft(item, id, need) : false;
+    const effectiveFull = have >= need || craftFull;
+    const isExpanded = craftIngs && _expandedCraftItems.has(id);
+
+    const completableForThis = [...quests].filter(qid => completableQuests.has(qid));
+    const completableBtn = completableForThis.length > 0
+      ? `<button class="inv-completable-btn" data-quests="${completableForThis.join(',')}" title="Ouvrir la quête — tous les items réunis !">✨</button>`
+      : '';
+    const craftToggle = craftIngs
+      ? `<button class="inv-craft-toggle${isExpanded ? ' open' : ''}" onclick="toggleCraftExpand('${id}')" title="Composants de craft">⚒</button>`
+      : '';
 
     const row = document.createElement('div');
-    row.className = 'inv-row';
+    row.className = `inv-row${effectiveFull ? ' inv-row--full' : ''}`;
     row.innerHTML = `
+      <label class="inv-check-label">
+        <input type="checkbox" class="inv-check" data-id="${id}" data-need="${need}" ${effectiveFull ? 'checked' : ''} />
+        <span class="inv-checkmark"></span>
+      </label>
       <span class="inv-visual">
-        ${imgSrc
-          ? `<img class="inv-img" src="${imgSrc}" alt="${name}">`
-          : `<span class="inv-emoji">📦</span>`}
+        ${imgSrc ? `<img class="inv-img" src="${imgSrc}" alt="${name}">` : `<span class="inv-emoji">📦</span>`}
       </span>
       <span class="inv-label" style="color:${color}">${name}</span>
-      <input type="number" class="inv-input" min="0" value="${inv[id]}" data-id="${id}" />`;
+      ${craftToggle}
+      <span class="inv-progress">
+        <span class="inv-have">${have}</span>
+        <span class="inv-sep">/</span>
+        <span class="inv-need">${need}</span>
+      </span>
+      ${completableBtn}`;
     panel.appendChild(row);
+
+    if (craftIngs && isExpanded) {
+      const section = document.createElement('div');
+      section.className = 'inv-craft-section';
+      craftIngs.forEach(ing => {
+        if (!ing.id) return;
+        const ingQty  = ing.qty ?? ing.qte ?? 1;
+        const ingNeed = ingQty * need;
+        const ingHave = getCraftIngHave(id, ing.id);
+        const ingFull = ingHave >= ingNeed;
+        const ingItem  = dbItem(ing.id);
+        const ingName  = ingItem ? ingItem.name : (ing.id === 'cols' ? 'Cols' : ing.id);
+        const ingColor = ingItem ? rarityColor(ingItem.rarity) : (ing.id === 'cols' ? '#c9a84c' : '#888');
+        const ingImg   = ingItem ? getItemImg(ingItem) : null;
+        const ingVisual = ingImg
+          ? `<img class="inv-img" src="${ingImg}" alt="${ingName}">`
+          : ing.id === 'cols' ? '<span class="inv-emoji">🪙</span>' : '<span class="inv-emoji">📦</span>';
+
+        const ingRow = document.createElement('div');
+        ingRow.className = `inv-craft-row${ingFull ? ' inv-row--full' : ''}`;
+        ingRow.innerHTML = `
+          <span class="inv-craft-indent">└</span>
+          <label class="inv-check-label">
+            <input type="checkbox" class="inv-check inv-ing-check" data-ing-id="${ing.id}" data-parent-id="${id}" data-need="${ingNeed}" ${ingFull ? 'checked' : ''} />
+            <span class="inv-checkmark"></span>
+          </label>
+          <span class="inv-visual">${ingVisual}</span>
+          <span class="inv-label" style="color:${ingColor}">${ingName}</span>
+          <span class="inv-progress">
+            <span class="inv-have">${ingHave}</span>
+            <span class="inv-sep">/</span>
+            <span class="inv-need">${ingNeed}</span>
+          </span>`;
+        section.appendChild(ingRow);
+      });
+      panel.appendChild(section);
+    }
   });
 
-  panel.querySelectorAll('.inv-input').forEach(inp => {
-    inp.addEventListener('change', () => {
-      setInvItem(inp.dataset.id, inp.value);
-      buildFeasiblePanel();
+  panel.querySelectorAll('.inv-check').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const need = parseInt(cb.dataset.need, 10);
+      if (cb.dataset.ingId) {
+        // Ingrédient de craft → stockage per-parent
+        setCraftIngHave(cb.dataset.parentId, cb.dataset.ingId, cb.checked ? need : 0);
+      } else {
+        // Item top-level → sync sous-craft
+        setInvItem(cb.dataset.id, cb.checked ? need : 0);
+        const ings = getIngsById(cb.dataset.id);
+        if (ings) {
+          ings.forEach(ing => {
+            if (!ing.id) return;
+            const ingNeed = (ing.qty ?? ing.qte ?? 1) * need;
+            setCraftIngHave(cb.dataset.id, ing.id, cb.checked ? ingNeed : 0);
+          });
+        }
+      }
+      buildInventoryPanel();
       updateStatutCounts();
+    });
+  });
+
+  panel.querySelectorAll('.inv-completable-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const qids = btn.dataset.quests.split(',');
+      const q = getQuestById(qids[0]);
+      if (q) openModal(q);
     });
   });
 
@@ -510,12 +949,15 @@ let _currentSort = 'default';
 
 function buildGrid() {
   const entities = getFiltered();
+  currentVisible = entities.slice();
   queteGrid.innerHTML = '';
 
   if (entities.length === 0) {
     gridEmpty.style.display = 'flex';
     queteGrid.style.display = 'none';
     resultCount.textContent = '0 résultat';
+    _updateBulkBtn();
+    _updateTrackAllBtn();
     return;
   }
   gridEmpty.style.display = 'none';
@@ -527,6 +969,8 @@ function buildGrid() {
     const sorted = _sortQuests(entities, _currentSort);
     let idx = 0;
     sorted.forEach(q => _buildGridCard(q, idx++));
+    _updateBulkBtn();
+    _updateTrackAllBtn();
     return;
   }
 
@@ -543,17 +987,20 @@ function buildGrid() {
       _buildGridCard(q, idx++);
     });
   });
+  _updateBulkBtn();
+  _updateTrackAllBtn();
 }
 
 function _buildGridCard(q, idx) {
   const card = document.createElement('div');
-  card.className = `quete-card ${q.type}`;
+  const tracked = getTrackedIds().has(q.id);
+  card.className = `quete-card ${q.type}${tracked ? ' is-tracked' : ''}`;
   card.dataset.id = q.id;
   card.style.animationDelay = `${idx * 0.03}s`;
 
   const { done, total, pct } = getProgress(q);
-  const effectiveDone    = done === total && total > 0;
-  const effectiveStarted = !effectiveDone && done > 0;
+  const effectiveDone    = isQuestDone(q);
+  const effectiveStarted = !effectiveDone && isQuestStarted(q);
   const zs      = getZoneStyle(q.zone);
   const mapUrl  = getMapUrl(q.zone);
   const cardZoneHref = q.id
@@ -575,7 +1022,10 @@ function _buildGridCard(q, idx) {
     <div class="card-body">
       <div class="card-top">
         <div class="card-title">${q.titre}</div>
-        <span class="card-badge ${effectiveDone ? 'badge-done' : effectiveStarted ? 'badge-wip' : 'badge-todo'}">${effectiveDone ? 'Terminée' : effectiveStarted ? 'En cours' : 'À faire'}</span>
+        <div class="card-top-right">
+          <span class="card-badge ${effectiveDone ? 'badge-done' : effectiveStarted ? 'badge-wip' : 'badge-todo'}">${effectiveDone ? 'Terminée' : effectiveStarted ? 'En cours' : 'À faire'}</span>
+          ${!effectiveDone ? `<button class="card-track-btn${tracked ? ' tracked' : ''}" onclick="event.stopPropagation();toggleTracked('${q.id}')" title="${tracked ? 'Ne plus suivre' : 'Suivre cette quête'}">🎯</button>` : ''}
+        </div>
       </div>
       <div class="card-meta">
         <span class="ctag ctag-palier">P${q.palier}</span>
@@ -597,10 +1047,11 @@ function _buildGridCard(q, idx) {
       <div class="card-rewards-footer">${rewFooter}</div>
       <div class="card-progress-wrap">
         <div class="card-progress">
-          <div class="progress-wrap"><div class="progress-fill" style="width:${pct}%"></div></div>
-          <span class="progress-lbl">${done}/${total}</span>
+          <div class="progress-wrap"><div class="progress-fill" style="width:${effectiveDone ? 100 : pct}%"></div></div>
+          <span class="progress-lbl">${effectiveDone ? `${total}/${total}` : `${done}/${total}`}</span>
         </div>
         ${q.npc ? `<span class="card-npc">🧑 ${resolvePnjName(q.npc)}</span>` : ''}
+        <button class="card-done-btn" onclick="event.stopPropagation();toggleQuestDone('${q.id}')" title="${effectiveDone ? 'Marquer à faire' : 'Marquer terminée'}">${effectiveDone ? '↩' : '✓'}</button>
       </div>
     </div>`;
 
