@@ -58,8 +58,36 @@
         <span class="nav-label">Quêtes </span> 
       </a>
       <a href="atelier.html"                     class="nav-link active"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
+      <a href="../Builds/builds.html"            class="nav-link"><span class="nav-icon">📋</span><span class="nav-label">Builds</span></a>
     </nav>
   </header>
+
+  <!-- ══ BANNIÈRE PRÉVISUALISATION ══ -->
+  <div id="preview-banner" style="display:none; position:fixed; top:90px; left:0; right:0; z-index:90;
+    background:rgba(10,45,25,.97); border-bottom:1px solid rgba(80,200,120,.2);
+    padding:9px 24px; align-items:center; gap:14px;
+    font-family:'JetBrains Mono',monospace; font-size:12px; color:#7dcc90;">
+    <span style="color:rgba(125,204,144,.7); font-size:10px; letter-spacing:.1em; text-transform:uppercase;">◈ Aperçu</span>
+    <span style="color:#a8e0b5;">Build non sauvegardé — aucun emplacement modifié.</span>
+    <div style="margin-left:auto; display:flex; gap:8px;">
+      <button id="btn-preview-save" style="padding:7px 18px; border:1px solid rgba(80,200,120,.85); border-radius:4px; background:rgba(40,160,80,.25); color:#a8f0bc; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; cursor:pointer; letter-spacing:.04em; box-shadow:0 0 8px rgba(60,200,100,.2);">↓ Enregistrer</button>
+      <button id="btn-preview-discard" style="padding:5px 12px; border:1px solid rgba(200,100,80,.3); border-radius:3px; background:transparent; color:#c07868; font-family:'JetBrains Mono',monospace; font-size:11px; cursor:pointer;">✕ Quitter</button>
+    </div>
+  </div>
+
+  <!-- ══ MODALE ENREGISTRER APERÇU ══ -->
+  <div id="preview-save-modal" style="display:none; position:fixed; inset:0; z-index:200;
+    background:rgba(0,0,0,.65); backdrop-filter:blur(3px);
+    align-items:center; justify-content:center;">
+    <div style="background:var(--surface); border:1px solid var(--rim2); border-radius:8px;
+      padding:28px 28px 24px; width:100%; max-width:400px; position:relative;
+      box-shadow:0 20px 60px rgba(0,0,0,.8); display:flex; flex-direction:column; gap:14px;">
+      <button id="btn-pvsm-close" style="position:absolute;top:12px;right:12px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 8px;">✕</button>
+      <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;letter-spacing:.1em;color:var(--gold);">Enregistrer le Build</div>
+      <p style="font-size:12px;color:var(--muted);line-height:1.6;">Choisissez l'emplacement où enregistrer ce build :</p>
+      <div id="preview-save-slots" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
 
   <div class="page">
     <div class="body">
@@ -121,8 +149,13 @@
         <div class="actions">
           <input id="inp-name" class="input-name" type="text" placeholder="Nom du stuff…" autocomplete="off" />
           <div class="divider"></div>
-          <button id="btn-export" class="action-btn primary">◈ Exporter le Stuff</button>
-          <button id="btn-import" class="action-btn">↑ Importer</button>
+          <button id="btn-publish" class="action-btn primary">◈ Publier le Build</button>
+<button id="btn-random" class="action-btn">🎲 Build Aléatoire</button>
+          <div class="divider"></div>
+          <div style="display:flex;gap:6px;">
+            <button id="btn-export" class="action-btn" style="flex:1;font-size:10px;padding:5px 8px;">↑ Export JSON</button>
+            <button id="btn-import" class="action-btn" style="flex:1;font-size:10px;padding:5px 8px;">↓ Import JSON</button>
+          </div>
           <div class="divider"></div>
           <button id="btn-reset"  class="action-btn danger">✕ Réinitialiser</button>
         </div>
@@ -195,23 +228,32 @@
       <div class="modal-title" id="modal-title">Atelier</div>
 
       <div id="modal-zone-export" style="display:none; flex-direction:column; gap:12px">
-        <p class="modal-hint">Copiez ce JSON pour sauvegarder ou partager votre build. Vous pourrez le réimporter à tout moment.</p>
-        <div id="export-secret-section" style="display:none; flex-direction:column; gap:6px; padding:8px 10px; background:rgba(212,181,126,.06); border:1px solid rgba(212,181,126,.15); border-radius:6px;">
-          <label class="export-secret-toggle">
-            <input type="checkbox" id="chk-export-secret" />
-            <span>Inclure les items secrets</span>
-          </label>
-          <div id="export-secret-list" style="font-size:10px; color:var(--muted); padding-left:18px; display:flex; flex-direction:column; gap:2px;"></div>
-        </div>
+        <p class="modal-hint">Copiez ce JSON pour sauvegarder ou partager votre build.</p>
         <textarea class="modal-ta" id="modal-ta-export" readonly></textarea>
         <div class="modal-foot"><button id="btn-copy" class="action-btn primary">◈ Copier</button></div>
       </div>
 
       <div id="modal-zone-import" style="display:none; flex-direction:column; gap:12px">
-        <p class="modal-hint">Collez le JSON d'un build exporté ci-dessous. L'équipement actuel sera remplacé.</p>
+        <p class="modal-hint">Collez le JSON d'un build exporté. L'équipement actuel sera remplacé.</p>
         <textarea class="modal-ta" id="modal-ta-import" placeholder='Collez votre JSON ici…'></textarea>
         <div id="modal-error" class="modal-error" style="display:none"></div>
-        <div class="modal-foot"><button id="btn-confirm-import" class="action-btn primary">↑ Importer</button></div>
+        <div class="modal-foot"><button id="btn-confirm-import" class="action-btn primary">↓ Importer</button></div>
+      </div>
+
+      <div id="modal-zone-publish" style="display:none; flex-direction:column; gap:14px">
+        <p class="modal-hint">Publiez votre build pour le partager avec la communauté.</p>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Nom du build</label>
+          <input id="publish-name-inp" class="input-name" type="text" maxlength="60" placeholder="Nom du build…" autocomplete="off" />
+        </div>
+        <label class="export-secret-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" id="chk-publish-unlisted" />
+          <span style="font-size:12px;">Lien uniquement — non répertorié dans le forum</span>
+        </label>
+        <div id="publish-error" class="modal-error" style="display:none"></div>
+        <div class="modal-foot">
+          <button id="btn-confirm-publish" class="action-btn primary">◈ Publier</button>
+        </div>
       </div>
 
       <div id="modal-zone-reset" style="display:none; flex-direction:column; gap:20px; align-items:center; text-align:center; padding:8px 0">
@@ -238,13 +280,14 @@
   <script src="atelier.js"></script>
   <script type="module">
     import { store } from '../store.js';
-    import { getHiddenByName, getHiddenById, getSecretById, COL, db, getDoc, doc,
+    import { getHiddenByName, getHiddenById, getSecretById, COL, db, auth, getDoc, doc,
              desanitizeFromFirestore, hasRole, logPageView } from '../firebase.js';
-    logPageView('atelier');
     import { collection, getDocs }
       from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
     import { loadMaxLevel } from '../config-loader.js';
+    logPageView('atelier');
     window.VCL_DB = { getHiddenByName, getHiddenById, getSecretById, COL };
+    window._auth = auth;
     // Charger MAX_LEVEL depuis Firestore avant d'initialiser l'atelier
     try {
       const maxLevel = await loadMaxLevel(db, getDoc, doc);
@@ -256,7 +299,92 @@
     } catch (err) {
       console.error('[Atelier] Erreur Firestore :', err);
     }
-    window._pageInit?.();
+    // N'appeler _pageInit qu'une seule fois : après ?build ou ?preview, pas avant
+    const _urlParams  = new URLSearchParams(window.location.search);
+    const _urlBuildId = _urlParams.get('build');
+    const _hasPreview = _urlParams.get('preview') === '1';
+    if (!_urlBuildId && !_hasPreview) window._pageInit?.();
+    if (_urlBuildId) {
+      try {
+        const { loadBuildFromFirestore } = await import('../Builds/builds-publish.js');
+        await loadBuildFromFirestore(_urlBuildId, db, getDoc, doc, desanitizeFromFirestore);
+      } catch(e) {
+        console.warn('[Atelier] ?build param:', e);
+        window._pageInit?.(); // fallback si le load échoue
+      }
+    }
+
+    // Prévisualiser un build depuis ?preview=1 (écrit par builds.html)
+    // Utilise le slot virtuel 99 — aucun slot réel (0/1/2) n'est modifié.
+    if (_hasPreview) {
+      try {
+        const previewRaw = localStorage.getItem('vcl_atelier_preview');
+        if (previewRaw) {
+          const prevMeta = localStorage.getItem('vcl_atelier_meta');
+          if (prevMeta) localStorage.setItem('vcl_atelier_meta_backup', prevMeta);
+
+          localStorage.setItem('vcl_atelier_99', previewRaw);
+          localStorage.setItem('vcl_atelier_meta', JSON.stringify({ active: 99 }));
+          localStorage.removeItem('vcl_atelier_preview');
+          window._previewMode = true;
+          window._pageInit?.();
+
+          const banner  = document.getElementById('preview-banner');
+          const modal   = document.getElementById('preview-save-modal');
+          const slotsEl = document.getElementById('preview-save-slots');
+          if (banner) banner.style.display = 'flex';
+
+          function _exitPreview(saveToSlot) {
+            if (saveToSlot !== null && saveToSlot !== undefined) {
+              const raw99 = localStorage.getItem('vcl_atelier_99');
+              if (raw99) localStorage.setItem('vcl_atelier_' + saveToSlot, raw99);
+              localStorage.setItem('vcl_atelier_meta', JSON.stringify({ active: saveToSlot }));
+            } else {
+              const bk = localStorage.getItem('vcl_atelier_meta_backup');
+              if (bk) localStorage.setItem('vcl_atelier_meta', bk);
+            }
+            localStorage.removeItem('vcl_atelier_99');
+            localStorage.removeItem('vcl_atelier_meta_backup');
+            window._previewMode = false;
+            if (modal) modal.style.display = 'none';
+            if (banner) banner.style.display = 'none';
+            history.replaceState({}, '', 'atelier.html');
+            window._pageInit?.();
+          }
+
+          function _openSaveModal() {
+            slotsEl.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+              const raw = localStorage.getItem('vcl_atelier_' + i);
+              let slotName = 'Vide';
+              if (raw) { try { slotName = JSON.parse(raw).name || ('Emplacement ' + (i + 1)); } catch {} }
+              const btn = document.createElement('button');
+              btn.style.cssText = [
+                'display:flex','flex-direction:column','gap:3px',
+                'padding:10px 14px','border:1px solid var(--rim2)','border-radius:4px',
+                'background:transparent','cursor:pointer',
+                'font-family:"JetBrains Mono",monospace','text-align:left',
+                'transition:all .15s','width:100%',
+              ].join(';');
+              btn.innerHTML = '<span style="font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">Emplacement ' + (i + 1) + '</span>' +
+                              '<span style="font-size:12px;color:var(--bright);">' + (slotName.replace(/</g,'&lt;')) + '</span>';
+              btn.addEventListener('mouseenter', function() { this.style.borderColor='var(--gold-dim)'; this.style.background='var(--gold-glow)'; });
+              btn.addEventListener('mouseleave', function() { this.style.borderColor='var(--rim2)'; this.style.background='transparent'; });
+              (function(idx) {
+                btn.addEventListener('click', function() { _exitPreview(idx); });
+              })(i);
+              slotsEl.appendChild(btn);
+            }
+            modal.style.display = 'flex';
+          }
+
+          document.getElementById('btn-preview-save')?.addEventListener('click', _openSaveModal);
+          document.getElementById('btn-pvsm-close')?.addEventListener('click', function() { modal.style.display = 'none'; });
+          modal?.addEventListener('click', function(e) { if (e.target === modal) modal.style.display = 'none'; });
+          document.getElementById('btn-preview-discard')?.addEventListener('click', function() { _exitPreview(null); });
+        }
+      } catch(e) { console.warn('[Atelier] ?preview:', e); }
+    }
 
     let _secretLoaded = false;
     async function _canViewSecretItems(baseRole) {
@@ -291,9 +419,13 @@
       } catch (e) { console.warn('[Atelier] items sensibles:', e); }
     }
     document.addEventListener('vcl:auth-ready', async e => {
-      if (await _canViewSecretItems(e.detail.baseRole)) await _loadSecretItems();
+      window._canSeeSensibleItems = await _canViewSecretItems(e.detail.baseRole);
+      if (window._canSeeSensibleItems) await _loadSecretItems();
     }, { once: true });
-    if (window._vcl_base_role && await _canViewSecretItems(window._vcl_base_role)) await _loadSecretItems();
+    if (window._vcl_base_role) {
+      window._canSeeSensibleItems = await _canViewSecretItems(window._vcl_base_role);
+      if (window._canSeeSensibleItems) await _loadSecretItems();
+    }
   </script>
   <script type="module" src="../auth-widget.js"></script>
   <script src="../report-widget.js"></script>

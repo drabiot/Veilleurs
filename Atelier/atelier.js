@@ -27,6 +27,8 @@
   const CAR_BY_ID     = new Map(CARACTERISTIQUES.map(c => [c.id, c]));
   let   RUNES_BY_ID   = new Map(); // peuplé dans init() depuis ITEMS (cat='rune')
   const CLASSES_BY_ID = new Map(CLASSES.map(c => [c.id, c]));
+  // Cache statique — toutes les catégories d'items équipables (ne change pas)
+  const _EQUIP_CATS   = new Set(ALL_SLOTS.flatMap(function(s) { return s.cats; }));
 
   /* ══ VALIDATION DES RUNES ══ */
   function isRuneKeyValid(runeKey, equippedItems) {
@@ -1238,6 +1240,7 @@ function loadAccessoriesForClass(classId) {
 	}
 
   function selectSlot(slotId) {
+    if (window._previewMode) return;
     if (getBlockedSlots().has(slotId)) return;
     const prevRuneSlotId = activeRuneSlotId;
     activeRuneSlot   = null;
@@ -1289,6 +1292,7 @@ function loadAccessoriesForClass(classId) {
   }
 
 	function clearSlot(slotId) {
+    if (window._previewMode) return;
     const removedItem = equipped[slotId];
     delete equipped[slotId];
     clearRunesForSlot(slotId);
@@ -1537,9 +1541,10 @@ function loadAccessoriesForClass(classId) {
         return;
       }
       list.innerHTML = '';
+      const _runesFrag = document.createDocumentFragment();
       runes.forEach(function(rune) {
         const rid = getItemId(rune);
-        if (!rid) return; // rune sans ID valide → ignorée
+        if (!rid) return;
         const row = document.createElement('div');
         const isActive = equippedRunes[activeRuneSlot] === rid;
         row.className = 'item-row' + (isActive ? ' active' : '');
@@ -1567,18 +1572,17 @@ function loadAccessoriesForClass(classId) {
           renderItemList();
           saveToStorage();
         });
-        list.appendChild(row);
+        _runesFrag.appendChild(row);
       });
+      list.appendChild(_runesFrag);
       return;
     }
-
-    const _equipCats = new Set(ALL_SLOTS.flatMap(function(s) { return s.cats; }));
 
     let visible;
     if (!activeSlot) {
       // Mode "tous les items" — armes / armures / accessoires + runes
       visible = ITEMS.filter(function(item) {
-        return (_equipCats.has(item.cat) || item.cat === 'rune' || item.category === 'rune') &&
+        return (_EQUIP_CATS.has(item.cat) || item.cat === 'rune' || item.category === 'rune') &&
           itemAllowedForClass(item, activeClass) &&
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
@@ -1609,7 +1613,7 @@ function loadAccessoriesForClass(classId) {
         if (normalize(item.name) !== q) return;
         const isRune = item.cat === 'rune' || item.category === 'rune';
         if (activeSlot && !SLOTS_BY_ID.get(activeSlot)?.cats.includes(item.cat)) return;
-        if (!activeSlot && !_equipCats.has(item.cat) && !isRune) return;
+        if (!activeSlot && !_EQUIP_CATS.has(item.cat) && !isRune) return;
         if (!visible.some(function(v) { return v.id === item.id; })) visible.push(item);
       });
     }
@@ -1630,6 +1634,7 @@ function loadAccessoriesForClass(classId) {
     });
 
     list.innerHTML = '';
+    const _frag = document.createDocumentFragment();
     visible.forEach(function(item) {
       const row = document.createElement('div');
       const levelOk = itemAllowedForLevel(item, buildLevel);
@@ -1698,8 +1703,9 @@ function loadAccessoriesForClass(classId) {
       } else {
         row.title = 'Niveau ' + (item.lvl || 1) + ' requis';
       }
-      list.appendChild(row);
+      _frag.appendChild(row);
     });
+    list.appendChild(_frag);
   }
 
   function buildThresholdHTML(item) {
@@ -1757,6 +1763,7 @@ function loadAccessoriesForClass(classId) {
 	})();
 
 	function saveToStorage() {
+		if (window._previewMode) return;
 		const equippedSlots = {};
 		Object.entries(equipped).forEach(function(e) {
 			if (e[1]) equippedSlots[e[0]] = { id: e[1].id, name: e[1].name || e[1].id };
@@ -1963,6 +1970,7 @@ function loadAccessoriesForClass(classId) {
 			btn.appendChild(lbl);
 
 			btn.addEventListener('click', function() {
+				if (window._previewMode) return;
 				const idx = parseInt(this.dataset.buildIdx);
 				if (idx === activeBuildIndex) return;
 				loadBuild(idx);
@@ -1976,19 +1984,21 @@ function loadAccessoriesForClass(classId) {
 		const bar = document.getElementById('build-tabs-bar');
 		if (!bar) { buildBuildTabs(); return; }
 
-		bar.querySelectorAll('button').forEach(function(btn) {
+		const isPreview = !!(window._previewMode || activeBuildIndex > 2);
+
+		bar.querySelectorAll('button[data-build-idx]').forEach(function(btn) {
 			const i = parseInt(btn.dataset.buildIdx);
-			const isActive = i === activeBuildIndex;
+			const isActive = !isPreview && i === activeBuildIndex;
 
 			btn.style.background  = isActive ? 'var(--surface2)' : 'var(--surface)';
 			btn.style.color       = isActive ? 'var(--gold)' : 'var(--muted)';
 			btn.style.boxShadow   = isActive ? '0 0 0 1px rgba(215,175,95,.4)' : 'none';
 			btn.style.borderColor = isActive ? 'var(--gold)' : 'var(--rim)';
+			btn.style.opacity     = isPreview ? '0.4' : '';
 
 			const num = btn.querySelector('span:first-child');
 			if (num) num.style.color = isActive ? 'var(--gold)' : 'var(--muted)';
 
-			// Mettre à jour le label avec le nom actuel
 			const lbl = btn.querySelector('span:last-child');
 			if (lbl) {
 				let buildName = 'Build ' + (i + 1);
@@ -1999,7 +2009,6 @@ function loadAccessoriesForClass(classId) {
 						if (p.name) buildName = p.name;
 					}
 				} catch(e) {}
-				// Si c'est le build actif, prendre le nom depuis l'input directement
 				if (isActive) {
 					const inp = document.getElementById('inp-name');
 					if (inp && inp.value.trim()) buildName = inp.value.trim();
@@ -2007,6 +2016,20 @@ function loadAccessoriesForClass(classId) {
 				lbl.textContent = buildName;
 			}
 		});
+
+		// Indicateur "Aperçu" quand aucun slot n'est actif
+		let ind = bar.querySelector('.preview-tab-ind');
+		if (isPreview) {
+			if (!ind) {
+				ind = document.createElement('div');
+				ind.className = 'preview-tab-ind';
+				ind.style.cssText = 'padding:4px 10px;color:rgba(125,204,144,.9);font-size:9px;letter-spacing:.12em;text-transform:uppercase;border:1px solid rgba(80,200,120,.3);border-radius:3px;white-space:nowrap;align-self:center;font-family:inherit;';
+				ind.textContent = '◈ Aperçu';
+				bar.appendChild(ind);
+			}
+		} else if (ind) {
+			ind.remove();
+		}
 	}
 
   /* ══ MODALES ══ */
@@ -2015,7 +2038,7 @@ function loadAccessoriesForClass(classId) {
     modal.dataset.mode = mode;
     const errEl = document.getElementById('modal-error');
     if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
-    ['export', 'import', 'reset', 'confirm-class', 'confirm-level'].forEach(function(m) {
+    ['export', 'import', 'publish', 'reset', 'confirm-class', 'confirm-level'].forEach(function(m) {
       const zone = document.getElementById('modal-zone-' + m);
       if (zone) zone.style.display = (m === mode) ? 'flex' : 'none';
     });
@@ -2026,162 +2049,237 @@ function loadAccessoriesForClass(classId) {
     document.getElementById('modal').classList.remove('open');
   }
 
-  /* ══ EXPORT ══ */
-  function _isSecretItem(item) {
-    const id = getItemId(item);
-    return _hiddenCache.has(id) || window._hiddenItemIds?.has(id);
-  }
-  function _buildExportPayload(includeSecret) {
-    const name = document.getElementById('inp-name').value.trim() || 'Mon Stuff';
-    const equippedIds = {};
+  /* ══ EXPORT / IMPORT JSON ══ */
+  function _buildExportPayload() {
+    const slots = {};
     Object.entries(equipped).forEach(function(e) {
-      const item = e[1];
-      if (item && (includeSecret || !_isSecretItem(item))) equippedIds[e[0]] = getItemId(item);
+      if (e[1]) slots[e[0]] = getItemId(e[1]);
     });
-    return {
-      v: 1,
-      sig: SIG,
-			buildIndex: activeBuildIndex,
-      name: name,
-      classe: activeClass || '',
-      level: buildLevel,
-      caracterPoints: caracterPoints,
-      slots: equippedIds,
-      runes: equippedRunes,
-    };
+    return { v:1, sig:SIG, name: document.getElementById('inp-name').value.trim() || 'Mon Build',
+      classe: activeClass || '', level: buildLevel, caracterPoints: caracterPoints,
+      slots: slots, runes: equippedRunes };
   }
-  function _refreshExportTA() {
-    const includeSecret = document.getElementById('chk-export-secret')?.checked;
-    const payload = _buildExportPayload(includeSecret);
-    const ta = document.getElementById('modal-ta-export');
-    if (ta) ta.value = '```json\n' + JSON.stringify(payload, null, 2) + '\n```';
-  }
+
   document.getElementById('btn-export').addEventListener('click', function() {
-    const name = document.getElementById('inp-name').value.trim() || 'Mon Stuff';
-    // Détecter les items secrets équipés
-    const secretItems = [];
-    Object.entries(equipped).forEach(function(e) {
-      const item = e[1];
-      if (item && _isSecretItem(item)) secretItems.push(item);
-    });
-    const section = document.getElementById('export-secret-section');
-    const list    = document.getElementById('export-secret-list');
-    const chk     = document.getElementById('chk-export-secret');
-    if (section && list && chk) {
-      if (secretItems.length) {
-        section.style.display = 'flex';
-        list.innerHTML = secretItems.map(it => `<span>◻ ${it.name || it._id || getItemId(it)}</span>`).join('');
-      } else {
-        section.style.display = 'none';
-        chk.checked = false;
-        list.innerHTML = '';
-      }
-    }
-    _refreshExportTA();
-    document.getElementById('modal-title').textContent = '◈ Exporter — ' + name;
+    const ta = document.getElementById('modal-ta-export');
+    if (ta) ta.value = '```json\n' + JSON.stringify(_buildExportPayload(), null, 2) + '\n```';
+    document.getElementById('modal-title').textContent = '↑ Exporter — JSON';
     openModal('export');
   });
-  document.getElementById('chk-export-secret')?.addEventListener('change', _refreshExportTA);
 
   document.getElementById('btn-copy').addEventListener('click', function() {
     const ta = document.getElementById('modal-ta-export');
     if (!ta) return;
     ta.select();
     document.execCommand('copy');
-    const b = document.getElementById('btn-copy');
+    const b = this;
     b.textContent = '✓ Copié !';
     setTimeout(function() { b.textContent = '◈ Copier'; }, 1600);
   });
 
-  /* ══ IMPORT ══ */
   document.getElementById('btn-import').addEventListener('click', function() {
     const ta = document.getElementById('modal-ta-import');
     if (ta) ta.value = '';
-    document.getElementById('modal-title').textContent = '↑ Importer un Stuff';
+    const errEl = document.getElementById('modal-error');
+    if (errEl) { errEl.style.display = 'none'; }
+    document.getElementById('modal-title').textContent = '↓ Importer — JSON';
     openModal('import');
   });
 
   document.getElementById('btn-confirm-import').addEventListener('click', function() {
-    const ta = document.getElementById('modal-ta-import');
-    const raw = ta ? ta.value.trim() : '';
-	const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    const ta    = document.getElementById('modal-ta-import');
+    const raw   = ta ? ta.value.trim() : '';
+    const clean = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
     const errEl = document.getElementById('modal-error');
-
-    if (!cleaned) {
-      if (errEl) { errEl.textContent = '⚠ Collez un JSON valide avant d\'importer.'; errEl.style.display = 'block'; }
+    if (!clean) {
+      if (errEl) { errEl.textContent = '⚠ Collez un JSON valide.'; errEl.style.display = 'block'; }
       return;
     }
-
     try {
-      const parsed = JSON.parse(cleaned);
-
-      if (parsed.sig !== SIG) {
-        throw new Error('Signature invalide');
-      }
-
+      const parsed = JSON.parse(clean);
+      if (parsed.sig !== SIG) throw new Error('Signature invalide');
       if (parsed.v === 1 && parsed.slots) {
-        equipped = {};
-        equippedRunes = {};
-
-		if (parsed.level && parsed.level >= 1 && parsed.level <= MAX_LEVEL) {
-          buildLevel = parsed.level;
-        }
-        if (parsed.caracterPoints && typeof parsed.caracterPoints === 'object') {
-          Object.keys(caracterPoints).forEach(k => {
-            if (typeof parsed.caracterPoints[k] === 'number') {
-              caracterPoints[k] = parsed.caracterPoints[k];
-            }
-          });
-        }
-
-		const importLevel = (parsed.level >= 1 && parsed.level <= MAX_LEVEL) ? parsed.level : buildLevel;
-		Object.entries(parsed.slots).forEach(function(e) {
-			const slotId = e[0]; const itemId = e[1];
-			const item = ITEMS.find(function(i) { return i.id === itemId; });
-			if (item && itemAllowedForLevel(item, importLevel) && itemMeetsThreshold(item))
-				equipped[slotId] = item;
-		});
-
-        if (parsed.runes && typeof parsed.runes === 'object') {
-          Object.entries(parsed.runes).forEach(function(e) {
-            const runeKey = e[0]; const runeId = e[1];
-            if (
-              RUNES_BY_ID.get(runeId) &&
-              isRuneKeyValid(runeKey, equipped)
-            ) {
-              equippedRunes[runeKey] = runeId;
-            }
-          });
-        }
-
+        equipped = {}; equippedRunes = {};
+        if (parsed.level >= 1 && parsed.level <= MAX_LEVEL) buildLevel = parsed.level;
+        if (parsed.caracterPoints) Object.keys(caracterPoints).forEach(function(k) {
+          if (typeof parsed.caracterPoints[k] === 'number') caracterPoints[k] = parsed.caracterPoints[k];
+        });
+        const lvl = (parsed.level >= 1 && parsed.level <= MAX_LEVEL) ? parsed.level : buildLevel;
+        Object.entries(parsed.slots).forEach(function(e) {
+          const item = ITEMS.find(function(i) { return i.id === e[1]; });
+          if (item && itemAllowedForLevel(item, lvl) && itemMeetsThreshold(item)) equipped[e[0]] = item;
+        });
+        if (parsed.runes) Object.entries(parsed.runes).forEach(function(e) {
+          if (RUNES_BY_ID.get(e[1]) && isRuneKeyValid(e[0], equipped)) equippedRunes[e[0]] = e[1];
+        });
         if (parsed.name) document.getElementById('inp-name').value = parsed.name;
-        if (parsed.classe) {
-          activeClass = parsed.classe || null;
-          buildClassPicker();
-		  updateSkinClass();
-        }
-      }
-      else if (typeof parsed === 'object' && !Array.isArray(parsed)) {
-        equipped = parsed;
-        equippedRunes = {};
-      } else {
-        throw new Error('Format non reconnu');
-      }
-
-      buildGrid();
-      buildLevelPanel();
-      saveToStorage();
-      renderStats();
-      renderPickerInfo();
-      renderItemList();
+        if (parsed.classe) { activeClass = parsed.classe || null; buildClassPicker(); updateSkinClass(); }
+      } else { throw new Error('Format non reconnu'); }
+      buildGrid(); buildLevelPanel(); saveToStorage(); renderStats(); renderPickerInfo(); renderItemList();
       closeModal();
-
     } catch(e) {
-      if (errEl) {
-        errEl.textContent = '✕ JSON invalide ou format non reconnu. Vérifiez le contenu.';
-        errEl.style.display = 'block';
-      }
+      if (errEl) { errEl.textContent = '✕ JSON invalide ou format non reconnu.'; errEl.style.display = 'block'; }
     }
+  });
+
+  /* ══ PUBLISH ══ */
+  function _isSecretItem(item) {
+    const id = getItemId(item);
+    return _hiddenCache.has(id) || window._hiddenItemIds?.has(id);
+  }
+
+  function _buildPublishPayload() {
+    const name = document.getElementById('inp-name').value.trim() || 'Mon Build';
+    const slots = {};
+    const slotImages = {};
+    const sensibleSlots     = {}; // marqueur public : quels slots ont un item sensible
+    const sensibleSlotsData = {}; // données complètes, stockées dans builds_sensible (contrib+ only)
+    Object.entries(equipped).forEach(function(e) {
+      const item = e[1];
+      if (!item) return;
+      const id  = getItemId(item);
+      const img = _sensibleImg(item.category || item.cat, id, item.palier, item.event);
+      if (_isSecretItem(item)) {
+        // N'exposer ni l'ID ni le nom dans le doc public
+        sensibleSlots[e[0]] = true;
+        sensibleSlotsData[e[0]] = { id: id, name: item.name || id };
+        if (img) sensibleSlotsData[e[0]].img = img;
+      } else {
+        slots[e[0]] = { id: id, name: item.name || id };
+        if (img) slotImages[e[0]] = img;
+      }
+    });
+    const runeNames = {};
+    Object.entries(equippedRunes).forEach(function(e) {
+      const rune = RUNES_BY_ID.get(e[1]);
+      if (rune && rune.name) runeNames[e[0]] = rune.name;
+    });
+    return {
+      name: name,
+      classe: activeClass || '',
+      level: buildLevel,
+      caracterPoints: Object.assign({}, caracterPoints),
+      slots: slots,
+      slotImages: slotImages,
+      sensibleSlots: sensibleSlots,
+      sensibleSlotsData: sensibleSlotsData,
+      runes: Object.assign({}, equippedRunes),
+      runeNames: runeNames,
+    };
+  }
+
+  document.getElementById('btn-publish').addEventListener('click', function() {
+    if (!window._auth?.currentUser) {
+      document.querySelector('.vcl-auth-btn, #vcl-login-btn, [data-auth-trigger]')?.click();
+      return;
+    }
+    const currentName = document.getElementById('inp-name').value.trim();
+    document.getElementById('publish-name-inp').value = currentName;
+    document.getElementById('publish-error').style.display = 'none';
+    document.getElementById('chk-publish-unlisted').checked = false;
+    document.getElementById('modal-title').textContent = '◈ Publier le Build';
+    openModal('publish');
+  });
+
+  document.getElementById('btn-confirm-publish').addEventListener('click', async function() {
+    const name = document.getElementById('publish-name-inp').value.trim();
+    const errEl = document.getElementById('publish-error');
+    errEl.style.display = 'none';
+    if (!name) {
+      errEl.textContent = '⚠ Donnez un nom à votre build avant de publier.';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (!window._auth?.currentUser) {
+      errEl.textContent = '⚠ Connectez-vous pour publier.';
+      errEl.style.display = 'block';
+      return;
+    }
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = '…';
+    try {
+      const visibility = document.getElementById('chk-publish-unlisted').checked ? 'unlisted' : 'public';
+      const payload = _buildPublishPayload();
+      payload.name = name;
+      const stats = computeStats();
+      const { publishBuild } = await import('../Builds/builds-publish.js');
+      const buildId = await publishBuild({ payload, stats, visibility, auth: window._auth });
+      closeModal();
+      const shareUrl = window.location.origin + '/Builds/builds.html?id=' + buildId;
+      _showPublishToast(name, buildId, visibility);
+    } catch(e) {
+      errEl.textContent = '✕ ' + (e.message || 'Erreur lors de la publication.');
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '◈ Publier';
+    }
+  });
+
+  function _showPublishToast(name, buildId, visibility) {
+    const existing = document.getElementById('vcl-publish-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.id = 'vcl-publish-toast';
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
+      'background:var(--surface,#1a1a2e);border:1px solid var(--rim,rgba(212,181,126,.3));' +
+      'color:var(--text,#e8e0d0);padding:12px 20px;border-radius:8px;z-index:9999;' +
+      'font-size:13px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,.5);';
+    toast.innerHTML = '<span style="color:var(--gold,#d4b57e)">✓</span>' +
+      '<span>Build <strong>' + escHtml(name) + '</strong> publié' +
+      (visibility === 'unlisted' ? ' (lien uniquement)' : '') + '</span>' +
+      '<a href="../Builds/builds.html" style="color:var(--gold,#d4b57e);text-decoration:none;font-size:12px;">Voir les builds →</a>' +
+      '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--muted,#888);cursor:pointer;padding:0 4px;">✕</button>';
+    document.body.appendChild(toast);
+    setTimeout(function() { toast.remove(); }, 6000);
+  }
+
+
+  /* ══ BUILD ALÉATOIRE ══ */
+  const _RARITY_WEIGHTS = { commun:1, rare:3, epique:5, legendaire:7, mythique:6, godlike:5, event:3 };
+
+  function _generateRandomBuild() {
+    const newEquipped = {};
+    const usedUniqueIds = new Set();
+    ALL_SLOTS.forEach(function(slot) {
+      const candidates = ITEMS.filter(function(item) {
+        if (!slot.cats.includes(item.cat)) return false;
+        if (item.cat === 'rune') return false;
+        if ((item.lvl || 1) > buildLevel) return false;
+        if (activeClass) {
+          const cls = item.classes || item.class || [];
+          if (Array.isArray(cls) && cls.length > 0 && !cls.includes(activeClass)) return false;
+        }
+        if (item.threshold && Object.keys(item.threshold).length > 0) return false;
+        if (_isSecretItem(item) && !window._canSeeSensibleItems) return false;
+        // Items uniques : ne pas équiper deux fois le même item
+        if (item.unique && usedUniqueIds.has(item.id ?? item._id)) return false;
+        return true;
+      });
+      if (!candidates.length) return;
+      let totalW = candidates.reduce(function(s, i) { return s + (_RARITY_WEIGHTS[i.rarity] || 1); }, 0);
+      let r = Math.random() * totalW;
+      let picked = candidates[0];
+      for (let i = 0; i < candidates.length; i++) {
+        r -= (_RARITY_WEIGHTS[candidates[i].rarity] || 1);
+        if (r <= 0) { picked = candidates[i]; break; }
+      }
+      newEquipped[slot.id] = picked;
+      if (picked.unique) usedUniqueIds.add(picked.id ?? picked._id);
+    });
+    return newEquipped;
+  }
+
+  document.getElementById('btn-random').addEventListener('click', function() {
+    equipped = _generateRandomBuild();
+    equippedRunes = {};
+    buildGrid();
+    buildLevelPanel();
+    saveToStorage();
+    renderStats();
+    renderPickerInfo();
+    renderItemList();
   });
 
   /* ══ RESET ══ */
@@ -2340,9 +2438,28 @@ function loadAccessoriesForClass(classId) {
 
   /* ══ INIT ══ */
   function init() {
-    ITEMS.filter(function(i) { return i.cat === 'rune' || i.category === 'rune'; }).forEach(function(r) {
-      const rid = getItemId(r); if (rid) RUNES_BY_ID.set(rid, r);
-    });
+    // Re-read active slot from meta on every call (handles preview, _exitPreview, normal reload)
+    try {
+      const meta = JSON.parse(localStorage.getItem(META_KEY) || '{}');
+      activeBuildIndex = meta.active ?? 0;
+      window._vclActiveBuildIndex = activeBuildIndex;
+    } catch {}
+
+    // Reset build state so old equipped items don't bleed into new slot
+    equipped        = {};
+    equippedRunes   = {};
+    activeSlot      = null;
+    activeRuneSlot  = null;
+    activeRuneSlotId = null;
+    buildLevel      = 1;
+    activeClass     = null;
+    Object.keys(caracterPoints).forEach(k => { caracterPoints[k] = 0; });
+
+    if (!RUNES_BY_ID.size) {
+      ITEMS.filter(function(i) { return i.cat === 'rune' || i.category === 'rune'; }).forEach(function(r) {
+        const rid = getItemId(r); if (rid) RUNES_BY_ID.set(rid, r);
+      });
+    }
     buildCarTooltip();
     buildSetTooltip();
     buildClassPicker();
@@ -2461,18 +2578,18 @@ function loadAccessoriesForClass(classId) {
     renderStats();
     renderPickerInfo();
     renderItemList();
-		buildBuildTabs();
-	requestAnimationFrame(function() {
-		fitGrid();
-		requestAnimationFrame(fitGrid);
-	});
-    if (window.ResizeObserver) {
+    updateBuildTabs();
+    requestAnimationFrame(function() { fitGrid(); requestAnimationFrame(fitGrid); });
+    if (!window._vclResizeObserverSet && window.ResizeObserver) {
+      window._vclResizeObserverSet = true;
       new ResizeObserver(fitGrid).observe(document.querySelector('.site-header'));
     }
   }
 
   window._pageInit = init;
   window._atelierRefreshPicker = function() { renderItemList(); };
+  window._atelierComputeStats  = computeStats;
+  window._atelierSIG           = SIG;
 
 })();
 

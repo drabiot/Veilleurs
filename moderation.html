@@ -15,6 +15,7 @@
   <span id="header-role" style="font-size:12px;color:var(--muted);"></span>
   <div class="hbtns">
     <a href="creator.html" class="btn btn-ghost" style="font-size:12px;">⚙️ Creator</a>
+    <a href="Compendium/compendium.html" class="btn btn-ghost" style="font-size:12px;">📖 Compendium</a>
     <span id="header-user" style="font-size:12px;color:var(--muted);"></span>
     <button class="btn btn-ghost" id="btn-logout" onclick="doLogout()" style="display:none;font-size:12px;">🚪</button>
   </div>
@@ -165,6 +166,7 @@
         <option value="role_change">🔑 Changements de rôle</option>
         <option value="suspend">🚫 Suspensions</option>
         <option value="unsuspend">✓ Levées de suspension</option>
+        <option value="login">🔐 Connexions</option>
       </select>
       <input type="search" id="audit-filter-actor" placeholder="🔍 Filtrer par modérateur…" oninput="renderAuditLog()"
         style="flex:1;min-width:140px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;">
@@ -225,7 +227,10 @@
   <main class="main" id="panel-statistiques" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <span style="font-size:15px;font-weight:700;">📊 Statistiques</span>
-      <button class="btn btn-ghost" onclick="loadStatistiques()" style="font-size:12px;">🔄 Rafraîchir</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="loadStatistiques()" style="font-size:12px;">🔄 Rafraîchir</button>
+        <button class="btn btn-ghost" onclick="resetStatistiques()" style="font-size:12px;color:var(--danger);border-color:var(--danger);">🗑️ Réinitialiser</button>
+      </div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
       Visites par section du wiki. Un visit est compté une fois par session de navigateur par section.<br>

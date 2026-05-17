@@ -139,6 +139,12 @@ onAuthStateChanged(auth, async user => {
 
   // Hash routing — navigue vers le panel correspondant au hash initial
   _routeToHash();
+
+  // Enregistrer la connexion dans l'audit log (contributeurs seulement, pas les admins)
+  if (currentRole === 'contributeur') {
+    if (_userData?.pseudo) _userNames.set(currentUser.uid, _userData.pseudo);
+    _writeAudit('login', 'session', currentUser.uid, _userData?.pseudo || user.email, {});
+  }
 });
 
 // Maps tool permission IDs → button ID(s) in the sidebar.
@@ -8566,6 +8572,7 @@ const AUDIT_ACTION_LABELS = {
   role_change:       '🔑 Changement de rôle',
   suspend:           '🚫 Suspension',
   unsuspend:         '✓ Levée de suspension',
+  login:             '🔐 Connexion',
 };
 
 window.showAuditLog = async () => {
@@ -8636,6 +8643,29 @@ window.loadAuditLogMore = function() {
 
 // ══════════════════════════════════════════════════════
 // STATISTIQUES
+window.resetStatistiques = async function() {
+  if (currentRole !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
+  const ok = await modal.confirm('Supprimer toutes les données de statistiques (page_views, user_visits) ? Cette action est irréversible.', { confirmLabel: 'Supprimer', danger: true });
+  if (!ok) return;
+  try {
+    const [pvSnap, loginSnap, uvSnap] = await Promise.all([
+      getDocs(collection(db, 'page_views')),
+      getDocs(query(collection(db, 'audit_log'), where('action', '==', 'login'))),
+      getDocs(collection(db, 'user_visits')),
+    ]);
+    await Promise.all([
+      ...pvSnap.docs.map(d => deleteDoc(d.ref)),
+      ...loginSnap.docs.map(d => deleteDoc(d.ref)),
+      ...uvSnap.docs.map(d => deleteDoc(d.ref)),
+    ]);
+    const total = pvSnap.size + loginSnap.size + uvSnap.size;
+    toast(`✓ ${total} document${total !== 1 ? 's' : ''} supprimé${total !== 1 ? 's' : ''}`, 'success');
+    loadStatistiques();
+  } catch(e) {
+    toast('⛔ ' + e.message, 'error');
+  }
+};
+
 // ══════════════════════════════════════════════════════
 window.showStatistiques = function() {
   if (currentRole !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
@@ -8650,26 +8680,39 @@ window.loadStatistiques = async function loadStatistiques() {
   const container = document.getElementById('stats-content');
   container.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const snap = await getDocs(collection(db, 'page_views'));
-    const docs = snap.docs.map(d => d.data());
+    const [pvSnap, loginSnap, uvSnap] = await Promise.all([
+      getDocs(collection(db, 'page_views')),
+      getDocs(query(collection(db, 'audit_log'),
+        where('action', '==', 'login'),
+        orderBy('createdAt', 'desc'),
+        limit(20))),
+      getDocs(collection(db, 'user_visits')),
+    ]);
+
+    const docs      = pvSnap.docs.map(d => d.data());
+    const logins    = loginSnap.docs.map(d => d.data());
+    const userVisits = uvSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     if (!docs.length) {
       container.innerHTML = '<div class="empty">Aucune donnée — visitez les pages wiki pour générer des statistiques.</div>';
       return;
     }
 
-    const today = new Date();
+    const today    = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
     const cutoff7  = new Date(today); cutoff7.setDate(today.getDate() - 7);
     const cutoff30 = new Date(today); cutoff30.setDate(today.getDate() - 30);
 
-    let total = 0, total7 = 0, total30 = 0;
+    let total = 0, total7 = 0, total30 = 0, totalToday = 0;
     const byDate = {}, bySection = {}, byMonth = {};
+    const byHour = Array(24).fill(0);
 
     for (const d of docs) {
-      const count = d.count || 0;
-      const date  = d.date;
+      const count   = d.count || 0;
+      const date    = d.date;
       const section = d.section || 'inconnu';
       total += count;
+      if (date === todayStr) totalToday += count;
       const dt = new Date(date + 'T00:00:00');
       if (dt >= cutoff7)  total7  += count;
       if (dt >= cutoff30) total30 += count;
@@ -8678,6 +8721,9 @@ window.loadStatistiques = async function loadStatistiques() {
       const month = date.slice(0, 7);
       if (!byMonth[month]) byMonth[month] = {};
       byMonth[month][section] = (byMonth[month][section] || 0) + count;
+      if (d.hours) {
+        for (let h = 0; h < 24; h++) byHour[h] += d.hours[h] || 0;
+      }
     }
 
     const SECTION_COLORS = {
@@ -8688,30 +8734,81 @@ window.loadStatistiques = async function loadStatistiques() {
       compendium: '⚔️ Compendium', bestiaire: '💀 Bestiaire', map: '🗺️ Carte',
       quetes: '📜 Quêtes', atelier: '🔨 Atelier', patchnotes: '📰 Patchnotes',
     };
-
-    const sections = Object.keys(bySection).sort((a, b) => bySection[b] - bySection[a]);
-    const maxSection = Math.max(...Object.values(bySection), 1);
-
-    const last30 = [];
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(today); d.setDate(today.getDate() - i);
-      last30.push(d.toISOString().slice(0, 10));
-    }
-    const maxDay = Math.max(...last30.map(d => byDate[d] || 0), 1);
-
-    const months = Object.keys(byMonth).sort().reverse();
+    const SECTION_ICONS = {
+      compendium: '⚔️', bestiaire: '💀', map: '🗺️', quetes: '📜', atelier: '🔨', patchnotes: '📰',
+    };
 
     const fmt = n => n.toLocaleString('fr-FR');
+    const fmtTime = ts => {
+      if (!ts?.toDate) return '';
+      const d = ts.toDate();
+      return d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    };
 
-    const dailyBars = last30.map(date => {
-      const count = byDate[date] || 0;
-      const pct = Math.round(count / maxDay * 100);
-      return `<div class="stats-bar-row">
-        <div class="stats-bar-label">${escHtml(date.slice(5))}</div>
-        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${pct}%">${count > 0 ? fmt(count) : ''}</div></div>
+    const sections    = Object.keys(bySection).sort((a, b) => bySection[b] - bySection[a]);
+    const maxSection  = Math.max(...Object.values(bySection), 1);
+    const topSection  = sections[0];
+    const topLabel    = topSection ? (SECTION_ICONS[topSection] || '') + ' ' + topSection : '—';
+
+    const todayStart  = new Date(todayStr + 'T00:00:00');
+    const loginsToday = logins.filter(l => l.createdAt?.toDate?.() >= todayStart).length;
+
+    // ── KPI cards ─────────────────────────────────────
+    const kpiCards = `<div class="stats-kpi-grid">
+      <div class="stats-kpi-card" style="--kpi-color:#7a5af8">
+        <div class="stats-kpi-icon">📅</div>
+        <div class="stats-kpi-val">${fmt(total7)}</div>
+        <div class="stats-kpi-lbl">7 derniers jours</div>
+      </div>
+      <div class="stats-kpi-card" style="--kpi-color:#60a5fa">
+        <div class="stats-kpi-icon">📆</div>
+        <div class="stats-kpi-val">${fmt(total30)}</div>
+        <div class="stats-kpi-lbl">30 derniers jours</div>
+      </div>
+      <div class="stats-kpi-card" style="--kpi-color:#4ade80">
+        <div class="stats-kpi-icon">🌍</div>
+        <div class="stats-kpi-val">${fmt(total)}</div>
+        <div class="stats-kpi-lbl">All-time</div>
+      </div>
+      <div class="stats-kpi-card" style="--kpi-color:#fbbf24">
+        <div class="stats-kpi-icon">☀️</div>
+        <div class="stats-kpi-val">${fmt(totalToday)}</div>
+        <div class="stats-kpi-lbl">Aujourd'hui</div>
+      </div>
+      <div class="stats-kpi-card" style="--kpi-color:${SECTION_COLORS[topSection] || '#a78bfa'}">
+        <div class="stats-kpi-icon">🏆</div>
+        <div class="stats-kpi-val stats-kpi-val--sm">${escHtml(topLabel)}</div>
+        <div class="stats-kpi-lbl">Section top</div>
+      </div>
+      <div class="stats-kpi-card" style="--kpi-color:#f87171">
+        <div class="stats-kpi-icon">👤</div>
+        <div class="stats-kpi-val">${fmt(loginsToday)}</div>
+        <div class="stats-kpi-lbl">Connexions aujourd'hui</div>
+      </div>
+    </div>`;
+
+    // ── Hourly chart ──────────────────────────────────
+    const maxHour   = Math.max(...byHour, 1);
+    const hourlyBars = byHour.map((count, h) => {
+      const pct   = Math.round(count / maxHour * 100);
+      const label = String(h).padStart(2, '0') + 'h';
+      return `<div class="stats-hour-col" data-tooltip="${count} visite${count !== 1 ? 's' : ''} — ${label}">
+        <div class="stats-hour-track">
+          <div class="stats-hour-fill" style="height:${pct}%"></div>
+        </div>
+        <div class="stats-hour-lbl">${h % 3 === 0 ? label : ''}</div>
       </div>`;
     }).join('');
 
+    // ── Connexions récentes ───────────────────────────
+    const loginRows = logins.length
+      ? logins.map(l => `<div class="stats-login-row">
+          <span class="stats-login-pseudo">${escHtml(l.actorPseudo || l.targetName || '?')}</span>
+          <span class="stats-login-time">${escHtml(fmtTime(l.createdAt))}</span>
+        </div>`).join('')
+      : '<div class="stats-login-empty">Aucune connexion enregistrée</div>';
+
+    // ── Section bars ──────────────────────────────────
     const sectionBars = sections.map(s => {
       const count = bySection[s] || 0;
       const pct   = Math.round(count / maxSection * 100);
@@ -8723,28 +8820,98 @@ window.loadStatistiques = async function loadStatistiques() {
       </div>`;
     }).join('');
 
-    const monthRows = months.map(m => {
-      const mData = byMonth[m] || {};
-      const mTotal = Object.values(mData).reduce((a, b) => a + b, 0);
-      const cells = sections.map(s => `<td style="text-align:right;">${fmt(mData[s] || 0)}</td>`).join('');
-      return `<tr><td style="font-weight:600;">${escHtml(m)}</td>${cells}<td style="font-weight:700;text-align:right;">${fmt(mTotal)}</td></tr>`;
+    // ── Daily chart (30j) ─────────────────────────────
+    const last30 = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today); d.setDate(today.getDate() - i);
+      last30.push(d.toISOString().slice(0, 10));
+    }
+    const maxDay    = Math.max(...last30.map(d => byDate[d] || 0), 1);
+    const dailyBars = last30.map((date, i) => {
+      const count    = byDate[date] || 0;
+      const pct      = Math.round(count / maxDay * 100);
+      const showLbl  = i % 5 === 0 || i === 29;
+      const dayLabel = date.slice(5);
+      return `<div class="stats-day-col" data-tooltip="${count} visite${count !== 1 ? 's' : ''} — ${dayLabel}">
+        <div class="stats-day-track">
+          <div class="stats-day-fill${count > 0 ? ' stats-day-fill--active' : ''}" style="height:${pct}%"></div>
+        </div>
+        <div class="stats-day-lbl">${showLbl ? dayLabel : ''}</div>
+      </div>`;
     }).join('');
 
+    // ── Monthly table ─────────────────────────────────
+    const months    = Object.keys(byMonth).sort().reverse();
+    const monthRows = months.map(m => {
+      const mData  = byMonth[m] || {};
+      const mTotal = Object.values(mData).reduce((a, b) => a + b, 0);
+      const cells  = sections.map(s => `<td style="text-align:right;">${fmt(mData[s] || 0)}</td>`).join('');
+      return `<tr><td style="font-weight:600;">${escHtml(m)}</td>${cells}<td style="font-weight:700;text-align:right;">${fmt(mTotal)}</td></tr>`;
+    }).join('');
     const thSections = sections.map(s => `<th style="text-align:right;">${escHtml(SECTION_LABELS[s] || s)}</th>`).join('');
 
-    container.innerHTML = `
-      <div class="stats-cards">
-        <div class="stats-card"><div class="stats-card-val">${fmt(total7)}</div><div class="stats-card-lbl">7 derniers jours</div></div>
-        <div class="stats-card"><div class="stats-card-val">${fmt(total30)}</div><div class="stats-card-lbl">30 derniers jours</div></div>
-        <div class="stats-card"><div class="stats-card-val">${fmt(total)}</div><div class="stats-card-lbl">All-time</div></div>
-      </div>
+    // ── Tableau membres par outil ─────────────────────
+    const ALL_SECTIONS = ['compendium','bestiaire','map','quetes','atelier','patchnotes'];
+    const uvSorted = [...userVisits].sort((a, b) => (b.total || 0) - (a.total || 0));
+    const uvSections = ALL_SECTIONS.filter(s => uvSorted.some(u => u.sections?.[s] > 0));
+
+    const uvThCols = uvSections.map(s =>
+      `<th style="text-align:right;">${escHtml(SECTION_ICONS[s] || s)}</th>`
+    ).join('');
+
+    const uvRows = uvSorted.map(u => {
+      const isAnon = u.isAnonymous;
+      const badge = isAnon
+        ? `<span style="font-size:10px;padding:1px 5px;border-radius:8px;background:#4a4a5a;color:#aaa;">anon</span>`
+        : `<span style="font-size:10px;padding:1px 5px;border-radius:8px;background:#1a3a4a;color:#60a5fa;">membre</span>`;
+      const cells = uvSections.map(s => {
+        const v = u.sections?.[s] || 0;
+        return `<td style="text-align:right;color:${v > 0 ? 'var(--text)' : 'var(--muted)'}">${v > 0 ? fmt(v) : '—'}</td>`;
+      }).join('');
+      return `<tr>
+        <td style="display:flex;align-items:center;gap:6px;">${badge} ${escHtml(u.pseudo || u.id)}</td>
+        ${cells}
+        <td style="text-align:right;font-weight:700;">${fmt(u.total || 0)}</td>
+        <td style="text-align:right;color:var(--muted);font-size:11px;">${escHtml(u.lastSeen || '')}</td>
+      </tr>`;
+    }).join('');
+
+    const membresTable = uvSorted.length ? `
       <div class="stats-section">
-        <div class="stats-section-title">Visites par jour — 30 derniers jours</div>
-        <div class="stats-barchart">${dailyBars}</div>
+        <div class="stats-section-title">Visites par membre</div>
+        <div style="overflow-x:auto;">
+          <table class="stats-table">
+            <thead><tr>
+              <th>Membre</th>
+              ${uvThCols}
+              <th style="text-align:right;">Total</th>
+              <th style="text-align:right;">Dernière visite</th>
+            </tr></thead>
+            <tbody>${uvRows}</tbody>
+          </table>
+        </div>
+      </div>` : '';
+
+    container.innerHTML = `
+      ${kpiCards}
+      <div class="stats-mid-grid">
+        <div class="stats-section">
+          <div class="stats-section-title">Activité par heure (all-time)</div>
+          <div class="stats-hour-chart">${hourlyBars}</div>
+        </div>
+        <div class="stats-section">
+          <div class="stats-section-title">Connexions récentes</div>
+          <div class="stats-login-list">${loginRows}</div>
+        </div>
       </div>
       <div class="stats-section">
         <div class="stats-section-title">Répartition par section</div>
         ${sectionBars}
+      </div>
+      ${membresTable}
+      <div class="stats-section">
+        <div class="stats-section-title">Visites par jour — 30 derniers jours</div>
+        <div class="stats-day-chart">${dailyBars}</div>
       </div>
       <div class="stats-section">
         <div class="stats-section-title">Tableau mensuel</div>
@@ -13262,10 +13429,31 @@ window.renderDataAll = function() {
       showEditor(col, d.sensible ? (d._docKey || d.id) : d.id, d, 'data-all');
     };
 
+    const compUrl = d._type === 'item'
+      ? `Compendium/compendium.html#${encodeURIComponent(d.id)}`
+      : d._type === 'mob'
+        ? `Bestiaire/bestiaire.html#monstres/${encodeURIComponent(d.id)}`
+        : d._type === 'pnj'
+          ? `Bestiaire/bestiaire.html#personnages/${encodeURIComponent(d.id)}`
+          : null;
     row.appendChild(nameEl);
     row.appendChild(idEl);
     row.appendChild(badgesEl);
     row.appendChild(editBtn);
+
+    if (compUrl) {
+      const compBtn = document.createElement('a');
+      compBtn.className = 'btn btn-ghost';
+      compBtn.style.cssText = 'font-size:11px;padding:3px 8px;flex-shrink:0;text-decoration:none;';
+      compBtn.textContent = '📖';
+      compBtn.title = 'Voir dans le Compendium / Bestiaire';
+      compBtn.href = compUrl;
+      compBtn.target = '_blank';
+      compBtn.setAttribute('draggable', 'false');
+      compBtn.addEventListener('click', e => e.stopPropagation());
+      row.appendChild(compBtn);
+    }
+
     listEl.appendChild(row);
   });
 };

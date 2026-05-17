@@ -891,6 +891,109 @@ function formatDuration(sec) {
   return rm ? `${h} h ${rm}` : `${h} h`;
 }
 
+function _statValHtml(val, unit) {
+  const u = unit || '';
+  let mn, mx;
+  if (Array.isArray(val)) {
+    mn = val[0]; mx = val[1];
+  } else if (val != null && typeof val === 'object') {
+    mn = val.min; mx = val.max;
+  } else {
+    mn = val; mx = val;
+  }
+  if (mn == null || mn === '') return '—';
+  const mnS = `${mn}${u}`;
+  const mxS = (mx != null && mx !== '' && String(mx) !== String(mn)) ? `${mx}${u}` : null;
+  if (!mxS) return `<span class="sv-single">${escHtml(mnS)}</span>`;
+  return `<span class="sv-min" title="minimum">${escHtml(mnS)}</span><span class="sv-sep">▸</span><span class="sv-max" title="maximum">${escHtml(mxS)}</span>`;
+}
+
+function renderItemStats(item) {
+  const stats     = item.stats     || null;
+  const threshold = item.threshold || null;
+  const buff      = item.buff      || null;
+  const lvl       = item.lvl != null ? +item.lvl : null;
+  const classes   = item.classes   || [];
+  const twoHanded = item.twoHanded || false;
+  const unique    = item.unique    || false;
+  const runeSlots = item.rune_slots ? +item.rune_slots : 0;
+
+  const hasStats  = stats     && Object.keys(stats).some(k => stats[k] != null);
+  const hasThresh = threshold && Object.entries(threshold).some(([, v]) => v);
+  const hasBuff   = buff      && Object.entries(buff).some(([, v]) => v);
+  const hasReqs   = lvl != null || classes.length || twoHanded || unique || runeSlots > 0;
+
+  if (!hasStats && !hasThresh && !hasBuff && !hasReqs) return '';
+
+  let html = '';
+
+  // ─ Barre de prérequis (compacte, inline) ─
+  if (hasReqs || hasThresh) {
+    html += '<div class="stat-reqs-bar">';
+    if (lvl != null) {
+      html += `<span class="stat-req-badge stat-req-lvl">⬡ Niv. ${lvl}</span>`;
+    }
+    if (twoHanded)  html += `<span class="stat-req-badge">⚔️ Deux mains</span>`;
+    if (unique)     html += `<span class="stat-req-badge">🔮 Unique</span>`;
+    if (runeSlots > 0) html += `<span class="stat-req-badge">🔮 ${runeSlots} rune${runeSlots > 1 ? 's' : ''}</span>`;
+    if (classes.length) {
+      classes.forEach(cid => {
+        const cls = CLASSES.find(c => c.id === cid);
+        html += cls
+          ? `<span class="stat-req-badge stat-req-class">${cls.ico} ${escHtml(cls.label)}</span>`
+          : `<span class="stat-req-badge stat-req-class">${escHtml(cid)}</span>`;
+      });
+    }
+    if (hasThresh) {
+      if (hasReqs) html += '<span class="stat-req-div">│</span>';
+      for (const [attrId, value] of Object.entries(threshold)) {
+        if (!value) continue;
+        const car   = CARACTERISTIQUES.find(c => c.id === attrId);
+        const color = car ? car.color : '#888';
+        const icon  = car ? car.icon  : '◆';
+        html += `<span class="stat-thresh-item" style="color:${color}" title="${escHtml(car?.label ?? attrId)} requis">${escHtml(icon)} ≥ ${escHtml(String(value))}</span>`;
+      }
+    }
+    html += '</div>';
+  }
+
+  // ─ Lignes de stats ─
+  if (hasStats) {
+    html += '<div class="stat-rows">';
+    for (const group of STAT_GROUPS) {
+      for (const statDef of group.stats) {
+        if (stats[statDef.id] == null) continue;
+        html += `<div class="stat-row">
+          <span class="stat-row-icon">${escHtml(statDef.icon)}</span>
+          <span class="stat-row-label">${escHtml(statDef.label)}</span>
+          <span class="stat-row-value">${_statValHtml(stats[statDef.id], statDef.unit)}</span>
+        </div>`;
+      }
+    }
+    html += '</div>';
+  }
+
+  // ─ Bonus d'attributs (buff) ─
+  if (hasBuff) {
+    html += '<div class="stat-rows">';
+    for (const [attrId, value] of Object.entries(buff)) {
+      if (!value) continue;
+      const car   = CARACTERISTIQUES.find(c => c.id === attrId);
+      const color = car ? car.color : '#888';
+      const label = car ? car.label : attrId;
+      const icon  = car ? car.icon  : '◆';
+      html += `<div class="stat-row">
+        <span class="stat-row-icon" style="color:${color}">${escHtml(icon)}</span>
+        <span class="stat-row-label">${escHtml(label)}</span>
+        <span class="stat-row-value" style="color:${color}">+${escHtml(String(value))}</span>
+      </div>`;
+    }
+    html += '</div>';
+  }
+
+  return `<div class="item-stats-panel">${html}</div>`;
+}
+
 function renderEffects(effectsList) {
   if (!effectsList || effectsList.length === 0) return '';
 
@@ -1145,6 +1248,9 @@ function showItem(id, initialQuality = false) {
     </div>` : '';
 
   const v = getVariant();
+  const itemStatsHtml = renderItemStats(item);
+  const currentEffects = (qualityMode && item.quality?.effects) ? item.quality.effects : (item.effects ?? null);
+  const hasRow = item.craft || item.effects || item.quality?.craft || item.quality?.effects || itemStatsHtml;
 
   itemDisplay.innerHTML = `
     <div class="item-sheet">
@@ -1174,16 +1280,16 @@ function showItem(id, initialQuality = false) {
       ${renderEvolutionChain(item)}
       <div class="item-section-title">Comment obtenir cet item</div>
       <div class="item-obtain" id="item-obtain-text">${parseText(v.obtain)}</div>
-      ${(item.craft || item.effects || item.quality?.craft || item.quality?.effects) ? `
+      ${hasRow ? `
       <div class="effects-craft-titles" id="effects-craft-titles">
-        <div class="item-section-title">${(getCraft()) ? 'Craft' : ''}</div>
-        <div class="item-section-title">${(item.effects || item.quality?.effects) ? 'Effets' : ''}</div>
+        <div class="item-section-title">${getCraft() ? 'Craft' : ''}</div>
+        ${itemStatsHtml ? '<div class="item-section-title">Statistiques</div>' : ''}
+        <div class="item-section-title">${currentEffects?.length ? 'Effets' : ''}</div>
       </div>
       <div class="effects-craft-row">
         <div id="item-craft-wrap">${renderCraft(getCraft())}</div>
-        <div id="item-effects-wrap">${renderEffects(
-          (qualityMode && item.quality?.effects) ? item.quality.effects : (item.effects ?? null)
-        )}</div>
+        ${itemStatsHtml ? `<div id="item-stats-wrap">${itemStatsHtml}</div>` : ''}
+        <div id="item-effects-wrap">${renderEffects(currentEffects)}</div>
       </div>` : ''}
       <div class="item-sep"></div>
       ${renderUsedIn(item.id)}
