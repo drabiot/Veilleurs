@@ -67,6 +67,9 @@ export const COL = {
   zones:        'zones',          // zones de spawn de monstres (polygones)
   donjons:      'donjons',        // donjons migrés depuis data.js
   submissions: 'submissions',
+  buildsPublished: 'builds_published', // builds communautaires publiés
+  buildsSensible:  'builds_sensible',  // données des slots sensibles (contrib+ only)
+  userFavorites:   'user_favorites',   // index plat des favoris par user
 };
 
 // ── Rôles ─────────────────────────────────────────────
@@ -126,15 +129,57 @@ export async function logout() {
   return signOut(auth);
 }
 
-/** Enregistre une visite de page — une seule fois par session par section */
+/** Enregistre une visite de page — au plus une fois par heure par section (localStorage). Ignoré pour les admins. */
 export async function logPageView(section) {
+  // Attendre que l'état d'auth soit résolu (auth.currentUser peut être null au chargement initial)
+  const user = await new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, u => { unsub(); resolve(u); });
+  });
+  if (user) {
+    let role = sessionStorage.getItem('vcl_role_' + user.uid);
+    if (!role) {
+      role = await getUserRole(user.uid);
+      sessionStorage.setItem('vcl_role_' + user.uid, role);
+    }
+    if (role === 'admin') return;
+  }
   const key = 'pv_' + section;
-  if (sessionStorage.getItem(key)) return;
-  sessionStorage.setItem(key, '1');
+  const last = parseInt(localStorage.getItem(key) || '0');
+  if (Date.now() - last < 60 * 60 * 1000) return;
+  localStorage.setItem(key, String(Date.now()));
   const today = new Date().toISOString().slice(0, 10);
+  const hour  = new Date().getHours();
   try {
-    await setDoc(doc(db, 'page_views', section + '_' + today),
-      { section, date: today, count: increment(1) }, { merge: true });
+    const ref = doc(db, 'page_views', section + '_' + today);
+    await setDoc(ref, { section, date: today, count: increment(1) }, { merge: true });
+    await updateDoc(ref, { [`hours.${hour}`]: increment(1) });
+  } catch { /* silently fail */ }
+
+  // Tracking par utilisateur
+  try {
+    let visitorId, pseudo, isAnonymous;
+    if (user) {
+      visitorId = user.uid;
+      pseudo = user.displayName || user.email || user.uid;
+      isAnonymous = false;
+    } else {
+      let anonId = sessionStorage.getItem('vcl_anon_id');
+      if (!anonId) {
+        anonId = 'anon_' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+        sessionStorage.setItem('vcl_anon_id', anonId);
+      }
+      visitorId = anonId;
+      pseudo = 'Anonyme';
+      isAnonymous = true;
+    }
+    const uvRef = doc(db, 'user_visits', visitorId);
+    await setDoc(uvRef, {
+      pseudo,
+      isAnonymous,
+      total: increment(1),
+      [`sections.${section}`]: increment(1),
+      lastSeen: today,
+    }, { merge: true });
   } catch { /* silently fail */ }
 }
 

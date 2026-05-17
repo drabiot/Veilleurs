@@ -144,6 +144,62 @@
         allow write: if true;
       }
 
+      match /user_visits/{docId} {
+        allow read:  if isAdmin();
+        allow write: if true;
+      }
+
+      // ── Builds communautaires ───────────────────────────────────────
+      match /builds_published/{buildId} {
+        allow get:  if resource.data.visibility == 'public'
+                    || (isAuth() && resource.data.authorUid == request.auth.uid)
+                    || isAdmin();
+        allow list: if true;
+        allow create: if isMembre()
+                      && request.auth.uid == request.resource.data.authorUid
+                      && request.resource.data.name is string
+                      && request.resource.data.name.size() >= 1
+                      && request.resource.data.name.size() <= 60
+                      && request.resource.data.visibility in ['public', 'unlisted']
+                      && request.resource.data.previewCount == 0
+                      && request.resource.data.favoriteCount == 0;
+        allow update: if (isAuth()
+                          && resource.data.authorUid == request.auth.uid
+                          && request.resource.data.diff(resource.data).affectedKeys()
+                               .hasOnly(['name','visibility','updatedAt','slots','runes',
+                                         'caracterPoints','statsSnapshot','classe','level',
+                                         'slotImages','sensibleSlots','runeNames']))
+                      || isAdmin()
+                      || (isAuth()
+                          && request.resource.data.diff(resource.data).affectedKeys()
+                               .hasOnly(['previewCount','favoriteCount']));
+        allow delete: if isAdmin()
+                      || (isAuth() && resource.data.authorUid == request.auth.uid);
+
+        match /favoritedBy/{uid} {
+          allow read:   if true;
+          allow create: if isMembre() && request.auth.uid == uid;
+          allow delete: if isMembre() && request.auth.uid == uid;
+          allow update: if false;
+        }
+      }
+
+      match /user_favorites/{docId} {
+        allow read:   if isAuth() && resource.data.uid == request.auth.uid;
+        allow list:   if isAuth();
+        allow create: if isMembre()
+                      && request.auth.uid == request.resource.data.uid;
+        allow delete: if isMembre() && resource.data.uid == request.auth.uid;
+        allow update: if false;
+      }
+
+      match /builds_sensible/{buildId} {
+        allow read:   if isContrib();
+        allow create: if isMembre() && request.auth.uid == request.resource.data.authorUid;
+        allow delete: if isAdmin() || (isAuth() && resource.data.authorUid == request.auth.uid);
+        allow update: if false;
+      }
+
       match /submissions/{id} {
         allow create: if request.resource.data.submitterName is string
                       && request.resource.data.submitterName.size() >= 2

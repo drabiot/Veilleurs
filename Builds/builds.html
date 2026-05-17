@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
+  <title>[VCL] - Builds Partagés</title>
+  <link rel="stylesheet" href="builds.css" />
+  <link rel="stylesheet" href="../auth-widget.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1ZEKMF3QVS"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-1ZEKMF3QVS');
+  </script>
+</head>
+<body>
+
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="moon"></div>
+    <div class="fog fog-1"></div>
+    <div class="fog fog-2"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <header class="site-header">
+    <div class="header-top">
+      <div class="header-left">
+        <div class="traffic-lights">
+          <span class="tl tl-red"></span>
+          <span class="tl tl-yellow"></span>
+          <span class="tl tl-green"></span>
+        </div>
+        <span class="header-sep">─────</span>
+        <a href="../index.html" class="header-logo">Veilleurs au Clair de Lune</a>
+      </div>
+      <div class="header-right"></div>
+    </div>
+    <nav class="header-nav">
+      <a href="../Patchnotes/patchnotes.html"    class="nav-link"><span class="nav-icon">📜</span><span class="nav-label">Patchnotes</span></a>
+      <a href="../Map/map.html"                  class="nav-link"><span class="nav-icon">🗺️</span><span class="nav-label">Carte</span></a>
+      <a href="../Compendium/compendium.html"    class="nav-link"><span class="nav-icon">📖</span><span class="nav-label">Compendium</span></a>
+      <a href="../Bestiaire/bestiaire.html"      class="nav-link"><span class="nav-icon">💀</span><span class="nav-label">Bestiaire</span></a>
+      <a href="../Quetes/quetes.html"            class="nav-link"><span class="nav-icon">📋</span><span class="nav-label">Quêtes</span></a>
+      <a href="../Atelier/atelier.html"          class="nav-link"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
+      <a href="builds.html"                      class="nav-link active"><span class="nav-icon">📋</span><span class="nav-label">Builds</span></a>
+    </nav>
+  </header>
+
+  <div class="page">
+    <div class="builds-layout">
+
+      <!-- ── Sidebar Filtres ── -->
+      <aside class="filters-sidebar">
+
+        <div class="filter-section">
+          <div class="filter-head">⬡ Classe</div>
+          <div class="class-chips" id="class-chips">
+            <!-- Injecté par JS -->
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-head">⬡ Niveau max</div>
+          <div class="level-range-row">
+            <span>1</span>
+            <input type="range" id="filter-level" min="1" max="30" value="30" step="1" />
+            <span class="level-range-val" id="filter-level-val">30</span>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-head">⬡ Stats minimales</div>
+          <div class="stats-filter-list" id="stats-filter-list">
+            <!-- Injecté par JS -->
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <div class="filter-head">⬡ Trier par</div>
+          <select class="sort-select" id="sort-select">
+            <option value="createdAt">Plus récents</option>
+            <option value="previewCount">Plus prévisualisés</option>
+            <option value="favoriteCount">Plus favoris</option>
+          </select>
+        </div>
+
+        <div class="filter-section">
+          <button class="fav-toggle" id="fav-toggle">
+            <span>⭐</span> Mes Favoris
+          </button>
+          <button class="fav-toggle" id="my-builds-toggle" style="margin-top:4px;">
+            <span>👤</span> Mes Builds
+          </button>
+        </div>
+
+        <button class="filter-reset-btn" id="filter-reset">✕ Réinitialiser les filtres</button>
+
+      </aside>
+
+      <!-- ── Centre ── -->
+      <main class="builds-center">
+
+        <div class="builds-top-bar">
+          <div>
+            <div class="builds-title">Builds Partagés</div>
+            <div class="builds-subtitle">// FORUM · VEILLEURS AU CLAIR DE LUNE</div>
+          </div>
+          <div class="search-wrap">
+            <input type="text" id="search-input" class="search-input" placeholder="🔍  Rechercher un build, un auteur…" autocomplete="off" />
+          </div>
+        </div>
+
+        <div id="single-build-banner" class="single-build-banner" style="display:none">
+          🔗 Build en accès par lien uniquement — non répertorié dans le forum.
+          <a href="builds.html" style="color:var(--gold);text-decoration:none;margin-left:auto;font-size:11px;">← Voir tous les builds</a>
+        </div>
+
+        <div class="builds-count" id="builds-count"></div>
+
+        <div class="builds-grid" id="builds-grid">
+          <div class="builds-loading">Chargement des builds…</div>
+        </div>
+
+        <button class="load-more-btn" id="load-more-btn" style="display:none">
+          ↓ Charger plus de builds
+        </button>
+
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ══ MODALE SUPPRESSION ══ -->
+  <div class="modal-backdrop" id="modal">
+    <div class="modal-box">
+      <button class="modal-close-btn" id="btn-modal-close">✕</button>
+      <div class="modal-title" id="modal-title">Supprimer le Build</div>
+      <div id="modal-zone-delete" style="display:flex; flex-direction:column; gap:14px; text-align:center; align-items:center;">
+        <p class="modal-hint">Supprimer ce build définitivement ? Cette action ne peut pas être annulée.</p>
+        <div class="modal-foot">
+          <button class="action-btn" id="btn-delete-cancel">Annuler</button>
+          <button class="action-btn danger" id="btn-delete-confirm">✕ Supprimer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bc-tooltip" class="bc-tooltip" style="display:none"></div>
+
+  <script src="../utils.js"></script>
+  <script src="../Compendium/data.js"></script>
+
+  <script type="module">
+    import {
+      db, auth, COL,
+      desanitizeFromFirestore, logPageView, getUserRole,
+    } from '../firebase.js';
+    import {
+      collection, query, where, orderBy, limit, startAfter,
+      getDoc, getDocs, doc, setDoc, deleteDoc, updateDoc, increment, serverTimestamp,
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+    logPageView('builds');
+
+    // ── État ──────────────────────────────────────────────────────
+    const PAGE_SIZE    = 24;
+    const SIG          = "🌙𝓥𝓮𝓲𝓵𝓵𝓮𝓾𝓻𝓼 𝓪𝓾 𝓒𝓵𝓪𝓲𝓻 𝓭𝓮 𝓛𝓾𝓷𝓮🌙";
+    const COL_BUILDS   = COL.buildsPublished;
+    const COL_FAVS     = COL.userFavorites;
+
+    let currentUser      = null;
+    let currentUserRole  = 'visiteur';
+    let myFavoriteIds    = new Set();
+    let lastDoc          = null;
+    let hasMore          = false;
+    let allBuilds        = [];
+    let isSingleView     = false;
+    let filterMyBuilds   = false;
+
+    // Filtres
+    let filterClass    = '';
+    let filterMaxLevel = parseInt(document.getElementById('filter-level').max) || 30;
+    let filterStats    = {};
+    let filterFavOnly  = false;
+    let filterSearch   = '';
+    let sortBy         = 'createdAt';
+
+    let pendingDeleteId  = null;
+
+    // ── URL params ────────────────────────────────────────────────
+    const urlParams   = new URLSearchParams(window.location.search);
+    const urlBuildId  = urlParams.get('id');
+    const urlMyBuilds = urlParams.get('my');
+
+    // ── Auth ──────────────────────────────────────────────────────
+    onAuthStateChanged(auth, async user => {
+      currentUser = user;
+      const prevRole = currentUserRole;
+      if (user) {
+        await _loadMyFavorites();
+        try { currentUserRole = await getUserRole(user.uid); } catch {}
+      } else {
+        currentUserRole = 'visiteur';
+      }
+      _refreshFavButtons();
+      // Re-fetch sensible data if role changed (e.g., auth resolved after initial load)
+      const nowCanSee = ['contributeur', 'admin'].includes(currentUserRole);
+      const wasCanSee = ['contributeur', 'admin'].includes(prevRole);
+      if (nowCanSee !== wasCanSee && allBuilds.length > 0) {
+        await _fetchSensibleData(allBuilds);
+        _renderBuilds(allBuilds);
+      }
+    });
+
+    async function _loadMyFavorites() {
+      if (!currentUser) return;
+      try {
+        const q = query(
+          collection(db, COL_FAVS),
+          where('uid', '==', currentUser.uid),
+          limit(200)
+        );
+        const snap = await getDocs(q);
+        myFavoriteIds = new Set(snap.docs.map(d => d.data().buildId));
+      } catch(e) { console.warn('[builds] favorites:', e); }
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    _buildClassChips();
+    _buildStatsFilters();
+    _setupEventListeners();
+
+    // Charger le niveau max depuis window si disponible
+    const maxLvl = window.MAX_LEVEL || 30;
+    document.getElementById('filter-level').max = maxLvl;
+    document.getElementById('filter-level').value = maxLvl;
+    document.getElementById('filter-level-val').textContent = maxLvl;
+    filterMaxLevel = maxLvl;
+
+    // Mode "mes builds"
+    if (urlMyBuilds && currentUser) {
+      // Attendre auth avant de charger
+    }
+
+    // Mode single build (lien direct)
+    if (urlBuildId) {
+      isSingleView = true;
+      // Attendre que l'état auth soit connu — sinon le token n'est pas encore attaché
+      // aux requêtes Firestore, ce qui fait échouer les builds unlisted (rule: isAuth())
+      await new Promise(resolve => { const u = onAuthStateChanged(auth, () => { u(); resolve(); }); });
+      await _loadSingleBuild(urlBuildId);
+    } else {
+      await _loadBuilds(false);
+    }
+
+    // ── Chargement builds ──────────────────────────────────────────
+    // Pas d'orderBy côté serveur → pas d'index composite requis.
+    // Tri et filtres secondaires appliqués client-side.
+    async function _loadBuilds(append) {
+      const grid = document.getElementById('builds-grid');
+      if (!append) {
+        grid.innerHTML = '<div class="builds-loading">Chargement des builds…</div>';
+        allBuilds = [];
+        lastDoc   = null;
+      }
+
+      try {
+        const constraints = [ where('visibility', '==', 'public'), limit(PAGE_SIZE) ];
+        if (append && lastDoc) constraints.push(startAfter(lastDoc));
+
+        const snap = await getDocs(query(collection(db, COL_BUILDS), ...constraints));
+
+        hasMore = snap.docs.length === PAGE_SIZE;
+        if (snap.docs.length > 0) lastDoc = snap.docs[snap.docs.length - 1];
+
+        const builds = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+        if (append) allBuilds = allBuilds.concat(builds);
+        else        allBuilds = builds;
+
+        await _fetchSensibleData(allBuilds);
+        _renderBuilds(allBuilds);
+      } catch(e) {
+        console.error('[builds] load:', e);
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">⚠️</span>Erreur lors du chargement. Vérifiez la console.</div>';
+      }
+    }
+
+    async function _loadMyBuilds() {
+      const grid = document.getElementById('builds-grid');
+      grid.innerHTML = '<div class="builds-loading">Chargement de vos builds…</div>';
+      if (!currentUser) {
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">🔒</span>Connectez-vous pour voir vos builds.</div>';
+        return;
+      }
+      try {
+        const snap = await getDocs(query(
+          collection(db, COL_BUILDS),
+          where('authorUid', '==', currentUser.uid),
+          limit(50)
+        ));
+        allBuilds = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+        await _fetchSensibleData(allBuilds);
+        _renderBuilds(allBuilds);
+      } catch(e) {
+        console.error('[builds] my builds:', e);
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">⚠️</span>Erreur lors du chargement.</div>';
+      }
+    }
+
+    async function _loadMyFavoritesBuilds() {
+      const grid = document.getElementById('builds-grid');
+      grid.innerHTML = '<div class="builds-loading">Chargement de vos favoris…</div>';
+      if (!currentUser) {
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">🔒</span>Connectez-vous pour voir vos favoris.</div>';
+        return;
+      }
+      const ids = [...myFavoriteIds];
+      if (!ids.length) {
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">⭐</span>Aucun favori pour l\'instant.<br><span style="font-size:11px;opacity:.6">Cliquez sur ⭐ sur un build pour l\'ajouter.</span></div>';
+        return;
+      }
+      try {
+        const builds = await Promise.all(
+          ids.slice(0, 50).map(id =>
+            getDoc(doc(db, COL_BUILDS, id)).then(d => d.exists() ? { _id: d.id, ...d.data() } : null)
+          )
+        ).then(r => r.filter(Boolean));
+        allBuilds = builds;
+        await _fetchSensibleData(allBuilds);
+        _renderBuilds(builds);
+      } catch(e) {
+        console.error('[builds] favorites builds:', e);
+      }
+    }
+
+    async function _loadSingleBuild(buildId) {
+      const grid = document.getElementById('builds-grid');
+      grid.innerHTML = '<div class="builds-loading">Chargement du build…</div>';
+      try {
+        const snap = await getDoc(doc(db, COL_BUILDS, buildId));
+        if (!snap.exists()) {
+          grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">🔍</span>Build introuvable.</div>';
+          return;
+        }
+        const build = { _id: snap.id, ...snap.data() };
+        if (build.visibility === 'unlisted') {
+          document.getElementById('single-build-banner').style.display = 'flex';
+        }
+        allBuilds = [build];
+        await _fetchSensibleData(allBuilds);
+        _renderBuilds([build]);
+      } catch(e) {
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">⚠️</span>Erreur lors du chargement.</div>';
+      }
+    }
+
+    // ── Sensible data fetch ───────────────────────────────────────
+    async function _fetchSensibleData(builds) {
+      if (!['contributeur', 'admin'].includes(currentUserRole)) return;
+      const toFetch = builds.filter(b => b.sensibleSlots && Object.keys(b.sensibleSlots).length > 0 && !b._sensibleData);
+      if (!toFetch.length) return;
+      await Promise.all(toFetch.map(async b => {
+        try {
+          const snap = await getDoc(doc(db, COL.buildsSensible, b._id));
+          if (snap.exists()) b._sensibleData = { slots: desanitizeFromFirestore(snap.data().slots || {}) };
+        } catch {}
+      }));
+    }
+
+    // ── Rendu ─────────────────────────────────────────────────────
+    function _renderBuilds(builds) {
+      const grid  = document.getElementById('builds-grid');
+      const count = document.getElementById('builds-count');
+
+      let filtered = [...builds];
+
+      // Filtres client-side
+      if (filterClass)    filtered = filtered.filter(b => b.classe === filterClass);
+      if (filterMaxLevel < maxLvl) filtered = filtered.filter(b => (b.level || 1) <= filterMaxLevel);
+
+      const statEntries = Object.entries(filterStats).filter(e => e[1] > 0);
+      if (statEntries.length) {
+        filtered = filtered.filter(b => {
+          const ss = b.statsSnapshot || {};
+          return statEntries.every(([id, min]) => (ss[id] || 0) >= min);
+        });
+      }
+
+      if (filterFavOnly && !isSingleView) filtered = filtered.filter(b => myFavoriteIds.has(b._id));
+
+      if (filterSearch) {
+        const q = normalize(filterSearch);
+        filtered = filtered.filter(b => fuzzyMatch(q, b.name || '') || fuzzyMatch(q, b.authorPseudo || ''));
+      }
+
+      // Tri client-side
+      filtered.sort(function(a, b) {
+        const va = sortBy === 'createdAt' ? (a.createdAt?.seconds || 0) : (a[sortBy] || 0);
+        const vb = sortBy === 'createdAt' ? (b.createdAt?.seconds || 0) : (b[sortBy] || 0);
+        return vb - va;
+      });
+
+      count.textContent = filtered.length
+        ? filtered.length + ' build' + (filtered.length > 1 ? 's' : '')
+        : '';
+
+      if (!filtered.length) {
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">📋</span>Aucun build trouvé.<br><span style="font-size:11px;opacity:.6">Soyez le premier à publier !</span></div>';
+        document.getElementById('load-more-btn').style.display = 'none';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(b => _buildCard(b)).join('');
+
+      const lmBtn = document.getElementById('load-more-btn');
+      lmBtn.style.display = (hasMore && !filterSearch && !filterFavOnly && !filterMyBuilds && !isSingleView) ? 'block' : 'none';
+
+      _attachCardListeners();
+    }
+
+    // Disposition des slots identique à l'atelier
+    const MQ_LEFT  = ['amulette','anneau1','anneau2','bracelet','gants'];
+    const MQ_RIGHT = ['casque','plastron','jambieres','bottes','arme_pr'];
+    const MQ_BOT   = ['artefact1','artefact2','artefact3','arme_sec'];
+    const _SLOT_DEFS = (typeof ALL_SLOTS !== 'undefined')
+      ? new Map(ALL_SLOTS.map(s => [s.id, s]))
+      : new Map();
+    function _slotCell(slotId, b, canSeeSensible, runeNames) {
+      const def         = _SLOT_DEFS.get(slotId);
+      const ico         = def ? def.ico : '◻';
+      const label       = def ? def.label : slotId;
+      const slotImages  = b.slotImages || {};
+      const slots       = b.slots || {};
+      const isSensible  = !!(b.sensibleSlots || {})[slotId];
+      // runeNames: { "slotId_rune_0": "Nom Rune", ... } — stocké au publish
+      const prefix = slotId + '_rune_';
+      const slotRunes = Object.entries(runeNames)
+        .filter(([k]) => k.startsWith(prefix))
+        .map(([, name]) => name)
+        .filter(Boolean);
+      const runeAttr = slotRunes.length ? ` data-tip-rune="${escHtml(slotRunes.join(', '))}"` : '';
+
+      if (isSensible) {
+        if (canSeeSensible && b._sensibleData?.slots?.[slotId]) {
+          const s = b._sensibleData.slots[slotId];
+          const n = s.name || label;
+          if (s.img) return `<div class="bc-slot" data-tip="${escHtml(n)}"${runeAttr}><img src="../${s.img.replace(/^\.\.\//, '')}" alt="${escHtml(n)}" loading="lazy" onerror="this.classList.add('bc-slot-empty');this.remove()" /></div>`;
+          return `<div class="bc-slot bc-slot-noimg" data-tip="${escHtml(n)}"${runeAttr}><span class="bc-slot-text">${escHtml(n.slice(0,10))}</span></div>`;
+        }
+        return `<div class="bc-slot bc-slot-sensible" data-tip="Item sensible"${runeAttr}>?</div>`;
+      }
+
+      const img      = slotImages[slotId];
+      const itemName = slots[slotId]?.name || '';
+      const tipItem  = escHtml(itemName || label);
+      if (img)      return `<div class="bc-slot" data-tip="${tipItem}"${runeAttr}><img src="../${img.replace(/^\.\.\//, '')}" alt="${escHtml(itemName || slotId)}" loading="lazy" onerror="this.classList.add('bc-slot-empty-img')" /></div>`;
+      if (itemName) return `<div class="bc-slot bc-slot-noimg" data-tip="${tipItem}"${runeAttr}><span class="bc-slot-text">${escHtml(itemName.slice(0,10))}</span></div>`;
+      return `<div class="bc-slot bc-slot-empty" data-tip="${tipItem}"${runeAttr}>${escHtml(ico)}</div>`;
+    }
+
+    function _buildCard(b) {
+      const cls    = CLASSES?.find(c => c.id === b.classe);
+      const clsIco = cls ? cls.ico : '◈';
+      const clsLbl = cls ? cls.label : (b.classe || '—');
+      const ago    = _timeAgo(b.createdAt?.toDate?.() || new Date(b.createdAt?.seconds * 1000 || Date.now()));
+      const isFav  = myFavoriteIds.has(b._id);
+      const isOwn  = currentUser && b.authorUid === currentUser.uid;
+      const isAdm  = currentUserRole === 'admin';
+      const canDel = isOwn || isAdm;
+      const canSeeSensible = ['contributeur', 'admin'].includes(currentUserRole);
+
+      const runeNames = b.runeNames || {};
+      const colL   = MQ_LEFT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
+      const colR   = MQ_RIGHT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
+      const botRow = MQ_BOT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
+
+      const unlistedBadge = (b.visibility === 'unlisted') ? `<span class="bc-unlisted-badge">🔗 Lien uniquement</span>` : '';
+      const adminBadge    = (!isOwn && isAdm) ? `<span class="bc-admin-badge">⬡ admin</span>` : '';
+
+      return `
+        <div class="build-card" data-id="${escHtml(b._id)}">
+          <div class="bc-head">
+            <div class="bc-name" title="${escHtml(b.name || 'Sans nom')}">${escHtml(b.name || 'Sans nom')}</div>
+            <div class="bc-head-right">
+              ${canDel ? `<button class="bc-btn-del" data-action="delete" data-id="${escHtml(b._id)}" title="${isAdm && !isOwn ? 'Supprimer (modération)' : 'Supprimer'}">✕</button>` : ''}
+            </div>
+          </div>
+          <div class="bc-meta">
+            <span class="bc-author">👤 ${escHtml(b.authorPseudo || 'Anonyme')}</span>
+            ${unlistedBadge}${adminBadge}
+          </div>
+          <div class="bc-mannequin-wrap">
+            <div class="bc-mannequin-row">
+              <div class="bc-mq-col">${colL}</div>
+              <div class="bc-mq-center">
+                <span class="bc-mq-cls-ico">${escHtml(clsIco)}</span>
+                <span class="bc-mq-cls-name">${escHtml(clsLbl)}</span>
+                <span class="bc-mq-level">Niv.&nbsp;${b.level || 1}</span>
+              </div>
+              <div class="bc-mq-col">${colR}</div>
+            </div>
+            <div class="bc-mq-bot">${botRow}</div>
+          </div>
+          <div class="bc-foot">
+            <div class="bc-social">
+              <span title="Prévisualisations">◉ ${b.previewCount || 0}</span>
+              <span title="Favoris">⭐ ${b.favoriteCount || 0}</span>
+            </div>
+            <span class="bc-time">${escHtml(ago)}</span>
+            <div class="bc-actions">
+              <button class="bc-btn" data-action="share" data-id="${escHtml(b._id)}" title="Copier le lien">🔗</button>
+              <button class="bc-btn primary" data-action="preview" data-id="${escHtml(b._id)}" title="Aperçu dans l'Atelier">◉ Aperçu</button>
+              <button class="bc-btn fav ${isFav ? 'active' : ''}" data-action="fav" data-id="${escHtml(b._id)}" title="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">⭐</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function _attachCardListeners() {
+      document.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const action = this.dataset.action;
+          const id     = this.dataset.id;
+          if (action === 'fav')     _handleFav(id, this);
+          if (action === 'delete')  _handleDelete(id);
+          if (action === 'share')   _handleShare(id);
+          if (action === 'preview') {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = '… Chargement';
+            _handlePreview(id).catch(() => {
+              btn.disabled = false;
+              btn.textContent = '◉ Aperçu';
+              _showToast('⚠️ Erreur lors du chargement de l\'aperçu.');
+            });
+          }
+        });
+      });
+      // Tooltips sur les thumbnails
+      const tip = document.getElementById('bc-tooltip');
+      document.querySelectorAll('.bc-slot[data-tip]').forEach(el => {
+        el.addEventListener('mouseenter', function() {
+          const label = this.dataset.tip;
+          if (!label) return;
+          const rune = this.dataset.tipRune;
+          tip.innerHTML = '';
+          const nameNode = document.createTextNode(label);
+          tip.appendChild(nameNode);
+          if (rune) {
+            tip.appendChild(document.createElement('br'));
+            const runeSpan = document.createElement('span');
+            runeSpan.className = 'bc-tip-rune';
+            runeSpan.textContent = rune;
+            tip.appendChild(runeSpan);
+          }
+          tip.style.display = 'block';
+        });
+        el.addEventListener('mousemove', function(e) {
+          tip.style.left = (e.clientX + 14) + 'px';
+          tip.style.top  = (e.clientY - 28) + 'px';
+        });
+        el.addEventListener('mouseleave', function() {
+          tip.style.display = 'none';
+        });
+      });
+    }
+
+    // ── Actions ───────────────────────────────────────────────────
+    function _handleShare(buildId) {
+      const url = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'builds.html?id=' + buildId;
+      navigator.clipboard.writeText(url)
+        .then(() => _showToast('🔗 Lien copié !'))
+        .catch(() => _showToast('⚠️ Impossible de copier le lien.'));
+    }
+
+    async function _handlePreview(buildId) {
+      const build = allBuilds.find(b => b._id === buildId);
+      if (!build) return;
+
+      const slots = { ...desanitizeFromFirestore(build.slots || {}) };
+
+      const canSeeSensible = ['contributeur', 'admin'].includes(currentUserRole);
+
+      // Strip sensible slots for unauthorized users — guards against legacy builds
+      // where sensible item data may still be in the public `slots` field
+      if (!canSeeSensible) {
+        Object.keys(build.sensibleSlots || {}).forEach(id => delete slots[id]);
+      }
+
+      // Merge sensible slots for authorized users
+      if (canSeeSensible && build.sensibleSlots && Object.keys(build.sensibleSlots).length > 0) {
+        try {
+          const sensSnap = await getDoc(doc(db, COL.buildsSensible, buildId));
+          if (sensSnap.exists()) {
+            Object.assign(slots, desanitizeFromFirestore(sensSnap.data().slots || {}));
+          }
+        } catch {}
+      }
+
+      const previewBuild = {
+        v: 2, sig: SIG,
+        name:           build.name,
+        classe:         build.classe,
+        level:          build.level,
+        caracterPoints: build.caracterPoints || {},
+        slots,
+        runes:          desanitizeFromFirestore(build.runes || {}),
+        forkOf:         build._id,
+      };
+      localStorage.setItem('vcl_atelier_preview', JSON.stringify(previewBuild));
+      updateDoc(doc(db, COL_BUILDS, build._id), { previewCount: increment(1) }).catch(() => {});
+      window.location.href = '../Atelier/atelier.html?preview=1';
+    }
+
+    async function _handleFav(buildId, btnEl) {
+      if (!currentUser) {
+        _showToast('🔒 Connectez-vous pour utiliser les favoris.');
+        return;
+      }
+      const isFav = myFavoriteIds.has(buildId);
+      const favRef  = doc(db, COL_BUILDS + '/' + buildId + '/favoritedBy', currentUser.uid);
+      const flatRef = doc(db, COL_FAVS, currentUser.uid + '_' + buildId);
+      const buildRef = doc(db, COL_BUILDS, buildId);
+
+      // Optimistic UI
+      if (isFav) {
+        myFavoriteIds.delete(buildId);
+        btnEl.classList.remove('active');
+      } else {
+        myFavoriteIds.add(buildId);
+        btnEl.classList.add('active');
+      }
+
+      try {
+        if (isFav) {
+          await deleteDoc(favRef);
+          await deleteDoc(flatRef).catch(() => {});
+          await updateDoc(buildRef, { favoriteCount: increment(-1) });
+        } else {
+          await setDoc(favRef, { uid: currentUser.uid, addedAt: serverTimestamp() });
+          await setDoc(flatRef, { uid: currentUser.uid, buildId, addedAt: serverTimestamp() });
+          await updateDoc(buildRef, { favoriteCount: increment(1) });
+        }
+        // Mettre à jour le compteur affiché dans la card
+        const card = btnEl.closest('.build-card');
+        if (card) {
+          const build = allBuilds.find(b => b._id === buildId);
+          if (build) {
+            build.favoriteCount = (build.favoriteCount || 0) + (isFav ? -1 : 1);
+            const socialEl = card.querySelector('.bc-social');
+            if (socialEl) {
+              const spans = socialEl.querySelectorAll('span');
+              if (spans[1]) spans[1].textContent = '⭐ ' + Math.max(0, build.favoriteCount);
+            }
+          }
+        }
+      } catch(e) {
+        // Rollback
+        if (isFav) { myFavoriteIds.add(buildId); btnEl.classList.add('active'); }
+        else { myFavoriteIds.delete(buildId); btnEl.classList.remove('active'); }
+        console.error('[builds] fav toggle:', e);
+      }
+    }
+
+    function _handleDelete(buildId) {
+      pendingDeleteId = buildId;
+      document.getElementById('modal-title').textContent = '✕ Supprimer le Build';
+      document.getElementById('modal-zone-delete').style.display = 'flex';
+      document.getElementById('modal').classList.add('open');
+    }
+
+    async function _confirmDelete() {
+      if (!pendingDeleteId || !currentUser) return;
+      try {
+        await deleteDoc(doc(db, COL_BUILDS, pendingDeleteId));
+        document.getElementById('modal').classList.remove('open');
+        allBuilds = allBuilds.filter(b => b._id !== pendingDeleteId);
+        pendingDeleteId = null;
+        _renderBuilds(allBuilds);
+        _showToast('✓ Build supprimé.');
+      } catch(e) {
+        _showToast('✕ Erreur lors de la suppression.');
+      }
+    }
+
+    // ── Favoris view ─────────────────────────────────────────────
+    function _refreshFavButtons() {
+      document.querySelectorAll('.bc-btn.fav').forEach(btn => {
+        const id = btn.dataset.id;
+        if (myFavoriteIds.has(id)) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function _timeAgo(date) {
+      if (!date || isNaN(date)) return '';
+      const diff = Date.now() - date.getTime();
+      const m = Math.floor(diff / 60000);
+      const h = Math.floor(diff / 3600000);
+      const d = Math.floor(diff / 86400000);
+      if (m < 1)  return 'à l\'instant';
+      if (m < 60) return 'il y a ' + m + 'min';
+      if (h < 24) return 'il y a ' + h + 'h';
+      if (d < 30) return 'il y a ' + d + 'j';
+      return 'il y a ' + Math.floor(d / 30) + ' mois';
+    }
+
+    function _showToast(msg) {
+      const t = document.getElementById('vcl-toast');
+      if (t) t.remove();
+      const el = document.createElement('div');
+      el.id = 'vcl-toast';
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    // ── Build UI ─────────────────────────────────────────────────
+    function _buildClassChips() {
+      const wrap = document.getElementById('class-chips');
+      if (!wrap || typeof CLASSES === 'undefined') return;
+      const all = document.createElement('button');
+      all.className = 'class-chip active';
+      all.textContent = 'Toutes';
+      all.dataset.class = '';
+      wrap.appendChild(all);
+      CLASSES.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'class-chip';
+        btn.textContent = c.ico + ' ' + c.label;
+        btn.dataset.class = c.id;
+        wrap.appendChild(btn);
+      });
+      wrap.addEventListener('click', e => {
+        const chip = e.target.closest('.class-chip');
+        if (!chip) return;
+        wrap.querySelectorAll('.class-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        filterClass = chip.dataset.class;
+        _renderBuilds(allBuilds);
+      });
+    }
+
+    function _buildStatsFilters() {
+      const wrap = document.getElementById('stats-filter-list');
+      if (!wrap || typeof STAT_GROUPS === 'undefined') return;
+
+      STAT_GROUPS.forEach(group => {
+        const groupEl   = document.createElement('div');
+        groupEl.className = 'stat-group';
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'stat-group-toggle';
+        toggleBtn.innerHTML = `${escHtml(group.label)} <span class="stat-group-arrow">▸</span>`;
+        const body = document.createElement('div');
+        body.className = 'stat-group-body';
+        body.style.display = 'none';
+
+        group.stats.forEach(s => {
+          const row = document.createElement('div');
+          row.className = 'stat-filter-row';
+          row.innerHTML = `<label title="${escHtml(s.label)}">${escHtml(s.icon || '')} ${escHtml(s.label)}</label>
+            <span class="stat-filter-ge">≥</span>
+            <input type="number" min="0" step="1" placeholder="0" data-stat="${escHtml(s.id)}" />`;
+          body.appendChild(row);
+        });
+
+        toggleBtn.addEventListener('click', function() {
+          const isOpen = body.style.display !== 'none';
+          body.style.display = isOpen ? 'none' : 'flex';
+          this.querySelector('.stat-group-arrow').textContent = isOpen ? '▸' : '▾';
+        });
+
+        groupEl.appendChild(toggleBtn);
+        groupEl.appendChild(body);
+        wrap.appendChild(groupEl);
+      });
+
+      wrap.addEventListener('input', e => {
+        const inp = e.target.closest('input[data-stat]');
+        if (!inp) return;
+        const val = parseInt(inp.value) || 0;
+        if (val > 0) filterStats[inp.dataset.stat] = val;
+        else delete filterStats[inp.dataset.stat];
+        _renderBuilds(allBuilds);
+      });
+    }
+
+    // ── Events ───────────────────────────────────────────────────
+    function _setupEventListeners() {
+      // Search
+      document.getElementById('search-input').addEventListener('input', e => {
+        filterSearch = e.target.value.trim();
+        _renderBuilds(allBuilds);
+      });
+
+      // Niveau slider (client-side)
+      document.getElementById('filter-level').addEventListener('input', e => {
+        filterMaxLevel = parseInt(e.target.value);
+        document.getElementById('filter-level-val').textContent = filterMaxLevel;
+        _renderBuilds(allBuilds);
+      });
+
+      // Sort (client-side uniquement — tri appliqué dans _renderBuilds)
+      document.getElementById('sort-select').addEventListener('change', e => {
+        sortBy = e.target.value;
+        _renderBuilds(allBuilds);
+      });
+
+      // Favoris toggle
+      document.getElementById('fav-toggle').addEventListener('click', function() {
+        if (!currentUser) {
+          _showToast('🔒 Connectez-vous pour voir vos favoris.');
+          return;
+        }
+        filterFavOnly  = !filterFavOnly;
+        filterMyBuilds = false;
+        this.classList.toggle('active', filterFavOnly);
+        document.getElementById('my-builds-toggle').classList.remove('active');
+        if (filterFavOnly) _loadMyFavoritesBuilds();
+        else _reload();
+      });
+
+      // Reset filtres
+      document.getElementById('filter-reset').addEventListener('click', () => {
+        filterClass = ''; filterStats = {}; filterFavOnly = false; filterSearch = ''; filterMyBuilds = false;
+        filterMaxLevel = maxLvl;
+        document.getElementById('filter-level').value = maxLvl;
+        document.getElementById('filter-level-val').textContent = maxLvl;
+        document.getElementById('search-input').value = '';
+        document.getElementById('fav-toggle').classList.remove('active');
+        document.getElementById('my-builds-toggle').classList.remove('active');
+        document.querySelectorAll('.class-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
+        document.querySelectorAll('input[data-stat]').forEach(i => { i.value = ''; });
+        _reload();
+      });
+
+      // Load more
+      document.getElementById('load-more-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('load-more-btn');
+        btn.disabled = true;
+        btn.textContent = '…';
+        await _loadBuilds(true);
+        btn.disabled = false;
+        btn.textContent = '↓ Charger plus de builds';
+      });
+
+      // Modal suppression
+      document.getElementById('btn-modal-close').addEventListener('click', _closeModal);
+      document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) _closeModal(); });
+      document.getElementById('btn-delete-cancel').addEventListener('click', _closeModal);
+      document.getElementById('btn-delete-confirm').addEventListener('click', _confirmDelete);
+
+      // Mes Builds toggle
+      document.getElementById('my-builds-toggle').addEventListener('click', function() {
+        if (!currentUser) {
+          _showToast('🔒 Connectez-vous pour voir vos builds.');
+          return;
+        }
+        filterMyBuilds = !filterMyBuilds;
+        filterFavOnly  = false;
+        this.classList.toggle('active', filterMyBuilds);
+        document.getElementById('fav-toggle').classList.remove('active');
+        if (filterMyBuilds) _loadMyBuilds();
+        else _reload();
+      });
+    }
+
+    function _closeModal() {
+      document.getElementById('modal').classList.remove('open');
+      pendingDeleteId = null;
+    }
+
+    async function _reload() {
+      if (isSingleView) return;
+      if (filterFavOnly) { await _loadMyFavoritesBuilds(); return; }
+      if (filterMyBuilds) { await _loadMyBuilds(); return; }
+      await _loadBuilds(false);
+    }
+  </script>
+  <script type="module" src="../auth-widget.js"></script>
+</body>
+</html>
