@@ -147,4 +147,50 @@ export const modal = {
       overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
     });
   },
+
+  /**
+   * Modal avec corps HTML libre. Résout avec un objet { key: value } collecté depuis
+   * les éléments ayant id="_vcl-fill-*" (key = la partie après "_vcl-fill-"), ou null si annulé.
+   * @param {string} message
+   * @param {string} bodyHTML
+   * @param {{ confirmLabel?: string, cancelLabel?: string, danger?: boolean, maxWidth?: string, setup?: (card: HTMLElement) => void }} [opts]
+   * @returns {Promise<Record<string, string> | null>}
+   */
+  custom(message, bodyHTML, opts = {}) {
+    const {
+      confirmLabel = 'Valider',
+      cancelLabel  = 'Annuler',
+      danger       = false,
+      maxWidth     = '440px',
+      setup,
+    } = opts;
+    return new Promise(resolve => {
+      const overlay = makeOverlay();
+      const btnColor = danger ? 'var(--danger,#c0392b)' : 'var(--accent,#7c5cbf)';
+      const card = document.createElement('div');
+      card.className = 'vcl-modal-card';
+      card.style.maxWidth = maxWidth;
+      card.innerHTML = `
+        ${message ? `<div class="vcl-modal-msg">${message}</div>` : ''}
+        <div>${bodyHTML}</div>
+        <div class="vcl-modal-btns" style="margin-top:16px;">
+          <button class="btn btn-ghost" id="_vcl-cancel">${cancelLabel}</button>
+          <button class="btn" id="_vcl-confirm" style="background:${btnColor};color:#fff;">${confirmLabel}</button>
+        </div>
+      `;
+      overlay.appendChild(card);
+      if (setup) setup(card);
+      const collect = () => {
+        const data = {};
+        card.querySelectorAll('[id^="_vcl-fill-"]').forEach(el => {
+          data[el.id.replace('_vcl-fill-', '')] = el.value;
+        });
+        return data;
+      };
+      const close = val => { overlay.remove(); resolve(val); };
+      card.querySelector('#_vcl-confirm').addEventListener('click', () => close(collect()));
+      card.querySelector('#_vcl-cancel').addEventListener('click', () => close(null));
+      overlay.addEventListener('click', e => { if (e.target === overlay) close(null); });
+    });
+  },
 };

@@ -338,6 +338,23 @@ body.bestiaire-page {
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 14px;
 }
+.entity-grid.size-small { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+.entity-grid.size-large  { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+
+.card-size-btns { display: flex; gap: 3px; }
+.card-size-btn {
+  background: var(--surface2, #1a1a2a);
+  border: 1px solid var(--border, #333);
+  color: var(--muted, #888);
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: border-color .15s, color .15s;
+}
+.card-size-btn.active,
+.card-size-btn:hover { border-color: var(--gold-dim, #9a7040); color: var(--gold, #c9a84c); }
 
 @keyframes card-in {
   from { opacity: 0; transform: scale(.96) translateY(6px); }

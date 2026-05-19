@@ -270,6 +270,25 @@ const modalOverlay  = document.getElementById('quest-modal-overlay');
 const modalContent  = document.getElementById('quest-modal-content');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 
+/* ── Sélecteur taille de cartes ── */
+(function initCardSize() {
+  const saved = localStorage.getItem('vcl_quetes_size') || 'medium';
+  if (saved !== 'medium') queteGrid.classList.add('size-' + saved);
+  const btns = document.getElementById('card-size-btns');
+  if (btns) {
+    btns.querySelectorAll('.card-size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === saved));
+    btns.addEventListener('click', e => {
+      const btn = e.target.closest('.card-size-btn');
+      if (!btn) return;
+      const size = btn.dataset.size;
+      queteGrid.className = queteGrid.className.replace(/\bsize-\w+\b/g, '').trim();
+      if (size !== 'medium') queteGrid.classList.add('size-' + size);
+      btns.querySelectorAll('.card-size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === size));
+      localStorage.setItem('vcl_quetes_size', size);
+    });
+  }
+})();
+
 /* ══════════════════════════════════
    HELPERS
 ══════════════════════════════════ */

@@ -290,7 +290,14 @@
           <h1 class="bestiaire-title" id="main-title">Bestiaire</h1>
           <p class="bestiaire-subtitle" id="main-subtitle">// MONSTRES · VEILLEURS AU CLAIR DE LUNE</p>
         </div>
-        <span id="result-count" class="result-count"></span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="card-size-btns" id="card-size-btns">
+            <button class="card-size-btn" data-size="small" title="Petites icônes">⊞</button>
+            <button class="card-size-btn active" data-size="medium" title="Icônes moyennes">⊡</button>
+            <button class="card-size-btn" data-size="large" title="Grandes icônes">⊟</button>
+          </div>
+          <span id="result-count" class="result-count"></span>
+        </div>
       </div>
 
       <div id="entity-grid" class="entity-grid"></div>

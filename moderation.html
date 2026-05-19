@@ -113,12 +113,11 @@
     <button class="filter-btn" id="btn-game-config"        data-min-role="admin" onclick="showGameConfig()">🌍 Config Jeu</button>
     <button class="filter-btn" id="btn-audit-log"          data-min-role="admin" onclick="showAuditLog()">📋 Journal d'audit</button>
     <button class="filter-btn" id="btn-statistiques"       data-min-role="admin" onclick="showStatistiques()">📊 Statistiques</button>
+    <button class="filter-btn" id="btn-events-tool"        data-min-role="admin" onclick="showEventsTool()">🎪 Events</button>
 
     <!-- ── OUTILS ───────────────────────────────────────── -->
     <div class="sb-label">OUTILS</div>
     <button class="filter-btn" id="btn-images-tool" onclick="showImagesTool()">🖼️ Images</button>
-    <button class="filter-btn" id="btn-migrate-occulte"    data-min-role="admin" onclick="runMigrateOcculteIds()">🔑 Migration IDs Occultes</button>
-    <button class="filter-btn" id="btn-backfill-sensible"  data-min-role="admin" onclick="runBackfillSensibleFlag()">🔒 Backfill flag sensible</button>
     <button class="filter-btn" id="btn-calibrateur" onclick="showCalibrateur()">🎮 Calibrateur 3D</button>
     <button class="filter-btn" id="btn-capture-sprites" onclick="showCaptureSprites()">📸 Capture Sprites</button>
     <button class="filter-btn" id="btn-zone-editor" onclick="showZoneEditor()">🗺️ Éditeur de Zones</button>
@@ -221,6 +220,15 @@
       Références croisées dans les données <b>publiées</b> (items, mobs, quêtes) pointant vers un ID inexistant dans la base.<br>
       Couvre : craft, loot, obtain, évolutions, set, objectifs de quête, récompenses, PNJ de quête.
     </p>
+    <div id="dead-links-progress" style="display:none;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;">
+        <span id="dead-links-progress-label">Correction…</span>
+        <span id="dead-links-progress-count"></span>
+      </div>
+      <div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden;border:1px solid var(--border);">
+        <div id="dead-links-progress-bar" style="height:100%;width:0%;background:var(--warn);border-radius:4px;transition:width .15s ease;"></div>
+      </div>
+    </div>
     <div id="dead-links-list"><div class="empty">Chargement…</div></div>
   </main>
 
@@ -827,6 +835,7 @@
           <div id="sens-migration-log" style="margin-top:10px;font-size:11px;color:var(--muted);white-space:pre-wrap;max-height:120px;overflow-y:auto;"></div>
         </div>
       </div>
+
     </div>
   </main>
 
@@ -1378,6 +1387,24 @@ style="font-size:12px;">← Retour</button>
     </div>
 
     <div id="data-all-list" style="display:flex;flex-direction:column;gap:4px;"></div>
+  </main>
+
+  <!-- Panneau Events -->
+  <main class="main" id="events-tool-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🎪 Gestion des Events</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      Les events peuvent être sélectionnés comme source d'obtention dans le Creator. Exemple&nbsp;: "Noël 2025".
+    </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:14px;align-items:center;">
+      <input type="text" id="event-name-input" placeholder="Nom de l'event (ex : Noël 2025)" style="height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 10px;font-size:13px;outline:none;font-family:inherit;" />
+      <select id="event-set-input" style="height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-size:13px;outline:none;font-family:inherit;">
+        <option value="">— Set associé (optionnel) —</option>
+      </select>
+      <button class="btn btn-primary" onclick="createVclEvent()" style="font-size:12px;white-space:nowrap;">+ Créer</button>
+    </div>
+    <div id="events-list" style="display:flex;flex-direction:column;gap:6px;"></div>
   </main>
 
   <!-- Panneau Effets -->

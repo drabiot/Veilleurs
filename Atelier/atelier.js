@@ -1267,6 +1267,24 @@ function loadAccessoriesForClass(classId) {
     renderItemList();
   });
 
+  function findBestRuneSlot() {
+    // 1) First empty rune slot among equipped items
+    for (const slotId of Object.keys(equipped)) {
+      const it = equipped[slotId];
+      if (!it || !it.rune_slots) continue;
+      for (let i = 0; i < it.rune_slots; i++) {
+        const runeKey = slotId + '_rune_' + i;
+        if (!equippedRunes[runeKey]) return { runeKey, slotId };
+      }
+    }
+    // 2) Fallback: first rune slot (overwrite)
+    for (const slotId of Object.keys(equipped)) {
+      const it = equipped[slotId];
+      if (it && it.rune_slots > 0) return { runeKey: slotId + '_rune_0', slotId };
+    }
+    return null;
+  }
+
   function findBestSlotForItem(item) {
     const blocked = getBlockedSlots();
     const compatible = ALL_SLOTS.filter(function(s) {
@@ -1570,7 +1588,7 @@ function loadAccessoriesForClass(classId) {
             '<div class="item-thumb-bar" style="background:' + rarColor + '"></div>' +
           '</div>' +
           '<div class="item-meta">' +
-            '<div class="item-meta-top"><div class="item-meta-name">' + rune.name + '</div></div>' +
+            '<div class="item-meta-top"><div class="item-meta-name">' + rune.name + (_isSecretItem(rune) ? ' <span class="sensible-tag" title="Visible grâce à votre rôle">🔒</span>' : '') + '</div></div>' +
             '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + '</div>' +
             buildItemStatsHTML(rune) +
           '</div>';
@@ -1680,6 +1698,25 @@ function loadAccessoriesForClass(classId) {
 
     	if (!isLocked) {
 			row.addEventListener('click', function() {
+				// Rune sans slot actif → auto-équiper au meilleur emplacement de rune
+				if ((item.cat === 'rune' || item.category === 'rune') && !activeRuneSlot) {
+					const rid = getItemId(item);
+					if (!rid) return;
+					const existingKey = Object.keys(equippedRunes).find(function(k) { return equippedRunes[k] === rid; });
+					if (existingKey) {
+						delete equippedRunes[existingKey];
+						redrawSlot(existingKey.split('_rune_')[0]);
+					} else {
+						const best = findBestRuneSlot();
+						if (!best) return;
+						equippedRunes[best.runeKey] = rid;
+						redrawSlot(best.slotId);
+					}
+					saveToStorage();
+					renderStats();
+					renderItemList();
+					return;
+				}
 				// En vue globale, trouver le meilleur slot pour cet item
 				const targetSlot = activeSlot || findBestSlotForItem(item);
 				if (!targetSlot) return;
