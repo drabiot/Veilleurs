@@ -28,7 +28,8 @@
       }
 
       match /items_hidden/{id} {
-        allow read:  if true;
+        allow get:   if true;
+        allow list:  if isContrib();
         allow write: if isContrib();
       }
 

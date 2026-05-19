@@ -26,7 +26,7 @@ html, body {
   line-height: 1.65;
   min-height: 100vh;
   overflow-x: hidden;
-  min-width: 800px;
+  touch-action: pan-y;
 }
 
 /* ============================================================
@@ -620,3 +620,64 @@ html, body {
   animation: toast-in .2s ease;
 }
 @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* ── Tablette (≤768px) ── */
+@media (max-width: 768px) {
+  .header-top { padding: 8px 16px; }
+  .header-sep { display: none; }
+  .nav-link { padding: 10px 14px; font-size: 11px; }
+  .header-nav { overflow-x: auto; scrollbar-width: none; }
+  .header-nav::-webkit-scrollbar { display: none; }
+
+  .builds-layout { grid-template-columns: 1fr; }
+
+  .filters-sidebar {
+    position: static;
+    height: auto;
+    max-height: 42vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    border-right: none;
+    border-bottom: 1px solid var(--rim);
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+  .filter-section { min-width: 180px; flex: 1; }
+  .filter-head { margin-bottom: 6px; }
+
+  .builds-center { padding: 16px 14px; }
+
+  /* iOS : empêche zoom sur focus input */
+  .search-input { font-size: 16px; }
+  .stat-filter-row input[type=number] { font-size: 16px; }
+}
+
+/* ── Mobile (≤640px) ── */
+@media (max-width: 640px) {
+  .nav-label { display: none; }
+  .nav-link { flex: 1; justify-content: center; padding: 10px 0; }
+  .nav-icon { font-size: 16px; }
+
+  .builds-grid { grid-template-columns: 1fr; }
+
+  .bc-foot { flex-wrap: wrap; gap: 6px; }
+  .bc-time { margin-left: 0; }
+
+  .builds-top-bar { flex-direction: column; align-items: flex-start; }
+
+  .filters-sidebar { max-height: 35vh; }
+  .filter-section { min-width: 140px; }
+}
+
+/* ── Mobile XS (≤480px) ── */
+@media (max-width: 480px) {
+  .nav-link { padding: 8px 0; }
+  .builds-center { padding: 12px 10px; }
+}

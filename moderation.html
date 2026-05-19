@@ -41,6 +41,7 @@
 </div>
 
 <!-- Main layout (visible une fois connecté) -->
+<div id="mod-backdrop"></div>
 <div class="layout" id="main-layout" style="display:none;">
   <aside class="sidebar">
     <button class="btn btn-ghost" onclick="location.reload()" style="width:100%;justify-content:center;font-size:12px;margin-bottom:4px;">🔄 Rafraîchir</button>
@@ -809,6 +810,23 @@
           <div id="sens-pnj-public-list"></div>
         </div>
       </div>
+
+      <!-- MIGRATION CLÉS items_hidden (one-shot) -->
+      <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-top:20px;">
+        <div style="padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);">
+          <span style="font-size:14px;font-weight:700;">🔧 Migration des clés items_hidden</span>
+        </div>
+        <div style="padding:12px 14px;">
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px;">
+            Convertit les anciens docs keyés par <code>item.id</code> vers <code>nameHash</code>.
+            À exécuter une fois après la mise à jour du système sensible.
+          </p>
+          <button class="btn" onclick="sensRunKeyMigration()" style="font-size:12px;background:var(--accent);color:#fff;">
+            🔧 Migrer les clés
+          </button>
+          <div id="sens-migration-log" style="margin-top:10px;font-size:11px;color:var(--muted);white-space:pre-wrap;max-height:120px;overflow-y:auto;"></div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -1435,6 +1453,12 @@ style="font-size:12px;">← Retour</button>
 <script src="Map/data.js"></script>
 <script src="utils.js"></script>
 <script type="module" src="moderation.js?v=5"></script>
+<script>
+if (window.innerWidth < 768) document.body.classList.add('sidebar-hidden');
+document.getElementById('mod-backdrop').addEventListener('click', () => {
+  document.body.classList.add('sidebar-hidden');
+});
+</script>
 
 <div id="img-lightbox" onclick="this.classList.remove('open')">
   <img id="img-lightbox-img" src="" alt="">

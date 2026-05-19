@@ -20,6 +20,7 @@
   z-index: 1;
 }
 
+
 /* ══════════════════════════════════
    SIDEBAR GAUCHE
 ══════════════════════════════════ */
@@ -389,6 +390,7 @@
   flex: 1;
   overflow: hidden;
   position: relative;
+  touch-action: none;
   cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M2 2L2 16L6.5 12.5L10 20L12.5 19L9 11L15 11Z' fill='none' stroke='%23000' stroke-width='3' stroke-linejoin='round' stroke-linecap='round'/%3E%3Cpath d='M2 2L2 16L6.5 12.5L10 20L12.5 19L9 11L15 11Z' fill='%23f0e8d0' stroke='%231a0e05' stroke-width='1' stroke-linejoin='round'/%3E%3C/svg%3E") 2 2, crosshair;
   background:
     radial-gradient(ellipse 80% 70% at 50% 50%, #13100d 0%, #0a0806 100%);
@@ -981,10 +983,61 @@
 }
 
 /* ══════════════════════════════════
+   TOGGLE SIDEBAR MAP (mobile)
+══════════════════════════════════ */
+.map-sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px; height: 34px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--rim2);
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.map-sidebar-toggle:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+.map-sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 49;
+  backdrop-filter: blur(2px);
+}
+.map-sidebar-backdrop.open { display: block; }
+
+/* ══════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════ */
 @media (max-width: 700px) {
-  .map-sidebar { display: none; }
-  .floor-wheel-panel { width: 54px; }
-  .floor-input { font-size: 16px; width: 40px; }
+  /* Sidebar : overlay slide-in */
+  .map-sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    width: 200px;
+  }
+  .map-sidebar.open { transform: translateX(0); }
+  .map-sidebar-toggle { display: flex; }
+
+  /* Wheel panel : overlay sur la carte, map-main prend toute la largeur */
+  .floor-wheel-panel {
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 50px;
+    z-index: 10;
+    background: rgba(14,12,10,.88);
+    border-left: 1px solid var(--rim);
+  }
+  .floor-input { font-size: 16px; width: 36px; }
+
+  /* Tooltip : reste lisible en bas */
+  .map-tooltip { max-width: calc(100vw - 64px); }
+  .coord-display { font-size: 10px; padding: 4px 8px; gap: 8px; }
 }

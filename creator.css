@@ -683,3 +683,93 @@ select:focus, select:hover { border-color: var(--accent); }
 .chasse-banner-title { font-size: 11px; font-weight: 700; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .05em; }
 .chasse-banner-fields { display: flex; flex-wrap: wrap; gap: 6px; }
 .chasse-banner-field { font-size: 11px; padding: 3px 8px; border-radius: 5px; background: rgba(248,113,113,.12); border: 1px solid rgba(248,113,113,.3); color: var(--danger); font-family: 'JetBrains Mono', monospace; }
+
+/* ══════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════ */
+
+/* ── Tablette (≤768px) ── */
+@media (max-width: 768px) {
+  html { overflow-x: hidden; }
+  body { touch-action: pan-y; overflow-y: auto; }
+
+  /* Layout : colonne unique, hauteur auto → page scrolle */
+  .layout {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+  }
+
+  /* Panel formulaire : hauteur naturelle */
+  .form-panel { overflow-y: visible; }
+
+  /* Panel output : hauteur fixe avec scroll interne */
+  .out-panel {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    height: 65vh;
+  }
+
+  /* Header : wrap + padding réduit */
+  .header-top { padding: 8px 12px; flex-wrap: wrap; }
+  .header-right { flex-wrap: wrap; gap: 6px; }
+  .header-sep { display: none; }
+
+  /* Mode selector : wrap */
+  .mode-selector { flex-wrap: wrap; }
+  .mode-btn { font-size: 11px; padding: 6px 8px; }
+
+  /* Grilles : 2 → 1 colonne */
+  .row2 { grid-template-columns: 1fr; }
+  .row3 { grid-template-columns: 1fr 1fr; }
+
+  /* Coords : 3 → 2 colonnes */
+  .coords-row { grid-template-columns: 1fr 1fr; }
+
+  /* Stats : réduire les colonnes fixes */
+  .stat-row { grid-template-columns: 1fr 66px 12px 66px; padding: 4px 6px; }
+
+  /* Modal : contenu dans 92vw */
+  .modal-card { width: min(340px, 92vw); padding: 20px 16px; }
+
+  /* Craft item */
+  .craft-item { grid-template-columns: 56px 1fr auto; }
+
+  /* Tuto card */
+  .tuto-card { max-width: min(320px, 90vw); }
+}
+
+/* ── Mobile (≤640px) ── */
+@media (max-width: 640px) {
+  .header-subtitle { display: none; }
+  .header-logo { font-size: 11px; }
+
+  /* Header : réduire les boutons non-critiques */
+  #btn-guide { font-size: 10px; padding: 4px 9px; }
+  #author-input { width: 90px !important; }
+
+  /* Inputs : 16px pour éviter le zoom iOS */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* row3 → 1 colonne */
+  .row3 { grid-template-columns: 1fr; }
+
+  /* Out panel un peu plus haut */
+  .out-panel { height: 70vh; }
+
+  /* Tabs output : scroll horizontal si besoin */
+  .out-tabs { overflow-x: auto; scrollbar-width: none; }
+  .out-tabs::-webkit-scrollbar { display: none; }
+}
+
+/* ── Mobile XS (≤480px) ── */
+@media (max-width: 480px) {
+  .header-top { padding: 6px 10px; }
+  .coords-row { grid-template-columns: 1fr; }
+  .stat-row { grid-template-columns: 1fr 58px 10px 58px; }
+
+  /* Rarity buttons : plus compacts */
+  .r-btn { padding: 5px 10px; font-size: 12px; }
+
+  /* Submit bien visible */
+  #btn-submit-discord { width: 100%; justify-content: center; }
+}

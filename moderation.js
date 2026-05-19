@@ -2,7 +2,7 @@ import { db, auth, onAuthStateChanged,
          login, logout, loginWithGoogle,
          ROLES, roleLevel, hasRole, COL,
          collection, getDocs, getDoc, doc, updateDoc, setDoc, addDoc,
-         deleteDoc, deleteField, serverTimestamp, orderBy, where, query, limit,
+         deleteDoc, deleteField, serverTimestamp, writeBatch, orderBy, where, query, limit,
          hashName, getItemGameplayKeys,
          sanitizeForFirestore, desanitizeFromFirestore,
          invalidateCache }
@@ -1069,7 +1069,7 @@ window.approve = async (id) => {
     const _contribField = { uid: sub.submittedBy || null, name: _contribName };
 
     if (sub.type === 'item' && isSensible) {
-      // Item sensible → split gameplay (items_hidden par item.id) + flavor (items_secret par id)
+      // Item sensible → split gameplay (items_hidden keyé par nameHash) + flavor (items_secret keyé par item.id)
       const gameplayKeys = await getItemGameplayKeys();
       const gameplay = {};
       const secret   = {};
@@ -1092,9 +1092,11 @@ window.approve = async (id) => {
       }
       const nameHash = await hashName(sub.data.name);
       if (!nameHash) throw new Error('Nom manquant pour hash');
-      await setDoc(doc(db, COL.itemsHidden, String(dataId)), sanitizeForFirestore({ ...gameplay, nameHash, sensible: true }));
-      // items_secret sert aussi de point d'ancrage pour le _contributor (créé même si vide)
-      await setDoc(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore({ ...secret, _contributor: _contribField, sensible: true }));
+      // Écriture atomique : les deux docs créés ensemble ou pas du tout
+      const batch = writeBatch(db);
+      batch.set(doc(db, COL.itemsHidden, nameHash), sanitizeForFirestore({ ...gameplay, nameHash, sensible: true }));
+      batch.set(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore({ ...secret, _contributor: _contribField, sensible: true }));
+      await batch.commit();
       // Nettoyer toute version publique existante
       try { await deleteDoc(doc(db, COL.items, String(dataId))); } catch {}
       store.invalidate('items');
@@ -1139,7 +1141,11 @@ window.approve = async (id) => {
 
       // Si l'entité était précédemment sensible, nettoyer les collections cachées
       if (sub.type === 'item') {
+        // items_hidden est keyé par nameHash (pas item.id) — calculer le hash pour la suppression
+        const cleanHash = await hashName(sub.data?.name || '').catch(() => '');
         try { await deleteDoc(doc(db, COL.itemsSecret, String(dataId))); } catch {}
+        if (cleanHash) try { await deleteDoc(doc(db, COL.itemsHidden, cleanHash)); } catch {}
+        // Fallback : si l'item avait été approuvé avec l'ancien système (clé = item.id)
         try { await deleteDoc(doc(db, COL.itemsHidden, String(dataId))); } catch {}
       } else if (sub.type === 'mob') {
         try { await deleteDoc(doc(db, COL.mobsSecret, String(dataId))); } catch {}
@@ -4936,12 +4942,12 @@ window.deleteCurrentEntry = async function() {
     try { await addDoc(collection(db, 'trash'), trashPayload); } catch(te) { console.warn('[Trash] Sauvegarde corbeille échouée:', te); }
 
     if (_editorCollection === 'items_sensible') {
-      // items_hidden keyé par item.id — un doc par item, pas de sibling possible
-      await deleteDoc(doc(db, COL.itemsHidden, _editorId));
-      const itemId = String(_editorOrigData?.id || _editorId || '');
-      if (itemId) {
-        try { await deleteDoc(doc(db, COL.itemsSecret, itemId)); } catch {}
-      }
+      // items_hidden keyé par nameHash (_editorId = hash), items_secret keyé par item.id
+      const itemId = String(_editorOrigData?.id || '');
+      const delBatch = writeBatch(db);
+      delBatch.delete(doc(db, COL.itemsHidden, _editorId));
+      if (itemId) delBatch.delete(doc(db, COL.itemsSecret, itemId));
+      await delBatch.commit();
       invalidateModCache(COL.itemsHidden);
       invalidateModCache(COL.itemsSecret);
       _sensState.itemsHidden = _sensState.itemsHidden.filter(x => x._id !== _editorId);
@@ -8934,6 +8940,81 @@ window.showMigration = async () => {
   await sensReload();
 };
 
+// Migration one-shot : re-keyer items_hidden de item.id → nameHash + supprimer doublons
+window.sensRunKeyMigration = async () => {
+  if (currentRole !== 'admin') return;
+  const log = document.getElementById('sens-migration-log');
+  if (log) log.textContent = '';
+  const print = (msg) => { if (log) log.textContent += msg + '\n'; console.log('[sensMigration]', msg); };
+
+  print('Chargement items_hidden…');
+  let docs;
+  try {
+    const snap = await getDocs(collection(db, COL.itemsHidden));
+    docs = snap.docs;
+  } catch (e) {
+    print('Erreur : ' + e.message); return;
+  }
+
+  print(`${docs.length} doc(s) trouvé(s).`);
+
+  // Grouper par champ 'id' (item ID original) pour détecter les doublons
+  const byItemId = new Map(); // itemId → [{docKey, data}]
+  for (const d of docs) {
+    const data = d.data();
+    const itemId = String(data.id || '');
+    if (!itemId) { print(`  SKIP ${d.id} — pas de champ id`); continue; }
+    if (!byItemId.has(itemId)) byItemId.set(itemId, []);
+    byItemId.get(itemId).push({ docKey: d.id, data });
+  }
+
+  let migrated = 0, cleaned = 0, skipped = 0, errors = 0;
+
+  for (const [itemId, entries] of byItemId) {
+    const name = entries[0].data.name || '';
+    const expectedHash = name ? await hashName(name).catch(() => '') : '';
+    if (!expectedHash) { print(`  SKIP ${itemId} — hash vide (name="${name}")`); skipped++; continue; }
+
+    // Identifier les docs correctement keyés et les orphelins
+    const correct = entries.filter(e => e.docKey === expectedHash);
+    const orphans = entries.filter(e => e.docKey !== expectedHash);
+
+    if (correct.length === 0) {
+      // Aucun doc avec la bonne clé → migrer le premier, supprimer les autres
+      const [toKeep, ...toDelete] = orphans;
+      print(`  Migre ${toKeep.docKey} → ${expectedHash} (${name})`);
+      try {
+        const batch = writeBatch(db);
+        batch.set(doc(db, COL.itemsHidden, expectedHash), { ...toKeep.data, nameHash: expectedHash });
+        batch.delete(doc(db, COL.itemsHidden, toKeep.docKey));
+        for (const o of toDelete) batch.delete(doc(db, COL.itemsHidden, o.docKey));
+        await batch.commit();
+        migrated++;
+        cleaned += toDelete.length;
+      } catch (e) { print(`  ERREUR : ${e.message}`); errors++; }
+    } else if (orphans.length > 0) {
+      // Doc correct existe + orphelins → supprimer les orphelins
+      print(`  Nettoie ${orphans.length} orphelin(s) pour "${name}"`);
+      try {
+        const batch = writeBatch(db);
+        for (const o of orphans) {
+          print(`    Supprime orphelin ${o.docKey}`);
+          batch.delete(doc(db, COL.itemsHidden, o.docKey));
+        }
+        await batch.commit();
+        cleaned += orphans.length;
+      } catch (e) { print(`  ERREUR nettoyage : ${e.message}`); errors++; }
+    } else {
+      skipped++; // déjà correct, un seul doc
+    }
+  }
+
+  print(`\nTerminé : ${migrated} migré(s), ${cleaned} orphelin(s) supprimé(s), ${skipped} déjà correct(s), ${errors} erreur(s).`);
+
+  invalidateModCache(COL.itemsHidden);
+  await sensReload();
+};
+
 // ═══════════════════════════════════════════════════════
 // TAGS — Règles automatiques de tags sur items
 // ═══════════════════════════════════════════════════════
@@ -10311,7 +10392,16 @@ window.sensReload = async () => {
       getDocs(collection(db, COL.pnjSecret)),
       getDocs(collection(db, COL.pnj)),
     ]);
-    _sensState.itemsHidden = ih.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+    // Déduplication par champ 'id' : si deux docs ont le même item (ancienne clé + nameHash), garder le plus récent (nameHash)
+    const _ihAll = ih.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+    const _ihById = new Map();
+    for (const item of _ihAll) {
+      const key = String(item.id || item._id || '');
+      const existing = _ihById.get(key);
+      // Préférer le doc dont la clé est le nameHash (pas un id numérique)
+      if (!existing || /^[0-9]+$/.test(existing._id)) _ihById.set(key, item);
+    }
+    _sensState.itemsHidden = [..._ihById.values()];
     _sensState.itemsSecretById = new Map(
       is.docs.map(d => [d.id, desanitizeFromFirestore({ _id: d.id, ...d.data() })])
     );
@@ -11044,12 +11134,16 @@ window.imgUploadToGithub = async function() {
     }
 
     // Mettre à jour le champ images dans Firestore
-    const col = _imgSelectedItem.sensible ? COL.itemsSecret : COL.items;
-    const docId = _imgSelectedItem.sensible
-      ? String(_imgSelectedItem.id || _imgSelectedItem._id || '')
-      : String(_imgSelectedItem.id || '');
-    if (docId) {
-      try { await updateDoc(doc(db, col, docId), { images: [path] }); } catch {}
+    if (_imgSelectedItem.sensible) {
+      // items_hidden keyé par nameHash — mettre à jour pour que non-contribs voient l'image
+      const imgHash = await hashName(_imgSelectedItem.name || '').catch(() => '');
+      if (imgHash) try { await updateDoc(doc(db, COL.itemsHidden, imgHash), { images: [path] }); } catch {}
+      // Aussi dans items_secret (keyé par item.id) pour les contribs
+      const secretId = String(_imgSelectedItem.id || _imgSelectedItem._id || '');
+      if (secretId) try { await updateDoc(doc(db, COL.itemsSecret, secretId), { images: [path] }); } catch {}
+    } else {
+      const docId = String(_imgSelectedItem.id || '');
+      if (docId) try { await updateDoc(doc(db, COL.items, docId), { images: [path] }); } catch {}
     }
 
     if (status) { status.textContent = `✓ Envoyé : ${path}`; status.style.color = 'var(--success)'; }

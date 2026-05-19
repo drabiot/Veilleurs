@@ -33,7 +33,7 @@
 
 /* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   background: var(--bg);
@@ -42,6 +42,7 @@ body {
   font-size: 14px;
   line-height: 1.65;
   min-height: 100vh;
+  touch-action: pan-y;
   overflow-x: hidden;
 }
 
@@ -609,6 +610,17 @@ kbd {
 /* ══════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════ */
+
+/* ── Tablette (≤768px) ── */
+@media (max-width: 768px) {
+  .header-top { padding: 8px 16px; }
+  .header-sep { display: none; }
+  .nav-link { padding: 10px 14px; font-size: 11px; }
+  .header-nav { overflow-x: auto; scrollbar-width: none; }
+  .header-nav::-webkit-scrollbar { display: none; }
+}
+
+/* ── Mobile (≤580px) ── */
 @media (max-width: 580px) {
   .header-logo { font-size: 10px; }
   .hero-title  { font-size: 3.2rem; }
@@ -616,4 +628,13 @@ kbd {
   .change-group { flex-direction: column; gap: 6px; }
   .tag { min-width: unset; width: fit-content; }
   .version-header { gap: 6px; }
+
+  /* Header nav : icônes seulement, répartition égale */
+  .nav-label { display: none; }
+  .nav-link { flex: 1; justify-content: center; padding: 10px 0; }
+  .nav-icon { font-size: 16px; }
+
+  /* Bouton contribuer raccourci */
+  .btn-add-item { font-size: 0; padding: 5px 10px; }
+  .btn-add-item::before { content: '+'; font-size: 0.75rem; }
 }

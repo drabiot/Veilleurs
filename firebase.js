@@ -11,7 +11,7 @@ import { initializeFirestore, getFirestore,
          persistentLocalCache, persistentMultipleTabManager,
          doc, getDoc, collection, getDocs, onSnapshot,
          setDoc, addDoc, updateDoc, deleteDoc, deleteField,
-         serverTimestamp, increment,
+         serverTimestamp, increment, writeBatch,
          query, where, orderBy, limit }           from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getAuth, onAuthStateChanged,
          signInWithEmailAndPassword, signOut,
@@ -244,7 +244,7 @@ export function desanitizeFromFirestore(val) {
 export const DEFAULT_ITEM_GAMEPLAY_KEYS = [
   'id', 'name', 'rarity', 'category', 'cat',
   'palier', 'lvl', 'set', 'stats', 'classes',
-  'twoHanded', 'rune_slots',
+  'twoHanded', 'rune_slots', 'img',
 ];
 
 /**
@@ -290,9 +290,9 @@ export async function hashName(name) {
 }
 
 /**
- * Lookup d'items cachés par nom exact (champ nameHash = hash(normalize(name))).
- * Retourne un tableau (plusieurs items peuvent partager le même nom).
- * Doc key = item.id depuis la migration — plus de collision par nom.
+ * Lookup d'items cachés par nom exact.
+ * Doc key = nameHash → getDoc direct sans query (fonctionne pour non-contribs via allow get).
+ * Retourne un tableau pour compatibilité avec les appelants existants.
  */
 const _hiddenLookupCache = new Map(); // mémoire uniquement
 export async function getHiddenByName(colName, name) {
@@ -301,9 +301,8 @@ export async function getHiddenByName(colName, name) {
   const cacheKey = `${colName}/name/${hash}`;
   if (_hiddenLookupCache.has(cacheKey)) return _hiddenLookupCache.get(cacheKey);
   try {
-    const q = query(collection(db, colName), where('nameHash', '==', hash), limit(10));
-    const snap = await getDocs(q);
-    const data = snap.docs.map(d => desanitizeFromFirestore({ _id: d.id, ...d.data() }));
+    const snap = await getDoc(doc(db, colName, hash));
+    const data = snap.exists() ? [desanitizeFromFirestore({ _id: snap.id, ...snap.data() })] : [];
     _hiddenLookupCache.set(cacheKey, data);
     return data;
   } catch (err) {
@@ -312,14 +311,19 @@ export async function getHiddenByName(colName, name) {
   }
 }
 
-/** Lookup d'un item caché par son id (= clé Firestore depuis la migration). Getdoc direct, sans query. */
-export async function getHiddenById(colName, id) {
-  if (!id) return null;
-  const cacheKey = `${colName}/id/${id}`;
+/**
+ * Lookup d'un item caché par son item.id (champ 'id' dans le doc).
+ * Doc key = nameHash → nécessite une query list → contrib+ seulement (Firestore rules).
+ * Utilisé uniquement en modération. L'Atelier utilise getHiddenByName.
+ */
+export async function getHiddenById(colName, itemId) {
+  if (!itemId) return null;
+  const cacheKey = `${colName}/id/${itemId}`;
   if (_hiddenLookupCache.has(cacheKey)) return _hiddenLookupCache.get(cacheKey);
   try {
-    const snap = await getDoc(doc(db, colName, String(id)));
-    const data = snap.exists() ? desanitizeFromFirestore({ _id: snap.id, ...snap.data() }) : null;
+    const q = query(collection(db, colName), where('id', '==', String(itemId)), limit(1));
+    const snap = await getDocs(q);
+    const data = snap.empty ? null : desanitizeFromFirestore({ _id: snap.docs[0].id, ...snap.docs[0].data() });
     _hiddenLookupCache.set(cacheKey, data);
     return data;
   } catch (err) {
@@ -389,7 +393,7 @@ export function invalidateCache(colName) {
 
 // ── Exports Firestore bruts (pour les pages qui en ont besoin) ──
 export { doc, getDoc, collection, getDocs, onSnapshot, setDoc, addDoc,
-         updateDoc, deleteDoc, deleteField, serverTimestamp,
+         updateDoc, deleteDoc, deleteField, serverTimestamp, writeBatch,
          query, where, orderBy, limit };
 
 // ── Exports Auth bruts (pour listeners réactifs côté pages) ──

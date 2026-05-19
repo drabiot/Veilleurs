@@ -5122,14 +5122,14 @@ async function submitToDiscord() {
     const itemName = document.getElementById('f-name').value.trim();
     if (isDuplicate(itemId)) {
       const action = await window._modal?.choice(
-        `⚠️ L'ID <strong>${itemId}</strong> existe déjà dans la base.\nS'agit-il d'une modification de l'item existant, ou d'un nouvel item différent ?`,
-        { btn1: '✏️ Modification', btn2: '➕ Ajout (nouvel item)', cancelLabel: 'Annuler' }
+        `⚠️ <strong>${itemName || itemId}</strong> existe déjà.\nS'agit-il d'une modification de cet item, ou d'un nouvel item différent ?`,
+        { btn1: '✏️ Modification', btn2: '➕ Nouvel item', cancelLabel: 'Annuler' }
       );
       if (!action) return;
       if (action === 'btn2') {
-        let suffix = 2;
-        let newId = `${itemId}_v${suffix}`;
-        while (isDuplicate(newId)) { suffix++; newId = `${itemId}_v${suffix}`; }
+        let suffix = 1;
+        let newId = `${itemId}_${suffix}`;
+        while (isDuplicate(newId)) { suffix++; newId = `${itemId}_${suffix}`; }
         document.getElementById('f-id').value = newId;
         update();
       }

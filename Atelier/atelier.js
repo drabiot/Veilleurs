@@ -1252,7 +1252,20 @@ function loadAccessoriesForClass(classId) {
     });
     renderPickerInfo();
     renderItemList();
+    if (window.innerWidth <= 768) {
+      document.dispatchEvent(new CustomEvent('atelier:slotSelected', { detail: { active: !!activeSlot } }));
+    }
   }
+
+  document.addEventListener('atelier:deselectSlot', function() {
+    if (!activeSlot && !activeRuneSlot) return;
+    activeSlot = null;
+    activeRuneSlot = null;
+    activeRuneSlotId = null;
+    document.querySelectorAll('.slot').forEach(function(el) { el.classList.remove('active'); });
+    renderPickerInfo();
+    renderItemList();
+  });
 
   function findBestSlotForItem(item) {
     const blocked = getBlockedSlots();
@@ -1868,11 +1881,9 @@ function loadAccessoriesForClass(classId) {
 				(function(slotId, rawName, savedId) {
 					var api = window.VCL_DB;
 					if (!api || !api.getHiddenByName) return;
-					const fetchHidden = api.getHiddenById
-						? api.getHiddenById(api.COL.itemsHidden, savedId).then(function(h) {
-							return h || api.getHiddenByName(api.COL.itemsHidden, rawName).then(function(hits) { return hits && hits[0] || null; });
-						  })
-						: api.getHiddenByName(api.COL.itemsHidden, rawName).then(function(hits) { return hits && hits[0] || null; });
+					// getHiddenByName = getDoc par hash (fonctionne pour non-contribs)
+					const fetchHidden = api.getHiddenByName(api.COL.itemsHidden, rawName)
+						.then(function(hits) { return hits && hits[0] || null; });
 					fetchHidden.then(async function(hit) {
 						if (!hit) return;
 						if (!_hiddenCache.has(hit.id)) {
@@ -2545,11 +2556,9 @@ function loadAccessoriesForClass(classId) {
               (function(slotId, rawName, savedId) {
                 var api = window.VCL_DB;
                 if (!api || !api.getHiddenByName) return;
-                const fetchHidden = api.getHiddenById
-                  ? api.getHiddenById(api.COL.itemsHidden, savedId).then(function(h) {
-                      return h || api.getHiddenByName(api.COL.itemsHidden, rawName).then(function(hits) { return hits && hits[0] || null; });
-                    })
-                  : api.getHiddenByName(api.COL.itemsHidden, rawName).then(function(hits) { return hits && hits[0] || null; });
+                // getHiddenByName = getDoc par hash (fonctionne pour non-contribs)
+                const fetchHidden = api.getHiddenByName(api.COL.itemsHidden, rawName)
+                  .then(function(hits) { return hits && hits[0] || null; });
                 fetchHidden.then(async function(hit) {
                   if (!hit) return;
                   if (!_hiddenCache.has(hit.id)) {
@@ -3135,3 +3144,59 @@ statsTab.addEventListener('click', function() {
 statsClose.addEventListener('click', function() {
   setStatsOpen(false);
 });
+
+/* ══ MOBILE SIDEBAR TOGGLES ══ */
+(function() {
+  const sidebarLeft    = document.querySelector('.sidebar-left');
+  const sidebarRight   = document.querySelector('.sidebar-right');
+  const backdrop       = document.getElementById('atelier-backdrop');
+  const leftToggleBtn  = document.getElementById('atelier-left-toggle');
+  const pickerCloseBtn = document.getElementById('atelier-picker-close');
+
+  function isMobile() { return window.innerWidth <= 768; }
+
+  function lockScroll()   { document.body.style.overflow = 'hidden'; }
+  function unlockScroll() { document.body.style.overflow = ''; }
+
+  function openLeft()  { sidebarLeft.classList.add('open');    lockScroll(); }
+  function closeLeft() { sidebarLeft.classList.remove('open'); unlockScroll(); }
+  function openPicker()  { sidebarRight.classList.add('picker-open'); }
+  function closePicker() { sidebarRight.classList.remove('picker-open'); }
+  function closeAll() {
+    sidebarLeft.classList.remove('open');
+    sidebarRight.classList.remove('picker-open');
+    unlockScroll();
+  }
+
+  leftToggleBtn?.addEventListener('click', function() {
+    if (sidebarLeft.classList.contains('open')) closeLeft();
+    else openLeft();
+  });
+  pickerCloseBtn?.addEventListener('click', closePicker);
+  backdrop?.addEventListener('click', closeAll);
+
+  document.addEventListener('atelier:slotSelected', function(e) {
+    if (!isMobile()) return;
+    if (e.detail.active) openPicker();
+    else closePicker();
+  });
+
+  // Clic sur zone centrale : ferme les overlays ouverts
+  document.querySelector('.center')?.addEventListener('click', function(e) {
+    if (!isMobile()) return;
+    if (e.target.closest('.slot')) return;               // slot → selectSlot gère
+    if (e.target.closest('#atelier-left-toggle')) return; // toggle → leftToggleBtn gère
+    if (e.target.closest('.craft-drawer')) return;        // dans le tiroir craft → ignore
+    if (sidebarRight.classList.contains('picker-open')) {
+      closePicker();
+      document.dispatchEvent(new CustomEvent('atelier:deselectSlot'));
+    }
+    if (sidebarLeft.classList.contains('open')) closeLeft();
+    const craftDrawer = document.getElementById('craft-drawer');
+    if (craftDrawer?.classList.contains('open')) craftDrawer.classList.remove('open');
+  });
+
+  window.addEventListener('resize', function() {
+    if (!isMobile()) closeAll();
+  });
+})();
