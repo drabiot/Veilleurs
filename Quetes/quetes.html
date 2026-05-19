@@ -165,7 +165,12 @@
           <h1 class="quetes-title" id="main-title">Quêtes Principales</h1>
           <p class="quetes-subtitle" id="main-subtitle">// PRINCIPALES · VEILLEURS AU CLAIR DE LUNE</p>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="card-size-btns" id="card-size-btns">
+            <button class="card-size-btn" data-size="small" title="Petites cartes">⊞</button>
+            <button class="card-size-btn active" data-size="medium" title="Cartes moyennes">⊡</button>
+            <button class="card-size-btn" data-size="large" title="Grandes cartes">⊟</button>
+          </div>
           <button id="track-all-btn" class="bulk-complete-btn" onclick="trackAllVisible()">🎯 Suivre affichées</button>
           <button id="bulk-complete-btn" class="bulk-complete-btn" onclick="bulkComplete()">✓ Tout terminer</button>
           <select id="quest-sort" class="quest-sort">

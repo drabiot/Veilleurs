@@ -193,7 +193,7 @@
             <label>Nom affiché *</label>
             <input type="text" id="f-name" placeholder="Épée du Dragon" oninput="onNameInput()">
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
-              <span id="id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant — sera traité comme une modification</span>
+              <span id="id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant — il est possible que cet item existe déjà sur le wiki !</span>
               <span id="id-orphan-badge" style="display:none;font-size:11px;font-weight:700;color:var(--success);background:rgba(74,222,128,.1);border:1px solid var(--success);border-radius:10px;padding:1px 8px;cursor:default;" title="">✓ Drop orphelin</span>
             </div>
           </div>
@@ -414,6 +414,7 @@
               <option value="pnj">🧑 PNJ</option>
               <option value="quete">📜 Quête</option>
               <option value="ressource">🌿 Ressource</option>
+              <option value="event">🎪 Event</option>
               <option value="autre">💬 Autre</option>
             </select>
             <div id="obtain-search-container"></div>
@@ -1325,6 +1326,17 @@ try {
 } catch(e) {
   window._vcl_sensibleItemIds = new Set();
 }
+// Exposer une fonction de chargement des events pour le Creator
+window._vcl_fetchEvents = async () => {
+  try {
+    const snap = await getDocs(collection(db, 'events'));
+    return snap.docs.map(d => ({ id: d.id, name: d.data().name || d.id }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  } catch(e) {
+    console.warn('[VCL Creator] Events non chargés:', e);
+    return [];
+  }
+};
 // Écoute temps réel : invalider le cache quand une approbation est publiée
 // Note : ne recharge pas allItemsIndex (l'utilisateur voit les nouveaux items après F5)
 onSnapshot(doc(db, 'config', 'wiki_version'), async snap => {

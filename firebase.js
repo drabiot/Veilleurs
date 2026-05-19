@@ -70,6 +70,7 @@ export const COL = {
   buildsPublished: 'builds_published', // builds communautaires publiés
   buildsSensible:  'builds_sensible',  // données des slots sensibles (contrib+ only)
   userFavorites:   'user_favorites',   // index plat des favoris par user
+  events:          'events',           // events (Noël 2025, etc.) pour les sources d'obtention
 };
 
 // ── Rôles ─────────────────────────────────────────────

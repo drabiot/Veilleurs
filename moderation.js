@@ -578,7 +578,7 @@ function buildCard(sub) {
         <button class="btn-toggle" onclick="toggleDetails('${sub._id}', this)">▾ Voir</button>
       </div>
       <div class="sub-details" id="details-${sub._id}">
-        ${sub.isModification ? `<div id="diff-${sub._id}" style="margin-bottom:10px;"><button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="loadSubDiff('${sub._id}','${sub.type}','${String(sub.data?.id||'')}')">🔍 Voir les changements</button></div>` : ''}
+        ${sub.data?.id ? `<div id="diff-${sub._id}" style="margin-bottom:10px;"><button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="loadSubDiff('${sub._id}','${sub.type}','${String(sub.data?.id||'')}')">${sub.isModification ? '🔍 Voir les changements' : '🔍 Comparer avec item existant'}</button></div>` : ''}
         <div id="pretty-${sub._id}">${_buildPrettySummary(sub.data || {}, sub.type)}</div>
         <div id="screens-${sub._id}"></div>
         <details style="margin-top:6px;">
@@ -1366,6 +1366,7 @@ const HASH_PANELS = {
   'pnj-migration':        () => showPnjMigration(),
   'zone-list':            () => showZoneList(),
   'effects-tool':         () => showEffectsTool(),
+  'events-tool':          () => showEventsTool(),
   'quest-map-migration':  () => showQuestMapMigration(),
   'game-config':          () => showGameConfig(),
   'audit-log':            () => showAuditLog(),
@@ -3062,74 +3063,73 @@ async function loadDeadLinks() {
   }
 }
 
-async function _applyDeadLinkFix(b, newId) {
-  const COL_SRC = { item: 'items', mob: 'mobs', 'quête': 'quetes' };
-  const colName = COL_SRC[b.srcType];
-  if (!colName) throw new Error('Type source non supporté : ' + b.srcType);
+const _DEAD_LINK_COL = { item: 'items', mob: 'mobs', 'quête': 'quetes' };
 
-  const snap = await getDoc(doc(db, colName, b.srcId));
-  if (!snap.exists()) throw new Error('Document source introuvable');
-  const data = snap.data();
-  let patch = {};
-
+// Applique UN fix sur data (mutates) — pur, sans I/O
+function _applyPatchToData(data, b, newId) {
   if (b.field === 'craft') {
     const craft = JSON.parse(JSON.stringify(data.craft || []));
     for (const c of craft) {
       if (c.id === b.refId) c.id = newId;
       for (const ing of (c.items || [])) if (ing.id === b.refId) ing.id = newId;
     }
-    patch = { craft };
+    data.craft = craft;
 
   } else if (b.field.startsWith('obtain')) {
-    let obtain = data.obtain || '';
-    obtain = obtain.replace(/\[([^\]|]+)\|([^\]]+)\]/g, (match, ref, lbl) => {
+    data.obtain = (data.obtain || '').replace(/\[([^\]|]+)\|([^\]]+)\]/g, (match, ref, lbl) => {
       const colonIdx = ref.indexOf(':');
       const id = colonIdx !== -1 ? ref.slice(colonIdx + 1) : ref;
       if (id !== b.refId) return match;
-      const prefix = colonIdx !== -1 ? ref.slice(0, colonIdx + 1) : '';
-      return `[${prefix}${newId}|${lbl}]`;
+      return `[${colonIdx !== -1 ? ref.slice(0, colonIdx + 1) : ''}${newId}|${lbl}]`;
     });
-    patch = { obtain };
 
   } else if (b.field === 'evolutions') {
-    patch = { evolutions: (data.evolutions || []).map(id => id === b.refId ? newId : id) };
+    data.evolutions = (data.evolutions || []).map(id => id === b.refId ? newId : id);
 
   } else if (b.field === 'evolvedFrom') {
-    patch = { evolvedFrom: (data.evolvedFrom || []).map(id => id === b.refId ? newId : id) };
+    data.evolvedFrom = (data.evolvedFrom || []).map(id => id === b.refId ? newId : id);
 
   } else if (b.field === 'set') {
-    patch = { set: newId };
+    data.set = newId;
 
   } else if (b.field === 'loot') {
-    patch = { loot: (data.loot || []).map(l => l.id === b.refId ? { ...l, id: newId } : l) };
+    data.loot = (data.loot || []).map(l => l.id === b.refId ? { ...l, id: newId } : l);
 
   } else if (b.field === 'npc') {
-    patch = { npc: newId };
+    data.npc = newId;
 
   } else if (b.field === 'objectif.items') {
     const objectifs = JSON.parse(JSON.stringify(data.objectifs || []));
     for (const obj of objectifs)
       for (const it of (obj.items || []))
         if ((it.id || it.itemId) === b.refId) { it.id = newId; if ('itemId' in it) it.itemId = newId; }
-    patch = { objectifs };
+    data.objectifs = objectifs;
 
   } else if (b.field === 'objectif.mobs') {
     const objectifs = JSON.parse(JSON.stringify(data.objectifs || []));
     for (const obj of objectifs)
       for (const mb of (obj.mobs || []))
         if ((mb.id || mb.mobId) === b.refId) { mb.id = newId; if ('mobId' in mb) mb.mobId = newId; }
-    patch = { objectifs };
+    data.objectifs = objectifs;
 
   } else if (b.field === 'recompense.item') {
     const recompenses = JSON.parse(JSON.stringify(data.recompenses || []));
     for (const r of recompenses) if (r.itemId === b.refId) r.itemId = newId;
-    patch = { recompenses };
+    data.recompenses = recompenses;
 
   } else {
     throw new Error('Champ non supporté : ' + b.field);
   }
+}
 
-  await updateDoc(doc(db, colName, b.srcId), sanitizeForFirestore(patch));
+async function _applyDeadLinkFix(b, newId) {
+  const colName = _DEAD_LINK_COL[b.srcType];
+  if (!colName) throw new Error('Type source non supporté : ' + b.srcType);
+  const snap = await getDoc(doc(db, colName, b.srcId));
+  if (!snap.exists()) throw new Error('Document source introuvable');
+  const data = { ...snap.data() };
+  _applyPatchToData(data, b, newId);
+  await updateDoc(doc(db, colName, b.srcId), sanitizeForFirestore(data));
   invalidateModCache(colName);
 }
 
@@ -3139,14 +3139,30 @@ window._autoFixDeadLinks = async function() {
     return;
   }
   const { deduped, ENTITY_POOL } = _deadLinksSnapshot;
-  const autoBtn = document.getElementById('dead-links-auto-btn');
-  if (autoBtn) { autoBtn.disabled = true; autoBtn.textContent = '⏳ Correction…'; }
+  const autoBtn   = document.getElementById('dead-links-auto-btn');
+  const progWrap  = document.getElementById('dead-links-progress');
+  const progBar   = document.getElementById('dead-links-progress-bar');
+  const progLabel = document.getElementById('dead-links-progress-label');
+  const progCount = document.getElementById('dead-links-progress-count');
 
-  let fixed = 0, skipped = 0;
+  if (autoBtn) { autoBtn.disabled = true; autoBtn.textContent = '⏳ Correction…'; }
+  if (progWrap) progWrap.style.display = '';
+
+  const setProgress = (done, total, label) => {
+    const pct = Math.round((done / total) * 100);
+    if (progBar)   progBar.style.width   = pct + '%';
+    if (progCount) progCount.textContent = `${done} / ${total}`;
+    if (progLabel && label) progLabel.textContent = label;
+  };
+  setProgress(0, deduped.length, 'Analyse…');
+
+  // ── Phase 1 : résoudre les correspondances (pur, sans I/O) ──────────
+  const fixes = []; // { b, newId, colName }
+  let skipped = 0;
   for (const b of deduped) {
+    const colName = _DEAD_LINK_COL[b.srcType];
+    if (!colName) { skipped++; continue; }
     const pool = ENTITY_POOL[b.targetType] || [];
-    // refId est un ID avec underscores (ex: forgeron_armes_tolbana)
-    // → convertir en mots puis utiliser fuzzyMatch (token par token, tolère Levenshtein)
     const normWords = b.refId.replace(/_/g, ' ');
     const normId    = normalize(b.refId);
     let results = pool.filter(e => {
@@ -3155,35 +3171,80 @@ window._autoFixDeadLinks = async function() {
           || eId.includes(normId)
           || normId.includes(eId);
     });
-
-    // Fallback : si pas exactement 1 résultat, chercher par srcName (ex: "Pièce d'Onyx Pur")
-    // Utilise includes() — même logique que le dropdown manuel — pas fuzzyMatch (trop permissif)
     if (results.length !== 1 && b.srcName) {
       const normSrc = normalize(b.srcName);
-      const fallback = pool.filter(e =>
+      const fb = pool.filter(e =>
         normalize(e.search || e.name).includes(normSrc) || normalize(e.id).includes(normSrc)
       );
-      if (fallback.length === 1) results = fallback;
+      if (fb.length === 1) results = fb;
     }
-    if (results.length === 1) {
-      try {
-        await _applyDeadLinkFix(b, results[0].id);
-        await _writeAudit('dead_link_fix', b.srcType, b.srcId, b.srcName,
-          { field: b.field, oldRef: b.refId, newRef: results[0].id, auto: true });
-        fixed++;
-      } catch { skipped++; }
-    } else {
-      skipped++;
+    if (results.length === 1) fixes.push({ b, newId: results[0].id, colName });
+    else skipped++;
+  }
+
+  if (!fixes.length) {
+    if (autoBtn) { autoBtn.disabled = false; autoBtn.textContent = '⚡ Auto-corriger tout'; }
+    if (progWrap) progWrap.style.display = 'none';
+    toast(`Aucun lien auto-corrigeable (${skipped} nécessite${skipped > 1 ? 'nt' : ''} correction manuelle)`, 'info');
+    return;
+  }
+
+  // ── Phase 2 : charger tous les docs sources en parallèle ───────────
+  setProgress(0, fixes.length, 'Chargement des documents…');
+  const uniqueKeys = [...new Set(fixes.map(f => `${f.colName}/${f.b.srcId}`))];
+  const snapMap = new Map(); // "col/id" → data object (mutable)
+  const snapResults = await Promise.all(
+    uniqueKeys.map(key => {
+      const [col, id] = key.split('/');
+      return getDoc(doc(db, col, id)).then(s => ({ key, snap: s }));
+    })
+  );
+  for (const { key, snap } of snapResults) {
+    if (snap.exists()) snapMap.set(key, { ...snap.data() });
+  }
+
+  // ── Phase 3 : appliquer tous les patches en mémoire (pur) ──────────
+  for (const f of fixes) {
+    const key = `${f.colName}/${f.b.srcId}`;
+    const data = snapMap.get(key);
+    if (data) _applyPatchToData(data, f.b, f.newId);
+  }
+
+  // ── Phase 4 : écriture par lots (writeBatch, max 500 ops) ──────────
+  const BATCH_SIZE = 400;
+  const dirtyKeys = [...snapMap.keys()];
+  let written = 0;
+  setProgress(0, dirtyKeys.length, 'Écriture…');
+  for (let i = 0; i < dirtyKeys.length; i += BATCH_SIZE) {
+    const chunk = dirtyKeys.slice(i, i + BATCH_SIZE);
+    const batch = writeBatch(db);
+    for (const key of chunk) {
+      const [col, id] = key.split('/');
+      batch.update(doc(db, col, id), sanitizeForFirestore(snapMap.get(key)));
+    }
+    await batch.commit();
+    written += chunk.length;
+    setProgress(written, dirtyKeys.length, 'Écriture…');
+    for (const key of chunk) {
+      const [col] = key.split('/');
+      invalidateModCache(col);
     }
   }
 
-  if (autoBtn) { autoBtn.disabled = false; autoBtn.textContent = '⚡ Auto-corriger tout'; }
+  // ── Phase 5 : audits en parallèle (fire-and-forget) ────────────────
+  await Promise.all(fixes.map(f =>
+    _writeAudit('dead_link_fix', f.b.srcType, f.b.srcId, f.b.srcName,
+      { field: f.b.field, oldRef: f.b.refId, newRef: f.newId, auto: true })
+  ));
 
-  const msg = fixed > 0
-    ? `✓ ${fixed} lien${fixed > 1 ? 's' : ''} corrigé${fixed > 1 ? 's' : ''} automatiquement` +
-      (skipped > 0 ? `, ${skipped} nécessite${skipped > 1 ? 'nt' : ''} correction manuelle` : '')
-    : `Aucun lien auto-corrigeable (${skipped} nécessite${skipped > 1 ? 'nt' : ''} correction manuelle)`;
-  toast(msg, fixed > 0 ? 'success' : 'info');
+  if (autoBtn) { autoBtn.disabled = false; autoBtn.textContent = '⚡ Auto-corriger tout'; }
+  if (progWrap) progWrap.style.display = 'none';
+  if (progBar)  progBar.style.width = '0%';
+
+  const fixed = fixes.length;
+  const msg = `✓ ${fixed} lien${fixed > 1 ? 's' : ''} corrigé${fixed > 1 ? 's' : ''} automatiquement` +
+    (skipped > 0 ? `, ${skipped} nécessite${skipped > 1 ? 'nt' : ''} correction manuelle` : '');
+  toast(msg, 'success');
 
   if (fixed > 0) await loadDeadLinks();
 };
@@ -8859,13 +8920,33 @@ window.loadStatistiques = async function loadStatistiques() {
     // ── Tableau membres par outil ─────────────────────
     const ALL_SECTIONS = ['compendium','bestiaire','map','quetes','atelier','patchnotes'];
     const uvSorted = [...userVisits].sort((a, b) => (b.total || 0) - (a.total || 0));
-    const uvSections = ALL_SECTIONS.filter(s => uvSorted.some(u => u.sections?.[s] > 0));
+
+    // Regrouper tous les anonymes en 1 entrée synthétique
+    const uvMembers = uvSorted.filter(u => !u.isAnonymous);
+    const uvAnons   = uvSorted.filter(u => u.isAnonymous);
+    const uvDisplay = [...uvMembers];
+    if (uvAnons.length > 0) {
+      const anonSections = {};
+      for (const s of ALL_SECTIONS) {
+        anonSections[s] = uvAnons.reduce((sum, u) => sum + (u.sections?.[s] || 0), 0);
+      }
+      uvDisplay.push({
+        id: '__anon__',
+        pseudo: `Anonymes (${uvAnons.length})`,
+        isAnonymous: true,
+        total: uvAnons.reduce((s, u) => s + (u.total || 0), 0),
+        sections: anonSections,
+        lastSeen: uvAnons.map(u => u.lastSeen || '').filter(Boolean).sort().pop() || '',
+      });
+    }
+
+    const uvSections = ALL_SECTIONS.filter(s => uvDisplay.some(u => u.sections?.[s] > 0));
 
     const uvThCols = uvSections.map(s =>
       `<th style="text-align:right;">${escHtml(SECTION_ICONS[s] || s)}</th>`
     ).join('');
 
-    const uvRows = uvSorted.map(u => {
+    const uvRows = uvDisplay.map(u => {
       const isAnon = u.isAnonymous;
       const badge = isAnon
         ? `<span style="font-size:10px;padding:1px 5px;border-radius:8px;background:#4a4a5a;color:#aaa;">anon</span>`
@@ -8874,7 +8955,9 @@ window.loadStatistiques = async function loadStatistiques() {
         const v = u.sections?.[s] || 0;
         return `<td style="text-align:right;color:${v > 0 ? 'var(--text)' : 'var(--muted)'}">${v > 0 ? fmt(v) : '—'}</td>`;
       }).join('');
-      return `<tr>
+      const uidAttr = !isAnon ? `data-uid="${escHtml(u.id)}"` : '';
+      const clickable = !isAnon ? 'cursor:pointer;' : '';
+      return `<tr class="stats-member-row" ${uidAttr} style="${clickable}" title="${!isAnon ? 'Voir l\'historique' : ''}">
         <td style="display:flex;align-items:center;gap:6px;">${badge} ${escHtml(u.pseudo || u.id)}</td>
         ${cells}
         <td style="text-align:right;font-weight:700;">${fmt(u.total || 0)}</td>
@@ -8882,11 +8965,11 @@ window.loadStatistiques = async function loadStatistiques() {
       </tr>`;
     }).join('');
 
-    const membresTable = uvSorted.length ? `
-      <div class="stats-section">
+    const membresTable = uvDisplay.length ? `
+      <div class="stats-section" id="stats-membres-section">
         <div class="stats-section-title">Visites par membre</div>
         <div style="overflow-x:auto;">
-          <table class="stats-table">
+          <table class="stats-table" id="stats-members-table">
             <thead><tr>
               <th>Membre</th>
               ${uvThCols}
@@ -8896,6 +8979,7 @@ window.loadStatistiques = async function loadStatistiques() {
             <tbody>${uvRows}</tbody>
           </table>
         </div>
+        <div id="stats-user-detail" style="display:none;margin-top:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;"></div>
       </div>` : '';
 
     container.innerHTML = `
@@ -8926,6 +9010,48 @@ window.loadStatistiques = async function loadStatistiques() {
           <tbody>${monthRows}</tbody>
         </table>
       </div>`;
+
+    // Clic sur ligne membre → historique audit
+    container.querySelector('#stats-members-table')?.addEventListener('click', async e => {
+      const row = e.target.closest('.stats-member-row[data-uid]');
+      if (!row) return;
+      const uid = row.dataset.uid;
+      const detailPanel = container.querySelector('#stats-user-detail');
+      if (!detailPanel) return;
+      if (detailPanel.dataset.uid === uid && detailPanel.style.display !== 'none') {
+        detailPanel.style.display = 'none';
+        detailPanel.dataset.uid = '';
+        return;
+      }
+      detailPanel.dataset.uid = uid;
+      detailPanel.style.display = '';
+      const pseudo = row.querySelector('td')?.textContent?.trim() || uid;
+      detailPanel.innerHTML = `<div style="color:var(--muted);">Chargement de l'historique de <strong>${escHtml(pseudo)}</strong>…</div>`;
+      try {
+        const snap = await getDocs(query(
+          collection(db, 'audit_log'),
+          where('actorUid', '==', uid),
+          orderBy('createdAt', 'desc'),
+          limit(50)
+        ));
+        if (snap.empty) {
+          detailPanel.innerHTML = `<div style="color:var(--muted);">Aucune action enregistrée pour <strong>${escHtml(pseudo)}</strong>.</div>`;
+          return;
+        }
+        const auditRows = snap.docs.map(d => {
+          const a = d.data();
+          const label = AUDIT_ACTION_LABELS[a.action] || a.action;
+          return `<div style="display:flex;gap:10px;align-items:baseline;border-bottom:1px solid var(--border);padding:4px 0;">
+            <span style="color:var(--muted);font-size:10px;white-space:nowrap;min-width:110px;">${escHtml(fmtTime(a.createdAt))}</span>
+            <span style="min-width:130px;">${escHtml(label)}</span>
+            <span style="color:var(--text-dim,#aaa);">${escHtml(a.targetName || a.targetId || '')}</span>
+          </div>`;
+        }).join('');
+        detailPanel.innerHTML = `<div style="font-weight:700;margin-bottom:8px;">Actions de <span style="color:var(--accent,#7a5af8)">${escHtml(pseudo)}</span></div>${auditRows}`;
+      } catch(e2) {
+        detailPanel.innerHTML = `<div style="color:var(--danger);">Erreur : ${escHtml(e2.message)}</div>`;
+      }
+    });
   } catch(e) {
     container.innerHTML = `<div class="empty" style="color:var(--danger)">Erreur : ${escHtml(e.message)}</div>`;
   }
@@ -12565,165 +12691,6 @@ window.runNormalize = async function() {
 };
 
 // ── Migration IDs Occultes ─────────────────────────
-window.runMigrateOcculteIds = async function() {
-  if (!await modal.confirm(
-    'Pour les 12 items occultes ciblés (liste explicite, PNJs non concernés) :\n' +
-    ' • renomme les IDs en ajoutant "_p{palier}" si pas déjà fait\n' +
-    ' • ajoute le booléen occulte: true s\'il manque\n\n' +
-    'Cette opération est IRRÉVERSIBLE. Continuer ?'
-  )) return;
-
-  const btn = document.getElementById('btn-migrate-occulte');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Migration…'; }
-
-  try {
-    // Charger tous les items (public + sensible)
-    const [pubDocs, hidDocs] = await Promise.all([
-      cachedDocs(COL.items),
-      cachedDocs(COL.itemsHidden).catch(() => []),
-    ]);
-    const allItems = [
-      ...pubDocs.map(d => ({ ...d, _col: COL.items })),
-      ...hidDocs.map(d => ({ ...d, _col: COL.itemsHidden })),
-    ];
-
-    // Liste explicite des IDs à flagger (PNJs en collection personnages
-    // ne sont pas concernés — on ne lit que items / items_hidden)
-    const OCCULTE_TARGET_IDS = new Set([
-      'amulette_occulte_p1',
-      'anneau_occulte_p1',
-      'anneau_occulte_p2',
-      'bracelet_occulte_p1',
-      'bracelet_occulte_p2',
-      'capuche_occulte_p1',
-      'crane_occulte_p1',
-      'gants_occultes_p1',
-      'parchemin_occulte_p2',
-      'poignard_occulte_p2',
-      'robe_occulte_p1',
-      'sablier_occulte_p2',
-    ]);
-    const occulteItems = allItems.filter(it => {
-      const id = String(it.id || it._id || '');
-      return OCCULTE_TARGET_IDS.has(id);
-    });
-
-    if (!occulteItems.length) {
-      toast('✓ Aucun item occulte trouvé.', 'success');
-      return;
-    }
-
-    const log = [];
-    let renamedCount = 0;
-    let flaggedCount = 0;
-    for (const item of occulteItems) {
-      const oldId = item.id || item._id || '';
-      // docKey = clé Firestore réelle. Pour items_hidden c'est le hash du nom (≠ publicId).
-      // Pour items, c'est le publicId.
-      const docKey = item._docKey || oldId;
-      const palier = item.palier;
-      const idNeedsRename = !/_p[123]$/.test(oldId);
-      const flagNeedsAdd  = item.occulte !== true;
-
-      if (!idNeedsRename && !flagNeedsAdd) continue;
-
-      try {
-        if (idNeedsRename) {
-          if (!palier) { log.push(`⚠️ ${oldId} — palier manquant, ignoré`); continue; }
-          const newId = `${oldId}_p${palier}`;
-          const payload = { ...item, id: newId, occulte: true };
-          delete payload._col; delete payload._id; delete payload._docKey;
-
-          if (item._col === COL.itemsHidden) {
-            // items_hidden est keyé par hash : on n'écrit/supprime QUE via docKey,
-            // jamais via publicId (sinon on crée un doc parasite)
-            await setDoc(doc(db, item._col, docKey), sanitizeForFirestore(payload));
-            // items_secret est keyé par publicId : renommer oldId → newId
-            try {
-              const secSnap = await getDoc(doc(db, COL.itemsSecret, oldId));
-              if (secSnap.exists()) {
-                await setDoc(doc(db, COL.itemsSecret, newId), secSnap.data());
-                await deleteDoc(doc(db, COL.itemsSecret, oldId));
-              }
-            } catch {}
-          } else {
-            // items : la clé EST le publicId, donc rename = setDoc(newId) + deleteDoc(oldId)
-            await setDoc(doc(db, item._col, newId), sanitizeForFirestore(payload));
-            await deleteDoc(doc(db, item._col, oldId));
-          }
-          renamedCount++;
-          if (flagNeedsAdd) flaggedCount++;
-          log.push(`✓ ${oldId} → ${newId} (+ occulte: true)`);
-        } else {
-          // ID déjà bon, on ajoute juste le booléen — utiliser docKey (hash pour items_hidden)
-          await updateDoc(doc(db, item._col, docKey), { occulte: true });
-          flaggedCount++;
-          log.push(`✓ ${oldId} (+ occulte: true)`);
-        }
-        store.invalidate('items');
-        invalidateModCache(item._col);
-      } catch(e) {
-        log.push(`⛔ ${oldId} : ${e.message}`);
-      }
-    }
-
-    if (!renamedCount && !flaggedCount) {
-      toast('✓ Tous les items occultes sont déjà à jour.', 'success');
-      return;
-    }
-
-    const summary = `Migration terminée : ${renamedCount} renommage(s), ${flaggedCount} ajout(s) du flag\n\n${log.join('\n')}`;
-    await modal.confirm(summary);
-    toast(`✓ ${renamedCount} renommé(s), ${flaggedCount} flagué(s)`, 'success');
-  } catch(e) {
-    toast('⛔ Erreur migration : ' + e.message, 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '🔑 Migration IDs Occultes'; }
-  }
-};
-
-// ── Backfill flag sensible ─────────────────────────
-// Ajoute sensible: true à tous les docs des collections "secrètes"
-// (items_hidden, items_secret, mobs_secret) qui ne l'ont pas.
-window.runBackfillSensibleFlag = async function() {
-  if (!await modal.confirm(
-    'Ajoute sensible: true à tous les docs de items_hidden, items_secret et mobs_secret qui ne l\'ont pas.\n\nContinuer ?'
-  )) return;
-
-  const btn = document.getElementById('btn-backfill-sensible');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Backfill…'; }
-
-  try {
-    const targets = [COL.itemsHidden, COL.itemsSecret, COL.mobsSecret];
-    let updated = 0;
-    let alreadyOk = 0;
-    const log = [];
-    for (const colName of targets) {
-      let docs;
-      try { docs = await cachedDocs(colName); }
-      catch(e) { log.push(`⛔ ${colName} : ${e.message}`); continue; }
-      for (const d of docs) {
-        if (d.sensible === true) { alreadyOk++; continue; }
-        // _docKey = clé Firestore réelle (hash pour items_hidden, publicId ailleurs)
-        const docKey = d._docKey || d.id;
-        try {
-          await updateDoc(doc(db, colName, docKey), { sensible: true });
-          updated++;
-        } catch(e) {
-          log.push(`⛔ ${colName}/${docKey} : ${e.message}`);
-        }
-      }
-      invalidateModCache(colName);
-    }
-    const summary = `Backfill terminé : ${updated} doc(s) mis à jour, ${alreadyOk} déjà OK.${log.length ? '\n\n' + log.join('\n') : ''}`;
-    await modal.confirm(summary);
-    toast(`✓ ${updated} doc(s) mis à jour`, 'success');
-  } catch(e) {
-    toast('⛔ Erreur backfill : ' + e.message, 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '🔒 Backfill flag sensible'; }
-  }
-};
 
 // ── Outils modération ──────────────────────────────
 window.showCalibrateur = function() {
@@ -15865,6 +15832,85 @@ const _EFFECT_SEED_TEMPLATES = [
   { label:'⏳ Fortifiant de Patience',   effects:[{type:'level',value:8},{type:'agilite',value:2,unit:'%',duration:900},{type:'boost_regen_mana',value:0.2,unit:'/s',duration:900},{type:'boost_regen_stamina',value:0.1,unit:'/s',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
   { label:'🛡️ Fortifiant de Résistance', effects:[{type:'level',value:8},{type:'resistance_recul',value:2,unit:'%',duration:900},{type:'maitrise_blocage',value:2,unit:'%',duration:900},{type:'puissance_blocage',value:2,unit:'%',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
 ];
+
+// ── EVENTS TOOL ──────────────────────────────────────
+window.showEventsTool = async function() {
+  _setHash('events-tool');
+  _showPanel('events-tool-panel', 'btn-events-tool');
+  await Promise.all([_loadEventsList(), _populateEventSetSelect()]);
+};
+
+async function _populateEventSetSelect() {
+  const sel = document.getElementById('event-set-input');
+  if (!sel) return;
+  try {
+    const panoplies = await cachedDocs('panoplies');
+    const sorted = [...panoplies].sort((a, b) => (a.label || a.id).localeCompare(b.label || b.id, 'fr'));
+    const current = sel.value;
+    sel.innerHTML = '<option value="">— Set associé (optionnel) —</option>' +
+      sorted.map(p => `<option value="${escHtml(p.id)}">${escHtml(p.label || p.id)}</option>`).join('');
+    if (current) sel.value = current;
+  } catch(e) { /* silencieux */ }
+}
+
+async function _loadEventsList() {
+  const list = document.getElementById('events-list');
+  if (!list) return;
+  list.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [snap, panoplies] = await Promise.all([
+      getDocs(query(collection(db, COL.events), orderBy('createdAt', 'desc'))),
+      cachedDocs('panoplies'),
+    ]);
+    const panoById = new Map(panoplies.map(p => [p.id, p.label || p.id]));
+    if (snap.empty) {
+      list.innerHTML = '<div class="empty" style="color:var(--muted);">Aucun event. Créez-en un ci-dessus.</div>';
+      return;
+    }
+    list.innerHTML = snap.docs.map(d => {
+      const ev = d.data();
+      const safeName = escHtml(ev.name || d.id);
+      const setLabel = ev.setId ? `<span style="font-size:11px;color:var(--muted);margin-left:8px;">🔗 ${escHtml(panoById.get(ev.setId) || ev.setId)}</span>` : '';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;">
+        <span style="font-size:13px;">🎪 ${safeName}${setLabel}</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteVclEvent('${d.id}','${safeName.replace(/'/g, '\\\'')}')" style="font-size:12px;">🗑️ Supprimer</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`;
+  }
+}
+
+window.createVclEvent = async function() {
+  const inp = document.getElementById('event-name-input');
+  const sel = document.getElementById('event-set-input');
+  const name = inp?.value?.trim();
+  if (!name) { toast('Nom de l\'event requis.', 'error'); return; }
+  const setId = sel?.value || null;
+  const data = { name, createdAt: serverTimestamp() };
+  if (setId) data.setId = setId;
+  try {
+    await addDoc(collection(db, COL.events), data);
+    if (inp) inp.value = '';
+    if (sel) sel.value = '';
+    toast(`Event créé : ${name}`, 'success');
+    await _loadEventsList();
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
+
+window.deleteVclEvent = async function(id, name) {
+  const ok = await modal.confirm(`Supprimer l'event "${name}" ?`, { danger: true, confirmLabel: 'Supprimer' });
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(db, COL.events, id));
+    toast('Event supprimé.', 'success');
+    await _loadEventsList();
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
 
 let _effectsData = { types: [], templates: [] };
 let _effectsDirty = false;

@@ -394,6 +394,25 @@ body.quetes-page { overflow: hidden; }
   gap: 14px;
   align-items: start;
 }
+.quete-grid.size-small { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.quete-grid.size-large  { grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 16px; }
+.quete-grid.size-small .quete-card  { height: 180px; }
+.quete-grid.size-large  .quete-card { height: 300px; }
+
+.card-size-btns { display: flex; gap: 3px; }
+.card-size-btn {
+  background: var(--surface2, #1a1a2a);
+  border: 1px solid var(--border, #333);
+  color: var(--muted, #888);
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: border-color .15s, color .15s;
+}
+.card-size-btn.active,
+.card-size-btn:hover { border-color: var(--gold-dim, #9a7040); color: var(--gold, #c9a84c); }
 
 .palier-heading {
   grid-column: 1 / -1;

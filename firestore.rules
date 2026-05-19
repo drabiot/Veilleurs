@@ -201,6 +201,11 @@
         allow update: if false;
       }
 
+      match /events/{id} {
+        allow read:   if true;
+        allow write:  if isAdmin();
+      }
+
       match /submissions/{id} {
         allow create: if request.resource.data.submitterName is string
                       && request.resource.data.submitterName.size() >= 2

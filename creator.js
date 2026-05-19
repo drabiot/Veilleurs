@@ -131,6 +131,7 @@ function populatePalierSelects(paliers) {
     if (currentVal && paliers.some(p => String(p.id) === currentVal)) {
       sel.value = currentVal;
       delete sel.dataset.vclPending;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }
   refreshCustomSelects();
@@ -1082,6 +1083,11 @@ function restoreForm(forcedMode) {
       }
     }
 
+    // Recompute ID après que selOcculte, selEvolutif et palier soient restaurés
+    if (!idLocked && creatorMode === 'item') {
+      const recomputed = _computeItemId();
+      if (recomputed) document.getElementById('f-id').value = recomputed;
+    }
     refreshCustomSelects();
     _skipSave = false;
     update();
@@ -1162,21 +1168,10 @@ function nameToId(name) {
 let idLocked = false; // true = ID a été fixé manuellement, ne pas écraser depuis le nom
 
 function _computeItemId() {
-  const name = document.getElementById('f-name').value;
-  const slug  = nameToId(name);
-  // Mode occulte : ID toujours sous forme nom_p{palier}
-  if (selOcculte) {
-    const palier = document.getElementById('f-palier').value;
-    return palier ? `${slug}_p${palier}` : slug;
-  }
-  if (selEvolutif) {
-    const palier = document.getElementById('f-palier').value;
-    // Si un item avec le même slug existe déjà (palier différent), distinguer par palier
-    if (palier && typeof ITEMS !== 'undefined' && ITEMS.some(it => (it.id || it._id) === slug)) {
-      return `${slug}_${palier}`;
-    }
-  }
-  return slug;
+  const name   = document.getElementById('f-name').value;
+  const slug   = nameToId(name);
+  const palier = document.getElementById('f-palier').value;
+  return (slug && palier) ? `${slug}_p${palier}` : slug;
 }
 
 function toggleOcculte() {
@@ -1391,6 +1386,31 @@ function onObtainTypeChange() {
     addBtn.disabled = true;
     addBtn.style.display = '';
 
+  } else if (type === 'event') {
+    const sel = document.createElement('select');
+    sel.id = 'obtain-event-select';
+    sel.style.cssText = 'width:100%;height:38px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 10px;font-size:13px;font-family:inherit;outline:none;';
+    sel.innerHTML = '<option value="">Chargement des events…</option>';
+    sel.addEventListener('change', () => { addBtn.disabled = !sel.value; });
+    container.appendChild(sel);
+    addBtn.disabled = true;
+    addBtn.style.display = '';
+    const _fetchFn = window._vcl_fetchEvents;
+    if (_fetchFn) {
+      _fetchFn().then(events => {
+        if (!events.length) {
+          sel.innerHTML = '<option value="">Aucun event — créez-en dans la Modération</option>';
+          return;
+        }
+        sel.innerHTML = '<option value="">— Choisir un event —</option>' +
+          events.map(ev => `<option value="${ev.id.replace(/"/g,'&quot;')}">${ev.name.replace(/</g,'&lt;')}</option>`).join('');
+      }).catch(() => {
+        sel.innerHTML = '<option value="">Erreur de chargement</option>';
+      });
+    } else {
+      sel.innerHTML = '<option value="">Module non chargé</option>';
+    }
+
   } else if (type === 'ressource') {
     // Coordonnées uniquement — auto-ajout au blur si les deux champs sont remplis
     obtainDrop = null;
@@ -1526,6 +1546,20 @@ function addObtainSource() {
     return;
   }
 
+  if (type === 'event') {
+    const sel = document.getElementById('obtain-event-select');
+    const eventId = sel?.value;
+    if (!eventId) return;
+    const eventName = sel.options[sel.selectedIndex]?.textContent?.trim() || eventId;
+    if (obtainSources.some(s => s.type === 'event' && s.eventId === eventId)) return;
+    obtainSources.push({ uid: obtainUid++, type: 'event', eventId, name: eventName });
+    sel.value = '';
+    document.getElementById('obtain-add-btn').disabled = true;
+    renderObtainSources();
+    update();
+    return;
+  }
+
   if (type === 'ressource') {
     const cx = document.getElementById('obtain-res-x')?.value.trim();
     const cz = document.getElementById('obtain-res-z')?.value.trim();
@@ -1592,7 +1626,11 @@ function renderObtainSources() {
       label += `<a href="${href}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">${s.name}</a>`;
       if (s.subtitle) label += ` <span style="color:var(--muted)">— ${s.subtitle}</span>`;
     } else if (s.type === 'autre' || s.type === 'coffre' || s.type === 'event' || s.type === 'exploration') {
-      label += `<span style="color:var(--muted)">${s.type === 'autre' ? 'Autre' : s.type} ·</span> <b>${s.desc}</b>`;
+      if (s.type === 'event' && s.eventId) {
+        label += `<b>${s.name || s.eventId}</b>`;
+      } else {
+        label += `<span style="color:var(--muted)">${s.type === 'autre' ? 'Autre' : s.type} ·</span> <b>${s.desc || s.name || ''}</b>`;
+      }
     } else if (s.type === 'ressource') {
       if (s.coords) {
         label += `📍 <b>X</b> ${s.coords.x} <b>Z</b> ${s.coords.z}`;
@@ -1693,6 +1731,8 @@ function parseObtainText(text, itemId, itemName) {
     // Anciens formats (compatibilité lecture)
     const coffreM = t.match(/^Trouvable dans un coffre — (.+)$/);
     if (coffreM) { sources.push({ uid: obtainUid++, type: 'coffre', desc: coffreM[1] }); continue; }
+    const eventNewM = t.match(/^Obtenable pendant l'Event \[(.+)\]$/);
+    if (eventNewM) { sources.push({ uid: obtainUid++, type: 'event', eventId: eventNewM[1], name: eventNewM[1] }); continue; }
     const eventM = t.match(/^Récompense d'événement — (.+)$/);
     if (eventM) { sources.push({ uid: obtainUid++, type: 'event', desc: eventM[1] }); continue; }
     const exploM = t.match(/^Trouvable en exploration — (.+)$/);
@@ -1744,7 +1784,13 @@ function buildObtainText() {
   for (const a of autres)       parts.push(`Autre source — ${a.desc}`);
   // Anciens formats
   for (const c of coffres)      parts.push(`Trouvable dans un coffre — ${c.desc}`);
-  for (const e of events)       parts.push(`Récompense d'événement — ${e.desc}`);
+  for (const e of events) {
+    if (e.eventId || (e.name && !e.desc)) {
+      parts.push(`Obtenable pendant l'Event [${e.name || e.eventId}]`);
+    } else if (e.desc) {
+      parts.push(`Récompense d'événement — ${e.desc}`);
+    }
+  }
   for (const ex of explorations) parts.push(`Trouvable en exploration — ${ex.desc}`);
   return parts.join('\n');
 }
@@ -1881,7 +1927,7 @@ function onPalierChange() {
   if (p) activeTags.add(`Palier ${p}`);
   syncPresetTagButtons();
   renderCustomTags();
-  if ((selEvolutif || selOcculte) && !idLocked) document.getElementById('f-id').value = _computeItemId();
+  if (!idLocked) document.getElementById('f-id').value = _computeItemId();
   update();
 }
 
@@ -3197,6 +3243,7 @@ const CRAFT_CATEGORIES = new Set(['materiaux','ressources','monnaie','donjon','q
 // Entrées virtuelles toujours disponibles dans les recettes (items sans ID fixe dans ITEMS)
 const CRAFT_VIRTUAL_ITEMS = [
   { id: 'potion_qualite', name: '🧪 Potion [qualité]', search: 'potion qualite consommable soin mana stamina' },
+  { id: 'cols', name: '🪙 Cols', search: 'cols monnaie currency or argent gold' },
 ];
 
 function ensureItemIndex() {
@@ -4969,6 +5016,160 @@ function validateCurrentMode() {
   return { errors };
 }
 
+async function _promptMissingFields(errors, warnings = []) {
+  const RARITIES = [
+    { id: 'commun',     label: 'Commun',     color: '#aaa' },
+    { id: 'peu_commun', label: 'Peu commun', color: '#1eff00' },
+    { id: 'rare',       label: 'Rare',       color: '#0070dd' },
+    { id: 'epique',     label: 'Épique',     color: '#a335ee' },
+    { id: 'legendaire', label: 'Légendaire', color: '#ff8000' },
+    { id: 'mythique',   label: 'Mythique',   color: '#e6cc80' },
+    { id: 'godlike',    label: 'Godlike',    color: '#ff4444' },
+    { id: 'event',      label: 'Événement',  color: '#d7af5f' },
+  ];
+  const paliers = window._vcl_paliers || _DEFAULT_PALIERS;
+  const palierOpts = paliers.map(p =>
+    `<option value="${p.id}" style="color:${p.color||''}">${escHtml(p.label)}</option>`
+  ).join('');
+  const catEl = document.getElementById('f-category');
+  const catOpts = [...(catEl?.options || [])].filter(o => o.value)
+    .map(o => `<option value="${escHtml(o.value)}">${escHtml(o.text)}</option>`).join('');
+  const currentCat = catEl?.value || '';
+  // Slot nécessaire si : catégorie absente (sera choisie dans le popup) OU catégorie équip avec slot manquant
+  const catMissing = errors.some(e => e.field === 'f-category');
+  const needsSlot  = catMissing || [...errors, ...warnings].some(e => e.field === 'f-cat');
+
+  const _inputStyle = 'width:100%;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:4px;font-family:inherit;box-sizing:border-box;';
+  const _field = (label, body) =>
+    `<div style="margin-bottom:10px;">
+       <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">${label}</label>
+       ${body}
+     </div>`;
+  const _sel = (id, opts) =>
+    `<select id="${id}" style="${_inputStyle}">
+       <option value="">— Choisir —</option>${opts}
+     </select>`;
+
+  // Bloquer si nom ou ID manquants — à remplir directement dans le formulaire
+  if (errors.some(e => e.field === 'f-name' || e.field === 'f-id')) {
+    window._toast?.('⛔ Nom et ID obligatoires — remplis-les dans le formulaire.', 'error', 5000);
+    return false;
+  }
+
+  let bodyHTML = '';
+  let _lvlRendered = false;
+  for (const err of [...errors, ...warnings]) {
+    if (err.field === 'f-name' || err.field === 'f-id') {
+      // ignoré — bloqué avant
+    } else if (err.field === 'f-palier') {
+      bodyHTML += _field('Palier *', _sel('_vcl-fill-palier', palierOpts));
+    } else if (err.field === 'f-category') {
+      // onchange inline — met à jour le slot dynamiquement sans dépendre du setup callback
+      bodyHTML += _field('Catégorie *',
+        `<select id="_vcl-fill-category" onchange="window._vcl_updatePopupSlot(this.value)" style="${_inputStyle}">
+           <option value="">— Choisir —</option>${catOpts}
+         </select>`);
+      // Slot interne + Niveau — apparaissent dynamiquement quand catégorie = équip
+      const initSlotOpts = (SLOT_OPTIONS[currentCat] || [])
+        .map(([v, l]) => `<option value="${escHtml(v)}">${escHtml(l)}</option>`).join('');
+      const equipVisible = initSlotOpts ? '' : 'display:none;';
+      bodyHTML += `<div id="_vcl-slot-wrap" style="${equipVisible}margin-bottom:10px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Slot interne</label>
+        <select id="_vcl-fill-cat" style="${_inputStyle}">
+          <option value="">— Choisir —</option>${initSlotOpts}
+        </select>
+      </div>
+      <div id="_vcl-lvl-wrap" style="${equipVisible}margin-bottom:10px;">
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Niveau requis</label>
+        <input type="number" id="_vcl-fill-lvl" min="1" placeholder="ex: 30" style="${_inputStyle}">
+      </div>`;
+      _lvlRendered = true;
+    } else if (err.field === null && err.msg.includes('Rareté')) {
+      const btns = RARITIES.map(r =>
+        `<button type="button" class="_vcl-rar-btn" data-rar="${r.id}"
+          style="padding:4px 10px;border-radius:4px;border:1px solid ${r.color};background:transparent;color:${r.color};cursor:pointer;font-size:11px;font-family:inherit;transition:opacity .1s;"
+          >${r.label}</button>`
+      ).join('');
+      bodyHTML += _field('Rareté *',
+        `<div style="display:flex;flex-wrap:wrap;gap:6px;">${btns}</div>
+         <input type="hidden" id="_vcl-fill-rarity" value="">`);
+    } else if (err.field === 'f-lore') {
+      bodyHTML += _field('Lore *',
+        `<textarea id="_vcl-fill-lore" rows="3" placeholder="Description de l'item…"
+          style="${_inputStyle}resize:vertical;font-size:12px;"></textarea>`);
+    } else if (err.field === 'f-craft-cd') {
+      bodyHTML += _field('CD de craft *',
+        `<input type="text" id="_vcl-fill-craft-cd" placeholder="ex: 24h, aucun" style="${_inputStyle}">`);
+    } else if (err.field === 'f-cat' && !catMissing) {
+      // Catégorie déjà set : slot + niveau apparaissent directement
+      const initSlotOpts = (SLOT_OPTIONS[currentCat] || [])
+        .map(([v, l]) => `<option value="${escHtml(v)}">${escHtml(l)}</option>`).join('');
+      if (initSlotOpts) {
+        bodyHTML += `<div id="_vcl-slot-wrap" style="margin-bottom:10px;">
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Slot interne</label>
+          <select id="_vcl-fill-cat" style="${_inputStyle}">
+            <option value="">— Choisir —</option>${initSlotOpts}
+          </select>
+        </div>
+        <div id="_vcl-lvl-wrap" style="margin-bottom:10px;">
+          <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Niveau requis</label>
+          <input type="number" id="_vcl-fill-lvl" min="1" placeholder="ex: 30" style="${_inputStyle}">
+        </div>`;
+        _lvlRendered = true;
+      }
+    } else if (err.field === 'f-lvl' && !_lvlRendered) {
+      bodyHTML += _field('Niveau requis',
+        `<input type="number" id="_vcl-fill-lvl" min="1" placeholder="ex: 30" style="${_inputStyle}">`);
+    }
+  }
+
+  // Exposer la fonction de mise à jour slot pour l'onchange inline
+  window._vcl_updatePopupSlot = (cat) => {
+    const wrap    = document.getElementById('_vcl-slot-wrap');
+    const sel     = document.getElementById('_vcl-fill-cat');
+    const lvlWrap = document.getElementById('_vcl-lvl-wrap');
+    const opts    = SLOT_OPTIONS[cat] || [];
+    const isEquip = opts.length > 0;
+    if (wrap && sel) {
+      if (!isEquip) { wrap.style.display = 'none'; }
+      else {
+        sel.innerHTML = '<option value="">— Choisir —</option>' +
+          opts.map(([v, l]) => `<option value="${escHtml(v)}">${escHtml(l)}</option>`).join('');
+        wrap.style.display = '';
+      }
+    }
+    if (lvlWrap) lvlWrap.style.display = isEquip ? '' : 'none';
+  };
+
+  const data = await window._modal?.custom('📋 Compléter les champs manquants', bodyHTML, {
+    confirmLabel: 'Valider et soumettre',
+    maxWidth: '460px',
+    setup(card) {
+      // Rareté — boutons colorés
+      card.querySelectorAll('._vcl-rar-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          card.querySelectorAll('._vcl-rar-btn').forEach(b => { b.style.opacity = '.4'; b.style.fontWeight = ''; });
+          btn.style.opacity = '1'; btn.style.fontWeight = '700';
+          const h = card.querySelector('#_vcl-fill-rarity');
+          if (h) h.value = btn.dataset.rar;
+        });
+      });
+    },
+  });
+  delete window._vcl_updatePopupSlot;
+  if (!data) return false;
+
+  if (data.palier)      { _setPalierValue('f-palier', data.palier); document.getElementById('f-palier')?.dispatchEvent(new Event('change', { bubbles: true })); }
+  if (data.category)    { document.getElementById('f-category').value = data.category; onCatChange(); }
+  if (data.rarity)      setRarity(data.rarity);
+  if (data.lore)        document.getElementById('f-lore').value = data.lore;
+  if (data['craft-cd']) { const el = document.getElementById('f-craft-cd'); if (el) el.value = data['craft-cd']; }
+  if (data.cat)         { const el = document.getElementById('f-cat'); if (el) { el.value = data.cat; onCatSlotChange?.(); } }
+  if (data.lvl)         { const el = document.getElementById('f-lvl'); if (el) el.value = data.lvl; }
+  update();
+  return true;
+}
+
 async function submitToDiscord() {
   // Invités : pseudo obligatoire
   if (!window._vcl_user) {
@@ -5110,16 +5311,30 @@ async function submitToDiscord() {
     return;
   }
 
-  const { errors } = validateForm();
-  if (errors.length) {
-    window._toast?.('⛔ Corrige les erreurs avant de soumettre', 'error', 5000);
-    return;
+  let { errors, warnings } = validateForm();
+  if (errors.length || warnings.length) {
+    const filled = await _promptMissingFields(errors, warnings);
+    if (!filled) return;
+    // Re-valider après remplissage
+    ({ errors } = validateForm());
+    if (errors.length) {
+      window._toast?.('⛔ Des champs restent manquants.', 'error', 4000);
+      return;
+    }
   }
 
   // Check for duplicates before submitting
   {
     const itemId   = document.getElementById('f-id').value.trim();
     const itemName = document.getElementById('f-name').value.trim();
+    // Base ID pour le suffix : toujours recalculé avec palier pour éviter "slug_1" au lieu de "slug_p3_1"
+    const _baseId  = _computeItemId() || itemId;
+    function _nextFreeId() {
+      let suffix = 1;
+      let newId = `${_baseId}_${suffix}`;
+      while (isDuplicate(newId)) { suffix++; newId = `${_baseId}_${suffix}`; }
+      return newId;
+    }
     if (isDuplicate(itemId)) {
       const action = await window._modal?.choice(
         `⚠️ <strong>${itemName || itemId}</strong> existe déjà.\nS'agit-il d'une modification de cet item, ou d'un nouvel item différent ?`,
@@ -5127,17 +5342,21 @@ async function submitToDiscord() {
       );
       if (!action) return;
       if (action === 'btn2') {
-        let suffix = 1;
-        let newId = `${itemId}_${suffix}`;
-        while (isDuplicate(newId)) { suffix++; newId = `${itemId}_${suffix}`; }
-        document.getElementById('f-id').value = newId;
+        document.getElementById('f-id').value = _nextFreeId();
         update();
       }
     } else {
       const pendingItem = await hasPendingSubmission('item', itemName);
       if (pendingItem) {
-        const yes = await window._modal?.confirm(`⚠️ Une soumission avec ce nom est déjà en attente de validation.\nContinuer quand même ?`);
-        if (!yes) return;
+        const action = await window._modal?.choice(
+          `⚠️ <strong>${itemName || itemId}</strong> est déjà en attente de validation.\nS'agit-il d'une modification de cet item, ou d'un nouvel item différent ?`,
+          { btn1: '✏️ Modification', btn2: '➕ Nouvel item', cancelLabel: 'Annuler' }
+        );
+        if (!action) return;
+        if (action === 'btn2') {
+          document.getElementById('f-id').value = _nextFreeId();
+          update();
+        }
       }
     }
   }
@@ -5246,11 +5465,6 @@ async function submitToFirestore() {
 
   const submitterComment = document.getElementById('submitter-comment')?.value?.trim() || '';
 
-  if (isModification && !submitterComment) {
-    window._toast?.('⛔ Pour une modification, la note de modération est obligatoire. Expliquez ce qui a changé.', 'error', 6000);
-    document.getElementById('submitter-comment')?.focus();
-    return;
-  }
 
   // Chercher une soumission pending existante avec le même type+id → la remplacer
   const getDocs2  = window._vcl_getDocs;

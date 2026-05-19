@@ -63,6 +63,25 @@ const modalCloseBtn = document.getElementById('modal-close-btn');
 const typeSection   = document.getElementById('type-block');
 const pnjTagSection = document.getElementById('pnj-tag-block');
 
+/* ── Sélecteur taille de cartes ── */
+(function initCardSize() {
+  const saved = localStorage.getItem('vcl_bestiaire_size') || 'medium';
+  if (saved !== 'medium') entityGrid.classList.add('size-' + saved);
+  const btns = document.getElementById('card-size-btns');
+  if (btns) {
+    btns.querySelectorAll('.card-size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === saved));
+    btns.addEventListener('click', e => {
+      const btn = e.target.closest('.card-size-btn');
+      if (!btn) return;
+      const size = btn.dataset.size;
+      entityGrid.className = entityGrid.className.replace(/\bsize-\w+\b/g, '').trim();
+      if (size !== 'medium') entityGrid.classList.add('size-' + size);
+      btns.querySelectorAll('.card-size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === size));
+      localStorage.setItem('vcl_bestiaire_size', size);
+    });
+  }
+})();
+
 function getMapZone(entity) {
   return entity.mapZone || null;
 }
