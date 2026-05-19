@@ -26,7 +26,6 @@ html, body {
   line-height: 1.65;
   min-height: 100vh;
   overflow-x: hidden;
-  min-width: 900px;
 }
 
 
@@ -187,7 +186,7 @@ html, body {
    SIDEBARS communes
    ============================================================ */
 .sidebar {
-  background: linear-gradient(180deg, rgba(19,16,13,.98) 0%, rgba(13,11,9,.96) 100%);
+  background: linear-gradient(180deg, #13100d 0%, #0d0b09 100%);
   display: flex; flex-direction: column;
   overflow: hidden;
   position: relative;
@@ -1520,4 +1519,123 @@ html, body {
 }
 .set-tooltip.visible {
   opacity: 1;
+}
+
+/* ══════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════ */
+
+/* ── Tablette (≤768px) ── */
+@media (max-width: 768px) {
+  .header-top { padding: 8px 16px; }
+  .header-sep { display: none; }
+  .nav-link { padding: 10px 14px; font-size: 11px; }
+  .header-nav { overflow-x: auto; scrollbar-width: none; }
+  .header-nav::-webkit-scrollbar { display: none; }
+}
+
+/* ── Mobile (≤640px) ── */
+@media (max-width: 640px) {
+  .nav-label { display: none; }
+  .nav-link { flex: 1; justify-content: center; padding: 10px 0; }
+  .nav-icon { font-size: 16px; }
+  .btn-add-item { font-size: 0; padding: 5px 10px; }
+  .btn-add-item::before { content: '+'; font-size: 0.75rem; }
+}
+
+/* ── Mobile XS (≤480px) ── */
+@media (max-width: 480px) {
+  .nav-link { padding: 8px 0; }
+}
+
+/* ══════════════════════════════════
+   ATELIER RESPONSIVE (≤768px)
+══════════════════════════════════ */
+.atelier-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  z-index: 49;
+}
+.atelier-backdrop.open { display: block; }
+
+.mobile-atelier-bar {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--rim);
+  flex-shrink: 0;
+}
+.atelier-mobile-btn {
+  padding: 6px 12px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--rim2);
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+  white-space: nowrap;
+}
+.atelier-mobile-btn:hover { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow); }
+.atelier-mobile-btn.ml-auto { margin-left: auto; }
+
+@media (max-width: 768px) {
+  /* Layout : 1 colonne, center prend tout */
+  .body,
+  .body.stats-open { grid-template-columns: 1fr !important; }
+
+  /* Sidebar gauche : overlay slide depuis gauche */
+  .sidebar-left {
+    position: fixed;
+    inset: 90px auto 0 0;
+    z-index: 50;
+    width: 230px;
+    transform: translate3d(-100%, 0, 0);
+    transition: transform .25s ease;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border-right: 1px solid var(--rim);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform;
+  }
+  .sidebar-left.open { transform: translate3d(0, 0, 0); }
+
+  /* Sidebar droite : overlay slide depuis droite */
+  .sidebar-right {
+    position: fixed;
+    inset: 0 0 0 auto;
+    z-index: 50;
+    width: 300px;
+    transform: translate3d(100%, 0, 0);
+    transition: transform .25s ease;
+    padding-left: 0 !important;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform;
+  }
+  .sidebar-right.picker-open { transform: translate3d(0, 0, 0); }
+  .body.stats-open .sidebar-right { padding-left: 0 !important; }
+
+  /* iOS : empêche le zoom au focus sur les inputs du picker */
+  .picker-search-input { font-size: 16px; }
+
+  /* Craft drawer : plus ancré sur sidebar-left */
+  .craft-drawer { left: 0; }
+
+  /* Mannequin : slots plus petits */
+  .mq { --S: 52px; --W: 130px; --G: 6px; }
+
+  /* Barre mobile dans center */
+  .mobile-atelier-bar { display: flex; }
+
+  /* Preview banner : adapté mobile */
+  #preview-banner { top: 0; flex-wrap: wrap; padding: 8px 12px; gap: 8px; }
 }

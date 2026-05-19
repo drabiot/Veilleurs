@@ -1090,9 +1090,19 @@ body.quetes-page { overflow: hidden; }
    RESPONSIVE
 ══════════════════════════════════ */
 @media (max-width: 860px) {
-  .quetes-layout { grid-template-columns: 1fr; }
+  .quetes-layout { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
   .quetes-sidebar { border-right: none; border-bottom: 1px solid var(--rim); max-height: 40vh; }
   .quest-modal { max-width: 98vw; max-height: 92vh; }
   .quest-sheet-header { grid-template-columns: 1fr; }
   .quete-card { height: auto; min-height: 200px; }
+  .quetes-main { padding: 20px 20px; }
+}
+
+@media (max-width: 640px) {
+  .quetes-main { padding: 16px 14px; }
+  .quetes-main-header { flex-direction: column; gap: 10px; }
+  .quete-grid { grid-template-columns: 1fr; }
+  .quest-section { padding: 14px 16px; }
+  .quest-modal { padding: 0; }
+  .card-body { padding: 10px 10px 6px 14px; }
 }

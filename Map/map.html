@@ -64,7 +64,7 @@
         <span class="nav-icon">💀</span><span class="nav-label">Bestiaire</span>
       </a>
       <a href="../Quetes/quetes.html" class="nav-link">
-        <span class="nav-icon">📋</span>
+        <span class="nav-icon">❓</span>
         <span class="nav-label">Quêtes</span>
       </a>
       <a href="../Atelier/atelier.html" class="nav-link"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
@@ -74,9 +74,10 @@
 
   <!-- ══════ MAP LAYOUT ══════ -->
   <div class="map-layout">
+    <div id="map-sidebar-backdrop" class="map-sidebar-backdrop"></div>
 
     <!-- ── Sidebar gauche ── -->
-    <aside class="map-sidebar">
+    <aside class="map-sidebar" id="map-sidebar">
       <button id="custom-pin-mode-btn" class="custom-pin-btn">📌 Ajouter un pin</button>
       <div class="cpd-io-btns">
         <button id="pin-export-btn" class="custom-pin-btn cpd-io-btn">📤 Exporter mes pins</button>
@@ -268,6 +269,7 @@
     <main class="map-main">
 
       <div class="map-topbar">
+        <button id="map-sidebar-toggle" class="map-sidebar-toggle" aria-label="Filtres">≡</button>
         <span class="map-topbar-label">ÉTAGE</span>
         <span class="map-topbar-num" id="floor-display">01</span>
         <span class="map-topbar-name" id="floor-name-display">Forêt</span>

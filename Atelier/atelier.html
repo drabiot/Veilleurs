@@ -53,9 +53,9 @@
       <a href="../Map/map.html"                  class="nav-link"><span class="nav-icon">🗺️</span><span class="nav-label">Carte</span></a>
       <a href="../Compendium/compendium.html"    class="nav-link"><span class="nav-icon">📖</span><span class="nav-label">Compendium</span></a>
       <a href="../Bestiaire/bestiaire.html"      class="nav-link"><span class="nav-icon">💀</span><span class="nav-label">Bestiaire</span></a>
-      <a href="../Quetes/quetes.html" class="nav-link"> 
-        <span class="nav-icon">📋</span> 
-        <span class="nav-label">Quêtes </span> 
+      <a href="../Quetes/quetes.html" class="nav-link">
+        <span class="nav-icon">❓</span>
+        <span class="nav-label">Quêtes </span>
       </a>
       <a href="atelier.html"                     class="nav-link active"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
       <a href="../Builds/builds.html"            class="nav-link"><span class="nav-icon">📋</span><span class="nav-label">Builds</span></a>
@@ -88,6 +88,8 @@
       <div id="preview-save-slots" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
   </div>
+
+  <div id="atelier-backdrop" class="atelier-backdrop"></div>
 
   <div class="page">
     <div class="body">
@@ -166,6 +168,9 @@
         <div class="center-head">
           <div class="center-title">Atelier</div>
           <div class="center-sub">// CONSTRUCTEUR D'ÉQUIPEMENT · VEILLEURS AU CLAIR DE LUNE</div>
+        </div>
+        <div class="mobile-atelier-bar">
+          <button id="atelier-left-toggle" class="atelier-mobile-btn">≡ Classe</button>
         </div>
         <div class="center-body">
           <div class="mannequin-col">
@@ -278,6 +283,33 @@
   <script src="../utils.js"></script>
   <script src="../Compendium/data.js"></script>
   <script src="atelier.js"></script>
+  <script>
+    (function() {
+      var backdrop    = document.getElementById('atelier-backdrop');
+      var sidebarL    = document.querySelector('.sidebar-left');
+      var sidebarR    = document.querySelector('.sidebar-right');
+      var leftToggle  = document.getElementById('atelier-left-toggle');
+      var pickerClose = document.getElementById('atelier-picker-close');
+
+      function isMobile() { return window.innerWidth <= 768; }
+
+      function openLeft()  { sidebarL.classList.add('open'); }
+      function closeLeft() { sidebarL.classList.remove('open'); }
+      function openPicker()  { sidebarR.classList.add('picker-open'); }
+      function closePicker() { sidebarR.classList.remove('picker-open'); }
+
+      leftToggle?.addEventListener('click', function() { isMobile() && openLeft(); });
+      pickerClose?.addEventListener('click', function() { closePicker(); });
+      backdrop?.addEventListener('click', function() { closeLeft(); closePicker(); });
+
+      // Ouvrir le picker automatiquement quand un slot est cliqué sur mobile
+      document.querySelector('.body')?.addEventListener('click', function(e) {
+        if (!isMobile()) return;
+        var slot = e.target.closest('.slot');
+        if (slot) openPicker();
+      });
+    })();
+  </script>
   <script type="module">
     import { store } from '../store.js';
     import { getHiddenByName, getHiddenById, getSecretById, COL, db, auth, getDoc, doc,

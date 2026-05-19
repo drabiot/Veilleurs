@@ -375,3 +375,39 @@ body.sidebar-hidden .sidebar { padding: 0; width: 0; border-right: none; overflo
 /* ── TABLEAU DE CHASSE ── */
 .tdc-check { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; margin-right: 8px; flex-shrink: 0; font-size: 14px; }
 .tdc-check input { cursor: pointer; accent-color: var(--accent); width: 15px; height: 15px; }
+
+/* ── Mobile ── */
+#mod-backdrop { display: none; position: fixed; inset: 0; z-index: 199; background: rgba(0,0,0,.5); }
+
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr !important; }
+  .layout > aside {
+    position: fixed !important; top: 49px; left: 0; bottom: 0;
+    width: 220px !important; z-index: 200;
+    padding: 16px !important;
+    overflow-y: auto !important; overflow-x: hidden !important;
+    border-right: 1px solid var(--border) !important;
+    transform: translateX(-100%);
+    transition: transform .25s ease !important;
+  }
+  body:not(.sidebar-hidden) .layout > aside { transform: translateX(0); }
+  body:not(.sidebar-hidden) #mod-backdrop { display: block; }
+
+  .main { padding: 12px; }
+  .user-row { grid-template-columns: 1fr auto; gap: 8px; }
+  #perm-layout { flex-direction: column; }
+  #perm-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; max-height: 180px; overflow-y: auto; }
+  #perm-detail { padding: 14px 12px; }
+  .hbtns .btn-ghost[href] { font-size: 11px; padding: 4px 8px; }
+  header { flex-wrap: wrap; padding: 10px 14px; gap: 8px; }
+  header h1 { font-size: 14px; }
+  .stats-mid-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 480px) {
+  .user-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .stats-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}

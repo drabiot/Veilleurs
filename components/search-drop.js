@@ -136,7 +136,7 @@ export class SearchDrop {
     this._drop.style.display = 'block';
 
     this._drop.querySelectorAll('.vcl-sd-item').forEach(el => {
-      el.addEventListener('mousedown', e => {
+      el.addEventListener('pointerdown', e => {
         e.preventDefault(); // évite que onblur ferme avant le clic
         const idx = parseInt(el.dataset.i, 10);
         this._select(this._results[idx]);

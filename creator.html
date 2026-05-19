@@ -1175,9 +1175,19 @@ onAuthStateChanged(auth, async user => {
       if (window._vcl_lastCreatorConfig !== undefined && typeof applyCreatorConfig === 'function') {
         applyCreatorConfig(window._vcl_lastCreatorConfig);
       }
-      // Injecter les items sensibles dans l'index si déjà chargés
-      if (await _canViewItemsSecret(baseRole) && window._vcl_hiddenItemsLoaded && typeof window._vcl_appendHiddenItemsToIndex === 'function') {
-        window._vcl_appendHiddenItemsToIndex(window._vcl_hiddenItemsLoaded);
+      // Charger/injecter les items sensibles (list restreinte aux contribs — doit s'exécuter après auth)
+      if (await _canViewItemsSecret(baseRole)) {
+        if (!window._vcl_hiddenItemsLoaded) {
+          try {
+            const hiddenSnap = await getDocs(collection(db, 'items_hidden'));
+            const hiddenItems = hiddenSnap.docs.map(d => ({ _id: d.id, ...d.data() }));
+            window._vcl_sensibleItemIds   = new Set(hiddenItems.map(it => it.id).filter(Boolean));
+            window._vcl_hiddenItemsLoaded = hiddenItems;
+          } catch(e) {}
+        }
+        if (window._vcl_hiddenItemsLoaded && typeof window._vcl_appendHiddenItemsToIndex === 'function') {
+          window._vcl_appendHiddenItemsToIndex(window._vcl_hiddenItemsLoaded);
+        }
       }
       // Recharger les soumissions pending avec le bon filtre sensible
       window._vcl_appendPendingToIndices?.();

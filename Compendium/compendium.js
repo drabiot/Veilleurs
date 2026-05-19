@@ -1454,6 +1454,18 @@ function initCompendium() {
   document.querySelector('.glossary-subtitle').innerHTML =
     '// BASE DE DONNÉES · VEILLEURS AU CLAIR DE LUNE &nbsp;·&nbsp; <span style="color:var(--gold);font-weight:600">' + ITEMS.length + '</span> items recensés';
 
+  // Mobile sidebar toggle
+  const _sidebar = document.querySelector('.glossary-sidebar');
+  const _backdrop = document.getElementById('sidebar-backdrop');
+  const _toggleBtn = document.getElementById('sidebar-toggle');
+  function _openSidebar()  { _sidebar?.classList.add('open');    _backdrop?.classList.add('open'); }
+  function _closeSidebar() { _sidebar?.classList.remove('open'); _backdrop?.classList.remove('open'); }
+  _toggleBtn?.addEventListener('click', _openSidebar);
+  _backdrop?.addEventListener('click', _closeSidebar);
+  _sidebar?.addEventListener('click', e => {
+    if (e.target.closest('.sidebar-item') && window.innerWidth <= 768) _closeSidebar();
+  });
+
   const { id: initId, quality: initQuality } = parseHash(window.location.hash);
   if (initId) {
     const target = ITEMS_BY_ID.get(initId);

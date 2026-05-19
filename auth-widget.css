@@ -88,6 +88,13 @@
   to   { transform: translateY(0);    opacity: 1; }
 }
 
+@media (max-width: 480px) {
+  .vcl-auth-modal-box {
+    padding: 20px 16px;
+    border-radius: 10px;
+  }
+}
+
 .vcl-auth-modal-logo {
   text-align: center;
   font-size: 26px;

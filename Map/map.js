@@ -1687,17 +1687,52 @@ window.addEventListener('mousemove', (e) => {
 });
 window.addEventListener('mouseup', () => { isPanning = false; mapViewport.style.cursor = VCL_CURSOR; });
 
+let _pinchDist = 0;
+function _getTouchDist(e) {
+  const dx = e.touches[0].clientX - e.touches[1].clientX;
+  const dy = e.touches[0].clientY - e.touches[1].clientY;
+  return Math.hypot(dx, dy);
+}
 mapViewport.addEventListener('touchstart', (e) => {
-  const t = e.touches[0]; isPanning = true; panLastX = t.clientX; panLastY = t.clientY;
+  if (e.touches.length === 2) {
+    isPanning = false;
+    _pinchDist = _getTouchDist(e);
+  } else {
+    const t = e.touches[0]; isPanning = true; panLastX = t.clientX; panLastY = t.clientY;
+  }
 }, { passive: true });
 mapViewport.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 2) {
+    e.preventDefault();
+    const dist = _getTouchDist(e);
+    if (_pinchDist > 0) {
+      const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const rect = mapViewport.getBoundingClientRect();
+      zoomFromPoint(mx - rect.left, my - rect.top, dist / _pinchDist);
+    }
+    _pinchDist = dist;
+    return;
+  }
   if (!isPanning) return;
   const t = e.touches[0];
   panOffset.x += t.clientX - panLastX; panOffset.y += t.clientY - panLastY;
   panLastX = t.clientX; panLastY = t.clientY;
   applyTransform();
-}, { passive: true });
-mapViewport.addEventListener('touchend', () => { isPanning = false; });
+}, { passive: false });
+mapViewport.addEventListener('touchend', (e) => {
+  if (e.touches.length < 2) _pinchDist = 0;
+  if (e.touches.length === 0) isPanning = false;
+});
+
+// Mobile sidebar toggle
+const _mapSidebar   = document.getElementById('map-sidebar');
+const _mapBackdrop  = document.getElementById('map-sidebar-backdrop');
+const _mapToggleBtn = document.getElementById('map-sidebar-toggle');
+function _openMapSidebar()  { _mapSidebar?.classList.add('open');    _mapBackdrop?.classList.add('open'); }
+function _closeMapSidebar() { _mapSidebar?.classList.remove('open'); _mapBackdrop?.classList.remove('open'); }
+_mapToggleBtn?.addEventListener('click', _openMapSidebar);
+_mapBackdrop?.addEventListener('click', _closeMapSidebar);
 
 /* ══════════════════════════════════
    CONTRÔLES MOLETTE ÉTAGES
