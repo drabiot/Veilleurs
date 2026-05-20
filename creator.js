@@ -1168,10 +1168,11 @@ function nameToId(name) {
 let idLocked = false; // true = ID a été fixé manuellement, ne pas écraser depuis le nom
 
 function _computeItemId() {
-  const name   = document.getElementById('f-name').value;
+  const name   = document.getElementById('f-name').value.replace(/\s*\[qualit[eé]\]\s*/gi, ' ').trim();
   const slug   = nameToId(name);
   const palier = document.getElementById('f-palier').value;
-  return (slug && palier) ? `${slug}_p${palier}` : slug;
+  const base   = (slug && palier) ? `${slug}_p${palier}` : slug;
+  return (selQualite && base) ? base.replace(/(_p\d+)$/, '_qualite$1') || (base + '_qualite') : base;
 }
 
 function toggleOcculte() {
@@ -1181,7 +1182,23 @@ function toggleOcculte() {
   update();
 }
 
+function toggleQualite() {
+  selQualite = !selQualite;
+  document.getElementById('qualite-btn').classList.toggle('active', selQualite);
+  if (!idLocked) document.getElementById('f-id').value = _computeItemId();
+  update();
+}
+
 function onNameInput() {
+  const raw = document.getElementById('f-name').value;
+  if (/\[qualit[eé]\]/i.test(raw)) {
+    const cat = document.getElementById('f-category').value;
+    const isCons = ['consommable', 'nourriture'].includes(cat);
+    if (isCons && !selQualite) {
+      selQualite = true;
+      document.getElementById('qualite-btn')?.classList.add('active');
+    }
+  }
   if (!idLocked) document.getElementById('f-id').value = _computeItemId();
   update();
 }
@@ -1391,10 +1408,10 @@ function onObtainTypeChange() {
     sel.id = 'obtain-event-select';
     sel.style.cssText = 'width:100%;height:38px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 10px;font-size:13px;font-family:inherit;outline:none;';
     sel.innerHTML = '<option value="">Chargement des events…</option>';
-    sel.addEventListener('change', () => { addBtn.disabled = !sel.value; });
+    sel.addEventListener('change', () => { if (sel.value) addObtainSource(); });
     container.appendChild(sel);
     addBtn.disabled = true;
-    addBtn.style.display = '';
+    addBtn.style.display = 'none';
     const _fetchFn = window._vcl_fetchEvents;
     if (_fetchFn) {
       _fetchFn().then(events => {
@@ -1882,6 +1899,14 @@ function onCatChange() {
   document.getElementById('extras-section').style.display    = hasExtras  ? '' : 'none';
   if (hasExtras) buildBuffGrid();
   document.getElementById('effects-section').style.display   = isCons   ? '' : 'none';
+  const qualiteBtn = document.getElementById('qualite-btn');
+  if (qualiteBtn) qualiteBtn.style.display = isCons ? '' : 'none';
+  if (!isCons && selQualite) { selQualite = false; qualiteBtn?.classList.remove('active'); }
+  if (isCons && !selQualite && /\[qualit[eé]\]/i.test(document.getElementById('f-name').value)) {
+    selQualite = true;
+    qualiteBtn?.classList.add('active');
+    if (!idLocked) document.getElementById('f-id').value = _computeItemId();
+  }
   document.getElementById('classes-field').style.display     = isEquip  ? '' : 'none';
   document.getElementById('twohanded-field').style.display      = isArme           ? '' : 'none';
   document.getElementById('rune-slots-field').style.display     = cat === 'armure' ? '' : 'none';
@@ -1907,6 +1932,7 @@ let selEvent     = false;
 let selTwoHanded = false;
 let selEvolutif  = false;
 let selOcculte   = false;
+let selQualite   = false;
 
 function toggleSensible() {
   selSensible = !selSensible;
@@ -2656,7 +2682,8 @@ function resetFormSilent() {
   _skipSave = true;
   document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel textarea').forEach(i => i.value = '');
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
-  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvent = false; selEvolutif = false; selOcculte = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
+  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvent = false; selEvolutif = false; selOcculte = false; selQualite = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
+  document.getElementById('qualite-btn')?.classList.remove('active');
   const _evSec = document.getElementById('evolutif-evolutions-section');
   if (_evSec) _evSec.style.display = 'none';
   const _evList = document.getElementById('evolutif-evolutions-list');
@@ -3685,6 +3712,15 @@ async function loadTableauDeChasse() {
   _chasseDocMap.clear();
   const groups = [];
 
+  const _pendingByMode = {
+    items:     window._vcl_pendingItems   || [],
+    mobs:      window._vcl_pendingMobs    || [],
+    pnj:       window._vcl_pendingPnjs    || [],
+    regions:   window._vcl_pendingRegions || [],
+    quetes:    window._vcl_pendingQuests  || [],
+    panoplies: [],
+  };
+
   for (const { mode, label, colName, disc } of _CHASSE_TYPES) {
     const ids = (tdcIds[mode] || []).filter(Boolean);
     if (!ids.length) continue;
@@ -3707,7 +3743,8 @@ async function loadTableauDeChasse() {
 
     for (const id of ids) {
       const d = allDocs.find(x => (x.id || x._id) === id);
-      if (!d) { cards.push({ id, name: id, missing: [], notFound: true }); continue; }
+      const hasPending = (_pendingByMode[mode] || []).some(s => s.data?.id === id);
+      if (!d) { cards.push({ id, name: id, missing: [], notFound: true, hasPending }); continue; }
 
       const normD = (!d.images?.length && (d.img || d.image))
         ? { ...d, images: [d.img || d.image].filter(Boolean) }
@@ -3726,10 +3763,25 @@ async function loadTableauDeChasse() {
       const name = d.name || d.titre || d.label || id;
       const modeCreator = { items:'item', mobs:'mob', pnj:'pnj', regions:'region', quetes:'quest', panoplies:'panoplie' }[mode] || mode;
       _chasseDocMap.set(`${mode}:${id}`, { data: d, modeCreator, name, missing });
-      cards.push({ id, name, missing });
+      cards.push({ id, name, missing, hasPending });
     }
 
     groups.push({ mode, label, cards });
+  }
+
+  // Auto-retrait des items dont tous les champs sont complétés
+  const setDocFn = window._vcl_setDoc;
+  const docFn    = window._vcl_doc;
+  let tdcModified = false;
+  const cleanedIds = {};
+  for (const { mode, cards } of groups) {
+    const original = tdcIds[mode] || [];
+    const stillNeeded = cards.filter(c => c.notFound || c.missing.length > 0).map(c => c.id);
+    cleanedIds[mode] = stillNeeded;
+    if (stillNeeded.length !== original.length) tdcModified = true;
+  }
+  if (tdcModified && setDocFn && docFn && db) {
+    try { await setDocFn(docFn(db, 'config', 'tableau_de_chasse'), cleanedIds); } catch {}
   }
 
   renderTableauDeChasse(groups);
@@ -3756,23 +3808,29 @@ function renderTableauDeChasse(groups) {
     header.textContent = `${label} (${cards.length})`;
     group.appendChild(header);
 
-    for (const { id, name, missing, notFound } of cards) {
+    for (const { id, name, missing, notFound, hasPending } of cards) {
       const card = document.createElement('div');
       card.className = 'chasse-card';
       const entry = _chasseDocMap.get(`${mode}:${id}`);
       const modeCreator = entry?.modeCreator || ({ items:'item', mobs:'mob', pnj:'pnj', regions:'region', quetes:'quest', panoplies:'panoplie' }[mode] || mode);
-      card.title = `Charger dans le formulaire`;
-      card.onclick = () => {
-        if (entry) {
-          _chasseOrigin = { mode, id, name, missing: entry.missing || [] };
-          switchMode(modeCreator);
-          loadFromData(entry.data, modeCreator);
-          _applyChasseHighlights();
-        } else {
-          switchMode(modeCreator);
-        }
-        switchTab('preview');
-      };
+
+      if (hasPending) {
+        card.title = 'Soumission en attente de modération';
+        card.style.cssText = 'opacity:0.65;cursor:not-allowed;';
+      } else {
+        card.title = 'Charger dans le formulaire';
+        card.onclick = () => {
+          if (entry) {
+            _chasseOrigin = { mode, id, name, missing: entry.missing || [] };
+            switchMode(modeCreator);
+            loadFromData(entry.data, modeCreator);
+            _applyChasseHighlights();
+          } else {
+            switchMode(modeCreator);
+          }
+          switchTab('preview');
+        };
+      }
 
       const nameEl = document.createElement('span');
       nameEl.className = 'chasse-name';
@@ -3781,7 +3839,13 @@ function renderTableauDeChasse(groups) {
 
       card.appendChild(nameEl);
 
-      if (missing.length) {
+      if (hasPending) {
+        const pendingEl = document.createElement('span');
+        pendingEl.className = 'chasse-missing';
+        pendingEl.textContent = '⏳ En attente de validation';
+        pendingEl.style.color = 'var(--warn, #d7af5f)';
+        card.appendChild(pendingEl);
+      } else if (missing.length) {
         const missingEl = document.createElement('span');
         missingEl.className = 'chasse-missing';
         missingEl.textContent = '⚠ ' + missing.join(', ');
@@ -4373,6 +4437,7 @@ function buildObj() {
   if (selEvolutif && evolutifEvolutions.length)  obj.evolutions  = evolutifEvolutions.map(e => e.id);
   if (selEvolutif && evolutifEvolvedFrom.length) obj.evolvedFrom = evolutifEvolvedFrom.map(e => e.id);
   if (selOcculte)                                obj.occulte     = true;
+  if (selQualite)                obj.quality  = true;
   const runeSlots = parseInt(document.getElementById('f-rune-slots').value);
   if (runeSlots > 0)             obj.rune_slots = runeSlots;
   if (selSensible)               obj.sensible  = true;
@@ -4446,7 +4511,7 @@ function validateForm() {
   if (isEquip && !lvl)    warnings.push({ field:'f-lvl',    msg:'Niveau requis non renseigné' });
   const craftCount = getCraft().length;
   const craftCd    = document.getElementById('f-craft-cd')?.value.trim();
-  if (craftCount > 0 && !craftCd) errors.push({ field:'f-craft-cd', msg:'CD de craft obligatoire (ex: 24h, aucun)' });
+  if (craftCount > 0 && !craftCd) warnings.push({ field:'f-craft-cd', msg:'CD de craft recommandé (ex: 24h, aucun)' });
 
   return { errors, warnings };
 }
@@ -5312,7 +5377,7 @@ async function submitToDiscord() {
   }
 
   let { errors, warnings } = validateForm();
-  if (errors.length || warnings.length) {
+  if (errors.length) {
     const filled = await _promptMissingFields(errors, warnings);
     if (!filled) return;
     // Re-valider après remplissage
@@ -7470,13 +7535,16 @@ async function loadCreatorLeaderboard() {
     try {
       const snap = await getDocs(col(db, colName));
       for (const d of snap.docs) {
-        const c = d.data()._contributor;
-        if (!c) continue;
-        const name = c.name || null;
-        if (!name || /^invit[ée]?$/i.test(name.trim())) continue;
-        const key = c.uid || ('__' + name);
-        if (!byKey[key]) byKey[key] = { name, uid: c.uid || null, count: 0 };
-        byKey[key].count++;
+        const data = d.data();
+        const raw = data._contributor;
+        const contribs = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+        for (const c of contribs) {
+          const name = c.name || null;
+          if (!name || /^invit[ée]?$/i.test(name.trim())) continue;
+          const key = c.uid || ('__' + name);
+          if (!byKey[key]) byKey[key] = { name, uid: c.uid || null, count: 0 };
+          byKey[key].count++;
+        }
       }
     } catch {}
   }

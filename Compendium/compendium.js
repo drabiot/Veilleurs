@@ -39,7 +39,7 @@ function currentItems() {
 	});
   const filtered = q.length >= 1
     ? ITEMS.filter(item =>
-        fuzzyMatch(norm, item.name || item.quality?.name || '', item.sensible === true) ||
+        fuzzyMatch(norm, item.name || '', item.sensible === true) ||
         fuzzyMatch(norm, item.lore  || '', item.sensible === true) ||
         fuzzyMatch(norm, catData(item.category).label || '', item.sensible === true) ||
         (item.tags || []).some(t => t != null && fuzzyMatch(norm, String(t), item.sensible === true))
@@ -859,22 +859,23 @@ function renderUsedIn(itemId) {
 ══════════════════════════════════ */
 
 function isQualityOnly(item) {
-  return !!item.quality && !item.lore && !item.obtain;
+  return item.quality === true;
 }
 
-function resolveMedia(item, qualityMode = false) {
-  if (item.model) return [item.model];
-  
-  if (qualityMode && item.quality?.images?.length) {
-    return item.quality.images;
-  }
-  
-  // Fallback : images de base, ou images qualité si pas de base
-  const baseImages = getItemImages(item); // ta fonction existante
-  if (baseImages.length) return baseImages;
-  if (item.quality?.images?.length) return item.quality.images;
-  
-  return [];
+function getQualityItemId(normalId) {
+  const m = normalId.match(/^(.+?)(_p\d+)$/);
+  return m ? `${m[1]}_qualite${m[2]}` : `${normalId}_qualite`;
+}
+
+function getNormalItemId(qualityId) {
+  return qualityId.replace(/_qualite(_p\d+)$/, '$1').replace(/_qualite$/, '');
+}
+
+function resolveMedia(activeItem) {
+  if (!activeItem) return [];
+  if (activeItem.model) return [activeItem.model];
+  const imgs = getItemImages(activeItem);
+  return imgs.length ? imgs : [];
 }
 
 /* Formate une durée en secondes vers une chaîne lisible :
@@ -1030,6 +1031,15 @@ function bindCraftLinks() {
       history.pushState({ item: targetId }, '', `#${targetId}`);
     });
   });
+  document.querySelectorAll('.set-item-link[data-id]').forEach(link => {
+    link.addEventListener('click', () => {
+      const targetId = link.dataset.id;
+      if (targetId) {
+        showItem(targetId);
+        history.pushState({ item: targetId }, '', `#${targetId}`);
+      }
+    });
+  });
 }
 
 function bindCraftTabs() {
@@ -1170,6 +1180,52 @@ function bindSlideshowButtons(color, name) {
   startSlideshow(color, name);
 }
 
+function renderSetSection(item) {
+  if (!item.set) return '';
+  const setDef = SETS?.[item.set];
+  if (!setDef) return '';
+  const color = setDef.color || '#888';
+
+  const setItems = (ITEMS || []).filter(i => i.set === item.set && i.quality !== true);
+  const itemLinks = setItems.map(i => {
+    const isActive = String(i.id) === String(item.id);
+    const c = rarityColor(i.rarity);
+    return `<span class="set-item-link${isActive ? ' set-item-active' : ''}" data-id="${escHtml(String(i.id))}"
+      style="${isActive ? `color:${color};border-color:${color};background:${color}18;` : `color:${c};border-color:${c}30;`}"
+      title="${escHtml(i.name)}">${escHtml(i.name)}</span>`;
+  }).join('');
+
+  const statLookup = Object.fromEntries((ALL_STATS || []).map(s => [s.id, s]));
+  // Structure Firestore : {"2": {"sante": 50, "degats": 30}, "4": {...}}
+  // Clé = nombre de pièces, valeur = {statId: number}
+  const bonusEntries = Object.entries(setDef.bonuses || {})
+    .sort((a, b) => +a[0] - +b[0]);
+  const bonusRows = bonusEntries.map(([piecesStr, stats]) => {
+    const count = parseInt(piecesStr) || 0;
+    const statsHtml = Object.entries(stats || {}).map(([statId, val]) => {
+      const sd = statLookup[statId];
+      const label = sd ? `${sd.icon} ${sd.label}` : statId;
+      const unit  = sd?.unit || '';
+      const display = Array.isArray(val)
+        ? `+${val[0]}–${val[1]}${unit}`
+        : `+${val}${unit}`;
+      return `<div>${escHtml(label)} <span class="set-bonus-val" style="color:${color};">${display}</span></div>`;
+    }).join('');
+    return `<tr>
+      <td class="set-bonus-pieces" style="color:${color};">${count} pièce${count > 1 ? 's' : ''}</td>
+      <td class="set-bonus-stat">${statsHtml}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="item-sep"></div>
+    <div class="item-section-title" style="color:${color};">◈ ${escHtml(setDef.label)}</div>
+    <div class="item-set-section">
+      <div class="set-items-list">${itemLinks}</div>
+      ${bonusRows ? `<table class="set-bonuses-table">${bonusRows}</table>` : ''}
+    </div>`;
+}
+
 function showItem(id, initialQuality = false) {
   const item = ITEMS_BY_ID.get(id);
   if (!item) return;
@@ -1183,30 +1239,39 @@ function showItem(id, initialQuality = false) {
     el.classList.toggle('active', el.dataset.id === _activeDataId);
   });
 
-  const qualityOnly = isQualityOnly(item);
-  const hasQuality  = !!item.quality;
-
-  // Si qualité uniquement → on force le mode qualité, pas de toggle
-  let qualityMode = qualityOnly ? true : (initialQuality && hasQuality);
-
-  function getVariant() {
-    if (qualityMode && item.quality) {
-      return {
-        lore:   item.quality.lore   ?? item.lore,
-        obtain: item.quality.obtain ?? item.obtain,
-      };
-    }
-    return { lore: item.lore, obtain: item.obtain };
+  // Item qualitatif chargé directement → rediriger vers le normal en mode qualité
+  if (item.quality === true) {
+    const normalId   = getNormalItemId(id);
+    const normalItem = ITEMS_BY_ID.get(normalId);
+    if (normalItem) { showItem(normalId, true); return; }
   }
 
-  function getCraft() {
-    if (qualityMode && item.quality) return item.quality.craft ?? item.craft ?? null;
-    return item.craft ?? null;
+  const qualityItemId = getQualityItemId(id);
+  let qualityItem = ITEMS_BY_ID.get(qualityItemId) || null;
+
+  // Compat anciens items : quality encore stocké comme objet embedded (avant migration)
+  if (!qualityItem && item.quality && typeof item.quality === 'object') {
+    qualityItem = {
+      ...item,
+      id:      qualityItemId,
+      quality: true,
+      name:    item.quality.name    || item.name,
+      lore:    item.quality.lore    ?? item.lore,
+      obtain:  item.quality.obtain  ?? item.obtain,
+      craft:   item.quality.craft   ?? item.craft,
+      effects: item.quality.effects ?? item.effects,
+      images:  item.quality.images  ?? item.images,
+    };
   }
 
-  // ── Media : dépend du mode actif
+  const hasQuality = !!qualityItem;
+  let qualityMode     = initialQuality && hasQuality;
+
+  function activeData() { return (qualityMode && qualityItem) ? qualityItem : item; }
+  function getVariant() { const d = activeData(); return { lore: d.lore, obtain: d.obtain }; }
+  function getCraft()   { return activeData().craft ?? null; }
   function refreshMedia() {
-    _slideMedia  = resolveMedia(item, qualityMode);
+    _slideMedia  = resolveMedia(activeData());
     _slideIndex  = 0;
     _slidePaused = false;
   }
@@ -1218,8 +1283,7 @@ function showItem(id, initialQuality = false) {
   const cdata  = catData(item.category);
   const hasSlideshow = _slideMedia.length > 1;
 
-  // Toggle uniquement si l'item a les deux versions
-  const showToggle = hasQuality && !qualityOnly;
+  const showToggle = hasQuality;
 
   const slideshowControls = hasSlideshow ? `
     <div class="slideshow-controls">
@@ -1248,9 +1312,10 @@ function showItem(id, initialQuality = false) {
     </div>` : '';
 
   const v = getVariant();
+  const d = activeData();
   const itemStatsHtml = renderItemStats(item);
-  const currentEffects = (qualityMode && item.quality?.effects) ? item.quality.effects : (item.effects ?? null);
-  const hasRow = item.craft || item.effects || item.quality?.craft || item.quality?.effects || itemStatsHtml;
+  const currentEffects = d.effects ?? null;
+  const hasRow = item.craft || item.effects || qualityItem?.craft || qualityItem?.effects || itemStatsHtml;
 
   itemDisplay.innerHTML = `
     <div class="item-sheet">
@@ -1265,12 +1330,13 @@ function showItem(id, initialQuality = false) {
           ${slideshowControls}
         </div>
         <div class="item-info">
-          <h2 class="item-name" id="item-name-text">${escHtml(item.quality?.name && qualityMode ? item.quality.name : item.name)}${item.sensible ? ' <span style="font-size:13px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}</h2>
+          <h2 class="item-name" id="item-name-text">${escHtml(d.name || item.name)}${item.sensible ? ' <span style="font-size:13px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}</h2>
           <div class="item-rarity-badge" style="color:${color}; border-color:${color};">
             <span class="item-rarity-dot" style="background:${color};"></span>
             ${rlabel}
           </div>
           ${item.palier != null ? `<div style="font-size:11px;color:var(--muted);opacity:.65;margin-top:3px;letter-spacing:.04em;">⬡ Palier ${item.palier}</div>` : ''}
+          ${item.set && SETS?.[item.set] ? `<div class="item-set-badge" style="color:${SETS[item.set].color || '#888'};border-color:${SETS[item.set].color || '#888'}40;">◈ ${escHtml(SETS[item.set].label)}</div>` : ''}
           ${qualityToggle}
           <blockquote class="item-lore" id="item-lore-text">${parseText(v.lore)}</blockquote>
         </div>
@@ -1293,16 +1359,18 @@ function showItem(id, initialQuality = false) {
       </div>` : ''}
       <div class="item-sep"></div>
       ${renderUsedIn(item.id)}
+      ${renderSetSection(item)}
       <div class="item-tags">
         ${(item.tags || []).map(t => `<span class="item-tag">${t}</span>`).join('')}
       </div>
     </div>`;
 
+  window._vclLogItemView?.(id, item.name);
   bindCraftLinks();
   bindCraftTabs();
   bindEntityLinks();
 
-  // ── Toggle Normal / Qualité (seulement si les deux versions existent)
+  // ── Toggle Normal / Qualité
   if (showToggle) {
     const switchBtn = document.getElementById('qt-switch');
     const loreEl    = document.getElementById('item-lore-text');
@@ -1318,26 +1386,21 @@ function showItem(id, initialQuality = false) {
       labelQual.classList.toggle('qt-active',  qualityMode);
       history.replaceState({ item: id, quality: qualityMode }, '', qualityMode ? `#${id}-quality` : `#${id}`);
 
-      const v = getVariant();
-      loreEl.innerHTML   = parseText(v.lore);
-      obtainEl.innerHTML = parseText(v.obtain);
+      const d2 = activeData();
+      const v2 = getVariant();
+      loreEl.innerHTML   = parseText(v2.lore);
+      obtainEl.innerHTML = parseText(v2.obtain);
       const nameEl = document.getElementById('item-name-text');
-      if (nameEl) nameEl.textContent = (qualityMode && item.quality?.name) ? item.quality.name : item.name;
+      if (nameEl) nameEl.textContent = d2.name || item.name;
       craftWrap.innerHTML = renderCraft(getCraft());
 
       const effectsWrap = document.getElementById('item-effects-wrap');
-      if (effectsWrap) {
-        effectsWrap.innerHTML = renderEffects(
-          (qualityMode && item.quality?.effects) ? item.quality.effects : (item.effects ?? null)
-        );
-      }
+      if (effectsWrap) effectsWrap.innerHTML = renderEffects(d2.effects ?? null);
 
-      // ── Recharger les images selon la version active
       stopSlideshow();
       stopWebGL();
       refreshMedia();
       if (_slideMedia.length > 0) renderMedia(_slideMedia[0], color, item.name);
-      // Reconstruire les dots si le nb d'images change
       rebuildSlideshowUI(color, item.name);
 
       bindCraftLinks();
@@ -1350,7 +1413,6 @@ function showItem(id, initialQuality = false) {
       applyToggleState();
     });
 
-    // État initial
     if (qualityMode) applyToggleState();
     else labelNorm.classList.add('qt-active');
   }
@@ -1389,9 +1451,16 @@ function showItem(id, initialQuality = false) {
    RECHERCHE
 ══════════════════════════════════ */
 
+let _searchLogTimer = null;
 searchInput.addEventListener('input', () => {
   const expandAll = currentSort === 'palier';
   buildSidebar(currentItems(), expandAll);
+  // Log search query après 1.5s de pause (évite de logger chaque frappe)
+  clearTimeout(_searchLogTimer);
+  _searchLogTimer = setTimeout(() => {
+    const term = searchInput.value.trim();
+    if (term.length >= 2) window._vclLogSearchQuery?.(term);
+  }, 1500);
 });
 
 /* ══════════════════════════════════
@@ -1421,13 +1490,11 @@ function initCompendium() {
   ITEMS_BY_ID.clear();
   for (const it of ITEMS) {
     ITEMS_BY_ID.set(it.id, it);
-    if (it.quality && it.quality.id) ITEMS_BY_ID.set(it.quality.id, it);
   }
   CRAFTED_BY.clear();
   for (const item of ITEMS) {
     const craftLists = [];
     if (item.craft) craftLists.push(item.craft);
-    if (item.quality?.craft) craftLists.push(item.quality.craft);
     for (const craftList of craftLists) {
       if (!craftList || !craftList.length) continue;
       const isNewFmt = !Array.isArray(craftList[0]) && craftList[0].items !== undefined;

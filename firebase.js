@@ -130,9 +130,15 @@ export async function logout() {
   return signOut(auth);
 }
 
-/** Enregistre une visite de page — au plus une fois par heure par section (localStorage). Ignoré pour les admins. */
+/** Enregistre une visite de page.
+ *  - 1 session = 30 min d'inactivité max (localStorage pv_session_last).
+ *  - page_views/site_YYYY-MM-DD : incrémenté une seule fois par session (compteur global de visites).
+ *  - user_visits : section trackée au plus une fois par heure (pour répartition par outil).
+ *  - Ignoré pour les admins.
+ */
+const _PV_SESSION_TTL = 30 * 60 * 1000;
+
 export async function logPageView(section) {
-  // Attendre que l'état d'auth soit résolu (auth.currentUser peut être null au chargement initial)
   const user = await new Promise(resolve => {
     const unsub = onAuthStateChanged(auth, u => { unsub(); resolve(u); });
   });
@@ -144,19 +150,53 @@ export async function logPageView(section) {
     }
     if (role === 'admin') return;
   }
-  const key = 'pv_' + section;
-  const last = parseInt(localStorage.getItem(key) || '0');
-  if (Date.now() - last < 60 * 60 * 1000) return;
-  localStorage.setItem(key, String(Date.now()));
+
+  const now   = Date.now();
   const today = new Date().toISOString().slice(0, 10);
   const hour  = new Date().getHours();
-  try {
-    const ref = doc(db, 'page_views', section + '_' + today);
-    await setDoc(ref, { section, date: today, count: increment(1) }, { merge: true });
-    await updateDoc(ref, { [`hours.${hour}`]: increment(1) });
-  } catch { /* silently fail */ }
 
-  // Tracking par utilisateur
+  // Session : nouvelle session si inactivité > 30 min
+  const lastActivity = parseInt(localStorage.getItem('pv_session_last') || '0');
+  const isNewSession = now - lastActivity >= _PV_SESSION_TTL;
+  localStorage.setItem('pv_session_last', String(now));
+
+  // Incrémenter le compteur global de visites (une fois par session)
+  if (isNewSession) {
+    try {
+      const ref = doc(db, 'page_views', 'site_' + today);
+      await setDoc(ref, { section: 'site', date: today, count: increment(1) }, { merge: true });
+      await updateDoc(ref, { [`hours.${hour}`]: increment(1) });
+    } catch { /* silently fail */ }
+  }
+
+  // Tracking par section dans user_visits (au plus une fois par heure par section)
+  const sectionKey = 'pv_' + section;
+  const lastSection = parseInt(localStorage.getItem(sectionKey) || '0');
+  const isNewSectionVisit = now - lastSection >= 60 * 60 * 1000;
+  if (isNewSectionVisit) localStorage.setItem(sectionKey, String(now));
+
+  // Session depth : sections visitées dans la session courante
+  let sessionSections = new Set((localStorage.getItem('pv_session_sections') || '').split(',').filter(Boolean));
+  if (isNewSession) {
+    const prevDepth = sessionSections.size;
+    sessionSections = new Set();
+    // Écriture de la profondeur de la session précédente
+    if (prevDepth > 0) {
+      try {
+        const visId = user?.uid || sessionStorage.getItem('vcl_anon_id');
+        if (visId) {
+          await setDoc(doc(db, 'user_visits', visId),
+            { totalSessions: increment(1), totalSectionVisits: increment(prevDepth) },
+            { merge: true });
+        }
+      } catch {}
+    }
+  }
+  sessionSections.add(section);
+  localStorage.setItem('pv_session_sections', [...sessionSections].join(','));
+
+  if (!isNewSectionVisit) return;
+
   try {
     let visitorId, pseudo, isAnonymous;
     if (user) {
@@ -173,16 +213,72 @@ export async function logPageView(section) {
       pseudo = 'Anonyme';
       isAnonymous = true;
     }
+
+    // firstSeen : une seule fois par visiteur (flag localStorage)
+    const firstSeenKey = 'pv_fs_' + String(visitorId).slice(0, 16);
+    const isFirstSeen  = !localStorage.getItem(firstSeenKey);
+    if (isFirstSeen) localStorage.setItem(firstSeenKey, today);
+
+    // Appareil
+    const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+
     const uvRef = doc(db, 'user_visits', visitorId);
     await setDoc(uvRef, {
       pseudo,
       isAnonymous,
-      total: increment(1),
       [`sections.${section}`]: increment(1),
       lastSeen: today,
+      [`devices.${device}`]:   increment(1),
+      ...(isFirstSeen && { firstSeen: today }),
     }, { merge: true });
   } catch { /* silently fail */ }
 }
+
+/** Log une vue d'item dans le compendium — rate-limited 1/hr par item. */
+export async function logItemView(itemId, itemName) {
+  if (!itemId) return;
+  const key  = 'iv_' + String(itemId);
+  const last = parseInt(localStorage.getItem(key) || '0');
+  const now  = Date.now();
+  if (now - last < 60 * 60 * 1000) return;
+  localStorage.setItem(key, String(now));
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const ref = doc(db, 'item_views', String(itemId) + '_' + today);
+    await setDoc(ref, { itemId: String(itemId), name: itemName || '', date: today, count: increment(1) }, { merge: true });
+  } catch {}
+}
+
+/** Log un terme recherché dans le compendium — rate-limited 1/5min par terme. */
+export async function logSearchQuery(term) {
+  if (!term || term.length < 2) return;
+  const normalized = term.toLowerCase().trim().slice(0, 50);
+  const safeKey = normalized.replace(/[^a-z0-9]/g, '_');
+  const key  = 'sq_' + safeKey;
+  const last = parseInt(localStorage.getItem(key) || '0');
+  const now  = Date.now();
+  if (now - last < 5 * 60 * 1000) return;
+  localStorage.setItem(key, String(now));
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const ref = doc(db, 'search_logs', safeKey + '_' + today);
+    await setDoc(ref, { term: normalized, date: today, count: increment(1) }, { merge: true });
+  } catch {}
+}
+
+/** Log un rapport bug/suggestion envoyé via le widget — collection reports. */
+export async function logReport(pseudo, page, text) {
+  try {
+    await addDoc(collection(db, 'reports'), {
+      pseudo: pseudo || 'Anonyme',
+      page:   page   || '',
+      text:   String(text || '').slice(0, 300),
+      createdAt: serverTimestamp(),
+    });
+  } catch {}
+}
+// Exposé globalement pour report-widget.js (script non-module)
+window._vclLogReport = logReport;
 
 // ── Data helpers ─────────────────────────────────────
 

@@ -18,7 +18,7 @@
   color: #f5cc6a;
 }
 .vcl-report-overlay {
-  position: fixed;
+  position: fixed !important;
   inset: 0;
   background: rgba(0,0,0,0.65);
   backdrop-filter: blur(6px);

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/png" href="img/VeilleursLogo.png" />
+<title>[VCL] — Générateur de Cartes</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="auth-widget.css" />
+<link rel="stylesheet" href="card-generator.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-left">
+      <div class="traffic-lights">
+        <span class="tl tl-red"></span>
+        <span class="tl tl-yellow"></span>
+        <span class="tl tl-green"></span>
+      </div>
+      <span class="header-sep">─────</span>
+      <a href="index.html" class="header-logo">Veilleurs au Clair de Lune</a>
+    </div>
+    <div class="header-right" id="auth-widget-mount"></div>
+  </div>
+</header>
+
+<!-- ══════════ MAIN ══════════ -->
+<main class="card-gen-wrap">
+
+  <h1 class="card-gen-title">Générateur de Cartes</h1>
+  <p class="card-gen-sub">Items · Rechercher → Prévisualiser → Exporter</p>
+
+  <div class="search-wrapper">
+    <input
+      id="search-input"
+      type="text"
+      placeholder="Chargement…"
+      autocomplete="off"
+      disabled
+    />
+    <div id="search-dropdown" class="search-dropdown hidden"></div>
+  </div>
+
+  <div class="card-preview">
+    <canvas id="card-canvas"></canvas>
+    <div id="empty-state">Recherchez un item pour prévisualiser sa carte</div>
+  </div>
+
+  <div class="card-actions">
+    <button id="btn-download" disabled>⬇ Download PNG</button>
+    <button id="btn-discord" disabled>🔗 Post Discord</button>
+    <button id="btn-reset-webhook" class="btn-reset" title="Réinitialiser l'URL du webhook Discord">↺ Webhook</button>
+  </div>
+
+</main>
+
+<!-- Classic scripts (globals disponibles pour les modules ES) -->
+<script src="utils.js"></script>
+<script src="Compendium/data.js"></script>
+<script>
+  // Bridge : expose les constantes data.js aux modules ES via window
+  window._VCL_DATA = {
+    STAT_GROUPS: typeof STAT_GROUPS !== 'undefined' ? STAT_GROUPS : [],
+    CATEGORIES:  typeof CATEGORIES  !== 'undefined' ? CATEGORIES  : {},
+    EFFECT_META: typeof EFFECT_META !== 'undefined' ? EFFECT_META : {},
+    CLASSES:     typeof CLASSES     !== 'undefined' ? CLASSES     : [],
+    ALL_SLOTS:   typeof ALL_SLOTS   !== 'undefined' ? ALL_SLOTS   : [],
+  };
+</script>
+<script type="module" src="auth-widget.js"></script>
+<script type="module" src="card-generator.js"></script>
+
+</body>
+</html>

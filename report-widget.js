@@ -48,6 +48,15 @@
 
       try {
         const page = window.location.pathname.split('/').pop() || 'index.html';
+        // auth-widget.js (wiki) expose _vcl_uid + #vcl-user-pseudo
+        // creator.html expose _vcl_auth.currentUser directement
+        let pseudo = 'Anonyme';
+        if (window._vcl_uid) {
+          pseudo = document.getElementById('vcl-user-pseudo')?.textContent?.trim() || 'Utilisateur';
+        } else if (window._vcl_auth?.currentUser) {
+          const u = window._vcl_auth.currentUser;
+          pseudo = u.displayName || u.email?.split('@')[0] || 'Utilisateur';
+        }
         const res = await fetch(REPORT_WEBHOOK, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -56,6 +65,7 @@
               title: 'Bug / Suggestion',
               description: text,
               color: 15251531,
+              author: { name: pseudo },
               footer: { text: page }
             }]
           })
@@ -65,6 +75,7 @@
           throw new Error('HTTP ' + res.status + (body ? ' — ' + body : ''));
         }
         statusEl.textContent = 'Envoyé !';
+        window._vclLogReport?.(pseudo, page, text);
         textEl.value = '';
         setTimeout(close, 1200);
       } catch (err) {

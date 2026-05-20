@@ -1,0 +1,203 @@
+/* ══════════════════════════════════════════════════════
+   CARD GENERATOR — UI styles (mobile-first)
+   Template canvas = 800×430, not styled here (drawn via JS)
+══════════════════════════════════════════════════════ */
+
+/* ── Page layout ──────────────────────────────────── */
+.card-gen-wrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.5rem 1rem 3rem;
+  gap: 1.5rem;
+}
+
+.card-gen-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.2rem;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.card-gen-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: -1rem 0 0;
+  text-align: center;
+}
+
+/* ── Search ───────────────────────────────────────── */
+.search-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+}
+
+#search-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--rim2);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  padding: 0.6rem 1rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+#search-input:focus {
+  border-color: var(--gold-dim);
+}
+
+#search-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#search-input::placeholder {
+  color: var(--muted);
+}
+
+/* ── Dropdown ─────────────────────────────────────── */
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--surface2);
+  border: 1px solid var(--rim2);
+  border-top: none;
+  z-index: 100;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.search-dropdown.hidden {
+  display: none;
+}
+
+.search-result {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--rim);
+  transition: background 0.1s;
+}
+
+.search-result:last-child {
+  border-bottom: none;
+}
+
+.search-result:hover {
+  background: var(--surface);
+}
+
+.sr-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.sr-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ── Canvas preview ───────────────────────────────── */
+.card-preview {
+  width: 100%;
+  max-width: 800px;
+  min-height: 180px;
+  position: relative;
+  border: 1px solid var(--rim);
+  background: var(--deep);
+  overflow-x: auto;
+}
+
+#card-canvas {
+  display: none;
+  max-width: 100%;
+  /* height est fixée en JS via canvas.style.height — pas de height: auto ici */
+}
+
+#empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 180px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+}
+
+/* ── Action buttons ───────────────────────────────── */
+.card-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.card-actions button {
+  background: var(--surface);
+  border: 1px solid var(--rim2);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  padding: 0.5rem 1.2rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.card-actions button:hover:not(:disabled) {
+  border-color: var(--gold-dim);
+  color: var(--bright);
+}
+
+.card-actions button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-reset {
+  border-color: var(--rim) !important;
+  color: var(--muted) !important;
+  font-size: 0.72rem !important;
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 480px) {
+  .card-gen-wrap {
+    padding: 1rem 0.5rem 2rem;
+  }
+
+  .card-gen-title {
+    font-size: 1rem;
+  }
+
+  .card-preview {
+    border-left: none;
+    border-right: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .card-gen-title {
+    font-size: 1.4rem;
+  }
+
+  .card-gen-wrap {
+    padding: 2rem 2rem 4rem;
+    gap: 2rem;
+  }
+}
