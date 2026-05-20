@@ -222,6 +222,7 @@
             <button id="event-btn"     class="r-btn" style="--c:#a855f7;width:fit-content;"  onclick="toggleEvent()">🎊 Event</button>
             <button id="evolutif-btn"  class="r-btn" style="--c:#60a5fa;width:fit-content;"  onclick="toggleEvolutif()">🔄 Évolutif</button>
             <button id="occulte-btn"   class="r-btn" style="--c:#e8d44a;width:fit-content;"  onclick="toggleOcculte()" title="Marque l'item comme occulte (occulte: true) et génère un ID de forme nom_p{palier} (ex: amulette_occulte_p1) pour distinguer les paliers">✦ Occulte</button>
+            <button id="qualite-btn"  class="r-btn" style="--c:#34d399;width:fit-content;display:none;" onclick="toggleQualite()" title="Marque cet item comme version qualité d'un consommable (quality: true) — génère un ID avec suffixe _qualite">✦ Qualité</button>
           </div>
         </div>
 
@@ -388,8 +389,8 @@
         <div id="craft-list" style="display:flex;flex-direction:column;gap:8px;"></div>
         <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:4px" onclick="addCraft()">+ Ajouter un ingrédient</button>
         <div class="field" id="craft-cd-row" style="display:none;margin-top:10px;">
-          <label>⏱ CD de craft <span style="color:var(--danger)">*</span></label>
-          <input type="text" id="f-craft-cd" placeholder="ex: 24h, 7j, aucun" oninput="update()">
+          <label>⏱ CD de craft</label>
+          <input type="text" id="f-craft-cd" placeholder="ex: 5m, 2h, 1j,..." oninput="update()">
           <div class="field-hint">Délai avant de pouvoir recrafter cet item. Mettez « aucun » si pas de restriction.</div>
         </div>
       </div>

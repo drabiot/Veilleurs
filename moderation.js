@@ -1035,6 +1035,24 @@ function _addCreatorBtn(row, creatorType, data) {
   editBtn.parentNode.insertBefore(btn, editBtn);
 }
 
+// Lit _contributor depuis un doc Firestore — toujours retourne un array (compat vieux format objet)
+function _readContribs(data) {
+  const c = data?._contributor;
+  if (!c) return [];
+  return Array.isArray(c) ? c : [c];
+}
+
+// Fusionne des contributeurs existants avec un nouveau — dedup par uid puis par name, retourne array
+function _mergeContributors(existing, newContrib) {
+  const result = [...existing];
+  const alreadyIn = result.some(c =>
+    (newContrib.uid && c.uid === newContrib.uid) ||
+    (!newContrib.uid && c.name === newContrib.name)
+  );
+  if (!alreadyIn) result.push(newContrib);
+  return result.length ? result : [newContrib];
+}
+
 // ── Approve ───────────────────────────────────────────
 window.approve = async (id) => {
   const sub     = allSubs.find(s => s._id === id);
@@ -1079,23 +1097,27 @@ window.approve = async (id) => {
         else                          secret[k]   = v;
       }
       // Modification : préserver les champs items_secret non soumis (ex: craft absent du formulaire)
+      let _secretExistContribs = [];
       if (sub.isModification) {
         try {
           const existingSecret = await getDoc(doc(db, COL.itemsSecret, String(dataId)));
           if (existingSecret.exists()) {
-            for (const [k, v] of Object.entries(existingSecret.data())) {
+            const ed = existingSecret.data();
+            for (const [k, v] of Object.entries(ed)) {
               if (k.startsWith('_') || k === 'sensible') continue;
               if (!(k in secret)) secret[k] = v;
             }
+            _secretExistContribs = _readContribs(ed);
           }
         } catch {}
       }
+      const _secretMerged = _mergeContributors(_secretExistContribs, _contribField);
       const nameHash = await hashName(sub.data.name);
       if (!nameHash) throw new Error('Nom manquant pour hash');
       // Écriture atomique : les deux docs créés ensemble ou pas du tout
       const batch = writeBatch(db);
       batch.set(doc(db, COL.itemsHidden, nameHash), sanitizeForFirestore({ ...gameplay, nameHash, sensible: true }));
-      batch.set(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore({ ...secret, _contributor: _contribField, sensible: true }));
+      batch.set(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore({ ...secret, _contributor: _secretMerged, sensible: true }));
       await batch.commit();
       // Nettoyer toute version publique existante
       try { await deleteDoc(doc(db, COL.items, String(dataId))); } catch {}
@@ -1103,25 +1125,42 @@ window.approve = async (id) => {
       setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: 'items' }, { merge: true }).catch(() => {});
     } else if (sub.type === 'mob' && isSensible) {
       // Mob sensible → doc complet dans mobs_secret, jamais dans mobs
-      const payload = { _order: Date.now(), _contributor: _contribField, ...sub.data, sensible: true };
+      let _mobExistContribs = [];
+      if (sub.isModification) {
+        try {
+          const es = await getDoc(doc(db, COL.mobsSecret, String(dataId)));
+          if (es.exists()) _mobExistContribs = _readContribs(es.data());
+        } catch {}
+      }
+      const _mobMerged = _mergeContributors(_mobExistContribs, _contribField);
+      const payload = { _order: Date.now(), _contributor: _mobMerged, ...sub.data, sensible: true };
       await setDoc(doc(db, COL.mobsSecret, String(dataId)), sanitizeForFirestore(payload));
       try { await deleteDoc(doc(db, COL.mobs, String(dataId))); } catch {}
       store.invalidate('mobs');
       setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: 'mobs' }, { merge: true }).catch(() => {});
     } else if (sub.type === 'pnj' && isSensible) {
       // PNJ sensible → doc complet dans pnj_secret, jamais dans personnages
-      const payload = { _order: Date.now(), _contributor: _contribField, ...sub.data, sensible: true };
+      let _pnjExistContribs = [];
+      if (sub.isModification) {
+        try {
+          const es = await getDoc(doc(db, COL.pnjSecret, String(dataId)));
+          if (es.exists()) _pnjExistContribs = _readContribs(es.data());
+        } catch {}
+      }
+      const _pnjMerged = _mergeContributors(_pnjExistContribs, _contribField);
+      const payload = { _order: Date.now(), _contributor: _pnjMerged, ...sub.data, sensible: true };
       await setDoc(doc(db, COL.pnjSecret, String(dataId)), sanitizeForFirestore(payload));
       try { await deleteDoc(doc(db, COL.pnj, String(dataId))); } catch {}
       store.invalidate('pnj');
       setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: 'personnages' }, { merge: true }).catch(() => {});
     } else {
       // Flux standard
-      let dataToWrite = { _order: Date.now(), ...sub.data, _contributor: _contribField };
+      let dataToWrite = { _order: Date.now(), ...sub.data };
       // Panoplie : couleur par défaut si absente (définie par la modération côté liste)
       if (sub.type === 'panoplie' && !dataToWrite.color) dataToWrite.color = '#b87333';
 
-      // Pour une modification : préserver l'ordre et les images du doc existant
+      // Pour une modification : préserver l'ordre, les images et les contributeurs existants
+      let _stdExistContribs = [];
       if (sub.isModification) {
         try {
           const existingSnap = await getDoc(doc(db, target, String(dataId)));
@@ -1131,11 +1170,13 @@ window.approve = async (id) => {
             if (existing.ordre  != null) dataToWrite.ordre  = existing.ordre;
             if (existing.images?.length) dataToWrite.images = existing.images;
             else if (existing.image)     dataToWrite.image  = existing.image;
+            _stdExistContribs = _readContribs(existing);
           } else {
             toast(`⚠️ Modification approuvée comme nouvel ajout — "${dataId}" n'existait pas encore.`, 'warning', 6000);
           }
         } catch {}
       }
+      dataToWrite._contributor = _mergeContributors(_stdExistContribs, _contribField);
 
       await setDoc(doc(db, target, String(dataId)), dataToWrite);
 
@@ -2887,7 +2928,14 @@ async function loadDeadLinks() {
       return true;
     });
 
-    _deadLinksSnapshot = { deduped, ENTITY_POOL };
+    // Map "srcType|srcId" → palier (number) pour la désambiguïsation auto
+    const SRC_PALIER = new Map();
+    for (const e of [...items, ...hiddenItems]) if (e.id) SRC_PALIER.set(`item|${e.id}`, e.palier || 1);
+    for (const e of mobs)   if (e.id) SRC_PALIER.set(`mob|${e.id}`,   e.palier || 1);
+    for (const e of pnjs)   if (e.id) SRC_PALIER.set(`pnj|${e.id}`,   e.palier || 1);
+    for (const e of quetes) if (e.id) SRC_PALIER.set(`quête|${e.id}`, e.palier || 1);
+
+    _deadLinksSnapshot = { deduped, ENTITY_POOL, SRC_PALIER };
 
     listEl.innerHTML = '';
     if (!deduped.length) {
@@ -3086,17 +3134,32 @@ async function loadDeadLinks() {
   }
 }
 
-const _DEAD_LINK_COL = { item: 'items', mob: 'mobs', 'quête': 'quetes' };
+const _DEAD_LINK_COL = { item: 'items', mob: 'mobs', 'quête': 'quetes', pnj: 'personnages' };
 
 // Applique UN fix sur data (mutates) — pur, sans I/O
 function _applyPatchToData(data, b, newId) {
   if (b.field === 'craft') {
-    const craft = JSON.parse(JSON.stringify(data.craft || []));
-    for (const c of craft) {
+    // PNJ craft peut être un objet {0:{…},1:{…}} au lieu d'un array
+    const craftRaw = data.craft;
+    const isObj = craftRaw && !Array.isArray(craftRaw) && typeof craftRaw === 'object';
+    const craftArr = JSON.parse(JSON.stringify(isObj ? Object.values(craftRaw) : (craftRaw || [])));
+    for (const c of craftArr) {
       if (c.id === b.refId) c.id = newId;
-      for (const ing of (c.items || [])) if (ing.id === b.refId) ing.id = newId;
+      // items = format item/quête, ingredients = format PNJ
+      for (const ing of [...(c.items || []), ...(c.ingredients || [])]) if (ing.id === b.refId) ing.id = newId;
     }
-    data.craft = craft;
+    data.craft = isObj ? Object.fromEntries(craftArr.map((c, i) => [String(i), c])) : craftArr;
+
+  } else if (b.field === 'craft.ingredient') {
+    const craftRaw = data.craft;
+    const isObj = craftRaw && !Array.isArray(craftRaw) && typeof craftRaw === 'object';
+    const craftArr = JSON.parse(JSON.stringify(isObj ? Object.values(craftRaw) : (craftRaw || [])));
+    for (const c of craftArr)
+      for (const ing of (c.ingredients || [])) if (ing.id === b.refId) ing.id = newId;
+    data.craft = isObj ? Object.fromEntries(craftArr.map((c, i) => [String(i), c])) : craftArr;
+
+  } else if (b.field === 'sells') {
+    data.sells = (data.sells || []).map(s => s.id === b.refId ? { ...s, id: newId } : s);
 
   } else if (b.field.startsWith('obtain')) {
     data.obtain = (data.obtain || '').replace(/\[([^\]|]+)\|([^\]]+)\]/g, (match, ref, lbl) => {
@@ -3161,7 +3224,7 @@ window._autoFixDeadLinks = async function() {
     toast('Aucun lien mort chargé', 'error');
     return;
   }
-  const { deduped, ENTITY_POOL } = _deadLinksSnapshot;
+  const { deduped, ENTITY_POOL, SRC_PALIER } = _deadLinksSnapshot;
   const autoBtn   = document.getElementById('dead-links-auto-btn');
   const progWrap  = document.getElementById('dead-links-progress');
   const progBar   = document.getElementById('dead-links-progress-bar');
@@ -3180,30 +3243,83 @@ window._autoFixDeadLinks = async function() {
   setProgress(0, deduped.length, 'Analyse…');
 
   // ── Phase 1 : résoudre les correspondances (pur, sans I/O) ──────────
-  const fixes = []; // { b, newId, colName }
+  // Scoring par précision d'ID — plus fiable que fuzzy sur les noms.
+  // Score 90 : pool_id = dead_id + suffix court (_p1, _v2…)  → suffix renaming
+  // Score 80 : dead_id = pool_id + suffix court              → dead avait un suffixe retiré
+  // Score 70 : même relation avec suffixe ≤ 8 chars
+  // Score 60 : même relation avec suffixe ≤ 8 chars (direction inverse)
+  // Score 30 : substring (guard : IDs ≥ 6 chars, ambigus → jamais auto-fixé seul)
+  function _dlIdScore(normDeadId, normPoolId) {
+    if (normDeadId === normPoolId) return 100;
+    if (normPoolId.startsWith(normDeadId + '_')) {
+      const sfx = normPoolId.slice(normDeadId.length + 1);
+      if (sfx.length <= 3) return 90;
+      if (sfx.length <= 8) return 70;
+      return 0;
+    }
+    if (normDeadId.startsWith(normPoolId + '_') && normPoolId.length >= 4) {
+      const sfx = normDeadId.slice(normPoolId.length + 1);
+      if (sfx.length <= 3) return 80;
+      if (sfx.length <= 8) return 60;
+      return 0;
+    }
+    if (normDeadId.length >= 6 && normPoolId.length >= 6 && normPoolId.includes(normDeadId)) return 30;
+    return 0;
+  }
+
+  const fixes = []; // { b, newId, colName, confidence }
   let skipped = 0;
   for (const b of deduped) {
     const colName = _DEAD_LINK_COL[b.srcType];
     if (!colName) { skipped++; continue; }
-    const pool = ENTITY_POOL[b.targetType] || [];
-    const normWords = b.refId.replace(/_/g, ' ');
-    const normId    = normalize(b.refId);
-    let results = pool.filter(e => {
-      const eId = normalize(e.id);
-      return fuzzyMatch(normWords, e.search || e.name)
-          || eId.includes(normId)
-          || normId.includes(eId);
-    });
-    if (results.length !== 1 && b.srcName) {
-      const normSrc = normalize(b.srcName);
-      const fb = pool.filter(e =>
-        normalize(e.search || e.name).includes(normSrc) || normalize(e.id).includes(normSrc)
-      );
-      if (fb.length === 1) results = fb;
+    const pool    = ENTITY_POOL[b.targetType] || [];
+    const normId  = normalize(b.refId);
+
+    // Scorer tous les candidats par ID
+    const scored = pool
+      .map(e => ({ e, score: _dlIdScore(normId, normalize(e.id)) }))
+      .filter(x => x.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    let resolved = null;
+    if (scored.length) {
+      const best = scored[0];
+      const tied = scored.filter(x => x.score === best.score);
+      // Unique meilleur candidat à haute confiance
+      if (tied.length === 1 && best.score >= 70) {
+        resolved = best.e.id;
+      // Unique meilleur à confiance moyenne ET écart net sur le 2e
+      } else if (tied.length === 1 && best.score >= 60 && (scored.length < 2 || best.score - scored[1].score >= 20)) {
+        resolved = best.e.id;
+      // Tie entre variants _p{N} : utiliser le palier de l'entité source
+      } else if (!resolved && tied.length > 1 && best.score >= 70) {
+        const srcPalier = SRC_PALIER?.get(`${b.srcType}|${b.srcId}`);
+        if (srcPalier) {
+          const palierKey = normId + '_p' + srcPalier;
+          const palierMatch = tied.find(x => normalize(x.e.id) === palierKey);
+          if (palierMatch) resolved = palierMatch.e.id;
+        }
+      }
     }
-    if (results.length === 1) fixes.push({ b, newId: results[0].id, colName });
+
+    // Fallback : correspondance de nom normalisé exacte seulement (pas fuzzy)
+    if (!resolved) {
+      const normWords = normalize(b.refId.replace(/_/g, ' '));
+      const nameExact = pool.filter(e => normalize(e.search || e.name || '') === normWords);
+      if (nameExact.length === 1) resolved = nameExact[0].id;
+    }
+
+    if (resolved) fixes.push({ b, newId: resolved, colName });
     else skipped++;
   }
+
+  console.log('[deadlinks] fixes:', fixes.length, '| skipped:', skipped,
+    '| sample skip:', deduped.slice(0, 3).map(b => ({
+      srcType: b.srcType, refId: b.refId, targetType: b.targetType,
+      hasColName: !!_DEAD_LINK_COL[b.srcType],
+      poolSize: (ENTITY_POOL[b.targetType] || []).length,
+    }))
+  );
 
   if (!fixes.length) {
     if (autoBtn) { autoBtn.disabled = false; autoBtn.textContent = '⚡ Auto-corriger tout'; }
@@ -4260,117 +4376,13 @@ function _renderFormFields(data, col, ns) {
   }).join('');
 }
 
-function _renderQualityFields(qualityData, col) {
-  if (!qualityData || typeof qualityData !== 'object') return '';
-
-  // Affiche tous les champs présents dans quality comme un form normal
-  const entries = Object.entries(qualityData).sort(([ak, av], [bk, bv]) => {
-    const ia = _GEN_FIELD_ORDER.indexOf(ak), ib = _GEN_FIELD_ORDER.indexOf(bk);
-    const ta = _typeOf(av), tb = _typeOf(bv);
-    const cxa = ta === 'array' || ta === 'map', cxb = tb === 'array' || tb === 'map';
-    if (ia !== -1 && ib !== -1) return ia - ib;
-    if (ia !== -1) return -1;
-    if (ib !== -1) return 1;
-    if (cxa && !cxb) return 1;
-    if (!cxa && cxb) return -1;
-    return ak.localeCompare(bk);
-  });
-
-  if (!entries.length) return '<div style="font-size:12px;color:var(--muted);padding:6px 0;font-style:italic;">Aucun champ qualité défini.</div>';
-
-  return entries.map(([key, val]) => {
-    const t = _typeOf(val);
-    return `<div class="ed-gen-row ed-quality-row" data-gf-orig-key="${_ee(key)}" data-gf-ns="quality">
-      <div class="ed-gen-keycell">
-        <span class="ed-gen-keylbl" style="cursor:default;">${_ee(key)}</span>
-      </div>
-      <span class="ed-gen-type" style="color:${_typeColor(t)};">${_typeLabel(t)}</span>
-      <div class="ed-gen-val">${_genValueHtml(key, val, col)}</div>
-      <span></span>
-    </div>`;
-  }).join('');
-}
-
 window.edSwitchTab = function(tab) {
   document.querySelectorAll('.ed-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  document.getElementById('ed-tab-base').style.display    = tab === 'base'    ? '' : 'none';
-  document.getElementById('ed-tab-quality').style.display = tab === 'quality' ? '' : 'none';
-
-  // Recalculer la hauteur des textareas du panneau maintenant visible
-  const activeScope = tab === 'quality' ? '#ed-tab-quality' : '#ed-tab-base';
-  document.querySelectorAll(`${activeScope} .ed-json-ta, ${activeScope} .ed-textarea`).forEach(ta => {
+  document.getElementById('ed-tab-base').style.display = tab === 'base' ? '' : 'none';
+  document.querySelectorAll(`#ed-tab-base .ed-json-ta, #ed-tab-base .ed-textarea`).forEach(ta => {
     ta.style.height = 'auto';
     ta.style.height = ta.scrollHeight + 'px';
   });
-};
-
-window.edCreateQuality = function() {
-  const tabsEl  = document.querySelector('.ed-tabs');
-  const draftBtn = tabsEl.querySelector('.ed-tab-create-quality');
-  if (draftBtn) {
-    draftBtn.outerHTML = `<button type="button" class="ed-tab-btn" data-tab="quality"
-      onclick="edSwitchTab('quality')">✦ Qualité</button>`;
-  }
-
-  const qualityPanel = document.getElementById('ed-tab-quality');
-  qualityPanel.innerHTML = `
-    <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">
-      Version qualité vide — utilisez <b>＋ Ajouter un champ</b> pour définir les overrides.
-    </p>
-    <div id="ed-gen-fields-quality" style="display:flex;flex-direction:column;gap:4px;"></div>
-    <button type="button" onclick="edAddGenFieldQuality()" class="btn btn-ghost"
-            style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ qualité</button>
-    <button type="button" onclick="edRemoveQuality()" class="btn btn-ghost"
-            style="font-size:12px;padding:6px 14px;margin-top:16px;color:var(--danger);border-color:var(--danger);">
-      🗑 Supprimer la version qualité
-    </button>`;
-
-  _initFormExtras('#ed-tab-quality');
-  edSwitchTab('quality');
-};
-
-window.edAddGenFieldQuality = function() {
-  const container = document.getElementById('ed-gen-fields-quality');
-  if (!container) return;
-  const row = document.createElement('div');
-  row.className = 'ed-gen-row ed-quality-row ed-gen-newrow';
-  row.dataset.gfNs = 'quality';
-  row.innerHTML = `
-    <input class="ed-gen-new-key ed-input" placeholder="nom_du_champ" style="font-family:monospace;font-size:12px;">
-    <select class="ed-gen-new-type ed-input" style="font-size:11px;padding:5px 4px;">
-      <option value="string">str</option>
-      <option value="number">int</option>
-      <option value="bool">bool</option>
-      <option value="json">array/map</option>
-    </select>
-    <div class="ed-gen-val">
-      <input class="ed-input" data-gf-type="string" placeholder="valeur…">
-    </div>
-    <button type="button" class="ed-gen-delbtn" onclick="edDelGenRow(this)" title="Annuler">✕</button>`;
-
-  const typeSelect = row.querySelector('.ed-gen-new-type');
-  const valDiv     = row.querySelector('.ed-gen-val');
-  typeSelect.addEventListener('change', () => {
-    const t = typeSelect.value;
-    if (t === 'bool') {
-      valDiv.innerHTML = `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0;">
-        <input type="checkbox" data-gf-type="bool" style="accent-color:var(--accent);width:15px;height:15px;">
-        <span class="ed-gen-bool-txt" style="font-size:12px;color:var(--muted);">false</span>
-      </label>`;
-      valDiv.querySelector('input').addEventListener('change', function() {
-        this.closest('label').querySelector('.ed-gen-bool-txt').textContent = this.checked ? 'true' : 'false';
-      });
-    } else if (t === 'json') {
-      valDiv.innerHTML = `<textarea class="ed-json-ta" data-gf-type="json" spellcheck="false" placeholder="[] ou {}" style="min-height:50px;"></textarea>`;
-    } else if (t === 'number') {
-      valDiv.innerHTML = `<input class="ed-input" type="number" data-gf-type="number" placeholder="0">`;
-    } else {
-      valDiv.innerHTML = `<input class="ed-input" data-gf-type="string" placeholder="valeur…">`;
-    }
-  });
-
-  container.appendChild(row);
-  row.querySelector('.ed-gen-new-key').focus();
 };
 
 window.edAddGenField = function() {
@@ -4469,65 +4481,16 @@ function _buildGenericForm(data, col) {
 
   _editorOrigData = { ...data };
 
-  // Séparer les données base vs quality
-  const { quality: qualityData, ...baseData } = data;
-  const hasQuality   = qualityData != null && typeof qualityData === 'object';
-  const qualityOnly  = hasQuality && isQualityOnly(data);
+  const { quality: _qualityData, ...baseData } = data;
 
-  // Si qualité uniquement → on injecte un onglet base vide mais on affiche quality par défaut
-  const defaultTab   = qualityOnly ? 'quality' : 'base';
-
-  // Si c'est pas un item, on rend le form générique classique sans onglets
-  if (col !== 'items') {
-    return `
+  return `
+    <div id="ed-tab-base" class="ed-tab-panel">
       <div id="ed-gen-fields" style="display:flex;flex-direction:column;gap:4px;">
         ${_renderFormFields(baseData, col, '')}
       </div>
       <datalist id="ed-dl-sets"></datalist>
       <button type="button" onclick="edAddGenField()" class="btn btn-ghost"
-              style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ</button>`;
-  }
-
-  // ── Onglets Normal / Qualité ───────────────────────
-  const qualityTabBtn = hasQuality
-    ? `<button type="button" class="ed-tab-btn" data-tab="quality" onclick="edSwitchTab('quality')">✦ Qualité</button>`
-    : `<button type="button" class="ed-tab-btn ed-tab-create-quality" onclick="edCreateQuality()"
-              style="color:var(--muted);border-style:dashed;">＋ Ajouter version qualité</button>`;
-
-  return `
-    <div class="ed-tabs" style="display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--border);padding-bottom:8px;">
-      <button type="button" class="ed-tab-btn ${defaultTab === 'base' ? 'active' : ''}" data-tab="base" onclick="edSwitchTab('base')">Normal</button>
-      ${qualityTabBtn}
-    </div>
-
-    <!-- Panneau Base -->
-    <div id="ed-tab-base" class="ed-tab-panel">
-      <div id="ed-gen-fields" style="display:flex;flex-direction:column;gap:4px;">
-        ${_renderFormFields(baseData, col, 'base')}
-      </div>
-      <datalist id="ed-dl-sets"></datalist>
-      <button type="button" onclick="edAddGenField()" class="btn btn-ghost"
               style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ</button>
-    </div>
-
-    <!-- Panneau Qualité -->
-    <div id="ed-tab-quality" class="ed-tab-panel" style="display:none;">
-      ${hasQuality ? `
-        <p style="font-size:11px;color:var(--muted);margin:0 0 10px;">
-          Seuls les champs renseignés ici <strong>remplacent</strong> la version normale.
-          Les champs vides héritent de la version normale.
-        </p>
-        <div id="ed-gen-fields-quality" style="display:flex;flex-direction:column;gap:4px;">
-          ${_renderQualityFields(qualityData, col)}
-        </div>
-        <button type="button" onclick="edAddGenFieldQuality()" class="btn btn-ghost"
-          style="font-size:12px;padding:6px 14px;margin-top:10px;">＋ Ajouter un champ qualité</button>
-        <button type="button" onclick="edRemoveQuality()" ...>
-        <button type="button" onclick="edRemoveQuality()" class="btn btn-ghost"
-                style="font-size:12px;padding:6px 14px;margin-top:16px;color:var(--danger);border-color:var(--danger);">
-          🗑 Supprimer la version qualité
-        </button>
-      ` : ''}
     </div>`;
 }
 
@@ -4540,10 +4503,8 @@ function _collectGenericForm() {
   const allRows = document.querySelectorAll('.ed-gen-row, .ed-gen-newrow');
   const _criticalFields = new Set(['palier', 'region', 'category', 'rarity']);
   allRows.forEach(row => {
-    if (row.closest('#ed-tab-quality')) return; // On saute si c'est dans l'onglet qualité
     const data = _innerExtract(row);
     if (data) {
-      // Préserver les champs critiques si la valeur collectée est vide/null mais qu'on avait une valeur originale
       if (_criticalFields.has(data.key) && (data.value === null || data.value === '') && _editorOrigData?.[data.key] != null) {
         result[data.key] = _editorOrigData[data.key];
       } else {
@@ -4551,24 +4512,6 @@ function _collectGenericForm() {
       }
     }
   });
-
-  // 2. On traite la QUALITÉ uniquement si l'onglet est présent
-  const qPanel = document.getElementById('ed-tab-quality');
-  if (qPanel) {
-    // On initialise l'objet quality (fusion)
-    const newQ = { ...(result.quality || {}) };
-    
-    qPanel.querySelectorAll('.ed-quality-row').forEach(row => {
-      const data = _innerExtract(row);
-      if (data) {
-        if (data.value === "" || data.value === null) delete newQ[data.key];
-        else newQ[data.key] = data.value;
-      }
-    });
-
-    if (Object.keys(newQ).length > 0) result.quality = newQ;
-    else delete result.quality;
-  }
 
   return result;
 }
@@ -4911,7 +4854,7 @@ window.saveEditor = async function() {
     const rawNewId = (newData.id != null ? String(newData.id).trim() : '');
     const newDocId = rawNewId || _editorId;
 
-    const _editorContrib = _editorOrigData?._contributor || null;
+    const _editorContribs = _readContribs(_editorOrigData);
     const _selfContrib = currentUser
       ? { uid: currentUser.uid, name: _userNames.get(currentUser.uid) || currentUser.displayName || currentUser.email || 'Inconnu' }
       : null;
@@ -4924,8 +4867,9 @@ window.saveEditor = async function() {
       }
       const currentSnap = await getDoc(doc(db, _editorCollection, _editorId));
       const existing = currentSnap.exists() ? currentSnap.data() : {};
-      const contributor = existing._contributor || _editorContrib || _selfContrib;
-      await setDoc(doc(db, _editorCollection, newDocId), { ...existing, ...newData, id: newDocId, ...( contributor ? { _contributor: contributor } : {}) });
+      const existContribs = _readContribs(existing);
+      const contribs = existContribs.length ? existContribs : _editorContribs;
+      await setDoc(doc(db, _editorCollection, newDocId), { ...existing, ...newData, id: newDocId, ...(contribs.length ? { _contributor: contribs } : {}) });
       await deleteDoc(doc(db, _editorCollection, _editorId));
       _editorCacheRename(_editorCollection, _editorId, newDocId, newData);
       _editorId = newDocId;
@@ -4941,7 +4885,11 @@ window.saveEditor = async function() {
         }
       });
 
-      if (!_editorContrib && _selfContrib) patch._contributor = _selfContrib;
+      if (!_editorContribs.length && _selfContrib) {
+        patch._contributor = [_selfContrib];
+      } else if (_editorContribs.length) {
+        patch._contributor = _editorContribs; // préserver sans ajouter l'éditeur admin
+      }
 
       // Nettoyage pour Firestore (évite les undefined/null selon tes besoins)
       await updateDoc(doc(db, _editorCollection, _editorId), sanitizeForFirestore(patch));
@@ -8766,22 +8714,211 @@ window.showStatistiques = function() {
   loadStatistiques();
 };
 
+function _buildStatsExtra({ userVisits, itemViewDocs, searchLogDocs, recentReports, itemsRaw, fmt, fmtTime, byHour }) {
+  let html = '';
+
+  // ── 1. Nouveaux vs visiteurs de retour ─────────────
+  const today = new Date().toISOString().slice(0, 10);
+  const newVisitors      = userVisits.filter(u => !u.isAnonymous && u.firstSeen === today).length;
+  const returningVisitors = userVisits.filter(u => !u.isAnonymous && u.firstSeen && u.firstSeen !== today).length;
+  const totalMembers      = userVisits.filter(u => !u.isAnonymous).length;
+  const newPct   = totalMembers ? Math.round(newVisitors / totalMembers * 100) : 0;
+  const retPct   = totalMembers ? Math.round(returningVisitors / totalMembers * 100) : 0;
+
+  html += `<div class="stats-section">
+    <div class="stats-section-title">Membres — nouveaux vs retour</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;">
+      <div class="stats-kpi-card" style="--kpi-color:#4ade80;flex:1;min-width:110px;">
+        <div class="stats-kpi-icon">🆕</div>
+        <div class="stats-kpi-val">${fmt(newVisitors)}</div>
+        <div class="stats-kpi-lbl">Nouveaux aujourd'hui</div>
+      </div>
+      <div class="stats-kpi-card" style="--kpi-color:#60a5fa;flex:1;min-width:110px;">
+        <div class="stats-kpi-icon">🔄</div>
+        <div class="stats-kpi-val">${fmt(returningVisitors)}</div>
+        <div class="stats-kpi-lbl">De retour</div>
+      </div>
+      <div class="stats-kpi-card" style="--kpi-color:#a78bfa;flex:1;min-width:110px;">
+        <div class="stats-kpi-icon">👥</div>
+        <div class="stats-kpi-val">${fmt(totalMembers)}</div>
+        <div class="stats-kpi-lbl">Membres connus</div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── 2. Appareils (mobile vs desktop) ───────────────
+  let mobTotal = 0, deskTotal = 0;
+  for (const u of userVisits) {
+    mobTotal  += u.devices?.mobile  || 0;
+    deskTotal += u.devices?.desktop || 0;
+  }
+  const devTotal = mobTotal + deskTotal || 1;
+  const mobPct  = Math.round(mobTotal  / devTotal * 100);
+  const deskPct = Math.round(deskTotal / devTotal * 100);
+  if (mobTotal + deskTotal > 0) {
+    html += `<div class="stats-section">
+      <div class="stats-section-title">Appareils</div>
+      <div style="display:flex;gap:10px;align-items:center;font-size:12px;">
+        <span>📱 Mobile</span>
+        <div style="flex:1;background:var(--surface3);border-radius:4px;overflow:hidden;height:14px;">
+          <div style="width:${mobPct}%;height:100%;background:#60a5fa;"></div>
+        </div>
+        <span style="min-width:50px;text-align:right;">${fmt(mobTotal)} (${mobPct}%)</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;font-size:12px;margin-top:6px;">
+        <span>🖥️ Desktop</span>
+        <div style="flex:1;background:var(--surface3);border-radius:4px;overflow:hidden;height:14px;">
+          <div style="width:${deskPct}%;height:100%;background:#a78bfa;"></div>
+        </div>
+        <span style="min-width:50px;text-align:right;">${fmt(deskTotal)} (${deskPct}%)</span>
+      </div>
+    </div>`;
+  }
+
+  // ── 3. Profondeur de session (avg sections/session) ─
+  let totalSessions = 0, totalSectionVisits = 0;
+  for (const u of userVisits) {
+    totalSessions     += u.totalSessions     || 0;
+    totalSectionVisits += u.totalSectionVisits || 0;
+  }
+  if (totalSessions > 0) {
+    const avgDepth = (totalSectionVisits / totalSessions).toFixed(1);
+    html += `<div class="stats-section">
+      <div class="stats-section-title">Profondeur de session</div>
+      <div style="font-size:22px;font-weight:700;color:var(--accent);">${avgDepth}<span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:6px;">sections / session</span></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">${fmt(totalSessions)} sessions enregistrées</div>
+    </div>`;
+  }
+
+  // ── 4. Heatmap heure × jour de semaine ─────────────
+  const DAY_NAMES = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+  // byHour contient les totaux all-time; on ne peut pas décomposer par jour sans données
+  // On affiche une version simplifiée : heatmap 1D des heures (barres colorées)
+  const maxH = Math.max(...byHour, 1);
+  const heatCells = byHour.map((v, h) => {
+    const intensity = v / maxH;
+    const bg = `rgba(122,90,248,${(0.08 + intensity * 0.92).toFixed(2)})`;
+    return `<div title="${h}h : ${fmt(v)} visites" style="background:${bg};height:28px;border-radius:2px;flex:1;min-width:10px;"></div>`;
+  }).join('');
+  html += `<div class="stats-section">
+    <div class="stats-section-title">Heatmap activité par heure</div>
+    <div style="display:flex;gap:2px;align-items:flex-end;">${heatCells}</div>
+    <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:3px;"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>23h</span></div>
+  </div>`;
+
+  // ── 5. Top 10 items consultés ───────────────────────
+  if (itemViewDocs.length) {
+    const itemTotals = {};
+    for (const d of itemViewDocs) {
+      if (!d.itemId) continue;
+      if (!itemTotals[d.itemId]) itemTotals[d.itemId] = { name: d.name || d.itemId, count: 0 };
+      itemTotals[d.itemId].count += d.count || 0;
+    }
+    const top10 = Object.values(itemTotals).sort((a, b) => b.count - a.count).slice(0, 10);
+    const maxItem = top10[0]?.count || 1;
+    const itemRows = top10.map((it, i) => {
+      const pct = Math.round(it.count / maxItem * 100);
+      return `<div class="stats-sec-row">
+        <div class="stats-sec-label">${i + 1}. ${escHtml(it.name)}</div>
+        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${pct}%;background:#7a5af8">${fmt(it.count)}</div></div>
+      </div>`;
+    }).join('');
+    html += `<div class="stats-section">
+      <div class="stats-section-title">Top 10 items consultés (compendium)</div>
+      ${itemRows}
+    </div>`;
+  }
+
+  // ── 6. Top recherches ──────────────────────────────
+  if (searchLogDocs.length) {
+    const searchTotals = {};
+    for (const d of searchLogDocs) {
+      if (!d.term) continue;
+      searchTotals[d.term] = (searchTotals[d.term] || 0) + (d.count || 0);
+    }
+    const topSearches = Object.entries(searchTotals).sort((a, b) => b[1] - a[1]).slice(0, 15);
+    const searchTags = topSearches.map(([term, count]) =>
+      `<span style="display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:11px;white-space:nowrap;">
+        ${escHtml(term)} <span style="color:var(--accent);font-weight:700;">${fmt(count)}</span>
+      </span>`
+    ).join('');
+    html += `<div class="stats-section">
+      <div class="stats-section-title">Top recherches</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">${searchTags}</div>
+    </div>`;
+  }
+
+  // ── 7. Qualité du wiki ─────────────────────────────
+  if (itemsRaw.length) {
+    const total = itemsRaw.length;
+    const checks = [
+      { label: '🖼️ Avec image',    count: itemsRaw.filter(i => i.images?.length || i.img).length },
+      { label: '📖 Avec lore',     count: itemsRaw.filter(i => i.lore).length },
+      { label: '📍 Avec obtention',count: itemsRaw.filter(i => i.obtain).length },
+      { label: '🔨 Avec craft',    count: itemsRaw.filter(i => Array.isArray(i.craft) ? i.craft.length : i.craft).length },
+      { label: '📊 Avec stats',    count: itemsRaw.filter(i => i.stats && Object.keys(i.stats).length).length },
+    ];
+    const qualityRows = checks.map(c => {
+      const pct = Math.round(c.count / total * 100);
+      const color = pct >= 80 ? '#4ade80' : pct >= 50 ? '#fbbf24' : '#f87171';
+      return `<div class="stats-sec-row">
+        <div class="stats-sec-label">${c.label}</div>
+        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${pct}%;background:${color}">${c.count}/${total} (${pct}%)</div></div>
+      </div>`;
+    }).join('');
+    html += `<div class="stats-section">
+      <div class="stats-section-title">Qualité du wiki — ${fmt(total)} items</div>
+      ${qualityRows}
+    </div>`;
+  }
+
+  // ── 8. Rapports récents ────────────────────────────
+  if (recentReports.length) {
+    const repRows = recentReports.map(r => {
+      const ts = r.createdAt?.toDate?.() ? r.createdAt.toDate().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+      return `<div style="border:1px solid var(--border);background:var(--surface2);border-radius:6px;padding:8px 12px;margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-weight:700;font-size:12px;">${escHtml(r.pseudo || 'Anonyme')}</span>
+          <span style="font-size:10px;color:var(--muted);">${escHtml(r.page || '')} · ${escHtml(ts)}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim,#bbb);word-break:break-word;">${escHtml((r.text || '').slice(0, 200))}</div>
+      </div>`;
+    }).join('');
+    html += `<div class="stats-section">
+      <div class="stats-section-title">Rapports récents (10 derniers)</div>
+      ${repRows}
+    </div>`;
+  }
+
+  return html;
+}
+
 window.loadStatistiques = async function loadStatistiques() {
   const container = document.getElementById('stats-content');
   container.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const [pvSnap, loginSnap, uvSnap] = await Promise.all([
+    const [pvSnap, loginSnap, uvSnap, ivSnap, sqSnap, repSnap, itemsSnap] = await Promise.all([
       getDocs(collection(db, 'page_views')),
       getDocs(query(collection(db, 'audit_log'),
         where('action', '==', 'login'),
         orderBy('createdAt', 'desc'),
         limit(20))),
       getDocs(collection(db, 'user_visits')),
+      getDocs(collection(db, 'item_views')).catch(() => ({ docs: [] })),
+      getDocs(collection(db, 'search_logs')).catch(() => ({ docs: [] })),
+      getDocs(query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(10))).catch(() => ({ docs: [] })),
+      cachedDocs(COL.items).then(arr => ({ docs: arr.map(d => ({ data: () => d })) })).catch(() => ({ docs: [] })),
     ]);
 
-    const docs      = pvSnap.docs.map(d => d.data());
-    const logins    = loginSnap.docs.map(d => d.data());
+    const docs       = pvSnap.docs.map(d => d.data());
+    const logins     = loginSnap.docs.map(d => d.data());
     const userVisits = uvSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Axes supplémentaires
+    const itemViewDocs  = ivSnap.docs.map(d => d.data());
+    const searchLogDocs = sqSnap.docs.map(d => d.data());
+    const recentReports = repSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const itemsRaw      = itemsSnap.docs.map(d => d.data());
 
     if (!docs.length) {
       container.innerHTML = '<div class="empty">Aucune donnée — visitez les pages wiki pour générer des statistiques.</div>';
@@ -8794,25 +8931,35 @@ window.loadStatistiques = async function loadStatistiques() {
     const cutoff30 = new Date(today); cutoff30.setDate(today.getDate() - 30);
 
     let total = 0, total7 = 0, total30 = 0, totalToday = 0;
-    const byDate = {}, bySection = {}, byMonth = {};
+    const byDate = {}, byMonth = {};
     const byHour = Array(24).fill(0);
 
+    // KPI totals + hourly + daily : site_* docs (sessions) + anciens docs section (rétrocompat)
+    // Les site_* docs ont section='site', les anciens ont section=nom_outil
     for (const d of docs) {
-      const count   = d.count || 0;
-      const date    = d.date;
-      const section = d.section || 'inconnu';
+      const count = d.count || 0;
+      const date  = d.date;
       total += count;
       if (date === todayStr) totalToday += count;
       const dt = new Date(date + 'T00:00:00');
       if (dt >= cutoff7)  total7  += count;
       if (dt >= cutoff30) total30 += count;
       byDate[date] = (byDate[date] || 0) + count;
-      bySection[section] = (bySection[section] || 0) + count;
       const month = date.slice(0, 7);
       if (!byMonth[month]) byMonth[month] = {};
-      byMonth[month][section] = (byMonth[month][section] || 0) + count;
+      const monthSection = d.section || 'inconnu';
+      byMonth[month][monthSection] = (byMonth[month][monthSection] || 0) + count;
       if (d.hours) {
         for (let h = 0; h < 24; h++) byHour[h] += d.hours[h] || 0;
+      }
+    }
+
+    // Répartition par section depuis user_visits (plus fiable que page_views après migration)
+    const bySection = {};
+    for (const u of userVisits) {
+      if (!u.sections) continue;
+      for (const [s, c] of Object.entries(u.sections)) {
+        bySection[s] = (bySection[s] || 0) + (c || 0);
       }
     }
 
@@ -9032,7 +9179,8 @@ window.loadStatistiques = async function loadStatistiques() {
           <thead><tr><th>Mois</th>${thSections}<th style="text-align:right;">Total</th></tr></thead>
           <tbody>${monthRows}</tbody>
         </table>
-      </div>`;
+      </div>
+      ${_buildStatsExtra({userVisits, itemViewDocs, searchLogDocs, recentReports, itemsRaw, fmt, fmtTime, byHour})}`;
 
     // Clic sur ligne membre → historique audit
     container.querySelector('#stats-members-table')?.addEventListener('click', async e => {
@@ -9072,7 +9220,12 @@ window.loadStatistiques = async function loadStatistiques() {
         }).join('');
         detailPanel.innerHTML = `<div style="font-weight:700;margin-bottom:8px;">Actions de <span style="color:var(--accent,#7a5af8)">${escHtml(pseudo)}</span></div>${auditRows}`;
       } catch(e2) {
-        detailPanel.innerHTML = `<div style="color:var(--danger);">Erreur : ${escHtml(e2.message)}</div>`;
+        const isIndex = e2.message?.includes('index') || e2.message?.includes('Index');
+        const hint = isIndex
+          ? `<br><span style="font-size:10px;color:var(--muted);">Index Firestore manquant sur <code>audit_log (actorUid + createdAt)</code> — créer l'index dans la console Firebase.</span>`
+          : '';
+        detailPanel.innerHTML = `<div style="color:var(--danger);">Erreur : ${escHtml(e2.message)}${hint}</div>`;
+        console.error('[stats] audit_log query:', e2);
       }
     });
   } catch(e) {
@@ -9418,6 +9571,7 @@ const _CF_DEFS = {
   'quetes:zone':     { type:'dbselect', colName:'regions', labelKey:'name' },
   'pnj:type':        { type:'select', opts:[['marchand','🛒 Marchand'],['donneur_quete','📜 Donneur quête'],['forgeron','⚒️ Forgeron'],['aubergiste','🍺 Aubergiste'],['instructeur','📚 Instructeur'],['autre','❓ Autre']] },
   'pnj:region':      { type:'dbselect', colName:'regions', labelKey:'name' },
+  craft_cd:          { type:'text', placeholder:'ex: 24h, aucun' },
 };
 
 const _NUMERIC_CF_FIELDS = new Set(['palier','lvl','difficulty','rune_slots','ordre']);
@@ -9661,6 +9815,31 @@ window.loadCompletion = async () => {
     }
   } catch {}
 
+  // craft_cd — requis seulement si l'item a des ingrédients de craft
+  try {
+    const itemDocs = await cachedDocs(COL.items);
+    for (const r of _completionResults) {
+      if (r.colName === COL.items && Array.isArray(r.doc.craft) && r.doc.craft.length > 0
+          && (!r.doc.craft_cd || !String(r.doc.craft_cd).trim())) {
+        if (!r.missing.includes('craft_cd')) r.missing.push('craft_cd');
+      }
+    }
+    const coveredItemIds = new Set(
+      _completionResults.filter(r => r.colName === COL.items).map(r => r.doc.id || r.doc._id)
+    );
+    for (const item of itemDocs) {
+      const iid = item.id || item._id;
+      if (coveredItemIds.has(iid)) continue;
+      if (Array.isArray(item.craft) && item.craft.length > 0
+          && (!item.craft_cd || !String(item.craft_cd).trim())) {
+        _completionResults.push({
+          mode: 'items', colName: COL.items, doc: item,
+          missing: ['craft_cd'], discVal: item.category || null,
+        });
+      }
+    }
+  } catch {}
+
   // Badge sidebar (exclut les ignorés)
   const _activeCount = _completionResults.filter(r => !_completionIgnored?.[r.mode]?.has(r.doc.id || '')).length;
   const badge = document.getElementById('count-incomplete');
@@ -9743,8 +9922,8 @@ function _buildCompletionCard(mode, colName, d, missing, discVal, { ignored = fa
     ${!ignored && !hasPending ? `<button class="btn btn-ghost btn-sm" onclick="showEditor('${escHtml(colName)}','${escHtml(docId)}',null,'completion')" style="font-size:11px;flex-shrink:0;">✏️ Éditer</button>` : ''}
     ${!ignored && !hasPending && mode === 'items' ? `<button class="btn btn-ghost btn-sm" onclick="openCompletionInCreator('${escHtml(colName)}','${escHtml(docId)}')" style="font-size:11px;flex-shrink:0;" title="Ouvrir dans le Creator">⚙️ Creator</button>` : ''}
     ${!ignored
-      ? `<button class="btn btn-ghost btn-sm" onclick="window.ignoreCompletionDoc('${escHtml(mode)}','${escHtml(docId)}',this)" style="font-size:11px;flex-shrink:0;color:var(--muted);" title="Marquer comme exception — ne plus afficher dans À compléter">🚫 Ignorer</button>`
-      : `<button class="btn btn-ghost btn-sm" onclick="window.unignoreCompletionDoc('${escHtml(mode)}','${escHtml(docId)}',this)" style="font-size:11px;flex-shrink:0;" title="Réintégrer dans À compléter">↩️ Réactiver</button>`
+      ? `<button class="btn btn-ghost btn-sm" onclick="window.ignoreCompletionDoc('${escHtml(mode)}','${escHtml(docId)}',this)" style="font-size:11px;flex-shrink:0;color:var(--muted);" title="Marquer comme exception — ne plus afficher dans Tableau de Chasse">🚫 Ignorer</button>`
+      : `<button class="btn btn-ghost btn-sm" onclick="window.unignoreCompletionDoc('${escHtml(mode)}','${escHtml(docId)}',this)" style="font-size:11px;flex-shrink:0;" title="Réintégrer dans Tableau de Chasse">↩️ Réactiver</button>`
     }
   `;
   card.appendChild(headRow);
@@ -9999,6 +10178,7 @@ const QUALITY_FIELD_SCHEMA = {
     { id: 'stats',    label: 'Stats' },
     { id: 'effects',  label: 'Effets' },
     { id: 'cat',      label: 'Slot interne' },
+    { id: 'craft_cd', label: 'CD de craft' },
   ],
   mobs: [
     { id: 'name',   label: 'Nom' },
@@ -10355,7 +10535,7 @@ async function _loadItemDocsForImageCheck() {
   return [...pub, ...sensible];
 }
 
-// Ouvre le bon éditeur pour un item public ou sensible depuis la liste "À compléter".
+// Ouvre le bon éditeur pour un item public ou sensible depuis la liste "Tableau de chasse".
 window._openItemForCompletion = async function(key, sensible, origin) {
   if (!sensible) { showEditor('items', key, null, origin || 'completion'); return; }
   const [hidden, secret] = await Promise.all([
@@ -13282,16 +13462,23 @@ const _DATA_ALL_COLS = {
 };
 
 const _DATA_ALL_FLAGS = [
-  { key: 'evolutif',  label: '🔄 Évolutif',    types: ['item'],           filter: d => d.evolutif === true },
-  { key: 'event',     label: '🎊 Event',        types: ['item'],           filter: d => d.event === true },
-  { key: 'sensible',  label: '🔒 Sensible',     types: ['item','mob','pnj'], filter: d => d.sensible === true },
-  { key: 'boss',      label: '💀 Boss',         types: ['mob'],            filter: d => d.type === 'boss' },
-  { key: 'miniboss',  label: '⚔️ Mini-Boss',   types: ['mob'],            filter: d => d.type === 'miniboss' },
-  { key: 'codex',     label: '📖 Codex',        types: ['mob','region'],   filter: d => d.codex === true },
-  { key: 'sans_lore', label: '📖 Sans lore',    types: ['item','mob'],     filter: d => !d.lore },
-  { key: 'avec_craft',label: '🔨 Avec craft',   types: ['item'],           filter: d => Array.isArray(d.craft) && d.craft.length > 0 },
-  { key: 'avec_evo',  label: '🔀 Avec évolutions', types: ['item'],        filter: d => Array.isArray(d.evolutions) && d.evolutions.length > 0 },
-  { key: 'no_palier', label: '❓ Sans palier',  types: ['item','mob','pnj','region','quest'], filter: d => !d.palier },
+  { key: 'evolutif',   label: '🔄 Évolutif',      types: ['item'],                            filter: d => d.evolutif === true },
+  { key: 'event',      label: '🎊 Event',          types: ['item'],                            filter: d => d.event === true },
+  { key: 'sensible',   label: '🔒 Sensible',       types: ['item','mob','pnj'],                filter: d => d.sensible === true },
+  { key: 'boss',       label: '💀 Boss',           types: ['mob'],                             filter: d => d.type === 'boss' },
+  { key: 'miniboss',   label: '⚔️ Mini-Boss',     types: ['mob'],                             filter: d => d.type === 'miniboss' },
+  { key: 'codex',      label: '📖 Codex',          types: ['mob','region'],                    filter: d => d.codex === true },
+  { key: 'sans_lore',  label: '📖 Sans lore',      types: ['item','mob'],                      filter: d => !d.lore },
+  { key: 'avec_craft', label: '🔨 Avec craft',     types: ['item'],                            filter: d => Array.isArray(d.craft) && d.craft.length > 0 },
+  { key: 'avec_evo',   label: '🔀 Avec évolutions',types: ['item'],                            filter: d => Array.isArray(d.evolutions) && d.evolutions.length > 0 },
+  { key: 'no_palier',  label: '❓ Sans palier',    types: ['item','mob','pnj','region','quest'],filter: d => !d.palier },
+  { key: 'sans_image', label: '🖼️ Sans image',    types: ['item','mob'],                      filter: d => !d.images?.length },
+  { key: 'sans_obtain',label: '📍 Sans obtention', types: ['item'],                            filter: d => !d.obtain },
+  { key: 'sans_stats', label: '📊 Sans stats',     types: ['item'],                            filter: d => !d.stats && !d.buff },
+  { key: 'avec_set',   label: '◈ Avec set',        types: ['item'],                            filter: d => !!d.set },
+  { key: 'unique',     label: '✦ Unique',          types: ['item'],                            filter: d => !!d.unique },
+  { key: 'deux_mains', label: '⚔️⚔️ 2 mains',    types: ['item'],                            filter: d => !!d.twoHanded },
+  { key: 'avec_effets',label: '✨ Avec effets',    types: ['item','mob'],                      filter: d => Array.isArray(d.effects) && d.effects.length > 0 },
 ];
 
 window.showDataAll = async function() {
@@ -13402,9 +13589,11 @@ window.loadDataAll = async function() {
 window.onDataAllTypeChange = function() {
   _dataAllFlagSet = new Set();
   _buildDataAllChips();
-  const typeVal = document.getElementById('data-all-type')?.value || '';
-  const catSel  = document.getElementById('data-all-category');
-  if (catSel) catSel.style.display = (typeVal === 'item') ? '' : 'none';
+  const typeVal    = document.getElementById('data-all-type')?.value || '';
+  const catSel     = document.getElementById('data-all-category');
+  const raritySel  = document.getElementById('data-all-rarity');
+  if (catSel)    catSel.style.display    = (typeVal === 'item') ? '' : 'none';
+  if (raritySel) raritySel.style.display = (typeVal === 'item') ? '' : 'none';
   renderDataAll();
 };
 
@@ -13438,20 +13627,24 @@ window.renderDataAll = function() {
   const countEl   = document.getElementById('data-all-count');
   if (!listEl) return;
 
-  const searchQ    = normalize((document.getElementById('data-all-search')?.value || '').trim());
-  const typeFilter = document.getElementById('data-all-type')?.value   || '';
-  const palierFilter = document.getElementById('data-all-palier')?.value || '';
-  const catFilter  = document.getElementById('data-all-category')?.value || '';
-  const sortBy     = document.getElementById('data-all-sort')?.value    || 'name';
+  const searchQ      = normalize((document.getElementById('data-all-search')?.value || '').trim());
+  const typeFilter   = document.getElementById('data-all-type')?.value    || '';
+  const palierFilter = document.getElementById('data-all-palier')?.value  || '';
+  const catFilter    = document.getElementById('data-all-category')?.value || '';
+  const rarityFilter = document.getElementById('data-all-rarity')?.value  || '';
+  const sortBy       = document.getElementById('data-all-sort')?.value    || 'name';
 
   let results = _dataAllData;
 
   if (typeFilter)   results = results.filter(d => d._type === typeFilter);
   if (palierFilter) results = results.filter(d => String(d.palier) === palierFilter);
   if (catFilter)    results = results.filter(d => d.category === catFilter);
+  if (rarityFilter) results = results.filter(d => d._type === 'item' && d.rarity === rarityFilter);
   if (searchQ)      results = results.filter(d =>
     fuzzyMatch(searchQ, d.name || '') ||
-    fuzzyMatch(searchQ, d.id   || '')
+    fuzzyMatch(searchQ, d.id   || '') ||
+    (d.tags || []).some(t => fuzzyMatch(searchQ, t)) ||
+    (d.set  && fuzzyMatch(searchQ, d.set))
   );
 
   for (const flagKey of _dataAllFlagSet) {
@@ -13492,6 +13685,12 @@ window.renderDataAll = function() {
 
     if (d.palier) _daAddBadge(badgesEl, 'P'+d.palier, 'var(--accent)', 'rgba(122,90,248,.15)');
     if (d.category) _daAddBadge(badgesEl, d.category, 'var(--muted)', 'transparent');
+    if (d.rarity && d._type === 'item') {
+      const _RC = { commun:'#aaa', rare:'#4da6ff', epique:'#c47aff', legendaire:'#ffb830', mythique:'#ff6060', godlike:'#ff3aba', event:'#60e8b0' };
+      const rc = _RC[d.rarity] || '#aaa';
+      _daAddBadge(badgesEl, d.rarity, rc, rc + '22');
+    }
+    if (d.set)                 _daAddBadge(badgesEl, '◈ ' + d.set, 'var(--muted)', 'rgba(255,255,255,.04)');
     if (d.evolutif)            _daAddBadge(badgesEl, '🔄', '#60a5fa', 'rgba(96,165,250,.1)');
     if (d.event)               _daAddBadge(badgesEl, '🎊', '#a855f7', 'rgba(168,85,247,.1)');
     if (d.sensible)            _daAddBadge(badgesEl, '🔒', '#f87171', 'rgba(248,113,113,.1)');
@@ -14592,6 +14791,7 @@ window.loadAllMapPins = async function loadAllMapPins() {
     if (el) el.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${err.message}</div>`;
   }
 };
+
 
 const _AP_PNJ_TO_TYPE = {
   "quête principale":        "quête_principale",

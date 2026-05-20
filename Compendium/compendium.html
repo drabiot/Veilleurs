@@ -116,8 +116,10 @@
   <script src="compendium.js"></script>
   <script type="module">
     import { store } from '../store.js';
-    import { db, COL, desanitizeFromFirestore, hasRole, logPageView } from '../firebase.js';
+    import { db, COL, desanitizeFromFirestore, hasRole, logPageView, logItemView, logSearchQuery } from '../firebase.js';
     logPageView('compendium');
+    window._vclLogItemView    = logItemView;
+    window._vclLogSearchQuery = logSearchQuery;
     import { collection, getDocs, getDoc, doc }
       from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 

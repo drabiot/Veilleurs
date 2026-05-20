@@ -30,16 +30,18 @@ async function loadLeaderboard() {
       const snap = await getDocs(collection(db, col));
       for (const d of snap.docs) {
         const data = d.data();
-        const c = data._contributor;
-        if (!c) continue;
         const entryId = col + '/' + d.id;
         if (excludedIds.has(entryId)) continue;
-        const uid  = c.uid  || null;
-        const name = c.name || 'Inconnu';
-        if (!uid && (name === 'Anonyme' || name === 'Inconnu')) continue;
-        const key = uid || ('__' + name);
-        if (!byKey[key]) byKey[key] = { uid, name, count: 0 };
-        byKey[key].count++;
+        const raw = data._contributor;
+        const contribs = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+        for (const c of contribs) {
+          const uid  = c.uid  || null;
+          const name = c.name || 'Inconnu';
+          if (!uid && (name === 'Anonyme' || name === 'Inconnu')) continue;
+          const key = uid || ('__' + name);
+          if (!byKey[key]) byKey[key] = { uid, name, count: 0 };
+          byKey[key].count++;
+        }
       }
     } catch {}
   }

@@ -433,6 +433,71 @@
   color: var(--muted);
 }
 
+/* Set badge (inline dans item-info) */
+.item-set-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 2px;
+  border: 1px solid;
+  margin-top: 6px;
+  margin-bottom: 4px;
+  cursor: default;
+}
+
+/* Section set complète */
+.item-set-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.set-items-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.set-item-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: opacity .15s, background .15s;
+  user-select: none;
+}
+.set-item-link:hover { opacity: .8; }
+.set-item-link.set-item-active { font-weight: 700; }
+
+.set-bonuses-table {
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  width: auto;
+}
+.set-bonus-pieces {
+  font-weight: 700;
+  padding: 3px 16px 3px 0;
+  white-space: nowrap;
+  letter-spacing: .04em;
+}
+.set-bonus-stat {
+  color: var(--text);
+  padding: 3px 0;
+}
+.set-bonus-val {
+  font-weight: 700;
+}
+
 /* Section "Comment obtenir" */
 .item-section-title {
   font-family: 'Cinzel', serif;
