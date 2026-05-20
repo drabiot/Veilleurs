@@ -2838,11 +2838,28 @@ async function loadDeadLinks() {
       }
     }
 
+    // ── PNJ ────────────────────────────────────────────
+    for (const pnj of pnjs) {
+      const name = pnj.nom || pnj.name || pnj.id;
+      for (const s of (pnj.sells || [])) {
+        if (s.id && !itemIds.has(s.id) && !EXCLUDED_IDS.has(s.id))
+          addBroken('pnj', pnj.id, name, 'sells', s.id, 'item');
+      }
+      const craftArr = Array.isArray(pnj.craft) ? pnj.craft
+        : (pnj.craft && typeof pnj.craft === 'object') ? Object.values(pnj.craft) : [];
+      for (const c of craftArr) {
+        if (c.id && !itemIds.has(c.id) && !EXCLUDED_IDS.has(c.id))
+          addBroken('pnj', pnj.id, name, 'craft', c.id, 'item');
+        for (const ing of (c.ingredients || [])) {
+          if (ing.id && !itemIds.has(ing.id) && !EXCLUDED_IDS.has(ing.id))
+            addBroken('pnj', pnj.id, name, 'craft.ingredient', ing.id, 'item');
+        }
+      }
+    }
+
     // ── Quêtes ─────────────────────────────────────────
     for (const q of quetes) {
       const name = q.titre || q.name || q.id;
-      if (q.npc && !pnjIds.has(q.npc))
-        addBroken('quête', q.id, name, 'npc', q.npc, 'pnj');
       for (const obj of (q.objectifs || [])) {
         for (const it of (obj.items || [])) {
           const id = it.id || it.itemId;
@@ -2978,6 +2995,11 @@ async function loadDeadLinks() {
           empty.textContent = 'Aucun résultat';
           dropdown.appendChild(empty);
         } else {
+          if (norm && results.length === 1) {
+            selectEntity(results[0]);
+            dropdown.style.display = 'none';
+            return;
+          }
           for (const e of results.slice(0, 60)) {
             const row = document.createElement('div');
             row.style.cssText = 'padding:6px 12px;font-size:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);';
@@ -3031,8 +3053,9 @@ async function loadDeadLinks() {
           tbody.querySelectorAll('button[data-fix-btn]').forEach(b => { b.textContent = '✏️ Corriger'; });
           fixTr.style.display = '';
           fixBtn.textContent = '▲ Fermer';
+          searchInput.value = b.refId;
           searchInput.focus();
-          renderDropdown('');
+          renderDropdown(b.refId);
         }
       });
       fixBtn.dataset.fixBtn = '1';
