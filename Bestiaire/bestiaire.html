@@ -329,10 +329,11 @@
   <script src="bestiaire.js"></script>
   <script type="module">
     import { store } from '../store.js';
-    import { db, COL, desanitizeFromFirestore, hasRole, logPageView } from '../firebase.js';
+    import { db, COL, desanitizeFromFirestore, hasRole, logPageView, logContentView } from '../firebase.js';
     import { collection, getDocs, getDoc, doc }
       from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
     logPageView('bestiaire');
+    window._vclLogContentView = logContentView;
 
     let _sensitiveMobsLoaded = false;
     let _sensitivePnjLoaded  = false;

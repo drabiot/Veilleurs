@@ -227,6 +227,7 @@ export async function logPageView(section) {
       pseudo,
       isAnonymous,
       [`sections.${section}`]: increment(1),
+      total: increment(1),
       lastSeen: today,
       [`devices.${device}`]:   increment(1),
       ...(isFirstSeen && { firstSeen: today }),
@@ -234,18 +235,62 @@ export async function logPageView(section) {
   } catch { /* silently fail */ }
 }
 
+/** Log la consultation d'un contenu (mob, pnj, quete, item…) — rate-limited 1/hr par contenu.
+ *  Stocke dans user_visits/{userId} sous les clés `{type}s.{id}` et `{type}_names.{id}`.
+ *  Exposé globalement via window._vclLogContentView depuis chaque page.
+ */
+export async function logContentView(contentType, contentId, contentName) {
+  if (!contentId) return;
+  const safeId   = String(contentId).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const cacheKey = `cv_${contentType}_${safeId}`;
+  const last = parseInt(localStorage.getItem(cacheKey) || '0');
+  const now  = Date.now();
+  if (now - last < 60 * 60 * 1000) return;
+  localStorage.setItem(cacheKey, String(now));
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      const role = sessionStorage.getItem('vcl_role_' + user.uid);
+      if (role === 'admin') return;
+    }
+    const visitorId = user?.uid || sessionStorage.getItem('vcl_anon_id');
+    if (!visitorId) return;
+    // Namespace : mob→mobs, pnj→pnj, quete→quetes, item→items
+    const ns = contentType === 'pnj' ? 'pnj' : contentType + 's';
+    await setDoc(doc(db, 'user_visits', visitorId), {
+      [`${ns}.${safeId}`]:            increment(1),
+      [`${contentType}_names.${safeId}`]: contentName || String(contentId),
+    }, { merge: true });
+  } catch {}
+}
+
 /** Log une vue d'item dans le compendium — rate-limited 1/hr par item. */
 export async function logItemView(itemId, itemName) {
   if (!itemId) return;
-  const key  = 'iv_' + String(itemId);
+  const safeId = String(itemId).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const key  = 'iv_' + safeId;
   const last = parseInt(localStorage.getItem(key) || '0');
   const now  = Date.now();
   if (now - last < 60 * 60 * 1000) return;
   localStorage.setItem(key, String(now));
   const today = new Date().toISOString().slice(0, 10);
   try {
-    const ref = doc(db, 'item_views', String(itemId) + '_' + today);
+    const ref = doc(db, 'item_views', safeId + '_' + today);
     await setDoc(ref, { itemId: String(itemId), name: itemName || '', date: today, count: increment(1) }, { merge: true });
+  } catch {}
+  // Tracking par utilisateur
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      const role = sessionStorage.getItem('vcl_role_' + user.uid);
+      if (role === 'admin') return;
+    }
+    const visitorId = user?.uid || sessionStorage.getItem('vcl_anon_id');
+    if (!visitorId) return;
+    await setDoc(doc(db, 'user_visits', visitorId), {
+      [`items.${safeId}`]:      increment(1),
+      [`item_names.${safeId}`]: itemName || String(itemId),
+    }, { merge: true });
   } catch {}
 }
 
@@ -263,6 +308,19 @@ export async function logSearchQuery(term) {
   try {
     const ref = doc(db, 'search_logs', safeKey + '_' + today);
     await setDoc(ref, { term: normalized, date: today, count: increment(1) }, { merge: true });
+  } catch {}
+  // Tracking par utilisateur
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      const role = sessionStorage.getItem('vcl_role_' + user.uid);
+      if (role === 'admin') return;
+    }
+    const visitorId = user?.uid || sessionStorage.getItem('vcl_anon_id');
+    if (!visitorId) return;
+    await setDoc(doc(db, 'user_visits', visitorId), {
+      [`searches.${safeKey}`]: increment(1),
+    }, { merge: true });
   } catch {}
 }
 

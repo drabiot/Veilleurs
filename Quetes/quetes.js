@@ -1139,6 +1139,7 @@ function openModal(q) {
   window._currentModalQuest = q;
   modalContent.innerHTML = renderSheet(q);
   bindModalCheckboxes(q);
+  window._vclLogContentView?.('quete', q.id, q.titre || q.name || q.id);
   modalOverlay.classList.add('open');
   /* Met à jour le hash sans dupliquer */
   if (window.location.hash !== `#${q.id}`) {

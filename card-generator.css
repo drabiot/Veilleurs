@@ -51,6 +51,8 @@
 
 #search-input:focus {
   border-color: var(--gold-dim);
+  box-shadow: 0 0 0 2px rgba(224, 172, 96, 0.20),
+              0 0 12px rgba(224, 172, 96, 0.08);
 }
 
 #search-input:disabled {
@@ -80,6 +82,12 @@
   display: none;
 }
 
+.search-dropdown::-webkit-scrollbar { width: 4px; }
+.search-dropdown::-webkit-scrollbar-track { background: var(--surface2); }
+.search-dropdown::-webkit-scrollbar-thumb { background: var(--rim2); border-radius: 2px; }
+.search-dropdown::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+.search-dropdown { scrollbar-width: thin; scrollbar-color: var(--rim2) var(--surface2); }
+
 .search-result {
   display: flex;
   align-items: baseline;
@@ -95,7 +103,9 @@
 }
 
 .search-result:hover {
-  background: var(--surface);
+  background: var(--surface2);
+  border-left: 2px solid var(--gold-dim);
+  padding-left: calc(1rem - 2px);
 }
 
 .sr-name {
@@ -121,12 +131,14 @@
   border: 1px solid var(--rim);
   background: var(--deep);
   overflow-x: auto;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.5),
+              0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
 #card-canvas {
   display: none;
   max-width: 100%;
-  /* height est fixée en JS via canvas.style.height — pas de height: auto ici */
+  height: auto;
 }
 
 #empty-state {
@@ -156,12 +168,19 @@
   font-size: 0.8rem;
   padding: 0.5rem 1.2rem;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.1s;
 }
 
 .card-actions button:hover:not(:disabled) {
   border-color: var(--gold-dim);
   color: var(--bright);
+  background: rgba(224, 172, 96, 0.08);
+}
+
+.card-actions button:active:not(:disabled) {
+  transform: scale(0.97);
+  background: rgba(224, 172, 96, 0.14);
+  border-color: var(--gold);
 }
 
 .card-actions button:disabled {
@@ -169,10 +188,16 @@
   cursor: not-allowed;
 }
 
-.btn-reset {
-  border-color: var(--rim) !important;
-  color: var(--muted) !important;
-  font-size: 0.72rem !important;
+.card-actions .btn-reset {
+  border-color: var(--rim);
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.card-actions .btn-reset:hover:not(:disabled) {
+  border-color: var(--muted);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 /* ── Responsive ───────────────────────────────────── */

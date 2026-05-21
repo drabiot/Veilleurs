@@ -1065,7 +1065,9 @@ function bindEntityLinks() {
         showItem(id);
         history.pushState({ item: id }, '', `#${id}`);
       } else {
-        // Redirige vers le bestiaire si c'est un mob
+        // Redirige vers le bestiaire si c'est un mob/pnj — on log avant navigation
+        const name = link.textContent?.trim() || id;
+        window._vclLogContentView?.(type || 'mob', id, name);
         window.location.href = link.href;
       }
     });

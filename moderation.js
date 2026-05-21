@@ -8686,17 +8686,15 @@ window.resetStatistiques = async function() {
   const ok = await modal.confirm('Supprimer toutes les données de statistiques (page_views, user_visits) ? Cette action est irréversible.', { confirmLabel: 'Supprimer', danger: true });
   if (!ok) return;
   try {
-    const [pvSnap, loginSnap, uvSnap] = await Promise.all([
+    const [pvSnap, uvSnap] = await Promise.all([
       getDocs(collection(db, 'page_views')),
-      getDocs(query(collection(db, 'audit_log'), where('action', '==', 'login'))),
       getDocs(collection(db, 'user_visits')),
     ]);
     await Promise.all([
       ...pvSnap.docs.map(d => deleteDoc(d.ref)),
-      ...loginSnap.docs.map(d => deleteDoc(d.ref)),
       ...uvSnap.docs.map(d => deleteDoc(d.ref)),
     ]);
-    const total = pvSnap.size + loginSnap.size + uvSnap.size;
+    const total = pvSnap.size + uvSnap.size;
     toast(`✓ ${total} document${total !== 1 ? 's' : ''} supprimé${total !== 1 ? 's' : ''}`, 'success');
     loadStatistiques();
   } catch(e) {
@@ -8717,31 +8715,30 @@ window.showStatistiques = function() {
 function _buildStatsExtra({ userVisits, itemViewDocs, searchLogDocs, recentReports, itemsRaw, fmt, fmtTime, byHour }) {
   let html = '';
 
-  // ── 1. Nouveaux vs visiteurs de retour ─────────────
-  const today = new Date().toISOString().slice(0, 10);
-  const newVisitors      = userVisits.filter(u => !u.isAnonymous && u.firstSeen === today).length;
-  const returningVisitors = userVisits.filter(u => !u.isAnonymous && u.firstSeen && u.firstSeen !== today).length;
-  const totalMembers      = userVisits.filter(u => !u.isAnonymous).length;
-  const newPct   = totalMembers ? Math.round(newVisitors / totalMembers * 100) : 0;
-  const retPct   = totalMembers ? Math.round(returningVisitors / totalMembers * 100) : 0;
+  // ── 1. Membres identifiés vs visiteurs anonymes ────
+  const totalMembers = userVisits.filter(u => !u.isAnonymous).length;
+  const totalAnons   = userVisits.filter(u =>  u.isAnonymous).length;
+  const totalAll     = userVisits.length || 1;
+  const memberPct    = Math.round(totalMembers / totalAll * 100);
+  const anonPct      = 100 - memberPct;
 
   html += `<div class="stats-section">
-    <div class="stats-section-title">Membres — nouveaux vs retour</div>
+    <div class="stats-section-title">Membres &amp; Anonymes</div>
     <div style="display:flex;gap:16px;flex-wrap:wrap;">
-      <div class="stats-kpi-card" style="--kpi-color:#4ade80;flex:1;min-width:110px;">
-        <div class="stats-kpi-icon">🆕</div>
-        <div class="stats-kpi-val">${fmt(newVisitors)}</div>
-        <div class="stats-kpi-lbl">Nouveaux aujourd'hui</div>
-      </div>
       <div class="stats-kpi-card" style="--kpi-color:#60a5fa;flex:1;min-width:110px;">
-        <div class="stats-kpi-icon">🔄</div>
-        <div class="stats-kpi-val">${fmt(returningVisitors)}</div>
-        <div class="stats-kpi-lbl">De retour</div>
+        <div class="stats-kpi-icon">👤</div>
+        <div class="stats-kpi-val">${fmt(totalMembers)}</div>
+        <div class="stats-kpi-lbl">Membres identifiés (${memberPct}%)</div>
+      </div>
+      <div class="stats-kpi-card" style="--kpi-color:#7a7a90;flex:1;min-width:110px;">
+        <div class="stats-kpi-icon">👁️</div>
+        <div class="stats-kpi-val">${fmt(totalAnons)}</div>
+        <div class="stats-kpi-lbl">Visiteurs anonymes (${anonPct}%)</div>
       </div>
       <div class="stats-kpi-card" style="--kpi-color:#a78bfa;flex:1;min-width:110px;">
-        <div class="stats-kpi-icon">👥</div>
-        <div class="stats-kpi-val">${fmt(totalMembers)}</div>
-        <div class="stats-kpi-lbl">Membres connus</div>
+        <div class="stats-kpi-icon">🌐</div>
+        <div class="stats-kpi-val">${fmt(totalAll)}</div>
+        <div class="stats-kpi-lbl">Profils uniques total</div>
       </div>
     </div>
   </div>`;
@@ -8753,8 +8750,8 @@ function _buildStatsExtra({ userVisits, itemViewDocs, searchLogDocs, recentRepor
     deskTotal += u.devices?.desktop || 0;
   }
   const devTotal = mobTotal + deskTotal || 1;
-  const mobPct  = Math.round(mobTotal  / devTotal * 100);
-  const deskPct = Math.round(deskTotal / devTotal * 100);
+  const mobPct  = Math.floor(mobTotal / devTotal * 100);
+  const deskPct = 100 - mobPct;
   if (mobTotal + deskTotal > 0) {
     html += `<div class="stats-section">
       <div class="stats-section-title">Appareils</div>
@@ -8790,21 +8787,7 @@ function _buildStatsExtra({ userVisits, itemViewDocs, searchLogDocs, recentRepor
     </div>`;
   }
 
-  // ── 4. Heatmap heure × jour de semaine ─────────────
-  const DAY_NAMES = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
-  // byHour contient les totaux all-time; on ne peut pas décomposer par jour sans données
-  // On affiche une version simplifiée : heatmap 1D des heures (barres colorées)
-  const maxH = Math.max(...byHour, 1);
-  const heatCells = byHour.map((v, h) => {
-    const intensity = v / maxH;
-    const bg = `rgba(122,90,248,${(0.08 + intensity * 0.92).toFixed(2)})`;
-    return `<div title="${h}h : ${fmt(v)} visites" style="background:${bg};height:28px;border-radius:2px;flex:1;min-width:10px;"></div>`;
-  }).join('');
-  html += `<div class="stats-section">
-    <div class="stats-section-title">Heatmap activité par heure</div>
-    <div style="display:flex;gap:2px;align-items:flex-end;">${heatCells}</div>
-    <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:3px;"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>23h</span></div>
-  </div>`;
+  // ── 4. Heatmap heure — supprimée (doublon du graphique "Activité par heure" en section principale)
 
   // ── 5. Top 10 items consultés ───────────────────────
   if (itemViewDocs.length) {
@@ -8912,7 +8895,38 @@ window.loadStatistiques = async function loadStatistiques() {
 
     const docs       = pvSnap.docs.map(d => d.data());
     const logins     = loginSnap.docs.map(d => d.data());
-    const userVisits = uvSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const userVisits = uvSnap.docs.map(d => {
+      const raw = { id: d.id, ...d.data() };
+      // Firestore stocke les champs imbriqués comme clés plates (sections.X, devices.X, etc.)
+      const sections = {}, devices = {}, items = {}, itemNames = {},
+            mobs = {}, mobNames = {}, pnj = {}, pnjNames = {},
+            quetes = {}, queteNames = {}, searches = {};
+      for (const [k, v] of Object.entries(raw)) {
+        if (k.startsWith('sections.'))    sections[k.slice(9)]   = v;
+        if (k.startsWith('devices.'))     devices[k.slice(8)]    = v;
+        if (k.startsWith('items.'))       items[k.slice(6)]      = v;
+        if (k.startsWith('item_names.'))  itemNames[k.slice(11)] = v;
+        if (k.startsWith('mobs.'))        mobs[k.slice(5)]       = v;
+        if (k.startsWith('mob_names.'))   mobNames[k.slice(10)]  = v;
+        if (k.startsWith('pnj.'))         pnj[k.slice(4)]        = v;
+        if (k.startsWith('pnj_names.'))   pnjNames[k.slice(10)]  = v;
+        if (k.startsWith('quetes.'))      quetes[k.slice(7)]     = v;
+        if (k.startsWith('quete_names.')) queteNames[k.slice(12)] = v;
+        if (k.startsWith('searches.'))    searches[k.slice(9)]   = v;
+      }
+      if (Object.keys(sections).length)   raw.sections  = sections;
+      if (Object.keys(devices).length)    raw.devices   = devices;
+      if (Object.keys(items).length)      raw.items     = items;
+      if (Object.keys(itemNames).length)  raw.itemNames = itemNames;
+      if (Object.keys(mobs).length)       raw.mobs      = mobs;
+      if (Object.keys(mobNames).length)   raw.mobNames  = mobNames;
+      if (Object.keys(pnj).length)        raw.pnj       = pnj;
+      if (Object.keys(pnjNames).length)   raw.pnjNames  = pnjNames;
+      if (Object.keys(quetes).length)     raw.quetes    = quetes;
+      if (Object.keys(queteNames).length) raw.queteNames = queteNames;
+      if (Object.keys(searches).length)   raw.searches  = searches;
+      return raw;
+    });
 
     // Axes supplémentaires
     const itemViewDocs  = ivSnap.docs.map(d => d.data());
@@ -8934,24 +8948,30 @@ window.loadStatistiques = async function loadStatistiques() {
     const byDate = {}, byMonth = {};
     const byHour = Array(24).fill(0);
 
-    // KPI totals + hourly + daily : site_* docs (sessions) + anciens docs section (rétrocompat)
-    // Les site_* docs ont section='site', les anciens ont section=nom_outil
+    // Grouper par date pour éviter le double-counting entre ancien format (section=nom)
+    // et nouveau format (section='site'). Pour chaque date, préférer le doc 'site'.
+    const docsByDate = {};
     for (const d of docs) {
-      const count = d.count || 0;
-      const date  = d.date;
+      const date = d.date;
+      if (!date) continue;
+      if (!docsByDate[date]) docsByDate[date] = { siteDoc: null, legacyDocs: [] };
+      if (d.section === 'site') docsByDate[date].siteDoc = d;
+      else docsByDate[date].legacyDocs.push(d);
+    }
+    for (const [date, { siteDoc, legacyDocs }] of Object.entries(docsByDate)) {
+      const count = siteDoc
+        ? (siteDoc.count || 0)
+        : legacyDocs.reduce((s, d) => s + (d.count || 0), 0);
       total += count;
       if (date === todayStr) totalToday += count;
       const dt = new Date(date + 'T00:00:00');
       if (dt >= cutoff7)  total7  += count;
       if (dt >= cutoff30) total30 += count;
-      byDate[date] = (byDate[date] || 0) + count;
+      byDate[date] = count;
       const month = date.slice(0, 7);
-      if (!byMonth[month]) byMonth[month] = {};
-      const monthSection = d.section || 'inconnu';
-      byMonth[month][monthSection] = (byMonth[month][monthSection] || 0) + count;
-      if (d.hours) {
-        for (let h = 0; h < 24; h++) byHour[h] += d.hours[h] || 0;
-      }
+      if (!byMonth[month]) byMonth[month] = { _total: 0 };
+      byMonth[month]._total += count;
+      if (siteDoc?.hours) for (let h = 0; h < 24; h++) byHour[h] += siteDoc.hours[h] || 0;
     }
 
     // Répartition par section depuis user_visits (plus fiable que page_views après migration)
@@ -8965,14 +8985,14 @@ window.loadStatistiques = async function loadStatistiques() {
 
     const SECTION_COLORS = {
       compendium: '#7a5af8', bestiaire: '#f87171', map: '#4ade80',
-      quetes: '#fbbf24', atelier: '#60a5fa', patchnotes: '#a78bfa',
+      quetes: '#fbbf24', atelier: '#60a5fa', patchnotes: '#a78bfa', builds: '#f97316',
     };
     const SECTION_LABELS = {
       compendium: '⚔️ Compendium', bestiaire: '💀 Bestiaire', map: '🗺️ Carte',
-      quetes: '📜 Quêtes', atelier: '🔨 Atelier', patchnotes: '📰 Patchnotes',
+      quetes: '📜 Quêtes', atelier: '🔨 Atelier', patchnotes: '📰 Patchnotes', builds: '🏗️ Builds',
     };
     const SECTION_ICONS = {
-      compendium: '⚔️', bestiaire: '💀', map: '🗺️', quetes: '📜', atelier: '🔨', patchnotes: '📰',
+      compendium: '⚔️', bestiaire: '💀', map: '🗺️', quetes: '📜', atelier: '🔨', patchnotes: '📰', builds: '🏗️',
     };
 
     const fmt = n => n.toLocaleString('fr-FR');
@@ -8981,6 +9001,9 @@ window.loadStatistiques = async function loadStatistiques() {
       const d = ts.toDate();
       return d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     };
+    // YYYY-MM-DD → DD/MM/YY  |  YYYY-MM → MM/YY
+    const fmtDate  = str => str?.length >= 10 ? `${str.slice(8,10)}/${str.slice(5,7)}/${str.slice(2,4)}` : (str || '');
+    const fmtMonth = str => str?.length >= 7  ? `${str.slice(5,7)}/${str.slice(2,4)}` : (str || '');
 
     const sections    = Object.keys(bySection).sort((a, b) => bySection[b] - bySection[a]);
     const maxSection  = Math.max(...Object.values(bySection), 1);
@@ -8989,6 +9012,8 @@ window.loadStatistiques = async function loadStatistiques() {
 
     const todayStart  = new Date(todayStr + 'T00:00:00');
     const loginsToday = logins.filter(l => l.createdAt?.toDate?.() >= todayStart).length;
+    const loginsTodayLimitHit = logins.length >= 20 && loginsToday === logins.length;
+    const loginsTodayDisplay  = loginsTodayLimitHit ? `≥${fmt(loginsToday)}` : fmt(loginsToday);
 
     // ── KPI cards ─────────────────────────────────────
     const kpiCards = `<div class="stats-kpi-grid">
@@ -9019,8 +9044,8 @@ window.loadStatistiques = async function loadStatistiques() {
       </div>
       <div class="stats-kpi-card" style="--kpi-color:#f87171">
         <div class="stats-kpi-icon">👤</div>
-        <div class="stats-kpi-val">${fmt(loginsToday)}</div>
-        <div class="stats-kpi-lbl">Connexions aujourd'hui</div>
+        <div class="stats-kpi-val">${loginsTodayDisplay}</div>
+        <div class="stats-kpi-lbl">Connexions aujourd'hui${loginsTodayLimitHit ? ' (min.)' : ''}</div>
       </div>
     </div>`;
 
@@ -9068,7 +9093,7 @@ window.loadStatistiques = async function loadStatistiques() {
       const count    = byDate[date] || 0;
       const pct      = Math.round(count / maxDay * 100);
       const showLbl  = i % 5 === 0 || i === 29;
-      const dayLabel = date.slice(5);
+      const dayLabel = `${date.slice(8,10)}/${date.slice(5,7)}`;
       return `<div class="stats-day-col" data-tooltip="${count} visite${count !== 1 ? 's' : ''} — ${dayLabel}">
         <div class="stats-day-track">
           <div class="stats-day-fill${count > 0 ? ' stats-day-fill--active' : ''}" style="height:${pct}%"></div>
@@ -9078,17 +9103,16 @@ window.loadStatistiques = async function loadStatistiques() {
     }).join('');
 
     // ── Monthly table ─────────────────────────────────
+    // Colonnes par section supprimées : non fiables depuis la migration vers section='site'
     const months    = Object.keys(byMonth).sort().reverse();
     const monthRows = months.map(m => {
-      const mData  = byMonth[m] || {};
-      const mTotal = Object.values(mData).reduce((a, b) => a + b, 0);
-      const cells  = sections.map(s => `<td style="text-align:right;">${fmt(mData[s] || 0)}</td>`).join('');
-      return `<tr><td style="font-weight:600;">${escHtml(m)}</td>${cells}<td style="font-weight:700;text-align:right;">${fmt(mTotal)}</td></tr>`;
+      const mTotal = byMonth[m]?._total || 0;
+      return `<tr><td style="font-weight:600;">${escHtml(fmtMonth(m))}</td><td style="font-weight:700;text-align:right;">${fmt(mTotal)}</td></tr>`;
     }).join('');
-    const thSections = sections.map(s => `<th style="text-align:right;">${escHtml(SECTION_LABELS[s] || s)}</th>`).join('');
+    const thSections = '';
 
     // ── Tableau membres par outil ─────────────────────
-    const ALL_SECTIONS = ['compendium','bestiaire','map','quetes','atelier','patchnotes'];
+    const ALL_SECTIONS = ['compendium','bestiaire','map','quetes','atelier','patchnotes','builds'];
     const uvSorted = [...userVisits].sort((a, b) => (b.total || 0) - (a.total || 0));
 
     // Regrouper tous les anonymes en 1 entrée synthétique
@@ -9131,7 +9155,7 @@ window.loadStatistiques = async function loadStatistiques() {
         <td style="display:flex;align-items:center;gap:6px;">${badge} ${escHtml(u.pseudo || u.id)}</td>
         ${cells}
         <td style="text-align:right;font-weight:700;">${fmt(u.total || 0)}</td>
-        <td style="text-align:right;color:var(--muted);font-size:11px;">${escHtml(u.lastSeen || '')}</td>
+        <td style="text-align:right;color:var(--muted);font-size:11px;">${escHtml(fmtDate(u.lastSeen))}</td>
       </tr>`;
     }).join('');
 
@@ -9182,7 +9206,7 @@ window.loadStatistiques = async function loadStatistiques() {
       </div>
       ${_buildStatsExtra({userVisits, itemViewDocs, searchLogDocs, recentReports, itemsRaw, fmt, fmtTime, byHour})}`;
 
-    // Clic sur ligne membre → historique audit
+    // Clic sur ligne membre → détail outils + historique audit
     container.querySelector('#stats-members-table')?.addEventListener('click', async e => {
       const row = e.target.closest('.stats-member-row[data-uid]');
       if (!row) return;
@@ -9197,7 +9221,79 @@ window.loadStatistiques = async function loadStatistiques() {
       detailPanel.dataset.uid = uid;
       detailPanel.style.display = '';
       const pseudo = row.querySelector('td')?.textContent?.trim() || uid;
-      detailPanel.innerHTML = `<div style="color:var(--muted);">Chargement de l'historique de <strong>${escHtml(pseudo)}</strong>…</div>`;
+
+      // ── Détail utilisateur (données déjà en mémoire) ──
+      const uData = userVisits.find(u => u.id === uid);
+      let toolsHtml = '';
+      if (!uData) {
+        toolsHtml = `<div style="color:var(--muted);font-size:12px;">Aucune donnée trouvée pour ce membre.</div>`;
+      } else {
+        // Méta
+        const mobS  = uData.devices?.mobile  || 0;
+        const deskS = uData.devices?.desktop || 0;
+        const devStr = (mobS + deskS) > 0
+          ? `📱 ${mobS} mobile · 🖥️ ${deskS} desktop`
+          : '';
+        const metaParts = [
+          uData.total         ? `${fmt(uData.total)} visite${uData.total > 1 ? 's' : ''}` : '',
+          uData.totalSessions ? `${fmt(uData.totalSessions)} session${uData.totalSessions > 1 ? 's' : ''}` : '',
+          uData.firstSeen     ? `1ère visite ${escHtml(fmtDate(uData.firstSeen))}` : '',
+          uData.lastSeen      ? `dernière ${escHtml(fmtDate(uData.lastSeen))}` : '',
+          devStr,
+        ].filter(Boolean).join(' · ');
+
+        // Helper : génère une liste de contenus consultés (items, mobs, quêtes…)
+        const makeContentList = (dataObj, namesObj, label, max = 12) => {
+          if (!dataObj || !Object.keys(dataObj).length) return '';
+          const top = Object.entries(dataObj).sort((a, b) => b[1] - a[1]).slice(0, max);
+          const rows = top.map(([id, count]) => {
+            const name = namesObj?.[id] || id.replace(/_/g, ' ');
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px;">
+              <span>${escHtml(name)}</span>
+              <span style="color:var(--muted);font-size:11px;flex-shrink:0;margin-left:8px;">${fmt(count)}×</span>
+            </div>`;
+          }).join('');
+          return `<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px;">${label}</div>${rows}`;
+        };
+
+        const itemsHtml   = makeContentList(uData.items,  uData.itemNames,  '⚔️ Items consultés');
+        const mobsHtml    = makeContentList(uData.mobs,   uData.mobNames,   '💀 Monstres consultés');
+        const pnjHtml     = makeContentList(uData.pnj,    uData.pnjNames,   '🧑 PNJ consultés');
+        const quetesHtml  = makeContentList(uData.quetes, uData.queteNames, '📜 Quêtes consultées');
+
+        // Recherches effectuées
+        let searchesHtml = '';
+        if (uData.searches && Object.keys(uData.searches).length > 0) {
+          const topSearches = Object.entries(uData.searches).sort((a, b) => b[1] - a[1]).slice(0, 20);
+          searchesHtml = `
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 6px;">🔍 Recherches</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;">
+              ${topSearches.map(([term, count]) =>
+                `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--surface3);border:1px solid var(--border);border-radius:20px;padding:2px 8px;font-size:11px;">
+                  ${escHtml(term.replace(/_/g,' '))} <span style="color:var(--accent);font-weight:700;">${count}</span>
+                </span>`
+              ).join('')}
+            </div>`;
+        }
+
+        const noDetail = !itemsHtml && !mobsHtml && !pnjHtml && !quetesHtml && !searchesHtml
+          ? `<div style="color:var(--muted);font-size:12px;margin-top:8px;">Aucun détail enregistré — les données se collecteront lors des prochaines visites.</div>`
+          : '';
+
+        toolsHtml = `
+          <div style="font-weight:700;font-size:13px;margin-bottom:3px;color:var(--accent);">${escHtml(uData.pseudo || pseudo)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${metaParts}</div>
+          ${itemsHtml}
+          ${mobsHtml}
+          ${pnjHtml}
+          ${quetesHtml}
+          ${searchesHtml}
+          ${noDetail}`;
+      }
+
+      detailPanel.innerHTML = toolsHtml + `<div style="color:var(--muted);font-size:12px;">Chargement…</div>`;
+
+      // ── Partie 2 : actions de modération (uniquement si contrib/admin) ──
       try {
         const snap = await getDocs(query(
           collection(db, 'audit_log'),
@@ -9206,25 +9302,30 @@ window.loadStatistiques = async function loadStatistiques() {
           limit(50)
         ));
         if (snap.empty) {
-          detailPanel.innerHTML = `<div style="color:var(--muted);">Aucune action enregistrée pour <strong>${escHtml(pseudo)}</strong>.</div>`;
+          detailPanel.innerHTML = toolsHtml;
           return;
         }
         const auditRows = snap.docs.map(d => {
           const a = d.data();
           const label = AUDIT_ACTION_LABELS[a.action] || a.action;
-          return `<div style="display:flex;gap:10px;align-items:baseline;border-bottom:1px solid var(--border);padding:4px 0;">
+          return `<div style="display:flex;gap:10px;align-items:baseline;border-bottom:1px solid var(--border);padding:4px 0;font-size:12px;">
             <span style="color:var(--muted);font-size:10px;white-space:nowrap;min-width:110px;">${escHtml(fmtTime(a.createdAt))}</span>
             <span style="min-width:130px;">${escHtml(label)}</span>
             <span style="color:var(--text-dim,#aaa);">${escHtml(a.targetName || a.targetId || '')}</span>
           </div>`;
         }).join('');
-        detailPanel.innerHTML = `<div style="font-weight:700;margin-bottom:8px;">Actions de <span style="color:var(--accent,#7a5af8)">${escHtml(pseudo)}</span></div>${auditRows}`;
+        const auditSection = `
+          <div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:8px;">
+            <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Historique des actions</span>
+          </div>
+          ${auditRows}`;
+        detailPanel.innerHTML = toolsHtml + auditSection;
       } catch(e2) {
         const isIndex = e2.message?.includes('index') || e2.message?.includes('Index');
         const hint = isIndex
           ? `<br><span style="font-size:10px;color:var(--muted);">Index Firestore manquant sur <code>audit_log (actorUid + createdAt)</code> — créer l'index dans la console Firebase.</span>`
           : '';
-        detailPanel.innerHTML = `<div style="color:var(--danger);">Erreur : ${escHtml(e2.message)}${hint}</div>`;
+        detailPanel.innerHTML = toolsHtml + `<div style="color:var(--danger);font-size:12px;">Erreur : ${escHtml(e2.message)}${hint}</div>`;
         console.error('[stats] audit_log query:', e2);
       }
     });
