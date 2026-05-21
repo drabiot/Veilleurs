@@ -237,8 +237,9 @@
   <!-- Inline module : chargement Firestore via store.js -->
   <script type="module">
     import { store } from '../store.js';
-    import { logPageView } from '../firebase.js';
+    import { logPageView, logContentView } from '../firebase.js';
     logPageView('quetes');
+    window._vclLogContentView = logContentView;
 
     /* Normalise une quête Firestore pour la rendre compatible avec le format QUETES statique */
     function normalizeFirestoreQuest(q) {

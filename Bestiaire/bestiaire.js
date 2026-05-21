@@ -453,8 +453,13 @@ function attachModalHandlers() {
 function openModal(entity, pushHistory = true) {
   if (_activeViewer) { _activeViewer.destroy(); _activeViewer = null; }
   modalContent.innerHTML = '';
-  if (activeTab === 'monstres') renderMobSheet(entity);
-  else                          renderPNJSheet(entity);
+  if (activeTab === 'monstres') {
+    renderMobSheet(entity);
+    window._vclLogContentView?.('mob', entity.id || entity._id, entity.name);
+  } else {
+    renderPNJSheet(entity);
+    window._vclLogContentView?.('pnj', entity.id || entity._id, entity.name);
+  }
   attachModalHandlers();
 
   modalOverlay.style.top = '0';

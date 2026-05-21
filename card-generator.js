@@ -44,11 +44,11 @@ const C = {
 }
 
 const CARD_W = 900    // largeur logique — hauteur calculée dynamiquement
-const SCALE  = 2      // PNG 2× pour netteté
 
 // ── État ─────────────────────────────────────────────────────────────
 let allItems     = []
 let panoplieMap  = {}
+let pnjMap       = {}   // id → pnj (coordonnées pour l'affichage obtain)
 let chasseIds    = new Set()
 let selectedItem = null
 
@@ -67,10 +67,11 @@ async function loadData() {
   const timeout = new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 15000))
 
   try {
-    const [itemsList, panList, chasseSnap] = await Promise.race([
+    const [itemsList, panList, pnjList, chasseSnap] = await Promise.race([
       Promise.all([
         loadCollection(COL.items),
         loadCollection(COL.panoplies).catch(() => []),
+        loadCollection(COL.pnj).catch(() => []),
         getDoc(doc(db, 'config', 'tableau_de_chasse')).catch(() => null),
       ]),
       timeout,
@@ -80,6 +81,11 @@ async function loadData() {
 
     for (const pan of panList) {
       panoplieMap[pan._id] = pan.label || pan._id
+    }
+
+    for (const pnj of pnjList) {
+      pnjMap[pnj._id] = pnj
+      if (pnj.id && pnj.id !== pnj._id) pnjMap[pnj.id] = pnj
     }
 
     if (chasseSnap?.exists()) {
@@ -155,7 +161,6 @@ async function selectItem(id) {
   const emptyEl = document.getElementById('empty-state')
   emptyEl.style.display = 'none'
   canvas.style.display  = 'block'
-
   await drawItemCard(canvas, selectedItem)
 
   document.getElementById('btn-download').disabled = false
@@ -165,24 +170,27 @@ async function selectItem(id) {
 // ── Parsers obtain / craft ────────────────────────────────────────────
 
 /**
- * Transforme le texte obtain (avec syntaxe wiki) en lignes lisibles.
- * [type:id|Nom] → Nom   |   [50] → (50%)   |   -/*/◆ → retiré
+ * Transforme le texte obtain en lignes enrichies {text, npcIds}.
+ * [npc:id|Nom] → extrait l'ID pour afficher les coords.
+ * [type:id|Label] → Label   |   [50] → (50%)   |   -, *, •, ◆ → retirés
  */
-function parseObtainLines(raw) {
+function parseObtainData(raw) {
   if (!raw) return []
   return raw.split('\n')
     .map(line => {
       let l = line.trim()
       if (!l) return null
-      // retirer marqueur de liste
+      // Extraire les IDs de PNJ avant toute transformation
+      const npcIds = []
+      const npcRe = /\[npc:([^\]|]+)(?:\|[^\]]+)?\]/g
+      let m
+      while ((m = npcRe.exec(l)) !== null) npcIds.push(m[1].trim())
+      // Transformations
       l = l.replace(/^[-*•◆]\s*/, '')
-      // [type:id|Label] → Label
       l = l.replace(/\[(?:[a-zA-Z]+:)?[^\]|]+\|([^\]]+)\]/g, '$1')
-      // [50] ou [50.5] → (50%)
       l = l.replace(/\[(\d+(?:[.,]\d+)?)\]/g, '($1%)')
-      // nettoyer espaces multiples
       l = l.replace(/\s+/g, ' ').trim()
-      return l || null
+      return l ? { text: l, npcIds } : null
     })
     .filter(Boolean)
 }
@@ -206,7 +214,9 @@ function parseCraft(item) {
     recipe = { name: null, npcId: null, items: craftList }
   }
 
-  const npc  = recipe.name || recipe.npcId
+  const npc  = recipe.name
+    || (recipe.npcId && allItems.find(a => a.id === recipe.npcId)?.name)
+    || (recipe.npcId ? recipe.npcId.replace(/_/g, ' ') : null)
   const ingr = (recipe.items || []).map(ci => {
     const found = allItems.find(a => a.id === ci.id)
     return `${found?.name || ci.id} ×${ci.qty}`
@@ -216,6 +226,22 @@ function parseCraft(item) {
   if (npc)         return npc
   if (ingr)        return ingr
   return null
+}
+
+function parseCraftData(item) {
+  const craftList = item.craft
+  if (!craftList?.length) return null
+  const isNew = typeof craftList[0] === 'object' && 'items' in craftList[0]
+  const recipe = isNew ? craftList[0] : { name: null, npcId: null, items: craftList }
+  const npc = recipe.name
+    || (recipe.npcId && pnjMap[recipe.npcId]?.name)
+    || (recipe.npcId ? recipe.npcId.replace(/_/g, ' ') : null)
+  const ingredients = (recipe.items || []).map(ci => {
+    const found = allItems.find(a => a.id === ci.id)
+    return { name: found?.name || ci.id.replace(/_/g, ' '), id: ci.id, qty: ci.qty, item: found || { id: ci.id } }
+  })
+  if (!npc && !ingredients.length) return null
+  return { npc, ingredients }
 }
 
 // ── Résolution URL texture ────────────────────────────────────────────
@@ -252,9 +278,11 @@ function resolveIconUrl(item) {
 function loadImage(url) {
   return new Promise(resolve => {
     if (!url) return resolve(null)
+    const timer = setTimeout(() => resolve(null), 5000)
     const img = new Image()
-    img.onload  = () => resolve(img)
-    img.onerror = () => resolve(null)
+    img.onload  = () => { clearTimeout(timer); resolve(img) }
+    img.onerror = () => { clearTimeout(timer); resolve(null) }
+    img.crossOrigin = 'anonymous'
     img.src = url
   })
 }
@@ -268,17 +296,25 @@ function estimateCardHeight(item) {
   h += 34     // name (28px baseline ~y=90)
   h += 16     // palier
   h += 16     // subtitle
-  if (item.lore) h += LORE_H * 2 + 8   // lore (2 lignes max)
+  if (item.lore) h += LORE_H * 3 + 8   // lore (3 lignes max)
   h += 20     // divider + section header
   const statsCount = item.stats ? Object.values(item.stats).filter(v => v !== 0 && v != null).length : 0
   const efxCount   = item.effects?.length || 0
   h += Math.min(Math.max(statsCount, efxCount), 8) * ROW_H + 14
   // obtain
-  const obtainLines = parseObtainLines(item.obtain).slice(0, 5)
-  if (obtainLines.length) h += 20 + obtainLines.length * LORE_H
+  const obtainData = parseObtainData(item.obtain).slice(0, 5)
+  if (obtainData.length) {
+    h += 20  // header
+    h += obtainData.length * LORE_H
+    h += 6
+  }
   // craft
-  const craftStr = parseCraft(item)
-  if (craftStr) h += 22
+  const craftData = parseCraftData(item)
+  if (craftData) {
+    h += 20
+    if (craftData.npc) h += LORE_H
+    h += craftData.ingredients.length * LORE_H
+  }
   h += 60  // footer + bas
   return Math.max(h, 440)
 }
@@ -322,15 +358,51 @@ function wrapText(ctx, text, x, y, maxW, lineH, maxLines = 2) {
   return y
 }
 
+function drawAdaptiveName(ctx, name, x, y, maxW, maxPx = 28, minPx = 16) {
+  let size = maxPx
+  ctx.font = `bold ${size}px "Cinzel"`
+  while (ctx.measureText(name).width > maxW && size > minPx) {
+    size--
+    ctx.font = `bold ${size}px "Cinzel"`
+  }
+  let text = name
+  if (ctx.measureText(text).width > maxW) {
+    while (ctx.measureText(text + '…').width > maxW && text.length > 1) text = text.slice(0, -1)
+    text += '…'
+  }
+  ctx.fillText(text, x, y)
+}
+
+function drawSectionHeader(ctx, label, x, y, maxW, color) {
+  ctx.font         = '700 10px "JetBrains Mono"'
+  ctx.textBaseline = 'middle'
+  const lblW  = ctx.measureText(label).width
+  const dashW = Math.max(0, (maxW - lblW - 12) / 2)
+
+  ctx.strokeStyle = color + '60'
+  ctx.lineWidth   = 1
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + dashW, y); ctx.stroke()
+
+  ctx.fillStyle = color
+  ctx.textAlign = 'left'
+  ctx.fillText(label, x + dashW + 6, y)
+
+  if (dashW > 8) {
+    const end = x + dashW + 6 + lblW + 6
+    ctx.beginPath(); ctx.moveTo(end, y); ctx.lineTo(x + maxW, y); ctx.stroke()
+  }
+}
+
 // ── Dessin de la carte ────────────────────────────────────────────────
 async function drawItemCard(canvas, item) {
   await document.fonts.ready
   const CARD_H = estimateCardHeight(item)
+  const SCALE  = Math.min(window.devicePixelRatio || 2, 3)
 
   canvas.width        = CARD_W * SCALE
   canvas.height       = CARD_H * SCALE
   canvas.style.width  = CARD_W + 'px'
-  canvas.style.height = CARD_H + 'px'
+  canvas.style.height = 'auto'
 
   const ctx = canvas.getContext('2d')
   ctx.scale(SCALE, SCALE)
@@ -347,6 +419,19 @@ async function drawItemCard(canvas, item) {
 
   // ── Fond ──────────────────────────────────────────────
   ctx.fillStyle = C.bg
+  ctx.fillRect(0, 0, CARD_W, CARD_H)
+
+  const bgGrad = ctx.createLinearGradient(0, 0, CARD_W, CARD_H)
+  bgGrad.addColorStop(0,   'rgba(255,200,100,0.025)')
+  bgGrad.addColorStop(0.5, 'transparent')
+  bgGrad.addColorStop(1,   'rgba(0,0,0,0.15)')
+  ctx.fillStyle = bgGrad
+  ctx.fillRect(0, 0, CARD_W, CARD_H)
+
+  const vigGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, CARD_W * 0.6)
+  vigGrad.addColorStop(0, rColor + '08')
+  vigGrad.addColorStop(1, 'transparent')
+  ctx.fillStyle = vigGrad
   ctx.fillRect(0, 0, CARD_W, CARD_H)
 
   // ── Bordures rareté ────────────────────────────────────
@@ -371,23 +456,33 @@ async function drawItemCard(canvas, item) {
   // Badge rareté (droite, right-aligné)
   ctx.font = '700 10px "JetBrains Mono"'
   const badgeTxt    = rLabel.toUpperCase()
-  const badgePad    = 12
+  const badgePad    = 16
+  const badgeH      = 30
+  const badgeY      = 11
   const txtW        = ctx.measureText(badgeTxt).width
   const badgeW      = txtW + badgePad * 2
   const badgeRightX = CARD_W - 18
   const badgeX      = badgeRightX - badgeW
 
-  ctx.fillStyle = rColor + '28'
-  roundRect(ctx, badgeX, 14, badgeW, 26, 3)
+  ctx.fillStyle = rColor + '40'
+  roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 3)
   ctx.fill()
-  ctx.strokeStyle = rColor + '80'
+  ctx.strokeStyle = rColor + 'aa'
   ctx.lineWidth   = 1
-  roundRect(ctx, badgeX, 14, badgeW, 26, 3)
+  roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 3)
   ctx.stroke()
 
-  ctx.fillStyle = rColor
-  ctx.textAlign = 'right'
-  ctx.fillText(badgeTxt, badgeRightX - badgePad, 28)
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)'
+  ctx.lineWidth   = 1
+  ctx.beginPath()
+  ctx.moveTo(badgeX + 5, badgeY + 1)
+  ctx.lineTo(badgeX + badgeW - 5, badgeY + 1)
+  ctx.stroke()
+
+  ctx.fillStyle    = rColor
+  ctx.textAlign    = 'right'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(badgeTxt, badgeRightX - badgePad, badgeY + badgeH / 2)
 
   // Séparateur header
   ctx.strokeStyle = C.rim
@@ -397,33 +492,50 @@ async function drawItemCard(canvas, item) {
   // ── Zone icône ─────────────────────────────────────────
   ctx.fillStyle = C.deep
   ctx.fillRect(ICON_X, ICON_Y, ICON_S, ICON_S)
-  ctx.strokeStyle = C.rim
+  ctx.strokeStyle = rColor + '60'
   ctx.lineWidth   = 1
   ctx.strokeRect(ICON_X + 0.5, ICON_Y + 0.5, ICON_S - 1, ICON_S - 1)
 
   // Glow rareté dans zone icône
   const grad = ctx.createRadialGradient(
-    ICON_X + ICON_S / 2, ICON_Y + ICON_S / 2, 18,
-    ICON_X + ICON_S / 2, ICON_Y + ICON_S / 2, 90
+    ICON_X + ICON_S / 2, ICON_Y + ICON_S / 2, 0,
+    ICON_X + ICON_S / 2, ICON_Y + ICON_S / 2, ICON_S * 0.55
   )
-  grad.addColorStop(0, rColor + '22')
-  grad.addColorStop(1, 'transparent')
+  grad.addColorStop(0,   rColor + '35')
+  grad.addColorStop(0.6, rColor + '12')
+  grad.addColorStop(1,   'transparent')
   ctx.fillStyle = grad
   ctx.fillRect(ICON_X, ICON_Y, ICON_S, ICON_S)
 
-  // Icône (pixel art — pas de smoothing)
+  // Icône (pixel art — contain + centrage)
   const iconImg = await loadImage(resolveIconUrl(item))
   if (iconImg) {
+    const pad   = 10
+    const areaW = ICON_S - pad * 2
+    const areaH = ICON_S - pad * 2
+    const scale = Math.min(areaW / iconImg.naturalWidth, areaH / iconImg.naturalHeight)
+    const dw    = iconImg.naturalWidth  * scale
+    const dh    = iconImg.naturalHeight * scale
+    const dx    = ICON_X + pad + (areaW - dw) / 2
+    const dy    = ICON_Y + pad + (areaH - dh) / 2
     ctx.imageSmoothingEnabled = false
-    const pad = 20
-    ctx.drawImage(iconImg, ICON_X + pad, ICON_Y + pad, ICON_S - pad * 2, ICON_S - pad * 2)
+    ctx.drawImage(iconImg, dx, dy, dw, dh)
     ctx.imageSmoothingEnabled = true
   } else {
-    ctx.font = '64px serif'
+    const cx = ICON_X + ICON_S / 2
+    const cy = ICON_Y + ICON_S / 2
+    ctx.beginPath()
+    ctx.arc(cx, cy, 32, 0, Math.PI * 2)
+    ctx.strokeStyle = C.rim2
+    ctx.lineWidth   = 2
+    ctx.stroke()
+    ctx.fillStyle = C.surface
+    ctx.fill()
+    ctx.font         = 'bold 28px "JetBrains Mono"'
+    ctx.fillStyle    = C.muted
     ctx.textAlign    = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillStyle    = C.muted
-    ctx.fillText(catInfo.emoji || '❓', ICON_X + ICON_S / 2, ICON_Y + ICON_S / 2)
+    ctx.fillText('?', cx, cy + 1)
   }
 
   // ── Infos (layout dynamique en curY) ───────────────────
@@ -431,9 +543,14 @@ async function drawItemCard(canvas, item) {
   ctx.textBaseline = 'alphabetic'
 
   // Nom
-  ctx.font      = 'bold 28px "Cinzel"'
+  ctx.save()
+  ctx.shadowColor   = rColor
+  ctx.shadowBlur    = 18
+  ctx.shadowOffsetX = 0
+  ctx.shadowOffsetY = 0
   ctx.fillStyle = rColor
-  ctx.fillText(trunc(item.name || '?', 30), IX, 92)
+  drawAdaptiveName(ctx, item.name || '?', IX, 92, RMAX - IX)
+  ctx.restore()
 
   // Palier
   if (item.palier || isEvent) {
@@ -472,7 +589,7 @@ async function drawItemCard(canvas, item) {
     ctx.font         = '400 12px "JetBrains Mono"'
     ctx.fillStyle    = C.muted
     ctx.textBaseline = 'alphabetic'
-    curY = wrapText(ctx, `« ${item.lore} »`, IX, curY, RMAX - IX, 19, 2)
+    curY = wrapText(ctx, `« ${item.lore} »`, IX, curY, RMAX - IX, 19, 3)
     curY += 2
   }
 
@@ -502,20 +619,8 @@ async function drawItemCard(canvas, item) {
     ctx.beginPath(); ctx.moveTo(DIV_X, SEC_Y - 4); ctx.lineTo(DIV_X, vertEnd); ctx.stroke()
   }
 
-  if (stats.length) {
-    ctx.font = '700 11px "JetBrains Mono"'
-    ctx.fillStyle    = C.gold
-    ctx.textAlign    = 'left'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('STATISTIQUES', STATS_X, SEC_Y)
-  }
-  if (effects.length) {
-    ctx.font = '700 11px "JetBrains Mono"'
-    ctx.fillStyle    = C.gold
-    ctx.textAlign    = 'left'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('EFFETS', EFX_X, SEC_Y)
-  }
+  if (stats.length)   drawSectionHeader(ctx, 'STATISTIQUES', STATS_X, SEC_Y, DIV_X - STATS_X - 8, C.gold)
+  if (effects.length) drawSectionHeader(ctx, 'EFFETS', EFX_X, SEC_Y, RMAX - EFX_X, C.gold)
 
   const maxRows = 8
   stats.slice(0, maxRows).forEach(([statId, val], i) => {
@@ -527,8 +632,13 @@ async function drawItemCard(canvas, item) {
       ? (val[0] === val[1] ? `${val[0]}${unit}` : `${val[0]}–${val[1]}${unit}`)
       : `${val}${unit}`
 
+    if (i % 2 === 1) {
+      ctx.fillStyle = 'rgba(255,255,255,0.018)'
+      ctx.fillRect(STATS_X, y - ROW_STEP / 2 + 1, DIV_X - STATS_X, ROW_STEP - 1)
+    }
+
     // Icône
-    ctx.font = '13px serif'
+    ctx.font         = '14px serif'
     ctx.fillStyle    = C.muted
     ctx.textAlign    = 'left'
     ctx.textBaseline = 'middle'
@@ -537,11 +647,11 @@ async function drawItemCard(canvas, item) {
     // Label
     ctx.font      = '400 11px "JetBrains Mono"'
     ctx.fillStyle = C.muted
-    ctx.fillText(trunc(meta.label, 24), STATS_X + 20, y)
+    ctx.fillText(trunc(meta.label, 26), STATS_X + 22, y)
 
     // Valeur (right-aligned dans col stats)
     ctx.font      = '700 11px "JetBrains Mono"'
-    ctx.fillStyle = C.text
+    ctx.fillStyle = C.bright
     ctx.textAlign = 'right'
     ctx.fillText(disp, DIV_X - 10, y)
     ctx.textAlign = 'left'
@@ -570,7 +680,12 @@ async function drawItemCard(canvas, item) {
     else if (val !== '')      display = trunc(`${val}${unit}${dur}`, 28)
     else                      display = trunc(efx.label || meta.label || efx.type || '', 28)
 
-    ctx.font = '13px serif'
+    if (i % 2 === 1) {
+      ctx.fillStyle = 'rgba(255,255,255,0.018)'
+      ctx.fillRect(EFX_X, y - ROW_STEP / 2 + 1, RMAX - EFX_X, ROW_STEP - 1)
+    }
+
+    ctx.font         = '14px serif'
     ctx.fillStyle    = color
     ctx.textAlign    = 'left'
     ctx.textBaseline = 'middle'
@@ -578,7 +693,7 @@ async function drawItemCard(canvas, item) {
 
     ctx.font      = '400 11px "JetBrains Mono"'
     ctx.fillStyle = color
-    ctx.fillText(display, EFX_X + 20, y)
+    ctx.fillText(display, EFX_X + 22, y)
   })
 
   if (effects.length > maxRows) {
@@ -590,65 +705,147 @@ async function drawItemCard(canvas, item) {
   }
 
   // ── Obtenir / Craft ────────────────────────────────────
-  const rows       = Math.min(Math.max(stats.length, effects.length), maxRows)
-  const BOT_DIV    = Math.max(ROW_Y0 + rows * ROW_STEP + 14, divY + 90)
+  const rows    = Math.min(Math.max(stats.length, effects.length), maxRows)
+  const BOT_DIV = Math.max(ROW_Y0 + rows * ROW_STEP + 14, divY + 90)
 
+  // Séparateur pleine largeur
   ctx.strokeStyle = C.rim
   ctx.lineWidth   = 1
-  ctx.beginPath(); ctx.moveTo(IX, BOT_DIV); ctx.lineTo(RMAX, BOT_DIV); ctx.stroke()
+  ctx.beginPath(); ctx.moveTo(18, BOT_DIV); ctx.lineTo(CARD_W - 18, BOT_DIV); ctx.stroke()
 
+  const FULL_X = 18
+  const FULL_W = CARD_W - 36
   let botY = BOT_DIV + 18
 
-  // Obtenir — multi-lignes parsées
-  const obtainLines = parseObtainLines(item.obtain).slice(0, 5)
-  if (obtainLines.length) {
-    ctx.font = '700 11px "JetBrains Mono"'
-    ctx.fillStyle    = C.gold
-    ctx.textAlign    = 'left'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('OBTENIR', IX, botY)
+  // Obtenir — pleine largeur, header sur sa propre ligne, coords NPC
+  const obtainData = parseObtainData(item.obtain).slice(0, 5)
+  if (obtainData.length) {
+    drawSectionHeader(ctx, 'OBTENIR', FULL_X, botY, FULL_W, C.gold)
+    botY += 20
 
-    ctx.font      = '400 12px "JetBrains Mono"'
-    ctx.fillStyle = C.text
-    // Première ligne sur la même rangée que le label
-    ctx.fillText(trunc(obtainLines[0], 68), IX + 80, botY)
+    for (const line of obtainData) {
+      // Badge coords (cherche le premier PNJ avec coords)
+      let coordStr = null
+      for (const npcId of line.npcIds) {
+        const npc = pnjMap[npcId]
+        if (!npc?.coords) continue
+        const parts = []
+        if (npc.coords.x != null && npc.coords.x !== '') parts.push(`X${npc.coords.x}`)
+        if (npc.coords.z != null && npc.coords.z !== '') parts.push(`Z${npc.coords.z}`)
+        if (parts.length) { coordStr = '📍 ' + parts.join('  '); break }
+      }
 
-    // Lignes suivantes décalées en dessous
-    for (let i = 1; i < obtainLines.length; i++) {
-      botY += 19
-      ctx.fillText(trunc(obtainLines[i], 80), IX + 10, botY)
+      // Texte — tronqué pour laisser place au badge si besoin
+      const bPad = 7
+      const bGap = 10
+      const bH   = 18
+      ctx.font = '700 10px "JetBrains Mono"'
+      const bW = coordStr ? ctx.measureText(coordStr).width + bPad * 2 : 0
+      const maxTextW = FULL_X + FULL_W - FULL_X - 10 - (coordStr ? bW + bGap : 0)
+
+      ctx.font = '400 12px "JetBrains Mono"'
+      let displayText = line.text
+      if (ctx.measureText(displayText).width > maxTextW) {
+        while (ctx.measureText(displayText + '…').width > maxTextW && displayText.length > 1)
+          displayText = displayText.slice(0, -1)
+        displayText += '…'
+      }
+      ctx.fillStyle    = C.text
+      ctx.textAlign    = 'left'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(displayText, FULL_X + 10, botY)
+
+      // Badge coords juste après le texte
+      if (coordStr) {
+        const textW = ctx.measureText(displayText).width
+        const bX    = FULL_X + 10 + textW + bGap
+        const bY    = botY - bH / 2
+
+        roundRect(ctx, bX, bY, bW, bH, 3)
+        ctx.fillStyle = C.goldDim + '28'
+        ctx.fill()
+        ctx.strokeStyle = C.goldDim + 'cc'
+        ctx.lineWidth   = 1
+        roundRect(ctx, bX, bY, bW, bH, 3)
+        ctx.stroke()
+
+        ctx.font         = '700 10px "JetBrains Mono"'
+        ctx.fillStyle    = C.gold
+        ctx.textAlign    = 'left'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(coordStr, bX + bPad, botY)
+      }
+
+      botY += 20
     }
-    botY += 22
+    botY += 6
   }
 
-  // Craft
-  const craftStr = parseCraft(item)
-  if (craftStr) {
-    ctx.font = '700 11px "JetBrains Mono"'
-    ctx.fillStyle    = C.gold
-    ctx.textAlign    = 'left'
-    ctx.textBaseline = 'middle'
-    ctx.fillText('CRAFT', IX, botY)
+  // Craft — une ligne par ingrédient + icône 16×16
+  const craftData = parseCraftData(item)
+  if (craftData) {
+    drawSectionHeader(ctx, 'CRAFT', FULL_X, botY, FULL_W, C.gold)
+    botY += 20
 
-    ctx.font      = '400 12px "JetBrains Mono"'
-    ctx.fillStyle = C.text
-    ctx.fillText(trunc(craftStr, 70), IX + 80, botY)
+    if (craftData.npc) {
+      ctx.font         = '400 11px "JetBrains Mono"'
+      ctx.fillStyle    = C.goldDim
+      ctx.textAlign    = 'left'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('⚒  ' + craftData.npc, FULL_X + 10, botY)
+      botY += 18
+    }
+
+    const ingIcons = await Promise.all(
+      craftData.ingredients.map(ing => loadImage(resolveIconUrl(ing.item)))
+    )
+
+    for (let i = 0; i < craftData.ingredients.length; i++) {
+      const ing    = craftData.ingredients[i]
+      const ico    = ingIcons[i]
+      const iconSz = 16
+
+      if (ico) {
+        const scale = Math.min(iconSz / ico.naturalWidth, iconSz / ico.naturalHeight)
+        const dw = ico.naturalWidth  * scale
+        const dh = ico.naturalHeight * scale
+        const dx = FULL_X + 10 + (iconSz - dw) / 2
+        const dy = botY - iconSz / 2 + (iconSz - dh) / 2
+        ctx.imageSmoothingEnabled = false
+        ctx.drawImage(ico, dx, dy, dw, dh)
+        ctx.imageSmoothingEnabled = true
+      } else if (ing.id === 'cols') {
+        ctx.font         = '14px serif'
+        ctx.fillStyle    = C.muted
+        ctx.textAlign    = 'left'
+        ctx.textBaseline = 'middle'
+        ctx.fillText('🪙', FULL_X + 10, botY)
+      }
+
+      ctx.font         = '400 12px "JetBrains Mono"'
+      ctx.fillStyle    = C.text
+      ctx.textAlign    = 'left'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(trunc(`${ing.name}  ×${ing.qty}`, 80), FULL_X + 10 + iconSz + 6, botY)
+      botY += 18
+    }
   }
 
   // ── Footer ─────────────────────────────────────────────
   const FOOT_SEP = CARD_H - 34
-  ctx.strokeStyle = C.rim
+  ctx.strokeStyle = C.goldDim + '60'
   ctx.lineWidth   = 1
   ctx.beginPath(); ctx.moveTo(2, FOOT_SEP); ctx.lineTo(CARD_W - 2, FOOT_SEP); ctx.stroke()
 
   ctx.fillStyle = C.deep
   ctx.fillRect(2, FOOT_SEP + 1, CARD_W - 4, 29)
 
-  ctx.font = '400 11px "JetBrains Mono"'
-  ctx.fillStyle    = C.rim2
-  ctx.textAlign    = 'left'
+  ctx.font         = '400 10px "JetBrains Mono"'
+  ctx.fillStyle    = C.muted
+  ctx.textAlign    = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('https://drabiot.github.io/Veilleurs', 18, FOOT_SEP + 15)
+  ctx.fillText('Veilleurs au Clair de Lune 🌙', CARD_W / 2, FOOT_SEP + 17)
+
 }
 
 // ── Boutons ───────────────────────────────────────────────────────────
@@ -683,7 +880,16 @@ function setupButtons() {
     document.getElementById('card-canvas').toBlob(async blob => {
       try {
         const file = new File([blob], `${selectedItem.id}_card.png`, { type: 'image/png' })
-        const res  = await window.VCL.postDiscord(webhookUrl, { content: '' }, file, file.name)
+        const wikiUrl  = `https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${selectedItem.id}`
+        const hexColor = window.VCL.getRarityColor(selectedItem.rarity || 'commun').replace('#', '')
+        const payload  = {
+          embeds: [{
+            title: '↗  Lien vers le Wiki',
+            url:   wikiUrl,
+            color: parseInt(hexColor, 16),
+          }],
+        }
+        const res  = await window.VCL.postDiscord(webhookUrl, payload, file, file.name)
         btn.textContent = res.ok ? '✓ Envoyé !' : `✗ Erreur ${res.status}`
         if (!res.ok) console.error('Discord webhook:', await res.json().catch(() => ({})))
       } catch (e) {
