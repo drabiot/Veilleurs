@@ -10,6 +10,7 @@ import { db, auth, onAuthStateChanged,
 import { toast }  from './components/toast.js';
 import { modal }  from './components/modal.js';
 import { store }  from './store.js';
+import { generateCardBlob } from './card-renderer.js';
 
 // Helpers partagés — utils.js est chargé en classic script avant ce module
 const { normalize, fuzzyMatch } = window.VCL;
@@ -28,6 +29,7 @@ async function _getWorkerSecret() {
   throw new Error('Secret worker introuvable dans Firestore (secrets/worker.workerSecret)');
 }
 const _WIKI_ROOT = new URL('.', import.meta.url).href;
+const WORKER_URL  = 'https://veilleurs.paulrobinpro49.workers.dev';
 
 let currentUser = null;
 let currentRole = 'visiteur';
@@ -1385,6 +1387,7 @@ const HASH_PANELS = {
   'trash':          () => showTrash(),
   'ghost-ids':      () => showGhostIds(),
   'dead-links':     () => showDeadLinks(),
+  'self-craft':     () => showSelfCraft(),
   'orphan-ids':     () => showOrphanIds(),
   'region-orphans': () => showRegionOrphans(),
   'mob-orphans':    () => showMobOrphans(),
@@ -2751,6 +2754,115 @@ window.showGhostIds = async () => {
 
 // ══════════════════════════════════════════════════════
 // LIENS MORTS (données publiées → IDs inexistants)
+// ══════════════════════════════════════════════════════
+// CRAFTS CIRCULAIRES (item se contient dans son propre craft)
+// ══════════════════════════════════════════════════════
+window.showSelfCraft = async () => {
+  _setHash('self-craft');
+  document.getElementById('self-craft-panel').style.display = '';
+  document.getElementById('btn-self-craft').classList.add('active');
+  document.querySelector('.sidebar').classList.add('in-order-panel');
+  await loadSelfCraft();
+};
+
+async function loadSelfCraft() {
+  const listEl = document.getElementById('self-craft-list');
+  listEl.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const items = await cachedDocs('items');
+    const bugs = [];
+
+    for (const item of items) {
+      if (!item.craft || !Array.isArray(item.craft) || !item.id) continue;
+      let selfRef = false;
+      outer: for (const c of item.craft) {
+        if (c.id === item.id) { selfRef = true; break; }
+        if (Array.isArray(c.items)) {
+          for (const ing of c.items) {
+            if (ing.id === item.id) { selfRef = true; break outer; }
+          }
+        }
+      }
+      if (selfRef) bugs.push(item);
+    }
+
+    listEl.innerHTML = '';
+    if (!bugs.length) {
+      listEl.innerHTML = '<div class="empty">✓ Aucun craft circulaire trouvé.</div>';
+      return;
+    }
+
+    const summary = document.createElement('div');
+    summary.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:12px;';
+    summary.textContent = `${bugs.length} item${bugs.length > 1 ? 's' : ''} avec craft circulaire`;
+    listEl.appendChild(summary);
+
+    const table = document.createElement('table');
+    table.className = 'ghost-table';
+    table.innerHTML = `<thead><tr><th>Item</th><th>ID</th><th></th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+
+    for (const item of bugs) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-weight:500;">${escHtml(item.name || item.id)}</td>
+        <td><span class="ghost-id">${escHtml(item.id)}</span></td>
+        <td style="white-space:nowrap;"></td>`;
+
+      const actTd = tr.querySelector('td:last-child');
+
+      // Bouton ouvrir dans le Creator
+      const histBtn = document.createElement('button');
+      histBtn.className = 'btn btn-ghost';
+      histBtn.style.cssText = 'font-size:11px;padding:4px 10px;margin-right:4px;';
+      histBtn.textContent = '⚙️ Creator';
+      histBtn.onclick = () => {
+        sessionStorage.setItem('editSub', JSON.stringify({ type: 'item', data: item }));
+        window.open('creator.html', '_blank');
+      };
+
+      // Bouton retirer l'ingrédient fautif
+      const fixBtn = document.createElement('button');
+      fixBtn.className = 'btn btn-ghost';
+      fixBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
+      fixBtn.textContent = '🗑️ Retirer';
+
+      fixBtn.onclick = async () => {
+        fixBtn.disabled = true;
+        fixBtn.textContent = '…';
+        try {
+          const newCraft = item.craft
+            .map(c => {
+              if (c.id === item.id) return null;
+              if (Array.isArray(c.items)) return { ...c, items: c.items.filter(ing => ing.id !== item.id) };
+              return c;
+            })
+            .filter(Boolean);
+
+          await updateDoc(doc(db, 'items', item.id), { craft: sanitizeForFirestore(newCraft) });
+          invalidateModCache('items');
+          await _writeAudit('fix_self_craft', 'item', item.id, item.name || item.id, {});
+          tr.style.opacity = '0.4';
+          fixBtn.textContent = '✓ Retiré';
+        } catch (e) {
+          fixBtn.disabled = false;
+          fixBtn.textContent = '🗑️ Retirer';
+          alert('Erreur : ' + e.message);
+        }
+      };
+
+      actTd.appendChild(histBtn);
+      actTd.appendChild(fixBtn);
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    listEl.appendChild(table);
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`;
+  }
+}
+
 // ══════════════════════════════════════════════════════
 let _deadLinksSnapshot = null; // { deduped, ENTITY_POOL }
 window.showDeadLinks = async () => {
@@ -5213,15 +5325,6 @@ const EMBED_FIELDS = [
   { id:'bonuses',  label:'🔗 Bonus pano', desc:'Bonus de panoplie' },
 ];
 
-const TAG_RULE_FIELDS = [
-  { id:'rarity',    label:'Rareté',      type:'enum',    values:['commun','rare','epique','legendaire','mythique','godlike','event'] },
-  { id:'category',  label:'Catégorie',   type:'enum',    values:['arme','armure','accessoire'] },
-  { id:'classes',   label:'Classes',     type:'array',   values:['guerrier','assassin','archer','mage','shaman'] },
-  { id:'palier',    label:'Palier',      type:'number' },
-  { id:'sensible',  label:'Sensible',    type:'boolean' },
-  { id:'twoHanded', label:'Deux mains',  type:'boolean' },
-  { id:'rune_slots',label:'Empl. runes', type:'number'  },
-];
 
 let _dwPublishItems = [];
 let _dwActivetab = 'webhooks';
@@ -5319,7 +5422,7 @@ function _renderDiscordWebhooks() {
       const input = document.createElement('input');
       input.type        = 'text';
       input.id          = `dw-${key}`;
-      input.placeholder = 'https://discord.com/api/webhooks/…';
+      input.placeholder = 'ID du channel Discord (forum)';
       input.value       = _dwConfig[key] || '';
       input.style.cssText = 'flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:11px;outline:none;font-family:monospace;transition:border-color .15s;';
       input.addEventListener('focus', () => { input.style.borderColor = 'var(--accent)'; });
@@ -5329,22 +5432,15 @@ function _renderDiscordWebhooks() {
       label.textContent = `Palier ${p}`;
       label.style.cssText = 'font-size:12px;width:58px;flex-shrink:0;color:var(--text);';
 
-      const testBtn = document.createElement('button');
-      testBtn.className = 'btn btn-ghost';
-      testBtn.style.cssText = 'font-size:11px;padding:5px 10px;flex-shrink:0;';
-      testBtn.textContent = '🧪 Test';
-      testBtn.addEventListener('click', () => testDiscordWebhook(key));
-
       const delBtn = document.createElement('button');
       delBtn.className = 'btn btn-ghost';
-      delBtn.title = 'Supprimer tous les posts Discord de ce webhook';
+      delBtn.title = 'Supprimer tous les posts Discord de ce channel';
       delBtn.style.cssText = 'font-size:11px;padding:5px 8px;flex-shrink:0;color:var(--danger);';
       delBtn.textContent = '🗑️';
-      delBtn.addEventListener('click', () => deleteWebhookPosts(key, input.value.trim()));
+      delBtn.addEventListener('click', () => deleteChannelPosts(key));
 
       row.appendChild(label);
       row.appendChild(input);
-      row.appendChild(testBtn);
       row.appendChild(delBtn);
       section.appendChild(row);
     }
@@ -5352,59 +5448,32 @@ function _renderDiscordWebhooks() {
   }
 }
 
-window.deleteWebhookPosts = async function deleteWebhookPosts(key, url) {
-  if (!url) { toast('⚠ Aucun webhook configuré pour ce palier', 'warning'); return; }
+window.deleteChannelPosts = async function deleteChannelPosts(key) {
   if (!await modal.confirm(`Supprimer tous les posts Discord pour « ${key} » ?\n(supprime uniquement les messages sur Discord, les données Firestore sont conservées)`)) return;
 
-  const match = url.match(/webhooks\/(\d+)\/([^/?]+)/);
-  if (!match) { toast('⛔ URL webhook invalide', 'error'); return; }
-  const [, whId, whToken] = match;
-
   const snap = await getDocs(collection(db, 'discord_posts'));
-  console.log('[dwDelete] total docs:', snap.docs.length, snap.docs.map(d => d.data()));
   const posts = snap.docs.map(d => ({ _id: d.id, ...d.data() })).filter(p => p.webhookKey === key);
-  console.log('[dwDelete] key filter:', key, '→ matched:', posts.length);
 
   if (!posts.length) {
-    toast('Aucun post tracké pour ce webhook. Les posts envoyés avant l\'activation du tracking ne sont pas supprimables automatiquement.', 'warning');
+    toast('Aucun post tracké pour ce channel.', 'warning');
     return;
   }
 
-  const WORKER_URL = 'https://veilleurs.paulrobinpro49.workers.dev';
   const WORKER_SECRET = await _getWorkerSecret();
-
   let deleted = 0, failed = 0;
   for (const post of posts) {
     try {
-      // Supprimer le message webhook
-      let delUrl = `https://discord.com/api/webhooks/${whId}/${whToken}/messages/${post.messageId}`;
-      if (post.threadId) delUrl += `?thread_id=${post.threadId}`;
-      const r = await fetch(delUrl, { method: 'DELETE' });
-      if (!r.ok && r.status !== 404) {
-        const body = await r.text().catch(() => '');
-        const json = JSON.parse(body || '{}');
-        if (json.code === 10003) {
-          await deleteDoc(doc(db, 'discord_posts', post._id)).catch(() => {});
-          deleted++; continue;
-        }
-        console.warn('[deleteWebhookPosts] message delete failed', r.status, body);
-        failed++; continue;
-      }
-      // Supprimer le thread forum via Cloudflare Worker
       if (post.threadId) {
         const rt = await fetch(WORKER_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ threadId: post.threadId, secret: WORKER_SECRET }),
+          body: JSON.stringify({ secret: WORKER_SECRET, action: 'delete_thread', threadId: post.threadId }),
         });
-        if (!rt.ok) {
-          const body = await rt.text().catch(() => '');
-          console.warn('[deleteWebhookPosts] thread delete failed', rt.status, body);
-        }
+        if (!rt.ok) { console.warn('[deleteChannelPosts] thread delete failed', rt.status); failed++; continue; }
       }
       await deleteDoc(doc(db, 'discord_posts', post._id)).catch(() => {});
       deleted++;
-    } catch(e) { console.error('[deleteWebhookPosts] error', e); failed++; }
+    } catch(e) { console.error('[deleteChannelPosts] error', e); failed++; }
   }
   toast(`${deleted} post(s) supprimé(s)${failed ? `, ${failed} échec(s) — voir console` : ''}.`, deleted ? 'success' : 'error');
 };
@@ -5425,7 +5494,6 @@ window.saveDiscordWebhooks = async function saveDiscordWebhooks() {
     if (tpl) data.template = tpl;
     const newSub = document.getElementById('dw-new-submission')?.value?.trim() || '';
     if (newSub) data.new_submission = newSub;
-
     // Persist embedFields from in-memory config
     if (_dwConfig?.embedFields) data.embedFields = _dwConfig.embedFields;
 
@@ -5454,7 +5522,7 @@ window.saveDiscordWebhooks = async function saveDiscordWebhooks() {
 // ── Tab switcher ──────────────────────────────────────
 window.switchDwTab = function switchDwTab(name) {
   _dwActivetab = name;
-  const tabs = ['webhooks', 'embed', 'tags', 'publish'];
+  const tabs = ['webhooks', 'embed', 'publish'];
   for (const t of tabs) {
     const tab = document.getElementById(`dw-tab-${t}`);
     const btn = document.getElementById(`dw-tab-btn-${t}`);
@@ -5465,7 +5533,6 @@ window.switchDwTab = function switchDwTab(name) {
     btn.style.color = active ? '#fff' : 'var(--muted)';
   }
   if (name === 'embed')   _renderEmbedBuilder();
-  if (name === 'tags')    _renderTagRules();
   if (name === 'publish') _renderPublishPanel();
 };
 
@@ -5573,136 +5640,6 @@ function _dwChannelLabel(key) {
   return palier === 'event' ? `${cat.label} · Event` : `${cat.label} · Palier ${palier}`;
 }
 
-function _renderTagRules() {
-  const container = document.getElementById('dw-tag-rules-list');
-  if (!container) return;
-  container.innerHTML = '';
-
-  if (!_dwConfig.tagRules || Array.isArray(_dwConfig.tagRules)) _dwConfig.tagRules = {};
-
-  const SEL  = 'background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
-  const MONO = 'background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;font-family:monospace;outline:none;width:155px;';
-
-  for (const key of _dwAllChannelKeys()) {
-    const hasWebhook = !!(_dwConfig[key]);
-    const rules      = _dwConfig.tagRules[key] || [];
-    const label      = _dwChannelLabel(key);
-
-    const section = document.createElement('div');
-    section.style.cssText = 'border:1px solid var(--border);border-radius:10px;overflow:hidden;';
-
-    // Header
-    const hdr = document.createElement('div');
-    hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);';
-    hdr.innerHTML = `
-      <span style="font-size:13px;font-weight:700;">${_ee(label)}</span>
-      <div style="display:flex;align-items:center;gap:8px;">
-        ${hasWebhook
-          ? '<span style="font-size:10px;color:#4ade80;background:rgba(74,222,128,.1);padding:2px 8px;border-radius:10px;border:1px solid rgba(74,222,128,.3);">✓ Webhook actif</span>'
-          : '<span style="font-size:10px;color:var(--muted);padding:2px 8px;border-radius:10px;border:1px solid var(--border);">Pas de webhook</span>'}
-        <button class="btn btn-ghost" onclick="dwAddTagRule('${key}')" style="font-size:11px;padding:3px 9px;">＋ Règle</button>
-      </div>`;
-    section.appendChild(hdr);
-
-    // Rules body
-    const body = document.createElement('div');
-    body.id    = `dw-rules-body-${key}`;
-    body.style.cssText = 'padding:10px;display:flex;flex-direction:column;gap:6px;';
-
-    if (!rules.length) {
-      const empty = document.createElement('div');
-      empty.style.cssText = 'font-size:12px;color:var(--muted);font-style:italic;padding:2px 0;';
-      empty.textContent   = 'Aucune règle — les tags de ce forum seront ignorés.';
-      body.appendChild(empty);
-    } else {
-      rules.forEach((r, i) => {
-        const fieldDef = TAG_RULE_FIELDS.find(f => f.id === r.field);
-        const ops      = _dwTagRuleOpsFor(fieldDef?.type);
-        const fieldOpts = TAG_RULE_FIELDS.map(f => `<option value="${_ee(f.id)}" ${r.field===f.id?'selected':''}>${_ee(f.label)}</option>`).join('');
-        const opOpts    = ops.map(([v,l]) => `<option value="${_ee(v)}" ${r.op===v?'selected':''}>${_ee(l)}</option>`).join('');
-        const valWidget = _dwTagRuleValueWidget(fieldDef, r.value, `dwRuleSync('${key}',${i},'value',this.value)`);
-
-        const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:7px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;';
-        row.innerHTML = `
-          <select onchange="dwRuleFieldChange('${key}',${i},this.value)" style="${SEL}">${fieldOpts}</select>
-          <select onchange="dwRuleSync('${key}',${i},'op',this.value)" style="${SEL}">${opOpts}</select>
-          <div style="flex:1;min-width:80px;display:flex;">${valWidget}</div>
-          <span style="font-size:12px;color:var(--muted);flex-shrink:0;">→</span>
-          <input type="text" value="${_ee(r.tagId||'')}" placeholder="ID tag Discord…"
-            onchange="dwRuleSync('${key}',${i},'tagId',this.value)"
-            style="${MONO}">
-          <button class="btn btn-ghost" onclick="dwRuleRemove('${key}',${i})" style="font-size:11px;padding:4px 8px;flex-shrink:0;">✕</button>`;
-        body.appendChild(row);
-      });
-    }
-    section.appendChild(body);
-    container.appendChild(section);
-  }
-}
-
-function _dwTagRuleOpsFor(fieldType) {
-  if (fieldType === 'array')   return [['contains','contient'],['not_contains','ne contient pas']];
-  if (fieldType === 'boolean') return [['eq','est']];
-  if (fieldType === 'number')  return [['eq','='],['gte','≥'],['lte','≤']];
-  return [['eq','=']];
-}
-
-function _dwTagRuleValueWidget(fieldDef, currentValue, onChange) {
-  const S = 'flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
-  if (!fieldDef) return `<input type="text" value="${_ee(String(currentValue??''))}" placeholder="valeur" onchange="${onChange}" style="${S}">`;
-  if (fieldDef.type === 'boolean') {
-    return `<select onchange="${onChange}" style="width:80px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;">
-      <option value="true"  ${currentValue===true||currentValue==='true'?'selected':''}>Oui</option>
-      <option value="false" ${currentValue===false||currentValue==='false'?'selected':''}>Non</option>
-    </select>`;
-  }
-  if (fieldDef.type === 'number') {
-    return `<input type="number" value="${_ee(String(currentValue??''))}" placeholder="0" onchange="${onChange}" style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;">`;
-  }
-  const opts = (fieldDef.values||[]).map(v => `<option value="${_ee(v)}" ${currentValue==v?'selected':''}>${_ee(v)}</option>`).join('');
-  return `<select onchange="${onChange}" style="${S}">${opts}</select>`;
-}
-
-window.dwRuleSync = function(channelKey, idx, prop, value) {
-  if (!_dwConfig.tagRules) _dwConfig.tagRules = {};
-  const rules = _dwConfig.tagRules[channelKey];
-  if (!rules || !rules[idx]) return;
-  const r = rules[idx];
-  if (prop === 'value' && (r.field === 'sensible' || r.field === 'twoHanded')) {
-    r[prop] = (value === 'true');
-  } else if (prop === 'value' && (r.field === 'palier' || r.field === 'rune_slots')) {
-    r[prop] = Number(value);
-  } else {
-    r[prop] = value;
-  }
-};
-
-window.dwRuleFieldChange = function(channelKey, idx, newField) {
-  const rules = _dwConfig.tagRules?.[channelKey];
-  if (!rules || !rules[idx]) return;
-  const fd = TAG_RULE_FIELDS.find(f => f.id === newField);
-  const ops = _dwTagRuleOpsFor(fd?.type);
-  rules[idx].field = newField;
-  rules[idx].op    = ops[0][0];
-  rules[idx].value = fd?.type === 'boolean' ? true : (fd?.values?.[0] ?? '');
-  _renderTagRules();
-};
-
-window.dwRuleRemove = function(channelKey, idx) {
-  const rules = _dwConfig.tagRules?.[channelKey];
-  if (!rules) return;
-  rules.splice(idx, 1);
-  _renderTagRules();
-};
-
-window.dwAddTagRule = function(channelKey) {
-  if (!_dwConfig) return;
-  if (!_dwConfig.tagRules) _dwConfig.tagRules = {};
-  if (!_dwConfig.tagRules[channelKey]) _dwConfig.tagRules[channelKey] = [];
-  _dwConfig.tagRules[channelKey].push({ field: 'rarity', op: 'eq', value: 'commun', tagId: '' });
-  _renderTagRules();
-};
 
 // ── Publish Panel ─────────────────────────────────────
 function _renderUnsentSection() {
@@ -5780,29 +5717,10 @@ window.dwPublishUnsentSend = async function() {
   const ids  = checks.map(c => c.dataset.subid);
   const subs = allSubs.filter(s => ids.includes(s._id));
 
-  // Grouper par set — les items sans set partent individuellement
-  // Pour les anciennes soumissions, sub.data.set peut être absent (snapshot avant l'ajout du champ).
-  // On tombe alors dans la collection 'items' déjà mise en cache.
-  const _cachedItems = _modCache['items'] || [];
-  const setGroups = new Map(); // setId → [sub]
-  const soloSubs  = [];
-  for (const sub of subs) {
-    const liveItem = _cachedItems.find(it => it.id === sub.data?.id);
-    const setId = sub.data?.set || liveItem?.set || null;
-    console.log('[dw-group]', sub.data?.name, '| sub.data.set:', sub.data?.set, '| liveItem.set:', liveItem?.set, '| setId:', setId);
-    if (setId) {
-      if (!setGroups.has(setId)) setGroups.set(setId, []);
-      setGroups.get(setId).push(sub);
-    } else {
-      soloSubs.push(sub);
-    }
-  }
-  console.log('[dw-group] setGroups:', [...setGroups.keys()], '| soloSubs:', soloSubs.length);
-
   let done = 0, failed = 0;
-  const total = soloSubs.length + setGroups.size;
+  const total = subs.length;
 
-  for (const sub of soloSubs) {
+  for (const sub of subs) {
     try {
       await sendApprovalWebhook(sub);
       await updateDoc(doc(db, 'submissions', sub._id), { discord_sent: true });
@@ -5812,21 +5730,7 @@ window.dwPublishUnsentSend = async function() {
       toast(`⛔ Erreur « ${sub.data?.name || sub._id} » : ${e.message}`, 'error');
       failed++;
     }
-    if (done + failed < total) await new Promise(r => setTimeout(r, 1100));
-  }
-
-  for (const setSubs of setGroups.values()) {
-    try {
-      await _sendSetGroupDiscord(setSubs);
-      await Promise.all(setSubs.map(s => updateDoc(doc(db, 'submissions', s._id), { discord_sent: true })));
-      for (const s of setSubs) s.discord_sent = true;
-      done++;
-    } catch(e) {
-      const names = setSubs.map(s => s.data?.name || s._id).join(', ');
-      toast(`⛔ Erreur set « ${names} » : ${e.message}`, 'error');
-      failed++;
-    }
-    if (done + failed < total) await new Promise(r => setTimeout(r, 1100));
+    if (done + failed < total) await new Promise(r => setTimeout(r, 2500));
   }
 
   if (done) toast(`✓ ${done} envoi${done>1?'s':''} réussi${done>1?'s':''}`, 'success');
@@ -5911,23 +5815,10 @@ window.dwPublishSelected = async function() {
   const ids   = checks.map(c => c.dataset.id);
   const items = _dwPublishItems.filter(it => ids.includes(it._id || it.id));
 
-  // Grouper par set
-  const setGroups = new Map();
-  const soloItems = [];
-  for (const item of items) {
-    const setId = item.set || null;
-    if (setId) {
-      if (!setGroups.has(setId)) setGroups.set(setId, []);
-      setGroups.get(setId).push(item);
-    } else {
-      soloItems.push(item);
-    }
-  }
-
-  const total = soloItems.length + setGroups.size;
+  const total = items.length;
   let done = 0;
 
-  for (const item of soloItems) {
+  for (const item of items) {
     progText.textContent = `Envoi ${done + 1} / ${total} — ${item.name || ''}…`;
     progBar.style.width  = `${Math.round(done / total * 100)}%`;
     try {
@@ -5936,20 +5827,7 @@ window.dwPublishSelected = async function() {
       toast(`⛔ Erreur pour « ${item.name} » : ${e.message}`, 'error');
     }
     done++;
-    if (done < total) await new Promise(r => setTimeout(r, 1100));
-  }
-
-  for (const [setId, setItems] of setGroups) {
-    const label = setItems[0].name || setId;
-    progText.textContent = `Envoi ${done + 1} / ${total} — Set ${label}…`;
-    progBar.style.width  = `${Math.round(done / total * 100)}%`;
-    try {
-      await _sendSetGroupItemsDiscord(setItems);
-    } catch(e) {
-      toast(`⛔ Erreur set « ${setId} » : ${e.message}`, 'error');
-    }
-    done++;
-    if (done < total) await new Promise(r => setTimeout(r, 1100));
+    if (done < total) await new Promise(r => setTimeout(r, 2500));
   }
 
   progBar.style.width  = '100%';
@@ -5957,61 +5835,299 @@ window.dwPublishSelected = async function() {
   setTimeout(() => { prog.style.display = 'none'; btn.disabled = false; }, 3000);
 };
 
+// ── Helpers Discord bot (via Cloudflare Worker — évite CORS) ─────────
+
+async function _workerCall(action, payload) {
+  const secret = await _getWorkerSecret();
+  const r = await fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret, action, ...payload }),
+  });
+  if (!r.ok) { const t = await r.text().catch(() => ''); console.warn('[worker]', action, r.status, t.slice(0, 200)); return null; }
+  return r.json();
+}
+
+
+async function _postBotForumThread(channelId, threadName, content, fileBlob, fileName, tagIds) {
+  const secret = await _getWorkerSecret();
+  const message = {};
+  if (content) message.content = content;
+  message.attachments = [{ id: 0, filename: fileName }];
+  const thread = { name: threadName, message };
+  if (tagIds?.length) thread.applied_tags = tagIds;
+
+  const fd = new FormData();
+  fd.append('secret', secret);
+  fd.append('action', 'post_thread');
+  fd.append('channelId', channelId);
+  fd.append('thread', JSON.stringify(thread));
+  if (fileBlob && fileName) fd.append('file', fileBlob, fileName);
+  fd.append('fileName', fileName);
+
+  try {
+    let r = await fetch(`${WORKER_URL}?action=post_thread`, { method: 'POST', body: fd });
+    if (r.status === 429) {
+      const err = await r.json().catch(() => ({}));
+      const wait = Math.ceil((err.retry_after || 5) * 1000) + 500;
+      console.warn(`[botPost] rate limit — attente ${Math.ceil(wait/1000)}s`);
+      await new Promise(res => setTimeout(res, wait));
+      r = await fetch(`${WORKER_URL}?action=post_thread`, { method: 'POST', body: fd });
+    }
+    if (!r.ok) { const t = await r.text().catch(() => ''); console.warn('[botPost]', r.status, t.slice(0, 200)); return null; }
+    const data = await r.json();
+    return { threadId: data.id, messageId: data.message?.id || data.id, raw: data };
+  } catch(e) { console.error('[botPost]', e); return null; }
+}
+
+async function _getChannelId(key) {
+  const val = _dwConfig?.[key];
+  if (!val) return null;
+  // Migration : si valeur = URL webhook, dériver le channel ID automatiquement
+  if (val.startsWith('http')) {
+    const m = val.match(/\/webhooks\/(\d+)\/([^?/]+)/);
+    if (!m) return null;
+    const data = await _workerCall('get_webhook', { webhookId: m[1], webhookToken: m[2] });
+    const channelId = data?.channel_id || null;
+    if (channelId) _dwConfig[key] = channelId; // mise à jour en mémoire
+    return channelId;
+  }
+  return val;
+}
+
+// Priorité pour l'ordre d'affichage des tags dans le channel
+const TAG_TYPE_PRIORITY = { rarity: 0, slot: 1, set: 2, class: 3 };
+
+async function _ensureTag(channelId, tagName, emoji = null, type = 'class') {
+  if (!channelId || !tagName) return null;
+  const name = tagName.slice(0, 20);
+  if (!_dwConfig._tagCache)     _dwConfig._tagCache     = {};
+  if (!_dwConfig._tagTypeCache) _dwConfig._tagTypeCache = {};
+  const cacheKey = `${channelId}::${name}`;
+  if (_dwConfig._tagCache[cacheKey]) {
+    console.log(`[ensureTag] cache hit: "${name}" type=${type} id=${_dwConfig._tagCache[cacheKey]}`);
+    return _dwConfig._tagCache[cacheKey];
+  }
+
+  const chan = await _workerCall('get_channel', { channelId });
+  if (!chan) return null;
+  const existing = (chan.available_tags || []).find(t => t.name === name);
+  if (existing) {
+    _dwConfig._tagCache[cacheKey]        = existing.id;
+    _dwConfig._tagTypeCache[existing.id] = type;
+    console.log(`[ensureTag] existing: "${name}" type=${type} id=${existing.id}`);
+    return existing.id;
+  }
+
+  const newTag = { name, moderated: false };
+  if (emoji) newTag.emoji_name = emoji;
+  const updated = await _workerCall('patch_channel', {
+    channelId,
+    patch: { available_tags: [...(chan.available_tags || []), newTag] },
+  });
+  const created = (updated?.available_tags || []).find(t => t.name === name);
+  if (created) {
+    _dwConfig._tagCache[cacheKey]        = created.id;
+    _dwConfig._tagTypeCache[created.id]  = type;
+    console.log(`[ensureTag] created: "${name}" type=${type} id=${created.id}`);
+    return created.id;
+  }
+  console.warn(`[ensureTag] FAILED to create tag "${name}"`);
+  return null;
+}
+
+// Réordonne available_tags du channel selon rareté → set → classe
+async function _reorderChannelTags(channelId) {
+  if (!channelId) return;
+  const chan = await _workerCall('get_channel', { channelId });
+  if (!chan?.available_tags?.length) return;
+
+  const typeCache = _dwConfig._tagTypeCache || {};
+  const rarityNames = new Set(Object.values(window.VCL.RARITIES || {}).map(r => r.label));
+  const CLASSES = window._VCL_DATA?.CLASSES || [];
+  const classNames = new Set(CLASSES.map(c => c.label));
+  const slotNames = new Set([...Object.values(SLOT_TAG_INFO).map(s => s.label), 'Deux mains']);
+
+  const sorted = [...chan.available_tags].sort((a, b) => {
+    const typeOf = t => rarityNames.has(t.name) ? 0 : slotNames.has(t.name) ? 1 : classNames.has(t.name) ? 3 : 2;
+    const pa = typeCache[a.id] !== undefined ? TAG_TYPE_PRIORITY[typeCache[a.id]] : typeOf(a);
+    const pb = typeCache[b.id] !== undefined ? TAG_TYPE_PRIORITY[typeCache[b.id]] : typeOf(b);
+    if (pa !== pb) return pa - pb;
+    // Sous-tri : raretés par ordre défini, classes par ordre CLASSES
+    if (pa === 0) {
+      const rar = Object.keys(window.VCL.RARITIES || {});
+      const ia  = rar.findIndex(k => window.VCL.RARITIES[k].label === a.name);
+      const ib  = rar.findIndex(k => window.VCL.RARITIES[k].label === b.name);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    }
+    if (pa === 3) {
+      const ia = CLASSES.findIndex(c => c.label === a.name);
+      const ib = CLASSES.findIndex(c => c.label === b.name);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  const changed = sorted.some((t, i) => t.id !== chan.available_tags[i].id);
+  console.log('[reorder] avant:', chan.available_tags.map(t => t.name), '→ après:', sorted.map(t => t.name), 'changed:', changed);
+  if (!changed) return;
+
+  const result = await _workerCall('patch_channel', { channelId, patch: { available_tags: sorted } });
+  console.log('[reorder] patch result available_tags:', result?.available_tags?.map(t => t.name));
+}
+
+window.reorderAllChannelTags = async function reorderAllChannelTags() {
+  const btn = document.getElementById('btn-reorder-tags');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Réorganisation…'; }
+
+  const seen = new Set();
+  let ok = 0, skipped = 0, failed = 0;
+
+  for (const cat of DW_CATEGORIES) {
+    for (const p of CREATOR_PALIERS) {
+      const key = `${cat.id}_${p}`;
+      const channelId = await _getChannelId(key).catch(() => null);
+      if (!channelId || seen.has(channelId)) { skipped++; continue; }
+      seen.add(channelId);
+      try {
+        await _reorderChannelTags(channelId);
+        ok++;
+      } catch(e) {
+        console.warn('[reorderAll] failed for', key, e);
+        failed++;
+      }
+    }
+  }
+
+  console.log(`[reorderAll] done — ${ok} channels réorganisés, ${skipped} vides, ${failed} erreurs`);
+  if (btn) {
+    btn.textContent = failed ? `✗ ${failed} erreur(s)` : `✓ ${ok} channel(s) réorganisé(s)`;
+    setTimeout(() => { btn.disabled = false; btn.textContent = '🔃 Réorganiser les tags'; }, 3000);
+  }
+}
+
+function _buildCardMaps(panList, pnjList) {
+  const panoplieData = {}, panoplieMap = {};
+  for (const pan of panList) {
+    const id = pan._id || pan.id;
+    panoplieMap[id] = pan.label || id;
+    panoplieData[id] = pan;
+  }
+  const pnjMap = {};
+  for (const pnj of pnjList) {
+    pnjMap[pnj._id || pnj.id] = pnj;
+    if (pnj.id && pnj.id !== pnj._id) pnjMap[pnj.id] = pnj;
+  }
+  return { panoplieData, panoplieMap, pnjMap };
+}
+
+const RARITY_EMOJI = {
+  commun:     '🌿',
+  rare:       '💎',
+  epique:     '💜',
+  legendaire: '⭐',
+  mythique:   '🌸',
+  godlike:    '🔥',
+  event:      '🎉',
+};
+
+const SLOT_TAG_INFO = {
+  amulette:   { label: 'Amulette',         ico: '📿' },
+  anneau:     { label: 'Anneau',            ico: '💍' },
+  bracelet:   { label: 'Bracelet',         ico: '⭕' },
+  gants:      { label: 'Gants',            ico: '🧤' },
+  casque:     { label: 'Casque',           ico: '🧢' },
+  plastron:   { label: 'Plastron',         ico: '👔' },
+  'jambières':{ label: 'Jambières',        ico: '👖' },
+  bottes:     { label: 'Bottes',           ico: '👢' },
+  arme_p:     { label: 'Arme Principale',  ico: '⚔️' },
+  arme_s:     { label: 'Arme Secondaire',  ico: '🛡️' },
+  artefact:   { label: 'Artefact',         ico: '🔮' },
+};
+
+async function _ensureSlotTag(channelId, category, twoHanded) {
+  if (twoHanded) return _ensureTag(channelId, 'Deux mains', '⚔️', 'slot');
+  const info = SLOT_TAG_INFO[category];
+  if (!info) return null;
+  return _ensureTag(channelId, info.label, info.ico.replace(/️/g, ''), 'slot');
+}
+
+async function _deleteExistingDiscordPost(docId) {
+  try {
+    const snap = await getDoc(doc(db, 'discord_posts', docId));
+    if (!snap.exists()) return;
+    const { threadId } = snap.data();
+    if (threadId) await _workerCall('delete_thread', { threadId });
+    await deleteDoc(doc(db, 'discord_posts', docId));
+  } catch(e) { console.warn('[deletePost]', e); }
+}
+
 async function _sendSingleItemDiscord(item) {
   const cat    = item.category;
   const palier = item.palier;
   if (!cat || !palier) throw new Error('Catégorie ou palier manquant');
   const key = `${cat}_${palier}`;
-  const url = _dwConfig?.[key];
-  if (!url) throw new Error(`Aucun webhook configuré pour ${key}`);
+  const channelId0 = await _getChannelId(key);
+  if (!channelId0) throw new Error(`Aucun channel configuré pour ${key}`);
 
-  const [itemNames, { blob: imgBlob, fname: imgFname }, mobsPublic, mobsSecret, pnjs] = await Promise.all([
-    _getItemNamesCache(),
-    _fetchItemImgBlob(item),
-    cachedDocs(COL.mobs),
-    cachedDocs(COL.mobsSecret).catch(() => []),
+  const [panList, pnjList] = await Promise.all([
+    cachedDocs(COL.panoplies).catch(() => []),
     cachedDocs(COL.pnj).catch(() => []),
   ]);
-  const allMobs = [...mobsPublic, ...mobsSecret];
-  const itemForEmbed = item.obtain ? { ...item, obtain:
-    _enrichObtainWithPnjCoords(
-      _enrichObtainWithMobChances(item.obtain, item.id, allMobs),
-      pnjs)
-  } : item;
-  // Cherche le nom du soumetteur dans les submissions en mémoire
-  const itemId = item._id || item.id;
-  const matchSub = itemId
-    ? [...allSubs].reverse().find(s => s.type === 'item' && (String(s.data?.id) === String(itemId) || String(s.data?._id) === String(itemId)))
-    : null;
-  const _contributor = matchSub
-    ? (matchSub.submitterName || _userNames.get(matchSub.submittedBy) || null)
-    : null;
+  const allItemsList = await cachedDocs(COL.items).catch(() => []);
+  const maps = { ..._buildCardMaps(panList, pnjList), allItems: allItemsList };
 
-  const embed = _buildApprovalEmbed(itemForEmbed, imgFname, _dwConfig?.embedFields || null, itemNames, _contributor);
-  const tags  = _resolveTagRules(item, (_dwConfig?.tagRules || {})[key] || []);
+  const cardBlob  = await generateCardBlob(item, maps, 3);
+  const cardFname = `${item.id || item._id || 'item'}_card.png`;
 
-  const payload = { thread_name: item.name || 'Item', embeds: [embed] };
-  if (tags.length) payload.applied_tags = tags;
-  if (_dwConfig?.template) {
-    const RARITY_LABEL = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
-    const CAT_LABEL    = { arme:'Arme', armure:'Armure', accessoire:'Accessoire' };
-    const CLS_LABEL    = { guerrier:'Guerrier', assassin:'Assassin', archer:'Archer', mage:'Mage', shaman:'Shaman' };
-    payload.content = _dwConfig.template
-      .replace(/\{nom\}/g,       item.name        || '')
-      .replace(/\{categorie\}/g, CAT_LABEL[item.category]  || item.category || '')
-      .replace(/\{rarete\}/g,    RARITY_LABEL[item.rarity] || item.rarity   || '')
-      .replace(/\{palier\}/g,    item.palier       || '')
-      .replace(/\{niveau\}/g,    item.lvl          || '')
-      .replace(/\{classes\}/g,   (item.classes || []).map(c => CLS_LABEL[c] || c).join(', '));
+  const itemId   = item._id || item.id;
+  const wikiUrl  = itemId ? `https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${itemId}` : null;
+  const content  = wikiUrl ? `↗ [Lien vers le Wiki](<${wikiUrl}>)` : '';
+
+  const channelId = channelId0;
+  const postDocId = itemId ? `${key}_item_${itemId}` : null;
+
+  // Supprimer le post existant avant de recréer
+  if (postDocId) await _deleteExistingDiscordPost(postDocId);
+
+  const tags = [];
+  if (item.rarity) {
+    const rarLabel = window.VCL.RARITIES?.[item.rarity]?.label || item.rarity;
+    const rarEmoji = RARITY_EMOJI[item.rarity] || null;
+    const tagId = await _ensureTag(channelId, rarLabel, rarEmoji, 'rarity');
+    if (tagId) tags.push(tagId);
   }
-  const discordRes = await window.VCL.postDiscord(`${url}?wait=true`, payload, imgBlob, imgFname)
-    .then(r => r.ok ? r.json() : null).catch(() => null);
-  if (discordRes?.id && itemId) {
+  const slotTagId = await _ensureSlotTag(channelId, item.cat, item.twoHanded);
+  if (slotTagId && !tags.includes(slotTagId)) tags.push(slotTagId);
+  if (item.set) {
+    const setLabel = panList.find(p => (p._id || p.id) === item.set)?.label || item.set.replace(/_/g, ' ');
+    const tagId = await _ensureTag(channelId, setLabel, '✨', 'set');
+    if (tagId && !tags.includes(tagId)) tags.push(tagId);
+  }
+  const CLASSES = window._VCL_DATA?.CLASSES || [];
+  const sortedClasses = [...(item.classes || [])].sort((a, b) => {
+    const ai = CLASSES.findIndex(c => c.id === a);
+    const bi = CLASSES.findIndex(c => c.id === b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+  for (const cls of sortedClasses) {
+    const clsData = CLASSES.find(c => c.id === cls);
+    const label = clsData?.label || cls;
+    const emoji = clsData?.ico?.replace(/️/g, '') || null;
+    const tagId = await _ensureTag(channelId, label, emoji, 'class');
+    if (tagId && !tags.includes(tagId)) tags.push(tagId);
+  }
+  await _reorderChannelTags(channelId);
+
+  console.log('[send] applied_tags order:', tags);
+  const res = await _postBotForumThread(channelId, item.name || 'Item', content, cardBlob, cardFname, tags);
+  if (!res) throw new Error('Échec de l\'envoi bot Discord');
+
+  if (postDocId) {
     try {
-      await setDoc(doc(db, 'discord_posts', `${key}_item_${itemId}`), {
-        itemId: String(itemId), itemName: item.name || '', webhookKey: key, webhookUrl: url,
-        messageId: discordRes.id,
-        threadId: discordRes.channel_id || null,
+      await setDoc(doc(db, 'discord_posts', postDocId), {
+        itemId: String(itemId), itemName: item.name || '', webhookKey: key, channelId,
+        messageId: res.messageId, threadId: res.threadId,
         sentAt: new Date().toISOString(),
       });
     } catch(e) { console.warn('discord_posts save failed:', e); }
@@ -6949,7 +7065,7 @@ async function sendApprovalWebhook(sub) {
   if (!['arme', 'armure', 'accessoire'].includes(cat)) return;
   const palier = sub.data?.palier;
   if (!palier) return;
-  const key = sub.data.rarity === 'event' ? `${cat}_event` : `${cat}_${palier}`;
+  const key = `${cat}_${palier}`;
 
   if (!_dwConfig) {
     try {
@@ -6958,78 +7074,65 @@ async function sendApprovalWebhook(sub) {
     } catch { return; }
   }
 
-  const url = _dwConfig[key];
-  if (!url) return;
+  const channelId = await _getChannelId(key);
+  if (!channelId) return;
 
-  const { blob: imgBlob, fname: imgFname } = await _extractSubBlob(sub);
-
-  const [itemNames, mobsPublic, mobsSecret, pnjs] = await Promise.all([
-    _getItemNamesCache(),
-    cachedDocs(COL.mobs),
-    cachedDocs(COL.mobsSecret).catch(() => []),
+  const [panList, pnjList] = await Promise.all([
+    cachedDocs(COL.panoplies).catch(() => []),
     cachedDocs(COL.pnj).catch(() => []),
   ]);
-  const allMobs = [...mobsPublic, ...mobsSecret];
-  const subDataForEmbed = sub.data.obtain ? { ...sub.data, obtain:
-    _enrichObtainWithPnjCoords(
-      _enrichObtainWithMobChances(sub.data.obtain, sub.data.id, allMobs),
-      pnjs)
-  } : sub.data;
-  const contributorName = sub.submitterName || (_userNames.get(sub.submittedBy) || null);
-  const embed   = _buildApprovalEmbed(subDataForEmbed, imgFname, _dwConfig.embedFields || null, itemNames, contributorName);
+  const allItemsList = await cachedDocs(COL.items).catch(() => []);
+  const maps = { ..._buildCardMaps(panList, pnjList), allItems: allItemsList };
 
-  // Thread name: use set label if item belongs to a set, else item name
-  let threadName = sub.data.name;
-  if (sub.data.set && _dwConfig._setCache?.[sub.data.set]) {
-    threadName = _dwConfig._setCache[sub.data.set];
-  } else if (sub.data.set) {
-    try {
-      const setSnap = await getDoc(doc(db, 'panoplies', sub.data.set));
-      if (setSnap.exists()) {
-        const setLabel = setSnap.data().label || sub.data.set;
-        if (!_dwConfig._setCache) _dwConfig._setCache = {};
-        _dwConfig._setCache[sub.data.set] = setLabel;
-        threadName = setLabel;
-      }
-    } catch { /* ignore */ }
+  const cardBlob  = await generateCardBlob(sub.data, maps, 3);
+  const cardFname = `${sub.data.id || sub.data._id || 'item'}_card.png`;
+
+  const subItemId = sub.data.id || sub.data._id;
+  const wikiUrl   = subItemId ? `https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${subItemId}` : null;
+  const content   = wikiUrl ? `↗ [Lien vers le Wiki](<${wikiUrl}>)` : '';
+
+  const postDocId = `${key}_${sub._id}`;
+  await _deleteExistingDiscordPost(postDocId);
+
+  const tags = [];
+  if (sub.data.rarity) {
+    const rarLabel = window.VCL.RARITIES?.[sub.data.rarity]?.label || sub.data.rarity;
+    const rarEmoji = RARITY_EMOJI[sub.data.rarity] || null;
+    const tagId = await _ensureTag(channelId, rarLabel, rarEmoji, 'rarity');
+    if (tagId) tags.push(tagId);
   }
-
-  const payload = { thread_name: threadName, embeds: [embed] };
-
-  // Apply Discord forum tags via rules engine (channel-specific)
-  const appliedTags = _resolveTagRules(sub.data, (_dwConfig.tagRules || {})[key] || []);
-  if (appliedTags.length) payload.applied_tags = appliedTags;
-
-  if (_dwConfig.template) {
-    const RARITY_LABEL = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
-    const CAT_LABEL    = { arme:'Arme', armure:'Armure', accessoire:'Accessoire' };
-    const CLS_LABEL    = { guerrier:'Guerrier', assassin:'Assassin', archer:'Archer', mage:'Mage', shaman:'Shaman' };
-    payload.content = _dwConfig.template
-      .replace(/\{nom\}/g,       sub.data.name        || '')
-      .replace(/\{categorie\}/g, CAT_LABEL[sub.data.category]  || sub.data.category || '')
-      .replace(/\{rarete\}/g,    RARITY_LABEL[sub.data.rarity] || sub.data.rarity   || '')
-      .replace(/\{palier\}/g,    sub.data.palier       || '')
-      .replace(/\{niveau\}/g,    sub.data.lvl          || '')
-      .replace(/\{classes\}/g,   (sub.data.classes || []).map(c => CLS_LABEL[c] || c).join(', '));
+  const slotTagId = await _ensureSlotTag(channelId, sub.data.cat, sub.data.twoHanded);
+  if (slotTagId && !tags.includes(slotTagId)) tags.push(slotTagId);
+  if (sub.data.set) {
+    const setLabel = panList.find(p => (p._id || p.id) === sub.data.set)?.label || sub.data.set.replace(/_/g, ' ');
+    const tagId = await _ensureTag(channelId, setLabel, '✨', 'set');
+    if (tagId && !tags.includes(tagId)) tags.push(tagId);
   }
-
-  const discordRes = await window.VCL.postDiscord(`${url}?wait=true`, payload, imgBlob, imgFname)
-    .then(r => { console.log('[discord] status', r.status); return r.ok ? r.json() : r.text().then(t => { console.warn('[discord] body', t); return null; }); })
-    .catch(e => { console.error('[discord] fetch error', e); return null; });
-  console.log('[discord] discordRes', discordRes);
-  console.log('[discord] id check:', discordRes?.id);
-  if (discordRes?.id) {
-    console.log('[discord] saving to firestore, key:', key, 'subId:', sub._id);
-    try {
-      await setDoc(doc(db, 'discord_posts', `${key}_${sub._id}`), {
-        subId: sub._id, subName: sub.data.name || '', webhookKey: key, webhookUrl: url,
-        messageId: discordRes.id,
-        threadId: discordRes.channel_id || null,
-        sentAt: new Date().toISOString(),
-      });
-      console.log('[discord] firestore saved!');
-    } catch(e) { console.warn('[discord] discord_posts save failed:', e); }
+  const CLASSES = window._VCL_DATA?.CLASSES || [];
+  const sortedClasses = [...(sub.data.classes || [])].sort((a, b) => {
+    const ai = CLASSES.findIndex(c => c.id === a);
+    const bi = CLASSES.findIndex(c => c.id === b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+  for (const cls of sortedClasses) {
+    const clsData = CLASSES.find(c => c.id === cls);
+    const label = clsData?.label || cls;
+    const emoji = clsData?.ico?.replace(/️/g, '') || null;
+    const tagId = await _ensureTag(channelId, label, emoji, 'class');
+    if (tagId && !tags.includes(tagId)) tags.push(tagId);
   }
+  await _reorderChannelTags(channelId);
+
+  const res = await _postBotForumThread(channelId, sub.data.name || 'Item', content, cardBlob, cardFname, tags);
+  if (!res) { console.error('[saw] bot post failed'); return; }
+
+  try {
+    await setDoc(doc(db, 'discord_posts', postDocId), {
+      subId: sub._id, subName: sub.data.name || '', webhookKey: key, channelId,
+      messageId: res.messageId, threadId: res.threadId,
+      sentAt: new Date().toISOString(),
+    });
+  } catch(e) { console.warn('[saw] discord_posts save failed:', e); }
 }
 
 // ── Envoi groupé d'un set (plusieurs embeds dans un seul post) ──
@@ -7066,34 +7169,28 @@ async function _sendSetGroupDiscord(subs) {
     } catch {}
   }
 
-  const [itemNames, mobsPublic, mobsSecret, pnjs] = await Promise.all([
-    _getItemNamesCache(),
-    cachedDocs(COL.mobs),
-    cachedDocs(COL.mobsSecret).catch(() => []),
+  const [panList, pnjList] = await Promise.all([
+    cachedDocs(COL.panoplies).catch(() => []),
     cachedDocs(COL.pnj).catch(() => []),
   ]);
-  const allMobs = [...mobsPublic, ...mobsSecret];
+  const allItemsList = await cachedDocs(COL.items).catch(() => []);
+  const maps = { ..._buildCardMaps(panList, pnjList), allItems: allItemsList };
 
-  const embeds = [];
-  const files  = []; // { blob, fname }
+  const files = []; // { blob, fname }
 
   for (let i = 0; i < subs.length; i++) {
     const sub = subs[i];
-    const { blob, fname } = await _extractSubBlob(sub);
-    const indexedFname = (blob && fname)
-      ? `image_${i}.${fname.split('.').pop() || 'png'}`
-      : null;
-    if (blob && indexedFname) files.push({ blob, fname: indexedFname });
-
-    const subDataForEmbed = sub.data.obtain ? { ...sub.data, obtain:
-      _enrichObtainWithPnjCoords(
-        _enrichObtainWithMobChances(sub.data.obtain, sub.data.id, allMobs),
-        pnjs)
-    } : sub.data;
-
-    const contributorName = sub.submitterName || (_userNames.get(sub.submittedBy) || null);
-    embeds.push(_buildApprovalEmbed(subDataForEmbed, indexedFname, _dwConfig.embedFields || null, itemNames, contributorName));
+    const cardBlob  = await generateCardBlob(sub.data, maps, 3);
+    const cardFname = `${sub.data.id || sub.data._id || `item_${i}`}_card.png`;
+    files.push({ blob: cardBlob, fname: cardFname });
   }
+
+  // Embed minimal : liens wiki pour chaque item du set
+  const wikiLinks = subs.map(sub => {
+    const id = sub.data.id || sub.data._id;
+    return id ? `[🌐 ${sub.data.name || id}](<https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${id}>)` : null;
+  }).filter(Boolean).join('\n');
+  const setEmbed = wikiLinks ? { description: wikiLinks } : null;
 
   // Vérifier si un thread Discord existe déjà pour ce set
   let existingThreadId = null;
@@ -7102,26 +7199,26 @@ async function _sendSetGroupDiscord(subs) {
     if (existingSnap.exists()) existingThreadId = existingSnap.data().threadId || null;
   } catch {}
 
-  // Discord : max 10 embeds par message
+  // Discord : max 10 fichiers par message
   let fetchUrl, payload;
   if (existingThreadId) {
-    // Poster dans le thread existant (pas de thread_name, pas de applied_tags)
     fetchUrl = `${url}?thread_id=${existingThreadId}&wait=true`;
-    payload  = { embeds: embeds.slice(0, 10) };
+    payload  = {};
   } else {
-    // Créer un nouveau thread
     fetchUrl = `${url}?wait=true`;
-    payload  = { thread_name: threadName, embeds: embeds.slice(0, 10) };
+    payload  = { thread_name: threadName };
     const appliedTags = _resolveTagRules(first.data, (_dwConfig.tagRules || {})[key] || []);
     if (appliedTags.length) payload.applied_tags = appliedTags;
   }
+  if (setEmbed) payload.embeds = [setEmbed];
 
   let discordRes = null;
   if (files.length) {
-    const p  = { ...payload, attachments: files.map((f, i) => ({ id: i, filename: f.fname })) };
+    const filesSlice = files.slice(0, 10);
+    const p  = { ...payload, attachments: filesSlice.map((f, i) => ({ id: i, filename: f.fname })) };
     const fd = new FormData();
     fd.append('payload_json', JSON.stringify(p));
-    files.forEach((f, i) => fd.append(`files[${i}]`, f.blob, f.fname));
+    filesSlice.forEach((f, i) => fd.append(`files[${i}]`, f.blob, f.fname));
     const r = await fetch(fetchUrl, { method: 'POST', body: fd });
     if (r.ok) discordRes = await r.json();
   } else {
@@ -7177,32 +7274,28 @@ async function _sendSetGroupItemsDiscord(items) {
     } catch {}
   }
 
-  const [itemNames, mobsPublic, mobsSecret, pnjs] = await Promise.all([
-    _getItemNamesCache(),
-    cachedDocs(COL.mobs),
-    cachedDocs(COL.mobsSecret).catch(() => []),
+  const [panList, pnjList] = await Promise.all([
+    cachedDocs(COL.panoplies).catch(() => []),
     cachedDocs(COL.pnj).catch(() => []),
   ]);
-  const allMobs = [...mobsPublic, ...mobsSecret];
+  const allItemsList = await cachedDocs(COL.items).catch(() => []);
+  const maps = { ..._buildCardMaps(panList, pnjList), allItems: allItemsList };
 
-  const embeds = [];
-  const files  = [];
+  const files = [];
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    const { blob: imgBlob, fname: imgFname } = await _fetchItemImgBlob(item);
-    const indexedFname = (imgBlob && imgFname)
-      ? `image_${i}.${imgFname.split('.').pop() || 'png'}`
-      : null;
-    if (imgBlob && indexedFname) files.push({ blob: imgBlob, fname: indexedFname });
-
-    const itemForEmbed = item.obtain ? { ...item, obtain:
-      _enrichObtainWithPnjCoords(
-        _enrichObtainWithMobChances(item.obtain, item.id, allMobs),
-        pnjs)
-    } : item;
-    embeds.push(_buildApprovalEmbed(itemForEmbed, indexedFname, _dwConfig.embedFields || null, itemNames, null));
+    const cardBlob  = await generateCardBlob(item, maps, 3);
+    const cardFname = `${item.id || item._id || `item_${i}`}_card.png`;
+    files.push({ blob: cardBlob, fname: cardFname });
   }
+
+  // Embed minimal : liens wiki pour chaque item du set
+  const wikiLinks = items.map(item => {
+    const id = item.id || item._id;
+    return id ? `[🌐 ${item.name || id}](<https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${id}>)` : null;
+  }).filter(Boolean).join('\n');
+  const setEmbed = wikiLinks ? { description: wikiLinks } : null;
 
   // Vérifier si thread existant pour ce set
   let existingThreadId = null;
@@ -7214,20 +7307,22 @@ async function _sendSetGroupItemsDiscord(items) {
   let fetchUrl, payload;
   if (existingThreadId) {
     fetchUrl = `${url}?thread_id=${existingThreadId}&wait=true`;
-    payload  = { embeds: embeds.slice(0, 10) };
+    payload  = {};
   } else {
     fetchUrl = `${url}?wait=true`;
-    payload  = { thread_name: threadName, embeds: embeds.slice(0, 10) };
+    payload  = { thread_name: threadName };
     const appliedTags = _resolveTagRules(first, (_dwConfig.tagRules || {})[key] || []);
     if (appliedTags.length) payload.applied_tags = appliedTags;
   }
+  if (setEmbed) payload.embeds = [setEmbed];
 
   const _doFetch = async (fUrl, fPayload) => {
     if (files.length) {
-      const p  = { ...fPayload, attachments: files.map((f, i) => ({ id: i, filename: f.fname })) };
+      const filesSlice = files.slice(0, 10);
+      const p  = { ...fPayload, attachments: filesSlice.map((f, i) => ({ id: i, filename: f.fname })) };
       const fd = new FormData();
       fd.append('payload_json', JSON.stringify(p));
-      files.forEach((f, i) => fd.append(`files[${i}]`, f.blob, f.fname));
+      filesSlice.forEach((f, i) => fd.append(`files[${i}]`, f.blob, f.fname));
       return fetch(fUrl, { method: 'POST', body: fd });
     }
     return fetch(fUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fPayload) });
@@ -7241,9 +7336,10 @@ async function _sendSetGroupItemsDiscord(items) {
     // Thread probablement archivé — recréer un nouveau thread
     console.warn(`[dwPublish] thread ${existingThreadId} inaccessible (${r.status}), tentative de recréation…`);
     const fallbackUrl     = `${url}?wait=true`;
-    const fallbackPayload = { thread_name: threadName, embeds: embeds.slice(0, 10) };
+    const fallbackPayload = { thread_name: threadName };
     const appliedTags = _resolveTagRules(first, (_dwConfig.tagRules || {})[key] || []);
     if (appliedTags.length) fallbackPayload.applied_tags = appliedTags;
+    if (setEmbed) fallbackPayload.embeds = [setEmbed];
     r = await _doFetch(fallbackUrl, fallbackPayload);
     usedExistingThread = false;
   }
@@ -16430,5 +16526,137 @@ window.addEffectTemplate = function addEffectTemplate() {
   _markEffectsDirty();
   renderEffectTypes();
   switchEffectsTab('templates');
+};
+
+// ══════════════════════════════════════════════════════
+//  BUGS CONNUS
+// ══════════════════════════════════════════════════════
+
+window.showBugsConnus = async function showBugsConnus() {
+  _showPanel('bugs-connus-panel', 'btn-bugs-connus');
+  await _loadBugsConnus();
+};
+
+window._loadBugsConnus = async function _loadBugsConnus() {
+  const container = document.getElementById('bugs-list-container');
+  if (!container) return;
+  container.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const snap = await getDocs(query(collection(db, 'known_bugs'), orderBy('createdAt', 'desc')));
+    const bugs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    _renderBugsConnus(bugs, container);
+  } catch (e) {
+    container.innerHTML = '<div class="empty">Erreur de chargement.</div>';
+    console.error('[bugs-connus]', e);
+  }
+};
+
+const _BUG_STATUS_INFO = {
+  actif:    { label: '\u{1F534} Actif' },
+  en_cours: { label: '\u{1F7E1} En cours de résolution' },
+  résolu:   { label: '✅ Résolu' },
+};
+
+function _renderBugsConnus(bugs, container) {
+  if (!bugs.length) {
+    container.innerHTML = '<div class="empty">Aucun bug enregistré.</div>';
+    return;
+  }
+  container.innerHTML = bugs.map(b => {
+    const s = _BUG_STATUS_INFO[b.status] || { label: b.status };
+    const eid = JSON.stringify(b.id).replace(/"/g, '&quot;');
+    const etitle = JSON.stringify(b.title || '').replace(/"/g, '&quot;');
+    return '<div class="bug-row" id="bug-row-' + b.id + '" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;">'
+      + '<div id="bug-view-' + b.id + '">'
+      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">'
+      + '<div style="flex:1;min-width:0;"><span style="font-weight:600;font-size:13px;">' + _escHtmlBug(b.title || '(sans titre)') + '</span>'
+      + (b.description ? '<p style="margin:6px 0 0;font-size:12px;color:var(--muted);">' + _escHtmlBug(b.description) + '</p>' : '')
+      + '</div>'
+      + '<div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">'
+      + '<span class="tag" style="font-size:11px;">' + s.label + '</span>'
+      + '<button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;" onclick="window.startEditBug(' + eid + ')">&#x270F;&#xFE0F;</button>'
+      + '<button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger);" onclick="window.deleteBug(' + eid + ',' + etitle + ')">&#x1F5D1;&#xFE0F;</button>'
+      + '</div></div></div>'
+      + '<div id="bug-edit-' + b.id + '" style="display:none;">'
+      + '<div style="display:flex;flex-direction:column;gap:8px;">'
+      + '<input id="bug-edit-title-' + b.id + '" type="text" value="' + _escHtmlBugAttr(b.title || '') + '" placeholder="Titre *" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 9px;font-size:12px;outline:none;">'
+      + '<textarea id="bug-edit-desc-' + b.id + '" rows="2" placeholder="Description" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 9px;font-size:12px;outline:none;resize:vertical;font-family:inherit;">' + _escHtmlBug(b.description || '') + '</textarea>'
+      + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
+      + '<select id="bug-edit-status-' + b.id + '" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 9px;font-size:12px;outline:none;">'
+      + '<option value="actif"'    + (b.status === 'actif'    ? ' selected' : '') + '>\u{1F534} Actif</option>'
+      + '<option value="en_cours"' + (b.status === 'en_cours' ? ' selected' : '') + '>\u{1F7E1} En cours de résolution</option>'
+      + '<option value="résolu"'   + (b.status === 'résolu'   ? ' selected' : '') + '>✅ Résolu</option>'
+      + '</select>'
+      + '<button class="btn" style="background:var(--accent);color:#fff;font-size:12px;" onclick="window.saveEditBug(' + eid + ')">Sauvegarder</button>'
+      + '<button class="btn btn-ghost" style="font-size:12px;" onclick="window.cancelEditBug(' + eid + ')">Annuler</button>'
+      + '</div></div></div></div>';
+  }).join('');
+}
+
+function _escHtmlBug(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function _escHtmlBugAttr(s) {
+  return _escHtmlBug(s).replace(/"/g,'&quot;');
+}
+
+window.saveBugForm = async function saveBugForm() {
+  const title       = document.getElementById('bug-form-title').value.trim();
+  const description = document.getElementById('bug-form-desc').value.trim();
+  const status      = document.getElementById('bug-form-status').value;
+  if (!title) { toast('Le titre est obligatoire', 'warning'); return; }
+  try {
+    await addDoc(collection(db, 'known_bugs'), {
+      title, description, status,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    await _writeAudit('create', 'known_bug', '', title, { status });
+    document.getElementById('bug-form-title').value  = '';
+    document.getElementById('bug-form-desc').value   = '';
+    document.getElementById('bug-form-status').value = 'actif';
+    toast('Bug publié', 'success');
+    await _loadBugsConnus();
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
+
+window.startEditBug = function startEditBug(id) {
+  document.getElementById('bug-view-' + id).style.display = 'none';
+  document.getElementById('bug-edit-' + id).style.display = '';
+};
+
+window.cancelEditBug = function cancelEditBug(id) {
+  document.getElementById('bug-edit-' + id).style.display = 'none';
+  document.getElementById('bug-view-' + id).style.display = '';
+};
+
+window.saveEditBug = async function saveEditBug(id) {
+  const title       = document.getElementById('bug-edit-title-'  + id).value.trim();
+  const description = document.getElementById('bug-edit-desc-'   + id).value.trim();
+  const status      = document.getElementById('bug-edit-status-' + id).value;
+  if (!title) { toast('Le titre est obligatoire', 'warning'); return; }
+  try {
+    await updateDoc(doc(db, 'known_bugs', id), { title, description, status, updatedAt: serverTimestamp() });
+    await _writeAudit('update', 'known_bug', id, title, { status });
+    toast('Bug mis à jour', 'success');
+    await _loadBugsConnus();
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
+
+window.deleteBug = async function deleteBug(id, name) {
+  const ok = await modal.confirm('Supprimer ce bug ?', 'Cette action est irréversible.');
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(db, 'known_bugs', id));
+    await _writeAudit('delete', 'known_bug', id, name);
+    toast('Bug supprimé', 'success');
+    await _loadBugsConnus();
+  } catch (e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
 };
 

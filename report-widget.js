@@ -1,10 +1,15 @@
 (function () {
   const REPORT_WEBHOOK = 'https://discord.com/api/webhooks/1498346521765085386/beF1fOIgiwBxgoSovl_akVZFGpw2wsLpycAV2k0xk5Np0YyKYJwf_E6ff-U4VHIyzKCY';
 
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
   function init() {
     const logo = document.querySelector('.header-logo');
     if (!logo) return;
 
+    // ── Bug / Suggestion button ──────────────────────────
     const btn = document.createElement('button');
     btn.className = 'vcl-report-btn';
     btn.id = 'vcl-report-btn';
@@ -12,6 +17,64 @@
     btn.textContent = '⚑ Bug / Suggestion';
     logo.insertAdjacentElement('afterend', btn);
 
+    // ── Bugs connus button ───────────────────────────────
+    const bugsBtn = document.createElement('button');
+    bugsBtn.className = 'vcl-report-btn vcl-bugs-btn';
+    bugsBtn.id = 'vcl-bugs-btn';
+    bugsBtn.title = 'Liste des bugs connus';
+    bugsBtn.textContent = '🐛 Bugs connus';
+    btn.insertAdjacentElement('afterend', bugsBtn);
+
+    // ── Bugs connus overlay ──────────────────────────────
+    const bugsOverlay = document.createElement('div');
+    bugsOverlay.id = 'vcl-bugs-overlay';
+    bugsOverlay.className = 'vcl-report-overlay hidden';
+    bugsOverlay.innerHTML = [
+      '<div class="vcl-report-modal vcl-bugs-modal">',
+      '  <div class="vcl-bugs-header">',
+      '    <h3>🐛 Bugs connus</h3>',
+      '    <button id="vcl-bugs-close" class="vcl-bugs-close-btn" title="Fermer">✕</button>',
+      '  </div>',
+      '  <div id="vcl-bugs-list"><p class="vcl-bugs-loading">Chargement…</p></div>',
+      '</div>'
+    ].join('');
+    document.body.appendChild(bugsOverlay);
+
+    function closeBugs() { bugsOverlay.classList.add('hidden'); }
+    async function openBugs() {
+      bugsOverlay.classList.remove('hidden');
+      const listEl = document.getElementById('vcl-bugs-list');
+      listEl.innerHTML = '<p class="vcl-bugs-loading">Chargement…</p>';
+      try {
+        const all = typeof window._vclGetKnownBugs === 'function'
+          ? await window._vclGetKnownBugs()
+          : [];
+        const visible = all.filter(b => b.status === 'actif' || b.status === 'en_cours');
+        if (!visible.length) {
+          listEl.innerHTML = '<p class="vcl-bugs-empty">Aucun bug connu actuellement.</p>';
+          return;
+        }
+        const STATUS_LABEL = { actif: 'Bug connu', en_cours: 'En cours de résolution' };
+        listEl.innerHTML = visible.map(b => [
+          '<div class="vcl-bug-item">',
+          '  <div class="vcl-bug-item-top">',
+          '    <span class="vcl-bug-title">' + escHtml(b.title || '(sans titre)') + '</span>',
+          '    <span class="vcl-bug-badge vcl-bug-badge--' + b.status + '">' + (STATUS_LABEL[b.status] || b.status) + '</span>',
+          '  </div>',
+          b.description ? '  <p class="vcl-bug-desc">' + escHtml(b.description) + '</p>' : '',
+          '</div>'
+        ].join('')).join('');
+      } catch (err) {
+        listEl.innerHTML = '<p class="vcl-bugs-empty">Impossible de charger les bugs.</p>';
+        console.error('[bugs-widget]', err);
+      }
+    }
+
+    bugsBtn.onclick = openBugs;
+    document.getElementById('vcl-bugs-close').onclick = closeBugs;
+    bugsOverlay.onclick = e => { if (e.target === bugsOverlay) closeBugs(); };
+
+    // ── Bug / Suggestion overlay ─────────────────────────
     const overlay = document.createElement('div');
     overlay.id = 'vcl-report-overlay';
     overlay.className = 'vcl-report-overlay hidden';
@@ -37,7 +100,7 @@
     btn.onclick = open;
     document.getElementById('vcl-report-cancel').onclick = close;
     overlay.onclick = e => { if (e.target === overlay) close(); };
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { close(); closeBugs(); } });
 
     document.getElementById('vcl-report-submit').onclick = async function () {
       const text = textEl.value.trim();

@@ -93,3 +93,92 @@
   min-height: 1.2em;
   text-align: right;
 }
+
+/* ── Bugs connus widget ──────────────────────────────── */
+.vcl-bugs-modal {
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+}
+.vcl-bugs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.vcl-bugs-header h3 {
+  margin: 0;
+  color: #e8b84b;
+  font-family: 'Cinzel', serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.03em;
+}
+.vcl-bugs-close-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.vcl-bugs-close-btn:hover { color: #ccc; }
+#vcl-bugs-list {
+  overflow-y: auto;
+  flex: 1;
+}
+.vcl-bugs-loading,
+.vcl-bugs-empty {
+  color: #888;
+  font-size: 0.88rem;
+  text-align: center;
+  padding: 16px 0;
+  margin: 0;
+}
+.vcl-bug-item {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 7px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.vcl-bug-item:last-child { margin-bottom: 0; }
+.vcl-bug-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.vcl-bug-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #ddd;
+}
+.vcl-bug-desc {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #aaa;
+  line-height: 1.5;
+}
+.vcl-bug-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+.vcl-bug-badge--actif {
+  background: rgba(231,76,60,0.2);
+  border: 1px solid rgba(231,76,60,0.5);
+  color: #e74c3c;
+}
+.vcl-bug-badge--en_cours {
+  background: rgba(232,184,75,0.15);
+  border: 1px solid rgba(232,184,75,0.45);
+  color: #e8b84b;
+}

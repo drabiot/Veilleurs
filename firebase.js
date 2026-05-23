@@ -338,6 +338,33 @@ export async function logReport(pseudo, page, text) {
 // Exposé globalement pour report-widget.js (script non-module)
 window._vclLogReport = logReport;
 
+// ── Known Bugs ────────────────────────────────────────
+
+export async function getKnownBugs() {
+  const snap = await getDocs(query(collection(db, 'known_bugs'), orderBy('createdAt', 'desc')));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export async function saveKnownBug({ title, description, status }) {
+  return addDoc(collection(db, 'known_bugs'), {
+    title:       String(title       || '').trim(),
+    description: String(description || '').trim(),
+    status:      status || 'actif',
+    createdAt:   serverTimestamp(),
+    updatedAt:   serverTimestamp(),
+  });
+}
+
+export async function updateKnownBug(id, data) {
+  await updateDoc(doc(db, 'known_bugs', id), { ...data, updatedAt: serverTimestamp() });
+}
+
+export async function deleteKnownBug(id) {
+  await deleteDoc(doc(db, 'known_bugs', id));
+}
+
+window._vclGetKnownBugs = getKnownBugs;
+
 // ── Data helpers ─────────────────────────────────────
 
 /**

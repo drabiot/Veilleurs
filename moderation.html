@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Modération — VCL Wiki</title>
 <link rel="stylesheet" href="moderation.css">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
 </head>
 <body>
 
@@ -33,9 +36,11 @@
       <span style="font-size:11px;color:var(--muted)">ou</span>
       <div style="flex:1;height:1px;background:var(--border)"></div>
     </div>
-    <div class="field"><label>Identifiant</label><input type="text" id="login-email" placeholder="ton_identifiant" autocomplete="username"></div>
-    <div class="field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()"></div>
-    <button class="btn" style="background:var(--accent);color:#fff;width:100%;justify-content:center;" onclick="doLogin()">🔑 Connexion</button>
+    <form onsubmit="event.preventDefault();doLogin()" autocomplete="on">
+      <div class="field"><label>Identifiant</label><input type="text" id="login-email" placeholder="ton_identifiant" autocomplete="username"></div>
+      <div class="field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"></div>
+      <button type="submit" class="btn" style="background:var(--accent);color:#fff;width:100%;justify-content:center;">🔑 Connexion</button>
+    </form>
     <div id="login-error" style="font-size:12px;color:var(--danger);display:none;text-align:center;"></div>
   </div>
 </div>
@@ -92,6 +97,7 @@
     <div class="sb-label">DIAGNOSTIC</div>
     <button class="filter-btn" id="btn-ghost-ids"       onclick="showGhostIds()">🔗 IDs fantômes</button>
     <button class="filter-btn" id="btn-dead-links"      onclick="showDeadLinks()">💀 Liens morts</button>
+    <button class="filter-btn" id="btn-self-craft"      onclick="showSelfCraft()">🔁 Crafts circulaires</button>
     <button class="filter-btn" id="btn-orphan-ids"      onclick="showOrphanIds()">⚠️ IDs orphelins <span class="filter-count" id="count-orphan-ids" style="display:none;">0</span></button>
     <button class="filter-btn" id="btn-region-orphans"  onclick="showRegionOrphans()">🗺️ Régions orphelines</button>
     <button class="filter-btn" id="btn-mob-orphans"     onclick="showMobOrphans()">👾 Mobs orphelins</button>
@@ -121,6 +127,7 @@
     <button class="filter-btn" id="btn-calibrateur" onclick="showCalibrateur()">🎮 Calibrateur 3D</button>
     <button class="filter-btn" id="btn-capture-sprites" onclick="showCaptureSprites()">📸 Capture Sprites</button>
     <button class="filter-btn" id="btn-zone-editor" onclick="showZoneEditor()">🗺️ Éditeur de Zones</button>
+    <button class="filter-btn" id="btn-bugs-connus" onclick="showBugsConnus()">🐛 Bugs Connus</button>
   </aside>
 
   <main class="main" id="submissions-list">
@@ -230,6 +237,18 @@
       </div>
     </div>
     <div id="dead-links-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Crafts circulaires -->
+  <main class="main" id="self-craft-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🔁 Crafts circulaires</span>
+      <button class="btn btn-ghost" onclick="loadSelfCraft()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      Items dont leur propre ID apparaît comme ingrédient dans leur recette de craft.
+    </p>
+    <div id="self-craft-list"><div class="empty">Chargement…</div></div>
   </main>
 
   <!-- Panneau Statistiques -->
@@ -556,6 +575,7 @@
       <span style="font-size:15px;font-weight:700;">🔔 Webhooks Discord</span>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-ghost" onclick="loadDiscordWebhooks()" style="font-size:12px;">🔄 Rafraîchir</button>
+        <button class="btn btn-ghost" id="btn-reorder-tags" onclick="reorderAllChannelTags()" style="font-size:12px;">🔃 Réorganiser les tags</button>
         <button class="btn" id="dw-save-btn" onclick="saveDiscordWebhooks()" style="background:var(--accent);color:#fff;font-size:12px;">💾 Sauvegarder</button>
       </div>
     </div>
@@ -570,11 +590,7 @@
         style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
         🎨 Embed
       </button>
-      <button id="dw-tab-btn-tags" onclick="switchDwTab('tags')"
-        style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
-        🏷️ Tags
-      </button>
-      <button id="dw-tab-btn-publish" onclick="switchDwTab('publish')"
+<button id="dw-tab-btn-publish" onclick="switchDwTab('publish')"
         style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
         📤 Publier
       </button>
@@ -616,15 +632,7 @@
         </div>
       </div>
 
-      <!-- Tab Tags -->
-      <div id="dw-tab-tags" style="display:none;">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
-          Règles d'application automatique des tags Discord (Forum Channel). Chaque règle évalue un champ de l'item : si la condition est remplie, le tag correspondant est ajouté.
-        </p>
-        <div id="dw-tag-rules-list" style="display:flex;flex-direction:column;gap:12px;"></div>
-      </div>
-
-      <!-- Tab Publier -->
+<!-- Tab Publier -->
       <div id="dw-tab-publish" style="display:none;">
         <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">
           Sélectionne des items et envoie-les manuellement sur Discord. Chaque item est envoyé dans le salon correspondant à sa catégorie et son palier.
@@ -1300,7 +1308,7 @@ style="font-size:12px;">← Retour</button>
       <div style="display:flex;flex-direction:column;gap:10px;max-width:500px;">
         <div>
           <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Token GitHub (PAT)</label>
-          <input type="password" id="img-config-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          <input type="text" id="img-config-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off"
             style="width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:12px;font-family:monospace;outline:none;">
         </div>
         <div>
@@ -1455,6 +1463,41 @@ style="font-size:12px;">← Retour</button>
     </div>
   </main>
 
+  <!-- ── Bugs Connus ──────────────────────────────────────── -->
+  <main class="main" id="bugs-connus-panel" style="display:none;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <span style="font-size:15px;font-weight:700;">🐛 Bugs Connus</span>
+      <button class="btn btn-ghost" onclick="_loadBugsConnus()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:20px;">
+      Les bugs publiés ici sont visibles par tous les joueurs via le bouton "Bugs connus" sur le wiki.
+      Seuls les bugs avec statut <strong>Actif</strong> ou <strong>En cours de résolution</strong> sont affichés.
+    </p>
+
+    <!-- Formulaire ajout -->
+    <div id="bugs-add-form" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px;">➕ Ajouter un bug</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <input id="bug-form-title" type="text" placeholder="Titre du bug *"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;">
+        <textarea id="bug-form-desc" placeholder="Description (optionnel)" rows="3"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;resize:vertical;font-family:inherit;"></textarea>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <select id="bug-form-status"
+            style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;">
+            <option value="actif">🔴 Actif</option>
+            <option value="en_cours">🟡 En cours de résolution</option>
+            <option value="résolu">✅ Résolu</option>
+          </select>
+          <button class="btn" onclick="window.saveBugForm()" style="background:var(--accent);color:#fff;font-size:13px;">Publier</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Liste des bugs -->
+    <div id="bugs-list-container"><div class="empty">Chargement…</div></div>
+  </main>
+
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -1489,6 +1532,16 @@ style="font-size:12px;">← Retour</button>
 </div>
 <script src="Map/data.js"></script>
 <script src="utils.js"></script>
+<script src="Compendium/data.js"></script>
+<script>
+window._VCL_DATA = {
+  STAT_GROUPS: typeof STAT_GROUPS !== 'undefined' ? STAT_GROUPS : [],
+  CATEGORIES:  typeof CATEGORIES  !== 'undefined' ? CATEGORIES  : {},
+  EFFECT_META: typeof EFFECT_META !== 'undefined' ? EFFECT_META : {},
+  CLASSES:     typeof CLASSES     !== 'undefined' ? CLASSES     : [],
+  ALL_SLOTS:   typeof ALL_SLOTS   !== 'undefined' ? ALL_SLOTS   : [],
+};
+</script>
 <script type="module" src="moderation.js?v=5"></script>
 <script>
 if (window.innerWidth < 768) document.body.classList.add('sidebar-hidden');

@@ -125,7 +125,7 @@
 /* ── Canvas preview ───────────────────────────────── */
 .card-preview {
   width: 100%;
-  max-width: 800px;
+  max-width: 1100px;
   min-height: 180px;
   position: relative;
   border: 1px solid var(--rim);
