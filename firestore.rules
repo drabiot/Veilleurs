@@ -206,6 +206,11 @@
         allow write:  if isAdmin();
       }
 
+      match /known_bugs/{id} {
+        allow read:  if true;
+        allow write: if isContrib();
+      }
+
       match /submissions/{id} {
         allow create: if request.resource.data.submitterName is string
                       && request.resource.data.submitterName.size() >= 2
