@@ -109,7 +109,13 @@ function syncControlsToSelected() {
 /* ─── Scene Three.js ─── */
 
 function initScene() {
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  } catch(e) {
+    console.error('[Calibrateur] WebGL indisponible :', e);
+    viewport.innerHTML = '<p style="color:#c05050;padding:20px">⚠ WebGL indisponible — ferme d\'autres onglets et recharge la page.</p>';
+    return false;
+  }
   renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.setSize(viewport.clientWidth, viewport.clientHeight);
@@ -456,6 +462,7 @@ function parseMinecraftModel(json) {
 /* ─── Chargement monstre ─── */
 
 async function loadMonster(mob) {
+  if (!scene) return;
   for (const p of pieces) {
     scene.remove(p.outerGroup);
     scene.remove(p.boxHelper);
@@ -722,6 +729,7 @@ document.getElementById('copy-btn').addEventListener('click', () => {
 let mobsAvec3D = [];
 
 function populateMobSelect() {
+  if (!scene) return;
   mobsAvec3D = (typeof MOBS !== 'undefined' ? MOBS : [])
     .filter(m => m.morceaux && m.morceaux.length > 0);
   while (monsterSel.firstChild) monsterSel.removeChild(monsterSel.firstChild);
