@@ -12,7 +12,12 @@
 ══════════════════════════════════════════════════════════════ */
 
 const LS_KEY = 'vcl_lang';
-const SUPPORTED = ['fr', 'en'];
+// Langues proposées. 'fr' = langue source du site (aucun dictionnaire) ; les autres chargent i18n/<code>.json.
+const LANGUAGES = [
+  { code: 'fr', label: 'Français' },
+  { code: 'en', label: 'English' },
+];
+const SUPPORTED = LANGUAGES.map(l => l.code);
 const ATTRS = ['title', 'placeholder', 'alt', 'aria-label', 'data-tooltip', 'data-label'];
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'NOSCRIPT', 'CODE', 'PRE']);
 
@@ -134,32 +139,67 @@ function observe() {
 }
 
 // ── Sélecteur de langue (dans le header de chaque page) ──────────
+// Le bouton affiche la langue ACTIVE (drapeau + code) ; un clic ouvre la liste des langues disponibles.
+// Pour ajouter une langue : l'ajouter dans LANGUAGES et créer i18n/<code>.json (même format que en.json).
+// Drapeaux en SVG : les emojis de drapeaux ne s'affichent pas sous Windows.
+function flagSvg(code, n) {
+  if (code === 'fr') return '<svg viewBox="0 0 3 2" width="20" height="14" aria-hidden="true"><rect width="1" height="2" fill="#0055A4"/><rect x="1" width="1" height="2" fill="#fff"/><rect x="2" width="1" height="2" fill="#EF4135"/></svg>';
+  if (code === 'en') {
+    const id = 'vcl-uk-' + n;
+    return `<svg viewBox="0 0 60 30" width="22" height="11" aria-hidden="true"><clipPath id="${id}"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#00247d"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#${id})" stroke="#cf142b" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#cf142b" stroke-width="6"/></svg>`;
+  }
+  return '<span aria-hidden="true">🌐</span>';
+}
+
+const LANG_CSS = `
+.vcl-lang{position:relative;display:inline-block;margin-right:8px;vertical-align:middle}
+.vcl-lang-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid rgba(224,172,96,.4);color:#e0ac60;border-radius:4px;padding:3px 8px;font:600 11px/1.2 inherit;font-family:inherit;letter-spacing:.06em;cursor:pointer}
+.vcl-lang-btn:hover,.vcl-lang-btn[aria-expanded="true"]{background:rgba(224,172,96,.12)}
+.vcl-lang-btn .caret{font-size:8px;opacity:.7}
+.vcl-lang-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:150px;z-index:10000;background:#15120e;border:1px solid rgba(224,172,96,.4);border-radius:6px;padding:4px;box-shadow:0 10px 28px rgba(0,0,0,.55)}
+.vcl-lang-menu[hidden]{display:none}
+.vcl-lang-opt{display:flex;align-items:center;gap:9px;width:100%;background:transparent;border:0;border-radius:4px;color:#d8cdb8;padding:7px 9px;font:500 12px/1.2 inherit;font-family:inherit;text-align:left;cursor:pointer}
+.vcl-lang-opt:hover,.vcl-lang-opt:focus-visible{background:rgba(224,172,96,.14);outline:none}
+.vcl-lang-opt .check{margin-left:auto;color:#e0ac60}
+`;
+
 function injectSwitch() {
   const host = document.querySelector('.header-right');
-  if (!host || document.getElementById('vcl-lang-btn')) return;
+  if (!host || document.getElementById('vcl-lang')) return;
   if (!document.getElementById('vcl-lang-css')) {
     const st = document.createElement('style');
     st.id = 'vcl-lang-css';
-    st.textContent = `.vcl-lang-btn{background:transparent;border:1px solid rgba(224,172,96,.4);color:#e0ac60;border-radius:4px;padding:3px 9px;margin-right:8px;font:600 11px/1.2 inherit;font-family:inherit;letter-spacing:.06em;cursor:pointer}.vcl-lang-btn:hover{background:rgba(224,172,96,.12)}`;
+    st.textContent = LANG_CSS;
     document.head.appendChild(st);
   }
-  const b = document.createElement('button');
-  b.id = 'vcl-lang-btn';
-  b.className = 'vcl-lang-btn';
-  b.setAttribute('data-no-i18n', '');
-  b.type = 'button';
-  b.textContent = lang === 'fr' ? '🌐 EN' : '🌐 FR';
-  b.title = lang === 'fr' ? 'Switch to English' : 'Passer en français';
-  b.onclick = () => setLang(lang === 'fr' ? 'en' : 'fr');
-  host.insertBefore(b, host.firstChild);
+  const cur = LANGUAGES.find(l => l.code === lang) || LANGUAGES[0];
+  const wrap = document.createElement('div');
+  wrap.id = 'vcl-lang';
+  wrap.className = 'vcl-lang';
+  wrap.setAttribute('data-no-i18n', '');
+  wrap.innerHTML = `
+    <button type="button" class="vcl-lang-btn" id="vcl-lang-btn" aria-haspopup="menu" aria-expanded="false" title="${cur.label}">
+      ${flagSvg(cur.code, 0)}<span>${cur.code.toUpperCase()}</span><span class="caret">▾</span>
+    </button>
+    <div class="vcl-lang-menu" id="vcl-lang-menu" role="menu" hidden>
+      ${LANGUAGES.map((l, i) => `<button type="button" class="vcl-lang-opt" role="menuitemradio" aria-checked="${l.code === lang}" data-lang="${l.code}">
+        ${flagSvg(l.code, i + 1)}<span>${l.label}</span>${l.code === lang ? '<span class="check">✓</span>' : ''}</button>`).join('')}
+    </div>`;
+  const btn = wrap.querySelector('#vcl-lang-btn'), menu = wrap.querySelector('#vcl-lang-menu');
+  const close = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+  btn.onclick = e => { e.stopPropagation(); const open = menu.hidden; menu.hidden = !open; btn.setAttribute('aria-expanded', String(open)); if (open) menu.querySelector('.vcl-lang-opt')?.focus(); };
+  menu.querySelectorAll('.vcl-lang-opt').forEach(o => { o.onclick = () => { close(); setLang(o.dataset.lang); }; });
+  document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) { close(); btn.focus(); } });
+  host.insertBefore(wrap, host.firstChild);
 }
 
 // ── Démarrage ────────────────────────────────────────────────────
 async function boot() {
   injectSwitch();
-  if (lang !== 'en') return;
+  if (lang === 'fr') return;           // le français est la source : rien à traduire
   try {
-    const r = await fetch(new URL('./i18n/en.json', import.meta.url), { cache: 'no-cache' });
+    const r = await fetch(new URL(`./i18n/${lang}.json`, import.meta.url), { cache: 'no-cache' });
     if (r.ok) compile(await r.json());
   } catch { /* sans dictionnaire : le site reste en français */ }
   walk(document.body);
@@ -174,7 +214,7 @@ await boot();
 window.VCL_I18N = {
   lang,
   setLang,
-  t: s => (lang === 'en' ? (translate(s) ?? s) : s),   // pour les textes construits dans le code
+  t: s => (lang !== 'fr' ? (translate(s) ?? s) : s),   // pour les textes construits dans le code
   missing: () => [...missing.entries()].sort((a, b) => b[1] - a[1]),
   size: () => exact.size + patterns.length,
 };
