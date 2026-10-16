@@ -5,6 +5,7 @@
    Dispatch : 'vcl:auth-ready' sur document avec detail {uid, role, baseRole}
 ══════════════════════════════════════════════════════ */
 
+import './i18n.js';   // langue + traduction de l'interface (chargé sur toutes les pages publiques via ce widget)
 import { auth, db, getUserRole, login, register, loginWithGoogle, logout, hasRole, ROLES }
   from './firebase.js';
 import { loadHonorTitles, findHonorTitle, honorBadgeHtml } from './honor-titles.js';
