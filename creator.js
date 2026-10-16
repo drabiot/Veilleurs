@@ -359,7 +359,7 @@ const STAT_DEFS = [
   ]},
   { group:'Défensif', stats:[
     { id:'defense',            label:'Défense',                   color:'#9a9ab0' },
-    { id:'blocage',            label:'Blocage %',     color:'#b8b050' },
+    { id:'blocage',            label:'Blocage %',                 color:'#b8b050' },
     { id:'maitrise_bloc',      label:'Maîtrise de Blocage %',     color:'#b8b050' },
     { id:'puissance_bloc',     label:'Puissance de Blocage %'                     },
     { id:'sante',              label:'Santé',                     color:'#e85050' },
