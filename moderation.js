@@ -1385,6 +1385,7 @@ const HASH_PANELS = {
   'map':            () => showMapPanel(),
   'passages':       () => { showMapPanel(); switchMapTab('passages'); },
   'trash':          () => showTrash(),
+  'diag':           () => showDiagHub(),
   'ghost-ids':      () => showGhostIds(),
   'dead-links':     () => showDeadLinks(),
   'self-craft':     () => showSelfCraft(),
@@ -1426,6 +1427,7 @@ function _setHash(hash) {
   document.querySelectorAll('.main').forEach(el => el.style.display = 'none');
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   document.querySelector('.sidebar')?.classList.remove('in-order-panel');
+  _syncDiagHub();
 }
 
 // Masque tous les panneaux .main, retire tous les actifs de la sidebar,
@@ -1440,7 +1442,94 @@ function _showPanel(panelId, btnId) {
     const btn = document.getElementById(btnId);
     if (btn) btn.classList.add('active');
   }
+  _syncDiagHub();
 }
+
+// ── Hub « Qualité des données » ───────────────────────
+// Un seul bouton sidebar ; chaque panneau de diagnostic reçoit une barre d'onglets.
+// Les anciens boutons restent dans le DOM (cachés) : leur display propre porte les
+// permissions (tool_diagnostic, data-min-role) et leurs badges alimentent les onglets.
+const DIAG_GROUPS = [
+  { label: 'Références', tabs: [
+    { hash: 'dead-links',  label: '💀 Liens morts',        btn: 'btn-dead-links',  panel: 'dead-links-panel',  fn: () => showDeadLinks() },
+    { hash: 'ghost-ids',   label: '🔗 IDs fantômes',       btn: 'btn-ghost-ids',   panel: 'ghost-id-panel',    fn: () => showGhostIds() },
+    { hash: 'orphan-ids',  label: '⚠️ IDs orphelins',      btn: 'btn-orphan-ids',  panel: 'orphan-ids-panel',  fn: () => showOrphanIds(),  count: 'count-orphan-ids' },
+    { hash: 'self-craft',  label: '🔁 Crafts circulaires', btn: 'btn-self-craft',  panel: 'self-craft-panel',  fn: () => showSelfCraft() },
+  ]},
+  { label: 'Rattachement', tabs: [
+    { hash: 'region-orphans', label: '🗺️ Régions orphelines', btn: 'btn-region-orphans', panel: 'region-orphan-panel', fn: () => showRegionOrphans() },
+    { hash: 'mob-orphans',    label: '👾 Mobs orphelins',     btn: 'btn-mob-orphans',    panel: 'mob-orphan-panel',    fn: () => showMobOrphans() },
+    { hash: 'quest-orphans',  label: '📋 Quêtes orphelines',  btn: 'btn-quest-orphans',  panel: 'quest-orphan-panel',  fn: () => showQuestOrphans() },
+  ]},
+  { label: 'Complétude', tabs: [
+    { hash: 'completion',          label: '🎯 Tableau de Chasse', btn: 'btn-completion',        panel: 'completion-panel',         fn: () => showCompletion(), count: 'count-incomplete' },
+    { hash: 'obtain-legacy',       label: '🗂️ Obtentions libres', btn: 'btn-obtain-legacy',     panel: 'obtain-legacy-panel',      fn: () => showObtainLegacy(), count: 'count-obtain-legacy' },
+    { hash: 'creator-validation',  label: '⚙️ Champs requis',     btn: 'btn-creator-validation', panel: 'creator-validation-panel', fn: () => showCreatorValidation() },
+  ]},
+];
+const DIAG_TABS = DIAG_GROUPS.flatMap(g => g.tabs);
+let _lastDiagHash = 'dead-links';
+
+function _diagTabVisible(t) {
+  const b = document.getElementById(t.btn);
+  return !!b && b.style.display !== 'none';
+}
+
+function _diagBadgeText(t) {
+  const el = t.count && document.getElementById(t.count);
+  return el && el.style.display !== 'none' && el.textContent.trim() !== '0' ? el.textContent.trim() : '';
+}
+
+function _renderDiagTabs() {
+  let total = 0;
+  for (const t of DIAG_TABS) {
+    const panel = document.getElementById(t.panel);
+    if (!panel) continue;
+    let bar = panel.querySelector(':scope > .diag-tabs');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'diag-tabs';
+      panel.prepend(bar);
+    }
+    bar.innerHTML = DIAG_GROUPS.map(g => {
+      const tabs = g.tabs.filter(_diagTabVisible);
+      if (!tabs.length) return '';
+      return `<div class="diag-group"><span class="diag-group-label">${g.label}</span>` + tabs.map(x => {
+        const badge = _diagBadgeText(x);
+        return `<button class="diag-tab${x.hash === t.hash ? ' active' : ''}" data-diag="${x.hash}">${x.label}${badge ? ` <span class="filter-count">${badge}</span>` : ''}</button>`;
+      }).join('') + '</div>';
+    }).join('');
+  }
+  for (const t of DIAG_TABS) total += parseInt(_diagBadgeText(t), 10) || 0;
+  const hubBadge = document.getElementById('count-diag-hub');
+  if (hubBadge) { hubBadge.textContent = total; hubBadge.style.display = total > 0 ? '' : 'none'; }
+}
+
+function _syncDiagHub() {
+  const hub = document.getElementById('btn-diag-hub');
+  if (!hub) return;
+  const isDiag = DIAG_TABS.some(t => t.hash === _activePanel);
+  if (isDiag) _lastDiagHash = _activePanel;
+  hub.classList.toggle('active', isDiag);
+  _renderDiagTabs();
+}
+
+document.addEventListener('click', e => {
+  const tab = e.target.closest?.('.diag-tab');
+  if (!tab) return;
+  DIAG_TABS.find(t => t.hash === tab.dataset.diag)?.fn();
+});
+
+// Les badges (alimentés par les loaders existants) rafraîchissent les onglets
+new MutationObserver(() => _renderDiagTabs()).observe(document.getElementById('diag-legacy-btns'), {
+  subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['style'],
+});
+
+window.showDiagHub = function showDiagHub() {
+  const t = DIAG_TABS.find(x => x.hash === _lastDiagHash && _diagTabVisible(x))
+         || DIAG_TABS.find(_diagTabVisible);
+  if (t) t.fn();
+};
 
 function _routeToHash() {
   const hash = location.hash.slice(1) || 'submissions';
