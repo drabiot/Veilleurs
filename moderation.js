@@ -7577,6 +7577,7 @@ const DW_STAT_LABELS = {
   crit_comp_degats:    '💢 Crit. Comp. Dég.',
   // Défensif
   defense:             '🛡️ Défense',
+  blocage:             '🧱 Blocage',
   maitrise_bloc:       '🧱 Maî. de Blocage',
   puissance_bloc:      '💪 Puis. de Blocage',
   sante:               '❤️ Santé',
