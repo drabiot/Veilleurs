@@ -29,7 +29,7 @@ const STATUS_INFO = {
   new:     { label: 'Nouveau',           color: '#3ecf8e' },
   diff:    { label: 'Différences',       color: '#f5a623' },
   same:    { label: 'Identique',         color: '#6b7280' },
-  variant: { label: 'Variante à choisir', color: '#9b72cf' },
+  variant: { label: 'À vérifier', color: '#9b72cf' },
   done:    { label: 'Traité',            color: '#4f8ef7' },
   dup:     { label: 'Doublon API',       color: '#e05c5c' },
 };
@@ -38,6 +38,19 @@ const PAGE = 80;
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[’‘`´]/g, "'").replace(/[^a-z0-9]+/g, ' ').trim();
 const slug = s => norm(s).replace(/ /g, '_');
+// Nom "souple" : ignore articles, pluriel, accord (e final), œ/oe, "1000Cols"/"1000 Cols".
+// "Âme des ruines" ≈ "Âmes des Ruines", "Bottes de l'Héraut" ≈ "Bottes du Héraut".
+const STOP = new Set(['de', 'des', 'du', 'la', 'le', 'les', 'l', 'd', 'un', 'une', 'et', 'en', 'au', 'aux', 'a']);
+const looseTok = t => { t = t.length > 3 && /[sx]$/.test(t) ? t.slice(0, -1) : t; return t.length > 4 && t.endsWith('e') ? t.slice(0, -1) : t; };
+const loose = s => norm(String(s || '').replace(/œ/gi, 'oe').replace(/æ/gi, 'ae').replace(/(\d)([a-zA-Z])/g, '$1 $2'))
+  .replace(/'/g, ' ').split(' ').filter(t => t && !STOP.has(t)).map(looseTok).join(' ');
+function lev(a, b) {
+  const m = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+  for (let j = 1; j <= b.length; j++) m[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) m[i][j] = Math.min(m[i - 1][j] + 1, m[i][j - 1] + 1, m[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return m[a.length][b.length];
+}
+const similarity = (a, b) => 1 - lev(a, b) / Math.max(a.length, b.length, 1);
 const imgSrc = p => !p ? '' : /^https?:/.test(p) ? p : String(p).replace(/^(\.\.\/)+/, './');
 const getPath = (o, path) => path.split('.').reduce((v, k) => (v == null ? undefined : v[k]), o);
 const nrm = v => (typeof v === 'string' ? norm(v) : v); // accents/ponctuation/casse ignorés (lore surtout)
@@ -113,26 +126,44 @@ export function createApiItemsTool(ctx) {
 
   // ── Rapprochement API ↔ wiki ───────────────────────
   function build() {
-    const byApiId = new Map(), byName = new Map();
+    const byApiId = new Map(), byName = new Map(), byLoose = new Map();
+    const add = (m, k, w) => { if (!m.has(k)) m.set(k, []); m.get(k).push(w); };
+    const named = [];
     for (const w of wiki) {
       if (w._import?.apiId != null) byApiId.set(String(w._import.apiId), w);
       if (!w.name) continue;
-      const k = norm(w.name);
-      if (!byName.has(k)) byName.set(k, []);
-      byName.get(k).push(w);
+      add(byName, norm(w.name), w); add(byLoose, loose(w.name), w);
+      named.push({ w, k: loose(w.name) });
     }
-    const lastSeen = Number(safeLs('get', 'apiItemsSeenAt') || 0);
+    const lastSeen = Number(safeLs('get', 'apiItemsLastSeenAt') || 0);
+    // départage par classe quand plusieurs variantes (paliers / classes) portent le même nom
+    const pick = (cands, cls) => {
+      if (cands.length === 1) return cands[0];
+      const byClass = cands.filter(w => !cls || !w.classes || cls.some(c => w.classes.includes(c)));
+      return byClass.length === 1 ? byClass[0] : null;
+    };
     entries = snap.items.map(it => {
-      const e = { ...it, id: it.api.id, match: null, cands: [], fresh: new Date(it.api.created_at).getTime() > lastSeen && lastSeen > 0 };
+      const e = { ...it, id: it.api.id, match: null, matchKind: null, cands: [], fresh: new Date(it.api.created_at).getTime() > lastSeen && lastSeen > 0 };
+      const cls = it.wiki.classes;
       const linked = byApiId.get(String(it.api.id));
-      if (linked) { e.match = linked; }
+      if (linked) { e.match = linked; e.matchKind = 'link'; }
       else {
-        const cands = byName.get(norm(it.api.name)) || [];
-        const cls = it.wiki.classes;
-        const byClass = cands.filter(w => !cls || !w.classes || cls.some(c => w.classes.includes(c)));
-        if (cands.length === 1) e.match = cands[0];
-        else if (byClass.length === 1) e.match = byClass[0];
-        else e.cands = cands;
+        const exact = byName.get(norm(it.api.name)) || [];
+        const soft = byLoose.get(loose(it.api.name)) || [];
+        const m1 = exact.length ? pick(exact, cls) : null;
+        const m2 = !exact.length && soft.length ? pick(soft, cls) : null;
+        if (m1) { e.match = m1; e.matchKind = 'exact'; }
+        else if (m2) { e.match = m2; e.matchKind = 'loose'; }
+        else if (exact.length || soft.length) e.cands = exact.length ? exact : soft;
+        else {
+          // noms proches (fautes de frappe, genre, mot différent) : proposés, jamais liés automatiquement
+          const k = loose(it.api.name);
+          // même nombres (« 150 Cols » ≠ « 100 Cols ») et même début de nom (« Faux » ≠ « Dague »)
+          const nums = t => (t.match(/\d+/g) || []).join(','), first = t => t.split(' ')[0];
+          e.cands = named.filter(n => nums(n.k) === nums(k) && similarity(first(k), first(n.k)) >= 0.75)
+            .map(n => ({ w: n.w, r: similarity(k, n.k) })).filter(x => x.r >= 0.85).sort((a, b) => b.r - a.r).slice(0, 4).map(x => x.w);
+          e.near = e.cands.length > 0;
+        }
       }
       e.diffs = e.match ? fieldPaths(it.wiki, e.match).filter(p => !same(getPath(it.wiki, p), getPath(e.match, p))) : [];
       e.status = it.dupOf ? 'dup' : decided[it.api.id] ? 'done' : e.match ? (e.diffs.length ? 'diff' : 'same') : e.cands.length ? 'variant' : 'new';
@@ -190,7 +221,7 @@ export function createApiItemsTool(ctx) {
         <img class="api-ico" loading="lazy" src="${esc(e.image || '')}" onerror="this.style.visibility='hidden'">
         <div style="min-width:0;flex:1">
           <div class="api-name">${esc(e.api.name)} ${e.fresh ? '<span class="api-new">NEW</span>' : ''}</div>
-          <div class="api-sub"><span style="color:${RARITY_COLOR[w.rarity] || '#aaa'}">●</span> ${esc(RARITY_LABEL[w.rarity] || w.rarity || '?')} · ${esc(CATEGORY_LABEL[w.category] || w.category || api(e).apiCategory)} · niv. ${e.api.level ?? '—'}${e.match ? ` · wiki: <code>${esc(e.match._docKey || e.match.id)}</code>` : ''}${e.diffs.length ? ` · <b>${e.diffs.length} diff.</b>` : ''}</div>
+          <div class="api-sub"><span style="color:${RARITY_COLOR[w.rarity] || '#aaa'}">●</span> ${esc(RARITY_LABEL[w.rarity] || w.rarity || '?')} · ${esc(CATEGORY_LABEL[w.category] || w.category || api(e).apiCategory)} · niv. ${e.api.level ?? '—'}${e.match ? ` · wiki: <code>${esc(e.match._docKey || e.match.id)}</code>${e.matchKind === 'loose' ? ` <span title="nom proche : ${esc(e.match.name)}" style="color:#9b72cf">≈ ${esc(e.match.name)}</span>` : ''}` : ''}${e.diffs.length ? ` · <b>${e.diffs.length} diff.</b>` : ''}</div>
         </div>
         <span class="api-st" style="--c:${st.color}">${st.label}</span>
       </div>
@@ -225,8 +256,8 @@ export function createApiItemsTool(ctx) {
 
     // ─ Nouveau / variante : formulaire d'import
     if (!e.match) {
-      const cands = e.cands.length ? `<div class="api-flags" style="border-color:#9b72cf;color:#9b72cf">Même nom sur le wiki : ${e.cands.map(w => `<code>${esc(w._docKey || w.id)}</code> (P${w.palier ?? '?'}${w.classes ? ' ' + w.classes.join('/') : ''})`).join(', ')}.
-        Tu peux <b>lier</b> à l'un d'eux ou importer comme item distinct.
+      const cands = e.cands.length ? `<div class="api-flags" style="border-color:#9b72cf;color:#9b72cf">${e.near ? 'Noms proches sur le wiki (à vérifier — peut être le même item avec une faute ou un autre accord)' : 'Même nom sur le wiki'} : ${e.cands.map(w => `<b>${esc(w.name)}</b> <code>${esc(w._docKey || w.id)}</code> (P${w.palier ?? '?'}${w.classes ? ' ' + w.classes.join('/') : ''})`).join(', ')}.
+        Si c'est le même item, <b>lie-le</b> ; sinon importe-le comme item distinct.
         <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">${e.cands.filter(w => !w._hidden).map(w => `<button class="btn btn-ghost" style="font-size:11px" data-act="link" data-id="${e.id}" data-to="${esc(w._docKey || w.id)}">🔗 Lier à ${esc(w._docKey || w.id)}</button>`).join('')}</div></div>` : '';
       const catSel = Object.keys(CATEGORY_LABEL);
       return `<div class="api-detail">${flags}${cands}${dec}
@@ -388,7 +419,7 @@ export function createApiItemsTool(ctx) {
       else if (act === 'toggle') { ui.open = ui.open === id ? null : id; render(); document.getElementById(`api-row-${id}`)?.scrollIntoView({ block: 'nearest' }); }
       else if (act === 'more') { ui.limit += PAGE; render(); }
       else if (act === 'reload') load(true);
-      else if (act === 'seen') { safeLs('set', 'apiItemsSeenAt', String(Date.now())); build(); render(); toast('Marqué comme vu', 'success'); }
+      else if (act === 'seen') { safeLs('set', 'apiItemsLastSeenAt', String(Date.now())); build(); render(); toast('Marqué comme vu', 'success'); }
       else if (act === 'import') importOne(id);
       else if (act === 'bulk') bulkImport();
       else if (act === 'apply') applyChoices(id);

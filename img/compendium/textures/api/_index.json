@@ -231,8 +231,7 @@
  },
  "1337": {
   "file": "1337.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_layer_1_icon.png"
+  "source": "pack-3d"
  },
  "1338": {
   "file": "1338.png",
@@ -240,8 +239,7 @@
  },
  "1339": {
   "file": "1339.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_layer_1_icon.png"
+  "source": "pack-3d"
  },
  "1340": {
   "file": "1340.png",
@@ -275,8 +273,7 @@
  },
  "1346": {
   "file": "1346.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_layer_1_icon.png"
+  "source": "pack-3d"
  },
  "1347": {
   "file": "1347.png",
@@ -300,13 +297,11 @@
  },
  "1351": {
   "file": "1351.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/mage_hood.png"
+  "source": "pack-3d"
  },
  "1352": {
   "file": "1352.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/mage_assortment_armor1_icon.png"
+  "source": "pack-3d"
  },
  "1353": {
   "file": "1353.png",
@@ -314,13 +309,11 @@
  },
  "1354": {
   "file": "1354.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/mage_assortment_armor1_icon.png"
+  "source": "pack-3d"
  },
  "1355": {
   "file": "1355.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/knightassortment_armor_1_icon.png"
+  "source": "pack-3d"
  },
  "1356": {
   "file": "1356.png",
@@ -328,13 +321,11 @@
  },
  "1357": {
   "file": "1357.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/knightassortment_armor_1_icon.png"
+  "source": "pack-3d"
  },
  "1358": {
   "file": "1358.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/rogueassortment_icon1.png"
+  "source": "pack-3d"
  },
  "1359": {
   "file": "1359.png",
@@ -342,8 +333,7 @@
  },
  "1360": {
   "file": "1360.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/rogueassortment_icon1.png"
+  "source": "pack-3d"
  },
  "1361": {
   "file": "1361.png",
@@ -374,8 +364,7 @@
  },
  "1367": {
   "file": "1367.png",
-  "source": "api",
-  "url": "/uploads/items/fherov1items/freaper_hood.png"
+  "source": "pack-3d"
  },
  "1368": {
   "file": "1368.png",
@@ -394,8 +383,7 @@
  },
  "1371": {
   "file": "1371.png",
-  "source": "api",
-  "url": "/uploads/items/fherov1items/fwarden_helmetb.png"
+  "source": "pack-3d"
  },
  "1372": {
   "file": "1372.png",
@@ -414,8 +402,7 @@
  },
  "1375": {
   "file": "1375.png",
-  "source": "api",
-  "url": "/uploads/items/fherov1items/em_fherald.png"
+  "source": "pack-3d"
  },
  "1376": {
   "file": "1376.png",
@@ -439,8 +426,7 @@
  },
  "1381": {
   "file": "1381.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/helmet.png"
+  "source": "pack-3d"
  },
  "1382": {
   "file": "1382.png",
@@ -459,8 +445,7 @@
  },
  "1385": {
   "file": "1385.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/helmet.png"
+  "source": "pack-3d"
  },
  "1386": {
   "file": "1386.png",
@@ -479,8 +464,7 @@
  },
  "1389": {
   "file": "1389.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/helmet.png"
+  "source": "pack-3d"
  },
  "1390": {
   "file": "1390.png",
@@ -499,8 +483,7 @@
  },
  "1393": {
   "file": "1393.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/helmet.png"
+  "source": "pack-3d"
  },
  "1394": {
   "file": "1394.png",
@@ -519,8 +502,7 @@
  },
  "1397": {
   "file": "1397.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/helmet.png"
+  "source": "pack-3d"
  },
  "1398": {
   "file": "1398.png",
@@ -539,8 +521,7 @@
  },
  "1401": {
   "file": "1401.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/helmet.png"
+  "source": "pack-3d"
  },
  "1402": {
   "file": "1402.png",
@@ -1332,43 +1313,35 @@
  },
  "1566": {
   "file": "1566.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1567": {
   "file": "1567.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1568": {
   "file": "1568.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1569": {
   "file": "1569.png",
-  "source": "api",
-  "url": "/uploads/items/rpg_mobs_ents/mob_ent_archer.png"
+  "source": "pack-3d"
  },
  "1570": {
   "file": "1570.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/rogue_bow.png"
+  "source": "pack-3d"
  },
  "1571": {
   "file": "1571.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1572": {
   "file": "1572.png",
-  "source": "api",
-  "url": "/uploads/items/fherov1items/fhero_bow.png"
+  "source": "pack-3d"
  },
  "1573": {
   "file": "1573.png",
-  "source": "api",
-  "url": "/uploads/items/illfang_items/illfang_bow.png"
+  "source": "pack-3d"
  },
  "1574": {
   "file": "1574.png",
@@ -1376,8 +1349,7 @@
  },
  "1575": {
   "file": "1575.png",
-  "source": "api",
-  "url": "/uploads/items/fherov1items/fhero_crossbow.png"
+  "source": "pack-3d"
  },
  "1576": {
   "file": "1576.png",
@@ -1385,63 +1357,51 @@
  },
  "1577": {
   "file": "1577.png",
-  "source": "api",
-  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+  "source": "pack-3d"
  },
  "1578": {
   "file": "1578.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+  "source": "pack-3d"
  },
  "1579": {
   "file": "1579.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1580": {
   "file": "1580.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1581": {
   "file": "1581.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/honey_1.png"
+  "source": "pack-3d"
  },
  "1582": {
   "file": "1582.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1583": {
   "file": "1583.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/animated_9.png"
+  "source": "pack-3d"
  },
  "1584": {
   "file": "1584.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1585": {
   "file": "1585.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1586": {
   "file": "1586.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1587": {
   "file": "1587.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1588": {
   "file": "1588.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+  "source": "pack-3d"
  },
  "1589": {
   "file": "1589.png",
@@ -1670,8 +1630,7 @@
  },
  "1636": {
   "file": "1636.png",
-  "source": "api",
-  "url": "/uploads/items/rce1/avatar_summoner_tome.png"
+  "source": "pack-3d"
  },
  "1637": {
   "file": "1637.png",
@@ -1691,18 +1650,15 @@
  },
  "1641": {
   "file": "1641.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/wings.png"
+  "source": "pack-3d"
  },
  "1642": {
   "file": "1642.png",
-  "source": "api",
-  "url": "/uploads/items/nanopon/christmas_book.png"
+  "source": "pack-3d"
  },
  "1643": {
   "file": "1643.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+  "source": "pack-3d"
  },
  "1644": {
   "file": "1644.png",
@@ -1770,8 +1726,7 @@
  },
  "1663": {
   "file": "1663.png",
-  "source": "api",
-  "url": "/uploads/items/rce1/avatar_summoner_tome.png"
+  "source": "pack-3d"
  },
  "1667": {
   "file": "1667.png",
@@ -1795,8 +1750,7 @@
  },
  "1673": {
   "file": "1673.png",
-  "source": "api",
-  "url": "/uploads/items/killburn_set/crow_lord_hat.png"
+  "source": "pack-3d"
  },
  "1674": {
   "file": "1674.png",
@@ -1825,18 +1779,15 @@
  },
  "1679": {
   "file": "1679.png",
-  "source": "api",
-  "url": "/uploads/items/lanshan_cos_valentine_1/angel_wings_heart_2.png"
+  "source": "pack-3d"
  },
  "1680": {
   "file": "1680.png",
-  "source": "api",
-  "url": "/uploads/items/lanshan_cos_christmas_1/winter_knitted_hat.png"
+  "source": "pack-3d"
  },
  "1681": {
   "file": "1681.png",
-  "source": "api",
-  "url": "/uploads/items/lanshan_cos_christmas_1/festive_reindeer_antlers.png"
+  "source": "pack-3d"
  },
  "1682": {
   "file": "1682.png",
@@ -1865,8 +1816,7 @@
  },
  "1687": {
   "file": "1687.png",
-  "source": "api",
-  "url": "/uploads/items/lanshan_cos_christmas_1/winter_scarf.png"
+  "source": "pack-3d"
  },
  "1688": {
   "file": "1688.png",
@@ -1979,13 +1929,11 @@
  },
  "1717": {
   "file": "1717.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/wings_lovestruck_em.png"
+  "source": "pack-3d"
  },
  "1718": {
   "file": "1718.png",
-  "source": "api",
-  "url": "/uploads/items/lanshan_cos_valentine_1/laurel_wreath.png"
+  "source": "pack-3d"
  },
  "1719": {
   "file": "1719.png",
@@ -2017,13 +1965,11 @@
  },
  "1730": {
   "file": "1730.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_crossbow.png"
+  "source": "pack-3d"
  },
  "1731": {
   "file": "1731.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/knight_crossbow.png"
+  "source": "pack-3d"
  },
  "1734": {
   "file": "1734.png",
@@ -2042,38 +1988,31 @@
  },
  "1739": {
   "file": "1739.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/honey_1.png"
+  "source": "pack-3d"
  },
  "1741": {
   "file": "1741.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/animated_9.png"
+  "source": "pack-3d"
  },
  "1747": {
   "file": "1747.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/green_crystal.png"
+  "source": "pack-3d"
  },
  "1748": {
   "file": "1748.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/red_crystal.png"
+  "source": "pack-3d"
  },
  "1749": {
   "file": "1749.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/blue_crystal.png"
+  "source": "pack-3d"
  },
  "1750": {
   "file": "1750.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/yellow_crystal.png"
+  "source": "pack-3d"
  },
  "1751": {
   "file": "1751.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/red_crystal.png"
+  "source": "pack-3d"
  },
  "1752": {
   "file": "1752.png",
@@ -2082,43 +2021,35 @@
  },
  "1753": {
   "file": "1753.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/yellow_crystal.png"
+  "source": "pack-3d"
  },
  "1754": {
   "file": "1754.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/yellow_crystal.png"
+  "source": "pack-3d"
  },
  "1755": {
   "file": "1755.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/yellow_crystal.png"
+  "source": "pack-3d"
  },
  "1756": {
   "file": "1756.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/blue_crystal.png"
+  "source": "pack-3d"
  },
  "1757": {
   "file": "1757.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/violet_crystal.png"
+  "source": "pack-3d"
  },
  "1758": {
   "file": "1758.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/blue_crystal.png"
+  "source": "pack-3d"
  },
  "1759": {
   "file": "1759.png",
-  "source": "api",
-  "url": "/uploads/items/elitefantasy/yellow_crystal.png"
+  "source": "pack-3d"
  },
  "1760": {
   "file": "1760.png",
-  "source": "api",
-  "url": "/uploads/items/ashenweaponry1/dagger_texture.png"
+  "source": "pack-3d"
  },
  "1761": {
   "file": "1761.png",
@@ -2130,8 +2061,7 @@
  },
  "1763": {
   "file": "1763.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/rogue_sword.png"
+  "source": "pack-3d"
  },
  "1764": {
   "file": "1764.png",
@@ -2143,8 +2073,7 @@
  },
  "1766": {
   "file": "1766.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_dagger.png"
+  "source": "pack-3d"
  },
  "1767": {
   "file": "1767.png",
@@ -2160,8 +2089,7 @@
  },
  "1770": {
   "file": "1770.png",
-  "source": "api",
-  "url": "/uploads/items/rce1/avatar_assassin_dec.png"
+  "source": "pack-3d"
  },
  "1771": {
   "file": "1771.png",
@@ -2169,8 +2097,7 @@
  },
  "1772": {
   "file": "1772.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/knight_sword.png"
+  "source": "pack-3d"
  },
  "1773": {
   "file": "1773.png",
@@ -2194,8 +2121,7 @@
  },
  "1778": {
   "file": "1778.png",
-  "source": "api",
-  "url": "/uploads/items/assassin/assassin_blade.png"
+  "source": "pack-3d"
  },
  "1779": {
   "file": "1779.png",
@@ -2215,8 +2141,7 @@
  },
  "1784": {
   "file": "1784.png",
-  "source": "api",
-  "url": "/uploads/items/illfang_items/illfang_dagger.png"
+  "source": "pack-3d"
  },
  "1785": {
   "file": "1785.png",
@@ -2224,13 +2149,11 @@
  },
  "1786": {
   "file": "1786.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+  "source": "pack-3d"
  },
  "1787": {
   "file": "1787.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+  "source": "pack-3d"
  },
  "1788": {
   "file": "1788.png",
@@ -2239,18 +2162,15 @@
  },
  "1789": {
   "file": "1789.png",
-  "source": "api",
-  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+  "source": "pack-3d"
  },
  "1790": {
   "file": "1790.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+  "source": "pack-3d"
  },
  "1791": {
   "file": "1791.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+  "source": "pack-3d"
  },
  "1792": {
   "file": "1792.png",
@@ -2278,13 +2198,11 @@
  },
  "1798": {
   "file": "1798.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/honey_1.png"
+  "source": "pack-3d"
  },
  "1799": {
   "file": "1799.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/honey_1.png"
+  "source": "pack-3d"
  },
  "1800": {
   "file": "1800.png",
@@ -2316,13 +2234,11 @@
  },
  "1807": {
   "file": "1807.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/animated_2.png"
+  "source": "pack-3d"
  },
  "1808": {
   "file": "1808.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/animated_2.png"
+  "source": "pack-3d"
  },
  "1809": {
   "file": "1809.png",
@@ -2366,8 +2282,7 @@
  },
  "1821": {
   "file": "1821.png",
-  "source": "api",
-  "url": "/uploads/items/rpg_essentials_1/key_forest.png"
+  "source": "pack-3d"
  },
  "1822": {
   "file": "1822.png",
@@ -2376,13 +2291,11 @@
  },
  "1823": {
   "file": "1823.png",
-  "source": "api",
-  "url": "/uploads/items/rpg_essentials_1/key_shadow.png"
+  "source": "pack-3d"
  },
  "1824": {
   "file": "1824.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/knight_key.png"
+  "source": "pack-3d"
  },
  "1829": {
   "file": "1829.png",
@@ -2391,8 +2304,7 @@
  },
  "1830": {
   "file": "1830.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/honey_1.png"
+  "source": "pack-3d"
  },
  "1831": {
   "file": "1831.png",
@@ -3667,28 +3579,23 @@
  },
  "2096": {
   "file": "2096.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+  "source": "pack-3d"
  },
  "2097": {
   "file": "2097.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+  "source": "pack-3d"
  },
  "2098": {
   "file": "2098.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/shield.png"
+  "source": "pack-3d"
  },
  "2099": {
   "file": "2099.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+  "source": "pack-3d"
  },
  "2100": {
   "file": "2100.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+  "source": "pack-3d"
  },
  "2101": {
   "file": "2101.png",
@@ -3747,38 +3654,31 @@
  },
  "2112": {
   "file": "2112.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+  "source": "pack-3d"
  },
  "2113": {
   "file": "2113.png",
-  "source": "api",
-  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+  "source": "pack-3d"
  },
  "2114": {
   "file": "2114.png",
-  "source": "api",
-  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+  "source": "pack-3d"
  },
  "2115": {
   "file": "2115.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/key_lovestruck_em.png"
+  "source": "pack-3d"
  },
  "2116": {
   "file": "2116.png",
-  "source": "api",
-  "url": "/uploads/items/treasure_tier_pack/gold_key.png"
+  "source": "pack-3d"
  },
  "2117": {
   "file": "2117.png",
-  "source": "api",
-  "url": "/uploads/items/forestmagic_em/key_forestmagic_em.png"
+  "source": "pack-3d"
  },
  "2118": {
   "file": "2118.png",
-  "source": "api",
-  "url": "/uploads/items/treasure_tier_pack/wood_key.png"
+  "source": "pack-3d"
  },
  "2119": {
   "file": "2119.png",
@@ -3969,8 +3869,7 @@
  },
  "2163": {
   "file": "2163.png",
-  "source": "api",
-  "url": "/uploads/items/rpg_essentials_1/key_aqua.png"
+  "source": "pack-3d"
  },
  "2164": {
   "file": "2164.png",
@@ -4108,8 +4007,7 @@
  },
  "2198": {
   "file": "2198.png",
-  "source": "api",
-  "url": "/uploads/items/rpg_essentials_1/twig.png"
+  "source": "pack-3d"
  },
  "2199": {
   "file": "2199.png",
@@ -4163,8 +4061,7 @@
  },
  "2209": {
   "file": "2209.png",
-  "source": "api",
-  "url": "/uploads/items/rpg_essentials_2/clover.png"
+  "source": "pack-3d"
  },
  "2210": {
   "file": "2210.png",
@@ -5008,8 +4905,7 @@
  },
  "2383": {
   "file": "2383.png",
-  "source": "api",
-  "url": "/uploads/items/rpg_essentials_1/key_wooden.png"
+  "source": "pack-3d"
  },
  "2384": {
   "file": "2384.png",
@@ -5226,8 +5122,7 @@
  },
  "2428": {
   "file": "2428.png",
-  "source": "api",
-  "url": "/uploads/items/lanshan_cos_christmas_1/winter_leaf.png"
+  "source": "pack-3d"
  },
  "2429": {
   "file": "2429.png",
@@ -5798,23 +5693,19 @@
  },
  "2545": {
   "file": "2545.png",
-  "source": "api",
-  "url": "/uploads/items/fherov1items/fhero_shield.png"
+  "source": "pack-3d"
  },
  "2546": {
   "file": "2546.png",
-  "source": "api",
-  "url": "/uploads/items/illfang_items/illfang_shield.png"
+  "source": "pack-3d"
  },
  "2547": {
   "file": "2547.png",
-  "source": "api",
-  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+  "source": "pack-3d"
  },
  "2548": {
   "file": "2548.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/shield_lovestruck_em.png"
+  "source": "pack-3d"
  },
  "2549": {
   "file": "2549.png",
@@ -5838,8 +5729,7 @@
  },
  "2554": {
   "file": "2554.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/honey_1.png"
+  "source": "pack-3d"
  },
  "2555": {
   "file": "2555.png",
@@ -5863,8 +5753,7 @@
  },
  "2560": {
   "file": "2560.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/animated_1.png"
+  "source": "pack-3d"
  },
  "2561": {
   "file": "2561.png",
@@ -5900,43 +5789,35 @@
  },
  "2569": {
   "file": "2569.png",
-  "source": "api",
-  "url": "/uploads/items/rce1/avatar_shaman_scepter.png"
+  "source": "pack-3d"
  },
  "2570": {
   "file": "2570.png",
-  "source": "api",
-  "url": "/uploads/items/cosmetic_packv2/tiki_hand.png"
+  "source": "pack-3d"
  },
  "2571": {
   "file": "2571.png",
-  "source": "api",
-  "url": "/uploads/items/rce1/avatar_shaman_scepter.png"
+  "source": "pack-3d"
  },
  "2572": {
   "file": "2572.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/rogue_staff.png"
+  "source": "pack-3d"
  },
  "2573": {
   "file": "2573.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/staff.png"
+  "source": "pack-3d"
  },
  "2574": {
   "file": "2574.png",
-  "source": "api",
-  "url": "/uploads/items/awakened_shaman/awakened_shaman_lifescepter.png"
+  "source": "pack-3d"
  },
  "2575": {
   "file": "2575.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/runic_texture.png"
+  "source": "pack-3d"
  },
  "2576": {
   "file": "2576.png",
-  "source": "api",
-  "url": "/uploads/items/illfang_items/illfang_staff.png"
+  "source": "pack-3d"
  },
  "2577": {
   "file": "2577.png",
@@ -5948,88 +5829,71 @@
  },
  "2579": {
   "file": "2579.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+  "source": "pack-3d"
  },
  "2580": {
   "file": "2580.png",
-  "source": "api",
-  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+  "source": "pack-3d"
  },
  "2581": {
   "file": "2581.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/staff_lovestruck_em.png"
+  "source": "pack-3d"
  },
  "2582": {
   "file": "2582.png",
-  "source": "api",
-  "url": "/uploads/items/killburn_set/animation_4.png"
+  "source": "pack-3d"
  },
  "2583": {
   "file": "2583.png",
-  "source": "api",
-  "url": "/uploads/items/killburn_set/animation_4.png"
+  "source": "pack-3d"
  },
  "2584": {
   "file": "2584.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/honey_1.png"
+  "source": "pack-3d"
  },
  "2585": {
   "file": "2585.png",
-  "source": "api",
-  "url": "/uploads/items/killburn_set/animation_4.png"
+  "source": "pack-3d"
  },
  "2586": {
   "file": "2586.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/animated_2.png"
+  "source": "pack-3d"
  },
  "2587": {
   "file": "2587.png",
-  "source": "api",
-  "url": "/uploads/items/killburn_set/animation_4.png"
+  "source": "pack-3d"
  },
  "2588": {
   "file": "2588.png",
-  "source": "api",
-  "url": "/uploads/items/killburn_set/animation_4.png"
+  "source": "pack-3d"
  },
  "2589": {
   "file": "2589.png",
-  "source": "api",
-  "url": "/uploads/items/killburn_set/animation_4.png"
+  "source": "pack-3d"
  },
  "2590": {
   "file": "2590.png",
-  "source": "api",
-  "url": "/uploads/items/killburn_set/animation_4.png"
+  "source": "pack-3d"
  },
  "2591": {
   "file": "2591.png",
-  "source": "api",
-  "url": "/uploads/items/killburn_set/animation_4.png"
+  "source": "pack-3d"
  },
  "2592": {
   "file": "2592.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+  "source": "pack-3d"
  },
  "2593": {
   "file": "2593.png",
-  "source": "api",
-  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+  "source": "pack-3d"
  },
  "2594": {
   "file": "2594.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/staff_lovestruck_em.png"
+  "source": "pack-3d"
  },
  "2595": {
   "file": "2595.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/mace_lovestruck_em.png"
+  "source": "pack-3d"
  },
  "2596": {
   "file": "2596.png",
@@ -6037,8 +5901,7 @@
  },
  "2597": {
   "file": "2597.png",
-  "source": "api",
-  "url": "/uploads/items/adventurer_swords_volume_2/silver_claymore.png"
+  "source": "pack-3d"
  },
  "2598": {
   "file": "2598.png",
@@ -6070,8 +5933,7 @@
  },
  "2605": {
   "file": "2605.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/goblin_sword.png"
+  "source": "pack-3d"
  },
  "2606": {
   "file": "2606.png",
@@ -6087,8 +5949,7 @@
  },
  "2609": {
   "file": "2609.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/mage_sword.png"
+  "source": "pack-3d"
  },
  "2610": {
   "file": "2610.png",
@@ -6140,28 +6001,23 @@
  },
  "2622": {
   "file": "2622.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+  "source": "pack-3d"
  },
  "2623": {
   "file": "2623.png",
-  "source": "api",
-  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+  "source": "pack-3d"
  },
  "2624": {
   "file": "2624.png",
-  "source": "api",
-  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+  "source": "pack-3d"
  },
  "2625": {
   "file": "2625.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+  "source": "pack-3d"
  },
  "2626": {
   "file": "2626.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+  "source": "pack-3d"
  },
  "2627": {
   "file": "2627.png",
@@ -6221,8 +6077,7 @@
  },
  "2641": {
   "file": "2641.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/honey_1.png"
+  "source": "pack-3d"
  },
  "2642": {
   "file": "2642.png",
@@ -6238,8 +6093,7 @@
  },
  "2645": {
   "file": "2645.png",
-  "source": "api",
-  "url": "/uploads/items/plny_beeset/honey_1.png"
+  "source": "pack-3d"
  },
  "2646": {
   "file": "2646.png",
@@ -6287,8 +6141,7 @@
  },
  "2657": {
   "file": "2657.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/animated_1.png"
+  "source": "pack-3d"
  },
  "2658": {
   "file": "2658.png",
@@ -6304,8 +6157,7 @@
  },
  "2661": {
   "file": "2661.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/animated_2.png"
+  "source": "pack-3d"
  },
  "2662": {
   "file": "2662.png",
@@ -6409,8 +6261,7 @@
  },
  "2694": {
   "file": "2694.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/animated_2.png"
+  "source": "pack-3d"
  },
  "2695": {
   "file": "2695.png",
@@ -6434,8 +6285,7 @@
  },
  "2700": {
   "file": "2700.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/animated_2.png"
+  "source": "pack-3d"
  },
  "2701": {
   "file": "2701.png",
@@ -6459,8 +6309,7 @@
  },
  "2706": {
   "file": "2706.png",
-  "source": "api",
-  "url": "/uploads/items/necros_set/animated_2.png"
+  "source": "pack-3d"
  },
  "2707": {
   "file": "2707.png",
@@ -6472,23 +6321,19 @@
  },
  "2709": {
   "file": "2709.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/rogue_fishing_rod.png"
+  "source": "pack-3d"
  },
  "2710": {
   "file": "2710.png",
-  "source": "api",
-  "url": "/uploads/items/fherov1items/fhero_fishing_rod.png"
+  "source": "pack-3d"
  },
  "2714": {
   "file": "2714.png",
-  "source": "api",
-  "url": "/uploads/items/elitecreatures/staff.png"
+  "source": "pack-3d"
  },
  "2715": {
   "file": "2715.png",
-  "source": "api",
-  "url": "/uploads/items/lovestruck_em/mace_lovestruck_em.png"
+  "source": "pack-3d"
  },
  "2716": {
   "file": "2716.png",
@@ -6496,8 +6341,7 @@
  },
  "2717": {
   "file": "2717.png",
-  "source": "api",
-  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+  "source": "pack-3d"
  },
  "2718": {
   "file": "2718.png",

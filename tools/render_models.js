@@ -45,7 +45,7 @@ function modelOf(x) {
 
 const toRender = () => api.filter(x => {
   const i = index[x.id];
-  return (!i || i.source === 'pack') && modelOf(x);
+  return (!i || i.source !== 'pack-3d') && modelOf(x);
 }).map(x => ({ id: x.id, name: x.name }));
 
 const send = (res, code, body, type = 'application/json') => {
