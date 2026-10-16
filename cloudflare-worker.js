@@ -45,7 +45,7 @@ const STAT_MAP = {
   vitesse_attaque: { label: 'Vitesse Attaque', unit: '' }, crit_chance: { label: 'Chance Critique', unit: '%' },
   crit_degats: { label: 'Dégâts Critique', unit: '%' }, crit_comp_chance: { label: 'Crit. Compétence', unit: '%' },
   crit_comp_degats: { label: 'Dég. Crit. Comp.', unit: '%' }, defense: { label: 'Défense', unit: '' },
-  maitrise_bloc: { label: 'Maîtrise Blocage', unit: '%' }, puissance_bloc: { label: 'Puissance Bloc', unit: '%' },
+  blocage: { label: 'Blocage', unit: '%' },  maitrise_bloc: { label: 'Maîtrise Blocage', unit: '%' }, puissance_bloc: { label: 'Puissance Bloc', unit: '%' },
   sante: { label: 'Santé', unit: '' }, esquive: { label: 'Esquive', unit: '%' },
   reduction_degats: { label: 'Réduction Dégâts', unit: '%' }, tenacite: { label: 'Ténacité', unit: '%' },
   hate: { label: 'Hâte', unit: '%' }, vitesse_deplacement: { label: 'Vitesse Déplacement', unit: '%' },
