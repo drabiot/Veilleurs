@@ -153,14 +153,15 @@ function flagSvg(code, n) {
 
 const LANG_CSS = `
 .vcl-lang{position:relative;display:inline-block;margin-right:8px;vertical-align:middle}
-.vcl-lang-btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid rgba(224,172,96,.4);color:#e0ac60;border-radius:4px;padding:3px 8px;font:600 11px/1.2 inherit;font-family:inherit;letter-spacing:.06em;cursor:pointer}
+.vcl-lang-btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid rgba(224,172,96,.4);color:#e0ac60;border-radius:4px;padding:2px 7px;font-family:inherit;font-size:11px;font-weight:600;line-height:1.2;letter-spacing:.06em;cursor:pointer}
 .vcl-lang-btn:hover,.vcl-lang-btn[aria-expanded="true"]{background:rgba(224,172,96,.12)}
 .vcl-lang-btn .caret{font-size:8px;opacity:.7}
-.vcl-lang-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:150px;z-index:10000;background:#15120e;border:1px solid rgba(224,172,96,.4);border-radius:6px;padding:4px;box-shadow:0 10px 28px rgba(0,0,0,.55)}
+.vcl-lang-btn svg,.vcl-lang-opt svg{display:block;width:18px;height:12px;border-radius:2px;flex:none}
+.vcl-lang-menu{position:fixed !important;z-index:2147483000;min-width:128px;background:#15120e;border:1px solid rgba(224,172,96,.4);border-radius:6px;padding:3px;box-shadow:0 10px 28px rgba(0,0,0,.55)}
 .vcl-lang-menu[hidden]{display:none}
-.vcl-lang-opt{display:flex;align-items:center;gap:9px;width:100%;background:transparent;border:0;border-radius:4px;color:#d8cdb8;padding:7px 9px;font:500 12px/1.2 inherit;font-family:inherit;text-align:left;cursor:pointer}
+.vcl-lang-opt{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:0;border-radius:4px;color:#d8cdb8;padding:5px 8px;font-family:inherit;font-size:11px;font-weight:500;line-height:1.2;text-align:left;cursor:pointer}
 .vcl-lang-opt:hover,.vcl-lang-opt:focus-visible{background:rgba(224,172,96,.14);outline:none}
-.vcl-lang-opt .check{margin-left:auto;color:#e0ac60}
+.vcl-lang-opt .check{margin-left:auto;padding-left:10px;color:#e0ac60}
 `;
 
 function injectSwitch() {
@@ -186,10 +187,26 @@ function injectSwitch() {
         ${flagSvg(l.code, i + 1)}<span>${l.label}</span>${l.code === lang ? '<span class="check">✓</span>' : ''}</button>`).join('')}
     </div>`;
   const btn = wrap.querySelector('#vcl-lang-btn'), menu = wrap.querySelector('#vcl-lang-menu');
+  menu.setAttribute('data-no-i18n', '');
+  document.body.appendChild(menu);   // hors du header : un parent avec transform/filter casserait position:fixed
   const close = () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
-  btn.onclick = e => { e.stopPropagation(); const open = menu.hidden; menu.hidden = !open; btn.setAttribute('aria-expanded', String(open)); if (open) menu.querySelector('.vcl-lang-opt')?.focus(); };
+  // menu en position fixe, calé sous le bouton et gardé dans l'écran (indépendant du conteneur du header)
+  const place = () => {
+    const r = btn.getBoundingClientRect(), w = menu.offsetWidth;
+    menu.style.top = Math.round(r.bottom + 6) + 'px';
+    menu.style.left = Math.round(Math.max(8, Math.min(r.right - w, innerWidth - w - 8))) + 'px';
+  };
+  btn.onclick = e => {
+    e.stopPropagation();
+    const open = menu.hidden;
+    menu.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+    if (open) { place(); menu.querySelector('.vcl-lang-opt')?.focus(); }
+  };
+  addEventListener('resize', close);
+  addEventListener('scroll', close, true);
   menu.querySelectorAll('.vcl-lang-opt').forEach(o => { o.onclick = () => { close(); setLang(o.dataset.lang); }; });
-  document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+  document.addEventListener('click', e => { if (!wrap.contains(e.target) && !menu.contains(e.target)) close(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) { close(); btn.focus(); } });
   host.insertBefore(wrap, host.firstChild);
 }
