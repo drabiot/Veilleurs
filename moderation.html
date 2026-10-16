@@ -99,7 +99,6 @@
     <button class="filter-btn" id="btn-zone-list"      onclick="showZoneList()">💀 Zones Monstres</button>
     <button class="filter-btn" id="btn-zone-editor" onclick="showZoneEditor()">🗺️ Éditeur de Zones</button>
     </div>
-    <button class="filter-btn" id="btn-effects-tool"   data-min-role="admin" onclick="showEffectsTool()">✨ Effets</button>
 
     <!-- ── DIAGNOSTIC ──────────────────────────────────── -->
     <div class="sb-label">DIAGNOSTIC</div>
@@ -130,18 +129,25 @@
     <button class="filter-btn" id="btn-audit-log"          data-min-role="admin" onclick="showAuditLog()">📋 Journal d'audit</button>
     <button class="filter-btn" id="btn-statistiques"       data-min-role="admin" onclick="showStatistiques()">📊 Statistiques</button>
     </div>
+    <button class="filter-btn" id="btn-migration"          data-min-role="admin" onclick="showMigration()">🔒 Sensible</button>
+
+    <!-- ── CONFIGURATION ───────────────────────────────── -->
+    <div class="sb-label">CONFIGURATION</div>
+    <button class="filter-btn" id="btn-config-hub" onclick="showConfigHub()">⚙️ Config du jeu</button>
+    <div id="config-legacy-btns" style="display:none;">
+    <button class="filter-btn" id="btn-game-config"        data-min-role="admin" onclick="showGameConfig()">🌍 Config Jeu</button>
+    <button class="filter-btn" id="btn-effects-tool"   data-min-role="admin" onclick="showEffectsTool()">✨ Effets</button>
+    <button class="filter-btn" id="btn-events-tool"        data-min-role="admin" onclick="showEventsTool()">🎪 Events</button>
     <button class="filter-btn" id="btn-tags"              data-min-role="admin" onclick="showTagsPanel()">🏷️  Tags</button>
     <button class="filter-btn" id="btn-discord-webhooks"   data-min-role="admin" onclick="showDiscordWebhooks()">🔔 Webhooks Discord</button>
-    <button class="filter-btn" id="btn-migration"          data-min-role="admin" onclick="showMigration()">🔒 Sensible</button>
-    <button class="filter-btn" id="btn-game-config"        data-min-role="admin" onclick="showGameConfig()">🌍 Config Jeu</button>
-    <button class="filter-btn" id="btn-events-tool"        data-min-role="admin" onclick="showEventsTool()">🎪 Events</button>
+    <button class="filter-btn" id="btn-bugs-connus" onclick="showBugsConnus()">🐛 Bugs Connus</button>
+    </div>
 
     <!-- ── OUTILS ───────────────────────────────────────── -->
     <div class="sb-label">OUTILS</div>
     <button class="filter-btn" id="btn-images-tool" onclick="showImagesTool()">🖼️ Images</button>
     <button class="filter-btn" id="btn-calibrateur" onclick="showCalibrateur()">🎮 Calibrateur 3D</button>
     <button class="filter-btn" id="btn-capture-sprites" onclick="showCaptureSprites()">📸 Capture Sprites</button>
-    <button class="filter-btn" id="btn-bugs-connus" onclick="showBugsConnus()">🐛 Bugs Connus</button>
   </aside>
 
   <main class="main" id="submissions-list">

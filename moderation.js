@@ -1418,6 +1418,8 @@ const HASH_PANELS = {
   'audit-log':            () => showAuditLog(),
   'tags':                 () => showTagsPanel(),
   'statistiques':         () => showStatistiques(),
+  'bugs-connus':          () => showBugsConnus(),
+  'config':               () => showConfigHub(),
 };
 
 function _setHash(hash) {
@@ -1508,6 +1510,19 @@ const NAV_HUBS = [
         { hash: 'trash',       label: '🗑️ Corbeille',       btn: 'btn-trash',       panel: 'trash-panel',       fn: () => showTrash(), count: 'count-trash' },
       ]},
     ]},
+  { key: 'config', btn: 'btn-config-hub', badge: null, legacy: 'config-legacy-btns', def: 'game-config',
+    groups: [
+      { label: 'Règles du jeu', tabs: [
+        { hash: 'game-config',  label: '🌍 Config Jeu', btn: 'btn-game-config',  panel: 'game-config-panel',  fn: () => showGameConfig() },
+        { hash: 'effects-tool', label: '✨ Effets',     btn: 'btn-effects-tool', panel: 'effects-tool-panel', fn: () => showEffectsTool() },
+        { hash: 'events-tool',  label: '🎪 Events',     btn: 'btn-events-tool',  panel: 'events-tool-panel',  fn: () => showEventsTool() },
+        { hash: 'tags',         label: '🏷️ Tags',       btn: 'btn-tags',         panel: 'tags-panel',         fn: () => showTagsPanel() },
+      ]},
+      { label: 'Communication', tabs: [
+        { hash: 'webhooks',     label: '🔔 Webhooks Discord', btn: 'btn-discord-webhooks', panel: 'discord-webhooks-panel', fn: () => showDiscordWebhooks() },
+        { hash: 'bugs-connus',  label: '🐛 Bugs connus',      btn: 'btn-bugs-connus',      panel: 'bugs-connus-panel',      fn: () => showBugsConnus() },
+      ]},
+    ]},
 ];
 for (const h of NAV_HUBS) { h.tabs = h.groups.flatMap(g => g.tabs); h.last = h.def; }
 
@@ -1583,6 +1598,7 @@ window.showDiagHub    = () => _showHub(NAV_HUBS[0]);
 window.showContentHub = () => _showHub(NAV_HUBS[1]);
 window.showMapHub     = () => _showHub(NAV_HUBS[2]);
 window.showAdminHub   = () => _showHub(NAV_HUBS[3]);
+window.showConfigHub  = () => _showHub(NAV_HUBS[4]);
 
 function _routeToHash() {
   const hash = location.hash.slice(1) || 'submissions';
@@ -16675,6 +16691,7 @@ window.addEffectTemplate = function addEffectTemplate() {
 // ══════════════════════════════════════════════════════
 
 window.showBugsConnus = async function showBugsConnus() {
+  _setHash('bugs-connus');
   _showPanel('bugs-connus-panel', 'btn-bugs-connus');
   await _loadBugsConnus();
 };
