@@ -70,6 +70,14 @@ function same(api, wiki) {
   if (Array.isArray(api) && Array.isArray(wiki)) return JSON.stringify([...api].sort()) === JSON.stringify([...wiki].sort());
   return JSON.stringify(nrm(api)) === JSON.stringify(nrm(wiki));
 }
+// Lore identique au point final près : l'API a « …texte. » et le wiki « …texte ». On garde l'API pour le lore.
+// (La comparaison générale ignore déjà la ponctuation : ce cas n'apparaît pas comme différence, mais on peut l'aligner.)
+const trimEnd = t => String(t || '').replace(/\s+/g, ' ').trim();
+const stripEnd = t => trimEnd(t).replace(/[.…!?\s]+$/u, '');
+const loreOnlyEnding = (apiLore, wikiLore) => {
+  const a = trimEnd(apiLore), w = trimEnd(wikiLore);
+  return !!a && !!w && a !== w && stripEnd(a) === stripEnd(w) && /[.…!?]$/u.test(a) && !/[.…!?]$/u.test(w);
+};
 const labelOf = path => {
   const [g, k] = path.split('.');
   if (!k) return { rarity: 'Rareté', category: 'Catégorie', cat: 'Sous-type', lvl: 'Niveau', classes: 'Classes', lore: 'Lore', competence: 'Compétence' }[g] || g;
@@ -170,6 +178,7 @@ export function createApiItemsTool(ctx) {
         }
       }
       e.diffs = e.match ? fieldPaths(it.wiki, e.match).filter(p => !same(getPath(it.wiki, p), getPath(e.match, p))) : [];
+      e.loreFix = !!e.match && !e.match._hidden && loreOnlyEnding(it.wiki.lore, e.match.lore);
       e.status = it.dupOf ? 'dup' : decided[it.api.id] ? 'done' : e.match ? (e.diffs.length ? 'diff' : 'same') : e.cands.length ? 'variant' : 'new';
       return e;
     });
@@ -201,6 +210,18 @@ export function createApiItemsTool(ctx) {
       && (!ui.onlyFresh || e.fresh)
       && (!q || norm(e.api.name).includes(q)));
   }
+  // Entrées dont le lore ne diffère que par le point final (et pas déjà traitées / en attente)
+  function loreFixList() { return entries.filter(e => e.loreFix && !queue.has(e.id) && !decided[e.id] && !e.dupOf); }
+  function queueLoreFixes() {
+    const list = loreFixList();
+    for (const e of list) {
+      const m = e.match;
+      queue.set(e.id, { kind: 'apply', docKey: m._docKey || m.id, fields: ['lore'], name: m.name,
+        payload: { lore: e.wiki.lore, _import: { ...(m._import || {}), ...importMeta(e) }, _contributor: mergeContributors(readContribs(m), contrib()) } });
+    }
+    persistQueue(); render();
+    toast(list.length ? `${list.length} lores alignés sur l'API mis en attente — « Valider tout » pour écrire` : 'Rien à aligner', list.length ? 'success' : 'info', 4000);
+  }
   function readyEntries() { return entries.filter(e => e.status === 'new' && !e.flags.length); }
 
   function render() {
@@ -224,6 +245,7 @@ export function createApiItemsTool(ctx) {
         <select id="api-cat"><option value="">Toutes catégories</option>${cats.map(k => `<option value="${k}"${ui.cat === k ? ' selected' : ''}>${CATEGORY_LABEL[k] || k}</option>`).join('')}<option value="_none"${ui.cat === '_none' ? ' selected' : ''}>(à choisir)</option></select>
         <label style="font-size:12px;color:var(--muted);display:flex;gap:4px;align-items:center;"><input type="checkbox" id="api-fresh"${ui.onlyFresh ? ' checked' : ''}> récents seulement</label>
         <span style="flex:1"></span>
+        ${loreFixList().length ? `<button class="btn btn-ghost" data-act="lorefix" style="font-size:12px;" title="Items dont seul le point final du lore diffère : on garde le lore de l'API">✏️ Lore de l'API pour ${loreFixList().length} (point final)</button>` : ''}
         <button class="btn" data-act="bulk" style="background:var(--accent);color:#fff;font-size:12px;"${readyEntries().filter(e => !queue.has(e.id)).length ? '' : ' disabled'} title="Les met en attente, rien n'est écrit avant « Valider tout »">⏳ Mettre les ${readyEntries().filter(e => !queue.has(e.id)).length} prêts en attente</button>
       </div>
       ${ui.status === 'absent' ? '<p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Items présents sur le wiki mais introuvables dans l\'API (supprimés, renommés côté jeu, ou créés uniquement sur le wiki).</p>' : ''}
@@ -322,10 +344,11 @@ export function createApiItemsTool(ctx) {
     const rows = fieldPaths(a, m).filter(p => getPath(a, p) !== undefined || getPath(m, p) !== undefined).map(p => {
       const av = getPath(a, p), wv = getPath(m, p);
       const diff = !same(av, wv);
-      const def = wv === undefined || wv === null ? 'api' : 'wiki';
-      return `<tr class="${diff ? 'df' : ''}"><td>${esc(labelOf(p))}</td>
+      const loreFix = p === 'lore' && e.loreFix;   // seul le point final change : on garde l'API par défaut
+      const def = wv === undefined || wv === null || loreFix ? 'api' : 'wiki';
+      return `<tr class="${diff || loreFix ? 'df' : ''}"><td>${esc(labelOf(p))}${loreFix ? ' <span title="seul le point final change : on garde le lore de l\'API" style="color:#9b72cf">(point final)</span>' : ''}</td>
         <td>${esc(fmt(av))}</td><td>${esc(fmt(wv))}</td>
-        <td class="ch">${diff && av !== undefined && !hidden ? `<label><input type="radio" name="pick-${e.id}-${p}" data-p="${p}" value="api"${def === 'api' ? ' checked' : ''}>API</label> <label><input type="radio" name="pick-${e.id}-${p}" data-p="${p}" value="wiki"${def === 'wiki' ? ' checked' : ''}>Wiki</label>` : ''}</td></tr>`;
+        <td class="ch">${(diff || loreFix) && av !== undefined && !hidden ? `<label><input type="radio" name="pick-${e.id}-${p}" data-p="${p}" value="api"${def === 'api' ? ' checked' : ''}>API</label> <label><input type="radio" name="pick-${e.id}-${p}" data-p="${p}" value="wiki"${def === 'wiki' ? ' checked' : ''}>Wiki</label>` : ''}</td></tr>`;
     }).join('');
     const wImg = imgSrc(m.images?.[0] || m.image);
     const imgChoice = e.image && (!wImg || wImg !== e.image) && !hidden
@@ -508,6 +531,7 @@ export function createApiItemsTool(ctx) {
       else if (act === 'seen') { safeLs('set', 'apiItemsLastSeenAt', String(Date.now())); build(); render(); toast('Marqué comme vu', 'success'); }
       else if (act === 'import') importOne(id);
       else if (act === 'bulk') bulkImport();
+      else if (act === 'lorefix') queueLoreFixes();
       else if (act === 'apply') applyChoices(id);
       else if (act === 'allapi') applyChoices(id, true);
       else if (act === 'link') link(id, t.dataset.to);
