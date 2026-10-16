@@ -39,6 +39,7 @@ const STAT_GROUPS = [
     label: 'Défensif',
     stats: [
       { id:'defense',             label:'Défense',                         icon:'🛡️',  unit:'',   max:200 },
+      { id:'blocage',             label:'Blocage %',                       icon:'🧱',  unit:'%',   max:100 },
 	  	{ id:'maitrise_bloc',       label:'Maîtrise de Blocage',             icon:'🧱',  unit:'%',   max:100 },
 	  	{ id:'puissance_bloc',      label:'Puissance de Blocage',            icon:'💪',  unit:'%',   max:100 },
       { id:'sante',               label:'Santé',                           icon:'❤️',  unit:'',   max:1000 },
