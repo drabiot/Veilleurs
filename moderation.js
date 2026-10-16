@@ -11,6 +11,7 @@ import { toast }  from './components/toast.js';
 import { modal }  from './components/modal.js';
 import { store }  from './store.js';
 import { generateCardBlob } from './card-renderer.js';
+import { createApiItemsTool } from './moderation-api-items.js';
 
 // Helpers partagés — utils.js est chargé en classic script avant ce module
 const { normalize, fuzzyMatch } = window.VCL;
@@ -1415,6 +1416,7 @@ const HASH_PANELS = {
   'tags':                 () => showTagsPanel(),
   'statistiques':         () => showStatistiques(),
   'bugs-connus':          () => showBugsConnus(),
+  'api-items':            () => showApiItems(),
   'config':               () => showConfigHub(),
 };
 
@@ -1484,6 +1486,9 @@ const NAV_HUBS = [
       ]},
       { label: 'Visibilité', tabs: [
         { hash: 'migration', label: '🔒 Sensible', btn: 'btn-migration', panel: 'migration-panel', fn: () => showMigration() },
+      ]},
+      { label: 'Source externe', tabs: [
+        { hash: 'api-items', label: '🔌 API', btn: 'btn-api-items', panel: 'api-items-panel', fn: () => showApiItems() },
       ]},
     ]},
   { key: 'map', btn: 'btn-map-hub', badge: null, legacy: 'map-legacy-btns', def: 'map',
@@ -16154,3 +16159,19 @@ window.deleteBug = async function deleteBug(id, name) {
   }
 };
 
+
+// ══════════════════════════════════════════════════════
+//  ONGLET API (items SAO) — logique dans moderation-api-items.js
+// ══════════════════════════════════════════════════════
+let _apiItemsTool = null;
+window.showApiItems = async function showApiItems() {
+  _setHash('api-items');
+  _showPanel('api-items-panel', 'btn-api-items');
+  _apiItemsTool ??= createApiItemsTool({
+    db, doc, setDoc, updateDoc, getDoc, writeBatch, serverTimestamp, deleteField,
+    cachedDocs, invalidateModCache, store, COL, toast, modal,
+    writeAudit: _writeAudit, mergeContributors: _mergeContributors, readContribs: _readContribs,
+    getUser: () => ({ uid: currentUser?.uid, name: _userNames.get(currentUser?.uid) || currentUser?.email }),
+  });
+  await _apiItemsTool.show();
+};

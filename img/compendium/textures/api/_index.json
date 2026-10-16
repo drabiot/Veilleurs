@@ -1,0 +1,6506 @@
+{
+ "1288": {
+  "file": "1288.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_des_bois.png"
+ },
+ "1289": {
+  "file": "1289.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_squelette.png"
+ },
+ "1290": {
+  "file": "1290.png",
+  "source": "api",
+  "url": "/uploads/items/mcfantasytrinketsvol2/necklace20.png"
+ },
+ "1291": {
+  "file": "1291.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_slime.png"
+ },
+ "1292": {
+  "file": "1292.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_piece.png"
+ },
+ "1296": {
+  "file": "1296.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_albal.png"
+ },
+ "1297": {
+  "file": "1297.png",
+  "source": "api",
+  "url": "/uploads/items/mcfantasytrinketsvol2/necklace19.png"
+ },
+ "1298": {
+  "file": "1298.png",
+  "source": "api",
+  "url": "/uploads/items/mcfantasytrinketsvol2/necklace25.png"
+ },
+ "1299": {
+  "file": "1299.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_dechu.png"
+ },
+ "1300": {
+  "file": "1300.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_oublie.png"
+ },
+ "1301": {
+  "file": "1301.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_dechu.png"
+ },
+ "1302": {
+  "file": "1302.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/pendentif_dechu.png"
+ },
+ "1303": {
+  "file": "1303.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/pendentif_oublie.png"
+ },
+ "1304": {
+  "file": "1304.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_sculpteur_vents_froids.png"
+ },
+ "1305": {
+  "file": "1305.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_sentinellegivremar.png"
+ },
+ "1306": {
+  "file": "1306.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_amour1.png"
+ },
+ "1307": {
+  "file": "1307.png",
+  "source": "api",
+  "url": "/uploads/items/pixelmine/netherite_amulet.png"
+ },
+ "1308": {
+  "file": "1308.png",
+  "source": "api",
+  "url": "/uploads/items/mcfantasytrinketsvol2/necklace6.png"
+ },
+ "1309": {
+  "file": "1309.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_runique.png"
+ },
+ "1310": {
+  "file": "1310.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_taureau.png"
+ },
+ "1311": {
+  "file": "1311.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_ferraille.png"
+ },
+ "1312": {
+  "file": "1312.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_bauxite.png"
+ },
+ "1313": {
+  "file": "1313.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_onyx_impure.png"
+ },
+ "1314": {
+  "file": "1314.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_onyx_pure.png"
+ },
+ "1315": {
+  "file": "1315.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_acamiel.png"
+ },
+ "1316": {
+  "file": "1316.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_tricolore.png"
+ },
+ "1317": {
+  "file": "1317.png",
+  "source": "api",
+  "url": "/uploads/items/mcfantasytrinketsvol2/necklace4.png"
+ },
+ "1318": {
+  "file": "1318.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_novice.png"
+ },
+ "1319": {
+  "file": "1319.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_granite.png"
+ },
+ "1320": {
+  "file": "1320.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_andesite.png"
+ },
+ "1321": {
+  "file": "1321.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_pierre.png"
+ },
+ "1322": {
+  "file": "1322.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/collier_abordable.png"
+ },
+ "1323": {
+  "file": "1323.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_loup_bois.png"
+ },
+ "1324": {
+  "file": "1324.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_loup_brumeux.png"
+ },
+ "1325": {
+  "file": "1325.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_orc.png"
+ },
+ "1326": {
+  "file": "1326.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/amulette_goblinne.png"
+ },
+ "1327": {
+  "file": "1327.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_bois_sombres.png"
+ },
+ "1328": {
+  "file": "1328.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_toile.png"
+ },
+ "1329": {
+  "file": "1329.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_spectral.png"
+ },
+ "1330": {
+  "file": "1330.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_luminiscente.png"
+ },
+ "1331": {
+  "file": "1331.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/amulette_voleur.png"
+ },
+ "1332": {
+  "file": "1332.png",
+  "source": "api",
+  "url": "/uploads/items/chinese_newyear/head_dragon_mask.png"
+ },
+ "1333": {
+  "file": "1333.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/collier_dragonique_corrompu.png"
+ },
+ "1334": {
+  "file": "1334.png",
+  "source": "pack",
+  "pack": "assets/miners/textures/miners/miner_armor1_chestplate.png"
+ },
+ "1335": {
+  "file": "1335.png",
+  "source": "pack",
+  "pack": "assets/miners/textures/miners/miner_armor1_leggings.png"
+ },
+ "1336": {
+  "file": "1336.png",
+  "source": "api",
+  "url": "/uploads/items/miners/miner_armor1_boots.png"
+ },
+ "1337": {
+  "file": "1337.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_layer_1_icon.png"
+ },
+ "1338": {
+  "file": "1338.png",
+  "source": "pack-3d"
+ },
+ "1339": {
+  "file": "1339.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_layer_1_icon.png"
+ },
+ "1340": {
+  "file": "1340.png",
+  "source": "pack",
+  "pack": "assets/elitecreatures/textures/seaturtle_animated_weapon_set/seaturtle_chestplate.png"
+ },
+ "1341": {
+  "file": "1341.png",
+  "source": "pack",
+  "pack": "assets/elitecreatures/textures/seaturtle_animated_weapon_set/seaturtle_leggings.png"
+ },
+ "1342": {
+  "file": "1342.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/seaturtle_boots.png"
+ },
+ "1343": {
+  "file": "1343.png",
+  "source": "pack",
+  "pack": "assets/tools_armor/textures/wizard_set/armor/wizard_chestplate.png"
+ },
+ "1344": {
+  "file": "1344.png",
+  "source": "pack",
+  "pack": "assets/tools_armor/textures/wizard_set/armor/wizard_leggings.png"
+ },
+ "1345": {
+  "file": "1345.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_spectrale.png"
+ },
+ "1346": {
+  "file": "1346.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_layer_1_icon.png"
+ },
+ "1347": {
+  "file": "1347.png",
+  "source": "pack",
+  "pack": "assets/elitecreatures/textures/seaturtle_animated_weapon_set/seaturtle_chestplate.png"
+ },
+ "1348": {
+  "file": "1348.png",
+  "source": "pack",
+  "pack": "assets/elitecreatures/textures/seaturtle_animated_weapon_set/seaturtle_leggings.png"
+ },
+ "1349": {
+  "file": "1349.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/seaturtle_boots.png"
+ },
+ "1350": {
+  "file": "1350.png",
+  "source": "pack",
+  "pack": "assets/tools_armor/textures/wizard_set/armor/wizard_chestplate.png"
+ },
+ "1351": {
+  "file": "1351.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/mage_hood.png"
+ },
+ "1352": {
+  "file": "1352.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/mage_assortment_armor1_icon.png"
+ },
+ "1353": {
+  "file": "1353.png",
+  "source": "pack-3d"
+ },
+ "1354": {
+  "file": "1354.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/mage_assortment_armor1_icon.png"
+ },
+ "1355": {
+  "file": "1355.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/knightassortment_armor_1_icon.png"
+ },
+ "1356": {
+  "file": "1356.png",
+  "source": "pack-3d"
+ },
+ "1357": {
+  "file": "1357.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/knightassortment_armor_1_icon.png"
+ },
+ "1358": {
+  "file": "1358.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/rogueassortment_icon1.png"
+ },
+ "1359": {
+  "file": "1359.png",
+  "source": "pack-3d"
+ },
+ "1360": {
+  "file": "1360.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/rogueassortment_icon1.png"
+ },
+ "1361": {
+  "file": "1361.png",
+  "source": "pack-3d"
+ },
+ "1362": {
+  "file": "1362.png",
+  "source": "pack-3d"
+ },
+ "1363": {
+  "file": "1363.png",
+  "source": "pack-3d"
+ },
+ "1364": {
+  "file": "1364.png",
+  "source": "pack",
+  "pack": "assets/lunar_studios/textures/fflash/wizard_armor/wizard_chestplate.png"
+ },
+ "1365": {
+  "file": "1365.png",
+  "source": "pack",
+  "pack": "assets/lunar_studios/textures/fflash/wizard_armor/wizard_leggings.png"
+ },
+ "1366": {
+  "file": "1366.png",
+  "source": "pack",
+  "pack": "assets/lunar_studios/textures/fflash/wizard_armor/wizard_boots.png"
+ },
+ "1367": {
+  "file": "1367.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/freaper_hood.png"
+ },
+ "1368": {
+  "file": "1368.png",
+  "source": "pack",
+  "pack": "assets/fherov1items/textures/item/armor/freaper_chestplate.png"
+ },
+ "1369": {
+  "file": "1369.png",
+  "source": "pack",
+  "pack": "assets/fherov1items/textures/item/armor/freaper_leggings.png"
+ },
+ "1370": {
+  "file": "1370.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/freaper_boots.png"
+ },
+ "1371": {
+  "file": "1371.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fwarden_helmetb.png"
+ },
+ "1372": {
+  "file": "1372.png",
+  "source": "pack",
+  "pack": "assets/fherov1items/textures/item/armor/fwarden_chestplate.png"
+ },
+ "1373": {
+  "file": "1373.png",
+  "source": "pack",
+  "pack": "assets/fherov1items/textures/item/armor/fwarden_leggings.png"
+ },
+ "1374": {
+  "file": "1374.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fwarden_boots.png"
+ },
+ "1375": {
+  "file": "1375.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/em_fherald.png"
+ },
+ "1376": {
+  "file": "1376.png",
+  "source": "pack",
+  "pack": "assets/fherov1items/textures/item/armor/fherald_chestplate.png"
+ },
+ "1377": {
+  "file": "1377.png",
+  "source": "pack",
+  "pack": "assets/fherov1items/textures/item/armor/fherald_leggings.png"
+ },
+ "1378": {
+  "file": "1378.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fherald_boots.png"
+ },
+ "1379": {
+  "file": "1379.png",
+  "source": "api",
+  "url": "/uploads/items/mmoitems_pack/damned_boots.png"
+ },
+ "1381": {
+  "file": "1381.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/helmet.png"
+ },
+ "1382": {
+  "file": "1382.png",
+  "source": "pack",
+  "pack": "assets/plny_beeset/textures/armor/plny_beeset_chestplate_icon.png"
+ },
+ "1383": {
+  "file": "1383.png",
+  "source": "pack",
+  "pack": "assets/plny_beeset/textures/armor/plny_beeset_leggings_icon.png"
+ },
+ "1384": {
+  "file": "1384.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/plny_beeset_boots_icon.png"
+ },
+ "1385": {
+  "file": "1385.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/helmet.png"
+ },
+ "1386": {
+  "file": "1386.png",
+  "source": "pack",
+  "pack": "assets/plny_beeset/textures/armor/plny_beeset_chestplate_icon.png"
+ },
+ "1387": {
+  "file": "1387.png",
+  "source": "pack",
+  "pack": "assets/plny_beeset/textures/armor/plny_beeset_leggings_icon.png"
+ },
+ "1388": {
+  "file": "1388.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/plny_beeset_boots_icon.png"
+ },
+ "1389": {
+  "file": "1389.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/helmet.png"
+ },
+ "1390": {
+  "file": "1390.png",
+  "source": "pack",
+  "pack": "assets/plny_beeset/textures/armor/plny_beeset_chestplate_icon.png"
+ },
+ "1391": {
+  "file": "1391.png",
+  "source": "pack",
+  "pack": "assets/plny_beeset/textures/armor/plny_beeset_leggings_icon.png"
+ },
+ "1392": {
+  "file": "1392.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/plny_beeset_boots_icon.png"
+ },
+ "1393": {
+  "file": "1393.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/helmet.png"
+ },
+ "1394": {
+  "file": "1394.png",
+  "source": "pack",
+  "pack": "assets/plny_beeset/textures/armor/plny_beeset_chestplate_icon.png"
+ },
+ "1395": {
+  "file": "1395.png",
+  "source": "pack",
+  "pack": "assets/plny_beeset/textures/armor/plny_beeset_leggings_icon.png"
+ },
+ "1396": {
+  "file": "1396.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/plny_beeset_boots_icon.png"
+ },
+ "1397": {
+  "file": "1397.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/helmet.png"
+ },
+ "1398": {
+  "file": "1398.png",
+  "source": "pack",
+  "pack": "assets/plny_beeset/textures/armor/plny_beeset_chestplate_icon.png"
+ },
+ "1399": {
+  "file": "1399.png",
+  "source": "pack",
+  "pack": "assets/plny_beeset/textures/armor/plny_beeset_leggings_icon.png"
+ },
+ "1400": {
+  "file": "1400.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/plny_beeset_boots_icon.png"
+ },
+ "1401": {
+  "file": "1401.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/helmet.png"
+ },
+ "1402": {
+  "file": "1402.png",
+  "source": "pack",
+  "pack": "assets/necros_set/textures/armor/necros_chestplate_icon.png"
+ },
+ "1403": {
+  "file": "1403.png",
+  "source": "pack",
+  "pack": "assets/necros_set/textures/armor/necros_leggings_icon.png"
+ },
+ "1404": {
+  "file": "1404.png",
+  "source": "pack",
+  "pack": "assets/necros_set/textures/armor/necros_boots_icon.png"
+ },
+ "1405": {
+  "file": "1405.png",
+  "source": "pack-3d"
+ },
+ "1406": {
+  "file": "1406.png",
+  "source": "pack-3d"
+ },
+ "1407": {
+  "file": "1407.png",
+  "source": "pack-3d"
+ },
+ "1408": {
+  "file": "1408.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_chestplate.png"
+ },
+ "1409": {
+  "file": "1409.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_leggings.png"
+ },
+ "1410": {
+  "file": "1410.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_boots.png"
+ },
+ "1411": {
+  "file": "1411.png",
+  "source": "pack-3d"
+ },
+ "1412": {
+  "file": "1412.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_chestplate.png"
+ },
+ "1413": {
+  "file": "1413.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_leggings.png"
+ },
+ "1414": {
+  "file": "1414.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_boots.png"
+ },
+ "1415": {
+  "file": "1415.png",
+  "source": "pack-3d"
+ },
+ "1416": {
+  "file": "1416.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_chestplate.png"
+ },
+ "1417": {
+  "file": "1417.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_leggings.png"
+ },
+ "1418": {
+  "file": "1418.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_boots.png"
+ },
+ "1419": {
+  "file": "1419.png",
+  "source": "pack-3d"
+ },
+ "1420": {
+  "file": "1420.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_chestplate.png"
+ },
+ "1421": {
+  "file": "1421.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_leggings.png"
+ },
+ "1422": {
+  "file": "1422.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_boots.png"
+ },
+ "1423": {
+  "file": "1423.png",
+  "source": "pack-3d"
+ },
+ "1424": {
+  "file": "1424.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_chestplate.png"
+ },
+ "1425": {
+  "file": "1425.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_leggings.png"
+ },
+ "1426": {
+  "file": "1426.png",
+  "source": "pack",
+  "pack": "assets/amethyst/textures/item/amethyst_boots.png"
+ },
+ "1427": {
+  "file": "1427.png",
+  "source": "api",
+  "url": "/uploads/items/forestmagic_em/helmet2_forestmagic_em.png"
+ },
+ "1428": {
+  "file": "1428.png",
+  "source": "pack",
+  "pack": "assets/forestmagic_em/textures/item/armor/chestplate_forestmagic_em.png"
+ },
+ "1429": {
+  "file": "1429.png",
+  "source": "pack",
+  "pack": "assets/forestmagic_em/textures/item/armor/leggings_forestmagic_em.png"
+ },
+ "1430": {
+  "file": "1430.png",
+  "source": "api",
+  "url": "/uploads/items/forestmagic_em/boots_forestmagic_em.png"
+ },
+ "1431": {
+  "file": "1431.png",
+  "source": "api",
+  "url": "/uploads/items/forestmagic_em/helmet2_forestmagic_em.png"
+ },
+ "1432": {
+  "file": "1432.png",
+  "source": "pack",
+  "pack": "assets/forestmagic_em/textures/item/armor/chestplate_forestmagic_em.png"
+ },
+ "1433": {
+  "file": "1433.png",
+  "source": "pack",
+  "pack": "assets/forestmagic_em/textures/item/armor/leggings_forestmagic_em.png"
+ },
+ "1434": {
+  "file": "1434.png",
+  "source": "api",
+  "url": "/uploads/items/forestmagic_em/boots_forestmagic_em.png"
+ },
+ "1435": {
+  "file": "1435.png",
+  "source": "api",
+  "url": "/uploads/items/forestmagic_em/helmet2_forestmagic_em.png"
+ },
+ "1436": {
+  "file": "1436.png",
+  "source": "pack",
+  "pack": "assets/forestmagic_em/textures/item/armor/chestplate_forestmagic_em.png"
+ },
+ "1437": {
+  "file": "1437.png",
+  "source": "pack",
+  "pack": "assets/forestmagic_em/textures/item/armor/leggings_forestmagic_em.png"
+ },
+ "1438": {
+  "file": "1438.png",
+  "source": "api",
+  "url": "/uploads/items/forestmagic_em/boots_forestmagic_em.png"
+ },
+ "1439": {
+  "file": "1439.png",
+  "source": "api",
+  "url": "/uploads/items/forestmagic_em/helmet2_forestmagic_em.png"
+ },
+ "1440": {
+  "file": "1440.png",
+  "source": "pack",
+  "pack": "assets/forestmagic_em/textures/item/armor/chestplate_forestmagic_em.png"
+ },
+ "1441": {
+  "file": "1441.png",
+  "source": "pack",
+  "pack": "assets/forestmagic_em/textures/item/armor/leggings_forestmagic_em.png"
+ },
+ "1442": {
+  "file": "1442.png",
+  "source": "api",
+  "url": "/uploads/items/forestmagic_em/boots_forestmagic_em.png"
+ },
+ "1443": {
+  "file": "1443.png",
+  "source": "api",
+  "url": "/uploads/items/forestmagic_em/helmet2_forestmagic_em.png"
+ },
+ "1444": {
+  "file": "1444.png",
+  "source": "pack",
+  "pack": "assets/forestmagic_em/textures/item/armor/chestplate_forestmagic_em.png"
+ },
+ "1445": {
+  "file": "1445.png",
+  "source": "pack",
+  "pack": "assets/forestmagic_em/textures/item/armor/leggings_forestmagic_em.png"
+ },
+ "1446": {
+  "file": "1446.png",
+  "source": "api",
+  "url": "/uploads/items/forestmagic_em/boots_forestmagic_em.png"
+ },
+ "1448": {
+  "file": "1448.png",
+  "source": "pack",
+  "pack": "assets/mcfantasytrinketsvol2/textures/item/necklace22.png"
+ },
+ "1449": {
+  "file": "1449.png",
+  "source": "api",
+  "url": "/uploads/items/trinketsvol3/trinket_21.png"
+ },
+ "1450": {
+  "file": "1450.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/crane_squelette.png"
+ },
+ "1451": {
+  "file": "1451.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/ceinture_sanglier.png"
+ },
+ "1452": {
+  "file": "1452.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/coins/piece_cuivre.png"
+ },
+ "1453": {
+  "file": "1453.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/manteau_slime.png"
+ },
+ "1454": {
+  "file": "1454.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/manteau_simple.png"
+ },
+ "1455": {
+  "file": "1455.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/coins/piece_voleur.png"
+ },
+ "1456": {
+  "file": "1456.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/cagoule_bandit.png"
+ },
+ "1457": {
+  "file": "1457.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/coins/piece_fer.png"
+ },
+ "1458": {
+  "file": "1458.png",
+  "source": "api",
+  "url": "/uploads/items/mcfantasytrinketsvol2/necklace11.png"
+ },
+ "1459": {
+  "file": "1459.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/manteau_minuit2.png"
+ },
+ "1460": {
+  "file": "1460.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ceinture_cerfs.png"
+ },
+ "1461": {
+  "file": "1461.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ritual_skull.png"
+ },
+ "1462": {
+  "file": "1462.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/robe_occulte.png"
+ },
+ "1463": {
+  "file": "1463.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/capuche_occulte.png"
+ },
+ "1464": {
+  "file": "1464.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/talisman_kazor.png"
+ },
+ "1465": {
+  "file": "1465.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/couronne_kazor.png"
+ },
+ "1466": {
+  "file": "1466.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/casque_dechu.png"
+ },
+ "1467": {
+  "file": "1467.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_dechu.png"
+ },
+ "1468": {
+  "file": "1468.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/grimoire_oublie.png"
+ },
+ "1469": {
+  "file": "1469.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/crane_wolf1.png"
+ },
+ "1470": {
+  "file": "1470.png",
+  "source": "api",
+  "url": "/uploads/items/trinketsvol3/trinket_10.png"
+ },
+ "1471": {
+  "file": "1471.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_couronne_cyan.png"
+ },
+ "1472": {
+  "file": "1472.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/cadeau1.png"
+ },
+ "1473": {
+  "file": "1473.png",
+  "source": "api",
+  "url": "/uploads/items/trinketsvol3/trinket_6.png"
+ },
+ "1474": {
+  "file": "1474.png",
+  "source": "pack",
+  "pack": "assets/pixelmine/textures/item/mythic_drop.png"
+ },
+ "1475": {
+  "file": "1475.png",
+  "source": "pack",
+  "pack": "assets/trinketsvol3/textures/item/trinket_1.png"
+ },
+ "1476": {
+  "file": "1476.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ceinture_taureau.png"
+ },
+ "1477": {
+  "file": "1477.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ceinture_ours.png"
+ },
+ "1478": {
+  "file": "1478.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/plume_ecarlate.png"
+ },
+ "1479": {
+  "file": "1479.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/plume_azur.png"
+ },
+ "1480": {
+  "file": "1480.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/plume_flamboyant.png"
+ },
+ "1481": {
+  "file": "1481.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ceinture2.png"
+ },
+ "1482": {
+  "file": "1482.png",
+  "source": "api",
+  "url": "/uploads/items/trinketsvol3/trinket_20.png"
+ },
+ "1483": {
+  "file": "1483.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/talisman_taureau.png"
+ },
+ "1484": {
+  "file": "1484.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/masque_corrompu.png"
+ },
+ "1485": {
+  "file": "1485.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/coins/piece_ferraille.png"
+ },
+ "1486": {
+  "file": "1486.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/coins/piece_onyx_pure.png"
+ },
+ "1487": {
+  "file": "1487.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/coins/piece_onyx_impure.png"
+ },
+ "1488": {
+  "file": "1488.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/coins/piece_onyx_impure.png"
+ },
+ "1489": {
+  "file": "1489.png",
+  "source": "api",
+  "url": "/uploads/items/pixelmine/netherite_shield.png"
+ },
+ "1490": {
+  "file": "1490.png",
+  "source": "pack",
+  "pack": "assets/pixelmine/textures/item/scroll_of_dead.png"
+ },
+ "1491": {
+  "file": "1491.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/amulette_occulte.png"
+ },
+ "1492": {
+  "file": "1492.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/poignard_occulte.png"
+ },
+ "1493": {
+  "file": "1493.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/masque_occulte.png"
+ },
+ "1494": {
+  "file": "1494.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/sablier_occulte.png"
+ },
+ "1495": {
+  "file": "1495.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/chapeau_taurus.png"
+ },
+ "1496": {
+  "file": "1496.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/talisman_taurus.png"
+ },
+ "1497": {
+  "file": "1497.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/capuche_taurus.png"
+ },
+ "1498": {
+  "file": "1498.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/grimoire_taurus.png"
+ },
+ "1499": {
+  "file": "1499.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/boucle_oreille_taurus.png"
+ },
+ "1500": {
+  "file": "1500.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/chat_lunar1.png"
+ },
+ "1501": {
+  "file": "1501.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol2/textures/item/coin4.png"
+ },
+ "1502": {
+  "file": "1502.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/lanterne_lunar1.png"
+ },
+ "1503": {
+  "file": "1503.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/lanterne_lunar2.png"
+ },
+ "1508": {
+  "file": "1508.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_simple.png"
+ },
+ "1509": {
+  "file": "1509.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes1_fer.png"
+ },
+ "1510": {
+  "file": "1510.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_aventurier.png"
+ },
+ "1511": {
+  "file": "1511.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_explorateur.png"
+ },
+ "1512": {
+  "file": "1512.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_pionner.png"
+ },
+ "1513": {
+  "file": "1513.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_gobline.png"
+ },
+ "1514": {
+  "file": "1514.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_orcienne.png"
+ },
+ "1515": {
+  "file": "1515.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_tribue.png"
+ },
+ "1516": {
+  "file": "1516.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes1_loup1.png"
+ },
+ "1517": {
+  "file": "1517.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes1_loup2.png"
+ },
+ "1518": {
+  "file": "1518.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes1_loup.png"
+ },
+ "1519": {
+  "file": "1519.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes2_loup.png"
+ },
+ "1520": {
+  "file": "1520.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_sylvestre.png"
+ },
+ "1521": {
+  "file": "1521.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_bois_sombres.png"
+ },
+ "1522": {
+  "file": "1522.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_luminiscente.png"
+ },
+ "1523": {
+  "file": "1523.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_luminiscente.png"
+ },
+ "1524": {
+  "file": "1524.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_tisseuse.png"
+ },
+ "1525": {
+  "file": "1525.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_toile_araignee.png"
+ },
+ "1526": {
+  "file": "1526.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_toile.png"
+ },
+ "1527": {
+  "file": "1527.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_noire.png"
+ },
+ "1528": {
+  "file": "1528.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_bandit.png"
+ },
+ "1529": {
+  "file": "1529.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bottes_voleur.png"
+ },
+ "1530": {
+  "file": "1530.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/bottes_amethyste.png"
+ },
+ "1531": {
+  "file": "1531.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ceinture2.png"
+ },
+ "1532": {
+  "file": "1532.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ceinture8.png"
+ },
+ "1533": {
+  "file": "1533.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ceinture4.png"
+ },
+ "1534": {
+  "file": "1534.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ceinture_cuivre_granuleux.png"
+ },
+ "1535": {
+  "file": "1535.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ceinture3.png"
+ },
+ "1536": {
+  "file": "1536.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ceinture_cuivre.png"
+ },
+ "1537": {
+  "file": "1537.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ceinture_abordable.png"
+ },
+ "1538": {
+  "file": "1538.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/couteau_crocs_bois.png"
+ },
+ "1539": {
+  "file": "1539.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/manteau_loup_bois.png"
+ },
+ "1540": {
+  "file": "1540.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/couteau_crocs_brumeux.png"
+ },
+ "1541": {
+  "file": "1541.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/manteau_loup_brumeux.png"
+ },
+ "1542": {
+  "file": "1542.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/hache_orc.png"
+ },
+ "1543": {
+  "file": "1543.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/ceinture_orc.png"
+ },
+ "1544": {
+  "file": "1544.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/orbe_goblinne.png"
+ },
+ "1545": {
+  "file": "1545.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/grimoire_bois_sombres.png"
+ },
+ "1546": {
+  "file": "1546.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/boucle_oreille_bois_sombre.png"
+ },
+ "1547": {
+  "file": "1547.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/masque_toile.png"
+ },
+ "1548": {
+  "file": "1548.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/talisman_toile.png"
+ },
+ "1549": {
+  "file": "1549.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/ceinture_luminiscente.png"
+ },
+ "1550": {
+  "file": "1550.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/anneau_eclair_luminiscent.png"
+ },
+ "1551": {
+  "file": "1551.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/plume_spectrale.png"
+ },
+ "1552": {
+  "file": "1552.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/feu_follet_spectral.png"
+ },
+ "1553": {
+  "file": "1553.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/cagoule_voleur.png"
+ },
+ "1554": {
+  "file": "1554.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/masque_voleur.png"
+ },
+ "1555": {
+  "file": "1555.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/materials/rusted_iron.png"
+ },
+ "1556": {
+  "file": "1556.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/talisman_amethyste.png"
+ },
+ "1557": {
+  "file": "1557.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/grimoire_occulte.png"
+ },
+ "1558": {
+  "file": "1558.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/boucle_oreille_occulte.png"
+ },
+ "1559": {
+  "file": "1559.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/anneau_occulte5.png"
+ },
+ "1560": {
+  "file": "1560.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/hache_occulte.png"
+ },
+ "1561": {
+  "file": "1561.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/casque_occulte.png"
+ },
+ "1562": {
+  "file": "1562.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/bottes_occulte.png"
+ },
+ "1563": {
+  "file": "1563.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/manteau_adoryll.png"
+ },
+ "1564": {
+  "file": "1564.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/couteau_loup.png"
+ },
+ "1565": {
+  "file": "1565.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/grimoire_corrompu.png"
+ },
+ "1566": {
+  "file": "1566.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1567": {
+  "file": "1567.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1568": {
+  "file": "1568.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1569": {
+  "file": "1569.png",
+  "source": "api",
+  "url": "/uploads/items/rpg_mobs_ents/mob_ent_archer.png"
+ },
+ "1570": {
+  "file": "1570.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/rogue_bow.png"
+ },
+ "1571": {
+  "file": "1571.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1572": {
+  "file": "1572.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fhero_bow.png"
+ },
+ "1573": {
+  "file": "1573.png",
+  "source": "api",
+  "url": "/uploads/items/illfang_items/illfang_bow.png"
+ },
+ "1574": {
+  "file": "1574.png",
+  "source": "pack-3d"
+ },
+ "1575": {
+  "file": "1575.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fhero_crossbow.png"
+ },
+ "1576": {
+  "file": "1576.png",
+  "source": "pack-3d"
+ },
+ "1577": {
+  "file": "1577.png",
+  "source": "api",
+  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+ },
+ "1578": {
+  "file": "1578.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+ },
+ "1579": {
+  "file": "1579.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1580": {
+  "file": "1580.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1581": {
+  "file": "1581.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/honey_1.png"
+ },
+ "1582": {
+  "file": "1582.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1583": {
+  "file": "1583.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/animated_9.png"
+ },
+ "1584": {
+  "file": "1584.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1585": {
+  "file": "1585.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1586": {
+  "file": "1586.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1587": {
+  "file": "1587.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1588": {
+  "file": "1588.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_bow.png"
+ },
+ "1589": {
+  "file": "1589.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_sylvestre.png"
+ },
+ "1590": {
+  "file": "1590.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/bracelet_sanglier.png"
+ },
+ "1591": {
+  "file": "1591.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/copper_ring7.png"
+ },
+ "1592": {
+  "file": "1592.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_slime.png"
+ },
+ "1593": {
+  "file": "1593.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/iron_ring7.png"
+ },
+ "1594": {
+  "file": "1594.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_cerfs.png"
+ },
+ "1595": {
+  "file": "1595.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_tissu_araignee.png"
+ },
+ "1596": {
+  "file": "1596.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/greyish_ring11.png"
+ },
+ "1597": {
+  "file": "1597.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/netherite_ring9.png"
+ },
+ "1598": {
+  "file": "1598.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/red_ring7.png"
+ },
+ "1599": {
+  "file": "1599.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/netherite_ring7.png"
+ },
+ "1600": {
+  "file": "1600.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_yuleck.png"
+ },
+ "1601": {
+  "file": "1601.png",
+  "source": "api",
+  "url": "/uploads/items/trinketsvol3/trinket_28.png"
+ },
+ "1602": {
+  "file": "1602.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_kazor.png"
+ },
+ "1603": {
+  "file": "1603.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_ferraille.png"
+ },
+ "1604": {
+  "file": "1604.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_bauxite.png"
+ },
+ "1605": {
+  "file": "1605.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/netherite_ring7.png"
+ },
+ "1606": {
+  "file": "1606.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_onyx_pur.png"
+ },
+ "1607": {
+  "file": "1607.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_miel.png"
+ },
+ "1608": {
+  "file": "1608.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_runimiel.png"
+ },
+ "1609": {
+  "file": "1609.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_loup1.png"
+ },
+ "1610": {
+  "file": "1610.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/gold_ring7.png"
+ },
+ "1611": {
+  "file": "1611.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_granite.png"
+ },
+ "1612": {
+  "file": "1612.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_cuivre_granuleux.png"
+ },
+ "1613": {
+  "file": "1613.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_andesite.png"
+ },
+ "1614": {
+  "file": "1614.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_pierre.png"
+ },
+ "1615": {
+  "file": "1615.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_abordable.png"
+ },
+ "1616": {
+  "file": "1616.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_bois.png"
+ },
+ "1617": {
+  "file": "1617.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_brumeux.png"
+ },
+ "1618": {
+  "file": "1618.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_orc.png"
+ },
+ "1619": {
+  "file": "1619.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/bracelet_goblin.png"
+ },
+ "1620": {
+  "file": "1620.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_bois_sombres.png"
+ },
+ "1621": {
+  "file": "1621.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_toile.png"
+ },
+ "1622": {
+  "file": "1622.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_spectral.png"
+ },
+ "1623": {
+  "file": "1623.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_luminiscente.png"
+ },
+ "1624": {
+  "file": "1624.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_voleur.png"
+ },
+ "1625": {
+  "file": "1625.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bracelet_faille_corrompue.png"
+ },
+ "1626": {
+  "file": "1626.png",
+  "source": "pack-3d"
+ },
+ "1627": {
+  "file": "1627.png",
+  "source": "pack-3d"
+ },
+ "1628": {
+  "file": "1628.png",
+  "source": "pack-3d"
+ },
+ "1629": {
+  "file": "1629.png",
+  "source": "pack-3d"
+ },
+ "1630": {
+  "file": "1630.png",
+  "source": "pack-3d"
+ },
+ "1631": {
+  "file": "1631.png",
+  "source": "pack-3d"
+ },
+ "1632": {
+  "file": "1632.png",
+  "source": "pack-3d"
+ },
+ "1633": {
+  "file": "1633.png",
+  "source": "pack-3d"
+ },
+ "1634": {
+  "file": "1634.png",
+  "source": "pack-3d"
+ },
+ "1635": {
+  "file": "1635.png",
+  "source": "pack-3d"
+ },
+ "1636": {
+  "file": "1636.png",
+  "source": "api",
+  "url": "/uploads/items/rce1/avatar_summoner_tome.png"
+ },
+ "1637": {
+  "file": "1637.png",
+  "source": "pack-3d"
+ },
+ "1638": {
+  "file": "1638.png",
+  "source": "pack-3d"
+ },
+ "1639": {
+  "file": "1639.png",
+  "source": "pack-3d"
+ },
+ "1640": {
+  "file": "1640.png",
+  "source": "pack-3d"
+ },
+ "1641": {
+  "file": "1641.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/wings.png"
+ },
+ "1642": {
+  "file": "1642.png",
+  "source": "api",
+  "url": "/uploads/items/nanopon/christmas_book.png"
+ },
+ "1643": {
+  "file": "1643.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+ },
+ "1644": {
+  "file": "1644.png",
+  "source": "pack-3d"
+ },
+ "1645": {
+  "file": "1645.png",
+  "source": "pack-3d"
+ },
+ "1646": {
+  "file": "1646.png",
+  "source": "pack-3d"
+ },
+ "1647": {
+  "file": "1647.png",
+  "source": "pack-3d"
+ },
+ "1648": {
+  "file": "1648.png",
+  "source": "pack-3d"
+ },
+ "1649": {
+  "file": "1649.png",
+  "source": "pack-3d"
+ },
+ "1650": {
+  "file": "1650.png",
+  "source": "pack-3d"
+ },
+ "1651": {
+  "file": "1651.png",
+  "source": "pack-3d"
+ },
+ "1652": {
+  "file": "1652.png",
+  "source": "pack-3d"
+ },
+ "1653": {
+  "file": "1653.png",
+  "source": "pack-3d"
+ },
+ "1657": {
+  "file": "1657.png",
+  "source": "pack-3d"
+ },
+ "1658": {
+  "file": "1658.png",
+  "source": "pack-3d"
+ },
+ "1659": {
+  "file": "1659.png",
+  "source": "pack-3d"
+ },
+ "1660": {
+  "file": "1660.png",
+  "source": "pack-3d"
+ },
+ "1661": {
+  "file": "1661.png",
+  "source": "pack-3d"
+ },
+ "1662": {
+  "file": "1662.png",
+  "source": "pack-3d"
+ },
+ "1663": {
+  "file": "1663.png",
+  "source": "api",
+  "url": "/uploads/items/rce1/avatar_summoner_tome.png"
+ },
+ "1667": {
+  "file": "1667.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/outils_marteau.png"
+ },
+ "1670": {
+  "file": "1670.png",
+  "source": "api",
+  "url": "/uploads/items/mae/misc_halloween3.png"
+ },
+ "1671": {
+  "file": "1671.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_balais.png"
+ },
+ "1672": {
+  "file": "1672.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_oeil_vert.png"
+ },
+ "1673": {
+  "file": "1673.png",
+  "source": "api",
+  "url": "/uploads/items/killburn_set/crow_lord_hat.png"
+ },
+ "1674": {
+  "file": "1674.png",
+  "source": "api",
+  "url": "/uploads/items/mae/wb_377.png"
+ },
+ "1675": {
+  "file": "1675.png",
+  "source": "api",
+  "url": "/uploads/items/mae/wb_377.png"
+ },
+ "1676": {
+  "file": "1676.png",
+  "source": "api",
+  "url": "/uploads/items/mae/misc_halloween3.png"
+ },
+ "1677": {
+  "file": "1677.png",
+  "source": "api",
+  "url": "/uploads/items/mae/spe_cadeau.png"
+ },
+ "1678": {
+  "file": "1678.png",
+  "source": "api",
+  "url": "/uploads/items/mae/spe_cadeau3.png"
+ },
+ "1679": {
+  "file": "1679.png",
+  "source": "api",
+  "url": "/uploads/items/lanshan_cos_valentine_1/angel_wings_heart_2.png"
+ },
+ "1680": {
+  "file": "1680.png",
+  "source": "api",
+  "url": "/uploads/items/lanshan_cos_christmas_1/winter_knitted_hat.png"
+ },
+ "1681": {
+  "file": "1681.png",
+  "source": "api",
+  "url": "/uploads/items/lanshan_cos_christmas_1/festive_reindeer_antlers.png"
+ },
+ "1682": {
+  "file": "1682.png",
+  "source": "pack",
+  "pack": "assets/cubees/textures/v2/snow_cubee.png"
+ },
+ "1683": {
+  "file": "1683.png",
+  "source": "api",
+  "url": "/uploads/items/mae/wb_385.png"
+ },
+ "1684": {
+  "file": "1684.png",
+  "source": "api",
+  "url": "/uploads/items/mae/wb_385.png"
+ },
+ "1685": {
+  "file": "1685.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_379.png"
+ },
+ "1686": {
+  "file": "1686.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_379.png"
+ },
+ "1687": {
+  "file": "1687.png",
+  "source": "api",
+  "url": "/uploads/items/lanshan_cos_christmas_1/winter_scarf.png"
+ },
+ "1688": {
+  "file": "1688.png",
+  "source": "pack-3d"
+ },
+ "1689": {
+  "file": "1689.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse2.png"
+ },
+ "1690": {
+  "file": "1690.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse2.png"
+ },
+ "1691": {
+  "file": "1691.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse2.png"
+ },
+ "1692": {
+  "file": "1692.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse2.png"
+ },
+ "1693": {
+  "file": "1693.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse2.png"
+ },
+ "1694": {
+  "file": "1694.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse2.png"
+ },
+ "1695": {
+  "file": "1695.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse2.png"
+ },
+ "1696": {
+  "file": "1696.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse2.png"
+ },
+ "1697": {
+  "file": "1697.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse3.png"
+ },
+ "1698": {
+  "file": "1698.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse3.png"
+ },
+ "1699": {
+  "file": "1699.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse3.png"
+ },
+ "1700": {
+  "file": "1700.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse3.png"
+ },
+ "1701": {
+  "file": "1701.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse4.png"
+ },
+ "1702": {
+  "file": "1702.png",
+  "source": "api",
+  "url": "/uploads/items/mae/embleme3_bleu.png"
+ },
+ "1703": {
+  "file": "1703.png",
+  "source": "api",
+  "url": "/uploads/items/mae/embleme3_bleu.png"
+ },
+ "1704": {
+  "file": "1704.png",
+  "source": "api",
+  "url": "/uploads/items/mae/embleme3_bleu.png"
+ },
+ "1707": {
+  "file": "1707.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/misc_parchemin5.png"
+ },
+ "1708": {
+  "file": "1708.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/misc_parchemin4.png"
+ },
+ "1709": {
+  "file": "1709.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/materiel_parchemin2.png"
+ },
+ "1715": {
+  "file": "1715.png",
+  "source": "pack",
+  "pack": "assets/cubees/textures/v14/cubee-bearhug.png"
+ },
+ "1716": {
+  "file": "1716.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/embleme3_rouge.png"
+ },
+ "1717": {
+  "file": "1717.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/wings_lovestruck_em.png"
+ },
+ "1718": {
+  "file": "1718.png",
+  "source": "api",
+  "url": "/uploads/items/lanshan_cos_valentine_1/laurel_wreath.png"
+ },
+ "1719": {
+  "file": "1719.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_380.png"
+ },
+ "1722": {
+  "file": "1722.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_381.png"
+ },
+ "1723": {
+  "file": "1723.png",
+  "source": "pack-3d"
+ },
+ "1724": {
+  "file": "1724.png",
+  "source": "pack-3d"
+ },
+ "1725": {
+  "file": "1725.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/outils_pince.png"
+ },
+ "1726": {
+  "file": "1726.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/outils_pince.png"
+ },
+ "1730": {
+  "file": "1730.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_crossbow.png"
+ },
+ "1731": {
+  "file": "1731.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/knight_crossbow.png"
+ },
+ "1734": {
+  "file": "1734.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "1735": {
+  "file": "1735.png",
+  "source": "api",
+  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+ },
+ "1736": {
+  "file": "1736.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/crossbow_lovestruck_em.png"
+ },
+ "1739": {
+  "file": "1739.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/honey_1.png"
+ },
+ "1741": {
+  "file": "1741.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/animated_9.png"
+ },
+ "1747": {
+  "file": "1747.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/green_crystal.png"
+ },
+ "1748": {
+  "file": "1748.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/red_crystal.png"
+ },
+ "1749": {
+  "file": "1749.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/blue_crystal.png"
+ },
+ "1750": {
+  "file": "1750.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/yellow_crystal.png"
+ },
+ "1751": {
+  "file": "1751.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/red_crystal.png"
+ },
+ "1752": {
+  "file": "1752.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/cristal_ressurection.png"
+ },
+ "1753": {
+  "file": "1753.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/yellow_crystal.png"
+ },
+ "1754": {
+  "file": "1754.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/yellow_crystal.png"
+ },
+ "1755": {
+  "file": "1755.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/yellow_crystal.png"
+ },
+ "1756": {
+  "file": "1756.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/blue_crystal.png"
+ },
+ "1757": {
+  "file": "1757.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/violet_crystal.png"
+ },
+ "1758": {
+  "file": "1758.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/blue_crystal.png"
+ },
+ "1759": {
+  "file": "1759.png",
+  "source": "api",
+  "url": "/uploads/items/elitefantasy/yellow_crystal.png"
+ },
+ "1760": {
+  "file": "1760.png",
+  "source": "api",
+  "url": "/uploads/items/ashenweaponry1/dagger_texture.png"
+ },
+ "1761": {
+  "file": "1761.png",
+  "source": "pack-3d"
+ },
+ "1762": {
+  "file": "1762.png",
+  "source": "pack-3d"
+ },
+ "1763": {
+  "file": "1763.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/rogue_sword.png"
+ },
+ "1764": {
+  "file": "1764.png",
+  "source": "pack-3d"
+ },
+ "1765": {
+  "file": "1765.png",
+  "source": "pack-3d"
+ },
+ "1766": {
+  "file": "1766.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_dagger.png"
+ },
+ "1767": {
+  "file": "1767.png",
+  "source": "pack-3d"
+ },
+ "1768": {
+  "file": "1768.png",
+  "source": "pack-3d"
+ },
+ "1769": {
+  "file": "1769.png",
+  "source": "pack-3d"
+ },
+ "1770": {
+  "file": "1770.png",
+  "source": "api",
+  "url": "/uploads/items/rce1/avatar_assassin_dec.png"
+ },
+ "1771": {
+  "file": "1771.png",
+  "source": "pack-3d"
+ },
+ "1772": {
+  "file": "1772.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/knight_sword.png"
+ },
+ "1773": {
+  "file": "1773.png",
+  "source": "pack-3d"
+ },
+ "1774": {
+  "file": "1774.png",
+  "source": "pack-3d"
+ },
+ "1775": {
+  "file": "1775.png",
+  "source": "pack-3d"
+ },
+ "1776": {
+  "file": "1776.png",
+  "source": "pack-3d"
+ },
+ "1777": {
+  "file": "1777.png",
+  "source": "pack-3d"
+ },
+ "1778": {
+  "file": "1778.png",
+  "source": "api",
+  "url": "/uploads/items/assassin/assassin_blade.png"
+ },
+ "1779": {
+  "file": "1779.png",
+  "source": "pack-3d"
+ },
+ "1780": {
+  "file": "1780.png",
+  "source": "pack-3d"
+ },
+ "1781": {
+  "file": "1781.png",
+  "source": "pack-3d"
+ },
+ "1783": {
+  "file": "1783.png",
+  "source": "pack-3d"
+ },
+ "1784": {
+  "file": "1784.png",
+  "source": "api",
+  "url": "/uploads/items/illfang_items/illfang_dagger.png"
+ },
+ "1785": {
+  "file": "1785.png",
+  "source": "pack-3d"
+ },
+ "1786": {
+  "file": "1786.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "1787": {
+  "file": "1787.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "1788": {
+  "file": "1788.png",
+  "source": "api",
+  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+ },
+ "1789": {
+  "file": "1789.png",
+  "source": "api",
+  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+ },
+ "1790": {
+  "file": "1790.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+ },
+ "1791": {
+  "file": "1791.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+ },
+ "1792": {
+  "file": "1792.png",
+  "source": "pack-3d"
+ },
+ "1793": {
+  "file": "1793.png",
+  "source": "pack-3d"
+ },
+ "1794": {
+  "file": "1794.png",
+  "source": "pack-3d"
+ },
+ "1795": {
+  "file": "1795.png",
+  "source": "pack-3d"
+ },
+ "1796": {
+  "file": "1796.png",
+  "source": "pack-3d"
+ },
+ "1797": {
+  "file": "1797.png",
+  "source": "pack-3d"
+ },
+ "1798": {
+  "file": "1798.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/honey_1.png"
+ },
+ "1799": {
+  "file": "1799.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/honey_1.png"
+ },
+ "1800": {
+  "file": "1800.png",
+  "source": "pack-3d"
+ },
+ "1801": {
+  "file": "1801.png",
+  "source": "pack-3d"
+ },
+ "1802": {
+  "file": "1802.png",
+  "source": "pack-3d"
+ },
+ "1803": {
+  "file": "1803.png",
+  "source": "pack-3d"
+ },
+ "1804": {
+  "file": "1804.png",
+  "source": "pack-3d"
+ },
+ "1805": {
+  "file": "1805.png",
+  "source": "pack-3d"
+ },
+ "1806": {
+  "file": "1806.png",
+  "source": "pack-3d"
+ },
+ "1807": {
+  "file": "1807.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/animated_2.png"
+ },
+ "1808": {
+  "file": "1808.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/animated_2.png"
+ },
+ "1809": {
+  "file": "1809.png",
+  "source": "pack-3d"
+ },
+ "1810": {
+  "file": "1810.png",
+  "source": "pack-3d"
+ },
+ "1811": {
+  "file": "1811.png",
+  "source": "pack-3d"
+ },
+ "1812": {
+  "file": "1812.png",
+  "source": "pack-3d"
+ },
+ "1813": {
+  "file": "1813.png",
+  "source": "pack-3d"
+ },
+ "1814": {
+  "file": "1814.png",
+  "source": "pack-3d"
+ },
+ "1815": {
+  "file": "1815.png",
+  "source": "pack-3d"
+ },
+ "1816": {
+  "file": "1816.png",
+  "source": "pack-3d"
+ },
+ "1817": {
+  "file": "1817.png",
+  "source": "pack-3d"
+ },
+ "1818": {
+  "file": "1818.png",
+  "source": "pack-3d"
+ },
+ "1821": {
+  "file": "1821.png",
+  "source": "api",
+  "url": "/uploads/items/rpg_essentials_1/key_forest.png"
+ },
+ "1822": {
+  "file": "1822.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/cle_verte.png"
+ },
+ "1823": {
+  "file": "1823.png",
+  "source": "api",
+  "url": "/uploads/items/rpg_essentials_1/key_shadow.png"
+ },
+ "1824": {
+  "file": "1824.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/knight_key.png"
+ },
+ "1829": {
+  "file": "1829.png",
+  "source": "api",
+  "url": "/uploads/items/mae/misc_cube_violet2.png"
+ },
+ "1830": {
+  "file": "1830.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/honey_1.png"
+ },
+ "1831": {
+  "file": "1831.png",
+  "source": "api",
+  "url": "/uploads/items/mae/cle_3.png"
+ },
+ "1835": {
+  "file": "1835.png",
+  "source": "api",
+  "url": "/uploads/items/mae/plantes_feuille_jaune.png"
+ },
+ "1836": {
+  "file": "1836.png",
+  "source": "api",
+  "url": "/uploads/items/mae/fleurs10.png"
+ },
+ "1837": {
+  "file": "1837.png",
+  "source": "api",
+  "url": "/uploads/items/mae/wb_498.png"
+ },
+ "1839": {
+  "file": "1839.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/fleurs15.png"
+ },
+ "1840": {
+  "file": "1840.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_512.png"
+ },
+ "1841": {
+  "file": "1841.png",
+  "source": "api",
+  "url": "/uploads/items/mae/fleurs9.png"
+ },
+ "1842": {
+  "file": "1842.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_480.png"
+ },
+ "1843": {
+  "file": "1843.png",
+  "source": "api",
+  "url": "/uploads/items/mae/plantes5.png"
+ },
+ "1844": {
+  "file": "1844.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/plants_graine_orange.png"
+ },
+ "1845": {
+  "file": "1845.png",
+  "source": "api",
+  "url": "/uploads/items/mae/plantes19.png"
+ },
+ "1846": {
+  "file": "1846.png",
+  "source": "api",
+  "url": "/uploads/items/mae/plantes14.png"
+ },
+ "1847": {
+  "file": "1847.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/plantes1.png"
+ },
+ "1848": {
+  "file": "1848.png",
+  "source": "api",
+  "url": "/uploads/items/mae/plantes15.png"
+ },
+ "1849": {
+  "file": "1849.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/plantes13.png"
+ },
+ "1851": {
+  "file": "1851.png",
+  "source": "api",
+  "url": "/uploads/items/mae/wb_494.png"
+ },
+ "1852": {
+  "file": "1852.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/plantes_graine_jaune.png"
+ },
+ "1853": {
+  "file": "1853.png",
+  "source": "api",
+  "url": "/uploads/items/mae/fleurs3.png"
+ },
+ "1854": {
+  "file": "1854.png",
+  "source": "api",
+  "url": "/uploads/items/pack1/can2.png"
+ },
+ "1855": {
+  "file": "1855.png",
+  "source": "api",
+  "url": "/uploads/items/pack1/raw_silver.png"
+ },
+ "1856": {
+  "file": "1856.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/freshwater_sponge.png"
+ },
+ "1857": {
+  "file": "1857.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/fish_bone.png"
+ },
+ "1858": {
+  "file": "1858.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/mussel.png"
+ },
+ "1859": {
+  "file": "1859.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/freshwater_sponge.png"
+ },
+ "1860": {
+  "file": "1860.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/amphipod.png"
+ },
+ "1861": {
+  "file": "1861.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/pearl.png"
+ },
+ "1862": {
+  "file": "1862.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/jellyfish.png"
+ },
+ "1863": {
+  "file": "1863.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/slimefish.png"
+ },
+ "1864": {
+  "file": "1864.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/bubblefish.png"
+ },
+ "1865": {
+  "file": "1865.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/trout.png"
+ },
+ "1866": {
+  "file": "1866.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/greenfish.png"
+ },
+ "1867": {
+  "file": "1867.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/coralfish.png"
+ },
+ "1868": {
+  "file": "1868.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/bream.png"
+ },
+ "1869": {
+  "file": "1869.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/snapper.png"
+ },
+ "1870": {
+  "file": "1870.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/icefish.png"
+ },
+ "1871": {
+  "file": "1871.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/chromis.png"
+ },
+ "1872": {
+  "file": "1872.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/blue_grenadier.png"
+ },
+ "1873": {
+  "file": "1873.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/rosy_barb.png"
+ },
+ "1874": {
+  "file": "1874.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/green_barb.png"
+ },
+ "1875": {
+  "file": "1875.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/gemfish.png"
+ },
+ "1876": {
+  "file": "1876.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/starfish.png"
+ },
+ "1877": {
+  "file": "1877.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/shrimp.png"
+ },
+ "1878": {
+  "file": "1878.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/tuna.png"
+ },
+ "1879": {
+  "file": "1879.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/snook.png"
+ },
+ "1880": {
+  "file": "1880.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/stingray.png"
+ },
+ "1881": {
+  "file": "1881.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/angel_fish.png"
+ },
+ "1882": {
+  "file": "1882.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/betta_fish.png"
+ },
+ "1883": {
+  "file": "1883.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/bluetang_fish.png"
+ },
+ "1884": {
+  "file": "1884.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/butterfly_fish.png"
+ },
+ "1885": {
+  "file": "1885.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/cardinal_fish.png"
+ },
+ "1886": {
+  "file": "1886.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/carp_fish.png"
+ },
+ "1887": {
+  "file": "1887.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/crab.png"
+ },
+ "1888": {
+  "file": "1888.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/crimson_gourami_fish.png"
+ },
+ "1889": {
+  "file": "1889.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/discus_fish.png"
+ },
+ "1890": {
+  "file": "1890.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/eel_fish.png"
+ },
+ "1891": {
+  "file": "1891.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/gourami_fish.png"
+ },
+ "1892": {
+  "file": "1892.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/haddock_fish.png"
+ },
+ "1893": {
+  "file": "1893.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/jellyfish.png"
+ },
+ "1894": {
+  "file": "1894.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/koi_fish.png"
+ },
+ "1895": {
+  "file": "1895.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/octopus.png"
+ },
+ "1896": {
+  "file": "1896.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/oyster.png"
+ },
+ "1897": {
+  "file": "1897.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/pink_seahorse.png"
+ },
+ "1898": {
+  "file": "1898.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/piranha.png"
+ },
+ "1899": {
+  "file": "1899.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/sardine_fish.png"
+ },
+ "1900": {
+  "file": "1900.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/starfish.png"
+ },
+ "1901": {
+  "file": "1901.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/blazorb_jellyfish.png"
+ },
+ "1902": {
+  "file": "1902.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/lava_anthias.png"
+ },
+ "1903": {
+  "file": "1903.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/obsidianfish.png"
+ },
+ "1904": {
+  "file": "1904.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/fire_eel.png"
+ },
+ "1905": {
+  "file": "1905.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/magma_trout.png"
+ },
+ "1906": {
+  "file": "1906.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/molten_coralfish.png"
+ },
+ "1907": {
+  "file": "1907.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/warped_shrimp.png"
+ },
+ "1908": {
+  "file": "1908.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/crimson_bubblefish.png"
+ },
+ "1909": {
+  "file": "1909.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/blue_eel.png"
+ },
+ "1910": {
+  "file": "1910.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_pack/anthias.png"
+ },
+ "1911": {
+  "file": "1911.png",
+  "source": "pack",
+  "pack": "assets/fishing_pack/textures/item/sunfish.png"
+ },
+ "1912": {
+  "file": "1912.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/fire_jellyfish.png"
+ },
+ "1913": {
+  "file": "1913.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/fire_seahorse.png"
+ },
+ "1914": {
+  "file": "1914.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/gold_crab.png"
+ },
+ "1915": {
+  "file": "1915.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/gold_octopus.png"
+ },
+ "1916": {
+  "file": "1916.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/ice_jellyfish.png"
+ },
+ "1917": {
+  "file": "1917.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/ice_seahorse.png"
+ },
+ "1918": {
+  "file": "1918.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/lion_fish.png"
+ },
+ "1919": {
+  "file": "1919.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/lava_betta_fish.png"
+ },
+ "1920": {
+  "file": "1920.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/obsidian_piranha.png"
+ },
+ "1921": {
+  "file": "1921.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/prism_angel_fish.png"
+ },
+ "1922": {
+  "file": "1922.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/prism_eel.png"
+ },
+ "1923": {
+  "file": "1923.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/purple_tang_fish.png"
+ },
+ "1924": {
+  "file": "1924.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/purple_butterfly_fish.png"
+ },
+ "1925": {
+  "file": "1925.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/trout.png"
+ },
+ "1926": {
+  "file": "1926.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/sardine.png"
+ },
+ "1927": {
+  "file": "1927.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/pike.png"
+ },
+ "1928": {
+  "file": "1928.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/perch.png"
+ },
+ "1929": {
+  "file": "1929.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/mackerel.png"
+ },
+ "1930": {
+  "file": "1930.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/herring.png"
+ },
+ "1931": {
+  "file": "1931.png",
+  "source": "api",
+  "url": "/uploads/items/provanas/purple_eel.png"
+ },
+ "1932": {
+  "file": "1932.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/sea_turtle.png"
+ },
+ "1933": {
+  "file": "1933.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/green_seahorse.png"
+ },
+ "1934": {
+  "file": "1934.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/shark.png"
+ },
+ "1935": {
+  "file": "1935.png",
+  "source": "pack",
+  "pack": "assets/provanas/textures/fish/stingray.png"
+ },
+ "1936": {
+  "file": "1936.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/catfish.png"
+ },
+ "1937": {
+  "file": "1937.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/carp.png"
+ },
+ "1938": {
+  "file": "1938.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/bass.png"
+ },
+ "1939": {
+  "file": "1939.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/trigger_fish.png"
+ },
+ "1940": {
+  "file": "1940.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/surgeonfish.png"
+ },
+ "1941": {
+  "file": "1941.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/parrotfish.png"
+ },
+ "1942": {
+  "file": "1942.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/moray_eel.png"
+ },
+ "1943": {
+  "file": "1943.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/lion_fish.png"
+ },
+ "1944": {
+  "file": "1944.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/damsel_fish.png"
+ },
+ "1945": {
+  "file": "1945.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/snail.png"
+ },
+ "1946": {
+  "file": "1946.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/butterflyfish.png"
+ },
+ "1947": {
+  "file": "1947.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/angelfish.png"
+ },
+ "1948": {
+  "file": "1948.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/crayfish.png"
+ },
+ "1949": {
+  "file": "1949.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/crab.png"
+ },
+ "1950": {
+  "file": "1950.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/clam.png"
+ },
+ "1951": {
+  "file": "1951.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/wahoo.png"
+ },
+ "1952": {
+  "file": "1952.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/tuna.png"
+ },
+ "1953": {
+  "file": "1953.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/sword_fish.png"
+ },
+ "1954": {
+  "file": "1954.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/soulfin.png"
+ },
+ "1955": {
+  "file": "1955.png",
+  "source": "api",
+  "url": "/uploads/items/fishing_expansion/blightscale.png"
+ },
+ "1956": {
+  "file": "1956.png",
+  "source": "pack",
+  "pack": "assets/fishing_expansion/textures/moltenjaw.png"
+ },
+ "1957": {
+  "file": "1957.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_40.png"
+ },
+ "1960": {
+  "file": "1960.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/pwa_sandwich.png"
+ },
+ "1963": {
+  "file": "1963.png",
+  "source": "pack",
+  "pack": "assets/desserts1/textures/item/desserts1/desserts1_cake_caramel.png"
+ },
+ "1964": {
+  "file": "1964.png",
+  "source": "pack",
+  "pack": "assets/desserts1/textures/item/desserts1/desserts1_cake_pink.png"
+ },
+ "1965": {
+  "file": "1965.png",
+  "source": "pack",
+  "pack": "assets/desserts1/textures/item/desserts1/desserts1_coctail_strawberry.png"
+ },
+ "1966": {
+  "file": "1966.png",
+  "source": "pack",
+  "pack": "assets/desserts1/textures/item/desserts1/desserts1_ice_pink.png"
+ },
+ "1967": {
+  "file": "1967.png",
+  "source": "pack-3d"
+ },
+ "1968": {
+  "file": "1968.png",
+  "source": "pack-3d"
+ },
+ "1969": {
+  "file": "1969.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_vert2.png"
+ },
+ "1970": {
+  "file": "1970.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_rouge4.png"
+ },
+ "1971": {
+  "file": "1971.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_rose1.png"
+ },
+ "1972": {
+  "file": "1972.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_jaune1.png"
+ },
+ "1973": {
+  "file": "1973.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_bleu4.png"
+ },
+ "1974": {
+  "file": "1974.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_cyan1.png"
+ },
+ "1975": {
+  "file": "1975.png",
+  "source": "api",
+  "url": "/uploads/items/mae/bonbon_hallow.png"
+ },
+ "1976": {
+  "file": "1976.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_rouge2.png"
+ },
+ "1977": {
+  "file": "1977.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_elixir.png"
+ },
+ "1978": {
+  "file": "1978.png",
+  "source": "pack",
+  "pack": "assets/hsur/textures/custom/items/materials/red_candycane.png"
+ },
+ "1979": {
+  "file": "1979.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_rouge6.png"
+ },
+ "1980": {
+  "file": "1980.png",
+  "source": "api",
+  "url": "/uploads/items/mae/bonbon_rouge.png"
+ },
+ "1981": {
+  "file": "1981.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_vert2.png"
+ },
+ "1982": {
+  "file": "1982.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_rouge4.png"
+ },
+ "1983": {
+  "file": "1983.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_rose1.png"
+ },
+ "1984": {
+  "file": "1984.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_jaune1.png"
+ },
+ "1985": {
+  "file": "1985.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_bleu4.png"
+ },
+ "1986": {
+  "file": "1986.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_cyan1.png"
+ },
+ "1987": {
+  "file": "1987.png",
+  "source": "pack-3d"
+ },
+ "1988": {
+  "file": "1988.png",
+  "source": "pack-3d"
+ },
+ "1989": {
+  "file": "1989.png",
+  "source": "pack-3d"
+ },
+ "1990": {
+  "file": "1990.png",
+  "source": "pack-3d"
+ },
+ "1991": {
+  "file": "1991.png",
+  "source": "pack-3d"
+ },
+ "1992": {
+  "file": "1992.png",
+  "source": "pack-3d"
+ },
+ "1993": {
+  "file": "1993.png",
+  "source": "pack-3d"
+ },
+ "1994": {
+  "file": "1994.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_173.png"
+ },
+ "1995": {
+  "file": "1995.png",
+  "source": "api",
+  "url": "/uploads/items/mae/bonbon_jaune.png"
+ },
+ "1996": {
+  "file": "1996.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_vert2.png"
+ },
+ "1997": {
+  "file": "1997.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_rouge4.png"
+ },
+ "1998": {
+  "file": "1998.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_rose1.png"
+ },
+ "1999": {
+  "file": "1999.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_jaune1.png"
+ },
+ "2000": {
+  "file": "2000.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_bleu4.png"
+ },
+ "2001": {
+  "file": "2001.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/potion_cyan1.png"
+ },
+ "2002": {
+  "file": "2002.png",
+  "source": "pack",
+  "pack": "assets/hsur/textures/custom/items/rune/vitality_1.png"
+ },
+ "2003": {
+  "file": "2003.png",
+  "source": "pack",
+  "pack": "assets/hsur/textures/custom/items/rune/precision_1.png"
+ },
+ "2004": {
+  "file": "2004.png",
+  "source": "pack",
+  "pack": "assets/hsur/textures/custom/items/rune/sorcery_1.png"
+ },
+ "2005": {
+  "file": "2005.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/rune/agility_1.png"
+ },
+ "2006": {
+  "file": "2006.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/rune/time_1.png"
+ },
+ "2007": {
+  "file": "2007.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_kazor.png"
+ },
+ "2008": {
+  "file": "2008.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/mine_crystalmagic_bleu.png"
+ },
+ "2009": {
+  "file": "2009.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/mine_joyaux_sceller_violet.png"
+ },
+ "2010": {
+  "file": "2010.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_226.png"
+ },
+ "2011": {
+  "file": "2011.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_322.png"
+ },
+ "2012": {
+  "file": "2012.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_322.png"
+ },
+ "2013": {
+  "file": "2013.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_320.png"
+ },
+ "2014": {
+  "file": "2014.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_skeletonboss1.png"
+ },
+ "2015": {
+  "file": "2015.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_magnus.png"
+ },
+ "2016": {
+  "file": "2016.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_227.png"
+ },
+ "2017": {
+  "file": "2017.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_lunar1.png"
+ },
+ "2018": {
+  "file": "2018.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_416.png"
+ },
+ "2019": {
+  "file": "2019.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_257.png"
+ },
+ "2020": {
+  "file": "2020.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_gobline_p3.png"
+ },
+ "2021": {
+  "file": "2021.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_bois_p3.png"
+ },
+ "2022": {
+  "file": "2022.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_toile_p3.png"
+ },
+ "2023": {
+  "file": "2023.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_315.png"
+ },
+ "2024": {
+  "file": "2024.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_316.png"
+ },
+ "2025": {
+  "file": "2025.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_brumeuse_p3.png"
+ },
+ "2026": {
+  "file": "2026.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_luminiscente_p3.png"
+ },
+ "2027": {
+  "file": "2027.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_spectrale_p3.png"
+ },
+ "2028": {
+  "file": "2028.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/spe_piece3.png"
+ },
+ "2029": {
+  "file": "2029.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_230.png"
+ },
+ "2030": {
+  "file": "2030.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_263.png"
+ },
+ "2031": {
+  "file": "2031.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/mine_core_orange.png"
+ },
+ "2032": {
+  "file": "2032.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_muffet_p3.png"
+ },
+ "2033": {
+  "file": "2033.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/mine_pyralite.png"
+ },
+ "2034": {
+  "file": "2034.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/spe_piece2.png"
+ },
+ "2035": {
+  "file": "2035.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/corrupted_rune.png"
+ },
+ "2036": {
+  "file": "2036.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/runes/rune_occulte3.png"
+ },
+ "2037": {
+  "file": "2037.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_skeleton.png"
+ },
+ "2038": {
+  "file": "2038.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/gants_sanglier.png"
+ },
+ "2039": {
+  "file": "2039.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/manteau_minuit.png"
+ },
+ "2040": {
+  "file": "2040.png",
+  "source": "api",
+  "url": "/uploads/items/trinketsvol3/trinket_5.png"
+ },
+ "2041": {
+  "file": "2041.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_cuir.png"
+ },
+ "2042": {
+  "file": "2042.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_cuivre.png"
+ },
+ "2043": {
+  "file": "2043.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_cerfs.png"
+ },
+ "2044": {
+  "file": "2044.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_loup1.png"
+ },
+ "2045": {
+  "file": "2045.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_occulte2.png"
+ },
+ "2046": {
+  "file": "2046.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_dechu.png"
+ },
+ "2047": {
+  "file": "2047.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_faille_corrompue.png"
+ },
+ "2048": {
+  "file": "2048.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/gants_noel_rose.png"
+ },
+ "2049": {
+  "file": "2049.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_cuir.png"
+ },
+ "2050": {
+  "file": "2050.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_ours.png"
+ },
+ "2051": {
+  "file": "2051.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_onyx_impur.png"
+ },
+ "2052": {
+  "file": "2052.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_bauxite.png"
+ },
+ "2053": {
+  "file": "2053.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_loup2.png"
+ },
+ "2054": {
+  "file": "2054.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_ferraille.png"
+ },
+ "2055": {
+  "file": "2055.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_taureau.png"
+ },
+ "2056": {
+  "file": "2056.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_simples.png"
+ },
+ "2057": {
+  "file": "2057.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_superieures.png"
+ },
+ "2058": {
+  "file": "2058.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_novice.png"
+ },
+ "2059": {
+  "file": "2059.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_granite.png"
+ },
+ "2060": {
+  "file": "2060.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_andesite.png"
+ },
+ "2061": {
+  "file": "2061.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_pierre.png"
+ },
+ "2062": {
+  "file": "2062.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_abordable.png"
+ },
+ "2063": {
+  "file": "2063.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_bois.png"
+ },
+ "2064": {
+  "file": "2064.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_crocs_bois.png"
+ },
+ "2065": {
+  "file": "2065.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_brumeux.png"
+ },
+ "2066": {
+  "file": "2066.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_crocs_brumeux.png"
+ },
+ "2067": {
+  "file": "2067.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_orc.png"
+ },
+ "2068": {
+  "file": "2068.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/gants_goblin.png"
+ },
+ "2069": {
+  "file": "2069.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_bois_sombres.png"
+ },
+ "2070": {
+  "file": "2070.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_toile.png"
+ },
+ "2071": {
+  "file": "2071.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_spectral.png"
+ },
+ "2072": {
+  "file": "2072.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/gants_luminiscent.png"
+ },
+ "2073": {
+  "file": "2073.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/gants_amethyste.png"
+ },
+ "2074": {
+  "file": "2074.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/gants_loup3.png"
+ },
+ "2075": {
+  "file": "2075.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_voleur.png"
+ },
+ "2076": {
+  "file": "2076.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/gants_corrompu1.png"
+ },
+ "2077": {
+  "file": "2077.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_aile2.png"
+ },
+ "2078": {
+  "file": "2078.png",
+  "source": "api",
+  "url": "/uploads/items/mae/wb_72.png"
+ },
+ "2079": {
+  "file": "2079.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/materiel_tissu_bleu.png"
+ },
+ "2080": {
+  "file": "2080.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_poudre_cyan.png"
+ },
+ "2081": {
+  "file": "2081.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_corne18.png"
+ },
+ "2082": {
+  "file": "2082.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_inconnu10.png"
+ },
+ "2083": {
+  "file": "2083.png",
+  "source": "api",
+  "url": "/uploads/items/mae/pwa_viande_3.png"
+ },
+ "2084": {
+  "file": "2084.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_roche_grise.png"
+ },
+ "2085": {
+  "file": "2085.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_griffe_noir.png"
+ },
+ "2086": {
+  "file": "2086.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_poil_gris.png"
+ },
+ "2087": {
+  "file": "2087.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_coeurdarkbleu.png"
+ },
+ "2088": {
+  "file": "2088.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/netherite_ring7.png"
+ },
+ "2089": {
+  "file": "2089.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_boss_crystal.png"
+ },
+ "2090": {
+  "file": "2090.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/red_ring7.png"
+ },
+ "2091": {
+  "file": "2091.png",
+  "source": "api",
+  "url": "/uploads/items/mae/orbe2_bleu.png"
+ },
+ "2092": {
+  "file": "2092.png",
+  "source": "api",
+  "url": "/uploads/items/mae/orbe2_cyan.png"
+ },
+ "2093": {
+  "file": "2093.png",
+  "source": "api",
+  "url": "/uploads/items/mae/orbe2_jaune.png"
+ },
+ "2094": {
+  "file": "2094.png",
+  "source": "api",
+  "url": "/uploads/items/mae/orbe2_noir.png"
+ },
+ "2095": {
+  "file": "2095.png",
+  "source": "api",
+  "url": "/uploads/items/mae/orbe2_rouge.png"
+ },
+ "2096": {
+  "file": "2096.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "2097": {
+  "file": "2097.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "2098": {
+  "file": "2098.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/shield.png"
+ },
+ "2099": {
+  "file": "2099.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "2100": {
+  "file": "2100.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "2101": {
+  "file": "2101.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_298.png"
+ },
+ "2102": {
+  "file": "2102.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/mine_diamant_obscure2.png"
+ },
+ "2103": {
+  "file": "2103.png",
+  "source": "api",
+  "url": "/uploads/items/mae/misc_halloween2.png"
+ },
+ "2104": {
+  "file": "2104.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/materiel_substance_orange.png"
+ },
+ "2105": {
+  "file": "2105.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/misc_parchemin3.png"
+ },
+ "2106": {
+  "file": "2106.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/misc_parchemin3.png"
+ },
+ "2107": {
+  "file": "2107.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/misc_parchemin3.png"
+ },
+ "2108": {
+  "file": "2108.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/misc_parchemin3.png"
+ },
+ "2109": {
+  "file": "2109.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/misc_parchemin3.png"
+ },
+ "2110": {
+  "file": "2110.png",
+  "source": "api",
+  "url": "/uploads/items/mae/pwa_cle_dungeon.png"
+ },
+ "2111": {
+  "file": "2111.png",
+  "source": "api",
+  "url": "/uploads/items/mae/cle_1.png"
+ },
+ "2112": {
+  "file": "2112.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "2113": {
+  "file": "2113.png",
+  "source": "api",
+  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+ },
+ "2114": {
+  "file": "2114.png",
+  "source": "api",
+  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+ },
+ "2115": {
+  "file": "2115.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/key_lovestruck_em.png"
+ },
+ "2116": {
+  "file": "2116.png",
+  "source": "api",
+  "url": "/uploads/items/treasure_tier_pack/gold_key.png"
+ },
+ "2117": {
+  "file": "2117.png",
+  "source": "api",
+  "url": "/uploads/items/forestmagic_em/key_forestmagic_em.png"
+ },
+ "2118": {
+  "file": "2118.png",
+  "source": "api",
+  "url": "/uploads/items/treasure_tier_pack/wood_key.png"
+ },
+ "2119": {
+  "file": "2119.png",
+  "source": "api",
+  "url": "/uploads/items/mae/tab_pwa_bois.png"
+ },
+ "2120": {
+  "file": "2120.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/pwa_planche_chene.png"
+ },
+ "2121": {
+  "file": "2121.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/bois_inutilisable.png"
+ },
+ "2122": {
+  "file": "2122.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/wood_stick_chene2.png"
+ },
+ "2123": {
+  "file": "2123.png",
+  "source": "api",
+  "url": "/uploads/items/mae/wb_3.png"
+ },
+ "2124": {
+  "file": "2124.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/wood_stick_chene.png"
+ },
+ "2125": {
+  "file": "2125.png",
+  "source": "api",
+  "url": "/uploads/items/mae/pwa_buche_bouleau.png"
+ },
+ "2126": {
+  "file": "2126.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/pwa_planche_bouleau.png"
+ },
+ "2127": {
+  "file": "2127.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/poudre_bois_bouleau.png"
+ },
+ "2128": {
+  "file": "2128.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/wood_stick_bouleau2.png"
+ },
+ "2129": {
+  "file": "2129.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/wood_bark_bouleau.png"
+ },
+ "2130": {
+  "file": "2130.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/wood_stick_bouleau.png"
+ },
+ "2131": {
+  "file": "2131.png",
+  "source": "api",
+  "url": "/uploads/items/mae/pwa_buche_acacia.png"
+ },
+ "2132": {
+  "file": "2132.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/pwa_planche_acacia.png"
+ },
+ "2133": {
+  "file": "2133.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/poudre_bois_acacia.png"
+ },
+ "2134": {
+  "file": "2134.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/wood_stick_acacia2.png"
+ },
+ "2135": {
+  "file": "2135.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/poudre_bois_acacia.png"
+ },
+ "2136": {
+  "file": "2136.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/wood_stick_acacia.png"
+ },
+ "2137": {
+  "file": "2137.png",
+  "source": "api",
+  "url": "/uploads/items/mae/pwa_buche_sapin.png"
+ },
+ "2138": {
+  "file": "2138.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/pwa_planche_sapin.png"
+ },
+ "2139": {
+  "file": "2139.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/poudre_bois_sapin.png"
+ },
+ "2140": {
+  "file": "2140.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/wood_stick_sapin2.png"
+ },
+ "2141": {
+  "file": "2141.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/poudre_bois_sapin.png"
+ },
+ "2142": {
+  "file": "2142.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/wood_stick_sapin.png"
+ },
+ "2146": {
+  "file": "2146.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/rarenail2.png"
+ },
+ "2147": {
+  "file": "2147.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/beastscale3.png"
+ },
+ "2148": {
+  "file": "2148.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_orbe_feu.png"
+ },
+ "2149": {
+  "file": "2149.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_428.png"
+ },
+ "2150": {
+  "file": "2150.png",
+  "source": "pack-3d"
+ },
+ "2151": {
+  "file": "2151.png",
+  "source": "pack-3d"
+ },
+ "2154": {
+  "file": "2154.png",
+  "source": "pack-3d"
+ },
+ "2155": {
+  "file": "2155.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/materiel_substance_jaune.png"
+ },
+ "2156": {
+  "file": "2156.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/coins/bourse_bandit1.png"
+ },
+ "2157": {
+  "file": "2157.png",
+  "source": "api",
+  "url": "/uploads/items/hsur/lost_soul.png"
+ },
+ "2159": {
+  "file": "2159.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/string_acacia.png"
+ },
+ "2160": {
+  "file": "2160.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/sceau.png"
+ },
+ "2161": {
+  "file": "2161.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/sceauubriser.png"
+ },
+ "2162": {
+  "file": "2162.png",
+  "source": "api",
+  "url": "/uploads/items/mae/bassceau.png"
+ },
+ "2163": {
+  "file": "2163.png",
+  "source": "api",
+  "url": "/uploads/items/rpg_essentials_1/key_aqua.png"
+ },
+ "2164": {
+  "file": "2164.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/runeetrange.png"
+ },
+ "2166": {
+  "file": "2166.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/tissumaudit.png"
+ },
+ "2167": {
+  "file": "2167.png",
+  "source": "pack-3d"
+ },
+ "2170": {
+  "file": "2170.png",
+  "source": "api",
+  "url": "/uploads/items/mae/coeurputrefie.png"
+ },
+ "2172": {
+  "file": "2172.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/sporecorrompu.png"
+ },
+ "2173": {
+  "file": "2173.png",
+  "source": "api",
+  "url": "/uploads/items/mae/cristalcorrompu.png"
+ },
+ "2174": {
+  "file": "2174.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol1/textures/item/hide5.png"
+ },
+ "2175": {
+  "file": "2175.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/leather3.png"
+ },
+ "2176": {
+  "file": "2176.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/tooth4.png"
+ },
+ "2177": {
+  "file": "2177.png",
+  "source": "api",
+  "url": "/uploads/items/animated_fantasy_items/vampire_fang.png"
+ },
+ "2179": {
+  "file": "2179.png",
+  "source": "api",
+  "url": "/uploads/items/mob_loots_expansion/gel.png"
+ },
+ "2180": {
+  "file": "2180.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_orbe_terre.png"
+ },
+ "2181": {
+  "file": "2181.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_slime_vert.png"
+ },
+ "2182": {
+  "file": "2182.png",
+  "source": "pack",
+  "pack": "assets/mob_loots_expansion/textures/pig_leather.png"
+ },
+ "2183": {
+  "file": "2183.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/leather4.png"
+ },
+ "2184": {
+  "file": "2184.png",
+  "source": "pack",
+  "pack": "assets/hsur/textures/custom/gui/lands/info.png"
+ },
+ "2185": {
+  "file": "2185.png",
+  "source": "pack",
+  "pack": "assets/animated_fantasy_items/textures/absorption_water.png"
+ },
+ "2186": {
+  "file": "2186.png",
+  "source": "api",
+  "url": "/uploads/items/animated_fantasy_items/dragon_heart.png"
+ },
+ "2187": {
+  "file": "2187.png",
+  "source": "pack",
+  "pack": "assets/animated_fantasy_items_pp/textures/rainbow_mana_crystal.png"
+ },
+ "2188": {
+  "file": "2188.png",
+  "source": "api",
+  "url": "/uploads/items/hsur/pure_diamond.png"
+ },
+ "2189": {
+  "file": "2189.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol2/textures/item/shard5.png"
+ },
+ "2190": {
+  "file": "2190.png",
+  "source": "api",
+  "url": "/uploads/items/element_items_animation/ore_water.png"
+ },
+ "2191": {
+  "file": "2191.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/gemstone3.png"
+ },
+ "2194": {
+  "file": "2194.png",
+  "source": "pack",
+  "pack": "assets/mob_loots_expansion/textures/wool_ball.png"
+ },
+ "2195": {
+  "file": "2195.png",
+  "source": "pack",
+  "pack": "assets/mob_loots_expansion/textures/wolf_fang.png"
+ },
+ "2196": {
+  "file": "2196.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/materials/moss_stone.png"
+ },
+ "2197": {
+  "file": "2197.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol2/textures/item/rocky_powder3.png"
+ },
+ "2198": {
+  "file": "2198.png",
+  "source": "api",
+  "url": "/uploads/items/rpg_essentials_1/twig.png"
+ },
+ "2199": {
+  "file": "2199.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_coeurvert.png"
+ },
+ "2200": {
+  "file": "2200.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_inconnu20.png"
+ },
+ "2201": {
+  "file": "2201.png",
+  "source": "api",
+  "url": "/uploads/items/mob_loots_expansion/poison_sac.png"
+ },
+ "2202": {
+  "file": "2202.png",
+  "source": "pack",
+  "pack": "assets/element_items_animation/textures/ore_wind.png"
+ },
+ "2203": {
+  "file": "2203.png",
+  "source": "api",
+  "url": "/uploads/items/mae/materiel_pique.png"
+ },
+ "2204": {
+  "file": "2204.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/beastscale4.png"
+ },
+ "2205": {
+  "file": "2205.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/materiel_tissu1.png"
+ },
+ "2206": {
+  "file": "2206.png",
+  "source": "pack",
+  "pack": "assets/hsur/textures/custom/items/materials/calamity_handle.png"
+ },
+ "2207": {
+  "file": "2207.png",
+  "source": "api",
+  "url": "/uploads/items/hsur/uncanny_obelisk.png"
+ },
+ "2208": {
+  "file": "2208.png",
+  "source": "pack",
+  "pack": "assets/hsur/textures/custom/items/accessory/heart_of_the_damned.png"
+ },
+ "2209": {
+  "file": "2209.png",
+  "source": "api",
+  "url": "/uploads/items/rpg_essentials_2/clover.png"
+ },
+ "2210": {
+  "file": "2210.png",
+  "source": "api",
+  "url": "/uploads/items/hsur/abilitydamage.png"
+ },
+ "2211": {
+  "file": "2211.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fhero_rbfragment.png"
+ },
+ "2212": {
+  "file": "2212.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fhero_ygfragment.png"
+ },
+ "2213": {
+  "file": "2213.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fhero_rgfragment.png"
+ },
+ "2214": {
+  "file": "2214.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fhero_oldfabric.png"
+ },
+ "2215": {
+  "file": "2215.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fhero_yellowgem.png"
+ },
+ "2216": {
+  "file": "2216.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fhero_redgem.png"
+ },
+ "2217": {
+  "file": "2217.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fhero_soulfirequartz.png"
+ },
+ "2218": {
+  "file": "2218.png",
+  "source": "pack",
+  "pack": "assets/fherov1items/textures/item/material/fhero_soulmetalscrap.png"
+ },
+ "2219": {
+  "file": "2219.png",
+  "source": "pack",
+  "pack": "assets/fherov1items/textures/item/material/fhero_soulmetalingot.png"
+ },
+ "2220": {
+  "file": "2220.png",
+  "source": "pack",
+  "pack": "assets/fherov1items/textures/item/material/fhero_metalscrap.png"
+ },
+ "2221": {
+  "file": "2221.png",
+  "source": "pack",
+  "pack": "assets/fherov1items/textures/item/material/fhero_ingot.png"
+ },
+ "2222": {
+  "file": "2222.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_ecaille2.png"
+ },
+ "2224": {
+  "file": "2224.png",
+  "source": "api",
+  "url": "/uploads/items/hsur/luck.png"
+ },
+ "2225": {
+  "file": "2225.png",
+  "source": "api",
+  "url": "/uploads/items/element_items_animation/ore_life.png"
+ },
+ "2226": {
+  "file": "2226.png",
+  "source": "pack",
+  "pack": "assets/nogs_menagerie/textures/loots/nm_reindeer_horn_texture.png"
+ },
+ "2227": {
+  "file": "2227.png",
+  "source": "api",
+  "url": "/uploads/items/animated_fantasy_items/thousand_year_root.png"
+ },
+ "2228": {
+  "file": "2228.png",
+  "source": "api",
+  "url": "/uploads/items/animated_fantasy_items/eternal_shadow.png"
+ },
+ "2229": {
+  "file": "2229.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/big_saber_top.png"
+ },
+ "2230": {
+  "file": "2230.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/big_saber_middle.png"
+ },
+ "2231": {
+  "file": "2231.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/big_saber_bot.png"
+ },
+ "2232": {
+  "file": "2232.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_rune_protection.png"
+ },
+ "2233": {
+  "file": "2233.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_rune_justice.png"
+ },
+ "2234": {
+  "file": "2234.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_rune_glace.png"
+ },
+ "2235": {
+  "file": "2235.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_rune_geant.png"
+ },
+ "2236": {
+  "file": "2236.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_rune_destruction.png"
+ },
+ "2237": {
+  "file": "2237.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_griffe_basique.png"
+ },
+ "2238": {
+  "file": "2238.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_cuir.png"
+ },
+ "2239": {
+  "file": "2239.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_griffe6.png"
+ },
+ "2240": {
+  "file": "2240.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_cuir_marron.png"
+ },
+ "2241": {
+  "file": "2241.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_inconnu7.png"
+ },
+ "2242": {
+  "file": "2242.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_gras.png"
+ },
+ "2243": {
+  "file": "2243.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_plume_rouge2.png"
+ },
+ "2244": {
+  "file": "2244.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_plume_bleu.png"
+ },
+ "2245": {
+  "file": "2245.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_plume_vert.png"
+ },
+ "2246": {
+  "file": "2246.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_234.png"
+ },
+ "2247": {
+  "file": "2247.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_plume_violet.png"
+ },
+ "2248": {
+  "file": "2248.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/mine_orbe.png"
+ },
+ "2249": {
+  "file": "2249.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_mielabeille.png"
+ },
+ "2250": {
+  "file": "2250.png",
+  "source": "api",
+  "url": "/uploads/items/queenbeeitems/stingblade_part.png"
+ },
+ "2252": {
+  "file": "2252.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_84.png"
+ },
+ "2253": {
+  "file": "2253.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/plantes20.png"
+ },
+ "2254": {
+  "file": "2254.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/mine_tablette2.png"
+ },
+ "2255": {
+  "file": "2255.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_rosaire.png"
+ },
+ "2256": {
+  "file": "2256.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_capuchon.png"
+ },
+ "2257": {
+  "file": "2257.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/materiel_substance_grise.png"
+ },
+ "2258": {
+  "file": "2258.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/beastscale5.png"
+ },
+ "2259": {
+  "file": "2259.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_inconnu4.png"
+ },
+ "2260": {
+  "file": "2260.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/embleme2_2.png"
+ },
+ "2261": {
+  "file": "2261.png",
+  "source": "pack",
+  "pack": "assets/hsur/textures/custom/items/accessory/nullifying_necklace.png"
+ },
+ "2262": {
+  "file": "2262.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/beastscale4.png"
+ },
+ "2263": {
+  "file": "2263.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/beastscale3.png"
+ },
+ "2264": {
+  "file": "2264.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/beastscale2.png"
+ },
+ "2265": {
+  "file": "2265.png",
+  "source": "api",
+  "url": "/uploads/items/mae/wb_324.png"
+ },
+ "2266": {
+  "file": "2266.png",
+  "source": "api",
+  "url": "/uploads/items/mae/wb_327.png"
+ },
+ "2267": {
+  "file": "2267.png",
+  "source": "api",
+  "url": "/uploads/items/mae/wb_328.png"
+ },
+ "2268": {
+  "file": "2268.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_simple_cristal.png"
+ },
+ "2269": {
+  "file": "2269.png",
+  "source": "api",
+  "url": "/uploads/items/mae/plantes_champignon13.png"
+ },
+ "2270": {
+  "file": "2270.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/plantes9.png"
+ },
+ "2272": {
+  "file": "2272.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/outils_sacoche.png"
+ },
+ "2273": {
+  "file": "2273.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/copper_ring1.png"
+ },
+ "2274": {
+  "file": "2274.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/embleme3_basic.png"
+ },
+ "2275": {
+  "file": "2275.png",
+  "source": "api",
+  "url": "/uploads/items/mae/cle_2.png"
+ },
+ "2276": {
+  "file": "2276.png",
+  "source": "api",
+  "url": "/uploads/items/mae/cle_2.png"
+ },
+ "2277": {
+  "file": "2277.png",
+  "source": "api",
+  "url": "/uploads/items/mae/lighter.png"
+ },
+ "2278": {
+  "file": "2278.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/spe_piece_p_1.png"
+ },
+ "2279": {
+  "file": "2279.png",
+  "source": "api",
+  "url": "/uploads/items/mae/plantes_champignon14.png"
+ },
+ "2280": {
+  "file": "2280.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_361.png"
+ },
+ "2281": {
+  "file": "2281.png",
+  "source": "pack",
+  "pack": "assets/pack1/textures/items/potion2.png"
+ },
+ "2282": {
+  "file": "2282.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/spe_enveloppe.png"
+ },
+ "2283": {
+  "file": "2283.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_poudre_noir.png"
+ },
+ "2284": {
+  "file": "2284.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/mine_roche_noir.png"
+ },
+ "2285": {
+  "file": "2285.png",
+  "source": "pack",
+  "pack": "assets/mob_loots_expansion/textures/wither_dust.png"
+ },
+ "2286": {
+  "file": "2286.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol2/textures/item/thin_feather6.png"
+ },
+ "2287": {
+  "file": "2287.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/corne_rugiboeuf.png"
+ },
+ "2288": {
+  "file": "2288.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_oeuf.png"
+ },
+ "2289": {
+  "file": "2289.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_fils_noir.png"
+ },
+ "2290": {
+  "file": "2290.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/mendibule_araignee2.png"
+ },
+ "2291": {
+  "file": "2291.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_insecte5.png"
+ },
+ "2292": {
+  "file": "2292.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_oeildemon_rouge.png"
+ },
+ "2293": {
+  "file": "2293.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol2/textures/item/tonic6.png"
+ },
+ "2294": {
+  "file": "2294.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/aile_araignee.png"
+ },
+ "2295": {
+  "file": "2295.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_fils_orange.png"
+ },
+ "2296": {
+  "file": "2296.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/mendibule_araignee.png"
+ },
+ "2297": {
+  "file": "2297.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/carcasse_marron.png"
+ },
+ "2298": {
+  "file": "2298.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/yeux_araignee.png"
+ },
+ "2299": {
+  "file": "2299.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol2/textures/item/tonic1.png"
+ },
+ "2300": {
+  "file": "2300.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_fragment_violet.png"
+ },
+ "2301": {
+  "file": "2301.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_fils_violet.png"
+ },
+ "2302": {
+  "file": "2302.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/carcasse_araignee2.png"
+ },
+ "2303": {
+  "file": "2303.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_oeildemon_violet.png"
+ },
+ "2304": {
+  "file": "2304.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_sphere_blanche.png"
+ },
+ "2305": {
+  "file": "2305.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_fils_blanc.png"
+ },
+ "2306": {
+  "file": "2306.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_poudre_blanche.png"
+ },
+ "2307": {
+  "file": "2307.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol2/textures/item/tonic5.png"
+ },
+ "2308": {
+  "file": "2308.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_fils_jaune.png"
+ },
+ "2309": {
+  "file": "2309.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol2/textures/item/tonic4.png"
+ },
+ "2310": {
+  "file": "2310.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_insecte8.png"
+ },
+ "2311": {
+  "file": "2311.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bourse_bandit2.png"
+ },
+ "2312": {
+  "file": "2312.png",
+  "source": "api",
+  "url": "/uploads/items/mae/outils_couteau.png"
+ },
+ "2313": {
+  "file": "2313.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/spe_piece_p_1.png"
+ },
+ "2314": {
+  "file": "2314.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_statue2.png"
+ },
+ "2315": {
+  "file": "2315.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_poil_marron.png"
+ },
+ "2316": {
+  "file": "2316.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_sang.png"
+ },
+ "2317": {
+  "file": "2317.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_oeil_rouge.png"
+ },
+ "2318": {
+  "file": "2318.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_masque_carre.png"
+ },
+ "2319": {
+  "file": "2319.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_coeurvert.png"
+ },
+ "2320": {
+  "file": "2320.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_sphere_rouge.png"
+ },
+ "2321": {
+  "file": "2321.png",
+  "source": "api",
+  "url": "/uploads/items/mae/orbe4_rouge.png"
+ },
+ "2322": {
+  "file": "2322.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/griffe_loup2.png"
+ },
+ "2323": {
+  "file": "2323.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_poil_marron.png"
+ },
+ "2324": {
+  "file": "2324.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol1/textures/item/nail4.png"
+ },
+ "2325": {
+  "file": "2325.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/griffe_loup1.png"
+ },
+ "2326": {
+  "file": "2326.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_poil_gris.png"
+ },
+ "2327": {
+  "file": "2327.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/queue_loup1.png"
+ },
+ "2328": {
+  "file": "2328.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/sang_goblin.png"
+ },
+ "2329": {
+  "file": "2329.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/oreille_gobline.png"
+ },
+ "2330": {
+  "file": "2330.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_sphere_vert.png"
+ },
+ "2331": {
+  "file": "2331.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_oeil_vert.png"
+ },
+ "2332": {
+  "file": "2332.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_epauliere3.png"
+ },
+ "2333": {
+  "file": "2333.png",
+  "source": "api",
+  "url": "/uploads/items/mae/plantes_branche_basique.png"
+ },
+ "2334": {
+  "file": "2334.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ecorce1.png"
+ },
+ "2335": {
+  "file": "2335.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/plantes_graine2.png"
+ },
+ "2336": {
+  "file": "2336.png",
+  "source": "api",
+  "url": "/uploads/items/mae/orbe3_vert.png"
+ },
+ "2337": {
+  "file": "2337.png",
+  "source": "api",
+  "url": "/uploads/items/mae/plantes_branche_basique.png"
+ },
+ "2338": {
+  "file": "2338.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/ecorce2.png"
+ },
+ "2339": {
+  "file": "2339.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/coeur1.png"
+ },
+ "2340": {
+  "file": "2340.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_cuir_bleu.png"
+ },
+ "2341": {
+  "file": "2341.png",
+  "source": "api",
+  "url": "/uploads/items/mae/plantes_feuille_bleu.png"
+ },
+ "2342": {
+  "file": "2342.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol1/textures/item/gemstone5.png"
+ },
+ "2343": {
+  "file": "2343.png",
+  "source": "api",
+  "url": "/uploads/items/mae/orbe1_bleu.png"
+ },
+ "2344": {
+  "file": "2344.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_cuir_jaune.png"
+ },
+ "2345": {
+  "file": "2345.png",
+  "source": "api",
+  "url": "/uploads/items/mae/plantes_feuille_verte.png"
+ },
+ "2346": {
+  "file": "2346.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/joyau1.png"
+ },
+ "2347": {
+  "file": "2347.png",
+  "source": "api",
+  "url": "/uploads/items/mae/orbe1_vert.png"
+ },
+ "2348": {
+  "file": "2348.png",
+  "source": "api",
+  "url": "/uploads/items/hsur/silver_coin.png"
+ },
+ "2349": {
+  "file": "2349.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_plume_bleu2.png"
+ },
+ "2350": {
+  "file": "2350.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_orbe_eau.png"
+ },
+ "2351": {
+  "file": "2351.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_dent_bleu.png"
+ },
+ "2352": {
+  "file": "2352.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/eclat_sombre.png"
+ },
+ "2354": {
+  "file": "2354.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/colier_violet.png"
+ },
+ "2355": {
+  "file": "2355.png",
+  "source": "api",
+  "url": "/uploads/items/mae/invoc_sphere_bleu.png"
+ },
+ "2356": {
+  "file": "2356.png",
+  "source": "api",
+  "url": "/uploads/items/mae/invoc_sphere4.png"
+ },
+ "2357": {
+  "file": "2357.png",
+  "source": "api",
+  "url": "/uploads/items/mae/invoc_sphere9.png"
+ },
+ "2358": {
+  "file": "2358.png",
+  "source": "api",
+  "url": "/uploads/items/mae/invoc_sphere_darkvert.png"
+ },
+ "2360": {
+  "file": "2360.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_hache.png"
+ },
+ "2361": {
+  "file": "2361.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_362.png"
+ },
+ "2362": {
+  "file": "2362.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_masque_ovale1.png"
+ },
+ "2363": {
+  "file": "2363.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/pwa_epee3.png"
+ },
+ "2364": {
+  "file": "2364.png",
+  "source": "api",
+  "url": "/uploads/items/mae/outils_couteau.png"
+ },
+ "2365": {
+  "file": "2365.png",
+  "source": "api",
+  "url": "/uploads/items/mae/outils_boussole.png"
+ },
+ "2366": {
+  "file": "2366.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/piece_bauxite.png"
+ },
+ "2367": {
+  "file": "2367.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/string_chene.png"
+ },
+ "2368": {
+  "file": "2368.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/string_bouleau.png"
+ },
+ "2369": {
+  "file": "2369.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_sphere_vert.png"
+ },
+ "2370": {
+  "file": "2370.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/larme_slime.png"
+ },
+ "2371": {
+  "file": "2371.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/coins/coins_kazor.png"
+ },
+ "2372": {
+  "file": "2372.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/cristal_earthleveling1.png"
+ },
+ "2373": {
+  "file": "2373.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/misc_parchemin2.png"
+ },
+ "2374": {
+  "file": "2374.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/string_onyx_pure.png"
+ },
+ "2375": {
+  "file": "2375.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/string_ferraille.png"
+ },
+ "2376": {
+  "file": "2376.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/string_cuivre.png"
+ },
+ "2377": {
+  "file": "2377.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/string_bauxite.png"
+ },
+ "2378": {
+  "file": "2378.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/string_onyx_impure.png"
+ },
+ "2379": {
+  "file": "2379.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/string_spruce.png"
+ },
+ "2380": {
+  "file": "2380.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/corrupted_ore3.png"
+ },
+ "2381": {
+  "file": "2381.png",
+  "source": "pack",
+  "pack": "assets/pixelmine/textures/item/void_ingot.png"
+ },
+ "2382": {
+  "file": "2382.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/sang_bete_corrompue.png"
+ },
+ "2383": {
+  "file": "2383.png",
+  "source": "api",
+  "url": "/uploads/items/rpg_essentials_1/key_wooden.png"
+ },
+ "2384": {
+  "file": "2384.png",
+  "source": "api",
+  "url": "/uploads/items/crystal_pack/medium_amber_bud.png"
+ },
+ "2385": {
+  "file": "2385.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_pyrite2.png"
+ },
+ "2386": {
+  "file": "2386.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/coins/coins_occulte.png"
+ },
+ "2387": {
+  "file": "2387.png",
+  "source": "pack",
+  "pack": "assets/minerals_pack_v2/textures/onyx.png"
+ },
+ "2388": {
+  "file": "2388.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_jais.png"
+ },
+ "2389": {
+  "file": "2389.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_anthracite.png"
+ },
+ "2390": {
+  "file": "2390.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_hematite2.png"
+ },
+ "2391": {
+  "file": "2391.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_spinelle1.png"
+ },
+ "2392": {
+  "file": "2392.png",
+  "source": "pack",
+  "pack": "assets/minerals_pack_v2/textures/raw_adamantium.png"
+ },
+ "2393": {
+  "file": "2393.png",
+  "source": "pack-3d"
+ },
+ "2394": {
+  "file": "2394.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_hematite1.png"
+ },
+ "2395": {
+  "file": "2395.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_pyrite1.png"
+ },
+ "2396": {
+  "file": "2396.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_grenat1.png"
+ },
+ "2397": {
+  "file": "2397.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_spinelle2.png"
+ },
+ "2399": {
+  "file": "2399.png",
+  "source": "pack-3d"
+ },
+ "2400": {
+  "file": "2400.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_malachite1.png"
+ },
+ "2401": {
+  "file": "2401.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_azurite1.png"
+ },
+ "2402": {
+  "file": "2402.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_turquoise.png"
+ },
+ "2403": {
+  "file": "2403.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_cornalise.png"
+ },
+ "2404": {
+  "file": "2404.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_temporite.png"
+ },
+ "2405": {
+  "file": "2405.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_citrine1.png"
+ },
+ "2406": {
+  "file": "2406.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_pyrite2.png"
+ },
+ "2407": {
+  "file": "2407.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/onyx_pur.png"
+ },
+ "2408": {
+  "file": "2408.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_301.png"
+ },
+ "2409": {
+  "file": "2409.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/mine_inconnu6.png"
+ },
+ "2410": {
+  "file": "2410.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_305.png"
+ },
+ "2411": {
+  "file": "2411.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_basalt1.png"
+ },
+ "2412": {
+  "file": "2412.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_cobalt1.png"
+ },
+ "2413": {
+  "file": "2413.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_manganese.png"
+ },
+ "2414": {
+  "file": "2414.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_onyx1.png"
+ },
+ "2415": {
+  "file": "2415.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/mine_inconnu3.png"
+ },
+ "2416": {
+  "file": "2416.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_304.png"
+ },
+ "2417": {
+  "file": "2417.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_corindon1.png"
+ },
+ "2418": {
+  "file": "2418.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_andalousite.png"
+ },
+ "2419": {
+  "file": "2419.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_saphire1.png"
+ },
+ "2420": {
+  "file": "2420.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_saphire2.png"
+ },
+ "2421": {
+  "file": "2421.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_325.png"
+ },
+ "2422": {
+  "file": "2422.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_crystal_violet.png"
+ },
+ "2423": {
+  "file": "2423.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_fluorite1.png"
+ },
+ "2424": {
+  "file": "2424.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_lepidolite.png"
+ },
+ "2425": {
+  "file": "2425.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_charoite.png"
+ },
+ "2426": {
+  "file": "2426.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_sugilite.png"
+ },
+ "2427": {
+  "file": "2427.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/ore_tanzanite.png"
+ },
+ "2428": {
+  "file": "2428.png",
+  "source": "api",
+  "url": "/uploads/items/lanshan_cos_christmas_1/winter_leaf.png"
+ },
+ "2429": {
+  "file": "2429.png",
+  "source": "pack-3d"
+ },
+ "2430": {
+  "file": "2430.png",
+  "source": "api",
+  "url": "/uploads/items/littleroom_towerskeleton/flamet_04.png"
+ },
+ "2431": {
+  "file": "2431.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_pierrelisse_bleu.png"
+ },
+ "2432": {
+  "file": "2432.png",
+  "source": "api",
+  "url": "/uploads/items/mae/cle_3.png"
+ },
+ "2433": {
+  "file": "2433.png",
+  "source": "api",
+  "url": "/uploads/items/mae/epee_brise.png"
+ },
+ "2434": {
+  "file": "2434.png",
+  "source": "api",
+  "url": "/uploads/items/mae/mine_fleur_cristal.png"
+ },
+ "2435": {
+  "file": "2435.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_orbe2.png"
+ },
+ "2436": {
+  "file": "2436.png",
+  "source": "api",
+  "url": "/uploads/items/mae/invoc_sphere1.png"
+ },
+ "2437": {
+  "file": "2437.png",
+  "source": "api",
+  "url": "/uploads/items/mae/materiel_bol_jaune.png"
+ },
+ "2438": {
+  "file": "2438.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_oeil_noir.png"
+ },
+ "2439": {
+  "file": "2439.png",
+  "source": "api",
+  "url": "/uploads/items/mae/buche_bark.png"
+ },
+ "2440": {
+  "file": "2440.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/tas_os.png"
+ },
+ "2441": {
+  "file": "2441.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/materiel_substance_noir.png"
+ },
+ "2442": {
+  "file": "2442.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol2/textures/item/crystal_powder4.png"
+ },
+ "2443": {
+  "file": "2443.png",
+  "source": "pack",
+  "pack": "assets/fantasymcmatsvol1/textures/item/gemstone5.png"
+ },
+ "2444": {
+  "file": "2444.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol2/fairy_wing5.png"
+ },
+ "2445": {
+  "file": "2445.png",
+  "source": "api",
+  "url": "/uploads/items/fantasymcmatsvol1/crystalshard5.png"
+ },
+ "2446": {
+  "file": "2446.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_corne2.png"
+ },
+ "2447": {
+  "file": "2447.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_poil_blanc.png"
+ },
+ "2448": {
+  "file": "2448.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_griffe6.png"
+ },
+ "2449": {
+  "file": "2449.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_sphere_cyan.png"
+ },
+ "2450": {
+  "file": "2450.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/mine_crystal_bleu.png"
+ },
+ "2451": {
+  "file": "2451.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/wb_309.png"
+ },
+ "2452": {
+  "file": "2452.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_plume_bleu2.png"
+ },
+ "2453": {
+  "file": "2453.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_dent_bleu.png"
+ },
+ "2454": {
+  "file": "2454.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_coeurbleu.png"
+ },
+ "2455": {
+  "file": "2455.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/spe_papier.png"
+ },
+ "2456": {
+  "file": "2456.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/materiel_substance_bleu.png"
+ },
+ "2457": {
+  "file": "2457.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_1.png"
+ },
+ "2458": {
+  "file": "2458.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_2.png"
+ },
+ "2459": {
+  "file": "2459.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_3.png"
+ },
+ "2460": {
+  "file": "2460.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_1.png"
+ },
+ "2461": {
+  "file": "2461.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_1.png"
+ },
+ "2462": {
+  "file": "2462.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_1.png"
+ },
+ "2463": {
+  "file": "2463.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_1.png"
+ },
+ "2464": {
+  "file": "2464.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_2.png"
+ },
+ "2465": {
+  "file": "2465.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_3.png"
+ },
+ "2466": {
+  "file": "2466.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_3.png"
+ },
+ "2467": {
+  "file": "2467.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_3.png"
+ },
+ "2468": {
+  "file": "2468.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_3.png"
+ },
+ "2469": {
+  "file": "2469.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/misc/potion_vie_mana2.png"
+ },
+ "2470": {
+  "file": "2470.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_3.png"
+ },
+ "2471": {
+  "file": "2471.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_1.png"
+ },
+ "2472": {
+  "file": "2472.png",
+  "source": "pack",
+  "pack": "assets/mmoitems_pack/textures/hyronic_pack/items/buff_pot/endurepot_2.png"
+ },
+ "2473": {
+  "file": "2473.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_sylvestre.png"
+ },
+ "2474": {
+  "file": "2474.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bague_skeleton.png"
+ },
+ "2475": {
+  "file": "2475.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/anneau_sanglier.png"
+ },
+ "2476": {
+  "file": "2476.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_pumba.png"
+ },
+ "2477": {
+  "file": "2477.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/copper_ring1.png"
+ },
+ "2478": {
+  "file": "2478.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bague_slime.png"
+ },
+ "2479": {
+  "file": "2479.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/green_ring5.png"
+ },
+ "2480": {
+  "file": "2480.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_loups.png"
+ },
+ "2481": {
+  "file": "2481.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/netherite_ring2.png"
+ },
+ "2482": {
+  "file": "2482.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/iron_ring1.png"
+ },
+ "2483": {
+  "file": "2483.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/netherite_ring6.png"
+ },
+ "2484": {
+  "file": "2484.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/netherite_ring3.png"
+ },
+ "2485": {
+  "file": "2485.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/orange_ring6.png"
+ },
+ "2486": {
+  "file": "2486.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/netherite_ring14.png"
+ },
+ "2487": {
+  "file": "2487.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_dechu.png"
+ },
+ "2488": {
+  "file": "2488.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/wood_ring6.png"
+ },
+ "2489": {
+  "file": "2489.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/orange_ring5.png"
+ },
+ "2490": {
+  "file": "2490.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_taureau.png"
+ },
+ "2491": {
+  "file": "2491.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_ours.png"
+ },
+ "2492": {
+  "file": "2492.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/yellow_ring15.png"
+ },
+ "2493": {
+  "file": "2493.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_mielleux.png"
+ },
+ "2494": {
+  "file": "2494.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bague_bouleau.png"
+ },
+ "2495": {
+  "file": "2495.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_acacia.png"
+ },
+ "2496": {
+  "file": "2496.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/orange_ring15.png"
+ },
+ "2497": {
+  "file": "2497.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/cyan_ring15.png"
+ },
+ "2498": {
+  "file": "2498.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/green_ring15.png"
+ },
+ "2499": {
+  "file": "2499.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_ferraille.png"
+ },
+ "2500": {
+  "file": "2500.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau2_bauxite.png"
+ },
+ "2501": {
+  "file": "2501.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/netherite_ring1.png"
+ },
+ "2502": {
+  "file": "2502.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau2_onyx_pur.png"
+ },
+ "2503": {
+  "file": "2503.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/bague_winnie.png"
+ },
+ "2504": {
+  "file": "2504.png",
+  "source": "api",
+  "url": "/uploads/items/mctrinketsringsvol1/netherite_ring2.png"
+ },
+ "2505": {
+  "file": "2505.png",
+  "source": "api",
+  "url": "/uploads/items/pack1/ring.png"
+ },
+ "2506": {
+  "file": "2506.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_granite.png"
+ },
+ "2507": {
+  "file": "2507.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_cuivre_granuleux.png"
+ },
+ "2508": {
+  "file": "2508.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_andesite.png"
+ },
+ "2509": {
+  "file": "2509.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_pierre.png"
+ },
+ "2510": {
+  "file": "2510.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_abordable.png"
+ },
+ "2511": {
+  "file": "2511.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_bois.png"
+ },
+ "2512": {
+  "file": "2512.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_brumeux.png"
+ },
+ "2513": {
+  "file": "2513.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_orc.png"
+ },
+ "2514": {
+  "file": "2514.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/bague_goblinne.png"
+ },
+ "2515": {
+  "file": "2515.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_bois_sombres.png"
+ },
+ "2516": {
+  "file": "2516.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_toile.png"
+ },
+ "2517": {
+  "file": "2517.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_spectral.png"
+ },
+ "2518": {
+  "file": "2518.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_luminiscente.png"
+ },
+ "2519": {
+  "file": "2519.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/anneau_voleur.png"
+ },
+ "2520": {
+  "file": "2520.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/anneau_amethyste.png"
+ },
+ "2521": {
+  "file": "2521.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/anneau_adoryll.png"
+ },
+ "2522": {
+  "file": "2522.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/anneau_dragonique_corrompu.png"
+ },
+ "2523": {
+  "file": "2523.png",
+  "source": "api",
+  "url": "/uploads/items/nerfs/coeur_entier.png"
+ },
+ "2524": {
+  "file": "2524.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/coeur_gauche.png"
+ },
+ "2525": {
+  "file": "2525.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_poil_marron.png"
+ },
+ "2526": {
+  "file": "2526.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/drop_poil_rose.png"
+ },
+ "2527": {
+  "file": "2527.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/accessoires/tissu_blanc.png"
+ },
+ "2528": {
+  "file": "2528.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/griffe1_teddybear.png"
+ },
+ "2529": {
+  "file": "2529.png",
+  "source": "pack",
+  "pack": "assets/nerfs/textures/ressources/griffe2_teddybear.png"
+ },
+ "2530": {
+  "file": "2530.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_perle_rouge.png"
+ },
+ "2531": {
+  "file": "2531.png",
+  "source": "api",
+  "url": "/uploads/items/mae/drop_perle_marron.png"
+ },
+ "2532": {
+  "file": "2532.png",
+  "source": "pack",
+  "pack": "assets/mae/textures/materiel_substance_rose.png"
+ },
+ "2533": {
+  "file": "2533.png",
+  "source": "pack-3d"
+ },
+ "2534": {
+  "file": "2534.png",
+  "source": "pack-3d"
+ },
+ "2535": {
+  "file": "2535.png",
+  "source": "pack-3d"
+ },
+ "2536": {
+  "file": "2536.png",
+  "source": "pack-3d"
+ },
+ "2537": {
+  "file": "2537.png",
+  "source": "pack-3d"
+ },
+ "2538": {
+  "file": "2538.png",
+  "source": "pack-3d"
+ },
+ "2539": {
+  "file": "2539.png",
+  "source": "pack-3d"
+ },
+ "2540": {
+  "file": "2540.png",
+  "source": "pack-3d"
+ },
+ "2541": {
+  "file": "2541.png",
+  "source": "pack-3d"
+ },
+ "2542": {
+  "file": "2542.png",
+  "source": "pack-3d"
+ },
+ "2543": {
+  "file": "2543.png",
+  "source": "pack-3d"
+ },
+ "2544": {
+  "file": "2544.png",
+  "source": "pack-3d"
+ },
+ "2545": {
+  "file": "2545.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fhero_shield.png"
+ },
+ "2546": {
+  "file": "2546.png",
+  "source": "api",
+  "url": "/uploads/items/illfang_items/illfang_shield.png"
+ },
+ "2547": {
+  "file": "2547.png",
+  "source": "api",
+  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+ },
+ "2548": {
+  "file": "2548.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/shield_lovestruck_em.png"
+ },
+ "2549": {
+  "file": "2549.png",
+  "source": "pack-3d"
+ },
+ "2550": {
+  "file": "2550.png",
+  "source": "pack-3d"
+ },
+ "2551": {
+  "file": "2551.png",
+  "source": "pack-3d"
+ },
+ "2552": {
+  "file": "2552.png",
+  "source": "pack-3d"
+ },
+ "2553": {
+  "file": "2553.png",
+  "source": "pack-3d"
+ },
+ "2554": {
+  "file": "2554.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/honey_1.png"
+ },
+ "2555": {
+  "file": "2555.png",
+  "source": "pack-3d"
+ },
+ "2556": {
+  "file": "2556.png",
+  "source": "pack-3d"
+ },
+ "2557": {
+  "file": "2557.png",
+  "source": "pack-3d"
+ },
+ "2558": {
+  "file": "2558.png",
+  "source": "pack-3d"
+ },
+ "2559": {
+  "file": "2559.png",
+  "source": "pack-3d"
+ },
+ "2560": {
+  "file": "2560.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/animated_1.png"
+ },
+ "2561": {
+  "file": "2561.png",
+  "source": "pack-3d"
+ },
+ "2562": {
+  "file": "2562.png",
+  "source": "pack-3d"
+ },
+ "2563": {
+  "file": "2563.png",
+  "source": "pack-3d"
+ },
+ "2564": {
+  "file": "2564.png",
+  "source": "pack-3d"
+ },
+ "2565": {
+  "file": "2565.png",
+  "source": "pack-3d"
+ },
+ "2566": {
+  "file": "2566.png",
+  "source": "pack-3d"
+ },
+ "2567": {
+  "file": "2567.png",
+  "source": "pack-3d"
+ },
+ "2568": {
+  "file": "2568.png",
+  "source": "pack-3d"
+ },
+ "2569": {
+  "file": "2569.png",
+  "source": "api",
+  "url": "/uploads/items/rce1/avatar_shaman_scepter.png"
+ },
+ "2570": {
+  "file": "2570.png",
+  "source": "api",
+  "url": "/uploads/items/cosmetic_packv2/tiki_hand.png"
+ },
+ "2571": {
+  "file": "2571.png",
+  "source": "api",
+  "url": "/uploads/items/rce1/avatar_shaman_scepter.png"
+ },
+ "2572": {
+  "file": "2572.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/rogue_staff.png"
+ },
+ "2573": {
+  "file": "2573.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/staff.png"
+ },
+ "2574": {
+  "file": "2574.png",
+  "source": "api",
+  "url": "/uploads/items/awakened_shaman/awakened_shaman_lifescepter.png"
+ },
+ "2575": {
+  "file": "2575.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/runic_texture.png"
+ },
+ "2576": {
+  "file": "2576.png",
+  "source": "api",
+  "url": "/uploads/items/illfang_items/illfang_staff.png"
+ },
+ "2577": {
+  "file": "2577.png",
+  "source": "pack-3d"
+ },
+ "2578": {
+  "file": "2578.png",
+  "source": "pack-3d"
+ },
+ "2579": {
+  "file": "2579.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "2580": {
+  "file": "2580.png",
+  "source": "api",
+  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+ },
+ "2581": {
+  "file": "2581.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/staff_lovestruck_em.png"
+ },
+ "2582": {
+  "file": "2582.png",
+  "source": "api",
+  "url": "/uploads/items/killburn_set/animation_4.png"
+ },
+ "2583": {
+  "file": "2583.png",
+  "source": "api",
+  "url": "/uploads/items/killburn_set/animation_4.png"
+ },
+ "2584": {
+  "file": "2584.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/honey_1.png"
+ },
+ "2585": {
+  "file": "2585.png",
+  "source": "api",
+  "url": "/uploads/items/killburn_set/animation_4.png"
+ },
+ "2586": {
+  "file": "2586.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/animated_2.png"
+ },
+ "2587": {
+  "file": "2587.png",
+  "source": "api",
+  "url": "/uploads/items/killburn_set/animation_4.png"
+ },
+ "2588": {
+  "file": "2588.png",
+  "source": "api",
+  "url": "/uploads/items/killburn_set/animation_4.png"
+ },
+ "2589": {
+  "file": "2589.png",
+  "source": "api",
+  "url": "/uploads/items/killburn_set/animation_4.png"
+ },
+ "2590": {
+  "file": "2590.png",
+  "source": "api",
+  "url": "/uploads/items/killburn_set/animation_4.png"
+ },
+ "2591": {
+  "file": "2591.png",
+  "source": "api",
+  "url": "/uploads/items/killburn_set/animation_4.png"
+ },
+ "2592": {
+  "file": "2592.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "2593": {
+  "file": "2593.png",
+  "source": "api",
+  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+ },
+ "2594": {
+  "file": "2594.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/staff_lovestruck_em.png"
+ },
+ "2595": {
+  "file": "2595.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/mace_lovestruck_em.png"
+ },
+ "2596": {
+  "file": "2596.png",
+  "source": "pack-3d"
+ },
+ "2597": {
+  "file": "2597.png",
+  "source": "api",
+  "url": "/uploads/items/adventurer_swords_volume_2/silver_claymore.png"
+ },
+ "2598": {
+  "file": "2598.png",
+  "source": "pack-3d"
+ },
+ "2599": {
+  "file": "2599.png",
+  "source": "pack-3d"
+ },
+ "2600": {
+  "file": "2600.png",
+  "source": "pack-3d"
+ },
+ "2601": {
+  "file": "2601.png",
+  "source": "pack-3d"
+ },
+ "2602": {
+  "file": "2602.png",
+  "source": "pack-3d"
+ },
+ "2603": {
+  "file": "2603.png",
+  "source": "pack-3d"
+ },
+ "2604": {
+  "file": "2604.png",
+  "source": "pack-3d"
+ },
+ "2605": {
+  "file": "2605.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/goblin_sword.png"
+ },
+ "2606": {
+  "file": "2606.png",
+  "source": "pack-3d"
+ },
+ "2607": {
+  "file": "2607.png",
+  "source": "pack-3d"
+ },
+ "2608": {
+  "file": "2608.png",
+  "source": "pack-3d"
+ },
+ "2609": {
+  "file": "2609.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/mage_sword.png"
+ },
+ "2610": {
+  "file": "2610.png",
+  "source": "pack-3d"
+ },
+ "2611": {
+  "file": "2611.png",
+  "source": "pack-3d"
+ },
+ "2612": {
+  "file": "2612.png",
+  "source": "pack-3d"
+ },
+ "2613": {
+  "file": "2613.png",
+  "source": "pack-3d"
+ },
+ "2614": {
+  "file": "2614.png",
+  "source": "pack-3d"
+ },
+ "2615": {
+  "file": "2615.png",
+  "source": "pack-3d"
+ },
+ "2616": {
+  "file": "2616.png",
+  "source": "pack-3d"
+ },
+ "2617": {
+  "file": "2617.png",
+  "source": "pack-3d"
+ },
+ "2618": {
+  "file": "2618.png",
+  "source": "pack-3d"
+ },
+ "2619": {
+  "file": "2619.png",
+  "source": "pack-3d"
+ },
+ "2620": {
+  "file": "2620.png",
+  "source": "pack-3d"
+ },
+ "2621": {
+  "file": "2621.png",
+  "source": "pack-3d"
+ },
+ "2622": {
+  "file": "2622.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "2623": {
+  "file": "2623.png",
+  "source": "api",
+  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+ },
+ "2624": {
+  "file": "2624.png",
+  "source": "api",
+  "url": "/uploads/items/plny_christmas_2025_set/assets_1.png"
+ },
+ "2625": {
+  "file": "2625.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+ },
+ "2626": {
+  "file": "2626.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/hearts_lovestruck.png"
+ },
+ "2627": {
+  "file": "2627.png",
+  "source": "pack-3d"
+ },
+ "2628": {
+  "file": "2628.png",
+  "source": "pack-3d"
+ },
+ "2629": {
+  "file": "2629.png",
+  "source": "pack-3d"
+ },
+ "2630": {
+  "file": "2630.png",
+  "source": "pack-3d"
+ },
+ "2631": {
+  "file": "2631.png",
+  "source": "pack-3d"
+ },
+ "2632": {
+  "file": "2632.png",
+  "source": "pack-3d"
+ },
+ "2633": {
+  "file": "2633.png",
+  "source": "pack-3d"
+ },
+ "2634": {
+  "file": "2634.png",
+  "source": "pack-3d"
+ },
+ "2635": {
+  "file": "2635.png",
+  "source": "pack-3d"
+ },
+ "2636": {
+  "file": "2636.png",
+  "source": "pack-3d"
+ },
+ "2637": {
+  "file": "2637.png",
+  "source": "pack-3d"
+ },
+ "2638": {
+  "file": "2638.png",
+  "source": "pack-3d"
+ },
+ "2639": {
+  "file": "2639.png",
+  "source": "pack-3d"
+ },
+ "2640": {
+  "file": "2640.png",
+  "source": "pack-3d"
+ },
+ "2641": {
+  "file": "2641.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/honey_1.png"
+ },
+ "2642": {
+  "file": "2642.png",
+  "source": "pack-3d"
+ },
+ "2643": {
+  "file": "2643.png",
+  "source": "pack-3d"
+ },
+ "2644": {
+  "file": "2644.png",
+  "source": "pack-3d"
+ },
+ "2645": {
+  "file": "2645.png",
+  "source": "api",
+  "url": "/uploads/items/plny_beeset/honey_1.png"
+ },
+ "2646": {
+  "file": "2646.png",
+  "source": "pack-3d"
+ },
+ "2647": {
+  "file": "2647.png",
+  "source": "pack-3d"
+ },
+ "2648": {
+  "file": "2648.png",
+  "source": "pack-3d"
+ },
+ "2649": {
+  "file": "2649.png",
+  "source": "pack-3d"
+ },
+ "2650": {
+  "file": "2650.png",
+  "source": "pack-3d"
+ },
+ "2651": {
+  "file": "2651.png",
+  "source": "pack-3d"
+ },
+ "2652": {
+  "file": "2652.png",
+  "source": "pack-3d"
+ },
+ "2653": {
+  "file": "2653.png",
+  "source": "pack-3d"
+ },
+ "2654": {
+  "file": "2654.png",
+  "source": "pack-3d"
+ },
+ "2655": {
+  "file": "2655.png",
+  "source": "pack-3d"
+ },
+ "2656": {
+  "file": "2656.png",
+  "source": "pack-3d"
+ },
+ "2657": {
+  "file": "2657.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/animated_1.png"
+ },
+ "2658": {
+  "file": "2658.png",
+  "source": "pack-3d"
+ },
+ "2659": {
+  "file": "2659.png",
+  "source": "pack-3d"
+ },
+ "2660": {
+  "file": "2660.png",
+  "source": "pack-3d"
+ },
+ "2661": {
+  "file": "2661.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/animated_2.png"
+ },
+ "2662": {
+  "file": "2662.png",
+  "source": "pack-3d"
+ },
+ "2663": {
+  "file": "2663.png",
+  "source": "pack-3d"
+ },
+ "2664": {
+  "file": "2664.png",
+  "source": "pack-3d"
+ },
+ "2665": {
+  "file": "2665.png",
+  "source": "pack-3d"
+ },
+ "2666": {
+  "file": "2666.png",
+  "source": "pack-3d"
+ },
+ "2667": {
+  "file": "2667.png",
+  "source": "pack-3d"
+ },
+ "2668": {
+  "file": "2668.png",
+  "source": "pack-3d"
+ },
+ "2669": {
+  "file": "2669.png",
+  "source": "pack-3d"
+ },
+ "2670": {
+  "file": "2670.png",
+  "source": "pack-3d"
+ },
+ "2671": {
+  "file": "2671.png",
+  "source": "pack-3d"
+ },
+ "2672": {
+  "file": "2672.png",
+  "source": "pack-3d"
+ },
+ "2673": {
+  "file": "2673.png",
+  "source": "pack-3d"
+ },
+ "2674": {
+  "file": "2674.png",
+  "source": "pack-3d"
+ },
+ "2675": {
+  "file": "2675.png",
+  "source": "pack-3d"
+ },
+ "2676": {
+  "file": "2676.png",
+  "source": "pack-3d"
+ },
+ "2677": {
+  "file": "2677.png",
+  "source": "pack-3d"
+ },
+ "2678": {
+  "file": "2678.png",
+  "source": "pack-3d"
+ },
+ "2679": {
+  "file": "2679.png",
+  "source": "pack-3d"
+ },
+ "2680": {
+  "file": "2680.png",
+  "source": "pack-3d"
+ },
+ "2681": {
+  "file": "2681.png",
+  "source": "pack-3d"
+ },
+ "2682": {
+  "file": "2682.png",
+  "source": "pack-3d"
+ },
+ "2690": {
+  "file": "2690.png",
+  "source": "pack-3d"
+ },
+ "2691": {
+  "file": "2691.png",
+  "source": "pack-3d"
+ },
+ "2692": {
+  "file": "2692.png",
+  "source": "pack-3d"
+ },
+ "2693": {
+  "file": "2693.png",
+  "source": "pack-3d"
+ },
+ "2694": {
+  "file": "2694.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/animated_2.png"
+ },
+ "2695": {
+  "file": "2695.png",
+  "source": "pack-3d"
+ },
+ "2696": {
+  "file": "2696.png",
+  "source": "pack-3d"
+ },
+ "2697": {
+  "file": "2697.png",
+  "source": "pack-3d"
+ },
+ "2698": {
+  "file": "2698.png",
+  "source": "pack-3d"
+ },
+ "2699": {
+  "file": "2699.png",
+  "source": "pack-3d"
+ },
+ "2700": {
+  "file": "2700.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/animated_2.png"
+ },
+ "2701": {
+  "file": "2701.png",
+  "source": "pack-3d"
+ },
+ "2702": {
+  "file": "2702.png",
+  "source": "pack-3d"
+ },
+ "2703": {
+  "file": "2703.png",
+  "source": "pack-3d"
+ },
+ "2704": {
+  "file": "2704.png",
+  "source": "pack-3d"
+ },
+ "2705": {
+  "file": "2705.png",
+  "source": "pack-3d"
+ },
+ "2706": {
+  "file": "2706.png",
+  "source": "api",
+  "url": "/uploads/items/necros_set/animated_2.png"
+ },
+ "2707": {
+  "file": "2707.png",
+  "source": "pack-3d"
+ },
+ "2708": {
+  "file": "2708.png",
+  "source": "pack-3d"
+ },
+ "2709": {
+  "file": "2709.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/rogue_fishing_rod.png"
+ },
+ "2710": {
+  "file": "2710.png",
+  "source": "api",
+  "url": "/uploads/items/fherov1items/fhero_fishing_rod.png"
+ },
+ "2714": {
+  "file": "2714.png",
+  "source": "api",
+  "url": "/uploads/items/elitecreatures/staff.png"
+ },
+ "2715": {
+  "file": "2715.png",
+  "source": "api",
+  "url": "/uploads/items/lovestruck_em/mace_lovestruck_em.png"
+ },
+ "2716": {
+  "file": "2716.png",
+  "source": "pack-3d"
+ },
+ "2717": {
+  "file": "2717.png",
+  "source": "api",
+  "url": "/uploads/items/plny_halloween_set/animation_1.png"
+ },
+ "2718": {
+  "file": "2718.png",
+  "source": "pack-3d"
+ }
+}
