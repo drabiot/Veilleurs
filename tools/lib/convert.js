@@ -102,6 +102,20 @@ function guessPalier(level) {
 const num = v => (v == null || v === '' || isNaN(Number(v))) ? null : Number(v);
 const clean = s => String(s || '').replace(/\s*\n\s*/g, ' ').trim();
 
+// Le lore de l'API mélange parfois la compétence de l'arme et la description :
+//   "Compétence: GLACIAL_IMPALEMENT\n💥150 dmg | ⌚15s\n\nChaque carreau libère un\nsouffle glaçant…"
+// 1er paragraphe = compétence ; 2e = vrai lore ; paragraphes suivants = précisions sur la compétence.
+function splitLore(raw) {
+  const paras = String(raw || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  if (!paras.length || !/^Comp[ée]tence\s*:/i.test(paras[0])) return { lore: clean(raw), competence: '' };
+  const [head, ...rest] = paras[0].split('\n').map(l => l.trim()).filter(Boolean);
+  const nom = head.replace(/^Comp[ée]tence\s*:\s*/i, '').trim();
+  const pretty = /^[A-Z0-9_]+$/.test(nom) ? nom.toLowerCase().replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : nom;
+  const [lore = '', ...notes] = paras.slice(1);
+  const competence = [pretty, ...rest, ...notes.map(clean)].filter(Boolean).join(' | ');
+  return { lore: clean(lore), competence };
+}
+
 // ─── Conversion d'un item ────────────────────────────────────────────────────
 function convert(x) {
   const map = CATEGORY[x.category] || {};
@@ -149,6 +163,7 @@ function convert(x) {
   if (conf === 'none') flags.push('palier inconnu (niveau 1/absent)');
   else if (conf === 'low') flags.push(`palier déduit du niveau ${x.level} (peu fiable)`);
 
+  const split = splitLore(x.lore);
   const base = slug(x.name);
   const doc = {
     id: palier ? `${base}_p${palier}` : base,
@@ -159,7 +174,8 @@ function convert(x) {
     palier,
     ...(x.level != null && x.level > 1 ? { lvl: x.level } : {}),
     ...(classes && classes.length ? { classes } : {}),
-    lore: clean(x.lore),
+    lore: split.lore,
+    ...(split.competence ? { competence: split.competence } : {}),
     ...(Object.keys(stats).length ? { stats } : {}),
     ...(Object.keys(threshold).length ? { threshold } : {}),
     ...(effects.length ? { effects } : {}),

@@ -15,7 +15,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { modelFor, loadModel, findFile, split, index, indexFile, OUT } = require('./fetch_images.js');
+const { modelFor, loadModel, findFile, split, index, indexFile, OUT, roots, byUpload } = require('./fetch_images.js');
 
 const PORT = 8124;
 const api = JSON.parse(fs.readFileSync(path.join(__dirname, 'items.json'), 'utf8').replace(/^﻿/, ''));
@@ -36,10 +36,71 @@ function flatten(ref, depth = 0) {
   return out;
 }
 
+// Index inverse texture -> modèles 3D qui l'utilisent. Sert quand (matériau, cmd) ne donne rien dans le pack
+// (cmd absent) mais que l'image de l'API est un atlas : on retrouve le modèle qui porte cette texture.
+let texToModel = null;
+function buildTexIndex() {
+  texToModel = new Map();
+  for (const r of roots) {
+    const assets = path.join(r, 'assets');
+    if (!fs.existsSync(assets)) continue;
+    for (const ns of fs.readdirSync(assets)) {
+      const mdir = path.join(assets, ns, 'models');
+      if (!fs.existsSync(mdir)) continue;
+      const walk = d => { for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        const p = path.join(d, e.name);
+        if (e.isDirectory()) { walk(p); continue; }
+        if (!e.name.endsWith('.json')) continue;
+        let m; try { m = JSON.parse(fs.readFileSync(p, 'utf8')); } catch { continue; }
+        if (!m.elements || !m.elements.length) continue;
+        const ref = ns + ':' + path.relative(mdir, p).replace(/\\/g, '/').replace(/\.json$/, '');
+        for (const t of Object.values(m.textures || {})) {
+          const k = String(t).includes(':') ? String(t) : 'minecraft:' + t;
+          if (!texToModel.has(k)) texToModel.set(k, []);
+          if (!texToModel.get(k).includes(ref)) texToModel.get(k).push(ref);
+        }
+      } };
+      walk(mdir);
+    }
+  }
+}
+function modelByTexture(x) {
+  const png = byUpload(x);
+  if (!png) return null;
+  const m = png.replace(/\\/g, '/').match(/assets\/([^/]+)\/textures\/(.+)\.png$/);
+  if (!m) return null;
+  if (!texToModel) buildTexIndex();
+  const refs = texToModel.get(m[1] + ':' + m[2]) || [];
+  if (!refs.length) return null;
+  if (refs.length === 1) return flatten(refs[0]);
+  // atlas partagé par plusieurs modèles (ex. un set complet) : on départage par le nom de l'item
+  // et son type d'arme ; si rien ne se détache nettement, on ne rend RIEN plutôt qu'une mauvaise arme.
+  const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const KIND = { crossbow: ['crossbow', 'arbalet'], bow: ['bow', 'arc'], sword: ['sword', 'epee'], dagger: ['dagger', 'dague'],
+    staff_mage: ['staff', 'baton'], staff_shaman: ['staff', 'baton'], shield: ['shield', 'bouclier'], armor: ['helmet', 'chest', 'boots', 'leggings', 'casque'],
+    tool: ['pickaxe', 'axe', 'hoe', 'shovel', 'scythe', 'serpe'], catalyst: ['catalyst', 'catalyseur'] };
+  const words = norm(x.name).split(/[^a-z0-9]+/).filter(w => w.length > 3);
+  const kinds = KIND[x.category] || [];
+  // mot du nom -> morceau du nom de modèle (le nom de l'item est le meilleur indice : « Serpe » = scythe)
+  const NAME_HINT = { serpe: 'scythe', faux: 'scythe', hache: 'axe', pioche: 'pickaxe', houe: 'hoe', pelle: 'shovel', marteau: 'hammer',
+    masse: 'mace', cle: 'key', canne: 'fishing_rod', plastron: 'chest', arbalete: 'crossbow', arc: 'bow' };
+  const hints = norm(x.name).split(/[^a-z0-9]+/).map(w => NAME_HINT[w]).filter(Boolean);
+  const scored = refs.map(r => {
+    const t = norm(r), file = t.split('/').pop().replace(/\.json$/, '').split(':').pop();
+    return { r, s: hints.filter(h => file === h).length * 6 + hints.filter(h => t.includes(h)).length * 3
+      + words.filter(w => t.includes(w)).length * 2 + kinds.filter(k => t.includes(k)).length };
+  }).sort((a, b) => b.s - a.s || a.r.length - b.r.length);   // à égalité : le nom le plus court (« crossbow » avant « crossbow_0 »)
+  if (scored[0].s > 0 && (scored.length === 1 || scored[0].s > scored[1].s || scored[0].r.length < scored[1].r.length)) return flatten(scored[0].r);
+  return null;
+}
+
 function modelOf(x) {
-  if (!x.mmo_material || x.mmo_cmd == null) return null;
-  const ref = modelFor(x.mmo_material, x.mmo_cmd);
-  const f = ref && flatten(ref);
+  let f = null;
+  if (x.mmo_material && x.mmo_cmd != null) {
+    const ref = modelFor(x.mmo_material, x.mmo_cmd);
+    f = ref && flatten(ref);
+  }
+  if (!(f && f.elements && f.elements.length)) f = modelByTexture(x);
   return f && f.elements && f.elements.length ? f : null;
 }
 
