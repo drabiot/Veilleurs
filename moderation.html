@@ -1149,62 +1149,6 @@ style="font-size:12px;">← Retour</button>
     </div>
   </main>
 
-  <!-- Panneau Migration PNJ Types -->
-  <main class="main" id="pnj-migration-panel" style="display:none;overflow-y:auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-      <span style="font-size:15px;font-weight:700;">🔄 Migration PNJ Types</span>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost" onclick="loadPnjMigration()" style="font-size:12px;">🔄 Rafraîchir</button>
-        <button class="btn" id="pnjmig-save-btn" onclick="savePnjMigration()" style="background:var(--accent);color:#fff;font-size:12px;" disabled>💾 Sauvegarder les modifications</button>
-      </div>
-    </div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
-      Liste tous les PNJs. Pour chaque PNJ, sélectionne son type. Les modifications sont marquées en jaune. Clique sur "Sauvegarder" pour tout écrire dans Firestore.
-    </p>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
-      <select id="pnjmig-filter" onchange="renderPnjMigration()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
-        <option value="all">Tous les PNJs</option>
-        <option value="missing">Sans type uniquement</option>
-        <option value="unknown">Types inconnus uniquement</option>
-      </select>
-      <input type="search" id="pnjmig-search" placeholder="🔍 Nom…" oninput="renderPnjMigration()" style="flex:1;min-width:120px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
-      <span id="pnjmig-count" style="font-size:12px;color:var(--muted);white-space:nowrap;"></span>
-    </div>
-    <div id="pnjmig-table"></div>
-  </main>
-
-  <!-- Panneau Migration Quêtes → Carte -->
-  <main class="main" id="quest-map-migration-panel" style="display:none;overflow-y:auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-      <span style="font-size:15px;font-weight:700;">🗺️ Migration Quêtes → Carte</span>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost" onclick="loadQuestMapMigration()" style="font-size:12px;">🔄 Rafraîchir</button>
-        <button class="btn" id="qm-save-btn" onclick="saveQuestMapMigration()" style="background:var(--accent);color:#fff;font-size:12px;" disabled>💾 Migrer les quêtes</button>
-      </div>
-    </div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
-      Migre les marqueurs de quêtes <b>principales</b> et <b>secondaires</b> depuis <code>data.js</code> vers la collection Firestore <code>map_markers</code>, pour les afficher sur <b>map</b>.<br>
-      Pour chaque marqueur, sélectionnez la quête Firestore correspondante (auto-match tenté sur le titre). Laissez "— Aucune —" pour utiliser l'ancien lien Gitbook.
-    </p>
-    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;">
-      <select id="qm-filter-type" onchange="renderQuestMapMigration()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
-        <option value="">Tous les types</option>
-        <option value="quête_principale">💬 Principale</option>
-        <option value="quête_secondaire">❓ Secondaire</option>
-      </select>
-      <select id="qm-filter-floor" onchange="renderQuestMapMigration()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
-        <option value="">Tous les paliers</option>
-        <!-- options peuplées dynamiquement par _populateAllPalierSelects() -->
-      </select>
-      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;">
-        <input type="checkbox" id="qm-show-existing" onchange="renderQuestMapMigration()" style="cursor:pointer;">
-        Afficher déjà migrés
-      </label>
-      <span id="qm-count" style="font-size:12px;color:var(--muted);white-space:nowrap;"></span>
-    </div>
-    <div id="qm-table"></div>
-  </main>
-
   <!-- Panneau Images -->
   <main class="main" id="images-tool-panel" style="display:none;overflow-y:auto;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -1552,7 +1496,7 @@ window._VCL_DATA = {
   ALL_SLOTS:   typeof ALL_SLOTS   !== 'undefined' ? ALL_SLOTS   : [],
 };
 </script>
-<script type="module" src="moderation.js?v=6"></script>
+<script type="module" src="moderation.js?v=7"></script>
 <script>
 if (window.innerWidth < 768) document.body.classList.add('sidebar-hidden');
 document.getElementById('mod-backdrop').addEventListener('click', () => {
