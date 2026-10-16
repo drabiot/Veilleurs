@@ -1495,6 +1495,19 @@ const NAV_HUBS = [
         { hash: 'zones',     label: '✏️ Éditeur', btn: 'btn-zone-editor', panel: 'zone-editor-panel', fn: () => showZoneEditor() },
       ]},
     ]},
+  { key: 'admin', btn: 'btn-admin-hub', badge: null, legacy: 'admin-legacy-btns', def: 'members',
+    groups: [
+      { label: 'Membres', tabs: [
+        { hash: 'members',     label: '👥 Membres',      btn: 'btn-users',       panel: 'users-panel',       fn: () => showUsersPanel() },
+        { hash: 'leaderboard', label: '🏆 Leaderboard',  btn: 'btn-leaderboard', panel: 'leaderboard-panel', fn: () => showLeaderboard() },
+        { hash: 'permissions', label: '🔑 Permissions',  btn: 'btn-permissions', panel: 'permissions-panel', fn: () => showPermissions() },
+      ]},
+      { label: 'Suivi', tabs: [
+        { hash: 'audit-log',   label: "📋 Journal d'audit", btn: 'btn-audit-log',   panel: 'audit-log-panel',   fn: () => showAuditLog() },
+        { hash: 'statistiques', label: '📊 Statistiques',   btn: 'btn-statistiques', panel: 'panel-statistiques', fn: () => showStatistiques() },
+        { hash: 'trash',       label: '🗑️ Corbeille',       btn: 'btn-trash',       panel: 'trash-panel',       fn: () => showTrash(), count: 'count-trash' },
+      ]},
+    ]},
 ];
 for (const h of NAV_HUBS) { h.tabs = h.groups.flatMap(g => g.tabs); h.last = h.def; }
 
@@ -1527,6 +1540,8 @@ function _renderHubTabs(hub) {
       }).join('') + '</div>';
     }).join('');
   }
+  const hubBtn = document.getElementById(hub.btn);
+  if (hubBtn) hubBtn.style.display = hub.tabs.some(_hubTabVisible) ? '' : 'none';
   if (hub.badge) {
     const total = hub.tabs.reduce((n, t) => n + (parseInt(_hubBadgeText(t), 10) || 0), 0);
     const el = document.getElementById(hub.badge);
@@ -1567,6 +1582,7 @@ for (const hub of NAV_HUBS) {
 window.showDiagHub    = () => _showHub(NAV_HUBS[0]);
 window.showContentHub = () => _showHub(NAV_HUBS[1]);
 window.showMapHub     = () => _showHub(NAV_HUBS[2]);
+window.showAdminHub   = () => _showHub(NAV_HUBS[3]);
 
 function _routeToHash() {
   const hash = location.hash.slice(1) || 'submissions';

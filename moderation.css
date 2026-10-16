@@ -421,3 +421,7 @@ body.sidebar-hidden .sidebar { padding: 0; width: 0; border-right: none; overflo
 .diag-tab.active { background: rgba(122,90,248,.15); color: var(--accent); border-color: var(--accent); font-weight: 700; }
 .diag-tab .filter-count { background: var(--surface3); }
 .diag-tab.active .filter-count { background: var(--accent); color: #fff; }
+
+/* Le panneau Permissions remplit la hauteur : la barre d'onglets s'insère au-dessus */
+#permissions-panel > .diag-tabs { margin: 0; padding: 12px 20px; flex: 0 0 auto; }
+#permissions-panel > #perm-layout { height: auto !important; flex: 1 1 0; }
