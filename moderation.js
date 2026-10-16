@@ -1401,11 +1401,9 @@ const HASH_PANELS = {
   'migration':        () => showMigration(),
   'completion':       () => showCompletion(),
   'creator-validation': () => showCreatorValidation(),
-  'data-incomplete':  () => showDataIncomplete(),
   'obtain-legacy':     () => showObtainLegacy(),
   'calibrateur':       () => showCalibrateur(),
   'capture-sprites':  () => showCaptureSprites(),
-  'pnj-coords':       () => showPnjCoords(),
   'data-all':         () => showDataAll(),
   'zones':              () => showZoneEditor(),
   'images':             () => showImagesTool(),
@@ -5001,7 +4999,7 @@ window.showEditor = async function(collection, id, data, origin) {
   _editorId         = id;
   _editorOrigin     = origin;
 
-  // Fetch data from Firestore when not provided (e.g. called from data-incomplete panel)
+  // Fetch data from Firestore when not provided (e.g. called from the completion panel)
   if (!data) {
     document.getElementById('editor-title').textContent            = '✏️  Chargement…';
     document.getElementById('editor-collection-badge').textContent = _COL_LABELS[collection] || collection;
@@ -5072,7 +5070,6 @@ window.editorGoBack = function() {
   if (_editorOrigin === 'mob-orphan')     { showMobOrphans();    return; }
   if (_editorOrigin === 'quest-orphan')  { showQuestOrphans();  return; }
   if (_editorOrigin === 'migration')       { showMigration();       return; }
-  if (_editorOrigin === 'data-incomplete') { showCompletion(); return; }
   if (_editorOrigin === 'completion')      { showCompletion(); return; }
   if (_editorOrigin === 'allpins')         { showMapPanel(); switchMapTab('allpins'); return; }
   if (_editorOrigin === 'data-all')        { showDataAll();        return; }
@@ -10941,143 +10938,6 @@ function _subcatLabel(mode, subcatId) {
   return (QUALITY_SUBCATEGORIES[mode] || []).find(s => s.id === subcatId)?.label || subcatId || null;
 }
 
-window.showDataIncomplete = async () => showCompletion();
-
-window.loadDataIncomplete = async () => {
-  const list = document.getElementById('data-incomplete-list');
-  list.innerHTML = '<div class="empty">Chargement…</div>';
-
-  // Charger config depuis Firestore — structure { required, byCategory }
-  let standards = {};
-  try {
-    const _normF = f => (f === 'img' || f === 'image') ? 'images' : f;
-    const snap = await getDoc(doc(db, 'config', 'data_quality_standards'));
-    if (snap.exists()) {
-      for (const [mode, cfg] of Object.entries(snap.data())) {
-        const normReq = [...new Set((cfg.required || []).map(_normF))];
-        const normByCat = {};
-        for (const [sc, scfg] of Object.entries(cfg.byCategory || {})) {
-          normByCat[sc] = { required: [...new Set((scfg.required || []).map(_normF))] };
-        }
-        standards[mode] = { required: normReq, byCategory: normByCat };
-      }
-    }
-  } catch { /* silently ignore */ }
-  if (!Object.keys(standards).length) {
-    list.innerHTML = '<div class="empty">Aucune configuration définie. Définissez les champs requis dans ⚙️ Champs requis.</div>';
-    const badge = document.getElementById('count-data-incomplete');
-    if (badge) badge.style.display = 'none';
-    return;
-  }
-
-  const results = [];
-  try {
-    for (const [mode, std] of Object.entries(standards)) {
-      const colName  = QUALITY_COL_MAP[mode];
-      if (!colName) continue;
-      const disc     = QUALITY_DISCRIMINANT[mode];
-      const hasByCat = disc && Object.keys(std.byCategory || {}).length > 0;
-      let docs = [];
-      try { docs = await cachedDocs(colName); } catch { continue; }
-      for (const _d of docs) {
-        // Normalise img/image → images pour que les anciens docs soient traités correctement
-        const d = (!_d.images?.length && (_d.img || _d.image))
-          ? { ..._d, images: [_d.img || _d.image].filter(Boolean) }
-          : _d;
-        const missing = (std.required || []).filter(f => _fieldEmpty(d, f));
-
-        const discVal = disc ? (d[disc] || null) : null;
-        if (hasByCat && !discVal) {
-          // Catégorie absente alors que des règles par catégorie existent
-          if (!missing.includes(disc)) missing.push(disc);
-        } else if (discVal && std.byCategory?.[discVal]) {
-          for (const f of (std.byCategory[discVal].required || [])) {
-            if (!missing.includes(f) && _fieldEmpty(d, f)) missing.push(f);
-          }
-        }
-
-        if (missing.length) results.push({ mode, doc: d, missing, discVal });
-      }
-    }
-  } catch(e) {
-    list.innerHTML = `<div class="empty">Erreur : ${e.message}</div>`;
-    return;
-  }
-
-  // Badge sidebar
-  const badge = document.getElementById('count-data-incomplete');
-  if (badge) { badge.textContent = results.length; badge.style.display = results.length ? '' : 'none'; }
-
-  list.innerHTML = '';
-
-  if (!results.length) {
-    list.innerHTML = '<div class="empty">Aucun document incomplet. ✓</div>';
-  } else {
-    // Grouper par mode
-    const byMode = {};
-    for (const r of results) {
-      if (!byMode[r.mode]) byMode[r.mode] = [];
-      byMode[r.mode].push(r);
-    }
-    for (const [mode, rows] of Object.entries(byMode)) {
-      const header = document.createElement('div');
-      header.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;margin-top:16px;';
-      header.textContent = `${QUALITY_MODE_LABELS[mode] || mode} — ${rows.length} incomplet${rows.length > 1 ? 's' : ''}`;
-      list.appendChild(header);
-      for (const { doc: d, missing, discVal } of rows) {
-        const colName   = QUALITY_COL_MAP[mode];
-        const subcatLbl = discVal ? _subcatLabel(mode, discVal) : null;
-        const card = document.createElement('div');
-        card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;';
-        card.innerHTML = `
-          <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.titre||d.label||d.id||'—')}</span>
-          ${subcatLbl ? `<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:rgba(122,90,248,.12);color:var(--accent);border:1px solid rgba(122,90,248,.25);">${escHtml(subcatLbl)}</span>` : ''}
-          <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
-          <span style="font-size:11px;color:var(--warn);">Manque : ${missing.map(f => `<code style="background:var(--surface2);padding:1px 4px;border-radius:3px;">${escHtml(f)}</code>`).join(' ')}</span>
-          <button class="btn btn-ghost btn-sm" onclick="showEditor('${escHtml(colName)}','${escHtml(d.id||'')}',null,'data-incomplete')" style="font-size:11px;">✏️ Éditer</button>
-        `;
-        list.appendChild(card);
-      }
-    }
-  }
-
-  // ── Vérification des images cassées ──────────────────
-  const imgHeader = document.createElement('div');
-  imgHeader.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;margin-top:16px;';
-  imgHeader.textContent = '🖼️ Images — vérification en cours…';
-  list.appendChild(imgHeader);
-
-  try {
-    const itemDocs = await _loadItemDocsForImageCheck();
-    const broken = await _checkBrokenImages(itemDocs, (done, total) => {
-      imgHeader.textContent = `🖼️ Images — ${done} / ${total} vérifiées…`;
-    });
-
-    if (!broken.length) {
-      imgHeader.textContent = '🖼️ Images — toutes accessibles ✓';
-    } else {
-      imgHeader.textContent = `🖼️ Images cassées — ${broken.length} item${broken.length > 1 ? 's' : ''}`;
-      for (const { doc: d, brokenUrls } of broken) {
-        const sens = d._sensible === true;
-        const editKey = sens ? (d._docKey || '') : (d.id || '');
-        const card = document.createElement('div');
-        card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;';
-        card.innerHTML = `
-          <span style="font-size:13px;font-weight:700;flex:1;min-width:120px;">${escHtml(d.name||d.id||'—')}${sens ? ' <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;vertical-align:middle;">🔒 Sensible</span>' : ''}</span>
-          <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(d.id||'')}</span>
-          <div style="width:100%;display:flex;flex-direction:column;gap:3px;">
-            ${brokenUrls.map(u => `<span style="font-size:11px;color:var(--danger);font-family:monospace;word-break:break-all;">⛔ ${escHtml(u)}</span>`).join('')}
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="_openItemForCompletion('${escHtml(editKey)}',${sens},'data-incomplete')" style="font-size:11px;">✏️ Éditer</button>
-        `;
-        list.appendChild(card);
-      }
-    }
-  } catch(e) {
-    imgHeader.textContent = '🖼️ Images — erreur lors de la vérification';
-  }
-};
-
 window.sensReload = async () => {
   document.getElementById('sens-loading').style.display = '';
   document.getElementById('sens-loading').textContent = 'Chargement…';
@@ -13282,98 +13142,6 @@ window.showCaptureSprites = function() {
   const iframe = document.getElementById('capture-iframe');
   if (!iframe.src || iframe.src === 'about:blank') {
     iframe.src = 'capture-sprites.html';
-  }
-};
-
-// ── Coords PNJ ────────────────────────────────────────
-window.showPnjCoords = function() {
-  _setHash('pnj-coords');
-  _showPanel('pnj-coords-panel', 'btn-pnj-coords');
-};
-
-function _escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-window.addCoordsToAllPnj = async function() {
-  const statusEl = document.getElementById('pnj-coords-step1-status');
-  statusEl.style.display = '';
-  statusEl.style.color = 'var(--muted)';
-  statusEl.textContent = '⏳ Chargement des PNJ…';
-  try {
-    const pnjs = await cachedDocs('personnages');
-    const toUpdate = pnjs.filter(p => !('coords' in p) || typeof p.coords === 'string');
-    if (!toUpdate.length) {
-      statusEl.textContent = '✓ Tous les PNJ ont déjà le champ coords (map).';
-      statusEl.style.color = 'var(--success)';
-      return;
-    }
-    statusEl.textContent = `⏳ Mise à jour de ${toUpdate.length} PNJ…`;
-    let done = 0;
-    for (const p of toUpdate) {
-      await updateDoc(doc(db, 'personnages', p.id), { coords: { x: null, y: null, z: null } });
-      p.coords = { x: null, y: null, z: null };
-      done++;
-      if (done % 10 === 0) statusEl.textContent = `⏳ ${done} / ${toUpdate.length}…`;
-    }
-    localStorage.removeItem('vcl_cache_v2_personnages');
-    localStorage.removeItem('vcl_cache_meta_v2_personnages');
-    invalidateModCache('personnages');
-    statusEl.textContent = `✓ ${done} PNJ mis à jour !`;
-    statusEl.style.color = 'var(--success)';
-    toast(`✓ coords ajouté à ${done} PNJ`, 'success');
-  } catch(e) {
-    statusEl.textContent = '⛔ ' + e.message;
-    statusEl.style.color = 'var(--danger)';
-    toast('⛔ Erreur : ' + e.message, 'error');
-  }
-};
-
-window.revertObtainCoords = async function() {
-  const statusEl = document.getElementById('pnj-coords-step2-status');
-  statusEl.style.display = '';
-  statusEl.style.color = 'var(--muted)';
-  statusEl.textContent = '⏳ Chargement…';
-  try {
-    const [pnjs, items] = await Promise.all([
-      cachedDocs('personnages'),
-      cachedDocs('items'),
-    ]);
-    const pnjsWithName = pnjs.filter(p => p.name).sort((a, b) => b.name.length - a.name.length);
-    if (!pnjsWithName.length) {
-      statusEl.textContent = '⚠️ Aucun PNJ trouvé.';
-      statusEl.style.color = 'var(--warn)';
-      return;
-    }
-    statusEl.textContent = `⏳ Analyse de ${items.length} items…`;
-    let count = 0;
-    for (const item of items) {
-      if (!item.obtain) continue;
-      let obtain = item.obtain;
-      for (const pnj of pnjsWithName) {
-        // Retire "Nom PNJ (quoi que ce soit)" → "Nom PNJ"
-        const pattern = new RegExp(_escapeRegex(pnj.name) + '\\s*\\([^)]*\\)', 'g');
-        obtain = obtain.replace(pattern, pnj.name);
-      }
-      if (obtain !== item.obtain) {
-        await updateDoc(doc(db, 'items', item.id), { obtain });
-        item.obtain = obtain;
-        count++;
-        statusEl.textContent = `⏳ ${count} item${count>1?'s':''} nettoyé${count>1?'s':''}…`;
-      }
-    }
-    if (count > 0) {
-      localStorage.removeItem('vcl_cache_v2_items');
-      localStorage.removeItem('vcl_cache_meta_v2_items');
-      invalidateModCache('items');
-    }
-    statusEl.textContent = `✓ ${count} item${count>1?'s':''} nettoyé${count>1?'s':''} !`;
-    statusEl.style.color = 'var(--success)';
-    toast(`✓ ${count} items nettoyés`, count > 0 ? 'success' : 'info');
-  } catch(e) {
-    statusEl.textContent = '⛔ ' + e.message;
-    statusEl.style.color = 'var(--danger)';
-    toast('⛔ Erreur : ' + e.message, 'error');
   }
 };
 
