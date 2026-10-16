@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>Rendu icônes 3D</title>
+<style>body{background:#0d0f14;color:#c8cdd8;font:13px sans-serif;padding:16px}#g{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+#g div{width:72px;font-size:9px;text-align:center}#g img{width:64px;height:64px;background:#1b1f2b;border-radius:4px}</style></head>
+<body>
+<h3>Rendu des items 3D (resource pack SAO)</h3>
+<p id="st">Chargement…</p><div id="g"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// Serveur local : node repo/tools/render_models.js  (127.0.0.1:8124)
+const SRV = 'http://127.0.0.1:8124';
+const SIZE = 128;
+const S = 1 / 16;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(SIZE, SIZE);
+const scene = new THREE.Scene();
+scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+const key = new THREE.DirectionalLight(0xffffff, 0.6); key.position.set(-2, 4, 5); scene.add(key);
+
+const matCache = new Map();
+function material(url) {
+  if (matCache.has(url)) return matCache.get(url);
+  const mat = new THREE.MeshLambertMaterial({ side: THREE.DoubleSide, transparent: true, alphaTest: 0.1 });
+  const p = new Promise((res, rej) => new THREE.TextureLoader().load(url, t => { t.magFilter = t.minFilter = THREE.NearestFilter; mat.map = t; mat.needsUpdate = true; res(mat); }, undefined, rej));
+  const entry = { mat, p }; matCache.set(url, entry); return entry;
+}
+function resolveTex(textures, key) {
+  let v = key ? textures[key.replace(/^#/, '')] : Object.values(textures).find(t => !String(t).startsWith('#'));
+  let g = 0;
+  while (v && String(v).startsWith('#') && g++ < 8) v = textures[v.slice(1)];
+  return v || null;
+}
+function defaultUv(face, f, t) {
+  const [x1, y1, z1] = f, [x2, y2, z2] = t;
+  if (face === 'up' || face === 'down') return [x1, z1, x2, z2];
+  if (face === 'north' || face === 'south') return [x1, 16 - y2, x2, 16 - y1];
+  return [z1, 16 - y2, z2, 16 - y1];
+}
+function build(json, waits) {
+  const g = new THREE.Group();
+  for (const el of json.elements) {
+    const [x1, y1, z1] = el.from.map(v => v * S), [x2, y2, z2] = el.to.map(v => v * S);
+    const fd = {
+      north: [x1, y2, z1, x2, y2, z1, x2, y1, z1, x1, y1, z1], south: [x2, y2, z2, x1, y2, z2, x1, y1, z2, x2, y1, z2],
+      east: [x2, y2, z2, x2, y2, z1, x2, y1, z1, x2, y1, z2], west: [x1, y2, z1, x1, y2, z2, x1, y1, z2, x1, y1, z1],
+      up: [x1, y2, z1, x2, y2, z1, x2, y2, z2, x1, y2, z2], down: [x1, y1, z2, x2, y1, z2, x2, y1, z1, x1, y1, z1],
+    };
+    const buckets = new Map();
+    for (const [fn, fi] of Object.entries(el.faces || {})) {
+      const v = fd[fn]; if (!v) continue;
+      const url = resolveTex(json.textures, fi.texture);
+      if (!url) continue;
+      if (!buckets.has(url)) buckets.set(url, { pos: [], uvs: [], idx: [], vi: 0 });
+      const b = buckets.get(url);
+      v.forEach(n => b.pos.push(n));
+      const [u1, v1, u2, v2] = fi.uv || defaultUv(fn, el.from, el.to), r = fi.rotation || 0;
+      let fu = [u1 / 16, 1 - v1 / 16, u2 / 16, 1 - v1 / 16, u2 / 16, 1 - v2 / 16, u1 / 16, 1 - v2 / 16];
+      if (r === 90) fu = [fu[6], fu[7], fu[0], fu[1], fu[2], fu[3], fu[4], fu[5]];
+      if (r === 180) fu = [fu[4], fu[5], fu[6], fu[7], fu[0], fu[1], fu[2], fu[3]];
+      if (r === 270) fu = [fu[2], fu[3], fu[4], fu[5], fu[6], fu[7], fu[0], fu[1]];
+      fu.forEach(n => b.uvs.push(n));
+      b.idx.push(b.vi, b.vi + 1, b.vi + 2, b.vi, b.vi + 2, b.vi + 3); b.vi += 4;
+    }
+    const meshes = [];
+    for (const [url, b] of buckets) {
+      const m = material(url); waits.push(m.p);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(b.uvs, 2));
+      geo.setIndex(b.idx); geo.computeVertexNormals();
+      meshes.push(new THREE.Mesh(geo, m.mat));
+    }
+    if (el.rotation) {
+      const { origin, angle, axis } = el.rotation, [ox, oy, oz] = origin.map(v => v * S);
+      const piv = new THREE.Object3D(); piv.position.set(ox, oy, oz); piv.rotation[axis] = THREE.MathUtils.degToRad(angle);
+      meshes.forEach(m => { m.position.set(-ox, -oy, -oz); piv.add(m); }); g.add(piv);
+    } else meshes.forEach(m => g.add(m));
+  }
+  return g;
+}
+
+async function renderOne(id) {
+  const json = await fetch(`${SRV}/model/${id}`).then(r => { if (!r.ok) throw new Error('modèle ' + r.status); return r.json(); });
+  const waits = [];
+  const obj = build(json, waits);
+  await Promise.all(waits);
+  // orientation "inventaire" : display.gui du modèle, sinon la vue Minecraft classique
+  const gui = (json.display && json.display.gui) || {};
+  const rot = (gui.rotation || [30, 225, 0]).map(d => THREE.MathUtils.degToRad(d));
+  const holder = new THREE.Group(); holder.add(obj);
+  holder.rotation.set(rot[0], rot[1], rot[2], 'XYZ');
+  scene.add(holder); holder.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(holder), c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+  const half = Math.max(sz.x, sz.y) / 2 * 1.12 || 0.5;
+  const cam = new THREE.OrthographicCamera(-half, half, half, -half, -50, 50);
+  cam.position.set(c.x, c.y, 10); cam.lookAt(c.x, c.y, 0);
+  renderer.setClearColor(0x000000, 0); renderer.clear();
+  renderer.render(scene, cam);
+  const url = renderer.domElement.toDataURL('image/png');
+  scene.remove(holder);
+  holder.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
+  return url;
+}
+
+(async () => {
+  const st = document.getElementById('st'), grid = document.getElementById('g');
+  const params = new URLSearchParams(location.search);
+  const only = params.get('only') ? params.get('only').split(',').map(Number) : null;
+  const dry = params.has('dry');                       // ?dry : affiche sans enregistrer
+  let list = await fetch(`${SRV}/list`).then(r => r.json());
+  if (only) list = list.filter(i => only.includes(i.id));
+  let ok = 0, fail = 0; window.__fail = [];
+  for (const [n, it] of list.entries()) {
+    st.textContent = `${n + 1} / ${list.length} — ${it.name} (ok ${ok}, échecs ${fail})`;
+    try {
+      const url = await renderOne(it.id);
+      if (!dry) await fetch(`${SRV}/save/${it.id}`, { method: 'POST', body: url });
+      const d = document.createElement('div'); d.innerHTML = `<img src="${url}"><br>${it.name}`; grid.appendChild(d); ok++;
+    } catch (e) { fail++; window.__fail.push([it.id, it.name, e.message]); }
+  }
+  st.textContent = `Terminé : ${ok} rendus, ${fail} échecs${dry ? ' (dry-run, rien enregistré)' : ''}`;
+  window.__done = true;
+})();
+</script></body></html>

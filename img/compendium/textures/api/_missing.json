@@ -1,0 +1,212 @@
+[
+ {
+  "id": 1728,
+  "name": "Arbalète Basique",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1733,
+  "name": "Arbalète Déchue",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1727,
+  "name": "Arbalète d'Entraînement",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1746,
+  "name": "Arbalète des Bois Ancien",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1745,
+  "name": "Arbalète en Améthyste",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1738,
+  "name": "Arbalète en Bauxite",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1729,
+  "name": "Arbalète en Cuivre",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1743,
+  "name": "Arbalète en Cuivre Granuleux",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1732,
+  "name": "Arbalète en Fer",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1744,
+  "name": "Arbalète en Fer d'Acier",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1737,
+  "name": "Arbalète en Ferraille",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1740,
+  "name": "Arbalète en Onyx Impur",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1742,
+  "name": "Arbalète en Onyx Pur",
+  "material": "crossbow",
+  "cmd": 10004
+ },
+ {
+  "id": 1834,
+  "name": "Blé",
+  "material": "wheat",
+  "cmd": null
+ },
+ {
+  "id": 1380,
+  "name": "Bottes de l’écume",
+  "material": "iron_boots",
+  "cmd": null
+ },
+ {
+  "id": 2178,
+  "name": "Bouquet de Tulipes",
+  "material": "allium",
+  "cmd": null
+ },
+ {
+  "id": 2251,
+  "name": "Carapace d’Abeille",
+  "material": "honeycomb",
+  "cmd": null
+ },
+ {
+  "id": 2271,
+  "name": "Carnet Froissé",
+  "material": "book",
+  "cmd": null
+ },
+ {
+  "id": 1447,
+  "name": "Diademe du Berserker",
+  "material": "golden_helmet",
+  "cmd": 10100
+ },
+ {
+  "id": 1782,
+  "name": "Faux Déchue",
+  "material": "diamond_sword",
+  "cmd": 10035
+ },
+ {
+  "id": 2158,
+  "name": "Fil d’Araignée",
+  "material": "string",
+  "cmd": null
+ },
+ {
+  "id": 1850,
+  "name": "Flarevae",
+  "material": "torchflower",
+  "cmd": null
+ },
+ {
+  "id": 1838,
+  "name": "Fleur d’Allium",
+  "material": "allium",
+  "cmd": null
+ },
+ {
+  "id": 1668,
+  "name": "Kit de Réparation Complet",
+  "material": "paper",
+  "cmd": 12417
+ },
+ {
+  "id": 2398,
+  "name": "Minerai de Cuivre",
+  "material": "raw_copper",
+  "cmd": null
+ },
+ {
+  "id": 2192,
+  "name": "Os de Squelette",
+  "material": "bone",
+  "cmd": null
+ },
+ {
+  "id": 2193,
+  "name": "Os de Squelette Supérieur",
+  "material": "bone",
+  "cmd": null
+ },
+ {
+  "id": 2359,
+  "name": "Pantalon",
+  "material": "leather_leggings",
+  "cmd": null
+ },
+ {
+  "id": 2353,
+  "name": "Pantalon perdu de Caulette",
+  "material": "leather_leggings",
+  "cmd": null
+ },
+ {
+  "id": 2165,
+  "name": "Pinceau Magique",
+  "material": "brush",
+  "cmd": 0
+ },
+ {
+  "id": 2169,
+  "name": "Poudre Explosif",
+  "material": "gunpowder",
+  "cmd": 0
+ },
+ {
+  "id": 2223,
+  "name": "Relique du Maitre Épéiste",
+  "material": "player_head",
+  "cmd": null
+ },
+ {
+  "id": 2168,
+  "name": "Sable",
+  "material": "sand",
+  "cmd": 0
+ },
+ {
+  "id": 2171,
+  "name": "TNT Artisanale",
+  "material": "tnt",
+  "cmd": 0
+ },
+ {
+  "id": 2689,
+  "name": "Torche",
+  "material": "torch",
+  "cmd": null
+ }
+]

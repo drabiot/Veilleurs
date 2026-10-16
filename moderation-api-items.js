@@ -1,0 +1,461 @@
+// ══════════════════════════════════════════════════════
+//  ONGLET « API » — items de l'API SAO vs items du wiki
+//  Source : data/api-items.json (snapshot statique, rafraîchi par tools/sync_api_items.js / GitHub Action).
+//  Le navigateur ne peut pas appeler l'API directement (pas de CORS), d'où le snapshot.
+//  Écrit uniquement dans la collection `items` (flux public) + config/api_sync (décisions).
+// ══════════════════════════════════════════════════════
+
+const RARITY_COLOR = { commun: '#59d059', rare: '#2a5fa8', epique: '#6a3daa', legendaire: '#d7af5f', mythique: '#f5b5e4', godlike: '#a83020', event: '#ebebeb' };
+const RARITY_LABEL = { commun: 'Commun', rare: 'Rare', epique: 'Épique', legendaire: 'Légendaire', mythique: 'Mythique', godlike: 'Godlike', event: 'Event' };
+const CATEGORY_LABEL = {
+  arme: 'Arme', armure: 'Armure', accessoire: 'Accessoire', materiaux: 'Matériaux', ressources: 'Ressource', outils: 'Outil',
+  consommable: 'Consommable', nourriture: 'Nourriture', donjon: 'Donjon', monnaie: 'Monnaie', rune: 'Rune', quete: 'Quête',
+};
+const CAT_OPTIONS = {
+  arme: ['arme_p', 'arme_s'], armure: ['casque', 'plastron', 'jambières', 'bottes'],
+  accessoire: ['amulette', 'anneau', 'bracelet', 'gants', 'artefact'], rune: ['rune'],
+};
+const STAT_LABEL = {
+  sante: 'Santé', defense: 'Défense', degats: 'Dégâts', degats_physique: 'Dégâts physiques', degats_magique: 'Dégâts magiques',
+  degats_projectile: 'Dégâts projectile', degats_competence: 'Dégâts compétence', degats_arme: 'Dégâts d\'arme', stamina: 'Stamina',
+  mana: 'Mana', regen_mana: 'Régén. mana', regen_stamina: 'Régén. stamina', regen_sante: 'Régén. santé', vitesse_attaque: 'Vitesse d\'attaque',
+  vitesse_deplacement: 'Vitesse de déplacement', vitesse_accroupi: 'Vitesse accroupi', soin_bonus: 'Bonus de soin', crit_chance: 'Chance crit.',
+  crit_degats: 'Dégâts crit.', crit_comp_chance: 'Chance crit. comp.', crit_comp_degats: 'Dégâts crit. comp.', vol_vie: 'Vol de vie',
+  omnivamp: 'Omnivamp', reduction_degats: 'Réduction dégâts', puissance_bloc: 'Puissance de blocage', maitrise_bloc: 'Maîtrise de blocage',
+  esquive: 'Esquive', tenacite: 'Ténacité', hate: 'Hâte', reduction_chutes: 'Réduction chutes',
+  vitalite: 'Vitalité', force: 'Force', intelligence: 'Intelligence', esprit: 'Esprit', dexterite: 'Dextérité', defense_car: 'Défense (req.)',
+};
+const STATUS_INFO = {
+  new:     { label: 'Nouveau',           color: '#3ecf8e' },
+  diff:    { label: 'Différences',       color: '#f5a623' },
+  same:    { label: 'Identique',         color: '#6b7280' },
+  variant: { label: 'Variante à choisir', color: '#9b72cf' },
+  done:    { label: 'Traité',            color: '#4f8ef7' },
+  dup:     { label: 'Doublon API',       color: '#e05c5c' },
+};
+const PAGE = 80;
+
+const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[’‘`´]/g, "'").replace(/[^a-z0-9]+/g, ' ').trim();
+const slug = s => norm(s).replace(/ /g, '_');
+const imgSrc = p => !p ? '' : /^https?:/.test(p) ? p : String(p).replace(/^(\.\.\/)+/, './');
+const getPath = (o, path) => path.split('.').reduce((v, k) => (v == null ? undefined : v[k]), o);
+const nrm = v => (typeof v === 'string' ? norm(v) : v); // accents/ponctuation/casse ignorés (lore surtout)
+
+function fmt(v) {
+  if (v === undefined || v === null || v === '') return '—';
+  if (Array.isArray(v)) return v.join(', ') || '—';
+  if (typeof v === 'object') return ('min' in v || 'max' in v) ? `${v.min}–${v.max}` : JSON.stringify(v);
+  return String(v);
+}
+function same(api, wiki) {
+  if (api === undefined) return true;           // l'API ne dit rien : pas une différence
+  if (wiki === undefined || wiki === null) return false;
+  if (typeof wiki === 'object' && !Array.isArray(wiki) && 'min' in wiki && typeof api === 'number') return api >= wiki.min && api <= wiki.max;
+  if (Array.isArray(api) && Array.isArray(wiki)) return JSON.stringify([...api].sort()) === JSON.stringify([...wiki].sort());
+  return JSON.stringify(nrm(api)) === JSON.stringify(nrm(wiki));
+}
+const labelOf = path => {
+  const [g, k] = path.split('.');
+  if (!k) return { rarity: 'Rareté', category: 'Catégorie', cat: 'Sous-type', lvl: 'Niveau', classes: 'Classes', lore: 'Lore' }[g] || g;
+  return (g === 'threshold' ? 'Req. ' : '') + (STAT_LABEL[k] || k);
+};
+
+// champs comparables : fixes + stats.* + threshold.* (union des deux côtés)
+function fieldPaths(a, w) {
+  const out = ['rarity', 'category', 'cat', 'lvl', 'classes', 'lore'];
+  for (const g of ['stats', 'threshold']) {
+    const keys = new Set([...Object.keys(a?.[g] || {}), ...Object.keys(w?.[g] || {})]);
+    keys.forEach(k => out.push(`${g}.${k}`));
+  }
+  return out;
+}
+
+export function createApiItemsTool(ctx) {
+  const { db, doc, setDoc, updateDoc, getDoc, writeBatch, serverTimestamp, cachedDocs, invalidateModCache, store, COL,
+    writeAudit, toast, modal, getUser, mergeContributors, readContribs } = ctx;
+
+  let snap = null;            // { generatedAt, count, items }
+  let wiki = [];              // items publics + cachés
+  let decided = {};           // { apiId: { action, at, by } }
+  let entries = [];           // entrées enrichies
+  const ui = { status: 'new', cat: '', q: '', limit: PAGE, open: null, onlyFresh: false };
+  let root = null;
+  let loading = false;
+
+  // ── Chargement ─────────────────────────────────────
+  async function load(force = false) {
+    root = document.getElementById('api-items-body');
+    if (!root || loading) return;
+    loading = true;
+    root.innerHTML = '<div class="empty">Chargement…</div>';
+    try {
+      if (force) { invalidateModCache('items'); invalidateModCache(COL.itemsHidden); }
+      const [s, pub, hid, dec] = await Promise.all([
+        fetch(`./data/api-items.json?t=${Date.now()}`).then(r => { if (!r.ok) throw new Error('data/api-items.json introuvable (lance tools/sync_api_items.js)'); return r.json(); }),
+        cachedDocs('items'),
+        cachedDocs(COL.itemsHidden).catch(() => []),
+        getDoc(doc(db, 'config', 'api_sync')).then(d => (d.exists() ? d.data().decided || {} : {})).catch(() => ({})),
+      ]);
+      snap = s; decided = dec;
+      wiki = [...pub, ...hid.map(h => ({ ...h, _hidden: true }))];
+      build();
+      render();
+      const last = Number(safeLs('get', 'apiItemsLastCount') || 0);
+      if (last && snap.count > last) toast(`🔌 ${snap.count - last} nouvel(s) item(s) dans l'API depuis ta dernière visite`, 'info', 6000);
+      safeLs('set', 'apiItemsLastCount', String(snap.count));
+    } catch (e) {
+      console.error('[api-items]', e);
+      root.innerHTML = `<div class="empty">Erreur : ${esc(e.message)}</div>`;
+    } finally { loading = false; }
+  }
+  function safeLs(op, k, v) { try { return op === 'get' ? localStorage.getItem(k) : localStorage.setItem(k, v); } catch { return null; } }
+
+  // ── Rapprochement API ↔ wiki ───────────────────────
+  function build() {
+    const byApiId = new Map(), byName = new Map();
+    for (const w of wiki) {
+      if (w._import?.apiId != null) byApiId.set(String(w._import.apiId), w);
+      if (!w.name) continue;
+      const k = norm(w.name);
+      if (!byName.has(k)) byName.set(k, []);
+      byName.get(k).push(w);
+    }
+    const lastSeen = Number(safeLs('get', 'apiItemsSeenAt') || 0);
+    entries = snap.items.map(it => {
+      const e = { ...it, id: it.api.id, match: null, cands: [], fresh: new Date(it.api.created_at).getTime() > lastSeen && lastSeen > 0 };
+      const linked = byApiId.get(String(it.api.id));
+      if (linked) { e.match = linked; }
+      else {
+        const cands = byName.get(norm(it.api.name)) || [];
+        const cls = it.wiki.classes;
+        const byClass = cands.filter(w => !cls || !w.classes || cls.some(c => w.classes.includes(c)));
+        if (cands.length === 1) e.match = cands[0];
+        else if (byClass.length === 1) e.match = byClass[0];
+        else e.cands = cands;
+      }
+      e.diffs = e.match ? fieldPaths(it.wiki, e.match).filter(p => !same(getPath(it.wiki, p), getPath(e.match, p))) : [];
+      e.status = it.dupOf ? 'dup' : decided[it.api.id] ? 'done' : e.match ? (e.diffs.length ? 'diff' : 'same') : e.cands.length ? 'variant' : 'new';
+      return e;
+    });
+  }
+
+  // ── Rendu liste ────────────────────────────────────
+  function counts() {
+    const c = { new: 0, diff: 0, same: 0, variant: 0, done: 0, dup: 0 };
+    entries.forEach(e => c[e.status]++);
+    return c;
+  }
+  function filtered() {
+    const q = norm(ui.q);
+    return entries.filter(e => (ui.status === 'all' || e.status === ui.status)
+      && (!ui.cat || e.wiki.category === ui.cat || (ui.cat === '_none' && !e.wiki.category))
+      && (!ui.onlyFresh || e.fresh)
+      && (!q || norm(e.api.name).includes(q)));
+  }
+  function readyEntries() { return entries.filter(e => e.status === 'new' && !e.flags.length); }
+
+  function render() {
+    if (!root || !snap) return;
+    const c = counts();
+    const list = filtered();
+    const cats = [...new Set(entries.map(e => e.wiki.category).filter(Boolean))].sort();
+    const age = Math.round((Date.now() - new Date(snap.generatedAt)) / 3600000);
+    const fresh = entries.filter(e => e.fresh).length;
+    root.innerHTML = `
+      <div class="api-meta">Snapshot API : <b>${snap.count}</b> items · généré il y a ${age < 1 ? '< 1' : age} h (${esc(new Date(snap.generatedAt).toLocaleString('fr-FR'))})
+        ${age > 48 ? '<span style="color:var(--warn);">⚠️ ancien — relance <code>node repo/tools/sync_api_items.js</code></span>' : ''}
+        · <a href="#" data-act="reload">↻ Recharger</a>
+        · <a href="#" data-act="seen">${fresh ? `${fresh} récents — ` : ''}marquer tout comme vu</a></div>
+      <div class="api-chips">
+        ${['new', 'diff', 'variant', 'same', 'done', 'dup'].map(s => `<button class="api-chip${ui.status === s ? ' on' : ''}" data-act="status" data-v="${s}" style="--c:${STATUS_INFO[s].color}">${STATUS_INFO[s].label} <b>${c[s]}</b></button>`).join('')}
+        <button class="api-chip${ui.status === 'all' ? ' on' : ''}" data-act="status" data-v="all" style="--c:#aaa">Tous <b>${entries.length}</b></button>
+      </div>
+      <div class="api-bar">
+        <input type="search" id="api-q" placeholder="🔍 Nom…" value="${esc(ui.q)}">
+        <select id="api-cat"><option value="">Toutes catégories</option>${cats.map(k => `<option value="${k}"${ui.cat === k ? ' selected' : ''}>${CATEGORY_LABEL[k] || k}</option>`).join('')}<option value="_none"${ui.cat === '_none' ? ' selected' : ''}>(à choisir)</option></select>
+        <label style="font-size:12px;color:var(--muted);display:flex;gap:4px;align-items:center;"><input type="checkbox" id="api-fresh"${ui.onlyFresh ? ' checked' : ''}> récents seulement</label>
+        <span style="flex:1"></span>
+        <button class="btn" data-act="bulk" style="background:var(--accent);color:#fff;font-size:12px;"${readyEntries().length ? '' : ' disabled'}>⬇️ Importer les ${readyEntries().length} prêts</button>
+      </div>
+      <div class="api-list">${list.slice(0, ui.limit).map(rowHtml).join('') || '<div class="empty">Aucun item.</div>'}</div>
+      ${list.length > ui.limit ? `<div style="text-align:center;margin:12px;"><button class="btn btn-ghost" data-act="more">Afficher plus (${list.length - ui.limit} restants)</button></div>` : ''}`;
+  }
+
+  function rowHtml(e) {
+    const st = STATUS_INFO[e.status];
+    const w = e.wiki, open = ui.open === e.id;
+    return `<div class="api-row${open ? ' open' : ''}" id="api-row-${e.id}">
+      <div class="api-head" data-act="toggle" data-id="${e.id}">
+        <img class="api-ico" loading="lazy" src="${esc(e.image || '')}" onerror="this.style.visibility='hidden'">
+        <div style="min-width:0;flex:1">
+          <div class="api-name">${esc(e.api.name)} ${e.fresh ? '<span class="api-new">NEW</span>' : ''}</div>
+          <div class="api-sub"><span style="color:${RARITY_COLOR[w.rarity] || '#aaa'}">●</span> ${esc(RARITY_LABEL[w.rarity] || w.rarity || '?')} · ${esc(CATEGORY_LABEL[w.category] || w.category || api(e).apiCategory)} · niv. ${e.api.level ?? '—'}${e.match ? ` · wiki: <code>${esc(e.match._docKey || e.match.id)}</code>` : ''}${e.diffs.length ? ` · <b>${e.diffs.length} diff.</b>` : ''}</div>
+        </div>
+        <span class="api-st" style="--c:${st.color}">${st.label}</span>
+      </div>
+      ${open ? detailHtml(e) : ''}
+    </div>`;
+  }
+  const api = e => e.wiki._import || {};
+
+  // ── Détail : deux colonnes + choix ─────────────────
+  function sideHtml(title, item, other, e, isApi) {
+    const paths = fieldPaths(e.wiki, e.match || {}).filter(p => getPath(item, p) !== undefined || getPath(other, p) !== undefined);
+    const rows = paths.map(p => {
+      const v = getPath(item, p), o = getPath(other, p);
+      const diff = !(isApi ? same(v, o) : same(o, v)) && getPath(e.wiki, p) !== undefined;
+      return `<tr class="${diff ? 'df' : ''}"><td>${esc(labelOf(p))}</td><td>${esc(fmt(v))}</td></tr>`;
+    }).join('');
+    const img = isApi ? e.image : imgSrc(item?.images?.[0] || item?.image);
+    return `<div class="api-col"><h4>${title}</h4>
+      ${img ? `<img class="api-big" src="${esc(img)}" onerror="this.style.visibility='hidden'">` : '<div class="api-big none">pas d\'image</div>'}
+      <table class="api-tbl">${rows || '<tr><td colspan="2">—</td></tr>'}</table></div>`;
+  }
+
+  function detailHtml(e) {
+    const a = e.wiki;                         // version convertie de l'API
+    const raw = e.api;
+    const idents = Object.entries(raw.identifications || {}).map(([k, v]) => `${esc(k)}: ${esc(v)}`).join('<br>');
+    const flags = e.flags.length && !e.match ? `<div class="api-flags">⚠️ ${e.flags.map(esc).join(' · ')}</div>` : '';
+    const dec = decided[e.id] ? `<div class="api-flags" style="border-color:#4f8ef7;color:#4f8ef7">Traité (${esc(decided[e.id].action)}) par ${esc(decided[e.id].by || '?')} le ${esc(new Date(decided[e.id].at).toLocaleDateString('fr-FR'))} — <a href="#" data-act="undecide" data-id="${e.id}">annuler</a></div>` : '';
+    const rawBlock = `<details class="api-raw"><summary>Données brutes API</summary>
+      <div>id API <b>${raw.id}</b> · mmo <code>${esc(raw.mmo_key)}</code> · ${esc(raw.category)} · rareté ${esc(raw.rarity)}${e.imageSource ? ` · image: ${e.imageSource === 'pack' ? 'resource pack' : 'API'}` : ''}</div>
+      <div style="margin-top:6px;">${idents || '—'}</div><div style="margin-top:6px;color:var(--muted)">${esc(raw.lore || '')}</div></details>`;
+
+    // ─ Nouveau / variante : formulaire d'import
+    if (!e.match) {
+      const cands = e.cands.length ? `<div class="api-flags" style="border-color:#9b72cf;color:#9b72cf">Même nom sur le wiki : ${e.cands.map(w => `<code>${esc(w._docKey || w.id)}</code> (P${w.palier ?? '?'}${w.classes ? ' ' + w.classes.join('/') : ''})`).join(', ')}.
+        Tu peux <b>lier</b> à l'un d'eux ou importer comme item distinct.
+        <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">${e.cands.filter(w => !w._hidden).map(w => `<button class="btn btn-ghost" style="font-size:11px" data-act="link" data-id="${e.id}" data-to="${esc(w._docKey || w.id)}">🔗 Lier à ${esc(w._docKey || w.id)}</button>`).join('')}</div></div>` : '';
+      const catSel = Object.keys(CATEGORY_LABEL);
+      return `<div class="api-detail">${flags}${cands}${dec}
+        <div class="api-cols">${sideHtml('API', a, {}, e, true)}
+          <div class="api-col"><h4>Importer sur le wiki</h4>
+            <div class="api-form" data-id="${e.id}">
+              <label>Catégorie<select data-f="category"><option value="">— choisir —</option>${catSel.map(k => `<option value="${k}"${a.category === k ? ' selected' : ''}>${CATEGORY_LABEL[k]}</option>`).join('')}</select></label>
+              <label>Sous-type<select data-f="cat"><option value="">—</option>${[...new Set(Object.values(CAT_OPTIONS).flat())].map(k => `<option value="${k}"${a.cat === k ? ' selected' : ''}>${k}</option>`).join('')}</select></label>
+              <label>Rareté<select data-f="rarity">${Object.keys(RARITY_LABEL).map(k => `<option value="${k}"${a.rarity === k ? ' selected' : ''}>${RARITY_LABEL[k]}</option>`).join('')}</select></label>
+              <label>Palier<select data-f="palier"><option value="">— choisir —</option>${[1, 2, 3].map(p => `<option value="${p}"${a.palier === p ? ' selected' : ''}>Palier ${p}</option>`).join('')}</select></label>
+              <label>ID wiki<input data-f="id" value="${esc(a.id)}"></label>
+              <button class="btn" data-act="import" data-id="${e.id}" style="background:var(--accent);color:#fff;">⬇️ Importer cet item</button>
+            </div>
+          </div></div>${rawBlock}</div>`;
+    }
+
+    // ─ Existant : choix champ par champ
+    const m = e.match, hidden = !!m._hidden;
+    const rows = fieldPaths(a, m).filter(p => getPath(a, p) !== undefined || getPath(m, p) !== undefined).map(p => {
+      const av = getPath(a, p), wv = getPath(m, p);
+      const diff = !same(av, wv);
+      const def = wv === undefined || wv === null ? 'api' : 'wiki';
+      return `<tr class="${diff ? 'df' : ''}"><td>${esc(labelOf(p))}</td>
+        <td>${esc(fmt(av))}</td><td>${esc(fmt(wv))}</td>
+        <td class="ch">${diff && av !== undefined && !hidden ? `<label><input type="radio" name="pick-${e.id}-${p}" data-p="${p}" value="api"${def === 'api' ? ' checked' : ''}>API</label> <label><input type="radio" name="pick-${e.id}-${p}" data-p="${p}" value="wiki"${def === 'wiki' ? ' checked' : ''}>Wiki</label>` : ''}</td></tr>`;
+    }).join('');
+    const wImg = imgSrc(m.images?.[0] || m.image);
+    const imgChoice = e.image && (!wImg || wImg !== e.image) && !hidden
+      ? `<label class="api-imgpick"><input type="checkbox" id="api-useimg-${e.id}"${wImg ? '' : ' checked'}> Utiliser l'image de l'API <img src="${esc(e.image)}" style="height:28px;vertical-align:middle"></label>` : '';
+    return `<div class="api-detail">${flags}${dec}
+      ${hidden ? '<div class="api-flags">🔒 Item sensible (items_hidden) — lecture seule ici.</div>' : ''}
+      <div class="api-cols2">
+        <div class="api-imgs"><div><div class="api-cap">API</div>${e.image ? `<img class="api-big" src="${esc(e.image)}">` : '<div class="api-big none">—</div>'}</div>
+          <div><div class="api-cap">Wiki</div>${wImg ? `<img class="api-big" src="${esc(wImg)}" onerror="this.style.visibility='hidden'">` : '<div class="api-big none">—</div>'}</div></div>
+        <table class="api-tbl wide"><thead><tr><th>Champ</th><th>API</th><th>Wiki</th><th>Choix</th></tr></thead><tbody>${rows}</tbody></table>
+      </div>
+      ${imgChoice}
+      <div class="api-actions">
+        <button class="btn" data-act="apply" data-id="${e.id}" style="background:var(--accent);color:#fff;"${hidden ? ' disabled' : ''}>✅ Appliquer mes choix au wiki</button>
+        <button class="btn btn-ghost" data-act="allapi" data-id="${e.id}"${hidden ? ' disabled' : ''}>Tout prendre depuis l'API</button>
+        <button class="btn btn-ghost" data-act="keep" data-id="${e.id}">Garder le wiki (marquer traité)</button>
+      </div>${rawBlock}</div>`;
+  }
+
+  // ── Écritures ──────────────────────────────────────
+  const contrib = () => { const u = getUser(); return { uid: u.uid || null, name: u.name || 'API sync' }; };
+  const importMeta = e => ({ apiId: e.api.id, mmoKey: e.api.mmo_key || null, syncedAt: new Date().toISOString() });
+  const bump = () => setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: 'items' }, { merge: true }).catch(() => {});
+
+  async function markDecided(id, action) {
+    decided[id] = { action, at: Date.now(), by: getUser().name || '?' };
+    await setDoc(doc(db, 'config', 'api_sync'), { decided: { [id]: decided[id] } }, { merge: true });
+  }
+  const refreshAfterWrite = async () => { invalidateModCache('items'); store.invalidate('items'); await load(); };
+
+  function tagsFor(d) {
+    return [RARITY_LABEL[d.rarity], CATEGORY_LABEL[d.category], d.palier ? `Palier ${d.palier}` : null, d.event ? 'Event' : null].filter(Boolean);
+  }
+  function payloadFor(e, over = {}) {
+    const d = { ...e.wiki, ...over };
+    delete d._flags;
+    d.palier = d.palier ? Number(d.palier) : null;
+    d.tags = tagsFor(d);
+    d._import = { ...(e.wiki._import || {}), ...importMeta(e) };
+    Object.keys(d).forEach(k => { if (d[k] === null || d[k] === '' || d[k] === undefined) delete d[k]; });
+    d._order = Date.now();
+    d._contributor = mergeContributors([], contrib());
+    return d;
+  }
+  const idTaken = id => wiki.some(w => (w._docKey || w.id) === id);
+
+  async function importOne(id) {
+    const e = entries.find(x => x.id === id);
+    const form = root.querySelector(`.api-form[data-id="${id}"]`);
+    const v = f => form.querySelector(`[data-f="${f}"]`).value.trim();
+    if (!v('category')) return toast('Choisis une catégorie', 'warning');
+    if (!v('palier')) return toast('Choisis un palier', 'warning');
+    const over = { category: v('category'), rarity: v('rarity'), palier: Number(v('palier')), id: slug(v('id')) };
+    if (v('cat')) over.cat = v('cat'); else delete e.wiki.cat;
+    // régénère l'id si palier modifié et id par défaut
+    if (!over.id) return toast('ID invalide', 'warning');
+    if (idTaken(over.id)) return toast(`L'ID "${over.id}" existe déjà sur le wiki`, 'error');
+    try {
+      await setDoc(doc(db, 'items', over.id), payloadFor(e, over));
+      await markDecided(id, 'imported');
+      await writeAudit('create', 'item', over.id, e.api.name, { source: 'api-sync', apiId: e.api.id });
+      bump(); toast(`✅ "${e.api.name}" importé`, 'success');
+      ui.open = null; await refreshAfterWrite();
+    } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+  }
+
+  async function bulkImport() {
+    const ready = readyEntries().filter(e => e.wiki.category && e.wiki.palier);
+    const ids = new Set(); const todo = [];
+    for (const e of ready) { if (idTaken(e.wiki.id) || ids.has(e.wiki.id)) continue; ids.add(e.wiki.id); todo.push(e); }
+    if (!todo.length) return toast('Rien à importer', 'info');
+    const ok = await modal.confirm(`Importer ${todo.length} items ?`, `Ils sont créés dans la collection items (aucun écrasement : ${ready.length - todo.length} ignoré(s) car ID déjà pris). Palier déduit du niveau — vérifie ensuite.`);
+    if (!ok) return;
+    try {
+      for (let i = 0; i < todo.length; i += 400) {
+        const batch = writeBatch(db);
+        todo.slice(i, i + 400).forEach(e => batch.set(doc(db, 'items', e.wiki.id), payloadFor(e)));
+        await batch.commit();
+      }
+      const dec = {}; todo.forEach(e => { dec[e.id] = { action: 'imported', at: Date.now(), by: getUser().name || '?' }; });
+      Object.assign(decided, dec);
+      await setDoc(doc(db, 'config', 'api_sync'), { decided: dec }, { merge: true });
+      await writeAudit('create', 'item', '', `${todo.length} items`, { source: 'api-sync-bulk', count: todo.length });
+      bump(); toast(`✅ ${todo.length} items importés`, 'success');
+      await refreshAfterWrite();
+    } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+  }
+
+  async function applyChoices(id, all = false) {
+    const e = entries.find(x => x.id === id);
+    const m = e.match;
+    const payload = {};
+    if (all) e.diffs.forEach(p => { if (getPath(e.wiki, p) !== undefined) payload[p] = getPath(e.wiki, p); });
+    else root.querySelectorAll(`#api-row-${id} input[type=radio][value=api]:checked`).forEach(r => { payload[r.dataset.p] = getPath(e.wiki, r.dataset.p); });
+    if (all || document.getElementById(`api-useimg-${id}`)?.checked) {
+      if (e.image) payload.images = [`../${e.image}`];
+    }
+    if (!Object.keys(payload).length) return toast('Aucun champ à modifier', 'info');
+    // retag si rareté/catégorie changent
+    const merged = { ...m, ...payload };
+    if ('rarity' in payload || 'category' in payload) payload.tags = tagsFor(merged);
+    payload._import = { ...(m._import || {}), ...importMeta(e) };
+    payload._contributor = mergeContributors(readContribs(m), contrib());
+    try {
+      await updateDoc(doc(db, 'items', m._docKey || m.id), payload);
+      await markDecided(id, 'applied');
+      await writeAudit('update', 'item', m._docKey || m.id, m.name, { source: 'api-sync', fields: Object.keys(payload).filter(k => !k.startsWith('_')) });
+      bump(); toast('✅ Item du wiki mis à jour', 'success');
+      await refreshAfterWrite();
+    } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+  }
+
+  async function link(id, to) {
+    const e = entries.find(x => x.id === id);
+    const target = wiki.find(w => (w._docKey || w.id) === to);
+    if (!target) return;
+    try {
+      await updateDoc(doc(db, 'items', to), { _import: { ...(target._import || {}), ...importMeta(e) } });
+      toast(`🔗 Lié à ${to}`, 'success');
+      await refreshAfterWrite();
+    } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+  }
+
+  // ── Événements ─────────────────────────────────────
+  function bind(panel) {
+    if (panel._apiBound) return;
+    panel._apiBound = true;
+    panel.addEventListener('click', async ev => {
+      const t = ev.target.closest('[data-act]');
+      if (!t) return;
+      const act = t.dataset.act, id = Number(t.dataset.id);
+      if (['reload', 'seen', 'undecide'].includes(act)) ev.preventDefault();
+      if (act === 'status') { ui.status = t.dataset.v; ui.limit = PAGE; ui.open = null; render(); }
+      else if (act === 'toggle') { ui.open = ui.open === id ? null : id; render(); document.getElementById(`api-row-${id}`)?.scrollIntoView({ block: 'nearest' }); }
+      else if (act === 'more') { ui.limit += PAGE; render(); }
+      else if (act === 'reload') load(true);
+      else if (act === 'seen') { safeLs('set', 'apiItemsSeenAt', String(Date.now())); build(); render(); toast('Marqué comme vu', 'success'); }
+      else if (act === 'import') importOne(id);
+      else if (act === 'bulk') bulkImport();
+      else if (act === 'apply') applyChoices(id);
+      else if (act === 'allapi') applyChoices(id, true);
+      else if (act === 'link') link(id, t.dataset.to);
+      else if (act === 'keep') {
+        try { await markDecided(id, 'kept-wiki'); toast('Marqué comme traité', 'success'); build(); ui.open = null; render(); } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+      } else if (act === 'undecide') {
+        try { delete decided[id]; await updateDoc(doc(db, 'config', 'api_sync'), { [`decided.${id}`]: ctx.deleteField() }); build(); render(); } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+      }
+    });
+    panel.addEventListener('input', ev => { if (ev.target.id === 'api-q') { ui.q = ev.target.value; ui.limit = PAGE; const pos = ev.target.selectionStart; render(); const i = document.getElementById('api-q'); i.focus(); i.setSelectionRange(pos, pos); } });
+    panel.addEventListener('change', ev => {
+      if (ev.target.id === 'api-cat') { ui.cat = ev.target.value; ui.limit = PAGE; render(); }
+      else if (ev.target.id === 'api-fresh') { ui.onlyFresh = ev.target.checked; render(); }
+    });
+  }
+
+  injectCss();
+  return {
+    async show() { const p = document.getElementById('api-items-panel'); if (p) bind(p); await load(); },
+  };
+}
+
+function injectCss() {
+  if (document.getElementById('api-items-css')) return;
+  const s = document.createElement('style');
+  s.id = 'api-items-css';
+  s.textContent = `
+  #api-items-panel .api-meta{font-size:12px;color:var(--muted);margin-bottom:10px}
+  #api-items-panel .api-meta a{color:var(--accent)}
+  #api-items-panel .api-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  #api-items-panel .api-chip{background:var(--surface2);border:1px solid var(--border);border-radius:99px;color:var(--text);padding:4px 12px;font-size:12px;cursor:pointer}
+  #api-items-panel .api-chip b{color:var(--c);margin-left:4px}
+  #api-items-panel .api-chip.on{border-color:var(--c);box-shadow:0 0 0 1px var(--c) inset}
+  #api-items-panel .api-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  #api-items-panel .api-bar input[type=search],#api-items-panel .api-bar select{background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 9px;font-size:12px;outline:none}
+  #api-items-panel .api-bar input[type=search]{min-width:200px}
+  #api-items-panel .api-row{background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
+  #api-items-panel .api-row.open{border-color:var(--accent)}
+  #api-items-panel .api-head{display:flex;gap:10px;align-items:center;padding:8px 12px;cursor:pointer}
+  #api-items-panel .api-ico{width:34px;height:34px;object-fit:contain;image-rendering:pixelated;flex-shrink:0}
+  #api-items-panel .api-name{font-size:13px;font-weight:600}
+  #api-items-panel .api-sub{font-size:11px;color:var(--muted)}
+  #api-items-panel .api-new{background:#3ecf8e;color:#000;font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;margin-left:4px}
+  #api-items-panel .api-st{font-size:11px;font-weight:600;color:var(--c);border:1px solid var(--c);border-radius:99px;padding:2px 9px;white-space:nowrap}
+  #api-items-panel .api-detail{border-top:1px solid var(--border);padding:12px}
+  #api-items-panel .api-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  #api-items-panel .api-cols2{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  #api-items-panel .api-imgs{display:flex;gap:10px}
+  #api-items-panel .api-cap{font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:3px}
+  #api-items-panel .api-big{width:72px;height:72px;object-fit:contain;image-rendering:pixelated;background:var(--surface);border:1px solid var(--border);border-radius:6px}
+  #api-items-panel .api-big.none{display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)}
+  #api-items-panel .api-col h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;color:var(--muted)}
+  #api-items-panel .api-tbl{border-collapse:collapse;font-size:12px;margin-top:8px}
+  #api-items-panel .api-tbl.wide{flex:1;min-width:420px;margin-top:0}
+  #api-items-panel .api-tbl th{text-align:left;font-size:10px;color:var(--muted);text-transform:uppercase;padding:3px 8px}
+  #api-items-panel .api-tbl td{padding:3px 8px;border-top:1px solid var(--border);vertical-align:top;max-width:340px;overflow-wrap:anywhere}
+  #api-items-panel .api-tbl tr.df td{background:rgba(245,166,35,.10)}
+  #api-items-panel .api-tbl td.ch label{margin-right:8px;font-size:11px;white-space:nowrap}
+  #api-items-panel .api-form{display:grid;gap:8px}
+  #api-items-panel .api-form label{display:grid;gap:3px;font-size:11px;color:var(--muted)}
+  #api-items-panel .api-form select,#api-items-panel .api-form input{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none}
+  #api-items-panel .api-flags{border:1px solid var(--warn);color:var(--warn);border-radius:6px;padding:6px 10px;font-size:12px;margin-bottom:10px}
+  #api-items-panel .api-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  #api-items-panel .api-imgpick{display:block;margin-top:10px;font-size:12px}
+  #api-items-panel .api-raw{margin-top:12px;font-size:11px;color:var(--muted)}
+  @media (max-width:800px){#api-items-panel .api-cols{grid-template-columns:1fr}}`;
+  document.head.appendChild(s);
+}

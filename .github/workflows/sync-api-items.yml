@@ -1,0 +1,28 @@
+name: Sync API items
+
+# Met à jour data/api-items.json (+ images) pour l'onglet "API" de la modération.
+on:
+  schedule:
+    - cron: '17 */6 * * *'   # toutes les 6 h
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # le script vit hors du repo wiki (dossier "script" du projet) : copié ici sous tools/ s'il est versionné
+      - name: Sync
+        run: node tools/sync_api_items.js --repo .
+      - name: Commit si changement
+        run: |
+          git config user.name  "api-sync-bot"
+          git config user.email "api-sync-bot@users.noreply.github.com"
+          git add data/api-items.json img/compendium/textures/api
+          git diff --cached --quiet || git commit -m "Sync items API SAO" && git push
