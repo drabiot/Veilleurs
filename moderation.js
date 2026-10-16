@@ -11,7 +11,7 @@ import { toast }  from './components/toast.js';
 import { modal }  from './components/modal.js';
 import { store }  from './store.js';
 import { generateCardBlob } from './card-renderer.js';
-import { createApiItemsTool } from './moderation-api-items.js?v=12';
+import { createApiItemsTool } from './moderation-api-items.js?v=15';
 
 // Helpers partagés — utils.js est chargé en classic script avant ce module
 const { normalize, fuzzyMatch } = window.VCL;

@@ -32,6 +32,8 @@ const STATUS_INFO = {
   variant: { label: 'À vérifier', color: '#9b72cf' },
   done:    { label: 'Traité',            color: '#4f8ef7' },
   dup:     { label: 'Doublon API',       color: '#e05c5c' },
+  absent:  { label: 'Absents',           color: '#d97757' },
+  queued:  { label: 'En attente',        color: '#4f8ef7' },
 };
 const PAGE = 80;
 
@@ -70,13 +72,13 @@ function same(api, wiki) {
 }
 const labelOf = path => {
   const [g, k] = path.split('.');
-  if (!k) return { rarity: 'Rareté', category: 'Catégorie', cat: 'Sous-type', lvl: 'Niveau', classes: 'Classes', lore: 'Lore' }[g] || g;
+  if (!k) return { rarity: 'Rareté', category: 'Catégorie', cat: 'Sous-type', lvl: 'Niveau', classes: 'Classes', lore: 'Lore', competence: 'Compétence' }[g] || g;
   return (g === 'threshold' ? 'Req. ' : '') + (STAT_LABEL[k] || k);
 };
 
 // champs comparables : fixes + stats.* + threshold.* (union des deux côtés)
 function fieldPaths(a, w) {
-  const out = ['rarity', 'category', 'cat', 'lvl', 'classes', 'lore'];
+  const out = ['rarity', 'category', 'cat', 'lvl', 'classes', 'lore', 'competence'];
   for (const g of ['stats', 'threshold']) {
     const keys = new Set([...Object.keys(a?.[g] || {}), ...Object.keys(w?.[g] || {})]);
     keys.forEach(k => out.push(`${g}.${k}`));
@@ -92,6 +94,7 @@ export function createApiItemsTool(ctx) {
   let wiki = [];              // items publics + cachés
   let decided = {};           // { apiId: { action, at, by } }
   let entries = [];           // entrées enrichies
+  let absents = [];           // items du wiki absents de l'API
   const ui = { status: 'new', cat: '', q: '', limit: PAGE, open: null, onlyFresh: false };
   let root = null;
   let loading = false;
@@ -113,6 +116,7 @@ export function createApiItemsTool(ctx) {
       snap = s; decided = dec;
       wiki = [...pub, ...hid.map(h => ({ ...h, _hidden: true }))];
       build();
+      restoreQueue();
       render();
       const last = Number(safeLs('get', 'apiItemsLastCount') || 0);
       if (last && snap.count > last) toast(`🔌 ${snap.count - last} nouvel(s) item(s) dans l'API depuis ta dernière visite`, 'info', 6000);
@@ -169,16 +173,29 @@ export function createApiItemsTool(ctx) {
       e.status = it.dupOf ? 'dup' : decided[it.api.id] ? 'done' : e.match ? (e.diffs.length ? 'diff' : 'same') : e.cands.length ? 'variant' : 'new';
       return e;
     });
+    // Absents : items du wiki qu'aucun item de l'API ne rejoint (ni lien, ni nom, ni nom proche en « à vérifier »).
+    // Les items qui ne sont qu'un candidat d'un item API à vérifier ne comptent pas comme absents (ils peuvent être le même).
+    const used = new Set();
+    for (const e of entries) {
+      if (e.match) used.add(e.match._docKey || e.match.id);
+      e.cands.forEach(w => used.add(w._docKey || w.id));
+    }
+    absents = wiki.filter(w => w.name && !used.has(w._docKey || w.id));
   }
 
   // ── Rendu liste ────────────────────────────────────
   function counts() {
-    const c = { new: 0, diff: 0, same: 0, variant: 0, done: 0, dup: 0 };
+    const c = { new: 0, diff: 0, same: 0, variant: 0, done: 0, dup: 0, absent: absents.length, queued: queue.size };
     entries.forEach(e => c[e.status]++);
     return c;
   }
   function filtered() {
     const q = norm(ui.q);
+    if (ui.status === 'queued') return entries.filter(e => queue.has(e.id) && (!q || norm(e.api.name).includes(q)));
+    if (ui.status === 'absent') {
+      return absents.filter(w => (!ui.cat || w.category === ui.cat || (ui.cat === '_none' && !w.category)) && (!q || norm(w.name).includes(q)))
+        .sort((a, b) => String(a.name).localeCompare(String(b.name), 'fr'));
+    }
     return entries.filter(e => (ui.status === 'all' || e.status === ui.status)
       && (!ui.cat || e.wiki.category === ui.cat || (ui.cat === '_none' && !e.wiki.category))
       && (!ui.onlyFresh || e.fresh)
@@ -199,7 +216,7 @@ export function createApiItemsTool(ctx) {
         · <a href="#" data-act="reload">↻ Recharger</a>
         · <a href="#" data-act="seen">${fresh ? `${fresh} récents — ` : ''}marquer tout comme vu</a></div>
       <div class="api-chips">
-        ${['new', 'diff', 'variant', 'same', 'done', 'dup'].map(s => `<button class="api-chip${ui.status === s ? ' on' : ''}" data-act="status" data-v="${s}" style="--c:${STATUS_INFO[s].color}">${STATUS_INFO[s].label} <b>${c[s]}</b></button>`).join('')}
+        ${(queue.size ? ['queued'] : []).concat(['new', 'diff', 'variant', 'same', 'done', 'dup', 'absent']).map(s =>`<button class="api-chip${ui.status === s ? ' on' : ''}" data-act="status" data-v="${s}" style="--c:${STATUS_INFO[s].color}">${STATUS_INFO[s].label} <b>${c[s]}</b></button>`).join('')}
         <button class="api-chip${ui.status === 'all' ? ' on' : ''}" data-act="status" data-v="all" style="--c:#aaa">Tous <b>${entries.length}</b></button>
       </div>
       <div class="api-bar">
@@ -207,10 +224,23 @@ export function createApiItemsTool(ctx) {
         <select id="api-cat"><option value="">Toutes catégories</option>${cats.map(k => `<option value="${k}"${ui.cat === k ? ' selected' : ''}>${CATEGORY_LABEL[k] || k}</option>`).join('')}<option value="_none"${ui.cat === '_none' ? ' selected' : ''}>(à choisir)</option></select>
         <label style="font-size:12px;color:var(--muted);display:flex;gap:4px;align-items:center;"><input type="checkbox" id="api-fresh"${ui.onlyFresh ? ' checked' : ''}> récents seulement</label>
         <span style="flex:1"></span>
-        <button class="btn" data-act="bulk" style="background:var(--accent);color:#fff;font-size:12px;"${readyEntries().length ? '' : ' disabled'}>⬇️ Importer les ${readyEntries().length} prêts</button>
+        <button class="btn" data-act="bulk" style="background:var(--accent);color:#fff;font-size:12px;"${readyEntries().filter(e => !queue.has(e.id)).length ? '' : ' disabled'} title="Les met en attente, rien n'est écrit avant « Valider tout »">⏳ Mettre les ${readyEntries().filter(e => !queue.has(e.id)).length} prêts en attente</button>
       </div>
-      <div class="api-list">${list.slice(0, ui.limit).map(rowHtml).join('') || '<div class="empty">Aucun item.</div>'}</div>
-      ${list.length > ui.limit ? `<div style="text-align:center;margin:12px;"><button class="btn btn-ghost" data-act="more">Afficher plus (${list.length - ui.limit} restants)</button></div>` : ''}`;
+      ${ui.status === 'absent' ? '<p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Items présents sur le wiki mais introuvables dans l\'API (supprimés, renommés côté jeu, ou créés uniquement sur le wiki).</p>' : ''}
+      <div class="api-list">${list.slice(0, ui.limit).map(ui.status === 'absent' ? absentRowHtml : rowHtml).join('') || '<div class="empty">Aucun item.</div>'}</div>
+      ${list.length > ui.limit ? `<div style="text-align:center;margin:12px;"><button class="btn btn-ghost" data-act="more">Afficher plus (${list.length - ui.limit} restants)</button></div>` : ''}
+      ${queue.size ? queueBarHtml() : ''}`;
+  }
+
+  function queueBarHtml() {
+    const n = k => [...queue.values()].filter(d => d.kind === k).length;
+    const parts = ['import', 'apply', 'link', 'keep'].filter(k => n(k)).map(k => `${n(k)} ${KIND_LABEL[k].toLowerCase()}`).join(' · ');
+    return `<div class="api-queue"><span>⏳ <b>${queue.size}</b> décision${queue.size > 1 ? 's' : ''} en attente <span style="color:var(--muted)">(${parts})</span></span>
+      <span style="flex:1"></span>
+      <button class="btn btn-ghost" data-act="showq" style="font-size:12px;">👁 Voir</button>
+      <button class="btn btn-ghost" data-act="clearq" style="font-size:12px;color:var(--danger)">🗑 Vider</button>
+      <button class="btn" data-act="commit" style="background:#3ecf8e;color:#000;font-weight:700;font-size:13px;">✅ Valider tout (${queue.size})</button>
+    </div>`;
   }
 
   function rowHtml(e) {
@@ -223,12 +253,25 @@ export function createApiItemsTool(ctx) {
           <div class="api-name">${esc(e.api.name)} ${e.fresh ? '<span class="api-new">NEW</span>' : ''}</div>
           <div class="api-sub"><span style="color:${RARITY_COLOR[w.rarity] || '#aaa'}">●</span> ${esc(RARITY_LABEL[w.rarity] || w.rarity || '?')} · ${esc(CATEGORY_LABEL[w.category] || w.category || api(e).apiCategory)} · niv. ${e.api.level ?? '—'}${e.match ? ` · wiki: <code>${esc(e.match._docKey || e.match.id)}</code>${e.matchKind === 'loose' ? ` <span title="nom proche : ${esc(e.match.name)}" style="color:#9b72cf">≈ ${esc(e.match.name)}</span>` : ''}` : ''}${e.diffs.length ? ` · <b>${e.diffs.length} diff.</b>` : ''}</div>
         </div>
+        ${queue.has(e.id) ? `<span class="api-st api-qchip" data-act="unqueue" data-id="${e.id}" title="Retirer de la file" style="--c:${STATUS_INFO.queued.color}">⏳ ${KIND_LABEL[queue.get(e.id).kind]} ✕</span>` : ''}
         <span class="api-st" style="--c:${st.color}">${st.label}</span>
       </div>
       ${open ? detailHtml(e) : ''}
     </div>`;
   }
   const api = e => e.wiki._import || {};
+
+  function absentRowHtml(w) {
+    const key = w._docKey || w.id, img = imgSrc(w.images?.[0] || w.image);
+    return `<div class="api-row"><div class="api-head" style="cursor:default">
+      <img class="api-ico" loading="lazy" src="${esc(img)}" onerror="this.style.visibility='hidden'">
+      <div style="min-width:0;flex:1">
+        <div class="api-name">${esc(w.name)}${w._hidden ? ' 🔒' : ''}</div>
+        <div class="api-sub"><span style="color:${RARITY_COLOR[w.rarity] || '#aaa'}">●</span> ${esc(RARITY_LABEL[w.rarity] || w.rarity || '?')} · ${esc(CATEGORY_LABEL[w.category] || w.category || '?')}${w.palier ? ` · P${w.palier}` : ''}${w.lvl ? ` · niv. ${w.lvl}` : ''} · <a href="./Compendium/compendium.html#${esc(key)}" target="_blank" rel="noopener"><code>${esc(key)}</code></a></div>
+      </div>
+      <span class="api-st" style="--c:${STATUS_INFO.absent.color}">${STATUS_INFO.absent.label}</span>
+    </div></div>`;
+  }
 
   // ── Détail : deux colonnes + choix ─────────────────
   function sideHtml(title, item, other, e, isApi) {
@@ -302,15 +345,28 @@ export function createApiItemsTool(ctx) {
       </div>${rawBlock}</div>`;
   }
 
-  // ── Écritures ──────────────────────────────────────
+  // ── Décisions en attente (panier) ──────────────────
+  // Rien n'est écrit au clic : chaque choix (importer, corriger, garder, lier) est mis en attente,
+  // puis « Valider tout » écrit l'ensemble en une fois (par lots) et recharge une seule fois.
+  const queue = new Map();            // apiId -> décision
+  const QUEUE_KEY = 'apiItemsQueue';
+  const KIND_LABEL = { import: 'Importer', apply: 'Corriger', keep: 'Garder le wiki', link: 'Lier' };
+
+  const persistQueue = () => safeLs('set', QUEUE_KEY, JSON.stringify([...queue.entries()]));
+  function restoreQueue() {
+    queue.clear();
+    try {
+      for (const [k, d] of JSON.parse(safeLs('get', QUEUE_KEY) || '[]')) {
+        const id = Number(k);
+        if (!decided[id] && entries.some(e => e.id === id)) queue.set(id, d);   // déjà traité entre-temps : on abandonne
+      }
+    } catch { /* file corrompue : on repart de zéro */ }
+    persistQueue();
+  }
+
   const contrib = () => { const u = getUser(); return { uid: u.uid || null, name: u.name || 'API sync' }; };
   const importMeta = e => ({ apiId: e.api.id, mmoKey: e.api.mmo_key || null, syncedAt: new Date().toISOString() });
   const bump = () => setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: 'items' }, { merge: true }).catch(() => {});
-
-  async function markDecided(id, action) {
-    decided[id] = { action, at: Date.now(), by: getUser().name || '?' };
-    await setDoc(doc(db, 'config', 'api_sync'), { decided: { [id]: decided[id] } }, { merge: true });
-  }
   const refreshAfterWrite = async () => { invalidateModCache('items'); store.invalidate('items'); await load(); };
 
   function tagsFor(d) {
@@ -327,9 +383,19 @@ export function createApiItemsTool(ctx) {
     d._contributor = mergeContributors([], contrib());
     return d;
   }
-  const idTaken = id => wiki.some(w => (w._docKey || w.id) === id);
+  const idTaken = (id, exceptApiId) => wiki.some(w => (w._docKey || w.id) === id)
+    || [...queue.entries()].some(([k, d]) => d.kind === 'import' && d.docId === id && k !== exceptApiId);
 
-  async function importOne(id) {
+  function enqueue(id, d, msg) {
+    queue.set(id, d);
+    persistQueue();
+    ui.open = null;
+    render();
+    toast(`${msg || KIND_LABEL[d.kind]} · ${queue.size} en attente`, 'info', 1800);
+  }
+  function unqueue(id) { queue.delete(id); persistQueue(); render(); }
+
+  function importOne(id) {
     const e = entries.find(x => x.id === id);
     const form = root.querySelector(`.api-form[data-id="${id}"]`);
     const v = f => form.querySelector(`[data-f="${f}"]`).value.trim();
@@ -337,41 +403,24 @@ export function createApiItemsTool(ctx) {
     if (!v('palier')) return toast('Choisis un palier', 'warning');
     const over = { category: v('category'), rarity: v('rarity'), palier: Number(v('palier')), id: slug(v('id')) };
     if (v('cat')) over.cat = v('cat'); else delete e.wiki.cat;
-    // régénère l'id si palier modifié et id par défaut
     if (!over.id) return toast('ID invalide', 'warning');
-    if (idTaken(over.id)) return toast(`L'ID "${over.id}" existe déjà sur le wiki`, 'error');
-    try {
-      await setDoc(doc(db, 'items', over.id), payloadFor(e, over));
-      await markDecided(id, 'imported');
-      await writeAudit('create', 'item', over.id, e.api.name, { source: 'api-sync', apiId: e.api.id });
-      bump(); toast(`✅ "${e.api.name}" importé`, 'success');
-      ui.open = null; await refreshAfterWrite();
-    } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+    if (idTaken(over.id, id)) return toast(`L'ID "${over.id}" existe déjà (wiki ou file d'attente)`, 'error');
+    enqueue(id, { kind: 'import', docId: over.id, payload: payloadFor(e, over), name: e.api.name });
   }
 
-  async function bulkImport() {
-    const ready = readyEntries().filter(e => e.wiki.category && e.wiki.palier);
-    const ids = new Set(); const todo = [];
-    for (const e of ready) { if (idTaken(e.wiki.id) || ids.has(e.wiki.id)) continue; ids.add(e.wiki.id); todo.push(e); }
-    if (!todo.length) return toast('Rien à importer', 'info');
-    const ok = await modal.confirm(`Importer ${todo.length} items ?`, `Ils sont créés dans la collection items (aucun écrasement : ${ready.length - todo.length} ignoré(s) car ID déjà pris). Palier déduit du niveau — vérifie ensuite.`);
-    if (!ok) return;
-    try {
-      for (let i = 0; i < todo.length; i += 400) {
-        const batch = writeBatch(db);
-        todo.slice(i, i + 400).forEach(e => batch.set(doc(db, 'items', e.wiki.id), payloadFor(e)));
-        await batch.commit();
-      }
-      const dec = {}; todo.forEach(e => { dec[e.id] = { action: 'imported', at: Date.now(), by: getUser().name || '?' }; });
-      Object.assign(decided, dec);
-      await setDoc(doc(db, 'config', 'api_sync'), { decided: dec }, { merge: true });
-      await writeAudit('create', 'item', '', `${todo.length} items`, { source: 'api-sync-bulk', count: todo.length });
-      bump(); toast(`✅ ${todo.length} items importés`, 'success');
-      await refreshAfterWrite();
-    } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+  function bulkImport() {
+    const ready = readyEntries().filter(e => e.wiki.category && e.wiki.palier && !queue.has(e.id));
+    let n = 0;
+    for (const e of ready) {
+      if (idTaken(e.wiki.id, e.id)) continue;
+      queue.set(e.id, { kind: 'import', docId: e.wiki.id, payload: payloadFor(e), name: e.api.name });
+      n++;
+    }
+    persistQueue(); render();
+    toast(n ? `${n} imports mis en attente (${ready.length - n} ignoré(s) : ID déjà pris) — vérifie puis « Valider tout »` : 'Rien à mettre en attente', n ? 'success' : 'info', 4000);
   }
 
-  async function applyChoices(id, all = false) {
+  function applyChoices(id, all = false) {
     const e = entries.find(x => x.id === id);
     const m = e.match;
     const payload = {};
@@ -381,29 +430,66 @@ export function createApiItemsTool(ctx) {
       if (e.image) payload.images = [`../${e.image}`];
     }
     if (!Object.keys(payload).length) return toast('Aucun champ à modifier', 'info');
-    // retag si rareté/catégorie changent
+    const fields = Object.keys(payload);
     const merged = { ...m, ...payload };
     if ('rarity' in payload || 'category' in payload) payload.tags = tagsFor(merged);
     payload._import = { ...(m._import || {}), ...importMeta(e) };
     payload._contributor = mergeContributors(readContribs(m), contrib());
-    try {
-      await updateDoc(doc(db, 'items', m._docKey || m.id), payload);
-      await markDecided(id, 'applied');
-      await writeAudit('update', 'item', m._docKey || m.id, m.name, { source: 'api-sync', fields: Object.keys(payload).filter(k => !k.startsWith('_')) });
-      bump(); toast('✅ Item du wiki mis à jour', 'success');
-      await refreshAfterWrite();
-    } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+    enqueue(id, { kind: 'apply', docKey: m._docKey || m.id, payload, fields, name: m.name });
   }
 
-  async function link(id, to) {
+  function link(id, to) {
     const e = entries.find(x => x.id === id);
     const target = wiki.find(w => (w._docKey || w.id) === to);
     if (!target) return;
+    enqueue(id, { kind: 'link', docKey: to, payload: { _import: { ...(target._import || {}), ...importMeta(e) } }, name: target.name }, `Lier à ${to}`);
+  }
+
+  async function commitQueue() {
+    if (!queue.size) return;
+    const items = [...queue.entries()];
+    const by = k => items.filter(([, d]) => d.kind === k).length;
+    const ok = await modal.confirm(`Valider ${items.length} décision(s) ?`,
+      `${by('import')} import(s), ${by('apply')} correction(s), ${by('link')} lien(s), ${by('keep')} « garder le wiki ». Tout est écrit maintenant, en une fois.`);
+    if (!ok) return;
+    const btn = root.querySelector('[data-act="commit"]');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Écriture…'; }
+    const done = [];                       // apiIds réellement écrits
     try {
-      await updateDoc(doc(db, 'items', to), { _import: { ...(target._import || {}), ...importMeta(e) } });
-      toast(`🔗 Lié à ${to}`, 'success');
+      const writes = items.filter(([, d]) => d.kind !== 'keep');
+      for (let i = 0; i < writes.length; i += 400) {
+        const chunk = writes.slice(i, i + 400);
+        const batch = writeBatch(db);
+        for (const [, d] of chunk) {
+          const ref = doc(db, 'items', d.kind === 'import' ? d.docId : d.docKey);
+          if (d.kind === 'import') batch.set(ref, d.payload); else batch.update(ref, d.payload);
+        }
+        await batch.commit();
+        chunk.forEach(([k]) => done.push(k));
+      }
+      items.filter(([, d]) => d.kind === 'keep').forEach(([k]) => done.push(k));
+      const dec = {};
+      for (const [k, d] of items) dec[k] = { action: { import: 'imported', apply: 'applied', link: 'linked', keep: 'kept-wiki' }[d.kind], at: Date.now(), by: getUser().name || '?' };
+      Object.assign(decided, dec);
+      await setDoc(doc(db, 'config', 'api_sync'), { decided: dec }, { merge: true });
+      const names = k => items.filter(([, d]) => d.kind === k).map(([, d]) => d.name).slice(0, 25);
+      if (by('import')) await writeAudit('create', 'item', '', `${by('import')} items`, { source: 'api-sync-batch', names: names('import') });
+      if (by('apply')) await writeAudit('update', 'item', '', `${by('apply')} items`, { source: 'api-sync-batch', names: names('apply') });
+      if (by('link')) await writeAudit('update', 'item', '', `${by('link')} liens API`, { source: 'api-sync-batch', names: names('link') });
+      bump();
+      queue.clear(); persistQueue();
+      toast(`✅ ${items.length} décisions validées`, 'success');
       await refreshAfterWrite();
-    } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+    } catch (err) {
+      done.forEach(k => queue.delete(k)); persistQueue();      // ce qui est déjà écrit ne reste pas en attente
+      toast(`Erreur : ${err.message} — ${done.length} écrit(s), ${queue.size} restent en attente`, 'error', 8000);
+      render();
+    }
+  }
+
+  async function markDecided(id, action) {
+    decided[id] = { action, at: Date.now(), by: getUser().name || '?' };
+    await setDoc(doc(db, 'config', 'api_sync'), { decided: { [id]: decided[id] } }, { merge: true });
   }
 
   // ── Événements ─────────────────────────────────────
@@ -425,8 +511,12 @@ export function createApiItemsTool(ctx) {
       else if (act === 'apply') applyChoices(id);
       else if (act === 'allapi') applyChoices(id, true);
       else if (act === 'link') link(id, t.dataset.to);
-      else if (act === 'keep') {
-        try { await markDecided(id, 'kept-wiki'); toast('Marqué comme traité', 'success'); build(); ui.open = null; render(); } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+      else if (act === 'keep') { const e = entries.find(x => x.id === id); enqueue(id, { kind: 'keep', name: e.match?.name || e.api.name }); }
+      else if (act === 'unqueue') { ev.stopPropagation(); unqueue(id); }
+      else if (act === 'commit') commitQueue();
+      else if (act === 'showq') { ui.status = 'queued'; ui.limit = PAGE; ui.open = null; render(); }
+      else if (act === 'clearq') {
+        if (await modal.confirm('Vider la file d\'attente ?', `Les ${queue.size} décisions en attente sont abandonnées (rien n'a été écrit).`)) { queue.clear(); persistQueue(); if (ui.status === 'queued') ui.status = 'new'; render(); }
       } else if (act === 'undecide') {
         try { delete decided[id]; await updateDoc(doc(db, 'config', 'api_sync'), { [`decided.${id}`]: ctx.deleteField() }); build(); render(); } catch (err) { toast('Erreur : ' + err.message, 'error'); }
       }
@@ -486,6 +576,9 @@ function injectCss() {
   #api-items-panel .api-flags{border:1px solid var(--warn);color:var(--warn);border-radius:6px;padding:6px 10px;font-size:12px;margin-bottom:10px}
   #api-items-panel .api-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   #api-items-panel .api-imgpick{display:block;margin-top:10px;font-size:12px}
+  #api-items-panel .api-queue{position:sticky;bottom:8px;z-index:5;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:14px;padding:10px 14px;background:var(--surface);border:1px solid #4f8ef7;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.45);font-size:13px}
+  #api-items-panel .api-qchip{cursor:pointer;margin-right:6px}
+  #api-items-panel .api-row .api-head{flex-wrap:wrap}
   #api-items-panel .api-raw{margin-top:12px;font-size:11px;color:var(--muted)}
   @media (max-width:800px){#api-items-panel .api-cols{grid-template-columns:1fr}}`;
   document.head.appendChild(s);
