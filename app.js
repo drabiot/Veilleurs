@@ -4,6 +4,7 @@
 
 import { db, COL } from './firebase.js';
 import { doc, getDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { loadHonorTitles, findHonorTitle, honorBadgeHtml } from './honor-titles.js';
 
 const _LB_SCAN_COLS = [
   { col: COL.items,       type: 'item'     },
@@ -69,6 +70,9 @@ async function loadLeaderboard() {
     }
   } catch {}
 
+  const honor = await loadHonorTitles();
+  const badge = e => honorBadgeHtml(findHonorTitle(honor, e.uid, e.name));
+
   const sorted = Object.values(byKey)
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
@@ -94,6 +98,7 @@ async function loadLeaderboard() {
         <div class="podium-slot ${cls}">
           ${isFst ? '<div class="podium-crown">✦</div>' : ''}
           <div class="podium-name">${data.name}</div>
+          ${badge(data) ? `<div class="podium-honor">${badge(data)}</div>` : ''}
           <div class="podium-score">${data.count} contribution${data.count > 1 ? 's' : ''}</div>
           <div class="podium-block">${rank}</div>
         </div>`;
@@ -111,7 +116,7 @@ async function loadLeaderboard() {
       lbBody.innerHTML = rest.map((u, i) => `
         <div class="lb-row">
           <span class="lb-rank">#${i + 4}</span>
-          <span class="lb-name">${u.name}</span>
+          <span class="lb-name">${u.name}${badge(u)}</span>
           <span class="lb-count">${u.count}</span>
         </div>`).join('');
     } else {
