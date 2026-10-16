@@ -70,6 +70,35 @@ function same(api, wiki) {
   if (Array.isArray(api) && Array.isArray(wiki)) return JSON.stringify([...api].sort()) === JSON.stringify([...wiki].sort());
   return JSON.stringify(nrm(api)) === JSON.stringify(nrm(wiki));
 }
+// Lore qui ne diffère que par l'orthographe (faute de frappe, accord, pluriel, œ/oe, accents) :
+// même nombre de mots, et chaque mot différent est « le même mot » à quelques lettres près.
+// Dans ce cas le wiki est la version corrigée : on le garde. Un mot vraiment différent laisse le choix.
+const wordsOf = s => norm(String(s || '').replace(/œ/gi, 'oe').replace(/æ/gi, 'ae')).split(' ').filter(Boolean);
+function sameWord(a, b) {
+  if (a === b) return true;
+  const L = Math.max(a.length, b.length);
+  if (L <= 6) return ['s', 'e', 'es', 'x'].some(suf => a + suf === b || b + suf === a);   // pur/pure, de/des, certain/certaine
+  if (L === 7) return lev(a, b) <= 1;
+  return lev(a, b) <= 2 && similarity(a, b) >= 0.8;
+}
+// Sens de la correction : 'wiki' (faute côté API → on garde le wiki), 'api' (faute côté wiki → on prend l'API), sinon null.
+// On ne tranche que pour une vraie faute : un mot RARE dans tout le corpus (≤ 2 occurrences) face à sa version COURANTE
+// (≥ 5). Les variantes grammaticales (pur/pure, de/des, fait/faits…) dépendent du contexte : le choix reste à toi.
+function loreOrthoDir(apiLore, wikiLore, freq) {
+  const a = wordsOf(apiLore), w = wordsOf(wikiLore);
+  if (!a.length || a.length !== w.length) return null;
+  const dirs = new Set();
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] === w[i]) continue;
+    if (!sameWord(a[i], w[i])) return null;                       // vrai mot différent → choix
+    const fa = freq.get(a[i]) || 0, fw = freq.get(w[i]) || 0;
+    if (fa <= 2 && fw >= 5) dirs.add('wiki');
+    else if (fw <= 2 && fa >= 5) dirs.add('api');
+    else return null;                                              // ambigu → choix
+  }
+  return dirs.size === 1 ? [...dirs][0] : null;
+}
+
 // Lore identique au point final près : l'API a « …texte. » et le wiki « …texte ». On garde l'API pour le lore.
 // (La comparaison générale ignore déjà la ponctuation : ce cas n'apparaît pas comme différence, mais on peut l'aligner.)
 const trimEnd = t => String(t || '').replace(/\s+/g, ' ').trim();
@@ -103,6 +132,7 @@ export function createApiItemsTool(ctx) {
   let decided = {};           // { apiId: { action, at, by } }
   let entries = [];           // entrées enrichies
   let absents = [];           // items du wiki absents de l'API
+  let wordFreq = new Map();   // mot -> occurrences dans tous les lores
   const ui = { status: 'new', cat: '', q: '', limit: PAGE, open: null, onlyFresh: false };
   let root = null;
   let loading = false;
@@ -147,6 +177,11 @@ export function createApiItemsTool(ctx) {
       add(byName, norm(w.name), w); add(byLoose, loose(w.name), w);
       named.push({ w, k: loose(w.name) });
     }
+    // fréquence des mots dans tous les lores (wiki + API) : sert à repérer qui a la faute
+    wordFreq = new Map();
+    const addWords = t => wordsOf(t).forEach(x => wordFreq.set(x, (wordFreq.get(x) || 0) + 1));
+    wiki.forEach(w => { addWords(w.lore); addWords(w.name); });
+    snap.items.forEach(i => { addWords(i.api.lore); addWords(i.api.name); });
     const lastSeen = Number(safeLs('get', 'apiItemsLastSeenAt') || 0);
     // départage par classe quand plusieurs variantes (paliers / classes) portent le même nom
     const pick = (cands, cls) => {
@@ -177,8 +212,10 @@ export function createApiItemsTool(ctx) {
           e.near = e.cands.length > 0;
         }
       }
-      e.diffs = e.match ? fieldPaths(it.wiki, e.match).filter(p => !same(getPath(it.wiki, p), getPath(e.match, p))) : [];
-      e.loreFix = !!e.match && !e.match._hidden && loreOnlyEnding(it.wiki.lore, e.match.lore);
+      // lore : faute d'orthographe d'un côté ? ('wiki' = faute dans l'API → wiki gardé ; 'api' = faute dans le wiki → API prise)
+      e.loreOrtho = e.match ? loreOrthoDir(it.wiki.lore, e.match.lore, wordFreq) : null;
+      e.diffs = e.match ? fieldPaths(it.wiki, e.match).filter(p => !same(getPath(it.wiki, p), getPath(e.match, p)) && !(p === 'lore' && e.loreOrtho)) : [];
+      e.loreFix = !!e.match && !e.match._hidden && (loreOnlyEnding(it.wiki.lore, e.match.lore) || e.loreOrtho === 'api');
       e.status = it.dupOf ? 'dup' : decided[it.api.id] ? 'done' : e.match ? (e.diffs.length ? 'diff' : 'same') : e.cands.length ? 'variant' : 'new';
       return e;
     });
@@ -245,7 +282,7 @@ export function createApiItemsTool(ctx) {
         <select id="api-cat"><option value="">Toutes catégories</option>${cats.map(k => `<option value="${k}"${ui.cat === k ? ' selected' : ''}>${CATEGORY_LABEL[k] || k}</option>`).join('')}<option value="_none"${ui.cat === '_none' ? ' selected' : ''}>(à choisir)</option></select>
         <label style="font-size:12px;color:var(--muted);display:flex;gap:4px;align-items:center;"><input type="checkbox" id="api-fresh"${ui.onlyFresh ? ' checked' : ''}> récents seulement</label>
         <span style="flex:1"></span>
-        ${loreFixList().length ? `<button class="btn btn-ghost" data-act="lorefix" style="font-size:12px;" title="Items dont seul le point final du lore diffère : on garde le lore de l'API">✏️ Lore de l'API pour ${loreFixList().length} (point final)</button>` : ''}
+        ${loreFixList().length ? `<button class="btn btn-ghost" data-act="lorefix" style="font-size:12px;" title="Lore identique au point final près, ou faute d'orthographe dans le wiki : on prend le lore de l'API">✏️ Lore de l'API pour ${loreFixList().length} (point final / faute du wiki)</button>` : ''}
         <button class="btn" data-act="bulk" style="background:var(--accent);color:#fff;font-size:12px;"${readyEntries().filter(e => !queue.has(e.id)).length ? '' : ' disabled'} title="Les met en attente, rien n'est écrit avant « Valider tout »">⏳ Mettre les ${readyEntries().filter(e => !queue.has(e.id)).length} prêts en attente</button>
       </div>
       ${ui.status === 'absent' ? '<p style="font-size:12px;color:var(--muted);margin:0 0 10px;">Items présents sur le wiki mais introuvables dans l\'API (supprimés, renommés côté jeu, ou créés uniquement sur le wiki).</p>' : ''}
@@ -344,9 +381,12 @@ export function createApiItemsTool(ctx) {
     const rows = fieldPaths(a, m).filter(p => getPath(a, p) !== undefined || getPath(m, p) !== undefined).map(p => {
       const av = getPath(a, p), wv = getPath(m, p);
       const diff = !same(av, wv);
-      const loreFix = p === 'lore' && e.loreFix;   // seul le point final change : on garde l'API par défaut
+      const loreFix = p === 'lore' && e.loreFix;   // point final seul, ou faute dans le wiki : on prend l'API par défaut
+      const orthoWiki = p === 'lore' && e.loreOrtho === 'wiki';   // faute dans l'API : wiki gardé par défaut
       const def = wv === undefined || wv === null || loreFix ? 'api' : 'wiki';
-      return `<tr class="${diff || loreFix ? 'df' : ''}"><td>${esc(labelOf(p))}${loreFix ? ' <span title="seul le point final change : on garde le lore de l\'API" style="color:#9b72cf">(point final)</span>' : ''}</td>
+      const note = loreFix ? (e.loreOrtho === 'api' ? 'faute dans le wiki : API' : 'point final : API')
+        : orthoWiki ? 'faute dans l\'API : wiki gardé' : '';
+      return `<tr class="${diff || loreFix || orthoWiki ? 'df' : ''}"><td>${esc(labelOf(p))}${note ? ` <span title="${esc(note)}" style="color:#9b72cf">(${esc(note)})</span>` : ''}</td>
         <td>${esc(fmt(av))}</td><td>${esc(fmt(wv))}</td>
         <td class="ch">${(diff || loreFix) && av !== undefined && !hidden ? `<label><input type="radio" name="pick-${e.id}-${p}" data-p="${p}" value="api"${def === 'api' ? ' checked' : ''}>API</label> <label><input type="radio" name="pick-${e.id}-${p}" data-p="${p}" value="wiki"${def === 'wiki' ? ' checked' : ''}>Wiki</label>` : ''}</td></tr>`;
     }).join('');
@@ -447,7 +487,10 @@ export function createApiItemsTool(ctx) {
     const e = entries.find(x => x.id === id);
     const m = e.match;
     const payload = {};
-    if (all) e.diffs.forEach(p => { if (getPath(e.wiki, p) !== undefined) payload[p] = getPath(e.wiki, p); });
+    if (all) {
+      e.diffs.forEach(p => { if (getPath(e.wiki, p) !== undefined) payload[p] = getPath(e.wiki, p); });
+      if (e.loreFix && e.wiki.lore) payload.lore = e.wiki.lore;   // point final / faute du wiki
+    }
     else root.querySelectorAll(`#api-row-${id} input[type=radio][value=api]:checked`).forEach(r => { payload[r.dataset.p] = getPath(e.wiki, r.dataset.p); });
     if (all || document.getElementById(`api-useimg-${id}`)?.checked) {
       if (e.image) payload.images = [`../${e.image}`];
