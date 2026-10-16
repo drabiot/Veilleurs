@@ -82,6 +82,9 @@
 
     <!-- ── DONNÉES ─────────────────────────────────────── -->
     <div class="sb-label">DONNÉES</div>
+    <button class="filter-btn" id="btn-content-hub" onclick="showContentHub()">🗂️ Contenu</button>
+    <!-- Anciens boutons cachés : voir NAV_HUBS dans moderation.js -->
+    <div id="content-legacy-btns" style="display:none;">
     <button class="filter-btn" id="btn-data-all"       onclick="showDataAll()">🗂️ Data</button>
     <button class="filter-btn" id="btn-item-order"     onclick="showItemOrder()">⚔️ Items</button>
     <button class="filter-btn" id="btn-mob-order"      onclick="showMobOrder()">🔢 Mobs</button>
@@ -89,6 +92,7 @@
     <button class="filter-btn" id="btn-region-order"   onclick="showRegionOrder()">📍 Régions</button>
     <button class="filter-btn" id="btn-quest-order"    onclick="showQuestOrder()">📜 Quêtes</button>
     <button class="filter-btn" id="btn-panoplie-order" onclick="showPanoplieOrder()">🔗 Panoplies</button>
+    </div>
     <button class="filter-btn" id="btn-map-order"      onclick="showMapPanel()">🗺️ Carte</button>
     <button class="filter-btn" id="btn-zone-list"      onclick="showZoneList()">💀 Zones Monstres</button>
     <button class="filter-btn" id="btn-effects-tool"   data-min-role="admin" onclick="showEffectsTool()">✨ Effets</button>
