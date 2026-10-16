@@ -1486,6 +1486,9 @@ const NAV_HUBS = [
         { hash: 'quest-order',    label: '📜 Quêtes',    btn: 'btn-quest-order',    panel: 'quest-order-panel',    fn: () => showQuestOrder() },
         { hash: 'panoplie-order', label: '🔗 Panoplies', btn: 'btn-panoplie-order', panel: 'panoplie-order-panel', fn: () => showPanoplieOrder() },
       ]},
+      { label: 'Visibilité', tabs: [
+        { hash: 'migration', label: '🔒 Sensible', btn: 'btn-migration', panel: 'migration-panel', fn: () => showMigration() },
+      ]},
     ]},
   { key: 'map', btn: 'btn-map-hub', badge: null, legacy: 'map-legacy-btns', def: 'map',
     groups: [
@@ -1523,8 +1526,20 @@ const NAV_HUBS = [
         { hash: 'bugs-connus',  label: '🐛 Bugs connus',      btn: 'btn-bugs-connus',      panel: 'bugs-connus-panel',      fn: () => showBugsConnus() },
       ]},
     ]},
+  { key: 'studio', btn: 'btn-studio-hub', badge: null, legacy: 'studio-legacy-btns', def: 'images',
+    groups: [
+      { label: 'Assets', tabs: [
+        { hash: 'images',          label: '🖼️ Images',          btn: 'btn-images-tool',     panel: 'images-tool-panel', fn: () => showImagesTool() },
+        { hash: 'capture-sprites', label: '📸 Capture Sprites', btn: 'btn-capture-sprites', panel: 'capture-panel',     fn: () => showCaptureSprites() },
+      ]},
+      { label: '3D', tabs: [
+        { hash: 'calibrateur',     label: '🎮 Calibrateur 3D',  btn: 'btn-calibrateur',     panel: 'calibrateur-panel', fn: () => showCalibrateur() },
+      ]},
+    ]},
 ];
 for (const h of NAV_HUBS) { h.tabs = h.groups.flatMap(g => g.tabs); h.last = h.def; }
+
+const _hubByKey = k => NAV_HUBS.find(h => h.key === k);
 
 function _hubTabVisible(t) {
   const b = document.getElementById(t.btn);
@@ -1594,11 +1609,12 @@ for (const hub of NAV_HUBS) {
   });
 }
 
-window.showDiagHub    = () => _showHub(NAV_HUBS[0]);
-window.showContentHub = () => _showHub(NAV_HUBS[1]);
-window.showMapHub     = () => _showHub(NAV_HUBS[2]);
-window.showAdminHub   = () => _showHub(NAV_HUBS[3]);
-window.showConfigHub  = () => _showHub(NAV_HUBS[4]);
+window.showDiagHub    = () => _showHub(_hubByKey('diag'));
+window.showContentHub = () => _showHub(_hubByKey('content'));
+window.showMapHub     = () => _showHub(_hubByKey('map'));
+window.showAdminHub   = () => _showHub(_hubByKey('admin'));
+window.showConfigHub  = () => _showHub(_hubByKey('config'));
+window.showStudioHub  = () => _showHub(_hubByKey('studio'));
 
 function _routeToHash() {
   const hash = location.hash.slice(1) || 'submissions';

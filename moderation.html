@@ -92,6 +92,7 @@
     <button class="filter-btn" id="btn-region-order"   onclick="showRegionOrder()">📍 Régions</button>
     <button class="filter-btn" id="btn-quest-order"    onclick="showQuestOrder()">📜 Quêtes</button>
     <button class="filter-btn" id="btn-panoplie-order" onclick="showPanoplieOrder()">🔗 Panoplies</button>
+    <button class="filter-btn" id="btn-migration"          data-min-role="admin" onclick="showMigration()">🔒 Sensible</button>
     </div>
     <button class="filter-btn" id="btn-map-hub" onclick="showMapHub()">🗺️ Carte</button>
     <div id="map-legacy-btns" style="display:none;">
@@ -129,7 +130,6 @@
     <button class="filter-btn" id="btn-audit-log"          data-min-role="admin" onclick="showAuditLog()">📋 Journal d'audit</button>
     <button class="filter-btn" id="btn-statistiques"       data-min-role="admin" onclick="showStatistiques()">📊 Statistiques</button>
     </div>
-    <button class="filter-btn" id="btn-migration"          data-min-role="admin" onclick="showMigration()">🔒 Sensible</button>
 
     <!-- ── CONFIGURATION ───────────────────────────────── -->
     <div class="sb-label">CONFIGURATION</div>
@@ -145,9 +145,12 @@
 
     <!-- ── OUTILS ───────────────────────────────────────── -->
     <div class="sb-label">OUTILS</div>
+    <button class="filter-btn" id="btn-studio-hub" onclick="showStudioHub()">🎮 Studio</button>
+    <div id="studio-legacy-btns" style="display:none;">
     <button class="filter-btn" id="btn-images-tool" onclick="showImagesTool()">🖼️ Images</button>
     <button class="filter-btn" id="btn-calibrateur" onclick="showCalibrateur()">🎮 Calibrateur 3D</button>
     <button class="filter-btn" id="btn-capture-sprites" onclick="showCaptureSprites()">📸 Capture Sprites</button>
+    </div>
   </aside>
 
   <main class="main" id="submissions-list">
