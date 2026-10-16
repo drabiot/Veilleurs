@@ -413,12 +413,17 @@ function renderRewardFull(r) {
    Style identique craft-ingredient du compendium
 ══════════════════════════════════ */
 function formatObjectifText(texte, floor) {
-  return texte.replace(/\((-?\d+)\s*,\s*(-?\d+)\)/g, (_, x, z) => {
+  // (x, z) ou (x, y, z) — avec trois valeurs, la deuxième est la hauteur (Y)
+  return texte.replace(/\((-?\d+)\s*,\s*(-?\d+)(?:\s*,\s*(-?\d+))?\)/g, (_, a, b, c) => {
+    const [x, y, z] = c != null ? [a, b, c] : [a, null, b];
+    const label = y != null ? `X:${x}, Y:${y}, Z:${z}` : `X:${x}, Z:${z}`;
     if (floor != null) {
-      const href = `../Map/map.html?ghost_gx=${x}&ghost_gz=${z}&ghost_floor=${floor}&ghost_name=${encodeURIComponent(`Objectif · X:${x} Z:${z}`)}#floor-${floor}-surface`;
-      return `<a class="coord-badge coord-badge-link" href="${href}" target="_blank" onclick="event.stopPropagation()">📍 X:${x}, Z:${z}</a>`;
+      // la carte est en 2D : le lien ne porte que X et Z, Y est gardé dans le nom du point
+      const name = `Objectif · ${y != null ? `X:${x} Y:${y} Z:${z}` : `X:${x} Z:${z}`}`;
+      const href = `../Map/map.html?ghost_gx=${x}&ghost_gz=${z}&ghost_floor=${floor}&ghost_name=${encodeURIComponent(name)}#floor-${floor}-surface`;
+      return `<a class="coord-badge coord-badge-link" href="${href}" target="_blank" onclick="event.stopPropagation()">📍 ${label}</a>`;
     }
-    return `<span class="coord-badge">📍 X:${x}, Z:${z}</span>`;
+    return `<span class="coord-badge">📍 ${label}</span>`;
   });
 }
 

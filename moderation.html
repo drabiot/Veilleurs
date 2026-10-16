@@ -965,10 +965,15 @@
   <main class="main" id="leaderboard-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <span style="font-size:15px;font-weight:700;">🏆 Leaderboard des contributeurs</span>
-      <button class="btn btn-ghost" onclick="loadLeaderboard()" style="font-size:12px;">🔄 Rafraîchir</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn btn-ghost" onclick="resetHomeLeaderboard()" style="font-size:12px;color:var(--warn);border-color:var(--warn);" title="Remet à 0 le classement affiché sur l'accueil du site (rien n'est supprimé)">♻️ Remettre l'accueil à zéro</button>
+        <button class="btn btn-ghost" id="btn-lb-undo-reset" onclick="undoHomeLeaderboardReset()" style="font-size:12px;display:none;" title="Rétablit le classement complet sur l'accueil">↩ Annuler la remise à zéro</button>
+        <button class="btn btn-ghost" onclick="loadLeaderboard()" style="font-size:12px;">🔄 Rafraîchir</button>
+      </div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
       Classement par nombre de contributions <b>approuvées</b>. Cliquer sur un membre pour voir son historique.
+      <span id="lb-reset-info"></span>
     </p>
     <div id="leaderboard-list"><div class="empty">Chargement…</div></div>
     <div id="leaderboard-user-detail" style="display:none;margin-top:16px;">
@@ -1509,7 +1514,7 @@ window._VCL_DATA = {
   ALL_SLOTS:   typeof ALL_SLOTS   !== 'undefined' ? ALL_SLOTS   : [],
 };
 </script>
-<script type="module" src="moderation.js?v=12"></script>
+<script type="module" src="moderation.js?v=13"></script>
 <script>
 if (window.innerWidth < 768) document.body.classList.add('sidebar-hidden');
 document.getElementById('mod-backdrop').addEventListener('click', () => {

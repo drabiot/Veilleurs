@@ -57,11 +57,27 @@ async function loadLeaderboard() {
     }
   } catch {}
 
+  // Remise à zéro : config/leaderboard_reset.baseline = compteurs figés au moment du reset
+  // (clé = uid ou '__pseudo'). Seules les contributions arrivées depuis comptent.
+  // Rien n'est supprimé des documents : supprimer config/leaderboard_reset rétablit le classement complet.
+  try {
+    const resetSnap = await getDoc(doc(db, 'config', 'leaderboard_reset'));
+    const baseline = resetSnap.exists() ? (resetSnap.data().baseline || {}) : {};
+    for (const [key, e] of Object.entries(byKey)) {
+      e.count -= Number(baseline[key]) || 0;
+      if (e.count <= 0) delete byKey[key];
+    }
+  } catch {}
+
   const sorted = Object.values(byKey)
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
-  if (!sorted.length) return;
+  if (!sorted.length) {
+    const loading = document.getElementById('podium-loading');
+    if (loading) loading.textContent = 'Une nouvelle saison commence — les archives attendent leurs premiers Veilleurs.';
+    return;
+  }
 
   // ── Podium (top 3) ──
   const podiumRow = document.getElementById('podium-row');
