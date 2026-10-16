@@ -425,3 +425,7 @@ body.sidebar-hidden .sidebar { padding: 0; width: 0; border-right: none; overflo
 /* Le panneau Permissions remplit la hauteur : la barre d'onglets s'insère au-dessus */
 #permissions-panel > .diag-tabs { margin: 0; padding: 12px 20px; flex: 0 0 auto; }
 #permissions-panel > #perm-layout { height: auto !important; flex: 1 1 0; }
+
+/* Panneaux iframe (Calibrateur, Capture Sprites) : l'iframe prend la hauteur restante sous la barre d'onglets */
+#calibrateur-panel > .diag-tabs, #capture-panel > .diag-tabs { margin: 0; padding: 12px 20px; flex: 0 0 auto; }
+#calibrateur-panel > iframe, #capture-panel > iframe { height: auto !important; flex: 1 1 0; min-height: 0; }
