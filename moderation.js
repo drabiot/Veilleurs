@@ -8466,6 +8466,7 @@ window.showLeaderboard = async () => {
   _setHash('leaderboard');
   document.getElementById('leaderboard-panel').style.display = '';
   document.getElementById('btn-leaderboard').classList.add('active');
+  _lbRefreshResetInfo();
   await loadLeaderboard();
 };
 
@@ -8557,6 +8558,69 @@ window.loadLeaderboard = async () => {
     }
     listEl.appendChild(excSection);
   }
+};
+
+// ── Remise à zéro du classement de l'accueil ──────────
+// Ne supprime rien : fige les compteurs actuels dans config/leaderboard_reset.baseline ;
+// app.js (accueil) les soustrait. Même règles de comptage que app.js (tableau _contributor, exclusions).
+async function _lbHomeCounts() {
+  let excluded = new Set();
+  try {
+    const ex = await getDoc(doc(db, 'config', 'leaderboard_excluded'));
+    if (ex.exists()) excluded = new Set(ex.data().ids || []);
+  } catch {}
+  const counts = {};
+  for (const { col } of _LB_SCAN_COLS) {
+    try {
+      const snap = await getDocs(collection(db, col));
+      for (const d of snap.docs) {
+        if (excluded.has(col + '/' + d.id)) continue;
+        const raw = d.data()._contributor;
+        for (const c of (Array.isArray(raw) ? raw : raw ? [raw] : [])) {
+          const uid = c.uid || null, name = c.name || 'Inconnu';
+          if (!uid && (name === 'Anonyme' || name === 'Inconnu')) continue;
+          const key = uid || ('__' + name);
+          counts[key] = (counts[key] || 0) + 1;
+        }
+      }
+    } catch {}
+  }
+  return counts;
+}
+
+async function _lbRefreshResetInfo() {
+  const info = document.getElementById('lb-reset-info');
+  const undo = document.getElementById('btn-lb-undo-reset');
+  try {
+    const snap = await getDoc(doc(db, 'config', 'leaderboard_reset'));
+    const at = snap.exists() ? snap.data().at?.toDate?.() : null;
+    if (info) info.innerHTML = snap.exists() ? `<br>♻️ L'accueil est remis à zéro depuis le <b>${at ? at.toLocaleDateString('fr-FR') : '?'}</b> (ce classement-ci reste complet).` : '';
+    if (undo) undo.style.display = snap.exists() ? '' : 'none';
+  } catch {}
+}
+
+window.resetHomeLeaderboard = async function resetHomeLeaderboard() {
+  const ok = await modal.confirm('Remettre le classement de l\'accueil à zéro ?',
+    'Tout le monde repart à 0 sur la page d\'accueil. Aucune contribution n\'est supprimée : ce classement-ci reste complet, et tu peux annuler à tout moment.');
+  if (!ok) return;
+  try {
+    const baseline = await _lbHomeCounts();
+    await setDoc(doc(db, 'config', 'leaderboard_reset'), { at: serverTimestamp(), by: currentUser?.uid || null, baseline });
+    await _writeAudit('update', 'config', 'leaderboard_reset', 'Remise à zéro accueil', { members: Object.keys(baseline).length });
+    toast('♻️ Classement de l\'accueil remis à zéro', 'success');
+    await _lbRefreshResetInfo();
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+};
+
+window.undoHomeLeaderboardReset = async function undoHomeLeaderboardReset() {
+  const ok = await modal.confirm('Annuler la remise à zéro ?', 'Le classement complet réapparaît sur l\'accueil.');
+  if (!ok) return;
+  try {
+    await deleteDoc(doc(db, 'config', 'leaderboard_reset'));
+    await _writeAudit('delete', 'config', 'leaderboard_reset', 'Annulation remise à zéro accueil');
+    toast('↩ Classement complet rétabli', 'success');
+    await _lbRefreshResetInfo();
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
 };
 
 function _renderLbRows(ranked, listEl, isSnapshot) {
