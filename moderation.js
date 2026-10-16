@@ -1485,6 +1485,16 @@ const NAV_HUBS = [
         { hash: 'panoplie-order', label: '🔗 Panoplies', btn: 'btn-panoplie-order', panel: 'panoplie-order-panel', fn: () => showPanoplieOrder() },
       ]},
     ]},
+  { key: 'map', btn: 'btn-map-hub', badge: null, legacy: 'map-legacy-btns', def: 'map',
+    groups: [
+      { label: 'Pins', tabs: [
+        { hash: 'map', label: '📍 Pins & types', btn: 'btn-map-order', panel: 'map-panel', fn: () => showMapPanel() },
+      ]},
+      { label: 'Zones de monstres', tabs: [
+        { hash: 'zone-list', label: '💀 Liste',   btn: 'btn-zone-list',   panel: 'zone-list-panel',   fn: () => showZoneList() },
+        { hash: 'zones',     label: '✏️ Éditeur', btn: 'btn-zone-editor', panel: 'zone-editor-panel', fn: () => showZoneEditor() },
+      ]},
+    ]},
 ];
 for (const h of NAV_HUBS) { h.tabs = h.groups.flatMap(g => g.tabs); h.last = h.def; }
 
@@ -1556,6 +1566,7 @@ for (const hub of NAV_HUBS) {
 
 window.showDiagHub    = () => _showHub(NAV_HUBS[0]);
 window.showContentHub = () => _showHub(NAV_HUBS[1]);
+window.showMapHub     = () => _showHub(NAV_HUBS[2]);
 
 function _routeToHash() {
   const hash = location.hash.slice(1) || 'submissions';
