@@ -411,3 +411,13 @@ body.sidebar-hidden .sidebar { padding: 0; width: 0; border-right: none; overflo
   }
   .stats-kpi-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ── Hub Qualité des données : barre d'onglets ───────────── */
+.diag-tabs { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.diag-group { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.diag-group-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-right: 2px; }
+.diag-tab { padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; transition: all .15s; }
+.diag-tab:hover { color: var(--text); border-color: var(--accent); }
+.diag-tab.active { background: rgba(122,90,248,.15); color: var(--accent); border-color: var(--accent); font-weight: 700; }
+.diag-tab .filter-count { background: var(--surface3); }
+.diag-tab.active .filter-count { background: var(--accent); color: #fff; }
