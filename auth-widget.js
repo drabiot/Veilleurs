@@ -7,6 +7,7 @@
 
 import { auth, db, getUserRole, login, register, loginWithGoogle, logout, hasRole, ROLES }
   from './firebase.js';
+import { loadHonorTitles, findHonorTitle, honorBadgeHtml } from './honor-titles.js';
 import { onAuthStateChanged, updateProfile }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { doc, getDoc, setDoc }
@@ -66,6 +67,7 @@ function _injectWidget() {
     <button class="vcl-auth-btn" id="vcl-login-btn">🔑 Connexion</button>
     <div id="vcl-user-info" style="display:none">
       <span class="vcl-auth-pseudo" id="vcl-user-pseudo"></span>
+      <span id="vcl-user-honor"></span>
       <span class="vcl-auth-role-badge" id="vcl-role-badge"></span>
       <button class="vcl-auth-btn" id="vcl-logout-btn">Déconnexion</button>
     </div>`;
@@ -176,8 +178,16 @@ function _showUserUI(user, role, baseRole) {
   const d = _display(role);
   document.getElementById('vcl-login-btn').style.display = 'none';
   document.getElementById('vcl-user-info').style.display = 'flex';
-  document.getElementById('vcl-user-pseudo').textContent =
-    user.displayName || user.email?.split('@')[0] || 'Veilleur';
+  const pseudo = user.displayName || user.email?.split('@')[0] || 'Veilleur';
+  document.getElementById('vcl-user-pseudo').textContent = pseudo;
+  // titre honorifique (config/leaderboard_titles), reconnu par uid ou par pseudo
+  const honorEl = document.getElementById('vcl-user-honor');
+  if (honorEl) {
+    honorEl.innerHTML = '';
+    loadHonorTitles().then(t => {
+      if (document.getElementById('vcl-user-pseudo')?.textContent === pseudo) honorEl.innerHTML = honorBadgeHtml(findHonorTitle(t, user.uid, pseudo));
+    });
+  }
   const badge = document.getElementById('vcl-role-badge');
   badge.textContent = `${d.emoji} ${d.label}`;
   badge.style.background = d.color;

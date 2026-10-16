@@ -274,3 +274,25 @@
 
 /* Nav modération lien injecté */
 .vcl-nav-mod { /* inherits .nav-link styles */ }
+
+/* ── Titre honorifique : petit badge à côté du pseudo ── */
+.honor-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  font-size: 9px;
+  font-style: italic;
+  letter-spacing: .03em;
+  color: #e0ac60;
+  background: rgba(224,172,96,.09);
+  border: 1px solid rgba(224,172,96,.35);
+  border-radius: 99px;
+  vertical-align: middle;
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.podium-honor { margin-bottom: 4px; max-width: 100%; text-align: center; }
+.podium-honor .honor-badge { margin-left: 0; }
+.podium-honor .honor-badge { white-space: normal; max-width: 100%; border-radius: 10px; line-height: 1.3; }
