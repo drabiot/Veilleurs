@@ -276,7 +276,7 @@ function buildSidebar(items, expandAll = false) {
   const grouped = groupItems(items);
 
   Object.keys(grouped)
-    .sort((a, b) => a - b)
+    .sort((a, b) => (a == -1) - (b == -1) || a - b)
     .forEach(palier => {
 
       /* ── Bloc Palier ── */
@@ -285,7 +285,7 @@ function buildSidebar(items, expandAll = false) {
 
       const ph = document.createElement('div');
       ph.className = 'palier-header' + (expandAll ? ' open' : '');
-      ph.innerHTML = `<span class="palier-label">⬡ Palier ${palier}</span><span class="palier-arrow">▶</span>`;
+      ph.innerHTML = `<span class="palier-label">⬡ Palier ${palier == -1 ? 'Archive' : palier}</span><span class="palier-arrow">▶</span>`;
 
       const pb = document.createElement('div');
       pb.className = 'palier-body' + (expandAll ? ' open' : '');
@@ -1337,7 +1337,7 @@ function showItem(id, initialQuality = false) {
             <span class="item-rarity-dot" style="background:${color};"></span>
             ${rlabel}
           </div>
-          ${item.palier != null ? `<div style="font-size:11px;color:var(--muted);opacity:.65;margin-top:3px;letter-spacing:.04em;">⬡ Palier ${item.palier}</div>` : ''}
+          ${item.palier != null ? `<div style="font-size:11px;color:var(--muted);opacity:.65;margin-top:3px;letter-spacing:.04em;">⬡ Palier ${item.palier == -1 ? 'Archive' : item.palier}</div>` : ''}
           ${item.set && SETS?.[item.set] ? `<div class="item-set-badge" style="color:${SETS[item.set].color || '#888'};border-color:${SETS[item.set].color || '#888'}40;">◈ ${escHtml(SETS[item.set].label)}</div>` : ''}
           ${qualityToggle}
           <blockquote class="item-lore" id="item-lore-text">${parseText(v.lore)}</blockquote>

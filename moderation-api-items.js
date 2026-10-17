@@ -433,7 +433,7 @@ export function createApiItemsTool(ctx) {
   const refreshAfterWrite = async () => { invalidateModCache('items'); store.invalidate('items'); await load(); };
 
   function tagsFor(d) {
-    return [RARITY_LABEL[d.rarity], CATEGORY_LABEL[d.category], d.palier ? `Palier ${d.palier}` : null, d.event ? 'Event' : null].filter(Boolean);
+    return [RARITY_LABEL[d.rarity], CATEGORY_LABEL[d.category], d.palier ? `Palier ${d.palier == -1 ? 'Archive' : d.palier}` : null, d.event ? 'Event' : null].filter(Boolean);
   }
   function payloadFor(e, over = {}) {
     const d = { ...e.wiki, ...over };
