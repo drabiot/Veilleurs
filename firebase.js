@@ -531,6 +531,15 @@ export async function getSecretById(colName, id) {
  */
 const CACHE_TTL = 60 * 60 * 1000; // 1 heure
 
+// Une seule lecture de config/wiki_version, partagée par tous les loadCollection de la page.
+let _wikiVerP = null;
+function _wikiBumpedSince(ts) {
+  _wikiVerP ??= getDoc(doc(db, 'config', 'wiki_version'))
+    .then(s => (s.exists() ? (s.data().lastUpdated?.toMillis?.() ?? 0) : 0))
+    .catch(() => 0);
+  return _wikiVerP.then(v => v > ts);
+}
+
 export async function loadCollection(colName, maxAgeMs = CACHE_TTL) {
   const cacheKey = `vcl_cache_v2_${colName}`;
   const metaKey  = `vcl_cache_meta_v2_${colName}`;
@@ -539,7 +548,8 @@ export async function loadCollection(colName, maxAgeMs = CACHE_TTL) {
     const meta = JSON.parse(localStorage.getItem(metaKey) || '{}');
     if (meta.ts && Date.now() - meta.ts < maxAgeMs) {
       const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-      if (cached) return cached; // déjà désanitisé
+      // Cache périmé si config/wiki_version a été bumpée après sa création
+      if (cached && !(await _wikiBumpedSince(meta.ts))) return cached; // déjà désanitisé
     }
   } catch {}
 
