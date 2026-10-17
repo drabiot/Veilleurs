@@ -1373,7 +1373,7 @@ function loadAccessoriesForClass(classId) {
 	if (!wrap) return;
 	wrap.innerHTML = '';
 
-	const tiers = [...new Set(ITEMS.map(i => i.palier))].sort((a, b) => a - b);
+	const tiers = [...new Set(ITEMS.map(i => i.palier))].sort((a, b) => (a == -1) - (b == -1) || a - b);
 
 	const all = document.createElement('button');
 	all.className = 'rarity-chip active';
@@ -1385,7 +1385,7 @@ function loadAccessoriesForClass(classId) {
 	const btn = document.createElement('button');
 	btn.className = 'rarity-chip';
 	btn.dataset.t = t;
-	btn.textContent = t === 0 ? 'Évènements' : 'Palier ' + t;
+	btn.textContent = t === 0 ? 'Évènements' : 'Palier ' + (t == -1 ? 'Archive' : t);
 	wrap.appendChild(btn);
 	});
 
@@ -1690,7 +1690,7 @@ function loadAccessoriesForClass(classId) {
             '<div class="item-meta-name">' + item.name + (_isSecretItem(item) ? ' <span class="sensible-tag" title="Visible grâce à votre rôle">🔒</span>' : '') + '</div>' +
             buildItemLevelBadgeHTML(item) +
           '</div>' +
-        '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · Palier ' + item.palier + '</div>' +
+        '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · Palier ' + (item.palier == -1 ? 'Archive' : item.palier) + '</div>' +
         buildBadgesHTML(item) +
         buildItemStatsHTML(item) +
 		    buildThresholdHTML(item) +

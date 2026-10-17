@@ -429,7 +429,7 @@ function _buildPrettySummary(data, type) {
     const rarColor = RARITY_COLORS[data.rarity] || 'var(--muted)';
     if (data.rarity)   field('Rareté',   `<span style="font-weight:700;">${RARITY_LABELS[data.rarity]||data.rarity}</span>`, rarColor);
     if (data.category) field('Catégorie', CAT_LABELS[data.category]||data.category);
-    if (data.palier)   field('Palier',   'Palier ' + data.palier);
+    if (data.palier)   field('Palier',   'Palier ' + (data.palier == -1 ? 'Archive' : data.palier));
     if (data.lvl)      field('Niveau',   'Niveau ≥ ' + data.lvl);
     if (data.cat)      field('Slot',     data.cat);
     if (data.classes?.length) field('Classes', data.classes.join(', '));
@@ -456,7 +456,7 @@ function _buildPrettySummary(data, type) {
     if (data.tags?.length) field('Tags', data.tags.map(t=>`<span style="font-size:10px;background:var(--surface3);border-radius:3px;padding:1px 5px;">${esc(t)}</span>`).join(' '));
   } else if (type === 'mob') {
     if (data.type)    field('Type',     data.type);
-    if (data.palier)  field('Palier',   'Palier ' + data.palier);
+    if (data.palier)  field('Palier',   'Palier ' + (data.palier == -1 ? 'Archive' : data.palier));
     if (data.region)  field('Région',   data.region);
     if (data.behavior)field('Comportement', data.behavior);
     if (data.lore)    field('Lore', `<i style="color:var(--muted)">${esc(data.lore).slice(0,200)}${data.lore.length>200?'…':''}</i>`);
@@ -466,18 +466,18 @@ function _buildPrettySummary(data, type) {
     }
   } else if (type === 'pnj') {
     if (data.tag)    field('Type',   data.tag);
-    if (data.palier) field('Palier', 'Palier ' + data.palier);
+    if (data.palier) field('Palier', 'Palier ' + (data.palier == -1 ? 'Archive' : data.palier));
     if (data.region) field('Région', data.region);
     if (data.coords) field('Coords', `X:${data.coords.x} Y:${data.coords.y} Z:${data.coords.z}`);
   } else if (type === 'region') {
-    if (data.palier)  field('Palier', 'Palier ' + data.palier);
+    if (data.palier)  field('Palier', 'Palier ' + (data.palier == -1 ? 'Archive' : data.palier));
     if (data.coords)  field('Coords', `X:${data.coords.x} Y:${data.coords.y} Z:${data.coords.z}`);
     if (data.inCodex) field('Codex',  '✓ Dans le Codex', 'var(--success)');
     if (data.lore)    field('Lore', `<i style="color:var(--muted)">${esc(data.lore).slice(0,200)}${data.lore.length>200?'…':''}</i>`);
   } else if (type === 'quest') {
     const QUEST_TYPE_LABELS = { main:'⚔️ Principale', sec:'🗺️ Secondaire', ter:'📋 Tertiaire' };
     if (data.type)    field('Type',   QUEST_TYPE_LABELS[data.type]||data.type);
-    if (data.palier)  field('Palier', 'Palier ' + data.palier);
+    if (data.palier)  field('Palier', 'Palier ' + (data.palier == -1 ? 'Archive' : data.palier));
     if (data.npc)     field('PNJ',    data.npc);
     if (data.zone)    field('Zone',   data.zone);
     if (data.coords)  field('Coords', `X:${data.coords.x} Y:${data.coords.y} Z:${data.coords.z}`);
