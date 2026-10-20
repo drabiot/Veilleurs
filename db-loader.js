@@ -11,7 +11,6 @@ window.VCL_DB = { getHiddenByName, getHiddenById, COL };
 
 (async () => {
   try {
-	const users = await loadCollection(COL.users, 0);
     const [items, itemsSec, mobs, mobsSec, pnj, quetes, regions, panoplies] = await Promise.all([
       loadCollection(COL.items),
       loadCollection(COL.itemsSecret).catch(() => []),
@@ -32,7 +31,6 @@ window.VCL_DB = { getHiddenByName, getHiddenById, COL };
     window.VCL_QUETES = quetes;
     window.VCL_REGIONS = regions;
     window.VCL_PANOPLIES = panoplies;
-    window.VCL_USERS_LIST = users; // Stockage de la liste des users
     if (typeof ITEMS      !== 'undefined') ITEMS.push(...items);
     if (typeof MOBS       !== 'undefined') MOBS.push(...mobs);
     if (typeof PERSONNAGES !== 'undefined') PERSONNAGES.push(...pnj);
