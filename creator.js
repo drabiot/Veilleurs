@@ -359,8 +359,8 @@ const STAT_DEFS = [
   ]},
   { group:'Défensif', stats:[
     { id:'defense',            label:'Défense',                   color:'#9a9ab0' },
+    { id:'durabilite_garde',      label:'Durabilite de la Garde',     color:'#858edf' },
     { id:'blocage',            label:'Blocage %',                 color:'#b8b050' },
-    { id:'maitrise_bloc',      label:'Maîtrise de Blocage %',     color:'#b8b050' },
     { id:'puissance_bloc',     label:'Puissance de Blocage %'                     },
     { id:'sante',              label:'Santé',                     color:'#e85050' },
     { id:'esquive',            label:'Esquive %',                 color:'#50b8c8' },
@@ -3400,8 +3400,8 @@ const EFFECT_TYPES = [
   'vitesse_deplacement',
   'agilite',
   'resistance_recul',
+  'durabilite_garde',
   'blocage',
-  'maitrise_blocage',
   'puissance_blocage',
   'health_heal',
   'mana_heal',
@@ -3433,7 +3433,7 @@ const EFFECT_TEMPLATES = [
   { label:'⚔️ Fortifiant de Férocité',        effects:[{type:'level', value:8}, { type:'degats_attaque', value:2, unit:'%', duration:900}, { type:'degats_critique', value:2, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
   { label:'💓 Fortifiant de Vitalité',        effects:[{type:'level', value:8}, { type:'boost_sante', value:10, duration:900}, { type:'boost_regen_vie', value:0.2, unit:'/s', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
   { label:'⏳ Fortifiant de Patiente',        effects:[{type:'level', value:8}, { type:'agilite', value:2, unit:'%', duration:900}, { type:'boost_regen_mana', value:0.2, unit:'/s', duration:900}, { type:'boost_regen_stamina', value:0.1, unit:'/s', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
-  { label:'🛡️ Fortifiant de Résistance',      effects:[{type:'level', value:8}, { type:'resistance_recul', value:2, unit:'%', duration:900}, { type:'maitrise_blocage', value:2, unit:'%', duration:900}, { type:'puissance_blocage', value:2, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
+  { label:'🛡️ Fortifiant de Résistance',      effects:[{type:'level', value:8}, { type:'resistance_recul', value:2, unit:'%', duration:900}, { type:'blocage', value:2, unit:'%', duration:900}, { type:'puissance_blocage', value:2, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
   
 ];
 

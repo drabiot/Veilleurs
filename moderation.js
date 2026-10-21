@@ -7577,8 +7577,8 @@ const DW_STAT_LABELS = {
   crit_comp_degats:    '💢 Crit. Comp. Dég.',
   // Défensif
   defense:             '🛡️ Défense',
+  durabilite_garde:    '🛡️ Durabilité de la Garde',
   blocage:             '🧱 Blocage',
-  maitrise_bloc:       '🧱 Maî. de Blocage',
   puissance_bloc:      '💪 Puis. de Blocage',
   sante:               '❤️ Santé',
   esquive:             '💨 Esquive',
@@ -15781,7 +15781,7 @@ const _EFFECT_SEED_TYPES = [
   { id:'vitesse_deplacement',  icon:'🏃',  color:'#5f89fd', label:'Vitesse de Déplacement',               prefix:'Boost la Vitesse de Déplacement de ' },
   { id:'agilite',              icon:'💨',  color:'#b8c8f4', label:'Agilité',                              prefix:"Boost les chances d'Esquive de " },
   { id:'resistance_recul',     icon:'💨',  color:'#b8c8f4', label:'Résistance au Recul',                  prefix:'Boost la résistance au recul de ' },
-  { id:'maitrise_blocage',     icon:'🛡️',  color:'#cdc0d6', label:'Maîtrise du Blocage',                 prefix:'Boost la maîtrise du blocage de ' },
+  { id:'blocage',     		   icon:'🛡️',  color:'#cdc0d6', label:'Blocage',                 				prefix:'Boost la maîtrise du blocage de ' },
   { id:'puissance_blocage',    icon:'💪',  color:'#e06c95', label:'Puissance du Blocage',                 prefix:'Boost la puissance du blocage de ' },
   { id:'health_heal',          icon:'💓',  color:'#a01212', label:'Healing',                              prefix:'Vous rend ' },
   { id:'mana_heal',            icon:'💦',  color:'#247ca5', label:'Mana',                                 prefix:'Vous rend ' },
@@ -15813,7 +15813,7 @@ const _EFFECT_SEED_TEMPLATES = [
   { label:'⚔️ Fortifiant de Férocité',   effects:[{type:'level',value:8},{type:'degats_attaque',value:2,unit:'%',duration:900},{type:'degats_critique',value:2,unit:'%',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
   { label:'💓 Fortifiant de Vitalité',   effects:[{type:'level',value:8},{type:'boost_sante',value:10,duration:900},{type:'boost_regen_vie',value:0.2,unit:'/s',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
   { label:'⏳ Fortifiant de Patience',   effects:[{type:'level',value:8},{type:'agilite',value:2,unit:'%',duration:900},{type:'boost_regen_mana',value:0.2,unit:'/s',duration:900},{type:'boost_regen_stamina',value:0.1,unit:'/s',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
-  { label:'🛡️ Fortifiant de Résistance', effects:[{type:'level',value:8},{type:'resistance_recul',value:2,unit:'%',duration:900},{type:'maitrise_blocage',value:2,unit:'%',duration:900},{type:'puissance_blocage',value:2,unit:'%',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
+  { label:'🛡️ Fortifiant de Résistance', effects:[{type:'level',value:8},{type:'resistance_recul',value:2,unit:'%',duration:900},{type:'blocage',value:2,unit:'%',duration:900},{type:'puissance_blocage',value:2,unit:'%',duration:900},{type:'cooldown',value:3600,unit:'s'},{type:'use',value:1}] },
 ];
 
 // ── EVENTS TOOL ──────────────────────────────────────

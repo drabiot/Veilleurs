@@ -67,7 +67,7 @@ const STAT = {
   'HEAL_BONUS': 'soin_bonus', 'HEAL BONUS': 'soin_bonus', 'Critical Strike Chance': 'crit_chance',
   'Critical Strike Power': 'crit_degats', 'Skill Critical Strike Chance': 'crit_comp_chance',
   'Skill Critical Strike Power': 'crit_comp_degats', 'Lifesteal': 'vol_vie', 'Spell Vampirism': 'omnivamp',
-  'Damage Reduction': 'reduction_degats', 'Block Power': 'puissance_bloc', 'Block Rating': 'maitrise_bloc',
+  'Damage Reduction': 'reduction_degats', 'Block Power': 'puissance_bloc', 'Block Rating': 'bloc',
   'Dodge Rating': 'esquive', 'Knockback Resistance': 'tenacite', 'Cooldown Reduction': 'hate',
   'Fall Damage Reduction': 'reduction_chutes',
 };

@@ -202,7 +202,7 @@ const EFFECT_META = {
   vitesse_deplacement:	{ icon: '🏃',  	color: '#5f89fd', label: 'Vitesse de Déplacement',  				prefix: 'Boost la Vitesse de Déplacement de ' },
   agilite:	            { icon: '💨',  	color: '#b8c8f4', label: 'Agilité',  				prefix: 'Boost les chances d\'Esquive de ' },
   resistance_recul:	    { icon: '💨',  	color: '#b8c8f4', label: 'Résistance au Recul',  				prefix: 'Boost la résistance au recul de ' },
-  maitrise_blocage:	    { icon: '🛡️',  	color: '#cdc0d6', label: 'Maîtrise du Blocage',  				prefix: 'Boost la maîtrise du blocage de ' },
+  blocage:	    { icon: '🛡️',  	color: '#cdc0d6', label: 'Maîtrise du Blocage',  				prefix: 'Boost la maîtrise du blocage de ' },
   puissance_blocage :	  { icon: '💪',  	color: '#e06c95', label: 'Puissance du Blocage',  				prefix: 'Boost la puissance du blocage de ' },
 	
 
