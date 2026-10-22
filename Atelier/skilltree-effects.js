@@ -169,6 +169,13 @@ window.VCL_SKILL_EFFECTS = {
     "6": { "name": "Éclat de maîtrise", "stats": "crit_comp_chance", "bonus": 0.5 },
     "7": { "name": "Garde renforcée", "stats": "defense", "bonus": 2 },
     "8": { "name": "Puissance magique", "stats": "degats_magique", "bonus": 1 },
-    "9": { "name": "Puissance magique", "stats": "degats_magique", "bonus": 1 }
+    "9": { "name": "Puissance magique", "stats": "degats_magique", "bonus": 1 },
+    "10": { "name": "Vitalité renforcée", "stats": "sante", "bonus": 3 },
+    "11": { "name": "Éclat de maîtrise", "stats": "crit_comp_chance", "bonus": 0.5 },
+    "12": { "name": "Éclat de maîtrise", "stats": "crit_comp_chance", "bonus": 0.5 },
+    "13": { "name": "Garde renforcée", "stats": "defense", "bonus": 2 },
+    "14": { "name": "Puissance magique", "stats": "degats_magique", "bonus": 1 },
+    "15": { "name": "Puissance magique", "stats": "degats_magique", "bonus": 1 },
+    "16": { "name": "Vitalité renforcée", "stats": "sante", "bonus": 3 }
   }
 };
