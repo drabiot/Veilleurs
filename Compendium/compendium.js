@@ -924,8 +924,6 @@ function _statValHtml(val, unit) {
 
 function renderItemStats(item) {
   const stats     = item.stats     || null;
-  const threshold = item.threshold || null;
-  const buff      = item.buff      || null;
   const lvl       = item.lvl != null ? +item.lvl : null;
   const classes   = item.classes   || [];
   const twoHanded = item.twoHanded || false;
@@ -933,16 +931,14 @@ function renderItemStats(item) {
   const runeSlots = item.rune_slots ? +item.rune_slots : 0;
 
   const hasStats  = stats     && Object.keys(stats).some(k => stats[k] != null);
-  const hasThresh = threshold && Object.entries(threshold).some(([, v]) => v);
-  const hasBuff   = buff      && Object.entries(buff).some(([, v]) => v);
   const hasReqs   = lvl != null || classes.length || twoHanded || unique || runeSlots > 0;
 
-  if (!hasStats && !hasThresh && !hasBuff && !hasReqs) return '';
+  if (!hasStats && !hasReqs) return '';
 
   let html = '';
 
   // ─ Barre de prérequis (compacte, inline) ─
-  if (hasReqs || hasThresh) {
+  if (hasReqs) {
     html += '<div class="stat-reqs-bar">';
     if (lvl != null) {
       html += `<span class="stat-req-badge stat-req-lvl">⬡ Niv. ${lvl}</span>`;
@@ -957,16 +953,6 @@ function renderItemStats(item) {
           ? `<span class="stat-req-badge stat-req-class">${cls.ico} ${escHtml(cls.label)}</span>`
           : `<span class="stat-req-badge stat-req-class">${escHtml(cid)}</span>`;
       });
-    }
-    if (hasThresh) {
-      if (hasReqs) html += '<span class="stat-req-div">│</span>';
-      for (const [attrId, value] of Object.entries(threshold)) {
-        if (!value) continue;
-        const car   = CARACTERISTIQUES.find(c => c.id === attrId);
-        const color = car ? car.color : '#888';
-        const icon  = car ? car.icon  : '◆';
-        html += `<span class="stat-thresh-item" style="color:${color}" title="${escHtml(car?.label ?? attrId)} requis">${escHtml(icon)} ≥ ${escHtml(String(value))}</span>`;
-      }
     }
     html += '</div>';
   }
@@ -983,24 +969,6 @@ function renderItemStats(item) {
           <span class="stat-row-value">${_statValHtml(stats[statDef.id], statDef.unit)}</span>
         </div>`;
       }
-    }
-    html += '</div>';
-  }
-
-  // ─ Bonus d'attributs (buff) ─
-  if (hasBuff) {
-    html += '<div class="stat-rows">';
-    for (const [attrId, value] of Object.entries(buff)) {
-      if (!value) continue;
-      const car   = CARACTERISTIQUES.find(c => c.id === attrId);
-      const color = car ? car.color : '#888';
-      const label = car ? car.label : attrId;
-      const icon  = car ? car.icon  : '◆';
-      html += `<div class="stat-row">
-        <span class="stat-row-icon" style="color:${color}">${escHtml(icon)}</span>
-        <span class="stat-row-label">${escHtml(label)}</span>
-        <span class="stat-row-value" style="color:${color}">+${escHtml(String(value))}</span>
-      </div>`;
     }
     html += '</div>';
   }

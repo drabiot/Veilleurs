@@ -73,10 +73,6 @@ const STAT = {
 };
 // échelle API -> wiki (mesurée sur les items présents des deux côtés : ratio constant)
 const SCALE = { vitesse_deplacement: 1000, tenacite: 100, vitesse_accroupi: 100 };
-const THRESHOLD = {
-  'Required Vitality': 'vitalite', 'Required Strength': 'force', 'Required Defense': 'defense_car',
-  'Required Intelligence': 'intelligence', 'Required Esprit': 'esprit', 'Required Dexterity': 'dexterite',
-};
 // identifications consommables -> effects wiki
 const EFFECT = {
   'Restore Health': { type: 'heal', unit: 'PV' }, 'Restore Mana': { type: 'mana', unit: 'Mana' },
@@ -143,10 +139,9 @@ function convert(x) {
       .filter(c => ['archer', 'mage', 'shaman', 'assassin', 'guerrier'].includes(c));
   }
 
-  const stats = {}; const threshold = {}; const effects = []; const unmapped = {};
+  const stats = {}; const effects = []; const unmapped = {};
   for (const [k, v] of Object.entries(idents)) {
     if (STAT[k]) stats[STAT[k]] = SCALE[STAT[k]] && typeof v === 'number' ? +(v * SCALE[STAT[k]]).toFixed(4) : v;
-    else if (THRESHOLD[k]) threshold[THRESHOLD[k]] = v;
     else if (EFFECT[k]) effects.push({ ...EFFECT[k], value: v });
     else if (!IGNORED.has(k)) unmapped[k] = v;
   }
@@ -177,7 +172,6 @@ function convert(x) {
     lore: split.lore,
     ...(split.competence ? { competence: split.competence } : {}),
     ...(Object.keys(stats).length ? { stats } : {}),
-    ...(Object.keys(threshold).length ? { threshold } : {}),
     ...(effects.length ? { effects } : {}),
     ...(idents['Arme à deux mains'] ? { twoHanded: true } : {}),
     ...(map.event ? { event: true } : {}),

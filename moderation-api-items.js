@@ -110,13 +110,13 @@ const loreOnlyEnding = (apiLore, wikiLore) => {
 const labelOf = path => {
   const [g, k] = path.split('.');
   if (!k) return { rarity: 'Rareté', category: 'Catégorie', cat: 'Sous-type', lvl: 'Niveau', classes: 'Classes', lore: 'Lore', competence: 'Compétence' }[g] || g;
-  return (g === 'threshold' ? 'Req. ' : '') + (STAT_LABEL[k] || k);
+  return STAT_LABEL[k] || k;
 };
 
-// champs comparables : fixes + stats.* + threshold.* (union des deux côtés)
+// champs comparables : fixes + stats.* (union des deux côtés)
 function fieldPaths(a, w) {
   const out = ['rarity', 'category', 'cat', 'lvl', 'classes', 'lore', 'competence'];
-  for (const g of ['stats', 'threshold']) {
+  for (const g of ['stats']) {
     const keys = new Set([...Object.keys(a?.[g] || {}), ...Object.keys(w?.[g] || {})]);
     keys.forEach(k => out.push(`${g}.${k}`));
   }

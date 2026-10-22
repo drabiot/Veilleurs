@@ -25,7 +25,6 @@
      Les données viennent de Compendium/data.js (chargé avant ce script). */
   const STATS_BY_ID   = new Map(ALL_STATS.map(s => [s.id, s]));
   const SLOTS_BY_ID   = new Map(ALL_SLOTS.map(s => [s.id, s]));
-  const CAR_BY_ID     = new Map(CARACTERISTIQUES.map(c => [c.id, c]));
   let   RUNES_BY_ID   = new Map(); // peuplé dans init() depuis ITEMS (cat='rune')
   const CLASSES_BY_ID = new Map(CLASSES.map(c => [c.id, c]));
   // Cache statique — toutes les catégories d'items équipables (ne change pas)
@@ -49,25 +48,10 @@
     const reqLvl = item.lvl || 1;
     return level >= reqLvl;
   }
-  function itemMeetsThreshold(item) {
-  	if (!item.threshold) return true;
-  	return Object.entries(item.threshold).every(function(e) {
-    	return (caracterPoints[e[0]] || 0) >= e[1];
-  		});
-	}
-
-  /* ══ TOOLTIP CARACTÉRISTIQUES ══ */
+  /* ══ TOOLTIP PANOPLIES ══ */
   function hideSetTooltip() {
     const tooltip = document.getElementById('set-tooltip');
     if (tooltip) tooltip.classList.remove('visible');
-  }
-
-  function buildCarTooltip() {
-    if (document.getElementById('car-tooltip')) return;
-    const tooltip = document.createElement('div');
-    tooltip.id = 'car-tooltip';
-    tooltip.className = 'car-tooltip';
-    document.body.appendChild(tooltip);
   }
 
   function buildSetTooltip() {
@@ -140,7 +124,7 @@
 
     tooltip.innerHTML = html;
     tooltip.classList.add('visible');
-    positionCarTooltip(e, tooltip);
+    positionTooltip(e, tooltip);
   }
 
   function hideSetTooltip() {
@@ -317,7 +301,7 @@ function loadAccessoriesForClass(classId) {
   }
 }
 
-  function positionCarTooltip(e, tooltip) {
+  function positionTooltip(e, tooltip) {
     const offset = 16;
     const tw = tooltip.offsetWidth  || 230;
     const th = tooltip.offsetHeight || 100;
@@ -327,46 +311,6 @@ function loadAccessoriesForClass(classId) {
     if (y + th > window.innerHeight - 8) y = e.clientY - th - offset;
     tooltip.style.left = x + 'px';
     tooltip.style.top  = y + 'px';
-  }
-
-  function showCarTooltip(e, car) {
-    const tooltip = document.getElementById('car-tooltip');
-    if (!tooltip) return;
-
-    let html = '<div class="car-tt-header">' +
-               '<span class="car-tt-icon">' + car.icon + '</span>' +
-               '<span class="car-tt-name" style="color:' + car.color + '">' + car.label + '</span>' +
-               '</div>';
-
-    html += '<div class="car-tt-desc">' + car.desc + '</div>';
-
-    if (car.stats && Object.keys(car.stats).length > 0) {
-      html += '<div class="car-tt-stats">';
-      Object.entries(car.stats).forEach(function(entry) {
-        const statDef = STATS_BY_ID.get(entry[0]);
-        const label = statDef ? statDef.label : entry[0];
-        const unit  = statDef ? statDef.unit  : '';
-        const icon  = statDef ? statDef.icon  : '◈';
-        const val   = entry[1];
-        html += '<div class="car-tt-stat-row">' +
-                '<span class="car-tt-stat-icon">' + icon + '</span>' +
-                '<span class="car-tt-stat-label">' + label + '</span>' +
-                '<span class="car-tt-stat-val" style="color:' + car.color + '">+' + val + unit +
-                '<span class="car-tt-per-pt">/ pt</span>' +
-                '</span>' +
-                '</div>';
-      });
-      html += '</div>';
-    }
-
-    tooltip.innerHTML = html;
-    tooltip.classList.add('visible');
-    positionCarTooltip(e, tooltip);
-  }
-
-  function hideCarTooltip() {
-    const tooltip = document.getElementById('car-tooltip');
-    if (tooltip) tooltip.classList.remove('visible');
   }
 
   /* ══ SÉLECTEUR DE NIVEAU ══ */
@@ -443,35 +387,6 @@ function loadAccessoriesForClass(classId) {
     const fill = document.getElementById('level-progress-fill');
     if (fill) fill.style.width = ((buildLevel / MAX_LEVEL) * 100) + '%';
 
-    const avail = getAvailablePoints();
-    const pointsRow = document.getElementById('level-points-row');
-    if (pointsRow) {
-      if (avail > 0) {
-        pointsRow.innerHTML =
-          '<span class="points-avail-label">Points disponibles</span>' +
-          '<span class="points-avail-val" style="color:var(--gold)">' + avail + '</span>';
-      } else {
-        pointsRow.innerHTML =
-          '<span class="points-avail-label">Points disponibles</span>' +
-          '<span class="points-avail-val" style="color:var(--muted)">0</span>';
-      }
-    }
-
-    CARACTERISTIQUES.forEach(function(car) {
-      const valEl   = document.getElementById('car-val-' + car.id);
-      const buffEl  = document.getElementById('car-buff-' + car.id);
-      const bonus   = getBuffBonus(car.id);
-      if (valEl) valEl.value = caracterPoints[car.id] + bonus;
-      if (buffEl) {
-        if (bonus > 0) {
-          buffEl.textContent = '+' + bonus;
-          buffEl.style.display = '';
-        } else {
-          buffEl.textContent = '';
-          buffEl.style.display = 'none';
-        }
-      }
-    });
   }
 
   function changeLevelBy(delta) {
@@ -479,16 +394,13 @@ function loadAccessoriesForClass(classId) {
     if (newLevel === buildLevel) return;
 
     if (delta < 0) {
-      const newMaxPoints = newLevel;
-      const spent = Object.values(caracterPoints).reduce((a, b) => a + b, 0);
-
       const itemsAtRisk = Object.keys(equipped).filter(slotId => {
         const item = equipped[slotId];
         return item && !itemAllowedForLevel(item, newLevel);
       });
 
-      if (itemsAtRisk.length > 0 || spent > newMaxPoints) {
-        openLevelChangeModal(newLevel, itemsAtRisk, spent > newMaxPoints ? spent - newMaxPoints : 0);
+      if (itemsAtRisk.length > 0) {
+        openLevelChangeModal(newLevel, itemsAtRisk);
         return;
       }
     }
@@ -496,7 +408,7 @@ function loadAccessoriesForClass(classId) {
     applyLevelChange(newLevel);
   }
 
-  function openLevelChangeModal(newLevel, itemsAtRisk, pointsToRemove) {
+  function openLevelChangeModal(newLevel, itemsAtRisk) {
     document.getElementById('modal-title').textContent = '⚠ Changement de Niveau';
 
 	const hint = document.getElementById('modal-level-hint');
@@ -507,13 +419,6 @@ function loadAccessoriesForClass(classId) {
 		'Passer au niveau\u00a0<span style="color:var(--gold);font-family:\'Cinzel\',serif;font-weight:600">' + newLevel + '</span>' +
 		' supprimera\u00a0<span style="color:#d9614a;font-weight:700">' + itemsAtRisk.length + '</span>' +
 		'\u00a0item' + (itemsAtRisk.length > 1 ? 's' : '') + ' dont le niveau requis est trop élevé\u00a0:'
-	);
-	}
-	if (pointsToRemove > 0) {
-	lines.push(
-		'<span style="color:#e09555">⚠\u00a0Les points de caractéristique alloués dépassent le maximum autorisé au niveau\u00a0' +
-		'<span style="color:var(--gold);font-family:\'Cinzel\',serif;font-weight:600">' + newLevel + '</span>' +
-		'\u00a0et seront réinitialisés.</span>'
 	);
 	}
 
@@ -542,14 +447,14 @@ function loadAccessoriesForClass(classId) {
     document.getElementById('modal-zone-confirm-level').style.display = 'flex';
 
     document.getElementById('btn-confirm-level').onclick = () => {
-      applyLevelChange(newLevel, itemsAtRisk, pointsToRemove);
+      applyLevelChange(newLevel, itemsAtRisk);
       closeModal();
     };
 
     document.getElementById('modal').classList.add('open');
   }
 
-  function applyLevelChange(newLevel, itemsAtRisk, pointsToRemove) {
+  function applyLevelChange(newLevel, itemsAtRisk) {
     buildLevel = newLevel;
     _setSkillNodes(skillNodes);
 
@@ -561,32 +466,12 @@ function loadAccessoriesForClass(classId) {
       });
     }
 
-    const maxPoints = buildLevel;
-    const spent = Object.values(caracterPoints).reduce((a, b) => a + b, 0);
-    if (spent > maxPoints) {
-      caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
-    }
-
     updateLevelUI();
     renderStats();
     clearTimeout(_rlTimer);
     _rlTimer = setTimeout(renderItemList, 80);
     saveToStorage();
 	updateSkinClass();
-  }
-
-  function adjustCar(carId, delta) {
-    const current = caracterPoints[carId] || 0;
-    const avail   = getAvailablePoints();
-
-    if (delta > 0 && avail <= 0) return;
-    if (delta < 0 && current <= 0) return;
-
-    caracterPoints[carId] = current + delta;
-    renderStats(); // calls updateLevelUI internally
-    clearTimeout(_rlTimer);
-    _rlTimer = setTimeout(renderItemList, 80);
-    saveToStorage();
   }
 
   /* ══ SÉLECTEUR DE CLASSE ══ */
@@ -950,41 +835,6 @@ function loadAccessoriesForClass(classId) {
         maxs[sid] += val;
       });
     });
-
-    /* ── Bonus des caractéristiques ── */
-		CARACTERISTIQUES.forEach(function(car) {
-				if (!car.stats) return;
-
-				// Points alloués manuellement
-				let pts = caracterPoints[car.id] || 0;
-
-				// ← Ajouter les buffs de tous les items équipés (non bloqués)
-				Object.entries(equipped).forEach(function(entry) {
-						const slotId = entry[0];
-						const item   = entry[1];
-						if (blockedSlots.has(slotId)) return;
-						if (!item || !item.buff) return;
-						pts += item.buff[car.id] || 0;
-				});
-
-        Object.entries(equippedRunes).forEach(function(entry) {
-            const runeKey = entry[0];
-            const runeId  = entry[1];
-            const slotId  = runeKey.split('_rune_')[0];
-            if (blockedSlots.has(slotId)) return;
-            const rune = RUNES_BY_ID.get(runeId) || _hiddenCache.get(runeId);
-            if (rune && rune.buff) pts += rune.buff[car.id] || 0;
-        });
-				
-				if (pts <= 0) return;
-				Object.entries(car.stats).forEach(function(entry) {
-						const sid      = entry[0];
-						const perPoint = entry[1];
-						if (!(sid in mins)) return;
-						mins[sid] += pts * perPoint;
-						maxs[sid] += pts * perPoint;
-				});
-		});
 
     /* ── Bonus de l'arbre de compétences ── */
     if (window.VCLSkillTree) {
@@ -1396,24 +1246,9 @@ function loadAccessoriesForClass(classId) {
 							'</div>';
 			}).join('');
 
-			// ── Buffs de caractéristiques ──
-			const buffEntries = Object.entries(item.buff || {});
-			const buffLines = buffEntries.map(function(e) {
-					const carDef = CAR_BY_ID.get(e[0]);
-					const label = carDef ? carDef.label : e[0];
-					const icon  = carDef ? carDef.icon  : '◈';
-					const color = carDef ? carDef.color : '#aaa';
-					return '<div class="istat-row">' +
-							'<span class="istat-icon">' + icon + '</span>' +
-							'<span class="istat-label" style="color:' + color + '">' + label + '</span>' +
-							'<span class="istat-val" style="color:' + color + '">+' + e[1] + ' pt</span>' +
-							'</div>';
-			}).join('');
+			if (!lines && !runeSlotLine) return '';
 
-			if (!lines && !buffLines && !runeSlotLine) return '';
-
-			return (lines || runeSlotLine ? '<div class="istat-block">' + lines + runeSlotLine + '</div>' : '') +
-						(buffLines ? '<div class="istat-block" style="border-top:1px solid rgba(255,255,255,.06);margin-top:4px;padding-top:4px">' + buffLines + '</div>' : '');
+			return '<div class="istat-block">' + lines + runeSlotLine + '</div>';
 	}
 
   function buildBadgesHTML(item) {
@@ -1447,30 +1282,6 @@ function loadAccessoriesForClass(classId) {
     return '<span class="item-lvl-badge" style="color:' + color + ';border-color:' + color + '50">' +
            (allowed ? '' : '⚠ ') + 'Niv. ' + lvl + '</span>';
   }
-
-	function getBuffBonus(carId) {
-			const blockedSlots = getBlockedSlots();
-			let bonus = 0;
-
-			// Buffs des items équipés
-			Object.entries(equipped).forEach(function(entry) {
-					if (blockedSlots.has(entry[0])) return;
-					const item = entry[1];
-					if (item && item.buff) bonus += item.buff[carId] || 0;
-			});
-
-			// Buffs des runes équipées
-			Object.entries(equippedRunes).forEach(function(entry) {
-					const runeKey = entry[0];
-					const runeId  = entry[1];
-					const slotId = runeKey.split('_rune_')[0];
-					if (blockedSlots.has(slotId)) return;
-					const rune = RUNES_BY_ID.get(runeId) || _hiddenCache.get(runeId);
-					if (rune && rune.buff) bonus += rune.buff[carId] || 0;
-			});
-
-			return bonus;
-	}
 
   function matchesSetSearch(item, normalizedQuery) {
     if (!item.set) return false;
@@ -1617,8 +1428,7 @@ function loadAccessoriesForClass(classId) {
     visible.forEach(function(item) {
       const row = document.createElement('div');
       const levelOk = itemAllowedForLevel(item, buildLevel);
-	  const thresholdOk = itemMeetsThreshold(item);
-	  const isLocked    = !levelOk || !thresholdOk;
+	  const isLocked    = !levelOk;
 	  row.className = 'item-row' + (isLocked ? ' item-locked' : '');
       // Actif si équipé dans le slot actif (ou dans n'importe quel slot si vue globale)
       const isActive = activeSlot
@@ -1641,7 +1451,6 @@ function loadAccessoriesForClass(classId) {
         '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · Palier ' + (item.palier == -1 ? 'Archive' : item.palier) + '</div>' +
         buildBadgesHTML(item) +
         buildItemStatsHTML(item) +
-		    buildThresholdHTML(item) +
         '</div>';
 
     	if (!isLocked) {
@@ -1706,30 +1515,6 @@ function loadAccessoriesForClass(classId) {
     list.appendChild(_frag);
   }
 
-  function buildThresholdHTML(item) {
-  if (!item.threshold || !Object.keys(item.threshold).length) return '';
-  const rows = Object.entries(item.threshold).map(function(e) {
-    const carDef = CAR_BY_ID.get(e[0]);
-    const label  = carDef ? carDef.label : e[0];
-    const icon   = carDef ? carDef.icon  : '◈';
-    const color  = carDef ? carDef.color : '#888';
-    const current = caracterPoints[e[0]] || 0;
-    const required = e[1];
-    const ok = current >= required;
-    return '<div class="thresh-row">' +
-      '<span class="thresh-icon">' + icon + '</span>' +
-      '<span class="thresh-label" style="color:' + color + '">' + label + '</span>' +
-      '<span class="thresh-val" style="color:' + (ok ? '#6dba6d' : '#d9614a') + '">' +
-        (ok ? '✓' : '✕') + ' ' + current + ' / ' + required +
-      '</span>' +
-    '</div>';
-  }).join('');
-  return '<div class="thresh-block">' +
-    '<div class="thresh-title">Prérequis</div>' +
-    rows +
-  '</div>';
-}
-
   /* ══ PERSISTANCE localStorage ══ */
   const SIG = "🌙𝓥𝓮𝓲𝓵𝓵𝓮𝓾𝓻𝓼 𝓪𝓾 𝓒𝓵𝓪𝓲𝓻 𝓭𝓮 𝓛𝓾𝓷𝓮🌙";
   const STORAGE_KEY_BASE = 'vcl_atelier';
@@ -1772,7 +1557,6 @@ function loadAccessoriesForClass(classId) {
 				name: document.getElementById('inp-name').value.trim(),
 				classe: activeClass || '',
 				level: buildLevel,
-				caracterPoints: caracterPoints,
 				skillNodes: skillNodes,
 				slots: equippedSlots,
 				runes: equippedRunes,
@@ -1804,7 +1588,6 @@ function loadAccessoriesForClass(classId) {
 		activeSlot = null;
 		buildLevel = 1;
 		skillNodes = [];
-		caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
 
 		const sensiblePending = [];
 		try {
@@ -1837,12 +1620,6 @@ function loadAccessoriesForClass(classId) {
 					if (parsed.classe) { activeClass = parsed.classe || null; buildClassPicker(); updateSkinClass(); }
 					else               { activeClass = null; buildClassPicker(); updateSkinClass(); }
 					if (parsed.level >= 1) buildLevel = parsed.level;
-					if (parsed.caracterPoints) {
-						Object.keys(caracterPoints).forEach(k => {
-							if (typeof parsed.caracterPoints[k] === 'number')
-								caracterPoints[k] = parsed.caracterPoints[k];
-						});
-					}
 					_setSkillNodes(parsed.skillNodes);
 				}
 			} else {
@@ -2055,7 +1832,7 @@ function loadAccessoriesForClass(classId) {
       if (e[1]) slots[e[0]] = getItemId(e[1]);
     });
     return { v:1, sig:SIG, name: document.getElementById('inp-name').value.trim() || 'Mon Build',
-      classe: activeClass || '', level: buildLevel, caracterPoints: caracterPoints,
+      classe: activeClass || '', level: buildLevel,
       skillNodes: skillNodes, slots: slots, runes: equippedRunes };
   }
 
@@ -2100,14 +1877,11 @@ function loadAccessoriesForClass(classId) {
       if (parsed.v === 1 && parsed.slots) {
         equipped = {}; equippedRunes = {};
         if (parsed.level >= 1 && parsed.level <= MAX_LEVEL) buildLevel = parsed.level;
-        if (parsed.caracterPoints) Object.keys(caracterPoints).forEach(function(k) {
-          if (typeof parsed.caracterPoints[k] === 'number') caracterPoints[k] = parsed.caracterPoints[k];
-        });
         _setSkillNodes(parsed.skillNodes);
         const lvl = (parsed.level >= 1 && parsed.level <= MAX_LEVEL) ? parsed.level : buildLevel;
         Object.entries(parsed.slots).forEach(function(e) {
           const item = ITEMS.find(function(i) { return i.id === e[1]; });
-          if (item && itemAllowedForLevel(item, lvl) && itemMeetsThreshold(item)) equipped[e[0]] = item;
+          if (item && itemAllowedForLevel(item, lvl)) equipped[e[0]] = item;
         });
         if (parsed.runes) Object.entries(parsed.runes).forEach(function(e) {
           if (RUNES_BY_ID.get(e[1]) && isRuneKeyValid(e[0], equipped)) equippedRunes[e[0]] = e[1];
@@ -2158,7 +1932,6 @@ function loadAccessoriesForClass(classId) {
       name: name,
       classe: activeClass || '',
       level: buildLevel,
-      caracterPoints: Object.assign({}, caracterPoints),
       skillNodes: skillNodes.slice(),
       slots: slots,
       slotImages: slotImages,
@@ -2252,7 +2025,6 @@ function loadAccessoriesForClass(classId) {
           const cls = item.classes || item.class || [];
           if (Array.isArray(cls) && cls.length > 0 && !cls.includes(activeClass)) return false;
         }
-        if (item.threshold && Object.keys(item.threshold).length > 0) return false;
         if (_isSecretItem(item) && !window._canSeeSensibleItems) return false;
         // Items uniques : ne pas équiper deux fois le même item
         if (item.unique && usedUniqueIds.has(item.id ?? item._id)) return false;
@@ -2295,7 +2067,6 @@ function loadAccessoriesForClass(classId) {
     activeSlot = null;
     buildLevel = 1;
     skillNodes = [];
-    caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
     localStorage.removeItem(getBuildKey(activeBuildIndex));
     buildGrid();
     buildLevelPanel();
@@ -2456,14 +2227,12 @@ function loadAccessoriesForClass(classId) {
     buildLevel      = 1;
     activeClass     = null;
     skillNodes      = [];
-    Object.keys(caracterPoints).forEach(k => { caracterPoints[k] = 0; });
 
     if (!RUNES_BY_ID.size) {
       ITEMS.filter(function(i) { return i.cat === 'rune' || i.category === 'rune'; }).forEach(function(r) {
         const rid = getItemId(r); if (rid) RUNES_BY_ID.set(rid, r);
       });
     }
-    buildCarTooltip();
     buildSetTooltip();
     buildClassPicker();
     buildGrid();
@@ -2480,7 +2249,7 @@ function loadAccessoriesForClass(classId) {
     });
     document.getElementById('items-list').addEventListener('mousemove', function(e) {
       const tooltip = document.getElementById('set-tooltip');
-      if (tooltip && tooltip.classList.contains('visible')) positionCarTooltip(e, tooltip);
+      if (tooltip && tooltip.classList.contains('visible')) positionTooltip(e, tooltip);
     });
     document.getElementById('items-list').addEventListener('mouseleave', function() {
       hideSetTooltip();
@@ -2530,13 +2299,6 @@ function loadAccessoriesForClass(classId) {
           }
           if (parsed.level && parsed.level >= 1 && parsed.level <= MAX_LEVEL) {
             buildLevel = parsed.level;
-          }
-          if (parsed.caracterPoints && typeof parsed.caracterPoints === 'object') {
-            Object.keys(caracterPoints).forEach(k => {
-              if (typeof parsed.caracterPoints[k] === 'number') {
-                caracterPoints[k] = parsed.caracterPoints[k];
-              }
-            });
           }
           _setSkillNodes(parsed.skillNodes);
 

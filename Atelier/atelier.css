@@ -879,32 +879,6 @@ html, body {
 .level-max { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: .06em; }
 .level-progress-wrap { height: 3px; background: rgba(255,255,255,.05); border-radius: 2px; overflow: hidden; }
 .level-progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold-dim), var(--gold)); border-radius: 2px; transition: width .3s ease; }
-.level-points-row {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 4px 6px; background: rgba(255,255,255,.02);
-  border: 1px solid var(--rim); min-height: 24px;
-}
-.points-avail-label { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; }
-.points-avail-val { font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; }
-.car-block { display: flex; flex-direction: column; gap: 3px; }
-.car-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-radius: 2px; transition: background .12s; }
-.car-row:hover { background: rgba(255,255,255,.025); }
-.car-icon { font-size: 11px; width: 16px; text-align: center; flex-shrink: 0; filter: saturate(.8); }
-.car-label { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: var(--text); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.car-controls { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
-.car-btn {
-  width: 18px; height: 18px;
-  display: flex; align-items: center; justify-content: center;
-  background: transparent; border: 1px solid var(--rim2);
-  color: var(--muted); font-size: 13px; line-height: 1;
-  cursor: pointer; padding: 0;
-  transition: color .12s, border-color .12s, background .12s;
-  font-family: 'JetBrains Mono', monospace;
-}
-.car-btn:hover        { color: var(--gold);    border-color: var(--gold-dim);          background: var(--gold-glow); }
-.car-btn-plus:hover   { color: #59d059;        border-color: rgba(89,208,89,.4);        background: rgba(89,208,89,.06); }
-.car-btn-minus:hover  { color: #d9614a;        border-color: rgba(217,97,74,.4);        background: rgba(217,97,74,.06); }
-.car-val { font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; color: var(--gold); min-width: 20px; text-align: center; }
 
 /* ============================================================
    SIDEBAR GAUCHE — scroll interne
@@ -924,18 +898,17 @@ html, body {
 .tier-wrap::-webkit-scrollbar-thumb  { background: rgba(255,255,255,.18); border-radius: 2px; }
 
 /* ============================================================
-   INPUTS NUMÉRIQUES (level, car)
+   INPUT NUMÉRIQUE (niveau)
    ============================================================ */
-.level-num,
-.car-val {
+.level-num {
   background: transparent; border: none;
   text-align: center; width: 2.5ch;
   -moz-appearance: textfield;
 }
 .level-num::-webkit-outer-spin-button,
-.level-num::-webkit-inner-spin-button,
-.car-val::-webkit-outer-spin-button,
-.car-val::-webkit-inner-spin-button { display: none; }
+.level-num::-webkit-inner-spin-button { display: none; }
+
+/* ============================================================
 
 /* ============================================================
    SCROLLBAR GLOBALE
@@ -982,29 +955,6 @@ html, body {
   height: 100%;
 }
 
-.thresh-block {
-  margin-top: 6px;
-  padding: 6px 8px;
-  background: rgba(255,255,255,.04);
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,.08);
-}
-.thresh-title {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: rgba(255,255,255,.35);
-  margin-bottom: 4px;
-}
-.thresh-row {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-}
-.thresh-icon { font-size: 12px; width: 16px; text-align: center; }
-.thresh-label { flex: 1; }
-.thresh-val { font-weight: 700; font-size: 11px; white-space: nowrap; }
 
 .stat-row {
   cursor: pointer;
@@ -1490,16 +1440,6 @@ html, body {
   line-height: 1.5;
 }
 .car-tooltip.visible { opacity: 1; transform: translateY(0) scale(1); }
-.car-tt-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-.car-tt-icon { font-size: 15px; line-height: 1; }
-.car-tt-name { font-weight: 700; font-size: 12.5px; letter-spacing: .02em; }
-.car-tt-desc { font-style: italic; color: rgba(255,255,255,.45); font-size: 11px; margin-bottom: 8px; line-height: 1.45; }
-.car-tt-stats { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid rgba(255,255,255,.07); padding-top: 7px; }
-.car-tt-stat-row { display: flex; align-items: center; gap: 6px; }
-.car-tt-stat-icon { font-size: 12px; flex-shrink: 0; width: 16px; text-align: center; }
-.car-tt-stat-label { flex: 1; color: rgba(255,255,255,.6); font-size: 11px; }
-.car-tt-stat-val { font-weight: 700; font-size: 11.5px; white-space: nowrap; }
-.car-tt-per-pt { font-size: 9.5px; color: rgba(255,255,255,.3); margin-left: 2px; font-weight: 400; }
 
 .item-locked {
   cursor: default;

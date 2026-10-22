@@ -95,71 +95,14 @@ const CURRENCIES = {
 var MAX_LEVEL = 18; // var pour permettre la surcharge depuis Firestore (config/game)
 
 //#endregion MAX_LEVEL
-//#region CARACTERISTIQUES
-const CARACTERISTIQUES = [
-	  {
-		  id:'force',
-		  label:'Force',
-		  icon:'⚔️',
-		  color:'#e07a35',
-		  desc:'Augmente les Dégâts physiques infligés.',
-		  stats:{ degats: 1, crit_degats:0.75 }
-	  },
-		{
-			id:'dexterite',
-			label:'Dextérité',
-			icon:'🏹',
-			color:'#e0c840',
-			desc:'Améliore l\'Agilité et les chances de coups critique',
-			stats:{ crit_chance: 0.75, esquive: 0.3 }
-		},
-	  {
-		  id:'intelligence',
-		  label:'Intelligence',
-		  icon:'📖',
-		  color:'#9a5de8',
-		  desc:'Amplifie la puissance des sorts et des compétences magiques',
-		  stats:{ degats_magique: 1, crit_comp_chance:0.75 }
-		},
-		{
-			id:'esprit',
-			label:'Esprit',
-			icon:'🌿',
-			color:'#59d059',
-			desc:'Augmente la Régénération de Santé et d\'Énergie',
-			stats:{ regen_sante: 0.15, regen_mana: 0.1, regen_stamina: 0.05 }
-		},
-		{
-			id:'defense_car',
-		  label:'Défense',
-		  icon:'🛡️',
-		  color:'#5588e0',
-		  desc:'Réduit les dégâts subis en augmentant la Défense',
-		  stats:{ defense: 0.4 }
-		},
-		{
-			id:'vitalite',
-			label:'Vitalité',
-			icon:'❤️',
-			color:'#e05555',
-			desc:'Augmente la Santé maximale',
-			stats:{ sante: 3 }
-		},
-	];
-	
-/* Niveau actuel et points alloués */
+//#region BUILD LEVEL
+/* Niveau actuel du build */
 let buildLevel = 1;
-let caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
-
-function getAvailablePoints() {
-	const spent = Object.values(caracterPoints).reduce((a, b) => a + b, 0);
-	return buildLevel - spent;
-}
 
 function getMin(val) { return Array.isArray(val) ? val[0] : val; }
 function getMax(val) { return Array.isArray(val) ? val[1] : val; }
 
-//#endregion CARACTERISTIQUES
+//#endregion BUILD LEVEL
 //#region CATEGORIES
 const CATEGORIES = {
   armure:          { label: 'Armures',         emoji: '🛡️',  ordre: 1 },

@@ -47,8 +47,6 @@ export function generateRandomBuild(items, level, classId) {
         if (Array.isArray(classes) && classes.length > 0 && !classes.includes(classId)) return false;
       }
 
-      // Ignorer les items avec threshold attribut (trop complex à valider sans UI)
-      if (item.threshold && Object.keys(item.threshold).length > 0) return false;
 
       return true;
     });
