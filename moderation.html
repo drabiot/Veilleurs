@@ -4,17 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Modération — VCL Wiki</title>
-<link rel="stylesheet" href="moderation.css?v=2">
+<link rel="stylesheet" href="moderation.css?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
 </head>
 <body>
 
+<div class="ambient-bg"><div class="moon"></div><div class="vignette"></div></div>
+
 <header>
   <button id="btn-toggle-sidebar" onclick="toggleSidebar()" title="Afficher/Cacher le menu"
     style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px 8px;color:var(--text);line-height:1;margin-right:4px;">☰</button>
-  <h1>🛡️ Modération</h1>
+  <h1>Modération</h1>
   <span id="header-role" style="font-size:12px;color:var(--muted);"></span>
   <div class="hbtns">
     <a href="creator.html" class="btn btn-ghost" style="font-size:12px;">⚙️ Creator</a>
@@ -39,7 +41,7 @@
     <form onsubmit="event.preventDefault();doLogin()" autocomplete="on">
       <div class="field"><label>Identifiant</label><input type="text" id="login-email" placeholder="ton_identifiant" autocomplete="username"></div>
       <div class="field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"></div>
-      <button type="submit" class="btn" style="background:var(--accent);color:#fff;width:100%;justify-content:center;">🔑 Connexion</button>
+      <button type="submit" class="btn" style="background:var(--accent);color:var(--on-accent);width:100%;justify-content:center;">🔑 Connexion</button>
     </form>
     <div id="login-error" style="font-size:12px;color:var(--danger);display:none;text-align:center;"></div>
   </div>
@@ -452,7 +454,7 @@
     <!-- Onglets -->
     <div style="display:flex;gap:2px;margin-bottom:16px;background:var(--surface2);border-radius:8px;padding:3px;">
       <button id="map-tab-btn-allpins" onclick="switchMapTab('allpins')"
-        style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:#fff;">
+        style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:var(--on-accent);">
         🗺️ Tous les pins
       </button>
       <button id="map-tab-btn-colors" onclick="switchMapTab('colors')"
@@ -502,7 +504,7 @@
         <p style="font-size:12px;color:var(--muted);margin:0;">
           Définit la couleur de fond du pin sur la carte et dans la légende. Sauvegardé dans <code>config/pin_type_colors</code>. Les Régions restent toujours transparentes.
         </p>
-        <button class="btn" id="btn-save-pin-colors" onclick="savePinColors()" style="background:var(--accent);color:#fff;font-size:12px;flex-shrink:0;">💾 Sauvegarder</button>
+        <button class="btn" id="btn-save-pin-colors" onclick="savePinColors()" style="background:var(--accent);color:var(--on-accent);font-size:12px;flex-shrink:0;">💾 Sauvegarder</button>
       </div>
       <div id="pin-colors-content"><div class="empty">Chargement…</div></div>
     </div>
@@ -513,7 +515,7 @@
         <p style="font-size:12px;color:var(--muted);margin:0;">
           Personnalise l'emoji affiché pour chaque type de pin. Sauvegardé dans <code>config/pin_type_emojis</code>. Pour un pin individuel, édite le champ Emoji dans l'onglet "Tous les pins".
         </p>
-        <button class="btn" id="btn-save-pin-emojis" onclick="savePinEmojis()" style="background:var(--accent);color:#fff;font-size:12px;flex-shrink:0;">💾 Sauvegarder</button>
+        <button class="btn" id="btn-save-pin-emojis" onclick="savePinEmojis()" style="background:var(--accent);color:var(--on-accent);font-size:12px;flex-shrink:0;">💾 Sauvegarder</button>
       </div>
       <div id="pin-emojis-content"><div class="empty">Chargement…</div></div>
     </div>
@@ -532,7 +534,7 @@
         <p style="font-size:12px;color:var(--muted);margin:0;">
           Groupes de pins affichés dans la légende de la carte. Sauvegardé dans <code>config/pin_categories</code>.
         </p>
-        <button class="btn" id="btn-save-pin-categories" onclick="savePinCategories()" style="background:var(--accent);color:#fff;font-size:12px;flex-shrink:0;">💾 Sauvegarder</button>
+        <button class="btn" id="btn-save-pin-categories" onclick="savePinCategories()" style="background:var(--accent);color:var(--on-accent);font-size:12px;flex-shrink:0;">💾 Sauvegarder</button>
       </div>
       <div id="pin-categories-content"><div class="empty">Chargement…</div></div>
     </div>
@@ -584,7 +586,7 @@
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
-          <button class="btn" id="pg-save-btn" onclick="saveNewPassage()" style="background:var(--accent);color:#fff;font-size:12px;" disabled>💾 Créer le passage</button>
+          <button class="btn" id="pg-save-btn" onclick="saveNewPassage()" style="background:var(--accent);color:var(--on-accent);font-size:12px;" disabled>💾 Créer le passage</button>
           <button class="btn btn-ghost" onclick="pgReset()" style="font-size:12px;">✖ Annuler</button>
         </div>
         <div id="pg-create-error" style="font-size:12px;color:var(--danger);margin-top:6px;display:none;"></div>
@@ -611,14 +613,14 @@
       <div style="display:flex;gap:8px;">
         <button class="btn btn-ghost" onclick="loadDiscordWebhooks()" style="font-size:12px;">🔄 Rafraîchir</button>
         <button class="btn btn-ghost" id="btn-reorder-tags" onclick="reorderAllChannelTags()" style="font-size:12px;">🔃 Réorganiser les tags</button>
-        <button class="btn" id="dw-save-btn" onclick="saveDiscordWebhooks()" style="background:var(--accent);color:#fff;font-size:12px;">💾 Sauvegarder</button>
+        <button class="btn" id="dw-save-btn" onclick="saveDiscordWebhooks()" style="background:var(--accent);color:var(--on-accent);font-size:12px;">💾 Sauvegarder</button>
       </div>
     </div>
 
     <!-- Tab bar -->
     <div id="dw-tab-bar" style="display:flex;gap:2px;margin-bottom:20px;background:var(--surface2);border-radius:8px;padding:3px;">
       <button id="dw-tab-btn-webhooks" onclick="switchDwTab('webhooks')"
-        style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:#fff;">
+        style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:var(--on-accent);">
         🔗 Webhooks
       </button>
       <button id="dw-tab-btn-embed" onclick="switchDwTab('embed')"
@@ -699,7 +701,7 @@
             <button class="btn btn-ghost" onclick="dwPublishCheckAll(false)" style="font-size:11px;padding:4px 10px;">☐ Tout décocher</button>
           </div>
           <button id="dw-pub-send-btn" class="btn" onclick="dwPublishSelected()"
-            style="background:var(--accent);color:#fff;font-size:12px;">📤 Envoyer les sélectionnés</button>
+            style="background:var(--accent);color:var(--on-accent);font-size:12px;">📤 Envoyer les sélectionnés</button>
         </div>
         <div id="dw-pub-progress" style="display:none;margin-bottom:12px;">
           <div style="font-size:12px;color:var(--muted);margin-bottom:6px;" id="dw-pub-progress-text">Envoi en cours…</div>
@@ -872,7 +874,7 @@
             Convertit les anciens docs keyés par <code>item.id</code> vers <code>nameHash</code>.
             À exécuter une fois après la mise à jour du système sensible.
           </p>
-          <button class="btn" onclick="sensRunKeyMigration()" style="font-size:12px;background:var(--accent);color:#fff;">
+          <button class="btn" onclick="sensRunKeyMigration()" style="font-size:12px;background:var(--accent);color:var(--on-accent);">
             🔧 Migrer les clés
           </button>
           <div id="sens-migration-log" style="margin-top:10px;font-size:11px;color:var(--muted);white-space:pre-wrap;max-height:120px;overflow-y:auto;"></div>
@@ -933,7 +935,7 @@
   <main class="main" id="game-config-panel" style="display:none;overflow-y:auto;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <h2 style="margin:0;font-size:18px;font-weight:700;">🌍 Configuration du Jeu</h2>
-      <button class="btn" id="gc-save-btn" onclick="saveGameConfig()" style="background:var(--accent);color:#fff;font-weight:600;">💾 Sauvegarder</button>
+      <button class="btn" id="gc-save-btn" onclick="saveGameConfig()" style="background:var(--accent);color:var(--on-accent);font-weight:600;">💾 Sauvegarder</button>
     </div>
     <div id="gc-content">
       <!-- généré par _renderGameConfig() -->
@@ -1008,11 +1010,11 @@ style="font-size:12px;">← Retour</button>
         <label style="font-size:11px;color:var(--muted);">Tag à ajouter</label>
         <input type="text" id="tag-rule-tag" placeholder="ex: Arme" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;width:140px;">
       </div>
-      <button class="btn" onclick="addTagRule()" style="background:var(--accent);color:#fff;font-size:12px;">+ Ajouter</button>
+      <button class="btn" onclick="addTagRule()" style="background:var(--accent);color:var(--on-accent);font-size:12px;">+ Ajouter</button>
     </div>
     <div id="tag-rules-list" style="margin-bottom:16px;"></div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-      <button class="btn" onclick="applyTagRules()" style="background:var(--accent);color:#fff;font-size:12px;">▶ Appliquer toutes les règles</button>
+      <button class="btn" onclick="applyTagRules()" style="background:var(--accent);color:var(--on-accent);font-size:12px;">▶ Appliquer toutes les règles</button>
       <button class="btn btn-ghost" onclick="seedDefaultTagRules()" style="font-size:12px;">📋 Règles par défaut</button>
       <span id="tag-apply-status" style="font-size:12px;color:var(--muted);"></span>
     </div>
@@ -1032,7 +1034,7 @@ style="font-size:12px;">← Retour</button>
       <div id="lb-migrate-selected" style="font-size:12px;color:var(--accent);margin-bottom:14px;min-height:18px;"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button class="btn btn-ghost" onclick="closeLbMigrateDialog()" style="font-size:12px;">Annuler</button>
-        <button class="btn" id="btn-lb-migrate-confirm" onclick="confirmLbMigrate()" style="background:var(--accent);color:#fff;font-size:12px;" disabled>🔀 Confirmer</button>
+        <button class="btn" id="btn-lb-migrate-confirm" onclick="confirmLbMigrate()" style="background:var(--accent);color:var(--on-accent);font-size:12px;" disabled>🔀 Confirmer</button>
       </div>
     </div>
   </div>
@@ -1042,10 +1044,10 @@ style="font-size:12px;">← Retour</button>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
       <button class="btn btn-ghost" onclick="editorGoBack()" style="font-size:12px;">← Retour</button>
       <span id="editor-title" style="font-size:15px;font-weight:700;flex:1;color:var(--text);">✏️ Éditeur</span>
-      <span id="editor-collection-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:rgba(122,90,248,.15);color:var(--accent);border:1px solid rgba(122,90,248,.3);"></span>
+      <span id="editor-collection-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;background:rgba(224,172,96,.15);color:var(--accent);border:1px solid rgba(224,172,96,.3);"></span>
       <button class="btn btn-ghost" id="btn-creator-editor" onclick="openEditorInCreator()" style="font-size:12px;" title="Ouvrir dans le Creator">⚙️ Creator</button>
       <button class="btn btn-reject" id="btn-delete-editor" onclick="deleteCurrentEntry()" style="font-size:12px;">🗑️ Supprimer</button>
-      <button class="btn" id="btn-save-editor" onclick="saveEditor()" style="background:var(--accent);color:#fff;font-size:12px;">💾 Sauvegarder</button>
+      <button class="btn" id="btn-save-editor" onclick="saveEditor()" style="background:var(--accent);color:var(--on-accent);font-size:12px;">💾 Sauvegarder</button>
     </div>
     <div id="ed-error" style="display:none;font-size:12px;color:var(--danger);padding:8px 12px;background:rgba(248,113,113,.1);border-radius:6px;border:1px solid rgba(248,113,113,.3);margin-bottom:10px;"></div>
     <div id="editor-form" style="display:flex;flex-direction:column;gap:12px;"></div>
@@ -1085,7 +1087,7 @@ style="font-size:12px;">← Retour</button>
       <span style="font-size:15px;font-weight:700;">🗺️ Éditeur de Zones</span>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-ghost" onclick="zoneEditorReset()" style="font-size:12px;">🗑 Reset</button>
-        <button class="btn" id="ze-save-btn" onclick="zoneEditorSave()" style="background:var(--accent);color:#fff;font-size:12px;" disabled>💾 Sauvegarder</button>
+        <button class="btn" id="ze-save-btn" onclick="zoneEditorSave()" style="background:var(--accent);color:var(--on-accent);font-size:12px;" disabled>💾 Sauvegarder</button>
       </div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
@@ -1121,7 +1123,7 @@ style="font-size:12px;">← Retour</button>
     <!-- Toggle Surface / Sous-sol -->
     <div style="display:flex;gap:0;margin-bottom:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px;width:fit-content;">
       <button id="ze-layer-surface" onclick="zeLayerChange('surface')"
-        style="padding:5px 14px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:#fff;">
+        style="padding:5px 14px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:var(--on-accent);">
         🌿 Surface
       </button>
       <button id="ze-layer-underground" onclick="zeLayerChange('underground')"
@@ -1173,14 +1175,14 @@ style="font-size:12px;">← Retour</button>
       <span style="font-size:15px;font-weight:700;">🖼️ Images</span>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-ghost" onclick="resetImagesTool()" style="font-size:12px;">🔄 Rafraîchir</button>
-        <button class="btn" onclick="saveImagesConfig()" style="background:var(--accent);color:#fff;font-size:12px;">💾 Config</button>
+        <button class="btn" onclick="saveImagesConfig()" style="background:var(--accent);color:var(--on-accent);font-size:12px;">💾 Config</button>
       </div>
     </div>
 
     <!-- Onglets -->
     <div style="display:flex;gap:2px;margin-bottom:16px;background:var(--surface2);border-radius:8px;padding:3px;">
       <button id="img-tab-btn-upload" onclick="switchImgTab('upload')"
-        style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:#fff;">
+        style="flex:1;padding:6px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:var(--on-accent);">
         📤 Upload
       </button>
       <button id="img-tab-btn-textures" onclick="switchImgTab('textures')"
@@ -1221,7 +1223,7 @@ style="font-size:12px;">← Retour</button>
           <input type="file" id="img-file-input" accept="image/png,image/jpg,image/jpeg,image/webp" style="display:none;" onchange="imgFileSelect(this.files[0])">
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn" id="img-upload-btn" onclick="imgUploadToGithub()" style="background:var(--accent);color:#fff;font-size:12px;" disabled>📤 Envoyer sur GitHub</button>
+          <button class="btn" id="img-upload-btn" onclick="imgUploadToGithub()" style="background:var(--accent);color:var(--on-accent);font-size:12px;" disabled>📤 Envoyer sur GitHub</button>
           <span id="img-upload-status" style="font-size:12px;color:var(--muted);"></span>
         </div>
       </div>
@@ -1231,7 +1233,7 @@ style="font-size:12px;">← Retour</button>
     <div id="img-tab-textures" style="display:none;">
       <!-- Barre d'outils -->
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-        <button class="btn" onclick="document.getElementById('tpk-zip-input').click()" style="background:var(--accent);color:#fff;font-size:12px;">📦 Charger ZIP</button>
+        <button class="btn" onclick="document.getElementById('tpk-zip-input').click()" style="background:var(--accent);color:var(--on-accent);font-size:12px;">📦 Charger ZIP</button>
         <input type="file" id="tpk-zip-input" accept=".zip" style="display:none;" onchange="tpkLoadZip(this.files[0])">
         <button class="btn btn-ghost" id="tpk-gh-btn" onclick="tpkRefreshGithub()" style="font-size:12px;" disabled>🔄 GitHub</button>
         <button class="btn btn-ghost" id="tpk-visual-btn" onclick="tpkVisualMatch()" style="font-size:12px;" disabled>🔍 Match visuel</button>
@@ -1255,7 +1257,7 @@ style="font-size:12px;">← Retour</button>
           </div>
           <div id="tpk-sel-bar" style="display:none;padding:5px 8px;margin-bottom:6px;background:color-mix(in srgb,var(--accent) 15%,var(--surface2));border:1px solid var(--accent);border-radius:6px;align-items:center;gap:8px;font-size:11px;">
             <span id="tpk-sel-count" style="flex:1;font-weight:600;color:var(--accent);"></span>
-            <button class="btn" onclick="tpkSelToInutile()" style="background:var(--accent);color:#fff;font-size:11px;padding:2px 8px;">🚫 Inutile</button>
+            <button class="btn" onclick="tpkSelToInutile()" style="background:var(--accent);color:var(--on-accent);font-size:11px;padding:2px 8px;">🚫 Inutile</button>
             <button class="btn btn-ghost" onclick="tpkSelToIllisible()" style="font-size:11px;padding:2px 8px;">❓ Illisible</button>
             <button class="btn btn-ghost" onclick="tpkSelClear()" style="font-size:11px;padding:2px 6px;" title="Désélectionner tout">✕</button>
           </div>
@@ -1410,7 +1412,7 @@ style="font-size:12px;">← Retour</button>
       Gérez les types d'effets disponibles pour les consommables. Les modifications sont répercutées dans le Creator et le Compendium après rechargement.
     </p>
     <div style="display:flex;gap:8px;margin-bottom:14px;">
-      <button class="vcl-tab active" id="effects-tab-types" onclick="switchEffectsTab('types')" style="font-size:12px;padding:5px 14px;border-radius:20px;border:none;cursor:pointer;background:var(--accent);color:#fff;">Types d'effets</button>
+      <button class="vcl-tab active" id="effects-tab-types" onclick="switchEffectsTab('types')" style="font-size:12px;padding:5px 14px;border-radius:20px;border:none;cursor:pointer;background:var(--accent);color:var(--on-accent);">Types d'effets</button>
       <button class="vcl-tab" id="effects-tab-templates" onclick="switchEffectsTab('templates')" style="font-size:12px;padding:5px 14px;border-radius:20px;border:none;cursor:pointer;background:var(--surface2);color:var(--text);">Templates</button>
     </div>
     <!-- Onglet Types -->
@@ -1461,7 +1463,7 @@ style="font-size:12px;">← Retour</button>
             <option value="en_cours">🟡 En cours de résolution</option>
             <option value="résolu">✅ Résolu</option>
           </select>
-          <button class="btn" onclick="window.saveBugForm()" style="background:var(--accent);color:#fff;font-size:13px;">Publier</button>
+          <button class="btn" onclick="window.saveBugForm()" style="background:var(--accent);color:var(--on-accent);font-size:13px;">Publier</button>
         </div>
       </div>
     </div>
@@ -1482,7 +1484,7 @@ style="font-size:12px;">← Retour</button>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-ghost" onclick="tpkMatchSelectAll(true)" style="font-size:11px;">Tout cocher</button>
         <button class="btn btn-ghost" onclick="tpkMatchSelectAll(false)" style="font-size:11px;">Tout décocher</button>
-        <button class="btn" onclick="tpkMatchApply()" style="background:var(--accent);color:#fff;font-size:12px;">✓ Appliquer <span id="tpk-match-apply-count"></span></button>
+        <button class="btn" onclick="tpkMatchApply()" style="background:var(--accent);color:var(--on-accent);font-size:12px;">✓ Appliquer <span id="tpk-match-apply-count"></span></button>
         <button class="btn btn-ghost" onclick="document.getElementById('tpk-match-modal').style.display='none'" style="font-size:12px;">Annuler</button>
       </div>
     </div>

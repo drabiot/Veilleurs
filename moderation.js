@@ -443,7 +443,7 @@ function _buildPrettySummary(data, type) {
     if (data.stats && Object.keys(data.stats).length) {
       const statLines = Object.entries(data.stats).map(([k, v]) => {
         const val = Array.isArray(v) ? `${v[0]}–${v[1]}` : v;
-        return `<span style="background:rgba(122,90,248,.12);border:1px solid rgba(122,90,248,.2);border-radius:4px;padding:1px 6px;font-size:11px;">${esc(k)} <b>${val}</b></span>`;
+        return `<span style="background:rgba(224,172,96,.12);border:1px solid rgba(224,172,96,.2);border-radius:4px;padding:1px 6px;font-size:11px;">${esc(k)} <b>${val}</b></span>`;
       }).join(' ');
       rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Stats</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;">${statLines}</div>`);
     }
@@ -960,7 +960,7 @@ window.toggleEdit = async (id) => {
     ta.value = JSON.stringify(sub.data || {}, null, 2);
     editor.classList.add('open');
     btn.textContent = '✔ Valider';
-    btn.style.background = 'rgba(122,90,248,.25)';
+    btn.style.background = 'rgba(224,172,96,.25)';
     ta.focus();
   }
 };
@@ -3221,7 +3221,7 @@ async function loadDeadLinks() {
 
       // ── Ligne de correction (masquée par défaut) ────
       const fixTr = document.createElement('tr');
-      fixTr.style.cssText = 'display:none;background:rgba(122,90,248,.04);';
+      fixTr.style.cssText = 'display:none;background:rgba(224,172,96,.04);';
       const fixTd = document.createElement('td');
       fixTd.colSpan = 5;
       fixTd.style.cssText = 'padding:8px 12px;border-top:none;';
@@ -3247,7 +3247,7 @@ async function loadDeadLinks() {
 
       const applyBtn = document.createElement('button');
       applyBtn.className = 'btn';
-      applyBtn.style.cssText = 'background:var(--accent);color:#fff;font-size:11px;padding:4px 12px;margin-left:6px;opacity:.4;cursor:not-allowed;';
+      applyBtn.style.cssText = 'background:var(--accent);color:var(--on-accent);font-size:11px;padding:4px 12px;margin-left:6px;opacity:.4;cursor:not-allowed;';
       applyBtn.textContent = '✓ Appliquer';
       applyBtn.disabled = true;
 
@@ -4154,7 +4154,7 @@ async function loadGhostIds() {
         ? `<span style="font-size:10px;font-weight:700;color:#f87171;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);border-radius:8px;padding:2px 7px;">🚫 Rejet</span>`
         : isMob
           ? `<span style="font-size:10px;font-weight:700;color:var(--warn);background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:2px 7px;">Mob</span>`
-          : `<span style="font-size:10px;font-weight:700;color:var(--accent);background:rgba(122,90,248,.1);border:1px solid rgba(122,90,248,.3);border-radius:8px;padding:2px 7px;">Item</span>`;
+          : `<span style="font-size:10px;font-weight:700;color:var(--accent);background:rgba(224,172,96,.1);border:1px solid rgba(224,172,96,.3);border-radius:8px;padding:2px 7px;">Item</span>`;
       const actionCell = isRejected
         ? `<span style="font-size:11px;color:var(--muted);">Soumission rejetée — à corriger</span>`
         : isMob
@@ -5800,13 +5800,13 @@ function _renderUnsentSection() {
   section.style.display = '';
   section.innerHTML = `
     <div style="border:1px solid var(--accent);border-radius:8px;overflow:hidden;margin-bottom:20px;">
-      <div style="padding:10px 14px;background:rgba(122,90,248,.1);border-bottom:1px solid var(--accent);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="padding:10px 14px;background:rgba(224,172,96,.1);border-bottom:1px solid var(--accent);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <span style="font-size:13px;font-weight:700;color:var(--accent);">🆕 Nouvelles approvals${unsent.length ? ` — ${unsent.length} non envoyée${unsent.length>1?'s':''}` : ''}</span>
         ${unsent.length ? `<div style="display:flex;gap:6px;align-items:center;">
           <button class="btn btn-ghost" onclick="dwUnsentCheckAll(true)"  style="font-size:11px;padding:4px 10px;">✅ Tout cocher</button>
           <button class="btn btn-ghost" onclick="dwUnsentCheckAll(false)" style="font-size:11px;padding:4px 10px;">☐ Tout décocher</button>
           <button id="dw-unsent-send-btn" class="btn" onclick="dwPublishUnsentSend()"
-            style="background:var(--accent);color:#fff;font-size:12px;">📤 Envoyer la file</button>
+            style="background:var(--accent);color:var(--on-accent);font-size:12px;">📤 Envoyer la file</button>
         </div>` : ''}
       </div>
       ${body}
@@ -8341,7 +8341,7 @@ function renderUsers(users) {
       : `<button class="btn btn-ghost" style="font-size:11px;padding:2px 8px;color:var(--warn,#f59e0b);border-color:var(--warn,#f59e0b);" onclick="suspendUser('${escHtml(u.uid)}', '${escHtml(u.pseudo || u.uid)}')">🚫 Suspendre</button>`;
 
     const countBadge = count > 0
-      ? `<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(122,90,248,.12);color:var(--accent);border:1px solid rgba(122,90,248,.25);margin-left:4px;">${count} contrib.</span>`
+      ? `<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(224,172,96,.12);color:var(--accent);border:1px solid rgba(224,172,96,.25);margin-left:4px;">${count} contrib.</span>`
       : '';
 
     row.innerHTML = `
@@ -9085,7 +9085,7 @@ function _buildStatsExtra({ userVisits, itemViewDocs, searchLogDocs, recentRepor
       const pct = Math.round(it.count / maxItem * 100);
       return `<div class="stats-sec-row">
         <div class="stats-sec-label">${i + 1}. ${escHtml(it.name)}</div>
-        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${pct}%;background:#7a5af8">${fmt(it.count)}</div></div>
+        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${pct}%;background:#E0AC60">${fmt(it.count)}</div></div>
       </div>`;
     }).join('');
     html += `<div class="stats-section">
@@ -9266,7 +9266,7 @@ window.loadStatistiques = async function loadStatistiques() {
     }
 
     const SECTION_COLORS = {
-      compendium: '#7a5af8', bestiaire: '#f87171', map: '#4ade80',
+      compendium: '#E0AC60', bestiaire: '#f87171', map: '#4ade80',
       quetes: '#fbbf24', atelier: '#60a5fa', patchnotes: '#a78bfa', builds: '#f97316',
     };
     const SECTION_LABELS = {
@@ -9299,7 +9299,7 @@ window.loadStatistiques = async function loadStatistiques() {
 
     // ── KPI cards ─────────────────────────────────────
     const kpiCards = `<div class="stats-kpi-grid">
-      <div class="stats-kpi-card" style="--kpi-color:#7a5af8">
+      <div class="stats-kpi-card" style="--kpi-color:#E0AC60">
         <div class="stats-kpi-icon">📅</div>
         <div class="stats-kpi-val">${fmt(total7)}</div>
         <div class="stats-kpi-lbl">7 derniers jours</div>
@@ -10295,7 +10295,7 @@ function _buildCompletionCard(mode, colName, d, missing, discVal, { ignored = fa
   headRow.innerHTML = `
     ${!ignored ? `<label class="tdc-check" title="Ajouter au tableau de chasse"><input type="checkbox" data-mode="${escHtml(mode)}" data-id="${escHtml(docId)}"${(_tdcData[mode]||[]).includes(docId) ? ' checked' : ''} onchange="saveTableauDeChasse()">🎯</label>` : ''}
     <span style="font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:8px;background:var(--surface3);color:var(--muted);flex-shrink:0;">${escHtml(mode)}</span>
-    ${subcatLbl ? `<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:rgba(122,90,248,.12);color:var(--accent);border:1px solid rgba(122,90,248,.25);flex-shrink:0;">${escHtml(subcatLbl)}</span>` : ''}
+    ${subcatLbl ? `<span style="font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;background:rgba(224,172,96,.12);color:var(--accent);border:1px solid rgba(224,172,96,.25);flex-shrink:0;">${escHtml(subcatLbl)}</span>` : ''}
     <span style="font-size:14px;font-weight:700;">${escHtml(d.name||d.titre||d.label||docId||'—')}</span>
     <span style="font-size:11px;color:var(--muted);font-family:monospace;">${escHtml(docId)}</span>
     ${hasPending
@@ -13837,7 +13837,7 @@ window.renderDataAll = function() {
     const badgesEl = document.createElement('span');
     badgesEl.style.cssText = 'display:flex;gap:3px;flex-shrink:0;flex-wrap:nowrap;';
 
-    if (d.palier) _daAddBadge(badgesEl, 'P'+d.palier, 'var(--accent)', 'rgba(122,90,248,.15)');
+    if (d.palier) _daAddBadge(badgesEl, 'P'+d.palier, 'var(--accent)', 'rgba(224,172,96,.15)');
     if (d.category) _daAddBadge(badgesEl, d.category, 'var(--muted)', 'transparent');
     if (d.rarity && d._type === 'item') {
       const _RC = { commun:'#aaa', rare:'#4da6ff', epique:'#c47aff', legendaire:'#ffb830', mythique:'#ff6060', godlike:'#ff3aba', event:'#60e8b0' };
@@ -14241,7 +14241,7 @@ function _renderZoneMobEditor(zone, body, mobsById, header, nameSpan, colorDot, 
 
   const saveBtn = document.createElement('button');
   saveBtn.className = 'btn';
-  saveBtn.style.cssText = 'background:var(--accent);color:#fff;font-size:12px;';
+  saveBtn.style.cssText = 'background:var(--accent);color:var(--on-accent);font-size:12px;';
   saveBtn.textContent = '💾 Sauvegarder';
   saveBtn.addEventListener('click', async () => {
     saveBtn.disabled = true;
@@ -15563,7 +15563,7 @@ function _buildAddPinTypeForm() {
 
   const addBtn = document.createElement('button');
   addBtn.className = 'btn';
-  addBtn.style.cssText = 'background:var(--accent);color:#fff;font-size:12px;flex-shrink:0;align-self:flex-end;';
+  addBtn.style.cssText = 'background:var(--accent);color:var(--on-accent);font-size:12px;flex-shrink:0;align-self:flex-end;';
   addBtn.textContent = '✓ Ajouter';
   addBtn.addEventListener('click', async () => {
     const label = labelInp.value.trim();
@@ -16151,7 +16151,7 @@ function _renderBugsConnus(bugs, container) {
       + '<option value="en_cours"' + (b.status === 'en_cours' ? ' selected' : '') + '>\u{1F7E1} En cours de résolution</option>'
       + '<option value="résolu"'   + (b.status === 'résolu'   ? ' selected' : '') + '>✅ Résolu</option>'
       + '</select>'
-      + '<button class="btn" style="background:var(--accent);color:#fff;font-size:12px;" onclick="window.saveEditBug(' + eid + ')">Sauvegarder</button>'
+      + '<button class="btn" style="background:var(--accent);color:var(--on-accent);font-size:12px;" onclick="window.saveEditBug(' + eid + ')">Sauvegarder</button>'
       + '<button class="btn btn-ghost" style="font-size:12px;" onclick="window.cancelEditBug(' + eid + ')">Annuler</button>'
       + '</div></div></div></div>';
   }).join('');
