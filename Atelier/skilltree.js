@@ -227,6 +227,39 @@
     return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
   }
 
+  /* ── Filtre par stat ── */
+  var filterStats = {};
+
+  function hasFilter() { return Object.keys(filterStats).length > 0; }
+
+  function renderFilter() {
+    var classe = src && src.getClass(), box = ui.chips;
+    var counts = {}, all = (window.VCL_SKILL_EFFECTS || {})[classe] || {};
+    if (classe) {
+      Object.keys(GRAPH.nodes).forEach(function (k) {
+        var fx = k === CENTER ? null : all[NUMBERS[k]];
+        if (fx) counts[fx.stats] = (counts[fx.stats] || 0) + 1;
+      });
+    }
+    // une stat filtrée qui n'existe plus dans cette classe est retirée
+    Object.keys(filterStats).forEach(function (s) { if (!counts[s]) delete filterStats[s]; });
+    var ids = Object.keys(counts).sort(function (a, b) {
+      var da = statDef(a), db = statDef(b);
+      return (da ? da.label : a).localeCompare(db ? db.label : b, 'fr');
+    });
+    if (!ids.length) {
+      box.innerHTML = '<div class="st-chips-none">' + (classe ? 'Aucune stat' : 'Choisis une classe pour filtrer') + '</div>';
+    } else {
+      box.innerHTML = ids.map(function (s) {
+        var d = statDef(s);
+        return '<button class="st-chip' + (filterStats[s] ? ' on' : '') + '" data-stat="' + escapeHtml(s) + '">' +
+          '<span class="st-chip-ico">' + (d ? d.icon : '') + '</span>' + escapeHtml(d ? d.label : s) +
+          '<span class="st-chip-n">' + counts[s] + '</span></button>';
+      }).join('');
+    }
+    ui.filterClear.hidden = !hasFilter();
+  }
+
   function showTip(g) {
     var k = g.getAttribute('data-k'), classe = src && src.getClass();
     var fx = classe ? effectOf(k, classe) : null;
@@ -281,6 +314,8 @@
     var left = max - nodes.length;
 
     hideTip();
+    renderFilter();
+    ui.svg.classList.toggle('st-filtering', hasFilter());
     var svg = ui.world;
     svg.innerHTML = '';
     Object.keys(GRAPH.edges).forEach(function (k) {
@@ -295,8 +330,10 @@
       var n = GRAPH.nodes[k];
       var isCenter = k === CENTER, isKey = !!KEYSTONES[k], isOwned = !!owned[k];
       var avail = !readOnly && !isOwned && left > 0 && canTake(k, owned);
+      var fxN = isCenter ? null : effectOf(k, A.getClass());
       var cls = 'st-node' + (isCenter ? ' st-center' : '') + (isKey ? ' st-key' : '') +
-                (isOwned ? ' st-owned' : avail ? ' st-avail' : '');
+                (isOwned ? ' st-owned' : avail ? ' st-avail' : '') +
+                (hasFilter() && !isCenter ? (fxN && filterStats[fxN.stats] ? ' st-hit' : ' st-dim') : '');
       var g = el('g', { class: cls, transform: 'translate(' + n[0] * STEP + ',' + n[1] * STEP + ')', 'data-k': k }, svg);
       var r = isCenter ? 15 : isKey ? 12 : 9;
       if (isCenter) diamond(g, r + 5, 'st-ring');
@@ -526,6 +563,10 @@
           '<span class="st-points-lbl">Points restants</span>' +
           '<span class="st-points-val">0 / 0</span>' +
         '</div>' +
+        '<div class="st-filter">' +
+          '<div class="st-filter-head"><span>Filtrer par stat</span><button class="st-filter-clear" hidden>Effacer</button></div>' +
+          '<div class="st-chips"></div>' +
+        '</div>' +
         '<div class="st-info"></div>' +
         '<div class="st-editor" hidden></div>' +
         '<div class="st-admin" hidden>' +
@@ -553,6 +594,8 @@
     ui.info = overlay.querySelector('.st-info');
     ui.points = overlay.querySelector('.st-points-val');
     ui.pointsLbl = overlay.querySelector('.st-points-lbl');
+    ui.chips = overlay.querySelector('.st-chips');
+    ui.filterClear = overlay.querySelector('.st-filter-clear');
     ui.reset = overlay.querySelector('.st-reset');
     ui.admin = overlay.querySelector('.st-admin');
     ui.editor = overlay.querySelector('.st-editor');
@@ -564,6 +607,14 @@
 
     function close() { overlay.classList.remove('open'); }
     overlay.querySelector('.st-close').addEventListener('click', function () { if (editing) cancelEdit(); close(); });
+    ui.chips.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.st-chip');
+      if (!b) return;
+      var s = b.getAttribute('data-stat');
+      if (filterStats[s]) delete filterStats[s]; else filterStats[s] = 1;
+      render();
+    });
+    ui.filterClear.addEventListener('click', function () { filterStats = {}; render(); });
     ui.editBtn.addEventListener('click', startEdit);
     overlay.querySelector('.st-confirm').addEventListener('click', confirmEdit);
     overlay.querySelector('.st-cancel').addEventListener('click', cancelEdit);
@@ -586,6 +637,7 @@
     overlay.setAttribute('data-class', src.getClass() || 'none');
     ui.reset.style.display = readOnly ? 'none' : '';
     ui.pointsLbl.textContent = readOnly ? 'Points dépensés' : 'Points restants';
+    filterStats = {};
     editing = false; ui.editor.hidden = true; ui.editActions.hidden = true; ui.editBtn.hidden = false;
     ui.admin.hidden = !isAdmin();
     overlay.classList.add('open');

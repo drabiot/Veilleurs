@@ -193,3 +193,30 @@
 }
 .st-ed-val { display: flex; align-items: center; gap: 10px; color: var(--muted); }
 .st-ed-val .st-ed-num { width: 90px; }
+
+/* Filtre par stat */
+.st-filter { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.st-filter-head { display: flex; align-items: center; justify-content: space-between; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.st-filter-clear { background: none; border: none; color: var(--gold-dim); font-family: inherit; font-size: 10px; cursor: pointer; text-decoration: underline; }
+.st-filter-clear[hidden] { display: none; }
+.st-filter-clear:hover { color: var(--gold); }
+.st-chips { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; padding-right: 2px; }
+.st-chips-none { font-size: 11px; color: var(--muted); }
+.st-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(0,0,0,.25); border: 1px solid var(--rim2); border-radius: 999px;
+  color: var(--text); font-family: inherit; font-size: 10.5px; line-height: 1.2; padding: 4px 9px; cursor: pointer;
+  transition: all .12s;
+}
+.st-chip:hover { border-color: var(--gold-dim); color: var(--bright); }
+.st-chip.on { background: var(--gold-glow); border-color: var(--gold); color: var(--gold); }
+.st-chip-ico { font-size: 11px; line-height: 1; }
+.st-chip-n { color: var(--muted); font-size: 9.5px; }
+.st-chip.on .st-chip-n { color: var(--gold-dim); }
+.st-info { flex: 0 0 auto; }
+
+.st-filtering .st-edge { opacity: .3; }
+.st-node.st-dim { opacity: .25; }
+.st-node.st-hit .st-shape { stroke: #ffe08a; stroke-width: 2.4; filter: drop-shadow(0 0 7px rgba(255,214,120,.95)); }
+.st-node.st-hit { animation: st-hit-pulse 1.6s ease-in-out infinite; }
+@keyframes st-hit-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .72; } }
