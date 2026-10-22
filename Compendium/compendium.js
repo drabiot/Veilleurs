@@ -243,6 +243,18 @@ function inlineMd(str) {
   return inlineLinks(escHtml(str).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'));
 }
 
+/* Repli de tri des armes sans `ordre` : niveau → classe → arme principale puis secondaire */
+function weaponFallbackCmp(a, b) {
+  const classIdx = it => {
+    const i = CLASSES.findIndex(c => c.id === (it.classes || [])[0]);
+    return i === -1 ? 999 : i;
+  };
+  const slotIdx = it => (it.cat === 'arme_s' ? 1 : 0);
+  return ((a.lvl ?? 0) - (b.lvl ?? 0))
+      || (classIdx(a) - classIdx(b))
+      || (slotIdx(a) - slotIdx(b));
+}
+
 /* Regroupe les items par palier puis par catégorie, triés par rareté */
 function groupItems(items) {
   const grouped = {};
@@ -260,6 +272,7 @@ function groupItems(items) {
         if (ao !== null && bo !== null) return ao - bo;
         if (ao !== null) return -1;
         if (bo !== null) return 1;
+        if (cat === 'arme') return weaponFallbackCmp(a, b) || rarityRank(a.rarity) - rarityRank(b.rarity);
         return rarityRank(a.rarity) - rarityRank(b.rarity);
       });
     }
