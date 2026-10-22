@@ -55,9 +55,33 @@
   ];
   var KEYSTONES = { '-2,-2': 1, '2,-2': 1, '-2,2': 1, '2,2': 1 };
 
+  // Un trait long qui passe sur une case existante relie en fait cette case
+  // (ex. contour (5,2)→(3,4) via (4,3)) : on le découpe aux cases intermédiaires.
+  var EXPANDED = (function () {
+    var known = {};
+    CHAINS.forEach(function (c) { c.forEach(function (p) { known[p.join(',')] = 1; }); });
+    function gcd(a, b) { return b ? gcd(b, a % b) : Math.abs(a); }
+    return CHAINS.map(function (c) {
+      var out = [c[0]];
+      for (var i = 1; i < c.length; i++) {
+        var a = c[i - 1], b = c[i];
+        var dx = b[0] - a[0], dy = b[1] - a[1], n = gcd(dx, dy);
+        if (n > 1 && (dx === 0 || dy === 0 || Math.abs(dx) === Math.abs(dy))) {
+          var sx = dx / n, sy = dy / n;
+          for (var k = 1; k < n; k++) {
+            var p = [a[0] + sx * k, a[1] + sy * k];
+            if (known[p.join(',')]) out.push(p);
+          }
+        }
+        out.push(b);
+      }
+      return out;
+    });
+  })();
+
   var GRAPH = (function () {
     var nodes = {}, edges = {}, adj = {};
-    CHAINS.forEach(function (c) {
+    EXPANDED.forEach(function (c) {
       for (var i = 0; i < c.length; i++) {
         var a = c[i].join(',');
         nodes[a] = c[i];

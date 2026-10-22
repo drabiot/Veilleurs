@@ -1652,7 +1652,7 @@ html, body {
   padding: 4px 2px;
 }
 .skilltree-btn-shape {
-  width: 26px; height: 26px; flex-shrink: 0;
+  width: 28px; height: 28px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   transform: rotate(45deg);
   background: var(--surface2);
@@ -1661,7 +1661,12 @@ html, body {
   color: var(--gold);
   transition: border-color .2s, box-shadow .2s, background .2s;
 }
-.skilltree-btn-ico { width: 14px; height: 14px; transform: rotate(-45deg); }
+.skilltree-btn-ico {
+  width: 17px; height: 17px; transform: rotate(-45deg);
+  background: currentColor;
+  -webkit-mask: url(../img/skilltree-icon.png) center / contain no-repeat;
+          mask: url(../img/skilltree-icon.png) center / contain no-repeat;
+}
 .skilltree-btn-label {
   font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600;
   letter-spacing: .12em; text-transform: uppercase;
