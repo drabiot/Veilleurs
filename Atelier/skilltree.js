@@ -4,15 +4,13 @@
    - la case centrale est offerte
    - une case est prenable si elle touche une case possédée
    - les 4 grosses cases (keystones) exigent leurs 4 petites cases voisines
-   - effets : renseigner NODE_EFFECTS (clé "x,y", centre = "0,0")
-       '2,0': { name: '…', desc: '…', stats: { statId: valeur } }
+   - effets par classe et par numéro de case : skilltree-effects.js
    ============================================================ */
 (function () {
   'use strict';
 
   var STEP = 57;
   var CENTER = '0,0';
-  var NODE_EFFECTS = {};
 
   // Polylignes en coordonnées de grille [x, y] (y vers le bas)
   var CHAINS = [
@@ -79,6 +77,9 @@
     });
   })();
 
+  // Liaisons présentes dans le tracé mais absentes de l'arbre réel
+  var REMOVED = { '-5,-2|-4,-3': 1, '-3,4|-2,5': 1, '5,2|4,3': 1 };
+
   var GRAPH = (function () {
     var nodes = {}, edges = {}, adj = {};
     EXPANDED.forEach(function (c) {
@@ -88,7 +89,9 @@
         adj[a] = adj[a] || {};
         if (i === 0) continue;
         var b = c[i - 1].join(',');
-        edges[a < b ? a + '|' + b : b + '|' + a] = [c[i - 1], c[i]];
+        var ek = a < b ? a + '|' + b : b + '|' + a;
+        if (REMOVED[ek] || REMOVED[b + '|' + a] || REMOVED[a + '|' + b]) continue;
+        edges[ek] = [c[i - 1], c[i]];
         adj[b] = adj[b] || {};
         adj[a][b] = 1; adj[b][a] = 1;
       }
@@ -147,17 +150,29 @@
     return sanitize(rest, rest.length).length === rest.length;
   }
 
-  function statsFor(nodes) {
+  // Effet d'une case pour une classe : { name, stats, bonus } ou null
+  function effectOf(key, classe) {
+    var all = window.VCL_SKILL_EFFECTS;
+    var byClass = all && classe && all[classe];
+    return (byClass && byClass[NUMBERS[key]]) || null;
+  }
+
+  function statsFor(nodes, classe) {
     var total = {};
     [CENTER].concat(nodes || []).forEach(function (k) {
-      var fx = NODE_EFFECTS[k];
-      if (!fx || !fx.stats) return;
-      Object.keys(fx.stats).forEach(function (s) { total[s] = (total[s] || 0) + fx.stats[s]; });
+      var fx = effectOf(k, classe);
+      if (fx) total[fx.stats] = (total[fx.stats] || 0) + fx.bonus;
     });
     return total;
   }
 
-  window.VCLSkillTree = { graph: GRAPH, numbers: NUMBERS, sanitize: sanitize, statsFor: statsFor, maxPoints: maxPoints, NODE_EFFECTS: NODE_EFFECTS };
+  function effectText(fx) {
+    var def = typeof ALL_STATS !== 'undefined' && ALL_STATS.find(function (x) { return x.id === fx.stats; });
+    var label = def ? def.label : fx.stats, unit = def ? def.unit : '';
+    return fx.name + ' — +' + fx.bonus + unit + ' ' + label;
+  }
+
+  window.VCLSkillTree = { graph: GRAPH, numbers: NUMBERS, sanitize: sanitize, statsFor: statsFor, maxPoints: maxPoints };
 
   /* ── Rendu ── */
   var SVG_NS = 'http://www.w3.org/2000/svg';
@@ -189,10 +204,11 @@
   }
 
   function nodeLabel(k) {
-    if (k === CENTER) return 'Origine — offerte';
-    var fx = NODE_EFFECTS[k];
-    var base = KEYSTONES[k] ? 'Case majeure · ' : '';
-    return base + (fx ? fx.name + ' — ' + fx.desc : 'Effet à définir');
+    var classe = src && src.getClass();
+    var base = k === CENTER ? 'Origine (offerte) · ' : KEYSTONES[k] ? 'Case majeure · ' : '';
+    if (!classe) return base + 'Choisis une classe pour voir les effets.';
+    var fx = effectOf(k, classe);
+    return base + (fx ? effectText(fx) : 'Aucun effet');
   }
 
   function render() {

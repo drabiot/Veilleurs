@@ -988,7 +988,7 @@ function loadAccessoriesForClass(classId) {
 
     /* ── Bonus de l'arbre de compétences ── */
     if (window.VCLSkillTree) {
-      const sk = window.VCLSkillTree.statsFor(skillNodes);
+      const sk = window.VCLSkillTree.statsFor(skillNodes, activeClass);
       Object.keys(sk).forEach(function(sid) {
         if (!(sid in mins)) return;
         mins[sid] += sk[sid];
