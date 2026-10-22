@@ -58,7 +58,8 @@ body.sidebar-hidden .sidebar { padding: 0; width: 0; border-right: none; overflo
 .sb-label:first-of-type { padding-top: 10px; }
 .filter-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
 .filter-label { font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .14em; padding: 4px 8px 2px; }
-.filter-btn { padding: 8px 10px; border-radius: 3px; border: 1px solid transparent; border-left: 2px solid transparent; background: transparent; color: var(--muted); cursor: pointer; font-family: inherit; font-size: 12px; text-align: left; transition: color .15s, background .15s, border-color .15s; display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+.filter-btn { padding: 8px 10px; border-radius: 3px; border: 1px solid transparent; border-left: 2px solid transparent; background: transparent; color: var(--muted); cursor: pointer; font-family: inherit; font-size: 12px; text-align: left; transition: color .15s, background .15s, border-color .15s; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sidebar .filter-btn { width: 100%; }
 .filter-btn:hover { color: var(--bright); background: rgba(224,172,96,.05); border-left-color: var(--border-hi); }
 .filter-btn.active { background: linear-gradient(90deg, rgba(224,172,96,.14), rgba(224,172,96,.03)); color: var(--accent); border-left-color: var(--accent); font-weight: 700; }
 .filter-count { font-size: 10px; font-weight: 700; background: var(--surface3); color: var(--muted); border: 1px solid var(--border); border-radius: 10px; padding: 0 7px; min-width: 22px; text-align: center; line-height: 17px; }
@@ -494,3 +495,13 @@ input[type="checkbox"], input[type="radio"], input[type="range"] { accent-color:
   .main { padding: 14px 12px; }
   header { padding: 0 12px; }
 }
+
+/* Chips de filtre hors sidebar (ex. panneau Data) : pilules compactes */
+main .filter-btn { width: auto; display: inline-flex; justify-content: center; border: 1px solid var(--border-hi); border-left-width: 1px; background: rgba(32,24,16,.6); }
+main .filter-btn:hover { border-color: var(--accent-dim); background: var(--accent-glow); }
+main .filter-btn.active { background: var(--accent-glow); border-color: var(--accent); }
+.btn-danger { border-color: rgba(196,122,106,.5); color: var(--danger); background: rgba(196,122,106,.06); }
+.btn-danger:hover { background: var(--danger); color: var(--on-accent); border-color: var(--danger); }
+
+/* Police mono plus large : les champs en grille/flex doivent pouvoir rétrécir */
+main input:not([type="checkbox"]):not([type="radio"]), main select, main textarea { min-width: 0; max-width: 100%; }
