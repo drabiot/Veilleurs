@@ -96,6 +96,21 @@
     return { nodes: nodes, edges: edges, adj: adj };
   })();
 
+  // Numéro stable par case (0 = centre), du centre vers l'extérieur puis dans le sens horaire.
+  var NUMBERS = (function () {
+    var keys = Object.keys(GRAPH.nodes).sort(function (a, b) {
+      var A = GRAPH.nodes[a], B = GRAPH.nodes[b];
+      var da = Math.abs(A[0]) + Math.abs(A[1]), db = Math.abs(B[0]) + Math.abs(B[1]);
+      if (da !== db) return da - db;
+      var aa = (Math.atan2(A[1], A[0]) + 2.5 * Math.PI) % (2 * Math.PI);
+      var ab = (Math.atan2(B[1], B[0]) + 2.5 * Math.PI) % (2 * Math.PI);
+      return aa - ab || A[0] - B[0];
+    });
+    var map = {};
+    keys.forEach(function (k, i) { map[k] = i; });
+    return map;
+  })();
+
   /* ── Règles ── */
   function maxPoints(level) { return Math.max(0, (level || 1) - 1); }
 
@@ -142,7 +157,7 @@
     return total;
   }
 
-  window.VCLSkillTree = { sanitize: sanitize, statsFor: statsFor, maxPoints: maxPoints, NODE_EFFECTS: NODE_EFFECTS };
+  window.VCLSkillTree = { numbers: NUMBERS, sanitize: sanitize, statsFor: statsFor, maxPoints: maxPoints, NODE_EFFECTS: NODE_EFFECTS };
 
   /* ── Rendu ── */
   var SVG_NS = 'http://www.w3.org/2000/svg';
@@ -173,10 +188,10 @@
   }
 
   function nodeLabel(k) {
-    if (k === CENTER) return 'Origine — offerte';
+    if (k === CENTER) return 'Case n°0 · Origine — offerte';
     var fx = NODE_EFFECTS[k];
     var base = KEYSTONES[k] ? 'Case majeure · ' : '';
-    return base + (fx ? fx.name + ' — ' + fx.desc : 'Effet à définir');
+    return 'Case n°' + NUMBERS[k] + ' · ' + base + (fx ? fx.name + ' — ' + fx.desc : 'Effet à définir');
   }
 
   function render() {
@@ -207,6 +222,8 @@
       var r = isCenter ? 15 : isKey ? 12 : 9;
       if (isCenter) diamond(g, r + 5, 'st-ring');
       diamond(g, r, 'st-shape');
+      var num = el('text', { class: 'st-num', y: r + 15 }, g);
+      num.textContent = NUMBERS[k];
       el('use', { href: '#st-glyph', x: -9, y: -9, width: 18, height: 18, transform: 'scale(' + (r / 11) + ')', class: 'st-glyph' }, g);
     });
     ui.points.textContent = left + ' / ' + max;
@@ -315,6 +332,8 @@
     }
     function close() { overlay.classList.remove('open'); }
     btn.addEventListener('click', open);
+    var numChk = overlay.querySelector('#st-show-nums');
+    numChk.addEventListener('change', function () { ui.svg.classList.toggle('hide-nums', !numChk.checked); });
     overlay.querySelector('.st-close').addEventListener('click', close);
     overlay.querySelector('.st-reset').addEventListener('click', function () {
       window._atelierSkills.setNodes([]);
