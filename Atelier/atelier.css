@@ -1639,3 +1639,68 @@ html, body {
   /* Preview banner : adapté mobile */
   #preview-banner { top: 0; flex-wrap: wrap; padding: 8px 12px; gap: 8px; }
 }
+
+
+/* ============================================================
+   ARBRE DE COMPÉTENCES
+   ============================================================ */
+.center-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+
+.skilltree-btn {
+  display: flex; align-items: center; gap: 14px;
+  background: none; border: none; cursor: pointer;
+  color: var(--gold); font-family: 'Cinzel', serif;
+  padding: 4px 6px 4px 4px;
+}
+.skilltree-btn-shape {
+  position: relative; width: 38px; height: 38px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transform: rotate(45deg);
+  background: var(--bright); color: var(--deep);
+  border: 1px solid var(--bright);
+  outline: 1px solid var(--gold-dim); outline-offset: 3px;
+  transition: all .2s;
+}
+.skilltree-btn-ico { width: 20px; height: 20px; transform: rotate(-45deg); }
+.skilltree-btn-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text); transition: color .2s;
+}
+.skilltree-btn:hover .skilltree-btn-shape {
+  background: var(--gold); border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(224,172,96,.45);
+}
+.skilltree-btn:hover .skilltree-btn-label { color: var(--gold); }
+
+.skilltree-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  display: none; flex-direction: column; align-items: center;
+  background: radial-gradient(ellipse at center, #1c1510 0%, var(--bg) 75%);
+  padding: 20px 16px 16px;
+}
+.skilltree-overlay.open { display: flex; }
+.st-title {
+  font-family: 'Cinzel', serif; font-size: 18px; font-weight: 900;
+  letter-spacing: .1em; color: var(--bright);
+}
+.st-close {
+  position: absolute; top: 14px; right: 18px;
+  background: none; border: 1px solid var(--rim2); border-radius: 4px;
+  color: var(--muted); font-size: 16px; padding: 4px 10px; cursor: pointer;
+}
+.st-close:hover { color: var(--text); border-color: var(--gold-dim); }
+.st-svg { flex: 1; min-height: 0; width: 100%; max-width: 900px; }
+.st-info {
+  font-size: 12px; color: var(--muted); letter-spacing: .06em;
+  min-height: 20px; text-align: center;
+}
+.st-edge {
+  stroke: var(--rim2); stroke-width: 2; stroke-dasharray: 7 5;
+}
+.st-node { cursor: pointer; outline: none; }
+.st-shape { fill: var(--surface2); stroke: var(--gold-dim); stroke-width: 1.5; transition: all .15s; }
+.st-node:hover .st-shape, .st-node:focus .st-shape {
+  fill: var(--gold-glow); stroke: var(--gold);
+}
+.st-ring { fill: none; stroke: var(--gold-dim); stroke-width: 1.5; }
+.st-active .st-shape { fill: var(--gold); stroke: var(--gold); }

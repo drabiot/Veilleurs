@@ -89,6 +89,14 @@
     </div>
   </div>
 
+  <!-- ══ ARBRE DE COMPÉTENCES ══ -->
+  <div id="skilltree-overlay" class="skilltree-overlay">
+    <button class="st-close" aria-label="Fermer">✕</button>
+    <div class="st-title">Arbre de compétences</div>
+    <svg class="st-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="st-info">Survolez une case</div>
+  </div>
+
   <div id="atelier-backdrop" class="atelier-backdrop"></div>
 
   <div class="page">
@@ -166,8 +174,20 @@
       <!-- ── Centre : mannequin + stats ── -->
       <main class="center">
         <div class="center-head">
-          <div class="center-title">Atelier</div>
-          <div class="center-sub">// CONSTRUCTEUR D'ÉQUIPEMENT · VEILLEURS AU CLAIR DE LUNE</div>
+          <div class="center-head-text">
+            <div class="center-title">Atelier</div>
+            <div class="center-sub">// CONSTRUCTEUR D'ÉQUIPEMENT · VEILLEURS AU CLAIR DE LUNE</div>
+          </div>
+          <button id="btn-skilltree" class="skilltree-btn" title="Arbre de compétences" aria-label="Arbre de compétences">
+            <span class="skilltree-btn-shape">
+              <svg class="skilltree-btn-ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 3l8 8M20 3l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+                <path d="M12 8c-3 0-5 2-5 5v3l2 2v2h6v-2l2-2v-3c0-3-2-5-5-5z" fill="currentColor"/>
+                <path d="M10 13h4" stroke="var(--surface)" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="skilltree-btn-label">Arbre de compétences</span>
+          </button>
         </div>
         <div class="mobile-atelier-bar">
           <button id="atelier-left-toggle" class="atelier-mobile-btn">≡ Classe</button>
@@ -283,6 +303,7 @@
   <script src="../utils.js"></script>
   <script src="../Compendium/data.js"></script>
   <script src="atelier.js"></script>
+  <script src="skilltree.js"></script>
   <script>
     (function() {
       var backdrop    = document.getElementById('atelier-backdrop');
