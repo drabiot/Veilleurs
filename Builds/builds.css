@@ -360,11 +360,11 @@ html, body {
   flex: 1; min-width: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 5px;
+  gap: 3px;
   border: 1px solid var(--rim); border-radius: 3px;
-  background: rgba(0,0,0,.18); padding: 6px 4px;
+  background: rgba(0,0,0,.18); padding: 4px 2px;
 }
-.bc-mq-cls-ico  { font-size: 24px; line-height: 1; }
+.bc-mq-cls-ico  { font-size: 18px; line-height: 1; }
 .bc-mq-cls-name {
   font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
   letter-spacing: .08em; color: var(--gold-dim); text-align: center;
@@ -375,9 +375,22 @@ html, body {
   display: flex; gap: 3px; justify-content: center;
 }
 
+/* Bouton arbre de compétences (dernière cellule de la rangée du bas) */
+.bc-skill {
+  padding: 0; cursor: pointer; border-style: dashed;
+  background: rgba(0,0,0,.08); color: var(--gold-dim);
+  transition: color .15s, border-color .15s, background .15s;
+}
+.bc-skill:hover { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow); }
+.bc-skill-ico {
+  width: 26px; height: 26px; background: currentColor;
+  -webkit-mask: url(../img/skilltree-icon.png) center / contain no-repeat;
+          mask: url(../img/skilltree-icon.png) center / contain no-repeat;
+}
+
 /* Individual slot cell */
 .bc-slot {
-  width: 38px; height: 38px; flex-shrink: 0;
+  width: 48px; height: 48px; flex-shrink: 0;
   border: 1px solid var(--rim); border-radius: 3px;
   background: var(--deep);
   display: flex; align-items: center; justify-content: center;

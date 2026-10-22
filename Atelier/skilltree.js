@@ -174,6 +174,7 @@
   var FULL = 7 * STEP + 36;
   var view = { x: 0, y: 0, w: 1, h: 1 };
   var ui = {};
+  var src = null, readOnly = false;
 
   function applyView() {
     ui.svg.setAttribute('viewBox', [view.x, view.y, view.w, view.h].join(' '));
@@ -188,14 +189,14 @@
   }
 
   function nodeLabel(k) {
-    if (k === CENTER) return 'Case n°0 · Origine — offerte';
+    if (k === CENTER) return 'Origine — offerte';
     var fx = NODE_EFFECTS[k];
     var base = KEYSTONES[k] ? 'Case majeure · ' : '';
-    return 'Case n°' + NUMBERS[k] + ' · ' + base + (fx ? fx.name + ' — ' + fx.desc : 'Effet à définir');
+    return base + (fx ? fx.name + ' — ' + fx.desc : 'Effet à définir');
   }
 
   function render() {
-    var A = window._atelierSkills;
+    var A = src;
     var nodes = A.getNodes(), owned = {};
     owned[CENTER] = 1;
     nodes.forEach(function (k) { owned[k] = 1; });
@@ -215,15 +216,13 @@
     Object.keys(GRAPH.nodes).forEach(function (k) {
       var n = GRAPH.nodes[k];
       var isCenter = k === CENTER, isKey = !!KEYSTONES[k], isOwned = !!owned[k];
-      var avail = !isOwned && left > 0 && canTake(k, owned);
+      var avail = !readOnly && !isOwned && left > 0 && canTake(k, owned);
       var cls = 'st-node' + (isCenter ? ' st-center' : '') + (isKey ? ' st-key' : '') +
                 (isOwned ? ' st-owned' : avail ? ' st-avail' : '');
       var g = el('g', { class: cls, transform: 'translate(' + n[0] * STEP + ',' + n[1] * STEP + ')', 'data-k': k }, svg);
       var r = isCenter ? 15 : isKey ? 12 : 9;
       if (isCenter) diamond(g, r + 5, 'st-ring');
       diamond(g, r, 'st-shape');
-      var num = el('text', { class: 'st-num', y: r + 15 }, g);
-      num.textContent = NUMBERS[k];
       if (isCenter || isKey) {
         el('rect', { x: -9, y: -9, width: 18, height: 18, mask: 'url(#st-icon-mask)', fill: 'currentColor',
                      transform: 'scale(' + (r * 1.4 / 18) + ')', class: 'st-glyph' }, g);
@@ -231,14 +230,15 @@
         el('use', { href: '#st-glyph', x: -9, y: -9, width: 18, height: 18, transform: 'scale(' + (r / 11) + ')', class: 'st-glyph' }, g);
       }
     });
-    ui.points.textContent = left + ' / ' + max;
-    ui.points.classList.toggle('empty', left <= 0);
+    ui.points.textContent = readOnly ? nodes.length + ' / ' + max : left + ' / ' + max;
+    ui.points.classList.toggle('empty', !readOnly && left <= 0);
   }
 
   function setInfo(k) { ui.info.textContent = k ? nodeLabel(k) : 'Survolez une case pour voir son effet.'; }
 
   function onNodeClick(k) {
-    var A = window._atelierSkills;
+    if (readOnly) return;
+    var A = src;
     var nodes = A.getNodes();
     if (k === CENTER) return;
     if (nodes.indexOf(k) >= 0) {
@@ -316,32 +316,54 @@
     });
   }
 
-  function init() {
-    var btn = document.getElementById('btn-skilltree');
-    var overlay = document.getElementById('skilltree-overlay');
-    if (!btn || !overlay) return;
+  var OVERLAY_HTML =
+    '<div class="st-panel">' +
+      '<div class="st-stars" aria-hidden="true"></div>' +
+      '<button class="st-close" aria-label="Fermer" title="Fermer (Échap)">✕</button>' +
+      '<svg class="st-svg" xmlns="http://www.w3.org/2000/svg">' +
+        '<defs>' +
+          '<symbol id="st-glyph" viewBox="-9 -9 18 18" overflow="visible">' +
+            '<rect x="-2.6" y="-2.6" width="5.2" height="5.2" transform="rotate(45)" fill="currentColor"/>' +
+          '</symbol>' +
+          '<mask id="st-icon-mask" maskUnits="userSpaceOnUse" x="-9" y="-9" width="18" height="18">' +
+            '<image href="../img/skilltree-icon.png" x="-9" y="-9" width="18" height="18" />' +
+          '</mask>' +
+        '</defs>' +
+        '<g class="st-world"></g>' +
+      '</svg>' +
+      '<aside class="st-side">' +
+        '<div class="st-title">Arbre de compétences</div>' +
+        '<div class="st-points">' +
+          '<span class="st-points-lbl">Points restants</span>' +
+          '<span class="st-points-val">0 / 0</span>' +
+        '</div>' +
+        '<div class="st-info"></div>' +
+        '<button class="st-reset">⟳ Réinitialiser l’arbre</button>' +
+      '</aside>' +
+    '</div>';
+
+  function ensureOverlay() {
+    if (ui.overlay) return ui.overlay;
+    var overlay = document.createElement('div');
+    overlay.id = 'skilltree-overlay';
+    overlay.className = 'skilltree-overlay';
+    overlay.innerHTML = OVERLAY_HTML;
+    document.body.appendChild(overlay);
     ui.overlay = overlay;
     ui.svg = overlay.querySelector('.st-svg');
     ui.info = overlay.querySelector('.st-info');
     ui.points = overlay.querySelector('.st-points-val');
+    ui.pointsLbl = overlay.querySelector('.st-points-lbl');
+    ui.reset = overlay.querySelector('.st-reset');
     ui.world = ui.svg.querySelector('.st-world');
     makeStars(overlay.querySelector('.st-stars'));
     bindPanZoom();
 
-    function open() {
-      overlay.setAttribute('data-class', window._atelierSkills.getClass() || 'none');
-      overlay.classList.add('open');
-      fitView();
-      render();
-      setInfo(null);
-    }
     function close() { overlay.classList.remove('open'); }
-    btn.addEventListener('click', open);
-    var numChk = overlay.querySelector('#st-show-nums');
-    numChk.addEventListener('change', function () { ui.svg.classList.toggle('hide-nums', !numChk.checked); });
     overlay.querySelector('.st-close').addEventListener('click', close);
-    overlay.querySelector('.st-reset').addEventListener('click', function () {
-      window._atelierSkills.setNodes([]);
+    ui.reset.addEventListener('click', function () {
+      if (readOnly) return;
+      src.setNodes([]);
       render();
     });
     overlay.addEventListener('mousedown', function (e) { if (e.target === overlay) close(); });
@@ -349,6 +371,39 @@
       if (e.key === 'Escape' && overlay.classList.contains('open')) close();
     });
     window.addEventListener('resize', function () { if (overlay.classList.contains('open')) fitView(); });
+    return overlay;
+  }
+
+  function open(source, ro) {
+    var overlay = ensureOverlay();
+    src = source; readOnly = !!ro;
+    overlay.setAttribute('data-class', src.getClass() || 'none');
+    ui.reset.style.display = readOnly ? 'none' : '';
+    ui.pointsLbl.textContent = readOnly ? 'Points dépensés' : 'Points restants';
+    overlay.classList.add('open');
+    fitView();
+    render();
+    setInfo(null);
+  }
+
+  // Lecture seule : { nodes, level, classe } (ex. build publié)
+  function openReadOnly(build) {
+    var level = build.level || 1;
+    var nodes = sanitize(build.nodes || [], maxPoints(level));
+    open({
+      getNodes: function () { return nodes; },
+      getLevel: function () { return level; },
+      getClass: function () { return build.classe || null; },
+      setNodes: function () {}
+    }, true);
+  }
+
+  window.VCLSkillTree.open = open;
+  window.VCLSkillTree.openReadOnly = openReadOnly;
+
+  function init() {
+    var btn = document.getElementById('btn-skilltree');
+    if (btn) btn.addEventListener('click', function () { open(window._atelierSkills, false); });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

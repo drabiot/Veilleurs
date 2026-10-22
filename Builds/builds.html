@@ -6,6 +6,7 @@
   <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
   <title>[VCL] - Builds Partagés</title>
   <link rel="stylesheet" href="builds.css" />
+  <link rel="stylesheet" href="../Atelier/skilltree.css" />
   <link rel="stylesheet" href="../auth-widget.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -155,6 +156,7 @@
 
   <script src="../utils.js"></script>
   <script src="../Compendium/data.js"></script>
+  <script src="../Atelier/skilltree.js"></script>
 
   <script type="module">
     import {
@@ -506,7 +508,7 @@
               </div>
               <div class="bc-mq-col">${colR}</div>
             </div>
-            <div class="bc-mq-bot">${botRow}</div>
+            <div class="bc-mq-bot">${botRow}<button class="bc-slot bc-skill" data-action="skills" data-id="${escHtml(b._id)}" title="Arbre de compétences" aria-label="Arbre de compétences"><span class="bc-skill-ico"></span></button></div>
           </div>
           <div class="bc-foot">
             <div class="bc-social">
@@ -531,6 +533,7 @@
           const id     = this.dataset.id;
           if (action === 'fav')     _handleFav(id, this);
           if (action === 'delete')  _handleDelete(id);
+          if (action === 'skills')  _handleSkills(id);
           if (action === 'share')   _handleShare(id);
           if (action === 'preview') {
             const btn = this;
@@ -579,6 +582,16 @@
       navigator.clipboard.writeText(url)
         .then(() => _showToast('🔗 Lien copié !'))
         .catch(() => _showToast('⚠️ Impossible de copier le lien.'));
+    }
+
+    function _handleSkills(buildId) {
+      const build = allBuilds.find(b => b._id === buildId);
+      if (!build || !window.VCLSkillTree) return;
+      window.VCLSkillTree.openReadOnly({
+        nodes:  Array.isArray(build.skillNodes) ? build.skillNodes : [],
+        level:  build.level || 1,
+        classe: build.classe || null,
+      });
     }
 
     async function _handlePreview(buildId) {

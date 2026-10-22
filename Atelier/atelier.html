@@ -6,6 +6,7 @@
   <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
   <title>[VCL] - Atelier</title>
   <link rel="stylesheet" href="atelier.css" />
+  <link rel="stylesheet" href="skilltree.css" />
   <link rel="stylesheet" href="../auth-widget.css" />
   <link rel="stylesheet" href="../report-widget.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -89,36 +90,7 @@
     </div>
   </div>
 
-  <!-- ══ ARBRE DE COMPÉTENCES ══ -->
-  <div id="skilltree-overlay" class="skilltree-overlay">
-    <div class="st-panel">
-      <div class="st-stars" aria-hidden="true"></div>
-      <button class="st-close" aria-label="Fermer" title="Fermer (Échap)">✕</button>
-      <svg class="st-svg" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <symbol id="st-glyph" viewBox="-9 -9 18 18" overflow="visible">
-            <rect x="-2.6" y="-2.6" width="5.2" height="5.2" transform="rotate(45)" fill="currentColor"/>
-          </symbol>
-          <mask id="st-icon-mask" maskUnits="userSpaceOnUse" x="-9" y="-9" width="18" height="18">
-            <image href="../img/skilltree-icon.png" x="-9" y="-9" width="18" height="18" />
-          </mask>
-        </defs>
-        <g class="st-world"></g>
-      </svg>
-      <aside class="st-side">
-        <div class="st-title">Arbre de compétences</div>
-        <div class="st-points">
-          <span class="st-points-lbl">Points restants</span>
-          <span class="st-points-val">0 / 0</span>
-        </div>
-        <label class="st-numtoggle"><input type="checkbox" id="st-show-nums" checked /> Afficher les numéros</label>
-        <div class="st-info"></div>
-        <button class="st-reset">⟳ Réinitialiser l'arbre</button>
-      </aside>
-    </div>
-  </div>
-
-  <div id="atelier-backdrop" class="atelier-backdrop"></div>
+<div id="atelier-backdrop" class="atelier-backdrop"></div>
 
   <div class="page">
     <div class="body">
