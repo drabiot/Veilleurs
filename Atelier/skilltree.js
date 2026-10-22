@@ -219,14 +219,29 @@
       var lbl = cls ? cls.label : '';
       var voie = lbl ? 'Voie ' + (/^[aeiouyéèêàâîô]/i.test(lbl) ? 'de l’' : 'du ') + lbl : 'Case de départ';
       html = '<div class="st-tip-name st-tip-solo">' + escapeHtml(voie) + '</div>';
-    } else if (fx) {
-      var d = statDef(fx.stats), unit = d ? d.unit : '';
-      html = '<div class="st-tip-name">' + escapeHtml(fx.name) + '</div>' +
-        '<div class="st-tip-stat"><span class="st-tip-lbl"><span class="st-tip-ico">' + (d ? d.icon : '') + '</span>' +
-        escapeHtml(d ? d.label : fx.stats) + '</span><span class="st-tip-val">+' + fx.bonus + unit + '</span></div>';
     } else {
-      html = '<div class="st-tip-name">' + (KEYSTONES[k] ? 'Case majeure' : 'Case') + '</div>' +
-        '<div class="st-tip-none">' + (classe ? 'Aucun effet' : 'Choisis une classe pour voir les effets') + '</div>';
+      var cl = classe && typeof CLASSES !== 'undefined' && CLASSES.find(function (c) { return c.id === classe; });
+      var title = fx ? fx.name : (KEYSTONES[k] ? 'Case majeure' : 'Compétence');
+      html = '<div class="st-tip-name">' + escapeHtml(title) + '</div>' +
+        '<div class="st-tip-class">' + escapeHtml(cl ? cl.label : 'Toutes classes') + '</div>' +
+        '<div class="st-tip-sep"></div>';
+      if (fx) {
+        var d = statDef(fx.stats), unit = d ? d.unit : '';
+        html += '<div class="st-tip-stat"><span class="st-tip-ico">' + (d ? d.icon : '') + '</span>' +
+          escapeHtml(d ? d.label : fx.stats) + ' +' + fx.bonus + unit + '</div>';
+      } else {
+        html += '<div class="st-tip-stat st-tip-dim">' + (classe ? 'Aucun effet' : 'Choisis une classe pour voir les effets') + '</div>';
+      }
+      if (!readOnly) {
+        var nodes = src.getNodes(), ownedMap = { '0,0': 1 };
+        nodes.forEach(function (n) { ownedMap[n] = 1; });
+        var left = maxPoints(src.getLevel()) - nodes.length, hint;
+        if (ownedMap[k]) hint = '<span class="st-tip-ok">Compétence débloquée.</span> Clique pour la retirer.';
+        else if (left <= 0) hint = 'Plus de points de compétence.';
+        else if (canTake(k, ownedMap)) hint = '<span class="st-tip-act">Clique pour débloquer</span> cette compétence.<br>Coût : 1 point de compétence <span class="st-tip-pt"></span>';
+        else hint = KEYSTONES[k] ? 'Il faut avoir débloqué les 4 compétences voisines.' : 'Il faut d’abord débloquer une compétence voisine.';
+        html += '<div class="st-tip-sep"></div><div class="st-tip-hint">' + hint + '</div>';
+      }
     }
     ui.tip.innerHTML = html;
     ui.tip.classList.add('show');
