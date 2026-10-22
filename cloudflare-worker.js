@@ -50,7 +50,7 @@ const STAT_MAP = {
   reduction_degats: { label: 'Réduction Dégâts', unit: '%' }, tenacite: { label: 'Ténacité', unit: '%' },
   hate: { label: 'Hâte', unit: '%' }, vitesse_deplacement: { label: 'Vitesse Déplacement', unit: '%' },
   mana: { label: 'Mana', unit: '' }, stamina: { label: 'Stamina', unit: '' },
-  vol_vie: { label: 'Vol de Vie', unit: '%' }, omnivamp: { label: 'Omnivampirisme', unit: '%' },
+  vol_vie: { label: 'Vol de Vie', unit: '%' }, omnivamp: { label: 'Vampirisme de sort', unit: '%' },
   regen_sante: { label: 'Régén. Santé', unit: '/s' }, regen_mana: { label: 'Régén. Mana', unit: '/s' },
   regen_stamina: { label: 'Régén. Stamina', unit: '/s' }, soin_bonus: { label: 'Soin Bonus', unit: '' },
 };

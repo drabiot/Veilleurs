@@ -7593,7 +7593,7 @@ const DW_STAT_LABELS = {
   stamina:             '👟 Stamina',
   // Soutien
   vol_vie:             '🩸 Vol de Vie',
-  omnivamp:            '👄 Omnivamp',
+  omnivamp:            '👄 Vampirisme de sort',
   soin_bonus:          '✳️ Soin Bonus',
   regen_sante:         '💓 Rég. Santé',
   regen_mana:          '💦 Rég. Mana',

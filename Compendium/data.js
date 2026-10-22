@@ -65,7 +65,7 @@ const STAT_GROUPS = [
     label: 'Régénération & Soutien',
     stats: [
       { id:'vol_vie',             label:'Vol de Vie',                      icon:'🩸',  unit:'%',   max:100  },
-      { id:'omnivamp',            label:'Omnivampirisme',                  icon:'👄',  unit:'%',   max:100  },
+      { id:'omnivamp',            label:'Vampirisme de sort',                  icon:'👄',  unit:'%',   max:100  },
       { id:'soin_bonus',          label:'Soin Bonus',                      icon:'✳️',  unit:'',   max:100  },
       { id:'puissance_soin',      label:'Puissance de Soin',               icon:'💚',  unit:'',   max:100  },
       { id:'regen_sante',         label:'Régénération Santé',              icon:'💓',  unit:'/s', max:100  },

@@ -379,7 +379,7 @@ const STAT_DEFS = [
   ]},
   { group:'Régénération & Soutien', stats:[
     { id:'vol_vie',            label:'Vol de Vie %',              color:'#a03030' },
-    { id:'omnivamp',           label:'Omnivampirisme %',          color:'#a03030' },
+    { id:'omnivamp',           label:'Vampirisme de sort %',          color:'#a03030' },
     { id:'soin_bonus',         label:'Soin Bonus',                color:'#50e050' },
     { id:'puissance_soin',     label:'Puissance de Soin',         color:'#50e050' },
     { id:'regen_sante',        label:'Régén. Santé /s',          color:'#e85050' },
