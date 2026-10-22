@@ -159,5 +159,16 @@ window.VCL_SKILL_EFFECTS = {
     "74": { "name": "Instinct critique", "stats": "crit_chance", "bonus": 0.5 },
     "75": { "name": "Instinct critique", "stats": "crit_chance", "bonus": 0.5 },
     "76": { "name": "Vitalité renforcée", "stats": "sante", "bonus": 3 }
+  },
+  "shaman": {
+    "1": { "name": "Éclat de maîtrise", "stats": "crit_comp_chance", "bonus": 0.5 },
+    "2": { "name": "Puissance magique", "stats": "degats_magique", "bonus": 1 },
+    "3": { "name": "Éclat de maîtrise", "stats": "crit_comp_chance", "bonus": 0.5 },
+    "4": { "name": "Puissance magique", "stats": "degats_magique", "bonus": 1 },
+    "5": { "name": "Éclat de maîtrise", "stats": "crit_comp_chance", "bonus": 0.5 },
+    "6": { "name": "Éclat de maîtrise", "stats": "crit_comp_chance", "bonus": 0.5 },
+    "7": { "name": "Garde renforcée", "stats": "defense", "bonus": 2 },
+    "8": { "name": "Puissance magique", "stats": "degats_magique", "bonus": 1 },
+    "9": { "name": "Puissance magique", "stats": "degats_magique", "bonus": 1 }
   }
 };
