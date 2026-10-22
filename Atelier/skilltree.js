@@ -224,7 +224,12 @@
       diamond(g, r, 'st-shape');
       var num = el('text', { class: 'st-num', y: r + 15 }, g);
       num.textContent = NUMBERS[k];
-      el('use', { href: '#st-glyph', x: -9, y: -9, width: 18, height: 18, transform: 'scale(' + (r / 11) + ')', class: 'st-glyph' }, g);
+      if (isCenter || isKey) {
+        el('rect', { x: -9, y: -9, width: 18, height: 18, mask: 'url(#st-icon-mask)', fill: 'currentColor',
+                     transform: 'scale(' + (r * 1.4 / 18) + ')', class: 'st-glyph' }, g);
+      } else {
+        el('use', { href: '#st-glyph', x: -9, y: -9, width: 18, height: 18, transform: 'scale(' + (r / 11) + ')', class: 'st-glyph' }, g);
+      }
     });
     ui.points.textContent = left + ' / ' + max;
     ui.points.classList.toggle('empty', left <= 0);
