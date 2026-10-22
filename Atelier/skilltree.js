@@ -203,13 +203,37 @@
     applyView();
   }
 
-  function nodeLabel(k) {
-    var classe = src && src.getClass();
-    var base = KEYSTONES[k] ? 'Case majeure · ' : '';
-    if (!classe) return base + 'Choisis une classe pour voir les effets.';
-    var fx = effectOf(k, classe);
-    return base + (fx ? effectText(fx) : 'Aucun effet');
+  function statDef(id) {
+    return typeof ALL_STATS !== 'undefined' ? ALL_STATS.find(function (x) { return x.id === id; }) : null;
   }
+  function escapeHtml(t) {
+    return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+  }
+
+  function showTip(g) {
+    var k = g.getAttribute('data-k'), classe = src && src.getClass();
+    var fx = classe ? effectOf(k, classe) : null;
+    var html;
+    if (fx) {
+      var d = statDef(fx.stats), unit = d ? d.unit : '';
+      html = '<div class="st-tip-name">' + escapeHtml(fx.name) + '</div>' +
+        '<div class="st-tip-stat"><span class="st-tip-lbl"><span class="st-tip-ico">' + (d ? d.icon : '') + '</span>' +
+        escapeHtml(d ? d.label : fx.stats) + '</span><span class="st-tip-val">+' + fx.bonus + unit + '</span></div>';
+    } else {
+      html = '<div class="st-tip-name">' + (KEYSTONES[k] ? 'Case majeure' : 'Case') + '</div>' +
+        '<div class="st-tip-none">' + (classe ? 'Aucun effet' : 'Choisis une classe pour voir les effets') + '</div>';
+    }
+    ui.tip.innerHTML = html;
+    ui.tip.classList.add('show');
+    var pr = ui.panel.getBoundingClientRect(), nr = g.getBoundingClientRect();
+    var half = ui.tip.offsetWidth / 2 + 8;
+    var x = Math.min(Math.max(nr.left + nr.width / 2 - pr.left, half), pr.width - half);
+    ui.tip.style.left = x + 'px';
+    var below = nr.top - pr.top - 10 < ui.tip.offsetHeight + 4;
+    ui.tip.classList.toggle('below', below);
+    ui.tip.style.top = (below ? nr.bottom - pr.top + 10 : nr.top - pr.top - 10) + 'px';
+  }
+  function hideTip() { if (ui.tip) ui.tip.classList.remove('show'); }
 
   function render() {
     var A = src;
@@ -219,6 +243,7 @@
     var max = maxPoints(A.getLevel());
     var left = max - nodes.length;
 
+    hideTip();
     var svg = ui.world;
     svg.innerHTML = '';
     Object.keys(GRAPH.edges).forEach(function (k) {
@@ -250,7 +275,7 @@
     ui.points.classList.toggle('empty', !readOnly && left <= 0);
   }
 
-  function setInfo(k) { ui.info.textContent = k ? nodeLabel(k) : 'Survolez une case pour voir son effet.'; }
+  function setInfo(msg) { ui.info.textContent = msg || ''; }
 
   function onNodeClick(k) {
     if (readOnly) return;
@@ -272,7 +297,7 @@
       A.setNodes(nodes.concat(k));
     }
     render();
-    setInfo(k);
+    setInfo(null);
   }
 
   function makeStars(host) {
@@ -311,6 +336,7 @@
       var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 5) return;
       drag.moved = true;
+      hideTip();
       svg.classList.add('dragging');
       var r = svg.getBoundingClientRect();
       view.x = drag.vx - dx * view.w / r.width;
@@ -328,13 +354,18 @@
     });
     svg.addEventListener('mouseover', function (e) {
       var g = e.target.closest && e.target.closest('.st-node');
-      if (g) setInfo(g.getAttribute('data-k'));
+      if (g && !(drag && drag.moved)) showTip(g);
+    });
+    svg.addEventListener('mouseout', function (e) {
+      var g = e.target.closest && e.target.closest('.st-node');
+      if (g && !(e.relatedTarget && g.contains(e.relatedTarget))) hideTip();
     });
   }
 
   var OVERLAY_HTML =
     '<div class="st-panel">' +
       '<div class="st-stars" aria-hidden="true"></div>' +
+      '<div class="st-tip"></div>' +
       '<button class="st-close" aria-label="Fermer" title="Fermer (Échap)">✕</button>' +
       '<svg class="st-svg" xmlns="http://www.w3.org/2000/svg">' +
         '<defs>' +
@@ -366,6 +397,8 @@
     overlay.innerHTML = OVERLAY_HTML;
     document.body.appendChild(overlay);
     ui.overlay = overlay;
+    ui.panel = overlay.querySelector('.st-panel');
+    ui.tip = overlay.querySelector('.st-tip');
     ui.svg = overlay.querySelector('.st-svg');
     ui.info = overlay.querySelector('.st-info');
     ui.points = overlay.querySelector('.st-points-val');
