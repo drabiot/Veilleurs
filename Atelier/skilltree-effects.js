@@ -3,6 +3,11 @@
    Clé = numéro de case (0 = case centrale), valeur = { name, stats, bonus }.
    Une case absente n'a pas d'effet.
    ============================================================ */
+// Effets proposés dans l'éditeur admin même s'ils ne sont (encore) placés sur aucune case
+window.VCL_SKILL_CATALOG = [
+  { "name": "Endurcissement", "stats": "reduction_degats", "bonus": 2 }
+];
+
 window.VCL_SKILL_EFFECTS = {
   "assassin": {
     "1": { "name": "Instinct critique", "stats": "crit_chance", "bonus": 0.5 },

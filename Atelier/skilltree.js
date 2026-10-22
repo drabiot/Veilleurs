@@ -419,6 +419,10 @@
   // Effets existants (toutes classes confondues), dédoublonnés par nom + stat
   function effectOptions(classe) {
     var all = window.VCL_SKILL_EFFECTS || {}, seen = {}, list = [];
+    (window.VCL_SKILL_CATALOG || []).forEach(function (e) {
+      var key = e.name + '|' + e.stats;
+      if (!seen[key]) { seen[key] = 1; list.push({ key: key, name: e.name, stats: e.stats, bonus: e.bonus }); }
+    });
     [classe].concat(Object.keys(all)).forEach(function (c) {
       Object.keys(all[c] || {}).forEach(function (n) {
         var e = all[c][n], key = e.name + '|' + e.stats;
