@@ -16,6 +16,21 @@ const FIREBASE_KEY   = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
 const WIKI_PAGES     = 'https://drabiot.github.io/Veilleurs';
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
+// ── Sources d'obtention prédéfinies ([obtain:id]) — relues depuis Compendium/data.js ──
+let OBTAIN_TEXTS = null;
+async function loadObtainTexts() {
+  if (OBTAIN_TEXTS) return;
+  OBTAIN_TEXTS = {};
+  try {
+    const src = await (await fetch(`${WIKI_PAGES}/Compendium/data.js`)).text();
+    const m = src.match(/const OBTAIN_TEXTS = (\{[\s\S]*?\n\});/);
+    if (m) OBTAIN_TEXTS = JSON.parse(m[1].replace(/,(\s*\})/, '$1'));
+  } catch {}
+}
+function resolveObtain(str) {
+  return String(str).replace(/\[obtain:([\w-]+)\]/g, (_, id) => (OBTAIN_TEXTS && OBTAIN_TEXTS[id]) || id);
+}
+
 // ── Rarity colors (hex integers for Discord embeds) ───────────
 const RARITY_COLORS = {
   commun:     0x59d059, rare:       0x2a5fa8,
@@ -353,7 +368,7 @@ function buildItemEmbed(item) {
 
   // Obtain (first line)
   if (item.obtain) {
-    const firstLine = item.obtain.split('\n')
+    const firstLine = resolveObtain(item.obtain).split('\n')
       .map(l => l.replace(/\[(?:[a-zA-Z]+:)?[^\]|]+\|([^\]]+)\]/g, '$1').replace(/\[npc:[^\]]+\]/g, '').trim())
       .find(l => l.length > 0);
     if (firstLine) embed.fields.push({ name: '📍 Obtention', value: firstLine.slice(0, 256), inline: false });
@@ -522,6 +537,7 @@ function iResponse(data) {
 
 async function handleInteraction(rawBody, env) {
   const interaction = JSON.parse(rawBody);
+  await loadObtainTexts();
 
   // PING → PONG
   if (interaction.type === 1) return iResponse({ type: 1 });

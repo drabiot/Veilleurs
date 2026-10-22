@@ -451,7 +451,7 @@ function _buildPrettySummary(data, type) {
       const craftLines = data.craft.map(c => `<span style="background:var(--surface3);border-radius:4px;padding:1px 6px;font-size:11px;">×${c.qty} ${esc(c.id)}</span>`).join(' ');
       rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Craft</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;">${craftLines}</div>`);
     }
-    if (data.obtain)  field('Obtention', esc(data.obtain).replace(/\n/g,'<br>'));
+    field('Obtention', data.obtain ? esc(resolveObtain(data.obtain)).replace(/\n/g,'<br>') : '<i style="color:var(--muted)">Aucune source renseignée</i>');
     if (data.lore)    field('Lore', `<i style="color:var(--muted)">${esc(data.lore).slice(0,200)}${data.lore.length>200?'…':''}</i>`);
     if (data.tags?.length) field('Tags', data.tags.map(t=>`<span style="font-size:10px;background:var(--surface3);border-radius:3px;padding:1px 5px;">${esc(t)}</span>`).join(' '));
   } else if (type === 'mob') {
@@ -7708,7 +7708,7 @@ function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames 
   }
 
   if (has('obtain')) {
-    const raw   = obj.obtain || '';
+    const raw   = resolveObtain(obj.obtain || '');
     const clean = raw
       .replace(/\[npc:[^\]|]+\|([^\]]+)\]/g, (_, content) => {
         const [namePart, coordsPart] = content.split('\n');
@@ -13466,6 +13466,7 @@ const OBTAIN_STRUCTURED_PATTERNS = [
   /^-\s*\[([^|]+)\|([^\]]+)\]\[([^\]]+)\]$/,
   /^Obtenable en récompense du \[npc:[^|]+\|[^\]]+\]$/,
   /^Fabricable au \[npc:[^|]+\|[^\]]+\]$/,
+  /^\[obtain:[\w-]+\]$/,
   /^Fabricable à la Forge( du Fractured Underworld)?$/,
   /^Achetable au \[npc:[^|]+\|[^\]]+\]$/,
   /^Récompense de la quête \[quest:[^|]+\|[^\]]+\]$/,

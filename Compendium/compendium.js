@@ -170,6 +170,7 @@ function inlineLinks(str) {
 
 function parseText(str) {
   if (!str) return '';
+  str = resolveObtain(str);
 
   const lines = str.split('\n');
 

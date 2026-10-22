@@ -43,6 +43,7 @@ const CARD_W = 750
 
 function parseObtainData(raw) {
   if (!raw) return []
+  if (typeof window !== 'undefined' && window.resolveObtain) raw = window.resolveObtain(raw)
   return raw.split('\n')
     .map(line => {
       let l = line.trim()

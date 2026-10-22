@@ -103,6 +103,18 @@ function getMin(val) { return Array.isArray(val) ? val[0] : val; }
 function getMax(val) { return Array.isArray(val) ? val[1] : val; }
 
 //#endregion BUILD LEVEL
+//#region OBTAIN_TEXTS
+/* Sources d'obtention prédéfinies : une ligne [obtain:<id>] dans item.obtain est remplacée par ce texte.
+   Modifier le texte d'un id met à jour tous les items qui l'utilisent.
+   (Garder l'objet sur plusieurs lignes, clés entre guillemets : le Worker Cloudflare le relit tel quel.) */
+const OBTAIN_TEXTS = {
+  "forge": "Fabricable à la Forge du Fractured Underworld",
+};
+function resolveObtain(str) {
+	if (typeof str !== 'string') return str;
+	return str.replace(/\[obtain:([\w-]+)\]/g, (m, id) => OBTAIN_TEXTS[id] ?? id);
+}
+//#endregion OBTAIN_TEXTS
 //#region CATEGORIES
 const CATEGORIES = {
   armure:          { label: 'Armures',         emoji: '🛡️',  ordre: 1 },

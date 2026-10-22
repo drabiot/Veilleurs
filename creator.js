@@ -1247,7 +1247,7 @@ function onObtainTypeChange() {
   } else if (type === 'forge') {
     const hint = document.createElement('div');
     hint.style.cssText = 'height:38px;display:flex;align-items:center;padding:0 10px;font-size:12px;color:var(--muted);';
-    hint.textContent = 'Item fabricable à la Forge du Fractured Underworld';
+    hint.textContent = (OBTAIN_TEXTS.forge || 'forge') + '  ·  id : forge';
     container.appendChild(hint);
     addBtn.disabled = obtainSources.some(s => s.type === 'forge');
     addBtn.style.display = '';
@@ -1482,7 +1482,7 @@ function renderObtainSources() {
         label += `<span style="color:var(--muted)">${s.type === 'autre' ? 'Autre' : s.type} ·</span> <b>${s.desc || s.name || ''}</b>`;
       }
     } else if (s.type === 'forge') {
-      label += '<b>Forge du Fractured Underworld</b> <span style="color:var(--muted)">— fabricable</span>';
+      label += `<b>${OBTAIN_TEXTS.forge || 'Forge'}</b> <span style="color:var(--muted)">· id forge</span>`;
     } else if (s.type === 'ressource') {
       if (s.coords) {
         label += `📍 <b>X</b> ${s.coords.x} <b>Z</b> ${s.coords.z}`;
@@ -1545,7 +1545,7 @@ function parseObtainText(text, itemId, itemName) {
       sources.push({ uid: obtainUid++, type: 'donjon', id, name, desc: d?.desc || '', subtitle: d?.subtitle || '' });
       continue;
     }
-    if (/^Fabricable à la Forge( du Fractured Underworld)?$/.test(t)) { sources.push({ uid: obtainUid++, type: 'forge' }); continue; }
+    if (/^(\[obtain:forge\]|Fabricable à la Forge( du Fractured Underworld)?)$/.test(t)) { sources.push({ uid: obtainUid++, type: 'forge' }); continue; }
     const artM = t.match(/^Fabricable au \[npc:([^|]+)\|([^\]]+)\]$/);
     if (artM) {
       const [, id, name] = artM;
@@ -1635,7 +1635,7 @@ function buildObtainText() {
       parts.push(`Récoltable dans [region:${r.id}|${r.name}]`);
     }
   }
-  if (forges.length)            parts.push('Fabricable à la Forge du Fractured Underworld');
+  if (forges.length)            parts.push('[obtain:forge]');
   for (const a of autres)       parts.push(`Autre source — ${a.desc}`);
   // Anciens formats
   for (const c of coffres)      parts.push(`Trouvable dans un coffre — ${c.desc}`);
@@ -3851,7 +3851,7 @@ function renderPreview() {
 
   // Obtain
   if (obj.obtain) {
-    h += `<div><div class="ic-section-label">Obtention</div><div class="ic-obtain">${renderObtainHtml(obj.obtain)}</div></div>`;
+    h += `<div><div class="ic-section-label">Obtention</div><div class="ic-obtain">${renderObtainHtml(resolveObtain(obj.obtain))}</div></div>`;
   }
 
   // Craft
@@ -4784,7 +4784,7 @@ function buildItemCardEmbed(obj, color, imageFilename) {
   }
 
   if (obj.obtain) {
-    const clean = obj.obtain
+    const clean = resolveObtain(obj.obtain)
       .replace(/\[npc:[\w]+\|([^\]]+)\]/g, '**$1**')
       .replace(/\[[\w]+\|([^\]]+)\]/g, '**$1**')
       .slice(0, 1024);
