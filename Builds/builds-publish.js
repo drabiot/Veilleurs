@@ -11,14 +11,14 @@ import {
 
 /**
  * Publie le build courant dans Firestore.
- * @param {object} payload     - { name, classe, level, caracterPoints, slots, slotImages,
+ * @param {object} payload     - { name, classe, level, caracterPoints, skillNodes, slots, slotImages,
  *                                 sensibleSlots, sensibleSlotsData, runes }
  * @param {object} stats       - résultat de computeStats() : { mins, maxs, setCounts }
  * @param {string} visibility  - 'public' | 'unlisted'
  * @param {object} auth        - firebase auth instance (window._auth)
  * @returns {string} buildId   - ID du document créé
  */
-function _buildFingerprint(slots, carPoints) {
+function _buildFingerprint(slots, carPoints, skillNodes) {
   // Compare item IDs only (not names) — avoids property-order sensitivity
   const slotPart = Object.entries(slots || {})
     .map(([k, v]) => k + ':' + (v && typeof v === 'object' ? (v.id ?? '') : (v ?? '')))
@@ -29,7 +29,8 @@ function _buildFingerprint(slots, carPoints) {
     .map(([k, v]) => k + ':' + v)
     .sort()
     .join('|');
-  return slotPart + '§' + carPart;
+  const skillPart = (skillNodes || []).slice().sort().join(',');
+  return slotPart + '§' + carPart + '§' + skillPart;
 }
 
 export async function publishBuild({ payload, stats, visibility, auth }) {
@@ -46,11 +47,11 @@ export async function publishBuild({ payload, stats, visibility, auth }) {
       where('name', '==', name)
     ));
     if (!existing.empty) {
-      const newFp = _buildFingerprint(payload.slots, payload.caracterPoints);
+      const newFp = _buildFingerprint(payload.slots, payload.caracterPoints, payload.skillNodes);
       const isDuplicate = existing.docs.some(d => {
         const data = d.data();
         const slots = desanitizeFromFirestore(data.slots || {});
-        return _buildFingerprint(slots, data.caracterPoints) === newFp;
+        return _buildFingerprint(slots, data.caracterPoints, data.skillNodes) === newFp;
       });
       if (isDuplicate) throw new Error('Un build identique (même nom, mêmes équipements et attributs) existe déjà.');
     }
@@ -85,6 +86,7 @@ export async function publishBuild({ payload, stats, visibility, auth }) {
     slotImages:     payload.slotImages || {},
     sensibleSlots:  payload.sensibleSlots || {},   // { slotId: true } — marqueur only
     caracterPoints: payload.caracterPoints || {},
+    skillNodes:     Array.isArray(payload.skillNodes) ? payload.skillNodes : [],
     statsSnapshot:  statsSnapshot,
     previewCount:   0,
     favoriteCount:  0,
@@ -135,6 +137,7 @@ export async function loadBuildFromFirestore(buildId, dbInst, getDocFn, docFn, d
     classe:         data.classe,
     level:          data.level,
     caracterPoints: data.caracterPoints || {},
+    skillNodes:     Array.isArray(data.skillNodes) ? data.skillNodes : [],
     slots:          allSlots,
     runes:          desanitizeFn(data.runes || {}),
     forkOf:         buildId,

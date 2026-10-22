@@ -11,6 +11,7 @@
   let filterRar     = null;
   let filterTier 	= null;
   let activeClass   = null;
+  let skillNodes    = []; // arbre de compétences : clés "x,y" dans l'ordre de prise (centre offert, non listé)
   let filterStats	= new Set();
   const NUM_BUILDS   = 3;
 	let activeBuildIndex = 0;
@@ -633,6 +634,7 @@ function loadAccessoriesForClass(classId) {
 
   function applyLevelChange(newLevel, itemsAtRisk, pointsToRemove) {
     buildLevel = newLevel;
+    _setSkillNodes(skillNodes);
 
     if (itemsAtRisk && itemsAtRisk.length) {
       itemsAtRisk.forEach(slotId => {
@@ -1067,8 +1069,36 @@ function loadAccessoriesForClass(classId) {
 				});
 		});
 
+    /* ── Bonus de l'arbre de compétences ── */
+    if (window.VCLSkillTree) {
+      const sk = window.VCLSkillTree.statsFor(skillNodes);
+      Object.keys(sk).forEach(function(sid) {
+        if (!(sid in mins)) return;
+        mins[sid] += sk[sid];
+        maxs[sid] += sk[sid];
+      });
+    }
+
     return { mins, maxs, setCounts };
   }
+
+  /* ══ ARBRE DE COMPÉTENCES — état ══ */
+  function _setSkillNodes(nodes) {
+    skillNodes = window.VCLSkillTree
+      ? window.VCLSkillTree.sanitize(nodes, window.VCLSkillTree.maxPoints(buildLevel))
+      : [];
+  }
+  function _applySkillNodes(nodes) {
+    _setSkillNodes(nodes);
+    renderStats();
+    saveToStorage();
+  }
+  window._atelierSkills = {
+    getNodes: function() { return skillNodes.slice(); },
+    setNodes: _applySkillNodes,
+    getLevel: function() { return buildLevel; },
+    getClass: function() { return activeClass; },
+  };
 
   /* ══ CAROUSEL PANOPLIES ══ */
   let setCarouselIndex = 0;
@@ -1825,6 +1855,7 @@ function loadAccessoriesForClass(classId) {
 				classe: activeClass || '',
 				level: buildLevel,
 				caracterPoints: caracterPoints,
+				skillNodes: skillNodes,
 				slots: equippedSlots,
 				runes: equippedRunes,
 			}));
@@ -1854,6 +1885,7 @@ function loadAccessoriesForClass(classId) {
 		equippedRunes = {};
 		activeSlot = null;
 		buildLevel = 1;
+		skillNodes = [];
 		caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
 
 		const sensiblePending = [];
@@ -1893,6 +1925,7 @@ function loadAccessoriesForClass(classId) {
 								caracterPoints[k] = parsed.caracterPoints[k];
 						});
 					}
+					_setSkillNodes(parsed.skillNodes);
 				}
 			} else {
 				// Build vide : reset le nom
@@ -2105,7 +2138,7 @@ function loadAccessoriesForClass(classId) {
     });
     return { v:1, sig:SIG, name: document.getElementById('inp-name').value.trim() || 'Mon Build',
       classe: activeClass || '', level: buildLevel, caracterPoints: caracterPoints,
-      slots: slots, runes: equippedRunes };
+      skillNodes: skillNodes, slots: slots, runes: equippedRunes };
   }
 
   document.getElementById('btn-export').addEventListener('click', function() {
@@ -2152,6 +2185,7 @@ function loadAccessoriesForClass(classId) {
         if (parsed.caracterPoints) Object.keys(caracterPoints).forEach(function(k) {
           if (typeof parsed.caracterPoints[k] === 'number') caracterPoints[k] = parsed.caracterPoints[k];
         });
+        _setSkillNodes(parsed.skillNodes);
         const lvl = (parsed.level >= 1 && parsed.level <= MAX_LEVEL) ? parsed.level : buildLevel;
         Object.entries(parsed.slots).forEach(function(e) {
           const item = ITEMS.find(function(i) { return i.id === e[1]; });
@@ -2207,6 +2241,7 @@ function loadAccessoriesForClass(classId) {
       classe: activeClass || '',
       level: buildLevel,
       caracterPoints: Object.assign({}, caracterPoints),
+      skillNodes: skillNodes.slice(),
       slots: slots,
       slotImages: slotImages,
       sensibleSlots: sensibleSlots,
@@ -2341,6 +2376,7 @@ function loadAccessoriesForClass(classId) {
     equippedRunes = {};
     activeSlot = null;
     buildLevel = 1;
+    skillNodes = [];
     caracterPoints = { vitalite: 0, defense_car: 0, intelligence: 0, force: 0, esprit: 0, dexterite: 0 };
     localStorage.removeItem(getBuildKey(activeBuildIndex));
     buildGrid();
@@ -2501,6 +2537,7 @@ function loadAccessoriesForClass(classId) {
     activeRuneSlotId = null;
     buildLevel      = 1;
     activeClass     = null;
+    skillNodes      = [];
     Object.keys(caracterPoints).forEach(k => { caracterPoints[k] = 0; });
 
     if (!RUNES_BY_ID.size) {
@@ -2583,6 +2620,7 @@ function loadAccessoriesForClass(classId) {
               }
             });
           }
+          _setSkillNodes(parsed.skillNodes);
 
           buildGrid();
           buildLevelPanel();
