@@ -214,7 +214,12 @@
     var k = g.getAttribute('data-k'), classe = src && src.getClass();
     var fx = classe ? effectOf(k, classe) : null;
     var html;
-    if (fx) {
+    if (k === CENTER) {
+      var cls = classe && typeof CLASSES !== 'undefined' && CLASSES.find(function (c) { return c.id === classe; });
+      var lbl = cls ? cls.label : '';
+      var voie = lbl ? 'Voie ' + (/^[aeiouyéèêàâîô]/i.test(lbl) ? 'de l’' : 'du ') + lbl : 'Case de départ';
+      html = '<div class="st-tip-name st-tip-solo">' + escapeHtml(voie) + '</div>';
+    } else if (fx) {
       var d = statDef(fx.stats), unit = d ? d.unit : '';
       html = '<div class="st-tip-name">' + escapeHtml(fx.name) + '</div>' +
         '<div class="st-tip-stat"><span class="st-tip-lbl"><span class="st-tip-ico">' + (d ? d.icon : '') + '</span>' +

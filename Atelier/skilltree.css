@@ -164,3 +164,4 @@
 .st-tip-val { color: var(--bright); font-weight: 700; }
 .st-tip-none { font-size: 11px; color: var(--muted); }
 .st-tip.below { transform: translate(-50%, 0); }
+.st-tip-solo { padding-bottom: 0; margin-bottom: 0; border-bottom: 0; text-align: center; }
