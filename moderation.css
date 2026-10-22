@@ -170,6 +170,7 @@ body.sidebar-hidden .sidebar { padding: 0; width: 0; border-right: none; overflo
 .ed-input:focus { border-color: var(--accent); }
 .ed-input[readonly] { opacity: .45; cursor: default; }
 .ed-textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 7px 10px; font-size: 13px; outline: none; transition: border-color .15s; font-family: inherit; resize: vertical; min-height: 70px; }
+.ed-textarea-s { min-height: 0; overflow: hidden; line-height: 1.4; }
 .ed-textarea:focus { border-color: var(--accent); }
 .ed-json-ta { width: 100%; background: #0d1117; border: 1px solid var(--border); border-radius: 6px; color: #c9d1d9; padding: 8px 10px; font-family: 'Consolas', monospace; font-size: 11px; outline: none; transition: border-color .15s; resize: vertical; min-height: 32px; line-height: 1.6; overflow: hidden; }
 .ed-json-ta:focus { border-color: var(--accent); }

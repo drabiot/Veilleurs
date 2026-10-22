@@ -4570,8 +4570,8 @@ function _genValueHtml(key, val, col) {
   // string
   const str = String(val ?? '');
   const listAttr = key === 'set' ? ' list="ed-dl-sets"' : '';
-  if (str.length > 100 || str.includes('\n')) {
-    return `<textarea class="ed-textarea" data-gf-type="string">${_ee(str)}</textarea>`;
+  if (key !== 'set') {
+    return `<textarea class="ed-textarea ed-textarea-s" rows="1" data-gf-type="string">${_ee(str)}</textarea>`;
   }
   return `<input class="ed-input" data-gf-type="string" value="${_ee(str)}"${listAttr} autocomplete="off">`;
 }
@@ -4635,7 +4635,7 @@ window.edAddGenField = function() {
       <option value="json">array/map</option>
     </select>
     <div class="ed-gen-val">
-      <input class="ed-input" data-gf-type="string" placeholder="valeur…">
+      <textarea class="ed-textarea ed-textarea-s" rows="1" data-gf-type="string" placeholder="valeur…"></textarea>
     </div>
     <button type="button" class="ed-gen-delbtn" onclick="edDelGenRow(this)" title="Annuler">✕</button>`;
 
@@ -4656,7 +4656,7 @@ window.edAddGenField = function() {
     } else if (t === 'number') {
       valDiv.innerHTML = `<input class="ed-input" type="number" data-gf-type="number" placeholder="0">`;
     } else {
-      valDiv.innerHTML = `<input class="ed-input" data-gf-type="string" placeholder="valeur…">`;
+      valDiv.innerHTML = `<textarea class="ed-textarea ed-textarea-s" rows="1" data-gf-type="string" placeholder="valeur…"></textarea>`;
     }
   });
 
