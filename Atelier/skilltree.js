@@ -157,6 +157,22 @@
     return (byClass && byClass[NUMBERS[key]]) || null;
   }
 
+  // Modifications admin (config/skilltree) : { classe: { numéro: {name, stats, bonus} | {none:true} } }
+  var overrides = {};
+  function applyOverrides(obj) {
+    overrides = obj || {};
+    var all = window.VCL_SKILL_EFFECTS = window.VCL_SKILL_EFFECTS || {};
+    Object.keys(overrides).forEach(function (c) {
+      all[c] = all[c] || {};
+      Object.keys(overrides[c]).forEach(function (n) {
+        var v = overrides[c][n];
+        if (v && v.none) delete all[c][n];
+        else if (v) all[c][n] = { name: v.name, stats: v.stats, bonus: v.bonus };
+      });
+    });
+    window.dispatchEvent(new CustomEvent('vcl:skilltree-effects'));
+  }
+
   function statsFor(nodes, classe) {
     var total = {};
     [CENTER].concat(nodes || []).forEach(function (k) {
@@ -172,7 +188,7 @@
     return fx.name + ' — +' + fx.bonus + unit + ' ' + label;
   }
 
-  window.VCLSkillTree = { graph: GRAPH, numbers: NUMBERS, sanitize: sanitize, statsFor: statsFor, maxPoints: maxPoints };
+  window.VCLSkillTree = { graph: GRAPH, numbers: NUMBERS, sanitize: sanitize, statsFor: statsFor, maxPoints: maxPoints, applyOverrides: applyOverrides };
 
   /* ── Rendu ── */
   var SVG_NS = 'http://www.w3.org/2000/svg';
@@ -190,6 +206,7 @@
   var view = { x: 0, y: 0, w: 1, h: 1 };
   var ui = {};
   var src = null, readOnly = false;
+  var editing = false, editSnap = null, changed = {};
 
   function applyView() {
     ui.svg.setAttribute('viewBox', [view.x, view.y, view.w, view.h].join(' '));
@@ -284,6 +301,10 @@
       var r = isCenter ? 15 : isKey ? 12 : 9;
       if (isCenter) diamond(g, r + 5, 'st-ring');
       diamond(g, r, 'st-shape');
+      if (editing && !isCenter) {
+        var num = el('text', { class: 'st-num', y: r + 15 }, g);
+        num.textContent = NUMBERS[k];
+      }
       if (isCenter || isKey) {
         el('rect', { x: -9, y: -9, width: 18, height: 18, mask: 'url(#st-icon-mask)', fill: 'currentColor',
                      transform: 'scale(' + (r * 1.4 / 18) + ')', class: 'st-glyph' }, g);
@@ -298,6 +319,7 @@
   function setInfo(msg) { ui.info.textContent = msg || ''; }
 
   function onNodeClick(k) {
+    if (editing) { selectForEdit(k); return; }
     if (readOnly) return;
     var A = src;
     var nodes = A.getNodes();
@@ -382,6 +404,102 @@
     });
   }
 
+  /* ── Mode édition (admin) ── */
+  function isAdmin() { return window._vcl_base_role === 'admin'; }
+
+  function setEffect(classe, num, fx) {
+    var all = window.VCL_SKILL_EFFECTS = window.VCL_SKILL_EFFECTS || {};
+    all[classe] = all[classe] || {};
+    changed[classe] = changed[classe] || {};
+    if (fx) { all[classe][num] = fx; changed[classe][num] = fx; }
+    else { delete all[classe][num]; changed[classe][num] = { none: true }; }
+    window.dispatchEvent(new CustomEvent('vcl:skilltree-effects'));
+  }
+
+  // Effets existants (toutes classes confondues), dédoublonnés par nom + stat
+  function effectOptions(classe) {
+    var all = window.VCL_SKILL_EFFECTS || {}, seen = {}, list = [];
+    [classe].concat(Object.keys(all)).forEach(function (c) {
+      Object.keys(all[c] || {}).forEach(function (n) {
+        var e = all[c][n], key = e.name + '|' + e.stats;
+        if (!seen[key]) { seen[key] = 1; list.push({ key: key, name: e.name, stats: e.stats, bonus: e.bonus }); }
+      });
+    });
+    return list.sort(function (a, b) { return a.name.localeCompare(b.name, 'fr'); });
+  }
+
+  function selectForEdit(k) {
+    var classe = src.getClass();
+    if (k === CENTER || !classe) return;
+    var num = NUMBERS[k], cur = effectOf(k, classe), opts = effectOptions(classe);
+    var html = '<div class="st-ed-title">Case n°' + num + '</div>' +
+      '<select class="st-ed-sel"><option value="">— Aucun effet —</option>' +
+      opts.map(function (o, i) {
+        var d = statDef(o.stats);
+        return '<option value="' + i + '"' + (cur && cur.name + '|' + cur.stats === o.key ? ' selected' : '') + '>' +
+          escapeHtml(o.name) + ' (' + escapeHtml(d ? d.label : o.stats) + ')</option>';
+      }).join('') + '</select>' +
+      '<label class="st-ed-val">Valeur <input type="number" step="any" class="st-ed-num" value="' + (cur ? cur.bonus : '') + '"' + (cur ? '' : ' disabled') + ' /></label>';
+    ui.editor.innerHTML = html;
+    ui.editor.hidden = false;
+    var sel = ui.editor.querySelector('.st-ed-sel'), inp = ui.editor.querySelector('.st-ed-num');
+    function apply() {
+      if (sel.value === '') { setEffect(classe, num, null); inp.disabled = true; inp.value = ''; return; }
+      var o = opts[+sel.value], b = parseFloat(inp.value);
+      inp.disabled = false;
+      setEffect(classe, num, { name: o.name, stats: o.stats, bonus: isNaN(b) ? o.bonus : b });
+    }
+    sel.addEventListener('change', function () {
+      if (sel.value !== '') { inp.value = opts[+sel.value].bonus; }
+      apply();
+    });
+    inp.addEventListener('input', function () { if (sel.value !== '' && inp.value !== '') apply(); });
+    ui.info.textContent = '';
+  }
+
+  function startEdit() {
+    var classe = src.getClass();
+    if (!classe) { ui.info.textContent = 'Choisis une classe pour modifier ses cases.'; return; }
+    editing = true; changed = {};
+    editSnap = JSON.parse(JSON.stringify((window.VCL_SKILL_EFFECTS || {})[classe] || {}));
+    ui.editBtn.hidden = true; ui.editActions.hidden = false;
+    ui.info.textContent = 'Mode édition : clique une case pour changer son effet.';
+    render();
+  }
+
+  function endEdit() {
+    editing = false; changed = {}; editSnap = null;
+    ui.editor.hidden = true; ui.editActions.hidden = true; ui.editBtn.hidden = false;
+    render();
+  }
+
+  function cancelEdit() {
+    if (!editing) return;
+    var classe = src.getClass();
+    if (classe) window.VCL_SKILL_EFFECTS[classe] = editSnap;
+    window.dispatchEvent(new CustomEvent('vcl:skilltree-effects'));
+    endEdit();
+    ui.info.textContent = 'Modifications annulées.';
+  }
+
+  function confirmEdit() {
+    if (!editing) return;
+    var next = JSON.parse(JSON.stringify(overrides));
+    Object.keys(changed).forEach(function (c) {
+      next[c] = next[c] || {};
+      Object.keys(changed[c]).forEach(function (n) { next[c][n] = changed[c][n]; });
+    });
+    if (!window.VCLSkillSync) { ui.info.textContent = 'Synchronisation indisponible.'; return; }
+    ui.info.textContent = 'Enregistrement…';
+    window.VCLSkillSync.save(next).then(function () {
+      overrides = next;
+      endEdit();
+      ui.info.textContent = 'Modifications enregistrées.';
+    }).catch(function (e) {
+      ui.info.textContent = 'Échec de l’enregistrement : ' + (e && e.message || e);
+    });
+  }
+
   var OVERLAY_HTML =
     '<div class="st-panel">' +
       '<div class="st-stars" aria-hidden="true"></div>' +
@@ -405,6 +523,14 @@
           '<span class="st-points-val">0 / 0</span>' +
         '</div>' +
         '<div class="st-info"></div>' +
+        '<div class="st-editor" hidden></div>' +
+        '<div class="st-admin" hidden>' +
+          '<button class="st-edit">✎ Modifier</button>' +
+          '<div class="st-edit-actions" hidden>' +
+            '<button class="st-confirm">✓ Confirmer</button>' +
+            '<button class="st-cancel">Annuler</button>' +
+          '</div>' +
+        '</div>' +
         '<button class="st-reset">⟳ Réinitialiser l’arbre</button>' +
       '</aside>' +
     '</div>';
@@ -424,12 +550,19 @@
     ui.points = overlay.querySelector('.st-points-val');
     ui.pointsLbl = overlay.querySelector('.st-points-lbl');
     ui.reset = overlay.querySelector('.st-reset');
+    ui.admin = overlay.querySelector('.st-admin');
+    ui.editor = overlay.querySelector('.st-editor');
+    ui.editBtn = overlay.querySelector('.st-edit');
+    ui.editActions = overlay.querySelector('.st-edit-actions');
     ui.world = ui.svg.querySelector('.st-world');
     makeStars(overlay.querySelector('.st-stars'));
     bindPanZoom();
 
     function close() { overlay.classList.remove('open'); }
-    overlay.querySelector('.st-close').addEventListener('click', close);
+    overlay.querySelector('.st-close').addEventListener('click', function () { if (editing) cancelEdit(); close(); });
+    ui.editBtn.addEventListener('click', startEdit);
+    overlay.querySelector('.st-confirm').addEventListener('click', confirmEdit);
+    overlay.querySelector('.st-cancel').addEventListener('click', cancelEdit);
     ui.reset.addEventListener('click', function () {
       if (readOnly) return;
       src.setNodes([]);
@@ -449,6 +582,8 @@
     overlay.setAttribute('data-class', src.getClass() || 'none');
     ui.reset.style.display = readOnly ? 'none' : '';
     ui.pointsLbl.textContent = readOnly ? 'Points dépensés' : 'Points restants';
+    editing = false; ui.editor.hidden = true; ui.editActions.hidden = true; ui.editBtn.hidden = false;
+    ui.admin.hidden = !isAdmin();
     overlay.classList.add('open');
     fitView();
     render();

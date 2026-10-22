@@ -167,3 +167,29 @@
   border: 1px solid #e8a05a; transform: rotate(45deg); vertical-align: middle;
 }
 .st-tip-solo { text-align: center; }
+
+/* Mode édition (admin) */
+.st-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+  fill: #f3e3c4; text-anchor: middle; pointer-events: none;
+  paint-order: stroke; stroke: rgba(0,0,0,.85); stroke-width: 3px; stroke-linejoin: round;
+}
+.st-admin { display: flex; flex-direction: column; gap: 8px; }
+.st-admin[hidden], .st-editor[hidden], .st-edit-actions[hidden], .st-edit[hidden] { display: none; }
+.st-edit-actions { display: flex; gap: 8px; }
+.st-edit, .st-confirm, .st-cancel {
+  background: none; border: 1px solid var(--rim2); border-radius: 4px;
+  color: var(--text); font-family: inherit; font-size: 11px; padding: 7px 10px; cursor: pointer;
+  transition: all .15s;
+}
+.st-edit:hover, .st-confirm:hover { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow); }
+.st-confirm { flex: 1; color: var(--gold); border-color: var(--gold-dim); }
+.st-cancel:hover { color: #d9614a; border-color: rgba(217,97,74,.45); }
+.st-editor { display: flex; flex-direction: column; gap: 8px; font-size: 11px; color: var(--text); }
+.st-ed-title { font-family: 'Cinzel', serif; color: var(--gold); font-size: 12px; letter-spacing: .08em; }
+.st-ed-sel, .st-ed-num {
+  background: rgba(0,0,0,.35); color: var(--bright); border: 1px solid var(--rim2); border-radius: 4px;
+  font-family: inherit; font-size: 11px; padding: 6px 8px; width: 100%;
+}
+.st-ed-val { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.st-ed-val .st-ed-num { width: 90px; }

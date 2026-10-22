@@ -1010,6 +1010,7 @@ function loadAccessoriesForClass(classId) {
     renderStats();
     saveToStorage();
   }
+  window.addEventListener('vcl:skilltree-effects', function() { renderStats(); });
   window._atelierSkills = {
     getNodes: function() { return skillNodes.slice(); },
     setNodes: _applySkillNodes,
