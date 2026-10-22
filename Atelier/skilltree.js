@@ -205,7 +205,7 @@
 
   function nodeLabel(k) {
     var classe = src && src.getClass();
-    var base = k === CENTER ? 'Origine (offerte) · ' : KEYSTONES[k] ? 'Case majeure · ' : '';
+    var base = KEYSTONES[k] ? 'Case majeure · ' : '';
     if (!classe) return base + 'Choisis une classe pour voir les effets.';
     var fx = effectOf(k, classe);
     return base + (fx ? effectText(fx) : 'Aucun effet');
