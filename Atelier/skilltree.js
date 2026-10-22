@@ -280,7 +280,7 @@
     svg.addEventListener('wheel', function (e) {
       e.preventDefault();
       var f = e.deltaY > 0 ? 1.12 : 1 / 1.12;
-      var nw = Math.min(2.4 * FULL, Math.max(240, view.w * f)), k = nw / view.w;
+      var nw = Math.min(8 * FULL, Math.max(240, view.w * f)), k = nw / view.w;
       var r = svg.getBoundingClientRect();
       var px = view.x + (e.clientX - r.left) * view.w / r.width;
       var py = view.y + (e.clientY - r.top) * view.h / r.height;
