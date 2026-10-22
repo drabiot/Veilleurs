@@ -116,7 +116,7 @@
   <script src="compendium.js"></script>
   <script type="module">
     import { store } from '../store.js';
-    import { db, COL, desanitizeFromFirestore, hasRole, logPageView, logItemView, logSearchQuery, logContentView } from '../firebase.js';
+    import { db, COL, loadCollection, hasRole, logPageView, logItemView, logSearchQuery, logContentView } from '../firebase.js';
     logPageView('compendium');
     window._vclLogItemView    = logItemView;
     window._vclLogSearchQuery = logSearchQuery;
@@ -139,24 +139,25 @@
       if (_sensitiveLoaded) return;
       _sensitiveLoaded = true;
       try {
-        const [hiddenSnap, secretSnap] = await Promise.all([
-          getDocs(collection(db, COL.itemsHidden)),
-          getDocs(collection(db, COL.itemsSecret)),
+        // loadCollection : cache localStorage 1h (invalidé par wiki_version), évite de relire
+        // les 2 collections complètes à chaque visite des comptes contributeur+.
+        const [hiddenDocs, secretDocs] = await Promise.all([
+          loadCollection(COL.itemsHidden),
+          loadCollection(COL.itemsSecret),
         ]);
-        const secretById = new Map(
-          secretSnap.docs.map(d => [d.id, desanitizeFromFirestore(d.data())])
-        );
+        const secretById = new Map(secretDocs.map(d => [d._id, d]));
+        let added = false;
         const existing = new Set(ITEMS.map(i => String(i.id || i._id)));
-        for (const d of hiddenSnap.docs) {
-          const hidden = desanitizeFromFirestore({ _id: d.id, ...d.data() });
+        for (const hidden of hiddenDocs) {
           const itemId = String(hidden.id || '');
           const secret = itemId ? (secretById.get(itemId) || {}) : {};
-          const item = { ...hidden, ...secret, sensible: true };
+          const item = { ...hidden, ...secret, _id: hidden._id, sensible: true };
           if (!existing.has(String(hidden.id || hidden._id))) {
             ITEMS.push(item);
+            added = true;
           }
         }
-        window._pageInit?.();
+        if (added) window._pageInit?.();
       } catch (e) { console.warn('[Compendium] items sensibles:', e); }
     }
 
