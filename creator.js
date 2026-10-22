@@ -1199,7 +1199,7 @@ const OBTAIN_PLACEHOLDERS = {
   autre:     'Pour des cas particuliers, détaillez ici précisément le moyen d\'obtention de cet item.',
 };
 
-function onObtainTypeChange() {
+function onObtainTypeChange(ev) {
   const type = document.getElementById('obtain-type').value;
   const container = document.getElementById('obtain-search-container');
   const addBtn = document.getElementById('obtain-add-btn');
@@ -1251,6 +1251,8 @@ function onObtainTypeChange() {
     container.appendChild(hint);
     addBtn.disabled = obtainSources.some(s => s.type === 'forge');
     addBtn.style.display = '';
+    // Choisir « Forge » dans la liste l'ajoute directement (pas de clic sur « + Ajouter »)
+    if (ev && ev.type === 'change' && !addBtn.disabled) addObtainSource();
 
   } else if (type === 'ressource') {
     // Coordonnées uniquement — auto-ajout au blur si les deux champs sont remplis
@@ -1444,6 +1446,7 @@ function addObtainSource() {
 function removeObtainSource(uid) {
   obtainSources = obtainSources.filter(s => s.uid !== uid);
   renderObtainSources();
+  if (document.getElementById('obtain-type').value === 'forge') document.getElementById('obtain-add-btn').disabled = obtainSources.some(s => s.type === 'forge');
   // Rafraîchit le loot picker si un mob est sélectionné
   if (document.getElementById('obtain-type').value === 'mob') {
     const mobId = obtainDrop?.getValue();
