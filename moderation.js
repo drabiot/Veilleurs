@@ -425,17 +425,28 @@ function _buildPrettySummary(data, type) {
     </div>`);
   };
 
+  // Ligne « id caché │ valeur affichée » : l'id n'est montré que s'il diffère de la valeur affichée
+  const idCode = id => `<code style="font-size:10px;color:var(--muted);background:rgba(255,255,255,.05);border-radius:3px;padding:1px 5px;">${esc(String(id))}</code>`;
+  const idPair = (id, shown) => {
+    const plain = String(shown).replace(/<[^>]*>/g, '').trim();
+    if (id == null || id === '' || plain === String(id).trim()) return shown;
+    return `${idCode(id)}<span style="color:var(--rim2);margin:0 6px;">│</span>${shown}`;
+  };
+  const SLOT_LABELS = { arme_p:'Arme Principale', arme_s:'Arme Secondaire / Bouclier', anneau:'Anneau', amulette:'Amulette', bracelet:'Bracelet', artefact:'Artefact', gants:'Gants', casque:'Casque', plastron:'Plastron', 'jambières':'Jambières', bottes:'Bottes' };
+  const statDef  = id => (typeof ALL_STATS !== 'undefined' ? ALL_STATS.find(x => x.id === id) : null);
+  const itemName = id => ((_modCache['items'] || []).find(i => (i.id || i._id) === id) || {}).name;
+
   if (type === 'item') {
     const rarColor = RARITY_COLORS[data.rarity] || 'var(--muted)';
-    if (data.rarity)   field('Rareté',   `<span style="font-weight:700;">${RARITY_LABELS[data.rarity]||data.rarity}</span>`, rarColor);
-    if (data.category) field('Catégorie', CAT_LABELS[data.category]||data.category);
-    if (data.palier)   field('Palier',   'Palier ' + (data.palier == -1 ? 'Archive' : data.palier));
-    if (data.lvl)      field('Niveau',   'Niveau ≥ ' + data.lvl);
-    if (data.cat)      field('Slot',     data.cat);
-    if (data.classes?.length) field('Classes', data.classes.join(', '));
+    if (data.rarity)   field('Rareté',   idPair(data.rarity, `<span style="font-weight:700;">${RARITY_LABELS[data.rarity]||data.rarity}</span>`), rarColor);
+    if (data.category) field('Catégorie', idPair(data.category, esc(CAT_LABELS[data.category]||data.category)));
+    if (data.palier)   field('Palier',   idPair(data.palier, 'Palier ' + (data.palier == -1 ? 'Archive' : data.palier)));
+    if (data.lvl)      field('Niveau',   idPair(data.lvl, 'Niveau ≥ ' + data.lvl));
+    if (data.cat)      field('Slot',     idPair(data.cat, esc(SLOT_LABELS[data.cat] || data.cat)));
+    if (data.classes?.length) field('Classes', data.classes.map(c => idPair(c, esc((typeof CLASSES !== 'undefined' && CLASSES.find(x => x.id === c)?.label) || c))).join(' &nbsp; '));
     if (data.set) {
       const pano = (_modCache['panoplies'] || []).find(p => p.id === data.set);
-      field('Set', esc(pano?.label || data.set), '#d7af5f');
+      field('Set', idPair(data.set, esc(pano?.label || data.set)), '#d7af5f');
     }
     if (data.sensible) field('', '🔒 Sensible', '#f87171');
     if (data.event)    field('', '🎊 Event',    '#a855f7');
@@ -443,15 +454,22 @@ function _buildPrettySummary(data, type) {
     if (data.stats && Object.keys(data.stats).length) {
       const statLines = Object.entries(data.stats).map(([k, v]) => {
         const val = Array.isArray(v) ? `${v[0]}–${v[1]}` : v;
-        return `<span style="background:rgba(224,172,96,.12);border:1px solid rgba(224,172,96,.2);border-radius:4px;padding:1px 6px;font-size:11px;">${esc(k)} <b>${val}</b></span>`;
+        const d = statDef(k), unit = d ? d.unit : '';
+        return `<span style="background:rgba(224,172,96,.12);border:1px solid rgba(224,172,96,.2);border-radius:4px;padding:1px 6px;font-size:11px;">${idPair(k, esc(d ? d.label : k))} <b>${val}${esc(unit)}</b></span>`;
       }).join(' ');
       rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Stats</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;">${statLines}</div>`);
     }
     if (data.craft?.length) {
-      const craftLines = data.craft.map(c => `<span style="background:var(--surface3);border-radius:4px;padding:1px 6px;font-size:11px;">×${c.qty} ${esc(c.id)}</span>`).join(' ');
+      const craftLines = data.craft.map(c => `<span style="background:var(--surface3);border-radius:4px;padding:1px 6px;font-size:11px;">×${c.qty} ${idPair(c.id, esc(itemName(c.id) || c.id))}</span>`).join(' ');
       rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Craft</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;">${craftLines}</div>`);
     }
-    field('Obtention', data.obtain ? esc(resolveObtain(data.obtain)).replace(/\n/g,'<br>') : '<i style="color:var(--muted)">Aucune source renseignée</i>');
+    {
+      const raw = data.obtain || '';
+      const resolved = resolveObtain(raw);
+      field('Obtention', raw
+        ? idPair(raw.replace(/\n/g, ' ⏎ '), esc(resolved).replace(/\n/g, '<br>'))
+        : '<i style="color:var(--muted)">Aucune source renseignée</i>');
+    }
     if (data.lore)    field('Lore', `<i style="color:var(--muted)">${esc(data.lore).slice(0,200)}${data.lore.length>200?'…':''}</i>`);
     if (data.tags?.length) field('Tags', data.tags.map(t=>`<span style="font-size:10px;background:var(--surface3);border-radius:3px;padding:1px 5px;">${esc(t)}</span>`).join(' '));
   } else if (type === 'mob') {
