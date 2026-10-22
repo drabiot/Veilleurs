@@ -1195,7 +1195,7 @@ const OBTAIN_PLACEHOLDERS = {
   pnj:       'Rechercher un PNJ (forgeron, marchand…)…',
   quete:     'Rechercher une quête…',
   ressource: 'Rechercher une région…',
-  forge:     'Fabricable à la Forge',
+  forge:     'Fabricable à la Forge du Fractured Underworld',
   autre:     'Pour des cas particuliers, détaillez ici précisément le moyen d\'obtention de cet item.',
 };
 
@@ -1247,7 +1247,7 @@ function onObtainTypeChange() {
   } else if (type === 'forge') {
     const hint = document.createElement('div');
     hint.style.cssText = 'height:38px;display:flex;align-items:center;padding:0 10px;font-size:12px;color:var(--muted);';
-    hint.textContent = 'Item fabricable à la Forge — rien d’autre à renseigner.';
+    hint.textContent = 'Item fabricable à la Forge du Fractured Underworld';
     container.appendChild(hint);
     addBtn.disabled = obtainSources.some(s => s.type === 'forge');
     addBtn.style.display = '';
@@ -1482,7 +1482,7 @@ function renderObtainSources() {
         label += `<span style="color:var(--muted)">${s.type === 'autre' ? 'Autre' : s.type} ·</span> <b>${s.desc || s.name || ''}</b>`;
       }
     } else if (s.type === 'forge') {
-      label += '<b>Forge</b> <span style="color:var(--muted)">— fabricable</span>';
+      label += '<b>Forge du Fractured Underworld</b> <span style="color:var(--muted)">— fabricable</span>';
     } else if (s.type === 'ressource') {
       if (s.coords) {
         label += `📍 <b>X</b> ${s.coords.x} <b>Z</b> ${s.coords.z}`;
@@ -1545,7 +1545,7 @@ function parseObtainText(text, itemId, itemName) {
       sources.push({ uid: obtainUid++, type: 'donjon', id, name, desc: d?.desc || '', subtitle: d?.subtitle || '' });
       continue;
     }
-    if (/^Fabricable à la Forge$/.test(t)) { sources.push({ uid: obtainUid++, type: 'forge' }); continue; }
+    if (/^Fabricable à la Forge( du Fractured Underworld)?$/.test(t)) { sources.push({ uid: obtainUid++, type: 'forge' }); continue; }
     const artM = t.match(/^Fabricable au \[npc:([^|]+)\|([^\]]+)\]$/);
     if (artM) {
       const [, id, name] = artM;
@@ -1635,7 +1635,7 @@ function buildObtainText() {
       parts.push(`Récoltable dans [region:${r.id}|${r.name}]`);
     }
   }
-  if (forges.length)            parts.push('Fabricable à la Forge');
+  if (forges.length)            parts.push('Fabricable à la Forge du Fractured Underworld');
   for (const a of autres)       parts.push(`Autre source — ${a.desc}`);
   // Anciens formats
   for (const c of coffres)      parts.push(`Trouvable dans un coffre — ${c.desc}`);
