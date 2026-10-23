@@ -1,1 +1,4 @@
 tools/items.json
+
+# Règles Firestore : gérées dans la console Firebase (copie locale hors dépôt dans Save/)
+firestore.rules
