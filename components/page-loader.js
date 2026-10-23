@@ -5,7 +5,7 @@
    barre qui avance à chaque collection reçue.
 ══════════════════════════════════════════════════════ */
 
-const SHOW_DELAY = 180;   // ms avant d'afficher (évite le flash quand le cache répond vite)
+const SHOW_DELAY = 2000;  // ms avant d'afficher : l'écran n'apparaît que si le chargement dépasse 2 s
 const MIN_VISIBLE = 350;  // ms d'affichage minimum une fois visible (évite le clignotement)
 
 const CSS = `
