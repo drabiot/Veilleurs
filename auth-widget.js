@@ -67,6 +67,7 @@ function _injectWidget() {
   widget.innerHTML = `
     <button class="vcl-auth-btn" id="vcl-login-btn">🔑 Connexion</button>
     <div id="vcl-user-info" style="display:none">
+      <img class="vcl-auth-avatar" id="vcl-user-avatar" alt="" style="display:none">
       <span class="vcl-auth-pseudo" id="vcl-user-pseudo"></span>
       <span id="vcl-user-honor"></span>
       <span class="vcl-auth-role-badge" id="vcl-role-badge"></span>
@@ -122,6 +123,7 @@ function _showUserUI(user, role, baseRole) {
   document.getElementById('vcl-user-info').style.display = 'flex';
   const pseudo = user.displayName || user.email?.split('@')[0] || 'Veilleur';
   document.getElementById('vcl-user-pseudo').textContent = pseudo;
+  _loadAvatar(user.uid);
   // titre honorifique (config/leaderboard_titles), reconnu par uid ou par pseudo
   const honorEl = document.getElementById('vcl-user-honor');
   if (honorEl) {
@@ -135,6 +137,22 @@ function _showUserUI(user, role, baseRole) {
   badge.style.background = d.color;
   if (hasRole(baseRole, 'contributeur')) _injectModLink();
 
+}
+
+// Avatar Discord (users/{uid}.discordId + discordAvatar) à gauche du pseudo
+async function _loadAvatar(uid) {
+  const img = document.getElementById('vcl-user-avatar');
+  if (!img) return;
+  img.style.display = 'none';
+  try {
+    const d = (await getDoc(doc(db, 'users', uid))).data() || {};
+    if (!d.discordId) return;
+    img.onerror = () => { img.style.display = 'none'; };
+    img.src = d.discordAvatar
+      ? `https://cdn.discordapp.com/avatars/${d.discordId}/${d.discordAvatar}.png?size=64`
+      : `https://cdn.discordapp.com/embed/avatars/${Number((BigInt(d.discordId) >> 22n) % 6n)}.png`;
+    img.style.display = '';
+  } catch { /* pas d'avatar */ }
 }
 
 function _showError(msg) {

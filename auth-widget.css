@@ -30,6 +30,14 @@
   gap: 8px;
 }
 
+.vcl-auth-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .vcl-auth-pseudo {
   font-size: 12px;
   font-family: 'JetBrains Mono', monospace;
