@@ -2651,8 +2651,9 @@ function loadQuest(quest) {
   if (quest.titre)  document.getElementById('quest-titre').value = quest.titre;
   if (quest.type)   document.getElementById('quest-type').value  = quest.type;
   if (quest.palier) _setPalierValue('quest-palier', quest.palier);
-  if (quest.npc)  { document.getElementById('quest-npc').value = quest.npc; window._pendingQuestNpc = quest.npc; }
-  if (quest.zone) window._pendingQuestZone = quest.zone;
+  // Les menus PNJ / zone existent déjà quand on charge une quête : on les met à jour directement (sinon la valeur en attente n'est jamais appliquée)
+  if (quest.npc)  { document.getElementById('quest-npc').value = quest.npc; window._pendingQuestNpc = quest.npc; if (_questNpcDrop) initQuestNpcDrop(); }
+  if (quest.zone) { window._pendingQuestZone = quest.zone; if (_questZoneDrop) { _questZoneDrop.setValue(quest.zone, quest.zone); window._pendingQuestZone = null; } }
   if (quest.desc)   document.getElementById('quest-desc').value  = quest.desc;
   if (quest.coords) {
     const cx = document.getElementById('quest-cx');
