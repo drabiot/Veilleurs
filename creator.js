@@ -125,17 +125,19 @@ function populatePalierSelects(paliers) {
     const currentVal = sel.value || sel.dataset.vclPending || '';
     sel.innerHTML = '<option value="">—</option>';
     for (const p of paliers) {
+      if (p.id === -1 || p.id === 'event') continue; // Archive : modération uniquement ; Event : bouton dédié
       const opt = document.createElement('option');
       opt.value = String(p.id);
       opt.textContent = p.label;
       sel.appendChild(opt);
     }
-    if (currentVal && paliers.some(p => String(p.id) === currentVal)) {
+    if (currentVal && paliers.some(p => String(p.id) === currentVal && p.id !== -1 && p.id !== 'event')) {
       sel.value = currentVal;
       delete sel.dataset.vclPending;
       sel.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }
+  if (selEvent) _lockPalierEvent(true); // le select vient d'être reconstruit
   refreshCustomSelects();
 }
 window.populatePalierSelects = populatePalierSelects;
@@ -988,7 +990,7 @@ function _computeItemId() {
   const name   = document.getElementById('f-name').value.replace(/\s*\[qualit[eé]\]\s*/gi, ' ').trim();
   const slug   = nameToId(name);
   const palier = document.getElementById('f-palier').value;
-  const base   = (slug && palier) ? `${slug}_p${palier}` : slug;
+  const base   = (slug && palier) ? `${slug}_${palier === 'event' ? 'event' : 'p' + palier}` : slug;
   return (selQualite && base) ? base.replace(/(_p\d+)$/, '_qualite$1') || (base + '_qualite') : base;
 }
 
@@ -1780,6 +1782,39 @@ function toggleSensible() {
   update();
 }
 
+let selEvent = false;          // bouton « Event » : verrouille le palier sur « event »
+let _palierBeforeEvent = '';   // palier choisi avant l'activation du bouton
+
+// Verrouille (ou libère) le sélecteur de palier sur « Event »
+function _lockPalierEvent(on) {
+  const sel = document.getElementById('f-palier');
+  if (!sel) return;
+  const prev = [...sel.options].some(o => o.value === 'event');
+  if (on) {
+    if (!selEvent && sel.value && sel.value !== 'event') _palierBeforeEvent = sel.value;
+    selEvent = true;
+    if (!prev) {
+      const o = document.createElement('option');
+      o.value = 'event';
+      o.textContent = ((window._vcl_paliers || []).find(p => p.id === 'event') || {}).label || 'Event';
+      sel.appendChild(o);
+    }
+    sel.value = 'event';
+    sel.disabled = true;
+  } else {
+    selEvent = false;
+    [...sel.options].filter(o => o.value === 'event').forEach(o => o.remove());
+    sel.disabled = false;
+    sel.value = [...sel.options].some(o => o.value === _palierBeforeEvent) ? _palierBeforeEvent : '';
+    _palierBeforeEvent = '';
+  }
+  document.getElementById('event-btn')?.classList.toggle('active', selEvent);
+  _customSelUpdaters['f-palier']?.();
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function toggleEvent() { _lockPalierEvent(!selEvent); }
+
 // Champ « Évènement » : uniquement quand le palier est « Event »
 function _syncEventField() {
   const wrap = document.getElementById('event-name-field');
@@ -1962,6 +1997,8 @@ function _setPalierValue(elId, val) {
   const el = document.getElementById(elId);
   if (!el) return;
   const s = String(val);
+  if (elId === 'f-palier' && s === 'event') { _lockPalierEvent(true); return; } // palier Event = bouton Event actif
+  if (s === '-1') return; // Archive : plus sélectionnable dans le creator
   el.value = s;
   if (el.value !== s) el.dataset.vclPending = s;
   _customSelUpdaters[elId]?.();
@@ -2538,6 +2575,7 @@ function resetFormSilent() {
   selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvolutif = false; selOcculte = false; selQualite = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
   document.getElementById('qualite-btn')?.classList.remove('active');
   _setEventName('');
+  if (selEvent) _lockPalierEvent(false);
   const _evSec = document.getElementById('evolutif-evolutions-section');
   if (_evSec) _evSec.style.display = 'none';
   const _evList = document.getElementById('evolutif-evolutions-list');
@@ -2897,6 +2935,8 @@ function initCustomSelects() {
       const hasVal = opt && opt.value !== '';
       valSpan.textContent = opt ? opt.text : '';
       valSpan.classList.toggle('custom-sel-placeholder', !hasVal);
+      trigger.disabled = nativeSel.disabled;
+      trigger.classList.toggle('locked', nativeSel.disabled);
     }
 
     function buildListItems() {

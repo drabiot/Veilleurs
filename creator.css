@@ -773,3 +773,5 @@ select:focus, select:hover { border-color: var(--accent); }
   /* Submit bien visible */
   #btn-submit-discord { width: 100%; justify-content: center; }
 }
+
+.custom-sel-trigger.locked { opacity: .65; cursor: not-allowed; border-color: #a855f7; }
