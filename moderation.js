@@ -3223,6 +3223,7 @@ async function loadDeadLinks() {
       const pool = ENTITY_POOL[b.targetType] || [];
       let selectedId = null;
       const chips = [];
+      const suggestions = _dlSuggest(b, pool, SRC_PALIER.get(`${b.srcType}|${b.srcId}`));
 
       const label = document.createElement('span');
       label.style.cssText = 'font-size:12px;color:var(--muted);margin-right:6px;';
@@ -3264,7 +3265,7 @@ async function loadDeadLinks() {
         const norm = normalize(q);
         const results = norm
           ? pool.filter(e => normalize(e.search || e.name).includes(norm) || normalize(e.id).includes(norm))
-          : pool.slice(0, 40);
+          : [...suggestions.map(s => s.e), ...pool.filter(e => !suggestions.some(s => s.e.id === e.id))].slice(0, 40);
         dropdown.innerHTML = '';
         if (!results.length) {
           const empty = document.createElement('div');
@@ -3356,8 +3357,7 @@ async function loadDeadLinks() {
       sugWrap.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:6px;';
       const sugLabel = document.createElement('span');
       sugLabel.style.cssText = 'font-size:12px;color:var(--muted);margin-right:2px;';
-      const suggestions = _dlSuggest(b, pool, SRC_PALIER.get(`${b.srcType}|${b.srcId}`));
-      sugLabel.textContent = suggestions.length ? 'Suggestions :' : 'Aucune suggestion — utilise la recherche.';
+      sugLabel.textContent = suggestions.length ? 'Suggestions (un clic applique) :' : 'Aucune suggestion — utilise la recherche.';
       sugWrap.appendChild(sugLabel);
       for (const { e } of suggestions) {
         const chip = document.createElement('button');
@@ -3365,7 +3365,8 @@ async function loadDeadLinks() {
         chip.style.cssText = 'font-size:11px;padding:3px 8px;';
         chip.title = e.id;
         chip.textContent = e.name && e.name !== e.id ? `${e.name} · ${e.id}` : e.id;
-        chip.addEventListener('click', () => selectEntity(e));
+        chip.title = `Appliquer : ${e.id}`;
+        chip.addEventListener('click', () => { selectEntity(e); applyBtn.click(); }); // un clic = choisi et appliqué
         chips.push({ id: e.id, el: chip });
         sugWrap.appendChild(chip);
       }
