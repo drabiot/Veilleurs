@@ -7296,11 +7296,15 @@ service cloud.firestore {
                     && request.resource.data.status == 'pending'
                     && request.resource.data.keys().size() <= 30
                     && (${_permRule('_mod_panel', 'contributeur')} || creatorToolEnabled(request.resource.data.type));
-      allow read:   if ${_permRule('_mod_panel', 'contributeur')} || (isAuth() && resource.data.submittedBy == request.auth.uid);
-      allow update: if ${_permRule('_approve', 'contributeur')}
+      allow read:   if ${_permRule('_approve', 'admin')}
+                    || (${_permRule('_mod_panel', 'contributeur')} && resource.data.status == 'pending')
+                    || (isAuth() && resource.data.submittedBy == request.auth.uid);
+      // Approuver / rejeter / supprimer : rôle « _approve » (admin par défaut) ; modifier une soumission en attente : contributeurs et auteur
+      allow update: if ${_permRule('_approve', 'admin')}
+                    || (${_permRule('_mod_panel', 'contributeur')} && resource.data.status == 'pending' && request.resource.data.status == 'pending')
                     || (isAuth() && resource.data.submittedBy == request.auth.uid
                         && resource.data.status == 'pending' && request.resource.data.status == 'pending');
-      allow delete: if ${_permRule('_approve', 'contributeur')};
+      allow delete: if ${_permRule('_approve', 'admin')};
     }
 
   }
