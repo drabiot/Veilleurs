@@ -16,7 +16,7 @@ import { initializeFirestore, getFirestore,
          query, where, orderBy, limit }           from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getAuth, onAuthStateChanged,
          signInWithEmailAndPassword, signOut,
-         createUserWithEmailAndPassword,
+         createUserWithEmailAndPassword, signInWithCustomToken,
          GoogleAuthProvider, signInWithPopup,
          sendEmailVerification,
          reauthenticateWithCredential, reauthenticateWithPopup,
@@ -160,9 +160,43 @@ export async function register(email, password) {
   return createUserWithEmailAndPassword(auth, email, password);
 }
 
-export async function loginWithGoogle() {
-  const provider = new GoogleAuthProvider();
-  return signInWithPopup(auth, provider);
+const DISCORD_WORKER = 'https://veilleurs.veilleurs-wiki.workers.dev';
+
+/**
+ * Connexion (mode 'login') ou liaison du compte courant (mode 'link') via Discord.
+ * Le worker vérifie l'appartenance au serveur, synchronise le rôle et renvoie un custom token.
+ * Doit être appelée directement depuis un clic (ouverture de popup).
+ */
+export async function loginWithDiscord(mode = 'login') {
+  const popup = window.open('about:blank', 'vcl-discord', 'width=520,height=760');
+  if (!popup) throw new Error('Autorise les popups pour te connecter avec Discord.');
+  try {
+    const idToken = mode === 'link' ? await auth.currentUser?.getIdToken() : undefined;
+    const r = await fetch(DISCORD_WORKER + '/discord/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode, idToken, origin: location.origin }),
+    });
+    const d = await r.json();
+    if (!d.url) throw new Error(d.error || 'Connexion Discord indisponible.');
+    popup.location.href = d.url;
+    const res = await new Promise((resolve, reject) => {
+      const onMsg = e => {
+        if (e.source !== popup || e.data?.type !== 'vcl-discord') return;
+        cleanup(); resolve(e.data);
+      };
+      const cleanup = () => { clearInterval(timer); window.removeEventListener('message', onMsg); };
+      const timer = setInterval(() => {
+        if (popup.closed) { cleanup(); reject(Object.assign(new Error('closed'), { code: 'auth/popup-closed-by-user' })); }
+      }, 500);
+      window.addEventListener('message', onMsg);
+    });
+    if (res.error) throw new Error(res.error);
+    const cred = await signInWithCustomToken(auth, res.token);
+    if (res.pseudo && cred.user.displayName !== res.pseudo) {
+      try { await updateProfile(cred.user, { displayName: res.pseudo }); } catch {}
+    }
+    return cred;
+  } catch (e) { popup.close(); throw e; }
 }
 
 export async function sendVerificationEmail() {
@@ -733,6 +767,7 @@ export async function reauthenticateCurrentUser({ password } = {}) {
     await reauthenticateWithPopup(user, new GoogleAuthProvider());
     return true;
   }
+  if (providers.length === 0) return true; // session Discord (custom token) : pas de mot de passe à redemander
   throw new Error('unsupported-provider');
 }
 
@@ -748,7 +783,7 @@ export async function changePseudoSecurely(newPseudo, { password } = {}) {
   if (!user) throw new Error('no-current-user');
 
   const pseudo = String(newPseudo || '').trim();
-  if (!/^[A-Za-z0-9 _\-\[\]]{2,32}$/.test(pseudo)) throw new Error('invalid-pseudo');
+  if (!/^[\p{L}\p{N}_\- \[\]]{2,32}$/u.test(pseudo)) throw new Error('invalid-pseudo');
 
   // Unicité : query users where pseudo == pseudo
   const q = query(collection(db, COL.users), where('pseudo', '==', pseudo), limit(2)); // limit exigé par les rules (pas de listing complet des users)

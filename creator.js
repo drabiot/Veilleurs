@@ -320,7 +320,6 @@ function switchAuthTab(tab) {
   const isLogin = tab === 'login';
   document.getElementById('panel-login').style.display         = isLogin ? '' : 'none';
   document.getElementById('panel-register').style.display      = isLogin ? 'none' : '';
-  document.getElementById('panel-pseudo').style.display        = 'none';
   const pcp = document.getElementById('panel-change-pseudo');
   if (pcp) pcp.style.display = 'none';
   document.getElementById('tab-login').style.color        = isLogin ? 'var(--accent)' : 'var(--muted)';
@@ -350,50 +349,17 @@ async function doLogin() {
   }
 }
 
-async function doLoginGoogle() {
+async function doLoginDiscord() {
   const err = document.getElementById('modal-error');
   err.style.display = 'none';
   try {
-    const cred = await window._vcl_loginGoogle();
-    const uid  = cred.user.uid;
-    const snap = await window._vcl_getDoc(window._vcl_doc(window._vcl_db, 'users', uid));
-    if (!snap.exists()) {
-      // Première connexion Google : demander le pseudo
-      const suggested = (cred.user.displayName || cred.user.email.split('@')[0]).slice(0, 32);
-      document.getElementById('panel-login').style.display    = 'none';
-      document.getElementById('panel-register').style.display = 'none';
-      document.getElementById('panel-pseudo').style.display   = '';
-      document.getElementById('google-pseudo').value = suggested;
-      document.getElementById('google-pseudo').focus();
-      document.getElementById('google-pseudo').select();
-    } else {
-      closeLoginModal();
-    }
+    await window._vcl_loginDiscord('login');
+    closeLoginModal();
   } catch (e) {
     if (e.code !== 'auth/popup-closed-by-user') {
       err.textContent = e.message;
       err.style.display = '';
     }
-  }
-}
-
-async function doSavePseudo() {
-  const pseudo = document.getElementById('google-pseudo').value.trim();
-  const err    = document.getElementById('modal-error');
-  err.style.display = 'none';
-  if (!pseudo) { err.textContent = 'Le pseudo est obligatoire.'; err.style.display = ''; return; }
-  if (pseudo.length < 2)  { err.textContent = 'Pseudo trop court (2 caractères min).'; err.style.display = ''; return; }
-  if (!/^[\w\- \[\]]+$/i.test(pseudo)) { err.textContent = 'Pseudo invalide (lettres, chiffres, espace, -, _, [ et ] seulement).'; err.style.display = ''; return; }
-  const user = window._vcl_auth?.currentUser;
-  if (!user) { err.textContent = 'Session expirée, réessaie.'; err.style.display = ''; return; }
-  try {
-    await window._vcl_setDoc(window._vcl_doc(window._vcl_db, 'users', user.uid), { pseudo, role: 'membre', email: user.email || '' });
-    const authorInput = document.getElementById('author-input');
-    if (authorInput) { authorInput.value = pseudo; saveAuthor(); }
-    closeLoginModal();
-  } catch (e) {
-    err.textContent = e.message;
-    err.style.display = '';
   }
 }
 
@@ -412,7 +378,6 @@ async function openChangePseudoModal() {
   document.getElementById('login-modal').classList.remove('hidden');
   document.getElementById('panel-login').style.display         = 'none';
   document.getElementById('panel-register').style.display      = 'none';
-  document.getElementById('panel-pseudo').style.display        = 'none';
   document.getElementById('panel-change-pseudo').style.display = '';
   document.getElementById('modal-error').style.display         = 'none';
 
@@ -445,7 +410,7 @@ async function doChangePseudo() {
   const password  = document.getElementById('change-pseudo-password').value;
 
   if (!newPseudo) { err.textContent = 'Le pseudo est obligatoire.'; err.style.display = ''; return; }
-  if (!/^[\w\- \[\]]{2,32}$/.test(newPseudo)) {
+  if (!/^[\p{L}\p{N}_\- \[\]]{2,32}$/u.test(newPseudo)) {
     err.textContent = 'Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_/[/]).';
     err.style.display = '';
     return;
@@ -485,7 +450,7 @@ async function doRegister() {
   if (identifiant.length > 32) { err.textContent = 'Identifiant trop long (32 caractères max).'; err.style.display = ''; return; }
   if (!/^[\w\-]+$/i.test(identifiant)) { err.textContent = 'Identifiant invalide (lettres, chiffres, - et _ seulement, sans espaces).'; err.style.display = ''; return; }
   // Validation pseudo affiché (si renseigné)
-  if (displayName && !/^[\w\- \[\]]{2,32}$/i.test(displayName)) { err.textContent = 'Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_/[/]).'; err.style.display = ''; return; }
+  if (displayName && !/^[\p{L}\p{N}_\- \[\]]{2,32}$/u.test(displayName)) { err.textContent = 'Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_/[/]).'; err.style.display = ''; return; }
   if (!pw) { err.textContent = 'Mot de passe obligatoire.'; err.style.display = ''; return; }
   if (pw.length < 6) { err.textContent = 'Mot de passe trop court (6 caractères min).'; err.style.display = ''; return; }
 

@@ -30,8 +30,8 @@
 <div class="auth-wall" id="auth-wall">
   <div class="auth-card">
     <h2>🔐 Connexion requise</h2>
-    <button class="btn btn-google" onclick="doLoginGoogle()" style="width:100%;justify-content:center;margin-bottom:4px;">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;height:18px;margin-right:8px;" alt="Google"> Continuer avec Google
+    <button class="btn btn-google" onclick="doLoginDiscord()" style="width:100%;justify-content:center;margin-bottom:4px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#5865F2" style="margin-right:8px" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9-.3 13.5.1 18a19.9 19.9 0 0 0 6 3l.8-1.1a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8 15.3c-1.2 0-2.1-1.1-2.1-2.4S6.8 10.5 8 10.5s2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg> Continuer avec Discord
     </button>
     <div style="display:flex;align-items:center;gap:8px;margin:4px 0 8px;">
       <div style="flex:1;height:1px;background:var(--border)"></div>
@@ -129,6 +129,7 @@
     <button class="filter-btn" id="btn-users"              data-min-role="admin" onclick="showUsersPanel()">👥 Membres</button>
     <button class="filter-btn" id="btn-leaderboard"        data-min-role="admin" onclick="showLeaderboard()">🏆 Leaderboard</button>
     <button class="filter-btn" id="btn-permissions"        data-min-role="admin" onclick="showPermissions()">🔑 Permissions</button>
+    <button class="filter-btn" id="btn-discord-roles"       data-min-role="admin" onclick="showDiscordRoles()">🎮 Rôles Discord</button>
     <button class="filter-btn" id="btn-audit-log"          data-min-role="admin" onclick="showAuditLog()">📋 Journal d'audit</button>
     <button class="filter-btn" id="btn-statistiques"       data-min-role="admin" onclick="showStatistiques()">📊 Statistiques</button>
     </div>
@@ -668,6 +669,15 @@
         </div>
       </div>
     </div>
+  </main>
+
+  <!-- Panneau Rôles Discord -->
+  <main class="main" id="discord-roles-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <span style="font-size:15px;font-weight:700;">🎮 Rôles Discord → permissions</span>
+      <button class="btn btn-ghost" onclick="loadDiscordRoles()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <div id="discord-roles-body"><div class="empty">Chargement…</div></div>
   </main>
 
   <!-- Panneau Sensible (admin only) -->

@@ -1,5 +1,5 @@
 import { db, auth, onAuthStateChanged,
-         login, logout, loginWithGoogle,
+         login, logout, loginWithDiscord,
          ROLES, roleLevel, hasRole, COL,
          collection, getDocs, getDoc, doc, updateDoc, setDoc, addDoc,
          deleteDoc, deleteField, serverTimestamp, writeBatch, orderBy, where, query, limit,
@@ -203,11 +203,11 @@ window.doLogin = async () => {
   }
 };
 
-window.doLoginGoogle = async () => {
+window.doLoginDiscord = async () => {
   const err = document.getElementById('login-error');
   err.style.display = 'none';
   try {
-    await loginWithGoogle();
+    await loginWithDiscord('login');
   } catch(e) {
     if (e.code !== 'auth/popup-closed-by-user') {
       err.textContent = '⛔ ' + e.message; err.style.display = '';
@@ -1414,6 +1414,7 @@ const HASH_PANELS = {
   'members':        () => showUsersPanel(),
   'leaderboard':    () => showLeaderboard(),
   'permissions':    () => showPermissions(),
+  'discord-roles':  () => showDiscordRoles(),
   'migration':        () => showMigration(),
   'completion':       () => showCompletion(),
   'creator-validation': () => showCreatorValidation(),
@@ -1522,6 +1523,7 @@ const NAV_HUBS = [
         { hash: 'members',     label: '👥 Membres',      btn: 'btn-users',       panel: 'users-panel',       fn: () => showUsersPanel() },
         { hash: 'leaderboard', label: '🏆 Leaderboard',  btn: 'btn-leaderboard', panel: 'leaderboard-panel', fn: () => showLeaderboard() },
         { hash: 'permissions', label: '🔑 Permissions',  btn: 'btn-permissions', panel: 'permissions-panel', fn: () => showPermissions() },
+        { hash: 'discord-roles', label: '🎮 Rôles Discord', btn: 'btn-discord-roles', panel: 'discord-roles-panel', fn: () => showDiscordRoles() },
       ]},
       { label: 'Suivi', tabs: [
         { hash: 'audit-log',   label: "📋 Journal d'audit", btn: 'btn-audit-log',   panel: 'audit-log-panel',   fn: () => showAuditLog() },
@@ -6739,6 +6741,147 @@ window._setCustomRoleBaseTier = async function(roleId, newTier) {
   _renderPermsSidebar();
   _renderPermsForRole(roleId);
   toast(`✅ Tier de "${cr.label}" changé en ${newTier}`, 'success');
+};
+
+// ── Rôles Discord → rôles du site ─────────────────────
+// Config : config/discordRoles = { map: { <idRôleDiscord>: <idRôleSite> }, defaultRole }.
+// Appliquée par le worker à chaque connexion Discord (cf. cloudflare-worker.js). Les droits Firebase
+// d'un rôle du site découlent de son tier (visiteur < membre < contributeur < admin) via les rules.
+const DISCORD_TIER_DOC = {
+  visiteur:     'Lecture du wiki public (compendium, bestiaire, carte, quêtes). Aucune écriture.',
+  membre:       'Visiteur + compte actif : soumettre des items/mobs/PNJ/régions/quêtes via le Creator (validés par la modération), favoris, builds, changer son pseudo.',
+  contributeur: 'Membre + lire les données secrètes (items/mobs/PNJ sensibles), accéder à la modération (approuver/rejeter), écrire directement items, mobs, PNJ, régions, quêtes, zones, marqueurs, donjons.',
+  admin:        'Tout : panoplies, gestion des membres et des rôles, permissions, configuration, journal d\'audit, secrets.',
+};
+
+let _discordRolesCfg = { map: {}, defaultRole: 'membre' };
+let _discordGuildRoles = [];
+
+function _discordRoleColor(c) { return c ? '#' + c.toString(16).padStart(6, '0') : '#99aab5'; }
+
+function _siteRoleChoices() {
+  const a = TIER_DEFAULTS.admin;
+  return [{ id: 'admin', label: a.label, emoji: a.emoji, color: a.color }, ..._customRoles];
+}
+
+function _permListHtml(roleId) {
+  const esc = window.VCL.escHtml;
+  return PERM_SECTIONS.map(sec => `
+    <div style="margin-top:10px;">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">${esc(sec.title)}</div>
+      ${sec.perms.map(p => {
+        const ok = _roleHasPerm(roleId, p);
+        return `<div style="display:flex;gap:8px;align-items:flex-start;padding:3px 0;opacity:${ok ? 1 : .45};">
+          <span style="width:16px;flex-shrink:0;color:${ok ? '#4ade80' : 'var(--danger)'};font-weight:700;">${ok ? '✓' : '✕'}</span>
+          <span style="font-size:12px;"><b>${esc(p.label)}</b>${p.serverSide ? ' 🛡️' : ''} — <span style="color:var(--muted);">${esc(p.desc)}</span></span>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+}
+
+window.showDiscordRoles = async function() {
+  _setHash('discord-roles');
+  document.getElementById('discord-roles-panel').style.display = '';
+  document.getElementById('btn-discord-roles')?.classList.add('active');
+  await loadDiscordRoles();
+};
+
+window.loadDiscordRoles = async function() {
+  const body = document.getElementById('discord-roles-body');
+  body.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [cfgSnap, permSnap] = await Promise.all([
+      getDoc(doc(db, 'config', 'discordRoles')),
+      _permConfig ? null : getDoc(doc(db, 'config', 'permissions')),
+      loadRoles(),
+    ]);
+    if (permSnap) _permConfig = permSnap.exists() ? (permSnap.data().minRole || {}) : {};
+    const d = cfgSnap.exists() ? cfgSnap.data() : {};
+    _discordRolesCfg = { map: { ...(d.map || {}) }, defaultRole: d.defaultRole || 'membre' };
+
+    const r = await fetch(WORKER_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: await _getWorkerSecret(), action: 'get_guild_roles' }),
+    });
+    const roles = await r.json();
+    if (!Array.isArray(roles)) throw new Error(roles?.error || roles?.message || 'Réponse Discord invalide (worker à jour ?)');
+    _discordGuildRoles = roles.filter(x => !x.managed && x.name !== '@everyone').sort((a, b) => b.position - a.position);
+    _renderDiscordRoles();
+  } catch (e) {
+    body.innerHTML = `<div class="empty" style="color:var(--danger)">⛔ ${window.VCL.escHtml(e.message)}</div>`;
+  }
+};
+
+function _renderDiscordRoles() {
+  const esc = window.VCL.escHtml;
+  const body = document.getElementById('discord-roles-body');
+  const choices = _siteRoleChoices();
+  const opts = (sel, withNone) => (withNone ? `<option value="">— aucun (rôle par défaut) —</option>` : '') +
+    choices.map(c => `<option value="${esc(c.id)}"${c.id === sel ? ' selected' : ''}>${esc(c.emoji || '')} ${esc(c.label)}</option>`).join('');
+  const selectCss = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;';
+
+  body.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;line-height:1.5;">
+      <b>Comment ça marche</b> — À chaque connexion via Discord, le rôle du site est recalculé : on prend le rôle le plus élevé parmi
+      ceux mappés ci-dessous que la personne possède sur le serveur. Les comptes <code>admin</code> et ceux marqués <code>roleLocked</code> ne sont jamais modifiés.
+      Les droits Firebase d'un rôle découlent de son <b>tier</b> :
+      <ul style="margin:6px 0 0 18px;padding:0;">
+        ${Object.keys(DISCORD_TIER_DOC).map(t => `<li><b>${esc(TIER_DEFAULTS[t].emoji)} ${esc(TIER_DEFAULTS[t].label)}</b> — ${esc(DISCORD_TIER_DOC[t])}</li>`).join('')}
+      </ul>
+      <div style="margin-top:6px;color:var(--muted);">Pour des droits sur mesure, crée un rôle dans 🔑 Permissions (avec le tier voulu), puis associe-le ici.</div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <label style="font-size:12px;">Membre du serveur sans rôle mappé :</label>
+      <select id="dr-default" style="${selectCss}">${opts(_discordRolesCfg.defaultRole, false)}</select>
+    </div>
+
+    <div id="dr-list">
+      ${_discordGuildRoles.map(g => {
+        const site = _discordRolesCfg.map[g.id] || '';
+        return `<div class="dr-row" data-did="${esc(g.id)}" style="border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:8px 12px;background:var(--surface);">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="width:12px;height:12px;border-radius:50%;background:${_discordRoleColor(g.color)};flex-shrink:0;"></span>
+            <span style="flex:1;font-size:13px;font-weight:600;">${esc(g.name)}</span>
+            <span style="font-size:11px;color:var(--muted);">→</span>
+            <select class="dr-select" style="${selectCss}">${opts(site, true)}</select>
+            <button class="btn btn-ghost dr-toggle" style="font-size:11px;" ${site ? '' : 'disabled'}>Permissions ▸</button>
+          </div>
+          <div class="dr-perms" style="display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:6px;"></div>
+        </div>`;
+      }).join('') || '<div class="empty">Aucun rôle trouvé sur le serveur.</div>'}
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+      <button class="btn btn-approve" onclick="saveDiscordRoles()">💾 Enregistrer</button>
+    </div>`;
+
+  body.querySelectorAll('.dr-row').forEach(row => {
+    const sel = row.querySelector('.dr-select'), tog = row.querySelector('.dr-toggle'), perms = row.querySelector('.dr-perms');
+    const refresh = () => { if (perms.style.display !== 'none') perms.innerHTML = _permListHtml(sel.value); };
+    sel.onchange = () => { tog.disabled = !sel.value; if (!sel.value) perms.style.display = 'none'; refresh(); };
+    tog.onclick = () => {
+      const open = perms.style.display !== 'none';
+      perms.style.display = open ? 'none' : '';
+      tog.textContent = open ? 'Permissions ▸' : 'Permissions ▾';
+      if (!open) perms.innerHTML = _permListHtml(sel.value);
+    };
+  });
+}
+
+window.saveDiscordRoles = async function() {
+  const map = {};
+  document.querySelectorAll('#dr-list .dr-row').forEach(row => {
+    const v = row.querySelector('.dr-select').value;
+    if (v) map[row.dataset.did] = v;
+  });
+  const defaultRole = document.getElementById('dr-default').value || 'membre';
+  const grantsAdmin = Object.values(map).includes('admin');
+  if (grantsAdmin && !confirm('⚠️ Un rôle Discord est associé à Admin : ses membres auront tous les droits à leur prochaine connexion. Continuer ?')) return;
+  try {
+    await setDoc(doc(db, 'config', 'discordRoles'), { map, defaultRole });
+    _discordRolesCfg = { map, defaultRole };
+    toast('✅ Rôles Discord enregistrés (appliqués à la prochaine connexion de chacun)', 'success');
+  } catch (e) { toast(`⛔ Erreur sauvegarde : ${e.message}`, 'error'); }
 };
 
 window.togglePermTech = function() {

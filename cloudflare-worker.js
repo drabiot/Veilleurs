@@ -599,6 +599,9 @@ export default {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders() });
     }
+    const _path = new URL(request.url).pathname;
+    if (_path === '/discord/callback' && request.method === 'GET') return handleDiscordCallback(request, env);
+    if (_path === '/discord/start' && request.method === 'POST') return handleDiscordStart(request, env);
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
     // ── Route: Discord Interaction (signature header present) ──
@@ -655,6 +658,11 @@ export default {
         return json({ status: r.status });
       }
 
+      if (action === 'get_guild_roles') {
+        const r = await fetch(`https://discord.com/api/v10/guilds/${env.DISCORD_GUILD_ID}/roles`, { headers: botHdr });
+        return json(await r.json(), r.ok ? 200 : r.status);
+      }
+
       if (action === 'get_channel') {
         const r = await fetch(`https://discord.com/api/v10/channels/${body.channelId}`, { headers: botHdr });
         return json(await r.json(), r.ok ? 200 : r.status);
@@ -692,4 +700,239 @@ function corsHeaders() {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  CONNEXION DISCORD (OAuth2 → custom token Firebase)
+//
+//  Env vars / secrets à ajouter dans Cloudflare :
+//    DISCORD_CLIENT_ID      → Dev Portal → OAuth2 → Client ID
+//    DISCORD_CLIENT_SECRET  → Dev Portal → OAuth2 → Client Secret
+//    DISCORD_GUILD_ID       → id du serveur Discord (mode développeur → clic droit)
+//    FIREBASE_SA            → contenu JSON du service account Firebase (secret)
+//    DISCORD_INVITE_URL     → lien d'invitation permanent du serveur (proposé aux non-membres)
+//  Redirect URI à déclarer côté Discord : <URL du worker>/discord/callback
+//
+//  Flux : POST /discord/start → URL d'autorisation ; Discord redirige vers
+//  GET /discord/callback → vérifie l'appartenance au serveur, synchronise le rôle
+//  (config/discordRoles), renvoie un custom token à la fenêtre appelante (postMessage).
+// ══════════════════════════════════════════════════════════════
+
+const DISCORD_API    = 'https://discord.com/api/v10';
+const BASE_ROLES     = ['visiteur', 'membre', 'contributeur', 'admin'];
+const SITE_ORIGIN    = 'https://drabiot.github.io';
+const ALLOWED_ORIGIN = /^(https:\/\/drabiot\.github\.io|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/;
+
+const b64u = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes)))
+  .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64uStr = s => b64u(new TextEncoder().encode(s));
+const b64uDec = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+
+// ── State signé (HMAC, clé = ADMIN_SECRET) ────────────────────
+async function hmacKey(env) {
+  return crypto.subtle.importKey('raw', new TextEncoder().encode(env.ADMIN_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']);
+}
+async function signState(payload, env) {
+  const body = b64uStr(JSON.stringify(payload));
+  const sig  = await crypto.subtle.sign('HMAC', await hmacKey(env), new TextEncoder().encode(body));
+  return `${body}.${b64u(sig)}`;
+}
+async function readState(state, env) {
+  const [body, sig] = String(state || '').split('.');
+  if (!body || !sig) return null;
+  const ok = await crypto.subtle.verify('HMAC', await hmacKey(env), b64uDec(sig), new TextEncoder().encode(body));
+  if (!ok) return null;
+  const p = JSON.parse(new TextDecoder().decode(b64uDec(body)));
+  return p.exp > Date.now() ? p : null;
+}
+
+// ── Service account Google (token OAuth Firestore + custom token Auth) ──
+async function signJwt(sa, claims) {
+  const head = b64uStr(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const body = b64uStr(JSON.stringify(claims));
+  const pem  = sa.private_key.replace(/-----[^-]+-----|\s/g, '');
+  const key  = await crypto.subtle.importKey('pkcs8', Uint8Array.from(atob(pem), c => c.charCodeAt(0)),
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+  const sig  = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(`${head}.${body}`));
+  return `${head}.${body}.${b64u(sig)}`;
+}
+
+let _saToken = null;
+async function saAccessToken(env) {
+  if (_saToken && _saToken.exp > Date.now() + 60000) return _saToken.token;
+  const sa  = JSON.parse(env.FIREBASE_SA);
+  const now = Math.floor(Date.now() / 1000);
+  const jwt = await signJwt(sa, {
+    iss: sa.client_email, scope: 'https://www.googleapis.com/auth/datastore',
+    aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600,
+  });
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: jwt }),
+  });
+  const d = await r.json();
+  if (!d.access_token) throw new Error('service account token refusé');
+  _saToken = { token: d.access_token, exp: Date.now() + d.expires_in * 1000 };
+  return _saToken.token;
+}
+
+async function firebaseCustomToken(uid, env) {
+  const sa  = JSON.parse(env.FIREBASE_SA);
+  const now = Math.floor(Date.now() / 1000);
+  return signJwt(sa, {
+    iss: sa.client_email, sub: sa.client_email, uid, iat: now, exp: now + 3600,
+    aud: 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit',
+  });
+}
+
+// ── Firestore (écritures admin, contournent les rules) ────────
+const toFs = v => v === null ? { nullValue: null }
+  : typeof v === 'boolean' ? { booleanValue: v }
+  : typeof v === 'number'  ? { integerValue: String(v) }
+  : { stringValue: String(v) };
+
+async function fsReq(env, path, init = {}) {
+  const r = await fetch(`${FIRESTORE_BASE}${path}`, {
+    ...init, headers: { Authorization: `Bearer ${await saAccessToken(env)}`, 'Content-Type': 'application/json' },
+  });
+  if (r.status === 404) return null;
+  const d = await r.json();
+  if (!r.ok) throw new Error(`Firestore ${r.status}: ${d.error?.message || ''}`);
+  return d;
+}
+const fsGetDoc = async (env, path) => { const d = await fsReq(env, `/${path}`); return d ? parseDoc(d) : null; };
+
+async function fsFindUser(env, field, value) {
+  const d = await fsReq(env, ':runQuery', { method: 'POST', body: JSON.stringify({ structuredQuery: {
+    from: [{ collectionId: 'users' }],
+    where: { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: toFs(value) } }, limit: 1,
+  } }) });
+  const hit = (d || []).find(x => x.document);
+  return hit ? parseDoc(hit.document) : null;
+}
+
+async function fsPatchUser(env, uid, data) {
+  const keys = Object.keys(data);
+  const mask = keys.map(k => `updateMask.fieldPaths=${encodeURIComponent(k)}`).join('&');
+  const fields = Object.fromEntries(keys.map(k => [k, toFs(data[k])]));
+  return fsReq(env, `/users/${uid}?${mask}`, { method: 'PATCH', body: JSON.stringify({ fields }) });
+}
+
+// ── Rôle site déduit des rôles Discord (config/discordRoles) ──
+async function resolveSiteRole(env, discordRoleIds) {
+  const [cfg, custom] = await Promise.all([fsGetDoc(env, 'config/discordRoles'), fsGetDoc(env, 'config/customRoles')]);
+  const map = cfg?.map || {};
+  const tier = role => BASE_ROLES.includes(role) ? BASE_ROLES.indexOf(role)
+    : BASE_ROLES.indexOf((custom?.roles || []).find(r => r.id === role)?.baseTier || 'visiteur');
+  let best = cfg?.defaultRole || 'membre';
+  for (const rid of discordRoleIds) {
+    const role = map[rid];
+    if (role && tier(role) > tier(best)) best = role;
+  }
+  return best;
+}
+
+async function uniquePseudo(env, wanted, discordId) {
+  let p = String(wanted || '').replace(/[^\p{L}\p{N}_\- \[\]]/gu, '').trim().slice(0, 32);
+  if (p.length < 2) p = `Veilleur${discordId.slice(-4)}`;
+  if (!(await fsFindUser(env, 'pseudo', p))) return p;
+  return `${p.slice(0, 27)}_${discordId.slice(-4)}`;
+}
+
+// ── Routes ────────────────────────────────────────────────────
+async function handleDiscordStart(request, env) {
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
+  if (!ALLOWED_ORIGIN.test(body.origin || '')) return json({ error: 'Origine refusée' }, 400);
+
+  let uid = null;
+  if (body.mode === 'link') {
+    const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_KEY}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: body.idToken }),
+    });
+    uid = (await r.json()).users?.[0]?.localId;
+    if (!uid) return json({ error: 'Session invalide, reconnecte-toi.' }, 401);
+  }
+  const state = await signState({ m: body.mode === 'link' ? 'link' : 'login', uid, o: body.origin, exp: Date.now() + 10 * 60000 }, env);
+  const url = `https://discord.com/oauth2/authorize?${new URLSearchParams({
+    client_id: env.DISCORD_CLIENT_ID, response_type: 'code', scope: 'identify',
+    redirect_uri: `${new URL(request.url).origin}/discord/callback`, state,
+  })}`;
+  return json({ url });
+}
+
+function popupResult(origin, payload, invite) {
+  const msg = JSON.stringify({ type: 'vcl-discord', ...payload }).replace(/</g, '\\u003c');
+  const label = payload.error ? '⛔ ' + payload.error.replace(/[<&]/g, '') : 'Connecté, tu peux fermer cette fenêtre.';
+  const join  = invite && /^https:\/\/discord\.(gg|com)\//.test(invite)
+    ? `<p><a href="${invite}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 18px;border-radius:6px;background:#5865F2;color:#fff;text-decoration:none;font-weight:600">Rejoindre le serveur Discord</a></p><p style="font-size:13px;color:#999">Puis reconnecte-toi sur le site.</p>`
+    : '';
+  return new Response(`<!doctype html><meta charset="utf-8"><title>Discord</title>
+<body style="font-family:sans-serif;background:#111;color:#ddd;text-align:center;padding-top:30vh">${label}${join}
+<script>try{window.opener.postMessage(${msg},${JSON.stringify(origin)})}catch(e){}${payload.error ? '' : ';window.close()'}</script>`,
+  { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
+
+async function handleDiscordCallback(request, env) {
+  const url   = new URL(request.url);
+  const state = await readState(url.searchParams.get('state'), env);
+  if (!state) return popupResult(SITE_ORIGIN, { error: 'Lien expiré, réessaie.' });
+  const fail = error => popupResult(state.o, { error });
+
+  const code = url.searchParams.get('code');
+  if (!code) return fail('Connexion Discord annulée.');
+  try {
+    const tr = await fetch(`${DISCORD_API}/oauth2/token`, {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: env.DISCORD_CLIENT_ID, client_secret: env.DISCORD_CLIENT_SECRET, grant_type: 'authorization_code',
+        code, redirect_uri: `${url.origin}/discord/callback`,
+      }),
+    });
+    const tok = await tr.json();
+    if (!tok.access_token) return fail("Échec de l'authentification Discord.");
+    const me = await (await fetch(`${DISCORD_API}/users/@me`, { headers: { Authorization: `Bearer ${tok.access_token}` } })).json();
+    if (!me.id) return fail('Profil Discord introuvable.');
+
+    // Appartenance + rôles via le bot (pas besoin du scope guilds.members.read)
+    const mr = await fetch(`${DISCORD_API}/guilds/${env.DISCORD_GUILD_ID}/members/${me.id}`, { headers: { Authorization: `Bot ${env.BOT_TOKEN}` } });
+    if (mr.status === 404) return popupResult(state.o, { error: 'Tu dois être membre du serveur Discord pour te connecter.' }, env.DISCORD_INVITE_URL);
+    if (!mr.ok) return fail("Impossible de vérifier ton appartenance au serveur.");
+    const member = await mr.json();
+
+    const owner = await fsFindUser(env, 'discordId', me.id);
+    let uid, existing;
+    if (state.m === 'link') {
+      uid = state.uid;
+      existing = await fsGetDoc(env, `users/${uid}`);
+      if (existing?.discordId && existing.discordId !== me.id) return fail('Ce compte est déjà lié à un autre Discord.');
+      if (owner && owner._id !== uid) {
+        if (!owner._id.startsWith('discord_')) return fail('Ce Discord est déjà lié à un autre compte.');
+        // compte auto-créé par une connexion Discord antérieure : on le désarme au profit de l'ancien
+        await fsPatchUser(env, owner._id, { discordId: null, mergedInto: uid });
+      }
+    } else if (owner) {
+      uid = owner._id; existing = owner;
+    } else {
+      uid = `discord_${me.id}`; existing = await fsGetDoc(env, `users/${uid}`);
+    }
+
+    const data = {
+      discordId: me.id,
+      discordName: me.global_name || me.username,
+      discordAvatar: me.avatar || '',
+    };
+    if (!existing) data.pseudo = await uniquePseudo(env, member.nick || me.global_name || me.username, me.id);
+    // admin / roleLocked : jamais écrasé par la synchro Discord
+    if (!existing || (existing.role !== 'admin' && !existing.roleLocked)) {
+      data.role = await resolveSiteRole(env, member.roles || []);
+    }
+    await fsPatchUser(env, uid, data);
+
+    return popupResult(state.o, { token: await firebaseCustomToken(uid, env), pseudo: data.pseudo || existing?.pseudo || '' });
+  } catch (e) {
+    return fail('Erreur serveur : ' + e.message);
+  }
 }
