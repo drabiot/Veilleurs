@@ -48,47 +48,12 @@
 <!-- Login / Register modal -->
 <div class="modal-overlay hidden" id="login-modal" onclick="if(event.target===this)closeLoginModal()">
   <div class="modal-card">
-    <!-- Onglets -->
-    <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:4px;">
-      <button id="tab-login"    onclick="switchAuthTab('login')"
-        style="flex:1;background:none;border:none;padding:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);border-bottom:2px solid var(--accent);">
-        🔑 Connexion
-      </button>
-      <button id="tab-register" onclick="switchAuthTab('register')"
-        style="flex:1;background:none;border:none;padding:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;">
-        ✨ Créer un compte
-      </button>
-    </div>
-
-    <!-- Panneau Connexion -->
+    <!-- Connexion (Discord uniquement) -->
     <div id="panel-login">
+      <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:12px;">Connecte-toi avec ton compte Discord pour accéder au Creator.</div>
       <button class="btn btn-google" onclick="doLoginDiscord()" style="width:100%;justify-content:center;margin-bottom:10px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#5865F2" style="margin-right:8px" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9-.3 13.5.1 18a19.9 19.9 0 0 0 6 3l.8-1.1a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8 15.3c-1.2 0-2.1-1.1-2.1-2.4S6.8 10.5 8 10.5s2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg> Continuer avec Discord
       </button>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:11px;color:var(--muted)">ou</span>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-      </div>
-      <div class="mfield"><label>Identifiant</label><input type="text" id="modal-email" placeholder="ton_identifiant" autocomplete="username"></div>
-      <div class="mfield"><label>Mot de passe</label><input type="password" id="modal-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></div>
-      <button class="btn btn-primary" onclick="doLogin()" style="width:100%;justify-content:center;">🔑 Se connecter</button>
-    </div>
-
-    <!-- Panneau Inscription -->
-    <div id="panel-register" style="display:none;">
-      <button class="btn btn-google" onclick="doLoginDiscord()" style="width:100%;justify-content:center;margin-bottom:10px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="#5865F2" style="margin-right:8px" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9-.3 13.5.1 18a19.9 19.9 0 0 0 6 3l.8-1.1a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8 15.3c-1.2 0-2.1-1.1-2.1-2.4S6.8 10.5 8 10.5s2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg> Continuer avec Discord
-      </button>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-size:11px;color:var(--muted)">ou</span>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-      </div>
-      <div class="mfield"><label>Identifiant <span style="color:var(--danger)">*</span></label><input type="text" id="reg-pseudo" placeholder="ex : identifiant" maxlength="32" autocomplete="username"></div>
-      <div class="mfield"><label>Pseudo affiché <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel — permet [VCL], espaces…)</span></label><input type="text" id="reg-display-name" placeholder="ex: [VCL] MonPseudo" maxlength="32" autocomplete="off"></div>
-      <div class="mfield"><label>Mot de passe</label><input type="password" id="reg-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doRegister()"></div>
-      <button class="btn btn-primary" onclick="doRegister()" style="width:100%;justify-content:center;">✨ Créer mon compte</button>
     </div>
 
     <!-- BANNIÈRE ÉDITION -->
@@ -1022,7 +987,7 @@
 <!-- Module 1 : Auth + soumission Firestore -->
 <script type="module">
 import { db, auth, onAuthStateChanged,
-         login, logout, register, loginWithDiscord, sendVerificationEmail,
+         logout, loginWithDiscord, sendVerificationEmail,
          collection, getDocs, addDoc, serverTimestamp, query, where,
          doc, getDoc, setDoc, sanitizeForFirestore,
          hasRole,
@@ -1059,9 +1024,7 @@ window._vcl_addDoc          = addDoc;
 window._vcl_getDocs         = getDocs;
 window._vcl_collection      = collection;
 window._vcl_serverTimestamp = serverTimestamp;
-window._vcl_login             = login;
 window._vcl_logout            = logout;
-window._vcl_register          = register;
 window._vcl_loginDiscord      = loginWithDiscord;
 window._vcl_sendVerification  = sendVerificationEmail;
 window._vcl_setDoc    = setDoc;
@@ -1132,6 +1095,8 @@ onAuthStateChanged(auth, async user => {
     if (authorInput) authorInput.style.display = '';
     const modBtn = document.getElementById('btn-moderation');
     if (modBtn) modBtn.style.display = 'none';
+    // Le Creator demande d'être connecté : on propose directement Discord
+    if (typeof openLoginModal === 'function') openLoginModal();
   }
 });
 </script>

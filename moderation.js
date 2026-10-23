@@ -1,5 +1,5 @@
 import { db, auth, onAuthStateChanged,
-         login, logout, loginWithDiscord,
+         logout, loginWithDiscord,
          ROLES, roleLevel, hasRole, COL,
          collection, getDocs, getDoc, doc, updateDoc, setDoc, addDoc,
          deleteDoc, deleteField, serverTimestamp, writeBatch, orderBy, where, query, limit,
@@ -185,23 +185,6 @@ function showAuthWall(msg) {
     err.textContent = msg; err.style.display = '';
   }
 }
-
-function toEmail(input) {
-  return input.includes('@') ? input : `${input}@veilleurs.wiki`;
-}
-
-window.doLogin = async () => {
-  const raw  = document.getElementById('login-email').value.trim();
-  const pass = document.getElementById('login-password').value;
-  const err  = document.getElementById('login-error');
-  err.style.display = 'none';
-  try {
-    await login(toEmail(raw), pass);
-  } catch(e) {
-    err.textContent = '⛔ ' + (e.message.includes('invalid-credential') ? 'Identifiant ou mot de passe incorrect.' : e.message);
-    err.style.display = '';
-  }
-};
 
 window.doLoginDiscord = async () => {
   const err = document.getElementById('login-error');

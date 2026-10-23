@@ -33,16 +33,6 @@
     <button class="btn btn-google" onclick="doLoginDiscord()" style="width:100%;justify-content:center;margin-bottom:4px;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="#5865F2" style="margin-right:8px" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9-.3 13.5.1 18a19.9 19.9 0 0 0 6 3l.8-1.1a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8 15.3c-1.2 0-2.1-1.1-2.1-2.4S6.8 10.5 8 10.5s2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg> Continuer avec Discord
     </button>
-    <div style="display:flex;align-items:center;gap:8px;margin:4px 0 8px;">
-      <div style="flex:1;height:1px;background:var(--border)"></div>
-      <span style="font-size:11px;color:var(--muted)">ou</span>
-      <div style="flex:1;height:1px;background:var(--border)"></div>
-    </div>
-    <form onsubmit="event.preventDefault();doLogin()" autocomplete="on">
-      <div class="field"><label>Identifiant</label><input type="text" id="login-email" placeholder="ton_identifiant" autocomplete="username"></div>
-      <div class="field"><label>Mot de passe</label><input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"></div>
-      <button type="submit" class="btn" style="background:var(--accent);color:var(--on-accent);width:100%;justify-content:center;">🔑 Connexion</button>
-    </form>
     <div id="login-error" style="font-size:12px;color:var(--danger);display:none;text-align:center;"></div>
   </div>
 </div>

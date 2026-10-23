@@ -310,43 +310,18 @@ window.addEventListener('DOMContentLoaded', () => {
 function openLoginModal() {
   document.getElementById('login-modal').classList.remove('hidden');
   switchAuthTab('login');
-  document.getElementById('modal-email').focus();
 }
 function closeLoginModal() {
   document.getElementById('login-modal').classList.add('hidden');
   document.getElementById('modal-error').style.display = 'none';
+  // Le Creator est réservé aux comptes connectés : fermer la fenêtre sans s'être connecté ramène à l'accueil
+  if (!window._vcl_auth?.currentUser) location.href = 'index.html';
 }
-function switchAuthTab(tab) {
-  const isLogin = tab === 'login';
-  document.getElementById('panel-login').style.display         = isLogin ? '' : 'none';
-  document.getElementById('panel-register').style.display      = isLogin ? 'none' : '';
+function switchAuthTab() {
+  document.getElementById('panel-login').style.display = '';
   const pcp = document.getElementById('panel-change-pseudo');
   if (pcp) pcp.style.display = 'none';
-  document.getElementById('tab-login').style.color        = isLogin ? 'var(--accent)' : 'var(--muted)';
-  document.getElementById('tab-login').style.borderBottomColor    = isLogin ? 'var(--accent)' : 'transparent';
-  document.getElementById('tab-register').style.color     = isLogin ? 'var(--muted)' : 'var(--accent)';
-  document.getElementById('tab-register').style.borderBottomColor = isLogin ? 'transparent' : 'var(--accent)';
   document.getElementById('modal-error').style.display = 'none';
-}
-function toEmail(input) {
-  // Si l'input contient un @, c'est un vrai email (compte Google ou ancien compte)
-  // Sinon c'est un identifiant → on génère l'email interne
-  return input.includes('@') ? input : `${input}@veilleurs.wiki`;
-}
-
-async function doLogin() {
-  const raw = document.getElementById('modal-email').value.trim();
-  const pw  = document.getElementById('modal-password').value;
-  const err = document.getElementById('modal-error');
-  err.style.display = 'none';
-  if (!raw || !pw) return;
-  try {
-    await window._vcl_login(toEmail(raw), pw);
-    closeLoginModal();
-  } catch (e) {
-    err.textContent = e.message.includes('invalid-credential') ? 'Identifiant ou mot de passe incorrect.' : e.message;
-    err.style.display = '';
-  }
 }
 
 async function doLoginDiscord() {
@@ -377,7 +352,6 @@ async function openChangePseudoModal() {
   // Ouvre la modal, masque les panneaux de login et affiche le panel change-pseudo
   document.getElementById('login-modal').classList.remove('hidden');
   document.getElementById('panel-login').style.display         = 'none';
-  document.getElementById('panel-register').style.display      = 'none';
   document.getElementById('panel-change-pseudo').style.display = '';
   document.getElementById('modal-error').style.display         = 'none';
 
@@ -391,16 +365,9 @@ async function openChangePseudoModal() {
   const providers = (user.providerData || []).map(p => p.providerId);
   const pwField   = document.getElementById('change-pseudo-pw-field');
   const gHint     = document.getElementById('change-pseudo-google-hint');
-  if (providers.includes('password')) {
-    pwField.style.display = '';
-    gHint.style.display   = 'none';
-  } else if (providers.includes('google.com')) {
-    pwField.style.display = 'none';
-    gHint.style.display   = '';
-  } else {
-    pwField.style.display = '';
-    gHint.style.display   = 'none';
-  }
+  // Session Discord (custom token) : pas de mot de passe à redemander
+  pwField.style.display = providers.includes('password') ? '' : 'none';
+  gHint.style.display   = providers.includes('google.com') ? '' : 'none';
 }
 
 async function doChangePseudo() {
@@ -437,55 +404,6 @@ async function doChangePseudo() {
   }
 }
 
-async function doRegister() {
-  const identifiant  = document.getElementById('reg-pseudo').value.trim();
-  const displayName  = (document.getElementById('reg-display-name')?.value || '').trim();
-  const pw           = document.getElementById('reg-password').value;
-  const err          = document.getElementById('modal-error');
-  err.style.display  = 'none';
-
-  // Validation identifiant : 2-32 caractères, lettres/chiffres/tirets/underscores (pas d'espaces)
-  if (!identifiant) { err.textContent = "L'identifiant est obligatoire."; err.style.display = ''; return; }
-  if (identifiant.length < 2)  { err.textContent = 'Identifiant trop court (2 caractères min).'; err.style.display = ''; return; }
-  if (identifiant.length > 32) { err.textContent = 'Identifiant trop long (32 caractères max).'; err.style.display = ''; return; }
-  if (!/^[\w\-]+$/i.test(identifiant)) { err.textContent = 'Identifiant invalide (lettres, chiffres, - et _ seulement, sans espaces).'; err.style.display = ''; return; }
-  // Validation pseudo affiché (si renseigné)
-  if (displayName && !/^[\p{L}\p{N}_\- \[\]]{2,32}$/u.test(displayName)) { err.textContent = 'Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_/[/]).'; err.style.display = ''; return; }
-  if (!pw) { err.textContent = 'Mot de passe obligatoire.'; err.style.display = ''; return; }
-  if (pw.length < 6) { err.textContent = 'Mot de passe trop court (6 caractères min).'; err.style.display = ''; return; }
-
-  const pseudo = displayName || identifiant;
-  const email  = toEmail(identifiant);
-
-  try {
-    const cred = await window._vcl_register(email, pw);
-    // Sauvegarder le pseudo dans Firestore — retry si le token n'est pas encore propagé
-    const saveProfile = async () => {
-      await window._vcl_setDoc(
-        window._vcl_doc(window._vcl_db, 'users', cred.user.uid),
-        { pseudo, role: 'membre' }
-      );
-    };
-    try {
-      await saveProfile();
-    } catch {
-      await new Promise(r => setTimeout(r, 1000));
-      try { await saveProfile(); } catch (e2) {
-        console.warn('Profil non sauvegardé :', e2.message);
-      }
-    }
-    // Connexion directe — pas de vérification email requise
-    const authorInput = document.getElementById('author-input');
-    if (authorInput) { authorInput.value = pseudo; saveAuthor(); }
-    closeLoginModal();
-  } catch (e) {
-    const msg = e.code === 'auth/email-already-in-use' ? 'Cet identifiant est déjà utilisé.'
-              : e.code === 'auth/weak-password'        ? 'Mot de passe trop faible (6 caractères min).'
-              : e.message;
-    err.textContent = msg;
-    err.style.display = '';
-  }
-}
 async function doLogout() {
   await window._vcl_logout();
   window.location.reload();

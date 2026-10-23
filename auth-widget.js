@@ -6,12 +6,12 @@
 ══════════════════════════════════════════════════════ */
 
 import './i18n.js';   // langue + traduction de l'interface (chargé sur toutes les pages publiques via ce widget)
-import { auth, db, getUserRole, login, register, loginWithDiscord, logout, hasRole, ROLES }
+import { auth, db, getUserRole, loginWithDiscord, logout, hasRole, ROLES }
   from './firebase.js';
 import { loadHonorTitles, findHonorTitle, honorBadgeHtml } from './honor-titles.js';
-import { onAuthStateChanged, updateProfile }
+import { onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { doc, getDoc, setDoc }
+import { doc, getDoc }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 // ── Display config ───────────────────────────────────
@@ -82,57 +82,14 @@ function _injectWidget() {
     <div class="vcl-auth-modal-box" role="dialog" aria-modal="true">
       <button class="vcl-auth-close-btn" id="vcl-modal-close" title="Fermer">✕</button>
       <div class="vcl-auth-modal-logo">🌙</div>
-      <div class="vcl-auth-tabs" id="vcl-auth-tabs">
-        <button class="vcl-auth-tab active" id="vcl-tab-login">Connexion</button>
-        <button class="vcl-auth-tab" id="vcl-tab-register">Créer un compte</button>
-      </div>
+      <div class="vcl-auth-hint" style="text-align:center;margin-bottom:12px;">Connecte-toi avec ton compte Discord pour accéder au Creator et contribuer au wiki.</div>
 
       <div class="vcl-auth-error" id="vcl-auth-error"></div>
 
-      <!-- Panel : connexion -->
-      <div id="vcl-panel-login">
-        <div class="vcl-auth-field">
-          <label class="vcl-auth-label">Identifiant ou e-mail</label>
-          <input class="vcl-auth-input" id="vcl-auth-email" type="text"
-                 placeholder="pseudo ou adresse@mail.com" autocomplete="email" />
-        </div>
-        <div class="vcl-auth-field">
-          <label class="vcl-auth-label">Mot de passe</label>
-          <input class="vcl-auth-input" id="vcl-auth-password" type="password"
-                 placeholder="••••••••" autocomplete="current-password" />
-        </div>
-        <button class="vcl-auth-primary-btn" id="vcl-auth-submit">Se connecter</button>
-        <div class="vcl-auth-divider"><span>ou</span></div>
-        <button class="vcl-auth-google-btn vcl-auth-discord-btn" id="vcl-auth-discord">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#5865F2" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.3 13.5.1 18a19.9 19.9 0 0 0 6 3l.8-1.1a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8 15.3c-1.2 0-2.1-1.1-2.1-2.4S6.800 10.500 8 10.500s2.200 1.100 2.100 2.400c0 1.300-.9 2.400-2.100 2.400Zm8 0c-1.200 0-2.100-1.100-2.100-2.400s.9-2.400 2.100-2.400 2.200 1.100 2.100 2.400c0 1.300-.9 2.400-2.100 2.400Z"/></svg>
-          Continuer avec Discord
-        </button>
-      </div>
-
-      <!-- Panel : inscription -->
-      <div id="vcl-panel-register" style="display:none">
-        <button class="vcl-auth-google-btn vcl-auth-discord-btn" id="vcl-reg-discord">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#5865F2" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.3 13.5.1 18a19.9 19.9 0 0 0 6 3l.8-1.1a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8 15.3c-1.2 0-2.1-1.1-2.1-2.4S6.800 10.500 8 10.500s2.200 1.100 2.100 2.400c0 1.300-.9 2.400-2.100 2.400Zm8 0c-1.200 0-2.100-1.100-2.100-2.400s.9-2.400 2.100-2.400 2.200 1.100 2.100 2.400c0 1.300-.9 2.400-2.100 2.400Z"/></svg>
-          Continuer avec Discord
-        </button>
-        <div class="vcl-auth-divider"><span>ou</span></div>
-        <div class="vcl-auth-field">
-          <label class="vcl-auth-label">Identifiant <span style="color:#f87171">*</span></label>
-          <input class="vcl-auth-input" id="vcl-reg-pseudo" type="text"
-                 placeholder="lettres, chiffres, - et _" maxlength="32" autocomplete="username" />
-        </div>
-        <div class="vcl-auth-field">
-          <label class="vcl-auth-label">Pseudo affiché <span class="vcl-auth-optional">optionnel</span></label>
-          <input class="vcl-auth-input" id="vcl-reg-display" type="text"
-                 placeholder="[VCL] MonPseudo" maxlength="32" autocomplete="off" />
-        </div>
-        <div class="vcl-auth-field">
-          <label class="vcl-auth-label">Mot de passe <span style="color:#f87171">*</span></label>
-          <input class="vcl-auth-input" id="vcl-reg-password" type="password"
-                 placeholder="6 caractères min" autocomplete="new-password" />
-        </div>
-        <button class="vcl-auth-primary-btn" id="vcl-reg-submit">Créer mon compte</button>
-      </div>
+      <button class="vcl-auth-google-btn vcl-auth-discord-btn" id="vcl-auth-discord">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#5865F2" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9 -.3 13.5.1 18a19.9 19.9 0 0 0 6 3l.8-1.1a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8 15.3c-1.2 0-2.1-1.1-2.1-2.4S6.800 10.500 8 10.500s2.200 1.100 2.100 2.400c0 1.300-.9 2.400-2.100 2.400Zm8 0c-1.200 0-2.100-1.100-2.100-2.400s.9-2.400 2.100-2.400 2.200 1.100 2.100 2.400c0 1.300-.9 2.400-2.100 2.400Z"/></svg>
+        Continuer avec Discord
+      </button>
     </div>`;
   document.documentElement.appendChild(overlay);
 }
@@ -187,116 +144,25 @@ function _showError(msg) {
   el.style.display = msg ? '' : 'none';
 }
 
-// ── Cookie helpers ───────────────────────────────────
-function _saveEmailCookie(raw) {
-  document.cookie = `vcl_email=${encodeURIComponent(raw)}; max-age=31536000; SameSite=Lax; path=/`;
-}
-function _readEmailCookie() {
-  const entry = document.cookie.split('; ').find(r => r.startsWith('vcl_email='));
-  return entry ? decodeURIComponent(entry.slice('vcl_email='.length)) : '';
-}
-
 // ── Events ───────────────────────────────────────────
 function _wireEvents() {
   const overlay = document.getElementById('vcl-auth-overlay');
 
-  const _switchTab = (tab) => {
-    const isLogin = tab === 'login';
-    document.getElementById('vcl-tab-login').classList.toggle('active', isLogin);
-    document.getElementById('vcl-tab-register').classList.toggle('active', !isLogin);
-    document.getElementById('vcl-panel-login').style.display    = isLogin ? '' : 'none';
-    document.getElementById('vcl-panel-register').style.display = isLogin ? 'none' : '';
-    document.getElementById('vcl-auth-tabs').style.display      = '';
-    _showError('');
-  };
-
-  // Préfill email depuis cookie
-  const _savedEmail = _readEmailCookie();
-  if (_savedEmail) {
-    const _emailEl = document.getElementById('vcl-auth-email');
-    if (_emailEl) _emailEl.value = _savedEmail;
-  }
-
   document.getElementById('vcl-login-btn').onclick = () => {
-    _switchTab('login');
+    _showError('');
     overlay.classList.remove('hidden');
-    document.getElementById('vcl-auth-email').focus();
   };
   document.getElementById('vcl-modal-close').onclick = () => overlay.classList.add('hidden');
   overlay.onclick = e => { if (e.target === overlay) overlay.classList.add('hidden'); };
   document.getElementById('vcl-logout-btn').onclick = () => logout();
-  document.getElementById('vcl-tab-login').onclick    = () => _switchTab('login');
-  document.getElementById('vcl-tab-register').onclick = () => _switchTab('register');
 
-  // ── Connexion ──
-  const doLogin = async () => {
-    let email = document.getElementById('vcl-auth-email').value.trim();
-    if (email && !email.includes('@')) email += '@veilleurs.wiki';
-    const pwd = document.getElementById('vcl-auth-password').value;
-    if (!email || !pwd) { _showError('Remplissez tous les champs.'); return; }
-    _showError('');
-    const btn = document.getElementById('vcl-auth-submit');
-    btn.disabled = true;
-    try {
-      await login(email, pwd);
-      _saveEmailCookie(document.getElementById('vcl-auth-email').value.trim());
-      overlay.classList.add('hidden');
-    } catch (e) {
-      _showError(['auth/wrong-password','auth/user-not-found','auth/invalid-credential']
-        .includes(e.code) ? 'Identifiants incorrects.' : e.message);
-    } finally { btn.disabled = false; }
-  };
-  document.getElementById('vcl-auth-submit').onclick = doLogin;
-  document.getElementById('vcl-auth-password').addEventListener('keydown',
-    e => { if (e.key === 'Enter') doLogin(); });
-
-  // ── Discord (login + register panels) ──
-  const doDiscord = async () => {
+  document.getElementById('vcl-auth-discord').onclick = async () => {
     _showError('');
     try {
       await loginWithDiscord('login');
       overlay.classList.add('hidden');
     } catch (e) { if (e.code !== 'auth/popup-closed-by-user') _showError(e.message); }
   };
-  document.getElementById('vcl-auth-discord').onclick = doDiscord;
-  document.getElementById('vcl-reg-discord').onclick  = doDiscord;
-
-  // ── Inscription ──
-  const doRegister = async () => {
-    const identifiant = document.getElementById('vcl-reg-pseudo').value.trim();
-    const displayName = document.getElementById('vcl-reg-display').value.trim();
-    const pw          = document.getElementById('vcl-reg-password').value;
-
-    if (!identifiant)                           { _showError("Identifiant obligatoire."); return; }
-    if (identifiant.length < 2)                 { _showError("Identifiant trop court (2 min)."); return; }
-    if (!/^[\w\-]+$/i.test(identifiant))        { _showError("Identifiant invalide (lettres, chiffres, - et _)."); return; }
-    if (displayName && !/^[\p{L}\p{N}_\- \[\]]{2,32}$/u.test(displayName)) { _showError("Pseudo invalide."); return; }
-    if (!pw)                                    { _showError("Mot de passe obligatoire."); return; }
-    if (pw.length < 6)                          { _showError("Mot de passe trop court (6 min)."); return; }
-
-    const pseudo = displayName || identifiant;
-    const email  = identifiant + '@veilleurs.wiki';
-    const btn    = document.getElementById('vcl-reg-submit');
-    btn.disabled = true;
-    _showError('');
-    try {
-      const cred = await register(email, pw);
-      const saveProfile = async () =>
-        setDoc(doc(db, 'users', cred.user.uid), { pseudo, role: 'membre' });
-      try { await saveProfile(); }
-      catch { await new Promise(r => setTimeout(r, 1000)); try { await saveProfile(); } catch {} }
-      try { await updateProfile(cred.user, { displayName: pseudo }); } catch {}
-      overlay.classList.add('hidden');
-    } catch (e) {
-      _showError(e.code === 'auth/email-already-in-use' ? 'Cet identifiant est déjà utilisé.'
-               : e.code === 'auth/weak-password'        ? 'Mot de passe trop faible (6 min).'
-               : e.message);
-    } finally { btn.disabled = false; }
-  };
-  document.getElementById('vcl-reg-submit').onclick = doRegister;
-  document.getElementById('vcl-reg-password').addEventListener('keydown',
-    e => { if (e.key === 'Enter') doRegister(); });
-
 }
 
 // ── Globals & event ──────────────────────────────────
