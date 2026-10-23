@@ -50,10 +50,60 @@
   <div class="modal-card">
     <!-- Connexion (Discord uniquement) -->
     <div id="panel-login">
-      <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:12px;">Connecte-toi avec ton compte Discord pour accéder au Creator.</div>
+      <div style="font-size:13px;color:var(--muted);text-align:center;margin-bottom:12px;">Connecte-toi avec ton compte Discord : tes contributions seront rattachées à ton compte et comptées dans le leaderboard.</div>
       <button class="btn btn-google" onclick="doLoginDiscord()" style="width:100%;justify-content:center;margin-bottom:10px;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#5865F2" style="margin-right:8px" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0 0 15.4 3l-.2.5a18.3 18.3 0 0 0-6.4 0L8.6 3a19.8 19.8 0 0 0-4.9 1.4C.6 9-.3 13.5.1 18a19.9 19.9 0 0 0 6 3l.8-1.1a13 13 0 0 1-2-1l.5-.4a14.2 14.2 0 0 0 12.2 0l.5.4a13 13 0 0 1-2 1l.8 1.1a19.9 19.9 0 0 0 6-3c.5-5.2-.8-9.7-3.6-13.6ZM8 15.3c-1.2 0-2.1-1.1-2.1-2.4S6.8 10.5 8 10.5s2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg> Continuer avec Discord
       </button>
+    </div>
+
+    <!-- Panneau : changement de pseudo sécurisé -->
+    <div id="panel-change-pseudo" style="display:none;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">Changer ton pseudo :</div>
+      <div class="mfield">
+        <label>Nouveau pseudo <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="change-pseudo-input" placeholder="ex : nouveau_pseudo" maxlength="32" onkeydown="if(event.key==='Enter')doChangePseudo()">
+      </div>
+      <div class="mfield" id="change-pseudo-pw-field">
+        <label>Mot de passe actuel <span style="color:var(--danger)">*</span></label>
+        <input type="password" id="change-pseudo-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doChangePseudo()">
+      </div>
+      <div id="change-pseudo-google-hint" style="font-size:12px;color:var(--muted);margin-bottom:8px;display:none;">Tu seras invité à ré-authentifier via Google.</div>
+      <button class="btn btn-primary" onclick="doChangePseudo()" style="width:100%;justify-content:center;margin-top:4px;">Valider</button>
+    </div>
+
+
+    <div id="modal-error" style="font-size:12px;color:var(--danger);display:none;text-align:center;"></div>
+    <button class="btn btn-ghost" onclick="closeLoginModal()" style="width:100%;justify-content:center;font-size:12px;">Annuler</button>
+  </div>
+</div>
+
+<div class="layout" id="main-layout" style="visibility:hidden">
+
+  <!-- ═══ FORM ═══ -->
+  <div class="form-panel" id="formPanel">
+
+    <!-- MODE SELECTOR -->
+    <div class="mode-selector">
+      <button class="mode-btn active" data-mode="item"   onclick="switchMode('item')">⚔️ Item</button>
+      <button class="mode-btn"        data-mode="mob"    onclick="switchMode('mob')">👾 Mob</button>
+      <button class="mode-btn"        data-mode="pnj"    onclick="switchMode('pnj')">🧑 PNJ</button>
+      <button class="mode-btn"        data-mode="region" onclick="switchMode('region')">📍 Région</button>
+      <button class="mode-btn"        data-mode="quest"  onclick="switchMode('quest')">📜 Quête</button>
+      <button class="mode-btn"        data-mode="panoplie" onclick="switchMode('panoplie')">🔗 Panoplie</button>
+    </div>
+
+    <!-- ITEM FORM -->
+    <div id="item-form">
+
+    <!-- CHARGER UN ITEM -->
+    <div class="section" style="border-color:var(--accent);">
+      <div class="sec-head" style="background:rgba(122,90,248,.12);color:var(--accent);" onclick="toggleSec(this)">
+        📂 Charger / Éditer un item existant <span class="chev">▾</span>
+      </div>
+      <div class="sec-body">
+        <div class="hint">Charge un item existant dans le formulaire pour l'éditer, puis copie le résultat.</div>
+        <div id="load-item-search-wrap"></div>
+      </div>
     </div>
 
     <!-- BANNIÈRE ÉDITION -->
@@ -957,6 +1007,10 @@
       <div class="preview-wrap" id="preview-wrap">
       </div>
       <div id="chasse-preview-banner" style="display:none;"></div>
+      <div id="guest-note" style="display:none;margin:140px 14px 24px;font-size:11px;line-height:1.5;color:var(--muted);opacity:.7;text-align:center;">
+        ℹ️ Tu contribues en tant qu'invité : tes contributions ne sont pas comptées dans le leaderboard.
+        <a href="#" onclick="openLoginModal();return false" style="color:var(--accent);">Connecte-toi avec Discord</a> pour qu'elles soient rattachées à ton compte et comptabilisées.
+      </div>
     </div>
     <!-- History Pane -->
     <div class="out-pane" id="pane-history">
@@ -1036,6 +1090,8 @@ window._vcl_where     = where;
 // Suivi de l'état auth — met à jour l'UI
 onAuthStateChanged(auth, async user => {
   window._vcl_user = user || null;
+  const guestNote = document.getElementById('guest-note');
+  if (guestNote) guestNote.style.display = user ? 'none' : '';
   const submitBtn = document.getElementById('btn-submit-discord');
   const status    = document.getElementById('auth-user-status');
   const loginBtn  = document.getElementById('btn-login');
@@ -1095,8 +1151,6 @@ onAuthStateChanged(auth, async user => {
     if (authorInput) authorInput.style.display = '';
     const modBtn = document.getElementById('btn-moderation');
     if (modBtn) modBtn.style.display = 'none';
-    // Le Creator demande d'être connecté : on propose directement Discord
-    if (typeof openLoginModal === 'function') openLoginModal();
   }
 });
 </script>

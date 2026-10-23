@@ -8765,18 +8765,19 @@ window.loadLeaderboard = async () => {
       const snap = await getDocs(collection(db, col));
       for (const d of snap.docs) {
         const data = d.data();
-        const c = data._contributor;
-        if (!c) continue;
+        const raw = data._contributor;
         const entryId = col + '/' + d.id;
         if (excludedIds.has(entryId)) continue;
-        const uid   = c.uid  || null;
-        const cname = c.name || 'Inconnu';
-        const key   = uid || ('__' + cname);
-        if (!byKey[key]) byKey[key] = { uid, name: cname, subs: [] };
-        byKey[key].subs.push({
-          _id: entryId, _col: col, _docId: d.id, type,
-          name: data.name || data.titre || data.label || d.id,
-        });
+        for (const c of (Array.isArray(raw) ? raw : raw ? [raw] : [])) {
+          const uid = c.uid || null;
+          if (!uid) continue; // invités : non comptés
+          const cname = c.name || 'Inconnu';
+          if (!byKey[uid]) byKey[uid] = { uid, name: cname, subs: [] };
+          byKey[uid].subs.push({
+            _id: entryId, _col: col, _docId: d.id, type,
+            name: data.name || data.titre || data.label || d.id,
+          });
+        }
       }
     } catch {}
   }
@@ -8854,8 +8855,8 @@ async function _lbHomeCounts() {
         const raw = d.data()._contributor;
         for (const c of (Array.isArray(raw) ? raw : raw ? [raw] : [])) {
           const uid = c.uid || null, name = c.name || 'Inconnu';
-          if (!uid && (name === 'Anonyme' || name === 'Inconnu')) continue;
-          const key = uid || ('__' + name);
+          if (!uid) continue; // invités : non comptés
+          const key = uid;
           counts[key] = (counts[key] || 0) + 1;
         }
       }

@@ -38,8 +38,8 @@ async function loadLeaderboard() {
         for (const c of contribs) {
           const uid  = c.uid  || null;
           const name = c.name || 'Inconnu';
-          if (!uid && (name === 'Anonyme' || name === 'Inconnu')) continue;
-          const key = uid || ('__' + name);
+          if (!uid) continue; // invités : non comptés
+          const key = uid;
           if (!byKey[key]) byKey[key] = { uid, name, count: 0 };
           byKey[key].count++;
         }

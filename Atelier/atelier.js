@@ -1986,7 +1986,9 @@ function loadAccessoriesForClass(classId) {
 
   document.getElementById('btn-publish').addEventListener('click', function() {
     if (!window._auth?.currentUser) {
-      document.querySelector('.vcl-auth-btn, #vcl-login-btn, [data-auth-trigger]')?.click();
+      const msg = 'Connecte-toi avec Discord pour publier ton build : il sera rattaché à ton compte, partageable par lien et visible dans le forum des builds.';
+      if (window.vclOpenLogin) window.vclOpenLogin(msg);
+      else document.querySelector('.vcl-auth-btn, #vcl-login-btn, [data-auth-trigger]')?.click();
       return;
     }
     const currentName = document.getElementById('inp-name').value.trim();

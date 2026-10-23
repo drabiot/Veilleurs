@@ -82,7 +82,7 @@ function _injectWidget() {
     <div class="vcl-auth-modal-box" role="dialog" aria-modal="true">
       <button class="vcl-auth-close-btn" id="vcl-modal-close" title="Fermer">✕</button>
       <div class="vcl-auth-modal-logo">🌙</div>
-      <div class="vcl-auth-hint" style="text-align:center;margin-bottom:12px;">Connecte-toi avec ton compte Discord pour accéder au Creator et contribuer au wiki.</div>
+      <div class="vcl-auth-hint" id="vcl-auth-hint" style="text-align:center;margin-bottom:12px;"></div>
 
       <div class="vcl-auth-error" id="vcl-auth-error"></div>
 
@@ -148,10 +148,14 @@ function _showError(msg) {
 function _wireEvents() {
   const overlay = document.getElementById('vcl-auth-overlay');
 
-  document.getElementById('vcl-login-btn').onclick = () => {
+  const DEFAULT_HINT = 'Connecte-toi avec Discord pour publier des builds et voir tes contributions comptées dans le leaderboard.';
+  // Ouvre la fenêtre de connexion ; msg explique ce que la connexion apporte dans le contexte courant
+  window.vclOpenLogin = msg => {
+    document.getElementById('vcl-auth-hint').textContent = msg || DEFAULT_HINT;
     _showError('');
     overlay.classList.remove('hidden');
   };
+  document.getElementById('vcl-login-btn').onclick = () => window.vclOpenLogin();
   document.getElementById('vcl-modal-close').onclick = () => overlay.classList.add('hidden');
   overlay.onclick = e => { if (e.target === overlay) overlay.classList.add('hidden'); };
   document.getElementById('vcl-logout-btn').onclick = () => logout();

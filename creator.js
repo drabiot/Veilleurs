@@ -314,8 +314,6 @@ function openLoginModal() {
 function closeLoginModal() {
   document.getElementById('login-modal').classList.add('hidden');
   document.getElementById('modal-error').style.display = 'none';
-  // Le Creator est réservé aux comptes connectés : fermer la fenêtre sans s'être connecté ramène à l'accueil
-  if (!window._vcl_auth?.currentUser) location.href = 'index.html';
 }
 function switchAuthTab() {
   document.getElementById('panel-login').style.display = '';
@@ -7267,8 +7265,8 @@ async function loadCreatorLeaderboard() {
         const contribs = Array.isArray(raw) ? raw : (raw ? [raw] : []);
         for (const c of contribs) {
           const name = c.name || null;
-          if (!name || /^invit[ée]?$/i.test(name.trim())) continue;
-          const key = c.uid || ('__' + name);
+          if (!c.uid || !name || /^invit[ée]?$/i.test(name.trim())) continue; // invités : non comptés
+          const key = c.uid;
           if (!byKey[key]) byKey[key] = { name, uid: c.uid || null, count: 0 };
           byKey[key].count++;
         }
