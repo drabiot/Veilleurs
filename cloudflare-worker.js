@@ -933,6 +933,8 @@ async function handleDiscordCallback(request, env) {
 
     return popupResult(state.o, { token: await firebaseCustomToken(uid, env), pseudo: data.pseudo || existing?.pseudo || '' });
   } catch (e) {
+    // Quota Firestore (offre gratuite) atteint : message clair plutôt qu'une erreur technique
+    if (/Firestore 429|quota|RESOURCE_EXHAUSTED/i.test(e.message)) return fail('Le site a atteint sa limite quotidienne de lectures : la connexion est indisponible pour le moment. Réessaie demain matin (remise à zéro vers 9h).');
     return fail('Erreur serveur : ' + e.message);
   }
 }
