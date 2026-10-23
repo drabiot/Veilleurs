@@ -3170,6 +3170,11 @@ async function loadDeadLinks() {
 
     _deadLinksSnapshot = { deduped, ENTITY_POOL, SRC_PALIER };
 
+    // corrections en attente dont le lien n'est plus mort (corrigé ailleurs) : on les oublie
+    const liveKeys = new Set(deduped.map(_dlKey));
+    for (const k of [..._dlStaged.keys()]) if (!liveKeys.has(k)) _dlStaged.delete(k);
+    _dlUpdateSendBar();
+
     listEl.innerHTML = '';
     if (!deduped.length) {
       _deadLinksSnapshot = null;
@@ -3211,6 +3216,10 @@ async function loadDeadLinks() {
       fixBtn.className = 'btn btn-ghost';
       fixBtn.style.cssText = 'font-size:11px;padding:4px 10px;';
       fixBtn.textContent = '✏️ Corriger';
+      const undoBtn = document.createElement('button');
+      undoBtn.className = 'btn btn-ghost';
+      undoBtn.style.cssText = 'font-size:11px;padding:4px 10px;margin-left:4px;display:none;';
+      undoBtn.textContent = '↩ Annuler';
 
       // ── Ligne de correction (masquée par défaut) ────
       const fixTr = document.createElement('tr');
@@ -3243,7 +3252,8 @@ async function loadDeadLinks() {
       const applyBtn = document.createElement('button');
       applyBtn.className = 'btn';
       applyBtn.style.cssText = 'background:var(--accent);color:var(--on-accent);font-size:11px;padding:4px 12px;margin-left:6px;opacity:.4;cursor:not-allowed;';
-      applyBtn.textContent = '✓ Appliquer';
+      applyBtn.textContent = '✓ Valider';
+      applyBtn.title = 'Mettre cette correction en attente (envoi groupé)';
       applyBtn.disabled = true;
 
       const cancelBtn = document.createElement('button');
@@ -3296,34 +3306,50 @@ async function loadDeadLinks() {
       });
       searchInput.addEventListener('blur', () => setTimeout(() => { dropdown.style.display = 'none'; }, 150));
 
-      applyBtn.addEventListener('click', async () => {
-        if (!selectedId) return;
-        applyBtn.disabled = true;
-        applyBtn.textContent = '⏳';
-        try {
-          await _applyDeadLinkFix(b, selectedId);
-          toast(`✓ Lien corrigé : ${b.refId} → ${selectedId}`, 'success');
-          await _writeAudit('dead_link_fix', b.srcType, b.srcId, b.srcName, { field: b.field, oldRef: b.refId, newRef: selectedId });
-          loadDeadLinks();
-        } catch(e) {
-          toast('⛔ ' + e.message, 'error');
-          applyBtn.disabled = false;
-          applyBtn.textContent = '✓ Appliquer';
+      // Valider = mettre la correction en attente (rien n'est écrit) ; tout part avec « Envoyer les corrections »
+      const stKey = _dlKey(b);
+      const idCell = tr.children[2];
+      fixBtn._label = () => _dlStaged.has(stKey) ? '✏️ Modifier' : '✏️ Corriger';
+      function refreshStaged() {
+        const st = _dlStaged.get(stKey);
+        idCell.querySelector('.dl-staged-new')?.remove();
+        tr.style.opacity = st ? '.65' : '';
+        if (st) {
+          const s = document.createElement('div');
+          s.className = 'dl-staged-new';
+          s.style.cssText = 'font-size:11px;color:var(--success);margin-top:2px;word-break:break-all;';
+          s.textContent = `→ ${st.newId}`;
+          idCell.appendChild(s);
         }
+        fixBtn.textContent = fixBtn._label();
+        undoBtn.style.display = st ? '' : 'none';
+      }
+      applyBtn.addEventListener('click', () => {
+        if (!selectedId) return;
+        if (b.srcType === b.targetType && selectedId === b.srcId) { toast('⛔ Un élément ne peut pas se référencer lui-même', 'error'); return; }
+        _dlStaged.set(stKey, { b, newId: selectedId });
+        fixTr.style.display = 'none';
+        refreshStaged();
+        _dlUpdateSendBar();
+      });
+      undoBtn.addEventListener('click', () => {
+        _dlStaged.delete(stKey);
+        refreshStaged();
+        _dlUpdateSendBar();
       });
 
       cancelBtn.addEventListener('click', () => {
         fixTr.style.display = 'none';
-        fixBtn.textContent = '✏️ Corriger';
+        fixBtn.textContent = fixBtn._label();
       });
 
       fixBtn.addEventListener('click', () => {
         const open = fixTr.style.display !== 'none';
-        if (open) { fixTr.style.display = 'none'; fixBtn.textContent = '✏️ Corriger'; }
+        if (open) { fixTr.style.display = 'none'; fixBtn.textContent = fixBtn._label(); }
         else {
           // Fermer les autres fix rows ouverts
           tbody.querySelectorAll('tr[data-fix-row]').forEach(r => { r.style.display = 'none'; });
-          tbody.querySelectorAll('button[data-fix-btn]').forEach(b => { b.textContent = '✏️ Corriger'; });
+          tbody.querySelectorAll('button[data-fix-btn]').forEach(b => { b.textContent = b._label ? b._label() : '✏️ Corriger'; });
           fixTr.style.display = '';
           fixBtn.textContent = '▲ Fermer';
           // rien n'est présélectionné : on choisit une suggestion ou on cherche
@@ -3352,7 +3378,7 @@ async function loadDeadLinks() {
       sugWrap.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:6px;';
       const sugLabel = document.createElement('span');
       sugLabel.style.cssText = 'font-size:12px;color:var(--muted);margin-right:2px;';
-      sugLabel.textContent = suggestions.length ? 'Suggestions (un clic applique) :' : 'Aucune suggestion — utilise la recherche.';
+      sugLabel.textContent = suggestions.length ? 'Suggestions (un clic valide) :' : 'Aucune suggestion — utilise la recherche.';
       sugWrap.appendChild(sugLabel);
       for (const { e } of suggestions) {
         const chip = document.createElement('button');
@@ -3360,8 +3386,8 @@ async function loadDeadLinks() {
         chip.style.cssText = 'font-size:11px;padding:3px 8px;';
         chip.title = e.id;
         chip.textContent = e.name && e.name !== e.id ? `${e.name} · ${e.id}` : e.id;
-        chip.title = `Appliquer : ${e.id}`;
-        chip.addEventListener('click', () => { selectEntity(e); applyBtn.click(); }); // un clic = choisi et appliqué
+        chip.title = `Choisir : ${e.id}`;
+        chip.addEventListener('click', () => { selectEntity(e); applyBtn.click(); }); // un clic = choisi et mis en attente
         chips.push({ id: e.id, el: chip });
         sugWrap.appendChild(chip);
       }
@@ -3371,8 +3397,10 @@ async function loadDeadLinks() {
       fixTr.appendChild(fixTd);
 
       actTd.appendChild(fixBtn);
+      actTd.appendChild(undoBtn);
       tbody.appendChild(tr);
       tbody.appendChild(fixTr);
+      refreshStaged();   // retrouve l'état « en attente » après un rafraîchissement
     }
 
     table.appendChild(tbody);
@@ -3457,16 +3485,75 @@ function _applyPatchToData(data, b, newId) {
   }
 }
 
-async function _applyDeadLinkFix(b, newId) {
-  const colName = _DEAD_LINK_COL[b.srcType];
-  if (!colName) throw new Error('Type source non supporté : ' + b.srcType);
-  if (b.srcType === b.targetType && newId === b.srcId) throw new Error('Un élément ne peut pas se référencer lui-même');
-  const snap = await getDoc(doc(db, colName, b.srcId));
-  if (!snap.exists()) throw new Error('Document source introuvable');
-  const data = { ...snap.data() };
-  _applyPatchToData(data, b, newId);
-  await updateDoc(doc(db, colName, b.srcId), sanitizeForFirestore(data));
-  invalidateModCache(colName);
+// ── Corrections en attente : rien n'est écrit avant « Envoyer les corrections » ──
+const _dlStaged = new Map();   // clé du lien mort -> { b, newId }
+const _dlKey = b => [b.srcType, b.srcId, b.field, b.refId].join('|');
+
+function _dlUpdateSendBar() {
+  const list = document.getElementById('dead-links-list');
+  if (!list) return;
+  let bar = document.getElementById('dl-send-bar');
+  const n = _dlStaged.size;
+  if (!n) { bar?.remove(); return; }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'dl-send-bar';
+    bar.className = 'dl-send-bar';
+    list.before(bar);
+  }
+  bar.innerHTML = `<span><b>${n}</b> correction${n > 1 ? 's' : ''} en attente</span>
+    <button class="btn" id="dl-send-btn" style="background:var(--accent);color:var(--on-accent);">📤 Envoyer les corrections</button>
+    <button class="btn btn-ghost" id="dl-cancel-btn">Tout annuler</button>`;
+  bar.querySelector('#dl-send-btn').onclick = _dlSendStaged;
+  bar.querySelector('#dl-cancel-btn').onclick = () => { _dlStaged.clear(); loadDeadLinks(); };
+}
+
+async function _dlSendStaged() {
+  const entries = [..._dlStaged.values()];
+  if (!entries.length) return;
+  const btn = document.getElementById('dl-send-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
+  try {
+    // regrouper par document source : un seul chargement et une seule écriture par document
+    const byDoc = new Map();
+    for (const e of entries) {
+      const col = _DEAD_LINK_COL[e.b.srcType];
+      if (!col) continue;
+      const k = col + '/' + e.b.srcId;
+      if (!byDoc.has(k)) byDoc.set(k, []);
+      byDoc.get(k).push(e);
+    }
+    const snaps = await Promise.all([...byDoc.keys()].map(async k => {
+      const [col, id] = k.split('/');
+      return { k, col, id, snap: await getDoc(doc(db, col, id)) };
+    }));
+    const writes = [], done = [], failed = [];
+    for (const { k, col, id, snap } of snaps) {
+      if (!snap.exists()) { failed.push(...byDoc.get(k)); continue; }
+      const before = snap.data();
+      const data = { ...before };
+      for (const e of byDoc.get(k)) {
+        try { _applyPatchToData(data, e.b, e.newId); done.push(e); } catch { failed.push(e); }
+      }
+      // on n'écrit que les champs réellement modifiés
+      const patch = {};
+      for (const key of Object.keys(data)) if (JSON.stringify(data[key]) !== JSON.stringify(before[key])) patch[key] = data[key];
+      if (Object.keys(patch).length) writes.push({ col, id, patch });
+    }
+    for (let i = 0; i < writes.length; i += 400) {
+      const batch = writeBatch(db);
+      for (const w of writes.slice(i, i + 400)) batch.update(doc(db, w.col, w.id), sanitizeForFirestore(w.patch));
+      await batch.commit();
+    }
+    for (const col of new Set(writes.map(w => w.col))) invalidateModCache(col);
+    await Promise.all(done.map(e => _writeAudit('dead_link_fix', e.b.srcType, e.b.srcId, e.b.srcName, { field: e.b.field, oldRef: e.b.refId, newRef: e.newId })));
+    done.forEach(e => _dlStaged.delete(_dlKey(e.b)));
+    toast(`✓ ${done.length} correction${done.length > 1 ? 's' : ''} envoyée${done.length > 1 ? 's' : ''}` + (failed.length ? ` — ${failed.length} échec${failed.length > 1 ? 's' : ''} (document introuvable ou champ non supporté, conservé${failed.length > 1 ? 'es' : 'e'} en attente)` : ''), failed.length ? 'info' : 'success');
+    await loadDeadLinks();
+  } catch (e) {
+    toast('⛔ ' + e.message, 'error');
+    _dlUpdateSendBar();
+  }
 }
 
 // ── Suggestions d'IDs pour un lien mort ──────────────
@@ -16530,7 +16617,11 @@ async function _dqEnhance(cfg) {
         const head = u.els[0];
         if (head.dataset.dqDone === undefined) {
           const cells = g.tr ? [...head.children] : [];
-          if (g.tr) head.dataset.dqKey = cells.slice(0, Math.max(1, cells.length - 1)).map(c => c.textContent.replace(/\s+/g, ' ').trim()).join('|');
+          if (g.tr) head.dataset.dqKey = cells.slice(0, Math.max(1, cells.length - 1)).map(c => {
+            const t = c.cloneNode(true);
+            t.querySelectorAll('.dl-staged-new, .dq-pal').forEach(n => n.remove());   // l'état « en attente » ne fait pas partie de l'identité de la ligne
+            return t.textContent.replace(/\s+/g, ' ').trim();
+          }).join('|');
           const ids = [...head.querySelectorAll('.ghost-id')].map(s => s.textContent.trim());
           if (head.dataset.dqId) ids.unshift(head.dataset.dqId);
           head.dataset.dqPal = _dqPalierOf(ids, map) ?? '';

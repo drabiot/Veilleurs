@@ -514,3 +514,7 @@ main input:not([type="checkbox"]):not([type="radio"]), main select, main textare
 .dq-aside-btn { font-size: 11px; padding: 4px 10px; margin-left: 4px; opacity: .8; white-space: nowrap; }
 .dq-sep td, div.dq-sep { padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface2); border-top: 1px solid var(--border); }
 div.dq-sep { margin: 10px 0 6px; border: 1px solid var(--border); border-radius: 6px; }
+
+/* ── Liens morts : barre d'envoi des corrections en attente ── */
+.dl-send-bar { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px; padding: 10px 14px; border: 1px solid var(--accent-dim); border-radius: 6px; background: var(--surface); box-shadow: 0 4px 14px rgba(0,0,0,.35); font-size: 13px; }
+.dl-send-bar span { margin-right: auto; }
