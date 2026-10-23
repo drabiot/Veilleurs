@@ -3273,11 +3273,6 @@ async function loadDeadLinks() {
           empty.textContent = 'Aucun résultat';
           dropdown.appendChild(empty);
         } else {
-          if (norm && results.length === 1) {
-            selectEntity(results[0]);
-            dropdown.style.display = 'none';
-            return;
-          }
           for (const e of results.slice(0, 60)) {
             const row = document.createElement('div');
             row.style.cssText = 'padding:6px 12px;font-size:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);';
@@ -16526,7 +16521,7 @@ async function _dqEnhance(cfg) {
     for (const g of groups) {
       const units = [];
       for (const el of [...g.box.children]) {
-        if (el.classList.contains('dq-sep')) { el.remove(); continue; }
+        if (el.classList.contains('dq-sep')) continue;
         if (g.tr && el.dataset.fixRow && units.length) { units[units.length - 1].els.push(el); continue; }
         if (!g.tr && el.dataset.dqKey === undefined) continue;
         units.push({ els: [el], idx: units.length });
@@ -16562,20 +16557,25 @@ async function _dqEnhance(cfg) {
         if (u.aside) asideTotal++;
       }
       units.sort((a, b) => (a.aside - b.aside) || (mode === 'palier' ? _dqRank(a.pal) - _dqRank(b.pal) : 0) || a.idx - b.idx);
-      const tail = g.tr ? null : [...g.box.children].find(c => c.dataset.dqKey === undefined);
-      let sepDone = false;
-      for (const u of units) {
-        if (u.aside && !sepDone) {
-          sepDone = true;
-          const sep = document.createElement(g.tr ? 'tr' : 'div');
-          sep.className = 'dq-sep';
-          const label = '⏸ Mis de côté';
-          if (g.tr) sep.innerHTML = `<td colspan="${g.box.closest('table').querySelectorAll('thead th').length || 5}">${label}</td>`;
-          else sep.textContent = label;
-          g.box.insertBefore(sep, tail);
-        }
-        u.els.forEach(e => g.box.insertBefore(e, tail));
+      const tail = g.tr ? null : [...g.box.children].find(c => c.dataset.dqKey === undefined && !c.classList.contains('dq-sep'));
+      let sep = [...g.box.children].find(c => c.classList.contains('dq-sep'));
+      const wantSep = units.some(u => u.aside);
+      if (!wantSep && sep) { sep.remove(); sep = null; }
+      if (wantSep && !sep) {
+        sep = document.createElement(g.tr ? 'tr' : 'div');
+        sep.className = 'dq-sep';
+        const label = '⏸ Mis de côté';
+        if (g.tr) sep.innerHTML = `<td colspan="${g.box.closest('table').querySelectorAll('thead th').length || 5}">${label}</td>`;
+        else sep.textContent = label;
       }
+      const desired = [];
+      for (const u of units) {
+        if (u.aside && sep && !desired.includes(sep)) desired.push(sep);
+        desired.push(...u.els);
+      }
+      // On ne déplace rien si l'ordre est déjà bon : déplacer un nœud fait perdre le focus d'un champ de saisie qu'il contient
+      const current = [...g.box.children].filter(c => desired.includes(c));
+      if (desired.some((e, i) => current[i] !== e)) desired.forEach(e => g.box.insertBefore(e, tail));
     }
     _dqBarState(cfg, asideTotal);
   } finally {
@@ -16589,7 +16589,11 @@ function _dqInit() {
     if (!panel) continue;
     _dqBarState(cfg);
     let t = null;
-    const obs = new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => _dqEnhance(cfg), 80); });
+    // On ignore ce qui se passe dans les lignes d'édition (saisie, menus déroulants) : seule la liste elle-même nous concerne
+    const obs = new MutationObserver(recs => {
+      if (recs.every(r => r.target.closest?.('[data-fix-row], .dq-bar'))) return;
+      clearTimeout(t); t = setTimeout(() => _dqEnhance(cfg), 80);
+    });
     _dqObs.set(cfg.panel, obs);
     obs.observe(panel, { childList: true, subtree: true });
   }
