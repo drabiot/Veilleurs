@@ -558,6 +558,7 @@ function saveForm() {
       category: document.getElementById('f-category').value,
       cat:      document.getElementById('f-cat').value,
       palier:   document.getElementById('f-palier').value,
+      eventName: document.getElementById('f-event-name')?.value || '',
       lvl:      document.getElementById('f-lvl').value,
       lore:     document.getElementById('f-lore').value,
       obtainOverride: document.getElementById('f-obtain-override').value,
@@ -687,6 +688,7 @@ function restoreForm(forcedMode) {
     }
     if (d.cat)    document.getElementById('f-cat').value    = d.cat;
     if (d.palier) _setPalierValue('f-palier', d.palier);
+    _setEventName(d.eventName || '');
     if (d.lvl)    document.getElementById('f-lvl').value    = d.lvl;
     if (d.lore)   document.getElementById('f-lore').value   = d.lore;
     if (d.obtainOverride) {
@@ -1785,11 +1787,37 @@ function toggleEvent() {
   update();
 }
 
+// Champ « Évènement » : uniquement quand le palier est « Event »
+function _syncEventField() {
+  const wrap = document.getElementById('event-name-field');
+  const sel  = document.getElementById('f-event-name');
+  if (!wrap || !sel) return;
+  if (!sel.dataset.built) {
+    sel.dataset.built = '1';
+    (typeof EVENT_NAMES !== 'undefined' ? EVENT_NAMES : []).forEach(n => {
+      const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o);
+    });
+  }
+  const on = document.getElementById('f-palier').value === 'event';
+  wrap.style.display = on ? '' : 'none';
+  if (!on) sel.value = '';
+}
+function _setEventName(name) {
+  _syncEventField();
+  const sel = document.getElementById('f-event-name');
+  if (!sel) return;
+  if (name && ![...sel.options].some(o => o.value === name)) {
+    const o = document.createElement('option'); o.value = name; o.textContent = name; sel.appendChild(o);
+  }
+  sel.value = name || '';
+}
+
 function onPalierChange() {
   // Remove all palier tags (liste dynamique depuis config Firestore, fallback statique)
   (window._vcl_paliers || _DEFAULT_PALIERS).forEach(p => activeTags.delete(p.label));
   const p = document.getElementById('f-palier').value;
-  if (p) activeTags.add(`Palier ${p}`);
+  if (p) { const pal = (window._vcl_paliers || _DEFAULT_PALIERS).find(x => String(x.id) === String(p)); activeTags.add(pal ? pal.label : `Palier ${p}`); }
+  _syncEventField();
   syncPresetTagButtons();
   renderCustomTags();
   if (!idLocked) document.getElementById('f-id').value = _computeItemId();
@@ -2374,6 +2402,7 @@ function loadItem(item) {
     document.getElementById('sensible-btn').classList.add('active');
   }
 
+  _setEventName(typeof item.event === 'string' ? item.event : '');
   if (item.event) {
     selEvent = true;
     document.getElementById('event-btn')?.classList.add('active');
@@ -2518,6 +2547,7 @@ function resetFormSilent() {
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
   selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvent = false; selEvolutif = false; selOcculte = false; selQualite = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
   document.getElementById('qualite-btn')?.classList.remove('active');
+  _setEventName('');
   const _evSec = document.getElementById('evolutif-evolutions-section');
   if (_evSec) _evSec.style.display = 'none';
   const _evList = document.getElementById('evolutif-evolutions-list');
@@ -4225,6 +4255,7 @@ function buildObj() {
   const category = document.getElementById('f-category').value;
   const cat      = document.getElementById('f-cat').value;
   const palier   = document.getElementById('f-palier').value;
+  const eventName = palier === 'event' ? (document.getElementById('f-event-name')?.value || '') : '';
   const lvl      = document.getElementById('f-lvl').value;
   const set      = setDrop ? setDrop.getValue() : '';
   const lore     = normalizeLore(document.getElementById('f-lore').value);
@@ -4274,7 +4305,8 @@ function buildObj() {
   const runeSlots = parseInt(document.getElementById('f-rune-slots').value);
   if (runeSlots > 0)             obj.rune_slots = runeSlots;
   if (selSensible)               obj.sensible  = true;
-  if (selEvent)                  obj.event     = true;
+  if (palier === 'event')        obj.event     = eventName || true;
+  else if (selEvent)             obj.event     = true;
   if (Object.keys(stats).length)  obj.stats   = stats;
   if (selClasses.length)     obj.classes  = [...selClasses];
   if (effects.length)        obj.effects  = effects;
@@ -4339,6 +4371,7 @@ function validateForm() {
   if (!lore)      errors.push({ field:'f-lore',      msg:'Lore obligatoire' });
   if (isEquip && !cat)    warnings.push({ field:'f-cat',    msg:'Slot (cat) non sélectionné' });
   if (!palier)            errors.push ({ field:'f-palier', msg:'Palier obligatoire' });
+  if (palier === 'event' && !document.getElementById('f-event-name')?.value) errors.push({ field:'f-event-name', msg:'Évènement obligatoire pour le palier Event' });
   if (isEquip && !lvl)    warnings.push({ field:'f-lvl',    msg:'Niveau requis non renseigné' });
   const craftCount = getCraft().length;
   const craftCd    = document.getElementById('f-craft-cd')?.value.trim();

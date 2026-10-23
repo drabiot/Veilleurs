@@ -309,15 +309,15 @@ function buildSidebar(items, expandAll = false) {
         pb.classList.toggle('open');
       });
 
-      /* ── Blocs Catégorie ── */
-      Object.keys(grouped[palier])
+      /* ── Blocs Catégorie (dans un conteneur : palier, ou sous-catégorie d'évènement) ── */
+      const renderCats = (host, catMap) => Object.keys(catMap)
         .sort((a, b) => {
           const oa = (CATEGORIES[a] && CATEGORIES[a].ordre) ?? 999;
           const ob = (CATEGORIES[b] && CATEGORIES[b].ordre) ?? 999;
           return oa - ob;
         })
         .forEach(cat => {
-        const catItems  = grouped[palier][cat];
+        const catItems  = catMap[cat];
         const cat_data  = catData(cat);
 
         const cb = document.createElement('div');
@@ -367,8 +367,37 @@ function buildSidebar(items, expandAll = false) {
 
         cb.appendChild(ch);
         cb.appendChild(cbody);
-        pb.appendChild(cb);
+        host.appendChild(cb);
       });
+
+      if (palier === 'event') {
+        // Une sous-catégorie par évènement (champ item.event), puis les catégories habituelles
+        const byEvent = {};
+        for (const cat of Object.keys(grouped[palier])) {
+          for (const it of grouped[palier][cat]) {
+            const ev = (typeof it.event === 'string' && it.event) || 'Autres';
+            ((byEvent[ev] = byEvent[ev] || {})[cat] = byEvent[ev][cat] || []).push(it);
+          }
+        }
+        const evRank = n => { const i = EVENT_NAMES.indexOf(n); return i < 0 ? 999 : i; };
+        Object.keys(byEvent).sort((a, b) => evRank(a) - evRank(b) || a.localeCompare(b, 'fr')).forEach(evName => {
+          const total = Object.values(byEvent[evName]).reduce((n, arr) => n + arr.length, 0);
+          const eb = document.createElement('div');
+          eb.className = 'event-block';
+          const eh = document.createElement('div');
+          eh.className = 'event-header' + (expandAll ? ' open' : '');
+          eh.innerHTML = `<span class="event-label">🎊 ${escHtml(evName)} <span class="categorie-count">${total}</span></span><span class="categorie-arrow">▶</span>`;
+          const ebody = document.createElement('div');
+          ebody.className = 'event-body' + (expandAll ? ' open' : '');
+          eh.addEventListener('click', () => { eh.classList.toggle('open'); ebody.classList.toggle('open'); });
+          renderCats(ebody, byEvent[evName]);
+          eb.appendChild(eh);
+          eb.appendChild(ebody);
+          pb.appendChild(eb);
+        });
+      } else {
+        renderCats(pb, grouped[palier]);
+      }
 
       palierBlock.appendChild(ph);
       palierBlock.appendChild(pb);

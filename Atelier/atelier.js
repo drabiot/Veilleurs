@@ -10,6 +10,7 @@
   let filterQ       = '';
   let filterRar     = null;
   let filterTier 	= null;
+  let filterEvent   = null; // sous-catégorie du palier Event
   let activeClass   = null;
   let skillNodes    = []; // arbre de compétences : clés "x,y" dans l'ordre de prise (centre offert, non listé)
   let filterStats	= new Set();
@@ -1196,9 +1197,44 @@ function loadAccessoriesForClass(classId) {
 	filterTier = chip.dataset.t !== '' ? (chip.dataset.t === 'event' ? 'event' : parseInt(chip.dataset.t)) : null;
 	wrap.querySelectorAll('.rarity-chip').forEach(c => c.classList.remove('active'));
 	chip.classList.add('active');
+	filterEvent = null;
+	buildEventFilter();
 	renderItemList();
 	});
+	buildEventFilter();
 	}
+
+  // Sous-catégories par évènement, visibles quand le palier « Event » est sélectionné
+  function buildEventFilter() {
+    let wrap = document.getElementById('event-wrap');
+    if (!wrap) {
+      const tw = document.getElementById('tier-wrap');
+      if (!tw) return;
+      wrap = document.createElement('div');
+      wrap.id = 'event-wrap';
+      wrap.className = 'tier-wrap picker-filters-wrap';
+      tw.insertAdjacentElement('afterend', wrap);
+      wrap.addEventListener('click', function(e) {
+        const chip = e.target.closest('.rarity-chip');
+        if (!chip) return;
+        filterEvent = chip.dataset.e !== '' ? chip.dataset.e : null;
+        wrap.querySelectorAll('.rarity-chip').forEach(c => c.classList.toggle('active', c === chip));
+        renderItemList();
+      });
+    }
+    wrap.innerHTML = '';
+    if (filterTier !== 'event') { wrap.style.display = 'none'; return; }
+    const names = [...new Set(ITEMS.filter(i => i.palier === 'event' && typeof i.event === 'string' && i.event).map(i => i.event))]
+      .sort((a, b) => { const r = n => { const i = EVENT_NAMES.indexOf(n); return i < 0 ? 999 : i; }; return r(a) - r(b) || a.localeCompare(b, 'fr'); });
+    wrap.style.display = '';
+    [['', 'Tous les évènements']].concat(names.map(n => [n, n])).forEach(function(e) {
+      const btn = document.createElement('button');
+      btn.className = 'rarity-chip' + ((filterEvent || '') === e[0] ? ' active' : '');
+      btn.dataset.e = e[0];
+      btn.textContent = e[1];
+      wrap.appendChild(btn);
+    });
+  }
 
   function formatStatValue(val, unit) {
     if (Array.isArray(val)) {
@@ -1314,6 +1350,7 @@ function loadAccessoriesForClass(classId) {
         return (item.cat === 'rune' || item.category === 'rune') &&
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
+          (filterEvent === null || item.event === filterEvent) &&
           (!q || fuzzyMatch(q, item.name)) &&
           statsFilter(item);
       });
@@ -1379,6 +1416,7 @@ function loadAccessoriesForClass(classId) {
           itemAllowedForClass(item, activeClass) &&
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
+          (filterEvent === null || item.event === filterEvent) &&
           (!q || fuzzyMatch(q, item.name) || matchesSetSearch(item, q)) &&
           statsFilter(item);
       });
@@ -1395,6 +1433,7 @@ function loadAccessoriesForClass(classId) {
         itemAllowedForClass(item, activeClass) &&
         (!filterRar  || item.rarity === filterRar) &&
         (filterTier === null || item.palier === filterTier) &&
+          (filterEvent === null || item.event === filterEvent) &&
         (!q || fuzzyMatch(q, item.name) || matchesSetSearch(item, q)) &&
         statsFilter(item);
       });

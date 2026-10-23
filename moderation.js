@@ -450,6 +450,8 @@ function _buildPrettySummary(data, type) {
     }
     if (data.sensible) field('', '🔒 Sensible', '#f87171');
     if (data.event)    field('', '🎊 Event',    '#a855f7');
+    // Le champ « event » (quel évènement) n'a de sens que dans le palier Event
+    if (data.palier === 'event') field('Évènement', typeof data.event === 'string' && data.event ? esc(data.event) : '<i style="color:var(--muted)">non renseigné</i>', '#a855f7');
     if (data.evolutif) field('', '🔄 Évolutif', '#60a5fa');
     if (data.stats && Object.keys(data.stats).length) {
       const statLines = Object.entries(data.stats).map(([k, v]) => {
@@ -9947,7 +9949,7 @@ window.toggleSidebarSection = (id) => {
 // Définitions des champs pour les inputs guidés
 // Clé = fieldId, ou "mode:fieldId" pour une surcharge par mode
 const _CF_DEFS = {
-  palier:      { type:'select',    opts:[[1,'Palier 1'],[2,'Palier 2'],[3,'Palier 3']] },
+  palier:      { type:'select',    opts:[[1,'Palier 1'],[2,'Palier 2'],[3,'Palier 3'],['event','Event'],[-1,'Palier Archive']] },
   difficulty:  { type:'number',    min:1, max:5, placeholder:'1–5' },
   lvl:         { type:'number',    min:1, placeholder:'Niveau requis' },
   lore:        { type:'textarea',  placeholder:'Texte de lore…' },
@@ -9963,6 +9965,7 @@ const _CF_DEFS = {
   npc:         { type:'text',      placeholder:'ID ou nom du PNJ donneur' },
   zone:        { type:'text',      placeholder:'ID région' },
   // Surcharges par mode
+  'items:event':     { type:'select', opts:(typeof EVENT_NAMES !== 'undefined' ? EVENT_NAMES : []).map(n => [n, n]) },
   'items:rarity':    { type:'select', opts:[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['mythique','Mythique'],['godlike','Godlike'],['event','Évènement']] },
   'items:category':  { type:'select', opts:[['arme','⚔️ Arme'],['armure','🛡️ Armure'],['accessoire','💍 Accessoire'],['materiaux','🧱 Matériau'],['ressources','⛏️ Ressource'],['consommable','🧪 Consommable'],['nourriture','🍖 Nourriture'],['outils','🔧 Outil'],['rune','🔮 Rune'],['quete','📜 Objet Quête'],['donjon','🏰 Donjon']] },
   'items:classes':   { type:'multicheckbox', opts:[['guerrier','⚔️ Guerrier'],['assassin','🗡️ Assassin'],['archer','🏹 Archer'],['mage','📖 Mage'],['shaman','🌿 Shaman']] },
@@ -10527,7 +10530,7 @@ window.saveCompletionFields = async (mode, docId, btn) => {
     const f = el.dataset.field;
     const v = el.value.trim();
     if (!v) continue;
-    patch[f] = _NUMERIC_CF_FIELDS.has(f) ? Number(v) : v;
+    patch[f] = _NUMERIC_CF_FIELDS.has(f) && !isNaN(Number(v)) ? Number(v) : v;
   }
 
   // div[data-field] = multicheckbox
@@ -10572,6 +10575,7 @@ const QUALITY_FIELD_SCHEMA = {
     { id: 'rarity',   label: 'Rareté' },
     { id: 'category', label: 'Catégorie' },
     { id: 'palier',   label: 'Palier' },
+    { id: 'event',    label: 'Évènement (palier Event uniquement)' },
     { id: 'lvl',      label: 'Niveau requis' },
     { id: 'images',   label: 'Image' },
     { id: 'lore',     label: 'Lore' },
@@ -10953,6 +10957,8 @@ window._openItemForCompletion = async function(key, sensible, origin) {
 };
 
 function _fieldEmpty(d, fieldId) {
+  // L'évènement n'est requis que pour les items du palier Event
+  if (fieldId === 'event') return d.palier === 'event' && !(typeof d.event === 'string' && d.event);
   if (fieldId === 'coords') return !d.coords || d.coords.x == null;
   // img et images sont interchangeables : si l'un est rempli, l'autre n'est pas manquant
   if (fieldId === 'img' || fieldId === 'images' || fieldId === 'image') {
@@ -13637,7 +13643,7 @@ const _DATA_ALL_COLS = {
 
 const _DATA_ALL_FLAGS = [
   { key: 'evolutif',   label: '🔄 Évolutif',      types: ['item'],                            filter: d => d.evolutif === true },
-  { key: 'event',      label: '🎊 Event',          types: ['item'],                            filter: d => d.event === true },
+  { key: 'event',      label: '🎊 Event',          types: ['item'],                            filter: d => !!d.event },
   { key: 'sensible',   label: '🔒 Sensible',       types: ['item','mob','pnj'],                filter: d => d.sensible === true },
   { key: 'boss',       label: '💀 Boss',           types: ['mob'],                             filter: d => d.type === 'boss' },
   { key: 'miniboss',   label: '⚔️ Mini-Boss',     types: ['mob'],                             filter: d => d.type === 'miniboss' },

@@ -115,6 +115,11 @@ function resolveObtain(str) {
 	return str.replace(/\[obtain:([\w-]+)\]/g, (m, id) => OBTAIN_TEXTS[id] ?? id);
 }
 //#endregion OBTAIN_TEXTS
+//#region EVENT_NAMES
+/* Évènements possibles pour le champ `event` des items du palier « Event » (ordre d'affichage).
+   Ajouter une ligne ici fait apparaître le nouvel évènement dans le creator, la modération et le Compendium. */
+const EVENT_NAMES = ['Noël', 'Saint-Valentin', 'Nouvel An Lunaire', 'Halloween'];
+//#endregion EVENT_NAMES
 //#region CATEGORIES
 const CATEGORIES = {
   armure:          { label: 'Armures',         emoji: '🛡️',  ordre: 1 },

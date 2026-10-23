@@ -283,6 +283,14 @@
           </div>
         </div>
 
+        <!-- Visible uniquement si le palier est « Event » -->
+        <div class="field" id="event-name-field" style="display:none;">
+          <label>Évènement <span style="font-size:10px;color:var(--muted);font-weight:400;">(sert au tri dans le palier Event)</span></label>
+          <select id="f-event-name" onchange="update()">
+            <option value="">—</option>
+          </select>
+        </div>
+
 
         <!-- Évolutions (visible si item évolutif) -->
         <div class="field" id="evolutif-evolutions-section" style="display:none;">
