@@ -505,3 +505,12 @@ main .filter-btn.active { background: var(--accent-glow); border-color: var(--ac
 
 /* Police mono plus large : les champs en grille/flex doivent pouvoir rétrécir */
 main input:not([type="checkbox"]):not([type="radio"]), main select, main textarea { min-width: 0; max-width: 100%; }
+
+/* ── Qualité des données : tri par palier + mise de côté ── */
+.dq-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: -4px 0 12px; font-size: 12px; }
+.dq-bar-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-right: 2px; }
+.dq-bar-aside { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; color: var(--muted); }
+.dq-pal { display: inline-block; margin-right: 6px; padding: 1px 6px; border-radius: 8px; font-size: 10px; font-weight: 700; background: var(--surface3); color: var(--accent); border: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+.dq-aside-btn { font-size: 11px; padding: 4px 10px; margin-left: 4px; opacity: .8; white-space: nowrap; }
+.dq-sep td, div.dq-sep { padding: 8px 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); background: var(--surface2); border-top: 1px solid var(--border); }
+div.dq-sep { margin: 10px 0 6px; border: 1px solid var(--border); border-radius: 6px; }
