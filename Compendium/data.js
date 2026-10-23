@@ -118,7 +118,7 @@ function resolveObtain(str) {
 //#region EVENT_NAMES
 /* Évènements possibles pour le champ `event` des items du palier « Event » (ordre d'affichage).
    Ajouter une ligne ici fait apparaître le nouvel évènement dans le creator, la modération et le Compendium. */
-const EVENT_NAMES = ['Noël', 'Saint-Valentin', 'Nouvel An Lunaire', 'Halloween'];
+const EVENT_NAMES = ['Noël', 'Saint-Valentin', 'Nouvel An Lunaire', 'Halloween', 'Earth Leveling'];
 //#endregion EVENT_NAMES
 //#region CATEGORIES
 const CATEGORIES = {

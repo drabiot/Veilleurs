@@ -1253,7 +1253,7 @@ function onObtainTypeChange(ev) {
   } else if (type === 'forge') {
     const hint = document.createElement('div');
     hint.style.cssText = 'height:38px;display:flex;align-items:center;padding:0 10px;font-size:12px;color:var(--muted);';
-    hint.textContent = (OBTAIN_TEXTS.forge || 'forge') + '  ·  id : forge';
+    hint.textContent = OBTAIN_TEXTS.forge || 'forge';
     container.appendChild(hint);
     addBtn.disabled = obtainSources.some(s => s.type === 'forge');
     addBtn.style.display = '';
@@ -1491,7 +1491,7 @@ function renderObtainSources() {
         label += `<span style="color:var(--muted)">${s.type === 'autre' ? 'Autre' : s.type} ·</span> <b>${s.desc || s.name || ''}</b>`;
       }
     } else if (s.type === 'forge') {
-      label += `<b>${OBTAIN_TEXTS.forge || 'Forge'}</b> <span style="color:var(--muted)">· id forge</span>`;
+      label += `<b>${OBTAIN_TEXTS.forge || 'Forge'}</b>`;
     } else if (s.type === 'ressource') {
       if (s.coords) {
         label += `📍 <b>X</b> ${s.coords.x} <b>Z</b> ${s.coords.z}`;
