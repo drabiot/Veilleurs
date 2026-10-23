@@ -1059,6 +1059,17 @@ function _mergeContributors(existing, newContrib) {
   return result.length ? result : [newContrib];
 }
 
+// Champs que le Creator sait produire, par type de soumission (= ce que build*Obj() renvoie).
+// Tout autre champ d'un document existant est conservé quand une modification est approuvée.
+const _CREATOR_MANAGED_KEYS = {
+  item:     new Set(['cat','category','classes','competence','craft','craft_cd','effects','event','evolutif','evolutions','evolvedFrom','id','images','lore','lvl','name','obtain','occulte','palier','quality','rarity','rune_slots','sensible','set','stats','tags','twoHanded','unique']),
+  mob:      new Set(['id','name','type','behavior','palier','region','images','inCodex','sensible','lore','spawnTime','coords','loot']),
+  pnj:      new Set(['coords','craft','id','images','instructions','is_underground','name','palier','region','sells','sensible','tag','type']),
+  region:   new Set(['canTp','coords','id','images','inCodex','lore','name','palier']),
+  quest:    new Set(['id','type','palier','zone','npc','desc','coords','titre','objectifs','recompenses','statut']),
+  panoplie: new Set(['bonuses','id','label']),
+};
+
 // ── Approve ───────────────────────────────────────────
 window.approve = async (id) => {
   const sub     = allSubs.find(s => s._id === id);
@@ -1176,6 +1187,17 @@ window.approve = async (id) => {
             if (existing.ordre  != null) dataToWrite.ordre  = existing.ordre;
             if (existing.images?.length) dataToWrite.images = existing.images;
             else if (existing.image)     dataToWrite.image  = existing.image;
+            // setDoc remplace le document : on reporte les champs que le Creator ne sait pas produire
+            // (threshold, camera, morceaux, color…), sinon ils seraient effacés à l'approbation.
+            const _managed = _CREATOR_MANAGED_KEYS[sub.type];
+            if (_managed) {
+              for (const [k, v] of Object.entries(existing)) {
+                if (k in dataToWrite || _managed.has(k) || ['_order', '_contributor', '_updatedAt', 'ordre', 'images', 'image'].includes(k)) continue;
+                dataToWrite[k] = v;
+              }
+              // palier Archive (-1) non sélectionnable dans le Creator : une soumission sans palier ne doit pas le faire disparaître
+              if (!('palier' in dataToWrite) && existing.palier != null) dataToWrite.palier = existing.palier;
+            }
             _stdExistContribs = _readContribs(existing);
           } else {
             toast(`⚠️ Modification approuvée comme nouvel ajout — "${dataId}" n'existait pas encore.`, 'warning', 6000);

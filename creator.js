@@ -1438,14 +1438,14 @@ function parseObtainText(text, itemId, itemName) {
     if (artM) {
       const [, id, name] = artM;
       const a = allArtisans.find(x => x.id === id);
-      sources.push({ uid: obtainUid++, type: 'pnj', id, name, desc: a?.desc || '', subtitle: a?.subtitle || '', coords: a?.coords || null });
+      sources.push({ uid: obtainUid++, type: 'pnj', id, name, verb: 'Fabricable', desc: a?.desc || '', subtitle: a?.subtitle || '', coords: a?.coords || null });
       continue;
     }
     const marchM = t.match(/^Achetable au \[npc:([^|]+)\|([^\]]+)\]$/);
     if (marchM) {
       const [, id, name] = marchM;
       const mx = allMarchands.find(x => x.id === id);
-      sources.push({ uid: obtainUid++, type: 'pnj', id, name, desc: mx?.desc || '', subtitle: mx?.subtitle || '', coords: mx?.coords || null });
+      sources.push({ uid: obtainUid++, type: 'pnj', id, name, verb: 'Achetable', desc: mx?.desc || '', subtitle: mx?.subtitle || '', coords: mx?.coords || null });
       continue;
     }
     const queteM = t.match(/^Récompense de la quête \[quest:([^|]+)\|([^\]]+)\]$/);
@@ -1510,7 +1510,8 @@ function buildObtainText() {
     parts.push('Obtenable en tuant:\n' + lines.join('\n'));
   }
   for (const d of donjons)      parts.push(`Obtenable en récompense du [npc:${d.id}|${d.name}]`);
-  for (const p of pnjs)         parts.push(allArtisans.some(a => a.id === p.id) ? `Fabricable au [npc:${p.id}|${p.name}]` : `Achetable au [npc:${p.id}|${p.name}]`);
+  // p.verb = formulation d'origine (Fabricable / Achetable) : on la garde, sinon une source dont le PNJ n'est pas (encore) dans la liste des artisans passerait à tort en « Achetable »
+  for (const p of pnjs)         parts.push((p.verb || (allArtisans.some(a => a.id === p.id) ? 'Fabricable' : 'Achetable')) + ` au [npc:${p.id}|${p.name}]`);
   for (const a of artisans)     parts.push(`Fabricable au [npc:${a.id}|${a.name}]`);
   for (const m of marchands)    parts.push(`Achetable au [npc:${m.id}|${m.name}]`);
   for (const q of quetes)       parts.push(`Récompense de la quête [quest:${q.id}|${q.name}]`);
@@ -2302,8 +2303,12 @@ function loadItem(item) {
   if (item.lvl) document.getElementById('f-lvl').value = String(item.lvl);
 
   // Set
-  if (item.set && setDrop && typeof SETS !== 'undefined' && SETS[item.set]) {
-    setDrop.setValue(item.set, SETS[item.set].label);
+  // (la liste statique SETS peut ne pas connaître une panoplie récente : on garde quand même la valeur, sinon elle serait effacée à la sauvegarde)
+  if (item.set && setDrop) {
+    const label = (typeof SETS !== 'undefined' && SETS[item.set]?.label)
+      || (typeof setItems !== 'undefined' && Array.isArray(setItems) && setItems.find(s => s.id === item.set)?.name)
+      || item.set;
+    setDrop.setValue(item.set, label);
   }
 
   // Classes
@@ -2523,6 +2528,7 @@ function loadMob(mob) {
       const entry = mobLootEntries[mobLootEntries.length - 1];
       entry.chance = l.chance !== undefined ? l.chance : 100;
       entry.itemId = l.id;
+      { const { id: _lid, chance: _lch, ...extra } = l; entry.extra = extra; }   // autres champs du drop (ex. qty « 2-4 ») : conservés tels quels
       const row = document.getElementById(`mob-loot-${entry.uid}`);
       if (row) {
         // Le second enfant du row est le champ chance (après le dropdown)
@@ -2646,14 +2652,21 @@ function loadRegion(reg) {
 
 function loadQuest(quest) {
   switchMode('quest');
+  resetQuestForm();   // repart d'un formulaire vide : sinon les champs absents de cette quête gardent la valeur de la précédente
   const questId = quest.id || quest._id;
   if (questId)      document.getElementById('quest-id').value    = questId;
   if (quest.titre)  document.getElementById('quest-titre').value = quest.titre;
   if (quest.type)   document.getElementById('quest-type').value  = quest.type;
   if (quest.palier) _setPalierValue('quest-palier', quest.palier);
   // Les menus PNJ / zone existent déjà quand on charge une quête : on les met à jour directement (sinon la valeur en attente n'est jamais appliquée)
-  if (quest.npc)  { document.getElementById('quest-npc').value = quest.npc; window._pendingQuestNpc = quest.npc; if (_questNpcDrop) initQuestNpcDrop(); }
-  if (quest.zone) { window._pendingQuestZone = quest.zone; if (_questZoneDrop) { _questZoneDrop.setValue(quest.zone, quest.zone); window._pendingQuestZone = null; } }
+  window._pendingQuestNpc  = quest.npc  || null;
+  window._pendingQuestZone = quest.zone || null;   // jamais de valeur « en attente » héritée de la quête précédente
+  if (quest.npc)  { document.getElementById('quest-npc').value = quest.npc; if (_questNpcDrop) initQuestNpcDrop(); }
+  if (quest.zone && _questZoneDrop) {
+    _questZoneDrop.setValue(quest.zone, quest.zone);
+    // switchMode('quest') reconstruit le menu zone en asynchrone : on garde la valeur en attente le temps qu'il le fasse, puis on l'oublie
+    setTimeout(() => { if (window._pendingQuestZone === quest.zone) window._pendingQuestZone = null; }, 4000);
+  }
   if (quest.desc)   document.getElementById('quest-desc').value  = quest.desc;
   if (quest.coords) {
     const cx = document.getElementById('quest-cx');
@@ -2684,8 +2697,8 @@ function loadQuest(quest) {
   questRecompenses = [];
   if (quest.recompenses?.length) {
     for (const r of quest.recompenses) {
-      if (r.type === 'exp')        questRecompenses.push({ uid: _qRewUid++, type: 'exp',   value: String(r.xp   || '') });
-      else if (r.type === 'cols')  questRecompenses.push({ uid: _qRewUid++, type: 'cols',  value: String(r.cols || '') });
+      if (r.type === 'exp')        questRecompenses.push({ uid: _qRewUid++, type: 'exp',   value: r.xp   != null ? String(r.xp)   : '' });
+      else if (r.type === 'cols')  questRecompenses.push({ uid: _qRewUid++, type: 'cols',  value: r.cols != null ? String(r.cols) : '' });
       else if (r.type === 'items') questRecompenses.push({ uid: _qRewUid++, type: 'items', itemId: r.itemId || '', value: r.label || '', qte: r.qte });
       else                         questRecompenses.push({ uid: _qRewUid++, type: r.type,  value: r.label || '' });
     }
@@ -5542,7 +5555,7 @@ function addMobLoot() {
 function getMobLoot() {
   return mobLootEntries
     .filter(e => e.itemId)
-    .map(e => ({ id: e.itemId, chance: e.chance === '?' ? '?' : (isNaN(e.chance) ? 100 : e.chance) }));
+    .map(e => ({ ...(e.extra || {}), id: e.itemId, chance: e.chance === '?' ? '?' : (isNaN(e.chance) ? 100 : e.chance) }));
 }
 
 // ═══════════════════════════════════════════════════
