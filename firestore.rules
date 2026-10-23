@@ -27,6 +27,12 @@
         allow write: if isContrib();
       }
 
+      // Traces de suppression pour la synchro différentielle (cf. firebase.js)
+      match /tombstones/{id} {
+        allow read:  if true;
+        allow write: if isContrib();
+      }
+
       match /items_hidden/{id} {
         allow get:   if true;
         allow list:  if isContrib();

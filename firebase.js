@@ -10,8 +10,9 @@ import { initializeApp, getApps, getApp }          from 'https://www.gstatic.com
 import { initializeFirestore, getFirestore,
          persistentLocalCache, persistentMultipleTabManager,
          doc, getDoc, collection, getDocs, onSnapshot,
-         setDoc, addDoc, updateDoc, deleteDoc, deleteField,
-         serverTimestamp, increment, writeBatch,
+         setDoc as _setDoc, addDoc as _addDoc, updateDoc as _updateDoc,
+         deleteDoc as _deleteDoc, deleteField,
+         serverTimestamp, increment, writeBatch as _writeBatch, Timestamp,
          query, where, orderBy, limit }           from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getAuth, onAuthStateChanged,
          signInWithEmailAndPassword, signOut,
@@ -71,6 +72,48 @@ export const COL = {
   buildsSensible:  'builds_sensible',  // données des slots sensibles (contrib+ only)
   userFavorites:   'user_favorites',   // index plat des favoris par user
   events:          'events',           // events (Noël 2025, etc.) pour les sources d'obtention
+};
+
+// ── Synchronisation différentielle ─────────────────────
+// Collections lues via loadCollection() et mises en cache localement. Toute écriture dessus
+// (setDoc / addDoc / updateDoc / deleteDoc / writeBatch exportés ci-dessous) est datée avec
+// `_updatedAt` ; une suppression laisse une trace dans `tombstones`. Les visiteurs ne
+// redemandent alors à Firestore que ce qui a changé depuis leur dernière visite.
+// ⚠ Un script qui écrit sans passer par ces fonctions doit dater ses écritures lui-même
+//   (et poser une trace de suppression), ou bumper config/sync.epoch pour forcer un rechargement.
+const SYNC_COLS = new Set([COL.items, COL.itemsHidden, COL.itemsSecret, COL.mobs, COL.mobsSecret,
+  COL.pnj, COL.pnjSecret, COL.regions, COL.quetes, COL.panoplies, COL.mapMarkers, COL.zones, COL.donjons]);
+const _segs   = ref => String(ref?.path || '').split('/');
+const _isSync = ref => { const s = _segs(ref); return SYNC_COLS.has(s[0]) && s.length <= 2; };
+const _stamp  = () => ({ _updatedAt: serverTimestamp() });
+const _tomb   = ref => [doc(db, 'tombstones', `${_segs(ref)[0]}__${ref.id}`), { col: _segs(ref)[0], id: ref.id, ts: serverTimestamp() }];
+const _stampArgs = args => (args.length === 1 && args[0] && typeof args[0] === 'object')
+  ? [{ ...args[0], ..._stamp() }]
+  : [...args, '_updatedAt', serverTimestamp()];
+
+const setDoc    = (ref, data, opts) => _setDoc(ref, _isSync(ref) ? { ...data, ..._stamp() } : data, opts);
+const addDoc    = (ref, data)       => _addDoc(ref, _isSync(ref) ? { ...data, ..._stamp() } : data);
+const updateDoc = (ref, ...args)    => _updateDoc(ref, ...(_isSync(ref) ? _stampArgs(args) : args));
+const deleteDoc = async ref => {
+  if (!_isSync(ref)) return _deleteDoc(ref);
+  const b = _writeBatch(db);
+  b.set(..._tomb(ref));
+  b.delete(ref);
+  try { return await b.commit(); }
+  catch (e) { // règles de `tombstones` pas encore déployées : on supprime quand même
+    if (e?.code !== 'permission-denied') throw e;
+    return _deleteDoc(ref);
+  }
+};
+const writeBatch = dbArg => {
+  const b = _writeBatch(dbArg);
+  const w = {
+    set(ref, data, opts)  { b.set(ref, _isSync(ref) ? { ...data, ..._stamp() } : data, opts); return w; },
+    update(ref, ...args)  { b.update(ref, ...(_isSync(ref) ? _stampArgs(args) : args)); return w; },
+    delete(ref)           { if (_isSync(ref)) b.set(..._tomb(ref)); b.delete(ref); return w; },
+    commit: () => b.commit(),
+  };
+  return w;
 };
 
 // ── Rôles ─────────────────────────────────────────────
@@ -540,7 +583,80 @@ function _wikiBumpedSince(ts) {
   return _wikiVerP.then(v => v > ts);
 }
 
+// Époque de synchro (config/sync.epoch) : posée par le script de migration, bumpée pour forcer
+// un rechargement complet chez tout le monde. 0 = pas migré → ancien mode (TTL + wiki_version).
+let _epochP = null;
+function _syncEpoch() {
+  _epochP ??= getDoc(doc(db, 'config', 'sync'))
+    .then(s => (s.exists() ? (s.data().epoch || 0) : 0))
+    .catch(() => null);
+  return _epochP;
+}
+
+const _ms = t => (t && typeof t.toMillis === 'function') ? t.toMillis() : 0;
+
+async function _syncFull(colName, key, epoch) {
+  const [snap, tomb] = await Promise.all([
+    getDocs(collection(db, colName)),
+    getDocs(query(collection(db, 'tombstones'), where('col', '==', colName))).catch(() => null),
+  ]);
+  let cur = 0;
+  const data = snap.docs.map(d => {
+    const raw = d.data();
+    cur = Math.max(cur, _ms(raw._updatedAt));
+    const { _updatedAt, ...rest } = raw;
+    return desanitizeFromFirestore({ _id: d.id, ...rest });
+  });
+  let tcur = 0;
+  tomb?.docs.forEach(t => { tcur = Math.max(tcur, _ms(t.data().ts)); });
+  try { localStorage.setItem(key, JSON.stringify({ epoch, ts: Date.now(), cur, tcur, data })); } catch {}
+  return data;
+}
+
+async function _syncDelta(colName, cache, key) {
+  const [dSnap, tSnap] = await Promise.all([
+    getDocs(query(collection(db, colName), where('_updatedAt', '>', Timestamp.fromMillis(cache.cur)))),
+    getDocs(query(collection(db, 'tombstones'), where('ts', '>', Timestamp.fromMillis(cache.tcur)))).catch(() => ({ docs: [] })),
+  ]);
+  const byId = new Map(cache.data.map(d => [d._id, d]));
+  let { cur, tcur } = cache, changed = false;
+  tSnap.docs.forEach(t => {
+    const x = t.data();
+    tcur = Math.max(tcur, _ms(x.ts));
+    if (x.col === colName && byId.delete(x.id)) changed = true;   // d'abord les suppressions…
+  });
+  dSnap.docs.forEach(d => {                                        // …puis les ajouts / modifications
+    const raw = d.data();
+    cur = Math.max(cur, _ms(raw._updatedAt));
+    const { _updatedAt, ...rest } = raw;
+    byId.set(d.id, desanitizeFromFirestore({ _id: d.id, ...rest }));
+    changed = true;
+  });
+  const data = changed ? [...byId.values()] : cache.data;
+  if (changed || cur !== cache.cur || tcur !== cache.tcur) {
+    try { localStorage.setItem(key, JSON.stringify({ ...cache, ts: Date.now(), cur, tcur, data })); } catch {}
+  }
+  return data;
+}
+
 export async function loadCollection(colName, maxAgeMs = CACHE_TTL) {
+  if (SYNC_COLS.has(colName)) {
+    const epoch = await _syncEpoch();
+    if (epoch) { // migration faite : mode différentiel
+      const key = `vcl_cache_v3_${colName}`;
+      let cache = null;
+      try { cache = JSON.parse(localStorage.getItem(key) || 'null'); } catch {}
+      const usable = cache && cache.epoch === epoch && cache.cur > 0 && Date.now() - cache.ts < 7 * 24 * 3600e3;
+      if (usable) {
+        try { return await _syncDelta(colName, cache, key); } catch { return cache.data; } // hors-ligne / quota : on garde le cache
+      }
+      try { return await _syncFull(colName, key, epoch); } catch (e) { if (cache) return cache.data; throw e; }
+    }
+  }
+  return _legacyLoadCollection(colName, maxAgeMs);
+}
+
+async function _legacyLoadCollection(colName, maxAgeMs = CACHE_TTL) {
   const cacheKey = `vcl_cache_v2_${colName}`;
   const metaKey  = `vcl_cache_meta_v2_${colName}`;
 
@@ -579,6 +695,8 @@ export function listenCollection(colName, callback) {
 
 /** Invalide le cache d'une collection (forcer un re-fetch) */
 export function invalidateCache(colName) {
+  // Ancien mode : on supprime le cache. Mode différentiel : le cache reste valable, le prochain
+  // load() ne récupère que les changements (les écritures de cette page sont déjà datées).
   localStorage.removeItem(`vcl_cache_v2_${colName}`);
   localStorage.removeItem(`vcl_cache_meta_v2_${colName}`);
 }
