@@ -102,6 +102,63 @@ function hide() {
   }, wait);
 }
 
+/* ── Barre de progression sous les onglets (tous les chargements) ──
+   Se remplit de gauche à droite à mesure que les collections arrivent. Sans barre d'onglets
+   sur la page, elle se place tout en haut de la fenêtre. */
+const NAVBAR_CSS = `
+#vcl-navbar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; z-index: 6;
+  pointer-events: none; opacity: 0; transition: opacity .3s ease; }
+#vcl-navbar.fixed { position: fixed; top: 0; bottom: auto; z-index: 100000; }
+#vcl-navbar > i { display: block; height: 100%; width: 0;
+  background: linear-gradient(90deg, #9a7040, #E0AC60 70%, #f3d9a0);
+  box-shadow: 0 0 8px rgba(224,172,96,.75); border-radius: 0 2px 2px 0; }
+`;
+let nbar = null, nfill = null, nbarTimer = null;
+
+function navBar() {
+  if (nbar) return nbar;
+  if (!document.body) return null;
+  if (!document.getElementById('vcl-navbar-css')) {
+    const st = document.createElement('style');
+    st.id = 'vcl-navbar-css';
+    st.textContent = NAVBAR_CSS;
+    document.head.appendChild(st);
+  }
+  nbar = document.createElement('div');
+  nbar.id = 'vcl-navbar';
+  nbar.setAttribute('aria-hidden', 'true');
+  nfill = document.createElement('i');
+  nbar.appendChild(nfill);
+  const host = document.querySelector('.header-nav');
+  if (host) {
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+    host.appendChild(nbar);
+  } else {
+    nbar.classList.add('fixed');
+    document.body.appendChild(nbar);
+  }
+  return nbar;
+}
+
+function barUpdate() {
+  if (!navBar()) return;
+  clearTimeout(nbarTimer);
+  nbar.style.opacity = '1';
+  const target = total ? Math.min(95, ((done + 0.85) / total) * 100) : 30;
+  nfill.style.transition = 'width 1.2s cubic-bezier(.1,.7,.2,1)';
+  nfill.style.width = target + '%';
+}
+
+function barFinish() {
+  if (!nbar) return;
+  nfill.style.transition = 'width .25s ease';
+  nfill.style.width = '100%';
+  nbarTimer = setTimeout(() => {
+    nbar.style.opacity = '0';
+    nbarTimer = setTimeout(() => { nfill.style.transition = 'none'; nfill.style.width = '0%'; }, 320);
+  }, 320);
+}
+
 export const loader = {
   /** Démarre le suivi de `n` éléments à charger. Retourne begin() → { step, end }. */
   begin(n) {
@@ -110,13 +167,14 @@ export const loader = {
       done = 0; total = n;
       showTimer = setTimeout(() => { if (active) reveal(); }, SHOW_DELAY);
     } else if (el) render();
+    barUpdate();
     let finished = false;
     return {
-      step() { done++; render(); },
+      step() { done++; render(); barUpdate(); },
       end() {
         if (finished) return; finished = true;
         active = Math.max(0, active - 1);
-        if (!active) { clearTimeout(showTimer); total = done = 0; if (el) { fill.style.width = '100%'; hide(); } }
+        if (!active) { clearTimeout(showTimer); barFinish(); total = done = 0; if (el) { fill.style.width = '100%'; hide(); } }
       },
     };
   },
