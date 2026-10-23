@@ -11,6 +11,7 @@
   let filterRar     = null;
   let filterTier 	= null;
   let filterEvent   = null; // sous-catégorie du palier Event
+  let filterEquip   = false; // n'afficher que les items équipables au niveau actuel du build
   let activeClass   = null;
   let skillNodes    = []; // arbre de compétences : clés "x,y" dans l'ordre de prise (centre offert, non listé)
   let filterStats	= new Set();
@@ -1204,6 +1205,31 @@ function loadAccessoriesForClass(classId) {
 	buildEventFilter();
 	}
 
+  // Interrupteur « Équipables » : n'affiche que les items utilisables au niveau actuel du build (activable / désactivable)
+  function buildEquipFilter() {
+    if (document.getElementById('equip-wrap')) return;
+    const anchor = document.getElementById('filters-wrap');
+    if (!anchor) return;
+    try { filterEquip = localStorage.getItem('vcl_atelier_equip') === '1'; } catch (e) {}
+    const wrap = document.createElement('div');
+    wrap.id = 'equip-wrap';
+    wrap.className = 'picker-filters-wrap';
+    const btn = document.createElement('button');
+    btn.className = 'rarity-chip equip-chip' + (filterEquip ? ' active' : '');
+    btn.textContent = '⚔ Équipables';
+    btn.title = "Activé : masque les items dont le niveau requis dépasse le niveau du build";
+    btn.setAttribute('aria-pressed', String(filterEquip));
+    btn.addEventListener('click', function() {
+      filterEquip = !filterEquip;
+      btn.classList.toggle('active', filterEquip);
+      btn.setAttribute('aria-pressed', String(filterEquip));
+      try { localStorage.setItem('vcl_atelier_equip', filterEquip ? '1' : '0'); } catch (e) {}
+      renderItemList();
+    });
+    wrap.appendChild(btn);
+    anchor.insertAdjacentElement('afterend', wrap);
+  }
+
   // Sous-catégories par évènement, visibles quand le palier « Event » est sélectionné
   function buildEventFilter() {
     let wrap = document.getElementById('event-wrap');
@@ -1333,6 +1359,9 @@ function loadAccessoriesForClass(classId) {
     const list = document.getElementById('items-list');
     const q    = normalize(filterQ);
 
+    // Filtre « Équipables » : masque les items dont le niveau requis dépasse celui du build
+    const equipFilter = function(item) { return !filterEquip || itemAllowedForLevel(item, buildLevel); };
+
     const statsFilter = function(item) {
       return filterStats.size === 0 || [...filterStats].every(function(sid) {
         if (!item.stats) return false;
@@ -1351,6 +1380,7 @@ function loadAccessoriesForClass(classId) {
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
           (filterEvent === null || item.event === filterEvent) &&
+          equipFilter(item) &&
           (!q || fuzzyMatch(q, item.name)) &&
           statsFilter(item);
       });
@@ -1417,6 +1447,7 @@ function loadAccessoriesForClass(classId) {
           (!filterRar  || item.rarity === filterRar) &&
           (filterTier === null || item.palier === filterTier) &&
           (filterEvent === null || item.event === filterEvent) &&
+          equipFilter(item) &&
           (!q || fuzzyMatch(q, item.name) || matchesSetSearch(item, q)) &&
           statsFilter(item);
       });
@@ -1434,6 +1465,7 @@ function loadAccessoriesForClass(classId) {
         (!filterRar  || item.rarity === filterRar) &&
         (filterTier === null || item.palier === filterTier) &&
           (filterEvent === null || item.event === filterEvent) &&
+        equipFilter(item) &&
         (!q || fuzzyMatch(q, item.name) || matchesSetSearch(item, q)) &&
         statsFilter(item);
       });
@@ -2282,6 +2314,7 @@ function loadAccessoriesForClass(classId) {
     buildGrid();
     buildFilters();
 	  buildTierFilter();
+    buildEquipFilter();
     buildStatsUI();
 
     document.getElementById('items-list').addEventListener('mouseover', function(e) {
