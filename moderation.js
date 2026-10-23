@@ -5004,6 +5004,15 @@ window.editorGoBack = function() {
   showSubmissions();
 };
 
+// ID attendu pour un palier : quêtes « pN_titre », items « nom_pN » (suffixe éventuel « _2 » conservé). null = pas de règle.
+function _idForPalier(col, id, palier) {
+  const p = Number(palier);
+  if (!id || !Number.isInteger(p) || p < 1) return null;   // Event / Archive / vide : on ne touche pas
+  if (col === 'quetes') return /^p\d+_/.test(id) ? id.replace(/^p\d+_/, `p${p}_`) : null;
+  if (col === 'items')  return /_p\d+(?:_\d+)?$/.test(id) ? id.replace(/_p\d+((?:_\d+)?)$/, `_p${p}$1`) : null;
+  return null;
+}
+
 // ── Save (générique) ─────────────────────────────────
 window.saveEditor = async function() {
   const btn    = document.getElementById('btn-save-editor');
@@ -5059,6 +5068,19 @@ window.saveEditor = async function() {
       btn.textContent = '✔ Sauvegardé'; btn.style.background = '#14532d'; btn.style.color = 'var(--success)';
       setTimeout(() => { btn.disabled = false; btn.textContent = '💾 Sauvegarder'; btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; }, 2500);
       return;
+    }
+
+    // L'ID suit le palier (quêtes : pN_…, items : …_pN) : un palier corrigé après coup corrige aussi l'ID, donc la clé du document
+    // (sauf si l'ID a été modifié à la main dans le formulaire)
+    {
+      const synced = _idForPalier(_editorCollection, String(newData.id ?? ''), newData.palier);
+      if (synced && synced !== String(newData.id) && String(newData.id) === String(_editorId)) {
+        toast(`ID aligné sur le palier : ${newData.id} → ${synced}`, 'info');
+        newData.id = synced;
+        const idRow = [...document.querySelectorAll('.ed-gen-row')].find(r => r.querySelector('.ed-gen-keylbl')?.textContent.trim() === 'id');
+        const idInput = idRow?.querySelector('[data-gf-type]');
+        if (idInput) idInput.value = synced;
+      }
     }
 
     // Renommage d'ID → recréer le document (toutes collections)

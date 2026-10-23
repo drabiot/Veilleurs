@@ -6697,10 +6697,8 @@ function _makeQuestItemRow(item, onRemove) {
 
   if (item.itemId) {
     const f = allItemsIndex.find(it => it.id === item.itemId);
-    if (f) {
-      drop.setValue(item.itemId, f.name);
-      if (_itemHasQuality(item.itemId)) qualBtn.style.display = '';
-    }
+    drop.setValue(item.itemId, f ? f.name : item.itemId);   // introuvable dans l'index : on affiche l'ID plutôt qu'un champ vide
+    if (f && _itemHasQuality(item.itemId)) qualBtn.style.display = '';
   }
 
   const qteEl = document.createElement('input');
@@ -6725,7 +6723,7 @@ function _makeQuestMobRow(mob, onRemove) {
   const drop = makeSearchDrop(allMobsIndex, 'Monstre…', id => { mob.mobId = id; update(); }, false);
   if (mob.mobId) {
     const f = allMobsIndex.find(m => m.id === mob.mobId);
-    if (f) drop.setValue(mob.mobId, f.name);
+    drop.setValue(mob.mobId, f ? f.name : mob.mobId);
   }
 
   const qteEl = document.createElement('input');
@@ -6963,7 +6961,8 @@ function renderQuestRecompenses() {
       }, true);
       if (rew.itemId) {
         const f = allItemsIndex.find(it => it.id === rew.itemId);
-        if (f) drop.setValue(rew.itemId, f.name);
+        // introuvable dans l'index (données pas encore chargées, ou lien mort) : on affiche quand même le libellé / l'ID enregistré
+        drop.setValue(rew.itemId, f ? f.name : (rew.value || rew.itemId));
       }
 
       const qteEl = document.createElement('input');
