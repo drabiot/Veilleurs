@@ -4290,13 +4290,30 @@ function validateForm() {
   return { errors, warnings };
 }
 
+// Élément réellement visible d'un champ : pour un <select> remplacé par un dropdown stylé,
+// c'est le bouton du dropdown (le <select> natif est masqué)
+function _validationTarget(el) {
+  if (el?.tagName === 'SELECT' && el.parentNode?.classList.contains('custom-sel-wrap')) {
+    return el.parentNode.querySelector('.custom-sel-trigger') || el;
+  }
+  return el;
+}
+
+function _highlightField(el, color) {
+  const t = _validationTarget(el);
+  if (!t) return;
+  t.style.borderColor = color;
+  t.style.boxShadow = `0 0 0 1px ${color}, 0 0 8px ${color}`;
+}
+
 function renderValidation() {
   const { errors, warnings } = validateForm();
   const panel = document.getElementById('validation-panel');
 
-  // Reset field highlights
-  document.querySelectorAll('.field input, .field select, .field textarea').forEach(el => {
+  // Reset field highlights (le surlignage reste tant que le champ n'est pas corrigé : renderValidation est rappelé à chaque modification)
+  document.querySelectorAll('.field input, .field select, .field textarea, .custom-sel-trigger').forEach(el => {
     el.style.borderColor = '';
+    el.style.boxShadow = '';
   });
 
   if (!errors.length && !warnings.length) {
@@ -4313,8 +4330,7 @@ function renderValidation() {
     row.innerHTML = `<span style="color:var(--danger);font-weight:700;">✕</span> <span style="color:var(--danger);">${msg}</span>`;
     panel.appendChild(row);
     if (field) {
-      const el = document.getElementById(field);
-      if (el) el.style.borderColor = 'var(--danger)';
+      _highlightField(document.getElementById(field), 'var(--danger)');
     }
   }
 
@@ -4324,8 +4340,7 @@ function renderValidation() {
     row.innerHTML = `<span style="color:#d7af5f;font-weight:700;">⚠</span> <span style="color:#d7af5f;">${msg}</span>`;
     panel.appendChild(row);
     if (field) {
-      const el = document.getElementById(field);
-      if (el) el.style.borderColor = '#d7af5f';
+      _highlightField(document.getElementById(field), '#d7af5f');
     }
   }
 }
