@@ -473,6 +473,7 @@ function _buildPrettySummary(data, type) {
         : '<i style="color:var(--muted)">Aucune source renseignée</i>');
     }
     if (data.lore)    field('Lore', `<i style="color:var(--muted)">${esc(data.lore).slice(0,200)}${data.lore.length>200?'…':''}</i>`);
+    if (data.competence) field('Compétence', esc(data.competence).replace(/\n/g,'<br>'));
     if (data.tags?.length) field('Tags', data.tags.map(t=>`<span style="font-size:10px;background:var(--surface3);border-radius:3px;padding:1px 5px;">${esc(t)}</span>`).join(' '));
   } else if (type === 'mob') {
     if (data.type)    field('Type',     data.type);

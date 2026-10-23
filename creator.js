@@ -561,6 +561,7 @@ function saveForm() {
       eventName: document.getElementById('f-event-name')?.value || '',
       lvl:      document.getElementById('f-lvl').value,
       lore:     document.getElementById('f-lore').value,
+      competence: document.getElementById('f-competence')?.value || '',
       obtainOverride: document.getElementById('f-obtain-override').value,
       selRarity, selClasses, selTwoHanded, selSensible, selEvent, selEvolutif, selOcculte, evolutifEvolutions,
       activeTags: [...activeTags],
@@ -691,6 +692,7 @@ function restoreForm(forcedMode) {
     _setEventName(d.eventName || '');
     if (d.lvl)    document.getElementById('f-lvl').value    = d.lvl;
     if (d.lore)   document.getElementById('f-lore').value   = d.lore;
+    if (d.competence) { const el = document.getElementById('f-competence'); if (el) el.value = d.competence; }
     if (d.obtainOverride) {
       document.getElementById('f-obtain-override').value = d.obtainOverride;
       document.getElementById('obtain-override-wrap').style.display = '';
@@ -1750,6 +1752,8 @@ function onCatChange() {
   }
   document.getElementById('classes-field').style.display     = isEquip  ? '' : 'none';
   document.getElementById('twohanded-field').style.display      = isArme           ? '' : 'none';
+  document.getElementById('competence-field').style.display     = isArme           ? '' : 'none';
+  if (!isArme) { const _cp = document.getElementById('f-competence'); if (_cp) _cp.value = ''; }
   document.getElementById('rune-slots-field').style.display     = cat === 'armure' ? '' : 'none';
   if (!isArme) {
     selTwoHanded = false; document.getElementById('twohanded-btn').classList.remove('active');
@@ -2516,6 +2520,7 @@ function loadItem(item) {
 
   // Lore
   if (item.lore) document.getElementById('f-lore').value = item.lore;
+  { const el = document.getElementById('f-competence'); if (el) el.value = item.competence || ''; }
 
   // Obtain — parse en sources structurées, fallback sur override texte brut
   if (item.obtain) {
@@ -4311,6 +4316,7 @@ function buildObj() {
   if (selClasses.length)     obj.classes  = [...selClasses];
   if (effects.length)        obj.effects  = effects;
   if (lore)                  obj.lore     = lore;
+  { const comp = category === 'arme' ? (document.getElementById('f-competence')?.value || '').trim() : ''; if (comp) obj.competence = comp; }
   if (tagsArr.length)        obj.tags     = tagsArr;
   if (obtain)                obj.obtain   = obtain;
   if (craft.length)          obj.craft    = craft;
@@ -5092,6 +5098,7 @@ async function _promptMissingFields(errors, warnings = []) {
   if (data.category)    { document.getElementById('f-category').value = data.category; onCatChange(); }
   if (data.rarity)      setRarity(data.rarity);
   if (data.lore)        document.getElementById('f-lore').value = data.lore;
+  if (data.competence)  { const el = document.getElementById('f-competence'); if (el) el.value = data.competence; }
   if (data['craft-cd']) { const el = document.getElementById('f-craft-cd'); if (el) el.value = data['craft-cd']; }
   if (data.cat)         { const el = document.getElementById('f-cat'); if (el) { el.value = data.cat; onCatSlotChange?.(); } }
   if (data.lvl)         { const el = document.getElementById('f-lvl'); if (el) el.value = data.lvl; }
