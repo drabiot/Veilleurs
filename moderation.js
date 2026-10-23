@@ -440,7 +440,7 @@ function _buildPrettySummary(data, type) {
     const rarColor = RARITY_COLORS[data.rarity] || 'var(--muted)';
     if (data.rarity)   field('Rareté',   idPair(data.rarity, `<span style="font-weight:700;">${RARITY_LABELS[data.rarity]||data.rarity}</span>`), rarColor);
     if (data.category) field('Catégorie', idPair(data.category, esc(CAT_LABELS[data.category]||data.category)));
-    if (data.palier)   field('Palier',   idPair(data.palier, 'Palier ' + (data.palier == -1 ? 'Archive' : data.palier)));
+    if (data.palier != null && data.palier !== '') field('Palier',   idPair(data.palier, data.palier == 'event' ? 'Event' : 'Palier ' + (data.palier == -1 ? 'Archive' : data.palier)));
     if (data.lvl)      field('Niveau',   idPair(data.lvl, 'Niveau ≥ ' + data.lvl));
     if (data.cat)      field('Slot',     idPair(data.cat, esc(SLOT_LABELS[data.cat] || data.cat)));
     if (data.classes?.length) field('Classes', data.classes.map(c => idPair(c, esc((typeof CLASSES !== 'undefined' && CLASSES.find(x => x.id === c)?.label) || c))).join(' &nbsp; '));
@@ -7546,7 +7546,7 @@ function _itemImgSrc(obj) {
   }
   if (!obj.id) return null;
   const { id, category, palier, event: isEvent } = obj;
-  const tier = (isEvent || palier === 0) ? 'events' : (palier ? 'P' + palier : '');
+  const tier = (isEvent || (palier === 0 || palier === 'event')) ? 'events' : (palier ? 'P' + palier : '');
   const tp   = tier ? tier + '/' : '';
   switch (category) {
     case 'arme':        return `${base}img/compendium/textures/weapons/${tp}${id}.png`;
@@ -8876,7 +8876,7 @@ function _sensEsc(s) {
 // Formule d'image identique à creator.js / atelier.js (source de vérité partagée)
 function _sensComputeImg(category, id, palier, isEvent) {
   if (!id) return null;
-  const tier = (isEvent || palier === 0) ? 'events' : (palier ? 'P' + palier : '');
+  const tier = (isEvent || (palier === 0 || palier === 'event')) ? 'events' : (palier ? 'P' + palier : '');
   const tp = tier ? tier + '/' : '';
   switch (category) {
     case 'arme':        return `../img/compendium/textures/weapons/${tp}${id}.png`;
@@ -11497,7 +11497,7 @@ function _imgResizeToCanvas(file, size) {
 function _imgComputePath(item) {
   const tpl = _imgConfig?.templates?.[item.category] || IMG_DEFAULT_TEMPLATES[item.category];
   if (!tpl) return null;
-  const tier = (item.event || item.palier === 0) ? 'events' : (item.palier ? 'P' + item.palier : '');
+  const tier = (item.event || (item.palier === 0 || item.palier === 'event')) ? 'events' : (item.palier ? 'P' + item.palier : '');
   const tp   = tier ? tier + '/' : '';
   return tpl
     .replace(/\{tier\}\//g, tp)    // "{tier}/" → "P1/" ou "" (évite le double slash)

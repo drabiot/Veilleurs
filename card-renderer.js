@@ -88,7 +88,7 @@ function resolveIconUrl(item) {
   const cat = item.category || item.cat
   if (!id || !cat) return null
 
-  const tier = (item.event || item.palier === 0) ? 'events' : (item.palier ? 'P' + item.palier : '')
+  const tier = (item.event || (item.palier === 0 || item.palier === 'event')) ? 'events' : (item.palier ? 'P' + item.palier : '')
   const tp   = tier ? tier + '/' : ''
   const base = 'img/compendium/textures/'
   const MAP  = {
@@ -250,7 +250,7 @@ export async function drawItemCard(canvas, item, exportScale = null, maps = {}) 
   const rColor  = window.VCL.getRarityColor(item.rarity || 'commun')
   const rLabel  = (window.VCL.RARITIES[item.rarity] || { label: 'Commun' }).label
   const catInfo = CATEGORIES[item.category] || { label: item.category || '?', emoji: '❓' }
-  const isEvent = item.event || item.palier === 0
+  const isEvent = item.event || (item.palier === 0 || item.palier === 'event')
 
   // ── Fond ──────────────────────────────────────────────
   ctx.fillStyle = C.bg

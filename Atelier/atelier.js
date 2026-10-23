@@ -43,6 +43,9 @@
     return runeIndex < slots;
   }
 
+  /* Le palier « Event » a pour id 'event' : on le trie après les paliers numériques */
+  function _palierNum(p) { return p === 'event' ? 99 : (p || 0); }
+
   /* ══ VÉRIFICATION NIVEAU ══ */
   function itemAllowedForLevel(item, level) {
     const reqLvl = item.lvl || 1;
@@ -1171,7 +1174,7 @@ function loadAccessoriesForClass(classId) {
 	if (!wrap) return;
 	wrap.innerHTML = '';
 
-	const tiers = [...new Set(ITEMS.map(i => i.palier))].sort((a, b) => (a == -1) - (b == -1) || a - b);
+	const tiers = [...new Set(ITEMS.map(i => i.palier))].sort((a, b) => { const r = (p => p == -1 ? 2 : p == 'event' ? 1 : 0); return r(a) - r(b) || (Number(a) - Number(b) || 0); });
 
 	const all = document.createElement('button');
 	all.className = 'rarity-chip active';
@@ -1183,14 +1186,14 @@ function loadAccessoriesForClass(classId) {
 	const btn = document.createElement('button');
 	btn.className = 'rarity-chip';
 	btn.dataset.t = t;
-	btn.textContent = t === 0 ? 'Évènements' : 'Palier ' + (t == -1 ? 'Archive' : t);
+	btn.textContent = t === 'event' ? 'Event' : 'Palier ' + (t == -1 ? 'Archive' : t);
 	wrap.appendChild(btn);
 	});
 
 	wrap.addEventListener('click', function(e) {
 	const chip = e.target.closest('.rarity-chip');
 	if (!chip || !('t' in chip.dataset)) return;
-	filterTier = chip.dataset.t !== '' ? parseInt(chip.dataset.t) : null;
+	filterTier = chip.dataset.t !== '' ? (chip.dataset.t === 'event' ? 'event' : parseInt(chip.dataset.t)) : null;
 	wrap.querySelectorAll('.rarity-chip').forEach(c => c.classList.remove('active'));
 	chip.classList.add('active');
 	renderItemList();
@@ -1323,7 +1326,7 @@ function loadAccessoriesForClass(classId) {
         });
       }
       runes.sort(function(a, b) {
-        if ((a.palier || 0) !== (b.palier || 0)) return (a.palier || 0) - (b.palier || 0);
+        if (_palierNum(a.palier) !== _palierNum(b.palier)) return _palierNum(a.palier) - _palierNum(b.palier);
         return (a.ordre ?? 999) - (b.ordre ?? 999);
       });
       if (!runes.length) {
@@ -1414,7 +1417,7 @@ function loadAccessoriesForClass(classId) {
     }
 
     visible.sort(function(a, b) {
-      if (a.palier !== b.palier) return (a.palier || 0) - (b.palier || 0);
+      if (a.palier !== b.palier) return _palierNum(a.palier) - _palierNum(b.palier);
       const ao = a.ordre ?? null;
       const bo = b.ordre ?? null;
       if (ao !== null && bo !== null) return ao - bo;
@@ -1448,7 +1451,7 @@ function loadAccessoriesForClass(classId) {
             '<div class="item-meta-name">' + item.name + (_isSecretItem(item) ? ' <span class="sensible-tag" title="Visible grâce à votre rôle">🔒</span>' : '') + '</div>' +
             buildItemLevelBadgeHTML(item) +
           '</div>' +
-        '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · Palier ' + (item.palier == -1 ? 'Archive' : item.palier) + '</div>' +
+        '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · ' + (item.palier == 'event' ? 'Event' : 'Palier ' + (item.palier == -1 ? 'Archive' : item.palier)) + '</div>' +
         buildBadgesHTML(item) +
         buildItemStatsHTML(item) +
         '</div>';
@@ -2096,7 +2099,7 @@ function loadAccessoriesForClass(classId) {
   let _sensibleTimer = null;
   function _sensibleImg(category, id, palier, isEvent) {
     if (!id) return null;
-    const tier = (isEvent || palier === 0) ? 'events' : (palier ? 'P' + palier : '');
+    const tier = (isEvent || (palier === 0 || palier === 'event')) ? 'events' : (palier ? 'P' + palier : '');
     const tp = tier ? tier + '/' : '';
     switch (category) {
       case 'arme':        return `../img/compendium/textures/weapons/${tp}${id}.png`;

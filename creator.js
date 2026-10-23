@@ -105,6 +105,8 @@ function applyCreatorConfig(cfg) {
 }
 
 // IDs de tous les selects palier dans le Creator
+// Un palier peut avoir un id numérique (1, 2, 3, -1) ou texte ('event')
+function _palierVal(v) { return v !== '' && !isNaN(+v) ? +v : v; }
 const PALIER_SELECT_IDS = ['f-palier', 'mob-palier', 'pnj-palier', 'reg-palier', 'quest-palier'];
 
 // Fallback si config Firestore non disponible
@@ -4230,7 +4232,7 @@ function buildObj() {
   const stats    = getStats();
   const craft    = getCraft();
   const effects  = getEffects();
-  const _ruleItem = { rarity: selRarity, category, classes: selClasses, palier: palier ? +palier : null, cat };
+  const _ruleItem = { rarity: selRarity, category, classes: selClasses, palier: palier ? _palierVal(palier) : null, cat };
   const tagsArr  = [...new Set([...activeTags, ..._getAutoTagsFromRules(_ruleItem)])];
 
   const obj = {};
@@ -4240,10 +4242,10 @@ function buildObj() {
   if (selRarity)             obj.rarity   = selRarity;
   if (cat)                   obj.cat      = cat;
   if (category)              obj.category = category;
-  if (palier)                obj.palier   = +palier;
+  if (palier)                obj.palier   = _palierVal(palier);
   if (lvl)                   obj.lvl      = +lvl;
   {
-    const tier = selEvent ? 'events' : (palier ? 'P' + palier : '');
+    const tier = (selEvent || palier === 'event') ? 'events' : (palier ? 'P' + palier : '');
     const tp   = tier ? tier + '/' : '';
     const CAT_IMG = {
       arme:        id ? `../img/compendium/textures/weapons/${tp}${id}.png`                     : null,

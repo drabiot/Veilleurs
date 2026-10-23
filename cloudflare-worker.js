@@ -292,7 +292,7 @@ function resolveImageUrl(item) {
   const id  = item.id;
   const cat = item.category || item.cat;
   if (!id || !cat) return null;
-  const tier = (item.event || item.palier === 0) ? 'events' : (item.palier ? 'P' + item.palier : '');
+  const tier = (item.event || (item.palier === 0 || item.palier === 'event')) ? 'events' : (item.palier ? 'P' + item.palier : '');
   const tp   = tier ? tier + '/' : '';
   const base = WIKI_PAGES + '/img/compendium/textures/';
   const MAP  = {
@@ -318,7 +318,7 @@ function buildItemEmbed(item) {
   const color   = RARITY_COLORS[rarity] || 0x888888;
   const catInfo = CATEGORIES[item.category] || { label: item.category || '?', emoji: '' };
   const imgUrl  = resolveImageUrl(item);
-  const isEvent = item.event || item.palier === 0;
+  const isEvent = item.event || (item.palier === 0 || item.palier === 'event');
 
   const embed = {
     title: item.name || 'Item inconnu',

@@ -260,7 +260,7 @@ function weaponFallbackCmp(a, b) {
 function groupItems(items) {
   const grouped = {};
   items.forEach(item => {
-    const p = item.palier || 1;
+    const p = item.palier ?? 1;
     if (!grouped[p]) grouped[p] = {};
     if (!grouped[p][item.category]) grouped[p][item.category] = [];
     grouped[p][item.category].push(item);
@@ -290,7 +290,7 @@ function buildSidebar(items, expandAll = false) {
   const grouped = groupItems(items);
 
   Object.keys(grouped)
-    .sort((a, b) => (a == -1) - (b == -1) || a - b)
+    .sort((a, b) => { const r = (p => p == -1 ? 2 : p == 'event' ? 1 : 0); return r(a) - r(b) || (Number(a) - Number(b) || 0); })
     .forEach(palier => {
 
       /* ── Bloc Palier ── */
@@ -299,7 +299,7 @@ function buildSidebar(items, expandAll = false) {
 
       const ph = document.createElement('div');
       ph.className = 'palier-header' + (expandAll ? ' open' : '');
-      ph.innerHTML = `<span class="palier-label">⬡ Palier ${palier == -1 ? 'Archive' : palier}</span><span class="palier-arrow">▶</span>`;
+      ph.innerHTML = `<span class="palier-label">⬡ ${palier == 'event' ? 'Event' : 'Palier ' + (palier == -1 ? 'Archive' : palier)}</span><span class="palier-arrow">▶</span>`;
 
       const pb = document.createElement('div');
       pb.className = 'palier-body' + (expandAll ? ' open' : '');
@@ -1319,7 +1319,7 @@ function showItem(id, initialQuality = false) {
             <span class="item-rarity-dot" style="background:${color};"></span>
             ${rlabel}
           </div>
-          ${item.palier != null ? `<div style="font-size:11px;color:var(--muted);opacity:.65;margin-top:3px;letter-spacing:.04em;">⬡ Palier ${item.palier == -1 ? 'Archive' : item.palier}</div>` : ''}
+          ${item.palier != null ? `<div style="font-size:11px;color:var(--muted);opacity:.65;margin-top:3px;letter-spacing:.04em;">⬡ ${item.palier == 'event' ? 'Event' : 'Palier ' + (item.palier == -1 ? 'Archive' : item.palier)}</div>` : ''}
           ${item.set && SETS?.[item.set] ? `<div class="item-set-badge" style="color:${SETS[item.set].color || '#888'};border-color:${SETS[item.set].color || '#888'}40;">◈ ${escHtml(SETS[item.set].label)}</div>` : ''}
           ${qualityToggle}
           <blockquote class="item-lore" id="item-lore-text">${parseText(v.lore)}</blockquote>

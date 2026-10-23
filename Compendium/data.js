@@ -220,7 +220,7 @@ function getItemImages(item) {
   const id  = item.id ?? item._id;
   const cat = item.category || item.cat;
   if (!id || !cat) return [];
-  const tier = (item.event || item.palier === 0) ? 'events' : (item.palier ? 'P' + item.palier : '');
+  const tier = (item.event || (item.palier === 0 || item.palier === 'event')) ? 'events' : (item.palier ? 'P' + item.palier : '');
   const tp   = tier ? tier + '/' : '';
   const base = '../img/compendium/textures/';
   const paths = {
