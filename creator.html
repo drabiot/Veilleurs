@@ -1206,8 +1206,40 @@ import { loadPaliersConfig, loadMaxLevel } from './config-loader.js';
 window._vcl_store          = store;
 window._vcl_loadCollection = loadCollection;
 
+// Toutes les lectures indépendantes partent en même temps (avant : une cascade d'await successifs)
+const _pre = p => { p.catch(() => {}); return p; };
+const _pStore      = _pre(store.load(['items', 'mobs', 'panoplies', 'quetes']));
+const _pPaliers    = _pre(Promise.all([loadPaliersConfig(db, getDoc, doc), loadMaxLevel(db, getDoc, doc)]));
+const _pCreatorCfg = _pre(getDoc(doc(db, 'config', 'creator')));
+const _pValidation = _pre(getDoc(doc(db, 'config', 'creator_validation')));
+const _pPinTypes   = _pre(getDoc(doc(db, 'config', 'custom_pin_types')));
+const _pWebhooks   = _pre(getDoc(doc(db, 'config', 'discord_webhooks')));
+const _pTagRules   = _pre(getDoc(doc(db, 'config', 'tag_rules')));
+const _pPending    = _pre(getDocs(query(collection(db, 'submissions'), where('status', '==', 'pending'))));
+const _pHidden     = _pre(getDocs(collection(db, 'items_hidden')));
+
+// Charger les paliers et MAX_LEVEL depuis Firestore, peupler les selects
 try {
-  await store.load(['items', 'mobs', 'panoplies', 'quetes']);
+  const [paliers, maxLevel] = await _pPaliers;
+  window._vcl_paliers   = paliers;
+  window._vcl_maxLevel  = maxLevel;
+  if (typeof populatePalierSelects === 'function') populatePalierSelects(paliers);
+  if (typeof applyGameConfig       === 'function') applyGameConfig(maxLevel);
+} catch(e) {
+  console.warn('[VCL Creator] Config paliers/game non chargée:', e);
+}
+// Charger la config creator (visibilité outils / paliers) — après populatePalierSelects
+try {
+  const snap = await _pCreatorCfg;
+  if (snap.exists() && typeof applyCreatorConfig === 'function') applyCreatorConfig(snap.data());
+  else _revealLayout();
+} catch(e) {
+  console.warn('[VCL Creator] Config non chargée:', e);
+  _revealLayout();
+}
+// Items / mobs / panoplies / quêtes : appliqués après l'affichage du layout
+try {
+  await _pStore;
   if (store.items.length)     { window.ITEMS = store.items; if (typeof initLoadSearch === 'function') initLoadSearch(); }
   if (store.mobs.length)      {
     window.MOBS = store.mobs;
@@ -1223,38 +1255,16 @@ try {
 } catch(e) {
   console.warn('[VCL Creator] Données indisponibles depuis Firestore.', e);
 }
-// Charger les paliers et MAX_LEVEL depuis Firestore, peupler les selects
-try {
-  const [paliers, maxLevel] = await Promise.all([
-    loadPaliersConfig(db, getDoc, doc),
-    loadMaxLevel(db, getDoc, doc),
-  ]);
-  window._vcl_paliers   = paliers;
-  window._vcl_maxLevel  = maxLevel;
-  if (typeof populatePalierSelects === 'function') populatePalierSelects(paliers);
-  if (typeof applyGameConfig       === 'function') applyGameConfig(maxLevel);
-} catch(e) {
-  console.warn('[VCL Creator] Config paliers/game non chargée:', e);
-}
-// Charger la config creator (visibilité outils / paliers) — après populatePalierSelects
-try {
-  const snap = await getDoc(doc(db, 'config', 'creator'));
-  if (snap.exists() && typeof applyCreatorConfig === 'function') applyCreatorConfig(snap.data());
-  else _revealLayout();
-} catch(e) {
-  console.warn('[VCL Creator] Config non chargée:', e);
-  _revealLayout();
-}
 // Charger la config de validation des champs requis
 try {
-  const snapVal = await getDoc(doc(db, 'config', 'creator_validation'));
+  const snapVal = await _pValidation;
   if (snapVal.exists()) window._vcl_creatorValidation = snapVal.data();
 } catch(e) {
   console.warn('[VCL Creator] Config validation non chargée:', e);
 }
 // Charger les types de pins personnalisés (pour le picker PNJ)
 try {
-  const snapCt = await getDoc(doc(db, 'config', 'custom_pin_types'));
+  const snapCt = await _pPinTypes;
   window._customPinTypes = (snapCt.exists() && Array.isArray(snapCt.data().types)) ? snapCt.data().types : [];
 } catch(e) { window._customPinTypes = []; }
 // Injecter les types custom dans la catégorie "autres" existante
@@ -1266,7 +1276,7 @@ for (const ct of window._customPinTypes) {
 }
 // Charger les webhooks Discord (accès complet pour getForumWebhook)
 try {
-  const snapDw = await getDoc(doc(db, 'config', 'discord_webhooks'));
+  const snapDw = await _pWebhooks;
   if (snapDw.exists()) {
     window._vcl_discordWebhooks = snapDw.data();
     window._vcl_newSubWebhook   = snapDw.data()?.new_submission || null;
@@ -1274,7 +1284,7 @@ try {
 } catch(e) {}
 // Charger les règles de tags automatiques
 try {
-  const tagRulesSnap = await getDoc(doc(db, 'config', 'tag_rules'));
+  const tagRulesSnap = await _pTagRules;
   window._creator_tag_rules = tagRulesSnap.exists() ? (tagRulesSnap.data().rules || []) : [];
 } catch { window._creator_tag_rules = []; }
 // Charger les soumissions en attente (pour les afficher dans les dropdowns)
@@ -1284,7 +1294,7 @@ try {
   window._vcl_pendingItems   = [];
   window._vcl_pendingQuests  = [];
   window._vcl_pendingPnjs    = [];
-  const subSnap = await getDocs(query(collection(db, 'submissions'), where('status', '==', 'pending')));
+  const subSnap = await _pPending;
   for (const d of subSnap.docs) {
     const s = { _pendingId: d.id, ...d.data() };
     if (s.type === 'region') window._vcl_pendingRegions.push(s);
@@ -1302,7 +1312,7 @@ try {
 }
 // Charger les items sensibles (items_hidden) — IDs pour détection de doublons + index pour dropdowns
 try {
-  const hiddenSnap = await getDocs(collection(db, 'items_hidden'));
+  const hiddenSnap = await _pHidden;
   const hiddenItems = hiddenSnap.docs.map(d => ({ _id: d.id, ...d.data() }));
   window._vcl_sensibleItemIds   = new Set(hiddenItems.map(it => it.id).filter(Boolean));
   window._vcl_hiddenItemsLoaded = hiddenItems;
@@ -1326,7 +1336,9 @@ window._vcl_fetchEvents = async () => {
 };
 // Écoute temps réel : invalider le cache quand une approbation est publiée
 // Note : ne recharge pas allItemsIndex (l'utilisateur voit les nouveaux items après F5)
+let _wikiVersionFirst = true;
 onSnapshot(doc(db, 'config', 'wiki_version'), async snap => {
+  if (_wikiVersionFirst) { _wikiVersionFirst = false; return; } // état initial : déjà couvert par loadCollection
   if (!snap.exists()) return;
   const col = snap.data()?.collection;
   if (!col) return;
