@@ -174,7 +174,7 @@
                           && resource.data.authorUid == request.auth.uid
                           && request.resource.data.diff(resource.data).affectedKeys()
                                .hasOnly(['name','visibility','updatedAt','slots','runes',
-                                         'caracterPoints','statsSnapshot','classe','level',
+                                         'caracterPoints','skillNodes','statsSnapshot','classe','level',
                                          'slotImages','sensibleSlots','runeNames']))
                       || isAdmin()
                       || (isAuth()
