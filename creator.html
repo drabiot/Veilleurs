@@ -1213,7 +1213,6 @@ const _pPaliers    = _pre(Promise.all([loadPaliersConfig(db, getDoc, doc), loadM
 const _pCreatorCfg = _pre(getDoc(doc(db, 'config', 'creator')));
 const _pValidation = _pre(getDoc(doc(db, 'config', 'creator_validation')));
 const _pPinTypes   = _pre(getDoc(doc(db, 'config', 'custom_pin_types')));
-const _pWebhooks   = _pre(getDoc(doc(db, 'config', 'discord_webhooks')));
 const _pTagRules   = _pre(getDoc(doc(db, 'config', 'tag_rules')));
 const _pPending    = _pre(getDocs(query(collection(db, 'submissions'), where('status', '==', 'pending'))));
 const _pHidden     = _pre(getDocs(collection(db, 'items_hidden')));
@@ -1274,14 +1273,6 @@ for (const ct of window._customPinTypes) {
     PNJ_TYPE_ICONS[ct.id] = '🏷️';
   }
 }
-// Charger les webhooks Discord (accès complet pour getForumWebhook)
-try {
-  const snapDw = await _pWebhooks;
-  if (snapDw.exists()) {
-    window._vcl_discordWebhooks = snapDw.data();
-    window._vcl_newSubWebhook   = snapDw.data()?.new_submission || null;
-  }
-} catch(e) {}
 // Charger les règles de tags automatiques
 try {
   const tagRulesSnap = await _pTagRules;

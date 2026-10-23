@@ -373,10 +373,11 @@ export async function logReport(pseudo, page, text) {
     await addDoc(collection(db, 'reports'), {
       pseudo: pseudo || 'Anonyme',
       page:   page   || '',
-      text:   String(text || '').slice(0, 300),
+      text:   String(text || '').slice(0, 2000),
       createdAt: serverTimestamp(),
     });
-  } catch {}
+    return true;
+  } catch { return false; }
 }
 // Exposé globalement pour report-widget.js (script non-module)
 window._vclLogReport = logReport;
@@ -750,7 +751,7 @@ export async function changePseudoSecurely(newPseudo, { password } = {}) {
   if (!/^[A-Za-z0-9 _\-\[\]]{2,32}$/.test(pseudo)) throw new Error('invalid-pseudo');
 
   // Unicité : query users where pseudo == pseudo
-  const q = query(collection(db, COL.users), where('pseudo', '==', pseudo));
+  const q = query(collection(db, COL.users), where('pseudo', '==', pseudo), limit(2)); // limit exigé par les rules (pas de listing complet des users)
   const snap = await getDocs(q);
   if (snap.docs.some(d => d.id !== user.uid)) throw new Error('pseudo-taken');
 

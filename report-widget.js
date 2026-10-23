@@ -1,5 +1,4 @@
 (function () {
-  const REPORT_WEBHOOK = 'https://discord.com/api/webhooks/1498346521765085386/beF1fOIgiwBxgoSovl_akVZFGpw2wsLpycAV2k0xk5Np0YyKYJwf_E6ff-U4VHIyzKCY';
 
   function escHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -120,25 +119,11 @@
           const u = window._vcl_auth.currentUser;
           pseudo = u.displayName || u.email?.split('@')[0] || 'Utilisateur';
         }
-        const res = await fetch(REPORT_WEBHOOK, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            embeds: [{
-              title: 'Bug / Suggestion',
-              description: text,
-              color: 15251531,
-              author: { name: pseudo },
-              footer: { text: page }
-            }]
-          })
-        });
-        if (!res.ok) {
-          const body = await res.text().catch(() => '');
-          throw new Error('HTTP ' + res.status + (body ? ' — ' + body : ''));
-        }
+        // Les signalements sont enregistrés dans Firestore (collection reports), lus par l'admin
+        if (typeof window._vclLogReport !== 'function') throw new Error('envoi indisponible sur cette page');
+        const sent = await window._vclLogReport(pseudo, page, text);
+        if (!sent) throw new Error('envoi refusé, réessaie plus tard');
         statusEl.textContent = 'Envoyé !';
-        window._vclLogReport?.(pseudo, page, text);
         textEl.value = '';
         setTimeout(close, 1200);
       } catch (err) {

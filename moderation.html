@@ -141,7 +141,6 @@
     <button class="filter-btn" id="btn-effects-tool"   data-min-role="admin" onclick="showEffectsTool()">✨ Effets</button>
     <button class="filter-btn" id="btn-events-tool"        data-min-role="admin" onclick="showEventsTool()">🎪 Events</button>
     <button class="filter-btn" id="btn-tags"              data-min-role="admin" onclick="showTagsPanel()">🏷️  Tags</button>
-    <button class="filter-btn" id="btn-discord-webhooks"   data-min-role="admin" onclick="showDiscordWebhooks()">🔔 Webhooks Discord</button>
     <button class="filter-btn" id="btn-bugs-connus" onclick="showBugsConnus()">🐛 Bugs Connus</button>
     </div>
 
@@ -604,115 +603,6 @@
       <div id="passages-list-content"><div class="empty">Chargement…</div></div>
     </div>
 
-  </main>
-
-  <!-- Panneau Webhooks Discord -->
-  <main class="main" id="discord-webhooks-panel" style="display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <span style="font-size:15px;font-weight:700;">🔔 Webhooks Discord</span>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-ghost" onclick="loadDiscordWebhooks()" style="font-size:12px;">🔄 Rafraîchir</button>
-        <button class="btn btn-ghost" id="btn-reorder-tags" onclick="reorderAllChannelTags()" style="font-size:12px;">🔃 Réorganiser les tags</button>
-        <button class="btn" id="dw-save-btn" onclick="saveDiscordWebhooks()" style="background:var(--accent);color:var(--on-accent);font-size:12px;">💾 Sauvegarder</button>
-      </div>
-    </div>
-
-    <!-- Tab bar -->
-    <div id="dw-tab-bar" style="display:flex;gap:2px;margin-bottom:20px;background:var(--surface2);border-radius:8px;padding:3px;">
-      <button id="dw-tab-btn-webhooks" onclick="switchDwTab('webhooks')"
-        style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:var(--accent);color:var(--on-accent);">
-        🔗 Webhooks
-      </button>
-      <button id="dw-tab-btn-embed" onclick="switchDwTab('embed')"
-        style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
-        🎨 Embed
-      </button>
-<button id="dw-tab-btn-publish" onclick="switchDwTab('publish')"
-        style="flex:1;padding:7px 12px;font-size:12px;font-weight:600;border:none;border-radius:6px;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);">
-        📤 Publier
-      </button>
-    </div>
-
-    <div id="dw-loading" style="color:var(--muted);font-size:13px;">Chargement…</div>
-    <div id="dw-content" style="display:none;">
-
-      <!-- Tab Webhooks -->
-      <div id="dw-tab-webhooks">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
-          Webhook Discord envoyé automatiquement lors de l'approbation d'un item <b>arme</b>, <b>armure</b> ou <b>accessoire</b>.
-          Un webhook par type et par palier. Laisser vide pour désactiver.<br>
-          <span style="color:var(--accent);">ℹ️ Les items avec <code>event: true</code> sont envoyés dans le webhook de leur palier avec un tag spécial.</span>
-        </p>
-        <div id="dw-list"></div>
-        <!-- dw-template kept hidden for save/load compatibility -->
-        <textarea id="dw-template" style="display:none;"></textarea>
-      </div>
-
-      <!-- Tab Embed -->
-      <div id="dw-tab-embed" style="display:none;">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:18px;">
-          Choisis quels blocs d'information apparaissent dans l'embed Discord et dans quel ordre. Glisse-dépose pour réordonner, clique ✕ pour désactiver.
-        </p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Blocs actifs (dans l'ordre)</div>
-            <div id="dw-embed-active" style="display:flex;flex-direction:column;gap:4px;min-height:40px;"></div>
-          </div>
-          <div>
-            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Blocs désactivés</div>
-            <div id="dw-embed-inactive" style="display:flex;flex-direction:column;gap:4px;"></div>
-          </div>
-        </div>
-        <div style="padding-top:20px;border-top:1px solid var(--border);">
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Prévisualisation de l'embed</div>
-          <div id="dw-embed-preview"></div>
-        </div>
-      </div>
-
-<!-- Tab Publier -->
-      <div id="dw-tab-publish" style="display:none;">
-        <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">
-          Sélectionne des items et envoie-les manuellement sur Discord. Chaque item est envoyé dans le salon correspondant à sa catégorie et son palier.
-        </p>
-
-        <!-- Section "nouvelles approvals non envoyées" (rendue dynamiquement) -->
-        <div id="dw-unsent-section" style="display:none;"></div>
-
-        <!-- Filtres -->
-        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-          <select id="dw-pub-cat" onchange="dwPublishFilter()"
-            style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
-            <option value="">Toutes catégories</option>
-            <option value="arme">⚔️ Arme</option>
-            <option value="armure">🛡️ Armure</option>
-            <option value="accessoire">💍 Accessoire</option>
-          </select>
-          <select id="dw-pub-palier" onchange="dwPublishFilter()"
-            style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
-            <option value="">Tous paliers</option>
-            <!-- options peuplées dynamiquement par _populateAllPalierSelects() -->
-          </select>
-          <input id="dw-pub-search" type="search" placeholder="🔍 Rechercher un item…" oninput="dwPublishFilter()"
-            style="flex:1;min-width:150px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost" onclick="dwPublishCheckAll(true)" style="font-size:11px;padding:4px 10px;">✅ Tout cocher</button>
-            <button class="btn btn-ghost" onclick="dwPublishCheckAll(false)" style="font-size:11px;padding:4px 10px;">☐ Tout décocher</button>
-          </div>
-          <button id="dw-pub-send-btn" class="btn" onclick="dwPublishSelected()"
-            style="background:var(--accent);color:var(--on-accent);font-size:12px;">📤 Envoyer les sélectionnés</button>
-        </div>
-        <div id="dw-pub-progress" style="display:none;margin-bottom:12px;">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;" id="dw-pub-progress-text">Envoi en cours…</div>
-          <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
-            <div id="dw-pub-progress-bar" style="height:100%;background:var(--accent);width:0%;transition:width .3s;border-radius:3px;"></div>
-          </div>
-        </div>
-        <div id="dw-pub-list" style="display:flex;flex-direction:column;gap:4px;max-height:500px;overflow-y:auto;"></div>
-      </div>
-
-    </div>
   </main>
 
   <!-- Panneau Permissions -->

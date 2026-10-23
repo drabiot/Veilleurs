@@ -1235,21 +1235,17 @@ window.approve = async (id) => {
     }
 
     // Mettre à jour la soumission
-    const isDiscordItem = sub.type === 'item' &&
-      ['arme', 'armure', 'accessoire'].includes(sub.data?.category) && sub.data?.palier;
     const subUpdate = {
       status:     'approved',
       reviewedBy: currentUser.uid,
       reviewedAt: serverTimestamp(),
       comment,
     };
-    if (isDiscordItem) subUpdate.discord_sent = false;
     await updateDoc(doc(db, 'submissions', id), subUpdate);
 
     sub.status     = 'approved';
     sub.comment    = comment;
     sub.reviewedBy = currentUser.uid;
-    if (isDiscordItem) sub.discord_sent = false;
     _writeAudit('approve', 'submission', id, sub.data?.name || sub.data?.titre || sub.data?.id || id, { type: sub.type, comment });
     updateCounts();
     renderSubs();
@@ -1417,7 +1413,6 @@ const HASH_PANELS = {
   'quest-orphans':  () => showQuestOrphans(),
   'members':        () => showUsersPanel(),
   'leaderboard':    () => showLeaderboard(),
-  'webhooks':       () => showDiscordWebhooks(),
   'permissions':    () => showPermissions(),
   'migration':        () => showMigration(),
   'completion':       () => showCompletion(),
@@ -1543,7 +1538,6 @@ const NAV_HUBS = [
         { hash: 'tags',         label: '🏷️ Tags',       btn: 'btn-tags',         panel: 'tags-panel',         fn: () => showTagsPanel() },
       ]},
       { label: 'Communication', tabs: [
-        { hash: 'webhooks',     label: '🔔 Webhooks Discord', btn: 'btn-discord-webhooks', panel: 'discord-webhooks-panel', fn: () => showDiscordWebhooks() },
         { hash: 'bugs-connus',  label: '🐛 Bugs connus',      btn: 'btn-bugs-connus',      panel: 'bugs-connus-panel',      fn: () => showBugsConnus() },
       ]},
     ]},
@@ -6349,7 +6343,6 @@ const PERM_SECTIONS = [
     { id: 'tool_trash',      label: '🗑️ Corbeille',            desc: 'Restaurer les éléments supprimés',  defaultRole: 'admin' },
     { id: 'tool_leaderboard',label: '🏆 Classement',           desc: 'Leaderboard des contributions',     defaultRole: 'admin' },
     { id: 'tool_audit_log',  label: '📋 Journal d\'audit',     desc: 'Historique des actions',            defaultRole: 'admin' },
-    { id: '_webhooks',       label: '🔔 Discord webhooks',     desc: 'Posts Discord — dans les rules Firestore',                  defaultRole: 'admin',         serverSide: true },
     { id: '_permissions',    label: '🔑 Permissions',          desc: 'Config Firestore — dans les rules Firestore',               defaultRole: 'admin',         serverSide: true },
     { id: '_admin',          label: '⚙️ Configuration admin',  desc: 'Migration, config jeu — dans les rules Firestore',          defaultRole: 'admin',         serverSide: true },
   ]},
@@ -7027,9 +7020,9 @@ function _generateRules() {
   const adminExtra   = _customRoles.filter(r => r.baseTier === 'admin').map(r => `'${r.id}'`);
   const membreExtra  = _customRoles.filter(r => ['membre','contributeur','admin'].includes(r.baseTier)).map(r => `'${r.id}'`);
 
-  const contribList = ["'contributeur'", "'admin'", ...new Set(contribExtra)].join(', ');
+  const contribList = [...new Set(["'contributeur'", "'admin'", ...contribExtra])].join(', ');
   const adminList   = ["'admin'", ...new Set(adminExtra)].join(', ');
-  const membreList  = ["'membre'", "'contributeur'", "'admin'", ...new Set(membreExtra)].join(', ');
+  const membreList  = [...new Set(["'membre'", "'contributeur'", "'admin'", ...membreExtra])].join(', ');
 
   return `rules_version = '2';
 service cloud.firestore {
@@ -7045,7 +7038,8 @@ service cloud.firestore {
         : 'visiteur';
     }
 
-    // Rôles personnalisés inclus automatiquement selon leur tier de base
+    // Rôles personnalisés inclus selon leur tier de base.
+    // ⚠ Regénérer ces rules (modération → Générer les rules) après tout ajout/changement de rôle.
     function isAdmin()   { return isAuth() && userRole() in [${adminList}]; }
     function isContrib() { return isAuth() && userRole() in [${contribList}]; }
     function isMembre()  { return isAuth() && userRole() in [${membreList}]; }
@@ -7055,13 +7049,27 @@ service cloud.firestore {
         || get(/databases/$(database)/documents/config/creator).data.get('tools', {}).get(toolType, true) != false;
     }
 
+    // Un compteur ne peut bouger que de ±1 (aperçus / favoris des builds)
+    function bumpedByOne(field) {
+      return request.resource.data[field] == resource.data[field] + 1
+          || request.resource.data[field] == resource.data[field] - 1;
+    }
+
     match /items/{id} {
       allow read:  if ${_colRule('items','read')};
       allow write: if ${_colRule('items','write')};
     }
 
+    // Traces de suppression pour la synchro différentielle (cf. firebase.js)
+    match /tombstones/{id} {
+      allow read:  if true;
+      allow write: if isContrib();
+    }
+
+    // Lecture à l'unité publique (recherche par hash du nom) ; liste réservée aux contributeurs
     match /items_hidden/{id} {
-      allow read:  if ${_colRule('items_hidden','read')};
+      allow get:   if true;
+      allow list:  if ${_permRule('view_items_secret', 'contributeur')};
       allow write: if ${_colRule('items_hidden','write')};
     }
 
@@ -7107,7 +7115,9 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow get:    if isAuth() && (request.auth.uid == uid || ${_permRule('_users', 'admin')});
-      allow list:   if isAuth();
+      // Liste complète réservée à l'admin ; un membre ne peut faire que des recherches limitées (unicité du pseudo)
+      allow list:   if ${_permRule('_users', 'admin')}
+                    || (isAuth() && request.query.limit != null && request.query.limit <= 2);
       allow create: if isAuth()
                     && request.auth.uid == uid
                     && request.resource.data.role == 'membre'
@@ -7135,9 +7145,15 @@ service cloud.firestore {
       allow write: if ${_colRule('zones','write')};
     }
 
+    // Config publique, sauf les webhooks Discord (système désactivé) : admin uniquement
     match /config/{id} {
-      allow read:  if ${_colRule('config','read')};
+      allow read:  if (id != 'discord_webhooks' && ${_colRule('config','read')}) || isAdmin();
       allow write: if ${_colRule('config','write')};
+    }
+
+    // La modération prévient les autres pages après chaque approbation
+    match /config/wiki_version {
+      allow write: if isContrib();
     }
 
     match /config/pseudos {
@@ -7160,6 +7176,11 @@ service cloud.firestore {
       allow write: if ${_colRule('discord_posts','write')};
     }
 
+    match /secrets/{id} {
+      allow read:  if isAdmin();
+      allow write: if isAdmin();
+    }
+
     match /audit_log/{id} {
       allow read:   if ${_colRule('audit_log','read')};
       allow create: if ${_colRule('audit_log','write')};
@@ -7167,14 +7188,118 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ── Statistiques de fréquentation : écriture ouverte mais bornée, jamais de suppression ──
+    match /page_views/{docId} {
+      allow read:   if isAdmin();
+      allow create, update: if request.resource.data.size() <= 100;
+      allow delete: if isAdmin();
+    }
+
+    match /user_visits/{docId} {
+      allow read:   if isAdmin();
+      allow create, update: if request.resource.data.size() <= 100;
+      allow delete: if isAdmin();
+    }
+
+    match /item_views/{docId} {
+      allow read:   if isAdmin();
+      allow create, update: if request.resource.data.size() <= 100;
+      allow delete: if isAdmin();
+    }
+
+    match /search_logs/{docId} {
+      allow read:   if isAdmin();
+      allow create, update: if request.resource.data.size() <= 100;
+      allow delete: if isAdmin();
+    }
+
+    // Signalements des visiteurs
+    match /reports/{id} {
+      allow create: if request.resource.data.keys().size() <= 20;
+      allow read, update, delete: if isContrib();
+    }
+
+    // ── Builds communautaires ───────────────────────────────────────
+    match /builds_published/{buildId} {
+      allow get:  if resource.data.visibility == 'public'
+                  || (isAuth() && resource.data.authorUid == request.auth.uid)
+                  || isAdmin();
+      // Les builds « lien uniquement » ne sont pas listables : la requête doit filtrer sur visibility == 'public' (ou sur son propre authorUid)
+      allow list: if resource.data.visibility == 'public'
+                  || (isAuth() && resource.data.authorUid == request.auth.uid)
+                  || isAdmin();
+      allow create: if isMembre()
+                    && request.auth.uid == request.resource.data.authorUid
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() >= 1
+                    && request.resource.data.name.size() <= 60
+                    && request.resource.data.visibility in ['public', 'unlisted']
+                    && request.resource.data.previewCount == 0
+                    && request.resource.data.favoriteCount == 0;
+      allow update: if (isAuth()
+                        && resource.data.authorUid == request.auth.uid
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['name','visibility','updatedAt','slots','runes',
+                                       'skillNodes','statsSnapshot','classe','level',
+                                       'slotImages','sensibleSlots','runeNames']))
+                    || isAdmin()
+                    || (isAuth()
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['previewCount'])
+                        && bumpedByOne('previewCount'))
+                    || (isAuth()
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favoriteCount'])
+                        && bumpedByOne('favoriteCount'));
+      allow delete: if isAdmin()
+                    || (isAuth() && resource.data.authorUid == request.auth.uid);
+
+      match /favoritedBy/{uid} {
+        allow read:   if true;
+        allow create: if isMembre() && request.auth.uid == uid;
+        allow delete: if isMembre() && request.auth.uid == uid;
+        allow update: if false;
+      }
+    }
+
+    match /user_favorites/{docId} {
+      allow get:    if isAuth() && resource.data.uid == request.auth.uid;
+      // Un utilisateur ne liste que ses propres favoris (la requête doit filtrer sur uid)
+      allow list:   if isAuth() && resource.data.uid == request.auth.uid;
+      allow create: if isMembre()
+                    && request.auth.uid == request.resource.data.uid;
+      allow delete: if isMembre() && resource.data.uid == request.auth.uid;
+      allow update: if false;
+    }
+
+    match /builds_sensible/{buildId} {
+      allow read:   if isContrib();
+      allow create: if isMembre() && request.auth.uid == request.resource.data.authorUid;
+      allow delete: if isAdmin() || (isAuth() && resource.data.authorUid == request.auth.uid);
+      allow update: if false;
+    }
+
+    match /events/{id} {
+      allow read:   if true;
+      allow write:  if isAdmin();
+    }
+
+    match /known_bugs/{id} {
+      allow read:  if true;
+      allow write: if isContrib();
+    }
+
     match /submissions/{id} {
+      // Ouvert aux visiteurs, mais borné : champs et longueurs limités
       allow create: if request.resource.data.submitterName is string
                     && request.resource.data.submitterName.size() >= 2
+                    && request.resource.data.submitterName.size() <= 80
                     && request.resource.data.type in ['item','mob','pnj','region','quest','panoplie']
                     && request.resource.data.status == 'pending'
+                    && request.resource.data.keys().size() <= 30
                     && (${_permRule('_mod_panel', 'contributeur')} || creatorToolEnabled(request.resource.data.type));
       allow read:   if ${_permRule('_mod_panel', 'contributeur')} || (isAuth() && resource.data.submittedBy == request.auth.uid);
-      allow update: if ${_permRule('_approve', 'contributeur')};
+      allow update: if ${_permRule('_approve', 'contributeur')}
+                    || (isAuth() && resource.data.submittedBy == request.auth.uid
+                        && resource.data.status == 'pending' && request.resource.data.status == 'pending');
       allow delete: if ${_permRule('_approve', 'contributeur')};
     }
 
@@ -15749,23 +15874,6 @@ window.saveGameConfig = async () => {
       setDoc(doc(db, 'config', 'paliers'), { paliers: _gcPaliers }),
       setDoc(doc(db, 'config', 'game'),    { maxLevel: maxLv }),
     ]);
-
-    // Créer des entrées webhook vides pour les nouveaux paliers
-    if (newPalierIds.length) {
-      const snapDw = await getDoc(doc(db, 'config', 'discord_webhooks'));
-      const current = snapDw.exists() ? snapDw.data() : {};
-      const updates = {};
-      for (const pid of newPalierIds) {
-        for (const cat of DW_CATEGORIES) {
-          const key = `${cat.id}_${pid}`;
-          if (!(key in current)) updates[key] = '';
-        }
-      }
-      if (Object.keys(updates).length) {
-        await setDoc(doc(db, 'config', 'discord_webhooks'), { ...current, ...updates });
-        toast(`✓ ${Object.keys(updates).length} entrée(s) webhook créée(s) pour le(s) nouveau(x) palier(s)`, 'success');
-      }
-    }
 
     // Mettre à jour l'état en mémoire
     _paliersConfig  = _gcPaliers.map(p => ({ ...p }));

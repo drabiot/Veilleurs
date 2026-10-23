@@ -4784,28 +4784,6 @@ async function resetForm() {
 // ═══════════════════════════════════════════════════
 // SOUMISSION DISCORD
 // ═══════════════════════════════════════════════════
-const DISCORD_WEBHOOK = 'https://discord.com/api/webhooks/1476647889920065549/1xPGdMDmpL7iswdaUNuwlnvmQPv9ED74Qn3ftPabthzX_TIMrYIPvLWfKirBwAMMyhFG';
-
-// Webhooks forums Discord (arme/armure/accessoire × palier)
-const FORUM_WEBHOOKS = {
-  'arme_1':         'https://discord.com/api/webhooks/1491072737761038357/DXrNa-UEnhY_IYNWxsxTI4ztqt_-_6vhgf7p35Ia7AIZgjPya9sA4nTuT4IekyTM0Mek',
-  'arme_2':         'https://discord.com/api/webhooks/1491072819088588970/RAPDd0z4d5Aiy0SXP_li1xo2LuzrlMoIU0ALs0lCEwwisMhlB0aCVxTdkF-7g72PMWk8',
-  'arme_event':     '',
-  'armure_1':       'https://discord.com/api/webhooks/1491072872637272214/IK9fJGjMJ8up1jlyCNIjxVf_SBv1MRnh8QXY2Xndxca_W0YWImaFNttv47ZJZfsnJadk',
-  'armure_2':       'https://discord.com/api/webhooks/1491072932800368832/pukxiljqxIQCm6Fh8I1v1fXhF-G-_FyJ_iU_BMXcM5216MwOsbeUVLo7HRU6KqzEoFL1',
-  'armure_event':   '',
-  'accessoire_1':   'https://discord.com/api/webhooks/1491072941985890386/RFNjfNRfGuRv7nmzEMmHdz4lhzxH9DzjX8rqpDLLKfLHkWS95xOgGMvPTFqRiQgqzNj1',
-  'accessoire_2':   'https://discord.com/api/webhooks/1491073046759342081/b-b21JWzETX1zsTVfMtop5tJm0fr1ZhTV5oQmXEH_DVKVFdbatHPYg2LybvKtsqMmqBO',
-  'accessoire_event': '',
-};
-
-function getForumWebhook(obj) {
-  const key = obj.rarity === 'event' ? `${obj.category}_event` : `${obj.category}_${obj.palier}`;
-  // Utiliser la config Firestore si disponible (chargée par creator.html), sinon fallback local
-  if (window._vcl_discordWebhooks) return window._vcl_discordWebhooks[key] || null;
-  return FORUM_WEBHOOKS[key] || null;
-}
-
 function buildItemCardEmbed(obj, color, imageFilename) {
   const RARITY_LABEL = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
   const RARITY_ICON  = { commun:'🟢', rare:'🔵', epique:'🟣', legendaire:'🟡', mythique:'🌸', godlike:'🔴', event:'⚪' };
@@ -5524,34 +5502,6 @@ async function submitToFirestore() {
   m.classList.add('show');
   setTimeout(() => { m.classList.remove('show'); m.textContent = '✓ Copié !'; }, 3500);
 
-  // Notifier le webhook "Nouvelles soumissions" (best-effort)
-  _notifyNewSubmissionWebhook(data, type, isModification, getAuthor()).catch(() => {});
-}
-
-async function _notifyNewSubmissionWebhook(data, type, isModification, author) {
-  const url = window._vcl_newSubWebhook;
-  if (!url) return;
-  // Ne pas envoyer si c'est un admin qui soumet
-  if (window._vcl_role === 'admin') return;
-  const name = data.name || data.titre || data.label || data.id || '?';
-  const typeLabel = { item:'Item', mob:'Mob', pnj:'PNJ', region:'Région', quest:'Quête', panoplie:'Panoplie' }[type] || type;
-  const action = isModification ? '✏️ Modification' : '✨ Nouvel ajout';
-  const dataStr = JSON.stringify(data, null, 2);
-  const chunks = [];
-  for (let i = 0; i < dataStr.length; i += 1900) chunks.push(dataStr.slice(i, i + 1900));
-  const embeds = [{
-    title: `${action} — ${name}`,
-    description: `**Type :** ${typeLabel}${author ? `\n**Auteur :** ${author}` : ''}\n\`\`\`json\n${chunks[0]}\n\`\`\``,
-    color: isModification ? 0xf59e0b : 0x4ade80,
-  }];
-  for (let i = 1; i < chunks.length; i++) {
-    embeds.push({ description: `\`\`\`json\n${chunks[i]}\n\`\`\`` });
-  }
-  await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ embeds }),
-  });
 }
 
 // Close dropdowns on outside click
