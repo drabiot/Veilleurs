@@ -11,6 +11,7 @@
 ══════════════════════════════════════════════════════ */
 
 import { loadCollection, invalidateCache, COL, db, doc, onSnapshot } from './firebase.js';
+import { loader } from './components/page-loader.js';
 
 // Correspondance nom logique → nom collection Firestore
 const COL_MAP = {
@@ -47,13 +48,19 @@ export const store = {
 
   /**
    * Charge les collections demandées en parallèle depuis Firestore (avec cache TTL 1h).
+   * Affiche l'écran de chargement si ça traîne (sauf `silent`, pour les rechargements en arrière-plan).
    * @param {string[]} cols  ex. ['items', 'mobs', 'panoplies']
+   * @param {{silent?: boolean}} [opts]
    */
-  async load(cols) {
+  async load(cols, opts = {}) {
     const toLoad = [...new Set(cols)];
-    const results = await Promise.all(
-      toLoad.map(c => loadCollection(COL_MAP[c] ?? c).catch(() => []))
-    );
+    const progress = opts.silent ? null : loader.begin(toLoad.length);
+    let results;
+    try {
+      results = await Promise.all(
+        toLoad.map(c => loadCollection(COL_MAP[c] ?? c).catch(() => []).finally(() => progress?.step()))
+      );
+    } finally { progress?.end(); }
     toLoad.forEach((c, i) => { _data[c] = results[i]; });
 
     // Fusion panoplies → SETS (miroir de la logique db-loader.js)

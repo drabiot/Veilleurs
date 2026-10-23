@@ -563,7 +563,7 @@ function saveForm() {
       lore:     document.getElementById('f-lore').value,
       competence: document.getElementById('f-competence')?.value || '',
       obtainOverride: document.getElementById('f-obtain-override').value,
-      selRarity, selClasses, selTwoHanded, selSensible, selEvent, selEvolutif, selOcculte, evolutifEvolutions,
+      selRarity, selClasses, selTwoHanded, selSensible, selEvolutif, selOcculte, evolutifEvolutions,
       activeTags: [...activeTags],
       obtainSources,
       stats: (() => {
@@ -701,10 +701,6 @@ function restoreForm(forcedMode) {
     if (d.selSensible) {
       selSensible = true;
       document.getElementById('sensible-btn').classList.add('active');
-    }
-    if (d.selEvent) {
-      selEvent = true;
-      document.getElementById('event-btn')?.classList.add('active');
     }
     if (d.selTwoHanded) {
       selTwoHanded = true;
@@ -1773,7 +1769,6 @@ function onCatChange() {
 }
 
 let selSensible  = false;
-let selEvent     = false;
 let selTwoHanded = false;
 let selEvolutif  = false;
 let selOcculte   = false;
@@ -1782,12 +1777,6 @@ let selQualite   = false;
 function toggleSensible() {
   selSensible = !selSensible;
   document.getElementById('sensible-btn').classList.toggle('active', selSensible);
-  update();
-}
-
-function toggleEvent() {
-  selEvent = !selEvent;
-  document.getElementById('event-btn').classList.toggle('active', selEvent);
   update();
 }
 
@@ -2407,10 +2396,6 @@ function loadItem(item) {
   }
 
   _setEventName(typeof item.event === 'string' ? item.event : '');
-  if (item.event) {
-    selEvent = true;
-    document.getElementById('event-btn')?.classList.add('active');
-  }
 
   // Two-handed
   if (item.twoHanded) {
@@ -2550,7 +2535,7 @@ function resetFormSilent() {
   _skipSave = true;
   document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel textarea').forEach(i => i.value = '');
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
-  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvent = false; selEvolutif = false; selOcculte = false; selQualite = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
+  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvolutif = false; selOcculte = false; selQualite = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
   document.getElementById('qualite-btn')?.classList.remove('active');
   _setEventName('');
   const _evSec = document.getElementById('evolutif-evolutions-section');
@@ -2571,7 +2556,6 @@ function resetFormSilent() {
   const rarityField = document.getElementById('rarity-field');
   if (rarityField) rarityField.classList.add('unset');
   document.getElementById('sensible-btn').classList.remove('active');
-  document.getElementById('event-btn')?.classList.remove('active');
   document.getElementById('twohanded-btn').classList.remove('active');
   activeTags = new Set();
   obtainSources = [];
@@ -4281,7 +4265,7 @@ function buildObj() {
   if (palier)                obj.palier   = _palierVal(palier);
   if (lvl)                   obj.lvl      = +lvl;
   {
-    const tier = (selEvent || palier === 'event') ? 'events' : (palier ? 'P' + palier : '');
+    const tier = palier === 'event' ? 'events' : (palier ? 'P' + palier : '');
     const tp   = tier ? tier + '/' : '';
     const CAT_IMG = {
       arme:        id ? `../img/compendium/textures/weapons/${tp}${id}.png`                     : null,
@@ -4310,8 +4294,7 @@ function buildObj() {
   const runeSlots = parseInt(document.getElementById('f-rune-slots').value);
   if (runeSlots > 0)             obj.rune_slots = runeSlots;
   if (selSensible)               obj.sensible  = true;
-  if (palier === 'event')        obj.event     = eventName || true;
-  else if (selEvent)             obj.event     = true;
+  if (palier === 'event' && eventName) obj.event = eventName;
   if (Object.keys(stats).length)  obj.stats   = stats;
   if (selClasses.length)     obj.classes  = [...selClasses];
   if (effects.length)        obj.effects  = effects;

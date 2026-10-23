@@ -449,7 +449,6 @@ function _buildPrettySummary(data, type) {
       field('Set', idPair(data.set, esc(pano?.label || data.set)), '#d7af5f');
     }
     if (data.sensible) field('', '🔒 Sensible', '#f87171');
-    if (data.event)    field('', '🎊 Event',    '#a855f7');
     // Le champ « event » (quel évènement) n'a de sens que dans le palier Event
     if (data.palier === 'event') field('Évènement', typeof data.event === 'string' && data.event ? esc(data.event) : '<i style="color:var(--muted)">non renseigné</i>', '#a855f7');
     if (data.evolutif) field('', '🔄 Évolutif', '#60a5fa');
@@ -13644,7 +13643,7 @@ const _DATA_ALL_COLS = {
 
 const _DATA_ALL_FLAGS = [
   { key: 'evolutif',   label: '🔄 Évolutif',      types: ['item'],                            filter: d => d.evolutif === true },
-  { key: 'event',      label: '🎊 Event',          types: ['item'],                            filter: d => !!d.event },
+  { key: 'event',      label: '🎊 Event',          types: ['item'],                            filter: d => d.palier === 'event' },
   { key: 'sensible',   label: '🔒 Sensible',       types: ['item','mob','pnj'],                filter: d => d.sensible === true },
   { key: 'boss',       label: '💀 Boss',           types: ['mob'],                             filter: d => d.type === 'boss' },
   { key: 'miniboss',   label: '⚔️ Mini-Boss',     types: ['mob'],                             filter: d => d.type === 'miniboss' },
@@ -13873,7 +13872,7 @@ window.renderDataAll = function() {
     }
     if (d.set)                 _daAddBadge(badgesEl, '◈ ' + d.set, 'var(--muted)', 'rgba(255,255,255,.04)');
     if (d.evolutif)            _daAddBadge(badgesEl, '🔄', '#60a5fa', 'rgba(96,165,250,.1)');
-    if (d.event)               _daAddBadge(badgesEl, '🎊', '#a855f7', 'rgba(168,85,247,.1)');
+    if (d.palier === 'event')  _daAddBadge(badgesEl, '🎊', '#a855f7', 'rgba(168,85,247,.1)');
     if (d.sensible)            _daAddBadge(badgesEl, '🔒', '#f87171', 'rgba(248,113,113,.1)');
     if (d.type === 'boss')     _daAddBadge(badgesEl, 'Boss', '#f87171', 'rgba(248,113,113,.1)');
     if (d.type === 'miniboss') _daAddBadge(badgesEl, 'Mini', '#f59e0b', 'rgba(245,158,11,.1)');
