@@ -246,23 +246,13 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <span style="font-size:15px;font-weight:700;">💀 Liens morts</span>
       <div style="display:flex;gap:6px;">
-        <button class="btn" id="dead-links-auto-btn" onclick="_autoFixDeadLinks()" style="background:var(--warn);color:#000;font-size:11px;padding:5px 12px;display:none;">⚡ Auto-corriger tout</button>
         <button class="btn btn-ghost" onclick="loadDeadLinks()" style="font-size:12px;">🔄 Rafraîchir</button>
       </div>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
-      Références croisées dans les données <b>publiées</b> (items, mobs, quêtes) pointant vers un ID inexistant dans la base.<br>
+      Références croisées dans les données <b>publiées</b> (items, mobs, quêtes) pointant vers un ID inexistant dans la base. Aucune correction automatique : pour chaque lien, des IDs sont suggérés et tu choisis.<br>
       Couvre : craft, loot, obtain, évolutions, set, objectifs de quête, récompenses, PNJ de quête.
     </p>
-    <div id="dead-links-progress" style="display:none;margin-bottom:12px;">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;">
-        <span id="dead-links-progress-label">Correction…</span>
-        <span id="dead-links-progress-count"></span>
-      </div>
-      <div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden;border:1px solid var(--border);">
-        <div id="dead-links-progress-bar" style="height:100%;width:0%;background:var(--warn);border-radius:4px;transition:width .15s ease;"></div>
-      </div>
-    </div>
     <div id="dead-links-list"><div class="empty">Chargement…</div></div>
   </main>
 

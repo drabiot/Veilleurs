@@ -3173,15 +3173,9 @@ async function loadDeadLinks() {
     listEl.innerHTML = '';
     if (!deduped.length) {
       _deadLinksSnapshot = null;
-      const autoBtn = document.getElementById('dead-links-auto-btn');
-      if (autoBtn) autoBtn.style.display = 'none';
       listEl.innerHTML = '<div class="empty">✓ Aucun lien mort — toutes les références sont valides.</div>';
       return;
     }
-
-    // Afficher le bouton auto-fix
-    const autoBtn = document.getElementById('dead-links-auto-btn');
-    if (autoBtn) autoBtn.style.display = '';
 
     const summary = document.createElement('div');
     summary.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:12px;';
@@ -3228,6 +3222,7 @@ async function loadDeadLinks() {
       // Recherche dans le pool de la cible
       const pool = ENTITY_POOL[b.targetType] || [];
       let selectedId = null;
+      const chips = [];
 
       const label = document.createElement('span');
       label.style.cssText = 'font-size:12px;color:var(--muted);margin-right:6px;';
@@ -3259,6 +3254,7 @@ async function loadDeadLinks() {
         selectedId = e.id;
         searchInput.value = `${e.name}  [${e.id}]`;
         dropdown.style.display = 'none';
+        for (const c of chips) c.el.style.borderColor = c.id === e.id ? 'var(--accent)' : '';
         applyBtn.disabled = false;
         applyBtn.style.opacity = '1';
         applyBtn.style.cursor = '';
@@ -3334,9 +3330,13 @@ async function loadDeadLinks() {
           tbody.querySelectorAll('button[data-fix-btn]').forEach(b => { b.textContent = '✏️ Corriger'; });
           fixTr.style.display = '';
           fixBtn.textContent = '▲ Fermer';
-          searchInput.value = b.refId;
-          searchInput.focus();
-          renderDropdown(b.refId);
+          // rien n'est présélectionné : on choisit une suggestion ou on cherche
+          selectedId = null;
+          searchInput.value = '';
+          applyBtn.disabled = true;
+          applyBtn.style.opacity = '.4';
+          applyBtn.style.cursor = 'not-allowed';
+          for (const c of chips) c.el.style.borderColor = '';
         }
       });
       fixBtn.dataset.fixBtn = '1';
@@ -3351,6 +3351,26 @@ async function loadDeadLinks() {
       row.appendChild(searchWrap);
       row.appendChild(applyBtn);
       row.appendChild(cancelBtn);
+      // Suggestions : l'utilisateur clique celle qui convient, puis « Appliquer »
+      const sugWrap = document.createElement('div');
+      sugWrap.style.cssText = 'display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:6px;';
+      const sugLabel = document.createElement('span');
+      sugLabel.style.cssText = 'font-size:12px;color:var(--muted);margin-right:2px;';
+      const suggestions = _dlSuggest(b, pool, SRC_PALIER.get(`${b.srcType}|${b.srcId}`));
+      sugLabel.textContent = suggestions.length ? 'Suggestions :' : 'Aucune suggestion — utilise la recherche.';
+      sugWrap.appendChild(sugLabel);
+      for (const { e } of suggestions) {
+        const chip = document.createElement('button');
+        chip.className = 'btn btn-ghost';
+        chip.style.cssText = 'font-size:11px;padding:3px 8px;';
+        chip.title = e.id;
+        chip.textContent = e.name && e.name !== e.id ? `${e.name} · ${e.id}` : e.id;
+        chip.addEventListener('click', () => selectEntity(e));
+        chips.push({ id: e.id, el: chip });
+        sugWrap.appendChild(chip);
+      }
+
+      fixTd.appendChild(sugWrap);
       fixTd.appendChild(row);
       fixTr.appendChild(fixTd);
 
@@ -3444,6 +3464,7 @@ function _applyPatchToData(data, b, newId) {
 async function _applyDeadLinkFix(b, newId) {
   const colName = _DEAD_LINK_COL[b.srcType];
   if (!colName) throw new Error('Type source non supporté : ' + b.srcType);
+  if (b.srcType === b.targetType && newId === b.srcId) throw new Error('Un élément ne peut pas se référencer lui-même');
   const snap = await getDoc(doc(db, colName, b.srcId));
   if (!snap.exists()) throw new Error('Document source introuvable');
   const data = { ...snap.data() };
@@ -3452,174 +3473,49 @@ async function _applyDeadLinkFix(b, newId) {
   invalidateModCache(colName);
 }
 
-window._autoFixDeadLinks = async function() {
-  if (!_deadLinksSnapshot?.deduped?.length) {
-    toast('Aucun lien mort chargé', 'error');
-    return;
-  }
-  const { deduped, ENTITY_POOL, SRC_PALIER } = _deadLinksSnapshot;
-  const autoBtn   = document.getElementById('dead-links-auto-btn');
-  const progWrap  = document.getElementById('dead-links-progress');
-  const progBar   = document.getElementById('dead-links-progress-bar');
-  const progLabel = document.getElementById('dead-links-progress-label');
-  const progCount = document.getElementById('dead-links-progress-count');
-
-  if (autoBtn) { autoBtn.disabled = true; autoBtn.textContent = '⏳ Correction…'; }
-  if (progWrap) progWrap.style.display = '';
-
-  const setProgress = (done, total, label) => {
-    const pct = Math.round((done / total) * 100);
-    if (progBar)   progBar.style.width   = pct + '%';
-    if (progCount) progCount.textContent = `${done} / ${total}`;
-    if (progLabel && label) progLabel.textContent = label;
-  };
-  setProgress(0, deduped.length, 'Analyse…');
-
-  // ── Phase 1 : résoudre les correspondances (pur, sans I/O) ──────────
-  // Scoring par précision d'ID — plus fiable que fuzzy sur les noms.
-  // Score 90 : pool_id = dead_id + suffix court (_p1, _v2…)  → suffix renaming
-  // Score 80 : dead_id = pool_id + suffix court              → dead avait un suffixe retiré
-  // Score 70 : même relation avec suffixe ≤ 8 chars
-  // Score 60 : même relation avec suffixe ≤ 8 chars (direction inverse)
-  // Score 30 : substring (guard : IDs ≥ 6 chars, ambigus → jamais auto-fixé seul)
-  function _dlIdScore(normDeadId, normPoolId) {
-    if (normDeadId === normPoolId) return 100;
-    if (normPoolId.startsWith(normDeadId + '_')) {
-      const sfx = normPoolId.slice(normDeadId.length + 1);
-      if (sfx.length <= 3) return 90;
-      if (sfx.length <= 8) return 70;
-      return 0;
-    }
-    if (normDeadId.startsWith(normPoolId + '_') && normPoolId.length >= 4) {
-      const sfx = normDeadId.slice(normPoolId.length + 1);
-      if (sfx.length <= 3) return 80;
-      if (sfx.length <= 8) return 60;
-      return 0;
-    }
-    if (normDeadId.length >= 6 && normPoolId.length >= 6 && normPoolId.includes(normDeadId)) return 30;
+// ── Suggestions d'IDs pour un lien mort ──────────────
+// Proposées à l'utilisateur, jamais appliquées automatiquement : c'est lui qui choisit.
+// Score 100 : ID identique ; 90/80 : même ID + suffixe court (_p1…) dans un sens ou dans l'autre ;
+// 70/60 : suffixe jusqu'à 8 caractères ; 30 : sous-chaîne ; sinon recouvrement des mots (ID + nom).
+function _dlIdScore(normDeadId, normPoolId) {
+  if (normDeadId === normPoolId) return 100;
+  if (normPoolId.startsWith(normDeadId + '_')) {
+    const sfx = normPoolId.slice(normDeadId.length + 1);
+    if (sfx.length <= 3) return 90;
+    if (sfx.length <= 8) return 70;
     return 0;
   }
+  if (normDeadId.startsWith(normPoolId + '_') && normPoolId.length >= 4) {
+    const sfx = normDeadId.slice(normPoolId.length + 1);
+    if (sfx.length <= 3) return 80;
+    if (sfx.length <= 8) return 60;
+    return 0;
+  }
+  if (normDeadId.length >= 6 && normPoolId.length >= 6 && normPoolId.includes(normDeadId)) return 30;
+  return 0;
+}
 
-  const fixes = []; // { b, newId, colName, confidence }
-  let skipped = 0;
-  for (const b of deduped) {
-    const colName = _DEAD_LINK_COL[b.srcType];
-    if (!colName) { skipped++; continue; }
-    const pool    = ENTITY_POOL[b.targetType] || [];
-    const normId  = normalize(b.refId);
+const _dlTokens = s => normalize(String(s || '')).split(/[s_]+/).filter(t => t && !/^pd+$/.test(t));
 
-    // Scorer tous les candidats par ID
-    const scored = pool
-      .map(e => ({ e, score: _dlIdScore(normId, normalize(e.id)) }))
-      .filter(x => x.score > 0)
-      .sort((a, b) => b.score - a.score);
-
-    let resolved = null;
-    if (scored.length) {
-      const best = scored[0];
-      const tied = scored.filter(x => x.score === best.score);
-      // Unique meilleur candidat à haute confiance
-      if (tied.length === 1 && best.score >= 70) {
-        resolved = best.e.id;
-      // Unique meilleur à confiance moyenne ET écart net sur le 2e
-      } else if (tied.length === 1 && best.score >= 60 && (scored.length < 2 || best.score - scored[1].score >= 20)) {
-        resolved = best.e.id;
-      // Tie entre variants _p{N} : utiliser le palier de l'entité source
-      } else if (!resolved && tied.length > 1 && best.score >= 70) {
-        const srcPalier = SRC_PALIER?.get(`${b.srcType}|${b.srcId}`);
-        if (srcPalier) {
-          const palierKey = normId + '_p' + srcPalier;
-          const palierMatch = tied.find(x => normalize(x.e.id) === palierKey);
-          if (palierMatch) resolved = palierMatch.e.id;
-        }
-      }
+function _dlSuggest(b, pool, srcPalier) {
+  const dead = normalize(b.refId);
+  const deadTok = _dlTokens(b.refId);
+  const out = [];
+  for (const e of pool) {
+    if (b.srcType === b.targetType && e.id === b.srcId) continue; // jamais l'entité elle-même
+    const ne = normalize(e.id);
+    let score = _dlIdScore(dead, ne);
+    if (deadTok.length) {
+      const tok = new Set([..._dlTokens(e.id), ..._dlTokens(e.name)]);
+      const common = deadTok.filter(t => tok.has(t)).length;
+      if (common) score = Math.max(score, Math.round(55 * common / deadTok.length) + (common === deadTok.length ? 5 : 0));
     }
-
-    // Fallback : correspondance de nom normalisé exacte seulement (pas fuzzy)
-    if (!resolved) {
-      const normWords = normalize(b.refId.replace(/_/g, ' '));
-      const nameExact = pool.filter(e => normalize(e.search || e.name || '') === normWords);
-      if (nameExact.length === 1) resolved = nameExact[0].id;
-    }
-
-    if (resolved) fixes.push({ b, newId: resolved, colName });
-    else skipped++;
+    if (score < 25) continue;
+    if (srcPalier != null && ne.endsWith('_p' + srcPalier)) score += 3;
+    out.push({ e, score });
   }
-
-  console.log('[deadlinks] fixes:', fixes.length, '| skipped:', skipped,
-    '| sample skip:', deduped.slice(0, 3).map(b => ({
-      srcType: b.srcType, refId: b.refId, targetType: b.targetType,
-      hasColName: !!_DEAD_LINK_COL[b.srcType],
-      poolSize: (ENTITY_POOL[b.targetType] || []).length,
-    }))
-  );
-
-  if (!fixes.length) {
-    if (autoBtn) { autoBtn.disabled = false; autoBtn.textContent = '⚡ Auto-corriger tout'; }
-    if (progWrap) progWrap.style.display = 'none';
-    toast(`Aucun lien auto-corrigeable (${skipped} nécessite${skipped > 1 ? 'nt' : ''} correction manuelle)`, 'info');
-    return;
-  }
-
-  // ── Phase 2 : charger tous les docs sources en parallèle ───────────
-  setProgress(0, fixes.length, 'Chargement des documents…');
-  const uniqueKeys = [...new Set(fixes.map(f => `${f.colName}/${f.b.srcId}`))];
-  const snapMap = new Map(); // "col/id" → data object (mutable)
-  const snapResults = await Promise.all(
-    uniqueKeys.map(key => {
-      const [col, id] = key.split('/');
-      return getDoc(doc(db, col, id)).then(s => ({ key, snap: s }));
-    })
-  );
-  for (const { key, snap } of snapResults) {
-    if (snap.exists()) snapMap.set(key, { ...snap.data() });
-  }
-
-  // ── Phase 3 : appliquer tous les patches en mémoire (pur) ──────────
-  for (const f of fixes) {
-    const key = `${f.colName}/${f.b.srcId}`;
-    const data = snapMap.get(key);
-    if (data) _applyPatchToData(data, f.b, f.newId);
-  }
-
-  // ── Phase 4 : écriture par lots (writeBatch, max 500 ops) ──────────
-  const BATCH_SIZE = 400;
-  const dirtyKeys = [...snapMap.keys()];
-  let written = 0;
-  setProgress(0, dirtyKeys.length, 'Écriture…');
-  for (let i = 0; i < dirtyKeys.length; i += BATCH_SIZE) {
-    const chunk = dirtyKeys.slice(i, i + BATCH_SIZE);
-    const batch = writeBatch(db);
-    for (const key of chunk) {
-      const [col, id] = key.split('/');
-      batch.update(doc(db, col, id), sanitizeForFirestore(snapMap.get(key)));
-    }
-    await batch.commit();
-    written += chunk.length;
-    setProgress(written, dirtyKeys.length, 'Écriture…');
-    for (const key of chunk) {
-      const [col] = key.split('/');
-      invalidateModCache(col);
-    }
-  }
-
-  // ── Phase 5 : audits en parallèle (fire-and-forget) ────────────────
-  await Promise.all(fixes.map(f =>
-    _writeAudit('dead_link_fix', f.b.srcType, f.b.srcId, f.b.srcName,
-      { field: f.b.field, oldRef: f.b.refId, newRef: f.newId, auto: true })
-  ));
-
-  if (autoBtn) { autoBtn.disabled = false; autoBtn.textContent = '⚡ Auto-corriger tout'; }
-  if (progWrap) progWrap.style.display = 'none';
-  if (progBar)  progBar.style.width = '0%';
-
-  const fixed = fixes.length;
-  const msg = `✓ ${fixed} lien${fixed > 1 ? 's' : ''} corrigé${fixed > 1 ? 's' : ''} automatiquement` +
-    (skipped > 0 ? `, ${skipped} nécessite${skipped > 1 ? 'nt' : ''} correction manuelle` : '');
-  toast(msg, 'success');
-
-  if (fixed > 0) await loadDeadLinks();
-};
+  return out.sort((x, y) => y.score - x.score || x.e.id.length - y.e.id.length).slice(0, 8);
+}
 
 // ══════════════════════════════════════════════════════
 // IDs ORPHELINS (soumissions pending → IDs rejetés)
