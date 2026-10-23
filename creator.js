@@ -2666,6 +2666,9 @@ function loadQuest(quest) {
     _questZoneDrop.setValue(quest.zone, quest.zone);
     // switchMode('quest') reconstruit le menu zone en asynchrone : on garde la valeur en attente le temps qu'il le fasse, puis on l'oublie
     setTimeout(() => { if (window._pendingQuestZone === quest.zone) window._pendingQuestZone = null; }, 4000);
+  } else if (quest.zone) {
+    // Ouverture directe en mode quête (ex. depuis la modération) : switchMode ne reconstruit pas le menu, il n'existe donc pas encore → on le crée
+    loadMobRegions().then(() => initQuestZoneDrop()).catch(() => initQuestZoneDrop());
   }
   if (quest.desc)   document.getElementById('quest-desc').value  = quest.desc;
   if (quest.coords) {
@@ -7099,12 +7102,15 @@ function initQuestZoneDrop() {
     search: normalize(r.name || r.id),
     subtitle: r.palier ? `Palier ${r.palier}` : '',
   }));
+  // reconstruire le menu ne doit pas effacer la zone déjà choisie
+  const keep = window._pendingQuestZone || (_questZoneDrop ? _questZoneDrop.getValue() : '');
   _questZoneDrop = makeSearchDrop(zones, '🔍 Zone…', () => update(), false);
   container.innerHTML = '';
   container.appendChild(_questZoneDrop.element);
-  if (window._pendingQuestZone) {
-    _questZoneDrop.setValue(window._pendingQuestZone, window._pendingQuestZone);
+  if (keep) {
+    _questZoneDrop.setValue(keep, keep);
     window._pendingQuestZone = null;
+    update();
   }
 }
 
