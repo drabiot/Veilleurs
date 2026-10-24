@@ -13,6 +13,8 @@ import { store }  from './store.js';
 import { generateCardBlob } from './card-renderer.js';
 import { createApiItemsTool } from './moderation-api-items.js?v=17';
 
+loadEventNames(); // EVENT_NAMES = collection `events` (select « Évènement » de l'éditeur)
+
 // Helpers partagés — utils.js est chargé en classic script avant ce module
 const { normalize, fuzzyMatch } = window.VCL;
 

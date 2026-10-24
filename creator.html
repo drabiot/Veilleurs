@@ -1198,6 +1198,7 @@ try {
 // Items / mobs / panoplies / quêtes : appliqués après l'affichage du layout
 try {
   await _pStore;
+  if (typeof _syncEventField === 'function') _syncEventField(); // liste des events (collection `events`) chargée par le store
   if (store.items.length)     { window.ITEMS = store.items; if (typeof initLoadSearch === 'function') initLoadSearch(); }
   if (store.mobs.length)      {
     window.MOBS = store.mobs;

@@ -421,6 +421,7 @@ window._vclLogReport = logReport;
 // ── Events : collection `events` (outil modération « Events ») = source unique des noms d'évènement ──
 // Met à jour EVENT_NAMES (Compendium/data.js) en place, triée par `ordre` puis date de création.
 export async function loadEventNames() {
+  if (typeof EVENT_NAMES === 'undefined') return null;
   let names = [];
   try {
     const snap = await getDocs(collection(db, COL.events));

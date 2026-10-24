@@ -10,7 +10,7 @@
      store.invalidate('items');                 // force re-fetch au prochain load()
 ══════════════════════════════════════════════════════ */
 
-import { loadCollection, invalidateCache, COL, db, doc, onSnapshot } from './firebase.js';
+import { loadCollection, loadEventNames, invalidateCache, COL, db, doc, onSnapshot } from './firebase.js';
 import { loader } from './components/page-loader.js';
 
 // Correspondance nom logique → nom collection Firestore
@@ -77,6 +77,8 @@ export const store = {
       }
       _data.sets = sets;
     }
+
+    await loadEventNames(); // EVENT_NAMES = collection `events` (no-op si la page n'a pas Compendium/data.js)
 
     _ready = true;
     const cbs = _callbacks.splice(0);
