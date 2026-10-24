@@ -2854,17 +2854,18 @@ function initCustomSelects() {
     wrap.appendChild(trigger);
     wrap.appendChild(list);
 
+    let typed = '', typedTimer = null, activeIdx = 0, shown = [];
+
     function updateDisplay() {
       const opt = nativeSel.options[nativeSel.selectedIndex];
-      const hasVal = opt && opt.value !== '';
-      valSpan.textContent = opt ? opt.text : '';
+      const hasVal = (opt && opt.value !== '') || !!typed; // pendant la saisie, le texte tapé s'affiche sur la barre
+      valSpan.textContent = typed || (opt ? opt.text : '');
       valSpan.classList.toggle('custom-sel-placeholder', !hasVal);
       trigger.disabled = nativeSel.disabled;
       trigger.classList.toggle('locked', nativeSel.disabled);
     }
 
     // Saisie au clavier : on tape pour filtrer (sans accents ni casse), Entrée choisit la 1ʳᵉ proposition
-    let typed = '', typedTimer = null, activeIdx = 0, shown = [];
     const norm = t => (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
     function pick(opt) {
@@ -2877,16 +2878,17 @@ function initCustomSelects() {
       list.classList.remove('open');
       trigger.classList.remove('open');
       typed = ''; clearTimeout(typedTimer);
+      updateDisplay();
     }
     function buildListItems() {
       list.innerHTML = '';
       const q = norm(typed);
       shown = Array.from(nativeSel.options).filter(opt => q ? (opt.value && norm(opt.text).includes(q)) : true);
       if (activeIdx >= shown.length) activeIdx = 0;
-      if (q) {
+      if (q && !shown.length) {
         const hint = document.createElement('div');
         hint.className = 'drop-empty';
-        hint.textContent = '🔎 ' + typed + (shown.length ? '' : ' — aucun résultat');
+        hint.textContent = 'Aucun résultat.';
         list.appendChild(hint);
       }
       shown.forEach((opt, idx) => {
@@ -2933,7 +2935,8 @@ function initCustomSelects() {
       ev.preventDefault();
       activeIdx = 0;
       clearTimeout(typedTimer);
-      typedTimer = setTimeout(() => { typed = ''; if (list.classList.contains('open')) buildListItems(); }, 4000);
+      typedTimer = setTimeout(() => { typed = ''; updateDisplay(); if (list.classList.contains('open')) buildListItems(); }, 4000);
+      updateDisplay();
       openList();
     });
 
