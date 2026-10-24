@@ -6,14 +6,17 @@ name = "veilleurs"
 main = "cloudflare-worker.js"
 compatibility_date = "2026-10-01"
 
+# Pas d'URL de prévisualisation publique pour chaque version
+preview_urls = false
+
 # Garde les variables texte et secrets déjà définis dans le dashboard (BOT_TOKEN, ADMIN_SECRET, FIREBASE_SA…)
 keep_vars = true
 
 [[kv_namespaces]]
 binding = "WIKI_CACHE"
-id = "REMPLACER_PAR_L_ID_KV"
+id = "bcf46723e68946d2b594f8f790a3c9ef"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "veilleurs"
-database_id = "REMPLACER_PAR_L_ID_D1"
+database_id = "8deed6e8-1a17-4339-86ef-fad656a886a9"
