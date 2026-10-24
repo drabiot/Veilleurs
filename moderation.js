@@ -14094,6 +14094,24 @@ function _buildDataAllChips() {
     });
 }
 
+// Tri « Ancien palier » : proposé uniquement quand le filtre est sur le palier Archive (-1)
+// et qu'il reste des items archivés ; l'option disparaît d'elle-même une fois l'archive vidée.
+function _daSyncOldPalierSort(palierFilter) {
+  const sel = document.getElementById('data-all-sort');
+  if (!sel) return;
+  const available = palierFilter === '-1' && _dataAllData.some(d => d.palier == -1 && d._oldPalier != null);
+  const opt = sel.querySelector('option[value="old"]');
+  if (available && !opt) {
+    const o = document.createElement('option');
+    o.value = 'old';
+    o.textContent = 'Ancien palier (archive)';
+    sel.appendChild(o);
+  } else if (!available && opt) {
+    if (sel.value === 'old') sel.value = 'name';
+    opt.remove();
+  }
+}
+
 window.renderDataAll = function() {
   if (!_dataAllLoaded) return;
   const listEl    = document.getElementById('data-all-list');
@@ -14105,6 +14123,7 @@ window.renderDataAll = function() {
   const palierFilter = document.getElementById('data-all-palier')?.value  || '';
   const catFilter    = document.getElementById('data-all-category')?.value || '';
   const rarityFilter = document.getElementById('data-all-rarity')?.value  || '';
+  _daSyncOldPalierSort(palierFilter);
   const sortBy       = document.getElementById('data-all-sort')?.value    || 'name';
 
   let results = _dataAllData;
@@ -14129,6 +14148,10 @@ window.renderDataAll = function() {
   results = [...results];
   if (sortBy === 'name')   results.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
   else if (sortBy === 'palier') results.sort((a, b) => (a.palier || 9) - (b.palier || 9) || (a.name || '').localeCompare(b.name || '', 'fr'));
+  else if (sortBy === 'old') {
+    const oldRank = d => { const n = Number(d._oldPalier); return Number.isFinite(n) ? n : 98; };
+    results.sort((a, b) => oldRank(a) - oldRank(b) || (a.name || '').localeCompare(b.name || '', 'fr'));
+  }
   else if (sortBy === 'type')  results.sort((a, b) => a._type.localeCompare(b._type) || (a.name || '').localeCompare(b.name || '', 'fr'));
 
   if (countEl) countEl.textContent = `${results.length} résultat${results.length !== 1 ? 's' : ''}`;
@@ -14156,7 +14179,8 @@ window.renderDataAll = function() {
     const badgesEl = document.createElement('span');
     badgesEl.style.cssText = 'display:flex;gap:3px;flex-shrink:0;flex-wrap:nowrap;';
 
-    if (d.palier) _daAddBadge(badgesEl, 'P'+d.palier, 'var(--accent)', 'rgba(224,172,96,.15)');
+    if (d.palier) _daAddBadge(badgesEl, d.palier == -1 ? 'Archive' : 'P'+d.palier, 'var(--accent)', 'rgba(224,172,96,.15)');
+    if (d.palier == -1 && d._oldPalier != null) _daAddBadge(badgesEl, 'ex-P' + d._oldPalier, '#60a5fa', 'rgba(96,165,250,.12)');
     if (d.category) _daAddBadge(badgesEl, d.category, 'var(--muted)', 'transparent');
     if (d.rarity && d._type === 'item') {
       const _RC = { commun:'#aaa', rare:'#4da6ff', epique:'#c47aff', legendaire:'#ffb830', mythique:'#ff6060', godlike:'#ff3aba', event:'#60e8b0' };
