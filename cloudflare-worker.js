@@ -597,13 +597,20 @@ async function handleInteraction(rawBody, env) {
 // ══════════════════════════════════════════════════════════════
 
 export default {
-  async fetch(request, env) {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(syncContent(env).catch(() => {}));
+  },
+
+  async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders() });
     }
     const _path = new URL(request.url).pathname;
     if (_path === '/discord/callback' && request.method === 'GET') return handleDiscordCallback(request, env);
     if (_path === '/discord/start' && request.method === 'POST') return handleDiscordStart(request, env);
+    if (_path === '/db/sync' && request.method === 'GET') return handleDbSync(new URL(request.url), env);
+    if (_path === '/db/refresh' && request.method === 'POST') return handleDbRefresh(request, env, ctx);
+    if (_path === '/db/resync' && request.method === 'POST') return handleDbResync(request, env);
     if (_path === '/track' && request.method === 'POST') return handleTrack(request, env);
     if (_path === '/stats' && request.method === 'POST') return handleStats(request, env);
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
@@ -701,7 +708,7 @@ function json(data, status = 200) {
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
   };
 }
@@ -1067,4 +1074,173 @@ async function handleStats(request, env) {
   }
   out.logins = logins.results.map(l => ({ actorPseudo: l.pseudo, ts: l.ts }));
   return json(out);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  CONTENU PUBLIC : copie Firestore → D1 (étape 2 de la migration)
+//
+//  Firestore reste la source d'écriture. Le worker en tire les changements (delta sur _updatedAt +
+//  tombstones, comme le cache client) et les range dans D1 ; les visiteurs lisent D1 via GET /db/sync.
+//  Déclencheurs : cron (toutes les 15 min), POST /db/refresh (appelé par le site après une écriture,
+//  utilisateur connecté, 1 fois / 15 s), POST /db/resync (admin, resynchronisation complète).
+//  Chaque lot est atomique et prend un nouveau numéro de révision (meta.rev) : un client ne rate rien.
+// ══════════════════════════════════════════════════════════════
+
+const D1_SYNC_COLS = ['items', 'mobs', 'personnages', 'regions', 'quetes', 'panoplies', 'map_markers', 'zones', 'donjons'];
+const SYNC_CHUNK   = 300;
+const SYNC_BUDGET  = 40;   // requêtes par exécution (limite 50 sur l'offre gratuite) ; le reste reprend au tour suivant
+const DOC_BASE     = `projects/${PROJECT_ID}/databases/(default)/documents`;
+const REV_SQL      = "(SELECT v FROM meta WHERE k = 'rev')";
+
+class BudgetOut extends Error {}
+
+function newBudget() {
+  let left = SYNC_BUDGET;
+  return { take(n = 1) { if (left < n) throw new BudgetOut(); left -= n; } };
+}
+
+async function fsRunQuery(env, b, structuredQuery) {
+  b.take();
+  const d = await fsReq(env, ':runQuery', { method: 'POST', body: JSON.stringify({ structuredQuery }) });
+  return (d || []).filter(x => x.document).map(x => x.document);
+}
+
+const lastSeg = name => name.split('/').pop();
+const tsMs = f => (f?.timestampValue ? Date.parse(f.timestampValue) : 0);
+const orderTsName = field => [
+  { field: { fieldPath: field }, direction: 'ASCENDING' },
+  { field: { fieldPath: '__name__' }, direction: 'ASCENDING' },
+];
+const startAfter = (ts, col, name) => (ts && name)
+  ? { values: [{ timestampValue: new Date(ts).toISOString() }, { referenceValue: `${DOC_BASE}/${col}/${name}` }], before: false }
+  : undefined;
+
+/** Synchronise Firestore → D1. Renvoie { done, docs, deleted } ; done=false tant qu'une passe complète reste à finir. */
+async function syncContent(env, { cols = D1_SYNC_COLS, reset = false } = {}) {
+  const stat = { done: false, docs: 0, deleted: 0 };
+  if (!env.DB) return { ...stat, done: true };
+  const b = newBudget();
+  const run = async stmts => { b.take(); await env.DB.batch(stmts); };
+  const setMeta = (k, v) => env.DB.prepare('INSERT OR REPLACE INTO meta (k, v) VALUES (?, ?)').bind(k, v);
+  const bump = () => env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'");
+  try {
+    b.take();
+    const m = Object.fromEntries((await env.DB.prepare('SELECT k, v FROM meta').all()).results.map(r => [r.k, r.v]));
+
+    // Époque : bumpée dans config/sync pour forcer un rechargement complet → on repart de zéro (avec balayage des disparus)
+    b.take();
+    const epoch = (await fsGetDoc(env, 'config/sync'))?.epoch || 0;
+    if (reset || epoch !== m.epoch) {
+      const gen = Date.now();
+      await run([
+        setMeta('gen', gen), setMeta('epoch', epoch),
+        ...D1_SYNC_COLS.flatMap(c => [setMeta('cur:' + c, 0), setMeta('curname:' + c, ''), setMeta('full:' + c, 1)]),
+      ]);
+      Object.assign(m, { gen, epoch });
+      for (const c of D1_SYNC_COLS) Object.assign(m, { ['cur:' + c]: 0, ['curname:' + c]: '', ['full:' + c]: 1 });
+    }
+
+    // 1. Suppressions (tombstones) d'abord, pour qu'un doc recréé ensuite repasse bien en « présent »
+    for (;;) {
+      const tombs = await fsRunQuery(env, b, {
+        from: [{ collectionId: 'tombstones' }], orderBy: orderTsName('ts'), limit: SYNC_CHUNK,
+        startAt: startAfter(m.tomb || 0, 'tombstones', m.tombname || ''),
+      });
+      if (!tombs.length) break;
+      const stmts = [bump()];
+      let ts = m.tomb || 0, name = m.tombname || '';
+      for (const t of tombs) {
+        const f = t.fields || {};
+        ts = tsMs(f.ts) || ts; name = lastSeg(t.name);
+        const col = f.col?.stringValue, id = f.id?.stringValue;
+        if (!D1_SYNC_COLS.includes(col) || !id) continue;
+        stmts.push(env.DB.prepare(`UPDATE docs SET deleted = 1, updated_at = ${REV_SQL} WHERE col = ? AND id = ? AND deleted = 0`).bind(col, id));
+        stat.deleted++;
+      }
+      stmts.push(setMeta('tomb', ts), setMeta('tombname', name));
+      await run(stmts);
+      m.tomb = ts; m.tombname = name;
+      if (tombs.length < SYNC_CHUNK) break;
+    }
+
+    // 2. Créations / modifications, collection par collection
+    for (const col of cols) {
+      if (!D1_SYNC_COLS.includes(col)) continue;
+      for (;;) {
+        const docs = await fsRunQuery(env, b, {
+          from: [{ collectionId: col }], orderBy: orderTsName('_updatedAt'), limit: SYNC_CHUNK,
+          startAt: startAfter(m['cur:' + col] || 0, col, m['curname:' + col] || ''),
+        });
+        const full = m['full:' + col] === 1, last = docs.length < SYNC_CHUNK;
+        const stmts = [bump()];
+        let ts = m['cur:' + col] || 0, name = m['curname:' + col] || '';
+        for (const d of docs) {
+          ts = tsMs(d.fields?._updatedAt) || ts; name = lastSeg(d.name);
+          const { _id, _updatedAt, ...data } = parseDoc(d);
+          // passe complète : on réécrit tout et on marque la génération (sert au balayage) ; sinon uniquement si ça a changé
+          stmts.push(env.DB.prepare(`INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES (?, ?, ?, ${REV_SQL}, 0, ?)
+            ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at, deleted = 0, gen = excluded.gen
+            ${full ? '' : 'WHERE docs.data != excluded.data OR docs.deleted = 1'}`).bind(col, _id, JSON.stringify(data), m.gen));
+          stat.docs++;
+        }
+        if (last && full) { // fin de la passe complète : ce que Firestore n'a pas renvoyé n'existe plus
+          stmts.push(env.DB.prepare(`UPDATE docs SET deleted = 1, updated_at = ${REV_SQL} WHERE col = ? AND deleted = 0 AND gen != ?`).bind(col, m.gen));
+          stmts.push(setMeta('full:' + col, 0));
+        }
+        stmts.push(setMeta('cur:' + col, ts), setMeta('curname:' + col, name));
+        if (docs.length || (last && full)) await run(stmts);
+        m['cur:' + col] = ts; m['curname:' + col] = name;
+        if (last) { if (full) m['full:' + col] = 0; break; }
+      }
+    }
+    stat.done = D1_SYNC_COLS.every(c => m['full:' + c] !== 1);
+  } catch (e) {
+    if (!(e instanceof BudgetOut)) throw e;
+  }
+  return stat;
+}
+
+/** GET /db/sync?col=items&since=N → { rev, epoch, docs: [{id, d}], deleted: [id] } */
+async function handleDbSync(url, env) {
+  const col = url.searchParams.get('col');
+  const since = parseInt(url.searchParams.get('since') || '0') || 0;
+  if (!env.DB || !D1_SYNC_COLS.includes(col)) return json({ error: 'Collection inconnue' }, 400);
+  const meta = (await env.DB.prepare("SELECT k, v FROM meta WHERE k IN ('rev', 'epoch') OR k = ?").bind('full:' + col).all()).results;
+  const m = Object.fromEntries(meta.map(r => [r.k, r.v]));
+  if (!m.rev || m['full:' + col] !== 0) return json({ error: 'Pas encore synchronisé' }, 503); // le client retombe sur Firestore
+  const rows = (since > 0
+    ? await env.DB.prepare('SELECT id, data, deleted FROM docs WHERE col = ? AND updated_at > ?').bind(col, since).all()
+    : await env.DB.prepare('SELECT id, data, deleted FROM docs WHERE col = ? AND deleted = 0').bind(col).all()).results;
+  const docs = rows.filter(r => !r.deleted).map(r => `{"id":${JSON.stringify(r.id)},"d":${r.data}}`).join(',');
+  const deleted = JSON.stringify(rows.filter(r => r.deleted).map(r => r.id));
+  return new Response(`{"rev":${m.rev},"epoch":${m.epoch},"docs":[${docs}],"deleted":${deleted}}`, {
+    headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+  });
+}
+
+/** POST /db/refresh { idToken, cols? } : le site signale une écriture ; utilisateur connecté, 1 synchro / 15 s. */
+async function handleDbRefresh(request, env, ctx) {
+  if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
+  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_KEY}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: String(body.idToken || '') }),
+  });
+  if (!r.ok) return json({ error: 'Non connecté' }, 401);
+  const now = Date.now();
+  const res = await env.DB.prepare("UPDATE meta SET v = ? WHERE k = 'lastrefresh' AND v < ?").bind(now, now - 15000).run();
+  if (!res.meta.changes) return json({ ok: true, throttled: true });
+  const cols = (Array.isArray(body.cols) ? body.cols : []).filter(c => D1_SYNC_COLS.includes(c));
+  ctx.waitUntil(syncContent(env, { cols: cols.length ? cols : D1_SYNC_COLS }).catch(() => {}));
+  return json({ ok: true });
+}
+
+/** POST /db/resync { secret, reset? } : synchronisation admin ; rappeler jusqu'à done = true. */
+async function handleDbResync(request, env) {
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
+  if (!env.ADMIN_SECRET || body.secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+  try { return json(await syncContent(env, { reset: !!body.reset })); }
+  catch (e) { return json({ error: e.message }, 500); }
 }

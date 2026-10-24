@@ -91,27 +91,52 @@ const _stampArgs = args => (args.length === 1 && args[0] && typeof args[0] === '
   ? [{ ...args[0], ..._stamp() }]
   : [...args, '_updatedAt', serverTimestamp()];
 
-const setDoc    = (ref, data, opts) => _setDoc(ref, _isSync(ref) ? { ...data, ..._stamp() } : data, opts);
-const addDoc    = (ref, data)       => _addDoc(ref, _isSync(ref) ? { ...data, ..._stamp() } : data);
-const updateDoc = (ref, ...args)    => _updateDoc(ref, ...(_isSync(ref) ? _stampArgs(args) : args));
+// Le contenu public est lu par les visiteurs dans D1 (copie alimentée par le worker). Après une écriture,
+// on prévient le worker (regroupé sur 4 s, utilisateur connecté) pour que la copie suive sans attendre le cron.
+const D1_COLS = new Set([COL.items, COL.mobs, COL.pnj, COL.regions, COL.quetes, COL.panoplies, COL.mapMarkers, COL.zones, COL.donjons]);
+const _pokeCols = new Set();
+let _pokeTimer = null;
+function _poke(ref) {
+  const col = _segs(ref)[0];
+  if (!D1_COLS.has(col)) return;
+  _pokeCols.add(col);
+  clearTimeout(_pokeTimer);
+  _pokeTimer = setTimeout(async () => {
+    const cols = [..._pokeCols]; _pokeCols.clear();
+    try {
+      const u = auth.currentUser;
+      if (!u) return;
+      await fetch(DISCORD_WORKER + '/db/refresh', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: await u.getIdToken(), cols }), keepalive: true,
+      });
+    } catch {}
+  }, 4000);
+}
+const _poked = async (ref, p) => { const r = await p; _poke(ref); return r; };
+
+const setDoc    = (ref, data, opts) => _poked(ref, _setDoc(ref, _isSync(ref) ? { ...data, ..._stamp() } : data, opts));
+const addDoc    = (ref, data)       => _poked(ref, _addDoc(ref, _isSync(ref) ? { ...data, ..._stamp() } : data));
+const updateDoc = (ref, ...args)    => _poked(ref, _updateDoc(ref, ...(_isSync(ref) ? _stampArgs(args) : args)));
 const deleteDoc = async ref => {
   if (!_isSync(ref)) return _deleteDoc(ref);
   const b = _writeBatch(db);
   b.set(..._tomb(ref));
   b.delete(ref);
-  try { return await b.commit(); }
+  try { return await _poked(ref, b.commit()); }
   catch (e) { // règles de `tombstones` pas encore déployées : on supprime quand même
     if (e?.code !== 'permission-denied') throw e;
-    return _deleteDoc(ref);
+    return _poked(ref, _deleteDoc(ref));
   }
 };
 const writeBatch = dbArg => {
   const b = _writeBatch(dbArg);
+  const refs = [];
   const w = {
-    set(ref, data, opts)  { b.set(ref, _isSync(ref) ? { ...data, ..._stamp() } : data, opts); return w; },
-    update(ref, ...args)  { b.update(ref, ...(_isSync(ref) ? _stampArgs(args) : args)); return w; },
-    delete(ref)           { if (_isSync(ref)) b.set(..._tomb(ref)); b.delete(ref); return w; },
-    commit: () => b.commit(),
+    set(ref, data, opts)  { refs.push(ref); b.set(ref, _isSync(ref) ? { ...data, ..._stamp() } : data, opts); return w; },
+    update(ref, ...args)  { refs.push(ref); b.update(ref, ...(_isSync(ref) ? _stampArgs(args) : args)); return w; },
+    delete(ref)           { refs.push(ref); if (_isSync(ref)) b.set(..._tomb(ref)); b.delete(ref); return w; },
+    commit: async () => { const r = await b.commit(); refs.forEach(_poke); return r; },
   };
   return w;
 };
@@ -780,7 +805,45 @@ async function _syncDelta(colName, cache, key) {
   return data;
 }
 
+// Lecture du contenu public dans D1 via le worker (GET /db/sync) : ni lecture ni quota Firestore.
+// Cache local `vcl_cache_d1_*` = { rev, epoch, ts, data } ; le serveur renvoie tout ce qui a une révision > rev.
+async function _d1Load(colName) {
+  const key = `vcl_cache_d1_${colName}`;
+  let cache = null;
+  try { cache = JSON.parse(localStorage.getItem(key) || 'null'); } catch {}
+  const usable = cache && cache.rev > 0 && Date.now() - cache.ts < 7 * 24 * 3600e3;
+  if (usable) {
+    try { if (Date.now() - parseInt(localStorage.getItem(_chkKey(colName)) || '0') < _SYNC_PAUSE_MS) return cache.data; } catch {}
+  }
+  const get = since => fetch(`${DISCORD_WORKER}/db/sync?col=${colName}&since=${since}`)
+    .then(r => { if (!r.ok) throw new Error('d1 ' + r.status); return r.json(); });
+  let j = await get(usable ? cache.rev : 0), delta = usable;
+  if (delta && j.epoch !== cache.epoch) { j = await get(0); delta = false; } // rechargement complet demandé
+  const row = x => desanitizeFromFirestore({ _id: x.id, ...x.d });
+  let data;
+  if (delta) {
+    const byId = new Map(cache.data.map(d => [d._id, d]));
+    j.deleted.forEach(id => byId.delete(id));
+    j.docs.forEach(x => byId.set(x.id, row(x)));
+    data = (j.deleted.length || j.docs.length) ? [...byId.values()] : cache.data;
+  } else {
+    data = j.docs.map(row);
+  }
+  try {
+    localStorage.setItem(key, JSON.stringify({ rev: j.rev, epoch: j.epoch, ts: Date.now(), data }));
+    localStorage.setItem(_chkKey(colName), String(Date.now()));
+  } catch {}
+  return data;
+}
+
 export async function loadCollection(colName, maxAgeMs = CACHE_TTL) {
+  if (D1_COLS.has(colName) && _syncPaused()) { // pages publiques : D1 ; modération / créateur : Firestore (écritures visibles tout de suite)
+    try { return await _d1Load(colName); }
+    catch {
+      try { const c = JSON.parse(localStorage.getItem(`vcl_cache_d1_${colName}`) || 'null'); if (c?.data) return c.data; } catch {}
+      // worker indisponible ou pas encore synchronisé : on retombe sur Firestore ci-dessous
+    }
+  }
   if (SYNC_COLS.has(colName)) {
     const epoch = await _syncEpoch();
     if (epoch) { // migration faite : mode différentiel

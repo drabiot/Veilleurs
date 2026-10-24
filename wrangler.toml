@@ -20,3 +20,7 @@ id = "bcf46723e68946d2b594f8f790a3c9ef"
 binding = "DB"
 database_name = "veilleurs"
 database_id = "8deed6e8-1a17-4339-86ef-fad656a886a9"
+
+# Synchro du contenu Firestore -> D1 (filet de sécurité ; le site déclenche aussi /db/refresh après une écriture)
+[triggers]
+crons = ["*/15 * * * *"]
