@@ -757,14 +757,45 @@ async function _syncFull(colName, key, epoch) {
   return data;
 }
 
+// Une seule requête `tombstones` par page : toutes les collections du cache partagent le plus ancien `tcur`,
+// puis chacune filtre côté client (au lieu d'une requête identique facturée par collection).
+let _tombP = null;
+function _tombstonesSince(tcur) {
+  if (!_tombP) {
+    let min = tcur;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('vcl_cache_v3_')) continue;
+        const c = JSON.parse(localStorage.getItem(k) || 'null');
+        if (c && c.tcur > 0) min = Math.min(min, c.tcur);
+      }
+    } catch {}
+    _tombP = getDocs(query(collection(db, 'tombstones'), where('ts', '>', Timestamp.fromMillis(min))))
+      .then(s => s.docs).catch(() => []);
+  }
+  return _tombP.then(docs => docs.filter(t => _ms(t.data().ts) > tcur));
+}
+
+// Pause entre deux vérifications de synchro (hors outils d'édition, qui doivent voir leurs écritures tout de suite).
+const _SYNC_PAUSE_MS = 3 * 60 * 1000;
+const _syncPaused = () => !/\/(moderation|creator)(\.html)?$/i.test(location.pathname);
+const _chkKey = colName => `vcl_sync_chk_${colName}`;
+
 async function _syncDelta(colName, cache, key) {
-  const [dSnap, tSnap] = await Promise.all([
+  if (_syncPaused()) {
+    try {
+      if (Date.now() - parseInt(localStorage.getItem(_chkKey(colName)) || '0') < _SYNC_PAUSE_MS) return cache.data;
+    } catch {}
+  }
+  const [dSnap, tDocs] = await Promise.all([
     getDocs(query(collection(db, colName), where('_updatedAt', '>', Timestamp.fromMillis(cache.cur)))),
-    getDocs(query(collection(db, 'tombstones'), where('ts', '>', Timestamp.fromMillis(cache.tcur)))).catch(() => ({ docs: [] })),
+    _tombstonesSince(cache.tcur),
   ]);
+  try { localStorage.setItem(_chkKey(colName), String(Date.now())); } catch {}
   const byId = new Map(cache.data.map(d => [d._id, d]));
   let { cur, tcur } = cache, changed = false;
-  tSnap.docs.forEach(t => {
+  tDocs.forEach(t => {
     const x = t.data();
     tcur = Math.max(tcur, _ms(x.ts));
     if (x.col === colName && byId.delete(x.id)) changed = true;   // d'abord les suppressions…
@@ -843,6 +874,7 @@ export function invalidateCache(colName) {
   // load() ne récupère que les changements (les écritures de cette page sont déjà datées).
   localStorage.removeItem(`vcl_cache_v2_${colName}`);
   localStorage.removeItem(`vcl_cache_meta_v2_${colName}`);
+  localStorage.removeItem(_chkKey(colName)); // force la prochaine vérification de synchro
 }
 
 // ── Exports Firestore bruts (pour les pages qui en ont besoin) ──
