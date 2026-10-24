@@ -261,18 +261,28 @@ export function anonName(id) {
 
 const _PV_SESSION_TTL = 30 * 60 * 1000;
 
+/** Visites des admins jamais comptées : le flag local suit l'appareil, même déconnecté. */
+async function _trackingBlocked(knownUser) {
+  try { if (localStorage.getItem('vcl_no_track') === '1') return true; } catch {}
+  const user = knownUser !== undefined ? knownUser : await new Promise(resolve => {
+    const unsub = onAuthStateChanged(auth, u => { unsub(); resolve(u); });
+  });
+  if (!user) return false;
+  let role = sessionStorage.getItem('vcl_role_' + user.uid);
+  if (!role) {
+    role = await getUserRole(user.uid);
+    if (role !== 'visiteur') sessionStorage.setItem('vcl_role_' + user.uid, role);
+  }
+  if (role !== 'admin') return false;
+  try { localStorage.setItem('vcl_no_track', '1'); } catch {}
+  return true;
+}
+
 export async function logPageView(section) {
   const user = await new Promise(resolve => {
     const unsub = onAuthStateChanged(auth, u => { unsub(); resolve(u); });
   });
-  if (user) {
-    let role = sessionStorage.getItem('vcl_role_' + user.uid);
-    if (!role) {
-      role = await getUserRole(user.uid);
-      sessionStorage.setItem('vcl_role_' + user.uid, role);
-    }
-    if (role === 'admin') return;
-  }
+  if (await _trackingBlocked(user)) return;
 
   const now   = Date.now();
   const today = _localDate();
@@ -363,7 +373,7 @@ export async function logPageView(section) {
  *  Exposé globalement via window._vclLogContentView depuis chaque page.
  */
 export async function logContentView(contentType, contentId, contentName) {
-  if (!contentId) return;
+  if (!contentId || await _trackingBlocked()) return;
   const safeId   = String(contentId).replace(/[^a-zA-Z0-9_-]/g, '_');
   const cacheKey = `cv_${contentType}_${safeId}`;
   const last = parseInt(localStorage.getItem(cacheKey) || '0');
@@ -389,7 +399,7 @@ export async function logContentView(contentType, contentId, contentName) {
 
 /** Log une vue d'item dans le compendium — rate-limited 1/hr par item. */
 export async function logItemView(itemId, itemName) {
-  if (!itemId) return;
+  if (!itemId || await _trackingBlocked()) return;
   const safeId = String(itemId).replace(/[^a-zA-Z0-9_-]/g, '_');
   const key  = 'iv_' + safeId;
   const last = parseInt(localStorage.getItem(key) || '0');
@@ -419,7 +429,7 @@ export async function logItemView(itemId, itemName) {
 
 /** Log un terme recherché dans le compendium — rate-limited 1/5min par terme. */
 export async function logSearchQuery(term) {
-  if (!term || term.length < 2) return;
+  if (!term || term.length < 2 || await _trackingBlocked()) return;
   const normalized = term.toLowerCase().trim().slice(0, 50);
   const safeKey = normalized.replace(/[^a-z0-9]/g, '_');
   const key  = 'sq_' + safeKey;

@@ -9269,18 +9269,14 @@ window.loadAuditLogMore = function() {
 // STATISTIQUES
 window.resetStatistiques = async function() {
   if (currentRole !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
-  const ok = await modal.confirm('Supprimer toutes les données de statistiques (page_views, user_visits) ? Cette action est irréversible.', { confirmLabel: 'Supprimer', danger: true });
+  const ok = await modal.confirm('Supprimer toutes les données de statistiques (visites, profils, items consultés, recherches) ? Cette action est irréversible.', { confirmLabel: 'Supprimer', danger: true });
   if (!ok) return;
   try {
-    const [pvSnap, uvSnap] = await Promise.all([
-      getDocs(collection(db, 'page_views')),
-      getDocs(collection(db, 'user_visits')),
-    ]);
-    await Promise.all([
-      ...pvSnap.docs.map(d => deleteDoc(d.ref)),
-      ...uvSnap.docs.map(d => deleteDoc(d.ref)),
-    ]);
-    const total = pvSnap.size + uvSnap.size;
+    const snaps = await Promise.all(
+      ['page_views', 'user_visits', 'item_views', 'search_logs'].map(c => getDocs(collection(db, c)))
+    );
+    await Promise.all(snaps.flatMap(sn => sn.docs.map(d => deleteDoc(d.ref))));
+    const total = snaps.reduce((n, sn) => n + sn.size, 0);
     toast(`✓ ${total} document${total !== 1 ? 's' : ''} supprimé${total !== 1 ? 's' : ''}`, 'success');
     loadStatistiques();
   } catch(e) {
@@ -9521,11 +9517,6 @@ window.loadStatistiques = async function loadStatistiques() {
     const searchLogDocs = sqSnap.docs.map(d => d.data());
     const recentReports = repSnap.docs.map(d => ({ id: d.id, ...d.data() }));
     const itemsRaw      = itemsSnap.docs.map(d => d.data());
-
-    if (!docs.length) {
-      container.innerHTML = '<div class="empty">Aucune donnée — visitez les pages wiki pour générer des statistiques.</div>';
-      return;
-    }
 
     const today    = new Date();
     const todayStr = _statsLocalDate(today);
