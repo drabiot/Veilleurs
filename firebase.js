@@ -319,7 +319,8 @@ export async function logPageView(section) {
         const visId = user?.uid || localStorage.getItem('vcl_anon_id');
         if (visId) {
           await setDoc(doc(db, 'user_visits', visId),
-            { totalSessions: increment(1), totalSectionVisits: increment(prevDepth) },
+            { totalSessions: increment(1), totalSectionVisits: increment(prevDepth),
+              ...(!user && { isAnonymous: true, pseudo: anonName(visId) }) },
             { merge: true });
         }
       } catch {}

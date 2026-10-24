@@ -9480,6 +9480,8 @@ window.loadStatistiques = async function loadStatistiques() {
     const logins     = loginSnap.docs.map(d => d.data());
     const userVisits = uvSnap.docs.map(d => {
       const raw = { id: d.id, ...d.data() };
+      // doc créé par une écriture partielle (profondeur de session) : l'id `anon_` fait foi
+      if (raw.isAnonymous == null && String(d.id).startsWith('anon_')) raw.isAnonymous = true;
       if (raw.isAnonymous) raw.pseudo = anonName(d.id);
       // Firestore stocke les champs imbriqués comme clés plates (sections.X, devices.X, etc.)
       const sections = {}, devices = {}, items = {}, itemNames = {},
