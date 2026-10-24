@@ -1329,6 +1329,11 @@ function loadAccessoriesForClass(classId) {
       });
     }
 
+    // Badge deux mains
+    if (item.twoHanded) {
+      badges += '<span class="item-class-badge">⚔️ Deux mains</span>';
+    }
+
     // Badge de set
     if (item.set) {
       const setDef = SETS[item.set];
