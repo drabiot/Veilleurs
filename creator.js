@@ -2858,43 +2858,81 @@ function initCustomSelects() {
       trigger.classList.toggle('locked', nativeSel.disabled);
     }
 
+    // Saisie au clavier : on tape pour filtrer (sans accents ni casse), Entrée choisit la 1ʳᵉ proposition
+    let typed = '', typedTimer = null, activeIdx = 0, shown = [];
+    const norm = t => (t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+    function pick(opt) {
+      nativeSel.value = opt.value;
+      nativeSel.dispatchEvent(new Event('change', { bubbles: true }));
+      closeList();
+      updateDisplay();
+    }
+    function closeList() {
+      list.classList.remove('open');
+      trigger.classList.remove('open');
+      typed = ''; clearTimeout(typedTimer);
+    }
     function buildListItems() {
       list.innerHTML = '';
-      const curVal = nativeSel.value;
-      Array.from(nativeSel.options).forEach(opt => {
+      const q = norm(typed);
+      shown = Array.from(nativeSel.options).filter(opt => q ? (opt.value && norm(opt.text).includes(q)) : true);
+      if (activeIdx >= shown.length) activeIdx = 0;
+      if (q) {
+        const hint = document.createElement('div');
+        hint.className = 'drop-empty';
+        hint.textContent = '🔎 ' + typed + (shown.length ? '' : ' — aucun résultat');
+        list.appendChild(hint);
+      }
+      shown.forEach((opt, idx) => {
         const di = document.createElement('div');
         di.className = 'drop-item';
         di.textContent = opt.text;
         if (!opt.value) di.style.cssText = 'color:var(--muted);font-style:italic;';
-        if (opt.value && opt.value === curVal) di.classList.add('focused');
-        di.addEventListener('mousedown', ev => {
-          ev.preventDefault();
-          nativeSel.value = opt.value;
-          nativeSel.dispatchEvent(new Event('change', { bubbles: true }));
-          list.classList.remove('open');
-          trigger.classList.remove('open');
-          updateDisplay();
-        });
+        if (idx === activeIdx) di.classList.add('focused');
+        di.addEventListener('mousedown', ev => { ev.preventDefault(); pick(opt); });
         list.appendChild(di);
       });
     }
-
-    trigger.addEventListener('click', () => {
-      const isOpen = list.classList.contains('open');
+    function openList() {
       document.querySelectorAll('.drop-list.open').forEach(d => d.classList.remove('open'));
       document.querySelectorAll('.custom-sel-trigger.open').forEach(t => t.classList.remove('open'));
-      if (!isOpen) {
-        buildListItems();
-        positionDrop(list, wrap);
-        list.classList.add('open');
-        trigger.classList.add('open');
-      }
+      buildListItems();
+      positionDrop(list, wrap);
+      list.classList.add('open');
+      trigger.classList.add('open');
+    }
+
+    trigger.addEventListener('click', () => {
+      if (list.classList.contains('open')) closeList(); else { typed = ''; activeIdx = Math.max(0, Array.from(nativeSel.options).findIndex(o => o.value && o.value === nativeSel.value)); openList(); }
     });
 
-    trigger.addEventListener('blur', () => setTimeout(() => {
-      list.classList.remove('open');
-      trigger.classList.remove('open');
-    }, 150));
+    trigger.addEventListener('keydown', ev => {
+      if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+      const isOpen = list.classList.contains('open');
+      if (ev.key === 'Enter') {
+        if (isOpen && shown.length) { ev.preventDefault(); pick(shown[activeIdx] || shown[0]); }
+        return;
+      }
+      if (ev.key === 'Escape') { if (isOpen) { ev.preventDefault(); closeList(); } return; }
+      if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && isOpen && shown.length) {
+        ev.preventDefault();
+        activeIdx = (activeIdx + (ev.key === 'ArrowDown' ? 1 : -1) + shown.length) % shown.length;
+        [...list.querySelectorAll('.drop-item')].forEach((el, k) => el.classList.toggle('focused', k === activeIdx));
+        return;
+      }
+      let changed = false;
+      if (ev.key === 'Backspace' && typed) { typed = typed.slice(0, -1); changed = true; }
+      else if (ev.key.length === 1 && (ev.key !== ' ' || typed)) { typed += ev.key; changed = true; }
+      if (!changed) return;
+      ev.preventDefault();
+      activeIdx = 0;
+      clearTimeout(typedTimer);
+      typedTimer = setTimeout(() => { typed = ''; if (list.classList.contains('open')) buildListItems(); }, 4000);
+      openList();
+    });
+
+    trigger.addEventListener('blur', () => setTimeout(closeList, 150));
 
     // Mettre à jour l'affichage quand le select natif change (via dispatchEvent)
     nativeSel.addEventListener('change', updateDisplay);
