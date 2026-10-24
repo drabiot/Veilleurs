@@ -2334,6 +2334,12 @@ function loadItem(item) {
     document.getElementById('evolutif-btn')?.classList.add('active');
   }
 
+  // Qualité
+  if (item.quality) {
+    selQualite = true;
+    document.getElementById('qualite-btn')?.classList.add('active');
+  }
+
   // Occulte
   if (item.occulte) {
     selOcculte = true;
@@ -5283,6 +5289,8 @@ async function submitToFirestore() {
     if (!data.label) throw new Error('Nom obligatoire');
   }
 
+  data = window._withLoadedExtras(data, creatorMode);
+
   // Nettoyer pour Firestore
   const clean = sanitizeForFirestore(JSON.parse(JSON.stringify(data)));
 
@@ -7392,3 +7400,55 @@ window._pageInit = function() {
       if (!skip.has(el.id)) el.setAttribute('autocomplete', 'off');
     });
   });
+
+// ═══════════════════════════════════════════════════
+// GARDE-FOU ROUND-TRIP (chargement → soumission)
+// Tout champ de l'objet chargé que le formulaire n'a pas su reproduire est mémorisé
+// puis ré-injecté à la soumission : évite qu'une correction supprime un champ en silence.
+// ═══════════════════════════════════════════════════
+(function () {
+  const BUILDERS = { item: () => buildObj(), mob: () => buildMobObj(), pnj: () => buildPnjObj(), region: () => buildRegionObj(), quest: () => buildQuestObj(), panoplie: () => buildPanoplieObj() };
+  const SKIP = new Set(['ordre', 'nameHash']);
+  window._loadedExtras = null;
+
+  const wrapLoad = (fnName, mode) => {
+    const orig = window[fnName];
+    if (typeof orig !== 'function') return;
+    window[fnName] = function (src, ...rest) {
+      const res = orig.call(this, src, ...rest);
+      try {
+        const built = BUILDERS[mode]() || {};
+        const extra = {};
+        for (const [k, v] of Object.entries(src || {})) {
+          if (k.startsWith('_') || SKIP.has(k) || v == null || k in built) continue;
+          extra[k] = v;
+        }
+        window._loadedExtras = { mode, id: built.id || src?.id || src?._id || '', extra };
+        if (Object.keys(extra).length) console.info(`[Creator] champs non reproductibles par le formulaire (conservés à la soumission) :`, Object.keys(extra));
+      } catch (e) { window._loadedExtras = null; }
+      return res;
+    };
+  };
+  [['loadItem', 'item'], ['loadMob', 'mob'], ['loadPnj', 'pnj'], ['loadRegion', 'region'], ['loadQuest', 'quest'], ['loadPanoplie', 'panoplie']]
+    .forEach(([fn, mode]) => wrapLoad(fn, mode));
+
+  const wrapReset = fnName => {
+    const orig = window[fnName];
+    if (typeof orig !== 'function') return;
+    window[fnName] = function (...a) {
+      const res = orig.apply(this, a);
+      // loadX appelle resetX avant de remplir : le snapshot est repris après le chargement
+      window._loadedExtras = null;
+      return res;
+    };
+  };
+  ['resetFormSilent', 'resetMobForm', 'resetPnjForm', 'resetRegionForm', 'resetQuestForm', 'resetPanoplieForm'].forEach(wrapReset);
+
+  window._withLoadedExtras = function (data, mode) {
+    const le = window._loadedExtras;
+    if (!le || le.mode !== mode || !data || (le.id && data.id !== le.id)) return data;
+    const out = { ...data };
+    for (const [k, v] of Object.entries(le.extra)) if (!(k in out)) out[k] = v;
+    return out;
+  };
+})();
