@@ -9272,17 +9272,24 @@ window.loadAuditLogMore = function() {
 };
 
 // ══════════════════════════════════════════════════════
-// STATISTIQUES
+// STATISTIQUES — données de tracking dans Cloudflare D1 (worker POST /stats, même secret que le proxy Discord)
+async function _fetchStats(action = 'get') {
+  const r = await fetch(WORKER_URL + '/stats', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret: await _getWorkerSecret(), action }),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || ('Stats HTTP ' + r.status));
+  return d;
+}
 window.resetStatistiques = async function() {
   if (currentRole !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
   const ok = await modal.confirm('Supprimer toutes les données de statistiques (visites, profils, items consultés, recherches) ? Cette action est irréversible.', { confirmLabel: 'Supprimer', danger: true });
   if (!ok) return;
   try {
-    const snaps = await Promise.all(
-      ['page_views', 'user_visits', 'item_views', 'search_logs'].map(c => getDocs(collection(db, c)))
-    );
-    await Promise.all(snaps.flatMap(sn => sn.docs.map(d => deleteDoc(d.ref))));
-    const total = snaps.reduce((n, sn) => n + sn.size, 0);
+    const before = await _fetchStats();
+    const total = ['page_views', 'user_visits', 'item_views', 'search_logs'].reduce((n, c) => n + before[c].length, 0);
+    await _fetchStats('reset');
     toast(`✓ ${total} document${total !== 1 ? 's' : ''} supprimé${total !== 1 ? 's' : ''}`, 'success');
     loadStatistiques();
   } catch(e) {
@@ -9469,18 +9476,19 @@ window.loadStatistiques = async function loadStatistiques() {
   const container = document.getElementById('stats-content');
   container.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const [pvSnap, loginSnap, uvSnap, ivSnap, sqSnap, repSnap, itemsSnap] = await Promise.all([
-      getDocs(collection(db, 'page_views')),
-      getDocs(query(collection(db, 'audit_log'),
-        where('action', '==', 'login'),
-        orderBy('createdAt', 'desc'),
-        limit(20))),
-      getDocs(collection(db, 'user_visits')),
-      getDocs(collection(db, 'item_views')).catch(() => ({ docs: [] })),
-      getDocs(collection(db, 'search_logs')).catch(() => ({ docs: [] })),
+    const [stats, repSnap, itemsSnap] = await Promise.all([
+      _fetchStats(),
       getDocs(query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(10))).catch(() => ({ docs: [] })),
       cachedDocs(COL.items).then(arr => ({ docs: arr.map(d => ({ data: () => d })) })).catch(() => ({ docs: [] })),
     ]);
+
+    // Les stats D1 arrivent en tableaux { _id, …champs } ; on les ramène à la forme « snapshot » lue ci-dessous
+    const asSnap  = arr => ({ docs: arr.map(({ _id, ...rest }) => ({ id: _id, data: () => rest })) });
+    const pvSnap  = asSnap(stats.page_views);
+    const uvSnap  = asSnap(stats.user_visits);
+    const ivSnap  = asSnap(stats.item_views);
+    const sqSnap  = asSnap(stats.search_logs);
+    const loginSnap = { docs: stats.logins.map(l => ({ data: () => ({ actorPseudo: l.actorPseudo, createdAt: { toDate: () => new Date(l.ts) } }) })) };
 
     const docs       = pvSnap.docs.map(d => d.data());
     const logins     = loginSnap.docs.map(d => d.data());

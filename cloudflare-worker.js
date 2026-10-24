@@ -604,6 +604,8 @@ export default {
     const _path = new URL(request.url).pathname;
     if (_path === '/discord/callback' && request.method === 'GET') return handleDiscordCallback(request, env);
     if (_path === '/discord/start' && request.method === 'POST') return handleDiscordStart(request, env);
+    if (_path === '/track' && request.method === 'POST') return handleTrack(request, env);
+    if (_path === '/stats' && request.method === 'POST') return handleStats(request, env);
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
     // ── Route: Discord Interaction (signature header present) ──
@@ -825,6 +827,10 @@ async function fsPatchUser(env, uid, data) {
 // Journal de connexion (alimente « Connexions récentes » des stats) ; jamais bloquant, admins exclus.
 async function fsLogLogin(env, uid, pseudo, role) {
   if (role === 'admin') return;
+  if (env.DB) {
+    try { await env.DB.prepare('INSERT INTO login_log (uid, pseudo, ts) VALUES (?, ?, ?)').bind(uid, pseudo || '', Date.now()).run(); } catch { /* idem */ }
+    return;
+  }
   try {
     await fsReq(env, '/audit_log', { method: 'POST', body: JSON.stringify({ fields: {
       action: toFs('login'), actorUid: toFs(uid), actorPseudo: toFs(pseudo || ''),
@@ -969,4 +975,96 @@ async function handleDiscordCallback(request, env) {
     if (/Firestore 429|quota|RESOURCE_EXHAUSTED/i.test(e.message)) return fail('Le site a atteint sa limite quotidienne de lectures : la connexion est indisponible pour le moment. Réessaie demain matin (remise à zéro vers 9h).');
     return fail('Erreur serveur : ' + e.message);
   }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  TRACKING & STATS (D1, binding `DB` — schéma dans d1/schema.sql)
+//
+//  POST /track  public : { ops: [{ col, id, set?: {clé: valeur}, inc?: {clé: 1..20} }] }
+//               équivalent de setDoc(…, {merge:true}) + increment(1) sur les 4 collections de stats.
+//  POST /stats  admin   : { secret, action: 'get' | 'reset' } — même secret que le proxy Discord.
+// ══════════════════════════════════════════════════════════════
+
+const TRACK_COLS    = new Set(['page_views', 'user_visits', 'item_views', 'search_logs']);
+const TRACK_ID_RE   = /^[A-Za-z0-9_\-]{1,120}$/;
+const TRACK_KEY_RE  = /^[A-Za-z0-9_.\-]{1,120}$/;
+const TRACK_MAX_OPS = 12;
+const TRACK_MAX_KEYS = 40;
+
+/** Valide une opération de tracking ; renvoie null si elle est refusée. */
+function cleanTrackOp(op) {
+  if (!op || !TRACK_COLS.has(op.col) || !TRACK_ID_RE.test(String(op.id))) return null;
+  const set = {}, inc = {};
+  for (const [k, v] of Object.entries(op.set || {})) {
+    if (!TRACK_KEY_RE.test(k)) return null;
+    if (typeof v === 'string') set[k] = v.slice(0, 150);
+    else if (typeof v === 'boolean' || (typeof v === 'number' && Number.isFinite(v))) set[k] = v;
+    else return null;
+  }
+  for (const [k, v] of Object.entries(op.inc || {})) {
+    if (!TRACK_KEY_RE.test(k) || !Number.isInteger(v) || v < 1 || v > 20) return null;
+    inc[k] = v;
+  }
+  if (Object.keys(set).length + Object.keys(inc).length > TRACK_MAX_KEYS) return null;
+  return { col: op.col, id: String(op.id), set, inc };
+}
+
+async function handleTrack(request, env) {
+  if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
+  let body;
+  try {
+    const raw = await request.text();
+    if (raw.length > 16000) return json({ error: 'Trop gros' }, 413);
+    body = JSON.parse(raw);
+  } catch { return json({ error: 'Bad JSON' }, 400); }
+  const ops = (Array.isArray(body?.ops) ? body.ops : []).slice(0, TRACK_MAX_OPS).map(cleanTrackOp);
+  if (!ops.length || ops.some(o => !o)) return json({ error: 'Opération invalide' }, 400);
+
+  const now = Date.now();
+  const stmts = [];
+  for (const o of ops) {
+    stmts.push(env.DB.prepare("INSERT OR IGNORE INTO track_docs (col, id, data, updated_at) VALUES (?, ?, '{}', ?)").bind(o.col, o.id, now));
+    // json_set(data, chemin, valeur, …) : une seule écriture par document
+    const parts = [], args = [];
+    for (const [k, v] of Object.entries(o.set)) { parts.push('?, json(?)'); args.push(`$."${k}"`, JSON.stringify(v)); }
+    for (const [k, n] of Object.entries(o.inc)) { parts.push('?, COALESCE(json_extract(data, ?), 0) + ?'); args.push(`$."${k}"`, `$."${k}"`, n); }
+    if (parts.length) {
+      stmts.push(env.DB.prepare(`UPDATE track_docs SET data = json_set(data, ${parts.join(', ')}), updated_at = ? WHERE col = ? AND id = ?`)
+        .bind(...args, now, o.col, o.id));
+    }
+  }
+  try { await env.DB.batch(stmts); } catch (e) { return json({ error: 'Écriture impossible' }, 500); }
+  return json({ ok: true });
+}
+
+async function handleStats(request, env) {
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
+  if (!env.ADMIN_SECRET || body.secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+  if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
+
+  if (body.action === 'reset') {
+    await env.DB.batch([env.DB.prepare('DELETE FROM track_docs'), env.DB.prepare('DELETE FROM login_log')]);
+    return json({ ok: true });
+  }
+
+  const [docs, logins] = await Promise.all([
+    env.DB.prepare('SELECT col, id, data FROM track_docs').all(),
+    env.DB.prepare('SELECT uid, pseudo, ts FROM login_log ORDER BY ts DESC LIMIT 20').all(),
+  ]);
+  const out = { page_views: [], user_visits: [], item_views: [], search_logs: [] };
+  for (const r of docs.results) {
+    let d; try { d = JSON.parse(r.data); } catch { continue; }
+    if (r.col === 'page_views') { // « hours.9 » (clés plates) → hours: { 9: n }, format lu par la page stats
+      for (const k of Object.keys(d)) {
+        if (!k.startsWith('hours.')) continue;
+        (d.hours = d.hours && typeof d.hours === 'object' ? d.hours : {})[k.slice(6)] = d[k];
+        delete d[k];
+      }
+    }
+    out[r.col]?.push({ _id: r.id, ...d });
+  }
+  out.logins = logins.results.map(l => ({ actorPseudo: l.pseudo, ts: l.ts }));
+  return json(out);
 }

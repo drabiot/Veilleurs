@@ -261,23 +261,21 @@ export function anonName(id) {
 
 const _PV_SESSION_TTL = 30 * 60 * 1000;
 
-// Garde-fou quota Firestore : le suivi des stats s'arrête pour la journée quand
-//  - le compteur de sessions du jour atteint ce plafond (≈ 5 écritures par session), ou
-//  - une écriture revient « resource-exhausted ».
-// Le reste du quota est ainsi réservé aux connexions Discord (≈ 10 lectures + 3 écritures chacune).
-const _TRACK_DAILY_SESSION_CAP = 1500;
-
-function _noteQuota(e) {
-  if (e?.code === 'resource-exhausted') {
-    try { localStorage.setItem('vcl_trk_off', _localDate()); } catch {}
-  }
+// Stats et tracking : écrits dans Cloudflare D1 via le worker (POST /track), plus dans Firestore.
+// Les échecs sont silencieux : le suivi ne doit jamais gêner la navigation.
+async function _track(ops) {
+  try {
+    await fetch(DISCORD_WORKER + '/track', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ops }), keepalive: true,
+    });
+  } catch {}
 }
 
 /** Visites des admins jamais comptées : le flag local suit l'appareil, même déconnecté. */
 async function _trackingBlocked(knownUser) {
   try {
     if (localStorage.getItem('vcl_no_track') === '1') return true;
-    if (localStorage.getItem('vcl_trk_off') === _localDate()) return true;
   } catch {}
   const user = knownUser !== undefined ? knownUser : await new Promise(resolve => {
     const unsub = onAuthStateChanged(auth, u => { unsub(); resolve(u); });
@@ -302,39 +300,22 @@ export async function logPageView(section) {
   const now   = Date.now();
   const today = _localDate();
   const hour  = new Date().getHours();
+  const ops   = [];
 
   // Session : nouvelle session si inactivité > 30 min
   const lastActivity = parseInt(localStorage.getItem('pv_session_last') || '0');
   const isNewSession = now - lastActivity >= _PV_SESSION_TTL;
   localStorage.setItem('pv_session_last', String(now));
 
-  const siteRef = doc(db, 'page_views', 'site_' + today);
-
-  // Plafond quotidien de sessions suivies (1 lecture par nouvelle session, échec = on continue)
-  if (isNewSession) {
-    try {
-      const snap = await getDoc(siteRef);
-      if ((snap.data()?.count || 0) >= _TRACK_DAILY_SESSION_CAP) {
-        localStorage.setItem('vcl_trk_off', today);
-        return;
-      }
-    } catch { /* règle de lecture absente ou hors-ligne : fail-open */ }
-  }
-
-  // Incrémenter le compteur global de visites (une fois par session)
-  if (isNewSession) {
-    try {
-      await setDoc(siteRef, { section: 'site', date: today, count: increment(1) }, { merge: true });
-      await updateDoc(siteRef, { [`hours.${hour}`]: increment(1) });
-    } catch (e) { _noteQuota(e); }
-  }
-
-  // Visiteurs uniques du jour : un seul incrément par navigateur et par jour
+  // Compteur global de visites (une fois par session) + visiteurs uniques (une fois par navigateur et par jour)
+  const siteInc = {};
+  if (isNewSession) { siteInc.count = 1; siteInc[`hours.${hour}`] = 1; }
   if (localStorage.getItem('pv_uv') !== today) {
     localStorage.setItem('pv_uv', today);
-    try {
-      await setDoc(siteRef, { section: 'site', date: today, uniques: increment(1) }, { merge: true });
-    } catch (e) { _noteQuota(e); }
+    siteInc.uniques = 1;
+  }
+  if (Object.keys(siteInc).length) {
+    ops.push({ col: 'page_views', id: 'site_' + today, set: { section: 'site', date: today }, inc: siteInc });
   }
 
   // Tracking par section dans user_visits (au plus une fois par heure par section)
@@ -343,30 +324,24 @@ export async function logPageView(section) {
   const isNewSectionVisit = now - lastSection >= 60 * 60 * 1000;
   if (isNewSectionVisit) localStorage.setItem(sectionKey, String(now));
 
+  const visId = user?.uid || localStorage.getItem('vcl_anon_id');
+
   // Session depth : sections visitées dans la session courante
   let sessionSections = new Set((localStorage.getItem('pv_session_sections') || '').split(',').filter(Boolean));
   if (isNewSession) {
     const prevDepth = sessionSections.size;
     sessionSections = new Set();
-    // Écriture de la profondeur de la session précédente
-    if (prevDepth > 0) {
-      try {
-        const visId = user?.uid || localStorage.getItem('vcl_anon_id');
-        if (visId) {
-          await setDoc(doc(db, 'user_visits', visId),
-            { totalSessions: increment(1), totalSectionVisits: increment(prevDepth),
-              ...(!user && { isAnonymous: true, pseudo: anonName(visId) }) },
-            { merge: true });
-        }
-      } catch {}
+    // Profondeur de la session précédente
+    if (prevDepth > 0 && visId) {
+      ops.push({ col: 'user_visits', id: visId,
+        set: user ? {} : { isAnonymous: true, pseudo: anonName(visId) },
+        inc: { totalSessions: 1, totalSectionVisits: Math.min(prevDepth, 20) } });
     }
   }
   sessionSections.add(section);
   localStorage.setItem('pv_session_sections', [...sessionSections].join(','));
 
-  if (!isNewSectionVisit) return;
-
-  try {
+  if (isNewSectionVisit) {
     let visitorId, pseudo, isAnonymous;
     if (user) {
       visitorId = user.uid;
@@ -391,17 +366,12 @@ export async function logPageView(section) {
     // Appareil
     const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
 
-    const uvRef = doc(db, 'user_visits', visitorId);
-    await setDoc(uvRef, {
-      pseudo,
-      isAnonymous,
-      [`sections.${section}`]: increment(1),
-      total: increment(1),
-      lastSeen: today,
-      [`devices.${device}`]:   increment(1),
-      ...(isFirstSeen && { firstSeen: today }),
-    }, { merge: true });
-  } catch (e) { _noteQuota(e); }
+    ops.push({ col: 'user_visits', id: visitorId,
+      set: { pseudo, isAnonymous, lastSeen: today, ...(isFirstSeen && { firstSeen: today }) },
+      inc: { [`sections.${section}`]: 1, total: 1, [`devices.${device}`]: 1 } });
+  }
+
+  if (ops.length) await _track(ops);
 }
 
 /** Log la consultation d'un contenu (mob, pnj, quete, item…) — rate-limited 1/hr par contenu.
@@ -426,10 +396,9 @@ export async function logContentView(contentType, contentId, contentName) {
     if (!visitorId) return;
     // Namespace : mob→mobs, pnj→pnj, quete→quetes, item→items
     const ns = contentType === 'pnj' ? 'pnj' : contentType + 's';
-    await setDoc(doc(db, 'user_visits', visitorId), {
-      [`${ns}.${safeId}`]:            increment(1),
-      [`${contentType}_names.${safeId}`]: contentName || String(contentId),
-    }, { merge: true });
+    await _track([{ col: 'user_visits', id: visitorId,
+      set: { [`${contentType}_names.${safeId}`]: contentName || String(contentId) },
+      inc: { [`${ns}.${safeId}`]: 1 } }]);
   } catch {}
 }
 
@@ -444,8 +413,8 @@ export async function logItemView(itemId, itemName) {
   localStorage.setItem(key, String(now));
   const today = _localDate();
   try {
-    const ref = doc(db, 'item_views', safeId + '_' + today);
-    await setDoc(ref, { itemId: String(itemId), name: itemName || '', date: today, count: increment(1) }, { merge: true });
+    await _track([{ col: 'item_views', id: safeId + '_' + today,
+      set: { itemId: String(itemId), name: itemName || '', date: today }, inc: { count: 1 } }]);
   } catch {}
   // Tracking par utilisateur
   try {
@@ -456,10 +425,9 @@ export async function logItemView(itemId, itemName) {
     }
     const visitorId = user?.uid || localStorage.getItem('vcl_anon_id');
     if (!visitorId) return;
-    await setDoc(doc(db, 'user_visits', visitorId), {
-      [`items.${safeId}`]:      increment(1),
-      [`item_names.${safeId}`]: itemName || String(itemId),
-    }, { merge: true });
+    await _track([{ col: 'user_visits', id: visitorId,
+      set: { [`item_names.${safeId}`]: itemName || String(itemId) },
+      inc: { [`items.${safeId}`]: 1 } }]);
   } catch {}
 }
 
@@ -475,8 +443,8 @@ export async function logSearchQuery(term) {
   localStorage.setItem(key, String(now));
   const today = _localDate();
   try {
-    const ref = doc(db, 'search_logs', safeKey + '_' + today);
-    await setDoc(ref, { term: normalized, date: today, count: increment(1) }, { merge: true });
+    await _track([{ col: 'search_logs', id: safeKey + '_' + today,
+      set: { term: normalized, date: today }, inc: { count: 1 } }]);
   } catch {}
   // Tracking par utilisateur
   try {
@@ -487,9 +455,7 @@ export async function logSearchQuery(term) {
     }
     const visitorId = user?.uid || localStorage.getItem('vcl_anon_id');
     if (!visitorId) return;
-    await setDoc(doc(db, 'user_visits', visitorId), {
-      [`searches.${safeKey}`]: increment(1),
-    }, { merge: true });
+    await _track([{ col: 'user_visits', id: visitorId, set: {}, inc: { [`searches.${safeKey}`]: 1 } }]);
   } catch {}
 }
 

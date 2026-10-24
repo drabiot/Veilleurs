@@ -1,0 +1,19 @@
+# Déploiement du worker : npx wrangler deploy
+# À remplir avant le premier déploiement (valeurs visibles dans le dashboard Cloudflare) :
+#   - kv_namespaces.id        → Workers & Pages → KV → namespace utilisé par WIKI_CACHE
+#   - d1_databases.database_id → résultat de `npx wrangler d1 create veilleurs`
+name = "veilleurs"
+main = "cloudflare-worker.js"
+compatibility_date = "2026-10-01"
+
+# Garde les variables texte et secrets déjà définis dans le dashboard (BOT_TOKEN, ADMIN_SECRET, FIREBASE_SA…)
+keep_vars = true
+
+[[kv_namespaces]]
+binding = "WIKI_CACHE"
+id = "REMPLACER_PAR_L_ID_KV"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "veilleurs"
+database_id = "REMPLACER_PAR_L_ID_D1"

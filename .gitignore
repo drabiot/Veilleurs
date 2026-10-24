@@ -2,3 +2,7 @@ tools/items.json
 
 # Règles Firestore : gérées dans la console Firebase (copie locale hors dépôt dans Save/)
 firestore.rules
+
+# Wrangler (�tat local de dev)
+.wrangler/
+.dev.vars
