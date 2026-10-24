@@ -171,6 +171,7 @@ function inlineLinks(str) {
 function parseText(str) {
   if (!str) return '';
   str = resolveObtain(str);
+  str = str.replace(/(Obtenable pendant l'Event )\[([^\]]+)\]/g, '$1$2'); // crochets = syntaxe de stockage, pas d'affichage
 
   const lines = str.split('\n');
 
