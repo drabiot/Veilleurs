@@ -213,6 +213,11 @@ export async function logout() {
  *  - user_visits : section trackée au plus une fois par heure (pour répartition par outil).
  *  - Ignoré pour les admins.
  */
+/** Date locale YYYY-MM-DD (évite le décalage UTC de toISOString). */
+function _localDate(d = new Date()) {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
 const _PV_SESSION_TTL = 30 * 60 * 1000;
 
 export async function logPageView(section) {
@@ -229,7 +234,7 @@ export async function logPageView(section) {
   }
 
   const now   = Date.now();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = _localDate();
   const hour  = new Date().getHours();
 
   // Session : nouvelle session si inactivité > 30 min
@@ -260,7 +265,7 @@ export async function logPageView(section) {
     // Écriture de la profondeur de la session précédente
     if (prevDepth > 0) {
       try {
-        const visId = user?.uid || sessionStorage.getItem('vcl_anon_id');
+        const visId = user?.uid || localStorage.getItem('vcl_anon_id');
         if (visId) {
           await setDoc(doc(db, 'user_visits', visId),
             { totalSessions: increment(1), totalSectionVisits: increment(prevDepth) },
@@ -281,10 +286,10 @@ export async function logPageView(section) {
       pseudo = user.displayName || user.email || user.uid;
       isAnonymous = false;
     } else {
-      let anonId = sessionStorage.getItem('vcl_anon_id');
+      let anonId = localStorage.getItem('vcl_anon_id');
       if (!anonId) {
         anonId = 'anon_' + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
-        sessionStorage.setItem('vcl_anon_id', anonId);
+        localStorage.setItem('vcl_anon_id', anonId);
       }
       visitorId = anonId;
       pseudo = 'Anonyme';
@@ -330,7 +335,7 @@ export async function logContentView(contentType, contentId, contentName) {
       const role = sessionStorage.getItem('vcl_role_' + user.uid);
       if (role === 'admin') return;
     }
-    const visitorId = user?.uid || sessionStorage.getItem('vcl_anon_id');
+    const visitorId = user?.uid || localStorage.getItem('vcl_anon_id');
     if (!visitorId) return;
     // Namespace : mob→mobs, pnj→pnj, quete→quetes, item→items
     const ns = contentType === 'pnj' ? 'pnj' : contentType + 's';
@@ -350,7 +355,7 @@ export async function logItemView(itemId, itemName) {
   const now  = Date.now();
   if (now - last < 60 * 60 * 1000) return;
   localStorage.setItem(key, String(now));
-  const today = new Date().toISOString().slice(0, 10);
+  const today = _localDate();
   try {
     const ref = doc(db, 'item_views', safeId + '_' + today);
     await setDoc(ref, { itemId: String(itemId), name: itemName || '', date: today, count: increment(1) }, { merge: true });
@@ -362,7 +367,7 @@ export async function logItemView(itemId, itemName) {
       const role = sessionStorage.getItem('vcl_role_' + user.uid);
       if (role === 'admin') return;
     }
-    const visitorId = user?.uid || sessionStorage.getItem('vcl_anon_id');
+    const visitorId = user?.uid || localStorage.getItem('vcl_anon_id');
     if (!visitorId) return;
     await setDoc(doc(db, 'user_visits', visitorId), {
       [`items.${safeId}`]:      increment(1),
@@ -381,7 +386,7 @@ export async function logSearchQuery(term) {
   const now  = Date.now();
   if (now - last < 5 * 60 * 1000) return;
   localStorage.setItem(key, String(now));
-  const today = new Date().toISOString().slice(0, 10);
+  const today = _localDate();
   try {
     const ref = doc(db, 'search_logs', safeKey + '_' + today);
     await setDoc(ref, { term: normalized, date: today, count: increment(1) }, { merge: true });
@@ -393,7 +398,7 @@ export async function logSearchQuery(term) {
       const role = sessionStorage.getItem('vcl_role_' + user.uid);
       if (role === 'admin') return;
     }
-    const visitorId = user?.uid || sessionStorage.getItem('vcl_anon_id');
+    const visitorId = user?.uid || localStorage.getItem('vcl_anon_id');
     if (!visitorId) return;
     await setDoc(doc(db, 'user_visits', visitorId), {
       [`searches.${safeKey}`]: increment(1),

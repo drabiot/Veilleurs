@@ -7342,7 +7342,10 @@ service cloud.firestore {
     // ── Statistiques de fréquentation : écriture ouverte mais bornée, jamais de suppression ──
     match /page_views/{docId} {
       allow read:   if isAdmin();
-      allow create, update: if request.resource.data.size() <= 100;
+      allow create: if request.resource.data.size() <= 100
+                    && request.resource.data.get('count', 0) <= 1;
+      allow update: if request.resource.data.size() <= 100
+                    && request.resource.data.get('count', 0) <= resource.data.get('count', 0) + 1;
       allow delete: if isAdmin();
     }
 
@@ -9459,6 +9462,7 @@ function _buildStatsExtra({ userVisits, itemViewDocs, searchLogDocs, recentRepor
   return html;
 }
 
+const _statsLocalDate = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 window.loadStatistiques = async function loadStatistiques() {
   const container = document.getElementById('stats-content');
   container.innerHTML = '<div class="empty">Chargement…</div>';
@@ -9523,7 +9527,7 @@ window.loadStatistiques = async function loadStatistiques() {
     }
 
     const today    = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
+    const todayStr = _statsLocalDate(today);
     const cutoff7  = new Date(today); cutoff7.setDate(today.getDate() - 7);
     const cutoff30 = new Date(today); cutoff30.setDate(today.getDate() - 30);
 
@@ -9669,7 +9673,7 @@ window.loadStatistiques = async function loadStatistiques() {
     const last30 = [];
     for (let i = 29; i >= 0; i--) {
       const d = new Date(today); d.setDate(today.getDate() - i);
-      last30.push(d.toISOString().slice(0, 10));
+      last30.push(_statsLocalDate(d));
     }
     const maxDay    = Math.max(...last30.map(d => byDate[d] || 0), 1);
     const dailyBars = last30.map((date, i) => {
