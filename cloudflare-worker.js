@@ -835,8 +835,13 @@ async function fsLogLogin(env, uid, pseudo, role) {
 }
 
 // ── Rôle site déduit des rôles Discord (config/discordRoles) ──
+let _roleCfgCache = null; // { at, cfg, custom } : 5 min, économise 2 lectures Firestore par connexion
 async function resolveSiteRole(env, discordRoleIds) {
-  const [cfg, custom] = await Promise.all([fsGetDoc(env, 'config/discordRoles'), fsGetDoc(env, 'config/customRoles')]);
+  if (!_roleCfgCache || Date.now() - _roleCfgCache.at > 5 * 60000) {
+    const [c, cu] = await Promise.all([fsGetDoc(env, 'config/discordRoles'), fsGetDoc(env, 'config/customRoles')]);
+    _roleCfgCache = { at: Date.now(), cfg: c, custom: cu };
+  }
+  const { cfg, custom } = _roleCfgCache;
   const map = cfg?.map || {};
   const tier = role => BASE_ROLES.includes(role) ? BASE_ROLES.indexOf(role)
     : BASE_ROLES.indexOf((custom?.roles || []).find(r => r.id === role)?.baseTier || 'visiteur');

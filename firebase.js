@@ -261,9 +261,24 @@ export function anonName(id) {
 
 const _PV_SESSION_TTL = 30 * 60 * 1000;
 
+// Garde-fou quota Firestore : le suivi des stats s'arrête pour la journée quand
+//  - le compteur de sessions du jour atteint ce plafond (≈ 5 écritures par session), ou
+//  - une écriture revient « resource-exhausted ».
+// Le reste du quota est ainsi réservé aux connexions Discord (≈ 10 lectures + 3 écritures chacune).
+const _TRACK_DAILY_SESSION_CAP = 1500;
+
+function _noteQuota(e) {
+  if (e?.code === 'resource-exhausted') {
+    try { localStorage.setItem('vcl_trk_off', _localDate()); } catch {}
+  }
+}
+
 /** Visites des admins jamais comptées : le flag local suit l'appareil, même déconnecté. */
 async function _trackingBlocked(knownUser) {
-  try { if (localStorage.getItem('vcl_no_track') === '1') return true; } catch {}
+  try {
+    if (localStorage.getItem('vcl_no_track') === '1') return true;
+    if (localStorage.getItem('vcl_trk_off') === _localDate()) return true;
+  } catch {}
   const user = knownUser !== undefined ? knownUser : await new Promise(resolve => {
     const unsub = onAuthStateChanged(auth, u => { unsub(); resolve(u); });
   });
@@ -293,13 +308,33 @@ export async function logPageView(section) {
   const isNewSession = now - lastActivity >= _PV_SESSION_TTL;
   localStorage.setItem('pv_session_last', String(now));
 
+  const siteRef = doc(db, 'page_views', 'site_' + today);
+
+  // Plafond quotidien de sessions suivies (1 lecture par nouvelle session, échec = on continue)
+  if (isNewSession) {
+    try {
+      const snap = await getDoc(siteRef);
+      if ((snap.data()?.count || 0) >= _TRACK_DAILY_SESSION_CAP) {
+        localStorage.setItem('vcl_trk_off', today);
+        return;
+      }
+    } catch { /* règle de lecture absente ou hors-ligne : fail-open */ }
+  }
+
   // Incrémenter le compteur global de visites (une fois par session)
   if (isNewSession) {
     try {
-      const ref = doc(db, 'page_views', 'site_' + today);
-      await setDoc(ref, { section: 'site', date: today, count: increment(1) }, { merge: true });
-      await updateDoc(ref, { [`hours.${hour}`]: increment(1) });
-    } catch { /* silently fail */ }
+      await setDoc(siteRef, { section: 'site', date: today, count: increment(1) }, { merge: true });
+      await updateDoc(siteRef, { [`hours.${hour}`]: increment(1) });
+    } catch (e) { _noteQuota(e); }
+  }
+
+  // Visiteurs uniques du jour : un seul incrément par navigateur et par jour
+  if (localStorage.getItem('pv_uv') !== today) {
+    localStorage.setItem('pv_uv', today);
+    try {
+      await setDoc(siteRef, { section: 'site', date: today, uniques: increment(1) }, { merge: true });
+    } catch (e) { _noteQuota(e); }
   }
 
   // Tracking par section dans user_visits (au plus une fois par heure par section)
@@ -366,7 +401,7 @@ export async function logPageView(section) {
       [`devices.${device}`]:   increment(1),
       ...(isFirstSeen && { firstSeen: today }),
     }, { merge: true });
-  } catch { /* silently fail */ }
+  } catch (e) { _noteQuota(e); }
 }
 
 /** Log la consultation d'un contenu (mob, pnj, quete, item…) — rate-limited 1/hr par contenu.

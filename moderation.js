@@ -7343,11 +7343,15 @@ service cloud.firestore {
 
     // ── Statistiques de fréquentation : écriture ouverte mais bornée, jamais de suppression ──
     match /page_views/{docId} {
-      allow read:   if isAdmin();
+      // get public : le tracker lit le compteur du jour pour appliquer le plafond quotidien
+      allow get:    if true;
+      allow list:   if isAdmin();
       allow create: if request.resource.data.size() <= 100
-                    && request.resource.data.get('count', 0) <= 1;
+                    && request.resource.data.get('count', 0) <= 1
+                    && request.resource.data.get('uniques', 0) <= 1;
       allow update: if request.resource.data.size() <= 100
-                    && request.resource.data.get('count', 0) <= resource.data.get('count', 0) + 1;
+                    && request.resource.data.get('count', 0) <= resource.data.get('count', 0) + 1
+                    && request.resource.data.get('uniques', 0) <= resource.data.get('uniques', 0) + 1;
       allow delete: if isAdmin();
     }
 
@@ -9530,7 +9534,7 @@ window.loadStatistiques = async function loadStatistiques() {
     const cutoff30 = new Date(today); cutoff30.setDate(today.getDate() - 30);
 
     let total = 0, total7 = 0, total30 = 0, totalToday = 0;
-    const byDate = {}, byMonth = {};
+    const byDate = {}, byMonth = {}, byUnique = {};
     const byHour = Array(24).fill(0);
 
     // Grouper par date pour éviter le double-counting entre ancien format (section=nom)
@@ -9553,6 +9557,7 @@ window.loadStatistiques = async function loadStatistiques() {
       if (dt >= cutoff7)  total7  += count;
       if (dt >= cutoff30) total30 += count;
       byDate[date] = count;
+      byUnique[date] = siteDoc?.uniques || 0;
       const month = date.slice(0, 7);
       if (!byMonth[month]) byMonth[month] = { _total: 0 };
       byMonth[month]._total += count;
@@ -9600,8 +9605,22 @@ window.loadStatistiques = async function loadStatistiques() {
     const loginsTodayLimitHit = logins.length >= 20 && loginsToday === logins.length;
     const loginsTodayDisplay  = loginsTodayLimitHit ? `≥${fmt(loginsToday)}` : fmt(loginsToday);
 
+    // Visiteurs uniques (1 par navigateur et par jour, collectés depuis l'ajout du suivi)
+    const uniqToday = byUnique[todayStr] || 0;
+    const uniq7  = Object.entries(byUnique).filter(([d]) => new Date(d + 'T00:00:00') >= cutoff7).reduce((a, [, v]) => a + v, 0);
+
     // ── KPI cards ─────────────────────────────────────
     const kpiCards = `<div class="stats-kpi-grid">
+      <div class="stats-kpi-card" style="--kpi-color:#22d3ee">
+        <div class="stats-kpi-icon">🧑‍🤝‍🧑</div>
+        <div class="stats-kpi-val">${fmt(uniqToday)}</div>
+        <div class="stats-kpi-lbl">Visiteurs uniques aujourd'hui</div>
+      </div>
+      <div class="stats-kpi-card" style="--kpi-color:#22d3ee">
+        <div class="stats-kpi-icon">🧑‍🤝‍🧑</div>
+        <div class="stats-kpi-val">${fmt(uniq7)}</div>
+        <div class="stats-kpi-lbl">Uniques cumulés (7 jours)</div>
+      </div>
       <div class="stats-kpi-card" style="--kpi-color:#E0AC60">
         <div class="stats-kpi-icon">📅</div>
         <div class="stats-kpi-val">${fmt(total7)}</div>
@@ -9680,6 +9699,20 @@ window.loadStatistiques = async function loadStatistiques() {
       const showLbl  = i % 5 === 0 || i === 29;
       const dayLabel = `${date.slice(8,10)}/${date.slice(5,7)}`;
       return `<div class="stats-day-col" data-tooltip="${count} visite${count !== 1 ? 's' : ''} — ${dayLabel}">
+        <div class="stats-day-track">
+          <div class="stats-day-fill${count > 0 ? ' stats-day-fill--active' : ''}" style="height:${pct}%"></div>
+        </div>
+        <div class="stats-day-lbl">${showLbl ? dayLabel : ''}</div>
+      </div>`;
+    }).join('');
+
+    const maxUniq    = Math.max(...last30.map(d => byUnique[d] || 0), 1);
+    const uniqueBars = last30.map((date, i) => {
+      const count    = byUnique[date] || 0;
+      const pct      = Math.round(count / maxUniq * 100);
+      const showLbl  = i % 5 === 0 || i === 29;
+      const dayLabel = `${date.slice(8,10)}/${date.slice(5,7)}`;
+      return `<div class="stats-day-col" data-tooltip="${count} visiteur${count !== 1 ? 's' : ''} unique${count !== 1 ? 's' : ''} — ${dayLabel}">
         <div class="stats-day-track">
           <div class="stats-day-fill${count > 0 ? ' stats-day-fill--active' : ''}" style="height:${pct}%"></div>
         </div>
@@ -9783,6 +9816,11 @@ window.loadStatistiques = async function loadStatistiques() {
       <div class="stats-section">
         <div class="stats-section-title">Visites par jour — 30 derniers jours</div>
         <div class="stats-day-chart">${dailyBars}</div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-section-title">Visiteurs uniques par jour — 30 derniers jours</div>
+        <div class="stats-day-chart">${uniqueBars}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px;">1 navigateur = 1 visiteur par jour. Collecté depuis l'ajout de ce suivi : les jours antérieurs restent vides.</div>
       </div>
       <div class="stats-section">
         <div class="stats-section-title">Tableau mensuel</div>
