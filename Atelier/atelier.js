@@ -1029,7 +1029,8 @@ function loadAccessoriesForClass(classId) {
     if (!item || !item.twoHanded) return null;
     const offCat = TWO_HANDED_PAIRS[item.cat];
     if (!offCat) return null;
-    const offSlot = SLOTS_BY_ID.get(offCat || (s.cats && s.cats.includes(offCat)));
+    // TWO_HANDED_PAIRS lie des catégories (arme_p → arme_s), pas des ids de slot (arme_pr / arme_sec)
+    const offSlot = ALL_SLOTS.find(function(sl) { return sl.cats.includes(offCat); });
     return offSlot ? offSlot.id : null;
 	}
 
