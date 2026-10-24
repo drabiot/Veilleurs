@@ -1406,8 +1406,21 @@ function parseObtainText(text, itemId, itemName) {
   if (!text) return sources;
   const lines = text.split('\n');
   let inMobSection = false;
+  let inQuestSection = false;
   for (const line of lines) {
     const t = line.trim();
+    if (/^Récompenses des quêtes\s*:$/.test(t)) { inQuestSection = true; inMobSection = false; continue; }
+    if (inQuestSection && t.startsWith('- ')) {
+      const qm = t.match(/^-\s*\[quest:([^|]+)\|([^\]]+)\]$/);
+      if (qm) {
+        const [, id, name] = qm;
+        const q = allQuetes.find(x => x.id === id);
+        sources.push({ uid: obtainUid++, type: 'quete', id, name, desc: q?.desc || '', subtitle: q?.subtitle || '' });
+      }
+      continue;
+    }
+    if (inQuestSection && t === '') continue;
+    inQuestSection = false;
     if (t === 'Obtenable en tuant:') { inMobSection = true; continue; }
     if (inMobSection && t.startsWith('- ')) {
       const m = t.match(/^-\s*\[([^|]+)\|([^\]]+)\]\[([^\]]+)\]$/);
@@ -1514,7 +1527,8 @@ function buildObtainText() {
   for (const p of pnjs)         parts.push((p.verb || (allArtisans.some(a => a.id === p.id) ? 'Fabricable' : 'Achetable')) + ` au [npc:${p.id}|${p.name}]`);
   for (const a of artisans)     parts.push(`Fabricable au [npc:${a.id}|${a.name}]`);
   for (const m of marchands)    parts.push(`Achetable au [npc:${m.id}|${m.name}]`);
-  for (const q of quetes)       parts.push(`Récompense de la quête [quest:${q.id}|${q.name}]`);
+  if (quetes.length === 1) parts.push(`Récompense de la quête [quest:${quetes[0].id}|${quetes[0].name}]`);
+  else if (quetes.length > 1) parts.push('Récompenses des quêtes :\n' + quetes.map(q => `- [quest:${q.id}|${q.name}]`).join('\n'));
   for (const r of ressources) {
     if (r.coords && !r.id) {
       parts.push(`Récoltable aux coordonnées [coords:${r.coords.x},${r.coords.z}]`);
