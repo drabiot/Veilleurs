@@ -16126,23 +16126,50 @@ async function _loadEventsList() {
   if (!list) return;
   list.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const snap = await getDocs(query(collection(db, COL.events), orderBy('createdAt', 'desc')));
-    if (snap.empty) {
+    const docs = await _sortedEventDocs();
+    if (!docs.length) {
       list.innerHTML = '<div class="empty" style="color:var(--muted);">Aucun event. Créez-en un ci-dessus.</div>';
       return;
     }
-    list.innerHTML = snap.docs.map(d => {
+    list.innerHTML = docs.map((d, i) => {
       const ev = d.data();
       const safeName = escHtml(ev.name || d.id);
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;">
         <span style="font-size:13px;">🎪 ${safeName}</span>
+        <span style="display:flex;gap:6px;align-items:center;">
+          <button class="btn btn-ghost btn-sm" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="moveVclEvent('${d.id}',-1)" style="font-size:12px;">▲</button>
+          <button class="btn btn-ghost btn-sm" title="Descendre" ${i === docs.length - 1 ? 'disabled' : ''} onclick="moveVclEvent('${d.id}',1)" style="font-size:12px;">▼</button>
         <button class="btn btn-danger btn-sm" onclick="deleteVclEvent('${d.id}','${safeName.replace(/'/g, '\\\'')}')" style="font-size:12px;">🗑️ Supprimer</button>
+        </span>
       </div>`;
     }).join('');
   } catch(e) {
     list.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`;
   }
 }
+
+// Events triés comme EVENT_NAMES : `ordre` puis date de création
+async function _sortedEventDocs() {
+  const snap = await getDocs(collection(db, COL.events));
+  const ts = d => d.data().createdAt?.seconds ?? 0;
+  return [...snap.docs].sort((a, b) => (a.data().ordre ?? 1e9) - (b.data().ordre ?? 1e9) || ts(a) - ts(b));
+}
+
+window.moveVclEvent = async function(id, dir) {
+  try {
+    const docs = await _sortedEventDocs();
+    const i = docs.findIndex(d => d.id === id), j = i + dir;
+    if (i < 0 || j < 0 || j >= docs.length) return;
+    [docs[i], docs[j]] = [docs[j], docs[i]];
+    const batch = writeBatch(db);
+    docs.forEach((d, k) => { if (d.data().ordre !== k + 1) batch.update(d.ref, { ordre: k + 1 }); });
+    await batch.commit();
+    await loadEventNames();
+    await _loadEventsList();
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
 
 // Ordre d'affichage d'un nouvel event (après les existants) ; EVENT_NAMES est rechargé après chaque création/suppression
 async function _nextEventOrdre() {
