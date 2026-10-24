@@ -990,7 +990,7 @@ async function handleDiscordCallback(request, env) {
 //
 //  POST /track  public : { ops: [{ col, id, set?: {clé: valeur}, inc?: {clé: 1..20} }] }
 //               équivalent de setDoc(…, {merge:true}) + increment(1) sur les 4 collections de stats.
-//  POST /stats  admin   : { secret, action: 'get' | 'reset' } — même secret que le proxy Discord.
+//  POST /stats  admin   : { secret, action: 'summary' (défaut) | 'user' | 'reset' } — agrégats calculés en SQL ; même secret que le proxy Discord.
 // ══════════════════════════════════════════════════════════════
 
 const TRACK_COLS    = new Set(['page_views', 'user_visits', 'item_views', 'search_logs']);
@@ -1045,35 +1045,113 @@ async function handleTrack(request, env) {
   return json({ ok: true });
 }
 
+// Visiteur anonyme : doc sans isAnonymous dont l'id commence par « anon_ » (écriture partielle de profondeur de session)
+const UV_ANON = "COALESCE(json_extract(track_docs.data, '$.isAnonymous'), substr(track_docs.id, 1, 5) = 'anon_')";
+const UV_TOTAL = "COALESCE(json_extract(track_docs.data, '$.total'), 0)";
+
+// Clés plates de user_visits (« sections.map », « item_names.arc ») → objets, comme la page stats les lit
+const UV_GROUPS = { sections: 'sections', devices: 'devices', items: 'items', item_names: 'itemNames', mobs: 'mobs',
+  mob_names: 'mobNames', pnj: 'pnj', npcs: 'pnj', pnj_names: 'pnjNames', npc_names: 'pnjNames', quetes: 'quetes',
+  quete_names: 'queteNames', searches: 'searches' };
+function uvGroups(d) {
+  const out = {};
+  for (const [k, v] of Object.entries(d)) {
+    const i = k.indexOf('.');
+    const g = i > 0 && UV_GROUPS[k.slice(0, i)];
+    if (g) (out[g] ??= {})[k.slice(i + 1)] = v;
+  }
+  return out;
+}
+
 async function handleStats(request, env) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
   if (!env.ADMIN_SECRET || body.secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
   if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
+  const q = (sql, ...args) => env.DB.prepare(sql).bind(...args);
 
   if (body.action === 'reset') {
-    await env.DB.batch([env.DB.prepare('DELETE FROM track_docs'), env.DB.prepare('DELETE FROM login_log')]);
-    return json({ ok: true });
+    const n = (await q("SELECT COUNT(*) n FROM track_docs").first()).n;
+    await env.DB.batch([q('DELETE FROM track_docs'), q('DELETE FROM login_log')]);
+    return json({ ok: true, deleted: n });
   }
 
-  const [docs, logins] = await Promise.all([
-    env.DB.prepare('SELECT col, id, data FROM track_docs').all(),
-    env.DB.prepare('SELECT uid, pseudo, ts FROM login_log ORDER BY ts DESC LIMIT 20').all(),
-  ]);
-  const out = { page_views: [], user_visits: [], item_views: [], search_logs: [] };
-  for (const r of docs.results) {
-    let d; try { d = JSON.parse(r.data); } catch { continue; }
-    if (r.col === 'page_views') { // « hours.9 » (clés plates) → hours: { 9: n }, format lu par la page stats
-      for (const k of Object.keys(d)) {
-        if (!k.startsWith('hours.')) continue;
-        (d.hours = d.hours && typeof d.hours === 'object' ? d.hours : {})[k.slice(6)] = d[k];
-        delete d[k];
-      }
-    }
-    out[r.col]?.push({ _id: r.id, ...d });
+  // Détail d'un visiteur (clic sur une ligne du tableau)
+  if (body.action === 'user') {
+    const row = await q("SELECT data FROM track_docs WHERE col = 'user_visits' AND id = ?", String(body.id || '')).first();
+    if (!row) return json({ user: null });
+    const d = JSON.parse(row.data);
+    const { isAnonymous, pseudo, total, totalSessions, firstSeen, lastSeen } = d;
+    return json({ user: { id: body.id, isAnonymous, pseudo, total, totalSessions, firstSeen, lastSeen, ...uvGroups(d) } });
   }
-  out.logins = logins.results.map(l => ({ actorPseudo: l.pseudo, ts: l.ts }));
-  return json(out);
+
+  // Résumé : tout est agrégé ici, la page n'a plus à télécharger ni à parcourir chaque profil
+  const date7 = String(body.date7 || ''), date30 = String(body.date30 || '');
+  const dayStart = Number(body.dayStart) || 0, weekStart = Number(body.weekStart) || 0;
+  const TOP_ANON = 40;
+
+  const [pv, uvAgg, uvSec, members, anons, anonAgg, anonSec, items, searches, lgRecent, lgToday, lgWeek] = await Promise.all([
+    q("SELECT id, data FROM track_docs WHERE col = 'page_views'").all(),
+    q(`SELECT COUNT(*) n, SUM(${UV_ANON}) anons,
+         SUM(json_extract(data, '$."devices.mobile"')) mobile, SUM(json_extract(data, '$."devices.desktop"')) desktop,
+         SUM(json_extract(data, '$.totalSessions')) sessions, SUM(json_extract(data, '$.totalSectionVisits')) sectionVisits,
+         SUM(json_extract(data, '$.lastSeen') >= ?) active7, SUM(json_extract(data, '$.lastSeen') >= ?) active30,
+         SUM(json_extract(data, '$.firstSeen') >= ?) new7, SUM(${UV_TOTAL} <= 1) oneVisit
+       FROM track_docs WHERE col = 'user_visits'`, date7, date30, date7).first(),
+    q("SELECT substr(key, 10) s, SUM(value) v FROM track_docs, json_each(track_docs.data) WHERE col = 'user_visits' AND key LIKE 'sections.%' GROUP BY s").all(),
+    q(`SELECT id, data FROM track_docs WHERE col = 'user_visits' AND NOT ${UV_ANON} ORDER BY ${UV_TOTAL} DESC LIMIT 300`).all(),
+    q(`SELECT id, data FROM track_docs WHERE col = 'user_visits' AND ${UV_ANON} ORDER BY ${UV_TOTAL} DESC LIMIT ${TOP_ANON}`).all(),
+    q(`SELECT COUNT(*) n, SUM(${UV_TOTAL}) total, MAX(json_extract(data, '$.lastSeen')) lastSeen FROM track_docs WHERE col = 'user_visits' AND ${UV_ANON}`).first(),
+    q(`SELECT substr(key, 10) s, SUM(value) v FROM track_docs, json_each(track_docs.data) WHERE col = 'user_visits' AND ${UV_ANON} AND key LIKE 'sections.%' GROUP BY s`).all(),
+    q("SELECT json_extract(data, '$.itemId') id, MAX(json_extract(data, '$.name')) name, SUM(json_extract(data, '$.count')) count FROM track_docs WHERE col = 'item_views' GROUP BY id ORDER BY count DESC LIMIT 10").all(),
+    q("SELECT json_extract(data, '$.term') term, SUM(json_extract(data, '$.count')) count FROM track_docs WHERE col = 'search_logs' GROUP BY term ORDER BY count DESC LIMIT 15").all(),
+    q('SELECT pseudo, ts FROM login_log ORDER BY ts DESC LIMIT 20').all(),
+    q('SELECT COUNT(*) n, COUNT(DISTINCT uid) u FROM login_log WHERE ts >= ?', dayStart).first(),
+    q('SELECT COUNT(*) n, COUNT(DISTINCT uid) u FROM login_log WHERE ts >= ?', weekStart).first(),
+  ]);
+
+  // Visites par jour : un doc « site » par jour (format actuel) ; à défaut, somme des anciens docs par section
+  const days = {};
+  const hours = Array(24).fill(0);
+  for (const r of pv.results) {
+    let d; try { d = JSON.parse(r.data); } catch { continue; }
+    if (!d.date) continue;
+    const day = (days[d.date] ??= { site: null, legacy: 0 });
+    if (d.section === 'site') day.site = d; else day.legacy += d.count || 0;
+  }
+  const daily = Object.entries(days).sort(([a], [b]) => (a < b ? -1 : 1)).map(([date, { site, legacy }]) => {
+    if (site) {
+      for (const [k, v] of Object.entries(site)) { // « hours.9 » (clés plates) ou hours: { 9: n } (anciens docs)
+        if (k.startsWith('hours.')) hours[+k.slice(6)] += v || 0;
+      }
+      if (site.hours && typeof site.hours === 'object') for (let h = 0; h < 24; h++) hours[h] += site.hours[h] || 0;
+    }
+    return { d: date, c: site ? site.count || 0 : legacy, u: site?.uniques || 0 };
+  });
+
+  const slim = r => {
+    const d = JSON.parse(r.data);
+    return { id: r.id, pseudo: d.pseudo, isAnonymous: !!(d.isAnonymous ?? r.id.startsWith('anon_')), total: d.total || 0,
+      lastSeen: d.lastSeen || '', sections: uvGroups(d).sections || {} };
+  };
+  const memberRows = members.results.map(slim);
+  const anonRows = anons.results.map(slim);
+  const restSections = Object.fromEntries(anonSec.results.map(r => [r.s, r.v]));
+  for (const a of anonRows) for (const [s, v] of Object.entries(a.sections)) restSections[s] = (restSections[s] || 0) - v;
+  const restN = Math.max(0, (anonAgg.n || 0) - anonRows.length);
+
+  return json({
+    daily, hours,
+    users: { total: uvAgg.n || 0, anons: uvAgg.anons || 0, members: (uvAgg.n || 0) - (uvAgg.anons || 0),
+      mobile: uvAgg.mobile || 0, desktop: uvAgg.desktop || 0, sessions: uvAgg.sessions || 0, sectionVisits: uvAgg.sectionVisits || 0,
+      active7: uvAgg.active7 || 0, active30: uvAgg.active30 || 0, new7: uvAgg.new7 || 0, oneVisit: uvAgg.oneVisit || 0 },
+    sections: Object.fromEntries(uvSec.results.map(r => [r.s, r.v])),
+    members: [...memberRows, ...anonRows],
+    anonRest: restN ? { n: restN, total: (anonAgg.total || 0) - anonRows.reduce((s, a) => s + a.total, 0),
+      lastSeen: anonAgg.lastSeen || '', sections: Object.fromEntries(Object.entries(restSections).filter(([, v]) => v > 0)) } : null,
+    topItems: items.results.filter(r => r.id), topSearches: searches.results.filter(r => r.term),
+    logins: { recent: lgRecent.results.map(l => ({ pseudo: l.pseudo, ts: l.ts })), today: lgToday.n, todayUniq: lgToday.u, week: lgWeek.n, weekUniq: lgWeek.u },
+  });
 }
 
 
