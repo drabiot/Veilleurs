@@ -1099,6 +1099,15 @@ const OBTAIN_PLACEHOLDERS = {
   autre:     'Pour des cas particuliers, détaillez ici précisément le moyen d\'obtention de cet item.',
 };
 
+// % d'obtention d'un donjon : nombre 0-100, ou « ? » (taux inconnu → null). undefined = saisie invalide / vide.
+function _parseDonjonChance(raw) {
+  const t = String(raw ?? '').trim().replace(',', '.');
+  if (t === '?') return null;
+  if (!/^\d+(\.\d+)?$/.test(t)) return undefined;
+  const n = parseFloat(t);
+  return n >= 0 && n <= 100 ? n : undefined;
+}
+
 function onObtainTypeChange(ev) {
   const type = document.getElementById('obtain-type').value;
   const container = document.getElementById('obtain-search-container');
@@ -1155,11 +1164,18 @@ function onObtainTypeChange(ev) {
       ? '<option value="">— Choisir un donjon —</option>' + allDonjonsLoot.map(d => `<option value="${escHtml(d.id)}">${escHtml(d.name)}</option>`).join('')
       : '<option value="">Aucun donjon — créez-en dans la Modération (Config › Donjons)</option>';
     const chance = document.createElement('input');
-    chance.type = 'number'; chance.id = 'obtain-donjon-chance'; chance.min = '0'; chance.max = '100'; chance.step = '0.1';
-    chance.placeholder = 'Chance %';
+    chance.type = 'text'; chance.id = 'obtain-donjon-chance'; chance.inputMode = 'decimal'; chance.autocomplete = 'off';
+    chance.placeholder = '% ou ?';
+    chance.title = "Obligatoire : pourcentage d'obtention (0-100), ou ? si le taux est inconnu";
     chance.style.cssText = 'width:110px;height:38px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-size:12px;outline:none;';
-    sel.addEventListener('change', () => { addBtn.disabled = !sel.value; });
-    chance.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addObtainSource(); } });
+    const sync = () => {
+      const ok = !!sel.value && _parseDonjonChance(chance.value) !== undefined;
+      addBtn.disabled = !ok;
+      chance.style.borderColor = chance.value.trim() === '' || _parseDonjonChance(chance.value) !== undefined ? 'var(--border)' : 'var(--danger)';
+    };
+    sel.addEventListener('change', sync);
+    chance.addEventListener('input', sync);
+    chance.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (!addBtn.disabled) addObtainSource(); } });
     wrap.append(sel, chance);
     container.appendChild(wrap);
     addBtn.disabled = true;
@@ -1324,8 +1340,9 @@ function addObtainSource() {
     const d = allDonjonsLoot.find(x => x.id === sel?.value);
     if (!d) return;
     if (obtainSources.some(s => s.type === 'donjon' && s.id === d.id)) return;
-    const raw = document.getElementById('obtain-donjon-chance')?.value;
-    obtainSources.push({ uid: obtainUid++, type: 'donjon', id: d.id, name: d.name, chance: raw !== '' && raw != null ? parseFloat(raw) : null });
+    const chance = _parseDonjonChance(document.getElementById('obtain-donjon-chance')?.value);
+    if (chance === undefined) { window._toast?.("⛔ Renseigne le % d'obtention (0-100, ou ? si inconnu).", 'error', 5000); return; }
+    obtainSources.push({ uid: obtainUid++, type: 'donjon', id: d.id, name: d.name, chance });
     sel.value = '';
     document.getElementById('obtain-donjon-chance').value = '';
     document.getElementById('obtain-add-btn').disabled = true;
@@ -1413,7 +1430,7 @@ function renderObtainSources() {
     } else if (s.type === 'donjon' && !s.legacy) {
       label += `<b>${s.name}</b>`;
       if (s.chance != null) label += ` — <b style="color:var(--success)">${s.chance}%</b>`;
-      else label += ` <span style="color:var(--muted)">— chance non définie</span>`;
+      else label += ` <span style="color:var(--muted)">— taux inconnu (?)</span>`;
     } else if (s.type === 'quete') {
       const href = `Quetes/quetes.html#${encodeURIComponent(s.id)}`;
       label += `<a href="${href}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">${s.name}</a>`;
