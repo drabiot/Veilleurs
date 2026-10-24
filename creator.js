@@ -1566,6 +1566,7 @@ function setRarity(r) {
   document.querySelectorAll('.r-btn[data-r]').forEach(b => b.classList.toggle('active', b.dataset.r === selRarity));
   const rarityField = document.getElementById('rarity-field');
   if (rarityField) rarityField.classList.toggle('unset', !selRarity);
+  if (selRarity === 'event' && !selEvent) _lockPalierEvent(true); // rareté Event => drapeau Event (palier verrouillé)
   syncPresetTagButtons();
   renderCustomTags();
   update();
