@@ -13779,6 +13779,9 @@ const OBTAIN_STRUCTURED_PATTERNS = [
   /^-\s*\[quest:[^|]+\|[^\]]+\]$/,
   /^Récoltable dans \[region:[^|]+\|[^\]]+\]$/,
   /^Autre source — .+$/,
+  /^Récoltable dans \[region:[^|]+\|[^\]]+\]\s*\[coords:-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?\]$/,
+  /^Récoltable aux coordonnées \[coords:-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?\]$/,
+  /^Obtenable pendant l'Event \[.+\]$/,
   // Anciens formats (compatibilité)
   /^Trouvable dans un coffre — .+$/,
   /^Récompense d'événement — .+$/,
