@@ -1434,6 +1434,7 @@ const HASH_PANELS = {
   'zone-list':            () => showZoneList(),
   'effects-tool':         () => showEffectsTool(),
   'events-tool':          () => showEventsTool(),
+  'donjons-tool':         () => showDonjonsTool(),
   'game-config':          () => showGameConfig(),
   'audit-log':            () => showAuditLog(),
   'tags':                 () => showTagsPanel(),
@@ -1544,6 +1545,7 @@ const NAV_HUBS = [
         { hash: 'game-config',  label: '🌍 Config Jeu', btn: 'btn-game-config',  panel: 'game-config-panel',  fn: () => showGameConfig() },
         { hash: 'effects-tool', label: '✨ Effets',     btn: 'btn-effects-tool', panel: 'effects-tool-panel', fn: () => showEffectsTool() },
         { hash: 'events-tool',  label: '🎪 Events',     btn: 'btn-events-tool',  panel: 'events-tool-panel',  fn: () => showEventsTool() },
+        { hash: 'donjons-tool', label: '🏰 Donjons',    btn: 'btn-donjons-tool', panel: 'donjons-tool-panel', fn: () => showDonjonsTool() },
         { hash: 'tags',         label: '🏷️ Tags',       btn: 'btn-tags',         panel: 'tags-panel',         fn: () => showTagsPanel() },
       ]},
       { label: 'Communication', tabs: [
@@ -13772,6 +13774,7 @@ window.zoneEditorSave = async function zoneEditorSave() {
 // Patterns reconnus par le builder structuré (y compris anciens formats pour compatibilité)
 const OBTAIN_STRUCTURED_PATTERNS = [
   /^Obtenable en tuant:$/,
+  /^Obtenable en finissant le donjon:$/,
   /^-\s*\[([^|]+)\|([^\]]+)\]\[([^\]]+)\]$/,
   /^Obtenable en récompense du \[npc:[^|]+\|[^\]]+\]$/,
   /^Fabricable au \[npc:[^|]+\|[^\]]+\]$/,
@@ -16229,6 +16232,91 @@ window.deleteVclEvent = async function(id, name) {
     toast('Event supprimé.', 'success');
     await loadEventNames();
     await _loadEventsList();
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
+
+// ── DONJONS TOOL (sources d'obtention « Donjon » du Creator) ──
+// Stockés dans config/donjons_loot : { list: [{ id, name }] } (l'ordre du tableau = ordre d'affichage).
+const _DONJONS_REF = () => doc(db, 'config', 'donjons_loot');
+
+async function _readDonjonsLoot() {
+  const snap = await getDoc(_DONJONS_REF());
+  return snap.exists() ? (snap.data().list || []).filter(d => d?.id && d?.name) : [];
+}
+const _writeDonjonsLoot = list => setDoc(_DONJONS_REF(), { list });
+
+window.showDonjonsTool = async function() {
+  _setHash('donjons-tool');
+  _showPanel('donjons-tool-panel', 'btn-donjons-tool');
+  await _loadDonjonsList();
+};
+
+async function _loadDonjonsList() {
+  const el = document.getElementById('donjons-list');
+  if (!el) return;
+  el.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const list = await _readDonjonsLoot();
+    if (!list.length) {
+      el.innerHTML = '<div class="empty" style="color:var(--muted);">Aucun donjon. Créez-en un ci-dessus.</div>';
+      return;
+    }
+    el.innerHTML = list.map((d, i) => `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;">
+        <span style="font-size:13px;">🏰 ${escHtml(d.name)} <code style="font-size:10px;color:var(--muted);margin-left:6px;">${escHtml(d.id)}</code></span>
+        <span style="display:flex;gap:6px;align-items:center;">
+          <button class="btn btn-ghost btn-sm" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="moveVclDonjon('${escHtml(d.id)}',-1)" style="font-size:12px;">▲</button>
+          <button class="btn btn-ghost btn-sm" title="Descendre" ${i === list.length - 1 ? 'disabled' : ''} onclick="moveVclDonjon('${escHtml(d.id)}',1)" style="font-size:12px;">▼</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteVclDonjon('${escHtml(d.id)}')" style="font-size:12px;">🗑️ Supprimer</button>
+        </span>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`;
+  }
+}
+
+window.createVclDonjon = async function() {
+  const inp = document.getElementById('donjon-name-input');
+  const name = inp?.value?.trim();
+  if (!name) { toast('Nom du donjon requis.', 'error'); return; }
+  try {
+    const list = await _readDonjonsLoot();
+    const base = normalize(name).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'donjon';
+    let id = base, n = 1;
+    while (list.some(d => d.id === id)) id = `${base}_${++n}`;
+    await _writeDonjonsLoot([...list, { id, name }]);
+    if (inp) inp.value = '';
+    toast(`Donjon créé : ${name}`, 'success');
+    await _loadDonjonsList();
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
+
+window.moveVclDonjon = async function(id, dir) {
+  try {
+    const list = await _readDonjonsLoot();
+    const i = list.findIndex(d => d.id === id), j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    await _writeDonjonsLoot(list);
+    await _loadDonjonsList();
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
+
+window.deleteVclDonjon = async function(id) {
+  try {
+    const list = await _readDonjonsLoot();
+    const d = list.find(x => x.id === id);
+    if (!d) return;
+    const ok = await modal.confirm(`Supprimer le donjon "${d.name}" ? Les items qui l'utilisent gardent leur texte d'obtention.`, { danger: true, confirmLabel: 'Supprimer' });
+    if (!ok) return;
+    await _writeDonjonsLoot(list.filter(x => x.id !== id));
+    toast('Donjon supprimé.', 'success');
+    await _loadDonjonsList();
   } catch(e) {
     toast('Erreur : ' + e.message, 'error');
   }

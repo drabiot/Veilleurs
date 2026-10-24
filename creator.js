@@ -915,6 +915,7 @@ let obtainDrop     = null;
 
 let allMobs      = [];
 let allDonjons   = [];
+let allDonjonsLoot = []; // config/donjons_loot (Modération > Donjons) : donjons proposés comme source d'obtention
 let allArtisans  = [];
 let allMarchands = [];
 let allQuetes    = [];
@@ -958,6 +959,7 @@ function initObtainData() {
   }
   // Compléter allDonjons avec les marqueurs Firestore (map_markers type=donjon)
   _loadFirestoreDonjons();
+  _loadDonjonsLoot();
   if (typeof QUETES_DATA !== 'undefined') {
     const TYPE_LABELS_Q = { main: 'Principale', sec: 'Secondaire', ter: 'Tertiaire' };
     allQuetes = QUETES_DATA.map(q => ({
@@ -1046,6 +1048,16 @@ function initObtainData() {
   onObtainTypeChange();
 }
 
+async function _loadDonjonsLoot() {
+  const getDoc = window._vcl_getDoc, doc = window._vcl_doc, db = window._vcl_db;
+  if (!getDoc || !doc || !db) return;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'donjons_loot'));
+    allDonjonsLoot = snap.exists() ? (snap.data().list || []).filter(d => d?.id && d?.name) : [];
+    if (document.getElementById('obtain-type')?.value === 'donjon') onObtainTypeChange();
+  } catch (e) { console.warn('[VCL Creator] Donjons non chargés:', e); }
+}
+
 async function _loadFirestoreDonjons() {
   const getDocs = window._vcl_getDocs;
   const col     = window._vcl_collection;
@@ -1074,7 +1086,7 @@ async function _loadFirestoreDonjons() {
 const OBTAIN_TEXT_TYPES = new Set(['autre']);
 
 function obtainItemsForType(type) {
-  return { mob: allMobs, donjon: allDonjons, pnj: [...allArtisans, ...allMarchands], quete: allQuetes, ressource: allRegions }[type] || [];
+  return { mob: allMobs, donjon: allDonjonsLoot, pnj: [...allArtisans, ...allMarchands], quete: allQuetes, ressource: allRegions }[type] || [];
 }
 
 const OBTAIN_PLACEHOLDERS = {
@@ -1131,6 +1143,27 @@ function onObtainTypeChange(ev) {
     } else {
       sel.innerHTML = '<option value="">Module non chargé</option>';
     }
+
+  } else if (type === 'donjon') {
+    // Donjon (config) + % d'obtention, comme le loot des mobs
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;gap:6px;align-items:center;width:100%;';
+    const sel = document.createElement('select');
+    sel.id = 'obtain-donjon-select';
+    sel.style.cssText = 'flex:1;min-width:0;height:38px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 10px;font-size:13px;font-family:inherit;outline:none;';
+    sel.innerHTML = allDonjonsLoot.length
+      ? '<option value="">— Choisir un donjon —</option>' + allDonjonsLoot.map(d => `<option value="${escHtml(d.id)}">${escHtml(d.name)}</option>`).join('')
+      : '<option value="">Aucun donjon — créez-en dans la Modération (Config › Donjons)</option>';
+    const chance = document.createElement('input');
+    chance.type = 'number'; chance.id = 'obtain-donjon-chance'; chance.min = '0'; chance.max = '100'; chance.step = '0.1';
+    chance.placeholder = 'Chance %';
+    chance.style.cssText = 'width:110px;height:38px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-size:12px;outline:none;';
+    sel.addEventListener('change', () => { addBtn.disabled = !sel.value; });
+    chance.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addObtainSource(); } });
+    wrap.append(sel, chance);
+    container.appendChild(wrap);
+    addBtn.disabled = true;
+    addBtn.style.display = '';
 
   } else if (type === 'forge') {
     const hint = document.createElement('div');
@@ -1286,6 +1319,21 @@ function addObtainSource() {
     return;
   }
 
+  if (type === 'donjon') {
+    const sel = document.getElementById('obtain-donjon-select');
+    const d = allDonjonsLoot.find(x => x.id === sel?.value);
+    if (!d) return;
+    if (obtainSources.some(s => s.type === 'donjon' && s.id === d.id)) return;
+    const raw = document.getElementById('obtain-donjon-chance')?.value;
+    obtainSources.push({ uid: obtainUid++, type: 'donjon', id: d.id, name: d.name, chance: raw !== '' && raw != null ? parseFloat(raw) : null });
+    sel.value = '';
+    document.getElementById('obtain-donjon-chance').value = '';
+    document.getElementById('obtain-add-btn').disabled = true;
+    renderObtainSources();
+    update();
+    return;
+  }
+
   if (type === 'event') {
     const sel = document.getElementById('obtain-event-select');
     const eventId = sel?.value;
@@ -1362,6 +1410,10 @@ function renderObtainSources() {
       if (s.chance != null) label += ` — <b style="color:var(--success)">${s.chance}%</b>`;
       else label += ` <span style="color:var(--muted)">— chance non définie</span>`;
       if (s.qty) label += ` <span style="color:var(--muted)">×${s.qty}</span>`;
+    } else if (s.type === 'donjon' && !s.legacy) {
+      label += `<b>${s.name}</b>`;
+      if (s.chance != null) label += ` — <b style="color:var(--success)">${s.chance}%</b>`;
+      else label += ` <span style="color:var(--muted)">— chance non définie</span>`;
     } else if (s.type === 'quete') {
       const href = `Quetes/quetes.html#${encodeURIComponent(s.id)}`;
       label += `<a href="${href}" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600;">${s.name}</a>`;
@@ -1410,8 +1462,20 @@ function parseObtainText(text, itemId, itemName) {
   const lines = text.split('\n');
   let inMobSection = false;
   let inQuestSection = false;
+  let inDonjonSection = false;
   for (const line of lines) {
     const t = line.trim();
+    if (t === 'Obtenable en finissant le donjon:') { inDonjonSection = true; inMobSection = false; inQuestSection = false; continue; }
+    if (inDonjonSection && t.startsWith('- ')) {
+      const dm = t.match(/^-\s*\[dj:([^|]+)\|([^\]]+)\]\[([^\]]+)\]$/);
+      if (dm) {
+        const [, id, name, chanceStr] = dm;
+        sources.push({ uid: obtainUid++, type: 'donjon', id, name, chance: chanceStr === '?' ? null : parseFloat(chanceStr) });
+      }
+      continue;
+    }
+    if (inDonjonSection && t === '') continue;
+    inDonjonSection = false;
     if (/^Récompenses des quêtes\s*:$/.test(t)) { inQuestSection = true; inMobSection = false; continue; }
     if (inQuestSection && t.startsWith('- ')) {
       const qm = t.match(/^-\s*\[quest:([^|]+)\|([^\]]+)\]$/);
@@ -1446,7 +1510,7 @@ function parseObtainText(text, itemId, itemName) {
     if (donjonM) {
       const [, id, name] = donjonM;
       const d = allDonjons.find(x => x.id === id);
-      sources.push({ uid: obtainUid++, type: 'donjon', id, name, desc: d?.desc || '', subtitle: d?.subtitle || '' });
+      sources.push({ uid: obtainUid++, type: 'donjon', legacy: true, id, name, desc: d?.desc || '', subtitle: d?.subtitle || '' });
       continue;
     }
     if (/^(\[obtain:forge\]|Fabricable à la Forge( du Fractured Underworld)?)$/.test(t)) { sources.push({ uid: obtainUid++, type: 'forge' }); continue; }
@@ -1525,7 +1589,12 @@ function buildObtainText() {
     });
     parts.push('Obtenable en tuant:\n' + lines.join('\n'));
   }
-  for (const d of donjons)      parts.push(`Obtenable en récompense du [npc:${d.id}|${d.name}]`);
+  const newDonjons = donjons.filter(d => !d.legacy);
+  if (newDonjons.length) {
+    parts.push('Obtenable en finissant le donjon:\n' + newDonjons.map(d => `- [dj:${d.id}|${d.name}][${d.chance != null ? d.chance : '?'}]`).join('\n'));
+  }
+  // Ancien format (marqueur de carte) conservé tel quel pour ne pas perdre de données
+  for (const d of donjons.filter(d => d.legacy)) parts.push(`Obtenable en récompense du [npc:${d.id}|${d.name}]`);
   // p.verb = formulation d'origine (Fabricable / Achetable) : on la garde, sinon une source dont le PNJ n'est pas (encore) dans la liste des artisans passerait à tort en « Achetable »
   for (const p of pnjs)         parts.push((p.verb || (allArtisans.some(a => a.id === p.id) ? 'Fabricable' : 'Achetable')) + ` au [npc:${p.id}|${p.name}]`);
   for (const a of artisans)     parts.push(`Fabricable au [npc:${a.id}|${a.name}]`);

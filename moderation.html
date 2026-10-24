@@ -131,6 +131,7 @@
     <button class="filter-btn" id="btn-game-config"        data-min-role="admin" onclick="showGameConfig()">🌍 Config Jeu</button>
     <button class="filter-btn" id="btn-effects-tool"   data-min-role="admin" onclick="showEffectsTool()">✨ Effets</button>
     <button class="filter-btn" id="btn-events-tool"        data-min-role="admin" onclick="showEventsTool()">🎪 Events</button>
+    <button class="filter-btn" id="btn-donjons-tool"       data-min-role="admin" onclick="showDonjonsTool()">🏰 Donjons</button>
     <button class="filter-btn" id="btn-tags"              data-min-role="admin" onclick="showTagsPanel()">🏷️  Tags</button>
     <button class="filter-btn" id="btn-bugs-connus" onclick="showBugsConnus()">🐛 Bugs Connus</button>
     </div>
@@ -1276,6 +1277,21 @@ style="font-size:12px;">← Retour</button>
     <div id="events-list" style="display:flex;flex-direction:column;gap:6px;"></div>
   </main>
 
+  <!-- Panneau Donjons (sources d'obtention) -->
+  <main class="main" id="donjons-tool-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🏰 Gestion des Donjons</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      Les donjons créés ici apparaissent dans la source d'obtention «&nbsp;Donjon&nbsp;» du Creator, avec un pourcentage d'obtention. Exemple&nbsp;: "Crypte Oubliée".
+    </p>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:14px;align-items:center;">
+      <input type="text" id="donjon-name-input" placeholder="Nom du donjon (ex : Crypte Oubliée)" style="height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 10px;font-size:13px;outline:none;font-family:inherit;" />
+      <button class="btn btn-primary" onclick="createVclDonjon()" style="font-size:12px;white-space:nowrap;">+ Créer</button>
+    </div>
+    <div id="donjons-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+  </main>
+
   <!-- Panneau Effets -->
   <main class="main" id="effects-tool-panel" style="display:none;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
@@ -1393,7 +1409,7 @@ window._VCL_DATA = {
   ALL_SLOTS:   typeof ALL_SLOTS   !== 'undefined' ? ALL_SLOTS   : [],
 };
 </script>
-<script type="module" src="moderation.js?v=21"></script>
+<script type="module" src="moderation.js?v=22"></script>
 <script>
 if (window.innerWidth < 768) document.body.classList.add('sidebar-hidden');
 document.getElementById('mod-backdrop').addEventListener('click', () => {
