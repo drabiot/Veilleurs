@@ -46,8 +46,8 @@ const CATEGORY = {
   key_crate: { category: 'donjon' },
   lunar: { category: 'monnaie' },
   // événements : rareté forcée à "event", catégorie wiki à trier à la main
-  halloween: { category: null, event: 'Halloween' },
-  noel2025: { category: null, event: 'Noël' },
+  halloween: { category: null, event: 'Halloween 2025' },
+  noel2025: { category: null, event: 'Noël 2025' },
   saint_valentin: { category: null, event: 'Saint Valentin' },
 };
 const CATEGORY_LABEL = {

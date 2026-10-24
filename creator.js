@@ -1717,11 +1717,16 @@ function _syncEventField() {
   const wrap = document.getElementById('event-name-field');
   const sel  = document.getElementById('f-event-name');
   if (!wrap || !sel) return;
-  if (!sel.dataset.built) {
-    sel.dataset.built = '1';
-    (typeof EVENT_NAMES !== 'undefined' ? EVENT_NAMES : []).forEach(n => {
+  const names = typeof EVENT_NAMES !== 'undefined' ? [...EVENT_NAMES] : [];
+  if (sel.dataset.built !== names.join('|')) { // (re)construit quand la collection `events` vient d'être chargée
+    const cur = sel.value;
+    sel.dataset.built = names.join('|');
+    [...sel.options].filter(o => o.value).forEach(o => o.remove());
+    names.forEach(n => {
       const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o);
     });
+    if (cur) { if (!names.includes(cur)) { const o = document.createElement('option'); o.value = cur; o.textContent = cur; sel.appendChild(o); } sel.value = cur; }
+    _customSelUpdaters['f-event-name']?.();
   }
   const on = document.getElementById('f-palier').value === 'event';
   wrap.style.display = on ? '' : 'none';
@@ -7437,6 +7442,7 @@ function _setCreatorDisabled(disabled) {
 
 // ── Appelé par db-loader.js après chargement Firestore ─
 window._pageInit = function() {
+  _syncEventField();
   allMobsIndex = []; // force rebuild avec les données fraîches
   _buildMobLoadDrop();
   _pnjDropBuilt = false; _regDropBuilt = false; _panopDropBuilt = false;

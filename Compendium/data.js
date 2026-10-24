@@ -117,8 +117,8 @@ function resolveObtain(str) {
 //#endregion OBTAIN_TEXTS
 //#region EVENT_NAMES
 /* Évènements possibles pour le champ `event` des items du palier « Event » (ordre d'affichage).
-   Ajouter une ligne ici fait apparaître le nouvel évènement dans le creator, la modération et le Compendium. */
-const EVENT_NAMES = ['Noël', 'Saint-Valentin', 'Nouvel An Lunaire', 'Halloween', 'Earth Leveling'];
+   Source réelle : collection Firestore `events` (outil modération « Events »), chargée par db-loader ; cette liste n'est qu'un repli. */
+const EVENT_NAMES = ['Noël 2025', 'Saint-Valentin 2026', 'Nouvel An Lunaire 2026', 'Halloween 2025', 'Earth Leveling 2026']; // repli : remplacé au chargement par la collection `events`
 //#endregion EVENT_NAMES
 //#region CATEGORIES
 const CATEGORIES = {

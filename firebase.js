@@ -418,6 +418,22 @@ window._vclLogReport = logReport;
 
 // ── Known Bugs ────────────────────────────────────────
 
+// ── Events : collection `events` (outil modération « Events ») = source unique des noms d'évènement ──
+// Met à jour EVENT_NAMES (Compendium/data.js) en place, triée par `ordre` puis date de création.
+export async function loadEventNames() {
+  let names = [];
+  try {
+    const snap = await getDocs(collection(db, COL.events));
+    const ts = d => d.createdAt?.seconds ?? 0;
+    names = snap.docs.map(d => d.data())
+      .filter(d => d.name)
+      .sort((a, b) => (a.ordre ?? 1e9) - (b.ordre ?? 1e9) || ts(a) - ts(b))
+      .map(d => d.name);
+  } catch (e) { console.warn('[events]', e.message); return null; }
+  if (names.length && typeof EVENT_NAMES !== 'undefined') EVENT_NAMES.splice(0, EVENT_NAMES.length, ...names);
+  return names;
+}
+
 export async function getKnownBugs() {
   const snap = await getDocs(query(collection(db, 'known_bugs'), orderBy('createdAt', 'desc')));
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));

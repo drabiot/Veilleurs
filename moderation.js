@@ -5,7 +5,7 @@ import { db, auth, onAuthStateChanged,
          deleteDoc, deleteField, serverTimestamp, writeBatch, orderBy, where, query, limit,
          hashName, getItemGameplayKeys,
          sanitizeForFirestore, desanitizeFromFirestore,
-         invalidateCache }
+         invalidateCache, loadEventNames }
                              from './firebase.js';
 import { toast }  from './components/toast.js';
 import { modal }  from './components/modal.js';
@@ -10244,7 +10244,7 @@ const _CF_DEFS = {
   npc:         { type:'text',      placeholder:'ID ou nom du PNJ donneur' },
   zone:        { type:'text',      placeholder:'ID région' },
   // Surcharges par mode
-  'items:event':     { type:'select', opts:(typeof EVENT_NAMES !== 'undefined' ? EVENT_NAMES : []).map(n => [n, n]) },
+  'items:event':     { type:'select', get opts() { return (typeof EVENT_NAMES !== 'undefined' ? EVENT_NAMES : []).map(n => [n, n]); } },
   'items:rarity':    { type:'select', opts:[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['mythique','Mythique'],['godlike','Godlike'],['event','Évènement']] },
   'items:category':  { type:'select', opts:[['arme','⚔️ Arme'],['armure','🛡️ Armure'],['accessoire','💍 Accessoire'],['materiaux','🧱 Matériau'],['ressources','⛏️ Ressource'],['consommable','🧪 Consommable'],['nourriture','🍖 Nourriture'],['outils','🔧 Outil'],['rune','🔮 Rune'],['quete','📜 Objet Quête'],['donjon','🏰 Donjon']] },
   'items:classes':   { type:'multicheckbox', opts:[['guerrier','⚔️ Guerrier'],['assassin','🗡️ Assassin'],['archer','🏹 Archer'],['mage','📖 Mage'],['shaman','🌿 Shaman']] },
@@ -16144,15 +16144,22 @@ async function _loadEventsList() {
   }
 }
 
+// Ordre d'affichage d'un nouvel event (après les existants) ; EVENT_NAMES est rechargé après chaque création/suppression
+async function _nextEventOrdre() {
+  const snap = await getDocs(collection(db, COL.events));
+  return snap.docs.reduce((m, d) => Math.max(m, d.data().ordre ?? 0), 0) + 1;
+}
+
 window.createVclEvent = async function() {
   const inp = document.getElementById('event-name-input');
   const name = inp?.value?.trim();
   if (!name) { toast('Nom de l\'event requis.', 'error'); return; }
-  const data = { name, createdAt: serverTimestamp() };
+  const data = { name, createdAt: serverTimestamp(), ordre: await _nextEventOrdre() };
   try {
     await addDoc(collection(db, COL.events), data);
     if (inp) inp.value = '';
     toast(`Event créé : ${name}`, 'success');
+    await loadEventNames();
     await _loadEventsList();
   } catch(e) {
     toast('Erreur : ' + e.message, 'error');
@@ -16165,6 +16172,7 @@ window.deleteVclEvent = async function(id, name) {
   try {
     await deleteDoc(doc(db, COL.events, id));
     toast('Event supprimé.', 'success');
+    await loadEventNames();
     await _loadEventsList();
   } catch(e) {
     toast('Erreur : ' + e.message, 'error');

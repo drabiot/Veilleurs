@@ -4,7 +4,7 @@
    peuple les variables globales, puis appelle
    window._pageInit() définie par chaque page.
 ══════════════════════════════════════════════════════ */
-import { loadCollection, COL, getHiddenByName, getHiddenById } from './firebase.js';
+import { loadCollection, loadEventNames, COL, getHiddenByName, getHiddenById } from './firebase.js';
 
 // Exposer le lookup sensible (par hash de nom exact) aux scripts classiques.
 window.VCL_DB = { getHiddenByName, getHiddenById, COL };
@@ -55,5 +55,6 @@ window.VCL_DB = { getHiddenByName, getHiddenById, COL };
   } catch (err) {
     console.error('[DB-Loader] Erreur Firestore :', err);
   }
+  await loadEventNames(); // EVENT_NAMES = collection `events`
   window._pageInit?.();
 })();
