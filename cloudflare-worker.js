@@ -856,7 +856,8 @@ async function handleDiscordStart(request, env) {
     uid = (await r.json()).users?.[0]?.localId;
     if (!uid) return json({ error: 'Session invalide, reconnecte-toi.' }, 401);
   }
-  const state = await signState({ m: body.mode === 'link' ? 'link' : 'login', uid, o: body.origin, exp: Date.now() + 10 * 60000 }, env);
+  const state = await signState({ m: body.mode === 'link' ? 'link' : 'login', uid, o: body.origin, exp: Date.now() + 10 * 60000,
+    r: body.redirect ? 1 : 0, p: /^\/[\w\-./]*$/.test(body.path || '') ? body.path : '/' }, env);
   const url = `https://discord.com/oauth2/authorize?${new URLSearchParams({
     client_id: env.DISCORD_CLIENT_ID, response_type: 'code', scope: 'identify',
     redirect_uri: `${new URL(request.url).origin}/discord/callback`, state,
@@ -864,23 +865,33 @@ async function handleDiscordStart(request, env) {
   return json({ url });
 }
 
-function popupResult(origin, payload, invite) {
+function popupResult(origin, payload, invite, back) {
   const msg = JSON.stringify({ type: 'vcl-discord', ...payload }).replace(/</g, '\\u003c');
   const label = payload.error ? '⛔ ' + payload.error.replace(/[<&]/g, '') : 'Connecté, tu peux fermer cette fenêtre.';
   const join  = invite && /^https:\/\/discord\.(gg|com)\//.test(invite)
     ? `<p><a href="${invite}" target="_blank" rel="noopener" style="display:inline-block;padding:10px 18px;border-radius:6px;background:#5865F2;color:#fff;text-decoration:none;font-weight:600">Rejoindre le serveur Discord</a></p><p style="font-size:13px;color:#999">Puis reconnecte-toi sur le site.</p>`
     : '';
+  const backLink = back ? `<p><a href="${back}" style="color:#E0AC60">← Retour au site</a></p>` : '';
   return new Response(`<!doctype html><meta charset="utf-8"><title>Discord</title>
-<body style="font-family:sans-serif;background:#111;color:#ddd;text-align:center;padding-top:30vh">${label}${join}
+<body style="font-family:sans-serif;background:#111;color:#ddd;text-align:center;padding-top:30vh">${label}${join}${backLink}
 <script>try{window.opener.postMessage(${msg},${JSON.stringify(origin)})}catch(e){}${payload.error ? '' : ';window.close()'}</script>`,
   { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+}
+
+// Mode redirection (popups bloquées) : le token revient dans le fragment de la page d'origine.
+function redirectResult(state, payload, invite) {
+  const back = state.o + (state.p || '/');
+  if (payload.error) return popupResult(state.o, payload, invite, back);
+  const frag = new URLSearchParams({ 'vcl-discord': payload.token, pseudo: payload.pseudo || '' });
+  return new Response(null, { status: 302, headers: { Location: `${back}#${frag}`, 'Cache-Control': 'no-store' } });
 }
 
 async function handleDiscordCallback(request, env) {
   const url   = new URL(request.url);
   const state = await readState(url.searchParams.get('state'), env);
   if (!state) return popupResult(SITE_ORIGIN, { error: 'Lien expiré, réessaie.' });
-  const fail = error => popupResult(state.o, { error });
+  const out   = (payload, invite) => state.r ? redirectResult(state, payload, invite) : popupResult(state.o, payload, invite);
+  const fail = error => out({ error });
 
   const code = url.searchParams.get('code');
   if (!code) return fail('Connexion Discord annulée.');
@@ -899,7 +910,7 @@ async function handleDiscordCallback(request, env) {
 
     // Appartenance + rôles via le bot (pas besoin du scope guilds.members.read)
     const mr = await fetch(`${DISCORD_API}/guilds/${env.DISCORD_GUILD_ID}/members/${me.id}`, { headers: { Authorization: `Bot ${env.BOT_TOKEN}` } });
-    if (mr.status === 404) return popupResult(state.o, { error: 'Tu dois être membre du serveur Discord pour te connecter.' }, env.DISCORD_INVITE_URL);
+    if (mr.status === 404) return out({ error: 'Tu dois être membre du serveur Discord pour te connecter.' }, env.DISCORD_INVITE_URL);
     if (!mr.ok) return fail("Impossible de vérifier ton appartenance au serveur.");
     const member = await mr.json();
 
@@ -932,7 +943,7 @@ async function handleDiscordCallback(request, env) {
     }
     await fsPatchUser(env, uid, data);
 
-    return popupResult(state.o, { token: await firebaseCustomToken(uid, env), pseudo: data.pseudo || existing?.pseudo || '' });
+    return out({ token: await firebaseCustomToken(uid, env), pseudo: data.pseudo || existing?.pseudo || '' });
   } catch (e) {
     // Quota Firestore (offre gratuite) atteint : message clair plutôt qu'une erreur technique
     if (/Firestore 429|quota|RESOURCE_EXHAUSTED/i.test(e.message)) return fail('Le site a atteint sa limite quotidienne de lectures : la connexion est indisponible pour le moment. Réessaie demain matin (remise à zéro vers 9h).');

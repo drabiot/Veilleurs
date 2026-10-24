@@ -169,7 +169,7 @@ const DISCORD_WORKER = 'https://veilleurs.veilleurs-wiki.workers.dev';
  */
 export async function loginWithDiscord(mode = 'login') {
   const popup = window.open('about:blank', 'vcl-discord', 'width=520,height=760');
-  if (!popup) throw new Error('Autorise les popups pour te connecter avec Discord.');
+  if (!popup) return loginWithDiscordRedirect(mode);
   try {
     const idToken = mode === 'link' ? await auth.currentUser?.getIdToken() : undefined;
     const r = await fetch(DISCORD_WORKER + '/discord/start', {
@@ -198,6 +198,37 @@ export async function loginWithDiscord(mode = 'login') {
     return cred;
   } catch (e) { popup.close(); throw e; }
 }
+
+/** Popups bloquées : redirection plein écran, le token revient dans le fragment (voir consumeDiscordRedirect). */
+async function loginWithDiscordRedirect(mode) {
+  const idToken = mode === 'link' ? await auth.currentUser?.getIdToken() : undefined;
+  const r = await fetch(DISCORD_WORKER + '/discord/start', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode, idToken, origin: location.origin, redirect: true, path: location.pathname }),
+  });
+  const d = await r.json();
+  if (!d.url) throw new Error(d.error || 'Connexion Discord indisponible.');
+  sessionStorage.setItem('vcl_discord_back', location.search + location.hash);
+  location.href = d.url;
+  return new Promise(() => {});
+}
+
+/** Au chargement : finalise une connexion Discord revenue par redirection. */
+(async function consumeDiscordRedirect() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  const token = h.get('vcl-discord');
+  if (!token) return;
+  const pseudo = h.get('pseudo') || '';
+  const back = sessionStorage.getItem('vcl_discord_back') || '';
+  sessionStorage.removeItem('vcl_discord_back');
+  history.replaceState(null, '', location.pathname + (back.startsWith('?') ? back.split('#')[0] : location.search) + (back.includes('#') ? back.slice(back.indexOf('#')) : ''));
+  try {
+    const cred = await signInWithCustomToken(auth, token);
+    if (pseudo && cred.user.displayName !== pseudo) {
+      try { await updateProfile(cred.user, { displayName: pseudo }); } catch {}
+    }
+  } catch (e) { console.error('[discord] redirect login:', e); }
+})();
 
 export async function sendVerificationEmail() {
   if (auth.currentUser) return sendEmailVerification(auth.currentUser);
