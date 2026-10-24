@@ -821,6 +821,19 @@ async function fsPatchUser(env, uid, data) {
   return fsReq(env, `/users/${uid}?${mask}`, { method: 'PATCH', body: JSON.stringify({ fields }) });
 }
 
+// Journal de connexion (alimente « Connexions récentes » des stats) ; jamais bloquant, admins exclus.
+async function fsLogLogin(env, uid, pseudo, role) {
+  if (role === 'admin') return;
+  try {
+    await fsReq(env, '/audit_log', { method: 'POST', body: JSON.stringify({ fields: {
+      action: toFs('login'), actorUid: toFs(uid), actorPseudo: toFs(pseudo || ''),
+      targetType: toFs('session'), targetId: toFs(uid), targetName: toFs(pseudo || ''),
+      metadata: { mapValue: { fields: { via: toFs('discord') } } },
+      createdAt: { timestampValue: new Date().toISOString() },
+    } }) });
+  } catch { /* le journal ne doit jamais empêcher la connexion */ }
+}
+
 // ── Rôle site déduit des rôles Discord (config/discordRoles) ──
 async function resolveSiteRole(env, discordRoleIds) {
   const [cfg, custom] = await Promise.all([fsGetDoc(env, 'config/discordRoles'), fsGetDoc(env, 'config/customRoles')]);
@@ -942,6 +955,7 @@ async function handleDiscordCallback(request, env) {
       data.role = await resolveSiteRole(env, member.roles || []);
     }
     await fsPatchUser(env, uid, data);
+    await fsLogLogin(env, uid, data.pseudo || existing?.pseudo, data.role || existing?.role);
 
     return out({ token: await firebaseCustomToken(uid, env), pseudo: data.pseudo || existing?.pseudo || '' });
   } catch (e) {

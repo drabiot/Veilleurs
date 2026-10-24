@@ -9499,6 +9499,8 @@ window.loadStatistiques = async function loadStatistiques() {
         if (k.startsWith('searches.'))    searches[k.slice(9)]   = v;
       }
       if (Object.keys(sections).length)   raw.sections  = sections;
+      // total absent (anciens docs) : repli sur la somme des sections
+      if (!raw.total) raw.total = Object.values(sections).reduce((a, c) => a + (c || 0), 0);
       if (Object.keys(devices).length)    raw.devices   = devices;
       if (Object.keys(items).length)      raw.items     = items;
       if (Object.keys(itemNames).length)  raw.itemNames = itemNames;
