@@ -29,7 +29,8 @@ async function loadObtainTexts() {
 }
 function resolveObtain(str) {
   return String(str).replace(/\[obtain:([\w-]+)\]/g, (_, id) => (OBTAIN_TEXTS && OBTAIN_TEXTS[id]) || id)
-    .replace(/(Obtenable pendant l'Event )\[([^\]]+)\]/g, '$1$2');
+    .replace(/(Obtenable pendant l'Event )\[([^\]]+)\]/g, '$1$2')
+    .replace(/^Autre source — /gm, '');
 }
 
 // ── Rarity colors (hex integers for Discord embeds) ───────────

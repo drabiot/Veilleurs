@@ -22,7 +22,7 @@ const STAT_GROUPS = [
   {
     label: 'Offensif',
     stats: [
-      { id:'degats',              label:'Dégâts',                          icon:'🗡️',  unit:'',   max:500  },
+      { id:'degats',              label:"Dégâts d'Attaque",                        icon:'🗡️',  unit:'',   max:500  },
 	  	{ id:'degats_physique',     label:'Dégâts Physique',                 icon:'💥',  unit:'%',  max:100  },
       { id:'degats_arme',         label:'Dégâts d\'Arme',                  icon:'⚔️',  unit:'%',  max:100  },
       { id:'degats_magique',      label:'Dégâts Magiques',                 icon:'📖',  unit:'%',  max:100  },
@@ -112,7 +112,8 @@ const OBTAIN_TEXTS = {
 };
 function resolveObtain(str) {
 	if (typeof str !== 'string') return str;
-	return str.replace(/\[obtain:([\w-]+)\]/g, (m, id) => OBTAIN_TEXTS[id] ?? id);
+	// « Autre source — » est un préfixe de stockage : à l'affichage, seul le texte saisi apparaît
+	return str.replace(/\[obtain:([\w-]+)\]/g, (m, id) => OBTAIN_TEXTS[id] ?? id).replace(/^Autre source — /gm, '');
 }
 //#endregion OBTAIN_TEXTS
 //#region EVENT_NAMES

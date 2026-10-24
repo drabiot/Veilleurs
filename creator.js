@@ -168,7 +168,7 @@ const pendingOrphans = new Map(); // id → displayName (tapé par l'user)
 // ═══════════════════════════════════════════════════
 const STAT_DEFS = [
   { group:'Offensif', stats:[
-    { id:'degats',             label:'Dégâts',                   color:'#e0923a' },
+    { id:'degats',             label:"Dégâts d'Attaque",         color:'#e0923a' },
     { id:'degats_physique',    label:'Dégâts Physique %',         color:'#e0923a' },
     { id:'degats_arme',        label:"Dégâts d'Arme %",          color:'#e0923a' },
     { id:'degats_magique',     label:'Dégâts Magiques %',         color:'#e86ca0' },
