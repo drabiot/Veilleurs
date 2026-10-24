@@ -3105,6 +3105,8 @@ function buildSetSelect() {
   if (typeof SETS === 'undefined') return;
   const container = document.getElementById('set-drop-container');
   if (!container) return;
+  // Reconstruit après le chargement du store : on garde le set déjà choisi (ex. item chargé depuis la modération avant l'arrivée des panoplies)
+  const prev = setDrop ? { id: setDrop.getValue(), name: setDrop.element.querySelector('input')?.value || '' } : null;
   const setItems = Object.entries(SETS)
     .sort((a, b) => (a[1].ordre ?? 999) - (b[1].ordre ?? 999))
     .map(([id, { label }]) => ({
@@ -3113,6 +3115,7 @@ function buildSetSelect() {
   setDrop = makeSearchDrop(setItems, 'Rechercher un set…', () => update());
   container.innerHTML = '';
   container.appendChild(setDrop.element);
+  if (prev?.id) setDrop.setValue(prev.id, SETS[prev.id]?.label || prev.name || prev.id);
   if (window._pendingRestoreSet) {
     const found = setItems.find(s => s.id === window._pendingRestoreSet);
     if (found) setDrop.setValue(found.id, found.name);
