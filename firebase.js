@@ -249,6 +249,16 @@ function _localDate(d = new Date()) {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
+const _ANON_ANIMALS = ['Loup','Renard','Corbeau','Hibou','Lynx','Cerf','Ours','Faucon','Sanglier','Blaireau','Dragon','Griffon','Lézard','Serpent','Chouette','Belette'];
+const _ANON_ADJ     = ['Curieux','Discret','Pensif','Vaillant','Rusé','Sombre','Lunaire','Errant','Brave','Calme','Fier','Agile','Sage','Hardi','Mystérieux','Rêveur'];
+
+/** Nom stable dérivé de l'id anonyme (ex. « Renard Pensif #4821 ») : même visiteur, même nom. */
+export function anonName(id) {
+  let h = 2166136261;
+  for (const c of String(id)) h = Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0;
+  return `${_ANON_ANIMALS[h % 16]} ${_ANON_ADJ[(h >>> 4) % 16]} #${String(h % 9000 + 1000)}`;
+}
+
 const _PV_SESSION_TTL = 30 * 60 * 1000;
 
 export async function logPageView(section) {
@@ -323,7 +333,7 @@ export async function logPageView(section) {
         localStorage.setItem('vcl_anon_id', anonId);
       }
       visitorId = anonId;
-      pseudo = 'Anonyme';
+      pseudo = anonName(anonId);
       isAnonymous = true;
     }
 

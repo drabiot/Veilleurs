@@ -5,7 +5,7 @@ import { db, auth, onAuthStateChanged,
          deleteDoc, deleteField, serverTimestamp, writeBatch, orderBy, where, query, limit,
          hashName, getItemGameplayKeys,
          sanitizeForFirestore, desanitizeFromFirestore,
-         invalidateCache, loadEventNames }
+         invalidateCache, loadEventNames, anonName }
                              from './firebase.js';
 import { toast }  from './components/toast.js';
 import { modal }  from './components/modal.js';
@@ -9484,6 +9484,7 @@ window.loadStatistiques = async function loadStatistiques() {
     const logins     = loginSnap.docs.map(d => d.data());
     const userVisits = uvSnap.docs.map(d => {
       const raw = { id: d.id, ...d.data() };
+      if (raw.isAnonymous) raw.pseudo = anonName(d.id);
       // Firestore stocke les champs imbriqués comme clés plates (sections.X, devices.X, etc.)
       const sections = {}, devices = {}, items = {}, itemNames = {},
             mobs = {}, mobNames = {}, pnj = {}, pnjNames = {},
@@ -9702,22 +9703,24 @@ window.loadStatistiques = async function loadStatistiques() {
     const ALL_SECTIONS = ['compendium','bestiaire','map','quetes','atelier','patchnotes','builds'];
     const uvSorted = [...userVisits].sort((a, b) => (b.total || 0) - (a.total || 0));
 
-    // Regrouper tous les anonymes en 1 entrée synthétique
+    // Anonymes : une ligne par visiteur (nom stable dérivé de l'id), top 40 + reste agrégé
+    const ANON_MAX  = 40;
     const uvMembers = uvSorted.filter(u => !u.isAnonymous);
-    const uvAnons   = uvSorted.filter(u => u.isAnonymous);
-    const uvDisplay = [...uvMembers];
-    if (uvAnons.length > 0) {
-      const anonSections = {};
+    const uvAnons   = uvSorted.filter(u => u.isAnonymous).map(u => ({ ...u, pseudo: anonName(u.id) }));
+    const uvDisplay = [...uvMembers, ...uvAnons.slice(0, ANON_MAX)];
+    const anonRest  = uvAnons.slice(ANON_MAX);
+    if (anonRest.length > 0) {
+      const restSections = {};
       for (const s of ALL_SECTIONS) {
-        anonSections[s] = uvAnons.reduce((sum, u) => sum + (u.sections?.[s] || 0), 0);
+        restSections[s] = anonRest.reduce((sum, u) => sum + (u.sections?.[s] || 0), 0);
       }
       uvDisplay.push({
         id: '__anon__',
-        pseudo: `Anonymes (${uvAnons.length})`,
+        pseudo: `+${anonRest.length} autres anonymes`,
         isAnonymous: true,
-        total: uvAnons.reduce((s, u) => s + (u.total || 0), 0),
-        sections: anonSections,
-        lastSeen: uvAnons.map(u => u.lastSeen || '').filter(Boolean).sort().pop() || '',
+        total: anonRest.reduce((s, u) => s + (u.total || 0), 0),
+        sections: restSections,
+        lastSeen: anonRest.map(u => u.lastSeen || '').filter(Boolean).sort().pop() || '',
       });
     }
 
@@ -9736,9 +9739,9 @@ window.loadStatistiques = async function loadStatistiques() {
         const v = u.sections?.[s] || 0;
         return `<td style="text-align:right;color:${v > 0 ? 'var(--text)' : 'var(--muted)'}">${v > 0 ? fmt(v) : '—'}</td>`;
       }).join('');
-      const uidAttr = !isAnon ? `data-uid="${escHtml(u.id)}"` : '';
-      const clickable = !isAnon ? 'cursor:pointer;' : '';
-      return `<tr class="stats-member-row" ${uidAttr} style="${clickable}" title="${!isAnon ? 'Voir l\'historique' : ''}">
+      const clickable = u.id !== '__anon__';
+      const uidAttr = clickable ? `data-uid="${escHtml(u.id)}"` : '';
+      return `<tr class="stats-member-row" ${uidAttr} style="${clickable ? 'cursor:pointer;' : ''}" title="${clickable ? 'Voir l\'historique' : ''}">
         <td style="display:flex;align-items:center;gap:6px;">${badge} ${escHtml(u.pseudo || u.id)}</td>
         ${cells}
         <td style="text-align:right;font-weight:700;">${fmt(u.total || 0)}</td>
