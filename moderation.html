@@ -1269,11 +1269,8 @@ style="font-size:12px;">← Retour</button>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
       Les events peuvent être sélectionnés comme source d'obtention dans le Creator. Exemple&nbsp;: "Noël 2025".
     </p>
-    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:14px;align-items:center;">
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:14px;align-items:center;">
       <input type="text" id="event-name-input" placeholder="Nom de l'event (ex : Noël 2025)" style="height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 10px;font-size:13px;outline:none;font-family:inherit;" />
-      <select id="event-set-input" style="height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-size:13px;outline:none;font-family:inherit;">
-        <option value="">— Set associé (optionnel) —</option>
-      </select>
       <button class="btn btn-primary" onclick="createVclEvent()" style="font-size:12px;white-space:nowrap;">+ Créer</button>
     </div>
     <div id="events-list" style="display:flex;flex-direction:column;gap:6px;"></div>

@@ -16118,32 +16118,15 @@ const _EFFECT_SEED_TEMPLATES = [
 window.showEventsTool = async function() {
   _setHash('events-tool');
   _showPanel('events-tool-panel', 'btn-events-tool');
-  await Promise.all([_loadEventsList(), _populateEventSetSelect()]);
+  await _loadEventsList();
 };
-
-async function _populateEventSetSelect() {
-  const sel = document.getElementById('event-set-input');
-  if (!sel) return;
-  try {
-    const panoplies = await cachedDocs('panoplies');
-    const sorted = [...panoplies].sort((a, b) => (a.label || a.id).localeCompare(b.label || b.id, 'fr'));
-    const current = sel.value;
-    sel.innerHTML = '<option value="">— Set associé (optionnel) —</option>' +
-      sorted.map(p => `<option value="${escHtml(p.id)}">${escHtml(p.label || p.id)}</option>`).join('');
-    if (current) sel.value = current;
-  } catch(e) { /* silencieux */ }
-}
 
 async function _loadEventsList() {
   const list = document.getElementById('events-list');
   if (!list) return;
   list.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const [snap, panoplies] = await Promise.all([
-      getDocs(query(collection(db, COL.events), orderBy('createdAt', 'desc'))),
-      cachedDocs('panoplies'),
-    ]);
-    const panoById = new Map(panoplies.map(p => [p.id, p.label || p.id]));
+    const snap = await getDocs(query(collection(db, COL.events), orderBy('createdAt', 'desc')));
     if (snap.empty) {
       list.innerHTML = '<div class="empty" style="color:var(--muted);">Aucun event. Créez-en un ci-dessus.</div>';
       return;
@@ -16151,9 +16134,8 @@ async function _loadEventsList() {
     list.innerHTML = snap.docs.map(d => {
       const ev = d.data();
       const safeName = escHtml(ev.name || d.id);
-      const setLabel = ev.setId ? `<span style="font-size:11px;color:var(--muted);margin-left:8px;">🔗 ${escHtml(panoById.get(ev.setId) || ev.setId)}</span>` : '';
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;">
-        <span style="font-size:13px;">🎪 ${safeName}${setLabel}</span>
+        <span style="font-size:13px;">🎪 ${safeName}</span>
         <button class="btn btn-danger btn-sm" onclick="deleteVclEvent('${d.id}','${safeName.replace(/'/g, '\\\'')}')" style="font-size:12px;">🗑️ Supprimer</button>
       </div>`;
     }).join('');
@@ -16164,16 +16146,12 @@ async function _loadEventsList() {
 
 window.createVclEvent = async function() {
   const inp = document.getElementById('event-name-input');
-  const sel = document.getElementById('event-set-input');
   const name = inp?.value?.trim();
   if (!name) { toast('Nom de l\'event requis.', 'error'); return; }
-  const setId = sel?.value || null;
   const data = { name, createdAt: serverTimestamp() };
-  if (setId) data.setId = setId;
   try {
     await addDoc(collection(db, COL.events), data);
     if (inp) inp.value = '';
-    if (sel) sel.value = '';
     toast(`Event créé : ${name}`, 'success');
     await _loadEventsList();
   } catch(e) {
