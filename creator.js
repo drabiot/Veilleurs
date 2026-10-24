@@ -106,6 +106,8 @@ function applyCreatorConfig(cfg) {
 
 // IDs de tous les selects palier dans le Creator
 // Un palier peut avoir un id numérique (1, 2, 3, -1) ou texte ('event')
+// Palier Archive (-1) : sélectionnable par les admins uniquement
+function _isAdmin() { return window._vcl_role === 'admin' || window._vcl_base_role === 'admin'; }
 function _palierVal(v) { return v !== '' && !isNaN(+v) ? +v : v; }
 const PALIER_SELECT_IDS = ['f-palier', 'mob-palier', 'pnj-palier', 'reg-palier', 'quest-palier'];
 
@@ -125,13 +127,14 @@ function populatePalierSelects(paliers) {
     const currentVal = sel.value || sel.dataset.vclPending || '';
     sel.innerHTML = '<option value="">—</option>';
     for (const p of paliers) {
-      if (p.id === -1 || p.id === 'event') continue; // Archive : modération uniquement ; Event : bouton dédié
+      if (p.id === 'event') continue; // Event : bouton dédié
+      if (p.id === -1 && !_isAdmin()) continue; // Archive : admins uniquement
       const opt = document.createElement('option');
       opt.value = String(p.id);
       opt.textContent = p.label;
       sel.appendChild(opt);
     }
-    if (currentVal && paliers.some(p => String(p.id) === currentVal && p.id !== -1 && p.id !== 'event')) {
+    if (currentVal && paliers.some(p => String(p.id) === currentVal && p.id !== 'event' && (p.id !== -1 || _isAdmin()))) {
       sel.value = currentVal;
       delete sel.dataset.vclPending;
       sel.dispatchEvent(new Event('change', { bubbles: true }));
@@ -871,7 +874,7 @@ function _computeItemId() {
   const name   = document.getElementById('f-name').value.replace(/\s*\[qualit[eé]\]\s*/gi, ' ').trim();
   const slug   = nameToId(name);
   const palier = document.getElementById('f-palier').value;
-  const base   = (slug && palier) ? `${slug}_${palier === 'event' ? 'event' : 'p' + palier}` : slug;
+  const base   = (slug && palier) ? `${slug}_${palier === 'event' ? 'event' : palier === '-1' ? 'archive' : 'p' + palier}` : slug;
   return (selQualite && base) ? base.replace(/(_p\d+)$/, '_qualite$1') || (base + '_qualite') : base;
 }
 
@@ -1900,7 +1903,7 @@ function _setPalierValue(elId, val) {
   if (!el) return;
   const s = String(val);
   if (elId === 'f-palier' && s === 'event') { _lockPalierEvent(true); return; } // palier Event = bouton Event actif
-  if (s === '-1') return; // Archive : plus sélectionnable dans le creator
+  if (s === '-1' && !_isAdmin()) return; // Archive : admins uniquement
   el.value = s;
   if (el.value !== s) el.dataset.vclPending = s;
   _customSelUpdaters[elId]?.();
@@ -4286,7 +4289,7 @@ function buildObj() {
       donjon:      id ? `../img/compendium/textures/items/Donjon/${tp}${id}.png`                : null,
       monnaie:     id ? `../img/compendium/textures/items/Monnaie/${tp}${id}.png`               : null,
     };
-    const _imgUrl = (category && CAT_IMG[category]) || null;
+    const _imgUrl = (palier !== '-1' && category && CAT_IMG[category]) || null; // archive : on ne devine pas le dossier d'image
     if (_imgUrl) obj.images = [_imgUrl];
   }
   if (selTwoHanded)              obj.twoHanded  = true;
@@ -5351,6 +5354,8 @@ async function submitToFirestore() {
   }
 
   data = window._withLoadedExtras(data, creatorMode);
+
+  if (data?.palier === -1 && !_isAdmin()) throw new Error('Le palier Archive est réservé aux admins');
 
   // Nettoyer pour Firestore
   const clean = sanitizeForFirestore(JSON.parse(JSON.stringify(data)));

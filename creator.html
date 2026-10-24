@@ -1114,6 +1114,7 @@ onAuthStateChanged(auth, async user => {
       const baseRole = await _resolveBaseRole(role);
       window._vcl_role      = role;
       window._vcl_base_role = baseRole;
+      if (typeof populatePalierSelects === 'function' && window._vcl_paliers) populatePalierSelects(window._vcl_paliers); // l'option Archive apparaît pour les admins
       if (pseudo && status) status.textContent = pseudo;
       if (pseudo && authorInput) { authorInput.value = pseudo; saveAuthor(); }
       const modBtn = document.getElementById('btn-moderation');
@@ -1323,7 +1324,7 @@ window._modal = modal;
   <textarea id="submitter-comment" rows="1" placeholder="Note pour la modération (optionnel pour un nouvel item)…" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-size:12px;outline:none;resize:none;border-radius:6px;font-family:inherit;line-height:1.4;transition:border-color .15s;height:34px;overflow:hidden;" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';this.style.borderColor=this.value?'var(--accent)':'var(--border)'"></textarea>
 </div>
 
-<script src="creator.js?v=20261024f"></script>
+<script src="creator.js?v=20261024g"></script>
 <script>
 (function() {
   window._creatorScreenshots = [];
