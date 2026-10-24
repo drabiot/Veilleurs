@@ -1173,13 +1173,16 @@ function onObtainTypeChange(ev) {
       addBtn.disabled = !ok;
       chance.style.borderColor = chance.value.trim() === '' || _parseDonjonChance(chance.value) !== undefined ? 'var(--border)' : 'var(--danger)';
     };
-    sel.addEventListener('change', sync);
-    chance.addEventListener('input', sync);
-    chance.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (!addBtn.disabled) addObtainSource(); } });
+    // Ajout automatique dès que donjon + % sont valides : « ? » immédiatement, un nombre à la validation (Entrée / sortie du champ)
+    const tryAdd = () => { sync(); if (!addBtn.disabled) addObtainSource(); };
+    sel.addEventListener('change', tryAdd);
+    chance.addEventListener('input', () => { sync(); if (chance.value.trim() === '?' && !addBtn.disabled) addObtainSource(); });
+    chance.addEventListener('change', tryAdd);
+    chance.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); tryAdd(); } });
     wrap.append(sel, chance);
     container.appendChild(wrap);
     addBtn.disabled = true;
-    addBtn.style.display = '';
+    addBtn.style.display = 'none';
 
   } else if (type === 'forge') {
     const hint = document.createElement('div');
@@ -1344,7 +1347,9 @@ function addObtainSource() {
     if (chance === undefined) { window._toast?.("⛔ Renseigne le % d'obtention (0-100, ou ? si inconnu).", 'error', 5000); return; }
     obtainSources.push({ uid: obtainUid++, type: 'donjon', id: d.id, name: d.name, chance });
     sel.value = '';
-    document.getElementById('obtain-donjon-chance').value = '';
+    const chanceInp = document.getElementById('obtain-donjon-chance');
+    chanceInp.value = '';
+    chanceInp.style.borderColor = 'var(--border)';
     document.getElementById('obtain-add-btn').disabled = true;
     renderObtainSources();
     update();
