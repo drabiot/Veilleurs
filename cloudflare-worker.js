@@ -1099,7 +1099,10 @@ async function handleStats(request, env) {
       body: JSON.stringify({ query: gql, variables: { acc, since: new Date(now - 7 * 864e5).toISOString(), until: now.toISOString(), a: day(new Date(now - 6 * 864e5)), b: day(now) } }),
     });
     const g = await r.json().catch(() => ({}));
-    if (!r.ok || g.errors?.length) return json({ configured: true, error: g.errors?.[0]?.message || ('HTTP ' + r.status) }, 502);
+    if (!r.ok || g.errors?.length) {
+      const t = String(env.CF_API_TOKEN); // diagnostic sans révéler le jeton : sa forme seulement
+      return json({ configured: true, error: (g.errors?.[0]?.message || ('HTTP ' + r.status)) + ` — jeton enregistré : ${t.length} caractères` + (/\s/.test(t) ? ', contient des espaces/retours à la ligne' : '') + (/^Bearer\s/i.test(t) ? ', commence par « Bearer »' : '') + ' (un jeton Cloudflare valide fait 40 caractères)' }, 502);
+    }
     const a0 = g.data?.viewer?.accounts?.[0] || {};
     const days = {};
     const slot = k => (days[k] ??= { date: k, requests: 0, errors: 0, subrequests: 0, d1Reads: 0, d1Writes: 0, rowsRead: 0, rowsWritten: 0 });
