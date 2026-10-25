@@ -2239,9 +2239,9 @@ function loadAccessoriesForClass(classId) {
   function _optAddMinRow(statId, val) {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex; gap:6px; align-items:center;';
-    row.innerHTML = '<select class="input-name opt-min-stat" style="flex:1">' + _optStatOptions('— stat —') + '</select>' +
-      '<input class="input-name opt-min-val" type="number" step="any" placeholder="min" style="width:90px" />' +
-      '<button type="button" class="action-btn danger" style="padding:4px 9px;">✕</button>';
+    row.innerHTML = '<select class="input-name opt-min-stat" style="flex:1 1 0; width:auto; min-width:0">' + _optStatOptions('— stat —') + '</select>' +
+      '<input class="input-name opt-min-val" type="number" step="any" placeholder="min" style="flex:none; width:90px" />' +
+      '<button type="button" class="action-btn danger" style="flex:none; width:auto; padding:4px 9px;">✕</button>';
     row.querySelector('select').value = statId || '';
     row.querySelector('.opt-min-val').value = val != null ? val : '';
     row.querySelector('button').addEventListener('click', function() { row.remove(); });
