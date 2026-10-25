@@ -8,11 +8,8 @@ import { loadHonorTitles, findHonorTitle, honorBadgeHtml } from './honor-titles.
 
 const _LB_SCAN_COLS = [
   { col: COL.items,       type: 'item'     },
-  { col: COL.itemsSecret, type: 'item'     },
   { col: COL.mobs,        type: 'mob'      },
-  { col: COL.mobsSecret,  type: 'mob'      },
   { col: COL.pnj,         type: 'pnj'      },
-  { col: COL.pnjSecret,   type: 'pnj'      },
   { col: COL.regions,     type: 'region'   },
   { col: COL.quetes,      type: 'quest'    },
   { col: COL.panoplies,   type: 'panoplie' },

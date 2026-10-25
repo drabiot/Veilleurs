@@ -464,6 +464,7 @@
 
     let _secretLoaded = false;
     async function _canViewSecretItems(baseRole) {
+      return false; // système « sensible » supprimé
       let minRole = 'contributeur';
       try {
         const snap = await getDoc(doc(db, 'config', 'permissions'));
@@ -472,6 +473,7 @@
       return hasRole(baseRole, minRole);
     }
     async function _loadSecretItems() {
+      return; // système « sensible » supprimé
       if (_secretLoaded) return;
       _secretLoaded = true;
       try {

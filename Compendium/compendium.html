@@ -127,6 +127,7 @@
     let _sensitiveLoaded = false;
 
     async function _canViewSensitiveItems(baseRole) {
+      return false; // système « sensible » supprimé
       let minRole = 'contributeur';
       try {
         const snap = await getDoc(doc(db, 'config', 'permissions'));
@@ -136,6 +137,7 @@
     }
 
     async function _loadSensitiveItems() {
+      return; // système « sensible » supprimé
       if (_sensitiveLoaded) return;
       _sensitiveLoaded = true;
       try {

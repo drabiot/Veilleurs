@@ -1231,78 +1231,11 @@ window.approve = async (id) => {
     const dataId = sub.data?.id;
     if (!dataId) throw new Error('Pas d\'ID dans les données');
 
-    const isSensible = sub.data?.sensible === true;
+    if (sub.data?.sensible === true) throw new Error('Les items / mobs / PNJ sensibles ne sont plus gérés : décoche « sensible » dans la soumission.');
     const _contribName  = sub.submitterName || _userNames.get(sub.submittedBy) || 'Inconnu';
     const _contribField = { uid: sub.submittedBy || null, name: _contribName };
 
-    if (sub.type === 'item' && isSensible) {
-      // Item sensible → split gameplay (items_hidden keyé par nameHash) + flavor (items_secret keyé par item.id)
-      const gameplayKeys = await getItemGameplayKeys();
-      const gameplay = {};
-      const secret   = {};
-      for (const [k, v] of Object.entries(sub.data)) {
-        if (k === 'sensible') continue;
-        if (gameplayKeys.includes(k)) gameplay[k] = v;
-        else                          secret[k]   = v;
-      }
-      // Modification : préserver les champs items_secret non soumis (ex: craft absent du formulaire)
-      let _secretExistContribs = [];
-      if (sub.isModification) {
-        try {
-          const existingSecret = await getDoc(doc(db, COL.itemsSecret, String(dataId)));
-          if (existingSecret.exists()) {
-            const ed = existingSecret.data();
-            for (const [k, v] of Object.entries(ed)) {
-              if (k.startsWith('_') || k === 'sensible') continue;
-              if (!(k in secret)) secret[k] = v;
-            }
-            _secretExistContribs = _readContribs(ed);
-          }
-        } catch {}
-      }
-      const _secretMerged = _mergeContributors(_secretExistContribs, _contribField, !!sub.isModification);
-      const nameHash = await hashName(sub.data.name);
-      if (!nameHash) throw new Error('Nom manquant pour hash');
-      // Écriture atomique : les deux docs créés ensemble ou pas du tout
-      const batch = writeBatch(db);
-      batch.set(doc(db, COL.itemsHidden, nameHash), sanitizeForFirestore({ ...gameplay, nameHash, sensible: true }));
-      batch.set(doc(db, COL.itemsSecret, String(dataId)), sanitizeForFirestore({ ...secret, _contributor: _secretMerged, sensible: true }));
-      await batch.commit();
-      // Nettoyer toute version publique existante
-      try { await deleteDoc(doc(db, COL.items, String(dataId))); } catch {}
-      store.invalidate('items');
-      setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: 'items' }, { merge: true }).catch(() => {});
-    } else if (sub.type === 'mob' && isSensible) {
-      // Mob sensible → doc complet dans mobs_secret, jamais dans mobs
-      let _mobExistContribs = [];
-      if (sub.isModification) {
-        try {
-          const es = await getDoc(doc(db, COL.mobsSecret, String(dataId)));
-          if (es.exists()) _mobExistContribs = _readContribs(es.data());
-        } catch {}
-      }
-      const _mobMerged = _mergeContributors(_mobExistContribs, _contribField, !!sub.isModification);
-      const payload = { _order: Date.now(), _contributor: _mobMerged, ...sub.data, sensible: true };
-      await setDoc(doc(db, COL.mobsSecret, String(dataId)), sanitizeForFirestore(payload));
-      try { await deleteDoc(doc(db, COL.mobs, String(dataId))); } catch {}
-      store.invalidate('mobs');
-      setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: 'mobs' }, { merge: true }).catch(() => {});
-    } else if (sub.type === 'pnj' && isSensible) {
-      // PNJ sensible → doc complet dans pnj_secret, jamais dans personnages
-      let _pnjExistContribs = [];
-      if (sub.isModification) {
-        try {
-          const es = await getDoc(doc(db, COL.pnjSecret, String(dataId)));
-          if (es.exists()) _pnjExistContribs = _readContribs(es.data());
-        } catch {}
-      }
-      const _pnjMerged = _mergeContributors(_pnjExistContribs, _contribField, !!sub.isModification);
-      const payload = { _order: Date.now(), _contributor: _pnjMerged, ...sub.data, sensible: true };
-      await setDoc(doc(db, COL.pnjSecret, String(dataId)), sanitizeForFirestore(payload));
-      try { await deleteDoc(doc(db, COL.pnj, String(dataId))); } catch {}
-      store.invalidate('pnj');
-      setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: 'personnages' }, { merge: true }).catch(() => {});
-    } else {
+    {
       // Flux standard
       let dataToWrite = { _order: Date.now(), ...sub.data };
       // Panoplie : couleur par défaut si absente (définie par la modération côté liste)

@@ -66,7 +66,8 @@ export const COL = {
 // « depuis la révision N ». Après une écriture, on oublie l'heure de la dernière vérification pour que le
 // prochain chargement récupère tout de suite le changement.
 const D1_COLS = new Set([COL.items, COL.mobs, COL.pnj, COL.regions, COL.quetes, COL.panoplies, COL.mapMarkers, COL.zones, COL.donjons]);
-const PRIVATE_D1_COLS = new Set([COL.itemsHidden, COL.itemsSecret, COL.mobsSecret, COL.pnjSecret]);
+const REMOVED_COLS = new Set([COL.itemsHidden, COL.itemsSecret, COL.mobsSecret, COL.pnjSecret]);
+const PRIVATE_D1_COLS = new Set(); // plus aucune collection protégée lue par cache
 const _colOf = ref => String(ref?.path || '').split('/')[0];
 const _forget = ref => { try { localStorage.removeItem(`vcl_sync_chk_${_colOf(ref)}`); } catch {} };
 const _w = fn => async (ref, ...args) => { const r = await fn(ref, ...args); _forget(ref); return r; };
@@ -613,59 +614,11 @@ export async function hashName(name) {
     .join('');
 }
 
-/**
- * Lookup d'items cachés par nom exact.
- * Doc key = nameHash → getDoc direct sans query (fonctionne pour non-contribs via allow get).
- * Retourne un tableau pour compatibilité avec les appelants existants.
- */
-const _hiddenLookupCache = new Map(); // mémoire uniquement
-export async function getHiddenByName(colName, name) {
-  const hash = await hashName(name);
-  if (!hash) return [];
-  const cacheKey = `${colName}/name/${hash}`;
-  if (_hiddenLookupCache.has(cacheKey)) return _hiddenLookupCache.get(cacheKey);
-  try {
-    const snap = await getDoc(doc(db, colName, hash));
-    const data = snap.exists() ? [desanitizeFromFirestore({ _id: snap.id, ...snap.data() })] : [];
-    _hiddenLookupCache.set(cacheKey, data);
-    return data;
-  } catch (err) {
-    console.warn(`[getHiddenByName] ${colName}:`, err);
-    return [];
-  }
-}
-
-/**
- * Lookup d'un item caché par son item.id (champ 'id' dans le doc).
- * Doc key = nameHash → nécessite une query list → contrib+ seulement (Firestore rules).
- * Utilisé uniquement en modération. L'Atelier utilise getHiddenByName.
- */
-export async function getHiddenById(colName, itemId) {
-  if (!itemId) return null;
-  const cacheKey = `${colName}/id/${itemId}`;
-  if (_hiddenLookupCache.has(cacheKey)) return _hiddenLookupCache.get(cacheKey);
-  try {
-    const q = query(collection(db, colName), where('id', '==', String(itemId)), limit(1));
-    const snap = await getDocs(q);
-    const data = snap.empty ? null : desanitizeFromFirestore({ _id: snap.docs[0].id, ...snap.docs[0].data() });
-    _hiddenLookupCache.set(cacheKey, data);
-    return data;
-  } catch (err) {
-    console.warn(`[getHiddenById] ${colName}:`, err);
-    return null;
-  }
-}
-
-/** Récupère un doc par ID dans une collection (ex: items_secret/{id}). Retourne null si absent ou refusé. */
-export async function getSecretById(colName, id) {
-  if (!id) return null;
-  try {
-    const snap = await getDoc(doc(db, colName, String(id)));
-    return snap.exists() ? desanitizeFromFirestore({ _id: snap.id, ...snap.data() }) : null;
-  } catch {
-    return null; // accès refusé (non-contrib) → silencieux
-  }
-}
+// Le système d'items / mobs / PNJ « sensibles » (items_hidden, items_secret, mobs_secret, pnj_secret) est supprimé.
+// Ces fonctions restent exportées pour les anciens appelants mais ne lisent plus rien.
+export async function getHiddenByName() { return []; }
+export async function getHiddenById()   { return null; }
+export async function getSecretById()   { return null; }
 
 /**
  * Charge toute une collection avec cache localStorage.
@@ -730,6 +683,7 @@ async function _d1Load(colName) {
 }
 
 export async function loadCollection(colName, maxAgeMs = CACHE_TTL) {
+  if (REMOVED_COLS.has(colName)) return []; // système « sensible » supprimé
   if (D1_COLS.has(colName) || PRIVATE_D1_COLS.has(colName)) {
     try { return await _d1Load(colName); }
     catch (e) {

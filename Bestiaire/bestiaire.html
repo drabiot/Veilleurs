@@ -348,6 +348,7 @@
     }
 
     async function _loadSensitiveMobs() {
+      return; // système « sensible » supprimé
       if (_sensitiveMobsLoaded) return;
       _sensitiveMobsLoaded = true;
       window._vcl_can_view_sensible = true;
@@ -363,6 +364,7 @@
     }
 
     async function _loadSensitivePnjs() {
+      return; // système « sensible » supprimé
       if (_sensitivePnjLoaded) return;
       _sensitivePnjLoaded = true;
       window._vcl_can_view_sensible_pnj = true;

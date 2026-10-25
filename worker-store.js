@@ -21,12 +21,8 @@ const jparse = s => { try { return s ? JSON.parse(s) : null; } catch { return nu
 /* ── Droits par défaut (défauts de moderation.js FIRESTORE_COLLECTIONS ; surchargés par config/permissions.collections) ── */
 const COL_DEFAULTS = {
   items:         { read: 'public',       write: 'contributeur' },
-  items_hidden:  { read: 'public',       write: 'contributeur', list: 'contributeur' }, // lecture à l'unité publique (hash du nom)
-  items_secret:  { read: 'contributeur', write: 'contributeur' },
   mobs:          { read: 'public',       write: 'contributeur' },
-  mobs_secret:   { read: 'contributeur', write: 'contributeur' },
   personnages:   { read: 'public',       write: 'contributeur' },
-  pnj_secret:    { read: 'contributeur', write: 'contributeur' },
   regions:       { read: 'public',       write: 'contributeur' },
   quetes:        { read: 'public',       write: 'contributeur' },
   panoplies:     { read: 'public',       write: 'admin' },
@@ -170,7 +166,7 @@ function canWrite(ctx, op, col, id, old, neu) {
       return isAdmin || ((isContrib || (authed && old?.submittedBy === ctx.uid)) && old?.status === 'pending' && neu?.status === 'pending');
     }
     case 'reports': return op === 'create' ? Object.keys(neu || {}).length <= 20 : isContrib;
-    case 'items_hidden': return isContrib;
+    
     default: {
       const r = colRule(ctx, top);
       if (!r) return false;
