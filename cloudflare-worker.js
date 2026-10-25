@@ -11,6 +11,8 @@
 // ══════════════════════════════════════════════════════════════
 
 // ── Project constants ──────────────────────────────────────────
+import { handleStoreRead, handleStoreWrite } from './worker-store.js';
+
 const PROJECT_ID     = 'veilleurs-a13b3';
 const FIREBASE_KEY   = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
 const WIKI_PAGES     = 'https://drabiot.github.io/Veilleurs';
@@ -621,6 +623,8 @@ export default {
     if (_path === '/discord/callback' && request.method === 'GET') return handleDiscordCallback(request, env);
     if (_path === '/discord/start' && request.method === 'POST') return handleDiscordStart(request, env);
     if (_path === '/db/sync' && request.method === 'GET') return handleDbSync(new URL(request.url), env);
+    if (_path === '/db/read' && request.method === 'POST') return handleStoreRead(request, env, corsHeaders());
+    if (_path === '/db/write' && request.method === 'POST') return handleStoreWrite(request, env, corsHeaders());
     if (_path === '/db/refresh' && request.method === 'POST') return handleDbRefresh(request, env, ctx);
     if (_path === '/db/resync' && request.method === 'POST') return handleDbResync(request, env);
     if (_path === '/me' && request.method === 'POST') return handleMe(request, env);
