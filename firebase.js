@@ -516,15 +516,24 @@ window._vclLogReport = logReport;
 // Met à jour EVENT_NAMES (Compendium/data.js) en place, triée par `ordre` puis date de création.
 export async function loadEventNames() {
   if (typeof EVENT_NAMES === 'undefined') return null;
+  const CK = 'vcl_event_names';
   let names = [];
   try {
-    const snap = await getDocs(collection(db, COL.events));
+    // Timeout : si Firestore ne répond pas (quota, réseau, Firefox sans cache), on ne bloque pas le chargement de la page
+    const snap = await Promise.race([
+      getDocs(collection(db, COL.events)),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000)),
+    ]);
     const ts = d => d.createdAt?.seconds ?? 0;
     names = snap.docs.map(d => d.data())
       .filter(d => d.name)
       .sort((a, b) => (a.ordre ?? 1e9) - (b.ordre ?? 1e9) || ts(a) - ts(b))
       .map(d => d.name);
-  } catch (e) { console.warn('[events]', e.message); return null; }
+    try { localStorage.setItem(CK, JSON.stringify(names)); } catch {}
+  } catch (e) {
+    console.warn('[events]', e.message);
+    try { names = JSON.parse(localStorage.getItem(CK) || '[]'); } catch { names = []; }
+  }
   if (names.length && typeof EVENT_NAMES !== 'undefined') EVENT_NAMES.splice(0, EVENT_NAMES.length, ...names);
   return names;
 }
