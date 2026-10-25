@@ -1585,3 +1585,7 @@ html, body {
 /* Interrupteur « Équipables » du sélecteur d'items */
 #equip-wrap { display: flex; }
 #equip-wrap .equip-chip { padding: 6px 12px; }
+
+/* Listes déroulantes natives (Build Optimisé) : fond opaque, sinon la popup est blanche avec du texte clair */
+select.input-name { color-scheme: dark; }
+select.input-name option { background: var(--surface2); color: var(--text); }
