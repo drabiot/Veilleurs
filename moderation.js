@@ -5,7 +5,7 @@ import { db, auth, onAuthStateChanged,
          deleteDoc, deleteField, serverTimestamp, writeBatch, orderBy, where, query, limit,
          hashName, getItemGameplayKeys,
          sanitizeForFirestore, desanitizeFromFirestore,
-         invalidateCache, loadEventNames, anonName }
+         invalidateCache, loadCollection, loadEventNames, anonName }
                              from './firebase.js';
 import { toast }  from './components/toast.js';
 import { modal }  from './components/modal.js';
@@ -254,6 +254,8 @@ window.loadSubmissions = async () => {
     await Promise.all([
       fetchUserNames(uids).catch(() => {}),
       cachedDocs('panoplies').catch(() => {}),
+      // noms et icônes des items cités dans les résumés (cache différentiel : quasi gratuit après la 1re fois)
+      _modCache['items'] ? null : loadCollection(COL.items).then(arr => { _modCache['items'] ??= arr.map(d => ({ _docKey: d._id, ...d, id: d.id ?? d._id })); }).catch(() => {}),
     ]);
     updateCounts();
     renderSubs();
@@ -401,7 +403,7 @@ const _PRETTY_SKIP = new Set(['_order', 'ordre', '_contributor', '_ts', '_update
 const _PRETTY_SHOWN = {
   item:     ['rarity', 'category', 'palier', 'lvl', 'cat', 'classes', 'set', 'sensible', 'event', 'evolutif', 'stats', 'craft', 'obtain', 'lore', 'competence', 'tags'],
   mob:      ['type', 'palier', 'region', 'behavior', 'lore', 'loot'],
-  pnj:      ['tag', 'palier', 'region', 'coords'],
+  pnj:      ['id', 'name', 'tag', 'type', 'palier', 'region', 'coords', 'craft', 'sells', 'lore', 'instructions', 'underground', 'sensible'],
   region:   ['palier', 'coords', 'inCodex', 'lore'],
   quest:    ['type', 'palier', 'npc', 'zone', 'coords', 'desc', 'objectifs'],
   panoplie: ['bonuses'],
@@ -444,6 +446,66 @@ function _prettyVal(v, esc, depth = 0) {
     if (s) parts.push(`<span style="color:var(--muted);font-size:10px;">${esc(_PRETTY_LABELS[k] || k.replace(/_/g, ' '))}</span> ${s}`);
   }
   return parts.join(' <span style="color:var(--muted);">·</span> ');
+}
+
+// ── Fiche PNJ « comme sur le wiki » : en-tête, Fabrique, Marchande, Description, Accès ──
+function _wikiItem(id, esc, right = '') {
+  if (id === 'cols') { // la monnaie n'est pas un item
+    return `<div style="display:flex;align-items:center;gap:8px;padding:2px 0;font-size:12px;"><span style="width:22px;text-align:center;flex-shrink:0;">🪙</span><span style="color:#d7af5f;font-weight:600;">Cols</span>${right}</div>`;
+  }
+  const it =(_modCache['items'] || []).find(x => (x.id || x._id) === id) || null;
+  const name = it?.name || id;
+  const color = it && typeof getRarityColor === 'function' ? getRarityColor(it.rarity) : '#8c8c8c';
+  const img = it && typeof getItemImg === 'function' ? getItemImg(it) : null;
+  const icon = img
+    ? `<img src="${esc(img)}" alt="" style="width:22px;height:22px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'">`
+    : `<span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;margin:0 7px;"></span>`;
+  const unknown = it ? '' : ' <span title="Item introuvable dans le wiki" style="font-size:10px;color:#f59e0b;">⚠</span>';
+  return `<div style="display:flex;align-items:center;gap:8px;padding:2px 0;font-size:12px;">${icon}<span style="color:${color};font-weight:600;">${esc(name)}</span>${unknown}${right}</div>`;
+}
+
+function _pnjWikiSummary(d, esc) {
+  const section = (title, body) => `<div style="margin-top:10px;"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);padding-bottom:3px;margin-bottom:4px;">${title}</div>${body}</div>`;
+  const chip = (txt, color) => `<span style="font-size:11px;background:var(--surface3);border:1px solid var(--border);border-radius:12px;padding:2px 9px;${color ? `color:${color};` : ''}">${txt}</span>`;
+  const badge = (txt, color) => `<span style="margin-left:auto;font-size:11px;font-weight:700;color:${color};border:1px solid ${color}55;border-radius:10px;padding:0 8px;">${txt}</span>`;
+
+  const typeLabel = d.type || (d.tag ? String(d.tag).replace(/_/g, ' ') : '');
+  let html = `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;">
+    <span style="font-size:15px;font-weight:700;color:var(--accent);">${esc(d.name || d.id || '—')}</span>
+    ${typeLabel ? chip('🧑 ' + esc(typeLabel)) : ''}
+    ${d.palier != null && d.palier !== '' ? chip('Palier ' + (d.palier == -1 ? 'Archive' : d.palier)) : ''}
+    ${d.region ? chip('📍 ' + esc(d.region)) : ''}
+    ${d.coords ? chip(`X ${esc(d.coords.x)} · Y ${esc(d.coords.y)} · Z ${esc(d.coords.z)}`) : ''}
+    ${d.underground ? chip('⛏️ Souterrain') : ''}
+    ${d.sensible ? chip('🔒 Sensible', '#f87171') : ''}
+    ${d.id ? `<code style="font-size:10px;color:var(--muted);margin-left:auto;">${esc(d.id)}</code>` : ''}
+  </div>`;
+
+  if (Array.isArray(d.craft) && d.craft.length) {
+    const rows = d.craft.map(r => {
+      const timer = r.time ? badge('⏱ ' + esc(String(r.time)), 'var(--muted)') : '';
+      const star = r.quality ? ' <span title="Version qualité" style="color:#d7af5f;">✦</span>' : '';
+      const ings = (r.ingredients || []).map(i => _wikiItem(i.id, esc, badge('×' + esc(String(i.qty ?? 1)), '#8c8c8c'))).join('');
+      return `<div style="display:grid;grid-template-columns:minmax(190px,1fr) 2fr;gap:12px;padding:6px 0;border-bottom:1px solid var(--border);">
+        <div>${_wikiItem(r.id, esc, star + timer)}</div>
+        <div style="border-left:2px solid var(--border);padding-left:10px;">${ings || '<i style="color:var(--muted);font-size:11px;">Aucun ingrédient</i>'}</div>
+      </div>`;
+    }).join('');
+    html += section('Fabrique', rows);
+  }
+
+  if (Array.isArray(d.sells) && d.sells.length) {
+    const rows = d.sells.map(s => {
+      const price = s.price != null ? badge('Vente ' + esc(String(s.price)) + ' cols', '#4ade80') : '';
+      const buy = s.buy != null ? badge('Achat ' + esc(String(s.buy)) + ' cols', '#60a5fa') : '';
+      return _wikiItem(s.id, esc, (s.quality ? ' <span style="color:#d7af5f;">✦</span>' : '') + price + buy);
+    }).join('');
+    html += section('Marchande', rows);
+  }
+
+  if (d.lore) html += section('Description', `<div style="font-style:italic;color:var(--muted);font-size:12px;line-height:1.5;">${esc(d.lore).replace(/\n/g, '<br>')}</div>`);
+  if (d.instructions) html += section('📍 Accès', `<div style="font-size:12px;line-height:1.5;">${esc(d.instructions).replace(/\n/g, '<br>')}</div>`);
+  return html;
 }
 
 function _buildPrettySummary(data, type) {
@@ -521,10 +583,7 @@ function _buildPrettySummary(data, type) {
       rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Loot</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${lootLines}</div>`);
     }
   } else if (type === 'pnj') {
-    if (data.tag)    field('Type',   data.tag);
-    if (data.palier) field('Palier', 'Palier ' + (data.palier == -1 ? 'Archive' : data.palier));
-    if (data.region) field('Région', data.region);
-    if (data.coords) field('Coords', `X:${data.coords.x} Y:${data.coords.y} Z:${data.coords.z}`);
+    rows.push(_pnjWikiSummary(data, esc));
   } else if (type === 'region') {
     if (data.palier)  field('Palier', 'Palier ' + (data.palier == -1 ? 'Archive' : data.palier));
     if (data.coords)  field('Coords', `X:${data.coords.x} Y:${data.coords.y} Z:${data.coords.z}`);
