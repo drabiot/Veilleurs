@@ -482,6 +482,16 @@
       const canDel = isOwn || isAdm;
       const canSeeSensible = ['contributeur', 'admin'].includes(currentUserRole);
 
+      // Les 6 stats les plus fortes du build (rapportées au maximum de chaque stat) pour remplir le centre du mannequin
+      const statsHtml = (typeof ALL_STATS !== 'undefined')
+        ? ALL_STATS.map(st => ({ st, v: (b.statsSnapshot || {})[st.id] || 0 }))
+            .filter(x => x.v > 0)
+            .sort((x, y) => (y.v / (y.st.max || 100)) - (x.v / (x.st.max || 100)))
+            .slice(0, 6)
+            .map(x => `<div class="bc-mq-stat" title="${escHtml(x.st.label)}"><span>${x.st.icon || ''}</span><b>${Math.round(x.v * 10) / 10}${escHtml(x.st.unit || '')}</b></div>`)
+            .join('')
+        : '';
+
       const runeNames = b.runeNames || {};
       const colL   = MQ_LEFT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
       const colR   = MQ_RIGHT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
@@ -507,8 +517,8 @@
               <div class="bc-mq-col">${colL}</div>
               <div class="bc-mq-center">
                 <span class="bc-mq-cls-ico">${escHtml(clsIco)}</span>
-                <span class="bc-mq-cls-name">${escHtml(clsLbl)}</span>
-                <span class="bc-mq-level">Niv.&nbsp;${b.level || 1}</span>
+                <span class="bc-mq-cls-name">${escHtml(clsLbl)} · Niv.&nbsp;${b.level || 1}</span>
+                ${statsHtml}
               </div>
               <div class="bc-mq-col">${colR}</div>
             </div>

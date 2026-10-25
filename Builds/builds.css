@@ -348,7 +348,7 @@ html, body {
 .bc-mannequin-wrap {
   /* Grille 5 colonnes x 6 rangées : colonne gauche (col. 1), centre (col. 2-4), colonne droite (col. 5), rangée du bas (rangée 6).
      Tout est placé explicitement : l'alignement ne dépend ni de la largeur de la carte ni du navigateur. */
-  --s: 40px;
+  --s: 44px;
   display: grid; grid-template-columns: repeat(5, var(--s)); grid-template-rows: repeat(6, var(--s));
   gap: 3px; justify-content: center;
   padding: 6px 0;
@@ -365,19 +365,24 @@ html, body {
 .bc-mq-center {
   grid-column: 2 / 5; grid-row: 1 / 6; min-width: 0;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
+  align-items: center; justify-content: flex-start;
   gap: 3px;
   border: 1px solid var(--rim); border-radius: 3px;
   background: radial-gradient(ellipse at 50% 40%, rgba(224,172,96,.14), rgba(0,0,0,.35) 75%);
   box-shadow: inset 0 0 22px rgba(0,0,0,.65), 0 0 0 1px rgba(224,172,96,.05);
-  padding: 4px 2px;
+  padding: 8px 2px 4px;
 }
-.bc-mq-cls-ico  { font-size: 30px; line-height: 1; margin-bottom: 4px; filter: drop-shadow(0 0 8px rgba(224,172,96,.35)); }
+.bc-mq-cls-ico  { font-size: 24px; line-height: 1; filter: drop-shadow(0 0 8px rgba(224,172,96,.35)); }
 .bc-mq-cls-name {
   font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
   letter-spacing: .08em; color: var(--gold-dim); text-align: center;
 }
 .bc-mq-level { font-size: 11px; color: var(--muted); }
+.bc-mq-stat {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px; width: calc(100% - 14px);
+  font-size: 11px; color: var(--text); border-bottom: 1px solid rgba(224,172,96,.08); padding: 1px 0;
+}
+.bc-mq-stat b { font-weight: 600; color: var(--gold); }
 
 
 /* Bouton arbre de compétences (dernière cellule de la rangée du bas) */
