@@ -482,16 +482,6 @@
       const canDel = isOwn || isAdm;
       const canSeeSensible = ['contributeur', 'admin'].includes(currentUserRole);
 
-      // Les 6 stats les plus fortes du build (rapportées au maximum de chaque stat) pour remplir le centre du mannequin
-      const statsHtml = (typeof ALL_STATS !== 'undefined')
-        ? ALL_STATS.map(st => ({ st, v: (b.statsSnapshot || {})[st.id] || 0 }))
-            .filter(x => x.v > 0)
-            .sort((x, y) => (y.v / (y.st.max || 100)) - (x.v / (x.st.max || 100)))
-            .slice(0, 6)
-            .map(x => `<div class="bc-mq-stat" title="${escHtml(x.st.label)}"><span>${x.st.icon || ''}</span><b>${Math.round(x.v * 10) / 10}${escHtml(x.st.unit || '')}</b></div>`)
-            .join('')
-        : '';
-
       const runeNames = b.runeNames || {};
       const colL   = MQ_LEFT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
       const colR   = MQ_RIGHT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
@@ -517,8 +507,9 @@
               <div class="bc-mq-col">${colL}</div>
               <div class="bc-mq-center">
                 <span class="bc-mq-cls-ico">${escHtml(clsIco)}</span>
-                <span class="bc-mq-cls-name">${escHtml(clsLbl)} · Niv.&nbsp;${b.level || 1}</span>
-                ${statsHtml}
+                <span class="bc-mq-cls-name">${escHtml(clsLbl)}</span>
+                <span class="bc-mq-level">Niv.&nbsp;${b.level || 1}</span>
+                <span class="bc-mq-statsbtn" data-stats-id="${escHtml(b._id)}">📊 Stats</span>
               </div>
               <div class="bc-mq-col">${colR}</div>
             </div>
@@ -561,8 +552,38 @@
           }
         });
       });
-      // Tooltips sur les thumbnails
+      // Infobulle « Stats » : toutes les stats du build, par groupe
       const tip = document.getElementById('bc-tooltip');
+      function _statsTipHtml(b) {
+        const ss = b.statsSnapshot || {};
+        const groups = (typeof STAT_GROUPS !== 'undefined' ? STAT_GROUPS : []).map(g => {
+          const rows = g.stats.filter(st => ss[st.id]).map(st => {
+            const v = Math.round(ss[st.id] * 100) / 100;
+            return `<div class="bc-tip-stat"><span>${st.icon || ''} ${escHtml(st.label)}</span><b>${v}${escHtml(st.unit || '')}</b></div>`;
+          }).join('');
+          return rows ? `<div class="bc-tip-group">${escHtml(g.label || g.group || "")}</div>${rows}` : '';
+        }).join('');
+        return groups || '<div class="bc-tip-group">Aucune stat enregistrée</div>';
+      }
+      document.querySelectorAll('.bc-mq-statsbtn').forEach(el => {
+        el.addEventListener('mouseenter', function() {
+          const b = allBuilds.find(x => x._id === this.dataset.statsId);
+          if (!b) return;
+          tip.innerHTML = _statsTipHtml(b);
+          tip.classList.add('bc-tooltip-stats');
+          tip.style.display = 'block';
+        });
+        el.addEventListener('mousemove', function(e) {
+          const w = tip.offsetWidth, h = tip.offsetHeight;
+          tip.style.left = Math.max(8, Math.min(e.clientX + 16, window.innerWidth - w - 8)) + 'px';
+          tip.style.top  = Math.max(8, Math.min(e.clientY - 12, window.innerHeight - h - 8)) + 'px';
+        });
+        el.addEventListener('mouseleave', function() {
+          tip.style.display = 'none';
+          tip.classList.remove('bc-tooltip-stats');
+        });
+      });
+      // Tooltips sur les thumbnails
       document.querySelectorAll('.bc-slot[data-tip]').forEach(el => {
         el.addEventListener('mouseenter', function() {
           const label = this.dataset.tip;
