@@ -14,6 +14,7 @@
 const PROJECT_ID     = 'veilleurs-a13b3';
 const FIREBASE_KEY   = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
 const WIKI_PAGES     = 'https://drabiot.github.io/Veilleurs';
+const WIKI_COMMAND_ENABLED = false; // commande Discord /wiki (lit Firestore à chaque recherche)
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
 // ── Sources d'obtention prédéfinies ([obtain:id]) — relues depuis Compendium/data.js ──
@@ -539,10 +540,17 @@ function iResponse(data) {
 
 async function handleInteraction(rawBody, env) {
   const interaction = JSON.parse(rawBody);
-  await loadObtainTexts();
 
-  // PING → PONG
+  // PING → PONG (Discord vérifie l'endpoint avec ça : à garder même commande éteinte)
   if (interaction.type === 1) return iResponse({ type: 1 });
+
+  // Commande /wiki éteinte : plus de lecture Firestore. Passer WIKI_COMMAND_ENABLED à true pour la rallumer.
+  if (!WIKI_COMMAND_ENABLED) {
+    if (interaction.type === 4) return iResponse({ type: 8, data: { choices: [] } });
+    return iResponse({ type: 4, data: { content: 'La commande /wiki est désactivée.', flags: 64 } });
+  }
+
+  await loadObtainTexts();
 
   // AUTOCOMPLETE (type 4)
   if (interaction.type === 4) {
