@@ -18,6 +18,8 @@ const FIREBASE_KEY   = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
 const WIKI_PAGES     = 'https://drabiot.github.io/Veilleurs';
 const USERS_CRON = '7 */6 * * *'; // recopie des comptes Firestore → D1 (voir wrangler.toml)
 const WIKI_COMMAND_ENABLED = false; // commande Discord /wiki (lit Firestore à chaque recherche)
+const CF_ACCOUNT_ID  = 'db3d4d15175ddbfbd2720490acc8fb53'; // identifiant public du compte Cloudflare (pas un secret)
+const CF_D1_ID       = '8deed6e8-1a17-4339-86ef-fad656a886a9';
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
 // ── Sources d'obtention prédéfinies ([obtain:id]) — relues depuis Compendium/data.js ──
@@ -1081,6 +1083,31 @@ async function handleStats(request, env) {
   if (!env.ADMIN_SECRET || body.secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
   if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
   const q = (sql, ...args) => env.DB.prepare(sql).bind(...args);
+
+  // Consommation Cloudflare (requêtes du worker, lectures / écritures D1) sur 7 jours, via l'API GraphQL Analytics.
+  // Nécessite le secret CF_API_TOKEN (jeton « Account Analytics : Read ») ; sinon on répond configured:false.
+  if (body.action === 'cloudflare') {
+    if (!env.CF_API_TOKEN) return json({ configured: false });
+    const acc = env.CF_ACCOUNT_ID || CF_ACCOUNT_ID, now = new Date();
+    const day = d => d.toISOString().slice(0, 10);
+    const gql = `query($acc:String!,$since:Time!,$until:Time!,$a:Date!,$b:Date!){viewer{accounts(filter:{accountTag:$acc}){
+      w: workersInvocationsAdaptive(limit:500, filter:{scriptName:"veilleurs", datetime_geq:$since, datetime_leq:$until}, orderBy:[datetimeHour_ASC]){ dimensions{datetimeHour} sum{requests errors subrequests} }
+      d: d1AnalyticsAdaptiveGroups(limit:20, filter:{date_geq:$a, date_leq:$b, databaseId:"${CF_D1_ID}"}, orderBy:[date_ASC]){ dimensions{date} sum{readQueries writeQueries rowsRead rowsWritten} }
+    }}}`;
+    const r = await fetch('https://api.cloudflare.com/client/v4/graphql', {
+      method: 'POST', headers: { Authorization: `Bearer ${env.CF_API_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: gql, variables: { acc, since: new Date(now - 7 * 864e5).toISOString(), until: now.toISOString(), a: day(new Date(now - 6 * 864e5)), b: day(now) } }),
+    });
+    const g = await r.json().catch(() => ({}));
+    if (!r.ok || g.errors?.length) return json({ configured: true, error: g.errors?.[0]?.message || ('HTTP ' + r.status) }, 502);
+    const a0 = g.data?.viewer?.accounts?.[0] || {};
+    const days = {};
+    const slot = k => (days[k] ??= { date: k, requests: 0, errors: 0, subrequests: 0, d1Reads: 0, d1Writes: 0, rowsRead: 0, rowsWritten: 0 });
+    for (const x of a0.w || []) { const o = slot(x.dimensions.datetimeHour.slice(0, 10)); o.requests += x.sum.requests; o.errors += x.sum.errors; o.subrequests += x.sum.subrequests; }
+    for (const x of a0.d || []) { const o = slot(x.dimensions.date); o.d1Reads = x.sum.readQueries; o.d1Writes = x.sum.writeQueries; o.rowsRead = x.sum.rowsRead; o.rowsWritten = x.sum.rowsWritten; }
+    return json({ configured: true, days: Object.values(days).sort((x, y) => x.date < y.date ? -1 : 1),
+      limits: { requests: 100000, rowsRead: 5000000, rowsWritten: 100000 } });
+  }
 
   if (body.action === 'reset') {
     const n = (await q("SELECT COUNT(*) n FROM track_docs").first()).n;

@@ -16,7 +16,7 @@ const SECTION_ICONS = {
   compendium: '⚔️', bestiaire: '💀', map: '🗺️', quetes: '📜', atelier: '🔨', patchnotes: '📰', builds: '🏗️',
 };
 const ALL_SECTIONS = Object.keys(SECTION_ICONS);
-const TABS = [['audience', '👥 Audience'], ['contenu', '📚 Contenu'], ['qualite', '🛠️ Qualité']];
+const TABS = [['audience', '👥 Audience'], ['contenu', '📚 Contenu'], ['qualite', '🛠️ Qualité'], ['infra', '☁️ Infrastructure']];
 
 const fmt = n => (n || 0).toLocaleString('fr-FR');
 const fmtDate  = s => s?.length >= 10 ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(2, 4)}` : (s || '');
@@ -260,13 +260,14 @@ function userDetailHtml(u, fallbackName, esc) {
 export function renderStats(container, s, ctx, deps) {
   const esc = deps.escHtml;
   ctx = { ...ctx, today: statsDay(0) };
-  const tabs = { audience: audienceTab, contenu: contenuTab, qualite: qualiteTab };
+  const tabs = { audience: audienceTab, contenu: contenuTab, qualite: qualiteTab, infra: () => '<div id="cf-usage"><div style="color:var(--muted);font-size:12px;">Chargement…</div></div>' };
   let tab = window._statsTab && tabs[window._statsTab] ? window._statsTab : 'audience';
 
   const draw = () => {
     container.innerHTML = `<div class="stats-tabs">${TABS.map(([id, label]) =>
       `<button class="stats-tab${id === tab ? ' active' : ''}" data-tab="${id}">${label}</button>`).join('')}</div>
       <div class="stats-tab-body">${tabs[tab](s, ctx, esc)}</div>`;
+    if (tab === 'infra') infraTab(container.querySelector('#cf-usage'), deps, esc);
   };
   draw();
 
@@ -295,4 +296,44 @@ export function renderStats(container, s, ctx, deps) {
       panel.innerHTML = top + `<div style="color:var(--danger);font-size:12px;">Historique indisponible : ${esc(err.message)}</div>`;
     }
   };
+}
+
+
+/* ── Onglet Infrastructure : consommation Cloudflare (worker + D1) face aux plafonds de l'offre gratuite ── */
+async function infraTab(host, deps, esc) {
+  if (!host) return;
+  let d;
+  try { d = await deps.loadCloudflare(); }
+  catch (e) { host.innerHTML = `<div style="color:var(--danger);font-size:12px;">Erreur : ${esc(e.message)}</div>`; return; }
+  if (!d.configured) {
+    host.innerHTML = `<div class="stats-detail-title">Jeton Cloudflare non configuré</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.7;">
+        1. Cloudflare → <b>My Profile → API Tokens → Create Token → Custom token</b><br>
+        2. Permission : <b>Account · Account Analytics · Read</b> (rien d'autre), ressource : ton compte<br>
+        3. Dans un terminal, dossier <code>repo</code> : <code>npx wrangler secret put CF_API_TOKEN</code> puis colle le jeton<br>
+        4. Recharge cet onglet.</div>`;
+    return;
+  }
+  if (d.error) { host.innerHTML = `<div style="color:var(--danger);font-size:12px;">Cloudflare : ${esc(d.error)}</div>`; return; }
+  const days = d.days || [], today = days[days.length - 1] || {};
+  const bar = (label, v, max) => {
+    const p = Math.min(100, (v || 0) / max * 100), col = p > 80 ? '#f87171' : p > 50 ? '#f59e0b' : '#4ade80';
+    return `<div style="margin:10px 0;"><div style="display:flex;justify-content:space-between;font-size:12px;"><span>${label}</span><span><b>${fmt(v)}</b> / ${fmt(max)} (${p.toFixed(1)} %)</span></div>
+      <div style="height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${p}%;background:${col};"></div></div></div>`;
+  };
+  const peak = Math.max(1, ...days.map(x => x.requests));
+  host.innerHTML = `<div class="stats-detail-title">Aujourd'hui (UTC, remise à zéro à 00:00 UTC)</div>
+    ${bar('Requêtes du worker', today.requests, d.limits.requests)}
+    ${bar('Lignes lues dans D1', today.rowsRead, d.limits.rowsRead)}
+    ${bar('Lignes écrites dans D1', today.rowsWritten, d.limits.rowsWritten)}
+    <div class="stats-detail-title" style="margin-top:18px;">7 derniers jours — requêtes du worker</div>
+    <div style="display:flex;align-items:flex-end;gap:8px;height:110px;margin:8px 0;">
+      ${days.map(x => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;" title="${esc(fmtDate(x.date))} : ${fmt(x.requests)} requêtes, ${fmt(x.errors)} erreurs">
+        <span style="font-size:10px;color:var(--muted);">${fmt(x.requests)}</span>
+        <div style="width:100%;max-width:40px;height:${Math.max(2, x.requests / peak * 80)}px;background:var(--accent);border-radius:3px 3px 0 0;"></div>
+        <span style="font-size:10px;color:var(--muted);">${esc(fmtDate(x.date).slice(0, 5))}</span></div>`).join('')}
+    </div>
+    <table class="stats-table" style="width:100%;font-size:12px;"><thead><tr><th>Jour</th><th>Requêtes</th><th>Erreurs</th><th>Lectures D1</th><th>Écritures D1</th><th>Lignes lues</th><th>Lignes écrites</th></tr></thead><tbody>
+      ${[...days].reverse().map(x => `<tr><td>${esc(fmtDate(x.date))}</td><td>${fmt(x.requests)}</td><td>${fmt(x.errors)}</td><td>${fmt(x.d1Reads)}</td><td>${fmt(x.d1Writes)}</td><td>${fmt(x.rowsRead)}</td><td>${fmt(x.rowsWritten)}</td></tr>`).join('')}
+    </tbody></table>`;
 }

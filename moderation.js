@@ -9385,6 +9385,7 @@ window.loadStatistiques = async function loadStatistiques() {
     renderStats(container, summary, { items, reports, anonName }, {
       escHtml,
       loadUser: id => _fetchStats('user', { id }).then(r => r.user),
+      loadCloudflare: () => _fetchStats('cloudflare'),
       loadAudit: async uid => {
         const snap = await getDocs(query(collection(db, 'audit_log'),
           where('actorUid', '==', uid), orderBy('createdAt', 'desc'), limit(50)));
