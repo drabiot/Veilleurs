@@ -282,7 +282,8 @@ html, body {
    ============================================================ */
 .builds-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, 340px); /* largeur fixe : la carte ne s'étire plus */
+  justify-content: start;
   gap: 16px;
 }
 
@@ -377,7 +378,7 @@ html, body {
   font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
   letter-spacing: .08em; color: var(--gold-dim); text-align: center;
 }
-.bc-mq-level { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
+.bc-mq-level { font-size: 11px; color: var(--muted); margin-bottom: 38px; }
 
 
 /* Bouton arbre de compétences (dernière cellule de la rangée du bas) */
