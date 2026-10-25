@@ -396,6 +396,56 @@ function toJSStr(obj, depth = 0) {
   return JSON.stringify(obj);
 }
 
+// ── Résumé lisible d'une soumission : champs connus mis en forme à la main, puis TOUS les autres champs ──
+const _PRETTY_SKIP = new Set(['_order', 'ordre', '_contributor', '_ts', '_updatedAt', '_id', 'nameHash', 'images', 'image', 'img', 'screenshots']);
+const _PRETTY_SHOWN = {
+  item:     ['rarity', 'category', 'palier', 'lvl', 'cat', 'classes', 'set', 'sensible', 'event', 'evolutif', 'stats', 'craft', 'obtain', 'lore', 'competence', 'tags'],
+  mob:      ['type', 'palier', 'region', 'behavior', 'lore', 'loot'],
+  pnj:      ['tag', 'palier', 'region', 'coords'],
+  region:   ['palier', 'coords', 'inCodex', 'lore'],
+  quest:    ['type', 'palier', 'npc', 'zone', 'coords', 'desc', 'objectifs'],
+  panoplie: ['bonuses'],
+};
+const _PRETTY_LABELS = { id: 'ID', name: 'Nom', label: 'Nom', titre: 'Titre', craft: 'Craft', ingredients: 'Ingrédients', tag: 'Type', coords: 'Coords', desc: 'Description', lore: 'Lore', dialogue: 'Dialogue', dialogues: 'Dialogues' };
+
+// id → nom lisible, d'après les collections déjà chargées par la modération
+function _prettyName(id) {
+  for (const col of ['items', 'mobs', 'personnages', 'quetes', 'panoplies', 'regions']) {
+    const hit = (_modCache[col] || []).find(x => (x.id || x._id) === id);
+    if (hit) return hit.name || hit.label || hit.titre || null;
+  }
+  return null;
+}
+function _prettyId(id, esc) {
+  const n = _prettyName(id);
+  const code = `<code style="font-size:10px;color:var(--muted);background:rgba(255,255,255,.05);border-radius:3px;padding:1px 5px;">${esc(String(id))}</code>`;
+  return n && n !== id ? `${esc(n)} ${code}` : esc(String(id));
+}
+function _prettyVal(v, esc, depth = 0) {
+  if (v == null || v === '' || v === false) return '';
+  if (v === true) return '✓';
+  if (typeof v !== 'object') return esc(String(v)).replace(/\n/g, '<br>');
+  if (Array.isArray(v)) {
+    const items = v.filter(x => x != null && x !== '' && x !== false);
+    if (!items.length) return '';
+    if (items.every(x => typeof x !== 'object')) {
+      return items.map(x => `<span style="font-size:10px;background:var(--surface3);border-radius:3px;padding:1px 5px;">${esc(String(x))}</span>`).join(' ');
+    }
+    const chip = depth > 0; // listes imbriquées (ex. ingrédients) : en pastilles ; listes de premier niveau : une ligne par entrée
+    return `<div style="display:flex;${chip ? 'flex-wrap:wrap;' : 'flex-direction:column;'}gap:3px;">${items.map(x =>
+      `<div style="${chip ? 'background:var(--surface3);border-radius:4px;padding:1px 6px;font-size:11px;' : ''}">${_prettyVal(x, esc, depth + 1)}</div>`).join('')}</div>`;
+  }
+  const parts = [];
+  const qty = v.qty ?? v.qte;
+  if (typeof v.id === 'string') parts.push((qty != null ? `<b>×${esc(String(qty))}</b> ` : '') + _prettyId(v.id, esc));
+  for (const [k, x] of Object.entries(v)) {
+    if (_PRETTY_SKIP.has(k) || k === 'qty' || k === 'qte' || (k === 'id' && typeof x === 'string')) continue;
+    const s = _prettyVal(x, esc, depth + 1);
+    if (s) parts.push(`<span style="color:var(--muted);font-size:10px;">${esc(_PRETTY_LABELS[k] || k.replace(/_/g, ' '))}</span> ${s}`);
+  }
+  return parts.join(' <span style="color:var(--muted);">·</span> ');
+}
+
 function _buildPrettySummary(data, type) {
   const esc = window.VCL.escHtml;
   const RARITY_COLORS = { commun:'#4ade80', rare:'#60a5fa', epique:'#a78bfa', legendaire:'#e8d44a', mythique:'#f5b5e4', godlike:'#f87171', event:'#e2e8f0' };
@@ -503,8 +553,18 @@ function _buildPrettySummary(data, type) {
       const bonLines = data.bonuses.map(b => `<span style="font-size:11px;background:var(--surface3);border-radius:4px;padding:1px 6px;">${b.pieces}×: ${esc(b.stat)} +${b.value}</span>`).join(' ');
       rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Bonus</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${bonLines}</div>`);
     }
-  } else {
-    return '';
+  }
+
+  // Tous les autres champs de la soumission, tels quels (ids résolus en noms quand on les connaît)
+  const shown = new Set(_PRETTY_SHOWN[type] || []);
+  const n0 = rows.length;
+  for (const [k, v] of Object.entries(data || {})) {
+    if (shown.has(k) || _PRETTY_SKIP.has(k)) continue;
+    const s = _prettyVal(v, esc);
+    if (s) field(_PRETTY_LABELS[k] || k.replace(/_/g, ' '), s);
+  }
+  if (rows.length > n0 && n0 > 0) {
+    rows.splice(n0, 0, '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 2px;border-top:1px solid var(--border);padding-top:6px;">Autres informations</div>');
   }
 
   if (!rows.length) return '';
