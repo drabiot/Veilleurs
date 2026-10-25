@@ -1894,7 +1894,7 @@ function loadAccessoriesForClass(classId) {
     modal.dataset.mode = mode;
     const errEl = document.getElementById('modal-error');
     if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
-    ['export', 'import', 'publish', 'reset', 'confirm-class', 'confirm-level'].forEach(function(m) {
+    ['export', 'import', 'publish', 'reset', 'confirm-class', 'confirm-level', 'optimize'].forEach(function(m) {
       const zone = document.getElementById('modal-zone-' + m);
       if (zone) zone.style.display = (m === mode) ? 'flex' : 'none';
     });
@@ -2135,6 +2135,179 @@ function loadAccessoriesForClass(classId) {
     renderStats();
     renderPickerInfo();
     renderItemList();
+  });
+
+
+  /* ══ BUILD OPTIMISÉ ══
+     Recherche locale (hill-climbing avec redémarrages) sur les slots. Le score passe par computeStats()
+     (panoplies, arbre de compétences, 2 mains…) : un minimum raté est lourdement pénalisé, puis on maximise
+     les stats prioritaires, puis la somme normalisée de toutes les stats. */
+  const _statNorm = function(id) { const s = STATS_BY_ID.get(id); return (s && s.max) || 100; };
+
+  function _optScore(mins, req, prio) {
+    let score = 0;
+    Object.keys(req).forEach(function(id) { score -= 1000 * Math.max(0, req[id] - (mins[id] || 0)) / _statNorm(id); });
+    prio.forEach(function(id) { score += 3 * (mins[id] || 0) / _statNorm(id); });
+    ALL_STATS.forEach(function(s) { score += 0.2 * (mins[s.id] || 0) / _statNorm(s.id); });
+    return score;
+  }
+
+  function _optPools() {
+    const pools = {};
+    ALL_SLOTS.forEach(function(slot) {
+      pools[slot.id] = ITEMS.filter(function(item) {
+        if (!slot.cats.includes(item.cat) || item.cat === 'rune') return false;
+        if ((item.lvl || 1) > buildLevel) return false;
+        if (!itemAllowedForClass(item, activeClass)) return false;
+        if (_isSecretItem(item) && !window._canSeeSensibleItems) return false;
+        return true;
+      });
+    });
+    return pools;
+  }
+
+  // Garde les meilleurs candidats par slot (score isolé) + des items de panoplie : réduit fortement le coût de la recherche.
+  function _optPrune(pools, req, prio) {
+    const out = {};
+    Object.keys(pools).forEach(function(slotId) {
+      const scored = pools[slotId].map(function(item) {
+        const m = {};
+        Object.entries(item.stats || {}).forEach(function(e) { m[e[0]] = getMin(e[1]); });
+        const sc = _optScore(m, {}, prio) + Object.keys(req).reduce(function(a, id) { return a + 4 * (m[id] || 0) / _statNorm(id); }, 0);
+        return { item: item, sc: sc };
+      }).sort(function(a, b) { return b.sc - a.sc; });
+      const keep = scored.slice(0, 35).map(function(x) { return x.item; });
+      scored.slice(35).forEach(function(x) { if (x.item.set && keep.length < 70) keep.push(x.item); });
+      out[slotId] = keep;
+    });
+    return out;
+  }
+
+  function _optBlockedFor(map) {
+    const saved = equipped; equipped = map;
+    try { return Array.from(getBlockedSlots()); } finally { equipped = saved; }
+  }
+
+  function _optSearch(pools, req, prio, deadline) {
+    const saved = equipped;
+    const slotIds = ALL_SLOTS.map(function(s) { return s.id; });
+    function evalMap(map) { equipped = map; return _optScore(computeStats().mins, req, prio); }
+    function usedElsewhere(map, slotId, item) {
+      if (!item.unique) return false;
+      const id = getItemId(item);
+      return Object.keys(map).some(function(k) { return k !== slotId && map[k] && getItemId(map[k]) === id; });
+    }
+    let best = null, bestScore = -Infinity, runs = 0;
+    try {
+      while (runs < 3 || (Date.now() < deadline && runs < 40)) {
+        runs++;
+        const map = {};
+        slotIds.forEach(function(sid) {
+          const list = pools[sid];
+          if (!list.length) return;
+          const it = list[Math.floor(Math.random() * Math.min(list.length, 12))];
+          if (!usedElsewhere(map, sid, it)) map[sid] = it;
+        });
+        let cur = evalMap(map);
+        for (let pass = 0; pass < 8; pass++) {
+          let improved = false;
+          slotIds.slice().sort(function() { return Math.random() - 0.5; }).forEach(function(sid) {
+            pools[sid].forEach(function(it) {
+              if (map[sid] === it || usedElsewhere(map, sid, it)) return;
+              const prev = map[sid];
+              map[sid] = it;
+              const sc = evalMap(map);
+              if (sc > cur + 1e-9) { cur = sc; improved = true; }
+              else if (prev) map[sid] = prev; else delete map[sid];
+            });
+          });
+          if (!improved) break;
+        }
+        if (cur > bestScore) { bestScore = cur; best = Object.assign({}, map); }
+      }
+    } finally { equipped = saved; }
+    if (best) _optBlockedFor(best).forEach(function(sid) { delete best[sid]; });
+    return best;
+  }
+
+  function _optStatOptions(emptyLabel) {
+    return '<option value="">' + emptyLabel + '</option>' + ALL_STATS.map(function(s) {
+      return '<option value="' + s.id + '">' + (s.icon || '') + ' ' + s.label + '</option>';
+    }).join('');
+  }
+
+  function _optAddMinRow(statId, val) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; gap:6px; align-items:center;';
+    row.innerHTML = '<select class="input-name opt-min-stat" style="flex:1">' + _optStatOptions('— stat —') + '</select>' +
+      '<input class="input-name opt-min-val" type="number" step="any" placeholder="min" style="width:90px" />' +
+      '<button type="button" class="action-btn danger" style="padding:4px 9px;">✕</button>';
+    row.querySelector('select').value = statId || '';
+    row.querySelector('.opt-min-val').value = val != null ? val : '';
+    row.querySelector('button').addEventListener('click', function() { row.remove(); });
+    document.getElementById('opt-mins').appendChild(row);
+  }
+
+  document.getElementById('btn-optimize').addEventListener('click', function() {
+    document.getElementById('modal-title').textContent = '🎯 Build Optimisé';
+    const clsSel = document.getElementById('opt-class');
+    clsSel.innerHTML = '<option value="">👥 Toutes</option>' + CLASSES.map(function(c) {
+      return '<option value="' + c.id + '">' + c.ico + ' ' + c.label + '</option>';
+    }).join('');
+    clsSel.value = activeClass || '';
+    const lvl = document.getElementById('opt-level');
+    lvl.max = MAX_LEVEL; lvl.value = buildLevel;
+    document.querySelectorAll('.opt-prio').forEach(function(sel) { const v = sel.value; sel.innerHTML = _optStatOptions('— priorité —'); sel.value = v; });
+    if (!document.querySelector('#opt-mins .opt-min-stat')) _optAddMinRow();
+    document.getElementById('opt-result').style.display = 'none';
+    openModal('optimize');
+  });
+  document.getElementById('btn-opt-addmin').addEventListener('click', function() { _optAddMinRow(); });
+
+  document.getElementById('btn-opt-run').addEventListener('click', function() {
+    const btn = document.getElementById('btn-opt-run');
+    const out = document.getElementById('opt-result');
+    const req = {};
+    document.querySelectorAll('#opt-mins > div').forEach(function(row) {
+      const id = row.querySelector('select').value;
+      const v  = parseFloat(row.querySelector('.opt-min-val').value);
+      if (id && !isNaN(v)) req[id] = Math.max(req[id] === undefined ? -Infinity : req[id], v);
+    });
+    const prio = Array.from(document.querySelectorAll('.opt-prio')).map(function(s) { return s.value; }).filter(Boolean);
+
+    // Point de départ : classe + niveau demandés, équipement vidé
+    equipped = {}; equippedRunes = {};
+    const newClass = document.getElementById('opt-class').value || null;
+    if (newClass !== activeClass) {
+      const cb = document.querySelector('#class-picker .class-btn[data-c="' + (newClass || '') + '"]');
+      if (cb) cb.click();
+    }
+    const newLvl = Math.max(1, Math.min(MAX_LEVEL, parseInt(document.getElementById('opt-level').value) || 1));
+    if (newLvl !== buildLevel) applyLevelChange(newLvl);
+
+    btn.disabled = true; btn.textContent = '⏳ Recherche…';
+    out.style.display = 'block'; out.textContent = 'Recherche du meilleur équipement…';
+    setTimeout(function() {
+      try {
+        const pools = _optPrune(_optPools(), req, prio);
+        equipped = _optSearch(pools, req, prio, Date.now() + 2500) || {};
+        buildGrid(); buildLevelPanel(); saveToStorage(); renderStats(); renderPickerInfo(); renderItemList();
+
+        const mins = computeStats().mins;
+        const ids = Object.keys(req);
+        const unmet = ids.some(function(id) { return (mins[id] || 0) < req[id]; });
+        out.innerHTML = (unmet ? '<div style="color:#d9614a;margin-bottom:4px">Impossible de tout respecter pour cette classe et ce niveau : voici le plus proche.</div>' : '') +
+          ids.map(function(id) {
+            const ok = (mins[id] || 0) >= req[id];
+            const st = STATS_BY_ID.get(id);
+            return '<div style="color:' + (ok ? '#7ac47a' : '#d9614a') + '">' + (ok ? '✓' : '✗') + ' ' + (st ? st.label : id) +
+              ' : ' + Math.round((mins[id] || 0) * 100) / 100 + ' / ' + req[id] + '</div>';
+          }).join('') + '<div style="opacity:.6;margin-top:4px">Clique sur Générer pour une autre variante.</div>';
+      } catch (err) {
+        console.error('[Atelier] build optimisé :', err);
+        out.textContent = '⛔ Erreur pendant la génération.';
+      } finally { btn.disabled = false; btn.textContent = '🎯 Générer'; }
+    }, 30);
   });
 
   /* ══ RESET ══ */

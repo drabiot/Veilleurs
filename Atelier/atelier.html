@@ -154,6 +154,7 @@
           <div class="divider"></div>
           <button id="btn-publish" class="action-btn primary">◈ Publier le Build</button>
 <button id="btn-random" class="action-btn">🎲 Build Aléatoire</button>
+          <button id="btn-optimize" class="action-btn">🎯 Build Optimisé</button>
           <div class="divider"></div>
           <div style="display:flex;gap:6px;">
             <button id="btn-export" class="action-btn" style="flex:1;font-size:10px;padding:5px 8px;">↑ Export JSON</button>
@@ -267,6 +268,37 @@
         <div id="publish-error" class="modal-error" style="display:none"></div>
         <div class="modal-foot">
           <button id="btn-confirm-publish" class="action-btn primary">◈ Publier</button>
+        </div>
+      </div>
+
+      <div id="modal-zone-optimize" style="display:none; flex-direction:column; gap:12px">
+        <p class="modal-hint">Fixe tes exigences : l'outil cherche le meilleur équipement qui les respecte, puis maximise tes stats prioritaires.</p>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Classe</label>
+            <select id="opt-class" class="input-name"></select>
+          </div>
+          <div style="width:90px; display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Niveau</label>
+            <input id="opt-level" class="input-name" type="number" min="1" />
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Stats minimum</label>
+          <div id="opt-mins" style="display:flex; flex-direction:column; gap:6px;"></div>
+          <button type="button" id="btn-opt-addmin" class="action-btn" style="font-size:10px; padding:5px 8px; align-self:flex-start;">+ Ajouter une stat minimum</button>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Stats prioritaires à maximiser (jusqu'à 3)</label>
+          <div style="display:flex; gap:6px;">
+            <select id="opt-prio-0" class="input-name opt-prio"></select>
+            <select id="opt-prio-1" class="input-name opt-prio"></select>
+            <select id="opt-prio-2" class="input-name opt-prio"></select>
+          </div>
+        </div>
+        <div id="opt-result" class="modal-hint" style="display:none; font-size:12px; line-height:1.6;"></div>
+        <div class="modal-foot">
+          <button id="btn-opt-run" class="action-btn primary">🎯 Générer</button>
         </div>
       </div>
 
