@@ -41,7 +41,7 @@ async function loadLeaderboard() {
           if (!uid) continue; // invités : non comptés
           const key = uid;
           if (!byKey[key]) byKey[key] = { uid, name, count: 0 };
-          byKey[key].count++;
+          byKey[key].count += (c.modOnly ? 0 : 1) + (c.edits || 0); // création = 1, chaque modification approuvée = +1
         }
       }
     } catch {}

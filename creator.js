@@ -7470,7 +7470,7 @@ async function loadCreatorLeaderboard() {
           if (!c.uid || !name || /^invit[ée]?$/i.test(name.trim())) continue; // invités : non comptés
           const key = c.uid;
           if (!byKey[key]) byKey[key] = { name, uid: c.uid || null, count: 0 };
-          byKey[key].count++;
+          byKey[key].count += (c.modOnly ? 0 : 1) + (c.edits || 0); // création = 1, chaque modification approuvée = +1
         }
       }
     } catch {}

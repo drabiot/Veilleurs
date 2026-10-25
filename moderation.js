@@ -1177,14 +1177,17 @@ function _readContribs(data) {
   return Array.isArray(c) ? c : [c];
 }
 
-// Fusionne des contributeurs existants avec un nouveau — dedup par uid puis par name, retourne array
-function _mergeContributors(existing, newContrib) {
-  const result = [...existing];
-  const alreadyIn = result.some(c =>
+// Fusionne des contributeurs existants avec un nouveau — dedup par uid puis par name, retourne array.
+// Classement : la création d'un document compte 1 ; chaque modification approuvée compte +1 (champ `edits`).
+// Un contributeur ajouté par une modification porte `modOnly` : sa 1re modification est alors sa seule contribution.
+function _mergeContributors(existing, newContrib, isMod = false) {
+  const result = existing.map(c => ({ ...c }));
+  const hit = result.find(c =>
     (newContrib.uid && c.uid === newContrib.uid) ||
     (!newContrib.uid && c.name === newContrib.name)
   );
-  if (!alreadyIn) result.push(newContrib);
+  if (hit) { if (isMod) hit.edits = (hit.edits || 0) + 1; }
+  else result.push(isMod ? { ...newContrib, edits: 1, modOnly: true } : newContrib);
   return result.length ? result : [newContrib];
 }
 
@@ -1257,7 +1260,7 @@ window.approve = async (id) => {
           }
         } catch {}
       }
-      const _secretMerged = _mergeContributors(_secretExistContribs, _contribField);
+      const _secretMerged = _mergeContributors(_secretExistContribs, _contribField, !!sub.isModification);
       const nameHash = await hashName(sub.data.name);
       if (!nameHash) throw new Error('Nom manquant pour hash');
       // Écriture atomique : les deux docs créés ensemble ou pas du tout
@@ -1278,7 +1281,7 @@ window.approve = async (id) => {
           if (es.exists()) _mobExistContribs = _readContribs(es.data());
         } catch {}
       }
-      const _mobMerged = _mergeContributors(_mobExistContribs, _contribField);
+      const _mobMerged = _mergeContributors(_mobExistContribs, _contribField, !!sub.isModification);
       const payload = { _order: Date.now(), _contributor: _mobMerged, ...sub.data, sensible: true };
       await setDoc(doc(db, COL.mobsSecret, String(dataId)), sanitizeForFirestore(payload));
       try { await deleteDoc(doc(db, COL.mobs, String(dataId))); } catch {}
@@ -1293,7 +1296,7 @@ window.approve = async (id) => {
           if (es.exists()) _pnjExistContribs = _readContribs(es.data());
         } catch {}
       }
-      const _pnjMerged = _mergeContributors(_pnjExistContribs, _contribField);
+      const _pnjMerged = _mergeContributors(_pnjExistContribs, _contribField, !!sub.isModification);
       const payload = { _order: Date.now(), _contributor: _pnjMerged, ...sub.data, sensible: true };
       await setDoc(doc(db, COL.pnjSecret, String(dataId)), sanitizeForFirestore(payload));
       try { await deleteDoc(doc(db, COL.pnj, String(dataId))); } catch {}
@@ -1333,7 +1336,7 @@ window.approve = async (id) => {
           }
         } catch {}
       }
-      dataToWrite._contributor = _mergeContributors(_stdExistContribs, _contribField);
+      dataToWrite._contributor = _mergeContributors(_stdExistContribs, _contribField, !!sub.isModification);
 
       await setDoc(doc(db, target, String(dataId)), dataToWrite);
 
@@ -8934,10 +8937,10 @@ window.loadLeaderboard = async () => {
           if (!uid) continue; // invités : non comptés
           const cname = c.name || 'Inconnu';
           if (!byKey[uid]) byKey[uid] = { uid, name: cname, subs: [] };
-          byKey[uid].subs.push({
-            _id: entryId, _col: col, _docId: d.id, type,
-            name: data.name || data.titre || data.label || d.id,
-          });
+          const docName = data.name || data.titre || data.label || d.id;
+          // création = 1 contribution ; chaque modification approuvée = +1
+          if (!c.modOnly) byKey[uid].subs.push({ _id: entryId, _col: col, _docId: d.id, type, name: docName });
+          for (let i = 0; i < (c.edits || 0); i++) byKey[uid].subs.push({ _id: entryId, _col: col, _docId: d.id, type, name: docName + ' (modification)' });
         }
       }
     } catch {}
@@ -9018,7 +9021,7 @@ async function _lbHomeCounts() {
           const uid = c.uid || null, name = c.name || 'Inconnu';
           if (!uid) continue; // invités : non comptés
           const key = uid;
-          counts[key] = (counts[key] || 0) + 1;
+          counts[key] = (counts[key] || 0) + (c.modOnly ? 0 : 1) + (c.edits || 0); // même règle que l'accueil
         }
       }
     } catch {}
