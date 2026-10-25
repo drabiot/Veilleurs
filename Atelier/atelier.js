@@ -2177,7 +2177,7 @@ function loadAccessoriesForClass(classId) {
         return { item: item, sc: sc };
       }).sort(function(a, b) { return b.sc - a.sc; });
       const keep = scored.slice(0, 35).map(function(x) { return x.item; });
-      scored.slice(35).forEach(function(x) { if (x.item.set && keep.length < 70) keep.push(x.item); });
+      scored.slice(35).forEach(function(x) { if (x.item.set && keep.length < 100) keep.push(x.item); });
       out[slotId] = keep;
     });
     return out;
@@ -2188,45 +2188,114 @@ function loadAccessoriesForClass(classId) {
     try { return Array.from(getBlockedSlots()); } finally { equipped = saved; }
   }
 
+  function _optRunePool() {
+    return ITEMS.filter(function(item) {
+      return (item.cat === 'rune' || item.category === 'rune') && !(_isSecretItem(item) && !window._canSeeSensibleItems);
+    });
+  }
+
   function _optSearch(pools, req, prio, deadline) {
-    const saved = equipped;
+    const savedEq = equipped, savedRunes = equippedRunes;
     const slotIds = ALL_SLOTS.map(function(s) { return s.id; });
-    function evalMap(map) { equipped = map; return _optScore(computeStats().mins, req, prio); }
+    const runePool = _optRunePool();
+    const setIds = Object.keys(SETS || {});
+
+    // Les clés de runes dont l'item n'a plus assez d'emplacements sont ignorées au calcul.
+    function evalState(map, runes) {
+      const valid = {};
+      Object.keys(runes).forEach(function(k) { if (isRuneKeyValid(k, map)) valid[k] = runes[k]; });
+      equipped = map; equippedRunes = valid;
+      return _optScore(computeStats().mins, req, prio);
+    }
     function usedElsewhere(map, slotId, item) {
       if (!item.unique) return false;
       const id = getItemId(item);
       return Object.keys(map).some(function(k) { return k !== slotId && map[k] && getItemId(map[k]) === id; });
     }
+    function runeKeysOf(map) {
+      const keys = [];
+      slotIds.forEach(function(sid) {
+        const it = map[sid];
+        if (it && it.stats && it.rune_slots > 0) for (let i = 0; i < it.rune_slots; i++) keys.push(sid + '_rune_' + i);
+      });
+      return keys;
+    }
+
+    // Une passe de recherche locale sur les items (runes figées)
+    function climbItems(map, runes, cur) {
+      for (let pass = 0; pass < 8; pass++) {
+        let improved = false;
+        slotIds.slice().sort(function() { return Math.random() - 0.5; }).forEach(function(sid) {
+          pools[sid].forEach(function(it) {
+            if (map[sid] === it || usedElsewhere(map, sid, it)) return;
+            const prev = map[sid];
+            map[sid] = it;
+            const sc = evalState(map, runes);
+            if (sc > cur + 1e-9) { cur = sc; improved = true; }
+            else if (prev) map[sid] = prev; else delete map[sid];
+          });
+        });
+        if (!improved) break;
+      }
+      return cur;
+    }
+
+    // Une passe de recherche locale sur les runes (une rune n'est équipable qu'une fois)
+    function climbRunes(map, runes, cur) {
+      for (let pass = 0; pass < 6; pass++) {
+        let improved = false;
+        runeKeysOf(map).sort(function() { return Math.random() - 0.5; }).forEach(function(key) {
+          runePool.forEach(function(r) {
+            const rid = getItemId(r);
+            if (runes[key] === rid) return;
+            const holder = Object.keys(runes).find(function(k) { return k !== key && runes[k] === rid; });
+            if (holder) return;
+            const prev = runes[key];
+            runes[key] = rid;
+            const sc = evalState(map, runes);
+            if (sc > cur + 1e-9) { cur = sc; improved = true; }
+            else if (prev) runes[key] = prev; else delete runes[key];
+          });
+        });
+        if (!improved) break;
+      }
+      return cur;
+    }
+
     let best = null, bestScore = -Infinity, runs = 0;
     try {
       while (runs < 3 || (Date.now() < deadline && runs < 40)) {
         runs++;
-        const map = {};
+        const map = {}, runes = {};
+        // Une restart sur deux démarre sur une panoplie complète (impossible à atteindre en changeant un item à la fois)
+        const seedSet = (runs % 2 === 0 && setIds.length) ? setIds[Math.floor(Math.random() * setIds.length)] : null;
         slotIds.forEach(function(sid) {
           const list = pools[sid];
           if (!list.length) return;
-          const it = list[Math.floor(Math.random() * Math.min(list.length, 12))];
+          const inSet = seedSet ? list.filter(function(i) { return i.set === seedSet; }) : [];
+          const src = inSet.length ? inSet : list.slice(0, 12);
+          const it = src[Math.floor(Math.random() * src.length)];
           if (!usedElsewhere(map, sid, it)) map[sid] = it;
         });
-        let cur = evalMap(map);
-        for (let pass = 0; pass < 8; pass++) {
-          let improved = false;
-          slotIds.slice().sort(function() { return Math.random() - 0.5; }).forEach(function(sid) {
-            pools[sid].forEach(function(it) {
-              if (map[sid] === it || usedElsewhere(map, sid, it)) return;
-              const prev = map[sid];
-              map[sid] = it;
-              const sc = evalMap(map);
-              if (sc > cur + 1e-9) { cur = sc; improved = true; }
-              else if (prev) map[sid] = prev; else delete map[sid];
-            });
-          });
-          if (!improved) break;
+        let cur = evalState(map, runes);
+        for (let round = 0; round < 3; round++) {
+          const before = cur;
+          cur = climbItems(map, runes, cur);
+          cur = climbRunes(map, runes, cur);
+          if (cur <= before + 1e-9) break;
         }
-        if (cur > bestScore) { bestScore = cur; best = Object.assign({}, map); }
+        if (cur > bestScore) {
+          bestScore = cur;
+          const keptRunes = {};
+          Object.keys(runes).forEach(function(k) { if (isRuneKeyValid(k, map)) keptRunes[k] = runes[k]; });
+          best = { map: Object.assign({}, map), runes: keptRunes };
+        }
       }
-    } finally { equipped = saved; }
-    if (best) _optBlockedFor(best).forEach(function(sid) { delete best[sid]; });
+    } finally { equipped = savedEq; equippedRunes = savedRunes; }
+    if (best) {
+      _optBlockedFor(best.map).forEach(function(sid) { delete best.map[sid]; });
+      Object.keys(best.runes).forEach(function(k) { if (!isRuneKeyValid(k, best.map)) delete best.runes[k]; });
+    }
     return best;
   }
 
@@ -2290,7 +2359,9 @@ function loadAccessoriesForClass(classId) {
     setTimeout(function() {
       try {
         const pools = _optPrune(_optPools(), req, prio);
-        equipped = _optSearch(pools, req, prio, Date.now() + 2500) || {};
+        const found = _optSearch(pools, req, prio, Date.now() + 3000);
+        equipped = found ? found.map : {};
+        equippedRunes = found ? found.runes : {};
         buildGrid(); buildLevelPanel(); saveToStorage(); renderStats(); renderPickerInfo(); renderItemList();
 
         const mins = computeStats().mins;
