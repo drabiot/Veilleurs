@@ -818,13 +818,17 @@ async function _syncDelta(colName, cache, key) {
 
 // Lecture du contenu public dans D1 via le worker (GET /db/sync) : ni lecture ni quota Firestore.
 // Cache local `vcl_cache_d1_*` = { rev, epoch, ts, data } ; le serveur renvoie tout ce qui a une révision > rev.
+// D1 ne coûte aucun quota Firestore : on revérifie vite (30 s) et toujours sur un rechargement (F5) de la page.
+const _D1_PAUSE_MS = 30 * 1000;
+const _isReload = (() => { try { return performance.getEntriesByType('navigation')[0]?.type === 'reload'; } catch { return false; } })();
+
 async function _d1Load(colName) {
   const key = `vcl_cache_d1_${colName}`;
   let cache = null;
   try { cache = JSON.parse(localStorage.getItem(key) || 'null'); } catch {}
   const usable = cache && cache.rev > 0 && Date.now() - cache.ts < 7 * 24 * 3600e3;
   if (usable) {
-    try { if (Date.now() - parseInt(localStorage.getItem(_chkKey(colName)) || '0') < _SYNC_PAUSE_MS) return cache.data; } catch {}
+    try { if (!_isReload && Date.now() - parseInt(localStorage.getItem(_chkKey(colName)) || '0') < _D1_PAUSE_MS) return cache.data; } catch {}
   }
   const get = since => fetch(`${DISCORD_WORKER}/db/sync?col=${colName}&since=${since}`)
     .then(r => { if (!r.ok) throw new Error('d1 ' + r.status); return r.json(); });
