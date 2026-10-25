@@ -346,7 +346,7 @@ html, body {
    BUILD CARD — MANNEQUIN LAYOUT
    ============================================================ */
 .bc-mannequin-wrap {
-  display: flex; flex-direction: column; gap: 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 4px 0;
 }
 .bc-mannequin-row {
@@ -357,7 +357,8 @@ html, body {
   flex-shrink: 0;
 }
 .bc-mq-center {
-  flex: 1; min-width: 0;
+  /* largeur = rangée du bas (5 cases de 48px + 4 écarts de 3px) moins les 2 colonnes et leurs écarts */
+  flex: 0 0 148px; min-width: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 3px;
