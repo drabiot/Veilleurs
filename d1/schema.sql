@@ -37,3 +37,16 @@ CREATE INDEX IF NOT EXISTS idx_docs_col_rev ON docs (col, updated_at);
 -- Compteurs et curseurs de synchro (rev, epoch, gen, cur:<col>, curname:<col>, full:<col>, tomb, tombname, lastrefresh)
 CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v);
 INSERT OR IGNORE INTO meta (k, v) VALUES ('rev', 0), ('epoch', -1), ('gen', 1), ('lastrefresh', 0);
+
+-- ── Comptes : copie des documents Firestore `users` + config de rôles (connexion Discord sans dépendre du quota) ──
+-- pending = champs écrits à la connexion et pas encore reportés dans Firestore (JSON), NULL si tout est à jour.
+CREATE TABLE IF NOT EXISTS users (
+  uid        TEXT PRIMARY KEY,
+  data       TEXT NOT NULL,
+  discord_id TEXT,
+  pseudo     TEXT,
+  pending    TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_users_discord ON users (discord_id);
+CREATE INDEX IF NOT EXISTS idx_users_pseudo ON users (pseudo);
+CREATE TABLE IF NOT EXISTS cfg (k TEXT PRIMARY KEY, v TEXT NOT NULL);

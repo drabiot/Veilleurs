@@ -173,6 +173,17 @@ export async function getUserRole(uid) {
     const snap = await getDoc(doc(db, COL.users, uid));
     return snap.exists() ? (snap.data().role ?? 'membre') : 'membre';
   } catch {
+    // Firestore indisponible (quota…) : le worker lit la copie D1 du compte, pour rester connecté avec le bon rôle
+    try {
+      const u = auth.currentUser;
+      if (u && u.uid === uid) {
+        const r = await fetch(DISCORD_WORKER + '/me', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken: await u.getIdToken() }),
+        });
+        if (r.ok) return (await r.json()).role ?? 'membre';
+      }
+    } catch {}
     return 'visiteur';
   }
 }

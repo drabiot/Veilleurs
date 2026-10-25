@@ -14,6 +14,7 @@
 const PROJECT_ID     = 'veilleurs-a13b3';
 const FIREBASE_KEY   = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
 const WIKI_PAGES     = 'https://drabiot.github.io/Veilleurs';
+const USERS_CRON = '7 */6 * * *'; // recopie des comptes Firestore → D1 (voir wrangler.toml)
 const WIKI_COMMAND_ENABLED = false; // commande Discord /wiki (lit Firestore à chaque recherche)
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
@@ -606,7 +607,10 @@ async function handleInteraction(rawBody, env) {
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(syncContent(env).catch(() => {}));
+    ctx.waitUntil((async () => {
+      if (event.cron === USERS_CRON) { await pullUsersAndCfg(env).catch(() => {}); await flushUsers(env, 10).catch(() => {}); }
+      else { await syncContent(env).catch(() => {}); await flushUsers(env).catch(() => {}); }
+    })());
   },
 
   async fetch(request, env, ctx) {
@@ -619,6 +623,7 @@ export default {
     if (_path === '/db/sync' && request.method === 'GET') return handleDbSync(new URL(request.url), env);
     if (_path === '/db/refresh' && request.method === 'POST') return handleDbRefresh(request, env, ctx);
     if (_path === '/db/resync' && request.method === 'POST') return handleDbResync(request, env);
+    if (_path === '/me' && request.method === 'POST') return handleMe(request, env);
     if (_path === '/track' && request.method === 'POST') return handleTrack(request, env);
     if (_path === '/stats' && request.method === 'POST') return handleStats(request, env);
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
@@ -860,7 +865,7 @@ async function fsLogLogin(env, uid, pseudo, role) {
 let _roleCfgCache = null; // { at, cfg, custom } : 5 min, économise 2 lectures Firestore par connexion
 async function resolveSiteRole(env, discordRoleIds) {
   if (!_roleCfgCache || Date.now() - _roleCfgCache.at > 5 * 60000) {
-    const [c, cu] = await Promise.all([fsGetDoc(env, 'config/discordRoles'), fsGetDoc(env, 'config/customRoles')]);
+    const [c, cu] = await Promise.all([cfgGet(env, 'config/discordRoles'), cfgGet(env, 'config/customRoles')]);
     _roleCfgCache = { at: Date.now(), cfg: c, custom: cu };
   }
   const { cfg, custom } = _roleCfgCache;
@@ -878,7 +883,7 @@ async function resolveSiteRole(env, discordRoleIds) {
 async function uniquePseudo(env, wanted, discordId) {
   let p = String(wanted || '').replace(/[^\p{L}\p{N}_\- \[\]]/gu, '').trim().slice(0, 32);
   if (p.length < 2) p = `Veilleur${discordId.slice(-4)}`;
-  if (!(await fsFindUser(env, 'pseudo', p))) return p;
+  if (!(await userFind(env, 'pseudo', p))) return p;
   return `${p.slice(0, 27)}_${discordId.slice(-4)}`;
 }
 
@@ -954,21 +959,21 @@ async function handleDiscordCallback(request, env) {
     if (!mr.ok) return fail("Impossible de vérifier ton appartenance au serveur.");
     const member = await mr.json();
 
-    const owner = await fsFindUser(env, 'discordId', me.id);
+    const owner = await userFind(env, 'discordId', me.id);
     let uid, existing;
     if (state.m === 'link') {
       uid = state.uid;
-      existing = await fsGetDoc(env, `users/${uid}`);
+      existing = await userGet(env, uid);
       if (existing?.discordId && existing.discordId !== me.id) return fail('Ce compte est déjà lié à un autre Discord.');
       if (owner && owner._id !== uid) {
         if (!owner._id.startsWith('discord_')) return fail('Ce Discord est déjà lié à un autre compte.');
         // compte auto-créé par une connexion Discord antérieure : on le désarme au profit de l'ancien
-        await fsPatchUser(env, owner._id, { discordId: null, mergedInto: uid });
+        await userPatch(env, owner._id, { discordId: null, mergedInto: uid });
       }
     } else if (owner) {
       uid = owner._id; existing = owner;
     } else {
-      uid = `discord_${me.id}`; existing = await fsGetDoc(env, `users/${uid}`);
+      uid = `discord_${me.id}`; existing = await userGet(env, uid);
     }
 
     const data = {
@@ -981,7 +986,7 @@ async function handleDiscordCallback(request, env) {
     if (!existing || (existing.role !== 'admin' && !existing.roleLocked)) {
       data.role = await resolveSiteRole(env, member.roles || []);
     }
-    await fsPatchUser(env, uid, data);
+    await userPatch(env, uid, data);
     await fsLogLogin(env, uid, data.pseudo || existing?.pseudo, data.role || existing?.role);
 
     return out({ token: await firebaseCustomToken(uid, env), pseudo: data.pseudo || existing?.pseudo || '' });
@@ -1329,4 +1334,114 @@ async function handleDbResync(request, env) {
   if (!env.ADMIN_SECRET || body.secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
   try { return json(await syncContent(env, { reset: !!body.reset })); }
   catch (e) { return json({ error: e.message }, 500); }
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  COMPTES : copie D1 — la connexion Discord ne dépend plus du quota Firestore
+//
+//  Firestore reste la source de vérité (règles de sécurité, modération). D1 (tables users, cfg) en garde une copie :
+//   - lecture  : Firestore d'abord (données à jour) ; si Firestore échoue (quota, panne), la copie D1 ;
+//   - écriture : D1 d'abord (`pending` = champs restant à reporter), puis report dans Firestore dès que possible
+//                (tout de suite, sinon par le cron via flushUsers).
+//  La copie est remplie à chaque lecture réussie, par pullUsersAndCfg (cron 6 h) et par Save/seed-users-d1.js.
+// ══════════════════════════════════════════════════════════════
+
+const jparse = s => { try { return JSON.parse(s); } catch { return null; } };
+
+async function d1UserRow(env, field, value) {
+  const col = field === 'discordId' ? 'discord_id' : field === 'pseudo' ? 'pseudo' : 'uid';
+  return env.DB.prepare(`SELECT uid, data, pending FROM users WHERE ${col} = ? LIMIT 1`).bind(value).first();
+}
+const rowToUser = r => (r ? { _id: r.uid, ...(jparse(r.data) || {}), ...(jparse(r.pending) || {}) } : null);
+
+function d1SaveUser(env, uid, data, pending) {
+  return env.DB.prepare(`INSERT INTO users (uid, data, discord_id, pseudo, pending) VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT (uid) DO UPDATE SET data = excluded.data, discord_id = excluded.discord_id, pseudo = excluded.pseudo, pending = excluded.pending`)
+    .bind(uid, JSON.stringify(data), data.discordId ?? null, data.pseudo ?? null, pending ? JSON.stringify(pending) : null).run();
+}
+
+/** Compte trouvé par pseudo / discordId / uid ; null s'il n'existe pas. */
+async function userLookup(env, field, value) {
+  const row = await d1UserRow(env, field, value).catch(() => null);
+  let fsUser, ok = false;
+  try { fsUser = field === 'uid' ? await fsGetDoc(env, `users/${value}`) : await fsFindUser(env, field, value); ok = true; } catch { /* quota / panne */ }
+  if (!ok) return rowToUser(row);
+  if (!fsUser) return row?.pending ? rowToUser(row) : null; // créé pendant une panne, pas encore reporté
+  const { _id, ...data } = fsUser;
+  await d1SaveUser(env, _id, data, jparse(row?.pending)).catch(() => {});
+  return { ...fsUser, ...(jparse(row?.pending) || {}) };
+}
+const userFind = (env, field, value) => userLookup(env, field, value);
+const userGet  = (env, uid) => userLookup(env, 'uid', uid);
+
+/** Enregistre un patch de compte : D1 d'abord, puis Firestore (reporté plus tard s'il échoue). */
+async function userPatch(env, uid, patch) {
+  const row = await d1UserRow(env, 'uid', uid).catch(() => null);
+  const data = { ...(jparse(row?.data) || {}), ...patch };
+  const pending = { ...(jparse(row?.pending) || {}), ...patch };
+  await d1SaveUser(env, uid, data, pending);
+  try { await fsPatchUser(env, uid, pending); await d1SaveUser(env, uid, data, null); } catch { /* flushUsers s'en chargera */ }
+}
+
+/** Reporte dans Firestore les patchs restés en attente (quota épuisé au moment de la connexion). */
+async function flushUsers(env, max = 3) {
+  if (!env.DB) return;
+  const { results } = await env.DB.prepare('SELECT uid, data, pending FROM users WHERE pending IS NOT NULL LIMIT ?').bind(max).all();
+  for (const r of results) {
+    try { await fsPatchUser(env, r.uid, jparse(r.pending) || {}); await d1SaveUser(env, r.uid, jparse(r.data) || {}, null); } catch { return; }
+  }
+}
+
+/** Config Firestore (rôles Discord…) avec copie D1 en secours. */
+async function cfgGet(env, path) {
+  try {
+    const d = await fsGetDoc(env, path);
+    if (env.DB) await env.DB.prepare('INSERT OR REPLACE INTO cfg (k, v) VALUES (?, ?)').bind(path, JSON.stringify(d)).run().catch(() => {});
+    return d;
+  } catch (e) {
+    const r = env.DB ? await env.DB.prepare('SELECT v FROM cfg WHERE k = ?').bind(path).first().catch(() => null) : null;
+    if (r) return jparse(r.v);
+    throw e;
+  }
+}
+
+/** Recopie tous les comptes et la config de rôles de Firestore vers D1 (cron 6 h). Ne touche pas aux patchs en attente. */
+async function pullUsersAndCfg(env) {
+  if (!env.DB) return;
+  const seen = new Set(), stmts = [];
+  let pageToken = '';
+  do {
+    const d = await fsReq(env, `/users?pageSize=300${pageToken ? `&pageToken=${pageToken}` : ''}`);
+    for (const doc of d?.documents || []) {
+      const { _id, ...data } = parseDoc(doc);
+      seen.add(_id);
+      stmts.push(env.DB.prepare(`INSERT INTO users (uid, data, discord_id, pseudo, pending) VALUES (?, ?, ?, ?, NULL)
+        ON CONFLICT (uid) DO UPDATE SET data = excluded.data, discord_id = excluded.discord_id, pseudo = excluded.pseudo WHERE users.pending IS NULL`)
+        .bind(_id, JSON.stringify(data), data.discordId ?? null, data.pseudo ?? null));
+    }
+    pageToken = d?.nextPageToken || '';
+  } while (pageToken);
+  const old = (await env.DB.prepare('SELECT uid FROM users WHERE pending IS NULL').all()).results;
+  for (const r of old) if (!seen.has(r.uid)) stmts.push(env.DB.prepare('DELETE FROM users WHERE uid = ? AND pending IS NULL').bind(r.uid));
+  for (const path of ['config/discordRoles', 'config/customRoles']) {
+    const c = await fsGetDoc(env, path);
+    stmts.push(env.DB.prepare('INSERT OR REPLACE INTO cfg (k, v) VALUES (?, ?)').bind(path, JSON.stringify(c)));
+  }
+  for (let i = 0; i < stmts.length; i += 50) await env.DB.batch(stmts.slice(i, i + 50));
+}
+
+/** POST /me { idToken } : rôle et avatar du compte connecté, lus dans D1 (le site s'en sert si Firestore refuse la lecture). */
+async function handleMe(request, env) {
+  if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
+  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${FIREBASE_KEY}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: String(body.idToken || '') }),
+  });
+  const uid = (await r.json().catch(() => ({}))).users?.[0]?.localId;
+  if (!uid) return json({ error: 'Non connecté' }, 401);
+  const row = await d1UserRow(env, 'uid', uid).catch(() => null);
+  const u = rowToUser(row);
+  return json({ uid, role: u?.role ?? 'membre', pseudo: u?.pseudo ?? null, discordId: u?.discordId ?? null, discordAvatar: u?.discordAvatar ?? null });
 }

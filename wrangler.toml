@@ -21,6 +21,7 @@ binding = "DB"
 database_name = "veilleurs"
 database_id = "8deed6e8-1a17-4339-86ef-fad656a886a9"
 
-# Synchro du contenu Firestore -> D1 (filet de sécurité ; le site déclenche aussi /db/refresh après une écriture)
+# */15 : synchro du contenu Firestore -> D1 (filet de sécurité ; le site déclenche aussi /db/refresh après une écriture)
+# 7 */6 : recopie des comptes et de la config de rôles Firestore -> D1 (connexion Discord indépendante du quota)
 [triggers]
-crons = ["*/15 * * * *"]
+crons = ["*/15 * * * *", "7 */6 * * *"]
