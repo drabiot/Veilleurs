@@ -14337,11 +14337,11 @@ let _pinCategories = null;
 
 const _DEFAULT_CATEGORIES = [
   { id: 'cat-principaux', label: '🗺️ Principaux',   types: ['donjon', 'boss', 'zone_monstre'] },
-  { id: 'cat-quetes',     label: '💬 Quêtes',         types: ['quête_principale', 'quête_secondaire', 'quête_tertiaire'] },
-  { id: 'cat-craft',      label: '⚒️ Forge / Craft',  types: ['craft_armes', 'craft_armures', 'craft_accessoires', 'craft_lingots', 'craft_cles'] },
-  { id: 'cat-artisans',   label: '🧪 Artisans',       types: ['craft_runes', 'alchimiste', 'bucheron', 'refaconneur'] },
-  { id: 'cat-commerce',   label: '🛒 Commerce',       types: ['repreneur_butin', 'repreneur_armes', 'marchand_itinerant', 'marchand_equipement', 'marchand_consommable', 'marchand_outils', 'marchand_access', 'marchand_occulte'] },
-  { id: 'cat-autres',     label: '🦠 Autres',         types: ['région', 'passage', 'autre'] },
+  { id: 'cat-quetes',     label: '💬 Quêtes',         types: ['quête_principale', 'quête_secondaire'] },
+  { id: 'cat-craft',      label: '⚒️ Forge / Craft',  types: ['craft_cles'] },
+  { id: 'cat-artisans',   label: '🧪 Artisans',       types: ['alchimiste', 'bucheron', 'refaconneur'] },
+  { id: 'cat-commerce',   label: '🛒 Commerce',       types: ['repreneur_butin', 'marchand_consommable', 'marchand_outils', 'marchand_access', 'marchand_occulte'] },
+  { id: 'cat-autres',     label: '🦠 Autres',         types: ['région', 'passage'] },
 ];
 
 let _allPinsList = [];
@@ -14683,7 +14683,7 @@ const _AP_PNJ_TO_TYPE = {
   "donjon":                  "donjon",
   "forgeron d'armes":        "craft_armes",
   "forgeron d'armures":      "craft_armures",
-  "forgeron d'accessoires":  "craft_accessoires",
+  "forgeron d'accessoires":  "marchand_access",
   "forgeron de lingots":     "craft_lingots",
   "forgeron de clés":        "craft_cles",
   "alchimiste":              "alchimiste",
@@ -14705,12 +14705,12 @@ const _AP_TYPE_LABELS = {
   région: 'Région', donjon: 'Donjon', boss: 'Boss', mini_boss: 'Mini-Boss', zone_monstre: 'Zone Monstres',
   quête_principale: 'Quête Principale', quête_secondaire: 'Quête Secondaire', quête_tertiaire: 'Quête Tertiaire',
   craft_armes: "Forgeron d'Armes", craft_armures: "Forgeron d'Armures",
-  craft_accessoires: "Forgeron d'Accessoires", craft_lingots: 'Forgeron de Lingots', craft_cles: 'Forgeron de Clés',
+  craft_accessoires: "Forgeron d'Accessoires", craft_lingots: 'Forgeron de Lingots', craft_cles: 'Fabricants de Clés',
   craft_runes: 'Maître des Runes', alchimiste: 'Alchimiste', bucheron: 'Bûcheron', refaconneur: 'Refaçonneur',
   repreneur_butin: 'Repreneur de Butin', repreneur_armes: "Repreneur d'Armes",
   marchand_itinerant: 'Marchand Itinérant', marchand_equipement: "Marchand d'Équipement",
   marchand_consommable: 'Marchand de Consommable', marchand_outils: "Marchand d'Outils",
-  marchand_access: "Marchand d'Accessoires", marchand_occulte: 'Marchand Occulte',
+  marchand_access: "Vendeur d'Accessoires", marchand_occulte: 'Marchand Occulte',
   passage: 'Passage', autre: 'Autre',
 };
 
