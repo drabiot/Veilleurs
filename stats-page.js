@@ -16,7 +16,7 @@ const SECTION_ICONS = {
   compendium: '⚔️', bestiaire: '💀', map: '🗺️', quetes: '📜', atelier: '🔨', patchnotes: '📰', builds: '🏗️',
 };
 const ALL_SECTIONS = Object.keys(SECTION_ICONS);
-const TABS = [['audience', '👥 Audience'], ['contenu', '📚 Contenu'], ['qualite', '🛠️ Qualité']];
+const TABS = [['audience', '👥 Audience'], ['contenu', '📚 Contenu'], ['qualite', '🛠️ Qualité'], ['quota', '🔥 Quota']];
 
 const fmt = n => (n || 0).toLocaleString('fr-FR');
 const fmtDate  = s => s?.length >= 10 ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(2, 4)}` : (s || '');
@@ -223,6 +223,81 @@ function qualiteTab(s, ctx, esc) {
   return html || '<div class="empty">Rien à signaler.</div>';
 }
 
+
+// ── Onglet Quota Firestore ────────────────────────────
+const METERS = [['read', '📖 Lectures'], ['write', '✏️ Écritures'], ['delete', '🗑️ Suppressions']];
+
+function quotaTab() { return '<div id="stats-quota"><div class="empty">Chargement…</div></div>'; }
+
+function quotaHtml(q, esc) {
+  if (q.error === 'permission') {
+    const iam = `https://console.cloud.google.com/iam-admin/iam?project=${encodeURIComponent(q.projectId)}`;
+    const api = `https://console.cloud.google.com/apis/library/monitoring.googleapis.com?project=${encodeURIComponent(q.projectId)}`;
+    const fb  = `https://console.firebase.google.com/project/${encodeURIComponent(q.projectId)}/firestore/usage`;
+    return `<div class="stats-section"><div class="stats-section-title">Quota Firestore</div>
+      <div class="stats-note" style="font-size:12px;">Le compte de service du site n'a pas encore le droit de lire les métriques Firestore. Pour afficher le quota ici :</div>
+      <ol class="stats-note" style="font-size:12px;padding-left:18px;">
+        <li>Ouvre <a href="${esc(iam)}" target="_blank" rel="noopener" style="color:var(--accent)">Google Cloud → IAM</a> puis <b>Accorder l'accès</b>.</li>
+        <li>Principal : <code>${esc(q.saEmail)}</code></li>
+        <li>Rôle : <b>Lecteur Monitoring</b> (<i>Monitoring Viewer</i>), puis Enregistrer.</li>
+        <li>Vérifie que <a href="${esc(api)}" target="_blank" rel="noopener" style="color:var(--accent)">l'API Cloud Monitoring</a> est activée.</li>
+        <li>Reviens ici et clique sur Actualiser (la permission peut mettre une minute à s'appliquer).</li>
+      </ol>
+      <div class="stats-note">En attendant, le détail officiel est dans la <a href="${esc(fb)}" target="_blank" rel="noopener" style="color:var(--accent)">console Firebase → Firestore → Usage</a>.</div>
+      <div><button class="stats-tab" data-quota-refresh>🔄 Actualiser</button></div></div>`;
+  }
+  if (q.error) {
+    return `<div class="stats-section"><div class="stats-section-title">Quota Firestore</div>
+      <div style="color:var(--danger);font-size:12px;">Lecture des métriques impossible : ${esc(q.message || q.error)}</div>
+      <div><button class="stats-tab" data-quota-refresh>🔄 Réessayer</button></div></div>`;
+  }
+
+  const elapsedH = Math.max((q.now - q.dayStart) / 3600000, 0.0001);
+  const pctOf = (k, v) => v / q.limits[k] * 100;
+  const color = p => p >= 80 ? '#f87171' : p >= 50 ? '#fbbf24' : '#4ade80';
+  const worst = Math.max(...METERS.map(([k]) => pctOf(k, q.today[k])));
+  const projWorst = elapsedH >= 1 ? Math.max(...METERS.map(([k]) => pctOf(k, q.today[k] / elapsedH * 24))) : worst;
+  const risk = Math.max(worst, projWorst);
+  const verdict = risk >= 100 ? ['🛑', "Quota atteint ou en passe de l'être aujourd'hui", '#f87171']
+    : risk >= 70 ? ['⚠️', "À surveiller : le quota risque d'être atteint avant la remise à zéro", '#fbbf24']
+    : ['✅', 'Tout va bien : large marge pour la journée', '#4ade80'];
+
+  const left = Math.max(q.resetAt - q.now, 0);
+  const resetIn = `${Math.floor(left / 3600000)} h ${String(Math.floor(left % 3600000 / 60000)).padStart(2, '0')}`;
+  const resetAt = new Date(q.resetAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+  const meters = METERS.map(([k, label]) => {
+    const v = q.today[k], lim = q.limits[k], p = pctOf(k, v);
+    const proj = elapsedH >= 1 ? Math.round(v / elapsedH * 24) : null;
+    return `<div class="stats-meter">
+      <div class="stats-meter-head"><span>${label}</span><span><b>${fmt(v)}</b> / ${fmt(lim)}</span></div>
+      <div class="stats-meter-track"><div class="stats-meter-fill" style="width:${Math.min(p, 100)}%;background:${color(p)}"></div></div>
+      <div class="stats-meter-foot"><span style="color:${color(p)};font-weight:700;">${p.toFixed(p < 10 ? 1 : 0)} %</span>
+        <span>${proj != null ? `au rythme actuel : ~${fmt(proj)} en fin de journée` : 'trop tôt pour projeter'} · hier : ${fmt(q.yesterday[k])}</span></div>
+    </div>`;
+  }).join('');
+
+  const byHour = Object.fromEntries(q.hourly.map(x => [x.h, x]));
+  const slots = Array.from({ length: 24 }, (_, i) => q.dayStart + i * 3600000);
+  const max = Math.max(...q.hourly.map(x => x.read), 1);
+  const bars = slots.map(h => {
+    const c = byHour[h]?.read || 0, future = h > q.now;
+    const label = new Date(h).toLocaleTimeString('fr-FR', { hour: '2-digit' });
+    return `<div class="stats-hour-col" data-tooltip="${fmt(c)} lecture${c !== 1 ? 's' : ''} — ${label}h">
+      <div class="stats-hour-track"><div class="stats-hour-fill" style="height:${Math.round(c / max * 100)}%;${future ? 'opacity:.25' : ''}"></div></div>
+      <div class="stats-hour-lbl">${new Date(h).getHours() % 3 === 0 ? label + 'h' : ''}</div></div>`;
+  }).join('');
+
+  return `<div class="stats-section"><div class="stats-section-title">Quota Firestore — aujourd'hui</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:${verdict[2]};font-weight:700;">${verdict[0]} ${verdict[1]}</div>
+      <div class="stats-note">Remise à zéro dans <b>${resetIn}</b> (à ${resetAt}, heure locale). Offre gratuite : 50 000 lectures, 20 000 écritures, 20 000 suppressions par jour.</div>
+      ${meters}
+      <div><button class="stats-tab" data-quota-refresh>🔄 Actualiser</button></div></div>
+    <div class="stats-section"><div class="stats-section-title">Lectures par heure (depuis la dernière remise à zéro)</div>
+      <div class="stats-hour-chart">${bars}</div>
+      <div class="stats-note">Source : Google Cloud Monitoring, avec quelques minutes de décalage. Seules comptent les lectures qui atteignent Firestore : celles servies par le cache du navigateur ou par D1 n'y figurent pas.</div></div>`;
+}
+
 // ── Détail d'un visiteur (clic sur une ligne du tableau) ──
 function userDetailHtml(u, fallbackName, esc) {
   if (!u) return '<div style="color:var(--muted);font-size:12px;">Aucune donnée trouvée pour ce visiteur.</div>';
@@ -255,23 +330,33 @@ function userDetailHtml(u, fallbackName, esc) {
  * Affiche la page stats dans `container`.
  * @param s     résumé du worker (daily, hours, users, sections, members, anonRest, topItems, topSearches, logins)
  * @param ctx   { items, reports: [{pseudo, page, text, ts}], anonName(id) }
- * @param deps  { escHtml, loadUser(id) → user|null, loadAudit(uid) → [{label, target, ts}] }
+ * @param deps  { escHtml, loadUser(id) → user|null, loadAudit(uid) → [{label, target, ts}], loadQuota() → quota Firestore du jour }
  */
 export function renderStats(container, s, ctx, deps) {
   const esc = deps.escHtml;
   ctx = { ...ctx, today: statsDay(0) };
-  const tabs = { audience: audienceTab, contenu: contenuTab, qualite: qualiteTab };
+  const tabs = { audience: audienceTab, contenu: contenuTab, qualite: qualiteTab, quota: quotaTab };
   let tab = window._statsTab && tabs[window._statsTab] ? window._statsTab : 'audience';
 
   const draw = () => {
     container.innerHTML = `<div class="stats-tabs">${TABS.map(([id, label]) =>
       `<button class="stats-tab${id === tab ? ' active' : ''}" data-tab="${id}">${label}</button>`).join('')}</div>
       <div class="stats-tab-body">${tabs[tab](s, ctx, esc)}</div>`;
+    if (tab === 'quota') fillQuota();
+  };
+
+  const fillQuota = async () => {
+    const box = container.querySelector('#stats-quota');
+    if (!box) return;
+    box.innerHTML = '<div class="empty">Chargement…</div>';
+    try { box.innerHTML = quotaHtml(await deps.loadQuota(), esc); }
+    catch (err) { box.innerHTML = `<div style="color:var(--danger);font-size:12px;">Erreur : ${esc(err.message)}</div>`; }
   };
   draw();
 
   container.onclick = async e => {
-    const t = e.target.closest('.stats-tab');
+    if (e.target.closest('[data-quota-refresh]')) { fillQuota(); return; }
+    const t = e.target.closest('.stats-tab[data-tab]');
     if (t) { tab = window._statsTab = t.dataset.tab; draw(); return; }
 
     const row = e.target.closest('.stats-member-row[data-uid]');

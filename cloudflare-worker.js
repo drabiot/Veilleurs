@@ -783,13 +783,14 @@ async function signJwt(sa, claims) {
   return `${head}.${body}.${b64u(sig)}`;
 }
 
-let _saToken = null;
-async function saAccessToken(env) {
-  if (_saToken && _saToken.exp > Date.now() + 60000) return _saToken.token;
+const _saTokens = {}; // scope → { token, exp }
+async function saAccessToken(env, scope = 'https://www.googleapis.com/auth/datastore') {
+  const cached = _saTokens[scope];
+  if (cached && cached.exp > Date.now() + 60000) return cached.token;
   const sa  = JSON.parse(env.FIREBASE_SA);
   const now = Math.floor(Date.now() / 1000);
   const jwt = await signJwt(sa, {
-    iss: sa.client_email, scope: 'https://www.googleapis.com/auth/datastore',
+    iss: sa.client_email, scope,
     aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600,
   });
   const r = await fetch('https://oauth2.googleapis.com/token', {
@@ -798,8 +799,8 @@ async function saAccessToken(env) {
   });
   const d = await r.json();
   if (!d.access_token) throw new Error('service account token refusé');
-  _saToken = { token: d.access_token, exp: Date.now() + d.expires_in * 1000 };
-  return _saToken.token;
+  _saTokens[scope] = { token: d.access_token, exp: Date.now() + d.expires_in * 1000 };
+  return d.access_token;
 }
 
 async function firebaseCustomToken(uid, env) {
@@ -1003,7 +1004,7 @@ async function handleDiscordCallback(request, env) {
 //
 //  POST /track  public : { ops: [{ col, id, set?: {clé: valeur}, inc?: {clé: 1..20} }] }
 //               équivalent de setDoc(…, {merge:true}) + increment(1) sur les 4 collections de stats.
-//  POST /stats  admin   : { secret, action: 'summary' (défaut) | 'user' | 'reset' } — agrégats calculés en SQL ; même secret que le proxy Discord.
+//  POST /stats  admin   : { secret, action: 'summary' (défaut) | 'user' | 'reset' | 'quota' } — agrégats calculés en SQL ; même secret que le proxy Discord.
 // ══════════════════════════════════════════════════════════════
 
 const TRACK_COLS    = new Set(['page_views', 'user_visits', 'item_views', 'search_logs']);
@@ -1080,6 +1081,7 @@ async function handleStats(request, env) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
   if (!env.ADMIN_SECRET || body.secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+  if (body.action === 'quota') return json(await quotaReport(env));
   if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
   const q = (sql, ...args) => env.DB.prepare(sql).bind(...args);
 
@@ -1444,4 +1446,77 @@ async function handleMe(request, env) {
   const row = await d1UserRow(env, 'uid', uid).catch(() => null);
   const u = rowToUser(row);
   return json({ uid, role: u?.role ?? 'membre', pseudo: u?.pseudo ?? null, discordId: u?.discordId ?? null, discordAvatar: u?.discordAvatar ?? null });
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  QUOTA FIRESTORE DU JOUR (Cloud Monitoring) — POST /stats { action: 'quota' }
+//  Le compte de service doit avoir le rôle « Lecteur Monitoring » (monitoring.viewer) sur le projet.
+//  Offre gratuite : 50 000 lectures, 20 000 écritures, 20 000 suppressions par jour, remis à zéro à minuit (heure du Pacifique).
+// ══════════════════════════════════════════════════════════════
+
+const FS_LIMITS = { read: 50000, write: 20000, delete: 20000 };
+const HOUR = 3600000;
+
+/** Début (ms) du jour courant à Los Angeles, c.-à-d. la dernière remise à zéro du quota. */
+function laDayStart(date) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Los_Angeles', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(date).map(x => [x.type, x.value]));
+  const elapsed = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - Date.UTC(+p.year, +p.month - 1, +p.day);
+  return Math.floor(date.getTime() / 1000) * 1000 - elapsed; // à la seconde près : le jour commence pile à minuit
+}
+
+async function quotaReport(env) {
+  const sa = JSON.parse(env.FIREBASE_SA);
+  const token = await saAccessToken(env, 'https://www.googleapis.com/auth/monitoring.read');
+  const now = Date.now();
+  const dayStart = laDayStart(new Date(now));
+  const prevStart = laDayStart(new Date(dayStart - HOUR)); // veille (gère le changement d'heure)
+  const hourFloor = Math.floor(now / HOUR) * HOUR;
+
+  // Une série horaire pleine [veille 0 h → heure pleine] + un seul seau pour l'heure en cours
+  const series = async (metric, start, end, periodSec) => {
+    const u = 'https://monitoring.googleapis.com/v3/projects/' + PROJECT_ID + '/timeSeries?' + new URLSearchParams({
+      filter: `metric.type="firestore.googleapis.com/document/${metric}_count"`,
+      'interval.startTime': new Date(start).toISOString(), 'interval.endTime': new Date(end).toISOString(),
+      'aggregation.alignmentPeriod': periodSec + 's', 'aggregation.perSeriesAligner': 'ALIGN_SUM',
+      'aggregation.crossSeriesReducer': 'REDUCE_SUM',
+    });
+    const r = await fetch(u, { headers: { Authorization: `Bearer ${token}` } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(j.error?.message || `Monitoring ${r.status}`); e.status = r.status; throw e; }
+    return (j.timeSeries?.[0]?.points || []).map(p => ({
+      end: Date.parse(p.interval.endTime), v: Number(p.value.int64Value ?? p.value.doubleValue ?? 0),
+    }));
+  };
+
+  const hours = {}; // début d'heure (ms) → { read, write, delete }
+  try {
+    for (const m of ['read', 'write', 'delete']) {
+      const full = await series(m, prevStart, hourFloor, 3600);
+      for (const p of full) (hours[p.end - HOUR] ??= { read: 0, write: 0, delete: 0 })[m] += p.v;
+      if (now - hourFloor >= 60000) {
+        const cur = await series(m, hourFloor, now, Math.round((now - hourFloor) / 1000));
+        for (const p of cur) (hours[hourFloor] ??= { read: 0, write: 0, delete: 0 })[m] += p.v;
+      }
+    }
+  } catch (e) {
+    if (e.status === 403 || e.status === 401) {
+      return { error: 'permission', saEmail: sa.client_email, projectId: PROJECT_ID, message: e.message };
+    }
+    return { error: 'api', message: e.message };
+  }
+
+  const sum = (from, to) => {
+    const t = { read: 0, write: 0, delete: 0 };
+    for (const [h, v] of Object.entries(hours)) if (+h >= from && +h < to) for (const k in t) t[k] += v[k];
+    return t;
+  };
+  return {
+    limits: FS_LIMITS, now, dayStart, resetAt: dayStart + 86400000,
+    today: sum(dayStart, Infinity), yesterday: sum(prevStart, dayStart),
+    hourly: Object.entries(hours).filter(([h]) => +h >= dayStart).sort((a, b) => a[0] - b[0]).map(([h, v]) => ({ h: +h, ...v })),
+  };
 }
