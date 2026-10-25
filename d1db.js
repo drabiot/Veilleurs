@@ -134,7 +134,7 @@ const _inflight = new Map();
 function dedupe(key, fn) {
   const hit = _inflight.get(key);
   if (hit) return hit;
-  const p = fn().finally(() => setTimeout(() => _inflight.delete(key), 1500));
+  const p = fn().finally(() => _inflight.delete(key)); // uniquement les appels simultanés identiques : jamais de résultat périmé après une écriture
   _inflight.set(key, p);
   return p;
 }

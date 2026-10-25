@@ -7,13 +7,10 @@
 ══════════════════════════════════════════════════════ */
 
 import { initializeApp, getApps, getApp }          from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { initializeFirestore, getFirestore,
-         persistentLocalCache, persistentMultipleTabManager,
-         doc, getDoc, collection, getDocs, onSnapshot,
-         setDoc as _setDoc, addDoc as _addDoc, updateDoc as _updateDoc,
-         deleteDoc as _deleteDoc, deleteField,
+import { db as _d1db, setTokenProvider, doc, getDoc, collection, getDocs, onSnapshot,
+         setDoc as _setDoc, addDoc as _addDoc, updateDoc as _updateDoc, deleteDoc as _deleteDoc, deleteField,
          serverTimestamp, increment, writeBatch as _writeBatch, Timestamp,
-         query, where, orderBy, limit }           from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+         query, where, orderBy, limit }           from './d1db.js';
 import { getAuth, onAuthStateChanged,
          signInWithEmailAndPassword, signOut,
          createUserWithEmailAndPassword, signInWithCustomToken,
@@ -36,20 +33,10 @@ const firebaseConfig = {
 // ── Init (guard contre la double initialisation) ─────
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// Cache offline multi-onglets — API moderne (remplace enableIndexedDbPersistence dépréciée)
-// try/catch au cas où initializeFirestore est appelé deux fois (defensive)
-let _db;
-try {
-  _db = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager(),
-    }),
-  });
-} catch {
-  _db = getFirestore(app);
-}
-export const db   = _db;
+// Base de données = Cloudflare D1 via le worker (d1db.js) ; Firebase ne sert plus que pour l'authentification.
+export const db   = _d1db;
 export const auth = getAuth(app);
+setTokenProvider(async () => (auth.currentUser ? auth.currentUser.getIdToken() : null));
 
 // ── Collections ──────────────────────────────────────
 export const COL = {
@@ -74,69 +61,26 @@ export const COL = {
   events:          'events',           // events (Noël 2025, etc.) pour les sources d'obtention
 };
 
-// ── Synchronisation différentielle ─────────────────────
-// Collections lues via loadCollection() et mises en cache localement. Toute écriture dessus
-// (setDoc / addDoc / updateDoc / deleteDoc / writeBatch exportés ci-dessous) est datée avec
-// `_updatedAt` ; une suppression laisse une trace dans `tombstones`. Les visiteurs ne
-// redemandent alors à Firestore que ce qui a changé depuis leur dernière visite.
-// ⚠ Un script qui écrit sans passer par ces fonctions doit dater ses écritures lui-même
-//   (et poser une trace de suppression), ou bumper config/sync.epoch pour forcer un rechargement.
-const SYNC_COLS = new Set([COL.items, COL.itemsHidden, COL.itemsSecret, COL.mobs, COL.mobsSecret,
-  COL.pnj, COL.pnjSecret, COL.regions, COL.quetes, COL.panoplies, COL.mapMarkers, COL.zones, COL.donjons]);
-const _segs   = ref => String(ref?.path || '').split('/');
-const _isSync = ref => { const s = _segs(ref); return SYNC_COLS.has(s[0]) && s.length <= 2; };
-const _stamp  = () => ({ _updatedAt: serverTimestamp() });
-const _tomb   = ref => [doc(db, 'tombstones', `${_segs(ref)[0]}__${ref.id}`), { col: _segs(ref)[0], id: ref.id, ts: serverTimestamp() }];
-const _stampArgs = args => (args.length === 1 && args[0] && typeof args[0] === 'object')
-  ? [{ ...args[0], ..._stamp() }]
-  : [...args, '_updatedAt', serverTimestamp()];
-
-// Le contenu public est lu par les visiteurs dans D1 (copie alimentée par le worker). Après une écriture,
-// on prévient le worker (regroupé sur 4 s, utilisateur connecté) pour que la copie suive sans attendre le cron.
+// ── Lecture / écriture D1 ───────────────────────────────
+// Le contenu est lu via GET /db/sync (public) ou POST /db/read (collections protégées), avec un cache local
+// « depuis la révision N ». Après une écriture, on oublie l'heure de la dernière vérification pour que le
+// prochain chargement récupère tout de suite le changement.
 const D1_COLS = new Set([COL.items, COL.mobs, COL.pnj, COL.regions, COL.quetes, COL.panoplies, COL.mapMarkers, COL.zones, COL.donjons]);
-const _pokeCols = new Set();
-let _pokeTimer = null;
-function _poke(ref) {
-  const col = _segs(ref)[0];
-  if (!D1_COLS.has(col)) return;
-  _pokeCols.add(col);
-  clearTimeout(_pokeTimer);
-  _pokeTimer = setTimeout(async () => {
-    const cols = [..._pokeCols]; _pokeCols.clear();
-    try {
-      const u = auth.currentUser;
-      if (!u) return;
-      await fetch(DISCORD_WORKER + '/db/refresh', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken: await u.getIdToken(), cols }), keepalive: true,
-      });
-    } catch {}
-  }, 4000);
-}
-const _poked = async (ref, p) => { const r = await p; _poke(ref); return r; };
-
-const setDoc    = (ref, data, opts) => _poked(ref, _setDoc(ref, _isSync(ref) ? { ...data, ..._stamp() } : data, opts));
-const addDoc    = (ref, data)       => _poked(ref, _addDoc(ref, _isSync(ref) ? { ...data, ..._stamp() } : data));
-const updateDoc = (ref, ...args)    => _poked(ref, _updateDoc(ref, ...(_isSync(ref) ? _stampArgs(args) : args)));
-const deleteDoc = async ref => {
-  if (!_isSync(ref)) return _deleteDoc(ref);
-  const b = _writeBatch(db);
-  b.set(..._tomb(ref));
-  b.delete(ref);
-  try { return await _poked(ref, b.commit()); }
-  catch (e) { // règles de `tombstones` pas encore déployées : on supprime quand même
-    if (e?.code !== 'permission-denied') throw e;
-    return _poked(ref, _deleteDoc(ref));
-  }
-};
+const PRIVATE_D1_COLS = new Set([COL.itemsHidden, COL.itemsSecret, COL.mobsSecret, COL.pnjSecret]);
+const _colOf = ref => String(ref?.path || '').split('/')[0];
+const _forget = ref => { try { localStorage.removeItem(`vcl_sync_chk_${_colOf(ref)}`); } catch {} };
+const _w = fn => async (ref, ...args) => { const r = await fn(ref, ...args); _forget(ref); return r; };
+const setDoc    = _w(_setDoc);
+const addDoc    = _w(_addDoc);
+const updateDoc = _w(_updateDoc);
+const deleteDoc = _w(_deleteDoc);
 const writeBatch = dbArg => {
-  const b = _writeBatch(dbArg);
-  const refs = [];
+  const b = _writeBatch(dbArg), refs = [];
   const w = {
-    set(ref, data, opts)  { refs.push(ref); b.set(ref, _isSync(ref) ? { ...data, ..._stamp() } : data, opts); return w; },
-    update(ref, ...args)  { refs.push(ref); b.update(ref, ...(_isSync(ref) ? _stampArgs(args) : args)); return w; },
-    delete(ref)           { refs.push(ref); if (_isSync(ref)) b.set(..._tomb(ref)); b.delete(ref); return w; },
-    commit: async () => { const r = await b.commit(); refs.forEach(_poke); return r; },
+    set(ref, ...a)    { refs.push(ref); b.set(ref, ...a); return w; },
+    update(ref, ...a) { refs.push(ref); b.update(ref, ...a); return w; },
+    delete(ref)       { refs.push(ref); b.delete(ref); return w; },
+    commit: async () => { const r = await b.commit(); refs.forEach(_forget); return r; },
   };
   return w;
 };
@@ -738,148 +682,64 @@ function _wikiBumpedSince(ts) {
   return _wikiVerP.then(v => v > ts);
 }
 
-// Époque de synchro (config/sync.epoch) : posée par le script de migration, bumpée pour forcer
-// un rechargement complet chez tout le monde. 0 = pas migré → ancien mode (TTL + wiki_version).
-let _epochP = null;
-function _syncEpoch() {
-  _epochP ??= getDoc(doc(db, 'config', 'sync'))
-    .then(s => (s.exists() ? (s.data().epoch || 0) : 0))
-    .catch(() => null);
-  return _epochP;
-}
-
-const _ms = t => (t && typeof t.toMillis === 'function') ? t.toMillis() : 0;
-
-async function _syncFull(colName, key, epoch) {
-  const [snap, tomb] = await Promise.all([
-    getDocs(collection(db, colName)),
-    getDocs(query(collection(db, 'tombstones'), where('col', '==', colName))).catch(() => null),
-  ]);
-  let cur = 0;
-  const data = snap.docs.map(d => {
-    const raw = d.data();
-    cur = Math.max(cur, _ms(raw._updatedAt));
-    const { _updatedAt, ...rest } = raw;
-    return desanitizeFromFirestore({ _id: d.id, ...rest });
-  });
-  let tcur = 0;
-  tomb?.docs.forEach(t => { tcur = Math.max(tcur, _ms(t.data().ts)); });
-  try { localStorage.setItem(key, JSON.stringify({ epoch, ts: Date.now(), cur, tcur, data })); } catch {}
-  return data;
-}
-
-// Une seule requête `tombstones` par page : toutes les collections du cache partagent le plus ancien `tcur`,
-// puis chacune filtre côté client (au lieu d'une requête identique facturée par collection).
-let _tombP = null;
-function _tombstonesSince(tcur) {
-  if (!_tombP) {
-    let min = tcur;
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (!k || !k.startsWith('vcl_cache_v3_')) continue;
-        const c = JSON.parse(localStorage.getItem(k) || 'null');
-        if (c && c.tcur > 0) min = Math.min(min, c.tcur);
-      }
-    } catch {}
-    _tombP = getDocs(query(collection(db, 'tombstones'), where('ts', '>', Timestamp.fromMillis(min))))
-      .then(s => s.docs).catch(() => []);
-  }
-  return _tombP.then(docs => docs.filter(t => _ms(t.data().ts) > tcur));
-}
-
-// Pause entre deux vérifications de synchro (hors outils d'édition, qui doivent voir leurs écritures tout de suite).
-const _SYNC_PAUSE_MS = 3 * 60 * 1000;
-const _syncPaused = () => !/\/(moderation|creator)(\.html)?$/i.test(location.pathname);
+// Pause entre deux vérifications auprès du worker (nulle dans la modération / le créateur : ils doivent voir leurs écritures tout de suite).
+const _isEditorPage = /\/(moderation|creator)(\.html)?$/i.test(location.pathname);
 const _chkKey = colName => `vcl_sync_chk_${colName}`;
-
-async function _syncDelta(colName, cache, key) {
-  if (_syncPaused()) {
-    try {
-      if (Date.now() - parseInt(localStorage.getItem(_chkKey(colName)) || '0') < _SYNC_PAUSE_MS) return cache.data;
-    } catch {}
-  }
-  const [dSnap, tDocs] = await Promise.all([
-    getDocs(query(collection(db, colName), where('_updatedAt', '>', Timestamp.fromMillis(cache.cur)))),
-    _tombstonesSince(cache.tcur),
-  ]);
-  try { localStorage.setItem(_chkKey(colName), String(Date.now())); } catch {}
-  const byId = new Map(cache.data.map(d => [d._id, d]));
-  let { cur, tcur } = cache, changed = false;
-  tDocs.forEach(t => {
-    const x = t.data();
-    tcur = Math.max(tcur, _ms(x.ts));
-    if (x.col === colName && byId.delete(x.id)) changed = true;   // d'abord les suppressions…
-  });
-  dSnap.docs.forEach(d => {                                        // …puis les ajouts / modifications
-    const raw = d.data();
-    cur = Math.max(cur, _ms(raw._updatedAt));
-    const { _updatedAt, ...rest } = raw;
-    byId.set(d.id, desanitizeFromFirestore({ _id: d.id, ...rest }));
-    changed = true;
-  });
-  const data = changed ? [...byId.values()] : cache.data;
-  if (changed || cur !== cache.cur || tcur !== cache.tcur) {
-    try { localStorage.setItem(key, JSON.stringify({ ...cache, ts: Date.now(), cur, tcur, data })); } catch {}
-  }
-  return data;
-}
-
-// Lecture du contenu public dans D1 via le worker (GET /db/sync) : ni lecture ni quota Firestore.
-// Cache local `vcl_cache_d1_*` = { rev, epoch, ts, data } ; le serveur renvoie tout ce qui a une révision > rev.
-// D1 ne coûte aucun quota Firestore : on revérifie vite (30 s) et toujours sur un rechargement (F5) de la page.
-const _D1_PAUSE_MS = 30 * 1000;
+const _D1_PAUSE_MS = _isEditorPage ? 0 : 30 * 1000;
 const _isReload = (() => { try { return performance.getEntriesByType('navigation')[0]?.type === 'reload'; } catch { return false; } })();
 
+// Lecture du contenu dans D1 via le worker. Cache local `vcl_cache_d1_*` = { rev, epoch, ts, data } ; le serveur renvoie
+// tout ce qui a une révision > rev (et la liste des suppressions). Collections publiques : GET /db/sync ;
+// collections protégées (items secrets…) : POST /db/read avec le jeton de l'utilisateur, cache propre à chaque compte.
 async function _d1Load(colName) {
-  const key = `vcl_cache_d1_${colName}`;
+  const priv = PRIVATE_D1_COLS.has(colName);
+  const user = priv ? await getCurrentUser() : null;
+  if (priv && !user) return []; // pas connecté : rien à voir
+  const key = `vcl_cache_d1_${colName}` + (priv ? `_${user.uid}` : '');
+  const chk = _chkKey(colName) + (priv ? `_${user.uid}` : '');
   let cache = null;
   try { cache = JSON.parse(localStorage.getItem(key) || 'null'); } catch {}
   const usable = cache && cache.rev > 0 && Date.now() - cache.ts < 7 * 24 * 3600e3;
   if (usable) {
-    try { if (!_isReload && Date.now() - parseInt(localStorage.getItem(_chkKey(colName)) || '0') < _D1_PAUSE_MS) return cache.data; } catch {}
+    try { if (!_isReload && Date.now() - parseInt(localStorage.getItem(chk) || '0') < _D1_PAUSE_MS) return cache.data; } catch {}
   }
-  const get = since => fetch(`${DISCORD_WORKER}/db/sync?col=${colName}&since=${since}`)
-    .then(r => { if (!r.ok) throw new Error('d1 ' + r.status); return r.json(); });
+  const get = async since => {
+    if (!priv) return fetch(`${DISCORD_WORKER}/db/sync?col=${colName}&since=${since}`).then(r => { if (!r.ok) throw new Error('d1 ' + r.status); return r.json(); });
+    const r = await fetch(`${DISCORD_WORKER}/db/read`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ col: colName, since, idToken: await user.getIdToken() }) });
+    if (!r.ok) throw new Error('d1 ' + r.status);
+    return r.json();
+  };
   let j = await get(usable ? cache.rev : 0), delta = usable;
   if (delta && j.epoch !== cache.epoch) { j = await get(0); delta = false; } // rechargement complet demandé
   const row = x => desanitizeFromFirestore({ _id: x.id, ...x.d });
   let data;
   if (delta) {
     const byId = new Map(cache.data.map(d => [d._id, d]));
-    j.deleted.forEach(id => byId.delete(id));
+    (j.deleted || []).forEach(id => byId.delete(id));
     j.docs.forEach(x => byId.set(x.id, row(x)));
-    data = (j.deleted.length || j.docs.length) ? [...byId.values()] : cache.data;
+    data = ((j.deleted || []).length || j.docs.length) ? [...byId.values()] : cache.data;
   } else {
     data = j.docs.map(row);
   }
   try {
     localStorage.setItem(key, JSON.stringify({ rev: j.rev, epoch: j.epoch, ts: Date.now(), data }));
-    localStorage.setItem(_chkKey(colName), String(Date.now()));
+    localStorage.setItem(chk, String(Date.now()));
   } catch {}
   return data;
 }
 
 export async function loadCollection(colName, maxAgeMs = CACHE_TTL) {
-  if (D1_COLS.has(colName) && _syncPaused()) { // pages publiques : D1 ; modération / créateur : Firestore (écritures visibles tout de suite)
+  if (D1_COLS.has(colName) || PRIVATE_D1_COLS.has(colName)) {
     try { return await _d1Load(colName); }
     catch (e) {
-      console.warn('[d1] lecture impossible, repli sur le cache/Firestore :', colName, e && e.message); // visible dans la console pour diagnostiquer un blocage (bloqueur de pub, réseau)
-      try { const c = JSON.parse(localStorage.getItem(`vcl_cache_d1_${colName}`) || 'null'); if (c?.data) return c.data; } catch {}
-      // worker indisponible ou pas encore synchronisé : on retombe sur Firestore ci-dessous
-    }
-  }
-  if (SYNC_COLS.has(colName)) {
-    const epoch = await _syncEpoch();
-    if (epoch) { // migration faite : mode différentiel
-      const key = `vcl_cache_v3_${colName}`;
-      let cache = null;
-      try { cache = JSON.parse(localStorage.getItem(key) || 'null'); } catch {}
-      const usable = cache && cache.epoch === epoch && cache.cur > 0 && Date.now() - cache.ts < 7 * 24 * 3600e3;
-      if (usable) {
-        try { return await _syncDelta(colName, cache, key); } catch { return cache.data; } // hors-ligne / quota : on garde le cache
-      }
-      try { return await _syncFull(colName, key, epoch); } catch (e) { if (cache) return cache.data; throw e; }
+      console.warn('[d1] lecture impossible, repli sur le cache :', colName, e && e.message);
+      try {
+        const u = PRIVATE_D1_COLS.has(colName) ? auth.currentUser : null;
+        const c = JSON.parse(localStorage.getItem(`vcl_cache_d1_${colName}` + (u ? `_${u.uid}` : '')) || 'null');
+        if (c?.data) return c.data;
+      } catch {}
+      throw e;
     }
   }
   return _legacyLoadCollection(colName, maxAgeMs);
@@ -928,7 +788,7 @@ export function invalidateCache(colName) {
   // load() ne récupère que les changements (les écritures de cette page sont déjà datées).
   localStorage.removeItem(`vcl_cache_v2_${colName}`);
   localStorage.removeItem(`vcl_cache_meta_v2_${colName}`);
-  localStorage.removeItem(_chkKey(colName)); // force la prochaine vérification de synchro
+  try { Object.keys(localStorage).filter(k => k.startsWith(_chkKey(colName))).forEach(k => localStorage.removeItem(k)); } catch {} // force la prochaine vérification
 }
 
 // ── Exports Firestore bruts (pour les pages qui en ont besoin) ──

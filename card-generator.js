@@ -3,7 +3,7 @@
 ══════════════════════════════════════════════════════ */
 
 import { db, COL, loadCollection }                from './firebase.js'
-import { doc, getDoc }                            from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js'
+import { doc, getDoc }                            from './d1db.js'
 import { drawItemCard, generateCardBlob }          from './card-renderer.js'
 
 // ── Data constants (bridgés depuis data.js via window._VCL_DATA) ─────

@@ -359,7 +359,7 @@
     import { getHiddenByName, getHiddenById, getSecretById, COL, db, auth, getDoc, doc,
              desanitizeFromFirestore, hasRole, logPageView } from '../firebase.js';
     import { collection, getDocs }
-      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+      from '../d1db.js';
     import { loadMaxLevel } from '../config-loader.js';
     logPageView('atelier');
     window.VCL_DB = { getHiddenByName, getHiddenById, getSecretById, COL };

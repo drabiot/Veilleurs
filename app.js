@@ -3,7 +3,7 @@
 ═══════════════════════════════════════════════ */
 
 import { db, COL } from './firebase.js';
-import { doc, getDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { doc, getDoc, collection, getDocs } from './d1db.js';
 import { loadHonorTitles, findHonorTitle, honorBadgeHtml } from './honor-titles.js';
 
 const _LB_SCAN_COLS = [

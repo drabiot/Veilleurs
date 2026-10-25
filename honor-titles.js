@@ -5,7 +5,7 @@
    Un membre est reconnu par son uid OU par son pseudo (insensible à la casse).
 ══════════════════════════════════════════════════════ */
 import { db } from './firebase.js';
-import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { doc, getDoc } from './d1db.js';
 
 let _titles = null;
 

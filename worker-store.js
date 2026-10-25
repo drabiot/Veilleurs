@@ -289,6 +289,7 @@ export async function handleStoreRead(request, env, cors) {
   if (!VALID_COL.test(col)) return json({ error: 'col invalide' }, 400, cors);
   const ctx = await loadCtx(env, body.idToken);
   const rev = (await env.DB.prepare("SELECT v FROM meta WHERE k = 'rev'").first())?.v;
+  const epoch = (await env.DB.prepare("SELECT v FROM meta WHERE k = 'epoch'").first())?.v;
 
   if (body.id != null) { // lecture à l'unité
     const data = await getDocRow(env, col, String(body.id));
@@ -320,5 +321,5 @@ export async function handleStoreRead(request, env, cors) {
     docs = docs.filter(x => { const v = tsVal(f === '__name__' ? x.id : getPath(x.d, f)); const c = cmp(v ?? null, tsVal(sv) ?? null) || cmp(x.id, sid); return dir === 'desc' ? c < 0 : c > 0; });
   }
   if (body.limit > 0) docs = docs.slice(0, body.limit);
-  return json({ rev, docs, deleted }, 200, cors);
+  return json({ rev, epoch, docs, deleted }, 200, cors);
 }

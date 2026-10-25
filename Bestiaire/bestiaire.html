@@ -331,7 +331,7 @@
     import { store } from '../store.js';
     import { db, COL, desanitizeFromFirestore, hasRole, logPageView, logContentView } from '../firebase.js';
     import { collection, getDocs, getDoc, doc }
-      from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+      from '../d1db.js';
     logPageView('bestiaire');
     window._vclLogContentView = logContentView;
 
