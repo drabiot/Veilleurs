@@ -51,7 +51,7 @@ const TYPE_LABELS = {
   craft_armures:      'Forgeron d\'Armures',
   craft_accessoires:  'Forgeron d\'Accessoires',
   craft_lingots:      'Forgeron de Lingots',
-  craft_cles:         'Forgeron de Clés',
+  craft_cles:         'Fabricants de Clés',
   craft_runes:        'Artisan de Runes',
   alchimiste:          'Alchimiste',
   bucheron:            'Bûcheron',
@@ -62,11 +62,17 @@ const TYPE_LABELS = {
   marchand_equipement: 'Marchand d\'Équipement',
   marchand_consommable:'Marchand de Consommable',
   marchand_outils:     'Marchand d\'Outils',
-  marchand_access:     'Marchand d\'Accessoires',
+  marchand_access:     'Vendeur d\'Accessoires',
   marchand_occulte:    'Marchand Occulte',
   passage:             'Passage',
   autre:               'Autre',
 };
+
+// Types retirés de la carte : marqueurs masqués, plus de filtre dans la légende
+const HIDDEN_MARKER_TYPES = new Set([
+  'quête_tertiaire', 'craft_armes', 'craft_armures', 'craft_accessoires', 'craft_lingots',
+  'craft_runes', 'repreneur_armes', 'marchand_itinerant', 'marchand_equipement', 'crate', 'autre',
+]);
 
 const _map_EMOJI = {
   région:             '📍',
@@ -159,9 +165,12 @@ const PNJ_TO_MARKER_TYPE = {
   "donjon":                  "donjon",
   "forgeron d'armes":        "craft_armes",
   "forgeron d'armures":      "craft_armures",
-  "forgeron d'accessoires":  "craft_accessoires",
+  "forgeron d'accessoires":  "marchand_access",
+  "vendeur d'accessoires":   "marchand_access",
   "forgeron de lingots":     "craft_lingots",
   "forgeron de clés":        "craft_cles",
+  "fabricant de clés":       "craft_cles",
+  "fabricants de clés":      "craft_cles",
   "alchimiste":              "alchimiste",
   "bûcheron":                "bucheron",
   "repreneur de butin":      "repreneur_butin",
@@ -1390,7 +1399,7 @@ function renderMarkers() {
   document.querySelectorAll('.marker-filter').forEach(cb => {
     filterState[cb.dataset.type] = cb.checked;
   });
-  const isTypeVisible = (type) => filterState[type] !== false;
+  const isTypeVisible = (type) => !HIDDEN_MARKER_TYPES.has(type) && filterState[type] !== false;
 
   const markers = getFlatFloorMarkers(currentFloor);
 
@@ -2120,7 +2129,8 @@ function applyPinColorsToLegend() {
     }
 
     for (const cat of cats) {
-      if (!cat.types || !cat.types.length) continue;
+      const catTypes = (cat.types || []).filter(t => !HIDDEN_MARKER_TYPES.has(t));
+      if (!catTypes.length) continue;
 
       const sep = document.createElement('div');
       sep.className = 'sidebar-sep';
@@ -2137,7 +2147,7 @@ function applyPinColorsToLegend() {
         details.appendChild(summary);
       }
 
-      for (const type of cat.types) {
+      for (const type of catTypes) {
         const color = getPinColor(type);
         const emoji = fsEmojis[type] || _map_EMOJI[type] || '📍';
         const label = getTypeLabel(type);
@@ -2187,7 +2197,7 @@ function applyPinColorsToLegend() {
   const fsColors = window._map_pin_colors || {};
   const fsEmojis = window._map_pin_emojis || {};
   Object.keys(fsColors).forEach(type => {
-    if (knownTypes.has(type)) return;
+    if (knownTypes.has(type) || HIDDEN_MARKER_TYPES.has(type)) return;
     const color = fsColors[type];
     const emoji = fsEmojis[type] || '📍';
     const label = TYPE_LABELS[type] || type;
