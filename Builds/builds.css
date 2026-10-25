@@ -346,34 +346,13 @@ html, body {
    BUILD CARD — MANNEQUIN LAYOUT
    ============================================================ */
 .bc-mannequin-wrap {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 4px 0;
+  /* 3 rangées de 5 cases : colonne gauche, colonne droite, rangée du bas (sans cadre vide au milieu) */
+  display: grid; grid-template-columns: repeat(5, 48px); justify-content: center; gap: 3px;
+  padding: 6px 0;
 }
-.bc-mannequin-row {
-  display: flex; align-items: stretch; gap: 4px;
-}
-.bc-mq-col {
-  display: flex; flex-direction: column; gap: 3px;
-  flex-shrink: 0;
-}
-.bc-mq-center {
-  /* largeur = rangée du bas (5 cases de 48px + 4 écarts de 3px) moins les 2 colonnes et leurs écarts */
-  flex: 0 0 148px; min-width: 0;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  gap: 3px;
-  border: 1px solid var(--rim); border-radius: 3px;
-  background: rgba(0,0,0,.18); padding: 4px 2px;
-}
-.bc-mq-cls-ico  { font-size: 18px; line-height: 1; }
-.bc-mq-cls-name {
-  font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
-  letter-spacing: .08em; color: var(--gold-dim); text-align: center;
-}
-.bc-mq-level { font-size: 10px; color: var(--muted); }
-
-.bc-mq-bot {
-  display: flex; gap: 3px; justify-content: center;
+.bc-mannequin-row, .bc-mq-col, .bc-mq-bot { display: contents; }
+.bc-class {
+  font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: .06em; color: var(--gold-dim);
 }
 
 /* Bouton arbre de compétences (dernière cellule de la rangée du bas) */
