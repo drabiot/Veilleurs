@@ -863,7 +863,8 @@ async function _d1Load(colName) {
 export async function loadCollection(colName, maxAgeMs = CACHE_TTL) {
   if (D1_COLS.has(colName) && _syncPaused()) { // pages publiques : D1 ; modération / créateur : Firestore (écritures visibles tout de suite)
     try { return await _d1Load(colName); }
-    catch {
+    catch (e) {
+      console.warn('[d1] lecture impossible, repli sur le cache/Firestore :', colName, e && e.message); // visible dans la console pour diagnostiquer un blocage (bloqueur de pub, réseau)
       try { const c = JSON.parse(localStorage.getItem(`vcl_cache_d1_${colName}`) || 'null'); if (c?.data) return c.data; } catch {}
       // worker indisponible ou pas encore synchronisé : on retombe sur Firestore ci-dessous
     }
