@@ -372,12 +372,12 @@ html, body {
   box-shadow: inset 0 0 22px rgba(0,0,0,.65), 0 0 0 1px rgba(224,172,96,.05);
   padding: 8px 2px 4px;
 }
-.bc-mq-cls-ico  { font-size: 36px; line-height: 1; margin-top: 18px; filter: drop-shadow(0 0 8px rgba(224,172,96,.35)); }
+.bc-mq-cls-ico  { font-size: 36px; line-height: 1; margin-top: auto; filter: drop-shadow(0 0 8px rgba(224,172,96,.35)); }
 .bc-mq-cls-name {
   font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
   letter-spacing: .08em; color: var(--gold-dim); text-align: center;
 }
-.bc-mq-level { font-size: 11px; color: var(--muted); }
+.bc-mq-level { font-size: 11px; color: var(--muted); margin-bottom: 14px; }
 
 
 /* Bouton arbre de compétences (dernière cellule de la rangée du bas) */
@@ -453,7 +453,7 @@ html, body {
 }
 
 .bc-mq-statsbtn {
-  margin-top: auto; margin-bottom: 8px; cursor: help;
+  margin-top: 8px; cursor: help;
   font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
   color: var(--gold); border: 1px solid rgba(224,172,96,.35); border-radius: 3px; padding: 3px 10px;
   background: rgba(224,172,96,.07);
