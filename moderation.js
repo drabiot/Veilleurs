@@ -255,6 +255,7 @@ window.loadSubmissions = async () => {
       fetchUserNames(uids).catch(() => {}),
       cachedDocs('panoplies').catch(() => {}),
       // noms et icônes des items cités dans les résumés (cache différentiel : quasi gratuit après la 1re fois)
+      _modCache['regions'] ? null : loadCollection(COL.regions).then(arr => { _modCache['regions'] ??= arr.map(d => ({ _docKey: d._id, ...d, id: d.id ?? d._id })); }).catch(() => {}),
       _modCache['items'] ? null : loadCollection(COL.items).then(arr => { _modCache['items'] ??= arr.map(d => ({ _docKey: d._id, ...d, id: d.id ?? d._id })); }).catch(() => {}),
     ]);
     updateCounts();
@@ -464,6 +465,12 @@ function _wikiItem(id, esc, right = '') {
   return `<div style="display:flex;align-items:center;gap:8px;padding:2px 0;font-size:12px;">${icon}<span style="color:${color};font-weight:600;">${esc(name)}</span>${unknown}${right}</div>`;
 }
 
+// id de région → nom affiché sur le wiki (« hanaka » → « Hanaka ») ; à défaut, l'id tel quel
+function _regionName(id) {
+  const r = (_modCache['regions'] || []).find(x => (x.id || x._id) === id);
+  return r?.name || r?.label || id;
+}
+
 function _pnjWikiSummary(d, esc) {
   const section = (title, body) => `<div style="margin-top:10px;"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);padding-bottom:3px;margin-bottom:4px;">${title}</div>${body}</div>`;
   const chip = (txt, color) => `<span style="font-size:11px;background:var(--surface3);border:1px solid var(--border);border-radius:12px;padding:2px 9px;${color ? `color:${color};` : ''}">${txt}</span>`;
@@ -474,7 +481,7 @@ function _pnjWikiSummary(d, esc) {
     <span style="font-size:15px;font-weight:700;color:var(--accent);">${esc(d.name || d.id || '—')}</span>
     ${typeLabel ? chip('🧑 ' + esc(typeLabel)) : ''}
     ${d.palier != null && d.palier !== '' ? chip('Palier ' + (d.palier == -1 ? 'Archive' : d.palier)) : ''}
-    ${d.region ? chip('📍 ' + esc(d.region)) : ''}
+    ${d.region ? chip('📍 ' + esc(_regionName(d.region))) : ''}
     ${d.coords ? chip(`X ${esc(d.coords.x)} · Y ${esc(d.coords.y)} · Z ${esc(d.coords.z)}`) : ''}
     ${d.underground ? chip('⛏️ Souterrain') : ''}
     ${d.sensible ? chip('🔒 Sensible', '#f87171') : ''}
@@ -575,7 +582,7 @@ function _buildPrettySummary(data, type) {
   } else if (type === 'mob') {
     if (data.type)    field('Type',     data.type);
     if (data.palier)  field('Palier',   'Palier ' + (data.palier == -1 ? 'Archive' : data.palier));
-    if (data.region)  field('Région',   data.region);
+    if (data.region)  field('Région',   esc(_regionName(data.region)));
     if (data.behavior)field('Comportement', data.behavior);
     if (data.lore)    field('Lore', `<i style="color:var(--muted)">${esc(data.lore).slice(0,200)}${data.lore.length>200?'…':''}</i>`);
     if (data.loot?.length) {
