@@ -346,35 +346,39 @@ html, body {
    BUILD CARD — MANNEQUIN LAYOUT
    ============================================================ */
 .bc-mannequin-wrap {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 4px 0;
+  /* Grille 5 colonnes x 6 rangées : colonne gauche (col. 1), centre (col. 2-4), colonne droite (col. 5), rangée du bas (rangée 6).
+     Tout est placé explicitement : l'alignement ne dépend ni de la largeur de la carte ni du navigateur. */
+  --s: 40px;
+  display: grid; grid-template-columns: repeat(5, var(--s)); grid-template-rows: repeat(6, var(--s));
+  gap: 3px; justify-content: center;
+  padding: 6px 0;
 }
-.bc-mannequin-row {
-  display: flex; align-items: stretch; gap: 4px;
-}
-.bc-mq-col {
-  display: flex; flex-direction: column; gap: 3px;
-  flex-shrink: 0;
-}
+.bc-mannequin-row, .bc-mq-col, .bc-mq-bot { display: contents; }
+.bc-mq-col:first-child > * { grid-column: 1; }
+.bc-mq-col:last-child  > * { grid-column: 5; }
+.bc-mq-col > :nth-child(1) { grid-row: 1; }
+.bc-mq-col > :nth-child(2) { grid-row: 2; }
+.bc-mq-col > :nth-child(3) { grid-row: 3; }
+.bc-mq-col > :nth-child(4) { grid-row: 4; }
+.bc-mq-col > :nth-child(5) { grid-row: 5; }
+.bc-mq-bot > * { grid-row: 6; }
 .bc-mq-center {
-  /* largeur = rangée du bas (5 cases de 48px + 4 écarts de 3px) moins les 2 colonnes et leurs écarts */
-  flex: 0 0 148px; min-width: 0;
+  grid-column: 2 / 5; grid-row: 1 / 6; min-width: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 3px;
   border: 1px solid var(--rim); border-radius: 3px;
-  background: radial-gradient(ellipse at center, rgba(224,172,96,.08), rgba(0,0,0,.18) 70%); padding: 4px 2px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(224,172,96,.14), rgba(0,0,0,.35) 75%);
+  box-shadow: inset 0 0 22px rgba(0,0,0,.65), 0 0 0 1px rgba(224,172,96,.05);
+  padding: 4px 2px;
 }
-.bc-mq-cls-ico  { font-size: 34px; line-height: 1; margin-bottom: 4px; }
+.bc-mq-cls-ico  { font-size: 30px; line-height: 1; margin-bottom: 4px; filter: drop-shadow(0 0 8px rgba(224,172,96,.35)); }
 .bc-mq-cls-name {
   font-family: 'Cinzel', serif; font-size: 8px; font-weight: 600;
   letter-spacing: .08em; color: var(--gold-dim); text-align: center;
 }
 .bc-mq-level { font-size: 11px; color: var(--muted); }
 
-.bc-mq-bot {
-  display: flex; gap: 3px; justify-content: center;
-}
 
 /* Bouton arbre de compétences (dernière cellule de la rangée du bas) */
 .bc-skill {
@@ -391,12 +395,15 @@ html, body {
 
 /* Individual slot cell */
 .bc-slot {
-  width: 48px; height: 48px; flex-shrink: 0;
+  width: var(--s, 48px); height: var(--s, 48px); flex-shrink: 0;
   border: 1px solid var(--rim); border-radius: 3px;
-  background: var(--deep);
+  background: linear-gradient(160deg, rgba(255,255,255,.04), rgba(0,0,0,.25)), var(--deep);
+  box-shadow: inset 0 0 8px rgba(0,0,0,.55), 0 1px 2px rgba(0,0,0,.4);
+  transition: border-color .15s, transform .15s;
   display: flex; align-items: center; justify-content: center;
   overflow: hidden; position: relative;
 }
+.bc-slot:hover { border-color: var(--gold-dim); transform: translateY(-1px); }
 .bc-slot img {
   width: 100%; height: 100%;
   object-fit: contain; display: block;
@@ -455,8 +462,8 @@ html, body {
   display: flex; gap: 10px; font-size: 10px; color: var(--muted);
   align-items: center;
 }
-.bc-social span { display: flex; align-items: center; gap: 3px; }
-.bc-time { font-size: 9px; color: var(--muted); margin-left: auto; }
+.bc-social span { display: flex; align-items: center; gap: 3px; white-space: nowrap; }
+.bc-time { font-size: 9px; color: var(--muted); margin-left: auto; white-space: nowrap; }
 
 .bc-actions { display: flex; gap: 6px; align-items: center; }
 

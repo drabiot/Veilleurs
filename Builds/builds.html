@@ -203,6 +203,15 @@
     const urlBuildId  = urlParams.get('id');
     const urlMyBuilds = urlParams.get('my');
 
+    // Défini avant le premier chargement : le rendu des cartes en dépend (sinon erreur « before initialization » pour les visiteurs)
+    // Disposition des slots identique à l'atelier
+    const MQ_LEFT  = ['amulette','anneau1','anneau2','bracelet','gants'];
+    const MQ_RIGHT = ['casque','plastron','jambieres','bottes','arme_pr'];
+    const MQ_BOT   = ['artefact1','artefact2','artefact3','arme_sec'];
+    const _SLOT_DEFS = (typeof ALL_SLOTS !== 'undefined')
+      ? new Map(ALL_SLOTS.map(s => [s.id, s]))
+      : new Map();
+
     // ── Auth ──────────────────────────────────────────────────────
     onAuthStateChanged(auth, async user => {
       currentUser = user;
@@ -429,13 +438,6 @@
       _attachCardListeners();
     }
 
-    // Disposition des slots identique à l'atelier
-    const MQ_LEFT  = ['amulette','anneau1','anneau2','bracelet','gants'];
-    const MQ_RIGHT = ['casque','plastron','jambieres','bottes','arme_pr'];
-    const MQ_BOT   = ['artefact1','artefact2','artefact3','arme_sec'];
-    const _SLOT_DEFS = (typeof ALL_SLOTS !== 'undefined')
-      ? new Map(ALL_SLOTS.map(s => [s.id, s]))
-      : new Map();
     function _slotCell(slotId, b, canSeeSensible, runeNames) {
       const def         = _SLOT_DEFS.get(slotId);
       const ico         = def ? def.ico : '◻';
