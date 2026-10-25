@@ -498,12 +498,16 @@
           </div>
           <div class="bc-meta">
             <span class="bc-author">👤 ${escHtml(b.authorPseudo || 'Anonyme')}</span>
-            <span class="bc-class" title="${escHtml(clsLbl)}">${escHtml(clsIco)} ${escHtml(clsLbl)} · Niv.&nbsp;${b.level || 1}</span>
             ${unlistedBadge}${adminBadge}
           </div>
           <div class="bc-mannequin-wrap">
             <div class="bc-mannequin-row">
               <div class="bc-mq-col">${colL}</div>
+              <div class="bc-mq-center">
+                <span class="bc-mq-cls-ico">${escHtml(clsIco)}</span>
+                <span class="bc-mq-cls-name">${escHtml(clsLbl)}</span>
+                <span class="bc-mq-level">Niv.&nbsp;${b.level || 1}</span>
+              </div>
               <div class="bc-mq-col">${colR}</div>
             </div>
             <div class="bc-mq-bot">${botRow}<button class="bc-slot bc-skill" data-action="skills" data-id="${escHtml(b._id)}" title="Arbre de compétences" aria-label="Arbre de compétences"><span class="bc-skill-ico"></span></button></div>
