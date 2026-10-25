@@ -230,18 +230,6 @@ const METERS = [['read', '📖 Lectures'], ['write', '✏️ Écritures'], ['del
 function quotaTab() { return '<div id="stats-quota"><div class="empty">Chargement…</div></div>'; }
 
 function quotaHtml(q, esc) {
-  if (q.error === 'billing') {
-    const fb = `https://console.firebase.google.com/project/${encodeURIComponent(q.projectId)}/firestore/usage`;
-    const up = `https://console.firebase.google.com/project/${encodeURIComponent(q.projectId)}/usage/details`;
-    return `<div class="stats-section"><div class="stats-section-title">Quota Firestore</div>
-      <div class="stats-note" style="font-size:12px;">Le droit d'accès est bon, mais <b>Google ne fournit les métriques d'usage qu'aux projets dont la facturation est activée</b> (plan Blaze). Ton projet est sur le plan gratuit (Spark), donc le quota ne peut pas s'afficher ici.</div>
-      <div class="stats-note" style="font-size:12px;">Deux possibilités :</div>
-      <ul class="stats-note" style="font-size:12px;padding-left:18px;">
-        <li>Consulter le quota à la main : <a href="${esc(fb)}" target="_blank" rel="noopener" style="color:var(--accent)">console Firebase → Firestore → Usage</a>.</li>
-        <li>Passer au plan Blaze (<a href="${esc(up)}" target="_blank" rel="noopener" style="color:var(--accent)">Usage et facturation</a>) : le quota gratuit reste le même, seul le dépassement est facturé, et cet onglet fonctionnera. Pense à régler une alerte de budget.</li>
-      </ul>
-      <div><button class="stats-tab" data-quota-refresh>🔄 Réessayer</button></div></div>`;
-  }
   if (q.error === 'permission') {
     const iam = `https://console.cloud.google.com/iam-admin/iam?project=${encodeURIComponent(q.projectId)}`;
     const api = `https://console.cloud.google.com/apis/library/monitoring.googleapis.com?project=${encodeURIComponent(q.projectId)}`;

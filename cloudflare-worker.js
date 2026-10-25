@@ -1503,7 +1503,6 @@ async function quotaReport(env) {
       }
     }
   } catch (e) {
-    if (/billing/i.test(e.message)) return { error: 'billing', projectId: PROJECT_ID, message: e.message };
     if (e.status === 403 || e.status === 401) {
       return { error: 'permission', saEmail: sa.client_email, projectId: PROJECT_ID, message: e.message };
     }
