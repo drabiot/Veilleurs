@@ -1347,6 +1347,7 @@ async function d1UserRow(env, field, value) {
   const col = field === 'discordId' ? 'discord_id' : field === 'pseudo' ? 'pseudo' : 'uid';
   return env.DB.prepare(`SELECT uid, data, pending FROM users WHERE ${col} = ? LIMIT 1`).bind(value).first();
 }
+const jparse = s => { try { return s ? JSON.parse(s) : null; } catch { return null; } };
 const rowToUser = r => (r ? { _id: r.uid, ...(jparse(r.data) || {}), ...(jparse(r.pending) || {}) } : null);
 
 function d1SaveUser(env, uid, data, pending) {
