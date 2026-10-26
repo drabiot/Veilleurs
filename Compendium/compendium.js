@@ -965,7 +965,7 @@ function renderItemStats(item) {
 
   const hasStats  = stats     && Object.keys(stats).some(k => stats[k] != null);
   const hasReqs   = lvl != null || classes.length || twoHanded || unique || runeSlots > 0;
-  const hasSkill  = !!(item.skill_name || item.skill_desc);
+  const hasSkill  = !!item.skill_name;
 
   if (!hasStats && !hasReqs && !hasSkill) return '';
 
@@ -1015,7 +1015,6 @@ function renderItemStats(item) {
         <span class="scroll-skill-name"${sr ? ` style="color:${sr.color}"` : ''}>📃 ${escHtml(item.skill_name || 'Compétence')}</span>
         ${sr ? `<span class="scroll-skill-rarity" style="color:${sr.color};border-color:${sr.color}66">${escHtml(sr.label)}</span>` : ''}
       </div>
-      ${item.skill_desc ? `<div class="scroll-skill-desc">${escHtml(item.skill_desc).replace(/\n/g, '<br>')}</div>` : ''}
     </div>`;
   }
 

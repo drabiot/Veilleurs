@@ -451,7 +451,6 @@ function saveForm() {
       competence: document.getElementById('f-competence')?.value || '',
       scrollName: document.getElementById('f-scroll-name')?.value || '',
       scrollRarity: document.getElementById('f-scroll-rarity')?.value || '',
-      scrollDesc: document.getElementById('f-scroll-desc')?.value || '',
       obtainOverride: document.getElementById('f-obtain-override').value,
       selRarity, selClasses, selTwoHanded, selSensible, selEvolutif, selOcculte, evolutifEvolutions,
       activeTags: [...activeTags],
@@ -584,7 +583,7 @@ function restoreForm(forcedMode) {
     if (d.lvl)    document.getElementById('f-lvl').value    = d.lvl;
     if (d.lore)   document.getElementById('f-lore').value   = d.lore;
     if (d.competence) { const el = document.getElementById('f-competence'); if (el) el.value = d.competence; }
-    { const _s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; }; _s('f-scroll-name', d.scrollName); _s('f-scroll-rarity', d.scrollRarity); _s('f-scroll-desc', d.scrollDesc); }
+    { const _s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; }; _s('f-scroll-name', d.scrollName); _s('f-scroll-rarity', d.scrollRarity); }
     if (d.obtainOverride) {
       document.getElementById('f-obtain-override').value = d.obtainOverride;
       document.getElementById('obtain-override-wrap').style.display = '';
@@ -1755,9 +1754,8 @@ function onCatChange() {
   }
   document.getElementById('classes-field').style.display     = (isEquip || isParchemin) ? '' : 'none';
   document.getElementById('scroll-field').style.display      = isParchemin ? '' : 'none';
-  { const _lf = document.getElementById('lore-field'); if (_lf) _lf.style.display = isParchemin ? 'none' : ''; }
-  if (isParchemin) { const _l = document.getElementById('f-lore'); if (_l) _l.value = ''; } // pas de lore sur un parchemin
-  if (!isParchemin) ['f-scroll-name', 'f-scroll-rarity', 'f-scroll-desc'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
+  { const _ll = document.getElementById('lore-label'); if (_ll) _ll.textContent = isParchemin ? 'Lore (= description de la compétence)' : 'Lore'; }
+  if (!isParchemin) ['f-scroll-name', 'f-scroll-rarity'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
   document.getElementById('twohanded-field').style.display      = isArme           ? '' : 'none';
   document.getElementById('competence-field').style.display     = isArme           ? '' : 'none';
   if (!isArme) { const _cp = document.getElementById('f-competence'); if (_cp) _cp.value = ''; }
@@ -2585,7 +2583,7 @@ function loadItem(item) {
   // Lore
   if (item.lore) document.getElementById('f-lore').value = item.lore;
   { const el = document.getElementById('f-competence'); if (el) el.value = item.competence || ''; }
-  { const _s = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; }; _s('f-scroll-name', item.skill_name); _s('f-scroll-rarity', item.skill_rarity); _s('f-scroll-desc', item.skill_desc); }
+  { const _s = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; }; _s('f-scroll-name', item.skill_name); _s('f-scroll-rarity', item.skill_rarity); }
 
   // Obtain — parse en sources structurées, fallback sur override texte brut
   if (item.obtain) {
@@ -4503,10 +4501,9 @@ function buildObj() {
   if (effects.length)        obj.effects  = effects;
   if (lore)                  obj.lore     = lore;
   if (category === 'parchemin') {
-    const _sn = (document.getElementById('f-scroll-name')?.value || '').trim(), _sr = document.getElementById('f-scroll-rarity')?.value || '', _sd = (document.getElementById('f-scroll-desc')?.value || '').trim();
+    const _sn = (document.getElementById('f-scroll-name')?.value || '').trim(), _sr = document.getElementById('f-scroll-rarity')?.value || '';
     if (_sn) obj.skill_name = _sn;
     if (_sr) obj.skill_rarity = _sr;
-    if (_sd) obj.skill_desc = _sd;
   }
   { const comp = category === 'arme' ? (document.getElementById('f-competence')?.value || '').trim() : ''; if (comp) obj.competence = comp; }
   if (tagsArr.length)        obj.tags     = tagsArr;
@@ -4566,9 +4563,7 @@ function validateForm() {
   if (!id)        errors.push({ field:'f-id',        msg:'ID manquant' });
   if (!category)  errors.push({ field:'f-category',  msg:'Catégorie non sélectionnée' });
   if (!selRarity) errors.push({ field:null,          msg:'Rareté non sélectionnée' });
-  if (category === 'parchemin') {
-    if (!(document.getElementById('f-scroll-desc')?.value || '').trim()) errors.push({ field:'f-scroll-desc', msg:'Description de la compétence obligatoire' });
-  } else if (!lore) errors.push({ field:'f-lore',      msg:'Lore obligatoire' });
+  if (!lore)      errors.push({ field:'f-lore',      msg: category === 'parchemin' ? 'Lore obligatoire (description de la compétence)' : 'Lore obligatoire' });
   if (isEquip && !cat)    warnings.push({ field:'f-cat',    msg:'Slot (cat) non sélectionné' });
   if (!palier)            errors.push ({ field:'f-palier', msg:'Palier obligatoire' });
   if (palier === 'event' && !document.getElementById('f-event-name')?.value) errors.push({ field:'f-event-name', msg:'Évènement obligatoire pour le palier Event' });
@@ -5286,7 +5281,7 @@ async function _promptMissingFields(errors, warnings = []) {
   if (data.rarity)      setRarity(data.rarity);
   if (data.lore)        document.getElementById('f-lore').value = data.lore;
   if (data.competence)  { const el = document.getElementById('f-competence'); if (el) el.value = data.competence; }
-  { const _s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; }; _s('f-scroll-name', data.skill_name); _s('f-scroll-rarity', data.skill_rarity); _s('f-scroll-desc', data.skill_desc); }
+  { const _s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; }; _s('f-scroll-name', data.skill_name); _s('f-scroll-rarity', data.skill_rarity); }
   if (data['craft-cd']) { const el = document.getElementById('f-craft-cd'); if (el) el.value = data['craft-cd']; }
   if (data.cat)         { const el = document.getElementById('f-cat'); if (el) { el.value = data.cat; onCatSlotChange?.(); } }
   if (data.lvl)         { const el = document.getElementById('f-lvl'); if (el) el.value = data.lvl; }
