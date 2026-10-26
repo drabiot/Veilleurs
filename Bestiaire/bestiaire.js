@@ -285,7 +285,7 @@ function updateCounts() {
       const el = document.getElementById(`count-${tag}`);
       if (el) el.textContent = filtered.filter(e => getPnjEffectiveTag(e) === tag).length;
     });
-    const groupExtras = { forgeron: ['refaconneur', 'fabricant_cles', 'fabricant_secrets'], marchand: ['repreneur_butin', 'marchand_occulte'] };
+    const groupExtras = { forgeron: ['refaconneur', 'fabricant_cles', 'fabricant_secrets'], marchand: ['repreneur_butin', 'marchand_occulte', 'recyclage_accessoires'] };
     ['forgeron', 'marchand'].forEach(cat => {
       const el = document.getElementById(`group-count-${cat}`);
       if (el) el.textContent = filtered.filter(e => {

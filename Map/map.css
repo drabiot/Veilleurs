@@ -515,6 +515,7 @@
 .marker[data-type="ressource"]             .marker-icon { background: #4a7d48; color: #7db87a; box-shadow: 0 2px 12px rgba(125,184,122,.5); }
 .marker[data-type="marchand"]              .marker-icon { background: #3a6e8a; color: #7aaccc; box-shadow: 0 2px 12px rgba(122,172,204,.5); }
 .marker[data-type="artisant"]              .marker-icon { background: #6a4daa; color: #a07de0; box-shadow: 0 2px 12px rgba(160,125,224,.5); }
+.marker[data-type="recyclage_access"]      .marker-icon { background: #1e4a45; color: #6fc4b8; box-shadow: 0 2px 12px rgba(111,196,184,.45); }
 .marker[data-type="repreneur_butin"]       .marker-icon { background: #0d2430; color: #0d2430; box-shadow: 0 2px 12px rgba(21, 55, 76, 0.5); }
 .marker[data-type="clef"]                  .marker-icon { background: #ebbc58; color: #ebbc58; box-shadow: 0 2px 12px rgba(212, 161, 49, 0.5); }
 .marker[data-type="boss"]                  .marker-icon { background: #6b1a1a; color: #e05050; box-shadow: 0 2px 12px rgba(224,80,80,.6); }

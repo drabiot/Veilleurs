@@ -980,7 +980,7 @@ function initObtainData() {
   // PNJs depuis Firestore dans les listes artisan/marchand
   if (_pnjsForObtain) {
     const _artisanTags = new Set(['forgeron_armes','forgeron_armures','forgeron_accessoires','forgeron_lingots','forgeron_cles','forgeron_items_secrets','bucheron','alchimiste','fabricant_secret']);
-    const _marchandTags = new Set(['marchand_equipement','marchand_consommable','marchand_outils','marchand_accessoires','marchand_itinerant','repreneur_butin','marchand_occulte']);
+    const _marchandTags = new Set(['marchand_equipement','marchand_consommable','marchand_outils','marchand_accessoires','recyclage_accessoires','marchand_itinerant','repreneur_butin','marchand_occulte']);
     const _existArtIds = new Set(allArtisans.map(a => a.id));
     const _existMchIds = new Set(allMarchands.map(m => m.id));
     const _obtainItemMap = {};
@@ -6179,6 +6179,7 @@ const PNJ_TYPE_TAGS = {
   "marchand de consommable": "marchand_consommable",
   "marchand d'outils":       "marchand_outils",
   "marchand d'accessoires":  "marchand_accessoires",
+  "recyclage d'accessoires": "recyclage_accessoires",
   "marchand itinérant":      "marchand_itinerant",
   "repreneur de butin":      "repreneur_butin",
   "repreneur d'armes":       "repreneur_armes",
@@ -6197,37 +6198,31 @@ const PNJ_TYPE_TAGS = {
 
 // Catégories UI du creator PNJ
 const PNJ_CATEGORIES = {
+  // Types retirés du creator parce qu'ils ne sont plus affichés sur la carte : forgeron d'armes / d'armures / de lingots, repreneur d'armes,
+  // marchand itinérant, marchand d'équipement, quête tertiaire, fabricant secret, autres. Les PNJ déjà enregistrés avec ces types restent éditables.
   craft: [
-    "forgeron d'armes",
-    "forgeron d'armures",
     "forgeron d'accessoires",
     "forgeron de clés",
   ],
   artisans: [
     "alchimiste",
     "bûcheron",
-    "forgeron de lingots",
     "refaçonneur",
   ],
   commerce: [
     "repreneur de butin",
-    "repreneur d'armes",
-    "marchand itinérant",
-    "marchand d'équipement",
     "marchand de consommable",
     "marchand d'outils",
     "marchand d'accessoires",
+    "recyclage d'accessoires",
   ],
   quetes: [
     "quête principale",
     "quête secondaire",
-    "quête tertiaire",
     "donjon",
   ],
   autres: [
-    "fabricant secret",
     "marchand occulte",
-    "autres",
   ],
 };
 
@@ -6255,6 +6250,7 @@ const PNJ_TYPE_ICONS = {
   "marchand de consommable": "🧪",
   "marchand d'outils":       "🛠️",
   "marchand d'accessoires":  "💍",
+  "recyclage d'accessoires": "♻️",
   "quête principale":        "💬",
   "quête secondaire":        "❓",
   "quête tertiaire":         "📋",
