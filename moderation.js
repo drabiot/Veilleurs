@@ -15855,8 +15855,9 @@ async function _loadTitresList() {
       el.innerHTML = '<div class="empty" style="color:var(--muted);">Aucun titre. Créez-en un ci-dessus.</div>';
       return;
     }
-    const statOpts = _titreStatDefs().map(s => `<option value="${escHtml(s.id)}">${escHtml((s.icon || '') + ' ' + s.label)}</option>`).join('');
-    el.innerHTML = list.map((t, i) => {
+    // Liste de stats consultable : champ de recherche + datalist (taper « crit » filtre les stats ; la valeur est le nom de la stat)
+    const statList = `<datalist id="titre-stat-list">${_titreStatDefs().map(s => `<option value="${escHtml(s.label)}">${escHtml((s.icon || '') + ' ' + s.id)}</option>`).join('')}</datalist>`;
+    el.innerHTML = statList + list.map((t, i) => {
       const id = escHtml(t.id);
       const chips = Object.entries(t.stats).map(([k, v]) =>
         `<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:11px;">${escHtml(_titreStatLabel(k))} <b style="color:var(--accent);">${v > 0 ? '+' : ''}${v}${escHtml(_titreStatUnit(k))}</b>
@@ -15873,7 +15874,7 @@ async function _loadTitresList() {
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;">${chips}</div>
         <div style="display:flex;gap:6px;align-items:center;">
-          <select id="titre-stat-${id}" style="height:30px;flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-family:inherit;font-size:12px;">${statOpts}</select>
+          <input type="text" id="titre-stat-${id}" list="titre-stat-list" autocomplete="off" placeholder="🔍 Rechercher une stat…" style="height:30px;flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-family:inherit;font-size:12px;" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('titre-val-${id}').focus();}">
           <input type="number" step="any" id="titre-val-${id}" placeholder="valeur" style="height:30px;width:90px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-family:inherit;font-size:12px;" onkeydown="if(event.key==='Enter')addVclTitreStat('${id}')">
           <button class="btn btn-primary btn-sm" onclick="addVclTitreStat('${id}')" style="font-size:12px;white-space:nowrap;">+ Stat</button>
         </div>
@@ -15911,10 +15912,23 @@ async function _updateTitre(id, fn) {
   await _loadTitresList();
 }
 
+// Retrouve l'id d'une stat à partir de ce qui est tapé : nom exact, id, ou nom partiel s'il n'y a qu'une seule correspondance.
+function _resolveTitreStat(txt) {
+  const q = normalize(String(txt || '').trim());
+  if (!q) return null;
+  const defs = _titreStatDefs();
+  const exact = defs.find(d => normalize(d.label) === q || d.id === String(txt).trim());
+  if (exact) return exact.id;
+  const part = defs.filter(d => normalize(d.label).includes(q));
+  return part.length === 1 ? part[0].id : null;
+}
+
 window.addVclTitreStat = async function(id) {
-  const stat = document.getElementById('titre-stat-' + id)?.value;
+  const raw = document.getElementById('titre-stat-' + id)?.value;
+  const stat = _resolveTitreStat(raw);
   const val = parseFloat(document.getElementById('titre-val-' + id)?.value);
-  if (!stat || isNaN(val)) { toast('Choisis une stat et une valeur.', 'error'); return; }
+  if (!stat) { toast(raw?.trim() ? `Stat inconnue ou ambiguë : « ${raw.trim()} ». Choisis-en une dans la liste.` : 'Choisis une stat.', 'error'); return; }
+  if (isNaN(val)) { toast('Indique une valeur.', 'error'); return; }
   try { await _updateTitre(id, t => { t.stats[stat] = val; }); }
   catch(e) { toast('Erreur : ' + e.message, 'error'); }
 };
