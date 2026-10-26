@@ -62,7 +62,7 @@ function buildSidebarAlpha(items) {
 
   sorted.forEach(item => {
     const color = rarityColor(item.rarity);
-    const qualityOnly = isQualityOnly(item);
+    const qualityOnly = _hiddenQualityItem(item);
 
     if (!qualityOnly) {
       const link = document.createElement('a');
@@ -347,7 +347,7 @@ function buildSidebar(items, expandAll = false) {
         /* ── Items ── */
         catItems.forEach(item => {
           const color = rarityColor(item.rarity);
-          const qualityOnly = isQualityOnly(item);
+          const qualityOnly = _hiddenQualityItem(item);
 
           // ─ Entrée normale (sauf si quality-only)
           if (!qualityOnly) {
@@ -906,6 +906,14 @@ function renderUsedIn(itemId) {
 
 function isQualityOnly(item) {
   return item.quality === true;
+}
+
+// Une version « Qualité » autonome n'a pas d'entrée dans la liste quand sa version normale existe dans le même palier (on y accède par le
+// bouton Normal / Qualité). Sans version normale visible (ex. fortifiants : normale restée en archive, ou inexistante), elle s'affiche seule.
+function _hiddenQualityItem(item) {
+  if (!isQualityOnly(item)) return false;
+  const normal = ITEMS_BY_ID.get(getNormalItemId(item.id));
+  return !!normal && normal.id !== item.id && String(normal.palier) === String(item.palier);
 }
 
 function getQualityItemId(normalId) {
