@@ -354,6 +354,7 @@ function loadAccessoriesForClass(classId) {
 
 	const lvlNum = document.createElement('input');
 	lvlNum.type = 'number';
+	lvlNum.dataset.nostep = '1';   // a déjà ses boutons − / +
 	lvlNum.className = 'level-num';
 	lvlNum.id = 'level-num';
 	lvlNum.value = buildLevel;

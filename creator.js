@@ -6978,20 +6978,20 @@ function renderPanopBonuses() {
     .concat(stats.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.label)}${s.unit ? ' (' + s.unit + ')' : ''}</option>`))
     .join('');
   wrap.innerHTML = panopBonuses.map(b => `
-    <div class="panop-bonus-row" data-uid="${b.uid}" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-      <div class="field" style="flex:0 0 118px;margin:0;">
+    <div class="panop-bonus-row" data-uid="${b.uid}" style="display:grid;grid-template-columns:118px minmax(120px,1fr) 150px auto auto;gap:8px;align-items:center;margin-bottom:6px;">
+      <div class="field" style="min-width:0;margin:0;">
         <label style="font-size:10px;">Pièces</label>
         <input type="number" min="2" max="12" value="${b.pieces}" data-k="pieces" oninput="updatePanopBonus(${b.uid}, 'pieces', this.value)">
       </div>
-      <div class="field" style="flex:1;margin:0;">
+      <div class="field" style="min-width:0;margin:0;">
         <label style="font-size:10px;">Stat</label>
-        <select data-k="stat" onchange="updatePanopBonus(${b.uid}, 'stat', this.value)">${statsOpts}</select>
+        <select data-k="stat" style="width:100%;" onchange="updatePanopBonus(${b.uid}, 'stat', this.value)">${statsOpts}</select>
       </div>
-      <div class="field" style="flex:0 0 150px;margin:0;">
+      <div class="field" style="min-width:0;margin:0;">
         <label style="font-size:10px;">Valeur</label>
         <input type="number" step="any" value="${b.value}" data-k="value" oninput="updatePanopBonus(${b.uid}, 'value', this.value)">
       </div>
-      <button class="btn btn-ghost btn-sm" style="margin-top:14px;" onclick="addPanopBonusAfter(${b.uid})" title="Ajouter un autre effet pour ${b.pieces} pièces">＋ effet</button>
+      <button class="btn btn-ghost btn-sm" style="margin-top:14px;white-space:nowrap;" onclick="addPanopBonusAfter(${b.uid})" title="Ajouter un autre effet pour ${b.pieces} pièces">＋ effet</button>
       <button class="btn btn-ghost btn-sm" style="margin-top:14px;" onclick="removePanopBonus(${b.uid})" title="Supprimer">🗑️</button>
     </div>
   `).join('');
