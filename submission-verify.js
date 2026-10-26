@@ -25,19 +25,24 @@
     return _worker;
   }
 
-  // Agrandit, passe en niveaux de gris et force un fond sombre → texte clair (les captures du jeu sont claires sur fond sombre).
+  // Agrandit ×3 sans lissage (la police pixel reste nette) ; 2 variantes lues puis fusionnées : couleurs d'origine, et niveaux de gris inversés.
+  // (Un seuillage noir/blanc a été essayé : il abîme les petits textes colorés des infobulles.)
   function prepare(src) {
     return new Promise((res, rej) => {
       const img = new Image();
       img.onload = () => {
-        const k = Math.max(1, Math.min(3, 1800 / img.width));
-        const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-        const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, c.width, c.height);
-        const d = x.getImageData(0, 0, c.width, c.height), p = d.data; let sum = 0;
-        for (let i = 0; i < p.length; i += 4) { const g = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]; p[i] = p[i + 1] = p[i + 2] = g; sum += g; }
-        const dark = sum / (p.length / 4) < 128;
-        for (let i = 0; i < p.length; i += 4) { let g = p[i]; g = dark ? 255 - g : g; g = g > 150 ? 255 : g < 90 ? 0 : g; p[i] = p[i + 1] = p[i + 2] = g; }
-        x.putImageData(d, 0, 0); res(c);
+        const k = Math.max(1, Math.min(3, 3200 / img.width));
+        const mk = invert => {
+          const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+          const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(img, 0, 0, c.width, c.height);
+          if (invert) {
+            const d = x.getImageData(0, 0, c.width, c.height), p = d.data;
+            for (let i = 0; i < p.length; i += 4) { const g = 255 - (0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]); p[i] = p[i + 1] = p[i + 2] = g; }
+            x.putImageData(d, 0, 0);
+          }
+          return c;
+        };
+        res([() => mk(false), () => mk(true)]); // créées à la demande : deux grands canvas en mémoire font échouer la lecture
       };
       img.onerror = () => rej(new Error('Image illisible'));
       img.src = src;
@@ -99,9 +104,10 @@
     let text = '';
     for (let i = 0; i < srcs.length; i++) {
       onStatus?.(`Lecture de la capture ${i + 1}/${srcs.length}…`);
-      const canvas = await prepare(srcs[i]);
-      const r = await w.recognize(canvas);
-      text += '\n' + r.data.text;
+      for (const make of await prepare(srcs[i])) {
+        const r = await w.recognize(make());
+        text += '\n' + r.data.text;
+      }
     }
     return text;
   }
@@ -115,8 +121,25 @@
     const nm = nameCheck(d.name || d.titre || d.label, lines, allTokens); if (nm) rows.push(nm);
     if (sub.type === 'item') {
       rows.push(...statChecks(d.stats, lines, allText));
-      if (d.rarity) { const r = norm(d.rarity); rows.push({ label: 'Rareté', expected: d.rarity, status: allTokens.some(t => tokenIn(r.split(' ')[0], [t])) ? 'ok' : 'miss', note: '' }); }
-      if (d.palier != null && d.palier !== '') rows.push({ label: 'Palier', expected: String(d.palier), status: /palier\s*[:\-]?\s*p?-?\s*0?/.test(allText) ? (new RegExp('palier\\s*[:\\-]?\\s*p?\\s*' + d.palier + '(?![0-9])').test(allText) ? 'ok' : 'warn') : 'miss', note: '' });
+      // Classe : « Classe : mage » sur la capture
+      const cls = Array.isArray(d.classes) ? d.classes : [];
+      if (cls.length) {
+        const lab = id => (typeof CLASSES !== 'undefined' ? CLASSES.find(c => c.id === id)?.label : '') || id;
+        const miss = cls.filter(id => !words(lab(id)).every(w => tokenIn(w, allTokens)));
+        rows.push({ label: 'Classe', expected: cls.map(lab).join(', '), status: miss.length === 0 ? 'ok' : miss.length < cls.length ? 'warn' : 'miss', note: miss.length ? 'non retrouvée : ' + miss.map(lab).join(', ') : '' });
+      }
+      // Niveau : « Niveau Minimum : 9 » (le début du mot est souvent mal lu : on cherche la fin « …veau »)
+      if (d.lvl != null && d.lvl !== '') {
+        const re = new RegExp('(veau|niveau|niv)[^0-9\n]{0,20}' + d.lvl + '(?![0-9])');
+        rows.push({ label: 'Niveau', expected: String(d.lvl), status: re.test(allText) ? 'ok' : numRe(d.lvl).test(allText) ? 'warn' : 'miss', note: '' });
+      }
+      // Lore : les mots de la description doivent se retrouver
+      const lw = words(d.lore || '').filter(w => w.length > 3);
+      if (lw.length) {
+        const hit = lw.filter(w => tokenIn(w, allTokens)).length, ratio = hit / lw.length;
+        rows.push({ label: 'Lore', expected: String(d.lore).replace(/\s+/g, ' ').slice(0, 70) + (String(d.lore).length > 70 ? '…' : ''), status: ratio >= 0.75 ? 'ok' : ratio >= 0.4 ? 'warn' : 'miss', note: ratio >= 0.75 ? '' : `${hit}/${lw.length} mots retrouvés` });
+      }
+      // Rareté (couleur du fond) et palier (non écrit sur la capture) : non vérifiables par lecture de texte.
     }
     return { rows, lines: lines.length };
   }
@@ -130,10 +153,11 @@
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
         ${res.rows.map(r => `<tr style="border-top:1px solid var(--border);"><td style="padding:3px 6px;width:24px;">${ICON[r.status]}</td><td style="padding:3px 6px;">${window.VCL?.escHtml ? window.VCL.escHtml(r.label) : r.label}</td><td style="padding:3px 6px;font-family:monospace;">${window.VCL?.escHtml ? window.VCL.escHtml(r.expected) : r.expected}</td><td style="padding:3px 6px;color:var(--muted);">${r.note || ''}</td></tr>`).join('')}
       </table>
-      <div style="font-size:10px;color:var(--muted);margin-top:6px;">Lecture automatique imparfaite (police pixel) : ⚠️ / ❓ = à vérifier à l'œil, pas forcément une erreur.</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px;">Lecture automatique imparfaite : ⚠️ / ❓ = à vérifier à l'œil, pas forcément une erreur. Rareté (couleur du fond) et palier ne sont pas vérifiés.</div>
       <details style="margin-top:4px;"><summary style="font-size:11px;cursor:pointer;color:var(--muted);">Texte lu sur la capture</summary><pre style="white-space:pre-wrap;font-size:11px;max-height:160px;overflow:auto;">${(window.VCL?.escHtml ? window.VCL.escHtml(text) : text).trim()}</pre></details>`;
   }
 
+  window._verifyInternals = { runOCR, check, prepare }; // diagnostic
   window.verifySubmission = async function (subId) {
     const sub = (window._allSubsForVerify ? window._allSubsForVerify() : []).find(s => s._id === subId);
     const card = document.getElementById('btn-verify-' + subId)?.closest('.sub-card, .card, [data-sub-id]') || document.getElementById('screens-' + subId)?.parentElement;
@@ -152,7 +176,7 @@
       status('Préparation…');
       const text = await runOCR(srcs, status);
       render(box, check(sub, text), text);
-    } catch (e) { box.textContent = '⛔ Vérification impossible : ' + e.message; }
+    } catch (e) { console.error('[verify]', e); box.textContent = '⛔ Vérification impossible : ' + (e && e.message || e); }
     if (btn) btn.disabled = false;
   };
 })();
