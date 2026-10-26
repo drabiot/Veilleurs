@@ -2726,7 +2726,10 @@ function loadPnj(pnj) {
   resetPnjForm();
   if (pnj.id) {
     document.getElementById('pnj-id').value = pnj.id;
-    pnjIdLocked = true;
+    // L'ID ne se verrouille que pour un PNJ déjà approuvé dans le wiki. Une soumission pas encore approuvée garde son ID libre :
+    // il suit le nom / le palier / le lieu (corriger une faute dans le nom corrige aussi l'ID). Liste pas encore chargée : on verrouille par prudence.
+    const _known = Array.isArray(_pnjsForObtain) ? _pnjsForObtain.some(x => (x.id || x._id) === pnj.id) : true;
+    pnjIdLocked = _known;
   }
   // Restaurer le type via pnj.type (champ canonique) ou pnj.name (fallback)
   const pnjTypeRaw = pnj.type || (pnj.name || '').toLowerCase().replace(/\u2019/g, "'");
@@ -2798,6 +2801,7 @@ function loadPnj(pnj) {
   if (_pnjNoteTA) _pnjNoteTA.placeholder = 'Décris ce que tu as modifié pour que la modération sache quoi vérifier…';
   document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
   refreshCustomSelects();
+  if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
   update();
 }
 
