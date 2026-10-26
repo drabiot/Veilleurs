@@ -1755,6 +1755,8 @@ function onCatChange() {
   }
   document.getElementById('classes-field').style.display     = (isEquip || isParchemin) ? '' : 'none';
   document.getElementById('scroll-field').style.display      = isParchemin ? '' : 'none';
+  { const _lf = document.getElementById('lore-field'); if (_lf) _lf.style.display = isParchemin ? 'none' : ''; }
+  if (isParchemin) { const _l = document.getElementById('f-lore'); if (_l) _l.value = ''; } // pas de lore sur un parchemin
   if (!isParchemin) ['f-scroll-name', 'f-scroll-rarity', 'f-scroll-desc'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
   document.getElementById('twohanded-field').style.display      = isArme           ? '' : 'none';
   document.getElementById('competence-field').style.display     = isArme           ? '' : 'none';
