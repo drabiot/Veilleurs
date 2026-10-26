@@ -1265,9 +1265,10 @@ function renderSetSection(item) {
       const sd = statLookup[statId];
       const label = sd ? `${sd.icon} ${sd.label}` : statId;
       const unit  = sd?.unit || '';
+      const sg = n => (+n < 0 ? String(n) : '+' + n);   // valeur négative : « -0.6 », pas « +-0.6 »
       const display = Array.isArray(val)
-        ? `+${val[0]}–${val[1]}${unit}`
-        : `+${val}${unit}`;
+        ? `${sg(val[0])}–${val[1]}${unit}`
+        : `${sg(val)}${unit}`;
       return `<div>${escHtml(label)} <span class="set-bonus-val" style="color:${color};">${display}</span></div>`;
     }).join('');
     return `<tr>

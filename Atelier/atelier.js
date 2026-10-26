@@ -1002,9 +1002,10 @@ function loadAccessoriesForClass(classId) {
         const unit  = statDef ? statDef.unit  : '';
         const icon  = statDef ? statDef.icon  : '';
         const val   = sv[1];
+        const sg = n => (+n < 0 ? String(n) : '+' + n);   // valeur négative : « -0.6 », pas « +-0.6 »
         const valStr = Array.isArray(val)
-          ? (val[0] === val[1] ? '+' + val[0] + unit : '+' + val[0] + '–' + val[1] + unit)
-          : '+' + val + unit;
+          ? (val[0] === val[1] ? sg(val[0]) + unit : sg(val[0]) + '–' + val[1] + unit)
+          : sg(val) + unit;
         const line = document.createElement('div');
         line.className = 'set-bonus-stat';
         line.innerHTML =
