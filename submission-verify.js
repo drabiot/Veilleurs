@@ -130,8 +130,11 @@
       }
       // Niveau : « Niveau Minimum : 9 » (le début du mot est souvent mal lu : on cherche la fin « …veau »)
       if (d.lvl != null && d.lvl !== '') {
-        const re = new RegExp('(veau|niveau|niv)[^0-9\n]{0,20}' + d.lvl + '(?![0-9])');
-        rows.push({ label: 'Niveau', expected: String(d.lvl), status: re.test(allText) ? 'ok' : numRe(d.lvl).test(allText) ? 'warn' : 'miss', note: '' });
+        // On repère la ligne « …iveau Minimum : N » (début de mot souvent mal lu : « Hiveau », « Miveau », « Mininun »…) puis on lit le chiffre
+        const lv = lines.find(l => /(veau|iveau|mini[mn]|minin)/.test(l.raw) && /[0-9]/.test(l.raw));
+        const nums = lv ? (lv.raw.match(/[0-9]+/g) || []) : [];
+        const okN = nums.includes(String(d.lvl)) || numRe(d.lvl).test(allText) && !!lv;
+        rows.push({ label: 'Niveau', expected: String(d.lvl), status: okN ? 'ok' : lv ? 'warn' : 'miss', note: okN ? '' : lv ? `lu sur la capture : ${nums.join(', ')}` : 'ligne « Niveau » non retrouvée' });
       }
       // Lore : les mots de la description doivent se retrouver
       const lw = words(d.lore || '').filter(w => w.length > 3);
