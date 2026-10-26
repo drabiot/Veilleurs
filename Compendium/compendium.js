@@ -1018,6 +1018,14 @@ function renderItemStats(item) {
   return `<div class="item-stats-panel">${html}</div>`;
 }
 
+// « Fabrique ×3 » : bandeau bien visible sous la liste d'ingrédients quand un craft donne plusieurs exemplaires
+function craftYieldHtml(d) {
+  const n = d && +d.craft_qty;
+  if (!(n > 1) || !getCraftSafe(d)) return '';
+  return `<div class="craft-yield"><span class="craft-yield-label">Fabrique</span><span class="craft-yield-qty">×${n}</span></div>`;
+}
+function getCraftSafe(d) { return d && Array.isArray(d.craft) ? d.craft.length : !!d?.craft; }
+
 function renderEffects(effectsList, applyCd) {
   if (!effectsList || effectsList.length === 0) return '';
 
@@ -1383,7 +1391,7 @@ function showItem(id, initialQuality = false) {
       </div>
       <div class="effects-craft-row">
         <div id="item-effects-wrap">${renderEffects(currentEffects, d.cooldown_apply)}</div>
-        <div id="item-craft-wrap">${renderCraft(getCraft())}</div>
+        <div id="item-craft-wrap">${renderCraft(getCraft())}${craftYieldHtml(d)}</div>
         ${itemStatsHtml ? `<div id="item-stats-wrap">${itemStatsHtml}</div>` : ''}
       </div>` : ''}
       <div class="item-sep"></div>
@@ -1422,7 +1430,7 @@ function showItem(id, initialQuality = false) {
       obtainEl.innerHTML = parseText(withAutoObtain(d2, v2.obtain));
       const nameEl = document.getElementById('item-name-text');
       if (nameEl) nameEl.textContent = d2.name || item.name;
-      craftWrap.innerHTML = renderCraft(getCraft());
+      craftWrap.innerHTML = renderCraft(getCraft()) + craftYieldHtml(d2);
 
       const effectsWrap = document.getElementById('item-effects-wrap');
       if (effectsWrap) effectsWrap.innerHTML = renderEffects(d2.effects ?? null, d2.cooldown_apply);

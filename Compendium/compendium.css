@@ -1283,3 +1283,8 @@ a.craft-ingredient-name:hover {
 
 /* Colonnes Effets / Craft / Statistiques : une colonne vide ne réserve pas de place (les autres se calent à gauche) */
 .effects-craft-row > :empty, .effects-craft-titles > :empty { display: none; }
+
+/* Quantité fabriquée par craft (×3…) */
+.craft-yield { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding: 10px 16px; border: 1px solid rgba(215,175,95,.45); border-left: 3px solid #d7af5f; border-radius: 3px; background: rgba(215,175,95,.08); }
+.craft-yield-label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted, #8c8270); }
+.craft-yield-qty { font-size: 22px; font-weight: 700; color: #f0c860; line-height: 1; }
