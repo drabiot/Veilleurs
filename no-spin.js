@@ -57,7 +57,21 @@
     w.appendChild(mk('+', 1, 'Augmenter'));
   }
 
+  // Pas de propositions d'autocomplétion du navigateur (valeurs déjà tapées, adresses…) : elles masquent les champs et n'ont aucun sens ici.
+  const ADDR = /region|adresse|address|ville|city|pays|country|zip|postal|tel|phone|mail|name|nom|code|user|pseudo/i;
+  function noFill(el) {
+    if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLFormElement)) return;
+    if (el instanceof HTMLInputElement && /^(password|checkbox|radio|file|hidden|button|submit|range|color)$/.test(el.type)) return;
+    if (el.dataset.autofill !== undefined) return;
+    if (['modal-email', 'modal-password', 'reg-pseudo', 'reg-email'].includes(el.id)) return; // connexion : le navigateur peut proposer l'identifiant
+    const hint = (el.id || '') + ' ' + (el.name || '') + ' ' + (el.getAttribute('placeholder') || '');
+    el.setAttribute('autocomplete', ADDR.test(hint) ? 'off-' + Math.random().toString(36).slice(2, 8) : 'off'); // valeur inconnue : Chrome / Brave ignorent « off » pour les champs qui ressemblent à une adresse
+    if (el instanceof HTMLInputElement && el.type === 'search') el.setAttribute('autocomplete', 'off');
+  }
+
   function scan(root) {
+    if (root.nodeType === 1) noFill(root);
+    root.querySelectorAll && root.querySelectorAll('input,textarea,form').forEach(noFill);
     if (root.nodeType !== 1 && root.nodeType !== 11) return;
     if (root.matches && root.matches('input[type=number]')) wrap(root);
     root.querySelectorAll && root.querySelectorAll('input[type=number]').forEach(wrap);

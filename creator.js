@@ -5979,6 +5979,11 @@ function selectMobRegion(r) {
   document.getElementById('mob-region').value        = r.id;
   document.getElementById('mob-regionid').value      = r.id;
   document.getElementById('mob-region-dropdown').classList.remove('open');
+  // Le palier se déduit de la région (modifiable ensuite à la main)
+  if (r.palier != null && r.palier !== '' && String(r.palier) !== '?' && document.getElementById('mob-palier')) {
+    _setPalierValue('mob-palier', r.palier);
+    _customSelUpdaters['mob-palier']?.();
+  }
   update();
 }
 
@@ -6081,6 +6086,11 @@ function selectPnjRegion(r) {
   document.getElementById('pnj-region-search').value = name;
   document.getElementById('pnj-region').value        = r.id;
   document.getElementById('pnj-region-dropdown').classList.remove('open');
+  // Le palier se déduit de la région (modifiable ensuite à la main)
+  if (r.palier != null && r.palier !== '' && String(r.palier) !== '?' && document.getElementById('pnj-palier')) {
+    _setPalierValue('pnj-palier', r.palier);
+    _customSelUpdaters['pnj-palier']?.();
+  }
   if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
   update();
 }
@@ -7756,13 +7766,7 @@ window._pageInit = function() {
   appendPendingToIndices().catch(e => console.warn('[pending]', e));
 };
 
-// ── Autocomplete off (sauf champs auth) ────────────────
-  document.addEventListener('DOMContentLoaded', function() {
-    const skip = new Set(['modal-email','reg-pseudo','modal-password']);
-    document.querySelectorAll('input, textarea').forEach(function(el) {
-      if (!skip.has(el.id)) el.setAttribute('autocomplete', 'off');
-    });
-  });
+// Autocomplétion du navigateur : désactivée sur tous les champs par no-spin.js (sauf connexion).
 
 // ═══════════════════════════════════════════════════
 // GARDE-FOU ROUND-TRIP (chargement → soumission)
