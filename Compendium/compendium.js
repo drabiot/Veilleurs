@@ -287,9 +287,15 @@ function groupItems(items) {
 /* ══════════════════════════════════
    CONSTRUCTION SIDEBAR
 ══════════════════════════════════ */
+// Les entrées d'une catégorie ne sont créées qu'à sa première ouverture (id d'item → fonction qui remplit sa catégorie) :
+// ~1 100 liens en moins dans le DOM au chargement.
+const _lazyFill = new Map();
+function ensureSidebarItem(id) { _lazyFill.get(id)?.(); }
+
 function buildSidebar(items, expandAll = false) {
   if (currentSort === 'alpha') { buildSidebarAlpha(items); return; }
   sidebarTree.innerHTML = '';
+  _lazyFill.clear();
   const grouped = groupItems(items);
 
   Object.keys(grouped)
@@ -339,12 +345,11 @@ function buildSidebar(items, expandAll = false) {
         const cbody = document.createElement('div');
         cbody.className = 'categorie-body' + (expandAll ? ' open' : '');
 
-        ch.addEventListener('click', () => {
-          ch.classList.toggle('open');
-          cbody.classList.toggle('open');
-        });
-
-        /* ── Items ── */
+        /* ── Items (créés à la première ouverture) ── */
+        let _filled = false;
+        const fillCat = () => {
+        if (_filled) return;
+        _filled = true;
         catItems.forEach(item => {
           const color = rarityColor(item.rarity);
           const qualityOnly = _hiddenQualityItem(item);
@@ -355,6 +360,7 @@ function buildSidebar(items, expandAll = false) {
             link.className  = 'sidebar-item';
             link.href       = `#${item.id}`;
             link.dataset.id = item.id;
+            if (window.location.hash.slice(1) === item.id) link.classList.add('active'); // catégorie remplie après coup
             link.innerHTML = `
               <span class="sidebar-item-dot" style="background:${color}"></span>
               ${escHtml(item.name || '')}${item.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}`;
@@ -367,6 +373,14 @@ function buildSidebar(items, expandAll = false) {
           }
 
         });
+        };
+        catItems.forEach(it => _lazyFill.set(it.id, fillCat));
+        ch.addEventListener('click', () => {
+          fillCat();
+          ch.classList.toggle('open');
+          cbody.classList.toggle('open');
+        });
+        if (expandAll) fillCat();
 
         cb.appendChild(ch);
         cb.appendChild(cbody);
@@ -1588,6 +1602,7 @@ function initCompendium() {
     if (target) {
       buildSidebar(ITEMS);
       requestAnimationFrame(() => {
+        ensureSidebarItem(initId);
         const link = sidebarTree.querySelector(`.sidebar-item[data-id="${initId}"]`);
         if (link) {
           link.closest('.palier-body')?.classList.add('open');

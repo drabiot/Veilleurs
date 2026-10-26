@@ -1288,3 +1288,6 @@ a.craft-ingredient-name:hover {
 .craft-yield { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding: 10px 16px; border: 1px solid rgba(215,175,95,.45); border-left: 3px solid #d7af5f; border-radius: 3px; background: rgba(215,175,95,.08); }
 .craft-yield-label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted, #8c8270); }
 .craft-yield-qty { font-size: 22px; font-weight: 700; color: #f0c860; line-height: 1; }
+
+/* Liste à plat (tri A → Z) : le navigateur ne met pas en page les lignes hors écran */
+.sidebar-item-flat { content-visibility: auto; contain-intrinsic-size: auto 34px; }
