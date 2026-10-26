@@ -1361,7 +1361,7 @@ function addObtainSource() {
     const eventId = sel?.value;
     if (!eventId) return;
     const eventName = sel.options[sel.selectedIndex]?.textContent?.trim() || eventId;
-    if (obtainSources.some(s => s.type === 'event' && s.eventId === eventId)) return;
+    if (obtainSources.some(s => s.type === 'event' && (s.eventId === eventId || s.name === eventName))) return;
     obtainSources.push({ uid: obtainUid++, type: 'event', eventId, name: eventName });
     sel.value = '';
     document.getElementById('obtain-add-btn').disabled = true;
@@ -1826,6 +1826,22 @@ function _syncEventField() {
   wrap.style.display = on ? '' : 'none';
   if (!on) sel.value = '';
 }
+// Source d'obtention « Event » ajoutée automatiquement d'après l'évènement choisi dans l'identité (palier Event). Elle reste modifiable à la main :
+// la retirer (✕) ne la remet pas tant que l'évènement ne change pas ; changer d'évènement remplace la source automatique (jamais une source ajoutée à la main).
+let _autoEventName = '';
+function _syncEventObtain() {
+  const palier = document.getElementById('f-palier')?.value;
+  const name = palier === 'event' ? (document.getElementById('f-event-name')?.value || '') : '';
+  if (name === _autoEventName) return;
+  if (_autoEventName) obtainSources = obtainSources.filter(s => !(s.type === 'event' && s._auto && s.name === _autoEventName));
+  _autoEventName = name;
+  if (name && !obtainSources.some(s => s.type === 'event' && s.name === name)) {
+    obtainSources.push({ uid: obtainUid++, type: 'event', eventId: name, name, _auto: true });
+  }
+  renderObtainSources();
+  update();
+}
+
 function _setEventName(name) {
   _syncEventField();
   const sel = document.getElementById('f-event-name');
@@ -1834,6 +1850,7 @@ function _setEventName(name) {
     const o = document.createElement('option'); o.value = name; o.textContent = name; sel.appendChild(o);
   }
   sel.value = name || '';
+  _syncEventObtain();
 }
 
 function onPalierChange() {
@@ -1842,6 +1859,7 @@ function onPalierChange() {
   const p = document.getElementById('f-palier').value;
   if (p) { const pal = (window._vcl_paliers || _DEFAULT_PALIERS).find(x => String(x.id) === String(p)); activeTags.add(pal ? pal.label : `Palier ${p}`); }
   _syncEventField();
+  _syncEventObtain();
   syncPresetTagButtons();
   renderCustomTags();
   if (!idLocked) document.getElementById('f-id').value = _computeItemId();
@@ -2580,6 +2598,7 @@ function resetFormSilent() {
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
   selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvolutif = false; selOcculte = false; selQualite = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
   document.getElementById('qualite-btn')?.classList.remove('active');
+  _autoEventName = '';
   _setEventName('');
   if (selEvent) _lockPalierEvent(false);
   const _evSec = document.getElementById('evolutif-evolutions-section');
