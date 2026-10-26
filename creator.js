@@ -503,6 +503,7 @@ function saveForm() {
         underground:   pnjUnderground,
         sensible:      pnjSensible,
         sells:  pnjSells.map(s => ({ itemId: s.itemId, buy: s.buy, price: s.price })),
+        recycles: pnjRecycles.map(r => ({ itemId: r.itemId, qty: r.qty, reward: r.reward, time: r.time, cost: r.cost })),
         crafts: pnjCrafts.map(c => ({ resultId: c.resultId, time: c.time, quality: c.quality, ingredients: c.ingredients.map(i => ({ itemId: i.itemId, qty: i.qty })) })),
       },
       // Région form
@@ -715,6 +716,11 @@ function restoreForm(forcedMode) {
         ensureAllItemsIndex();
         for (const s of p.sells) pnjSells.push({ uid: pnjSellUid++, itemId: s.itemId, buy: s.buy, price: s.price });
         renderPnjSells();
+      }
+      if (p.recycles?.length) {
+        ensureAllItemsIndex();
+        for (const r of p.recycles) pnjRecycles.push({ uid: pnjRecycleUid++, itemId: r.itemId, qty: r.qty || 1, reward: r.reward ?? '', time: r.time || '', cost: r.cost ?? '' });
+        renderPnjRecycles();
       }
       if (p.crafts?.length) {
         ensureAllItemsIndex();
@@ -981,7 +987,7 @@ function initObtainData() {
   // PNJs depuis Firestore dans les listes artisan/marchand
   if (_pnjsForObtain) {
     const _artisanTags = new Set(['forgeron_armes','forgeron_armures','forgeron_accessoires','forgeron_lingots','forgeron_cles','forgeron_items_secrets','bucheron','alchimiste','fabricant_secret']);
-    const _marchandTags = new Set(['marchand_equipement','marchand_consommable','marchand_outils','marchand_accessoires','recyclage_accessoires','marchand_itinerant','repreneur_butin','marchand_occulte']);
+    const _marchandTags = new Set(['marchand_equipement','marchand_consommable','marchand_outils','marchand_accessoires','recyclage_accessoires','recyclage_armes','marchand_itinerant','repreneur_butin','marchand_occulte']);
     const _existArtIds = new Set(allArtisans.map(a => a.id));
     const _existMchIds = new Set(allMarchands.map(m => m.id));
     const _obtainItemMap = {};
@@ -2757,6 +2763,12 @@ function loadPnj(pnj) {
     });
   }
   if (crafts.length) renderPnjCrafts();
+  const recycles = Array.isArray(pnj.recycle) ? pnj.recycle
+    : pnj.recycle && typeof pnj.recycle === 'object' ? Object.values(pnj.recycle) : [];
+  for (const r of recycles) {
+    pnjRecycles.push({ uid: pnjRecycleUid++, itemId: r.id || '', qty: r.qty || 1, reward: r.reward ?? '', time: r.time || '', cost: r.cost ?? '' });
+  }
+  if (recycles.length) renderPnjRecycles();
   // Bannière édition
   const banner = document.getElementById('pnj-editing-banner');
   const nameEl = document.getElementById('pnj-editing-name');
@@ -6184,6 +6196,8 @@ function switchMode(mode) {
 // ═══════════════════════════════════════════════════
 let pnjSells    = [];
 let pnjCrafts   = [];
+let pnjRecycles = [];
+let pnjRecycleUid = 0;
 let pnjSellUid  = 0;
 let pnjCraftUid = 0;
 let pnjIngUid   = 0;
@@ -6200,6 +6214,7 @@ const PNJ_TYPE_TAGS = {
   "marchand d'outils":       "marchand_outils",
   "marchand d'accessoires":  "marchand_accessoires",
   "recyclage d'accessoires": "recyclage_accessoires",
+  "recyclage d'armes":       "recyclage_armes",
   "marchand itinérant":      "marchand_itinerant",
   "repreneur de butin":      "repreneur_butin",
   "repreneur d'armes":       "repreneur_armes",
@@ -6234,7 +6249,10 @@ const PNJ_CATEGORIES = {
     "marchand de consommable",
     "marchand d'outils",
     "marchand d'accessoires",
+  ],
+  recyclage: [
     "recyclage d'accessoires",
+    "recyclage d'armes",
   ],
   quetes: [
     "quête principale",
@@ -6250,6 +6268,7 @@ const PNJ_CAT_COLORS = {
   craft:    '#8b5cf6',
   artisans: '#10b981',
   commerce: '#3b82f6',
+  recyclage:'#14b8a6',
   quetes:   '#f59e0b',
   autres:   '#6b7280',
 };
@@ -6271,6 +6290,7 @@ const PNJ_TYPE_ICONS = {
   "marchand d'outils":       "🛠️",
   "marchand d'accessoires":  "💍",
   "recyclage d'accessoires": "♻️",
+  "recyclage d'armes":       "♻️",
   "quête principale":        "💬",
   "quête secondaire":        "❓",
   "quête tertiaire":         "📋",
@@ -6481,6 +6501,67 @@ function renderPnjSells() {
 }
 
 // ═══════════════════════════════════════════════════
+// PNJ — RECYCLAGE (le joueur donne un item, le PNJ rend des Pièces de Recyclage après un délai)
+// ═══════════════════════════════════════════════════
+function addPnjRecycle() {
+  ensureAllItemsIndex();
+  pnjRecycles.push({ uid: pnjRecycleUid++, itemId: '', qty: 1, reward: '', time: '', cost: '' });
+  renderPnjRecycles();
+}
+
+function renderPnjRecycles() {
+  const list = document.getElementById('pnj-recycles-list');
+  if (!list) return;
+  list.innerHTML = '';
+  for (const r of pnjRecycles) {
+    const card = document.createElement('div');
+    card.style.cssText = 'display:grid;grid-template-columns:1fr 70px 28px;gap:6px;align-items:start;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;';
+
+    const drop = makeSearchDrop(allItemsIndex, 'Item donné…', id => { r.itemId = id; update(); }, true);
+    if (r.itemId) {
+      const f = allItemsIndex.find(it => it.id === r.itemId);
+      drop.setValue(r.itemId, f ? f.name : r.itemId);
+    }
+    r.drop = drop;
+
+    const qtyInp = document.createElement('input');
+    qtyInp.type = 'number'; qtyInp.min = '1'; qtyInp.step = '1'; qtyInp.value = r.qty || 1;
+    qtyInp.style.cssText = 'background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 6px;font-size:12px;text-align:center;outline:none;';
+    qtyInp.addEventListener('input', () => { r.qty = qtyInp.value; update(); });
+    const qty = makeQtyStepper(qtyInp);
+
+    const rm = document.createElement('button');
+    rm.className = 'btn-icon'; rm.textContent = '✕';
+    rm.addEventListener('click', () => { pnjRecycles = pnjRecycles.filter(e => e.uid !== r.uid); renderPnjRecycles(); update(); });
+
+    const mkField = (label, ph, key, wide) => {
+      const wrap = document.createElement('label');
+      wrap.style.cssText = 'display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;';
+      wrap.textContent = label;
+      const el = document.createElement('input');
+      el.type = key === 'time' ? 'text' : 'number'; el.min = '0'; el.step = 'any'; el.placeholder = ph;
+      el.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 6px;font-size:12px;text-align:center;outline:none;width:100%;text-transform:none;font-weight:400;';
+      if (r[key] !== '' && r[key] != null) el.value = r[key];
+      el.addEventListener('input', () => { r[key] = el.value; update(); });
+      wrap.appendChild(el);
+      return wrap;
+    };
+
+    const extra = document.createElement('div');
+    extra.style.cssText = 'grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;';
+    extra.appendChild(mkField('Pièces reçues', 'ex : 5', 'reward'));
+    extra.appendChild(mkField('Délai', 'ex : 30s', 'time'));
+    extra.appendChild(mkField('Coût (Cols)', 'gratuit', 'cost'));
+
+    card.appendChild(drop.element);
+    card.appendChild(qty);
+    card.appendChild(rm);
+    card.appendChild(extra);
+    list.appendChild(card);
+  }
+}
+
+// ═══════════════════════════════════════════════════
 // PNJ — CRAFT
 // ═══════════════════════════════════════════════════
 function addPnjCraft() {
@@ -6648,6 +6729,15 @@ function buildPnjObj() {
     return e;
   });
   if (crafts.length) obj.craft = crafts;
+
+  const recycle = pnjRecycles.filter(r => r.itemId).map(r => {
+    const e = { id: r.itemId, qty: +r.qty || 1 };
+    if (r.reward !== '' && r.reward != null) e.reward = +r.reward;
+    if (r.time) e.time = r.time;
+    if (r.cost !== '' && r.cost != null && +r.cost > 0) e.cost = +r.cost;
+    return e;
+  });
+  if (recycle.length) obj.recycle = recycle;
 
   return obj;
 }
@@ -6849,7 +6939,7 @@ function renderPanopliePreview() {
 // PNJ / RÉGION — RESET
 // ═══════════════════════════════════════════════════
 function resetPnjForm() {
-  pnjSells = []; pnjCrafts = []; pnjIdLocked = false; pnjSensible = false;
+  pnjSells = []; pnjCrafts = []; pnjRecycles = []; pnjIdLocked = false; pnjSensible = false;
   const sensBtn = document.getElementById('pnj-sensible-btn'); if (sensBtn) sensBtn.classList.remove('active');
   ['pnj-id','pnj-region','pnj-region-search','pnj-x','pnj-y','pnj-z','pnj-display-name','pnj-instructions'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
@@ -6859,6 +6949,7 @@ function resetPnjForm() {
   _customSelUpdaters['pnj-palier']?.();
   document.getElementById('pnj-sells-list').innerHTML  = '';
   document.getElementById('pnj-crafts-list').innerHTML = '';
+  const _rl = document.getElementById('pnj-recycles-list'); if (_rl) _rl.innerHTML = '';
   setPnjUnderground(false);
 }
 

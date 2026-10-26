@@ -14514,7 +14514,8 @@ const _DEFAULT_CATEGORIES = [
   { id: 'cat-quetes',     label: '💬 Quêtes',         types: ['quête_principale', 'quête_secondaire'] },
   { id: 'cat-craft',      label: '⚒️ Forge / Craft',  types: ['craft_cles'] },
   { id: 'cat-artisans',   label: '🧪 Artisans',       types: ['alchimiste', 'bucheron', 'refaconneur'] },
-  { id: 'cat-commerce',   label: '🛒 Commerce',       types: ['repreneur_butin', 'marchand_consommable', 'marchand_outils', 'marchand_access', 'recyclage_access', 'marchand_occulte'] },
+  { id: 'cat-commerce',   label: '🛒 Commerce',       types: ['repreneur_butin', 'marchand_consommable', 'marchand_outils', 'marchand_access', 'marchand_occulte'] },
+  { id: 'cat-recyclage', label: 'Recyclage', types: ['recyclage_access', 'recyclage_arme'] },
   { id: 'cat-autres',     label: '🦠 Autres',         types: ['région', 'passage'] },
 ];
 
@@ -14871,6 +14872,7 @@ const _AP_PNJ_TO_TYPE = {
   "marchand d'outils":       "marchand_outils",
   "marchand d'accessoires":  "marchand_access",
   "recyclage d'accessoires": "recyclage_access",
+  "recyclage d'armes":       "recyclage_arme",
   "marchand occulte":        "marchand_occulte",
   "fabricant secret":        "autre",
   "autres":                  "autre",
@@ -14885,7 +14887,7 @@ const _AP_TYPE_LABELS = {
   repreneur_butin: 'Repreneur de Butin', repreneur_armes: "Repreneur d'Armes",
   marchand_itinerant: 'Marchand Itinérant', marchand_equipement: "Marchand d'Équipement",
   marchand_consommable: 'Marchand de Consommable', marchand_outils: "Marchand d'Outils",
-  marchand_access: "Vendeur d'Accessoires", recyclage_access: "Recyclage d'Accessoires", marchand_occulte: 'Marchand Occulte',
+  marchand_access: "Vendeur d'Accessoires", recyclage_access: "Recyclage d'Accessoires", recyclage_arme: "Recyclage d'Armes", marchand_occulte: 'Marchand Occulte',
   passage: 'Passage', autre: 'Autre',
 };
 
@@ -15077,7 +15079,7 @@ function renderPinColorForm() {
     repreneur_butin: '#f59e0b', repreneur_armes: '#b45309',
     marchand_itinerant: '#eab308', marchand_equipement: '#ca8a04',
     marchand_consommable: '#84cc16', marchand_outils: '#16a34a',
-    marchand_access: '#0891b2', recyclage_access: '#14b8a6', marchand_occulte: '#7c3aed',
+    marchand_access: '#0891b2', recyclage_access: '#14b8a6', recyclage_arme: '#22c55e', marchand_occulte: '#7c3aed',
     passage: '#1a3a5c', autre: '#6b7280',
   };
 
@@ -15145,7 +15147,7 @@ const _DEFAULT_EMOJIS = {
   repreneur_butin: '🛒', repreneur_armes: '⚔️',
   marchand_itinerant: '💰', marchand_equipement: '⚔️',
   marchand_consommable: '🧪', marchand_outils: '🔧',
-  marchand_access: '💍', recyclage_access: '♻️', marchand_occulte: '🩸',
+  marchand_access: '💍', recyclage_access: '♻️', recyclage_arme: '♻️', marchand_occulte: '🩸',
   passage: '🚪', autre: '🦠',
 };
 

@@ -131,6 +131,7 @@ const ALL_STATS = STAT_GROUPS.flatMap(g => g.stats);
 //#region CURRENCIES
 const CURRENCIES = {
   cols: { label: 'Cols', emoji: '🪙', color: '#c9a84c' },
+  pieces_recyclage: { label: 'Pièces de Recyclage', emoji: '♻️', color: '#6fc4b8' },
 };
 
 //#endregion CURRENCIES

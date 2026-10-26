@@ -285,7 +285,7 @@ function updateCounts() {
       const el = document.getElementById(`count-${tag}`);
       if (el) el.textContent = filtered.filter(e => getPnjEffectiveTag(e) === tag).length;
     });
-    const groupExtras = { forgeron: ['refaconneur', 'fabricant_cles', 'fabricant_secrets'], marchand: ['repreneur_butin', 'marchand_occulte', 'recyclage_accessoires'] };
+    const groupExtras = { forgeron: ['refaconneur', 'fabricant_cles', 'fabricant_secrets'], marchand: ['repreneur_butin', 'marchand_occulte'] };
     ['forgeron', 'marchand'].forEach(cat => {
       const el = document.getElementById(`group-count-${cat}`);
       if (el) el.textContent = filtered.filter(e => {
@@ -860,6 +860,57 @@ function renderPNJSheet(pnj) {
       </div>`;
   }
 
+  // Recyclage : le joueur donne un item (et éventuellement des cols), le PNJ rend des Pièces de Recyclage après un délai
+  let recycleHTML = '';
+  const recycles = (pnj.recycle || []).filter(r => r && r.id);
+  if (recycles.length) {
+    const cur = (typeof CURRENCIES !== 'undefined') ? CURRENCIES.pieces_recyclage : null;
+    const rows = recycles.map(r => {
+      const it      = _findItemOrSensitive(r.id);
+      const name    = it ? it.name : r.id;
+      const color   = it ? getRarityColor(it.rarity) : '#8c8c8c';
+      const img     = it ? (getItemImg(it) || '') : '';
+      const imgPart = img
+        ? `<div class="loot-img-wrap"><img src="${img}" alt="${escHtml(name)}" onerror="this.style.display='none'"></div>`
+        : `<span class="loot-dot" style="background:${color}"></span>`;
+      const href    = it ? `../Compendium/compendium.html#${escHtml(it.id)}` : '#';
+      const reward  = r.reward != null ? r.reward : '?';
+      const rewardHTML = `
+          <div class="loot-row craft-currency-row">
+            <div class="loot-img-wrap craft-currency-ico">${cur ? cur.emoji : '♻️'}</div>
+            <span class="loot-name" style="color:${cur ? cur.color : '#6fc4b8'}">${escHtml(cur ? cur.label : 'Pièces de Recyclage')}</span>
+            <span class="loot-drop-rate" style="color:${cur ? cur.color : '#6fc4b8'};border-color:${cur ? cur.color : '#6fc4b8'}44">×${escHtml(String(reward))}</span>
+          </div>`;
+      const colsCur = (typeof CURRENCIES !== 'undefined') ? CURRENCIES.cols : null;
+      const costHTML = r.cost && colsCur ? `
+          <div class="loot-row craft-currency-row">
+            <div class="loot-img-wrap craft-currency-ico">${colsCur.emoji}</div>
+            <span class="loot-name" style="color:${colsCur.color}">${escHtml(colsCur.label)}</span>
+            <span class="loot-drop-rate" style="color:${colsCur.color};border-color:${colsCur.color}44">×${escHtml(String(r.cost))}</span>
+          </div>` : '';
+      return `
+        <div class="craft-recipe-row">
+          <div class="craft-result-cell">
+            ${rewardHTML}
+            ${r.time ? `<span class="craft-timer">⏱ ${escHtml(r.time)}</span>` : ''}
+          </div>
+          <div class="craft-ings-col">
+            <a class="loot-row" href="${href}">
+              ${imgPart}
+              <span class="loot-name" style="color:${color}">${escHtml(name)}</span>
+              <span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${escHtml(String(r.qty || 1))}</span>
+            </a>
+            ${costHTML}
+          </div>
+        </div>`;
+    }).join('');
+    recycleHTML = `
+      <div class="mob-section full-width">
+        <div class="mob-section-title">Recycle</div>
+        <div class="mob-loot-list">${rows}</div>
+      </div>`;
+  }
+
   const loreHTML = pnj.lore ? `
     <div class="mob-section full-width">
       <div class="mob-section-title">Description</div>
@@ -908,6 +959,7 @@ function renderPNJSheet(pnj) {
         ${instructionsHTML}
         ${sellsHTML}
 		${craftHTML}
+        ${recycleHTML}
         ${loreHTML}
       </div>
     </div>`;
