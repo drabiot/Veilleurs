@@ -668,15 +668,15 @@ function renderMobSheet(mob) {
   const locHTML = (() => {
     if (!['boss', 'mini_boss'].includes(mob.type) || mob.sensible) return '';
     const pts = [mob.coords, ...(Array.isArray(mob.coords_more) ? mob.coords_more : [])].filter(c => c && c.x != null && c.z != null)
-      .filter((c, i, arr) => arr.findIndex(o => o.x === c.x && o.y === c.y && o.z === c.z) === i); // doublons exacts masqués
+      .filter((c, i, arr) => arr.findIndex(o => o.x === c.x && o.z === c.z) === i); // doublons masqués (même règle que la carte : un pin par point distinct en X / Z)
     if (!pts.length) return '';
     const fmt = c => `X ${c.x}${c.y ? ' · Y ' + c.y : ''} · Z ${c.z}`;
-    // Chaque point est cliquable : ouvre la carte sur ce point (même mécanisme que les coordonnées des quêtes ; la carte est en 2D : seuls X et Z comptent)
-    const floor = mob.palier != null ? mob.palier : 1;
-    const href = c => `../Map/map.html?ghost_gx=${encodeURIComponent(c.x)}&ghost_gz=${encodeURIComponent(c.z)}&ghost_floor=${encodeURIComponent(floor)}&ghost_name=${encodeURIComponent(mob.name + ' · ' + fmt(c))}#floor-${floor}-surface`;
+    // Chaque point est un pin de la carte (id du mob, puis id_1, id_2…) : le clic ouvre la carte centrée sur ce pin
+    const mid = mob.id || mob._id;
+    const href = (c, i) => `../Map/map.html?pnjId=${encodeURIComponent(i === 0 ? mid : mid + '_' + i)}`;
     return `<div class="mob-loc">
       <span class="mob-meta-key">Localisation</span>
-      <ul class="mob-loc-list">${pts.map(c => `<li><a class="mob-loc-link" href="${href(c)}" target="_blank" title="Voir sur la carte">${escHtml(fmt(c))} <span aria-hidden="true">📍</span></a></li>`).join('')}</ul>
+      <ul class="mob-loc-list">${pts.map((c, i) => `<li><a class="mob-loc-link" href="${href(c, i)}" target="_blank" title="Voir sur la carte">${escHtml(fmt(c))} <span aria-hidden="true">📍</span></a></li>`).join('')}</ul>
     </div>`;
   })();
 
