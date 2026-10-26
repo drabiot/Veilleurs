@@ -379,8 +379,10 @@ function buildGrid() {
     const isMob = activeTab === 'monstres';
 
     const _eImg = e.images?.[0] || e.img;
+    // Grille : miniature WebP (≈10-30 Ko au lieu de 100-560 Ko) ; si elle n'existe pas encore, on retombe sur l'image d'origine
+    const _thumb = u => /\/img\/(mobs|compendium\/montages)\//.test(u || '') ? u.replace('/img/', '/img/thumbs/').replace(/\.(png|jpe?g)$/i, '.webp') : u;
     const imgHTML = _eImg
-      ? `<img loading="lazy" decoding="async" src="${_eImg}" alt="${escHtml(e.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
+      ? `<img loading="lazy" decoding="async" src="${_thumb(_eImg)}" alt="${escHtml(e.name)}" onerror="if(!this.dataset.fb&&this.src!==${JSON.stringify(_eImg).replace(/"/g, '&quot;')}){this.dataset.fb=1;this.src=${JSON.stringify(_eImg).replace(/"/g, '&quot;')}}else{this.style.display='none';this.nextElementSibling.style.display='block'}">`
       : '';
     const phStyle = _eImg ? 'style="display:none"' : '';
     const ph = `<span class="card-img-placeholder" ${phStyle}>${isMob ? '👾' : '🧑'}</span>`;
