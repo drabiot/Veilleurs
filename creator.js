@@ -2646,6 +2646,8 @@ function resetFormSilent() {
   document.querySelectorAll('.stat-row').forEach(r => r.classList.remove('has-val'));
   document.getElementById('craft-list').innerHTML    = '';
   document.getElementById('effects-list').innerHTML  = '';
+  ['f-cd-val', 'f-use-val'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
+  { const u = document.getElementById('f-cd-unit'); if (u) u.value = 's'; }
   document.getElementById('obtain-override-wrap').style.display = 'none';
   renderObtainSources();
   onObtainTypeChange(); // le menu « type de source » est revenu sur « Drop de Mob » : on reconstruit aussi la zone de saisie (sinon l'ancien champ « Forge » reste affiché)
@@ -3456,8 +3458,6 @@ const EFFECT_TYPES = [
   'resurection',
   'feed',
   'saturation',
-  'cooldown',
-  'use',
   'reparation',
   'durabilite',
   'puissance_recolte' 
@@ -3491,7 +3491,31 @@ function buildEffectTemplates() {
 
 // Le niveau requis d'un consommable est le champ « Niveau requis » (pas une ligne d'effet) : un effet « level » (ancien format ou modèle)
 // est reporté dans ce champ, sans créer de ligne en double.
+// Délai de recharge et nombre d'utilisations : informations à part (facultatives), pas des effets.
+// Elles restent stockées dans `effects` (types cooldown / use) pour rester compatibles avec l'affichage du Compendium.
+function _setUseInfo(type, v) {
+  if (type === 'use') { const el = document.getElementById('f-use-val'); if (el) el.value = v ?? ''; return; }
+  const val = document.getElementById('f-cd-val'), un = document.getElementById('f-cd-unit');
+  if (!val || !un) return;
+  let n = parseFloat(v); if (isNaN(n)) { val.value = ''; return; }
+  un.value = 's';
+  if (n >= 3600 && n % 3600 === 0) { n /= 3600; un.value = 'h'; }
+  else if (n >= 60 && n % 60 === 0) { n /= 60; un.value = 'min'; }
+  val.value = n;
+}
+function _useInfoEffects() {
+  const out = [];
+  const cd = parseFloat(document.getElementById('f-cd-val')?.value);
+  if (!isNaN(cd) && cd > 0) {
+    const m = document.getElementById('f-cd-unit')?.value === 'h' ? 3600 : document.getElementById('f-cd-unit')?.value === 'min' ? 60 : 1;
+    out.push({ type: 'cooldown', value: Math.round(cd * m * 1000) / 1000, unit: 's' });
+  }
+  const us = parseFloat(document.getElementById('f-use-val')?.value);
+  if (!isNaN(us) && us > 0) out.push({ type: 'use', value: us });
+  return out;
+}
 function _levelEffectToField(eff) {
+  if (eff && (eff.type === 'cooldown' || eff.type === 'use')) { _setUseInfo(eff.type, eff.value); return true; }
   if (!eff || eff.type !== 'level') return false;
   const el = document.getElementById('f-lvl');
   if (el && eff.value !== '' && eff.value != null && (!el.value || el.dataset.fromTpl)) { el.value = eff.value; el.dataset.fromTpl = '1'; }
@@ -3508,6 +3532,12 @@ function applyEffectTemplate(tpl) {
     if (e._val)   e._val.value   = eff.value  ?? '';
     if (e._unit)  e._unit.value  = eff.unit   || '';
     if (e._label) e._label.value = eff.label  || '';
+    if (eff.duration && e._dur) { // durée du modèle (en secondes) → plus grande unité exacte
+      const sec = +eff.duration;
+      if (sec >= 3600 && sec % 3600 === 0) { e._dur.value = sec / 3600; e._durUnit.value = 'h'; }
+      else if (sec >= 60 && sec % 60 === 0) { e._dur.value = sec / 60; e._durUnit.value = 'min'; }
+      else { e._dur.value = sec; e._durUnit.value = 's'; }
+    }
   }
   update();
 }
@@ -3586,7 +3616,7 @@ function addEffect() {
 }
 
 function getEffects() {
-  return effectEntries.map(e => {
+  const rows = effectEntries.map(e => {
     const obj = { type: e._type.value };
     const v = parseFloat(e._val.value);
     if (!isNaN(v)) obj.value = v;
@@ -3600,6 +3630,7 @@ function getEffects() {
     const l = e._label.value.trim(); if (l) obj.label = l;
     return obj;
   });
+  return rows.concat(_useInfoEffects());
 }
 
 // ═══════════════════════════════════════════════════
