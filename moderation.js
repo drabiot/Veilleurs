@@ -1584,8 +1584,8 @@ let _dragSrc            = null;
 let _mobPalierCollapsed = new Set();
 let _mobCollapseInit   = false;
 
-const TYPE_ORDER_MOD  = { monstre: 0, sbire: 1, mini_boss: 2, boss: 3 };
-const TYPE_LABELS_MOD = { monstre: 'Monstre', sbire: 'Sbire', mini_boss: 'Mini-boss', boss: 'Boss' };
+const TYPE_ORDER_MOD  = { monstre: 0, sbire: 1, mini_boss: 2, boss: 3, worldboss: 4 };
+const TYPE_LABELS_MOD = { monstre: 'Monstre', sbire: 'Sbire', mini_boss: 'Mini-boss', boss: 'Boss', worldboss: 'WorldBoss' };
 
 function mobTag(mob) {
   return `P${mob.palier||1} ${TYPE_LABELS_MOD[mob.type]||mob.type}`;
@@ -10141,7 +10141,7 @@ const _CF_DEFS = {
   'items:rarity':    { type:'select', opts:[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['mythique','Mythique'],['godlike','Godlike'],['event','Évènement']] },
   'items:category':  { type:'select', opts:[['arme','⚔️ Arme'],['armure','🛡️ Armure'],['accessoire','💍 Accessoire'],['materiaux','🧱 Matériau'],['ressources','⛏️ Ressource'],['consommable','🧪 Consommable'],['nourriture','🍖 Nourriture'],['outils','🔧 Outil'],['rune','🔮 Rune'],['parchemin','📃 Parchemin'],['quete','📜 Objet Quête'],['donjon','🏰 Donjon']] },
   'items:classes':   { type:'multicheckbox', opts:[['guerrier','⚔️ Guerrier'],['assassin','🗡️ Assassin'],['archer','🏹 Archer'],['mage','📖 Mage'],['shaman','🌿 Shaman']] },
-  'mobs:type':       { type:'select', opts:[['monstre','👹 Monstre'],['sbire','💀 Sbire'],['mini_boss','⚡ Mini-Boss'],['boss','🔥 Boss']] },
+  'mobs:type':       { type:'select', opts:[['monstre','👹 Monstre'],['sbire','💀 Sbire'],['mini_boss','⚡ Mini-Boss'],['worldboss','🌍 WorldBoss'],['boss','🔥 Boss']] },
   'mobs:region':     { type:'dbselect', colName:'regions', labelKey:'name' },
   'quetes:type':     { type:'select', opts:[['main','⚔️ Principale'],['sec','🗺️ Secondaire'],['ter','📋 Tertiaire']] },
   'quetes:zone':     { type:'dbselect', colName:'regions', labelKey:'name' },
@@ -10838,6 +10838,7 @@ const QUALITY_SUBCATEGORIES = {
     { id: 'monstre',   label: '👹 Monstre' },
     { id: 'sbire',     label: '💀 Sbire' },
     { id: 'mini_boss', label: '⚡ Mini-Boss' },
+    { id: 'worldboss', label: '🌍 WorldBoss' },
     { id: 'boss',      label: '🔥 Boss' },
   ],
   quetes: [

@@ -1078,3 +1078,6 @@ body.bestiaire-page {
 .skel-row:nth-child(3n) { width: 70%; } .skel-row:nth-child(3n+1) { width: 88%; }
 .skel-card { height: 210px; border-radius: 8px; }
 @media (prefers-reduced-motion: reduce) { .skel-row, .skel-card { animation: none; } }
+
+.bfilter-worldboss { background: #38bdf8; box-shadow: 0 0 5px #38bdf866; }
+.badge-worldboss   { background: rgba(14, 80, 120, 0.88); color: #bfe6ff; border: 1px solid #38bdf866; }

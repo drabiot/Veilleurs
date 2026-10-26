@@ -4210,9 +4210,9 @@ function renderMobPreview() {
     return;
   }
 
-  const TYPE_ICONS  = { monstre:'🐺', miniboss:'⚔️', mini_boss:'⚔️', boss:'💀', sbire:'🗡️' };
-  const TYPE_LABELS = { monstre:'Monstre', miniboss:'Mini-Boss', mini_boss:'Mini-Boss', boss:'Boss', sbire:'Sbire' };
-  const TYPE_COLORS = { monstre:'#9a9ab0', miniboss:'#f59e0b', mini_boss:'#f59e0b', boss:'#f87171', sbire:'#a07ae8' };
+  const TYPE_ICONS  = { monstre:'🐺', miniboss:'⚔️', mini_boss:'⚔️', boss:'💀', sbire:'🗡️', worldboss:'🌍' };
+  const TYPE_LABELS = { monstre:'Monstre', miniboss:'Mini-Boss', mini_boss:'Mini-Boss', boss:'Boss', sbire:'Sbire', worldboss:'WorldBoss' };
+  const TYPE_COLORS = { monstre:'#9a9ab0', miniboss:'#f59e0b', mini_boss:'#f59e0b', boss:'#f87171', sbire:'#a07ae8', worldboss:'#38bdf8' };
   const BEH_LABELS  = { agressif:'Agressif', neutre:'Neutre', passif:'Passif' };
   const BEH_COLORS  = { agressif:'#f87171', neutre:'#fbbf24', passif:'#4ade80' };
 
@@ -5839,9 +5839,23 @@ function setMobType(type) {
   const uiType    = type === 'mini_boss' ? 'miniboss' : type;
   const storeType = type === 'miniboss'  ? 'mini_boss' : type;
   document.getElementById('mob-type').value = storeType;
-  ['monstre','miniboss','boss','sbire'].forEach(t =>
-    document.getElementById('type-' + t).classList.toggle('active', t === uiType));
-  document.getElementById('mob-spawntime-field').style.display = (uiType === 'boss' || uiType === 'miniboss') ? '' : 'none';
+  ['monstre','miniboss','boss','sbire','worldboss'].forEach(t =>
+    document.getElementById('type-' + t)?.classList.toggle('active', t === uiType));
+  document.getElementById('mob-spawntime-field').style.display = (uiType === 'boss' || uiType === 'miniboss' || uiType === 'worldboss') ? '' : 'none';
+  if (uiType === 'worldboss') _applyWorldBossDefaults();
+  update();
+}
+
+// WorldBoss : agressif, région « Arène du WorldBoss » et coordonnées d'arène par défaut (toujours modifiables ensuite)
+const WORLDBOSS_REGION_ID = 'arene_du_worldboss';
+const WORLDBOSS_COORDS    = { x: 2438, z: 946 };
+async function _applyWorldBossDefaults() {
+  setBehavior('agressif');
+  const x = document.getElementById('mob-x'), z = document.getElementById('mob-z');
+  if (x && z && x.value === '' && z.value === '') { x.value = WORLDBOSS_COORDS.x; z.value = WORLDBOSS_COORDS.z; }
+  try { await loadMobRegions(); } catch (e) {}
+  const reg = _allMobRegions.find(r => r.id === WORLDBOSS_REGION_ID);
+  if (reg) selectMobRegion(reg);
   update();
 }
 
@@ -6247,7 +6261,7 @@ function buildMobObj() {
   obj.inCodex  = mobInCodex;
   if (mobSensible) obj.sensible = true;
   if (lore)     obj.lore     = lore;
-  if (spawnTime && (type === 'boss' || type === 'mini_boss')) obj.spawnTime = spawnTime;
+  if (spawnTime && (type === 'boss' || type === 'mini_boss' || type === 'worldboss')) obj.spawnTime = spawnTime;
   const cx = document.getElementById('mob-x')?.value;
   const cy = document.getElementById('mob-y')?.value;
   const cz = document.getElementById('mob-z')?.value;

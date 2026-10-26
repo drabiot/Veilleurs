@@ -53,7 +53,7 @@ const PNJ_TAG_COLORS = {
   autre:                '#7888a0',
 };
 
-const TYPE_LABELS     = { boss: 'Boss', mini_boss: 'Mini-Boss', monstre: 'Monstre', sbire: 'Sbire' };
+const TYPE_LABELS     = { boss: 'Boss', mini_boss: 'Mini-Boss', monstre: 'Monstre', sbire: 'Sbire', worldboss: 'WorldBoss' };
 const BEHAVIOR_LABELS = { passif: 'Passif', neutre: 'Neutre', agressif: 'Agressif' };
 const DIFF_LABELS     = ['', 'Très facile', 'Facile', 'Moyen', 'Difficile', 'Très difficile'];
 
@@ -62,6 +62,7 @@ const TYPE_COLORS = {
   mini_boss:    { bg: 'rgba(212, 95, 60, 0.85)',  text: '#ffc8c8', border: '#c0404055' },
   monstre: { bg: 'rgba(160,80,20,.85)', text: '#ffd9a0', border: '#c06c2055' },
   sbire:   { bg: 'rgba(50,50,70,.85)',  text: '#b0b8d0', border: '#5055a055' },
+  worldboss: { bg: 'rgba(14,80,120,.88)', text: '#bfe6ff', border: '#38bdf866' },
 };
 const BEHAVIOR_COLORS = {
   passif:   '#346f2e',

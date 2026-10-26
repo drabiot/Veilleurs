@@ -282,7 +282,7 @@ function buildDynamicMarkers() {
   const _fsBossIds = new Set();
   for (const m of mobs) {
     const _mType = (m.type || '').toLowerCase();
-    if (_mType !== 'boss' && _mType !== 'mini_boss') continue;
+    if (_mType !== 'boss' && _mType !== 'mini_boss' && _mType !== 'worldboss') continue;
     if (!m.palier) continue;
     const f     = +m.palier;
     const id    = m.id || m._id;

@@ -43,7 +43,7 @@ async function _runCaptureQueue() {
   _captureRunning = false;
 }
 let activePalier   = 'all';
-let activeTypes    = new Set(['boss', 'mini_boss', 'monstre', 'sbire']);
+let activeTypes    = new Set(['boss', 'mini_boss', 'monstre', 'sbire', 'worldboss']);
 let activePnjTags  = new Set(Object.keys(typeof PNJ_TAG_LABELS !== 'undefined' ? PNJ_TAG_LABELS : {}));
 let searchQuery    = '';
 
@@ -271,7 +271,7 @@ function updateCounts() {
     const filtered = q ? list.filter(e =>
       fuzzyMatch(q, e.name) || fuzzyMatch(q, e.region||'')
     ) : list;
-    ['boss','mini_boss','monstre','sbire'].forEach(t => {
+    ['boss','mini_boss','monstre','sbire','worldboss'].forEach(t => {
       const el = document.getElementById(`count-${t}`);
       if (el) el.textContent = filtered.filter(e => e.type === t).length;
     });
@@ -668,7 +668,7 @@ function renderMobSheet(mob) {
 
   // Boss / mini-boss : liste à puces des coordonnées où il apparaît (coords + coords_more)
   const locHTML = (() => {
-    if (!['boss', 'mini_boss'].includes(mob.type) || mob.sensible) return '';
+    if (!['boss', 'mini_boss', 'worldboss'].includes(mob.type) || mob.sensible) return '';
     const pts = [mob.coords, ...(Array.isArray(mob.coords_more) ? mob.coords_more : [])].filter(c => c && c.x != null && c.z != null)
       .filter((c, i, arr) => arr.findIndex(o => o.x === c.x && o.z === c.z) === i); // doublons masqués (même règle que la carte : un pin par point distinct en X / Z)
     if (!pts.length) return '';
