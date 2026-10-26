@@ -3441,7 +3441,6 @@ const EFFECT_TYPES = [
   'boost_regen_stamina',
   'coups_critique',
   'degats_critique',
-  'comp_coups_critique',
   'comp_degats_critique',
   'vol_vie',
   'vitesse_deplacement',
