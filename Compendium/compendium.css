@@ -1271,3 +1271,11 @@ a.craft-ingredient-name:hover {
 /* Recharge appliquée à la consommation (fortifiants…) */
 .effect-apply-cd { margin-top: 8px; padding: 8px 12px; font-size: 12.5px; line-height: 1.5; color: var(--text-dim, #bfb59a); border-top: 1px dashed var(--border, #3a3126); }
 .effect-apply-cd b { color: #f0a030; }
+
+/* Palier / niveau : pastilles lisibles sous la rareté */
+.item-meta-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.item-meta-badge { display: inline-flex; align-items: baseline; gap: 7px; padding: 4px 12px; border: 1px solid rgba(215,175,95,.35); border-radius: 4px; background: rgba(215,175,95,.07); font-family: inherit; }
+.item-meta-badge .imb-key { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted, #8c8270); }
+.item-meta-badge .imb-val { font-size: 15px; font-weight: 700; color: #e6c97a; }
+.item-meta-badge.imb-lvl { border-color: rgba(240,160,48,.4); background: rgba(240,160,48,.08); }
+.item-meta-badge.imb-lvl .imb-val { color: #f0a030; }

@@ -1364,8 +1364,7 @@ function showItem(id, initialQuality = false) {
             <span class="item-rarity-dot" style="background:${color};"></span>
             ${rlabel}
           </div>
-          ${item.palier != null ? `<div style="font-size:11px;color:var(--muted);opacity:.65;margin-top:3px;letter-spacing:.04em;">⬡ ${item.palier == 'event' ? 'Event' : 'Palier ' + (item.palier == -1 ? 'Archive' : item.palier)}</div>` : ''}
-          ${item.lvl != null && item.lvl !== '' ? `<div style="font-size:11px;color:var(--muted);opacity:.65;margin-top:2px;letter-spacing:.04em;">⬡ Niveau ${escHtml(String(item.lvl))}</div>` : ''}
+          ${(item.palier != null || (item.lvl != null && item.lvl !== '')) ? `<div class="item-meta-badges">${item.palier != null ? `<span class="item-meta-badge"><span class="imb-key">Palier</span><span class="imb-val">${item.palier == 'event' ? 'Event' : (item.palier == -1 ? 'Archive' : item.palier)}</span></span>` : ''}${item.lvl != null && item.lvl !== '' ? `<span class="item-meta-badge imb-lvl"><span class="imb-key">Niveau</span><span class="imb-val">${escHtml(String(item.lvl))}</span></span>` : ''}</div>` : ''}
           ${item.set && SETS?.[item.set] ? `<div class="item-set-badge" style="color:${SETS[item.set].color || '#888'};border-color:${SETS[item.set].color || '#888'}40;">◈ ${escHtml(SETS[item.set].label)}</div>` : ''}
           ${qualityToggle}
           <blockquote class="item-lore" id="item-lore-text"${String(v.lore || '').trim() ? '' : ' hidden'}>${parseText(v.lore)}</blockquote>
