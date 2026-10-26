@@ -542,7 +542,7 @@ async function handleStats(request, env) {
     q(`SELECT substr(key, 10) s, SUM(value) v FROM track_docs, json_each(track_docs.data) WHERE col = 'user_visits' AND ${UV_ANON} AND key LIKE 'sections.%' GROUP BY s`).all(),
     q("SELECT json_extract(data, '$.itemId') id, MAX(json_extract(data, '$.name')) name, SUM(json_extract(data, '$.count')) count FROM track_docs WHERE col = 'item_views' GROUP BY id ORDER BY count DESC LIMIT 10").all(),
     q("SELECT json_extract(data, '$.term') term, SUM(json_extract(data, '$.count')) count FROM track_docs WHERE col = 'search_logs' GROUP BY term ORDER BY count DESC LIMIT 15").all(),
-    q("SELECT COALESCE(json_extract(u.data, '$.discordName'), l.pseudo) AS pseudo, l.ts FROM login_log l LEFT JOIN users u ON u.uid = l.uid ORDER BY l.ts DESC LIMIT 20").all(),
+    q("SELECT CASE WHEN json_extract(u.data, '$.discordName') GLOB '*[A-Za-z0-9]*[A-Za-z0-9]*' THEN json_extract(u.data, '$.discordName') ELSE COALESCE(u.pseudo, l.pseudo) END AS pseudo, l.ts FROM login_log l LEFT JOIN users u ON u.uid = l.uid ORDER BY l.ts DESC LIMIT 20").all(),
     q('SELECT COUNT(*) n, COUNT(DISTINCT uid) u FROM login_log WHERE ts >= ?', dayStart).first(),
     q('SELECT COUNT(*) n, COUNT(DISTINCT uid) u FROM login_log WHERE ts >= ?', weekStart).first(),
   ]);
