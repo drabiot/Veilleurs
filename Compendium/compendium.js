@@ -1021,7 +1021,7 @@ function renderItemStats(item) {
   return `<div class="item-stats-panel">${html}</div>`;
 }
 
-function renderEffects(effectsList) {
+function renderEffects(effectsList, applyCd) {
   if (!effectsList || effectsList.length === 0) return '';
 
   const rows = effectsList.map(eff => {
@@ -1046,7 +1046,11 @@ function renderEffects(effectsList) {
       </div>`;
   }).join('');
 
-  return `<div class="item-obtain effects-panel">${rows}</div>`;
+  // « À la consommation, applique 1 h de recharge sur tout les fortifiants »
+  const note = (applyCd && applyCd.value > 0)
+    ? `<div class="effect-apply-cd">⏱ À la consommation, applique <b>${escHtml(formatDuration(applyCd.value))}</b> de recharge sur ${escHtml(applyCd.target || 'les objets du même type')}</div>`
+    : '';
+  return `<div class="item-obtain effects-panel">${rows}${note}</div>`;
 }
 function bindCraftLinks() {
   document.querySelectorAll('.craft-ingredient-name[data-id]').forEach(link => {
@@ -1383,7 +1387,7 @@ function showItem(id, initialQuality = false) {
       <div class="effects-craft-row">
         <div id="item-craft-wrap">${renderCraft(getCraft())}</div>
         ${itemStatsHtml ? `<div id="item-stats-wrap">${itemStatsHtml}</div>` : ''}
-        <div id="item-effects-wrap">${renderEffects(currentEffects)}</div>
+        <div id="item-effects-wrap">${renderEffects(currentEffects, d.cooldown_apply)}</div>
       </div>` : ''}
       <div class="item-sep"></div>
       ${renderUsedIn(item.id)}
@@ -1424,7 +1428,7 @@ function showItem(id, initialQuality = false) {
       craftWrap.innerHTML = renderCraft(getCraft());
 
       const effectsWrap = document.getElementById('item-effects-wrap');
-      if (effectsWrap) effectsWrap.innerHTML = renderEffects(d2.effects ?? null);
+      if (effectsWrap) effectsWrap.innerHTML = renderEffects(d2.effects ?? null, d2.cooldown_apply);
 
       stopSlideshow();
       stopWebGL();

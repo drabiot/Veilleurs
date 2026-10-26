@@ -468,6 +468,7 @@ function saveForm() {
       })(),
       craft:     getCraft(),
       effects:   (() => { try { return getEffects(); } catch { return []; } })(),
+      applyCd:   _applyCdValue(),
       runeSlots: document.getElementById('f-rune-slots')?.value || '',
       set:       setDrop?.getValue() || '',
       // Mob form (sauvegardé en permanence pour ne pas perdre les données en changeant de mode)
@@ -644,6 +645,7 @@ function restoreForm(forcedMode) {
         entry.drop?.setValue(id, itemIndex.find(it => it.id === id)?.name || id);
       }
     }
+    _setApplyCd(d.applyCd);
     if (d.effects?.length) {
       for (const eff of d.effects) {
         if (_levelEffectToField(eff)) continue;
@@ -2561,6 +2563,7 @@ function loadItem(item) {
     }
   }
 
+  _setApplyCd(item.cooldown_apply);
   // Effects
   if (item.effects?.length) {
     for (const eff of item.effects) {
@@ -2646,6 +2649,7 @@ function resetFormSilent() {
   document.querySelectorAll('.stat-row').forEach(r => r.classList.remove('has-val'));
   document.getElementById('craft-list').innerHTML    = '';
   document.getElementById('effects-list').innerHTML  = '';
+  _setApplyCd(null);
   ['f-cd-val', 'f-use-val'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
   { const u = document.getElementById('f-cd-unit'); if (u) u.value = 's'; }
   document.getElementById('obtain-override-wrap').style.display = 'none';
@@ -3468,12 +3472,12 @@ const EFFECT_TEMPLATES = [
   { label:'❤️ Potion de Soin',			          effects:[{type:'level', value:1}, { type:'heal', value:10, unit:'PV'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
   { label:'💧 Potion de Mana',			          effects:[{type:'level', value:1}, { type:'mana', value:10, unit:'Mana'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
   { label:'👟 Potion de Stamina',		          effects:[{type:'level', value:1}, { type:'stamina', value:5, unit:'Stamina'}, {type:'cooldown', value:15, unit:'s'}, {type:'use', value:1}] },
-  { label:'💨 Fortifiant d\'Endurance',			  effects:[{type:'level', value:8}, { type:'vitesse_deplacement', value:0.025, duration:900}, { type:'boost_mana', value:5, duration:900}, { type:'boost_stamina', value:2.5, duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
-  { label:'📚 Fortifiant de Connaissance',    effects:[{type:'level', value:8}, { type:'degats_arcane', value:2, unit:'%', duration:900}, { type:'comp_degats_critique', value:2, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
-  { label:'⚔️ Fortifiant de Férocité',        effects:[{type:'level', value:8}, { type:'degats_attaque', value:2, unit:'%', duration:900}, { type:'degats_critique', value:2, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
-  { label:'💓 Fortifiant de Vitalité',        effects:[{type:'level', value:8}, { type:'boost_sante', value:10, duration:900}, { type:'boost_regen_vie', value:0.2, unit:'/s', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
-  { label:'⏳ Fortifiant de Patiente',        effects:[{type:'level', value:8}, { type:'agilite', value:2, unit:'%', duration:900}, { type:'boost_regen_mana', value:0.2, unit:'/s', duration:900}, { type:'boost_regen_stamina', value:0.1, unit:'/s', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
-  { label:'🛡️ Fortifiant de Résistance',      effects:[{type:'level', value:8}, { type:'resistance_recul', value:2, unit:'%', duration:900}, { type:'blocage', value:2, unit:'%', duration:900}, { type:'puissance_blocage', value:2, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}] },
+  { label:'💨 Fortifiant d\'Endurance', effects:[{type:'level', value:8}, { type:'vitesse_deplacement', value:2.5, unit:'%', duration:900}, { type:'boost_mana', value:2, duration:900}, { type:'boost_stamina', value:2, duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}, {type:'cooldown_apply', value:3600, target:'tout les fortifiants'}] },
+  { label:'📚 Fortifiant de Connaissance', effects:[{type:'level', value:8}, { type:'degats_arcane', value:5, unit:'%', duration:900}, { type:'comp_degats_critique', value:5, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}, {type:'cooldown_apply', value:3600, target:'tout les fortifiants'}] },
+  { label:'⚔️ Fortifiant de Férocité', effects:[{type:'level', value:8}, { type:'degats_attaque', value:5, unit:'%', duration:900}, { type:'degats_critique', value:5, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}, {type:'cooldown_apply', value:3600, target:'tout les fortifiants'}] },
+  { label:'💓 Fortifiant de Vitalité', effects:[{type:'level', value:8}, { type:'boost_sante', value:5, duration:900}, { type:'boost_regen_vie', value:0.1, unit:'/s', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}, {type:'cooldown_apply', value:3600, target:'tout les fortifiants'}] },
+  { label:'⏳ Fortifiant de Patience', effects:[{type:'level', value:8}, { type:'agilite', value:3, unit:'%', duration:900}, { type:'boost_regen_mana', value:0.1, unit:'/s', duration:900}, { type:'boost_regen_stamina', value:0.1, unit:'/s', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}, {type:'cooldown_apply', value:3600, target:'tout les fortifiants'}] },
+  { label:'🛡️ Fortifiant de Résistance', effects:[{type:'level', value:8}, { type:'resistance_recul', value:5, unit:'%', duration:900}, { type:'blocage', value:2, unit:'%', duration:900}, { type:'puissance_blocage', value:2, unit:'%', duration:900}, {type:'cooldown', value:3600, unit:'s'}, {type:'use', value:1}, {type:'cooldown_apply', value:3600, target:'tout les fortifiants'}] },
   
 ];
 
@@ -3503,6 +3507,23 @@ function _setUseInfo(type, v) {
   else if (n >= 60 && n % 60 === 0) { n /= 60; un.value = 'min'; }
   val.value = n;
 }
+function _applyCdValue() {
+  const v = parseFloat(document.getElementById('f-apply-val')?.value);
+  if (isNaN(v) || v <= 0) return null;
+  const m = document.getElementById('f-apply-unit')?.value === 'h' ? 3600 : document.getElementById('f-apply-unit')?.value === 'min' ? 60 : 1;
+  const out = { value: Math.round(v * m * 1000) / 1000, unit: 's' };
+  const t = (document.getElementById('f-apply-target')?.value || '').trim();
+  if (t) out.target = t;
+  return out;
+}
+function _setApplyCd(a) {
+  const val = document.getElementById('f-apply-val'), un = document.getElementById('f-apply-unit'), tg = document.getElementById('f-apply-target');
+  if (!val) return;
+  if (!a || !(a.value > 0)) { val.value = ''; if (tg) tg.value = ''; if (un) un.value = 's'; return; }
+  let n = +a.value; un.value = 's';
+  if (n >= 3600 && n % 3600 === 0) { n /= 3600; un.value = 'h'; } else if (n >= 60 && n % 60 === 0) { n /= 60; un.value = 'min'; }
+  val.value = n; if (tg) tg.value = a.target || '';
+}
 function _useInfoEffects() {
   const out = [];
   const cd = parseFloat(document.getElementById('f-cd-val')?.value);
@@ -3515,6 +3536,7 @@ function _useInfoEffects() {
   return out;
 }
 function _levelEffectToField(eff) {
+  if (eff && eff.type === 'cooldown_apply') { _setApplyCd(eff); return true; }
   if (eff && (eff.type === 'cooldown' || eff.type === 'use')) { _setUseInfo(eff.type, eff.value); return true; }
   if (!eff || eff.type !== 'level') return false;
   const el = document.getElementById('f-lvl');
@@ -4557,6 +4579,7 @@ function buildObj() {
   if (Object.keys(stats).length)  obj.stats   = stats;
   if (selClasses.length)     obj.classes  = [...selClasses];
   if (effects.length)        obj.effects  = effects;
+  { const _ac = _applyCdValue(); if (_ac) obj.cooldown_apply = _ac; }
   if (lore)                  obj.lore     = lore;
   if (category === 'parchemin') {
     const _sn = (document.getElementById('f-scroll-name')?.value || '').trim(), _sr = document.getElementById('f-scroll-rarity')?.value || '';
