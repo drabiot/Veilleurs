@@ -31,7 +31,7 @@
     return new Promise((res, rej) => {
       const img = new Image();
       img.onload = () => {
-        const k = Math.max(1, Math.min(3, 3200 / img.width));
+        const k = Math.max(1, Math.min(5, 4000 / img.width));
         const mk = invert => {
           const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
           const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(img, 0, 0, c.width, c.height);
@@ -83,6 +83,16 @@
 
   const numRe = n => { const s = String(n).replace('.', '[.,]'); return new RegExp('(^|[^0-9])\\+?' + s + '(?![0-9])'); };
 
+  // Petits chiffres de police pixel : l'OCR confond souvent 0/6/8/9, 1/7, 5/6, 3/8 (et lit « S » pour 5, « O » pour 0).
+  const CONF = [['0', '6', '8', '9'], ['1', '7'], ['5', '6', 'S'], ['3', '8'], ['2', 'Z']];
+  const sameDigit = (a, b) => a === b || CONF.some(g => g.includes(a) && g.includes(b));
+  const looksLike = (read, want) => read.length === want.length && [...read].every((c, i) => sameDigit(c, want[i]));
+  // nombres lus après le dernier « : » d'une ligne (« Dégâts d'attaque : 16 »), lettres confondues converties
+  function numsAfterColon(raw) {
+    const seg = raw.includes(':') ? raw.slice(raw.lastIndexOf(':') + 1) : raw;
+    return (seg.toUpperCase().replace(/S/g, '5').replace(/O/g, '0').replace(/[IL]/g, '1').match(/[0-9]+/g) || []);
+  }
+
   function statChecks(stats, lines, allText) {
     const arr = Array.isArray(stats) ? stats.map(s => [s.id || s.stat, s.value]) : Object.entries(stats || {});
     return arr.filter(([id, v]) => id && v != null && v !== '').map(([id, v]) => {
@@ -91,8 +101,21 @@
       const sameLine = lines.some(l => re.test(l.raw) && labels.some(w => tokenIn(w, l.tokens)));
       const numAny = re.test(allText);
       const labelAny = lines.some(l => labels.some(w => tokenIn(w, l.tokens)));
+      const lab = SG().flatMap(g => g.stats).find(s => s.id === id)?.label || id;
+      if (!sameLine) {
+        // la ligne de la stat est là mais le chiffre est mal lu (16 pour 10…) : ⚠️ avec la valeur lue, plutôt que ❓
+        const want = String(v).replace(/[.,]/g, '');
+        for (const l of lines) {
+          if (!labels.some(w => tokenIn(w, l.tokens))) continue;
+          const ns = numsAfterColon(l.raw);
+          if (ns.includes(want)) return { label: lab, expected: String(v), status: 'ok', note: '' };
+          const near = ns.find(n => looksLike(n, want));
+          if (near) return { label: lab, expected: String(v), status: 'warn', note: `lu ${near} (chiffre proche, probablement une erreur de lecture)` };
+          if (ns.length) return { label: lab, expected: String(v), status: 'warn', note: `lu ${ns.join(', ')}` };
+        }
+      }
       return {
-        label: SG().flatMap(g => g.stats).find(s => s.id === id)?.label || id, expected: String(v),
+        label: lab, expected: String(v),
         status: sameLine ? 'ok' : (numAny && labelAny) ? 'warn' : numAny ? 'warn' : 'miss',
         note: sameLine ? '' : numAny ? 'valeur vue, mais pas à côté du nom de la stat' : labelAny ? 'stat vue, valeur absente ou différente' : 'ni la stat ni la valeur'
       };
@@ -131,10 +154,12 @@
       // Niveau : « Niveau Minimum : 9 » (le début du mot est souvent mal lu : on cherche la fin « …veau »)
       if (d.lvl != null && d.lvl !== '') {
         // On repère la ligne « …iveau Minimum : N » (début de mot souvent mal lu : « Hiveau », « Miveau », « Mininun »…) puis on lit le chiffre
-        const lv = lines.find(l => /(veau|iveau|mini[mn]|minin)/.test(l.raw) && /[0-9]/.test(l.raw));
-        const nums = lv ? (lv.raw.match(/[0-9]+/g) || []) : [];
-        const okN = nums.includes(String(d.lvl)) || numRe(d.lvl).test(allText) && !!lv;
-        rows.push({ label: 'Niveau', expected: String(d.lvl), status: okN ? 'ok' : lv ? 'warn' : 'miss', note: okN ? '' : lv ? `lu sur la capture : ${nums.join(', ')}` : 'ligne « Niveau » non retrouvée' });
+        const lv = lines.find(l => /(veau|iveau|mini[mn]|minin|hiveas)/.test(l.raw));
+        const nums = lv ? numsAfterColon(lv.raw) : [];
+        const want = String(d.lvl);
+        const okN = nums.includes(want);
+        const near = !okN && nums.find(n => looksLike(n, want));
+        rows.push({ label: 'Niveau', expected: want, status: okN ? 'ok' : (near || (lv && nums.length)) ? 'warn' : 'miss', note: okN ? '' : near ? `lu ${near} (chiffre proche, probablement une erreur de lecture)` : lv ? (nums.length ? `lu sur la capture : ${nums.join(', ')}` : 'ligne vue, chiffre illisible') : 'ligne « Niveau » non retrouvée' });
       }
       // Lore : les mots de la description doivent se retrouver
       const lw = words(d.lore || '').filter(w => w.length > 3);
