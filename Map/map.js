@@ -665,6 +665,7 @@ function updateLayerBtnVisibility() {
 
 function loadMapImage(n, layer) {
   const mapImg = document.getElementById('map-svg');
+  mapImg.dataset.target = ''; // annule un remplacement aperçu → pleine résolution encore en attente
   const ghost  = ensureGhostOverlay();
   if (layer === 'underground') {
     mapImg.style.opacity = '0';
@@ -689,7 +690,21 @@ function loadMapImage(n, layer) {
   } else {
     mapImg.style.opacity = '0';
     mapImg.style.zIndex  = '';
-    mapImg.src = `../img/maps/floor-${n}.webp`;
+    // Étage 1 (5000 px, 12 Mo) : un aperçu de 1 Mo s'affiche tout de suite, puis la carte pleine résolution la remplace sans clignotement
+    const full = `../img/maps/floor-${n}.webp`;
+    const preview = n === 1 ? `../img/maps/floor-1.preview.webp` : null;
+    mapImg.dataset.target = full;
+    mapImg.src = preview || full;
+    if (preview) {
+      const hi = new Image();
+      hi.onload = () => {
+        // décodage attendu au plus 2,5 s (sur un appareil lent, on remplace quand même : le navigateur finira de décoder)
+        Promise.race([hi.decode ? hi.decode() : Promise.resolve(), new Promise(r => setTimeout(r, 2500))]).catch(() => {}).then(() => {
+          if (mapImg.dataset.target === full) mapImg.src = full;   // l'utilisateur n'a pas changé d'étage entre-temps
+        });
+      };
+      hi.src = full;
+    }
     mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
     mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
     ghost.style.opacity = '0';
