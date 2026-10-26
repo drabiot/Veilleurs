@@ -5230,8 +5230,7 @@ async function _syncItemObtain(itemId) {
   const cur = String(snap.data().obtain || '');
   const lst = v => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []);
   const pnjs = await getDocs(collection(db, 'personnages'));
-  let lines = cur.split('
-');
+  let lines = cur.split('\n');
   for (const d of pnjs.docs) {
     const p = d.data(), pid = p.id || d.id;
     if (!p.name) continue;
@@ -5245,8 +5244,7 @@ async function _syncItemObtain(itemId) {
     lines = lines.filter(l => !mine.test(l.trim()));
     lines = lines.filter(l => l.trim() !== '').concat(line);
   }
-  const text = lines.join('
-');
+  const text = lines.join('\n');
   if (text === cur) return 0;
   await updateDoc(ref, { obtain: text });
   invalidateModCache('items');
