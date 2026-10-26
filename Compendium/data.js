@@ -12,9 +12,15 @@ const CLASSES = [
 //#endregion CLASSES
 //#region STATS DE BASE
 // Stats d'une classe au niveau 1, sans aucun équipement (clés = id de stat, voir STAT_GROUPS). Ajoutées dans l'Atelier quelle que soit le niveau.
-// Archer : 22 de vie au niveau 3 = 20 de base + 2 niveaux × 1.
+// Archer (fiche en jeu, niveau 3 sans équipement, moins 2 niveaux de gains) : 22 de vie = 20 + 2 × 1 ; 1,5 % de crit = 1 + 2 × 0,25.
 const CLASS_BASE_STATS = {
-  archer: { sante: 20 },
+  archer: {
+    sante: 20, mana: 20, stamina: 20,
+    degats: 1, degats_projectile: 1,
+    vitesse_attaque: 12.5,
+    crit_chance: 1, crit_degats: 200, crit_comp_chance: 1, crit_comp_degats: 200,
+    vitesse_deplacement: 16, esquive: 5,
+  },
 };
 //#endregion STATS DE BASE
 //#region GAINS PAR NIVEAU
@@ -43,7 +49,7 @@ const STAT_GROUPS = [
       { id:'degats_magique',      label:'Dégâts Magiques',                 icon:'📖',  unit:'%',  max:100  },
       { id:'degats_competence',   label:'Dégâts de Compétence',            icon:'✨',  unit:'%',  max:100  },
       { id:'degats_projectile',   label:'Dégâts de Projectile',            icon:'🏹',  unit:'%',  max:100  },
-      { id:'vitesse_attaque',     label:'Vitesse d\'Attaque',              icon:'💨',  unit:'',   max:100  },
+      { id:'vitesse_attaque',     label:'Vitesse d\'Attaque',              icon:'💨',  unit:'%',   max:100  },
       { id:'crit_chance',         label:'Chance Coups Critiques',          icon:'🎯',  unit:'%',  max:100  },
       { id:'crit_degats',         label:'Dégâts Coups Critiques',          icon:'💢',  unit:'%',  max:100  },
       { id:'crit_comp_chance',    label:'Chance Critique Compétence',      icon:'🎯',  unit:'%',  max:100  },
