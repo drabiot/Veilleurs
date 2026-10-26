@@ -3613,6 +3613,21 @@ async function loadDeadLinks() {
       fixTd.appendChild(row);
       fixTr.appendChild(fixTd);
 
+      // Ouvre la page publique de la donnée qui porte le lien mort (Compendium / Bestiaire / Quêtes), dans un nouvel onglet
+      const _pageOf = (type, id) => {
+        const e = encodeURIComponent(id);
+        return { item: `Compendium/compendium.html#${e}`, mob: `Bestiaire/bestiaire.html#monstres/${e}`, pnj: `Bestiaire/bestiaire.html#personnages/${e}`, 'quête': `Quetes/quetes.html#${e}` }[type] || null;
+      };
+      const _href = _pageOf(b.srcType, b.srcId);
+      if (_href) {
+        const openBtn = document.createElement('a');
+        openBtn.className = 'btn btn-ghost';
+        openBtn.href = _href; openBtn.target = '_blank'; openBtn.rel = 'noopener';
+        openBtn.style.cssText = 'font-size:11px;padding:4px 10px;margin-right:4px;text-decoration:none;display:inline-block;';
+        openBtn.textContent = '🔗 Ouvrir';
+        openBtn.title = 'Ouvre la page de cette donnée sur le wiki';
+        actTd.appendChild(openBtn);
+      }
       actTd.appendChild(fixBtn);
       actTd.appendChild(undoBtn);
       tbody.appendChild(tr);
