@@ -5194,8 +5194,8 @@ async function _syncPnjObtain(pnj) {
   const pid = pnj && (pnj.id || pnj._id);
   if (!pid || !pnj.name) return 0;
   const want = new Map(); // id d'item -> ligne
-  for (const e of (pnj.craft || [])) if (e && e.id) want.set(e.id, `Fabricable au [npc:${pid}|${pnj.name}]`);
-  for (const e of (pnj.sells || [])) if (e && e.id && !want.has(e.id)) want.set(e.id, `Achetable au [npc:${pid}|${pnj.name}]`);
+  for (const e of (pnj.craft || [])) if (e && e.id) want.set(e.id, `Fabricable au [npc:${pid}|${pnj.name}]${npcLocSuffix(pnj, pnj.region ? _regionName(pnj.region) : '')}`);
+  for (const e of (pnj.sells || [])) if (e && e.id && !want.has(e.id)) want.set(e.id, `Achetable au [npc:${pid}|${pnj.name}]${npcLocSuffix(pnj, pnj.region ? _regionName(pnj.region) : '')}`);
   const esc = String(pid).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const mine = new RegExp('^[\\s-]*(Fabricable|Achetable) au \\[npc:' + esc + '[|\\]].*$', 'i');
   const snap = await getDocs(collection(db, 'items'));

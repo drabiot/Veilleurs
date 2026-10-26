@@ -150,6 +150,15 @@ function getMax(val) { return Array.isArray(val) ? val[1] : val; }
 //#region OBTAIN AUTOMATIQUE (PNJ)
 /* Sources d'obtention déduites des PNJ : un PNJ qui a l'item dans sa liste `craft` le fabrique, un PNJ qui l'a dans `sells` le vend.
    Elles s'ajoutent au texte `obtain` de l'item à l'affichage, sans doublon avec ce qui est déjà écrit ; rien n'est stocké. */
+// Suffixe de localisation d'un PNJ dans une ligne d'obtain : " de Hanaka (x, y, z)". Vide pour un PNJ sensible.
+function npcLocSuffix(p, regionName) {
+  if (!p || p.sensible) return '';
+  let region = regionName || (p.region && window._regionIndex && window._regionIndex.get(p.region)) || '';
+  if (!region && p.region) region = String(p.region).replace(/_/g, ' ').replace(/(^|\s)\S/g, c => c.toUpperCase());
+  const c = p.coords;
+  const hasC = c && c.x != null && c.y != null && c.z != null;
+  return (region ? ` de ${region}` : '') + (hasC ? ` (${c.x}, ${c.y}, ${c.z})` : '');
+}
 function autoObtainLines(item) {
   if (typeof PERSONNAGES === 'undefined' || !Array.isArray(PERSONNAGES) || !item) return [];
   const id = item.id ?? item._id;
@@ -159,8 +168,8 @@ function autoObtainLines(item) {
     const pid = p.id ?? p._id;
     if (!pid || !p.name) continue;
     const has = list => Array.isArray(list) && list.some(e => e && (e.id === id || e.itemId === id));
-    if (has(p.craft))      lines.push({ pid, line: `Fabricable au [npc:${pid}|${p.name}]` });
-    else if (has(p.sells)) lines.push({ pid, line: `Achetable au [npc:${pid}|${p.name}]` });
+    if (has(p.craft))      lines.push({ pid, line: `Fabricable au [npc:${pid}|${p.name}]${npcLocSuffix(p)}` });
+    else if (has(p.sells)) lines.push({ pid, line: `Achetable au [npc:${pid}|${p.name}]${npcLocSuffix(p)}` });
   }
   return lines;
 }

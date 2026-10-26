@@ -1009,6 +1009,7 @@ function initObtainData() {
         id: pId, name: pName, desc: p.region || '',
         subtitle: subtitleParts.join(' · '),
         coords: pCoords,
+        loc: typeof npcLocSuffix === 'function' ? npcLocSuffix(p, (_regionsCache || []).find(r => (r.id || r._id) === p.region)?.name || '') : '',
         palier: p.palier || null,
         search: normalize(pName + ' ' + pId + ' ' + (p.region || '') + ' ' + (p.instructions || '') + ' ' + pCoordStr + ' ' + pCraftNames)
       };
@@ -1543,14 +1544,14 @@ function parseObtainText(text, itemId, itemName) {
       continue;
     }
     if (/^(\[obtain:forge\]|Fabricable à la Forge( du Fractured Underworld)?)$/.test(t)) { sources.push({ uid: obtainUid++, type: 'forge' }); continue; }
-    const artM = t.match(/^Fabricable au \[npc:([^|]+)\|([^\]]+)\]$/);
+    const artM = t.match(/^Fabricable au \[npc:([^|]+)\|([^\]]+)\](?: de .*)?$/);
     if (artM) {
       const [, id, name] = artM;
       const a = allArtisans.find(x => x.id === id);
       sources.push({ uid: obtainUid++, type: 'pnj', id, name, verb: 'Fabricable', desc: a?.desc || '', subtitle: a?.subtitle || '', coords: a?.coords || null });
       continue;
     }
-    const marchM = t.match(/^Achetable au \[npc:([^|]+)\|([^\]]+)\]$/);
+    const marchM = t.match(/^Achetable au \[npc:([^|]+)\|([^\]]+)\](?: de .*)?$/);
     if (marchM) {
       const [, id, name] = marchM;
       const mx = allMarchands.find(x => x.id === id);
@@ -1625,9 +1626,10 @@ function buildObtainText() {
   // Ancien format (marqueur de carte) conservé tel quel pour ne pas perdre de données
   for (const d of donjons.filter(d => d.legacy)) parts.push(`Obtenable en récompense du [npc:${d.id}|${d.name}]`);
   // p.verb = formulation d'origine (Fabricable / Achetable) : on la garde, sinon une source dont le PNJ n'est pas (encore) dans la liste des artisans passerait à tort en « Achetable »
-  for (const p of pnjs)         parts.push((p.verb || (allArtisans.some(a => a.id === p.id) ? 'Fabricable' : 'Achetable')) + ` au [npc:${p.id}|${p.name}]`);
-  for (const a of artisans)     parts.push(`Fabricable au [npc:${a.id}|${a.name}]`);
-  for (const m of marchands)    parts.push(`Achetable au [npc:${m.id}|${m.name}]`);
+  const _loc = id => (allArtisans.find(x => x.id === id) || allMarchands.find(x => x.id === id) || {}).loc || '';
+  for (const p of pnjs)         parts.push((p.verb || (allArtisans.some(a => a.id === p.id) ? 'Fabricable' : 'Achetable')) + ` au [npc:${p.id}|${p.name}]${_loc(p.id)}`);
+  for (const a of artisans)     parts.push(`Fabricable au [npc:${a.id}|${a.name}]${_loc(a.id)}`);
+  for (const m of marchands)    parts.push(`Achetable au [npc:${m.id}|${m.name}]${_loc(m.id)}`);
   if (quetes.length === 1) parts.push(`Récompense de la quête [quest:${quetes[0].id}|${quetes[0].name}]`);
   else if (quetes.length > 1) parts.push('Récompenses des quêtes :\n' + quetes.map(q => `- [quest:${q.id}|${q.name}]`).join('\n'));
   for (const r of ressources) {
