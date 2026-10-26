@@ -9,7 +9,7 @@ const RARITY_COLOR = { commun: '#59d059', rare: '#2a5fa8', epique: '#6a3daa', le
 const RARITY_LABEL = { commun: 'Commun', rare: 'Rare', epique: 'Épique', legendaire: 'Légendaire', mythique: 'Mythique', godlike: 'Godlike', event: 'Event' };
 const CATEGORY_LABEL = {
   arme: 'Arme', armure: 'Armure', accessoire: 'Accessoire', materiaux: 'Matériaux', ressources: 'Ressource', outils: 'Outil',
-  consommable: 'Consommable', nourriture: 'Nourriture', donjon: 'Donjon', monnaie: 'Monnaie', rune: 'Rune', quete: 'Quête',
+  consommable: 'Consommable', nourriture: 'Nourriture', donjon: 'Donjon', monnaie: 'Monnaie', rune: 'Rune', parchemin: 'Parchemin', quete: 'Quête',
 };
 const CAT_OPTIONS = {
   arme: ['arme_p', 'arme_s'], armure: ['casque', 'plastron', 'jambières', 'bottes'],

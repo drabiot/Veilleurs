@@ -101,6 +101,7 @@ function resolveIconUrl(item) {
     ressources:  base + 'items/Ressources/' + tp + id + '.png',
     consommable: base + 'items/Consommable/'+ tp + id + '.png',
     nourriture:  base + 'items/Nourriture/' + tp + id + '.png',
+    parchemin:   base + 'items/Parchemins/' + tp + id + '.png',
     quete:       base + 'items/Quest/'      + tp + id + '.png',
     donjon:      base + 'items/Donjon/'     + tp + id + '.png',
     monnaie:     base + 'items/Monnaie/'    + tp + id + '.png',

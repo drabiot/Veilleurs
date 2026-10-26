@@ -965,8 +965,9 @@ function renderItemStats(item) {
 
   const hasStats  = stats     && Object.keys(stats).some(k => stats[k] != null);
   const hasReqs   = lvl != null || classes.length || twoHanded || unique || runeSlots > 0;
+  const hasSkill  = !!(item.skill_name || item.skill_desc);
 
-  if (!hasStats && !hasReqs) return '';
+  if (!hasStats && !hasReqs && !hasSkill) return '';
 
   let html = '';
 
@@ -1004,6 +1005,18 @@ function renderItemStats(item) {
       }
     }
     html += '</div>';
+  }
+
+  // ─ Parchemin : compétence enseignée ─
+  if (hasSkill) {
+    const sr = item.skill_rarity && RARITIES[item.skill_rarity];
+    html += `<div class="scroll-skill">
+      <div class="scroll-skill-head">
+        <span class="scroll-skill-name"${sr ? ` style="color:${sr.color}"` : ''}>📃 ${escHtml(item.skill_name || 'Compétence')}</span>
+        ${sr ? `<span class="scroll-skill-rarity" style="color:${sr.color};border-color:${sr.color}66">${escHtml(sr.label)}</span>` : ''}
+      </div>
+      ${item.skill_desc ? `<div class="scroll-skill-desc">${escHtml(item.skill_desc).replace(/\n/g, '<br>')}</div>` : ''}
+    </div>`;
   }
 
   return `<div class="item-stats-panel">${html}</div>`;

@@ -449,6 +449,9 @@ function saveForm() {
       lvl:      document.getElementById('f-lvl').value,
       lore:     document.getElementById('f-lore').value,
       competence: document.getElementById('f-competence')?.value || '',
+      scrollName: document.getElementById('f-scroll-name')?.value || '',
+      scrollRarity: document.getElementById('f-scroll-rarity')?.value || '',
+      scrollDesc: document.getElementById('f-scroll-desc')?.value || '',
       obtainOverride: document.getElementById('f-obtain-override').value,
       selRarity, selClasses, selTwoHanded, selSensible, selEvolutif, selOcculte, evolutifEvolutions,
       activeTags: [...activeTags],
@@ -581,6 +584,7 @@ function restoreForm(forcedMode) {
     if (d.lvl)    document.getElementById('f-lvl').value    = d.lvl;
     if (d.lore)   document.getElementById('f-lore').value   = d.lore;
     if (d.competence) { const el = document.getElementById('f-competence'); if (el) el.value = d.competence; }
+    { const _s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; }; _s('f-scroll-name', d.scrollName); _s('f-scroll-rarity', d.scrollRarity); _s('f-scroll-desc', d.scrollDesc); }
     if (d.obtainOverride) {
       document.getElementById('f-obtain-override').value = d.obtainOverride;
       document.getElementById('obtain-override-wrap').style.display = '';
@@ -1738,6 +1742,7 @@ function onCatChange() {
   const hasStats   = ['arme','armure','accessoire','rune'].includes(cat);
   const isCons     = ['consommable','nourriture'].includes(cat);
   const isArme     = cat === 'arme';
+  const isParchemin = cat === 'parchemin';
   document.getElementById('stats-section').style.display     = hasStats   ? '' : 'none';
   document.getElementById('effects-section').style.display   = isCons   ? '' : 'none';
   const qualiteBtn = document.getElementById('qualite-btn');
@@ -1748,7 +1753,9 @@ function onCatChange() {
     qualiteBtn?.classList.add('active');
     if (!idLocked) document.getElementById('f-id').value = _computeItemId();
   }
-  document.getElementById('classes-field').style.display     = isEquip  ? '' : 'none';
+  document.getElementById('classes-field').style.display     = (isEquip || isParchemin) ? '' : 'none';
+  document.getElementById('scroll-field').style.display      = isParchemin ? '' : 'none';
+  if (!isParchemin) ['f-scroll-name', 'f-scroll-rarity', 'f-scroll-desc'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
   document.getElementById('twohanded-field').style.display      = isArme           ? '' : 'none';
   document.getElementById('competence-field').style.display     = isArme           ? '' : 'none';
   if (!isArme) { const _cp = document.getElementById('f-competence'); if (_cp) _cp.value = ''; }
@@ -1762,7 +1769,7 @@ function onCatChange() {
   buildCatSlotOptions(cat);
   for (const tag of Object.values(SLOT_TAG_MAP)) activeTags.delete(tag);
   // Auto-tag catégorie
-  const CAT_TAG_MAP = { materiaux:'Matériau', ressources:'Ressource', consommable:'Consommable', nourriture:'Nourriture', outils:'Outil', rune:'Rune', quete:'Quête', donjon:'Donjon' };
+  const CAT_TAG_MAP = { materiaux:'Matériau', ressources:'Ressource', consommable:'Consommable', nourriture:'Nourriture', outils:'Outil', rune:'Rune', quete:'Quête', donjon:'Donjon', parchemin:'Parchemin' };
   for (const t of Object.values(CAT_TAG_MAP)) activeTags.delete(t);
   if (CAT_TAG_MAP[cat]) activeTags.add(CAT_TAG_MAP[cat]);
   syncPresetTagButtons();
@@ -2576,6 +2583,7 @@ function loadItem(item) {
   // Lore
   if (item.lore) document.getElementById('f-lore').value = item.lore;
   { const el = document.getElementById('f-competence'); if (el) el.value = item.competence || ''; }
+  { const _s = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; }; _s('f-scroll-name', item.skill_name); _s('f-scroll-rarity', item.skill_rarity); _s('f-scroll-desc', item.skill_desc); }
 
   // Obtain — parse en sources structurées, fallback sur override texte brut
   if (item.obtain) {
@@ -3257,7 +3265,7 @@ function buildSetSelect() {
 // CRAFT
 // ═══════════════════════════════════════════════════
 let itemIndex = [];
-const CRAFT_CATEGORIES = new Set(['materiaux','ressources','monnaie','donjon','quete','arme','armure','accessoire','consommable','nourriture']);
+const CRAFT_CATEGORIES = new Set(['materiaux','ressources','monnaie','donjon','quete','arme','armure','accessoire','consommable','nourriture','parchemin']);
 
 // Entrées virtuelles toujours disponibles dans les recettes (items sans ID fixe dans ITEMS)
 const CRAFT_VIRTUAL_ITEMS = [
@@ -3609,7 +3617,7 @@ const RARITY_LABELS = {
 const CAT_ICONS = {
   arme:'⚔️', armure:'🛡️', accessoire:'💍', consommable:'🧪',
   nourriture:'🍖', materiaux:'🧱', ressources:'⛏️', outils:'🛠️',
-  rune:'🔮', quete:'📜', donjon:'🏰', monnaie:'🪙'
+  rune:'🔮', parchemin:'📃', quete:'📜', donjon:'🏰', monnaie:'🪙'
 };
 
 // Transforme le format obtain [npc:id|Name] / [mob_id|Name][chance] en HTML lisible
@@ -4467,6 +4475,7 @@ function buildObj() {
       consommable: id ? `../img/compendium/textures/items/Consommable/${tp}${id}.png`           : null,
       nourriture:  id ? `../img/compendium/textures/items/Nourriture/${tp}${id}.png`            : null,
       rune:        id ? `../img/compendium/textures/items/Runes/${tp}${id}.png`                 : null,
+      parchemin:   id ? `../img/compendium/textures/items/Parchemins/${tp}${id}.png`            : null,
       quete:       id ? `../img/compendium/textures/items/Quest/${tp}${id}.png`                 : null,
       donjon:      id ? `../img/compendium/textures/items/Donjon/${tp}${id}.png`                : null,
       monnaie:     id ? `../img/compendium/textures/items/Monnaie/${tp}${id}.png`               : null,
@@ -4489,6 +4498,12 @@ function buildObj() {
   if (selClasses.length)     obj.classes  = [...selClasses];
   if (effects.length)        obj.effects  = effects;
   if (lore)                  obj.lore     = lore;
+  if (category === 'parchemin') {
+    const _sn = (document.getElementById('f-scroll-name')?.value || '').trim(), _sr = document.getElementById('f-scroll-rarity')?.value || '', _sd = (document.getElementById('f-scroll-desc')?.value || '').trim();
+    if (_sn) obj.skill_name = _sn;
+    if (_sr) obj.skill_rarity = _sr;
+    if (_sd) obj.skill_desc = _sd;
+  }
   { const comp = category === 'arme' ? (document.getElementById('f-competence')?.value || '').trim() : ''; if (comp) obj.competence = comp; }
   if (tagsArr.length)        obj.tags     = tagsArr;
   if (obtain)                obj.obtain   = obtain;
@@ -4952,7 +4967,7 @@ async function resetForm() {
 function buildItemCardEmbed(obj, color, imageFilename) {
   const RARITY_LABEL = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
   const RARITY_ICON  = { commun:'🟢', rare:'🔵', epique:'🟣', legendaire:'🟡', mythique:'🌸', godlike:'🔴', event:'⚪' };
-  const CAT_LABEL    = { arme:'⚔️ Arme', armure:'🛡️ Armure', accessoire:'💍 Accessoire', materiaux:'🧱 Matériau', ressources:'⛏️ Ressource', consommable:'🧪 Consommable', nourriture:'🍖 Nourriture', rune:'🔮 Rune', quete:'📜 Quête', donjon:'🏰 Donjon' };
+  const CAT_LABEL    = { arme:'⚔️ Arme', armure:'🛡️ Armure', accessoire:'💍 Accessoire', materiaux:'🧱 Matériau', ressources:'⛏️ Ressource', consommable:'🧪 Consommable', nourriture:'🍖 Nourriture', rune:'🔮 Rune', parchemin:'📃 Parchemin', quete:'📜 Quête', donjon:'🏰 Donjon' };
   const CLS_LABEL    = { guerrier:'⚔️ Guerrier', assassin:'🗡️ Assassin', archer:'🏹 Archer', mage:'📖 Mage', shaman:'🌿 Shaman' };
 
   const rarIcon  = RARITY_ICON[obj.rarity]  || '▪️';
@@ -5069,7 +5084,7 @@ function findTargetRegion(obj) {
     if (cls.includes('mage')     || cls.includes('shaman')) return `Armures > ${p} > Mage-Shaman`;
     return `Armures > ${p} > Génériques`;
   }
-  const itemMap = { outils:'Outils', rune:'Runes', consommable:'Consommables', nourriture:'Nourritures', materiaux:'Matériaux', ressources:'Ressources', quete:'Quêtes', donjon:'Donjon', monnaie:'Monnaie' };
+  const itemMap = { outils:'Outils', rune:'Runes', parchemin:'Parchemins', consommable:'Consommables', nourriture:'Nourritures', materiaux:'Matériaux', ressources:'Ressources', quete:'Quêtes', donjon:'Donjon', monnaie:'Monnaie' };
   return `Items > ${p} > ${itemMap[obj.category] || 'Matériaux'}`;
 }
 
@@ -5265,6 +5280,7 @@ async function _promptMissingFields(errors, warnings = []) {
   if (data.rarity)      setRarity(data.rarity);
   if (data.lore)        document.getElementById('f-lore').value = data.lore;
   if (data.competence)  { const el = document.getElementById('f-competence'); if (el) el.value = data.competence; }
+  { const _s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; }; _s('f-scroll-name', data.skill_name); _s('f-scroll-rarity', data.skill_rarity); _s('f-scroll-desc', data.skill_desc); }
   if (data['craft-cd']) { const el = document.getElementById('f-craft-cd'); if (el) el.value = data['craft-cd']; }
   if (data.cat)         { const el = document.getElementById('f-cat'); if (el) { el.value = data.cat; onCatSlotChange?.(); } }
   if (data.lvl)         { const el = document.getElementById('f-lvl'); if (el) el.value = data.lvl; }

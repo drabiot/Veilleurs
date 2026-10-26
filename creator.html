@@ -196,6 +196,7 @@
               <option value="ressources">⛏️ Ressources</option>
               <option value="outils">🛠️ Outils</option>
               <option value="rune">🔮 Runes</option>
+              <option value="parchemin">📃 Parchemins</option>
               <option value="quete">📜 Objets de Quête</option>
               <option value="donjon">🏰 Donjon</option>
               <option value="monnaie">🪙 Monnaie</option>
@@ -206,6 +207,32 @@
             <select id="f-cat" onchange="onCatSlotChange()">
               <option value="">— Aucun —</option>
             </select>
+          </div>
+        </div>
+
+        <!-- Parchemin : la compétence qu'il enseigne (niveau = « Niveau requis », classe = boutons de classe) -->
+        <div id="scroll-field" style="display:none;">
+          <div class="row2">
+            <div class="field">
+              <label>Nom de la compétence</label>
+              <input type="text" id="f-scroll-name" placeholder="ex : Tir multiple" oninput="update()">
+            </div>
+            <div class="field">
+              <label>Rareté de la compétence</label>
+              <select id="f-scroll-rarity" onchange="update()">
+                <option value="">—</option>
+                <option value="commun">Commun</option>
+                <option value="rare">Rare</option>
+                <option value="epique">Épique</option>
+                <option value="legendaire">Légendaire</option>
+                <option value="mythique">Mythique</option>
+                <option value="godlike">Godlike</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Description de la compétence</label>
+            <textarea id="f-scroll-desc" rows="3" placeholder="Décris ce que fait la compétence…" oninput="update()"></textarea>
           </div>
         </div>
 
@@ -1345,7 +1372,7 @@ window._modal = modal;
   <textarea id="submitter-comment" rows="1" placeholder="Note pour la modération (optionnel pour un nouvel item)…" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-size:12px;outline:none;resize:none;border-radius:6px;font-family:inherit;line-height:1.4;transition:border-color .15s;height:34px;overflow:hidden;" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';this.style.borderColor=this.value?'var(--accent)':'var(--border)'"></textarea>
 </div>
 
-<script src="creator.js?v=20261026o"></script>
+<script src="creator.js?v=20261026p"></script>
 <script>
 (function() {
   window._creatorScreenshots = [];

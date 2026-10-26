@@ -520,7 +520,7 @@ function _buildPrettySummary(data, type) {
   const esc = window.VCL.escHtml;
   const RARITY_COLORS = { commun:'#4ade80', rare:'#60a5fa', epique:'#a78bfa', legendaire:'#e8d44a', mythique:'#f5b5e4', godlike:'#f87171', event:'#e2e8f0' };
   const RARITY_LABELS = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
-  const CAT_LABELS    = { arme:'⚔️ Arme', armure:'🛡️ Armure', accessoire:'💍 Accessoire', consommable:'🧪 Consommable', nourriture:'🍖 Nourriture', materiaux:'🧱 Matériaux', ressources:'⛏️ Ressources', outils:'🛠️ Outils', rune:'🔮 Rune', quete:'📜 Quête', donjon:'🏰 Donjon', monnaie:'🪙 Monnaie' };
+  const CAT_LABELS    = { arme:'⚔️ Arme', armure:'🛡️ Armure', accessoire:'💍 Accessoire', consommable:'🧪 Consommable', nourriture:'🍖 Nourriture', parchemin:'📃 Parchemin', materiaux:'🧱 Matériaux', ressources:'⛏️ Ressources', outils:'🛠️ Outils', rune:'🔮 Rune', quete:'📜 Quête', donjon:'🏰 Donjon', monnaie:'🪙 Monnaie' };
 
   const rows = [];
   const field = (label, val, color) => {
@@ -2025,6 +2025,7 @@ const ITEM_CATEGORIES = {
   accessoire:  { label: 'Accessoires',     emoji: '💍' },
   outils:      { label: 'Outils',          emoji: '🛠️' },
   rune:        { label: 'Runes',           emoji: '🔮' },
+  parchemin:   { label: 'Parchemins',      emoji: '📃' },
   donjon:      { label: 'Donjon',          emoji: '🏰' },
   monnaie:     { label: 'Monnaie',         emoji: '🪙' },
 };
@@ -8164,6 +8165,7 @@ function _itemImgSrc(obj) {
     case 'consommable': return `${base}img/compendium/textures/items/Consommable/${tp}${id}.png`;
     case 'nourriture':  return `${base}img/compendium/textures/items/Nourriture/${tp}${id}.png`;
     case 'rune':        return `${base}img/compendium/textures/items/Runes/${tp}${id}.png`;
+    case 'parchemin':   return `${base}img/compendium/textures/items/Parchemins/${tp}${id}.png`;
     case 'quete':       return `${base}img/compendium/textures/items/Quest/${tp}${id}.png`;
     case 'donjon':      return `${base}img/compendium/textures/items/Donjon/${tp}${id}.png`;
     case 'monnaie':     return `${base}img/compendium/textures/items/Monnaie/${tp}${id}.png`;
@@ -9495,6 +9497,7 @@ function _sensComputeImg(category, id, palier, isEvent) {
     case 'consommable': return `../img/compendium/textures/items/Consommable/${tp}${id}.png`;
     case 'nourriture':  return `../img/compendium/textures/items/Nourriture/${tp}${id}.png`;
     case 'rune':        return `../img/compendium/textures/items/Runes/${tp}${id}.png`;
+    case 'parchemin':   return `../img/compendium/textures/items/Parchemins/${tp}${id}.png`;
     case 'quete':       return `../img/compendium/textures/items/Quest/${tp}${id}.png`;
     case 'donjon':      return `../img/compendium/textures/items/Donjon/${tp}${id}.png`;
     case 'monnaie':     return `../img/compendium/textures/items/Monnaie/${tp}${id}.png`;
@@ -9741,7 +9744,7 @@ window.sensRunKeyMigration = async () => {
 // TAGS — Règles automatiques de tags sur items
 // ═══════════════════════════════════════════════════════
 const ITEM_TAG_FIELDS = [
-  { id: 'category', label: 'Catégorie', values: ['arme','armure','accessoire','consommable','nourriture','materiaux','ressources','outils','rune','quete','donjon','monnaie'] },
+  { id: 'category', label: 'Catégorie', values: ['arme','armure','accessoire','consommable','nourriture','materiaux','ressources','outils','rune','parchemin','quete','donjon','monnaie'] },
   { id: 'rarity',   label: 'Rareté',   values: ['commun','rare','epique','legendaire','mythique','godlike','event'] },
   { id: 'classes',  label: 'Classe',   values: ['guerrier','assassin','archer','mage','shaman'] },
   { id: 'palier',   label: 'Palier',   values: ['1','2','3','4','5','6','7','8','9','10'] },
@@ -9898,6 +9901,7 @@ window.seedDefaultTagRules = async function() {
     { field: 'cat', value: 'nourriture',    tag: 'Nourriture' },
     { field: 'cat', value: 'outils',        tag: 'Outil' },
     { field: 'cat', value: 'rune',          tag: 'Rune' },
+    { field: 'cat', value: 'parchemin',     tag: 'Parchemin' },
     { field: 'cat', value: 'quete',         tag: 'Quête' },
     { field: 'cat', value: 'donjon',        tag: 'Donjon' },
     // Palier
@@ -9984,7 +9988,7 @@ const _CF_DEFS = {
   // Surcharges par mode
   'items:event':     { type:'select', get opts() { return (typeof EVENT_NAMES !== 'undefined' ? EVENT_NAMES : []).map(n => [n, n]); } },
   'items:rarity':    { type:'select', opts:[['commun','Commun'],['rare','Rare'],['epique','Épique'],['legendaire','Légendaire'],['mythique','Mythique'],['godlike','Godlike'],['event','Évènement']] },
-  'items:category':  { type:'select', opts:[['arme','⚔️ Arme'],['armure','🛡️ Armure'],['accessoire','💍 Accessoire'],['materiaux','🧱 Matériau'],['ressources','⛏️ Ressource'],['consommable','🧪 Consommable'],['nourriture','🍖 Nourriture'],['outils','🔧 Outil'],['rune','🔮 Rune'],['quete','📜 Objet Quête'],['donjon','🏰 Donjon']] },
+  'items:category':  { type:'select', opts:[['arme','⚔️ Arme'],['armure','🛡️ Armure'],['accessoire','💍 Accessoire'],['materiaux','🧱 Matériau'],['ressources','⛏️ Ressource'],['consommable','🧪 Consommable'],['nourriture','🍖 Nourriture'],['outils','🔧 Outil'],['rune','🔮 Rune'],['parchemin','📃 Parchemin'],['quete','📜 Objet Quête'],['donjon','🏰 Donjon']] },
   'items:classes':   { type:'multicheckbox', opts:[['guerrier','⚔️ Guerrier'],['assassin','🗡️ Assassin'],['archer','🏹 Archer'],['mage','📖 Mage'],['shaman','🌿 Shaman']] },
   'mobs:type':       { type:'select', opts:[['monstre','👹 Monstre'],['sbire','💀 Sbire'],['mini_boss','⚡ Mini-Boss'],['boss','🔥 Boss']] },
   'mobs:region':     { type:'dbselect', colName:'regions', labelKey:'name' },
@@ -10675,6 +10679,7 @@ const QUALITY_SUBCATEGORIES = {
     { id: 'nourriture',  label: '🍖 Nourriture' },
     { id: 'outils',      label: '🔧 Outil' },
     { id: 'rune',        label: '🔮 Rune' },
+    { id: 'parchemin',   label: '📃 Parchemin' },
     { id: 'quete',       label: '📜 Objet Quête' },
     { id: 'donjon',      label: '🏰 Donjon' },
   ],
@@ -11495,6 +11500,7 @@ const IMG_DEFAULT_TEMPLATES = {
   consommable: '../img/compendium/textures/items/Consommable/{tier}/{id}.png',
   nourriture:  '../img/compendium/textures/items/Nourriture/{tier}/{id}.png',
   rune:        '../img/compendium/textures/items/Runes/{tier}/{id}.png',
+  parchemin:   '../img/compendium/textures/items/Parchemins/{tier}/{id}.png',
   quete:       '../img/compendium/textures/items/Quest/{tier}/{id}.png',
   donjon:      '../img/compendium/textures/items/Donjon/{tier}/{id}.png',
   monnaie:     '../img/compendium/textures/items/Monnaie/{tier}/{id}.png',
@@ -13608,7 +13614,7 @@ function _renderObtainLegacy() {
   }
 
   const RARITY_COLORS = { commun:'#aaa', rare:'#4da6ff', epique:'#c47aff', legendaire:'#ffb830', mythique:'#ff6060', godlike:'#ff3aba', event:'#60e8b0' };
-  const CAT_ICONS = { arme:'⚔️', armure:'🛡️', accessoire:'💍', consommable:'🧪', nourriture:'🍖', materiaux:'🧱', ressources:'⛏️', outils:'🛠️', rune:'🔮', quete:'📜', donjon:'🏰', monnaie:'🪙' };
+  const CAT_ICONS = { arme:'⚔️', armure:'🛡️', accessoire:'💍', consommable:'🧪', nourriture:'🍖', parchemin:'📃', materiaux:'🧱', ressources:'⛏️', outils:'🛠️', rune:'🔮', quete:'📜', donjon:'🏰', monnaie:'🪙' };
 
   listEl.innerHTML = '';
   listEl.dataset.dqList = '1';

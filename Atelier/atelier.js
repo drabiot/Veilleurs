@@ -2547,6 +2547,7 @@ function loadAccessoriesForClass(classId) {
       case 'ressources':  return `../img/compendium/textures/items/Ressources/${tp}${id}.png`;
       case 'consommable': return `../img/compendium/textures/items/Consommable/${tp}${id}.png`;
       case 'nourriture':  return `../img/compendium/textures/items/Nourriture/${tp}${id}.png`;
+      case 'parchemin':   return `../img/compendium/textures/items/Parchemins/${tp}${id}.png`;
       case 'rune':        return `../img/compendium/textures/items/Runes/${tp}${id}.png`;
       case 'quete':       return `../img/compendium/textures/items/Quest/${tp}${id}.png`;
       case 'donjon':      return `../img/compendium/textures/items/Donjon/${tp}${id}.png`;

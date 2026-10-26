@@ -1258,3 +1258,10 @@ a.craft-ingredient-name:hover {
 .event-header.open .categorie-arrow { transform: rotate(90deg); }
 .event-body { display: none; padding-left: 8px; }
 .event-body.open { display: block; }
+
+/* Parchemin : compétence enseignée */
+.scroll-skill { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--border, #3a3126); border-left: 3px solid var(--accent, #c9a84c); border-radius: 6px; background: rgba(255,255,255,.02); }
+.scroll-skill-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.scroll-skill-name { font-weight: 700; font-size: 14px; }
+.scroll-skill-rarity { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; border: 1px solid; border-radius: 4px; padding: 1px 6px; }
+.scroll-skill-desc { margin-top: 6px; font-size: 12.5px; line-height: 1.5; color: var(--text-dim, #bfb59a); }
