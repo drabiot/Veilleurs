@@ -289,7 +289,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const _validModes = ['item','mob','pnj','region','quest','panoplie'];
   const _hashMode   = location.hash.slice(1);
   const _urlMode    = _params.has('mode') && _validModes.includes(_params.get('mode')) ? _params.get('mode') : null;
-  const _initMode   = (_validModes.includes(_hashMode) ? _hashMode : null) || _urlMode;
+  let _lastMode = null; try { _lastMode = localStorage.getItem('vcl_creator_mode'); } catch (e) {}
+  // sans mode demandé dans l'adresse : on rouvre le dernier mode utilisé
+  const _initMode   = (_validModes.includes(_hashMode) ? _hashMode : null) || _urlMode || (_validModes.includes(_lastMode) && _lastMode !== 'item' ? _lastMode : null);
   if (_initMode) switchMode(_initMode);
   restoreForm(_initMode);
 
@@ -6331,6 +6333,7 @@ const MODE_SUBTITLES = {
 
 function switchMode(mode) {
   creatorMode = mode;
+  try { localStorage.setItem('vcl_creator_mode', mode); } catch (e) {}
   { const _p = new URLSearchParams(location.search); _p.delete('mode'); const _qs = _p.toString() ? '?' + _p.toString() : ''; history.replaceState(null, '', location.pathname + _qs + '#' + mode); }
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.getElementById('item-form').style.display   = mode === 'item'   ? 'flex' : 'none';
@@ -7944,3 +7947,22 @@ window._pageInit = function() {
     return out;
   };
 })();
+
+
+// ═══════════════════════════════════════════════════
+// RACCOURCIS CLAVIER
+//   Ctrl/⌘ + S ou Ctrl/⌘ + Entrée : soumettre      Alt + 1…6 : Item, Mob, PNJ, Région, Quête, Panoplie
+// ═══════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && !e.altKey && !e.shiftKey && (e.key === 's' || e.key === 'S' || e.key === 'Enter')) {
+    const btn = document.getElementById('btn-submit-discord');
+    if (btn && !btn.disabled && btn.offsetParent !== null) { e.preventDefault(); btn.click(); }
+    return;
+  }
+  if (e.altKey && !mod && /^[1-6]$/.test(e.key)) {
+    const modes = ['item', 'mob', 'pnj', 'region', 'quest', 'panoplie'];
+    e.preventDefault();
+    switchMode(modes[+e.key - 1]);
+  }
+});
