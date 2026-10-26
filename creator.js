@@ -2041,7 +2041,7 @@ function _setPalierValue(elId, val) {
 }
 
 function ensureAllItemsIndex() {
-  if (allItemsIndex.length || typeof ITEMS === 'undefined') return;
+  if (allItemsIndex.length || typeof ITEMS === 'undefined' || !ITEMS.length) return;   // ITEMS pas encore chargés : ne pas figer un index vide (ou réduit à « Cols »)
   const rarityLabel = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
   allItemsIndex.splice(0, allItemsIndex.length, ...ITEMS.map(it => ({
     id: it.id ?? it._id,
