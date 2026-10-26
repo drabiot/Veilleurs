@@ -2042,13 +2042,13 @@ function _setPalierValue(elId, val) {
 function ensureAllItemsIndex() {
   if (allItemsIndex.length || typeof ITEMS === 'undefined') return;
   const rarityLabel = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
-  allItemsIndex = ITEMS.map(it => ({
+  allItemsIndex.splice(0, allItemsIndex.length, ...ITEMS.map(it => ({
     id: it.id ?? it._id,
     name: it.name || it.id || it._id,
     subtitle: [rarityLabel[it.rarity] || it.rarity, it.category, it.palier ? 'P'+it.palier : ''].filter(Boolean).join(' · '),
     search: ((it.name || '') + ' ' + (it.id || it._id || '') + ' ' + (it.category || '')).toLowerCase(),
     _raw: it
-  }));
+  })));
 }
 
 function appendHiddenItemsToIndex(hiddenItems) {
@@ -2156,7 +2156,7 @@ window._vcl_appendPendingToIndices = appendPendingToIndices;
 
 function ensureAllMobsIndex() {
   if (allMobsIndex.length || typeof MOBS === 'undefined') return;
-  allMobsIndex = MOBS.map(m => {
+  allMobsIndex.splice(0, allMobsIndex.length, ...MOBS.map(m => {
     const regionName = _allMobRegions.find(r => r.id === m.region)?.name || m.region || '';
     return {
       id: m.id,
@@ -2165,7 +2165,7 @@ function ensureAllMobsIndex() {
       search: ((m.name || '') + ' ' + m.id + ' ' + regionName.toLowerCase()).toLowerCase(),
       _raw: m
     };
-  });
+  }));
 }
 
 function initLoadSearch() {
@@ -6205,7 +6205,8 @@ async function loadMobRegions() {
       return (a.name||a.id||'').localeCompare(b.name||b.id||'', 'fr');
     });
     _allMobRegions = regions;
-    allMobsIndex   = []; // force rebuild with region names
+    allMobsIndex.length = 0; // force rebuild with region names (même tableau : les recherches déjà ouvertes le voient)
+    ensureAllMobsIndex();
     // Appliquer les noms de région en attente (chargés avant que _allMobRegions soit prêt)
     for (const [elId, searchId] of [['mob-region', 'mob-region-search'], ['pnj-region', 'pnj-region-search']]) {
       const el = document.getElementById(elId);
@@ -7880,7 +7881,8 @@ function _setCreatorDisabled(disabled) {
 // ── Appelé par db-loader.js après chargement Firestore ─
 window._pageInit = function() {
   _syncEventField();
-  allMobsIndex = []; // force rebuild avec les données fraîches
+  allMobsIndex.length = 0; // force rebuild avec les données fraîches (même tableau : les recherches déjà ouvertes le voient)
+  ensureAllMobsIndex();
   _buildMobLoadDrop();
   _pnjDropBuilt = false; _regDropBuilt = false; _panopDropBuilt = false;
   _buildLoadDrops();
