@@ -1351,6 +1351,11 @@ window.approve = async (id) => {
         _syncPnjObtain({ ...dataToWrite, id: String(dataId) }).then(n => { if (n) toast(`Obtention mise à jour sur ${n} item${n !== 1 ? 's' : ''}`, 'success', 5000); }).catch(e => console.warn('[obtain PNJ]', e));
       }
 
+      // Item approuvé : les PNJ qui le fabriquent / vendent déjà y écrivent leur source d'obtention
+      if (sub.type === 'item') {
+        _syncItemObtain(String(dataId)).then(n => { if (n) toast('Obtention complétée depuis les PNJ', 'success', 4000); }).catch(e => console.warn('[obtain item]', e));
+      }
+
       // Si PNJ approuvé et panneau d'ordre ouvert, le recharger
       if (sub.type === 'pnj') {
         invalidateModCache('personnages');
@@ -5216,6 +5221,38 @@ async function _syncPnjObtain(pnj) {
   return touched;
 }
 
+// Sens inverse : à la création / modification d'un item, les PNJ qui le fabriquent ou le vendent déjà y ajoutent leur ligne d'obtention.
+async function _syncItemObtain(itemId) {
+  if (!itemId) return 0;
+  const ref = doc(db, 'items', String(itemId));
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return 0;
+  const cur = String(snap.data().obtain || '');
+  const lst = v => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []);
+  const pnjs = await getDocs(collection(db, 'personnages'));
+  let lines = cur.split('
+');
+  for (const d of pnjs.docs) {
+    const p = d.data(), pid = p.id || d.id;
+    if (!p.name) continue;
+    const crafts = lst(p.craft).some(e => e && e.id === itemId);
+    const sells = lst(p.sells).some(e => e && e.id === itemId);
+    if (!crafts && !sells) continue;
+    const loc = npcLocSuffix(p, p.region ? _regionName(p.region) : '');
+    const line = `${crafts ? 'Fabricable' : 'Achetable'} au [npc:${pid}|${p.name}]${loc}`;
+    const esc = String(pid).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const mine = new RegExp('^[\\s-]*(Fabricable|Achetable) au \\[npc:' + esc + '[|\\]].*$', 'i');
+    lines = lines.filter(l => !mine.test(l.trim()));
+    lines = lines.filter(l => l.trim() !== '').concat(line);
+  }
+  const text = lines.join('
+');
+  if (text === cur) return 0;
+  await updateDoc(ref, { obtain: text });
+  invalidateModCache('items');
+  return 1;
+}
+
 // Registre des renommages (config/item_renames : { map: { ancienId: nouvelId } }). Les navigateurs qui ont encore l'ancien ID
 // dans un brouillon d'Atelier le convertissent au chargement. Les chaînes sont raccourcies (a→b puis b→c devient a→c).
 async function _recordItemRename(oldId, newId) {
@@ -5422,6 +5459,10 @@ window.saveEditor = async function() {
 
       // Nettoyage pour Firestore (évite les undefined/null selon tes besoins)
       await updateDoc(doc(db, _editorCollection, _editorId), sanitizeForFirestore(patch));
+    }
+
+    if (_editorCollection === 'items') {
+      _syncItemObtain(String(_editorId)).catch(e => console.warn('[obtain item]', e));
     }
 
     if (_editorCollection === 'personnages') {
