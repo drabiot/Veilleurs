@@ -3507,7 +3507,8 @@ function addEffect() {
 
   const row = document.createElement('div');
   row.id = `eff-${uid}`;
-  row.style.cssText = 'display:grid;grid-template-columns:110px 70px 70px 60px 55px 1fr auto;gap:6px;align-items:center;';
+  // Ligne souple : les champs gardent une largeur lisible (valeur et durée avec boutons − / +) et passent à la ligne si la place manque
+  row.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;';
 
   const makeInp = (placeholder, type='text', opts='') => {
     const el = document.createElement('input');
@@ -3543,6 +3544,10 @@ function addEffect() {
     update();
   });
 
+  typeSel.style.flex = '0 0 168px';
+  valInp.style.width = '100%'; unitInp.style.flex = '0 0 104px'; unitInp.style.width = '104px';
+  durUnitSel.style.flex = '0 0 76px'; durUnitSel.style.width = '76px';
+  labelInp.style.flex = '1 1 180px'; labelInp.style.minWidth = '140px'; labelInp.style.width = 'auto';
   row.appendChild(typeSel);
   row.appendChild(valInp);
   row.appendChild(unitInp);
@@ -3551,6 +3556,8 @@ function addEffect() {
   row.appendChild(labelInp);
   row.appendChild(rmBtn);
   document.getElementById('effects-list').appendChild(row);
+  // champs numériques : le wrapper − / + (no-spin.js) doit garder 130 px de large
+  [valInp, durInp].forEach(el => { el.dataset.stepW = '130'; });
 
   // Store refs
   const entry = effectEntries.find(e => e.uid === uid);

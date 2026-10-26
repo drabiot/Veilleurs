@@ -38,10 +38,12 @@
     const w = document.createElement('span');
     w.className = 'vcl-step';
     const cs = getComputedStyle(input);
+    if (input.dataset.stepW) { w.style.flex = '0 0 ' + input.dataset.stepW + 'px'; w.style.width = input.dataset.stepW + 'px'; }
     // le wrapper reprend la place du champ dans la mise en page (largeur, flex, grille)
-    if (input.style.width) w.style.width = input.style.width;
+    if (input.dataset.stepW) { /* largeur fixée ci-dessus */ }
+    else if (input.style.width) w.style.width = input.style.width;
     else if (cs.display !== 'inline' && cs.display !== 'inline-block') w.style.width = '100%';
-    if (input.style.flex || cs.flexGrow !== '0') w.style.flex = cs.flex;
+    if (!input.dataset.stepW && (input.style.flex || cs.flexGrow !== '0')) w.style.flex = cs.flex;
     if (input.style.gridColumn) w.style.gridColumn = input.style.gridColumn;
     if (cs.display === 'none') w.style.display = 'none';
     const mk = (t, d, title) => {
