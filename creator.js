@@ -2999,8 +2999,9 @@ function initCustomSelects() {
     function updateDisplay() {
       const opt = nativeSel.options[nativeSel.selectedIndex];
       const hasVal = (opt && opt.value !== '') || !!typed; // pendant la saisie, le texte tapé s'affiche sur la barre
-      valSpan.textContent = typed || (opt ? opt.text : '');
-      valSpan.classList.toggle('custom-sel-placeholder', !hasVal);
+      const _open = list.classList.contains('open') && !typed && nativeSel.options.length > 6; // liste longue ouverte : on invite à taper
+      valSpan.textContent = _open ? 'Tape pour filtrer…' : (typed || (opt ? opt.text : ''));
+      valSpan.classList.toggle('custom-sel-placeholder', !hasVal || _open);
       trigger.disabled = nativeSel.disabled;
       trigger.classList.toggle('locked', nativeSel.disabled);
     }
@@ -3048,6 +3049,7 @@ function initCustomSelects() {
       positionDrop(list, wrap);
       list.classList.add('open');
       trigger.classList.add('open');
+      updateDisplay();
     }
 
     trigger.addEventListener('click', () => {
