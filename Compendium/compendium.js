@@ -1378,7 +1378,7 @@ function showItem(id, initialQuality = false) {
       ${hasRow ? `
       <div class="effects-craft-titles" id="effects-craft-titles">
         <div class="item-section-title">${currentEffects?.length ? 'Effets' : ''}</div>
-        <div class="item-section-title">${getCraft() ? 'Craft' : ''}</div>
+        <div class="item-section-title">${getCraft() ? 'Craft' + (d.craft_qty > 1 ? ' · ×' + d.craft_qty : '') : ''}</div>
         ${itemStatsHtml ? '<div class="item-section-title">Statistiques</div>' : ''}
       </div>
       <div class="effects-craft-row">

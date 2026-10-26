@@ -403,7 +403,7 @@ function toJSStr(obj, depth = 0) {
 // ── Résumé lisible d'une soumission : champs connus mis en forme à la main, puis TOUS les autres champs ──
 const _PRETTY_SKIP = new Set(['_order', 'ordre', '_contributor', '_ts', '_updatedAt', '_id', 'nameHash', 'images', 'image', 'img', 'screenshots']);
 const _PRETTY_SHOWN = {
-  item:     ['id', 'name', 'quality', 'rarity', 'category', 'palier', 'lvl', 'cat', 'classes', 'set', 'sensible', 'event', 'evolutif', 'stats', 'effects', 'cooldown_apply', 'craft', 'craft_cd', 'obtain', 'lore', 'competence', 'tags', 'skill_name', 'skill_rarity'],
+  item:     ['id', 'name', 'quality', 'rarity', 'category', 'palier', 'lvl', 'cat', 'classes', 'set', 'sensible', 'event', 'evolutif', 'stats', 'effects', 'cooldown_apply', 'craft', 'craft_cd', 'craft_qty', 'obtain', 'lore', 'competence', 'tags', 'skill_name', 'skill_rarity'],
   mob:      ['type', 'palier', 'region', 'behavior', 'lore', 'loot'],
   pnj:      ['id', 'name', 'tag', 'type', 'palier', 'region', 'coords', 'craft', 'sells', 'lore', 'instructions', 'underground', 'sensible'],
   region:   ['palier', 'coords', 'inCodex', 'lore'],
@@ -595,7 +595,7 @@ function _buildPrettySummary(data, type) {
       const craftLines = data.craft.map(c => c && c.id === 'cols'
         ? `<span style="background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:#c9a84c;border-radius:4px;padding:1px 6px;font-size:11px;">🪙 <b>${esc(String(c.qty))}</b> cols</span>`
         : `<span style="background:var(--surface3);border-radius:4px;padding:1px 6px;font-size:11px;"><b>×${c.qty}</b> ${idPair(c.id, esc(itemName(c.id) || c.id))}</span>`).join(' ');
-      rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Craft${data.craft_cd ? ` <span style="text-transform:none;letter-spacing:0;font-weight:400;">· ⏱ ${esc(String(data.craft_cd))}</span>` : ''}</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;">${craftLines}</div>`);
+      rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Craft${data.craft_qty > 1 ? ` <span style="text-transform:none;letter-spacing:0;font-weight:400;">· ×${esc(String(data.craft_qty))} par craft</span>` : ''}${data.craft_cd ? ` <span style="text-transform:none;letter-spacing:0;font-weight:400;">· ⏱ ${esc(String(data.craft_cd))}</span>` : ''}</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;">${craftLines}</div>`);
     }
     {
       const raw = data.obtain || '';
@@ -1253,7 +1253,7 @@ function _mergeContributors(existing, newContrib, isMod = false) {
 // Champs que le Creator sait produire, par type de soumission (= ce que build*Obj() renvoie).
 // Tout autre champ d'un document existant est conservé quand une modification est approuvée.
 const _CREATOR_MANAGED_KEYS = {
-  item:     new Set(['cat','category','classes','competence','cooldown_apply','craft','craft_cd','effects','event','evolutif','evolutions','evolvedFrom','id','images','lore','lvl','name','obtain','occulte','palier','quality','rarity','rune_slots','sensible','set','skill_name','skill_rarity','stats','tags','twoHanded','unique']),
+  item:     new Set(['cat','category','classes','competence','cooldown_apply','craft','craft_cd','craft_qty','effects','event','evolutif','evolutions','evolvedFrom','id','images','lore','lvl','name','obtain','occulte','palier','quality','rarity','rune_slots','sensible','set','skill_name','skill_rarity','stats','tags','twoHanded','unique']),
   mob:      new Set(['id','name','type','behavior','palier','region','images','inCodex','sensible','lore','spawnTime','coords','loot']),
   pnj:      new Set(['coords','craft','id','images','instructions','is_underground','name','palier','region','sells','sensible','tag','type']),
   region:   new Set(['canTp','coords','id','images','inCodex','lore','name','palier']),

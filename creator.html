@@ -382,6 +382,9 @@
           <label>⏱ CD de craft</label>
           <input type="text" id="f-craft-cd" placeholder="ex: 5m, 2h, 1j,..." oninput="update()">
           <div class="field-hint">Délai avant de pouvoir recrafter cet item. Mettez « aucun » si pas de restriction.</div>
+          <label style="margin-top:10px;display:block;">✖ Quantité fabriquée <span style="font-weight:400;color:var(--muted);font-size:10px;">(facultatif)</span></label>
+          <input type="number" id="f-craft-qty" min="1" step="1" placeholder="ex : 3 (vide = 1 seul exemplaire)" oninput="update()">
+          <div class="field-hint">Nombre d'exemplaires obtenus d'un seul craft (« ×3 » en jeu). Laisser vide pour 1.</div>
         </div>
       </div>
     </div>
@@ -1394,7 +1397,7 @@ window._modal = modal;
   <textarea id="submitter-comment" rows="1" placeholder="Note pour la modération (optionnel pour un nouvel item)…" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-size:12px;outline:none;resize:none;border-radius:6px;font-family:inherit;line-height:1.4;transition:border-color .15s;height:34px;overflow:hidden;" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';this.style.borderColor=this.value?'var(--accent)':'var(--border)'"></textarea>
 </div>
 
-<script src="creator.js?v=20261027g"></script>
+<script src="creator.js?v=20261027h"></script>
 <script>
 (function() {
   window._creatorScreenshots = [];

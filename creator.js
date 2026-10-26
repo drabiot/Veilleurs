@@ -2561,6 +2561,7 @@ function loadItem(item) {
       const cdEl = document.getElementById('f-craft-cd');
       if (cdEl) cdEl.value = item.craft_cd;
     }
+    { const cq = document.getElementById('f-craft-qty'); if (cq) cq.value = item.craft_qty > 1 ? item.craft_qty : ''; }
   }
 
   _setApplyCd(item.cooldown_apply);
@@ -4598,6 +4599,7 @@ function buildObj() {
   if (craft.length)          obj.craft    = craft;
   const craft_cd = document.getElementById('f-craft-cd')?.value.trim();
   if (craft.length && craft_cd) obj.craft_cd = craft_cd;
+  { const cq = parseInt(document.getElementById('f-craft-qty')?.value); if (craft.length && cq > 1) obj.craft_qty = cq; }
   return obj;
 }
 
@@ -5370,6 +5372,7 @@ async function _promptMissingFields(errors, warnings = []) {
   if (data.competence)  { const el = document.getElementById('f-competence'); if (el) el.value = data.competence; }
   { const _s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; }; _s('f-scroll-name', data.skill_name); _s('f-scroll-rarity', data.skill_rarity); }
   if (data['craft-cd']) { const el = document.getElementById('f-craft-cd'); if (el) el.value = data['craft-cd']; }
+  if (data.craft_qty > 1) { const el = document.getElementById('f-craft-qty'); if (el) el.value = data.craft_qty; }
   if (data.cat)         { const el = document.getElementById('f-cat'); if (el) { el.value = data.cat; onCatSlotChange?.(); } }
   if (data.lvl)         { const el = document.getElementById('f-lvl'); if (el) el.value = data.lvl; }
   update();
