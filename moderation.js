@@ -1235,6 +1235,24 @@ window.approve = async (id) => {
     const _contribName  = sub.submitterName || _userNames.get(sub.submittedBy) || 'Inconnu';
     const _contribField = { uid: sub.submittedBy || null, name: _contribName };
 
+    // Nouveau PNJ dont l'ID est déjà pris par un AUTRE PNJ (même type, palier, lieu) : l'ID est refait avec le nom, sans jamais écraser l'existant
+    if (sub.type === 'pnj' && !sub.isModification) {
+      const taken = async id => (await getDoc(doc(db, 'personnages', String(id)))).exists();
+      if (await taken(dataId)) {
+        const nameSlug = _slugName(sub.data.name || '');
+        const typeSlug = _slugName(sub.data.type || '');
+        const old = String(dataId);
+        const tail = (typeSlug && old.startsWith(typeSlug + '_')) ? old.slice(typeSlug.length) : (old.match(/_p\d+.*$/) || [''])[0];
+        let nid = nameSlug ? nameSlug + tail : '', n = 2;
+        while (nid && await taken(nid)) nid = `${nameSlug}${tail}_${n++}`;
+        if (!nid || nid === old) throw new Error(`Un PNJ avec l'ID « ${old} » existe déjà : ajoute un nom distinct, ou approuve-le comme modification.`);
+        toast(`ID déjà pris : ${old} → ${nid}`, 'info', 6000);
+        dataId = nid;
+        sub.data = { ...sub.data, id: nid };
+        if (Array.isArray(sub.data.images)) sub.data.images = sub.data.images.map(p => typeof p === 'string' ? p.split(old).join(nid) : p);
+      }
+    }
+
     // Modification d'item avec un nouveau nom : l'ID suit le nom (les références sont mises à jour après l'écriture)
     let _renameFrom = null;
     if (sub.type === 'item' && sub.isModification) {

@@ -6343,15 +6343,33 @@ function pnjRegionSlug(regionName) {
   return nameToId(regionName);
 }
 
+// ID d'un PNJ : type + palier + lieu (forgeron_d_accessoires_p1_vdp). Si cet ID est déjà pris par un AUTRE PNJ (même type, palier et lieu),
+// le NOM prend la place du type : nom + palier + lieu (forgeron_d_accessoires_en_fer_p1_vdp), puis _2, _3… en dernier recours.
+function _pnjIdTaken(id) {
+  if (!id) return false;
+  const editing = pnjIdLocked ? document.getElementById('pnj-id')?.value?.trim() : ''; // le PNJ en cours d'édition ne compte pas
+  if (id === editing) return false;
+  if (typeof _pnjsForObtain !== 'undefined' && (_pnjsForObtain || []).some(p => (p.id || p._id) === id)) return true;   // PNJ déjà enregistrés
+  if ((window._pendingSubs?.pnj || []).some(s => s.data?.id === id)) return true;                                        // PNJ en attente de validation
+  return (window._vcl_pendingPnjs || []).some(s => s.data?.id === id);
+}
+
 function buildPnjId() {
-  const type       = document.getElementById('pnj-type').value;
-  const palier     = document.getElementById('pnj-palier').value;
-  const region     = document.getElementById('pnj-region').value.trim();
-  const typeSlug   = nameToId(type);
-  const regionSlug = pnjRegionSlug(region);
-  const palierSlug = palier ? `p${palier}` : '';
-  const parts = [typeSlug, palierSlug, regionSlug].filter(Boolean);
-  return parts.join('_');
+  const type        = document.getElementById('pnj-type').value;
+  const displayName = document.getElementById('pnj-display-name')?.value?.trim() || '';
+  const palier      = document.getElementById('pnj-palier').value;
+  const region      = document.getElementById('pnj-region').value.trim();
+  const regionSlug  = pnjRegionSlug(region);
+  const palierSlug  = palier ? `p${palier}` : '';
+  const tail        = [palierSlug, regionSlug].filter(Boolean);
+  const byType      = [nameToId(type), ...tail].filter(Boolean).join('_');
+  if (!_pnjIdTaken(byType)) return byType;
+  const nameSlug = nameToId(displayName || pnjTitleCase(type));
+  const byName   = [nameSlug, ...tail].filter(Boolean).join('_');
+  if (byName && byName !== byType && !_pnjIdTaken(byName)) return byName;
+  let n = 2;
+  while (_pnjIdTaken(`${byName || byType}_${n}`)) n++;
+  return `${byName || byType}_${n}`;
 }
 
 function onPnjTypeChange() {
@@ -6363,6 +6381,7 @@ function onPnjTypeChange() {
 }
 
 function onPnjDisplayNameInput() {
+  if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId(); // le nom peut départager deux PNJ du même type / palier / lieu
   update();
 }
 
