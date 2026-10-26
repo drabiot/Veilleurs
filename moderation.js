@@ -3620,7 +3620,7 @@ async function loadDeadLinks() {
         openBtn.className = 'btn btn-ghost';
         openBtn.style.cssText = 'font-size:11px;padding:4px 10px;margin-right:4px;';
         openBtn.textContent = '📂 Ouvrir';
-        openBtn.title = 'Ouvre cette donnée dans l'éditeur (liste des champs)';
+        openBtn.title = 'Ouvre cette donnée dans l\'éditeur (liste des champs)';
         openBtn.addEventListener('click', async () => {
           try {
             const snap = await getDoc(doc(db, _colOf, String(b.srcId)));
