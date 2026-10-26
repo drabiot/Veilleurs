@@ -1899,7 +1899,19 @@ searchInput.addEventListener('input', () => {
   searchResults.classList.remove('hidden');
 });
 
+// Mode « choisir un point » (?pick=1, ouvert en iframe par le creator) : un clic renvoie les coordonnées au parent et pose un pin
+const _PICK_MODE = new URLSearchParams(window.location.search).get('pick') === '1' && window.parent !== window;
 mapViewport.addEventListener('click', (e) => {
+  if (_PICK_MODE && !e.target.closest('.marker') && !e.target.closest('.map-searchbar')) {
+    const vp   = clientToVp(e.clientX, e.clientY);
+    const img  = screenToImage(vp.x, vp.y);
+    const game = pixelToGame(img.x, img.y);
+    const gx = Math.round(game.x), gz = Math.round(game.y);
+    _ghostPin = { gx, gz, floor: currentFloor, name: 'Point choisi' };
+    renderGhostPin();
+    window.parent.postMessage({ type: 'vcl-map-pick', x: gx, z: gz, floor: currentFloor }, '*');
+    return;
+  }
   if (_customPinMode) {
     if (e.target.closest('.marker')) return;
     const vp   = clientToVp(e.clientX, e.clientY);

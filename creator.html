@@ -586,28 +586,16 @@
         </div>
       </div>
 
-      <!-- Ventes -->
-      <div class="section" id="pnj-sells-section" data-tuto="pnj-ventes">
-        <div class="sec-head" onclick="toggleSec(this)">🛒 Ventes <span class="chev">▾</span></div>
-        <div class="sec-body">
-          <div style="display:grid;grid-template-columns:1fr 124px 124px 28px;gap:6px;padding:0 2px;margin-bottom:4px;">
-            <span style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;">Item</span>
-            <span style="font-size:10px;color:var(--muted);font-weight:700;text-align:center;" title="Prix que le joueur paye au NPC">Achat</span>
-            <span style="font-size:10px;color:var(--muted);font-weight:700;text-align:center;" title="Prix que le NPC paye au joueur">Rachat</span>
-            <span></span>
-          </div>
-          <div id="pnj-sells-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
-          <button class="btn btn-ghost btn-sm" style="width:100%" onclick="addPnjSell()">+ Ajouter une ligne</button>
-        </div>
-      </div>
-
       <!-- Craft PNJ -->
       <div class="section" id="pnj-craft-section">
         <div class="sec-head" onclick="toggleSec(this)">⚒️ Craft <span class="chev">▾</span></div>
         <div class="sec-body">
-          <div class="hint">Chaque carte = une recette fabriquée par ce PNJ.</div>
+          <div class="hint">Chaque carte = une recette fabriquée par ce PNJ, <b>ou une vente</b> : une vente est un craft qui ne coûte que des <b>Cols</b> (ingrédient « Cols », quantité = prix).</div>
           <div id="pnj-crafts-list" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;margin-bottom:8px;"></div>
-          <button class="btn btn-ghost btn-sm" style="width:100%" onclick="addPnjCraft()">+ Ajouter une recette</button>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="addPnjCraft()">+ Ajouter une recette</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="addPnjSale()" title="Ajoute une recette dont l'ingrédient est déjà « Cols » : il ne reste qu'à choisir l'item et le prix">🛒 + Ajouter une vente</button>
+          </div>
         </div>
       </div>
 
@@ -1403,7 +1391,7 @@ window._modal = modal;
   <textarea id="submitter-comment" rows="1" placeholder="Note pour la modération (optionnel pour un nouvel item)…" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-size:12px;outline:none;resize:none;border-radius:6px;font-family:inherit;line-height:1.4;transition:border-color .15s;height:34px;overflow:hidden;" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';this.style.borderColor=this.value?'var(--accent)':'var(--border)'"></textarea>
 </div>
 
-<script src="creator.js?v=20261027l"></script>
+<script src="creator.js?v=20261027o"></script>
 <script>
 (function() {
   window._creatorScreenshots = [];

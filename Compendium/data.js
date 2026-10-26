@@ -157,7 +157,7 @@ function npcLocSuffix(p, regionName) {
   if (!region && p.region) region = String(p.region).replace(/_/g, ' ').replace(/(^|\s)\S/g, c => c.toUpperCase());
   const c = p.coords;
   const hasC = c && c.x != null && c.y != null && c.z != null;
-  return (region ? ` de ${region}` : '') + (hasC ? ` (${c.x}, ${c.y}, ${c.z})` : '');
+  return (region ? ` de ${region}` : '') + (hasC ? ` (${c.x},${c.y},${c.z})` : '');
 }
 function autoObtainLines(item) {
   if (typeof PERSONNAGES === 'undefined' || !Array.isArray(PERSONNAGES) || !item) return [];
@@ -215,7 +215,7 @@ const OBTAIN_TEXTS = {
 function resolveObtain(str) {
 	if (typeof str !== 'string') return str;
 	// « Autre source — » est un préfixe de stockage : à l'affichage, seul le texte saisi apparaît
-	return str.replace(/\[obtain:([\w-]+)\]/g, (m, id) => OBTAIN_TEXTS[id] ?? id).replace(/^Autre source — /gm, '');
+	return str.replace(/\[obtain:([\w-]+)\]/g, (m, id) => OBTAIN_TEXTS[id] ?? id).replace(/^Autre source — /gm, '').replace(/\((-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\)/g, '($1,$2,$3)');
 }
 //#endregion OBTAIN_TEXTS
 //#region EVENT_NAMES

@@ -508,7 +508,6 @@ function saveForm() {
         z:             document.getElementById('pnj-z')?.value        || '',
         underground:   pnjUnderground,
         sensible:      pnjSensible,
-        sells:  pnjSells.map(s => ({ itemId: s.itemId, buy: s.buy, price: s.price })),
         recycles: pnjRecycles.map(r => ({ itemId: r.itemId, qty: r.qty, reward: r.reward, time: r.time, cost: r.cost })),
         crafts: pnjCrafts.map(c => ({ resultId: c.resultId, time: c.time, quality: c.quality, ingredients: c.ingredients.map(i => ({ itemId: i.itemId, qty: i.qty })) })),
       },
@@ -724,8 +723,8 @@ function restoreForm(forcedMode) {
       setPnjUnderground(!!p.underground);
       if (p.sells?.length) {
         ensureAllItemsIndex();
-        for (const s of p.sells) pnjSells.push({ uid: pnjSellUid++, itemId: s.itemId, buy: s.buy, price: s.price });
-        renderPnjSells();
+        for (const s of p.sells) pnjCrafts.push(_saleAsCraft(s.itemId, s.buy));
+        renderPnjCrafts();
       }
       if (p.recycles?.length) {
         ensureAllItemsIndex();
@@ -2051,6 +2050,8 @@ function ensureAllItemsIndex() {
     search: ((it.name || '') + ' ' + (it.id || it._id || '') + ' ' + (it.category || '')).toLowerCase(),
     _raw: it
   })));
+  // La monnaie n'est pas un item : on l'ajoute pour pouvoir l'utiliser comme ingrédient (une vente = un craft payé en cols)
+  if (!allItemsIndex.some(i => i.id === 'cols')) allItemsIndex.unshift({ id: 'cols', name: '🪙 Cols', subtitle: 'Monnaie', search: 'cols monnaie currency or argent gold prix', _raw: { id: 'cols', name: 'Cols' } });
 }
 
 function appendHiddenItemsToIndex(hiddenItems) {
@@ -2072,7 +2073,6 @@ function appendHiddenItemsToIndex(hiddenItems) {
     existingIds.add(String(id));
   }
   if (pnjCrafts?.length && document.getElementById('pnj-crafts-list') && typeof renderPnjCrafts === 'function') renderPnjCrafts();
-  if (pnjSells?.length  && document.getElementById('pnj-sells-list')  && typeof renderPnjSells  === 'function') renderPnjSells();
   if (!loadDrop && typeof initLoadSearch === 'function') initLoadSearch();
 }
 window._vcl_appendHiddenItemsToIndex = appendHiddenItemsToIndex;
@@ -2119,7 +2119,6 @@ async function appendPendingToIndices() {
     }
     if (!loadDrop && typeof initLoadSearch === 'function') initLoadSearch();
     if (pnjCrafts?.length && document.getElementById('pnj-crafts-list')) renderPnjCrafts?.();
-    if (pnjSells?.length  && document.getElementById('pnj-sells-list'))  renderPnjSells?.();
   }
 
   // Mobs → allMobsIndex
@@ -2766,15 +2765,8 @@ function loadPnj(pnj) {
   ensureAllItemsIndex();
   const sells = Array.isArray(pnj.sells) ? pnj.sells
     : pnj.sells && typeof pnj.sells === 'object' ? Object.values(pnj.sells) : [];
-  for (const s of sells) {
-    pnjSells.push({
-      uid:    pnjSellUid++,
-      itemId: s.id    || '',
-      buy:    s.buy   != null ? s.buy   : '',
-      price:  s.price != null ? s.price : '',
-    });
-  }
-  if (sells.length) renderPnjSells();
+  for (const s of sells) pnjCrafts.push(_saleAsCraft(s.id || '', s.buy));   // une vente = un craft qui ne coûte que des cols
+  if (sells.length) renderPnjCrafts();
   // Restore crafts — push entries with data, then render once
   const crafts = Array.isArray(pnj.craft) ? pnj.craft
     : pnj.craft && typeof pnj.craft === 'object' ? Object.values(pnj.craft) : [];
@@ -6282,11 +6274,12 @@ function addMobCoordRow(x, y, z) {
   if (!wrap) return;
   const row = document.createElement('div');
   row.className = 'coords-row mob-more-row';
-  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center;';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:8px;align-items:center;';
   const mk = (cls, axis, ph, val) => `<div class="coord-field ${cls}"><span class="coord-axis">${axis}</span><input type="number" step="1" placeholder="${ph}" value="${val ?? ''}" data-axis="${axis.toLowerCase()}" oninput="update()"></div>`;
   row.innerHTML = mk('coord-x', 'X', '128', x) + mk('coord-y', 'Y', '64', y) + mk('coord-z', 'Z', '-320', z) +
     '<button type="button" class="btn-icon" title="Retirer cet endroit">✕</button>';
   row.querySelector('button').addEventListener('click', () => { row.remove(); update(); });
+  row.querySelector('.coord-z').after(Object.assign(_coordPickBtn(() => row.querySelector('input[data-axis="x"]'), () => row.querySelector('input[data-axis="z"]')), { textContent: '📍', style: 'padding:2px 6px;' }));
   wrap.appendChild(row);
   update();
 }
@@ -6375,11 +6368,9 @@ function switchMode(mode) {
 // ═══════════════════════════════════════════════════
 // PNJ — STATE
 // ═══════════════════════════════════════════════════
-let pnjSells    = [];
 let pnjCrafts   = [];
 let pnjRecycles = [];
 let pnjRecycleUid = 0;
-let pnjSellUid  = 0;
 let pnjCraftUid = 0;
 let pnjIngUid   = 0;
 
@@ -6594,7 +6585,6 @@ function onPnjTypeChange() {
   const _isRec = (PNJ_CATEGORIES.recyclage || []).includes(type);
   const _show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
   _show('pnj-recycle-section', _isRec || pnjRecycles.length > 0);
-  _show('pnj-sells-section', !_isRec || pnjSells.length > 0);
   _show('pnj-craft-section', !_isRec || pnjCrafts.length > 0);
   if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
   update();
@@ -6638,56 +6628,21 @@ function onRegNameInput() {
   update();
 }
 
-// ═══════════════════════════════════════════════════
-// PNJ — SELLS
-// ═══════════════════════════════════════════════════
-function addPnjSell() {
+// ═══════════════════════════════════════
+// PNJ — VENTES (= crafts qui ne coûtent que des cols)
+// ═══════════════════════════════════════
+// Une vente est saisie comme une recette : résultat = l'item vendu, un seul ingrédient « Cols » dont la quantité est le prix.
+// À l'enregistrement, ces recettes redeviennent des entrées `sells` ({id, buy}) : le format des données (et tout ce qui le lit) ne change pas.
+function _saleAsCraft(itemId, buy) {
+  return { uid: pnjCraftUid++, resultId: itemId || '', time: '', quality: false,
+           ingredients: [{ uid: pnjIngUid++, itemId: 'cols', qty: buy != null && buy !== '' ? buy : '' }] };
+}
+function addPnjSale() {
   ensureAllItemsIndex();
-  pnjSells.push({ uid: pnjSellUid++, itemId: '', buy: '', price: '' });
-  renderPnjSells();
+  pnjCrafts.push(_saleAsCraft('', ''));
+  renderPnjCrafts();
 }
-
-function renderPnjSells() {
-  const list = document.getElementById('pnj-sells-list');
-  list.innerHTML = '';
-  for (const s of pnjSells) {
-    const row = document.createElement('div');
-    row.style.cssText = 'display:grid;grid-template-columns:1fr 124px 124px auto;gap:6px;align-items:start;';
-
-    const drop = makeSearchDrop(allItemsIndex, 'Item…', id => { s.itemId = id; update(); }, true);
-    if (s.itemId) {
-      const f = allItemsIndex.find(it => it.id === s.itemId);
-      drop.setValue(s.itemId, f ? f.name : s.itemId);
-    }
-    s.drop = drop;
-
-    const mkNum = pl => {
-      const el = document.createElement('input');
-      el.type = 'number'; el.min = '0'; el.step = 'any'; el.placeholder = pl;
-      el.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 6px;font-size:12px;text-align:center;outline:none;width:100%;transition:border-color .15s;';
-      el.addEventListener('focus', () => el.style.borderColor = 'var(--accent)');
-      el.addEventListener('blur',  () => el.style.borderColor = 'var(--border)');
-      return el;
-    };
-
-    const buyEl   = mkNum('Achat');
-    const priceEl = mkNum('Rachat');
-    if (s.buy   !== '') buyEl.value   = s.buy;
-    if (s.price !== '') priceEl.value = s.price;
-    buyEl.addEventListener('input',   () => { s.buy   = buyEl.value;   update(); });
-    priceEl.addEventListener('input', () => { s.price = priceEl.value; update(); });
-
-    const rm = document.createElement('button');
-    rm.className = 'btn-icon'; rm.textContent = '✕';
-    rm.addEventListener('click', () => { pnjSells = pnjSells.filter(e => e.uid !== s.uid); renderPnjSells(); update(); });
-
-    row.appendChild(drop.element);
-    row.appendChild(buyEl);
-    row.appendChild(priceEl);
-    row.appendChild(rm);
-    list.appendChild(row);
-  }
-}
+const _isSaleCraft = (c, ings) => ings.length === 1 && ings[0].id === 'cols' && !c.time && !c.quality;
 
 // ═══════════════════════════════════════════════════
 // PNJ — RECYCLAGE (le joueur donne un item, le PNJ rend des Pièces de Recyclage après un délai)
@@ -6827,7 +6782,7 @@ function renderPnjCrafts() {
       const qtyEl = document.createElement('input');
       qtyEl.type = 'number'; qtyEl.min = '1'; qtyEl.value = ing.qty; qtyEl.placeholder = 'Qté';
       qtyEl.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 6px;font-size:12px;text-align:center;outline:none;width:100%;transition:border-color .15s;';
-      qtyEl.addEventListener('input', () => { ing.qty = parseInt(qtyEl.value) || 1; update(); });
+      qtyEl.addEventListener('input', () => { ing.qty = ing.itemId === 'cols' ? (qtyEl.value === '' ? '' : parseFloat(qtyEl.value)) : (parseInt(qtyEl.value) || 1); update(); });
       qtyEl.addEventListener('focus', () => qtyEl.style.borderColor = 'var(--accent)');
       qtyEl.addEventListener('blur',  () => qtyEl.style.borderColor = 'var(--border)');
 
@@ -6901,22 +6856,24 @@ function buildPnjObj() {
   if (instructions) obj.instructions = instructions;
   if (pnjSensible) obj.sensible = true;
 
-  const sells = pnjSells.filter(s => s.itemId).map(s => {
-    const e = { id: s.itemId };
-    if (s.buy   !== '') e.buy   = +s.buy;
-    if (s.price !== '') e.price = +s.price;
-    return e;
-  });
-  if (sells.length) obj.sells = sells;
-
-  const crafts = pnjCrafts.filter(c => c.resultId).map(c => {
+  // Les recettes qui ne coûtent que des Cols (sans durée ni qualité) sont des ventes : elles vont dans `sells`, les autres dans `craft`.
+  const sells = [], crafts = [];
+  for (const c of pnjCrafts.filter(c => c.resultId)) {
+    const ings = c.ingredients.filter(i => i.itemId).map(i => ({ id: i.itemId, qty: i.qty }));
+    if (_isSaleCraft(c, ings)) {
+      const e = { id: c.resultId };
+      const price = parseFloat(ings[0].qty);
+      if (!isNaN(price) && price >= 0) e.buy = price;
+      sells.push(e);
+      continue;
+    }
     const e = { id: c.resultId };
     if (c.time)    e.time = c.time;
     if (c.quality) e.quality = true;
-    const ings = c.ingredients.filter(i => i.itemId).map(i => ({ id: i.itemId, qty: i.qty }));
     if (ings.length) e.ingredients = ings;
-    return e;
-  });
+    crafts.push(e);
+  }
+  if (sells.length) obj.sells = sells;
   if (crafts.length) obj.craft = crafts;
 
   const recycle = pnjRecycles.filter(r => r.itemId).map(r => {
@@ -6984,6 +6941,14 @@ function onPanopLabelInput() {
   update();
 }
 
+// Un autre effet pour le même nombre de pièces : nouvelle ligne juste sous celle-ci, mêmes pièces
+function addPanopBonusAfter(uid) {
+  const i = panopBonuses.findIndex(b => b.uid === uid);
+  if (i < 0) return;
+  panopBonuses.splice(i + 1, 0, { uid: ++_panopUid, pieces: panopBonuses[i].pieces, stat: '', value: '' });
+  renderPanopBonuses();
+  update();
+}
 function addPanopBonus(preset) {
   panopBonuses.push({
     uid: ++_panopUid,
@@ -7014,7 +6979,7 @@ function renderPanopBonuses() {
     .join('');
   wrap.innerHTML = panopBonuses.map(b => `
     <div class="panop-bonus-row" data-uid="${b.uid}" style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-      <div class="field" style="max-width:90px;margin:0;">
+      <div class="field" style="flex:0 0 118px;margin:0;">
         <label style="font-size:10px;">Pièces</label>
         <input type="number" min="2" max="12" value="${b.pieces}" data-k="pieces" oninput="updatePanopBonus(${b.uid}, 'pieces', this.value)">
       </div>
@@ -7022,10 +6987,11 @@ function renderPanopBonuses() {
         <label style="font-size:10px;">Stat</label>
         <select data-k="stat" onchange="updatePanopBonus(${b.uid}, 'stat', this.value)">${statsOpts}</select>
       </div>
-      <div class="field" style="max-width:100px;margin:0;">
+      <div class="field" style="flex:0 0 150px;margin:0;">
         <label style="font-size:10px;">Valeur</label>
         <input type="number" step="any" value="${b.value}" data-k="value" oninput="updatePanopBonus(${b.uid}, 'value', this.value)">
       </div>
+      <button class="btn btn-ghost btn-sm" style="margin-top:14px;" onclick="addPanopBonusAfter(${b.uid})" title="Ajouter un autre effet pour ${b.pieces} pièces">＋ effet</button>
       <button class="btn btn-ghost btn-sm" style="margin-top:14px;" onclick="removePanopBonus(${b.uid})" title="Supprimer">🗑️</button>
     </div>
   `).join('');
@@ -7128,7 +7094,7 @@ function renderPanopliePreview() {
 // PNJ / RÉGION — RESET
 // ═══════════════════════════════════════════════════
 function resetPnjForm() {
-  pnjSells = []; pnjCrafts = []; pnjRecycles = []; pnjIdLocked = false; pnjSensible = false;
+  pnjCrafts = []; pnjRecycles = []; pnjIdLocked = false; pnjSensible = false;
   const sensBtn = document.getElementById('pnj-sensible-btn'); if (sensBtn) sensBtn.classList.remove('active');
   ['pnj-id','pnj-region','pnj-region-search','pnj-x','pnj-y','pnj-z','pnj-display-name','pnj-instructions'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
@@ -7136,7 +7102,6 @@ function resetPnjForm() {
   clearPnjType();
   const p = document.getElementById('pnj-palier'); if (p) p.selectedIndex = 0;
   _customSelUpdaters['pnj-palier']?.();
-  document.getElementById('pnj-sells-list').innerHTML  = '';
   document.getElementById('pnj-crafts-list').innerHTML = '';
   const _rl = document.getElementById('pnj-recycles-list'); if (_rl) _rl.innerHTML = '';
   setPnjUnderground(false);
@@ -7980,3 +7945,66 @@ document.addEventListener('keydown', e => {
     switchMode(modes[+e.key - 1]);
   }
 });
+
+// ── Sélecteur de coordonnées sur la carte ──
+// Un bouton 📍 à côté de chaque groupe X/Y/Z ouvre la carte interactive (Map/map.html?pick=1) : un clic remplit X et Z (Y reste à saisir).
+function openCoordPicker(xEl, zEl) {
+  if (!xEl || !zEl) return;
+  document.getElementById('coord-picker')?.remove();
+  const gx = parseFloat(xEl.value), gz = parseFloat(zEl.value);
+  const q = 'pick=1' + (!isNaN(gx) && !isNaN(gz) ? `&ghost_gx=${gx}&ghost_gz=${gz}&ghost_name=${encodeURIComponent('Position actuelle')}` : '');
+  const ov = document.createElement('div');
+  ov.id = 'coord-picker';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:16px;';
+  ov.innerHTML = `<div style="background:var(--surface,#16130f);border:1px solid var(--border,#3a3226);border-radius:10px;width:min(1100px,100%);height:min(760px,100%);display:flex;flex-direction:column;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border,#3a3226);font-size:12px;">
+        <b>📍 Cliquez sur la carte pour placer le point</b>
+        <span id="cp-val" style="color:var(--muted);flex:1;">Aucun point choisi</span>
+        <button type="button" class="btn btn-primary btn-sm" id="cp-ok" disabled>Valider</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="cp-cancel">Annuler</button>
+      </div>
+      <iframe src="Map/map.html?${q}" style="flex:1;border:0;width:100%;"></iframe></div>`;
+  document.body.appendChild(ov);
+  let picked = null;
+  const close = () => { window.removeEventListener('message', onMsg); document.removeEventListener('keydown', onKey, true); ov.remove(); };
+  const onMsg = e => {
+    const d = e.data;
+    if (!d || d.type !== 'vcl-map-pick' || !isFinite(d.x) || !isFinite(d.z)) return;
+    picked = d;
+    ov.querySelector('#cp-val').textContent = `X ${d.x}  ·  Z ${d.z}`;
+    ov.querySelector('#cp-ok').disabled = false;
+  };
+  const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
+  window.addEventListener('message', onMsg);
+  document.addEventListener('keydown', onKey, true);
+  ov.querySelector('#cp-cancel').onclick = close;
+  ov.addEventListener('mousedown', e => { if (e.target === ov) close(); });
+  ov.querySelector('#cp-ok').onclick = () => {
+    if (picked) {
+      xEl.value = picked.x; zEl.value = picked.z;
+      xEl.dispatchEvent(new Event('input', { bubbles: true })); zEl.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    close();
+  };
+}
+function _coordPickBtn(getX, getZ) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'btn btn-ghost btn-sm coord-pick-btn';
+  b.textContent = '📍 Carte';
+  b.title = 'Choisir le point sur la carte interactive';
+  b.style.cssText = 'padding:2px 8px;font-size:11px;margin-left:auto;';
+  b.addEventListener('click', () => openCoordPicker(getX(), getZ()));
+  return b;
+}
+function initCoordPickers() {
+  document.querySelectorAll('.coords-label').forEach(lab => {
+    const row = lab.nextElementSibling;
+    if (!row || !row.classList.contains('coords-row') || lab.querySelector('.coord-pick-btn')) return;
+    const x = row.querySelector('.coord-x input'), z = row.querySelector('.coord-z input');
+    if (!x || !z) return;
+    lab.style.alignItems = 'center';
+    lab.insertBefore(_coordPickBtn(() => x, () => z), lab.querySelector('.req'));
+  });
+}
+initCoordPickers();
