@@ -1036,17 +1036,19 @@ function loadAccessoriesForClass(classId) {
 
       const lo = roundUp2(mins[stat.id] || 0);
       const hi = roundUp2(maxs[stat.id] || 0);
+      // Stats générales : la vitesse d'attaque s'affiche en % (sur les items elle est en /s)
+      const unitTot = stat.id === 'vitesse_attaque' ? '%' : stat.unit;
 
       if (hi === 0 && lo === 0) {
 		valEl.innerHTML = '—';
 		valEl.className = 'stat-value';
 	  } else if (lo === hi) {
-		valEl.innerHTML = '<span style="' + (lo < 0 ? 'color:#d9614a' : '') + '">' + lo + stat.unit + '</span>';
+		valEl.innerHTML = '<span style="' + (lo < 0 ? 'color:#d9614a' : '') + '">' + lo + unitTot + '</span>';
 		valEl.className = 'stat-value nonzero';
 	  } else {
 		valEl.innerHTML =
-			'<span class="sv-hi"' + (hi < 0 ? ' style="color:#d9614a"' : '') + '>' + hi + stat.unit + '</span>' +
-			'<span class="sv-lo"' + (lo < 0 ? ' style="color:#d9614a"' : '') + '>' + lo + stat.unit + '</span>';
+			'<span class="sv-hi"' + (hi < 0 ? ' style="color:#d9614a"' : '') + '>' + hi + unitTot + '</span>' +
+			'<span class="sv-lo"' + (lo < 0 ? ' style="color:#d9614a"' : '') + '>' + lo + unitTot + '</span>';
 		valEl.className = 'stat-value nonzero has-range';
 	  }
 
@@ -2141,7 +2143,7 @@ function loadAccessoriesForClass(classId) {
     return Object.entries(t.stats || {}).map(function(e) {
       const st = STATS_BY_ID.get(e[0]);
       const v = +e[1] || 0;
-      return (st ? st.label : e[0]) + ' ' + (v > 0 ? '+' : '') + v + (st && st.unit ? st.unit : '');
+      return (st ? st.label : e[0]) + ' ' + (v > 0 ? '+' : '') + v + (e[0] === 'vitesse_attaque' ? '%' : (st && st.unit ? st.unit : ''));
     });
   }
   function _renderTitreBtn() {
