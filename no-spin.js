@@ -7,7 +7,7 @@
     'input[type=number]{-moz-appearance:textfield;appearance:textfield}' +
     'input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;display:none}' +
     '.vcl-step{display:inline-flex;align-items:stretch;min-width:0;max-width:100%}' +
-    '.vcl-step>input[type=number]{flex:1 1 auto;min-width:0;width:auto;border-radius:0!important;border-left:0!important;border-right:0!important}' +
+    '.vcl-step>input[type=number]{flex:1 1 auto;min-width:36px;width:auto;border-radius:0!important;border-left:0!important;border-right:0!important}' +
     '.vcl-step-btn{flex:0 0 26px;padding:0;cursor:pointer;font-size:15px;line-height:1;font-family:inherit;background:var(--surface2,#1f1b15);color:var(--text,#e8dcc0);border:1px solid var(--border,#3a3126);transition:background .12s,color .12s,border-color .12s}' +
     '.vcl-step-btn:first-child{border-radius:6px 0 0 6px}.vcl-step-btn:last-child{border-radius:0 6px 6px 0}' +
     '.vcl-step-btn:hover{background:var(--surface,#14110d);color:var(--accent,#c9a84c);border-color:var(--accent,#c9a84c)}' +

@@ -327,7 +327,7 @@ select:focus, select:hover { border-color: var(--accent); }
 /* ── STATS ── */
 .stat-group-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding: 6px 0 2px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
 .stat-row {
-  display: grid; grid-template-columns: 1fr 78px 16px 78px;
+  display: grid; grid-template-columns: 1fr 124px 16px 124px;
   gap: 6px; align-items: center; padding: 5px 8px; border-radius: 6px;
   border: 1px solid transparent; transition: border-color .15s, background .15s;
 }

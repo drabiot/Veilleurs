@@ -6501,7 +6501,7 @@ function renderPnjSells() {
   list.innerHTML = '';
   for (const s of pnjSells) {
     const row = document.createElement('div');
-    row.style.cssText = 'display:grid;grid-template-columns:1fr 78px 78px auto;gap:6px;align-items:start;';
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 124px 124px auto;gap:6px;align-items:start;';
 
     const drop = makeSearchDrop(allItemsIndex, 'Item…', id => { s.itemId = id; update(); }, true);
     if (s.itemId) {
