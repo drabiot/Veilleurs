@@ -2613,6 +2613,9 @@ function resetFormSilent() {
   clearForumImage();
   onCatChange();
   refreshCustomSelects();
+  const _ss = document.getElementById('stat-search');
+  if (_ss) _ss.value = '';
+  filterStats(); // la recherche de stats est vidée : on réaffiche toutes les lignes (sinon seules les stats filtrées restent visibles)
   _skipSave = false;
   clearSavedForm();
 }
