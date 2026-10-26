@@ -276,8 +276,10 @@ async function resolveSiteRole(env, discordRoleIds) {
   return best;
 }
 
+// `wanted` : un nom ou une liste de noms par ordre de préférence (pseudo serveur, nom affiché, identifiant Discord) ; le premier qui reste lisible une fois nettoyé est pris
 async function uniquePseudo(env, wanted, discordId) {
-  let p = String(wanted || '').replace(/[^\p{L}\p{N}_\- \[\]]/gu, '').trim().slice(0, 32);
+  const clean = w => String(w || '').replace(/[^\p{L}\p{N}_\- \[\]]/gu, '').trim().slice(0, 32);
+  let p = [].concat(wanted).map(clean).find(c => c.length >= 2) || '';
   if (p.length < 2) p = `Veilleur${discordId.slice(-4)}`;
   if (!(await userFind(env, 'pseudo', p))) return p;
   return `${p.slice(0, 27)}_${discordId.slice(-4)}`;
@@ -377,7 +379,11 @@ async function handleDiscordCallback(request, env) {
       discordName: me.global_name || me.username,
       discordAvatar: me.avatar || '',
     };
-    if (!existing) data.pseudo = await uniquePseudo(env, member.nick || me.global_name || me.username, me.id);
+    // pseudo du site : créé à la 1re connexion, et refait pour les comptes restés sur le pseudo de secours « VeilleurNNNN »
+    if (!existing || /^Veilleur\d{4}$/.test(existing.pseudo || '')) {
+      const p = await uniquePseudo(env, [member.nick, me.global_name, me.username], me.id);
+      if (!existing || !/^Veilleur\d{4}$/.test(p)) data.pseudo = p;
+    }
     // admin / roleLocked : jamais écrasé par la synchro Discord
     if (!existing || (existing.role !== 'admin' && !existing.roleLocked)) {
       data.role = await resolveSiteRole(env, member.roles || []);
