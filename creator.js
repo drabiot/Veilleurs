@@ -3885,6 +3885,9 @@ async function loadTableauDeChasse() {
         }
       }
 
+      // Un item fabriqué (craft renseigné) doit aussi indiquer le temps de recharge du craft
+      if (mode === 'items' && Array.isArray(d.craft) && d.craft.length && !d.craft_cd && !missing.includes('craft_cd')) missing.push('craft_cd');
+
       const name = d.name || d.titre || d.label || id;
       const modeCreator = { items:'item', mobs:'mob', pnj:'pnj', regions:'region', quetes:'quest', panoplies:'panoplie' }[mode] || mode;
       _chasseDocMap.set(`${mode}:${id}`, { data: d, modeCreator, name, missing });
@@ -3996,6 +3999,7 @@ const _CHASSE_FIELD_SELECTORS = {
     obtain:   '#obtain-type',
     stats:    '#stats-section .sec-head',
     effects:  '#effects-section .sec-head',
+    craft_cd: '#f-craft-cd',
   },
   mobs: {
     name:   '#mob-name',
