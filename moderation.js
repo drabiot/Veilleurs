@@ -1254,7 +1254,7 @@ function _mergeContributors(existing, newContrib, isMod = false) {
 // Tout autre champ d'un document existant est conservé quand une modification est approuvée.
 const _CREATOR_MANAGED_KEYS = {
   item:     new Set(['cat','category','classes','competence','cooldown_apply','craft','craft_cd','craft_qty','effects','event','evolutif','evolutions','evolvedFrom','id','images','lore','lvl','name','obtain','occulte','palier','quality','rarity','rune_slots','sensible','set','skill_name','skill_rarity','stats','tags','twoHanded','unique']),
-  mob:      new Set(['id','name','type','behavior','palier','region','images','inCodex','sensible','lore','spawnTime','coords','loot']),
+  mob:      new Set(['id','name','type','behavior','palier','region','images','inCodex','sensible','lore','spawnTime','coords','coords_more','loot']),
   pnj:      new Set(['coords','craft','id','images','instructions','is_underground','name','palier','region','sells','sensible','tag','type']),
   region:   new Set(['canTp','coords','id','images','inCodex','lore','name','palier']),
   quest:    new Set(['id','type','palier','zone','npc','desc','coords','titre','objectifs','recompenses','statut']),

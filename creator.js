@@ -489,6 +489,7 @@ function saveForm() {
         x:    document.getElementById('mob-x')?.value || '',
         y:    document.getElementById('mob-y')?.value || '',
         z:    document.getElementById('mob-z')?.value || '',
+        coordsMore: _mobMoreCoords(),
       },
       // PNJ form
       pnj: {
@@ -685,6 +686,7 @@ function restoreForm(forcedMode) {
       if (m.x !== undefined && m.x !== '') document.getElementById('mob-x').value = m.x;
       if (m.y !== undefined && m.y !== '') document.getElementById('mob-y').value = m.y;
       if (m.z !== undefined && m.z !== '') document.getElementById('mob-z').value = m.z;
+      if (m.coordsMore?.length) _setMobMoreCoords(m.coordsMore);
       if (m.loot?.length) {
         ensureItemIndex();
         for (const l of m.loot) {
@@ -2690,6 +2692,7 @@ function loadMob(mob) {
     document.getElementById('mob-y').value = mob.coords.y ?? '';
     document.getElementById('mob-z').value = mob.coords.z ?? '';
   }
+  _setMobMoreCoords(mob.coords_more);
   if (mob.loot?.length) {
     ensureItemIndex();
     for (const l of mob.loot) {
@@ -6248,10 +6251,39 @@ function buildMobObj() {
   if (cx !== '' && cz !== '' && cx != null && cz != null) {
     obj.coords = { x: +cx, y: (cy !== '' && cy != null) ? +cy : 0, z: +cz };
   }
+  // Autres endroits où le mob apparaît (le 1er reste dans `coords`)
+  { const more = _mobMoreCoords(); if (more.length) obj.coords_more = more; }
   const loot = getMobLoot();
   if (loot.length) obj.loot = loot;
 
   return obj;
+}
+
+// ── Mob : plusieurs endroits ──
+function addMobCoordRow(x, y, z) {
+  const wrap = document.getElementById('mob-coords-more');
+  if (!wrap) return;
+  const row = document.createElement('div');
+  row.className = 'coords-row mob-more-row';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center;';
+  const mk = (cls, axis, ph, val) => `<div class="coord-field ${cls}"><span class="coord-axis">${axis}</span><input type="number" step="1" placeholder="${ph}" value="${val ?? ''}" data-axis="${axis.toLowerCase()}" oninput="update()"></div>`;
+  row.innerHTML = mk('coord-x', 'X', '128', x) + mk('coord-y', 'Y', '64', y) + mk('coord-z', 'Z', '-320', z) +
+    '<button type="button" class="btn-icon" title="Retirer cet endroit">✕</button>';
+  row.querySelector('button').addEventListener('click', () => { row.remove(); update(); });
+  wrap.appendChild(row);
+  update();
+}
+function _mobMoreCoords() {
+  return [...document.querySelectorAll('#mob-coords-more .mob-more-row')].map(r => {
+    const g = a => r.querySelector(`input[data-axis="${a}"]`)?.value;
+    if (g('x') === '' || g('z') === '' || g('x') == null || g('z') == null) return null;
+    return { x: +g('x'), y: (g('y') !== '' && g('y') != null) ? +g('y') : 0, z: +g('z') };
+  }).filter(Boolean);
+}
+function _setMobMoreCoords(list) {
+  const wrap = document.getElementById('mob-coords-more');
+  if (wrap) wrap.innerHTML = '';
+  for (const c of (Array.isArray(list) ? list : [])) if (c) addMobCoordRow(c.x, c.y, c.z);
 }
 
 // ═══════════════════════════════════════════════════
@@ -6259,6 +6291,7 @@ function buildMobObj() {
 // ═══════════════════════════════════════════════════
 function resetMobForm() {
   mobIdLocked = false; mobInCodex = true; mobSensible = false; mobLootEntries = [];
+  _setMobMoreCoords([]);
   const sensBtn = document.getElementById('mob-sensible-btn'); if (sensBtn) sensBtn.classList.remove('active');
   ['mob-name','mob-id','mob-lore','mob-spawntime','mob-regionid','mob-x','mob-y','mob-z'].forEach(fid => {
     const el = document.getElementById(fid); if (el) el.value = '';
