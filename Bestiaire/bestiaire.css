@@ -1055,3 +1055,7 @@ body.bestiaire-page {
   .mob-body-grid { grid-template-columns: 1fr; }
   .mob-section.full-width { grid-column: 1; }
 }
+
+/* Monnaie dans une recette (cols) : pièce à la place de l'image, ligne non cliquable */
+.craft-currency-row { cursor: default; }
+.craft-currency-ico { display: flex; align-items: center; justify-content: center; font-size: 18px; line-height: 1; background: transparent; border-color: transparent; }

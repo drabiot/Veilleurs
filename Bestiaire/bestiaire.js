@@ -814,6 +814,16 @@ function renderPNJSheet(pnj) {
       const qualityBadge = recipe.quality ? ' <span class="loot-quality-badge">✦</span>' : '';
 
       const ingsHTML = (recipe.ingredients || []).map(c => {
+        // Monnaie (cols) : même rendu que dans le Compendium — pièce 🪙 et nom en or, sans lien
+        const cur = (typeof CURRENCIES !== 'undefined') ? CURRENCIES[c.id] : null;
+        if (cur) {
+          return `
+          <div class="loot-row craft-currency-row">
+            <div class="loot-img-wrap craft-currency-ico">${cur.emoji}</div>
+            <span class="loot-name" style="color:${cur.color}">${escHtml(cur.label)}</span>
+            <span class="loot-drop-rate" style="color:${cur.color};border-color:${cur.color}44">×${escHtml(String(c.qty))}</span>
+          </div>`;
+        }
         const ing      = _findItemOrSensitive(c.id);
         const ingName  = ing ? ing.name : c.id;
         const ingColor = ing ? getRarityColor(ing.rarity) : '#8c8c8c';
