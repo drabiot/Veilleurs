@@ -6343,8 +6343,8 @@ function pnjRegionSlug(regionName) {
   return nameToId(regionName);
 }
 
-// ID d'un PNJ : type + palier + lieu (forgeron_d_accessoires_p1_vdp). Si cet ID est déjà pris par un AUTRE PNJ (même type, palier et lieu),
-// le NOM prend la place du type : nom + palier + lieu (forgeron_d_accessoires_en_fer_p1_vdp), puis _2, _3… en dernier recours.
+// ID d'un PNJ : NOM + palier + lieu (forgeron_d_accessoires_en_fer_p1_vdp). Sans nom personnalisé, le nom est celui du type. Si l'ID est
+// pourtant déjà pris par un autre PNJ (même nom, palier et lieu), on ajoute _2, _3…
 function _pnjIdTaken(id) {
   if (!id) return false;
   const editing = pnjIdLocked ? document.getElementById('pnj-id')?.value?.trim() : ''; // le PNJ en cours d'édition ne compte pas
@@ -6359,17 +6359,12 @@ function buildPnjId() {
   const displayName = document.getElementById('pnj-display-name')?.value?.trim() || '';
   const palier      = document.getElementById('pnj-palier').value;
   const region      = document.getElementById('pnj-region').value.trim();
-  const regionSlug  = pnjRegionSlug(region);
-  const palierSlug  = palier ? `p${palier}` : '';
-  const tail        = [palierSlug, regionSlug].filter(Boolean);
-  const byType      = [nameToId(type), ...tail].filter(Boolean).join('_');
-  if (!_pnjIdTaken(byType)) return byType;
-  const nameSlug = nameToId(displayName || pnjTitleCase(type));
-  const byName   = [nameSlug, ...tail].filter(Boolean).join('_');
-  if (byName && byName !== byType && !_pnjIdTaken(byName)) return byName;
+  const nameSlug    = nameToId(displayName || (type ? pnjTitleCase(type) : ''));
+  const base        = [nameSlug, palier ? `p${palier}` : '', pnjRegionSlug(region)].filter(Boolean).join('_');
+  if (!_pnjIdTaken(base)) return base;
   let n = 2;
-  while (_pnjIdTaken(`${byName || byType}_${n}`)) n++;
-  return `${byName || byType}_${n}`;
+  while (_pnjIdTaken(`${base}_${n}`)) n++;
+  return `${base}_${n}`;
 }
 
 function onPnjTypeChange() {

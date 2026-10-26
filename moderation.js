@@ -1235,18 +1235,19 @@ window.approve = async (id) => {
     const _contribName  = sub.submitterName || _userNames.get(sub.submittedBy) || 'Inconnu';
     const _contribField = { uid: sub.submittedBy || null, name: _contribName };
 
-    // Nouveau PNJ dont l'ID est déjà pris par un AUTRE PNJ (même type, palier, lieu) : l'ID est refait avec le nom, sans jamais écraser l'existant
+    // Nouveau PNJ : l'ID par défaut est NOM + palier + lieu. Une soumission qui porte encore l'ancien format (type + palier + lieu) est convertie,
+    // et un ID déjà pris reçoit un _2, _3… : un nouvel ajout n'écrase jamais un PNJ existant.
     if (sub.type === 'pnj' && !sub.isModification) {
       const taken = async id => (await getDoc(doc(db, 'personnages', String(id)))).exists();
-      if (await taken(dataId)) {
-        const nameSlug = _slugName(sub.data.name || '');
-        const typeSlug = _slugName(sub.data.type || '');
-        const old = String(dataId);
-        const tail = (typeSlug && old.startsWith(typeSlug + '_')) ? old.slice(typeSlug.length) : (old.match(/_p\d+.*$/) || [''])[0];
-        let nid = nameSlug ? nameSlug + tail : '', n = 2;
-        while (nid && await taken(nid)) nid = `${nameSlug}${tail}_${n++}`;
-        if (!nid || nid === old) throw new Error(`Un PNJ avec l'ID « ${old} » existe déjà : ajoute un nom distinct, ou approuve-le comme modification.`);
-        toast(`ID déjà pris : ${old} → ${nid}`, 'info', 6000);
+      const old = String(dataId);
+      const nameSlug = _slugName(sub.data.name || '');
+      const typeSlug = _slugName(sub.data.type || '');
+      let nid = old;
+      if (nameSlug && typeSlug && old.startsWith(typeSlug + '_') && !old.startsWith(nameSlug + '_')) nid = nameSlug + old.slice(typeSlug.length); // ancien format
+      let base = nid, n = 2;
+      while (await taken(nid)) nid = `${base}_${n++}`;
+      if (nid !== old) {
+        toast(`ID du PNJ : ${old} → ${nid}`, 'info', 6000);
         dataId = nid;
         sub.data = { ...sub.data, id: nid };
         if (Array.isArray(sub.data.images)) sub.data.images = sub.data.images.map(p => typeof p === 'string' ? p.split(old).join(nid) : p);
@@ -1343,6 +1344,11 @@ window.approve = async (id) => {
         store.invalidate(storeKey);
         // Bump wiki_version pour notifier les autres onglets/pages
         setDoc(doc(db, 'config', 'wiki_version'), { lastUpdated: serverTimestamp(), collection: storeKey }, { merge: true }).catch(() => {});
+      }
+
+      // PNJ approuvé : ses items fabriqués / vendus reçoivent la source d'obtention correspondante
+      if (sub.type === 'pnj') {
+        _syncPnjObtain({ ...dataToWrite, id: String(dataId) }).then(n => { if (n) toast(`Obtention mise à jour sur ${n} item${n !== 1 ? 's' : ''}`, 'success', 5000); }).catch(e => console.warn('[obtain PNJ]', e));
       }
 
       // Si PNJ approuvé et panneau d'ordre ouvert, le recharger
@@ -5182,6 +5188,34 @@ const _toastImageRenames = pairs => pairs.length && toast(
   '🖼️ Texture : le chemin a changé. Renomme le fichier dans le dépôt (img/…) : ' + pairs.map(([a, b]) => `${a.split('/').pop()} → ${b.split('/').pop()}`).join(', '),
   'warning', 14000);
 
+// ── Obtention écrite dans l'item : quand un PNJ fabrique ou vend un item, la ligne « Fabricable au [PNJ] » / « Achetable au [PNJ] » est ajoutée
+// au champ `obtain` de cet item (sans doublon). Si le PNJ ne fabrique / ne vend plus l'item, sa ligne est retirée. Les autres lignes ne sont jamais touchées.
+async function _syncPnjObtain(pnj) {
+  const pid = pnj && (pnj.id || pnj._id);
+  if (!pid || !pnj.name) return 0;
+  const want = new Map(); // id d'item -> ligne
+  for (const e of (pnj.craft || [])) if (e && e.id) want.set(e.id, `Fabricable au [npc:${pid}|${pnj.name}]`);
+  for (const e of (pnj.sells || [])) if (e && e.id && !want.has(e.id)) want.set(e.id, `Achetable au [npc:${pid}|${pnj.name}]`);
+  const esc = String(pid).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const mine = new RegExp('^[\\s-]*(Fabricable|Achetable) au \\[npc:' + esc + '[|\\]].*$', 'i');
+  const snap = await getDocs(collection(db, 'items'));
+  let touched = 0;
+  for (const d of snap.docs) {
+    const data = d.data();
+    const lines = String(data.obtain || '').split('\n');
+    const kept = lines.filter(l => !mine.test(l.trim()));
+    const line = want.get(d.id);
+    const had = kept.length !== lines.length;
+    if (!line && !had) continue;                       // l'item n'a rien à voir avec ce PNJ
+    const text = line ? [...kept.filter(l => l.trim() !== ''), line].join('\n') : kept.join('\n').trim();
+    if (text === String(data.obtain || '')) continue;
+    await updateDoc(d.ref, { obtain: text });
+    touched++;
+  }
+  if (touched) invalidateModCache('items');
+  return touched;
+}
+
 // Registre des renommages (config/item_renames : { map: { ancienId: nouvelId } }). Les navigateurs qui ont encore l'ancien ID
 // dans un brouillon d'Atelier le convertissent au chargement. Les chaînes sont raccourcies (a→b puis b→c devient a→c).
 async function _recordItemRename(oldId, newId) {
@@ -5196,10 +5230,13 @@ async function _recordItemRename(oldId, newId) {
   } catch (e) { console.warn('[renommage] registre non mis à jour :', e); }
 }
 
-async function _renameItemReferences(oldId, newId) {
+async function _renameItemReferences(oldId, newId, opts = {}) {
   const COLS = ['items', 'mobs', 'personnages', 'quetes', 'panoplies', 'regions', 'zones', 'donjons', 'map_markers', 'builds_published', 'submissions', 'config'];
   const deepRep = v => {
     if (v === oldId) return { v: newId, c: true };
+    if (opts.npcText && typeof v === 'string' && (v.includes(`[npc:${oldId}|`) || v.includes(`[npc:${oldId}]`))) {
+      return { v: v.split(`[npc:${oldId}|`).join(`[npc:${newId}|`).split(`[npc:${oldId}]`).join(`[npc:${newId}]`), c: true };
+    }
     if (Array.isArray(v)) { let c = false; const o = v.map(x => { const r = deepRep(x); if (r.c) c = true; return r.v; }); return { v: o, c }; }
     if (v && typeof v === 'object' && typeof v.toMillis !== 'function') {
       let c = false; const o = {};
@@ -5212,7 +5249,7 @@ async function _renameItemReferences(oldId, newId) {
   for (const col of COLS) {
     const snap = await getDocs(collection(db, col));
     for (const d of snap.docs) {
-      if (col === 'items' && (d.id === oldId || d.id === newId)) continue;
+      if ((col === 'items' || col === 'personnages') && (d.id === oldId || d.id === newId)) continue;
       const data = d.data();
       if (col === 'submissions' && data.status !== 'pending') continue; // l'historique des soumissions traitées reste tel quel
       const patch = {};
@@ -5344,6 +5381,14 @@ window.saveEditor = async function() {
       if (_editorCollection === 'items' && _merged.images?.length) { const r = _renameImagePaths(_merged.images, _editorId, newDocId); _merged.images = r.images; _edImgPairs = r.pairs; newData.images = r.images; }
       await setDoc(doc(db, _editorCollection, newDocId), _merged);
       await deleteDoc(doc(db, _editorCollection, _editorId));
+      if (_editorCollection === 'personnages') { // quêtes, textes d'obtention [npc:id|nom], soumissions en attente…
+        try {
+          const n = await _renameItemReferences(_editorId, newDocId, { npcText: true });
+          toast(`Références au PNJ mises à jour : ${n} document${n !== 1 ? 's' : ''}`, 'success', 6000);
+        } catch (e) {
+          toast(`⚠️ ID renommé, mais certaines références n'ont pas pu être mises à jour : ${e.message}`, 'warning', 9000);
+        }
+      }
       if (_editorCollection === 'items') { // toutes les références à l'ancien ID suivent
         try {
           const n = await _renameItemReferences(_editorId, newDocId);
@@ -5377,6 +5422,10 @@ window.saveEditor = async function() {
 
       // Nettoyage pour Firestore (évite les undefined/null selon tes besoins)
       await updateDoc(doc(db, _editorCollection, _editorId), sanitizeForFirestore(patch));
+    }
+
+    if (_editorCollection === 'personnages') {
+      _syncPnjObtain({ ...newData, id: String(newData.id ?? _editorId) }).then(n => { if (n) toast(`Obtention mise à jour sur ${n} item${n !== 1 ? 's' : ''}`, 'success', 5000); }).catch(e => console.warn('[obtain PNJ]', e));
     }
 
     // Invalider les caches localStorage et session
@@ -13760,22 +13809,27 @@ function _daSyncOldPalierSort(palierFilter) {
 // Filtre « Ex-palier » : équipements de l'archive (palier -1) selon leur ancien palier (ex-P1, ex-P2…).
 // Le menu n'apparaît que s'il reste des items archivés ; il disparaît de lui-même une fois l'archive vidée.
 const _EX_PALIER_EQUIP = new Set(['arme', 'armure', 'accessoire']);
+let _exPalierSel = ''; // ancien palier sélectionné ('' = aucun) ; une seule pastille active à la fois
 function _daSyncExPalierFilter() {
-  const sel = document.getElementById('data-all-expalier');
-  if (!sel) return '';
+  const box = document.getElementById('data-all-expalier');
+  if (!box) return '';
   const olds = [...new Set(_dataAllData.filter(d => d.palier == -1 && d._oldPalier != null).map(d => String(d._oldPalier)))]
     .sort((a, b) => (Number(a) || 98) - (Number(b) || 98));
-  const cur = sel.value;
-  const have = [...sel.options].slice(1).map(o => o.value).join(',');
-  if (have !== olds.join(',')) {
-    sel.innerHTML = '<option value="">Ex-palier : tous</option>' + olds.map(o => {
-      const n = _dataAllData.filter(d => d.palier == -1 && String(d._oldPalier) === o && _EX_PALIER_EQUIP.has(d.category)).length;
-      return `<option value="${escHtml(o)}">Équipements ex-P${escHtml(o)} (${n})</option>`;
-    }).join('');
-    sel.value = olds.includes(cur) ? cur : '';
-  }
-  sel.style.display = olds.length ? '' : 'none';
-  return olds.length ? sel.value : '';
+  if (!olds.includes(_exPalierSel)) _exPalierSel = '';
+  box.innerHTML = '';
+  olds.forEach(o => {
+    const n = _dataAllData.filter(d => d.palier == -1 && String(d._oldPalier) === o && _EX_PALIER_EQUIP.has(d.category)).length;
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'filter-btn' + (o === _exPalierSel ? ' active' : '');
+    chip.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:20px;';
+    chip.title = `Équipements de l'archive qui étaient en palier ${o} (cliquer de nouveau pour retirer le filtre)`;
+    chip.textContent = `ex-P${o} (${n})`;
+    chip.onclick = () => { _exPalierSel = (_exPalierSel === o) ? '' : o; renderDataAll(); };
+    box.appendChild(chip);
+  });
+  box.style.display = olds.length ? 'inline-flex' : 'none';
+  return _exPalierSel;
 }
 
 window.renderDataAll = function() {
