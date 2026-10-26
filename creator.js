@@ -3226,16 +3226,22 @@ const CRAFT_VIRTUAL_ITEMS = [
   { id: 'cols', name: '🪙 Cols', search: 'cols monnaie currency or argent gold' },
 ];
 
+let _itemIndexSig = '';
 function ensureItemIndex() {
-  if (itemIndex.length) return;
   if (typeof ITEMS === 'undefined') return;
-  itemIndex = ITEMS
+  // Reconstruit l'index dès que la liste d'items change (items chargés après coup, soumissions en attente) ;
+  // il est modifié EN PLACE : les menus de recherche déjà créés gardent la même référence et voient la mise à jour.
+  const sig = ITEMS.length + ':' + (window._vcl_pendingItems || []).length;
+  if (itemIndex.length && _itemIndexSig === sig) return;
+  _itemIndexSig = sig;
+  itemIndex.length = 0;
+  itemIndex.push(...ITEMS
     .filter(it => CRAFT_CATEGORIES.has(it.category))
     .map(it => ({
       id: it.id,
       name: it.name || it.id,
       search: ((it.name || '') + ' ' + it.id).toLowerCase()
-    }));
+    })));
 
   // Ajouter les entrées virtuelles si elles ne sont pas déjà dans ITEMS
   const knownVirtual = new Set(itemIndex.map(i => i.id));
