@@ -737,13 +737,13 @@ function loadAccessoriesForClass(classId) {
     const list = document.getElementById('stats-list');
     list.innerHTML = '';
 
-    STAT_GROUPS.forEach(group => {
-      const glabel = document.createElement('div');
-      glabel.className = 'stat-group-label';
-      glabel.textContent = group.label;
-      list.appendChild(glabel);
-
-      group.stats.forEach(stat => {
+    // Liste à plat, dans l'ordre du panneau « Statistiques » du jeu (STAT_DISPLAY_ORDER) ; les stats non listées suivent à la fin.
+    const order = (typeof STAT_DISPLAY_ORDER !== 'undefined') ? STAT_DISPLAY_ORDER : [];
+    const rank = id => { const i = order.indexOf(id); return i < 0 ? order.length : i; };
+    const ordered = ALL_STATS.map(function(stat, i) { return { stat: stat, i: i }; })
+      .sort(function(a, b) { return rank(a.stat.id) - rank(b.stat.id) || a.i - b.i; })
+      .map(function(x) { return x.stat; });
+    ordered.forEach(stat => {
         const row = document.createElement('div');
         row.className = 'stat-row';
         row.dataset.statId = stat.id;
@@ -763,7 +763,6 @@ function loadAccessoriesForClass(classId) {
 		}
 		renderItemList();
 		});
-      });
     });
   }
 

@@ -23,6 +23,27 @@ const CLASS_BASE_STATS = {
   },
 };
 //#endregion STATS DE BASE
+//#region ORDRE D'AFFICHAGE DES STATS
+// Ordre du panneau « Statistiques » en jeu (Vie, Dég. d'attaque, Défense, Dég. projectile, Mana, Vit. d'attaque, Chance crit., Dég. critiques,
+// Crit. capacités, Dég. crit. capacités, Endurance, Délai capacités, Vit. déplac., Soin bonus, Dég. capacités, Esquive, Réduc. dégâts, Dég. magiques, Ténacité).
+// Les stats absentes de la fiche du jeu sont placées à côté de celles auxquelles elles se rattachent. « Délai capacités » = Hâte.
+const STAT_DISPLAY_ORDER = [
+  'sante', 'regen_sante',
+  'degats', 'degats_physique', 'degats_arme',
+  'defense', 'durabilite_garde', 'blocage', 'puissance_bloc', 'chance_parade',
+  'degats_projectile',
+  'mana', 'regen_mana',
+  'vitesse_attaque', 'crit_chance', 'crit_degats', 'crit_comp_chance', 'crit_comp_degats',
+  'stamina', 'regen_stamina',
+  'hate',
+  'vitesse_deplacement', 'vitesse_accroupi',
+  'soin_bonus', 'puissance_soin',
+  'degats_competence', 'vol_vie', 'omnivamp',
+  'esquive', 'reduction_degats', 'reduction_chutes',
+  'degats_magique',
+  'tenacite', 'res_recul',
+];
+//#endregion ORDRE D'AFFICHAGE DES STATS
 //#region GAINS PAR NIVEAU
 // Stats gagnées à CHAQUE montée de niveau (message « Niveau supérieur — vous gagnez : » en jeu).
 // Un build de niveau N a franchi N-1 niveaux : l'Atelier ajoute (N-1) × ces valeurs (clés = id de stat, voir STAT_GROUPS).
