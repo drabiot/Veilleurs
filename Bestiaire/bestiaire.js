@@ -664,6 +664,18 @@ function renderMobSheet(mob) {
 
   const bcolor = BEHAVIOR_COLORS[mob.behavior] || '#888';
 
+  // Boss / mini-boss : liste à puces des coordonnées où il apparaît (coords + coords_more)
+  const locHTML = (() => {
+    if (!['boss', 'mini_boss'].includes(mob.type) || mob.sensible) return '';
+    const pts = [mob.coords, ...(Array.isArray(mob.coords_more) ? mob.coords_more : [])].filter(c => c && c.x != null && c.z != null);
+    if (!pts.length) return '';
+    const fmt = c => `X ${c.x}${c.y ? ' · Y ' + c.y : ''} · Z ${c.z}`;
+    return `<div class="mob-loc">
+      <span class="mob-meta-key">Localisation</span>
+      <ul class="mob-loc-list">${pts.map(c => `<li>${escHtml(fmt(c))}</li>`).join('')}</ul>
+    </div>`;
+  })();
+
   const spawnBadgeHTML = (() => {
     if (!mob.spawnTime) return '';
     const st = mob.spawnTime;
@@ -709,6 +721,7 @@ function renderMobSheet(mob) {
               </span>
             </div>` : ''}
           </div>
+          ${locHTML}
         </div>
       </div>
       <div class="mob-body-grid">
