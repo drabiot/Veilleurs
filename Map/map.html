@@ -6,7 +6,7 @@
   <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
   <title>[VCL] - Carte </title>
   <link rel="stylesheet" href="../Patchnotes/patchnotes.css" />
-  <link rel="stylesheet" href="map.css" />
+  <link rel="stylesheet" href="map.css?v=2" />
   <link rel="stylesheet" href="../auth-widget.css" />
   <link rel="stylesheet" href="../report-widget.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -255,6 +255,7 @@
       <!-- Viewport -->
       <div class="map-viewport" id="map-viewport">
         <div class="map-canvas" id="map-canvas">
+          <div id="map-loading" aria-live="polite"><span class="map-loading-ring"></span><span>Chargement de la carte…</span></div>
           <img id="map-svg" src="" data-missing="true" width="900" height="900" alt="Carte" draggable="false" />
         </div>
         <div class="markers-layer" id="markers-layer"></div>
@@ -409,7 +410,7 @@
     window._mapDataLoaded = true;
     window._mapReady?.();
   </script>
-  <script src="map.js?v=6"></script>
+  <script src="map.js?v=8"></script>
   <script type="module" src="../auth-widget.js"></script>
   <script src="../report-widget.js"></script>
 </body>

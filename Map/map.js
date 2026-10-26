@@ -666,13 +666,14 @@ function updateLayerBtnVisibility() {
 function loadMapImage(n, layer) {
   const mapImg = document.getElementById('map-svg');
   mapImg.dataset.target = ''; // annule un remplacement aperçu → pleine résolution encore en attente
+  document.getElementById('map-svg-hi')?.remove();
   const ghost  = ensureGhostOverlay();
   if (layer === 'underground') {
     mapImg.style.opacity = '0';
     mapImg.style.zIndex  = '1';
     mapImg.src = `../img/maps/floor-${n}_underground.webp`;
-    mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
-    mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
+    mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); document.getElementById('map-loading')?.remove(); };
+    mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; document.getElementById('map-loading')?.remove(); };
     ghost.src           = `../img/maps/floor-${n}.webp`;
     ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
     ghost.style.zIndex  = '0';
@@ -681,8 +682,8 @@ function loadMapImage(n, layer) {
     mapImg.style.opacity = '0';
     mapImg.style.zIndex  = '1';
     mapImg.src = `../img/maps/floor-${n}_donjon.png`;
-    mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
-    mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
+    mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); document.getElementById('map-loading')?.remove(); };
+    mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; document.getElementById('map-loading')?.remove(); };
     ghost.src           = `../img/maps/floor-${n}_underground.webp`;
     ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
     ghost.style.zIndex  = '0';
@@ -696,17 +697,26 @@ function loadMapImage(n, layer) {
     mapImg.dataset.target = full;
     mapImg.src = preview || full;
     if (preview) {
-      const hi = new Image();
+      // La pleine résolution est chargée et décodée dans une 2ᵉ image posée par-dessus l'aperçu : on ne voit jamais de trou pendant le décodage.
+      const hi = mapImg.cloneNode(false);
+      hi.id = 'map-svg-hi';
+      hi.removeAttribute('data-missing');
+      hi.style.cssText = 'position:absolute;left:0;top:0;width:900px;height:900px;display:block;border:none;opacity:0;pointer-events:none;transition:none;';
       hi.onload = () => {
-        // décodage attendu au plus 2,5 s (sur un appareil lent, on remplace quand même : le navigateur finira de décoder)
-        Promise.race([hi.decode ? hi.decode() : Promise.resolve(), new Promise(r => setTimeout(r, 2500))]).catch(() => {}).then(() => {
-          if (mapImg.dataset.target === full) mapImg.src = full;   // l'utilisateur n'a pas changé d'étage entre-temps
+        Promise.race([hi.decode ? hi.decode() : Promise.resolve(), new Promise(r => setTimeout(r, 4000))]).catch(() => {}).then(() => {
+          if (mapImg.dataset.target !== full || !hi.isConnected) { hi.remove(); return; }   // étage changé entre-temps
+          hi.style.opacity = '1';
+          setTimeout(() => {                         // l'aperçu est recouvert : on le remplace par la pleine résolution (déjà en cache)
+            if (mapImg.dataset.target === full) mapImg.src = full;
+            setTimeout(() => hi.remove(), 400);
+          }, 60);
         });
       };
       hi.src = full;
+      mapImg.parentNode.insertBefore(hi, mapImg.nextSibling);
     }
-    mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); };
-    mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; };
+    mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); document.getElementById('map-loading')?.remove(); };
+    mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; document.getElementById('map-loading')?.remove(); };
     ghost.style.opacity = '0';
   }
 }

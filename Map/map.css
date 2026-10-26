@@ -1044,3 +1044,9 @@
   .map-tooltip { max-width: calc(100vw - 64px); }
   .coord-display { font-size: 10px; padding: 4px 8px; gap: 8px; }
 }
+
+/* Chargement de la carte */
+#map-loading { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted, #8c8270); pointer-events: none; }
+.map-loading-ring { width: 46px; height: 46px; border-radius: 50%; border: 3px solid rgba(215,175,95,.18); border-top-color: #d7af5f; animation: map-spin 1s linear infinite; }
+@keyframes map-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .map-loading-ring { animation: none; } }

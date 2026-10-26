@@ -6,7 +6,7 @@
   <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
   <title>[VCL] - Compendium</title>
   <link rel="stylesheet" href="../Patchnotes/patchnotes.css" />
-  <link rel="stylesheet" href="compendium.css?v=9" />
+  <link rel="stylesheet" href="compendium.css?v=10" />
   <link rel="stylesheet" href="../auth-widget.css" />
   <link rel="stylesheet" href="../report-widget.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -90,7 +90,7 @@
         <button class="sort-btn active" id="sort-palier" title="Trier par palier">⬡ Palier</button>
         <button class="sort-btn" id="sort-alpha" title="Trier par ordre alphabétique">A → Z</button>
       </div>
-      <div id="sidebar-tree"></div>
+      <div id="sidebar-tree"><div class="skel-list" aria-hidden="true"><div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div></div></div>
     </aside>
 
     <!-- ── Zone principale ── -->
@@ -116,7 +116,7 @@
   <script src="data.js"></script>
   <script src="../Bestiaire/mob_data.js"></script>
   <script src="../Bestiaire/data.js"></script>
-  <script src="compendium.js?v=14"></script>
+  <script src="compendium.js?v=15"></script>
   <script type="module">
     import { store } from '../store.js';
     import { db, COL, loadCollection, hasRole, logPageView, logItemView, logSearchQuery, logContentView } from '../firebase.js';

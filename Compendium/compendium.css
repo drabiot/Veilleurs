@@ -1291,3 +1291,12 @@ a.craft-ingredient-name:hover {
 
 /* Liste à plat (tri A → Z) : le navigateur ne met pas en page les lignes hors écran */
 .sidebar-item-flat { content-visibility: auto; contain-intrinsic-size: auto 34px; }
+
+/* Squelettes de chargement : la structure apparaît tout de suite, les données la remplacent */
+@keyframes vcl-shimmer { 0% { background-position: -240px 0; } 100% { background-position: 240px 0; } }
+.skel-row, .skel-card { background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.10) 37%, rgba(255,255,255,.04) 63%); background-size: 480px 100%; animation: vcl-shimmer 1.3s linear infinite; border-radius: 4px; }
+.skel-list { display: flex; flex-direction: column; gap: 8px; padding: 10px 6px; }
+.skel-row { height: 28px; }
+.skel-row:nth-child(3n) { width: 70%; } .skel-row:nth-child(3n+1) { width: 88%; }
+.skel-card { height: 210px; border-radius: 8px; }
+@media (prefers-reduced-motion: reduce) { .skel-row, .skel-card { animation: none; } }
