@@ -38,7 +38,7 @@
     const w = document.createElement('span');
     w.className = 'vcl-step';
     const cs = getComputedStyle(input);
-    if (input.dataset.stepW) { w.style.flex = '0 0 ' + input.dataset.stepW + 'px'; w.style.width = input.dataset.stepW + 'px'; }
+    if (input.dataset.stepW) { w.style.width = '100%'; }
     // le wrapper reprend la place du champ dans la mise en page (largeur, flex, grille)
     if (input.dataset.stepW) { /* largeur fixée ci-dessus */ }
     else if (input.style.width) w.style.width = input.style.width;

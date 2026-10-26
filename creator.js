@@ -646,6 +646,7 @@ function restoreForm(forcedMode) {
     }
     if (d.effects?.length) {
       for (const eff of d.effects) {
+        if (_levelEffectToField(eff)) continue;
         addEffect();
         const e = effectEntries[effectEntries.length - 1];
         if (e._type)  e._type.value = eff.type  || 'heal';
@@ -2563,6 +2564,7 @@ function loadItem(item) {
   // Effects
   if (item.effects?.length) {
     for (const eff of item.effects) {
+      if (_levelEffectToField(eff)) continue;
       addEffect();
       const e = effectEntries[effectEntries.length - 1];
       if (e._type)  e._type.value  = eff.type  || 'heal';
@@ -3456,7 +3458,6 @@ const EFFECT_TYPES = [
   'saturation',
   'cooldown',
   'use',
-  'level',
   'reparation',
   'durabilite',
   'puissance_recolte' 
@@ -3488,9 +3489,19 @@ function buildEffectTemplates() {
   }
 }
 
+// Le niveau requis d'un consommable est le champ « Niveau requis » (pas une ligne d'effet) : un effet « level » (ancien format ou modèle)
+// est reporté dans ce champ, sans créer de ligne en double.
+function _levelEffectToField(eff) {
+  if (!eff || eff.type !== 'level') return false;
+  const el = document.getElementById('f-lvl');
+  if (el && eff.value !== '' && eff.value != null && (!el.value || el.dataset.fromTpl)) { el.value = eff.value; el.dataset.fromTpl = '1'; }
+  return true;
+}
+
 function applyEffectTemplate(tpl) {
   // Apply template effects
   for (const eff of tpl.effects) {
+    if (_levelEffectToField(eff)) continue;
     addEffect();
     const e = effectEntries[effectEntries.length - 1];
     if (e._type)  e._type.value  = eff.type;
@@ -3526,14 +3537,14 @@ function addEffect() {
   typeSel.innerHTML = EFFECT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('');
   typeSel.addEventListener('change', update);
 
-  const valInp   = makeInp('Valeur','number');
-  const unitInp  = makeInp('PV / s…');
-  const durInp   = makeInp('Durée','number');
+  const valInp   = makeInp('ex : 10','number');
+  const unitInp  = makeInp('PV, %, /s…');
+  const durInp   = makeInp('vide = instantané','number');
   const durUnitSel = document.createElement('select');
   durUnitSel.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:6px 4px;font-size:12px;outline:none;width:100%';
   durUnitSel.innerHTML = '<option value="s">s</option><option value="min">min</option><option value="h">h</option>';
   durUnitSel.addEventListener('change', update);
-  const labelInp = makeInp('Label (optionnel)');
+  const labelInp = makeInp('Texte affiché (facultatif)');
 
   const rmBtn = document.createElement('button');
   rmBtn.className = 'btn-icon';
@@ -3544,20 +3555,29 @@ function addEffect() {
     update();
   });
 
-  typeSel.style.flex = '0 0 168px';
-  valInp.style.width = '100%'; unitInp.style.flex = '0 0 104px'; unitInp.style.width = '104px';
-  durUnitSel.style.flex = '0 0 76px'; durUnitSel.style.width = '76px';
-  labelInp.style.flex = '1 1 180px'; labelInp.style.minWidth = '140px'; labelInp.style.width = 'auto';
-  row.appendChild(typeSel);
-  row.appendChild(valInp);
-  row.appendChild(unitInp);
-  row.appendChild(durInp);
-  row.appendChild(durUnitSel);
-  row.appendChild(labelInp);
+  // Chaque champ a son titre : plus de doute sur ce qu'il faut remplir
+  const cell = (title, el, css, tip) => {
+    const c = document.createElement('label');
+    c.style.cssText = 'display:flex;flex-direction:column;gap:3px;' + css;
+    c.title = tip || '';
+    const t = document.createElement('span');
+    t.textContent = title;
+    t.style.cssText = 'font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);';
+    c.appendChild(t); c.appendChild(el);
+    return c;
+  };
+  typeSel.style.width = '100%'; unitInp.style.width = '100%'; durUnitSel.style.width = '100%'; labelInp.style.width = '100%'; valInp.style.width = '100%';
+  row.style.alignItems = 'flex-end';
+  row.appendChild(cell('Effet', typeSel, 'flex:0 0 190px;', 'Ce que fait l\'item quand on l\'utilise'));
+  row.appendChild(cell('Valeur', valInp, 'flex:0 0 130px;', 'Combien (ex : 10 pour +10 PV)'));
+  row.appendChild(cell('Unité', unitInp, 'flex:0 0 100px;', 'PV, %, /s… (facultatif)'));
+  row.appendChild(cell('Durée', durInp, 'flex:0 0 130px;', 'Combien de temps dure l\'effet. Laisser vide si l\'effet est instantané'));
+  row.appendChild(cell('en', durUnitSel, 'flex:0 0 70px;', 'Unité de la durée : s, min ou h'));
+  row.appendChild(cell('Texte affiché', labelInp, 'flex:1 1 180px;min-width:150px;', 'Remplace le texte automatique (facultatif)'));
   row.appendChild(rmBtn);
   document.getElementById('effects-list').appendChild(row);
   // champs numériques : le wrapper − / + (no-spin.js) doit garder 130 px de large
-  [valInp, durInp].forEach(el => { el.dataset.stepW = '130'; });
+  [valInp, durInp].forEach(el => { el.dataset.stepW = '1'; });
 
   // Store refs
   const entry = effectEntries.find(e => e.uid === uid);
@@ -4570,7 +4590,7 @@ function validateForm() {
   if (!id)        errors.push({ field:'f-id',        msg:'ID manquant' });
   if (!category)  errors.push({ field:'f-category',  msg:'Catégorie non sélectionnée' });
   if (!selRarity) errors.push({ field:null,          msg:'Rareté non sélectionnée' });
-  if (!lore)      errors.push({ field:'f-lore',      msg: category === 'parchemin' ? 'Lore obligatoire (description de la compétence)' : 'Lore obligatoire' });
+  if (!lore && !['consommable', 'nourriture'].includes(category)) errors.push({ field:'f-lore',      msg: category === 'parchemin' ? 'Lore obligatoire (description de la compétence)' : 'Lore obligatoire' }); // facultatif pour les consommables
   if (isEquip && !cat)    warnings.push({ field:'f-cat',    msg:'Slot (cat) non sélectionné' });
   if (!palier)            errors.push ({ field:'f-palier', msg:'Palier obligatoire' });
   if (palier === 'event' && !document.getElementById('f-event-name')?.value) errors.push({ field:'f-event-name', msg:'Évènement obligatoire pour le palier Event' });

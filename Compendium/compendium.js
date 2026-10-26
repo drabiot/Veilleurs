@@ -1366,7 +1366,7 @@ function showItem(id, initialQuality = false) {
           ${item.palier != null ? `<div style="font-size:11px;color:var(--muted);opacity:.65;margin-top:3px;letter-spacing:.04em;">⬡ ${item.palier == 'event' ? 'Event' : 'Palier ' + (item.palier == -1 ? 'Archive' : item.palier)}</div>` : ''}
           ${item.set && SETS?.[item.set] ? `<div class="item-set-badge" style="color:${SETS[item.set].color || '#888'};border-color:${SETS[item.set].color || '#888'}40;">◈ ${escHtml(SETS[item.set].label)}</div>` : ''}
           ${qualityToggle}
-          <blockquote class="item-lore" id="item-lore-text">${parseText(v.lore)}</blockquote>
+          <blockquote class="item-lore" id="item-lore-text"${String(v.lore || '').trim() ? '' : ' hidden'}>${parseText(v.lore)}</blockquote>
         </div>
       </div>
 
@@ -1417,6 +1417,7 @@ function showItem(id, initialQuality = false) {
       const d2 = activeData();
       const v2 = getVariant();
       loreEl.innerHTML   = parseText(v2.lore);
+      loreEl.hidden      = !String(v2.lore || '').trim(); // pas de lore : pas de bloc vide
       obtainEl.innerHTML = parseText(withAutoObtain(d2, v2.obtain));
       const nameEl = document.getElementById('item-name-text');
       if (nameEl) nameEl.textContent = d2.name || item.name;
