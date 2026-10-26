@@ -987,7 +987,7 @@ function initObtainData() {
   // PNJs depuis Firestore dans les listes artisan/marchand
   if (_pnjsForObtain) {
     const _artisanTags = new Set(['forgeron_armes','forgeron_armures','forgeron_accessoires','forgeron_lingots','forgeron_cles','forgeron_items_secrets','bucheron','alchimiste','fabricant_secret']);
-    const _marchandTags = new Set(['marchand_equipement','marchand_consommable','marchand_outils','marchand_accessoires','recyclage_accessoires','recyclage_armes','marchand_itinerant','repreneur_butin','marchand_occulte']);
+    const _marchandTags = new Set(['marchand_equipement','marchand_consommable','marchand_outils','marchand_accessoires','recyclage_accessoires','recyclage_armes','marchand_ressources','marchand_itinerant','repreneur_butin','marchand_occulte']);
     const _existArtIds = new Set(allArtisans.map(a => a.id));
     const _existMchIds = new Set(allMarchands.map(m => m.id));
     const _obtainItemMap = {};
@@ -6226,6 +6226,7 @@ const PNJ_TYPE_TAGS = {
   "marchand de consommable": "marchand_consommable",
   "marchand d'outils":       "marchand_outils",
   "marchand d'accessoires":  "marchand_accessoires",
+  "marchand de ressources":  "marchand_ressources",
   "recyclage d'accessoires": "recyclage_accessoires",
   "recyclage d'armes":       "recyclage_armes",
   "marchand itinérant":      "marchand_itinerant",
@@ -6262,6 +6263,7 @@ const PNJ_CATEGORIES = {
     "marchand de consommable",
     "marchand d'outils",
     "marchand d'accessoires",
+    "marchand de ressources",
   ],
   recyclage: [
     "recyclage d'accessoires",
@@ -6302,6 +6304,7 @@ const PNJ_TYPE_ICONS = {
   "marchand de consommable": "🧪",
   "marchand d'outils":       "🛠️",
   "marchand d'accessoires":  "💍",
+  "marchand de ressources":  "⛏️",
   "recyclage d'accessoires": "♻️",
   "recyclage d'armes":       "♻️",
   "quête principale":        "💬",

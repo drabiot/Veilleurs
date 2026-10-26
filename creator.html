@@ -1238,12 +1238,21 @@ try {
   const snapCt = await _pPinTypes;
   window._customPinTypes = (snapCt.exists() && Array.isArray(snapCt.data().types)) ? snapCt.data().types : [];
 } catch(e) { window._customPinTypes = []; }
-// Injecter les types custom dans la catégorie "autres" existante
+// Types créés sur la carte (config/custom_pin_types) : ils apparaissent ici dans la catégorie correspondant à leur catégorie de légende,
+// et disparaissent d'ici quand ils sont supprimés de la carte.
+let _pinCats = [], _pinEmojis = {};
+try {
+  const [sc, se] = await Promise.all([getDoc(doc(db, 'config', 'pin_categories')), getDoc(doc(db, 'config', 'pin_type_emojis'))]);
+  _pinCats = sc.exists() ? (sc.data().categories || []) : [];
+  _pinEmojis = se.exists() ? se.data() : {};
+} catch(e) {}
+const _MAP_CAT_TO_CREATOR = { 'cat-craft': 'craft', 'cat-artisans': 'artisans', 'cat-commerce': 'commerce', 'cat-recyclage': 'recyclage', 'cat-quetes': 'quetes' };
 for (const ct of window._customPinTypes) {
-  if (ct.id && !PNJ_CATEGORIES.autres.includes(ct.id)) {
-    PNJ_CATEGORIES.autres.push(ct.id);
-    PNJ_TYPE_ICONS[ct.id] = '🏷️';
-  }
+  if (!ct.id) continue;
+  const mapCat = _pinCats.find(c => (c.types || []).includes(ct.id));
+  const target = PNJ_CATEGORIES[_MAP_CAT_TO_CREATOR[mapCat?.id]] ? _MAP_CAT_TO_CREATOR[mapCat.id] : 'autres';
+  if (!Object.values(PNJ_CATEGORIES).some(l => l.includes(ct.id))) PNJ_CATEGORIES[target].push(ct.id);
+  PNJ_TYPE_ICONS[ct.id] = _pinEmojis[ct.id] || '🏷️';
 }
 // Charger les règles de tags automatiques
 try {
@@ -1335,7 +1344,7 @@ window._modal = modal;
   <textarea id="submitter-comment" rows="1" placeholder="Note pour la modération (optionnel pour un nouvel item)…" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-size:12px;outline:none;resize:none;border-radius:6px;font-family:inherit;line-height:1.4;transition:border-color .15s;height:34px;overflow:hidden;" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';this.style.borderColor=this.value?'var(--accent)':'var(--border)'"></textarea>
 </div>
 
-<script src="creator.js?v=20261026n"></script>
+<script src="creator.js?v=20261026o"></script>
 <script>
 (function() {
   window._creatorScreenshots = [];
