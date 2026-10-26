@@ -172,12 +172,23 @@
             <div class="center-title">Atelier</div>
             <div class="center-sub">// CONSTRUCTEUR D'ÉQUIPEMENT · VEILLEURS AU CLAIR DE LUNE</div>
           </div>
-          <button id="btn-skilltree" class="skilltree-btn" title="Arbre de compétences" aria-label="Arbre de compétences">
-            <span class="skilltree-btn-shape">
-              <span class="skilltree-btn-ico" aria-hidden="true"></span>
-            </span>
-            <span class="skilltree-btn-label">Arbre de compétences</span>
-          </button>
+          <div class="center-head-actions">
+            <div class="titre-wrap">
+              <button id="btn-titre" class="skilltree-btn titre-btn" title="Titre" aria-label="Titre" aria-haspopup="listbox" aria-expanded="false">
+                <span class="skilltree-btn-shape">
+                  <span class="titre-btn-ico" aria-hidden="true">⚜</span>
+                </span>
+                <span class="skilltree-btn-label" id="titre-btn-label">Titre</span>
+              </button>
+              <div id="titre-menu" class="titre-menu" role="listbox" hidden></div>
+            </div>
+            <button id="btn-skilltree" class="skilltree-btn" title="Arbre de compétences" aria-label="Arbre de compétences">
+              <span class="skilltree-btn-shape">
+                <span class="skilltree-btn-ico" aria-hidden="true"></span>
+              </span>
+              <span class="skilltree-btn-label">Arbre de compétences</span>
+            </button>
+          </div>
         </div>
         <div class="mobile-atelier-bar">
           <button id="atelier-left-toggle" class="atelier-mobile-btn">≡ Classe</button>
@@ -463,6 +474,15 @@
     }
 
     let _secretLoaded = false;
+    // Titres (config/titres, gérés dans Modération > Titres) : chaque titre donne des stats au build
+    (async function loadTitres() {
+      try {
+        const snap = await getDoc(doc(db, 'config', 'titres'));
+        window._vclTitres = snap.exists() ? (snap.data().list || []).filter(t => t && t.id && t.name) : [];
+      } catch { window._vclTitres = []; }
+      window.dispatchEvent(new Event('vcl:titres'));
+    })();
+
     async function _canViewSecretItems(baseRole) {
       return false; // système « sensible » supprimé
       let minRole = 'contributeur';

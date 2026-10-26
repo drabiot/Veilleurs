@@ -132,6 +132,7 @@
     <button class="filter-btn" id="btn-effects-tool"   data-min-role="admin" onclick="showEffectsTool()">✨ Effets</button>
     <button class="filter-btn" id="btn-events-tool"        data-min-role="admin" onclick="showEventsTool()">🎪 Events</button>
     <button class="filter-btn" id="btn-donjons-tool"       data-min-role="admin" onclick="showDonjonsTool()">🏰 Donjons</button>
+    <button class="filter-btn" id="btn-titres-tool"        data-min-role="admin" onclick="showTitresTool()">🏅 Titres</button>
     <button class="filter-btn" id="btn-tags"              data-min-role="admin" onclick="showTagsPanel()">🏷️  Tags</button>
     <button class="filter-btn" id="btn-bugs-connus" onclick="showBugsConnus()">🐛 Bugs Connus</button>
     </div>
@@ -1290,6 +1291,21 @@ style="font-size:12px;">← Retour</button>
       <button class="btn btn-primary" onclick="createVclDonjon()" style="font-size:12px;white-space:nowrap;">+ Créer</button>
     </div>
     <div id="donjons-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+  </main>
+
+  <!-- Panneau Titres (Atelier : bouton « Titre », chaque titre donne des stats) -->
+  <main class="main" id="titres-tool-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🏅 Gestion des Titres</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      Les titres créés ici apparaissent dans le menu «&nbsp;Titre&nbsp;» de l'Atelier. Chaque titre ajoute ses stats au build (par exemple +5 Santé). Exemple&nbsp;: "Tueur de Dragons".
+    </p>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px;margin-bottom:14px;align-items:center;">
+      <input type="text" id="titre-name-input" placeholder="Nom du titre (ex : Tueur de Dragons)" style="height:36px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 12px;font-family:inherit;font-size:13px;" onkeydown="if(event.key==='Enter')createVclTitre()">
+      <button class="btn btn-primary" onclick="createVclTitre()" style="font-size:12px;white-space:nowrap;">+ Créer</button>
+    </div>
+    <div id="titres-list" style="display:flex;flex-direction:column;gap:8px;"></div>
   </main>
 
   <!-- Panneau Effets -->

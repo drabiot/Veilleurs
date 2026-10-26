@@ -13,6 +13,7 @@
   let filterEvent   = null; // sous-catégorie du palier Event
   let filterEquip   = false; // n'afficher que les items équipables au niveau actuel du build
   let activeClass   = null;
+  let activeTitre   = null; // id du titre choisi (config/titres) : ses stats s'ajoutent au build
   let skillNodes    = []; // arbre de compétences : clés "x,y" dans l'ordre de prise (centre offert, non listé)
   let filterStats	= new Set();
   const NUM_BUILDS   = 3;
@@ -841,6 +842,17 @@ function loadAccessoriesForClass(classId) {
       });
     });
 
+    /* ── Bonus du titre ── */
+    const _ti = _titreById(activeTitre);
+    if (_ti) {
+      Object.entries(_ti.stats || {}).forEach(function(e) {
+        const v = +e[1] || 0;
+        if (!(e[0] in mins)) return;
+        mins[e[0]] += v;
+        maxs[e[0]] += v;
+      });
+    }
+
     /* ── Bonus de l'arbre de compétences ── */
     if (window.VCLSkillTree) {
       const sk = window.VCLSkillTree.statsFor(skillNodes, activeClass);
@@ -1638,6 +1650,7 @@ function loadAccessoriesForClass(classId) {
 				classe: activeClass || '',
 				level: buildLevel,
 				skillNodes: skillNodes,
+				titre: activeTitre || '',
 				slots: equippedSlots,
 				runes: equippedRunes,
 			}));
@@ -1668,6 +1681,7 @@ function loadAccessoriesForClass(classId) {
 		activeSlot = null;
 		buildLevel = 1;
 		skillNodes = [];
+		activeTitre = null;
 
 		const sensiblePending = [];
 		try {
@@ -1701,6 +1715,7 @@ function loadAccessoriesForClass(classId) {
 					else               { activeClass = null; buildClassPicker(); updateSkinClass(); }
 					if (parsed.level >= 1) buildLevel = parsed.level;
 					_setSkillNodes(parsed.skillNodes);
+          _setTitre(parsed.titre);
 				}
 			} else {
 				// Build vide : reset le nom
@@ -1913,7 +1928,7 @@ function loadAccessoriesForClass(classId) {
     });
     return { v:1, sig:SIG, name: document.getElementById('inp-name').value.trim() || 'Mon Build',
       classe: activeClass || '', level: buildLevel,
-      skillNodes: skillNodes, slots: slots, runes: equippedRunes };
+      skillNodes: skillNodes, titre: activeTitre || '', slots: slots, runes: equippedRunes };
   }
 
   document.getElementById('btn-export').addEventListener('click', function() {
@@ -1958,6 +1973,7 @@ function loadAccessoriesForClass(classId) {
         equipped = {}; equippedRunes = {};
         if (parsed.level >= 1 && parsed.level <= MAX_LEVEL) buildLevel = parsed.level;
         _setSkillNodes(parsed.skillNodes);
+          _setTitre(parsed.titre);
         const lvl = (parsed.level >= 1 && parsed.level <= MAX_LEVEL) ? parsed.level : buildLevel;
         Object.entries(parsed.slots).forEach(function(e) {
           const item = ITEMS.find(function(i) { return i.id === e[1]; });
@@ -2013,6 +2029,7 @@ function loadAccessoriesForClass(classId) {
       classe: activeClass || '',
       level: buildLevel,
       skillNodes: skillNodes.slice(),
+      titre: activeTitre || '',
       slots: slots,
       slotImages: slotImages,
       sensibleSlots: sensibleSlots,
@@ -2091,6 +2108,79 @@ function loadAccessoriesForClass(classId) {
     setTimeout(function() { toast.remove(); }, 6000);
   }
 
+
+  /* ══ TITRES ══
+     config/titres : { list: [{ id, name, stats: { <stat>: <valeur> } }] }, géré dans Modération > Titres. */
+  function _titreById(id) {
+    if (!id) return null;
+    return (window._vclTitres || []).find(function(t) { return t.id === id; }) || null;
+  }
+  function _titreChips(t) {
+    return Object.entries(t.stats || {}).map(function(e) {
+      const st = STATS_BY_ID.get(e[0]);
+      const v = +e[1] || 0;
+      return (st ? st.label : e[0]) + ' ' + (v > 0 ? '+' : '') + v + (st && st.unit ? st.unit : '');
+    });
+  }
+  function _renderTitreBtn() {
+    const btn = document.getElementById('btn-titre'), lab = document.getElementById('titre-btn-label');
+    if (!btn || !lab) return;
+    const t = _titreById(activeTitre);
+    lab.textContent = t ? t.name : 'Titre';
+    btn.classList.toggle('has-titre', !!t);
+    btn.title = t ? 'Titre : ' + t.name : 'Titre';
+  }
+  function _renderTitreMenu() {
+    const menu = document.getElementById('titre-menu');
+    if (!menu) return;
+    const list = window._vclTitres || [];
+    menu.innerHTML = '';
+    const none = document.createElement('button');
+    none.type = 'button'; none.className = 'titre-row titre-row-none' + (activeTitre ? '' : ' active');
+    none.innerHTML = '<span class="titre-row-name">Aucun titre</span>';
+    none.addEventListener('click', function() { _chooseTitre(null); });
+    menu.appendChild(none);
+    if (!list.length) {
+      const e = document.createElement('div'); e.className = 'titre-empty'; e.textContent = 'Aucun titre disponible pour le moment.';
+      menu.appendChild(e); return;
+    }
+    list.forEach(function(t) {
+      const row = document.createElement('button');
+      row.type = 'button'; row.className = 'titre-row' + (t.id === activeTitre ? ' active' : '');
+      row.setAttribute('role', 'option');
+      const chips = _titreChips(t).map(function(c) { return '<span class="titre-chip">' + escHtml(c) + '</span>'; }).join('');
+      row.innerHTML = '<span class="titre-row-name">' + escHtml(t.name) + '</span>' + (chips ? '<span class="titre-row-stats">' + chips + '</span>' : '');
+      row.addEventListener('click', function() { _chooseTitre(t.id); });
+      menu.appendChild(row);
+    });
+  }
+  function _setTitre(id) { activeTitre = id || null; _renderTitreBtn(); _renderTitreMenu(); }
+  function _chooseTitre(id) {
+    _setTitre(id);
+    _closeTitreMenu();
+    renderStats();
+    saveToStorage();
+  }
+  function _closeTitreMenu() {
+    const menu = document.getElementById('titre-menu'), btn = document.getElementById('btn-titre');
+    if (menu) menu.hidden = true;
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+  (function initTitres() {
+    const btn = document.getElementById('btn-titre'), menu = document.getElementById('titre-menu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const open = menu.hidden;
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) _renderTitreMenu();
+    });
+    document.addEventListener('click', function(e) { if (!menu.hidden && !e.target.closest('.titre-wrap')) _closeTitreMenu(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') _closeTitreMenu(); });
+    window.addEventListener('vcl:titres', function() { _renderTitreMenu(); _renderTitreBtn(); renderStats(); });
+    _renderTitreBtn();
+  })();
 
   /* ══ BUILD ALÉATOIRE ══ */
   const _RARITY_WEIGHTS = { commun:1, rare:3, epique:5, legendaire:7, mythique:6, godlike:5, event:3 };
@@ -2393,6 +2483,7 @@ function loadAccessoriesForClass(classId) {
     activeSlot = null;
     buildLevel = 1;
     skillNodes = [];
+    activeTitre = null;
     localStorage.removeItem(getBuildKey(activeBuildIndex));
     buildGrid();
     buildLevelPanel();
@@ -2553,6 +2644,7 @@ function loadAccessoriesForClass(classId) {
     buildLevel      = 1;
     activeClass     = null;
     skillNodes      = [];
+    activeTitre = null;
 
     if (!RUNES_BY_ID.size) {
       ITEMS.filter(function(i) { return i.cat === 'rune' || i.category === 'rune'; }).forEach(function(r) {
@@ -2628,6 +2720,7 @@ function loadAccessoriesForClass(classId) {
             buildLevel = parsed.level;
           }
           _setSkillNodes(parsed.skillNodes);
+          _setTitre(parsed.titre);
 
           buildGrid();
           buildLevelPanel();

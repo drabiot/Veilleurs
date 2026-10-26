@@ -1498,6 +1498,7 @@ const HASH_PANELS = {
   'effects-tool':         () => showEffectsTool(),
   'events-tool':          () => showEventsTool(),
   'donjons-tool':         () => showDonjonsTool(),
+  'titres-tool':          () => showTitresTool(),
   'game-config':          () => showGameConfig(),
   'audit-log':            () => showAuditLog(),
   'tags':                 () => showTagsPanel(),
@@ -1609,6 +1610,7 @@ const NAV_HUBS = [
         { hash: 'effects-tool', label: '✨ Effets',     btn: 'btn-effects-tool', panel: 'effects-tool-panel', fn: () => showEffectsTool() },
         { hash: 'events-tool',  label: '🎪 Events',     btn: 'btn-events-tool',  panel: 'events-tool-panel',  fn: () => showEventsTool() },
         { hash: 'donjons-tool', label: '🏰 Donjons',    btn: 'btn-donjons-tool', panel: 'donjons-tool-panel', fn: () => showDonjonsTool() },
+        { hash: 'titres-tool',  label: '🏅 Titres',     btn: 'btn-titres-tool',  panel: 'titres-tool-panel',  fn: () => showTitresTool() },
         { hash: 'tags',         label: '🏷️ Tags',       btn: 'btn-tags',         panel: 'tags-panel',         fn: () => showTagsPanel() },
       ]},
       { label: 'Communication', tabs: [
@@ -15799,6 +15801,139 @@ window.deleteVclDonjon = async function(id) {
   } catch(e) {
     toast('Erreur : ' + e.message, 'error');
   }
+};
+
+// ── TITRES TOOL (menu « Titre » de l'Atelier : chaque titre donne des stats) ──
+// Stockés dans config/titres : { list: [{ id, name, stats: { <stat>: <valeur> } }] } (l'ordre du tableau = ordre d'affichage).
+const _TITRES_REF = () => doc(db, 'config', 'titres');
+
+async function _readTitres() {
+  const snap = await getDoc(_TITRES_REF());
+  return snap.exists() ? (snap.data().list || []).filter(t => t?.id && t?.name).map(t => ({ ...t, stats: t.stats || {} })) : [];
+}
+const _writeTitres = list => setDoc(_TITRES_REF(), { list });
+const _titreStatDefs = () => (typeof ALL_STATS !== 'undefined' ? ALL_STATS : []);
+const _titreStatLabel = id => _titreStatDefs().find(s => s.id === id)?.label || id;
+const _titreStatUnit  = id => _titreStatDefs().find(s => s.id === id)?.unit || '';
+
+window.showTitresTool = async function() {
+  _setHash('titres-tool');
+  _showPanel('titres-tool-panel', 'btn-titres-tool');
+  await _loadTitresList();
+};
+
+async function _loadTitresList() {
+  const el = document.getElementById('titres-list');
+  if (!el) return;
+  el.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const list = await _readTitres();
+    if (!list.length) {
+      el.innerHTML = '<div class="empty" style="color:var(--muted);">Aucun titre. Créez-en un ci-dessus.</div>';
+      return;
+    }
+    const statOpts = _titreStatDefs().map(s => `<option value="${escHtml(s.id)}">${escHtml((s.icon || '') + ' ' + s.label)}</option>`).join('');
+    el.innerHTML = list.map((t, i) => {
+      const id = escHtml(t.id);
+      const chips = Object.entries(t.stats).map(([k, v]) =>
+        `<span style="display:inline-flex;align-items:center;gap:6px;padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:11px;">${escHtml(_titreStatLabel(k))} <b style="color:var(--accent);">${v > 0 ? '+' : ''}${v}${escHtml(_titreStatUnit(k))}</b>
+          <button class="btn btn-ghost btn-sm" title="Retirer cette stat" onclick="removeVclTitreStat('${id}','${escHtml(k)}')" style="padding:0 4px;font-size:11px;line-height:1.4;">✕</button></span>`).join('') || '<span style="font-size:11px;color:var(--muted);">Aucune stat : ce titre ne donne rien pour l\'instant.</span>';
+      return `<div style="padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span style="font-size:13px;">🏅 ${escHtml(t.name)} <code style="font-size:10px;color:var(--muted);margin-left:6px;">${id}</code></span>
+          <span style="display:flex;gap:6px;align-items:center;">
+            <button class="btn btn-ghost btn-sm" title="Renommer" onclick="renameVclTitre('${id}')" style="font-size:12px;">✏️</button>
+            <button class="btn btn-ghost btn-sm" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="moveVclTitre('${id}',-1)" style="font-size:12px;">▲</button>
+            <button class="btn btn-ghost btn-sm" title="Descendre" ${i === list.length - 1 ? 'disabled' : ''} onclick="moveVclTitre('${id}',1)" style="font-size:12px;">▼</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteVclTitre('${id}')" style="font-size:12px;">🗑️ Supprimer</button>
+          </span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">${chips}</div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select id="titre-stat-${id}" style="height:30px;flex:1;min-width:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-family:inherit;font-size:12px;">${statOpts}</select>
+          <input type="number" step="any" id="titre-val-${id}" placeholder="valeur" style="height:30px;width:90px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-family:inherit;font-size:12px;" onkeydown="if(event.key==='Enter')addVclTitreStat('${id}')">
+          <button class="btn btn-primary btn-sm" onclick="addVclTitreStat('${id}')" style="font-size:12px;white-space:nowrap;">+ Stat</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`;
+  }
+}
+
+window.createVclTitre = async function() {
+  const inp = document.getElementById('titre-name-input');
+  const name = inp?.value?.trim();
+  if (!name) { toast('Nom du titre requis.', 'error'); return; }
+  try {
+    const list = await _readTitres();
+    const base = normalize(name).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'titre';
+    let id = base, n = 1;
+    while (list.some(t => t.id === id)) id = `${base}_${++n}`;
+    await _writeTitres([...list, { id, name, stats: {} }]);
+    if (inp) inp.value = '';
+    toast(`Titre créé : ${name}. Ajoutez-lui des stats.`, 'success');
+    await _loadTitresList();
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
+
+async function _updateTitre(id, fn) {
+  const list = await _readTitres();
+  const t = list.find(x => x.id === id);
+  if (!t) return;
+  fn(t);
+  await _writeTitres(list);
+  await _loadTitresList();
+}
+
+window.addVclTitreStat = async function(id) {
+  const stat = document.getElementById('titre-stat-' + id)?.value;
+  const val = parseFloat(document.getElementById('titre-val-' + id)?.value);
+  if (!stat || isNaN(val)) { toast('Choisis une stat et une valeur.', 'error'); return; }
+  try { await _updateTitre(id, t => { t.stats[stat] = val; }); }
+  catch(e) { toast('Erreur : ' + e.message, 'error'); }
+};
+
+window.removeVclTitreStat = async function(id, stat) {
+  try { await _updateTitre(id, t => { delete t.stats[stat]; }); }
+  catch(e) { toast('Erreur : ' + e.message, 'error'); }
+};
+
+window.renameVclTitre = async function(id) {
+  try {
+    const list = await _readTitres();
+    const t = list.find(x => x.id === id);
+    if (!t) return;
+    const name = (await modal.prompt?.('Nouveau nom du titre', { defaultValue: t.name }) ?? window.prompt('Nouveau nom du titre', t.name))?.trim();
+    if (!name || name === t.name) return;
+    await _updateTitre(id, x => { x.name = name; });
+  } catch(e) { toast('Erreur : ' + e.message, 'error'); }
+};
+
+window.moveVclTitre = async function(id, dir) {
+  try {
+    const list = await _readTitres();
+    const i = list.findIndex(t => t.id === id), j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    await _writeTitres(list);
+    await _loadTitresList();
+  } catch(e) { toast('Erreur : ' + e.message, 'error'); }
+};
+
+window.deleteVclTitre = async function(id) {
+  try {
+    const list = await _readTitres();
+    const t = list.find(x => x.id === id);
+    if (!t) return;
+    const ok = await modal.confirm(`Supprimer le titre "${t.name}" ? Les builds qui l'utilisent n'auront plus de titre.`, { danger: true, confirmLabel: 'Supprimer' });
+    if (!ok) return;
+    await _writeTitres(list.filter(x => x.id !== id));
+    toast('Titre supprimé.', 'success');
+    await _loadTitresList();
+  } catch(e) { toast('Erreur : ' + e.message, 'error'); }
 };
 
 let _effectsData = { types: [], templates: [] };

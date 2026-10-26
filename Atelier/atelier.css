@@ -1589,3 +1589,33 @@ html, body {
 /* Listes déroulantes natives (Build Optimisé) : fond opaque, sinon la popup est blanche avec du texte clair */
 select.input-name { color-scheme: dark; }
 select.input-name option { background: var(--surface2); color: var(--text); }
+
+
+/* ══ TITRES (bouton à gauche de l'arbre de compétences + menu déroulant) ══ */
+.center-head-actions { display: flex; align-items: center; gap: 26px; flex-shrink: 0; }
+.titre-wrap { position: relative; }
+.titre-btn-ico { transform: rotate(-45deg); font-size: 15px; line-height: 1; color: currentColor; }
+.titre-btn.has-titre .skilltree-btn-label { color: var(--gold); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.titre-menu {
+  position: absolute; top: calc(100% + 10px); left: 0; z-index: 250;
+  min-width: 270px; max-width: 340px; max-height: 60vh; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--gold-dim); border-radius: 4px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.6); padding: 4px;
+}
+.titre-menu[hidden] { display: none; }
+.titre-row {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  background: none; border: 1px solid transparent; border-radius: 3px; padding: 8px 10px;
+  color: var(--text); font-family: inherit;
+}
+.titre-row:hover { background: var(--gold-glow); border-color: var(--rim2); }
+.titre-row.active { border-color: var(--gold-dim); background: var(--gold-glow); }
+.titre-row-name { display: block; font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: .06em; color: var(--bright); }
+.titre-row.active .titre-row-name { color: var(--gold); }
+.titre-row-stats { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.titre-chip { font-size: 10px; padding: 1px 6px; border: 1px solid var(--rim2); border-radius: 10px; color: var(--muted); }
+.titre-row-none .titre-row-name { color: var(--muted); font-style: italic; }
+.titre-empty { padding: 12px; font-size: 12px; color: var(--muted); text-align: center; }
+@media (max-width: 700px) { .center-head-actions { gap: 12px; } .titre-menu { left: auto; right: 0; } }
+/* colonne centrale étroite : seuls les pictogrammes restent (les libellés sont dans l'infobulle) */
+@media (max-width: 1250px) { .center-head-actions .skilltree-btn-label { display: none; } .center-head-actions .titre-btn.has-titre .skilltree-btn-label { display: none; } .center-head-actions { gap: 16px; } }

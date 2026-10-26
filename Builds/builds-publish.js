@@ -81,6 +81,7 @@ export async function publishBuild({ payload, stats, visibility, auth }) {
     slotImages:     payload.slotImages || {},
     sensibleSlots:  payload.sensibleSlots || {},   // { slotId: true } — marqueur only
     skillNodes:     Array.isArray(payload.skillNodes) ? payload.skillNodes : [],
+    titre:          payload.titre || '',
     statsSnapshot:  statsSnapshot,
     previewCount:   0,
     favoriteCount:  0,
@@ -131,6 +132,7 @@ export async function loadBuildFromFirestore(buildId, dbInst, getDocFn, docFn, d
     classe:         data.classe,
     level:          data.level,
     skillNodes:     Array.isArray(data.skillNodes) ? data.skillNodes : [],
+    titre:          data.titre || '',
     slots:          allSlots,
     runes:          desanitizeFn(data.runes || {}),
     forkOf:         buildId,
