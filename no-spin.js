@@ -46,6 +46,8 @@
     if (!input.dataset.stepW && (input.style.flex || cs.flexGrow !== '0')) w.style.flex = cs.flex;
     if (input.style.gridColumn) w.style.gridColumn = input.style.gridColumn;
     if (cs.display === 'none') w.style.display = 'none';
+    // champs de position des listes d'ordre (mobs, items, PNJ, quêtes…) : largeur fixe, le nom garde la place
+    if (input.classList.contains('mob-order-index') || input.dataset.stepFixed) { w.style.flex = '0 0 92px'; w.style.width = '92px'; }
     const mk = (t, d, title) => {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'vcl-step-btn'; b.textContent = t; b.title = title; b.tabIndex = -1;
