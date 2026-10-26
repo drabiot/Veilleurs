@@ -888,13 +888,10 @@ function renderPNJSheet(pnj) {
             <span class="loot-name" style="color:${colsCur.color}">${escHtml(colsCur.label)}</span>
             <span class="loot-drop-rate" style="color:${colsCur.color};border-color:${colsCur.color}44">×${escHtml(String(r.cost))}</span>
           </div>` : '';
+      // Lecture de gauche à droite : on DONNE l'item (+ éventuel coût en cols) → on REÇOIT les pièces, après le délai
       return `
         <div class="craft-recipe-row">
           <div class="craft-result-cell">
-            ${rewardHTML}
-            ${r.time ? `<span class="craft-timer">⏱ ${escHtml(r.time)}</span>` : ''}
-          </div>
-          <div class="craft-ings-col">
             <a class="loot-row" href="${href}">
               ${imgPart}
               <span class="loot-name" style="color:${color}">${escHtml(name)}</span>
@@ -902,11 +899,15 @@ function renderPNJSheet(pnj) {
             </a>
             ${costHTML}
           </div>
+          <div class="craft-ings-col">
+            ${rewardHTML}
+            ${r.time ? `<span class="craft-timer">⏱ ${escHtml(r.time)}</span>` : ''}
+          </div>
         </div>`;
     }).join('');
     recycleHTML = `
       <div class="mob-section full-width">
-        <div class="mob-section-title">Recycle</div>
+        <div class="mob-section-title">Recyclage <span style="font-weight:400;opacity:.7;text-transform:none;letter-spacing:0;">— l'item donné → les pièces reçues</span></div>
         <div class="mob-loot-list">${rows}</div>
       </div>`;
   }
