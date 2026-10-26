@@ -6409,6 +6409,8 @@ function onPnjTypeChange() {
   const type   = document.getElementById('pnj-type').value;
   const nameEl = document.getElementById('pnj-display-name');
   if (nameEl) nameEl.placeholder = type ? pnjTitleCase(type) : 'Nom personnalisé…';
+  const _recSec = document.getElementById('pnj-recycle-section');
+  if (_recSec) _recSec.style.display = (PNJ_CATEGORIES.recyclage || []).includes(type) || pnjRecycles.length ? '' : 'none';
   if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
   update();
 }
