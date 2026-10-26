@@ -4239,6 +4239,17 @@ function renderPnjPreview() {
     h += `</div></div>`;
   }
 
+  if (obj.recycle?.length) {
+    h += `<div><div class="ic-section-label">♻️ Recyclage (${obj.recycle.length})</div><div class="ic-stats">`;
+    for (const r of obj.recycle.slice(0, 5)) {
+      const iname = (typeof ITEMS !== 'undefined' && ITEMS.find(i => i.id === r.id)?.name) || r.id;
+      const val = `×${r.qty} → ${r.reward != null ? r.reward : '?'} ♻️${r.time ? ' · ' + r.time : ''}${r.cost ? ' · ' + r.cost + ' 🪙' : ''}`;
+      h += `<div class="ic-stat"><span class="ic-stat-label">${escHtml(iname)}</span><span class="ic-stat-val">${escHtml(val)}</span></div>`;
+    }
+    if (obj.recycle.length > 5) h += `<div style="font-size:11px;color:var(--muted);padding:2px 4px;">+${obj.recycle.length - 5} de plus…</div>`;
+    h += `</div></div>`;
+  }
+
   h += `</div></div>`;
   wrap.innerHTML = h;
 }
@@ -6409,8 +6420,11 @@ function onPnjTypeChange() {
   const type   = document.getElementById('pnj-type').value;
   const nameEl = document.getElementById('pnj-display-name');
   if (nameEl) nameEl.placeholder = type ? pnjTitleCase(type) : 'Nom personnalisé…';
-  const _recSec = document.getElementById('pnj-recycle-section');
-  if (_recSec) _recSec.style.display = (PNJ_CATEGORIES.recyclage || []).includes(type) || pnjRecycles.length ? '' : 'none';
+  const _isRec = (PNJ_CATEGORIES.recyclage || []).includes(type);
+  const _show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+  _show('pnj-recycle-section', _isRec || pnjRecycles.length > 0);
+  _show('pnj-sells-section', !_isRec || pnjSells.length > 0);
+  _show('pnj-craft-section', !_isRec || pnjCrafts.length > 0);
   if (!pnjIdLocked) document.getElementById('pnj-id').value = buildPnjId();
   update();
 }
@@ -6509,7 +6523,7 @@ function renderPnjSells() {
 // ═══════════════════════════════════════════════════
 function addPnjRecycle() {
   ensureAllItemsIndex();
-  pnjRecycles.push({ uid: pnjRecycleUid++, itemId: '', qty: 1, reward: '', time: '', cost: '' });
+  pnjRecycles.push({ uid: pnjRecycleUid++, itemId: '', qty: 1, reward: '', time: '', cost: 0 });
   renderPnjRecycles();
 }
 
@@ -6519,7 +6533,7 @@ function renderPnjRecycles() {
   list.innerHTML = '';
   for (const r of pnjRecycles) {
     const card = document.createElement('div');
-    card.style.cssText = 'display:grid;grid-template-columns:1fr 70px 28px;gap:6px;align-items:start;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;';
+    card.style.cssText = 'display:grid;grid-template-columns:1fr 130px 28px;gap:6px;align-items:start;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;';
 
     const drop = makeSearchDrop(allItemsIndex, 'Item donné…', id => { r.itemId = id; update(); }, true);
     if (r.itemId) {
@@ -6530,7 +6544,7 @@ function renderPnjRecycles() {
 
     const qtyInp = document.createElement('input');
     qtyInp.type = 'number'; qtyInp.min = '1'; qtyInp.step = '1'; qtyInp.value = r.qty || 1;
-    qtyInp.style.cssText = 'background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 6px;font-size:12px;text-align:center;outline:none;';
+    qtyInp.style.cssText = 'min-width:44px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 6px;font-size:12px;text-align:center;outline:none;';
     qtyInp.addEventListener('input', () => { r.qty = qtyInp.value; update(); });
     const qty = makeQtyStepper(qtyInp);
 
@@ -6555,7 +6569,7 @@ function renderPnjRecycles() {
     extra.style.cssText = 'grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;';
     extra.appendChild(mkField('Pièces reçues', 'ex : 5', 'reward'));
     extra.appendChild(mkField('Délai', 'ex : 30s', 'time'));
-    extra.appendChild(mkField('Coût (Cols)', 'gratuit', 'cost'));
+    extra.appendChild(mkField('Coût (Cols)', '0', 'cost'));
 
     card.appendChild(drop.element);
     card.appendChild(qty);
