@@ -1103,6 +1103,7 @@ window.toggleEdit = async (id) => {
     const prettyDiv = document.getElementById(`pretty-${id}`);
     if (prettyDiv) prettyDiv.innerHTML = _buildPrettySummary(sub.data || {}, sub.type);
     editor.classList.remove('open');
+    if (codeDiv) codeDiv.style.display = '';
     btn.textContent = '✏️ Modifier';
     btn.style.background = '';
     // Persister en Firestore pour survivre à un refresh
@@ -1118,25 +1119,54 @@ window.toggleEdit = async (id) => {
     }
   } else {
     // Ouvrir : pre-fill JSON
-    ta.value = JSON.stringify(sub.data || {}, null, 2);
+    // L'éditeur prend la place du bloc « JSON brut » déjà déroulé, avec le même format
+    const det = codeDiv?.closest('details'); if (det) det.open = true;
+    ta.value = toJSStr(sub.data || {}, 0);
+    if (codeDiv) { codeDiv.parentNode.insertBefore(editor, codeDiv); codeDiv.style.display = 'none'; }
     editor.classList.add('open');
+    ta.style.height = Math.min(Math.max(ta.scrollHeight, 200), 700) + 'px';
     btn.textContent = '✔ Valider';
     btn.style.background = 'rgba(224,172,96,.25)';
     ta.focus();
   }
 };
 
+// Accepte le format affiché dans « JSON brut » ({id:"x", sells:[…],}) comme du JSON classique : clés sans guillemets et virgules finales tolérées.
+function _parseObjectLiteral(src) {
+  let out = '', i = 0, str = false;
+  const n = src.length;
+  while (i < n) {
+    const ch = src[i];
+    if (str) {
+      out += ch;
+      if (ch === '\\') { out += src[i + 1] ?? ''; i += 2; continue; }
+      if (ch === '"') str = false;
+      i++; continue;
+    }
+    if (ch === '"') { str = true; out += ch; i++; continue; }
+    if (/[A-Za-z_$]/.test(ch)) {                       // identifiant hors chaîne : clé à mettre entre guillemets (sauf true / false / null)
+      let j = i; while (j < n && /[\w$]/.test(src[j])) j++;
+      const word = src.slice(i, j); let k = j; while (k < n && /\s/.test(src[k])) k++;
+      out += (src[k] === ':' && !['true', 'false', 'null'].includes(word)) ? '"' + word + '"' : word;
+      i = j; continue;
+    }
+    out += ch; i++;
+  }
+  out = out.replace(/,\s*([}\]])/g, '$1').replace(/,\s*$/, '');   // virgules finales (hors chaînes : une virgule suivie de } ou ] n'existe pas dans un texte entre guillemets sans être déjà protégée)
+  return JSON.parse(out);
+}
+
 function tryParseEdit(id) {
   const sub = allSubs.find(s => s._id === id);
   const ta  = document.getElementById(`editor-ta-${id}`);
   if (!sub || !ta) return null;
   try {
-    const parsed = JSON.parse(ta.value);
-    if (typeof parsed !== 'object' || parsed === null) return 'Objet JSON attendu.';
+    const parsed = _parseObjectLiteral(ta.value);
+    if (typeof parsed !== 'object' || parsed === null) return 'Objet attendu.';
     sub.data = parsed; // mutate in-place → approve() lira la version modifiée
     return null;
   } catch(e) {
-    return 'JSON invalide : ' + e.message;
+    return 'Syntaxe invalide : ' + e.message;
   }
 }
 
@@ -1146,10 +1176,10 @@ window.onEditorInput = (id) => {
   const status = document.getElementById(`editor-status-${id}`);
   if (!ta) return;
   try {
-    JSON.parse(ta.value);
+    _parseObjectLiteral(ta.value);
     ta.classList.add('json-valid');
     ta.classList.remove('json-invalid');
-    if (status) { status.textContent = '✓ JSON valide'; status.className = 'sub-editor-status ok'; }
+    if (status) { status.textContent = '✓ Syntaxe valide'; status.className = 'sub-editor-status ok'; }
   } catch(e) {
     ta.classList.add('json-invalid');
     ta.classList.remove('json-valid');
