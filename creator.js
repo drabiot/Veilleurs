@@ -3062,6 +3062,7 @@ function refreshCustomSelects() {
 function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, createEntityType = 'item') {
   let selectedId = '';
   let focusedIdx = -1;
+  let viaEnter = false; // true quand la sélection vient de la touche Entrée (3e argument de onSelect)
 
   const wrap = document.createElement('div');
   wrap.className = 'search-drop-wrap';
@@ -3126,7 +3127,7 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
           inp.classList.remove('selected-item');
           inp.classList.add('orphan-item');
           list.classList.remove('open');
-          onSelect(finalId, originalName);
+          onSelect(finalId, originalName, viaEnter);
         });
         list.appendChild(di);
       }
@@ -3141,7 +3142,7 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
     inp.value = it.name;
     inp.classList.add('selected-item');
     list.classList.remove('open');
-    onSelect(it.id, it.name);
+    onSelect(it.id, it.name, viaEnter);
   }
 
   inp.addEventListener('input', () => {
@@ -3158,7 +3159,7 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
     const rows = list.querySelectorAll('.drop-item');
     if (ev.key === 'ArrowDown') { ev.preventDefault(); focusedIdx = Math.min(focusedIdx+1, rows.length-1); }
     else if (ev.key === 'ArrowUp') { ev.preventDefault(); focusedIdx = Math.max(focusedIdx-1, 0); }
-    else if (ev.key === 'Enter') { ev.preventDefault(); const target = focusedIdx >= 0 ? rows[focusedIdx] : rows[0]; target?.dispatchEvent(new Event('mousedown')); return; }
+    else if (ev.key === 'Enter') { ev.preventDefault(); const target = focusedIdx >= 0 ? rows[focusedIdx] : rows[0]; viaEnter = true; try { target?.dispatchEvent(new Event('mousedown')); } finally { viaEnter = false; } return; }
     else if (ev.key === 'Escape') { list.classList.remove('open'); return; }
     rows.forEach((el, i) => el.classList.toggle('focused', i === focusedIdx));
   });
@@ -3324,7 +3325,7 @@ function addCraft() {
   qtyInp.type = 'number'; qtyInp.min = '1'; qtyInp.value = '1'; qtyInp.placeholder = 'Qté';
   qtyInp.addEventListener('input', () => { entry.qty = parseInt(qtyInp.value) || 1; update(); });
 
-  const drop = makeSearchDrop(itemIndex, 'Rechercher un ingrédient…', (id) => {
+  const drop = makeSearchDrop(itemIndex, 'Rechercher un ingrédient…', (id, name, viaEnter) => {
     const alreadyUsed = id && craftEntries.some(e => e.uid !== uid && e.itemId === id);
     if (alreadyUsed) {
       drop.setValue('', '');
@@ -3335,6 +3336,12 @@ function addCraft() {
     const inp = drop?.element.querySelector('input');
     if (inp) { inp.readOnly = !!id; inp.style.cursor = id ? 'default' : ''; }
     update();
+    // Entrée : on enchaîne avec un nouvel emplacement vide (jamais compté tant qu'on n'y a rien choisi : voir getCraft)
+    if (viaEnter && id && craftEntries[craftEntries.length - 1] === entry) {
+      addCraft();
+      const next = craftEntries[craftEntries.length - 1];
+      setTimeout(() => next.drop?.element.querySelector('input')?.focus(), 0);
+    }
   }, true);
   entry.drop = drop;
 
