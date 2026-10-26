@@ -10,9 +10,18 @@ import { db, auth, onAuthStateChanged,
 import { toast }  from './components/toast.js';
 import { modal }  from './components/modal.js';
 import { store }  from './store.js';
-import { renderStats, statsDay } from './stats-page.js';
-import { generateCardBlob } from './card-renderer.js';
-import { createApiItemsTool } from './moderation-api-items.js?v=17';
+// Modules lourds chargés à la première utilisation (statistiques, carte Discord, outil API items, JSZip) plutôt qu'au chargement de la page
+const generateCardBlob = (...a) => import('./card-renderer.js').then(m => m.generateCardBlob(...a));
+const _loadExternalScript = url => new Promise((res, rej) => { const el = document.createElement('script'); el.src = url; el.onload = res; el.onerror = () => rej(new Error('Script non chargé : ' + url)); document.head.appendChild(el); });
+// Vérificateur de soumissions (OCR) : le script n'est chargé qu'au premier clic sur « Vérifier »
+{
+  const _stub = async (id) => {
+    if (window.verifySubmission === _stub) await _loadExternalScript('submission-verify.js?v=4');
+    if (window.verifySubmission === _stub) { toast('Vérificateur indisponible', 'error'); return; }
+    return window.verifySubmission(id);
+  };
+  window.verifySubmission = _stub;
+}
 
 loadEventNames(); // EVENT_NAMES = collection `events` (select « Évènement » de l'éditeur)
 
@@ -9769,6 +9778,7 @@ window.loadStatistiques = async function loadStatistiques() {
   const container = document.getElementById('stats-content');
   container.innerHTML = '<div class="empty">Chargement…</div>';
   try {
+    const { renderStats, statsDay } = await import('./stats-page.js');
     const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
     const [summary, repSnap, items] = await Promise.all([
       _fetchStats('summary', {
@@ -12213,6 +12223,7 @@ window.tpkLoadZip = async function(file) {
   _tpkLoadManual();
   _tpkLoadVFolders();
   try {
+    if (typeof JSZip === 'undefined') await _loadExternalScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
     const zip  = await JSZip.loadAsync(file);
     const ref  = new Set(JSON.parse(localStorage.getItem(TPK_REF_KEY) || '[]'));
     const tasks = [];
@@ -16717,6 +16728,7 @@ let _apiItemsTool = null;
 window.showApiItems = async function showApiItems() {
   _setHash('api-items');
   _showPanel('api-items-panel', 'btn-api-items');
+  const { createApiItemsTool } = await import('./moderation-api-items.js?v=17');
   _apiItemsTool ??= createApiItemsTool({
     db, doc, setDoc, updateDoc, getDoc, writeBatch, serverTimestamp, deleteField,
     cachedDocs, invalidateModCache, store, COL, toast, modal,
