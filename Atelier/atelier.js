@@ -140,6 +140,18 @@
     if (tooltip) tooltip.classList.remove('visible');
   }
 
+  // Survol d'un emplacement équipé : nom, rareté et stats de l'item
+  function showSlotTooltip(e, item) {
+    const tooltip = document.getElementById('set-tooltip');
+    if (!tooltip || !item) return;
+    const rar = RARITIES[item.rarity] || { color: '#888', label: item.rarity || '' };
+    tooltip.innerHTML = '<div class="car-tt-header"><span class="car-tt-name" style="color:' + rar.color + '">' + item.name + '</span></div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,.45);margin-bottom:6px;">' + rar.label + ' · ' + (item.palier == 'event' ? 'Event' : 'Palier ' + (item.palier == -1 ? 'Archive' : item.palier)) + '</div>' +
+      '<div class="car-tt-stats">' + (buildItemStatsHTML(item) || '<div style="font-size:10px;color:rgba(255,255,255,.35)">Aucune statistique</div>') + '</div>';
+    tooltip.classList.add('visible');
+    positionTooltip(e, tooltip);
+  }
+
   /* ══ SKIN 3D ══ */
 function getSkinPath(classId) {
   if (!classId) return '../img/skins/default.png';
@@ -2685,6 +2697,21 @@ function loadAccessoriesForClass(classId) {
 	  buildTierFilter();
     buildEquipFilter();
     buildStatsUI();
+
+    const _slotArea = document.body;
+    _slotArea.addEventListener('mouseover', function(e) {
+      if (e.target.closest('.rune-orb')) { hideSetTooltip(); return; }
+      const slot = e.target.closest('.slot.filled');
+      const item = slot && equipped[slot.dataset.slotId];
+      if (item) showSlotTooltip(e, item); else if (slot || e.target.closest('#col-left,#col-right,#row-bot')) hideSetTooltip();
+    });
+    _slotArea.addEventListener('mousemove', function(e) {
+      const tooltip = document.getElementById('set-tooltip');
+      if (tooltip && tooltip.classList.contains('visible') && e.target.closest('.slot.filled')) positionTooltip(e, tooltip);
+    });
+    ['col-left', 'col-right', 'row-bot'].forEach(function(id) {
+      document.getElementById(id).addEventListener('mouseleave', hideSetTooltip);
+    });
 
     document.getElementById('items-list').addEventListener('mouseover', function(e) {
       const row = e.target.closest('.item-row');
