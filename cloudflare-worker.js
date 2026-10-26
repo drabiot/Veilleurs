@@ -580,8 +580,8 @@ async function handleStats(request, env) {
   const memberRows = members.results.map(slim);
   // Les docs de visites gardent le nom connu au moment du tracking (souvent l'uid) : on affiche le nom actuel du compte (même règle que le journal de connexions)
   if (memberRows.length) {
-    const names = await q(`SELECT t.id id, CASE WHEN json_extract(u.data, '$.discordName') GLOB '*[A-Za-z0-9]*[A-Za-z0-9]*' THEN json_extract(u.data, '$.discordName') ELSE u.pseudo END AS name
-      FROM track_docs t JOIN users u ON u.uid = t.id WHERE t.col = 'user_visits' AND NOT ${UV_ANON} ORDER BY ${UV_TOTAL} DESC LIMIT 300`).all();
+    const names = await q(`SELECT track_docs.id id, CASE WHEN json_extract(u.data, '$.discordName') GLOB '*[A-Za-z0-9]*[A-Za-z0-9]*' THEN json_extract(u.data, '$.discordName') ELSE u.pseudo END AS name
+      FROM track_docs JOIN users u ON u.uid = track_docs.id WHERE track_docs.col = 'user_visits' AND NOT ${UV_ANON} ORDER BY ${UV_TOTAL} DESC LIMIT 300`).all();
     const byId = new Map(names.results.filter(r => r.name).map(r => [r.id, r.name]));
     for (const m of memberRows) if (byId.has(m.id)) m.pseudo = byId.get(m.id);
   }
