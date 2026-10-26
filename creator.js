@@ -2610,6 +2610,7 @@ function resetFormSilent() {
   document.getElementById('effects-list').innerHTML  = '';
   document.getElementById('obtain-override-wrap').style.display = 'none';
   renderObtainSources();
+  onObtainTypeChange(); // le menu « type de source » est revenu sur « Drop de Mob » : on reconstruit aussi la zone de saisie (sinon l'ancien champ « Forge » reste affiché)
   clearForumImage();
   onCatChange();
   refreshCustomSelects();
