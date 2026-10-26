@@ -70,7 +70,7 @@ const STAT_GROUPS = [
       { id:'degats_magique',      label:'Dégâts Magiques',                 icon:'📖',  unit:'%',  max:100  },
       { id:'degats_competence',   label:'Dégâts de Compétence',            icon:'✨',  unit:'%',  max:100  },
       { id:'degats_projectile',   label:'Dégâts de Projectile',            icon:'🏹',  unit:'%',  max:100  },
-      { id:'vitesse_attaque',     label:'Vitesse d\'Attaque',              icon:'💨',  unit:'%',   max:100  },
+      { id:'vitesse_attaque',     label:'Vitesse d\'Attaque',              icon:'💨',  unit:'/s',   max:100  },
       { id:'crit_chance',         label:'Chance Coups Critiques',          icon:'🎯',  unit:'%',  max:100  },
       { id:'crit_degats',         label:'Dégâts Coups Critiques',          icon:'💢',  unit:'%',  max:100  },
       { id:'crit_comp_chance',    label:'Chance Critique Compétence',      icon:'🎯',  unit:'%',  max:100  },
