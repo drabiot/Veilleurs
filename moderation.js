@@ -1348,12 +1348,12 @@ window.approve = async (id) => {
 
       // PNJ approuvé : ses items fabriqués / vendus reçoivent la source d'obtention correspondante
       if (sub.type === 'pnj') {
-        _syncPnjObtain({ ...dataToWrite, id: String(dataId) }).then(n => { if (n) toast(`Obtention mise à jour sur ${n} item${n !== 1 ? 's' : ''}`, 'success', 5000); }).catch(e => console.warn('[obtain PNJ]', e));
+        _syncPnjObtain({ ...dataToWrite, id: String(dataId) }).then(n => { if (n.length) toast(`Obtain mis à jour : ${n.slice(0, 4).join(', ')}${n.length > 4 ? ` (+${n.length - 4})` : ''}`, 'success', 6000); }).catch(e => console.warn('[obtain PNJ]', e));
       }
 
       // Item approuvé : les PNJ qui le fabriquent / vendent déjà y écrivent leur source d'obtention
       if (sub.type === 'item') {
-        _syncItemObtain(String(dataId)).then(n => { if (n) toast('Obtention complétée depuis les PNJ', 'success', 4000); }).catch(e => console.warn('[obtain item]', e));
+        _syncItemObtain(String(dataId)).then(n => { if (n.length) toast(`Obtain mis à jour : ${n.slice(0, 4).join(', ')}${n.length > 4 ? ` (+${n.length - 4})` : ''}`, 'success', 6000); }).catch(e => console.warn('[obtain item]', e));
       }
 
       // Si PNJ approuvé et panneau d'ordre ouvert, le recharger
@@ -5197,14 +5197,14 @@ const _toastImageRenames = pairs => pairs.length && toast(
 // au champ `obtain` de cet item (sans doublon). Si le PNJ ne fabrique / ne vend plus l'item, sa ligne est retirée. Les autres lignes ne sont jamais touchées.
 async function _syncPnjObtain(pnj) {
   const pid = pnj && (pnj.id || pnj._id);
-  if (!pid || !pnj.name) return 0;
+  if (!pid || !pnj.name) return [];
   const want = new Map(); // id d'item -> ligne
   for (const e of (pnj.craft || [])) if (e && e.id) want.set(e.id, `Fabricable au [npc:${pid}|${pnj.name}]${npcLocSuffix(pnj, pnj.region ? _regionName(pnj.region) : '')}`);
   for (const e of (pnj.sells || [])) if (e && e.id && !want.has(e.id)) want.set(e.id, `Achetable au [npc:${pid}|${pnj.name}]${npcLocSuffix(pnj, pnj.region ? _regionName(pnj.region) : '')}`);
   const esc = String(pid).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const mine = new RegExp('^[\\s-]*(Fabricable|Achetable) au \\[npc:' + esc + '[|\\]].*$', 'i');
   const snap = await getDocs(collection(db, 'items'));
-  let touched = 0;
+  const touched = [];
   for (const d of snap.docs) {
     const data = d.data();
     const lines = String(data.obtain || '').split('\n');
@@ -5215,18 +5215,18 @@ async function _syncPnjObtain(pnj) {
     const text = line ? [...kept.filter(l => l.trim() !== ''), line].join('\n') : kept.join('\n').trim();
     if (text === String(data.obtain || '')) continue;
     await updateDoc(d.ref, { obtain: text });
-    touched++;
+    touched.push(data.name || d.id);
   }
-  if (touched) invalidateModCache('items');
+  if (touched.length) invalidateModCache('items');
   return touched;
 }
 
 // Sens inverse : à la création / modification d'un item, les PNJ qui le fabriquent ou le vendent déjà y ajoutent leur ligne d'obtention.
 async function _syncItemObtain(itemId) {
-  if (!itemId) return 0;
+  if (!itemId) return [];
   const ref = doc(db, 'items', String(itemId));
   const snap = await getDoc(ref);
-  if (!snap.exists()) return 0;
+  if (!snap.exists()) return [];
   const cur = String(snap.data().obtain || '');
   const lst = v => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.values(v) : []);
   const pnjs = await getDocs(collection(db, 'personnages'));
@@ -5245,10 +5245,10 @@ async function _syncItemObtain(itemId) {
     lines = lines.filter(l => l.trim() !== '').concat(line);
   }
   const text = lines.join('\n');
-  if (text === cur) return 0;
+  if (text === cur) return [];
   await updateDoc(ref, { obtain: text });
   invalidateModCache('items');
-  return 1;
+  return [snap.data().name || String(itemId)];
 }
 
 // Registre des renommages (config/item_renames : { map: { ancienId: nouvelId } }). Les navigateurs qui ont encore l'ancien ID
@@ -5460,11 +5460,11 @@ window.saveEditor = async function() {
     }
 
     if (_editorCollection === 'items') {
-      _syncItemObtain(String(_editorId)).catch(e => console.warn('[obtain item]', e));
+      _syncItemObtain(String(_editorId)).then(n => { if (n.length) toast(`Obtain mis à jour : ${n.slice(0, 4).join(', ')}${n.length > 4 ? ` (+${n.length - 4})` : ''}`, 'success', 6000); }).catch(e => console.warn('[obtain item]', e));
     }
 
     if (_editorCollection === 'personnages') {
-      _syncPnjObtain({ ...newData, id: String(newData.id ?? _editorId) }).then(n => { if (n) toast(`Obtention mise à jour sur ${n} item${n !== 1 ? 's' : ''}`, 'success', 5000); }).catch(e => console.warn('[obtain PNJ]', e));
+      _syncPnjObtain({ ...newData, id: String(newData.id ?? _editorId) }).then(n => { if (n.length) toast(`Obtain mis à jour : ${n.slice(0, 4).join(', ')}${n.length > 4 ? ` (+${n.length - 4})` : ''}`, 'success', 6000); }).catch(e => console.warn('[obtain PNJ]', e));
     }
 
     // Invalider les caches localStorage et session
