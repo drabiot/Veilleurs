@@ -21,6 +21,8 @@
   let _rlTimer = null; // debounce renderItemList
 
   /* ══ HELPER ID ══ */
+  // Ancien ID d'un item renommé → nouvel ID (table config/item_renames chargée par atelier.html)
+  function _rid(id) { return window._vclResolveItemId ? window._vclResolveItemId(id) : id; }
   function getItemId(item) { return item && (item.id ?? item._id) || null; }
 
   /* ══ INDEX MAPS ══
@@ -1997,7 +1999,7 @@ function loadAccessoriesForClass(classId) {
           _setTitre(parsed.titre);
         const lvl = (parsed.level >= 1 && parsed.level <= MAX_LEVEL) ? parsed.level : buildLevel;
         Object.entries(parsed.slots).forEach(function(e) {
-          const item = ITEMS.find(function(i) { return i.id === e[1]; });
+          const item = ITEMS.find(function(i) { return i.id === _rid(e[1]); });
           if (item && itemAllowedForLevel(item, lvl)) equipped[e[0]] = item;
         });
         if (parsed.runes) Object.entries(parsed.runes).forEach(function(e) {
@@ -2712,7 +2714,7 @@ function loadAccessoriesForClass(classId) {
             // Compat v1 (string) et v2 ({ id, name })
             const itemId   = typeof entry === 'string' ? entry : entry.id;
             const itemName = typeof entry === 'string' ? null  : entry.name;
-            const item = ITEMS.find(function(i) { return i.id === itemId; });
+            const item = ITEMS.find(function(i) { return i.id === _rid(itemId); });
             if (item) {
               equipped[slotId] = item;
             } else if (itemName) {
@@ -2852,7 +2854,7 @@ function loadAccessoriesForClass(classId) {
         const slotId = entry[0];
         const raw    = entry[1];
         const itemId = typeof raw === 'string' ? raw : raw.id;
-        const item = ITEMS.find(function (i) { return i.id === itemId; });
+        const item = ITEMS.find(function (i) { return i.id === _rid(itemId); });
         if (!item) return;
         if (!item.craft || !Array.isArray(item.craft) || !item.craft.length) return;
         results.push({ slotId: slotId, item: item });

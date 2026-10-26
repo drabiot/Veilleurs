@@ -1287,17 +1287,22 @@ window.approve = async (id) => {
       }
       dataToWrite._contributor = _mergeContributors(_stdExistContribs, _contribField, !!sub.isModification);
 
+      let _imgPairs = [];
+      if (_renameFrom && dataToWrite.images?.length) { const r = _renameImagePaths(dataToWrite.images, _renameFrom, String(dataId)); dataToWrite.images = r.images; _imgPairs = r.pairs; }
+
       await setDoc(doc(db, target, String(dataId)), dataToWrite);
 
       if (_renameFrom) { // ancien document supprimé, puis toutes les références pointent vers le nouvel ID
         await deleteDoc(doc(db, target, _renameFrom));
         try {
           const n = await _renameItemReferences(_renameFrom, String(dataId));
+          await _recordItemRename(_renameFrom, String(dataId));
           toast(`ID renommé : ${_renameFrom} → ${dataId} (${n} document${n !== 1 ? 's' : ''} mis à jour)`, 'success', 7000);
         } catch (e) {
           toast(`⚠️ ID renommé, mais certaines références n'ont pas pu être mises à jour : ${e.message}`, 'warning', 9000);
         }
         _writeAudit('rename_id', 'item', String(dataId), sub.data?.name || String(dataId), { from: _renameFrom, to: String(dataId) });
+        _toastImageRenames(_imgPairs);
       }
 
       // Si l'entité était précédemment sensible, nettoyer les collections cachées
@@ -5141,6 +5146,38 @@ function _renamedItemId(oldId, oldName, newName) {
 
 // Remplace l'ancien ID par le nouveau partout où il est utilisé comme valeur : crafts et évolutions des autres items, loot des mobs,
 // ventes des PNJ, récompenses de quêtes, panoplies, builds publiés, soumissions en attente, réglages… Retourne le nombre de documents modifiés.
+// Chemins de textures : …/ancien_id.png devient …/nouvel_id.png. Retourne les nouveaux chemins et les paires [ancien, nouveau] (le FICHIER
+// du dépôt doit porter le nouveau nom : la modération ne peut pas renommer un fichier du site).
+function _renameImagePaths(images, oldId, newId) {
+  const pairs = [];
+  const esc = String(oldId).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('([\\/])' + esc + '(\\.[A-Za-z0-9]+)$');
+  const out = (Array.isArray(images) ? images : []).map(p => {
+    if (typeof p !== 'string' || !re.test(p)) return p;
+    const np = p.replace(re, '$1' + newId + '$2');
+    pairs.push([p, np]);
+    return np;
+  });
+  return { images: out, pairs };
+}
+const _toastImageRenames = pairs => pairs.length && toast(
+  '🖼️ Texture : le chemin a changé. Renomme le fichier dans le dépôt (img/…) : ' + pairs.map(([a, b]) => `${a.split('/').pop()} → ${b.split('/').pop()}`).join(', '),
+  'warning', 14000);
+
+// Registre des renommages (config/item_renames : { map: { ancienId: nouvelId } }). Les navigateurs qui ont encore l'ancien ID
+// dans un brouillon d'Atelier le convertissent au chargement. Les chaînes sont raccourcies (a→b puis b→c devient a→c).
+async function _recordItemRename(oldId, newId) {
+  try {
+    const ref = doc(db, 'config', 'item_renames');
+    const snap = await getDoc(ref);
+    const map = snap.exists() ? { ...(snap.data().map || {}) } : {};
+    for (const k of Object.keys(map)) if (map[k] === oldId) map[k] = newId;
+    map[oldId] = newId;
+    delete map[newId];
+    await setDoc(ref, { map });
+  } catch (e) { console.warn('[renommage] registre non mis à jour :', e); }
+}
+
 async function _renameItemReferences(oldId, newId) {
   const COLS = ['items', 'mobs', 'personnages', 'quetes', 'panoplies', 'regions', 'zones', 'donjons', 'map_markers', 'builds_published', 'submissions', 'config'];
   const deepRep = v => {
@@ -5284,16 +5321,21 @@ window.saveEditor = async function() {
       const existing = currentSnap.exists() ? currentSnap.data() : {};
       const existContribs = _readContribs(existing);
       const contribs = existContribs.length ? existContribs : _editorContribs;
-      await setDoc(doc(db, _editorCollection, newDocId), { ...existing, ...newData, id: newDocId, ...(contribs.length ? { _contributor: contribs } : {}) });
+      const _merged = { ...existing, ...newData, id: newDocId, ...(contribs.length ? { _contributor: contribs } : {}) };
+      let _edImgPairs = [];
+      if (_editorCollection === 'items' && _merged.images?.length) { const r = _renameImagePaths(_merged.images, _editorId, newDocId); _merged.images = r.images; _edImgPairs = r.pairs; newData.images = r.images; }
+      await setDoc(doc(db, _editorCollection, newDocId), _merged);
       await deleteDoc(doc(db, _editorCollection, _editorId));
       if (_editorCollection === 'items') { // toutes les références à l'ancien ID suivent
         try {
           const n = await _renameItemReferences(_editorId, newDocId);
+          await _recordItemRename(_editorId, newDocId);
           toast(`Références mises à jour : ${n} document${n !== 1 ? 's' : ''}`, 'success', 6000);
         } catch (e) {
           toast(`⚠️ ID renommé, mais certaines références n'ont pas pu être mises à jour : ${e.message}`, 'warning', 9000);
         }
         _writeAudit('rename_id', 'item', newDocId, newData.name || newDocId, { from: _editorId, to: newDocId });
+        _toastImageRenames(_edImgPairs);
       }
       _editorCacheRename(_editorCollection, _editorId, newDocId, newData);
       _editorId = newDocId;

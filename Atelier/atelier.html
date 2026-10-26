@@ -386,6 +386,32 @@
     } catch (err) {
       console.error('[Atelier] Erreur Firestore :', err);
     }
+    // Items renommés (config/item_renames, écrit par la modération) : les brouillons enregistrés dans ce navigateur sont convertis
+    // AVANT le chargement de l'Atelier, pour que les cases ne se vident pas quand l'ID d'un item change.
+    try {
+      const rsnap = await getDoc(doc(db, 'config', 'item_renames'));
+      const rmap = rsnap.exists() ? (rsnap.data().map || {}) : {};
+      const resolveId = id => { let n = 0; while (rmap[id] && n++ < 25) id = rmap[id]; return id; };
+      window._vclResolveItemId = resolveId;
+      if (Object.keys(rmap).length) {
+        for (const key of Object.keys(localStorage)) {
+          if (!/^vcl_atelier_(\d+|preview)$/.test(key)) continue;
+          let b; try { b = JSON.parse(localStorage.getItem(key) || 'null'); } catch { continue; }
+          if (!b) continue;
+          let changed = false;
+          for (const [slot, v] of Object.entries(b.slots || {})) {
+            const id = typeof v === 'string' ? v : v && v.id, nid = id ? resolveId(id) : id;
+            if (nid && nid !== id) { b.slots[slot] = typeof v === 'string' ? nid : { ...v, id: nid }; changed = true; }
+          }
+          for (const [rk, rv] of Object.entries(b.runes || {})) {
+            const nid = typeof rv === 'string' ? resolveId(rv) : rv;
+            if (nid !== rv) { b.runes[rk] = nid; changed = true; }
+          }
+          if (changed) localStorage.setItem(key, JSON.stringify(b));
+        }
+      }
+    } catch (e) { console.warn('[Atelier] conversion des items renommés :', e); }
+
     // N'appeler _pageInit qu'une seule fois : après ?build ou ?preview, pas avant
     const _urlParams  = new URLSearchParams(window.location.search);
     const _urlBuildId = _urlParams.get('build');
