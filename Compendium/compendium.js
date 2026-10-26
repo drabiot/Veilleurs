@@ -122,6 +122,9 @@ function catData(categoryKey) {
 function inlineLinks(str) {
   // Syntaxe : [type:id|Nom affiché] ou [id|Nom affiché] (item par défaut)
   // type peut être : mob, npc, item
+  // Coordonnées qui suivent un PNJ (« [npc:id|Nom] de Région (x,y,z) ») : lien vers le pin de ce PNJ sur la carte
+  str = str.replace(/(\[npc:([^\]|]+)\|[^\]]+\])([^()\[\]\n]*?)\((-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\)/g,
+    (m, tag, id, mid, x, y, z) => `${tag}${mid}<a class="obtain-coords-link" href="../Map/map.html?pnjId=${encodeURIComponent(id)}" title="Voir sur la carte" style="color:var(--gold);border-bottom:1px dotted currentColor;text-decoration:none">(${x},${y},${z})</a>`);
   return str.replace(/\[([^\]|]+)\|([^\]]+)\]/g, function(_, ref, label) {
     // Détecter si ref contient un type explicite : "mob:sanglier_corrompu"
     const colonIdx = ref.indexOf(':');
