@@ -842,6 +842,16 @@ function loadAccessoriesForClass(classId) {
       });
     });
 
+    /* ── Stats de base de la classe (niveau 1, sans équipement) ── */
+    const _base = (typeof CLASS_BASE_STATS !== 'undefined' && activeClass) ? CLASS_BASE_STATS[activeClass] : null;
+    if (_base) {
+      Object.entries(_base).forEach(function(e) {
+        if (!(e[0] in mins)) return;
+        mins[e[0]] += e[1];
+        maxs[e[0]] += e[1];
+      });
+    }
+
     /* ── Gains de la classe à chaque niveau (niveau 1 = aucun, niveau N = N-1 montées) ── */
     const _gains = (typeof CLASS_LEVEL_GAINS !== 'undefined' && activeClass) ? CLASS_LEVEL_GAINS[activeClass] : null;
     if (_gains && buildLevel > 1) {

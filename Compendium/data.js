@@ -10,6 +10,13 @@ const CLASSES = [
 ];
 
 //#endregion CLASSES
+//#region STATS DE BASE
+// Stats d'une classe au niveau 1, sans aucun équipement (clés = id de stat, voir STAT_GROUPS). Ajoutées dans l'Atelier quelle que soit le niveau.
+// Archer : 22 de vie au niveau 3 = 20 de base + 2 niveaux × 1.
+const CLASS_BASE_STATS = {
+  archer: { sante: 20 },
+};
+//#endregion STATS DE BASE
 //#region GAINS PAR NIVEAU
 // Stats gagnées à CHAQUE montée de niveau (message « Niveau supérieur — vous gagnez : » en jeu).
 // Un build de niveau N a franchi N-1 niveaux : l'Atelier ajoute (N-1) × ces valeurs (clés = id de stat, voir STAT_GROUPS).
