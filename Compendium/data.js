@@ -16,7 +16,7 @@ const CLASSES = [
 const CLASS_BASE_STATS = {
   archer: {
     sante: 20, mana: 20, stamina: 20,
-    degats: 1, degats_projectile: 1,
+    degats: 1, // (la Dég. projectile de la fiche vient des cases de l'arbre de compétences, pas de la base)
     vitesse_attaque: 12.5,
     crit_chance: 1, crit_degats: 200, crit_comp_chance: 1, crit_comp_degats: 200,
     vitesse_deplacement: 16, esquive: 5,
