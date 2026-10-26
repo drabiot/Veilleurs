@@ -4566,7 +4566,9 @@ function validateForm() {
   if (!id)        errors.push({ field:'f-id',        msg:'ID manquant' });
   if (!category)  errors.push({ field:'f-category',  msg:'Catégorie non sélectionnée' });
   if (!selRarity) errors.push({ field:null,          msg:'Rareté non sélectionnée' });
-  if (!lore)      errors.push({ field:'f-lore',      msg:'Lore obligatoire' });
+  if (category === 'parchemin') {
+    if (!(document.getElementById('f-scroll-desc')?.value || '').trim()) errors.push({ field:'f-scroll-desc', msg:'Description de la compétence obligatoire' });
+  } else if (!lore) errors.push({ field:'f-lore',      msg:'Lore obligatoire' });
   if (isEquip && !cat)    warnings.push({ field:'f-cat',    msg:'Slot (cat) non sélectionné' });
   if (!palier)            errors.push ({ field:'f-palier', msg:'Palier obligatoire' });
   if (palier === 'event' && !document.getElementById('f-event-name')?.value) errors.push({ field:'f-event-name', msg:'Évènement obligatoire pour le palier Event' });
