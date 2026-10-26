@@ -3281,6 +3281,32 @@ function ensureItemIndex() {
   }
 }
 
+/* Champ de quantité : deux boutons « − » et « + » à la place des flèches natives du navigateur. */
+function makeQtyStepper(input) {
+  const wrap = document.createElement('div');
+  wrap.className = 'qty-stepper';
+  const mk = (txt, title, dir) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'qty-btn'; b.textContent = txt; b.title = title; b.tabIndex = -1;
+    b.addEventListener('mousedown', e => e.preventDefault()); // garde le focus sur le champ
+    b.addEventListener('click', () => {
+      const step = parseFloat(input.step) > 0 ? parseFloat(input.step) : 1;
+      const min = input.min !== '' ? parseFloat(input.min) : -Infinity;
+      const max = input.max !== '' ? parseFloat(input.max) : Infinity;
+      const cur = parseFloat(input.value);
+      let v = isNaN(cur) ? (dir > 0 ? Math.max(min, 0) + (min > 0 ? 0 : step) : min) : cur + dir * step;
+      v = Math.min(max, Math.max(min === -Infinity ? v : min, v));
+      input.value = String(Math.round(v * 1e6) / 1e6);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    return b;
+  };
+  input.style.cssText += ';width:auto;flex:1 1 auto;min-width:0;border-radius:0;';
+  wrap.append(mk('−', 'Diminuer', -1), input, mk('+', 'Augmenter', 1));
+  return wrap;
+}
+
 function addCraft() {
   ensureItemIndex();
   const uid = craftUid++;
@@ -3313,7 +3339,7 @@ function addCraft() {
   rmBtn.className = 'btn-icon'; rmBtn.textContent = '✕';
   rmBtn.addEventListener('click', () => { craftEntries = craftEntries.filter(e => e.uid !== uid); row.remove(); update(); });
 
-  row.appendChild(qtyInp);
+  row.appendChild(makeQtyStepper(qtyInp));
   row.appendChild(drop.element);
   row.appendChild(rmBtn);
   document.getElementById('craft-list').appendChild(row);
@@ -6485,7 +6511,7 @@ function renderPnjCrafts() {
 
     for (const ing of c.ingredients) {
       const ingRow = document.createElement('div');
-      ingRow.style.cssText = 'display:grid;grid-template-columns:70px 1fr auto;gap:6px;align-items:start;';
+      ingRow.style.cssText = 'display:grid;grid-template-columns:104px 1fr auto;gap:6px;align-items:start;';
 
       const qtyEl = document.createElement('input');
       qtyEl.type = 'number'; qtyEl.min = '1'; qtyEl.value = ing.qty; qtyEl.placeholder = 'Qté';
@@ -6504,7 +6530,7 @@ function renderPnjCrafts() {
       rmIng.className = 'btn-icon'; rmIng.textContent = '✕';
       rmIng.addEventListener('click', () => { c.ingredients = c.ingredients.filter(e => e !== ing); renderPnjCrafts(); update(); });
 
-      ingRow.appendChild(qtyEl);
+      ingRow.appendChild(makeQtyStepper(qtyEl));
       ingRow.appendChild(ingDrop.element);
       ingRow.appendChild(rmIng);
       ingsWrap.appendChild(ingRow);
@@ -6858,7 +6884,7 @@ function _applyQualBtnState(qualBtn, active) {
 
 function _makeQuestItemRow(item, onRemove) {
   const row = document.createElement('div');
-  row.style.cssText = 'display:grid;grid-template-columns:1fr 60px auto auto;gap:5px;align-items:start;';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 104px auto auto;gap:5px;align-items:start;';
 
   ensureAllItemsIndex();
 
@@ -6902,13 +6928,13 @@ function _makeQuestItemRow(item, onRemove) {
   rm.className = 'btn-icon'; rm.textContent = '✕';
   rm.addEventListener('click', onRemove);
 
-  row.append(drop.element, qteEl, qualBtn, rm);
+  row.append(drop.element, makeQtyStepper(qteEl), qualBtn, rm);
   return row;
 }
 
 function _makeQuestMobRow(mob, onRemove) {
   const row = document.createElement('div');
-  row.style.cssText = 'display:grid;grid-template-columns:1fr 60px auto;gap:5px;align-items:start;';
+  row.style.cssText = 'display:grid;grid-template-columns:1fr 104px auto;gap:5px;align-items:start;';
 
   ensureAllMobsIndex();
   const drop = makeSearchDrop(allMobsIndex, 'Monstre…', id => { mob.mobId = id; update(); }, false);
@@ -6927,7 +6953,7 @@ function _makeQuestMobRow(mob, onRemove) {
   rm.className = 'btn-icon'; rm.textContent = '✕';
   rm.addEventListener('click', onRemove);
 
-  row.append(drop.element, qteEl, rm);
+  row.append(drop.element, makeQtyStepper(qteEl), rm);
   return row;
 }
 
@@ -7142,7 +7168,7 @@ function renderQuestRecompenses() {
     let valueEl;
     if (rew.type === 'items') {
       const wrap = document.createElement('div');
-      wrap.style.cssText = 'display:grid;grid-template-columns:1fr 70px;gap:5px;align-items:start;';
+      wrap.style.cssText = 'display:grid;grid-template-columns:1fr 104px;gap:5px;align-items:start;';
 
       const drop = makeSearchDrop(allItemsIndex, 'Rechercher item…', id => {
         rew.itemId = id;
@@ -7164,7 +7190,7 @@ function renderQuestRecompenses() {
       qteEl.addEventListener('blur',  () => qteEl.style.borderColor = 'var(--border)');
       qteEl.addEventListener('input', () => { rew.qte = qteEl.value ? +qteEl.value : null; update(); });
 
-      wrap.append(drop.element, qteEl);
+      wrap.append(drop.element, makeQtyStepper(qteEl));
       valueEl = wrap;
     } else {
       const numEl = document.createElement('input');
