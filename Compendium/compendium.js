@@ -1048,7 +1048,7 @@ function renderEffects(effectsList, applyCd) {
 
   // « À la consommation, applique 1 h de recharge sur tout les fortifiants »
   const note = (applyCd && applyCd.value > 0)
-    ? `<div class="effect-apply-cd">⏱ À la consommation, applique <b>${escHtml(formatDuration(applyCd.value))}</b> de recharge sur ${escHtml(applyCd.target || 'les objets du même type')}</div>`
+    ? `<div class="effect-apply-cd">⏱ ${escHtml(applyCd.lead || 'À la consommation, applique')} <b>${escHtml(formatDuration(applyCd.value))}</b> de recharge sur ${escHtml(applyCd.target || 'les objets du même type')}</div>`
     : '';
   return `<div class="item-obtain effects-panel">${rows}${note}</div>`;
 }

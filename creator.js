@@ -3514,11 +3514,14 @@ function _applyCdValue() {
   const out = { value: Math.round(v * m * 1000) / 1000, unit: 's' };
   const t = (document.getElementById('f-apply-target')?.value || '').trim();
   if (t) out.target = t;
+  const l = (document.getElementById('f-apply-lead')?.value || '').trim();
+  if (l) out.lead = l;
   return out;
 }
 function _setApplyCd(a) {
-  const val = document.getElementById('f-apply-val'), un = document.getElementById('f-apply-unit'), tg = document.getElementById('f-apply-target');
+  const val = document.getElementById('f-apply-val'), un = document.getElementById('f-apply-unit'), tg = document.getElementById('f-apply-target'), ld = document.getElementById('f-apply-lead');
   if (!val) return;
+  if (ld) ld.value = (a && a.lead) || '';
   if (!a || !(a.value > 0)) { val.value = ''; if (tg) tg.value = ''; if (un) un.value = 's'; return; }
   let n = +a.value; un.value = 's';
   if (n >= 3600 && n % 3600 === 0) { n /= 3600; un.value = 'h'; } else if (n >= 60 && n % 60 === 0) { n /= 60; un.value = 'min'; }
