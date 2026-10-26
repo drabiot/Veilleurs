@@ -38,6 +38,7 @@ const WORKER_URL  = 'https://veilleurs.veilleurs-wiki.workers.dev';
 let currentUser = null;
 let currentRole = 'visiteur';
 let allSubs      = [];
+window._allSubsForVerify = () => allSubs; // lu par submission-verify.js
 let filterStatus = 'pending';
 let filterType   = 'all';
 let filterSearch = '';
@@ -667,6 +668,7 @@ function buildCard(sub) {
       <input type="text" class="sub-comment" id="comment-${sub._id}" placeholder="Commentaire (optionnel)">
       <button class="btn btn-ghost"   id="btn-edit-${sub._id}" onclick="toggleEdit('${sub._id}')" style="font-size:12px;">✏️ Modifier</button>
       <button class="btn btn-ghost"   onclick="openInCreator('${sub._id}')" style="font-size:12px;" title="Ouvre cette soumission dans le Creator pour l'éditer">⚙️ Creator</button>
+      <button class="btn btn-ghost"   id="btn-verify-${sub._id}" onclick="verifySubmission('${sub._id}')" style="font-size:12px;" title="Lit les captures jointes (gratuit, dans ton navigateur) et compare avec les champs saisis">🔍 Vérifier</button>
       <button class="btn btn-ghost"   onclick="requestChanges('${sub._id}')" style="font-size:12px;color:var(--warn,#f59e0b);">💬 Demander modifs</button>
       <button class="btn btn-approve" onclick="approve('${sub._id}')">✓ Approuver</button>
       <button class="btn btn-reject"  onclick="reject('${sub._id}')">✕ Rejeter</button>
