@@ -1279,3 +1279,6 @@ a.craft-ingredient-name:hover {
 .item-meta-badge .imb-val { font-size: 15px; font-weight: 700; color: #e6c97a; }
 .item-meta-badge.imb-lvl { border-color: rgba(240,160,48,.4); background: rgba(240,160,48,.08); }
 .item-meta-badge.imb-lvl .imb-val { color: #f0a030; }
+
+/* Colonnes Effets / Craft / Statistiques : une colonne vide ne réserve pas de place (les autres se calent à gauche) */
+.effects-craft-row > :empty, .effects-craft-titles > :empty { display: none; }
