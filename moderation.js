@@ -3613,19 +3613,22 @@ async function loadDeadLinks() {
       fixTd.appendChild(row);
       fixTr.appendChild(fixTd);
 
-      // Ouvre la page publique de la donnée qui porte le lien mort (Compendium / Bestiaire / Quêtes), dans un nouvel onglet
-      const _pageOf = (type, id) => {
-        const e = encodeURIComponent(id);
-        return { item: `Compendium/compendium.html#${e}`, mob: `Bestiaire/bestiaire.html#monstres/${e}`, pnj: `Bestiaire/bestiaire.html#personnages/${e}`, 'quête': `Quetes/quetes.html#${e}` }[type] || null;
-      };
-      const _href = _pageOf(b.srcType, b.srcId);
-      if (_href) {
-        const openBtn = document.createElement('a');
+      // Ouvre la donnée qui porte le lien mort dans l'éditeur de la modération (liste de ses champs) ; « Fermer » revient ici
+      const _colOf = { item: 'items', mob: 'mobs', pnj: 'personnages', 'quête': 'quetes', panoplie: 'panoplies' }[b.srcType];
+      if (_colOf) {
+        const openBtn = document.createElement('button');
         openBtn.className = 'btn btn-ghost';
-        openBtn.href = _href; openBtn.target = '_blank'; openBtn.rel = 'noopener';
-        openBtn.style.cssText = 'font-size:11px;padding:4px 10px;margin-right:4px;text-decoration:none;display:inline-block;';
-        openBtn.textContent = '🔗 Ouvrir';
-        openBtn.title = 'Ouvre la page de cette donnée sur le wiki';
+        openBtn.style.cssText = 'font-size:11px;padding:4px 10px;margin-right:4px;';
+        openBtn.textContent = '📂 Ouvrir';
+        openBtn.title = 'Ouvre cette donnée dans l'éditeur (liste des champs)';
+        openBtn.addEventListener('click', async () => {
+          try {
+            const snap = await getDoc(doc(db, _colOf, String(b.srcId)));
+            if (!snap.exists()) { toast('Donnée introuvable : ' + b.srcId, 'error'); return; }
+            const data = { id: snap.id, ...snap.data() };
+            showEditor(_colOf, String(b.srcId), data, 'dead-links');
+          } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+        });
         actTd.appendChild(openBtn);
       }
       actTd.appendChild(fixBtn);
@@ -5233,6 +5236,7 @@ window.editorGoBack = function() {
   if (_editorOrigin === 'completion')      { showCompletion(); return; }
   if (_editorOrigin === 'allpins')         { showMapPanel(); switchMapTab('allpins'); return; }
   if (_editorOrigin === 'data-all')        { showDataAll();        return; }
+  if (_editorOrigin === 'dead-links')      { showDeadLinks();      return; }
   showSubmissions();
 };
 
