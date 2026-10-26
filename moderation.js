@@ -403,7 +403,7 @@ function toJSStr(obj, depth = 0) {
 // ── Résumé lisible d'une soumission : champs connus mis en forme à la main, puis TOUS les autres champs ──
 const _PRETTY_SKIP = new Set(['_order', 'ordre', '_contributor', '_ts', '_updatedAt', '_id', 'nameHash', 'images', 'image', 'img', 'screenshots']);
 const _PRETTY_SHOWN = {
-  item:     ['rarity', 'category', 'palier', 'lvl', 'cat', 'classes', 'set', 'sensible', 'event', 'evolutif', 'stats', 'craft', 'obtain', 'lore', 'competence', 'tags'],
+  item:     ['id', 'name', 'quality', 'rarity', 'category', 'palier', 'lvl', 'cat', 'classes', 'set', 'sensible', 'event', 'evolutif', 'stats', 'effects', 'cooldown_apply', 'craft', 'craft_cd', 'obtain', 'lore', 'competence', 'tags', 'skill_name', 'skill_rarity'],
   mob:      ['type', 'palier', 'region', 'behavior', 'lore', 'loot'],
   pnj:      ['id', 'name', 'tag', 'type', 'palier', 'region', 'coords', 'craft', 'sells', 'lore', 'instructions', 'underground', 'sensible'],
   region:   ['palier', 'coords', 'inCodex', 'lore'],
@@ -544,6 +544,7 @@ function _buildPrettySummary(data, type) {
 
   if (type === 'item') {
     const rarColor = RARITY_COLORS[data.rarity] || 'var(--muted)';
+    if (data.name) field('Nom', `<b style="font-size:13px;">${esc(data.name)}</b>${data.quality ? ' <span style="font-size:10px;font-weight:700;color:#34d399;border:1px solid rgba(52,211,153,.4);border-radius:10px;padding:1px 7px;">✦ Qualité</span>' : ''}${data.id ? ' ' + idCode(data.id) : ''}`, rarColor);
     if (data.rarity)   field('Rareté',   idPair(data.rarity, `<span style="font-weight:700;">${RARITY_LABELS[data.rarity]||data.rarity}</span>`), rarColor);
     if (data.category) field('Catégorie', idPair(data.category, esc(CAT_LABELS[data.category]||data.category)));
     if (data.palier != null && data.palier !== '') field('Palier',   idPair(data.palier, data.palier == 'event' ? 'Event' : 'Palier ' + (data.palier == -1 ? 'Archive' : data.palier)));
@@ -566,9 +567,35 @@ function _buildPrettySummary(data, type) {
       }).join(' ');
       rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Stats</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;">${statLines}</div>`);
     }
+    // Effets (consommables) : une ligne par effet, comme sur le wiki ; recharge et utilisations regroupées dans « Utilisation »
+    if (Array.isArray(data.effects) && data.effects.length) {
+      const fmtDur = sec => { const n = +sec; if (!isFinite(n) || n <= 0) return ''; if (n % 3600 === 0) return (n / 3600) + ' h'; if (n % 60 === 0) return (n / 60) + ' min'; return n + ' s'; };
+      const meta = t => (typeof EFFECT_META !== 'undefined' && EFFECT_META[t]) || { icon: '◆', color: '#aaa', label: t, prefix: '' };
+      const real = data.effects.filter(e => e && !['cooldown', 'use', 'level'].includes(e.type));
+      const cd = data.effects.find(e => e && e.type === 'cooldown'), use = data.effects.find(e => e && e.type === 'use');
+      if (real.length) {
+        const eff = real.map(e => {
+          const m = meta(e.type), col = e.color || m.color;
+          const val = `${e.prefix ?? m.prefix ?? ''}${e.value ?? ''}${e.unit ? ' ' + String(e.unit).trim() : ''}`;
+          const dur = e.instant ? 'Instantané' : fmtDur(e.duration);
+          return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;padding:2px 0;"><span style="width:20px;text-align:center;">${esc(e.icon || m.icon)}</span><span style="color:${col};font-weight:600;">${esc(val)}</span>${dur ? `<span style="font-size:10px;color:var(--muted);background:var(--surface3);border-radius:10px;padding:1px 7px;">⏳ ${esc(dur)}</span>` : ''}<span style="font-size:10px;color:var(--muted);">${idCode(e.type)}</span></div>`;
+        }).join('');
+        rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Effets</div><div style="margin-bottom:2px;">${eff}</div>`);
+      }
+      const ac = data.cooldown_apply;
+      if (cd || use || (ac && ac.value > 0)) {
+        const chips = [];
+        if (cd) chips.push(`<span style="background:rgba(244,114,182,.12);border:1px solid rgba(244,114,182,.3);color:#f472b6;border-radius:4px;padding:1px 7px;font-size:11px;">⏱ Recharge <b>${esc(fmtDur(cd.value) || cd.value + ' s')}</b></span>`);
+        if (use) chips.push(`<span style="background:var(--surface3);border-radius:4px;padding:1px 7px;font-size:11px;">🧪 <b>${esc(String(use.value))}</b> utilisation${use.value > 1 ? 's' : ''}</span>`);
+        const apply = (ac && ac.value > 0) ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;">↳ ${esc(ac.lead || 'À la consommation, applique')} <b style="color:#f0a030;">${esc(fmtDur(ac.value))}</b> de recharge sur ${esc(ac.target || 'les objets du même type')}</div>` : '';
+        rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Utilisation</div><div style="display:flex;flex-wrap:wrap;gap:4px;">${chips.join('')}</div>${apply}`);
+      }
+    }
     if (data.craft?.length) {
-      const craftLines = data.craft.map(c => `<span style="background:var(--surface3);border-radius:4px;padding:1px 6px;font-size:11px;">×${c.qty} ${idPair(c.id, esc(itemName(c.id) || c.id))}</span>`).join(' ');
-      rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Craft</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;">${craftLines}</div>`);
+      const craftLines = data.craft.map(c => c && c.id === 'cols'
+        ? `<span style="background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.3);color:#c9a84c;border-radius:4px;padding:1px 6px;font-size:11px;">🪙 <b>${esc(String(c.qty))}</b> cols</span>`
+        : `<span style="background:var(--surface3);border-radius:4px;padding:1px 6px;font-size:11px;"><b>×${c.qty}</b> ${idPair(c.id, esc(itemName(c.id) || c.id))}</span>`).join(' ');
+      rows.push(`<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px;">Craft${data.craft_cd ? ` <span style="text-transform:none;letter-spacing:0;font-weight:400;">· ⏱ ${esc(String(data.craft_cd))}</span>` : ''}</div><div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:2px;">${craftLines}</div>`);
     }
     {
       const raw = data.obtain || '';
