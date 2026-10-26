@@ -1228,12 +1228,28 @@ window.approve = async (id) => {
     const target = colMap[sub.type];
     if (!target) throw new Error('Type inconnu : ' + sub.type);
 
-    const dataId = sub.data?.id;
+    let dataId = sub.data?.id;
     if (!dataId) throw new Error('Pas d\'ID dans les données');
 
     if (sub.data?.sensible === true) throw new Error('Les items / mobs / PNJ sensibles ne sont plus gérés : décoche « sensible » dans la soumission.');
     const _contribName  = sub.submitterName || _userNames.get(sub.submittedBy) || 'Inconnu';
     const _contribField = { uid: sub.submittedBy || null, name: _contribName };
+
+    // Modification d'item avec un nouveau nom : l'ID suit le nom (les références sont mises à jour après l'écriture)
+    let _renameFrom = null;
+    if (sub.type === 'item' && sub.isModification) {
+      const exSnap = await getDoc(doc(db, 'items', String(dataId))).catch(() => null);
+      if (exSnap?.exists() && sub.data.name && exSnap.data().name && sub.data.name !== exSnap.data().name) {
+        const nid = _renamedItemId(String(dataId), exSnap.data().name, sub.data.name);
+        if (nid) {
+          const clash = await getDoc(doc(db, 'items', nid));
+          if (clash.exists()) throw new Error(`Renommage impossible : un item avec l'ID « ${nid} » existe déjà.`);
+          _renameFrom = String(dataId);
+          dataId = nid;
+          sub.data = { ...sub.data, id: nid };
+        }
+      }
+    }
 
     {
       // Flux standard
@@ -1245,7 +1261,7 @@ window.approve = async (id) => {
       let _stdExistContribs = [];
       if (sub.isModification) {
         try {
-          const existingSnap = await getDoc(doc(db, target, String(dataId)));
+          const existingSnap = await getDoc(doc(db, target, String(_renameFrom || dataId)));
           if (existingSnap.exists()) {
             const existing = existingSnap.data();
             if (existing._order != null) dataToWrite._order = existing._order;
@@ -1272,6 +1288,17 @@ window.approve = async (id) => {
       dataToWrite._contributor = _mergeContributors(_stdExistContribs, _contribField, !!sub.isModification);
 
       await setDoc(doc(db, target, String(dataId)), dataToWrite);
+
+      if (_renameFrom) { // ancien document supprimé, puis toutes les références pointent vers le nouvel ID
+        await deleteDoc(doc(db, target, _renameFrom));
+        try {
+          const n = await _renameItemReferences(_renameFrom, String(dataId));
+          toast(`ID renommé : ${_renameFrom} → ${dataId} (${n} document${n !== 1 ? 's' : ''} mis à jour)`, 'success', 7000);
+        } catch (e) {
+          toast(`⚠️ ID renommé, mais certaines références n'ont pas pu être mises à jour : ${e.message}`, 'warning', 9000);
+        }
+        _writeAudit('rename_id', 'item', String(dataId), sub.data?.name || String(dataId), { from: _renameFrom, to: String(dataId) });
+      }
 
       // Si l'entité était précédemment sensible, nettoyer les collections cachées
       if (sub.type === 'item') {
@@ -5095,6 +5122,57 @@ window.editorGoBack = function() {
   showSubmissions();
 };
 
+// ── Renommage d'item : l'ID suit le nom, et tout ce qui référence l'ancien ID est mis à jour ──
+function _slugName(name) {
+  return normalize(String(name || '').replace(/\s*\[qualit[eé]\]\s*/gi, ' ').trim())
+    .replace(/['\u2019\u2018`]/g, '_').replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/_+/g, '_').replace(/^_|_$/g, '');
+}
+// Nouvel ID = slug du nouveau nom + le suffixe de l'ancien ID (_p1, _p2_2, _event…). null = rien à changer ou suffixe introuvable.
+function _renamedItemId(oldId, oldName, newName) {
+  const os = _slugName(oldName), ns = _slugName(newName);
+  if (!ns || !oldId || os === ns) return null;
+  let suffix = null;
+  if (os && oldId.startsWith(os) && (oldId.length === os.length || oldId[os.length] === '_')) suffix = oldId.slice(os.length);
+  else { const m = String(oldId).match(/(_(?:qualite_)?p\d+(?:_\d+)?|_event|_archive)$/); if (m) suffix = m[1]; }
+  if (suffix === null) return null;
+  const id = ns + suffix;
+  return id === oldId ? null : id;
+}
+
+// Remplace l'ancien ID par le nouveau partout où il est utilisé comme valeur : crafts et évolutions des autres items, loot des mobs,
+// ventes des PNJ, récompenses de quêtes, panoplies, builds publiés, soumissions en attente, réglages… Retourne le nombre de documents modifiés.
+async function _renameItemReferences(oldId, newId) {
+  const COLS = ['items', 'mobs', 'personnages', 'quetes', 'panoplies', 'regions', 'zones', 'donjons', 'map_markers', 'builds_published', 'submissions', 'config'];
+  const deepRep = v => {
+    if (v === oldId) return { v: newId, c: true };
+    if (Array.isArray(v)) { let c = false; const o = v.map(x => { const r = deepRep(x); if (r.c) c = true; return r.v; }); return { v: o, c }; }
+    if (v && typeof v === 'object' && typeof v.toMillis !== 'function') {
+      let c = false; const o = {};
+      for (const [k, x] of Object.entries(v)) { const r = deepRep(x); if (r.c) c = true; o[k] = r.v; }
+      return { v: o, c };
+    }
+    return { v, c: false };
+  };
+  let touched = 0;
+  for (const col of COLS) {
+    const snap = await getDocs(collection(db, col));
+    for (const d of snap.docs) {
+      if (col === 'items' && (d.id === oldId || d.id === newId)) continue;
+      const data = d.data();
+      if (col === 'submissions' && data.status !== 'pending') continue; // l'historique des soumissions traitées reste tel quel
+      const patch = {};
+      for (const [k, v] of Object.entries(data)) {
+        if (k.startsWith('_')) continue;
+        const r = deepRep(v);
+        if (r.c) patch[k] = r.v;
+      }
+      if (Object.keys(patch).length) { await updateDoc(d.ref, patch); touched++; }
+    }
+    invalidateModCache(col);
+  }
+  return touched;
+}
+
 // ID attendu pour un palier : quêtes « pN_titre », items « nom_pN » (suffixe éventuel « _2 » conservé). null = pas de règle.
 function _idForPalier(col, id, palier) {
   const p = Number(palier);
@@ -5174,6 +5252,19 @@ window.saveEditor = async function() {
       }
     }
 
+    // Item renommé dans le formulaire : l'ID suit le nom (sauf si l'ID a été modifié à la main)
+    if (_editorCollection === 'items' && newData.name && _editorOrigData?.name && newData.name !== _editorOrigData.name
+        && String(newData.id ?? '') === String(_editorId)) {
+      const nid = _renamedItemId(String(_editorId), _editorOrigData.name, newData.name);
+      if (nid) {
+        toast(`ID aligné sur le nom : ${newData.id} → ${nid}`, 'info');
+        newData.id = nid;
+        const idRow = [...document.querySelectorAll('.ed-gen-row')].find(r => r.querySelector('.ed-gen-keylbl')?.textContent.trim() === 'id');
+        const idInput = idRow?.querySelector('[data-gf-type]');
+        if (idInput) idInput.value = nid;
+      }
+    }
+
     // Renommage d'ID → recréer le document (toutes collections)
     const rawNewId = (newData.id != null ? String(newData.id).trim() : '');
     const newDocId = rawNewId || _editorId;
@@ -5195,6 +5286,15 @@ window.saveEditor = async function() {
       const contribs = existContribs.length ? existContribs : _editorContribs;
       await setDoc(doc(db, _editorCollection, newDocId), { ...existing, ...newData, id: newDocId, ...(contribs.length ? { _contributor: contribs } : {}) });
       await deleteDoc(doc(db, _editorCollection, _editorId));
+      if (_editorCollection === 'items') { // toutes les références à l'ancien ID suivent
+        try {
+          const n = await _renameItemReferences(_editorId, newDocId);
+          toast(`Références mises à jour : ${n} document${n !== 1 ? 's' : ''}`, 'success', 6000);
+        } catch (e) {
+          toast(`⚠️ ID renommé, mais certaines références n'ont pas pu être mises à jour : ${e.message}`, 'warning', 9000);
+        }
+        _writeAudit('rename_id', 'item', newDocId, newData.name || newDocId, { from: _editorId, to: newDocId });
+      }
       _editorCacheRename(_editorCollection, _editorId, newDocId, newData);
       _editorId = newDocId;
     } else {
@@ -9260,6 +9360,7 @@ let _auditLimit = 50;
 
 const AUDIT_ACTION_LABELS = {
   approve:           '✅ Approbation',
+  rename_id:         '🔁 ID renommé',
   reject:            '✕ Rejet',
   changes_requested: '💬 Modifs demandées',
   delete:            '🗑️ Suppression',
