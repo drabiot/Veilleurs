@@ -173,9 +173,34 @@ function autoObtainLines(item) {
   }
   return lines;
 }
+// Mobs qui lootent l'item (loot du mob = source de vérité) : lignes « - [mob|Nom][chance] » du bloc « Obtenable en tuant: »
+function autoMobLootLines(item) {
+  const mobs = (typeof window !== 'undefined' && Array.isArray(window.VCL_MOBS)) ? window.VCL_MOBS : [];
+  const id = item && (item.id ?? item._id);
+  if (!id) return [];
+  const out = [];
+  for (const m of mobs) {
+    const mid = m.id ?? m._id;
+    const l = mid && Array.isArray(m.loot) ? m.loot.find(x => x && x.id === id) : null;
+    if (l) out.push({ mid, line: `- [${mid}|${m.name || mid}][${l.chance != null ? l.chance : '?'}]` });
+  }
+  return out;
+}
 function withAutoObtain(item, text) {
-  const base = typeof text === 'string' ? text : '';
+  let base = typeof text === 'string' ? text : '';
   const extra = autoObtainLines(item).filter(l => !base.includes(`[npc:${l.pid}|`) && !base.includes(`[npc:${l.pid}]`)).map(l => l.line);
+  const mobExtra = autoMobLootLines(item).filter(l => !base.includes(`[${l.mid}|`)).map(l => l.line);
+  if (mobExtra.length) {
+    const lines = base.split('\n');
+    let last = -1, inBlock = false;
+    lines.forEach((l, i) => {
+      if (/^\s*Obtenable en tuant/i.test(l)) { inBlock = true; last = i; }
+      else if (inBlock && /^\s*-\s*\[[^|\]]+\|[^\]]*\]\[[^\]]*\]\s*$/.test(l)) last = i;
+      else if (l.trim() && !/^\s*-/.test(l)) inBlock = false;
+    });
+    if (last >= 0) { lines.splice(last + 1, 0, ...mobExtra); base = lines.join('\n'); }
+    else base = (base.trim() ? base.replace(/\s+$/, '') + '\n' : '') + 'Obtenable en tuant:\n' + mobExtra.join('\n');
+  }
   if (!extra.length) return base;
   return base.trim() ? base.replace(/\s+$/, '') + '\n' + extra.join('\n') : extra.join('\n');
 }

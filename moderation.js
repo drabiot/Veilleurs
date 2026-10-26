@@ -1410,6 +1410,11 @@ window.approve = async (id) => {
         _syncPnjObtain({ ...dataToWrite, id: String(dataId) }).then(n => { if (n.length) toast(`Obtain mis à jour : ${n.slice(0, 4).join(', ')}${n.length > 4 ? ` (+${n.length - 4})` : ''}`, 'success', 6000); }).catch(e => console.warn('[obtain PNJ]', e));
       }
 
+      // Mob approuvé : les items de son loot reçoivent / mettent à jour la ligne « Obtenable en tuant »
+      if (sub.type === 'mob') {
+        _syncMobObtain({ ...dataToWrite, id: String(dataId) }).then(n => { if (n.length) toast(`Obtain mis à jour : ${n.slice(0, 4).join(', ')}${n.length > 4 ? ` (+${n.length - 4})` : ''}`, 'success', 6000); }).catch(e => console.warn('[obtain mob]', e));
+      }
+
       // Item approuvé : les PNJ qui le fabriquent / vendent déjà y écrivent leur source d'obtention
       if (sub.type === 'item') {
         _syncItemObtain(String(dataId)).then(n => { if (n.length) toast(`Obtain mis à jour : ${n.slice(0, 4).join(', ')}${n.length > 4 ? ` (+${n.length - 4})` : ''}`, 'success', 6000); }).catch(e => console.warn('[obtain item]', e));
@@ -5282,6 +5287,55 @@ async function _syncPnjObtain(pnj) {
 }
 
 // Sens inverse : à la création / modification d'un item, les PNJ qui le fabriquent ou le vendent déjà y ajoutent leur ligne d'obtention.
+// ── Loot des mobs ↔ obtain des items : la ligne « - [mob|Nom][chance] » du bloc « Obtenable en tuant: » suit le loot du mob (le mob fait foi).
+const _mobLineRe = mid => new RegExp('^\\s*-\\s*\\[' + String(mid).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\|[^\\]]*\\]\\[[^\\]]*\\]\\s*$');
+function _upsertMobLine(text, mid, name, chance) {
+  const line = `- [${mid}|${name || mid}][${chance != null && chance !== '' ? chance : '?'}]`;
+  const lines = String(text || '').split('\n');
+  const re = _mobLineRe(mid);
+  const at = lines.findIndex(l => re.test(l));
+  if (at >= 0) { lines[at] = line; return lines.join('\n'); }
+  let last = -1, inBlock = false;
+  lines.forEach((l, i) => {
+    if (/^\s*Obtenable en tuant/i.test(l)) { inBlock = true; last = i; }
+    else if (inBlock && /^\s*-\s*\[[^|\]]+\|[^\]]*\]\[[^\]]*\]\s*$/.test(l)) last = i;
+    else if (l.trim() && !/^\s*-/.test(l)) inBlock = false;
+  });
+  if (last >= 0) { lines.splice(last + 1, 0, line); return lines.join('\n'); }
+  const base = lines.filter(l => l.trim() !== '');
+  return [...base, 'Obtenable en tuant:', line].join('\n');
+}
+function _removeMobLine(text, mid) {
+  const re = _mobLineRe(mid);
+  let lines = String(text || '').split('\n').filter(l => !re.test(l));
+  // un bloc « Obtenable en tuant: » devenu vide disparaît aussi
+  lines = lines.filter((l, i) => !(/^\s*Obtenable en tuant/i.test(l) && !/^\s*-\s*\[/.test(lines[i + 1] || '')));
+  return lines.join('\n').trim();
+}
+// Mob créé / modifié : chaque item de son loot reçoit (ou met à jour) sa ligne ; un item qu'il ne loot plus la perd.
+async function _syncMobObtain(mob) {
+  const mid = mob && (mob.id || mob._id);
+  if (!mid) return [];
+  const lootMap = new Map();
+  for (const l of (Array.isArray(mob.loot) ? mob.loot : [])) if (l && l.id) lootMap.set(l.id, l.chance);
+  const snap = await getDocs(collection(db, 'items'));
+  const touched = [];
+  for (const d of snap.docs) {
+    const data = d.data(), cur = String(data.obtain || '');
+    const has = _mobLineRe(mid);
+    const hadLine = cur.split('\n').some(l => has.test(l));
+    let next = cur;
+    if (lootMap.has(d.id)) next = _upsertMobLine(cur, mid, mob.name, lootMap.get(d.id));
+    else if (hadLine) next = _removeMobLine(cur, mid);
+    else continue;
+    if (next === cur) continue;
+    await updateDoc(d.ref, { obtain: next });
+    touched.push(data.name || d.id);
+  }
+  if (touched.length) invalidateModCache('items');
+  return touched;
+}
+
 async function _syncItemObtain(itemId) {
   if (!itemId) return [];
   const ref = doc(db, 'items', String(itemId));
@@ -5304,7 +5358,14 @@ async function _syncItemObtain(itemId) {
     lines = lines.filter(l => !mine.test(l.trim()));
     lines = lines.filter(l => l.trim() !== '').concat(line);
   }
-  const text = lines.join('\n');
+  let text = lines.join('\n');
+  try {
+    const mobsSnap = await getDocs(collection(db, 'mobs'));
+    for (const d of mobsSnap.docs) {
+      const m = d.data(), l = (Array.isArray(m.loot) ? m.loot : []).find(x => x && x.id === itemId);
+      if (l) text = _upsertMobLine(text, m.id || d.id, m.name, l.chance);
+    }
+  } catch (e) { console.warn('[obtain mobs]', e); }
   if (text === cur) return [];
   await updateDoc(ref, { obtain: text });
   invalidateModCache('items');
@@ -5521,6 +5582,10 @@ window.saveEditor = async function() {
 
     if (_editorCollection === 'items') {
       _syncItemObtain(String(_editorId)).then(n => { if (n.length) toast(`Obtain mis à jour : ${n.slice(0, 4).join(', ')}${n.length > 4 ? ` (+${n.length - 4})` : ''}`, 'success', 6000); }).catch(e => console.warn('[obtain item]', e));
+    }
+
+    if (_editorCollection === 'mobs') {
+      _syncMobObtain({ ...newData, id: String(newData.id ?? _editorId) }).then(n => { if (n.length) toast(`Obtain mis à jour : ${n.slice(0, 4).join(', ')}${n.length > 4 ? ` (+${n.length - 4})` : ''}`, 'success', 6000); }).catch(e => console.warn('[obtain mob]', e));
     }
 
     if (_editorCollection === 'personnages') {
