@@ -380,7 +380,7 @@ function buildGrid() {
 
     const _eImg = e.images?.[0] || e.img;
     const imgHTML = _eImg
-      ? `<img src="${_eImg}" alt="${escHtml(e.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
+      ? `<img loading="lazy" decoding="async" src="${_eImg}" alt="${escHtml(e.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
       : '';
     const phStyle = _eImg ? 'style="display:none"' : '';
     const ph = `<span class="card-img-placeholder" ${phStyle}>${isMob ? '👾' : '🧑'}</span>`;
@@ -589,7 +589,7 @@ function renderMobSheet(mob) {
         <button class="btn-expand-3d" id="btn-expand-3d" title="Agrandir le modèle 3D">⛶</button>
       </div>`
     : (mob.images?.[0] || mob.img)
-      ? `<img src="${mob.images?.[0] || mob.img}" alt="${escHtml(mob.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mob-img-placeholder" style="display:none">👾</span>`
+      ? `<img loading="lazy" decoding="async" src="${mob.images?.[0] || mob.img}" alt="${escHtml(mob.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mob-img-placeholder" style="display:none">👾</span>`
       : `<span class="mob-img-placeholder">👾</span>`;
 
   let attacksHTML = '';
@@ -620,7 +620,7 @@ function renderMobSheet(mob) {
       const rc    = dropRateColor(l.chance);
       const href  = item ? `../Compendium/compendium.html#${escHtml(item.id)}` : '#';
       const imgPart = img
-        ? `<div class="loot-img-wrap"><img src="${img}" alt="${escHtml(name)}" onerror="this.style.display='none'"></div>`
+        ? `<div class="loot-img-wrap"><img loading="lazy" decoding="async" src="${img}" alt="${escHtml(name)}" onerror="this.style.display='none'"></div>`
         : `<span class="loot-dot" style="background:${color}"></span>`;
       const hasCraft = item?.craft && item.craft.length > 0;
       const craftIngredients = hasCraft ? item.craft.map(c => {
@@ -630,7 +630,7 @@ function renderMobSheet(mob) {
         const ingImg   = ing ? (getItemImg(ing) || '') : '';
         const ingHref  = ing ? `../Compendium/compendium.html#${escHtml(ing.id)}` : '#';
         const ingImgPart = ingImg
-          ? `<div class="loot-img-wrap"><img src="${ingImg}" alt="${escHtml(ingName)}" onerror="this.style.display='none'"></div>`
+          ? `<div class="loot-img-wrap"><img loading="lazy" decoding="async" src="${ingImg}" alt="${escHtml(ingName)}" onerror="this.style.display='none'"></div>`
           : `<span class="loot-dot" style="background:${ingColor}"></span>`;
         return `<a class="loot-row craft-ingredient-row" href="${ingHref}">
           ${ingImgPart}
@@ -772,7 +772,7 @@ function renderPNJSheet(pnj) {
       const img   = item ? (getItemImg(item) || '') : '';
       const href  = item ? `../Compendium/compendium.html#${escHtml(item.id)}${s.quality ? '-quality' : ''}` : '#';
       const imgPart = img
-        ? `<div class="loot-img-wrap"><img src="${img}" alt="${escHtml(name)}" onerror="this.style.display='none'"></div>`
+        ? `<div class="loot-img-wrap"><img loading="lazy" decoding="async" src="${img}" alt="${escHtml(name)}" onerror="this.style.display='none'"></div>`
         : `<span class="loot-dot" style="background:${color}"></span>`;
       const priceVal = hasPriceCol
         ? `<span class="pnj-val pnj-val-vente${s.price == null ? ' pnj-val-empty' : ''}">${s.price != null ? `${s.price} cols` : '—'}</span>`
@@ -826,7 +826,7 @@ function renderPNJSheet(pnj) {
       const resultSensTag = !findItem(recipe.id) && result ? ' <span style="font-size:9px;opacity:0.65" title="Visible grâce à votre rôle">🔒</span>' : '';
       const resultHref  = result ? `../Compendium/compendium.html#${escHtml(result.id)}${recipe.quality ? '-quality' : ''}` : '#';
       const resultImgPart = resultImg
-        ? `<div class="loot-img-wrap"><img src="${resultImg}" alt="${escHtml(resultName)}" onerror="this.style.display='none'"></div>`
+        ? `<div class="loot-img-wrap"><img loading="lazy" decoding="async" src="${resultImg}" alt="${escHtml(resultName)}" onerror="this.style.display='none'"></div>`
         : `<span class="loot-dot" style="background:${resultColor}"></span>`;
       const qualityBadge = recipe.quality ? ' <span class="loot-quality-badge">✦</span>' : '';
 
@@ -847,7 +847,7 @@ function renderPNJSheet(pnj) {
         const ingImg   = ing ? (getItemImg(ing) || '') : '';
         const ingHref  = ing ? `../Compendium/compendium.html#${escHtml(ing.id)}` : '#';
         const ingImgPart = ingImg
-          ? `<div class="loot-img-wrap"><img src="${ingImg}" alt="${escHtml(ingName)}" onerror="this.style.display='none'"></div>`
+          ? `<div class="loot-img-wrap"><img loading="lazy" decoding="async" src="${ingImg}" alt="${escHtml(ingName)}" onerror="this.style.display='none'"></div>`
           : `<span class="loot-dot" style="background:${ingColor}"></span>`;
         return `
           <a class="loot-row" href="${ingHref}">
@@ -888,7 +888,7 @@ function renderPNJSheet(pnj) {
       const color   = it ? getRarityColor(it.rarity) : '#8c8c8c';
       const img     = it ? (getItemImg(it) || '') : '';
       const imgPart = img
-        ? `<div class="loot-img-wrap"><img src="${img}" alt="${escHtml(name)}" onerror="this.style.display='none'"></div>`
+        ? `<div class="loot-img-wrap"><img loading="lazy" decoding="async" src="${img}" alt="${escHtml(name)}" onerror="this.style.display='none'"></div>`
         : `<span class="loot-dot" style="background:${color}"></span>`;
       const href    = it ? `../Compendium/compendium.html#${escHtml(it.id)}` : '#';
       const reward  = r.reward != null ? r.reward : '?';
@@ -948,7 +948,7 @@ function renderPNJSheet(pnj) {
           <div class="mob-image-bg" style="background:rgba(100,80,30,.85);"></div>
           <div class="mob-image-border" style="border-color:#c06c2055;"></div>
           <div class="mob-image-inner">
-            ${(pnj.images?.[0] || pnj.img) ? `<img src="${pnj.images?.[0] || pnj.img}" alt="${escHtml(pnj.name)}">` : '<span class="mob-img-placeholder">🧑</span>'}
+            ${(pnj.images?.[0] || pnj.img) ? `<img loading="lazy" decoding="async" src="${pnj.images?.[0] || pnj.img}" alt="${escHtml(pnj.name)}">` : '<span class="mob-img-placeholder">🧑</span>'}
           </div>
         </div>
                 <div class="mob-header-info">

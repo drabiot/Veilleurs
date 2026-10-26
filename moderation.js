@@ -13488,8 +13488,8 @@ function _zeInitPanZoom() {
 
 function _zeMapSrc() {
   return _zeLayer === 'underground'
-    ? `img/maps/floor-${_zeFloor}_underground.png`
-    : `img/maps/floor-${_zeFloor}.png`;
+    ? `img/maps/floor-${_zeFloor}_underground.webp`
+    : `img/maps/floor-${_zeFloor}.webp`;
 }
 
 function _zeUpdateLayerButtons() {

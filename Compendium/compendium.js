@@ -805,7 +805,7 @@ function renderCraft(craftList) {
       if (ingredient) {
         const imgSrc = getItemImg(ingredient);
         imgHtml = imgSrc
-          ? `<img class="craft-ingredient-img" src="${imgSrc}" alt="${escHtml(ingredient.name)}">`
+          ? `<img loading="lazy" decoding="async" class="craft-ingredient-img" src="${imgSrc}" alt="${escHtml(ingredient.name)}">`
           : `<span class="craft-ingredient-emoji">${catData(ingredient.category).emoji}</span>`;
       } else {
         imgHtml = `<span class="craft-ingredient-emoji">❓</span>`;
@@ -846,7 +846,7 @@ function renderNpcHeader(recette, index) {
 
   const npcNameEsc = escHtml(npcName);
   const imgHtml = npcImg
-    ? `<img class="craft-npc-img" src="${npcImg}" alt="${npcNameEsc}">`
+    ? `<img loading="lazy" decoding="async" class="craft-npc-img" src="${npcImg}" alt="${npcNameEsc}">`
     : `<span class="craft-npc-ico">⚒</span>`;
 
   return `<div class="craft-npc-header" data-npc-id="${escHtml(recette.npcId)}" data-npc-section="${escHtml(section)}">
@@ -887,7 +887,7 @@ function renderUsedIn(itemId) {
     const c = rarityColor(u.rarity);
     const imgSrc = getItemImg(u);
     const imgHtml = imgSrc
-      ? `<img class="craft-ingredient-img" src="${imgSrc}" alt="${escHtml(u.name)}">`
+      ? `<img loading="lazy" decoding="async" class="craft-ingredient-img" src="${imgSrc}" alt="${escHtml(u.name)}">`
       : `<span class="craft-ingredient-emoji">${catData(u.category).emoji || '📦'}</span>`;
     return `<div class="craft-ingredient-row">
       <span class="craft-ingredient-visual">${imgHtml}</span>
@@ -1498,9 +1498,12 @@ function showItem(id, initialQuality = false) {
 ══════════════════════════════════ */
 
 let _searchLogTimer = null;
+let _sidebarSearchTimer = null;
 searchInput.addEventListener('input', () => {
   const expandAll = currentSort === 'palier';
-  buildSidebar(currentItems(), expandAll);
+  // la liste (≈1 100 items) est reconstruite après 120 ms de pause plutôt qu'à chaque frappe
+  clearTimeout(_sidebarSearchTimer);
+  _sidebarSearchTimer = setTimeout(() => buildSidebar(currentItems(), expandAll), 120);
   // Log search query après 1.5s de pause (évite de logger chaque frappe)
   clearTimeout(_searchLogTimer);
   _searchLogTimer = setTimeout(() => {

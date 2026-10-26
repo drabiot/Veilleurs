@@ -360,7 +360,7 @@ function rewardMiniTag(r) {
   const color = item ? rarityColor(item.rarity) : '#c0a0dc';
   const imgSrc = item ? (getItemImg(item)) : null;
   const visual = imgSrc
-    ? `<img class="rmt-item-img" src="${imgSrc}" alt="">`
+    ? `<img loading="lazy" decoding="async" class="rmt-item-img" src="${imgSrc}" alt="">`
     : `<span class="rmt-item-icon">📦</span>`;
   const label = rewardLabel(r);
   return `<span class="rmt rmt-item" style="color:${color};border-color:${color}33;background:${color}0d">
@@ -394,7 +394,7 @@ function renderRewardFull(r) {
   const name   = item ? item.name : (r.label || r.itemId || '?');
   const imgSrc = item ? (getItemImg(item)) : null;
   const visual = imgSrc
-    ? `<img class="reward-img" src="${imgSrc}" alt="${name}">`
+    ? `<img loading="lazy" decoding="async" class="reward-img" src="${imgSrc}" alt="${name}">`
     : `<span class="reward-icon-fallback">📦</span>`;
   const href = r.itemId ? `../Compendium/compendium.html#${r.itemId}` : null;
   const tag  = href ? 'a' : 'div';
@@ -434,7 +434,7 @@ function renderItemChip(itemId, qte, quality) {
   const imgSrc = item ? (getItemImg(item)) : null;
 
   const visual = imgSrc
-    ? `<img class="chip-img" src="${imgSrc}" alt="${name}">`
+    ? `<img loading="lazy" decoding="async" class="chip-img" src="${imgSrc}" alt="${name}">`
     : `<span class="chip-fallback">📦</span>`;
 
   const qty = (qte !== undefined && qte !== null)
@@ -463,7 +463,7 @@ function renderMobChip(mobId, qte) {
   const imgSrc = mob ? (mob.images?.[0] || mob.img || null) : null;
 
   const visual = imgSrc
-    ? `<img class="chip-img" src="${imgSrc}" alt="${name}">`
+    ? `<img loading="lazy" decoding="async" class="chip-img" src="${imgSrc}" alt="${name}">`
     : `<span class="chip-fallback">👾</span>`;
 
   const qty = (qte !== undefined && qte !== null)
@@ -793,7 +793,7 @@ function buildInventoryPanel() {
         <span class="inv-checkmark"></span>
       </label>
       <span class="inv-visual">
-        ${imgSrc ? `<img class="inv-img" src="${imgSrc}" alt="${name}">` : `<span class="inv-emoji">📦</span>`}
+        ${imgSrc ? `<img loading="lazy" decoding="async" class="inv-img" src="${imgSrc}" alt="${name}">` : `<span class="inv-emoji">📦</span>`}
       </span>
       <span class="inv-label" style="color:${color}">${name}</span>
       ${craftToggle}
@@ -819,7 +819,7 @@ function buildInventoryPanel() {
         const ingColor = ingItem ? rarityColor(ingItem.rarity) : (ing.id === 'cols' ? '#c9a84c' : '#888');
         const ingImg   = ingItem ? getItemImg(ingItem) : null;
         const ingVisual = ingImg
-          ? `<img class="inv-img" src="${ingImg}" alt="${ingName}">`
+          ? `<img loading="lazy" decoding="async" class="inv-img" src="${ingImg}" alt="${ingName}">`
           : ing.id === 'cols' ? '<span class="inv-emoji">🪙</span>' : '<span class="inv-emoji">📦</span>';
 
         const ingRow = document.createElement('div');
@@ -934,7 +934,7 @@ function renderCardItemIcon(it) {
   const imgSrc = item ? getItemImg(item) : null;
   const qtyBadge = (it.qte && it.qte > 1) ? `<span class="card-item-qty">×${it.qte}</span>` : '';
   const qualBadge = it.quality ? `<span style="position:absolute;bottom:0;right:0;font-size:8px;line-height:1;color:#4ade80;font-weight:900;">✦</span>` : '';
-  const inner   = imgSrc ? `<img src="${imgSrc}" alt="${name}">` : '📦';
+  const inner   = imgSrc ? `<img loading="lazy" decoding="async" src="${imgSrc}" alt="${name}">` : '📦';
   const tipText = (it.quality ? '[Qualité] ' : '') + name + (it.qte > 1 ? ` ×${it.qte}` : '');
   return `<span class="card-item-icon" data-tip="${tipText}" style="--chip-color:${color};position:relative;">${inner}${qtyBadge}${qualBadge}</span>`;
 }
