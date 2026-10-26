@@ -178,7 +178,7 @@ const STAT_DEFS = [
     { id:'crit_chance',        label:'Crit Chance %',             color:'#e8d44a' },
     { id:'crit_degats',        label:'Crit Dégâts %',             color:'#e8d44a' },
     { id:'crit_comp_chance',   label:'Crit Compétence Chance %',  color:'#a07ae8' },
-    { id:'crit_comp_degats',   label:'Crit Compétence Dégâts %',  color:'#a07ae8' },
+    { id:'crit_comp_degats',   label:'Crit Dégâts Compétence %',  color:'#a07ae8' },
   ]},
   { group:'Défensif', stats:[
     { id:'defense',            label:'Défense',                   color:'#9a9ab0' },

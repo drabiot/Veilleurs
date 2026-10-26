@@ -8196,7 +8196,7 @@ const DW_STAT_LABELS = {
   crit_chance:         '🎯 Chance Critique',
   crit_degats:         '💢 Dégâts Critique',
   crit_comp_chance:    '🎯 Crit. Compétence',
-  crit_comp_degats:    '💢 Crit. Comp. Dég.',
+  crit_comp_degats:    '💢 Crit Dégâts Compétence',
   // Défensif
   defense:             '🛡️ Défense',
   durabilite_garde:    '🛡️ Durabilité de la Garde',

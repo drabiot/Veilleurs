@@ -20,7 +20,7 @@ const STAT_LABEL = {
   degats_projectile: 'Dégâts projectile', degats_competence: 'Dégâts compétence', degats_arme: 'Dégâts d\'arme', stamina: 'Stamina',
   mana: 'Mana', regen_mana: 'Régén. mana', regen_stamina: 'Régén. stamina', regen_sante: 'Régén. santé', vitesse_attaque: 'Vitesse d\'attaque',
   vitesse_deplacement: 'Vitesse de déplacement', vitesse_accroupi: 'Vitesse accroupi', soin_bonus: 'Bonus de soin', crit_chance: 'Chance crit.',
-  crit_degats: 'Dégâts crit.', crit_comp_chance: 'Chance crit. comp.', crit_comp_degats: 'Dégâts crit. comp.', vol_vie: 'Vol de vie',
+  crit_degats: 'Dégâts crit.', crit_comp_chance: 'Chance crit. comp.', crit_comp_degats: 'Crit dégâts compétence', vol_vie: 'Vol de vie',
   omnivamp: 'Vampirisme de sort', reduction_degats: 'Réduction dégâts', blocage: 'Blocage', puissance_bloc: 'Puissance de blocage', durabilite_garde: 'Durabilité de la Garde',
   esquive: 'Esquive', tenacite: 'Ténacité', hate: 'Hâte', reduction_chutes: 'Réduction chutes',
   vitalite: 'Vitalité', force: 'Force', intelligence: 'Intelligence', esprit: 'Esprit', dexterite: 'Dextérité', defense_car: 'Défense (req.)',

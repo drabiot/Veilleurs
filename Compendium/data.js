@@ -74,7 +74,7 @@ const STAT_GROUPS = [
       { id:'crit_chance',         label:'Chance Coups Critiques',          icon:'🎯',  unit:'%',  max:100  },
       { id:'crit_degats',         label:'Dégâts Coups Critiques',          icon:'💢',  unit:'%',  max:100  },
       { id:'crit_comp_chance',    label:'Chance Critique Compétence',      icon:'🎯',  unit:'%',  max:100  },
-      { id:'crit_comp_degats',    label:'Dégâts Critique Compétence',      icon:'💢',  unit:'%',  max:100  },
+      { id:'crit_comp_degats',    label:'Crit Dégâts Compétence',           icon:'💢',  unit:'%',  max:100  },
     ]
   },
   {
