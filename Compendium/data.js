@@ -10,6 +10,14 @@ const CLASSES = [
 ];
 
 //#endregion CLASSES
+//#region GAINS PAR NIVEAU
+// Stats gagnées à CHAQUE montée de niveau (message « Niveau supérieur — vous gagnez : » en jeu).
+// Un build de niveau N a franchi N-1 niveaux : l'Atelier ajoute (N-1) × ces valeurs (clés = id de stat, voir STAT_GROUPS).
+const CLASS_LEVEL_GAINS = {
+  archer:   { sante: 1,   crit_chance: 0.25, regen_sante: 0.1, regen_stamina: 0.1 },
+  guerrier: { sante: 1.5, blocage: 0.25,     regen_sante: 0.1, regen_stamina: 0.1 },
+};
+//#endregion GAINS PAR NIVEAU
 //#region SETS — Panoplies
 // Les panoplies sont désormais stockées dans Firestore (collection `panoplies`).
 // Ce bloc ne sert plus que de container vide : les pages qui ont besoin des sets

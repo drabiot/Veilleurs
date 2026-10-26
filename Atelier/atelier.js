@@ -842,6 +842,17 @@ function loadAccessoriesForClass(classId) {
       });
     });
 
+    /* ── Gains de la classe à chaque niveau (niveau 1 = aucun, niveau N = N-1 montées) ── */
+    const _gains = (typeof CLASS_LEVEL_GAINS !== 'undefined' && activeClass) ? CLASS_LEVEL_GAINS[activeClass] : null;
+    if (_gains && buildLevel > 1) {
+      Object.entries(_gains).forEach(function(e) {
+        if (!(e[0] in mins)) return;
+        const v = e[1] * (buildLevel - 1);
+        mins[e[0]] += v;
+        maxs[e[0]] += v;
+      });
+    }
+
     /* ── Bonus du titre ── */
     const _ti = _titreById(activeTitre);
     if (_ti) {
