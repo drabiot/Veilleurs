@@ -2171,7 +2171,8 @@ function loadAccessoriesForClass(classId) {
       row.setAttribute('role', 'option');
       const chips = _titreChips(t).map(function(c) { return '<span class="titre-chip">' + escHtml(c) + '</span>'; }).join('');
       row.innerHTML = '<span class="titre-row-name">' + escHtml(t.name) + '</span>' + (chips ? '<span class="titre-row-stats">' + chips + '</span>' : '');
-      row.addEventListener('click', function() { _chooseTitre(t.id); });
+      row.addEventListener('click', function() { _chooseTitre(t.id === activeTitre ? null : t.id); }); // recliquer sur le titre actif le retire
+      if (t.id === activeTitre) row.title = 'Cliquer pour retirer ce titre';
       menu.appendChild(row);
     });
   }
