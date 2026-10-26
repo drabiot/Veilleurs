@@ -13596,6 +13596,27 @@ function _daSyncOldPalierSort(palierFilter) {
   }
 }
 
+// Filtre « Ex-palier » : équipements de l'archive (palier -1) selon leur ancien palier (ex-P1, ex-P2…).
+// Le menu n'apparaît que s'il reste des items archivés ; il disparaît de lui-même une fois l'archive vidée.
+const _EX_PALIER_EQUIP = new Set(['arme', 'armure', 'accessoire']);
+function _daSyncExPalierFilter() {
+  const sel = document.getElementById('data-all-expalier');
+  if (!sel) return '';
+  const olds = [...new Set(_dataAllData.filter(d => d.palier == -1 && d._oldPalier != null).map(d => String(d._oldPalier)))]
+    .sort((a, b) => (Number(a) || 98) - (Number(b) || 98));
+  const cur = sel.value;
+  const have = [...sel.options].slice(1).map(o => o.value).join(',');
+  if (have !== olds.join(',')) {
+    sel.innerHTML = '<option value="">Ex-palier : tous</option>' + olds.map(o => {
+      const n = _dataAllData.filter(d => d.palier == -1 && String(d._oldPalier) === o && _EX_PALIER_EQUIP.has(d.category)).length;
+      return `<option value="${escHtml(o)}">Équipements ex-P${escHtml(o)} (${n})</option>`;
+    }).join('');
+    sel.value = olds.includes(cur) ? cur : '';
+  }
+  sel.style.display = olds.length ? '' : 'none';
+  return olds.length ? sel.value : '';
+}
+
 window.renderDataAll = function() {
   if (!_dataAllLoaded) return;
   const listEl    = document.getElementById('data-all-list');
@@ -13614,6 +13635,8 @@ window.renderDataAll = function() {
 
   if (typeFilter)   results = results.filter(d => d._type === typeFilter);
   if (palierFilter) results = results.filter(d => String(d.palier) === palierFilter);
+  const exPalier = _daSyncExPalierFilter();
+  if (exPalier) results = results.filter(d => d.palier == -1 && String(d._oldPalier) === exPalier && _EX_PALIER_EQUIP.has(d.category));
   if (catFilter)    results = results.filter(d => d.category === catFilter);
   if (rarityFilter) results = results.filter(d => d._type === 'item' && d.rarity === rarityFilter);
   if (searchQ)      results = results.filter(d =>

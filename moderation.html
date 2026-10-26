@@ -957,6 +957,10 @@ style="font-size:12px;">← Retour</button>
         <option value="">Tous les paliers</option>
         <!-- options peuplées dynamiquement par _populateAllPalierSelects() -->
       </select>
+      <select id="data-all-expalier" onchange="renderDataAll()" title="Équipements de l'archive, par ancien palier" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
+        <option value="">Ex-palier : tous</option>
+        <!-- options peuplées par _daSyncExPalierFilter() : visibles seulement s'il reste des items dans l'archive -->
+      </select>
       <input type="search" id="zl-search" placeholder="🔍 Nom de zone…" oninput="renderZoneList()"
         style="flex:1;min-width:140px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;outline:none;">
     </div>
@@ -1425,7 +1429,7 @@ window._VCL_DATA = {
   ALL_SLOTS:   typeof ALL_SLOTS   !== 'undefined' ? ALL_SLOTS   : [],
 };
 </script>
-<script type="module" src="moderation.js?v=24"></script>
+<script type="module" src="moderation.js?v=25"></script>
 <script>
 if (window.innerWidth < 768) document.body.classList.add('sidebar-hidden');
 document.getElementById('mod-backdrop').addEventListener('click', () => {
