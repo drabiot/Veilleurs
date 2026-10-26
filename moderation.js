@@ -1223,7 +1223,7 @@ function _mergeContributors(existing, newContrib, isMod = false) {
 // Champs que le Creator sait produire, par type de soumission (= ce que build*Obj() renvoie).
 // Tout autre champ d'un document existant est conservé quand une modification est approuvée.
 const _CREATOR_MANAGED_KEYS = {
-  item:     new Set(['cat','category','classes','competence','craft','craft_cd','effects','event','evolutif','evolutions','evolvedFrom','id','images','lore','lvl','name','obtain','occulte','palier','quality','rarity','rune_slots','sensible','set','stats','tags','twoHanded','unique']),
+  item:     new Set(['cat','category','classes','competence','cooldown_apply','craft','craft_cd','effects','event','evolutif','evolutions','evolvedFrom','id','images','lore','lvl','name','obtain','occulte','palier','quality','rarity','rune_slots','sensible','set','skill_name','skill_rarity','stats','tags','twoHanded','unique']),
   mob:      new Set(['id','name','type','behavior','palier','region','images','inCodex','sensible','lore','spawnTime','coords','loot']),
   pnj:      new Set(['coords','craft','id','images','instructions','is_underground','name','palier','region','sells','sensible','tag','type']),
   region:   new Set(['canTp','coords','id','images','inCodex','lore','name','palier']),
