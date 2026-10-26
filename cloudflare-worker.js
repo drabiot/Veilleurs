@@ -10,502 +10,12 @@
 //    ADMIN_SECRET        → already set
 // ══════════════════════════════════════════════════════════════
 
-// ── Project constants ──────────────────────────────────────────
+// ── Constantes ──────────────────────────────────────────────
 import { handleStoreRead, handleStoreWrite } from './worker-store.js';
 
-const PROJECT_ID     = 'veilleurs-a13b3';
 const FIREBASE_KEY   = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
-const WIKI_PAGES     = 'https://drabiot.github.io/Veilleurs';
-const USERS_CRON = '7 */6 * * *'; // recopie des comptes Firestore → D1 (voir wrangler.toml)
-const WIKI_COMMAND_ENABLED = false; // commande Discord /wiki (lit Firestore à chaque recherche)
 const CF_ACCOUNT_ID  = 'db3d4d15175ddbfbd2720490acc8fb53'; // identifiant public du compte Cloudflare (pas un secret)
 const CF_D1_ID       = '8deed6e8-1a17-4339-86ef-fad656a886a9';
-const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
-
-// ── Sources d'obtention prédéfinies ([obtain:id]) — relues depuis Compendium/data.js ──
-let OBTAIN_TEXTS = null;
-async function loadObtainTexts() {
-  if (OBTAIN_TEXTS) return;
-  OBTAIN_TEXTS = {};
-  try {
-    const src = await (await fetch(`${WIKI_PAGES}/Compendium/data.js`)).text();
-    const m = src.match(/const OBTAIN_TEXTS = (\{[\s\S]*?\n\});/);
-    if (m) OBTAIN_TEXTS = JSON.parse(m[1].replace(/,(\s*\})/, '$1'));
-  } catch {}
-}
-function resolveObtain(str) {
-  return String(str).replace(/\[obtain:([\w-]+)\]/g, (_, id) => (OBTAIN_TEXTS && OBTAIN_TEXTS[id]) || id)
-    .replace(/(Obtenable pendant l'Event )\[([^\]]+)\]/g, '$1$2')
-    .replace(/^Autre source — /gm, '');
-}
-
-// ── Rarity colors (hex integers for Discord embeds) ───────────
-const RARITY_COLORS = {
-  commun:     0x59d059, rare:       0x2a5fa8,
-  epique:     0x6a3daa, legendaire: 0xd7af5f,
-  mythique:   0xf5b5e4, godlike:    0xa83020,
-  event:      0xebebeb,
-};
-const RARITY_LABELS = {
-  commun: 'Commun', rare: 'Rare', epique: 'Épique',
-  legendaire: 'Légendaire', mythique: 'Mythique', godlike: 'Godlike', event: 'Event',
-};
-
-
-const CATEGORIES = {
-  armure: { label: 'Armures', emoji: '🛡️' }, arme: { label: 'Armes', emoji: '⚔️' },
-  accessoire: { label: 'Accessoires', emoji: '💍' }, rune: { label: 'Runes', emoji: '🔮' },
-  outils: { label: 'Outils', emoji: '🛠️' }, nourriture: { label: 'Nourriture', emoji: '🍖' },
-  consommable: { label: 'Consommables', emoji: '🧪' }, materiaux: { label: 'Matériaux', emoji: '🧱' },
-  quete: { label: 'Objets de Quête', emoji: '📜' }, ressources: { label: 'Ressources', emoji: '⛏️' },
-  donjon: { label: 'Donjon', emoji: '🏰' }, monnaie: { label: 'Monnaie', emoji: '🪙' },
-};
-
-const STAT_MAP = {
-  degats: { label: 'Dégâts', unit: '' }, degats_physique: { label: 'Dég. Physique', unit: '%' },
-  degats_arme: { label: 'Dég. d\'Arme', unit: '%' }, degats_magique: { label: 'Dég. Magiques', unit: '%' },
-  degats_competence: { label: 'Dég. Compétence', unit: '%' }, degats_projectile: { label: 'Dég. Projectile', unit: '%' },
-  vitesse_attaque: { label: 'Vitesse Attaque', unit: '' }, crit_chance: { label: 'Chance Critique', unit: '%' },
-  crit_degats: { label: 'Dégâts Critique', unit: '%' }, crit_comp_chance: { label: 'Crit. Compétence', unit: '%' },
-  crit_comp_degats: { label: 'Dég. Crit. Comp.', unit: '%' }, defense: { label: 'Défense', unit: '' },
-  blocage: { label: 'Blocage', unit: '%' },  maitrise_bloc: { label: 'Maîtrise Blocage', unit: '%' }, puissance_bloc: { label: 'Puissance Bloc', unit: '%' },
-  sante: { label: 'Santé', unit: '' }, esquive: { label: 'Esquive', unit: '%' },
-  reduction_degats: { label: 'Réduction Dégâts', unit: '%' }, tenacite: { label: 'Ténacité', unit: '%' },
-  hate: { label: 'Hâte', unit: '%' }, vitesse_deplacement: { label: 'Vitesse Déplacement', unit: '%' },
-  mana: { label: 'Mana', unit: '' }, stamina: { label: 'Stamina', unit: '' },
-  vol_vie: { label: 'Vol de Vie', unit: '%' }, omnivamp: { label: 'Vampirisme de sort', unit: '%' },
-  regen_sante: { label: 'Régén. Santé', unit: '/s' }, regen_mana: { label: 'Régén. Mana', unit: '/s' },
-  regen_stamina: { label: 'Régén. Stamina', unit: '/s' }, soin_bonus: { label: 'Soin Bonus', unit: '' },
-};
-
-const MOB_TYPE_LABELS = { boss: 'Boss', mini_boss: 'Mini-Boss', monstre: 'Monstre', sbire: 'Sbire' };
-const MOB_TYPE_COLORS = { boss: 0xB42828, mini_boss: 0xD45F3C, monstre: 0xA05014, sbire: 0x323246 };
-const MOB_BEHAVIOR_LABELS = { passif: 'Passif', neutre: 'Neutre', agressif: 'Agressif' };
-const MOB_DIFF_LABELS = ['', 'Très facile', 'Facile', 'Moyen', 'Difficile', 'Très difficile'];
-const QUEST_TYPE_LABELS = { main: 'Principale', sec: 'Secondaire', ter: 'Tertiaire' };
-const QUEST_TYPE_ICONS  = { main: '🔥', sec: '💬', ter: '❓' };
-const QUEST_TYPE_COLORS = { main: 0xE06030, sec: 0x5899E0, ter: 0x888888 };
-
-
-// ══════════════════════════════════════════════════════════════
-//  IN-MEMORY CACHE (survives across requests in same isolate)
-// ══════════════════════════════════════════════════════════════
-
-const _mem = new Map(); // key → { data, ts }
-const MEM_TTL = 5 * 60 * 1000;
-
-function memGet(key) {
-  const e = _mem.get(key);
-  if (!e) return null;
-  if (Date.now() - e.ts > MEM_TTL) { _mem.delete(key); return null; }
-  return e.data;
-}
-function memSet(key, data) { _mem.set(key, { data, ts: Date.now() }); }
-
-
-// ══════════════════════════════════════════════════════════════
-//  FIRESTORE REST API
-// ══════════════════════════════════════════════════════════════
-
-function parseValue(v) {
-  if (!v || typeof v !== 'object') return null;
-  if ('stringValue'  in v) return v.stringValue;
-  if ('integerValue' in v) return Number(v.integerValue);
-  if ('doubleValue'  in v) return Number(v.doubleValue);
-  if ('booleanValue' in v) return v.booleanValue;
-  if ('nullValue'    in v) return null;
-  if ('arrayValue'   in v) return (v.arrayValue.values || []).map(parseValue);
-  if ('mapValue' in v) {
-    const fields = v.mapValue.fields || {};
-    const keys = Object.keys(fields);
-    // Desanitize: {min, max} → [min, max]
-    if (keys.length === 2 && 'min' in fields && 'max' in fields) {
-      const mn = parseValue(fields.min), mx = parseValue(fields.max);
-      if (typeof mn === 'number' && typeof mx === 'number') return [mn, mx];
-    }
-    // Desanitize: {"0":…,"1":…} → array
-    if (keys.length > 0 && keys.every((k, i) => k === String(i)))
-      return keys.map(k => parseValue(fields[k]));
-    const obj = {};
-    for (const [k, val] of Object.entries(fields)) obj[k] = parseValue(val);
-    return obj;
-  }
-  return null;
-}
-
-function parseDoc(doc) {
-  const obj = { _id: doc.name.split('/').pop() };
-  for (const [k, v] of Object.entries(doc.fields || {})) obj[k] = parseValue(v);
-  return obj;
-}
-
-async function fetchCollection(colName) {
-  const memKey = `col:${colName}`;
-  const hit = memGet(memKey);
-  if (hit) return hit;
-
-  const docs = [];
-  let pageToken = null;
-  do {
-    const url = `${FIRESTORE_BASE}/${colName}?key=${FIREBASE_KEY}&pageSize=300${pageToken ? `&pageToken=${pageToken}` : ''}`;
-    const r = await fetch(url);
-    const data = await r.json();
-    if (data.documents) docs.push(...data.documents.map(parseDoc));
-    pageToken = data.nextPageToken || null;
-  } while (pageToken);
-
-  memSet(memKey, docs);
-  return docs;
-}
-
-const KV_TTL = 6 * 60 * 60; // 6h en secondes
-
-async function fetchSearchIndex(colName, env) {
-  const kvKey  = `idx:${colName}`;
-  const memKey = `idx:${colName}`;
-
-  // L1 : mémoire isolate
-  const memHit = memGet(memKey);
-  if (memHit) return memHit;
-
-  // L2 : KV persistant
-  if (env?.WIKI_CACHE) {
-    const kvHit = await env.WIKI_CACHE.get(kvKey);
-    if (kvHit) {
-      const docs = JSON.parse(kvHit);
-      memSet(memKey, docs);
-      return docs;
-    }
-  }
-
-  // L3 : Firestore
-  const docs = [];
-  let pageToken = null;
-  do {
-    const url = `${FIRESTORE_BASE}/${colName}?key=${FIREBASE_KEY}&pageSize=300&mask.fieldPaths=name${pageToken ? `&pageToken=${pageToken}` : ''}`;
-    const r = await fetch(url);
-    const data = await r.json();
-    if (data.documents) {
-      docs.push(...data.documents.map(d => ({
-        _id: d.name.split('/').pop(),
-        name: d.fields?.name ? parseValue(d.fields.name) : null,
-      })));
-    }
-    pageToken = data.nextPageToken || null;
-  } while (pageToken);
-
-  memSet(memKey, docs);
-  if (env?.WIKI_CACHE) {
-    env.WIKI_CACHE.put(kvKey, JSON.stringify(docs), { expirationTtl: KV_TTL });
-  }
-  return docs;
-}
-
-
-// ══════════════════════════════════════════════════════════════
-//  SEARCH
-// ══════════════════════════════════════════════════════════════
-
-function normalize(s) {
-  return String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-}
-
-function editDist(a, b) {
-  if (Math.abs(a.length - b.length) > 4) return 99;
-  const dp = Array.from({ length: a.length + 1 }, (_, i) =>
-    [i, ...Array(b.length).fill(0)]
-  );
-  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
-  for (let i = 1; i <= a.length; i++)
-    for (let j = 1; j <= b.length; j++)
-      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1]
-        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
-  return dp[a.length][b.length];
-}
-
-function fuzzyMatch(query, target) {
-  const nq = normalize(query).replace(/\s+/g, ' ').trim();
-  const nt = normalize(target).replace(/\s+/g, ' ').trim();
-  if (!nq) return true;
-  if (nt.includes(nq)) return true;
-  const tokens = nq.split(' ').filter(t => t.length >= 2);
-  if (!tokens.length) return false;
-  const words = nt.split(' ');
-  return tokens.every(t =>
-    nt.includes(t) || words.some(w => editDist(t, w) <= (t.length <= 5 ? 1 : t.length <= 8 ? 2 : 3))
-  );
-}
-
-function withTimeout(promise, ms) {
-  return Promise.race([promise, new Promise(resolve => setTimeout(() => resolve(null), ms))]);
-}
-
-async function searchAll(query, categorie = null, env = null) {
-  if (!query || query.trim().length < 1) return [];
-
-  const allCols = [
-    { col: 'items',       type: 'item'   },
-    { col: 'mobs',        type: 'mob'    },
-    { col: 'personnages', type: 'pnj'    },
-    { col: 'quetes',      type: 'quete'  },
-    { col: 'regions',     type: 'zone'   },
-    { col: 'donjons',     type: 'donjon' },
-  ];
-
-  const cols = categorie ? allCols.filter(c => c.type === categorie) : allCols;
-
-  const settled = await Promise.allSettled(
-    cols.map(({ col }) => withTimeout(fetchSearchIndex(col, env), 2400))
-  );
-
-  const results = [];
-  settled.forEach((res, i) => {
-    const docs = res.status === 'fulfilled' && res.value ? res.value : [];
-    const { type } = cols[i];
-    docs.forEach(item => {
-      if (item.name && item._id && fuzzyMatch(query, item.name))
-        results.push({ name: item.name.slice(0, 100), value: `${type}:${item._id}`.slice(0, 100) });
-    });
-  });
-
-  return results.slice(0, 25);
-}
-
-async function getById(type, docId) {
-  const colMap = {
-    item: 'items', mob: 'mobs', pnj: 'personnages',
-    quete: 'quetes', zone: 'regions', donjon: 'donjons',
-  };
-  const col = colMap[type];
-  if (!col) return null;
-  // Direct single-document GET — O(1), no collection scan
-  const url = `${FIRESTORE_BASE}/${col}/${encodeURIComponent(docId)}?key=${FIREBASE_KEY}`;
-  const r = await fetch(url);
-  if (!r.ok) return null;
-  const doc = await r.json();
-  if (!doc.fields) return null;
-  return parseDoc(doc);
-}
-
-
-// ══════════════════════════════════════════════════════════════
-//  EMBED BUILDERS
-// ══════════════════════════════════════════════════════════════
-
-function resolveImageUrl(item) {
-  const fix = p => WIKI_PAGES + '/' + String(p || '').replace(/^\.\.\//, '');
-  if (item.images?.length) return fix(item.images[0]);
-  if (item.image) return fix(item.image);
-  if (item.img)   return fix(item.img);
-  const id  = item.id;
-  const cat = item.category || item.cat;
-  if (!id || !cat) return null;
-  const tier = (item.event || (item.palier === 0 || item.palier === 'event')) ? 'events' : (item.palier ? 'P' + item.palier : '');
-  const tp   = tier ? tier + '/' : '';
-  const base = WIKI_PAGES + '/img/compendium/textures/';
-  const MAP  = {
-    arme: base + 'weapons/' + tp + id + '.png', armure: base + 'armors/' + tp + id + '.png',
-    accessoire: base + 'trinkets/' + tp + id + '.png', outils: base + 'gears/' + tp + id + '.png',
-    rune: base + 'items/Runes/' + tp + id + '.png', materiaux: base + 'items/Material/' + tp + id + '.png',
-    ressources: base + 'items/Ressources/' + tp + id + '.png',
-    consommable: base + 'items/Consommable/' + tp + id + '.png',
-    nourriture: base + 'items/Nourriture/' + tp + id + '.png',
-  };
-  return MAP[cat] || null;
-}
-
-function formatStatValue(val, unit) {
-  if (Array.isArray(val)) {
-    return val[0] === val[1] ? `${val[0]}${unit}` : `${val[0]}–${val[1]}${unit}`;
-  }
-  return `${val}${unit}`;
-}
-
-function buildItemEmbed(item) {
-  const rarity  = item.rarity || 'commun';
-  const color   = RARITY_COLORS[rarity] || 0x888888;
-  const catInfo = CATEGORIES[item.category] || { label: item.category || '?', emoji: '' };
-  const imgUrl  = resolveImageUrl(item);
-  const isEvent = item.event || (item.palier === 0 || item.palier === 'event');
-
-  const embed = {
-    title: item.name || 'Item inconnu',
-    color,
-    url: `${WIKI_PAGES}/Compendium/compendium.html#${item.id || item._id}`,
-    thumbnail: imgUrl ? { url: imgUrl } : undefined,
-    fields: [],
-    footer: { text: 'Veilleurs au Clair de Lune 🌙' },
-  };
-
-  // Info badges row
-  const badges = [];
-  badges.push(`${catInfo.emoji || ''} ${catInfo.label}`.trim());
-  badges.push(RARITY_LABELS[rarity] || rarity);
-  if (isEvent) badges.push('✦ Event');
-  else if (item.palier) badges.push(`Palier ${item.palier}`);
-  if (item.lvl) badges.push(`Niv. ${item.lvl}`);
-  embed.fields.push({ name: '​', value: badges.join('  ·  '), inline: false });
-
-  // Stats
-  const stats = item.stats
-    ? Object.entries(item.stats).filter(([, v]) => v !== 0 && v != null).slice(0, 6)
-    : [];
-  if (stats.length) {
-    const lines = stats.map(([id, val]) => {
-      const meta = STAT_MAP[id] || { label: id.replace(/_/g, ' '), unit: '' };
-      return `\`${formatStatValue(val, meta.unit)}\` ${meta.label}`;
-    });
-    embed.fields.push({ name: '📊 Statistiques', value: lines.join('\n'), inline: true });
-  }
-
-  // Effects
-  const effects = item.effects?.slice(0, 4) || [];
-  if (effects.length) {
-    const lines = effects.map(e => {
-      const prefix = e.prefix || '';
-      const val    = e.value !== undefined ? e.value : '';
-      const unit   = e.unit || '';
-      const dur    = e.duration ? ` (${e.duration})` : '';
-      const label  = e.label || e.type || '';
-      const display = prefix && val !== '' ? `${prefix}${val}${unit}${dur}` : val !== '' ? `${val}${unit}${dur}` : label;
-      const icon   = e.icon || '✦';
-      return `${icon} ${String(display).slice(0, 60)}`;
-    });
-    embed.fields.push({ name: '✨ Effets', value: lines.join('\n'), inline: true });
-  }
-
-  // Obtain (first line)
-  if (item.obtain) {
-    const firstLine = resolveObtain(item.obtain).split('\n')
-      .map(l => l.replace(/\[(?:[a-zA-Z]+:)?[^\]|]+\|([^\]]+)\]/g, '$1').replace(/\[npc:[^\]]+\]/g, '').trim())
-      .find(l => l.length > 0);
-    if (firstLine) embed.fields.push({ name: '📍 Obtention', value: firstLine.slice(0, 256), inline: false });
-  }
-
-  return embed;
-}
-
-function buildMobEmbed(mob) {
-  const color = MOB_TYPE_COLORS[mob.type] || 0x323246;
-  const diff  = mob.difficulty ? '★'.repeat(mob.difficulty) + '☆'.repeat(Math.max(0, 5 - mob.difficulty)) : '';
-  const embed = {
-    title: mob.name || 'Mob inconnu',
-    color,
-    url: `${WIKI_PAGES}/Bestiaire/bestiaire.html`,
-    fields: [],
-    footer: { text: 'Veilleurs au Clair de Lune 🌙' },
-  };
-  const f = embed.fields;
-  if (mob.type)     f.push({ name: 'Type',         value: MOB_TYPE_LABELS[mob.type] || mob.type,         inline: true });
-  if (mob.behavior) f.push({ name: 'Comportement', value: MOB_BEHAVIOR_LABELS[mob.behavior] || mob.behavior, inline: true });
-  if (diff)         f.push({ name: 'Difficulté',   value: `${diff} ${MOB_DIFF_LABELS[mob.difficulty] || ''}`.trim(), inline: true });
-  if (mob.zone || mob.region) f.push({ name: 'Zone', value: mob.zone || mob.region, inline: true });
-  if (mob.palier)   f.push({ name: 'Palier', value: String(mob.palier), inline: true });
-  if (mob.hp)       f.push({ name: 'PV',     value: String(mob.hp),     inline: true });
-  if (mob.loot?.length) {
-    f.push({ name: 'Loot', value: mob.loot.slice(0, 6).map(l => l.name || l.id || String(l)).join('\n'), inline: false });
-  }
-  if (mob.description) embed.description = String(mob.description).slice(0, 300);
-  return embed;
-}
-
-function buildPnjEmbed(pnj) {
-  const PNJ_TAGS = {
-    forgeron_armes: "Forgeron d'Armes", forgeron_armures: "Forgeron d'Armures",
-    marchand_equipement: "Marchand d'Équipement", marchand_consommable: "Marchand de Consommable",
-    artisan_runes: "Artisan de Runes", alchimiste: "Alchimiste",
-    marchand_itinerant: "Marchand Itinérant", quetes: "Quêtes", autre: "Autre",
-  };
-  const embed = {
-    title: pnj.name || 'PNJ inconnu',
-    color: 0xC9A84C,
-    url: `${WIKI_PAGES}/Bestiaire/bestiaire.html`,
-    fields: [],
-    footer: { text: 'Veilleurs au Clair de Lune 🌙' },
-  };
-  const tags = (pnj.tags || []).map(t => PNJ_TAGS[t] || t).join(', ');
-  if (tags) embed.fields.push({ name: 'Rôle', value: tags, inline: false });
-  if (pnj.zone || pnj.region) embed.fields.push({ name: 'Zone', value: pnj.zone || pnj.region, inline: true });
-  const coords = pnj.coords;
-  if (coords) {
-    const parts = [];
-    if (coords.x != null) parts.push(`X: ${coords.x}`);
-    if (coords.z != null) parts.push(`Z: ${coords.z}`);
-    if (parts.length) embed.fields.push({ name: 'Coords', value: parts.join('  '), inline: true });
-  }
-  if (pnj.description) embed.description = String(pnj.description).slice(0, 300);
-  return embed;
-}
-
-function buildQueteEmbed(quete) {
-  const icon  = QUEST_TYPE_ICONS[quete.type]  || '❓';
-  const color = QUEST_TYPE_COLORS[quete.type] || 0x888888;
-  const embed = {
-    title: `${icon} ${quete.name || 'Quête inconnue'}`,
-    color,
-    url: `${WIKI_PAGES}/Quetes/quetes.html`,
-    fields: [],
-    footer: { text: 'Veilleurs au Clair de Lune 🌙' },
-  };
-  embed.fields.push({ name: 'Type', value: QUEST_TYPE_LABELS[quete.type] || quete.type || '?', inline: true });
-  if (quete.zone || quete.region) embed.fields.push({ name: 'Zone', value: quete.zone || quete.region, inline: true });
-  if (quete.palier) embed.fields.push({ name: 'Palier', value: String(quete.palier), inline: true });
-  if (quete.objectives?.length) {
-    const txt = quete.objectives.slice(0, 5).map((o, i) => `${i + 1}. ${o.text || o}`).join('\n');
-    embed.fields.push({ name: 'Objectifs', value: txt.slice(0, 1024), inline: false });
-  } else if (quete.description) {
-    embed.description = String(quete.description).slice(0, 400);
-  }
-  if (quete.rewards?.length) {
-    embed.fields.push({
-      name: 'Récompenses',
-      value: quete.rewards.slice(0, 5).map(r => r.name || r.id || String(r)).join('\n').slice(0, 1024),
-      inline: false,
-    });
-  }
-  return embed;
-}
-
-function buildZoneEmbed(zone) {
-  const embed = {
-    title: zone.name || 'Zone inconnue',
-    color: 0x3DA7C8,
-    url: `${WIKI_PAGES}/Map/map.html`,
-    fields: [],
-    footer: { text: 'Veilleurs au Clair de Lune 🌙' },
-  };
-  if (zone.palier) embed.fields.push({ name: 'Palier', value: String(zone.palier), inline: true });
-  if (zone.floor)  embed.fields.push({ name: 'Floor',  value: String(zone.floor),  inline: true });
-  if (zone.description) embed.description = String(zone.description).slice(0, 400);
-  return embed;
-}
-
-function buildDonjonEmbed(donjon) {
-  const embed = {
-    title: `🏰 ${donjon.name || 'Donjon inconnu'}`,
-    color: 0x8B3C00,
-    url: `${WIKI_PAGES}/Map/map.html`,
-    fields: [],
-    footer: { text: 'Veilleurs au Clair de Lune 🌙' },
-  };
-  if (donjon.palier) embed.fields.push({ name: 'Palier', value: String(donjon.palier), inline: true });
-  if (donjon.zone || donjon.region) embed.fields.push({ name: 'Zone', value: donjon.zone || donjon.region, inline: true });
-  if (donjon.description) embed.description = String(donjon.description).slice(0, 400);
-  return embed;
-}
-
-function embedFromEntry(type, entry) {
-  switch (type) {
-    case 'item':   return buildItemEmbed(entry);
-    case 'mob':    return buildMobEmbed(entry);
-    case 'pnj':    return buildPnjEmbed(entry);
-    case 'quete':  return buildQueteEmbed(entry);
-    case 'zone':   return buildZoneEmbed(entry);
-    case 'donjon': return buildDonjonEmbed(entry);
-    default: return { title: 'Type inconnu', color: 0x888888, description: type };
-  }
-}
-
 
 // ══════════════════════════════════════════════════════════════
 //  DISCORD SIGNATURE VERIFICATION (Ed25519 / Web Crypto API)
@@ -543,65 +53,15 @@ function iResponse(data) {
   });
 }
 
-async function handleInteraction(rawBody, env) {
+async function handleInteraction(rawBody) {
   const interaction = JSON.parse(rawBody);
 
-  // PING → PONG (Discord vérifie l'endpoint avec ça : à garder même commande éteinte)
+  // PING → PONG (Discord vérifie l'endpoint avec ça)
   if (interaction.type === 1) return iResponse({ type: 1 });
 
-  // Commande /wiki éteinte : plus de lecture Firestore. Passer WIKI_COMMAND_ENABLED à true pour la rallumer.
-  if (!WIKI_COMMAND_ENABLED) {
-    if (interaction.type === 4) return iResponse({ type: 8, data: { choices: [] } });
-    return iResponse({ type: 4, data: { content: 'La commande /wiki est désactivée.', flags: 64 } });
-  }
-
-  await loadObtainTexts();
-
-  // AUTOCOMPLETE (type 4)
-  if (interaction.type === 4) {
-    const opts      = interaction.data?.options || [];
-    const catOpt    = opts.find(o => o.name === 'categorie');
-    const rechOpt   = opts.find(o => o.name === 'recherche' && o.focused);
-    const query     = rechOpt?.value || '';
-    const categorie = catOpt?.value || null;
-    try {
-      const choices = await searchAll(query, categorie, env);
-      return iResponse({ type: 8, data: { choices } });
-    } catch {
-      return iResponse({ type: 8, data: { choices: [] } });
-    }
-  }
-
-  // APPLICATION_COMMAND (type 2)
-  if (interaction.type === 2 && interaction.data?.name === 'wiki') {
-    const opts      = interaction.data?.options || [];
-    const value     = opts.find(o => o.name === 'recherche')?.value || '';
-    const colonIdx  = value.indexOf(':');
-
-    if (colonIdx === -1) {
-      return iResponse({
-        type: 4,
-        data: { content: 'Sélectionne un résultat dans la liste de suggestions.', flags: 64 },
-      });
-    }
-
-    const type = value.slice(0, colonIdx);
-    const id   = value.slice(colonIdx + 1);
-
-    try {
-      const entry = await getById(type, id);
-      if (!entry) {
-        return iResponse({ type: 4, data: { content: `Aucun résultat pour \`${id}\`.`, flags: 64 } });
-      }
-      const embed = embedFromEntry(type, entry);
-      return iResponse({ type: 4, data: { embeds: [embed] } });
-    } catch (err) {
-      console.error('[wiki]', err);
-      return iResponse({ type: 4, data: { content: 'Erreur lors de la récupération des données.', flags: 64 } });
-    }
-  }
-
-  return iResponse({ type: 4, data: { content: 'Commande inconnue.', flags: 64 } });
+  // La commande /wiki est supprimée (elle lisait Firestore) : aucune suggestion, message d'information.
+  if (interaction.type === 4) return iResponse({ type: 8, data: { choices: [] } });
+  return iResponse({ type: 4, data: { content: 'La commande /wiki est désactivée.', flags: 64 } });
 }
 
 
@@ -610,8 +70,6 @@ async function handleInteraction(rawBody, env) {
 // ══════════════════════════════════════════════════════════════
 
 export default {
-  async scheduled() { /* plus de synchro Firestore : D1 est la source de vérité */ },
-
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders() });
@@ -637,7 +95,7 @@ export default {
       const rawBody = await request.text();
       const valid = await verifyDiscordSignature(env.DISCORD_PUBLIC_KEY, sigHeader, tsHeader, rawBody);
       if (!valid) return new Response('Unauthorized', { status: 401 });
-      return handleInteraction(rawBody, env);
+      return handleInteraction(rawBody);
     }
 
     // ── Route: existing admin proxy ────────────────────────────
@@ -773,7 +231,7 @@ async function readState(state, env) {
   return p.exp > Date.now() ? p : null;
 }
 
-// ── Service account Google (token OAuth Firestore + custom token Auth) ──
+// ── Service account Google (custom token Firebase Auth) ──
 async function signJwt(sa, claims) {
   const head = b64uStr(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
   const body = b64uStr(JSON.stringify(claims));
@@ -782,25 +240,6 @@ async function signJwt(sa, claims) {
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
   const sig  = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(`${head}.${body}`));
   return `${head}.${body}.${b64u(sig)}`;
-}
-
-let _saToken = null;
-async function saAccessToken(env) {
-  if (_saToken && _saToken.exp > Date.now() + 60000) return _saToken.token;
-  const sa  = JSON.parse(env.FIREBASE_SA);
-  const now = Math.floor(Date.now() / 1000);
-  const jwt = await signJwt(sa, {
-    iss: sa.client_email, scope: 'https://www.googleapis.com/auth/datastore',
-    aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600,
-  });
-  const r = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: jwt }),
-  });
-  const d = await r.json();
-  if (!d.access_token) throw new Error('service account token refusé');
-  _saToken = { token: d.access_token, exp: Date.now() + d.expires_in * 1000 };
-  return _saToken.token;
 }
 
 async function firebaseCustomToken(uid, env) {
@@ -812,58 +251,14 @@ async function firebaseCustomToken(uid, env) {
   });
 }
 
-// ── Firestore (écritures admin, contournent les rules) ────────
-const toFs = v => v === null ? { nullValue: null }
-  : typeof v === 'boolean' ? { booleanValue: v }
-  : typeof v === 'number'  ? { integerValue: String(v) }
-  : { stringValue: String(v) };
-
-async function fsReq(env, path, init = {}) {
-  const r = await fetch(`${FIRESTORE_BASE}${path}`, {
-    ...init, headers: { Authorization: `Bearer ${await saAccessToken(env)}`, 'Content-Type': 'application/json' },
-  });
-  if (r.status === 404) return null;
-  const d = await r.json();
-  if (!r.ok) throw new Error(`Firestore ${r.status}: ${d.error?.message || ''}`);
-  return d;
-}
-const fsGetDoc = async (env, path) => { const d = await fsReq(env, `/${path}`); return d ? parseDoc(d) : null; };
-
-async function fsFindUser(env, field, value) {
-  const d = await fsReq(env, ':runQuery', { method: 'POST', body: JSON.stringify({ structuredQuery: {
-    from: [{ collectionId: 'users' }],
-    where: { fieldFilter: { field: { fieldPath: field }, op: 'EQUAL', value: toFs(value) } }, limit: 1,
-  } }) });
-  const hit = (d || []).find(x => x.document);
-  return hit ? parseDoc(hit.document) : null;
-}
-
-async function fsPatchUser(env, uid, data) {
-  const keys = Object.keys(data);
-  const mask = keys.map(k => `updateMask.fieldPaths=${encodeURIComponent(k)}`).join('&');
-  const fields = Object.fromEntries(keys.map(k => [k, toFs(data[k])]));
-  return fsReq(env, `/users/${uid}?${mask}`, { method: 'PATCH', body: JSON.stringify({ fields }) });
-}
-
 // Journal de connexion (alimente « Connexions récentes » des stats) ; jamais bloquant, admins exclus.
-async function fsLogLogin(env, uid, pseudo, role) {
-  if (role === 'admin') return;
-  if (env.DB) {
-    try { await env.DB.prepare('INSERT INTO login_log (uid, pseudo, ts) VALUES (?, ?, ?)').bind(uid, pseudo || '', Date.now()).run(); } catch { /* idem */ }
-    return;
-  }
-  try {
-    await fsReq(env, '/audit_log', { method: 'POST', body: JSON.stringify({ fields: {
-      action: toFs('login'), actorUid: toFs(uid), actorPseudo: toFs(pseudo || ''),
-      targetType: toFs('session'), targetId: toFs(uid), targetName: toFs(pseudo || ''),
-      metadata: { mapValue: { fields: { via: toFs('discord') } } },
-      createdAt: { timestampValue: new Date().toISOString() },
-    } }) });
-  } catch { /* le journal ne doit jamais empêcher la connexion */ }
+async function logLogin(env, uid, pseudo, role) {
+  if (role === 'admin' || !env.DB) return;
+  try { await env.DB.prepare('INSERT INTO login_log (uid, pseudo, ts) VALUES (?, ?, ?)').bind(uid, pseudo || '', Date.now()).run(); } catch { /* le journal ne doit jamais empêcher la connexion */ }
 }
 
 // ── Rôle site déduit des rôles Discord (config/discordRoles) ──
-let _roleCfgCache = null; // { at, cfg, custom } : 5 min, économise 2 lectures Firestore par connexion
+let _roleCfgCache = null; // { at, cfg, custom } : 5 min, économise 2 lectures D1 par connexion
 async function resolveSiteRole(env, discordRoleIds) {
   if (!_roleCfgCache || Date.now() - _roleCfgCache.at > 5 * 60000) {
     const [c, cu] = await Promise.all([cfgGet(env, 'config/discordRoles'), cfgGet(env, 'config/customRoles')]);
@@ -988,12 +383,12 @@ async function handleDiscordCallback(request, env) {
       data.role = await resolveSiteRole(env, member.roles || []);
     }
     await userPatch(env, uid, data);
-    await fsLogLogin(env, uid, data.pseudo || existing?.pseudo, data.role || existing?.role);
+    await logLogin(env, uid, data.pseudo || existing?.pseudo, data.role || existing?.role);
 
     return out({ token: await firebaseCustomToken(uid, env), pseudo: data.pseudo || existing?.pseudo || '' });
   } catch (e) {
-    // Quota Firestore (offre gratuite) atteint : message clair plutôt qu'une erreur technique
-    if (/Firestore 429|quota|RESOURCE_EXHAUSTED/i.test(e.message)) return fail('Le site a atteint sa limite quotidienne de lectures : la connexion est indisponible pour le moment. Réessaie demain matin (remise à zéro vers 9h).');
+    // Limite quotidienne Cloudflare (offre gratuite) atteinte : message clair plutôt qu'une erreur technique
+    if (/D1|quota|limit|exceeded/i.test(e.message)) return fail('Le site a atteint sa limite quotidienne : la connexion est indisponible pour le moment. Réessaie demain matin (remise à zéro à 01h00, heure de Paris).');
     return fail('Erreur serveur : ' + e.message);
   }
 }
@@ -1197,129 +592,7 @@ async function handleStats(request, env) {
 }
 
 
-// ══════════════════════════════════════════════════════════════
-//  CONTENU PUBLIC : copie Firestore → D1 (étape 2 de la migration)
-//
-//  Firestore reste la source d'écriture. Le worker en tire les changements (delta sur _updatedAt +
-//  tombstones, comme le cache client) et les range dans D1 ; les visiteurs lisent D1 via GET /db/sync.
-//  Déclencheurs : cron (toutes les 15 min), POST /db/refresh (appelé par le site après une écriture,
-//  utilisateur connecté, 1 fois / 15 s), POST /db/resync (admin, resynchronisation complète).
-//  Chaque lot est atomique et prend un nouveau numéro de révision (meta.rev) : un client ne rate rien.
-// ══════════════════════════════════════════════════════════════
-
 const D1_SYNC_COLS = ['items', 'mobs', 'personnages', 'regions', 'quetes', 'panoplies', 'map_markers', 'zones', 'donjons'];
-const SYNC_CHUNK   = 300;
-const SYNC_BUDGET  = 40;   // requêtes par exécution (limite 50 sur l'offre gratuite) ; le reste reprend au tour suivant
-const DOC_BASE     = `projects/${PROJECT_ID}/databases/(default)/documents`;
-const REV_SQL      = "(SELECT v FROM meta WHERE k = 'rev')";
-
-class BudgetOut extends Error {}
-
-function newBudget() {
-  let left = SYNC_BUDGET;
-  return { take(n = 1) { if (left < n) throw new BudgetOut(); left -= n; } };
-}
-
-async function fsRunQuery(env, b, structuredQuery) {
-  b.take();
-  const d = await fsReq(env, ':runQuery', { method: 'POST', body: JSON.stringify({ structuredQuery }) });
-  return (d || []).filter(x => x.document).map(x => x.document);
-}
-
-const lastSeg = name => name.split('/').pop();
-const tsMs = f => (f?.timestampValue ? Date.parse(f.timestampValue) : 0);
-const orderTsName = field => [
-  { field: { fieldPath: field }, direction: 'ASCENDING' },
-  { field: { fieldPath: '__name__' }, direction: 'ASCENDING' },
-];
-const startAfter = (ts, col, name) => (ts && name)
-  ? { values: [{ timestampValue: new Date(ts).toISOString() }, { referenceValue: `${DOC_BASE}/${col}/${name}` }], before: false }
-  : undefined;
-
-/** Synchronise Firestore → D1. Renvoie { done, docs, deleted } ; done=false tant qu'une passe complète reste à finir. */
-async function syncContent(env, { cols = D1_SYNC_COLS, reset = false } = {}) {
-  const stat = { done: false, docs: 0, deleted: 0 };
-  if (!env.DB) return { ...stat, done: true };
-  const b = newBudget();
-  const run = async stmts => { b.take(); await env.DB.batch(stmts); };
-  const setMeta = (k, v) => env.DB.prepare('INSERT OR REPLACE INTO meta (k, v) VALUES (?, ?)').bind(k, v);
-  const bump = () => env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'");
-  try {
-    b.take();
-    const m = Object.fromEntries((await env.DB.prepare('SELECT k, v FROM meta').all()).results.map(r => [r.k, r.v]));
-
-    // Époque : bumpée dans config/sync pour forcer un rechargement complet → on repart de zéro (avec balayage des disparus)
-    b.take();
-    const epoch = (await fsGetDoc(env, 'config/sync'))?.epoch || 0;
-    if (reset || epoch !== m.epoch) {
-      const gen = Date.now();
-      await run([
-        setMeta('gen', gen), setMeta('epoch', epoch),
-        ...D1_SYNC_COLS.flatMap(c => [setMeta('cur:' + c, 0), setMeta('curname:' + c, ''), setMeta('full:' + c, 1)]),
-      ]);
-      Object.assign(m, { gen, epoch });
-      for (const c of D1_SYNC_COLS) Object.assign(m, { ['cur:' + c]: 0, ['curname:' + c]: '', ['full:' + c]: 1 });
-    }
-
-    // 1. Suppressions (tombstones) d'abord, pour qu'un doc recréé ensuite repasse bien en « présent »
-    for (;;) {
-      const tombs = await fsRunQuery(env, b, {
-        from: [{ collectionId: 'tombstones' }], orderBy: orderTsName('ts'), limit: SYNC_CHUNK,
-        startAt: startAfter(m.tomb || 0, 'tombstones', m.tombname || ''),
-      });
-      if (!tombs.length) break;
-      const stmts = [bump()];
-      let ts = m.tomb || 0, name = m.tombname || '';
-      for (const t of tombs) {
-        const f = t.fields || {};
-        ts = tsMs(f.ts) || ts; name = lastSeg(t.name);
-        const col = f.col?.stringValue, id = f.id?.stringValue;
-        if (!D1_SYNC_COLS.includes(col) || !id) continue;
-        stmts.push(env.DB.prepare(`UPDATE docs SET deleted = 1, updated_at = ${REV_SQL} WHERE col = ? AND id = ? AND deleted = 0`).bind(col, id));
-        stat.deleted++;
-      }
-      stmts.push(setMeta('tomb', ts), setMeta('tombname', name));
-      await run(stmts);
-      m.tomb = ts; m.tombname = name;
-      if (tombs.length < SYNC_CHUNK) break;
-    }
-
-    // 2. Créations / modifications, collection par collection
-    for (const col of cols) {
-      if (!D1_SYNC_COLS.includes(col)) continue;
-      for (;;) {
-        const docs = await fsRunQuery(env, b, {
-          from: [{ collectionId: col }], orderBy: orderTsName('_updatedAt'), limit: SYNC_CHUNK,
-          startAt: startAfter(m['cur:' + col] || 0, col, m['curname:' + col] || ''),
-        });
-        const full = m['full:' + col] === 1, last = docs.length < SYNC_CHUNK;
-        const stmts = [bump()];
-        let ts = m['cur:' + col] || 0, name = m['curname:' + col] || '';
-        for (const d of docs) {
-          ts = tsMs(d.fields?._updatedAt) || ts; name = lastSeg(d.name);
-          const { _id, _updatedAt, ...data } = parseDoc(d);
-          // passe complète : on réécrit tout et on marque la génération (sert au balayage) ; sinon uniquement si ça a changé
-          stmts.push(env.DB.prepare(`INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES (?, ?, ?, ${REV_SQL}, 0, ?)
-            ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at, deleted = 0, gen = excluded.gen
-            ${full ? '' : 'WHERE docs.data != excluded.data OR docs.deleted = 1'}`).bind(col, _id, JSON.stringify(data), m.gen));
-          stat.docs++;
-        }
-        if (last && full) { // fin de la passe complète : ce que Firestore n'a pas renvoyé n'existe plus
-          stmts.push(env.DB.prepare(`UPDATE docs SET deleted = 1, updated_at = ${REV_SQL} WHERE col = ? AND deleted = 0 AND gen != ?`).bind(col, m.gen));
-          stmts.push(setMeta('full:' + col, 0));
-        }
-        stmts.push(setMeta('cur:' + col, ts), setMeta('curname:' + col, name));
-        if (docs.length || (last && full)) await run(stmts);
-        m['cur:' + col] = ts; m['curname:' + col] = name;
-        if (last) { if (full) m['full:' + col] = 0; break; }
-      }
-    }
-    stat.done = D1_SYNC_COLS.every(c => m['full:' + c] !== 1);
-  } catch (e) {
-    if (!(e instanceof BudgetOut)) throw e;
-  }
-  return stat;
-}
 
 /** GET /db/sync?col=items&since=N → { rev, epoch, docs: [{id, d}], deleted: [id] } */
 async function handleDbSync(url, env) {
@@ -1328,7 +601,7 @@ async function handleDbSync(url, env) {
   if (!env.DB || !D1_SYNC_COLS.includes(col)) return json({ error: 'Collection inconnue' }, 400);
   const meta = (await env.DB.prepare("SELECT k, v FROM meta WHERE k IN ('rev', 'epoch') OR k = ?").bind('full:' + col).all()).results;
   const m = Object.fromEntries(meta.map(r => [r.k, r.v]));
-  if (!m.rev || m['full:' + col] !== 0) return json({ error: 'Pas encore synchronisé' }, 503); // le client retombe sur Firestore
+  if (!m.rev || m['full:' + col] !== 0) return json({ error: 'Pas encore synchronisé' }, 503); // le client garde son cache local
   const rows = (since > 0
     ? await env.DB.prepare('SELECT id, data, deleted FROM docs WHERE col = ? AND updated_at > ?').bind(col, since).all()
     : await env.DB.prepare('SELECT id, data, deleted FROM docs WHERE col = ? AND deleted = 0').bind(col).all()).results;
@@ -1376,7 +649,7 @@ async function cfgGet(env, path) {
   return r ? jparse(r.data) : null;
 }
 
-/** POST /me { idToken } : rôle et avatar du compte connecté, lus dans D1 (le site s'en sert si Firestore refuse la lecture). */
+/** POST /me { idToken } : rôle et avatar du compte connecté, lus dans D1 (rôle et avatar du compte connecté). */
 async function handleMe(request, env) {
   if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
   let body;
