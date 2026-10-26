@@ -1361,7 +1361,7 @@ function showItem(id, initialQuality = false) {
       <div class="item-sep"></div>
       ${renderEvolutionChain(item)}
       <div class="item-section-title">Comment obtenir cet item</div>
-      <div class="item-obtain" id="item-obtain-text">${parseText(v.obtain)}</div>
+      <div class="item-obtain" id="item-obtain-text">${parseText(withAutoObtain(activeData(), v.obtain))}</div>
       ${hasRow ? `
       <div class="effects-craft-titles" id="effects-craft-titles">
         <div class="item-section-title">${getCraft() ? 'Craft' : ''}</div>
@@ -1405,7 +1405,7 @@ function showItem(id, initialQuality = false) {
       const d2 = activeData();
       const v2 = getVariant();
       loreEl.innerHTML   = parseText(v2.lore);
-      obtainEl.innerHTML = parseText(v2.obtain);
+      obtainEl.innerHTML = parseText(withAutoObtain(d2, v2.obtain));
       const nameEl = document.getElementById('item-name-text');
       if (nameEl) nameEl.textContent = d2.name || item.name;
       craftWrap.innerHTML = renderCraft(getCraft());

@@ -124,6 +124,30 @@ function getMin(val) { return Array.isArray(val) ? val[0] : val; }
 function getMax(val) { return Array.isArray(val) ? val[1] : val; }
 
 //#endregion BUILD LEVEL
+//#region OBTAIN AUTOMATIQUE (PNJ)
+/* Sources d'obtention déduites des PNJ : un PNJ qui a l'item dans sa liste `craft` le fabrique, un PNJ qui l'a dans `sells` le vend.
+   Elles s'ajoutent au texte `obtain` de l'item à l'affichage, sans doublon avec ce qui est déjà écrit ; rien n'est stocké. */
+function autoObtainLines(item) {
+  if (typeof PERSONNAGES === 'undefined' || !Array.isArray(PERSONNAGES) || !item) return [];
+  const id = item.id ?? item._id;
+  if (!id) return [];
+  const lines = [];
+  for (const p of PERSONNAGES) {
+    const pid = p.id ?? p._id;
+    if (!pid || !p.name) continue;
+    const has = list => Array.isArray(list) && list.some(e => e && (e.id === id || e.itemId === id));
+    if (has(p.craft))      lines.push({ pid, line: `Fabricable au [npc:${pid}|${p.name}]` });
+    else if (has(p.sells)) lines.push({ pid, line: `Achetable au [npc:${pid}|${p.name}]` });
+  }
+  return lines;
+}
+function withAutoObtain(item, text) {
+  const base = typeof text === 'string' ? text : '';
+  const extra = autoObtainLines(item).filter(l => !base.includes(`[npc:${l.pid}|`) && !base.includes(`[npc:${l.pid}]`)).map(l => l.line);
+  if (!extra.length) return base;
+  return base.trim() ? base.replace(/\s+$/, '') + '\n' + extra.join('\n') : extra.join('\n');
+}
+//#endregion OBTAIN AUTOMATIQUE (PNJ)
 //#region OBTAIN_TEXTS
 /* Sources d'obtention prédéfinies : une ligne [obtain:<id>] dans item.obtain est remplacée par ce texte.
    Modifier le texte d'un id met à jour tous les items qui l'utilisent.
