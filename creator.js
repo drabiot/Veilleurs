@@ -205,6 +205,7 @@ const STAT_DEFS = [
     { id:'omnivamp',           label:'Vampirisme de sort %',          color:'#a03030' },
     { id:'soin_bonus',         label:'Soin Bonus',                color:'#50e050' },
     { id:'puissance_soin',     label:'Puissance de Soin',         color:'#50e050' },
+    { id:'soins_recus',        label:'Soins Reçus %',             color:'#50e050' },
     { id:'regen_sante',        label:'Régén. Santé /s',          color:'#e85050' },
     { id:'regen_mana',         label:'Régén. Mana /s',           color:'#50d8e8' },
     { id:'regen_stamina',      label:'Régén. Stamina /s',        color:'#e8a030' },
