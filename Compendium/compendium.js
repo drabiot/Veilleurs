@@ -964,7 +964,7 @@ function renderItemStats(item) {
   const runeSlots = item.rune_slots ? +item.rune_slots : 0;
 
   const hasStats  = stats     && Object.keys(stats).some(k => stats[k] != null);
-  const hasReqs   = lvl != null || classes.length || twoHanded || unique || runeSlots > 0;
+  const hasReqs   = classes.length || twoHanded || unique || runeSlots > 0; // le niveau est affiché sous le palier, pas ici
   const hasSkill  = !!item.skill_name;
 
   if (!hasStats && !hasReqs && !hasSkill) return '';
@@ -974,9 +974,6 @@ function renderItemStats(item) {
   // ─ Barre de prérequis (compacte, inline) ─
   if (hasReqs) {
     html += '<div class="stat-reqs-bar">';
-    if (lvl != null) {
-      html += `<span class="stat-req-badge stat-req-lvl">⬡ Niv. ${lvl}</span>`;
-    }
     if (twoHanded)  html += `<span class="stat-req-badge">⚔️ Deux mains</span>`;
     if (unique)     html += `<span class="stat-req-badge">🔮 Unique</span>`;
     if (runeSlots > 0) html += `<span class="stat-req-badge">🔮 ${runeSlots} rune${runeSlots > 1 ? 's' : ''}</span>`;
@@ -1368,6 +1365,7 @@ function showItem(id, initialQuality = false) {
             ${rlabel}
           </div>
           ${item.palier != null ? `<div style="font-size:11px;color:var(--muted);opacity:.65;margin-top:3px;letter-spacing:.04em;">⬡ ${item.palier == 'event' ? 'Event' : 'Palier ' + (item.palier == -1 ? 'Archive' : item.palier)}</div>` : ''}
+          ${item.lvl != null && item.lvl !== '' ? `<div style="font-size:11px;color:var(--muted);opacity:.65;margin-top:2px;letter-spacing:.04em;">⬡ Niveau ${escHtml(String(item.lvl))}</div>` : ''}
           ${item.set && SETS?.[item.set] ? `<div class="item-set-badge" style="color:${SETS[item.set].color || '#888'};border-color:${SETS[item.set].color || '#888'}40;">◈ ${escHtml(SETS[item.set].label)}</div>` : ''}
           ${qualityToggle}
           <blockquote class="item-lore" id="item-lore-text"${String(v.lore || '').trim() ? '' : ' hidden'}>${parseText(v.lore)}</blockquote>
@@ -1380,14 +1378,14 @@ function showItem(id, initialQuality = false) {
       <div class="item-obtain" id="item-obtain-text">${parseText(withAutoObtain(activeData(), v.obtain))}</div>
       ${hasRow ? `
       <div class="effects-craft-titles" id="effects-craft-titles">
+        <div class="item-section-title">${currentEffects?.length ? 'Effets' : ''}</div>
         <div class="item-section-title">${getCraft() ? 'Craft' : ''}</div>
         ${itemStatsHtml ? '<div class="item-section-title">Statistiques</div>' : ''}
-        <div class="item-section-title">${currentEffects?.length ? 'Effets' : ''}</div>
       </div>
       <div class="effects-craft-row">
+        <div id="item-effects-wrap">${renderEffects(currentEffects, d.cooldown_apply)}</div>
         <div id="item-craft-wrap">${renderCraft(getCraft())}</div>
         ${itemStatsHtml ? `<div id="item-stats-wrap">${itemStatsHtml}</div>` : ''}
-        <div id="item-effects-wrap">${renderEffects(currentEffects, d.cooldown_apply)}</div>
       </div>` : ''}
       <div class="item-sep"></div>
       ${renderUsedIn(item.id)}
