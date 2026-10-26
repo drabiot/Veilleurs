@@ -278,7 +278,7 @@ function buildDynamicMarkers() {
     });
   }
 
-  // Boss — Firestore mobs (migrated + creator, coords:{x,z} ou map_spawns:[{x,z}])
+  // Boss — Firestore mobs (migrated + creator : coords:{x,z} + coords_more:[{x,z}])
   const _fsBossIds = new Set();
   for (const m of mobs) {
     const _mType = (m.type || '').toLowerCase();
@@ -287,11 +287,9 @@ function buildDynamicMarkers() {
     const f     = +m.palier;
     const id    = m.id || m._id;
     const layer = m.is_underground ? 'underground' : 'surface';
-    // Un pin par endroit renseigné : map_spawns (ancien format) ou coords, puis les endroits supplémentaires du creator (coords_more).
+    // Un pin par endroit renseigné : coords, puis les endroits supplémentaires du creator (coords_more).
     // Doublons exacts écartés (même règle que la fiche du Bestiaire : l'index du pin = l'index du point affiché).
-    const spawns = (m.map_spawns && m.map_spawns.length
-      ? [...m.map_spawns]
-      : (m.coords && m.coords.x != null ? [{ x: m.coords.x, z: m.coords.z }] : []))
+    const spawns = (m.coords && m.coords.x != null && !(m.coords.x === 0 && m.coords.z === 0) ? [{ x: m.coords.x, z: m.coords.z }] : [])
       .concat(Array.isArray(m.coords_more) ? m.coords_more.filter(c => c && c.x != null && c.z != null).map(c => ({ x: c.x, z: c.z })) : [])
       .filter((s, i, arr) => arr.findIndex(o => o.x === s.x && o.z === s.z) === i);
     if (!spawns.length) continue;
