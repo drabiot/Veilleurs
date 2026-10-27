@@ -9461,12 +9461,7 @@ function _renderLbRows(ranked, listEl, isSnapshot) {
   });
 }
 
-window.showLeaderboardUser = function(u) {
-  document.getElementById('leaderboard-list').style.display = 'none';
-  const detailEl = document.getElementById('leaderboard-user-detail');
-  const titleEl  = document.getElementById('leaderboard-user-title');
-  const subsEl   = document.getElementById('leaderboard-user-subs');
-  detailEl.style.display = '';
+_lazyPanel(() => import('./moderation-leaderboard.js?v=0'), ['showLeaderboard', 'loadLeaderboard', 'resetHomeLeaderboard', 'undoHomeLeaderboardReset', 'showLeaderboardUser', 'openLbMigrateDialog', 'closeLbMigrateDialog', 'lbMigrateSearchUsers', 'confirmLbMigrate']);
 
   const updateTitle = () => {
     const n = u.subs.length;
