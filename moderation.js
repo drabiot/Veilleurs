@@ -10940,7 +10940,7 @@ window.zoneEditorSave = async function zoneEditorSave() {
   }
 };
 
-_lazyPanel(() => import('./moderation-obtain-legacy.js?v=0'), ['showObtainLegacy', 'loadObtainLegacy', 'filterObtainLegacy']);
+_lazyPanel(() => import('./moderation-obtain-legacy.js?v=99eaff64'), ['showObtainLegacy', 'loadObtainLegacy', 'filterObtainLegacy']);
 
 
 // ══════════════════════════════════════════════════════
