@@ -9113,7 +9113,7 @@ function _sensComputeImg(category, id, palier, isEvent) {
 
 _lazyPanel(() => import('./moderation-audit.js?v=24907cd5'), ['showAuditLog', 'loadAuditLog', 'renderAuditLog', 'loadAuditLogMore']);
 
-_lazyPanel(() => import('./moderation-stats.js?v=86524942'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques', 'showMigration', 'sensRunKeyMigration']);
+_lazyPanel(() => import('./moderation-stats.js?v=abef9ff5'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques', 'showMigration', 'sensRunKeyMigration']);
 
 
 _lazyPanel(() => import('./moderation-tags.js?v=318e5764'), ['showTagsPanel', 'updateTagRuleValueOptions', 'loadTagRules', 'addTagRule', 'deleteTagRule', 'seedDefaultTagRules', 'applyTagRules']);
@@ -10647,13 +10647,13 @@ window.sensPnjToPublic = async (sourceId) => {
 
 _lazyPanel(() => import('./moderation-images.js?v=2a487346'), ['showImagesTool', 'loadImagesTool', 'saveImagesConfig', 'imgFileDrop', 'imgFileSelect', 'imgUploadToGithub', 'resetImagesTool', 'switchImgTab', 'tpkOpenLightbox', 'tpkLbClose', 'tpkLbBgDown', 'tpkLoadZip', 'tpkRefreshGithub', 'tpkSelToInutile', 'tpkSelToIllisible', 'tpkSelClear', 'tpkRender', 'tpkLeftMore', 'tpkCreateVFolder', 'tpkDeleteVFolder', 'tpkCollapseAll', 'tpkVisualMatch', 'tpkMatchUpdateCount', 'tpkMatchSelectAll', 'tpkMatchApply', 'tpkSaveReference', 'previewNormalize', 'runNormalize', 'showCalibrateur', 'showCaptureSprites']);
 _lazyPanel(() => import('./moderation-obtain-legacy.js?v=99eaff64'), ['showObtainLegacy', 'loadObtainLegacy', 'filterObtainLegacy']);
-_lazyPanel(() => import('./moderation-data-all.js?v=0'), ['showDataAll', 'loadDataAll', 'onDataAllTypeChange', 'renderDataAll', 'deleteDataDuplicates']);
+_lazyPanel(() => import('./moderation-data-all.js?v=e899a830'), ['showDataAll', 'loadDataAll', 'onDataAllTypeChange', 'renderDataAll', 'deleteDataDuplicates']);
 
 
-_lazyPanel(() => import('./moderation-map.js?v=0'), ['showMapPanel', 'deleteMapMarker', 'showZoneEditor', 'zeZoom', 'zeZoomReset', 'zeLayerChange', 'zeFloorChange', 'zeRenderSvg', 'zeRemovePoint', 'zeCheckSave', 'zoneEditorReset', 'zoneEditorSave', 'zeSearchMob', 'zeAddMobFromSelect', 'zeAddMob', 'zeRemoveMob', 'zeRenderMobList', 'showZoneList', 'loadZoneList', 'renderZoneList', 'migrateHardcodedZones', 'switchMapTab', 'loadPassages', 'renderPassageList', 'pgValidate', 'pgReset', 'pgSearchPins', 'pgAddLink', 'pgRemoveLink', 'saveNewPassage', 'deletePassage', 'loadAllMapPins', 'renderAllMapPins', 'loadPinColors', 'savePinColors', 'loadPinEmojis', 'savePinEmojis', 'saveIndividualPinEmoji', 'loadPinCategories', 'savePinCategories', 'loadPinTypes']);
+_lazyPanel(() => import('./moderation-map.js?v=14c5774d'), ['showMapPanel', 'deleteMapMarker', 'showZoneEditor', 'zeZoom', 'zeZoomReset', 'zeLayerChange', 'zeFloorChange', 'zeRenderSvg', 'zeRemovePoint', 'zeCheckSave', 'zoneEditorReset', 'zoneEditorSave', 'zeSearchMob', 'zeAddMobFromSelect', 'zeAddMob', 'zeRemoveMob', 'zeRenderMobList', 'showZoneList', 'loadZoneList', 'renderZoneList', 'migrateHardcodedZones', 'switchMapTab', 'loadPassages', 'renderPassageList', 'pgValidate', 'pgReset', 'pgSearchPins', 'pgAddLink', 'pgRemoveLink', 'saveNewPassage', 'deletePassage', 'loadAllMapPins', 'renderAllMapPins', 'loadPinColors', 'savePinColors', 'loadPinEmojis', 'savePinEmojis', 'saveIndividualPinEmoji', 'loadPinCategories', 'savePinCategories', 'loadPinTypes']);
 
 
-_lazyPanel(() => import('./moderation-game-config.js?v=0'), ['showGameConfig', 'gcUpdatePalier', 'gcAddPalier', 'gcRemovePalier', 'saveGameConfig']);
+_lazyPanel(() => import('./moderation-game-config.js?v=bfa73f54'), ['showGameConfig', 'gcUpdatePalier', 'gcAddPalier', 'gcRemovePalier', 'saveGameConfig']);
 
 
 _lazyPanel(() => import('./moderation-game-tools.js?v=3210537c'), ['showEventsTool', 'moveVclEvent', 'createVclEvent', 'deleteVclEvent', 'showDonjonsTool', 'createVclDonjon', 'moveVclDonjon', 'deleteVclDonjon', 'showTitresTool', 'createVclTitre', 'addVclTitreStat', 'removeVclTitreStat', 'renameVclTitre', 'moveVclTitre', 'deleteVclTitre', 'showEffectsTool', 'seedEffectTypes', 'saveEffectTypes', 'switchEffectsTab', 'addEffectType', 'addEffectTemplate']);
