@@ -135,6 +135,7 @@ onAuthStateChanged(auth, async user => {
 
   document.getElementById('auth-wall').style.display   = 'none';
   document.getElementById('main-layout').style.display = 'grid';
+  _refreshReportsBadge();
   if (localStorage.getItem('vcl_sidebar_hidden')) document.body.classList.add('sidebar-hidden');
   // Afficher le pseudo si disponible, sinon l'email
   try {
@@ -189,6 +190,26 @@ async function _applyToolPermissions() {
     }
   } catch {} // silencieux — fallback sur data-min-role
 }
+
+// ── Rapports non lus : pastille sur « Statistiques » (admin), effacée quand l'onglet Qualité est ouvert ──
+const _REPORTS_SEEN_KEY = 'vcl_reports_seen';
+const _reportsSeen = () => { try { return Number(localStorage.getItem(_REPORTS_SEEN_KEY)) || 0; } catch { return 0; } };
+async function _refreshReportsBadge() {
+  const el = document.getElementById('count-reports');
+  if (!el || currentRole !== 'admin') return;
+  try {
+    const snap = await getDocs(query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(10)));
+    const seen = _reportsSeen();
+    const n = snap.docs.filter(d => (d.data().createdAt?.toMillis?.() ?? 0) > seen).length;
+    el.textContent = n; el.style.display = n > 0 ? '' : 'none';
+  } catch {}
+}
+window.vclReportsSeen = ts => {
+  try { if (ts > _reportsSeen()) localStorage.setItem(_REPORTS_SEEN_KEY, String(ts)); } catch {}
+  const el = document.getElementById('count-reports');
+  if (el) el.style.display = 'none';
+};
+window.vclReportsSeenAt = _reportsSeen;
 
 function showAuthWall(msg) {
   document.getElementById('auth-wall').style.display   = 'flex';
@@ -9113,7 +9134,7 @@ function _sensComputeImg(category, id, palier, isEvent) {
 
 _lazyPanel(() => import('./moderation-audit.js?v=24907cd5'), ['showAuditLog', 'loadAuditLog', 'renderAuditLog', 'loadAuditLogMore']);
 
-_lazyPanel(() => import('./moderation-stats.js?v=abef9ff5'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques', 'showMigration', 'sensRunKeyMigration']);
+_lazyPanel(() => import('./moderation-stats.js?v=4d38d6b4'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques', 'showMigration', 'sensRunKeyMigration']);
 
 
 _lazyPanel(() => import('./moderation-tags.js?v=922eadc4'), ['showTagsPanel', 'updateTagRuleValueOptions', 'loadTagRules', 'addTagRule', 'deleteTagRule', 'seedDefaultTagRules', 'applyTagRules']);

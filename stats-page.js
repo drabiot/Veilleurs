@@ -320,10 +320,14 @@ export function renderStats(container, s, ctx, deps) {
   ctx = { ...ctx, today: statsDay(0) };
   const tabs = { audience: audienceTab, contenu: contenuTab, qualite: qualiteTab, infra: () => '<div id="cf-usage"><div style="color:var(--muted);font-size:12px;">Chargement…</div></div>' };
   let tab = window._statsTab && tabs[window._statsTab] ? window._statsTab : 'audience';
+  const seen0 = deps.reportsSeen?.() || 0;   // rapports plus récents = non lus (pastille jusqu'à l'ouverture de l'onglet Qualité)
+  const unread = (ctx.reports || []).filter(r => r.ts > seen0).length;
+  let seen = false;
 
   const draw = () => {
+    if (tab === 'qualite' && ctx.reports?.length && !seen) { seen = true; deps.markReportsSeen?.(Math.max(...ctx.reports.map(r => r.ts))); }
     container.innerHTML = `<div class="stats-tabs">${TABS.map(([id, label]) =>
-      `<button class="stats-tab${id === tab ? ' active' : ''}" data-tab="${id}">${label}</button>`).join('')}</div>
+      `<button class="stats-tab${id === tab ? ' active' : ''}" data-tab="${id}">${label}${id === 'qualite' && unread && !seen ? ` <span class="filter-count">${unread}</span>` : ''}</button>`).join('')}</div>
       <div class="stats-tab-body">${tabs[tab](s, ctx, esc)}</div>`;
     if (tab === 'infra') infraTab(container.querySelector('#cf-usage'), deps, esc);
   };
