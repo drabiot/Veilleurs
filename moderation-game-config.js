@@ -56,15 +56,11 @@ function _renderGameConfig() {
 
   for (let i = 0; i < _gcPaliers.length; i++) {
     const p = _gcPaliers[i];
-    const numId = typeof p.id === 'number' || (p.id !== '' && !isNaN(Number(p.id)));
     html += `
         <div style="${S.row}" id="gc-palier-row-${i}">
           <span style="${S.label}">ID</span>
-          ${numId
-            ? `<input type="number" min="1" max="99" value="${p.id}" style="${S.inp}width:110px;"
-            data-gc="id" data-idx="${i}" oninput="gcUpdatePalier(${i},'id',+this.value)">`
-            : `<input type="text" value="${p.id}" readonly title="ID texte réservé, non modifiable" style="${S.inp}width:110px;opacity:.8;"
-            data-gc="id" data-idx="${i}">`}
+          <input type="text" value="${escHtml(String(p.id))}" placeholder="ex : 4 ou event" title="Nombre (4, -1…) ou texte (event, archive…) : lettres, chiffres, _ et - uniquement" style="${S.inp}width:110px;"
+            data-gc="id" data-idx="${i}" oninput="gcSetPalierId(${i},this)">
           <span style="${S.label}">Label</span>
           <input type="text" value="${p.label}" style="${S.inp}flex:1;"
             data-gc="label" data-idx="${i}" oninput="gcUpdatePalier(${i},'label',this.value)">
@@ -98,6 +94,12 @@ function _renderGameConfig() {
 }
 
 window.gcUpdatePalier = (idx, field, val) => { _gcPaliers[idx][field] = val; };
+// ID de palier : nombre (4, -1) ou texte libre (event, archive…) ; un ID purement numérique est stocké en nombre
+window.gcSetPalierId = (idx, inp) => {
+  const v = inp.value.replace(/[^\w-]+/g, '');
+  if (v !== inp.value) inp.value = v;
+  _gcPaliers[idx].id = /^-?\d+$/.test(v) ? Number(v) : v;
+};
 
 window.gcAddPalier = () => {
   const maxId = _gcPaliers.reduce((m, p) => Math.max(m, Number.isFinite(Number(p.id)) ? Number(p.id) : 0), 0);
@@ -119,7 +121,12 @@ window.saveGameConfig = async () => {
 
   // Validation
   const ids = _gcPaliers.map(p => p.id);
-  if (new Set(ids).size !== ids.length) {
+  if (ids.some(id => String(id) === '' || id == null)) {
+    toast('⚠️ Chaque palier doit avoir un ID', 'warning');
+    btn.disabled = false; btn.textContent = '💾 Sauvegarder';
+    return;
+  }
+  if (new Set(ids.map(String)).size !== ids.length) {
     toast('⚠️ Les IDs de palier doivent être uniques', 'warning');
     btn.disabled = false; btn.textContent = '💾 Sauvegarder';
     return;
