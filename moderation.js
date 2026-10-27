@@ -677,7 +677,7 @@ const _toastImageRenames = pairs => pairs.length && toast(
   '🖼️ Texture : le chemin a changé. Renomme le fichier dans le dépôt (img/…) : ' + pairs.map(([a, b]) => `${a.split('/').pop()} → ${b.split('/').pop()}`).join(', '),
   'warning', 14000);
 
-_lazyPanel(() => import('./moderation-item-sync.js?v=0'), ['_syncPnjObtain', '_syncMobObtain', '_syncItemObtain', '_recordItemRename', '_renameItemReferences']);
+_lazyPanel(() => import('./moderation-item-sync.js?v=3d35868a'), ['_syncPnjObtain', '_syncMobObtain', '_syncItemObtain', '_recordItemRename', '_renameItemReferences']);
 
 
 
@@ -783,7 +783,7 @@ window.toggleSidebarSection = (id) => {
   if (chev) chev.textContent   = open ? '▾' : '▸';
 };
 
-_lazyPanel(() => import('./moderation-quality.js?v=f4b85019'), ['showCompletion', 'loadCompletion', 'renderCompletion', 'ignoreCompletionDoc', 'unignoreCompletionDoc', 'saveTableauDeChasse', 'saveCompletionFields', 'openCompletionInCreator', 'showCreatorValidation', 'loadCreatorValidation', '_setCvMode', '_setCvSubMode', '_onCvToggle', 'saveCreatorValidation']);
+_lazyPanel(() => import('./moderation-quality.js?v=ba2f8052'), ['showCompletion', 'loadCompletion', 'renderCompletion', 'ignoreCompletionDoc', 'unignoreCompletionDoc', 'saveTableauDeChasse', 'saveCompletionFields', 'openCompletionInCreator', 'showCreatorValidation', 'loadCreatorValidation', '_setCvMode', '_setCvSubMode', '_onCvToggle', 'saveCreatorValidation']);
 
 
 // ── Auto-scroll pendant le drag dans n'importe quelle liste draggable ──
@@ -884,5 +884,5 @@ window.showApiItems = async function showApiItems() {
 };
 
 // Couche « qualité des données » : observe les onglets-listes dès le chargement, donc importée tout de suite (et non au premier clic)
-import('./moderation-dq.js?v=0').then(m => m.init(_getPanelCtx())).catch(e => console.warn('[mod] couche qualité indisponible', e));
+import('./moderation-dq.js?v=e70bf703').then(m => m.init(_getPanelCtx())).catch(e => console.warn('[mod] couche qualité indisponible', e));
 
