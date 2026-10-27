@@ -294,7 +294,7 @@ export function renderStats(container, s, ctx, deps) {
   draw();
 
   container.onclick = async e => {
-    const t = e.target.closest('.stats-tab');
+    const t = e.target.closest('.stats-tab[data-tab]');
     if (t) { tab = window._statsTab = t.dataset.tab; draw(); return; }
 
     const per = e.target.closest('[data-period]');

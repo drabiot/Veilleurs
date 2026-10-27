@@ -9778,7 +9778,7 @@ window.loadStatistiques = async function loadStatistiques() {
   const container = document.getElementById('stats-content');
   container.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const { renderStats, statsDay } = await import('./stats-page.js?v=2');
+    const { renderStats, statsDay } = await import('./stats-page.js?v=3');
     const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
     const [summary, repSnap, items] = await Promise.all([
       _fetchStats('summary', {
