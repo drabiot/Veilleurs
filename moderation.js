@@ -9570,7 +9570,7 @@ window.loadTagRules = async function() {
   renderTagRulesList();
 };
 
-_lazyPanel(() => import('./moderation-tags.js?v=0'), ['showTagsPanel', 'updateTagRuleValueOptions', 'loadTagRules', 'addTagRule', 'deleteTagRule', 'seedDefaultTagRules', 'applyTagRules']);
+_lazyPanel(() => import('./moderation-tags.js?v=318e5764'), ['showTagsPanel', 'updateTagRuleValueOptions', 'loadTagRules', 'addTagRule', 'deleteTagRule', 'seedDefaultTagRules', 'applyTagRules']);
 
 window.addTagRule = async function() {
   const field = document.getElementById('tag-rule-field')?.value;
