@@ -1202,14 +1202,38 @@ function onObtainTypeChange(ev) {
     addBtn.disabled = true;
     addBtn.style.display = 'none';
 
-  } else if (type === 'forge' || type === 'altar') {
+  } else if (type === 'altar') {
+    // Niveau de l'Altar : champ libre, chiffres uniquement ; la phrase s'affiche en direct
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;gap:10px;align-items:center;width:100%;';
+    const lvl = document.createElement('input');
+    lvl.type = 'text'; lvl.id = 'obtain-altar-level'; lvl.inputMode = 'numeric'; lvl.autocomplete = 'off';
+    lvl.placeholder = 'Niveau';
+    lvl.title = "Niveau de l'Altar (chiffres uniquement)";
+    lvl.style.cssText = 'width:90px;height:38px;flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-size:13px;outline:none;';
+    const hint = document.createElement('div');
+    hint.style.cssText = 'font-size:12px;color:var(--muted);';
+    const sync = () => {
+      lvl.value = lvl.value.replace(/\D+/g, '');
+      const v = lvl.value;
+      hint.textContent = (OBTAIN_TEXTS.altar_level || '').replace('{level}', v || 'x');
+      addBtn.disabled = !v || obtainSources.some(s => s.type === 'altar' && String(s.level) === String(Number(v)));
+    };
+    lvl.addEventListener('input', sync);
+    lvl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (!addBtn.disabled) addObtainSource(); } });
+    wrap.append(lvl, hint);
+    container.appendChild(wrap);
+    sync();
+    addBtn.style.display = '';
+
+  } else if (type === 'forge') {
     const hint = document.createElement('div');
     hint.style.cssText = 'height:38px;display:flex;align-items:center;padding:0 10px;font-size:12px;color:var(--muted);';
     hint.textContent = OBTAIN_TEXTS[type] || type;
     container.appendChild(hint);
     addBtn.disabled = obtainSources.some(s => s.type === type);
     addBtn.style.display = '';
-    // Choisir « Forge » / « Altar » dans la liste l'ajoute directement (pas de clic sur « + Ajouter »)
+    // Choisir « Forge » dans la liste l'ajoute directement (pas de clic sur « + Ajouter »)
     if (ev && ev.type === 'change' && !addBtn.disabled) addObtainSource();
 
   } else if (type === 'ressource') {
@@ -1347,7 +1371,20 @@ function addObtainSource() {
     return;
   }
 
-  if (type === 'forge' || type === 'altar') {
+  if (type === 'altar') {
+    const inp = document.getElementById('obtain-altar-level');
+    const v = (inp?.value || '').trim();
+    if (!/^\d+$/.test(v)) return;
+    const level = Number(v);
+    if (obtainSources.some(s => s.type === 'altar' && s.level === level)) return;
+    obtainSources.push({ uid: obtainUid++, type: 'altar', level });
+    if (inp) { inp.value = ''; inp.dispatchEvent(new Event('input')); }
+    renderObtainSources();
+    update();
+    return;
+  }
+
+  if (type === 'forge') {
     if (obtainSources.some(s => s.type === type)) return;
     obtainSources.push({ uid: obtainUid++, type });
     document.getElementById('obtain-add-btn').disabled = true;
@@ -1422,7 +1459,9 @@ function addObtainSource() {
 function removeObtainSource(uid) {
   obtainSources = obtainSources.filter(s => s.uid !== uid);
   renderObtainSources();
-  { const _t = document.getElementById('obtain-type').value; if (_t === 'forge' || _t === 'altar') document.getElementById('obtain-add-btn').disabled = obtainSources.some(s => s.type === _t); }
+  { const _t = document.getElementById('obtain-type').value;
+    if (_t === 'forge') document.getElementById('obtain-add-btn').disabled = obtainSources.some(s => s.type === _t);
+    else if (_t === 'altar') document.getElementById('obtain-altar-level')?.dispatchEvent(new Event('input')); }
   // Rafraîchit le loot picker si un mob est sélectionné
   if (document.getElementById('obtain-type').value === 'mob') {
     const mobId = obtainDrop?.getValue();
@@ -1467,7 +1506,7 @@ function renderObtainSources() {
     } else if (s.type === 'forge') {
       label += `<b>${OBTAIN_TEXTS.forge || 'Forge'}</b>`;
     } else if (s.type === 'altar') {
-      label += `<b>${OBTAIN_TEXTS.altar || 'Altar'}</b>`;
+      label += `<b>${s.level != null ? (OBTAIN_TEXTS.altar_level || '').replace('{level}', s.level) : (OBTAIN_TEXTS.altar || 'Altar')}</b>`;
     } else if (s.type === 'ressource') {
       if (s.coords) {
         label += `📍 <b>X</b> ${s.coords.x} <b>Z</b> ${s.coords.z}`;
@@ -1556,6 +1595,8 @@ function parseObtainText(text, itemId, itemName) {
       continue;
     }
     if (/^(\[obtain:forge\]|Fabricable à la Forge( du Fractured Underworld)?)$/.test(t)) { sources.push({ uid: obtainUid++, type: 'forge' }); continue; }
+    { const am = t.match(/^(?:\[obtain:altar:(\d+)\]|Fabricable au level (\d+) de l'Altar à Rulid dans le Fractured Underworld( \(187,71,234\))?)$/);
+      if (am) { sources.push({ uid: obtainUid++, type: 'altar', level: Number(am[1] ?? am[2]) }); continue; } }
     if (/^(\[obtain:altar\]|Fabricable à l'Altar de Rulid dans le Fractured Underworld( \(187,71,234\))?)$/.test(t)) { sources.push({ uid: obtainUid++, type: 'altar' }); continue; }
     const artM = t.match(/^Fabricable au \[npc:([^|]+)\|([^\]]+)\](?: de .*)?$/);
     if (artM) {
@@ -1656,7 +1697,7 @@ function buildObtainText() {
     }
   }
   if (forges.length)            parts.push('[obtain:forge]');
-  if (altars.length)            parts.push('[obtain:altar]');
+  for (const a of altars)       parts.push(a.level != null ? `[obtain:altar:${a.level}]` : '[obtain:altar]');
   for (const a of autres)       parts.push(`Autre source — ${a.desc}`);
   // Anciens formats
   for (const c of coffres)      parts.push(`Trouvable dans un coffre — ${c.desc}`);

@@ -212,11 +212,13 @@ function withAutoObtain(item, text) {
 const OBTAIN_TEXTS = {
   "forge": "Fabricable à la Forge du Fractured Underworld",
   "altar": "Fabricable à l'Altar de Rulid dans le Fractured Underworld (187,71,234)",
+  "altar_level": "Fabricable au level {level} de l'Altar à Rulid dans le Fractured Underworld (187,71,234)",
 };
 function resolveObtain(str) {
 	if (typeof str !== 'string') return str;
 	// « Autre source — » est un préfixe de stockage : à l'affichage, seul le texte saisi apparaît
-	return str.replace(/\[obtain:([\w-]+)\]/g, (m, id) => OBTAIN_TEXTS[id] ?? id).replace(/^Autre source — /gm, '').replace(/\((-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\)/g, '($1,$2,$3)');
+	// [obtain:<id>] ou [obtain:<id>:<niveau>] (ex. [obtain:altar:3] → texte « <id>_level » avec {level} remplacé)
+	return str.replace(/\[obtain:([\w-]+)(?::(\d+))?\]/g, (m, id, lvl) => lvl && OBTAIN_TEXTS[id + '_level'] ? OBTAIN_TEXTS[id + '_level'].replace('{level}', lvl) : (OBTAIN_TEXTS[id] ?? id)).replace(/^Autre source — /gm, '').replace(/\((-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\)/g, '($1,$2,$3)');
 }
 //#endregion OBTAIN_TEXTS
 //#region EVENT_NAMES

@@ -12,7 +12,7 @@ const OBTAIN_STRUCTURED_PATTERNS = [
   /^-\s*\[([^|]+)\|([^\]]+)\]\[([^\]]+)\]$/,
   /^Obtenable en récompense du \[npc:[^|]+\|[^\]]+\]$/,
   /^Fabricable au \[npc:[^|]+\|[^\]]+\]$/,
-  /^\[obtain:[\w-]+\]$/,
+  /^\[obtain:[\w-]+(?::\d+)?\]$/,
   /^Fabricable à la Forge( du Fractured Underworld)?$/,
   /^Achetable au \[npc:[^|]+\|[^\]]+\]$/,
   /^Récompense de la quête \[quest:[^|]+\|[^\]]+\]$/,
