@@ -1918,7 +1918,7 @@ window.showSubmissions = function showSubmissions() {
 }
 
 
-_lazyPanel(() => import('./moderation-integrity.js?v=0'), ['showGhostIds', 'showSelfCraft', 'showDeadLinks', 'showOrphanIds', '_goToSubmission', 'showRegionOrphans', 'loadRegionOrphans', 'showMobOrphans', 'loadMobOrphans', 'loadDeadLinks', 'loadOrphanIds', '_refreshOrphanCount', 'loadGhostIds']);
+_lazyPanel(() => import('./moderation-integrity.js?v=7fccedbe'), ['showGhostIds', 'showSelfCraft', 'showDeadLinks', 'showOrphanIds', '_goToSubmission', 'showRegionOrphans', 'loadRegionOrphans', 'showMobOrphans', 'loadMobOrphans', 'loadDeadLinks', 'loadOrphanIds', '_refreshOrphanCount', 'loadGhostIds']);
 
 
 // ══════════════════════════════════════════════════════
@@ -1935,7 +1935,7 @@ const _edCache = { regions: null, sets: null };
 const _shared = {};
 const _orderData = k => _shared[k]?.data ?? [];
 
-_lazyPanel(() => import('./moderation-editor.js?v=0'), ['cpSvDown', 'cpHueDown', 'cpHexInput', 'cpRgbInput', 'edPickPreset', 'edSwitchTab', 'edAddGenField', 'edRenameField', 'edDelGenRow', 'edOpenRegions', 'edCloseRegions', 'edFilterRegions', 'edSelectRegion', 'showEditor', 'editorGoBack', 'saveEditor', 'deleteCurrentEntry']);
+_lazyPanel(() => import('./moderation-editor.js?v=df351add'), ['cpSvDown', 'cpHueDown', 'cpHexInput', 'cpRgbInput', 'edPickPreset', 'edSwitchTab', 'edAddGenField', 'edRenameField', 'edDelGenRow', 'edOpenRegions', 'edCloseRegions', 'edFilterRegions', 'edSelectRegion', 'showEditor', 'editorGoBack', 'saveEditor', 'deleteCurrentEntry']);
 
 
 
