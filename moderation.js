@@ -219,7 +219,7 @@ window.toggleSidebar = function toggleSidebar() {
   localStorage.setItem('vcl_sidebar_hidden', hidden ? '1' : '');
 };
 
-_lazyPanel(() => import('./moderation-submissions.js?v=0'), ['loadSubmissions', 'setFilter', 'setFilterSearch', 'loadSubDiff', 'applyDiffSelection', 'modImgFile', 'modImgDrop', 'modImgClear', 'modImgPaste', 'copyCode', 'toggleDetails', 'toggleEdit', 'onEditorInput', 'openInCreator', 'openEditorInCreator', 'approve', 'reject', 'restorePending', 'requestChanges', 'bulkDeleteSubs', 'bulkApproveSubs', 'deleteSub', 'renderSubs', 'updateCounts']);
+_lazyPanel(() => import('./moderation-submissions.js?v=61da4ac3'), ['loadSubmissions', 'setFilter', 'setFilterSearch', 'loadSubDiff', 'applyDiffSelection', 'modImgFile', 'modImgDrop', 'modImgClear', 'modImgPaste', 'copyCode', 'toggleDetails', 'toggleEdit', 'onEditorInput', 'openInCreator', 'openEditorInCreator', 'approve', 'reject', 'restorePending', 'requestChanges', 'bulkDeleteSubs', 'bulkApproveSubs', 'deleteSub', 'renderSubs', 'updateCounts']);
 
 // id de région → nom affiché sur le wiki (« hanaka » → « Hanaka ») ; à défaut, l'id tel quel
 function _regionName(id) {
