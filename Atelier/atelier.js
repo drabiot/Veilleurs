@@ -2839,6 +2839,8 @@ function loadAccessoriesForClass(classId) {
   let haveQty     = {};
 
   const SIG = '🌙VCL_DRAWER_v2';
+  /* Ancien ID d'un item renommé → nouvel ID (même helper que l'IIFE principale, hors de portée ici) */
+  function _rid(id) { return window._vclResolveItemId ? window._vclResolveItemId(id) : id; }
   /* Lookup partagé — ALL_SLOTS vient de Compendium/data.js */
   const SLOTS_BY_ID = new Map(ALL_SLOTS.map(s => [s.id, s]));
 
