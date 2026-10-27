@@ -1577,7 +1577,7 @@ window.requestChanges = async (id) => {
   });
 };
 
-_lazyPanel(() => import('./moderation-orders.js?v=0'), ['showMobOrder', 'filterMobOrder', 'saveMobOrder', 'showItemOrder', 'filterItemOrder', 'saveItemOrder', 'showPnjOrder', 'filterPnjOrder', 'autoSortPnjOrder', 'savePnjOrder', 'showRegionOrder', 'filterRegionOrder', 'saveRegionOrder', 'showPanoplieOrder', 'renderPanoplieOrder', 'savePanoplieOrder', 'loadMobOrder', 'loadItemOrder', 'loadPnjOrder', 'loadRegionOrder', 'loadPanoplieOrder']);
+_lazyPanel(() => import('./moderation-orders.js?v=0ee74eeb'), ['showMobOrder', 'filterMobOrder', 'saveMobOrder', 'showItemOrder', 'filterItemOrder', 'saveItemOrder', 'showPnjOrder', 'filterPnjOrder', 'autoSortPnjOrder', 'savePnjOrder', 'showRegionOrder', 'filterRegionOrder', 'saveRegionOrder', 'showPanoplieOrder', 'renderPanoplieOrder', 'savePanoplieOrder', 'loadMobOrder', 'loadItemOrder', 'loadPnjOrder', 'loadRegionOrder', 'loadPanoplieOrder']);
 
 
 let _activePanel = 'submissions';
@@ -7903,7 +7903,7 @@ function _sensComputeImg(category, id, palier, isEvent) {
 
 _lazyPanel(() => import('./moderation-audit.js?v=24907cd5'), ['showAuditLog', 'loadAuditLog', 'renderAuditLog', 'loadAuditLogMore']);
 
-_lazyPanel(() => import('./moderation-stats.js?v=abef9ff5'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques', 'showMigration', 'sensRunKeyMigration']);
+_lazyPanel(() => import('./moderation-stats.js?v=4d38d6b4'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques', 'showMigration', 'sensRunKeyMigration']);
 
 
 _lazyPanel(() => import('./moderation-tags.js?v=922eadc4'), ['showTagsPanel', 'updateTagRuleValueOptions', 'loadTagRules', 'addTagRule', 'deleteTagRule', 'seedDefaultTagRules', 'applyTagRules']);
