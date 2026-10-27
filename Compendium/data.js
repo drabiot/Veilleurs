@@ -211,6 +211,7 @@ function withAutoObtain(item, text) {
    (Garder l'objet sur plusieurs lignes, clés entre guillemets : le Worker Cloudflare le relit tel quel.) */
 const OBTAIN_TEXTS = {
   "forge": "Fabricable à la Forge du Fractured Underworld",
+  "altar": "Fabricable à l'Altar de Rulid dans le Fractured Underworld (187,71,234)",
 };
 function resolveObtain(str) {
 	if (typeof str !== 'string') return str;

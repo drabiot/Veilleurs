@@ -1113,6 +1113,7 @@ const OBTAIN_PLACEHOLDERS = {
   quete:     'Rechercher une quête…',
   ressource: 'Rechercher une région…',
   forge:     'Fabricable à la Forge du Fractured Underworld',
+  altar:     'Fabricable à l\'Altar de Rulid dans le Fractured Underworld (187,71,234)',
   autre:     'Pour des cas particuliers, détaillez ici précisément le moyen d\'obtention de cet item.',
 };
 
@@ -1201,14 +1202,14 @@ function onObtainTypeChange(ev) {
     addBtn.disabled = true;
     addBtn.style.display = 'none';
 
-  } else if (type === 'forge') {
+  } else if (type === 'forge' || type === 'altar') {
     const hint = document.createElement('div');
     hint.style.cssText = 'height:38px;display:flex;align-items:center;padding:0 10px;font-size:12px;color:var(--muted);';
-    hint.textContent = OBTAIN_TEXTS.forge || 'forge';
+    hint.textContent = OBTAIN_TEXTS[type] || type;
     container.appendChild(hint);
-    addBtn.disabled = obtainSources.some(s => s.type === 'forge');
+    addBtn.disabled = obtainSources.some(s => s.type === type);
     addBtn.style.display = '';
-    // Choisir « Forge » dans la liste l'ajoute directement (pas de clic sur « + Ajouter »)
+    // Choisir « Forge » / « Altar » dans la liste l'ajoute directement (pas de clic sur « + Ajouter »)
     if (ev && ev.type === 'change' && !addBtn.disabled) addObtainSource();
 
   } else if (type === 'ressource') {
@@ -1346,9 +1347,9 @@ function addObtainSource() {
     return;
   }
 
-  if (type === 'forge') {
-    if (obtainSources.some(s => s.type === 'forge')) return;
-    obtainSources.push({ uid: obtainUid++, type: 'forge' });
+  if (type === 'forge' || type === 'altar') {
+    if (obtainSources.some(s => s.type === type)) return;
+    obtainSources.push({ uid: obtainUid++, type });
     document.getElementById('obtain-add-btn').disabled = true;
     renderObtainSources();
     update();
@@ -1421,7 +1422,7 @@ function addObtainSource() {
 function removeObtainSource(uid) {
   obtainSources = obtainSources.filter(s => s.uid !== uid);
   renderObtainSources();
-  if (document.getElementById('obtain-type').value === 'forge') document.getElementById('obtain-add-btn').disabled = obtainSources.some(s => s.type === 'forge');
+  { const _t = document.getElementById('obtain-type').value; if (_t === 'forge' || _t === 'altar') document.getElementById('obtain-add-btn').disabled = obtainSources.some(s => s.type === _t); }
   // Rafraîchit le loot picker si un mob est sélectionné
   if (document.getElementById('obtain-type').value === 'mob') {
     const mobId = obtainDrop?.getValue();
@@ -1430,7 +1431,7 @@ function removeObtainSource(uid) {
   update();
 }
 
-const OBTAIN_ICONS = { mob:'🗡️', donjon:'🏰', pnj:'🧑', artisant:'🔨', marchand:'🛒', quete:'📜', ressource:'🌿', forge:'⚒️', autre:'💬', coffre:'🎁', event:'🎊', exploration:'🗺️' };
+const OBTAIN_ICONS = { mob:'🗡️', donjon:'🏰', pnj:'🧑', artisant:'🔨', marchand:'🛒', quete:'📜', ressource:'🌿', forge:'⚒️', altar:'🔮', autre:'💬', coffre:'🎁', event:'🎊', exploration:'🗺️' };
 
 function renderObtainSources() {
   const list = document.getElementById('obtain-sources-list');
@@ -1465,6 +1466,8 @@ function renderObtainSources() {
       }
     } else if (s.type === 'forge') {
       label += `<b>${OBTAIN_TEXTS.forge || 'Forge'}</b>`;
+    } else if (s.type === 'altar') {
+      label += `<b>${OBTAIN_TEXTS.altar || 'Altar'}</b>`;
     } else if (s.type === 'ressource') {
       if (s.coords) {
         label += `📍 <b>X</b> ${s.coords.x} <b>Z</b> ${s.coords.z}`;
@@ -1553,6 +1556,7 @@ function parseObtainText(text, itemId, itemName) {
       continue;
     }
     if (/^(\[obtain:forge\]|Fabricable à la Forge( du Fractured Underworld)?)$/.test(t)) { sources.push({ uid: obtainUid++, type: 'forge' }); continue; }
+    if (/^(\[obtain:altar\]|Fabricable à l'Altar de Rulid dans le Fractured Underworld( \(187,71,234\))?)$/.test(t)) { sources.push({ uid: obtainUid++, type: 'altar' }); continue; }
     const artM = t.match(/^Fabricable au \[npc:([^|]+)\|([^\]]+)\](?: de .*)?$/);
     if (artM) {
       const [, id, name] = artM;
@@ -1615,6 +1619,7 @@ function buildObtainText() {
   const quetes      = obtainSources.filter(s => s.type === 'quete');
   const ressources  = obtainSources.filter(s => s.type === 'ressource');
   const forges      = obtainSources.filter(s => s.type === 'forge');
+  const altars      = obtainSources.filter(s => s.type === 'altar');
   const autres      = obtainSources.filter(s => s.type === 'autre');
   // Anciens formats conservés pour ne pas perdre de données
   const coffres     = obtainSources.filter(s => s.type === 'coffre');
@@ -1651,6 +1656,7 @@ function buildObtainText() {
     }
   }
   if (forges.length)            parts.push('[obtain:forge]');
+  if (altars.length)            parts.push('[obtain:altar]');
   for (const a of autres)       parts.push(`Autre source — ${a.desc}`);
   // Anciens formats
   for (const c of coffres)      parts.push(`Trouvable dans un coffre — ${c.desc}`);
