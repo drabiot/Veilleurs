@@ -15,7 +15,8 @@ function walk(dir, out = []) {
   }
   return out;
 }
-const hash = f => crypto.createHash('sha1').update(fs.readFileSync(f)).digest('hex').slice(0, 8);
+// fins de ligne normalisées : même hash sous Windows (CRLF) et sur le serveur (LF)
+const hash = f => crypto.createHash('sha1').update(fs.readFileSync(f, 'utf8').split('\r\n').join('\n')).digest('hex').slice(0, 8);
 const RE = /((?:\.{0,2}\/)?[\w./-]+\.(?:js|css|mjs))\?v=([\w-]+)/g;
 
 const files = walk(ROOT);
