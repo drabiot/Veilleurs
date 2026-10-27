@@ -1202,38 +1202,14 @@ function onObtainTypeChange(ev) {
     addBtn.disabled = true;
     addBtn.style.display = 'none';
 
-  } else if (type === 'altar') {
-    // Niveau de l'Altar : champ libre, chiffres uniquement ; la phrase s'affiche en direct
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;gap:10px;align-items:center;width:100%;';
-    const lvl = document.createElement('input');
-    lvl.type = 'text'; lvl.id = 'obtain-altar-level'; lvl.inputMode = 'numeric'; lvl.autocomplete = 'off';
-    lvl.placeholder = 'Niveau';
-    lvl.title = "Niveau de l'Altar (chiffres uniquement)";
-    lvl.style.cssText = 'width:90px;height:38px;flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-size:13px;outline:none;';
-    const hint = document.createElement('div');
-    hint.style.cssText = 'font-size:12px;color:var(--muted);';
-    const sync = () => {
-      lvl.value = lvl.value.replace(/\D+/g, '');
-      const v = lvl.value;
-      hint.textContent = (OBTAIN_TEXTS.altar_level || '').replace('{level}', v || 'x');
-      addBtn.disabled = !v || obtainSources.some(s => s.type === 'altar' && String(s.level) === String(Number(v)));
-    };
-    lvl.addEventListener('input', sync);
-    lvl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (!addBtn.disabled) addObtainSource(); } });
-    wrap.append(lvl, hint);
-    container.appendChild(wrap);
-    sync();
-    addBtn.style.display = '';
-
-  } else if (type === 'forge') {
+  } else if (type === 'forge' || type === 'altar') {
     const hint = document.createElement('div');
     hint.style.cssText = 'height:38px;display:flex;align-items:center;padding:0 10px;font-size:12px;color:var(--muted);';
-    hint.textContent = OBTAIN_TEXTS[type] || type;
+    hint.textContent = type === 'altar' ? (OBTAIN_TEXTS.altar_level || '').replace('{level}', 'x') : (OBTAIN_TEXTS[type] || type);
     container.appendChild(hint);
     addBtn.disabled = obtainSources.some(s => s.type === type);
     addBtn.style.display = '';
-    // Choisir « Forge » dans la liste l'ajoute directement (pas de clic sur « + Ajouter »)
+    // Choisir « Forge » / « Altar » dans la liste crée directement la ligne (Altar : niveau 1, modifiable ensuite dans la ligne)
     if (ev && ev.type === 'change' && !addBtn.disabled) addObtainSource();
 
   } else if (type === 'ressource') {
@@ -1371,22 +1347,9 @@ function addObtainSource() {
     return;
   }
 
-  if (type === 'altar') {
-    const inp = document.getElementById('obtain-altar-level');
-    const v = (inp?.value || '').trim();
-    if (!/^\d+$/.test(v)) return;
-    const level = Number(v);
-    if (obtainSources.some(s => s.type === 'altar' && s.level === level)) return;
-    obtainSources.push({ uid: obtainUid++, type: 'altar', level });
-    if (inp) { inp.value = ''; inp.dispatchEvent(new Event('input')); }
-    renderObtainSources();
-    update();
-    return;
-  }
-
-  if (type === 'forge') {
+  if (type === 'forge' || type === 'altar') {
     if (obtainSources.some(s => s.type === type)) return;
-    obtainSources.push({ uid: obtainUid++, type });
+    obtainSources.push(type === 'altar' ? { uid: obtainUid++, type, level: 1 } : { uid: obtainUid++, type });
     document.getElementById('obtain-add-btn').disabled = true;
     renderObtainSources();
     update();
@@ -1456,12 +1419,20 @@ function addObtainSource() {
   update();
 }
 
+// Modifie le niveau d'une ligne Altar (chiffres uniquement ; vide = ancien format sans niveau)
+function setAltarLevel(uid, inp) {
+  inp.value = inp.value.replace(/\D+/g, '');
+  const s = obtainSources.find(x => x.uid === uid);
+  if (!s) return;
+  s.level = inp.value === '' ? undefined : Number(inp.value);
+  update();
+}
+window.setAltarLevel = setAltarLevel;
+
 function removeObtainSource(uid) {
   obtainSources = obtainSources.filter(s => s.uid !== uid);
   renderObtainSources();
-  { const _t = document.getElementById('obtain-type').value;
-    if (_t === 'forge') document.getElementById('obtain-add-btn').disabled = obtainSources.some(s => s.type === _t);
-    else if (_t === 'altar') document.getElementById('obtain-altar-level')?.dispatchEvent(new Event('input')); }
+  { const _t = document.getElementById('obtain-type').value; if (_t === 'forge' || _t === 'altar') document.getElementById('obtain-add-btn').disabled = obtainSources.some(s => s.type === _t); }
   // Rafraîchit le loot picker si un mob est sélectionné
   if (document.getElementById('obtain-type').value === 'mob') {
     const mobId = obtainDrop?.getValue();
@@ -1506,7 +1477,8 @@ function renderObtainSources() {
     } else if (s.type === 'forge') {
       label += `<b>${OBTAIN_TEXTS.forge || 'Forge'}</b>`;
     } else if (s.type === 'altar') {
-      label += `<b>${s.level != null ? (OBTAIN_TEXTS.altar_level || '').replace('{level}', s.level) : (OBTAIN_TEXTS.altar || 'Altar')}</b>`;
+      const [pre, post] = (OBTAIN_TEXTS.altar_level || '{level}').split('{level}');
+      label += `<b>${pre}<input type="text" inputmode="numeric" autocomplete="off" value="${s.level ?? ''}" title="Niveau de l'Altar (chiffres uniquement)" oninput="setAltarLevel(${s.uid}, this)" style="width:46px;height:22px;margin:0 3px;text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font:inherit;outline:none;">${post}</b>`;
     } else if (s.type === 'ressource') {
       if (s.coords) {
         label += `📍 <b>X</b> ${s.coords.x} <b>Z</b> ${s.coords.z}`;
@@ -1697,7 +1669,7 @@ function buildObtainText() {
     }
   }
   if (forges.length)            parts.push('[obtain:forge]');
-  for (const a of altars)       parts.push(a.level != null ? `[obtain:altar:${a.level}]` : '[obtain:altar]');
+  for (const a of altars)       parts.push(Number.isFinite(a.level) ? `[obtain:altar:${a.level}]` : '[obtain:altar]');
   for (const a of autres)       parts.push(`Autre source — ${a.desc}`);
   // Anciens formats
   for (const c of coffres)      parts.push(`Trouvable dans un coffre — ${c.desc}`);
