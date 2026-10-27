@@ -61,9 +61,9 @@ function _renderGameConfig() {
         <div style="${S.row}" id="gc-palier-row-${i}">
           <span style="${S.label}">ID</span>
           ${numId
-            ? `<input type="number" min="1" max="99" value="${p.id}" style="${S.inp}width:64px;"
+            ? `<input type="number" min="1" max="99" value="${p.id}" style="${S.inp}width:110px;"
             data-gc="id" data-idx="${i}" oninput="gcUpdatePalier(${i},'id',+this.value)">`
-            : `<input type="text" value="${p.id}" readonly title="ID texte réservé, non modifiable" style="${S.inp}width:96px;opacity:.8;"
+            : `<input type="text" value="${p.id}" readonly title="ID texte réservé, non modifiable" style="${S.inp}width:110px;opacity:.8;"
             data-gc="id" data-idx="${i}">`}
           <span style="${S.label}">Label</span>
           <input type="text" value="${p.label}" style="${S.inp}flex:1;"
