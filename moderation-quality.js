@@ -5,7 +5,7 @@
 
 export function init(ctx) {
 const { cachedDocs, invalidateModCache, escHtml, _SUB_COL_MAP, setHash: _setHash, showPanel: _showPanel, db, hasRole, COL, getDoc, doc, updateDoc, setDoc, toast, modal, collection, getDocs } = ctx;
-const _dqSort = p => window._dqSort(p), _dqRank = p => window._dqRank(p);
+const _dqSort = p => window._dqSort?.(p) ?? 'default', _dqRank = p => window._dqRank?.(p) ?? 3000;
 // ── Completion panel ───────────────────────────────────
 
 // Définitions des champs pour les inputs guidés
@@ -436,7 +436,7 @@ window.renderCompletion = function renderCompletion() {
   const isIgnored = r => _completionIgnored?.[r.mode]?.has(r.doc.id || '');
   let results = _completionResults.filter(r => !isIgnored(r));
   if (filterField) results = results.filter(r => r.missing.includes(filterField));
-  if (window._dqSort('completion-panel') === 'palier') results = [...results].sort((a, b) => window._dqRank(a.doc.palier) - window._dqRank(b.doc.palier));
+  if (_dqSort('completion-panel') === 'palier') results = [...results].sort((a, b) => window._dqRank(a.doc.palier) - window._dqRank(b.doc.palier));
 
   list.innerHTML = '';
 
