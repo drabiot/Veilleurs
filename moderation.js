@@ -16539,7 +16539,7 @@ window.addEffectTemplate = function addEffectTemplate() {
   switchEffectsTab('templates');
 };
 
-_lazyPanel(() => import('./moderation-bugs.js?v=0'), ['showBugsConnus', '_loadBugsConnus', 'saveBugForm', 'startEditBug', 'cancelEditBug', 'saveEditBug', 'deleteBug']);
+_lazyPanel(() => import('./moderation-bugs.js?v=b25b387d'), ['showBugsConnus', '_loadBugsConnus', 'saveBugForm', 'startEditBug', 'cancelEditBug', 'saveEditBug', 'deleteBug']);
 
 // ══════════════════════════════════════════════════════
 //  ONGLET API (items SAO) — logique dans moderation-api-items.js
