@@ -1,0 +1,33 @@
+name: Lint data
+
+# Vérifie les données du wiki (items + panoplies lus en direct depuis le worker) avec les mêmes règles que data-linter.html.
+# Les données vivent en base, pas dans git : on contrôle donc chaque jour, et à chaque modif du linter.
+# Échec = une règle a plus d'erreurs que dans tools/lint-baseline.json (GitHub envoie alors un mail).
+on:
+  schedule:
+    - cron: '41 5 * * *'
+  push:
+    branches: [main]
+    paths: ['data-linter.html', 'tools/lint-data.js', 'tools/lint-baseline.json', 'Compendium/data.js', 'Bestiaire/mob_data.js', 'utils.js']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Linter
+        run: node tools/lint-data.js | tee lint.txt; exit ${PIPESTATUS[0]}
+        shell: bash
+      - name: Résumé
+        if: always()
+        run: |
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tail -n 60 lint.txt >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
