@@ -11,7 +11,7 @@
 // ══════════════════════════════════════════════════════════════
 
 // ── Constantes ──────────────────────────────────────────────
-import { handleStoreRead, handleStoreWrite } from './worker-store.js';
+import { handleStoreRead, handleStoreWrite, authUid } from './worker-store.js';
 
 const FIREBASE_KEY   = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
 const CF_ACCOUNT_ID  = 'db3d4d15175ddbfbd2720490acc8fb53'; // identifiant public du compte Cloudflare (pas un secret)
@@ -84,6 +84,7 @@ export default {
     if (_path === '/db/resync' && request.method === 'POST') return handleDbResync(request, env);
     if (_path === '/me' && request.method === 'POST') return handleMe(request, env);
     if (_path === '/track' && request.method === 'POST') return handleTrack(request, env);
+    if (_path === '/track/merge' && request.method === 'POST') return handleTrackMerge(request, env);
     if (_path === '/stats' && request.method === 'POST') return handleStats(request, env);
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
@@ -458,6 +459,39 @@ async function handleTrack(request, env) {
   }
   try { await env.DB.batch(stmts); } catch (e) { return json({ error: 'Écriture impossible' }, 500); }
   return json({ ok: true });
+}
+
+/** POST /track/merge { idToken, anonId } : à la connexion, les stats du profil anonyme `anon_…` de ce navigateur
+ *  sont additionnées à celles du compte, puis le profil anonyme est supprimé (donc idempotent : un 2e appel ne fait rien). */
+async function handleTrackMerge(request, env) {
+  if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
+  const anonId = String(body?.anonId || '');
+  if (!/^anon_[A-Za-z0-9_\-]{1,100}$/.test(anonId)) return json({ error: 'anonId invalide' }, 400);
+  const uid = await authUid(String(body.idToken || ''), env);
+  if (!uid || !TRACK_ID_RE.test(uid)) return json({ error: 'Non connecté' }, 401);
+
+  const get = id => env.DB.prepare("SELECT data FROM track_docs WHERE col = 'user_visits' AND id = ?").bind(id).first();
+  const [a, m] = await Promise.all([get(anonId), get(uid)]);
+  if (!a) return json({ ok: true, merged: false });
+  const anon = JSON.parse(a.data), mem = m ? JSON.parse(m.data) : {};
+  const out = { ...mem };
+  for (const [k, v] of Object.entries(anon)) {
+    if (k === 'isAnonymous' || k === 'pseudo') continue;           // l'identité du compte prime
+    if (typeof v === 'number') out[k] = (typeof out[k] === 'number' ? out[k] : 0) + v;
+    else if (k === 'firstSeen') out[k] = out[k] && out[k] < v ? out[k] : v;
+    else if (k === 'lastSeen') out[k] = out[k] && out[k] > v ? out[k] : v;
+    else if (out[k] === undefined) out[k] = v;                      // noms d'items, etc.
+  }
+  out.isAnonymous = false;
+  const now = Date.now();
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO track_docs (col, id, data, updated_at) VALUES ('user_visits', ?, ?, ?) ON CONFLICT(col, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at")
+      .bind(uid, JSON.stringify(out), now),
+    env.DB.prepare("DELETE FROM track_docs WHERE col = 'user_visits' AND id = ?").bind(anonId),
+  ]);
+  return json({ ok: true, merged: true });
 }
 
 // Visiteur anonyme : doc sans isAnonymous dont l'id commence par « anon_ » (écriture partielle de profondeur de session)

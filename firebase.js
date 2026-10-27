@@ -253,6 +253,20 @@ async function _track(ops) {
   } catch {}
 }
 
+/** Connecté sur un navigateur qui avait un profil anonyme : le worker fusionne ses stats dans le compte.
+ *  La clé locale n'est retirée qu'après succès ; si le worker échoue, on réessaiera à la prochaine page. */
+async function _mergeAnonStats(user) {
+  try {
+    const anonId = localStorage.getItem('vcl_anon_id');
+    if (!anonId) return;
+    const r = await fetch(DISCORD_WORKER + '/track/merge', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anonId, idToken: await user.getIdToken() }),
+    });
+    if (r.ok) localStorage.removeItem('vcl_anon_id');
+  } catch {}
+}
+
 /** Visites des admins jamais comptées : le flag local suit l'appareil, même déconnecté. */
 async function _trackingBlocked(knownUser) {
   try {
@@ -277,6 +291,7 @@ export async function logPageView(section) {
     const unsub = onAuthStateChanged(auth, u => { unsub(); resolve(u); });
   });
   if (await _trackingBlocked(user)) return;
+  if (user) await _mergeAnonStats(user);
 
   const now   = Date.now();
   const today = _localDate();

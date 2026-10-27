@@ -42,7 +42,7 @@ const HIDDEN_CONFIG_DOCS = new Set(['discord_webhooks']); // lisible par l'admin
 
 /* ── Auth : jeton Firebase → uid (mémoire 5 min) → rôle lu dans D1 ── */
 const _tokCache = new Map();
-async function authUid(idToken, env) {
+export async function authUid(idToken, env) {
   if (!idToken) return null;
   // Tests locaux uniquement : actif seulement si la variable TEST_AUTH_SECRET existe (jamais définie en production)
   if (env && env.TEST_AUTH_SECRET && idToken.startsWith('test:' + env.TEST_AUTH_SECRET + ':')) return idToken.split(':')[2] || null;
