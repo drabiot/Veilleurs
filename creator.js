@@ -995,7 +995,7 @@ function initObtainData() {
 
   // PNJs depuis Firestore dans les listes artisan/marchand
   if (_pnjsForObtain) {
-    const _artisanTags = new Set(['forgeron_armes','forgeron_armures','forgeron_accessoires','forgeron_lingots','forgeron_cles','forgeron_items_secrets','bucheron','alchimiste','fabricant_secret']);
+    const _artisanTags = new Set(['forgeron_armes','forgeron_armures','forgeron_accessoires','forgeron_lingots','forgeron_cles','forgeron_items_secrets','bucheron','mineur','alchimiste','fabricant_secret']);
     const _marchandTags = new Set(['marchand_equipement','marchand_consommable','marchand_outils','marchand_accessoires','recyclage_accessoires','recyclage_armes','marchand_ressources','marchand_itinerant','repreneur_butin','marchand_occulte']);
     const _existArtIds = new Set(allArtisans.map(a => a.id));
     const _existMchIds = new Set(allMarchands.map(m => m.id));
@@ -6397,6 +6397,8 @@ const PNJ_TYPE_TAGS = {
   "repreneur d'armes":       "repreneur_armes",
   "refaçonneur":             "refaconneur",
   "bûcheron":                "bucheron",
+  "mineur":                  "mineur",
+  "mineur":                  "mineur",
   "alchimiste":              "alchimiste",
   "quêtes":                  "quetes",
   "quête principale":        "quete_principale",
@@ -6420,6 +6422,7 @@ const PNJ_CATEGORIES = {
   artisans: [
     "alchimiste",
     "bûcheron",
+    "mineur",
     "refaçonneur",
   ],
   commerce: [
@@ -6459,6 +6462,7 @@ const PNJ_TYPE_ICONS = {
   "forgeron de clés":        "🗝️",
   "alchimiste":              "⚗️",
   "bûcheron":                "🪓",
+  "mineur":                  "⛏️",
   "forgeron de lingots":     "🔩",
   "repreneur de butin":      "🛒",
   "repreneur d'armes":       "⚔️",
