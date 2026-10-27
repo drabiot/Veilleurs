@@ -9059,7 +9059,7 @@ window.saveQuestOrder = async () => {
   await loadQuestOrder();
 };
 
-_lazyPanel(() => import('./moderation-users.js?v=0'), ['showUsersPanel', 'loadUsers', 'filterUsers', 'suspendUser', 'unsuspendUser', 'setUserRole', 'deleteUserAccount']);
+_lazyPanel(() => import('./moderation-users.js?v=c337e72d'), ['showUsersPanel', 'loadUsers', 'filterUsers', 'suspendUser', 'unsuspendUser', 'setUserRole', 'deleteUserAccount']);
 
 window.resetHomeLeaderboard = async function resetHomeLeaderboard() {
   const ok = await modal.confirm('Remettre le classement de l\'accueil à zéro ?',
