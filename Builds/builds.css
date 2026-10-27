@@ -326,6 +326,22 @@ html, body {
   transition: all .15s; flex-shrink: 0;
 }
 .bc-btn-del:hover { border-color: rgba(220,80,80,.35); color: #e07070; background: rgba(220,80,80,.06); }
+.bc-btn-move {
+  padding: 2px 6px;
+  background: transparent; border: 1px solid transparent;
+  border-radius: 2px; color: var(--rim2);
+  font-size: 10px; cursor: pointer; line-height: 1;
+  transition: all .15s; flex-shrink: 0;
+}
+.bc-btn-move:hover { border-color: rgba(224,172,96,.35); color: var(--gold); background: rgba(224,172,96,.06); }
+.builds-grid.reorderable .build-card { cursor: grab; }
+.build-card.dragging { opacity: .4; }
+.build-card.drag-over { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(224,172,96,.35); }
+.reorder-hint {
+  padding: 8px 14px;
+  background: rgba(224,172,96,.06); border: 1px dashed rgba(224,172,96,.25);
+  border-radius: 4px; font-size: 11px; color: var(--muted);
+}
 .bc-meta {
   display: flex; align-items: center; gap: 10px;
   font-size: 10px; color: var(--muted); letter-spacing: .04em;

@@ -88,6 +88,7 @@
         <div class="filter-section">
           <div class="filter-head">⬡ Trier par</div>
           <select class="sort-select" id="sort-select">
+            <option value="manual">Ordre du wiki</option>
             <option value="createdAt">Plus récents</option>
             <option value="previewCount">Plus prévisualisés</option>
             <option value="favoriteCount">Plus favoris</option>
@@ -124,6 +125,8 @@
           🔗 Build en accès par lien uniquement — non répertorié dans le forum.
           <a href="builds.html" style="color:var(--gold);text-decoration:none;margin-left:auto;font-size:11px;">← Voir tous les builds</a>
         </div>
+
+        <div id="reorder-hint" class="reorder-hint" style="display:none"></div>
 
         <div class="builds-count" id="builds-count"></div>
 
@@ -171,14 +174,15 @@
     } from '../firebase.js';
     import {
       collection, query, where, orderBy, limit, startAfter,
-      getDoc, getDocs, doc, setDoc, deleteDoc, updateDoc, increment, serverTimestamp,
+      getDoc, getDocs, doc, setDoc, deleteDoc, updateDoc, increment, serverTimestamp, writeBatch,
     } from '../d1db.js';
     import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
     logPageView('builds');
 
     // ── État ──────────────────────────────────────────────────────
-    const PAGE_SIZE    = 24;
+    // Tout charger d'un coup : l'ordre choisi par les admins (champ `order`) est trié côté client, donc global
+    const PAGE_SIZE    = 500;
     const SIG          = "🌙𝓥𝓮𝓲𝓵𝓵𝓮𝓾𝓻𝓼 𝓪𝓾 𝓒𝓵𝓪𝓲𝓻 𝓭𝓮 𝓛𝓾𝓷𝓮🌙";
     const COL_BUILDS   = COL.buildsPublished;
     const COL_FAVS     = COL.userFavorites;
@@ -198,7 +202,9 @@
     let filterStats    = {};
     let filterFavOnly  = false;
     let filterSearch   = '';
-    let sortBy         = 'createdAt';
+    let sortBy         = 'manual';
+    let shownBuilds    = [];   // liste affichée (filtrée + triée), base du réordonnancement admin
+    let dragId         = null;
 
     let pendingDeleteId  = null;
 
@@ -230,7 +236,7 @@
       // Re-fetch sensible data if role changed (e.g., auth resolved after initial load)
       const nowCanSee = ['contributeur', 'admin'].includes(currentUserRole);
       const wasCanSee = ['contributeur', 'admin'].includes(prevRole);
-      if (nowCanSee !== wasCanSee && allBuilds.length > 0) {
+      if ((nowCanSee !== wasCanSee || (currentUserRole === 'admin') !== (prevRole === 'admin')) && allBuilds.length > 0) {
         await _fetchSensibleData(allBuilds);
         _renderBuilds(allBuilds);
       }
@@ -253,6 +259,7 @@
     _buildClassChips();
     _buildStatsFilters();
     _setupEventListeners();
+    _setupDragReorder();
 
     // Charger le niveau max depuis window si disponible
     const maxLvl = window.MAX_LEVEL || 30;
@@ -419,10 +426,28 @@
 
       // Tri client-side
       filtered.sort(function(a, b) {
+        if (sortBy === 'manual') {
+          // Ordre choisi par les admins ; les builds jamais classés viennent après, du plus récent au plus ancien
+          const oa = typeof a.order === 'number' ? a.order : Infinity;
+          const ob = typeof b.order === 'number' ? b.order : Infinity;
+          if (oa !== ob) return oa < ob ? -1 : 1;
+          return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+        }
         const va = sortBy === 'createdAt' ? (a.createdAt?.seconds || 0) : (a[sortBy] || 0);
         const vb = sortBy === 'createdAt' ? (b.createdAt?.seconds || 0) : (b[sortBy] || 0);
         return vb - va;
       });
+      shownBuilds = filtered;
+
+      const canReorder = _canReorder();
+      grid.classList.toggle('reorderable', canReorder);
+      const hint = document.getElementById('reorder-hint');
+      if (currentUserRole === 'admin' && !isSingleView) {
+        hint.style.display = 'block';
+        hint.textContent = canReorder
+          ? '⇅ Mode admin : glisse les cartes (ou utilise ◀ ▶) pour choisir l\'ordre vu par tous les visiteurs.'
+          : '⇅ Admin : pour réordonner, choisis « Ordre du wiki » et retire les filtres / la recherche.';
+      } else hint.style.display = 'none';
 
       count.textContent = filtered.length
         ? filtered.length + ' build' + (filtered.length > 1 ? 's' : '')
@@ -495,10 +520,11 @@
       const adminBadge    = (!isOwn && isAdm) ? `<span class="bc-admin-badge">⬡ admin</span>` : '';
 
       return `
-        <div class="build-card" data-id="${escHtml(b._id)}">
+        <div class="build-card" data-id="${escHtml(b._id)}"${_canReorder() ? ' draggable="true"' : ''}>
           <div class="bc-head">
             <div class="bc-name" title="${escHtml(b.name || 'Sans nom')}">${escHtml(b.name || 'Sans nom')}</div>
             <div class="bc-head-right">
+              ${_canReorder() ? `<button class="bc-btn-move" data-action="move-prev" data-id="${escHtml(b._id)}" title="Déplacer avant">◀</button><button class="bc-btn-move" data-action="move-next" data-id="${escHtml(b._id)}" title="Déplacer après">▶</button>` : ''}
               ${canDel ? `<button class="bc-btn-del" data-action="delete" data-id="${escHtml(b._id)}" title="${isAdm && !isOwn ? 'Supprimer (modération)' : 'Supprimer'}">✕</button>` : ''}
             </div>
           </div>
@@ -544,6 +570,8 @@
           if (action === 'delete')  _handleDelete(id);
           if (action === 'skills')  _handleSkills(id);
           if (action === 'share')   _handleShare(id);
+          if (action === 'move-prev') _moveBuild(id, -1);
+          if (action === 'move-next') _moveBuild(id, 1);
           if (action === 'preview') {
             const btn = this;
             btn.disabled = true;
@@ -613,6 +641,78 @@
           tip.style.display = 'none';
         });
       });
+    }
+
+    // ── Réordonnancement (admin) ──────────────────────────────────
+    // Seulement sur la liste complète (aucun filtre) : sinon l'ordre des builds masqués serait ambigu.
+    function _canReorder() {
+      return currentUserRole === 'admin' && sortBy === 'manual' && !isSingleView
+        && !filterClass && !filterSearch && !filterFavOnly && !filterMyBuilds
+        && filterMaxLevel >= maxLvl && !Object.keys(filterStats).length;
+    }
+
+    // Place `id` à l'index `toIdx` (dans la liste actuelle), renumérote tout et n'écrit que les `order` modifiés
+    async function _applyOrder(id, toIdx) {
+      const ids = shownBuilds.map(b => b._id);
+      const from = ids.indexOf(id);
+      if (from < 0 || toIdx < 0 || toIdx >= ids.length || from === toIdx) return;
+      ids.splice(toIdx, 0, ids.splice(from, 1)[0]);
+
+      const changed = [];
+      ids.forEach((bid, i) => {
+        const b = allBuilds.find(x => x._id === bid);
+        if (b && b.order !== i) changed.push({ b, prev: b.order, next: i });
+      });
+      changed.forEach(c => { c.b.order = c.next; });
+      _renderBuilds(allBuilds);
+
+      try {
+        const batch = writeBatch();
+        changed.forEach(c => batch.update(doc(db, COL_BUILDS, c.b._id), { order: c.next }));
+        await batch.commit();
+        _showToast('✓ Ordre enregistré.');
+      } catch(e) {
+        console.error('[builds] reorder:', e);
+        changed.forEach(c => { if (c.prev === undefined) delete c.b.order; else c.b.order = c.prev; });
+        _renderBuilds(allBuilds);
+        _showToast('✕ Erreur : ordre non enregistré.');
+      }
+    }
+
+    function _moveBuild(id, delta) {
+      const idx = shownBuilds.findIndex(b => b._id === id);
+      if (idx >= 0) _applyOrder(id, idx + delta);
+    }
+
+    function _setupDragReorder() {
+      const grid = document.getElementById('builds-grid');
+      const clear = () => grid.querySelectorAll('.drag-over,.dragging').forEach(c => c.classList.remove('drag-over', 'dragging'));
+      grid.addEventListener('dragstart', e => {
+        const card = e.target.closest?.('.build-card');
+        if (!card || !_canReorder()) return;
+        dragId = card.dataset.id;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', dragId);
+      });
+      grid.addEventListener('dragover', e => {
+        const card = e.target.closest?.('.build-card');
+        if (!dragId || !card) return;
+        e.preventDefault();
+        grid.querySelectorAll('.drag-over').forEach(c => { if (c !== card) c.classList.remove('drag-over'); });
+        if (card.dataset.id !== dragId) card.classList.add('drag-over');
+      });
+      grid.addEventListener('drop', e => {
+        const card = e.target.closest?.('.build-card');
+        if (!dragId || !card) return;
+        e.preventDefault();
+        const toIdx = shownBuilds.findIndex(b => b._id === card.dataset.id);
+        const id = dragId;
+        dragId = null;
+        clear();
+        if (toIdx >= 0) _applyOrder(id, toIdx);
+      });
+      grid.addEventListener('dragend', () => { dragId = null; clear(); });
     }
 
     // ── Actions ───────────────────────────────────────────────────
