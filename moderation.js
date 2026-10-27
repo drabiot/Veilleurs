@@ -2143,12 +2143,12 @@ async function _renameItemReferences(oldId, newId, opts = {}) {
 }
 
 
-_lazyPanel(() => import('./moderation-trash.js?v=0'), ['showTrash', 'loadTrash', 'restoreFromTrash', 'permanentDeleteTrash', 'emptyTrash']);
+_lazyPanel(() => import('./moderation-trash.js?v=6311a2da'), ['showTrash', 'loadTrash', 'restoreFromTrash', 'permanentDeleteTrash', 'emptyTrash']);
 
 
 let CREATOR_PALIERS = [1, 2, 3]; // mis à jour dynamiquement depuis Firestore config/paliers
 let _paliersConfig = []; // données complètes { id, label, color, floorName }
-_lazyPanel(() => import('./moderation-roles.js?v=0'), ['showPermissions', 'loadPermissions', '_setPermission', '_setCustomRoleBaseTier', 'showDiscordRoles', 'loadDiscordRoles', 'saveDiscordRoles', 'togglePermTech', '_setCollectionPerm', 'loadRoles', 'showCreateRoleForm', 'hideCreateRoleForm', 'createRole', 'deleteRole', 'showGenerateRulesModal', 'closeRulesModal', 'copyGeneratedRules', 'toggleCreatorTool', 'toggleCreatorPalier']);
+_lazyPanel(() => import('./moderation-roles.js?v=ac9e1251'), ['showPermissions', 'loadPermissions', '_setPermission', '_setCustomRoleBaseTier', 'showDiscordRoles', 'loadDiscordRoles', 'saveDiscordRoles', 'togglePermTech', '_setCollectionPerm', 'loadRoles', 'showCreateRoleForm', 'hideCreateRoleForm', 'createRole', 'deleteRole', 'showGenerateRulesModal', 'closeRulesModal', 'copyGeneratedRules', 'toggleCreatorTool', 'toggleCreatorPalier']);
 
 
 async function _loadPaliersConfig() {
@@ -2192,7 +2192,7 @@ function _populateAllPalierSelects() {
 }
 
 
-_lazyPanel(() => import('./moderation-discord.js?v=0'), ['showDiscordWebhooks', 'loadDiscordWebhooks', 'deleteChannelPosts', 'saveDiscordWebhooks', 'switchDwTab', 'dwEmbedRemove', 'dwEmbedAdd', 'dwUnsentCheckAll', 'dwUnsentDelete', 'dwPublishUnsentSend', 'dwPublishFilter', 'dwPublishCheckAll', 'dwPublishSelected', 'reorderAllChannelTags', 'testNewSubmissionWebhook', 'testDiscordWebhook']);
+_lazyPanel(() => import('./moderation-discord.js?v=c3dddcc5'), ['showDiscordWebhooks', 'loadDiscordWebhooks', 'deleteChannelPosts', 'saveDiscordWebhooks', 'switchDwTab', 'dwEmbedRemove', 'dwEmbedAdd', 'dwUnsentCheckAll', 'dwUnsentDelete', 'dwPublishUnsentSend', 'dwPublishFilter', 'dwPublishCheckAll', 'dwPublishSelected', 'reorderAllChannelTags', 'testNewSubmissionWebhook', 'testDiscordWebhook']);
 
 
 // ── Gestion des Rôles ─────────────────────────────────
