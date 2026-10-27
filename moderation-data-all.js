@@ -197,9 +197,8 @@ function _daSyncOldPalierSort(palierFilter) {
   }
 }
 
-// Filtre « Ex-palier » : équipements de l'archive (palier -1) selon leur ancien palier (ex-P1, ex-P2…).
+// Filtre « Ex-palier » : items de l'archive (palier -1) selon leur ancien palier (ex-P1, ex-P2…).
 // Le menu n'apparaît que s'il reste des items archivés ; il disparaît de lui-même une fois l'archive vidée.
-const _EX_PALIER_EQUIP = new Set(['arme', 'armure', 'accessoire']);
 let _exPalierSel = ''; // ancien palier sélectionné ('' = aucun) ; une seule pastille active à la fois
 function _daSyncExPalierFilter() {
   const box = document.getElementById('data-all-expalier');
@@ -209,7 +208,7 @@ function _daSyncExPalierFilter() {
   if (!olds.includes(_exPalierSel)) _exPalierSel = '';
   box.innerHTML = '';
   olds.forEach(o => {
-    const n = _dataAllData.filter(d => d.palier == -1 && String(d._oldPalier) === o && _EX_PALIER_EQUIP.has(d.category)).length;
+    const n = _dataAllData.filter(d => d.palier == -1 && String(d._oldPalier) === o).length;
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'filter-btn' + (o === _exPalierSel ? ' active' : '');
@@ -242,7 +241,7 @@ window.renderDataAll = function() {
   if (typeFilter)   results = results.filter(d => d._type === typeFilter);
   if (palierFilter) results = results.filter(d => String(d.palier) === palierFilter);
   const exPalier = _daSyncExPalierFilter();
-  if (exPalier) results = results.filter(d => d.palier == -1 && String(d._oldPalier) === exPalier && _EX_PALIER_EQUIP.has(d.category));
+  if (exPalier) results = results.filter(d => d.palier == -1 && String(d._oldPalier) === exPalier);
   if (catFilter)    results = results.filter(d => d.category === catFilter);
   if (rarityFilter) results = results.filter(d => d._type === 'item' && d.rarity === rarityFilter);
   if (searchQ)      results = results.filter(d =>
