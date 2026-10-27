@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════
 
 export function init(ctx) {
-const { loadExternalScript: _loadExternalScript, cachedDocs, invalidateModCache, escHtml, setHash: _setHash, showPanel: _showPanel, db, COL, getDoc, doc, updateDoc, setDoc, hashName, toast , modal } = ctx;
+const { loadExternalScript: _loadExternalScript, cachedDocs, invalidateModCache, escHtml, setHash: _setHash, showPanel: _showPanel, db, COL, getDoc, doc, updateDoc, setDoc, deleteField, hashName, toast , modal } = ctx;
 const { normalize, fuzzyMatch } = window.VCL;
 let _imgConfig = null; // { token, repo, branch, templates }
 let _imgSelectedItem = null;
@@ -72,6 +72,17 @@ window.loadImagesTool = async function() {
   try {
     const snap = await getDoc(doc(db, 'config', 'image_paths'));
     _imgConfig = snap.exists() ? snap.data() : {};
+    // Le token GitHub vit dans secrets/github (admin uniquement) : config/* est public. Migration d'un ancien token resté dans config/image_paths.
+    const legacyToken = _imgConfig.token;
+    delete _imgConfig.token;
+    try {
+      const sec = await getDoc(doc(db, 'secrets', 'github'));
+      _imgConfig.token = sec.exists() ? (sec.data().token || '') : '';
+      if (legacyToken !== undefined) {
+        if (!_imgConfig.token && legacyToken) await setDoc(doc(db, 'secrets', 'github'), { token: legacyToken });
+        await updateDoc(doc(db, 'config', 'image_paths'), { token: deleteField() });
+      }
+    } catch { _imgConfig.token = ''; } // non-admin : pas d'accès au token, l'envoi GitHub reste indisponible
     if (!_imgConfig.templates) _imgConfig.templates = { ...IMG_DEFAULT_TEMPLATES };
     // Migrer les vieux templates (sans ../ ou avec le bug P{palier}')
     for (const [cat, def] of Object.entries(IMG_DEFAULT_TEMPLATES)) {
@@ -111,7 +122,9 @@ window.saveImagesConfig = async function() {
   _imgConfig = { ..._imgConfig, token, repo, branch, templates, resizeSize };
   _imgResize = resizeSize;
   try {
-    await setDoc(doc(db, 'config', 'image_paths'), _imgConfig);
+    const { token: _t, ...publicCfg } = _imgConfig;
+    await setDoc(doc(db, 'config', 'image_paths'), publicCfg);
+    await setDoc(doc(db, 'secrets', 'github'), { token });
     toast('✓ Config images sauvegardée', 'success');
   } catch(e) {
     toast('⛔ ' + e.message, 'error');
