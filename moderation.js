@@ -9064,10 +9064,10 @@ window.saveQuestOrder = async () => {
   await loadQuestOrder();
 };
 
-_lazyPanel(() => import('./moderation-users.js?v=c337e72d'), ['showUsersPanel', 'loadUsers', 'filterUsers', 'suspendUser', 'unsuspendUser', 'setUserRole', 'deleteUserAccount']);
+_lazyPanel(() => import('./moderation-users.js?v=e7d486e9'), ['showUsersPanel', 'loadUsers', 'filterUsers', 'suspendUser', 'unsuspendUser', 'setUserRole', 'deleteUserAccount']);
 
 
-_lazyPanel(() => import('./moderation-leaderboard.js?v=77530f00'), ['showLeaderboard', 'loadLeaderboard', 'resetHomeLeaderboard', 'undoHomeLeaderboardReset', 'showLeaderboardUser', 'openLbMigrateDialog', 'closeLbMigrateDialog', 'lbMigrateSearchUsers', 'confirmLbMigrate']);
+_lazyPanel(() => import('./moderation-leaderboard.js?v=6ffaeb75'), ['showLeaderboard', 'loadLeaderboard', 'resetHomeLeaderboard', 'undoHomeLeaderboardReset', 'showLeaderboardUser', 'openLbMigrateDialog', 'closeLbMigrateDialog', 'lbMigrateSearchUsers', 'confirmLbMigrate']);
 
 
 // ═══════════════════════════════════════════════════════
@@ -9116,7 +9116,7 @@ _lazyPanel(() => import('./moderation-audit.js?v=24907cd5'), ['showAuditLog', 'l
 _lazyPanel(() => import('./moderation-stats.js?v=abef9ff5'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques', 'showMigration', 'sensRunKeyMigration']);
 
 
-_lazyPanel(() => import('./moderation-tags.js?v=318e5764'), ['showTagsPanel', 'updateTagRuleValueOptions', 'loadTagRules', 'addTagRule', 'deleteTagRule', 'seedDefaultTagRules', 'applyTagRules']);
+_lazyPanel(() => import('./moderation-tags.js?v=922eadc4'), ['showTagsPanel', 'updateTagRuleValueOptions', 'loadTagRules', 'addTagRule', 'deleteTagRule', 'seedDefaultTagRules', 'applyTagRules']);
 
 
 // ── Sidebar section toggle ─────────────────────────────
@@ -10645,7 +10645,7 @@ window.sensPnjToPublic = async (sourceId) => {
   }, { capture: true, passive: false });
 })();
 
-_lazyPanel(() => import('./moderation-images.js?v=2a487346'), ['showImagesTool', 'loadImagesTool', 'saveImagesConfig', 'imgFileDrop', 'imgFileSelect', 'imgUploadToGithub', 'resetImagesTool', 'switchImgTab', 'tpkOpenLightbox', 'tpkLbClose', 'tpkLbBgDown', 'tpkLoadZip', 'tpkRefreshGithub', 'tpkSelToInutile', 'tpkSelToIllisible', 'tpkSelClear', 'tpkRender', 'tpkLeftMore', 'tpkCreateVFolder', 'tpkDeleteVFolder', 'tpkCollapseAll', 'tpkVisualMatch', 'tpkMatchUpdateCount', 'tpkMatchSelectAll', 'tpkMatchApply', 'tpkSaveReference', 'previewNormalize', 'runNormalize', 'showCalibrateur', 'showCaptureSprites']);
+_lazyPanel(() => import('./moderation-images.js?v=f6dc8676'), ['showImagesTool', 'loadImagesTool', 'saveImagesConfig', 'imgFileDrop', 'imgFileSelect', 'imgUploadToGithub', 'resetImagesTool', 'switchImgTab', 'tpkOpenLightbox', 'tpkLbClose', 'tpkLbBgDown', 'tpkLoadZip', 'tpkRefreshGithub', 'tpkSelToInutile', 'tpkSelToIllisible', 'tpkSelClear', 'tpkRender', 'tpkLeftMore', 'tpkCreateVFolder', 'tpkDeleteVFolder', 'tpkCollapseAll', 'tpkVisualMatch', 'tpkMatchUpdateCount', 'tpkMatchSelectAll', 'tpkMatchApply', 'tpkSaveReference', 'previewNormalize', 'runNormalize', 'showCalibrateur', 'showCaptureSprites']);
 _lazyPanel(() => import('./moderation-obtain-legacy.js?v=99eaff64'), ['showObtainLegacy', 'loadObtainLegacy', 'filterObtainLegacy']);
 _lazyPanel(() => import('./moderation-data-all.js?v=e899a830'), ['showDataAll', 'loadDataAll', 'onDataAllTypeChange', 'renderDataAll', 'deleteDataDuplicates']);
 
@@ -10656,10 +10656,10 @@ _lazyPanel(() => import('./moderation-map.js?v=14c5774d'), ['showMapPanel', 'del
 _lazyPanel(() => import('./moderation-game-config.js?v=bfa73f54'), ['showGameConfig', 'gcUpdatePalier', 'gcAddPalier', 'gcRemovePalier', 'saveGameConfig']);
 
 
-_lazyPanel(() => import('./moderation-game-tools.js?v=3210537c'), ['showEventsTool', 'moveVclEvent', 'createVclEvent', 'deleteVclEvent', 'showDonjonsTool', 'createVclDonjon', 'moveVclDonjon', 'deleteVclDonjon', 'showTitresTool', 'createVclTitre', 'addVclTitreStat', 'removeVclTitreStat', 'renameVclTitre', 'moveVclTitre', 'deleteVclTitre', 'showEffectsTool', 'seedEffectTypes', 'saveEffectTypes', 'switchEffectsTab', 'addEffectType', 'addEffectTemplate']);
+_lazyPanel(() => import('./moderation-game-tools.js?v=0065abfb'), ['showEventsTool', 'moveVclEvent', 'createVclEvent', 'deleteVclEvent', 'showDonjonsTool', 'createVclDonjon', 'moveVclDonjon', 'deleteVclDonjon', 'showTitresTool', 'createVclTitre', 'addVclTitreStat', 'removeVclTitreStat', 'renameVclTitre', 'moveVclTitre', 'deleteVclTitre', 'showEffectsTool', 'seedEffectTypes', 'saveEffectTypes', 'switchEffectsTab', 'addEffectType', 'addEffectTemplate']);
 
 
-_lazyPanel(() => import('./moderation-bugs.js?v=b25b387d'), ['showBugsConnus', '_loadBugsConnus', 'saveBugForm', 'startEditBug', 'cancelEditBug', 'saveEditBug', 'deleteBug']);
+_lazyPanel(() => import('./moderation-bugs.js?v=0490d991'), ['showBugsConnus', '_loadBugsConnus', 'saveBugForm', 'startEditBug', 'cancelEditBug', 'saveEditBug', 'deleteBug']);
 
 // ══════════════════════════════════════════════════════
 //  ONGLET API (items SAO) — logique dans moderation-api-items.js
