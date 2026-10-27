@@ -1601,6 +1601,7 @@ const HASH_PANELS = {
   'dead-links':     () => showDeadLinks(),
   'self-craft':     () => showSelfCraft(),
   'orphan-ids':     () => showOrphanIds(),
+  'coherence':      () => showCoherence(),
   'region-orphans': () => showRegionOrphans(),
   'mob-orphans':    () => showMobOrphans(),
   'quest-orphans':  () => showQuestOrphans(),
@@ -1709,6 +1710,7 @@ const NAV_HUBS = [
         { hash: 'ghost-ids',   label: '🔗 IDs fantômes',       btn: 'btn-ghost-ids',   panel: 'ghost-id-panel',    fn: () => showGhostIds() },
         { hash: 'orphan-ids',  label: '⚠️ IDs orphelins',      btn: 'btn-orphan-ids',  panel: 'orphan-ids-panel',  fn: () => showOrphanIds(),  count: 'count-orphan-ids' },
         { hash: 'self-craft',  label: '🔁 Crafts circulaires', btn: 'btn-self-craft',  panel: 'self-craft-panel',  fn: () => showSelfCraft() },
+        { hash: 'coherence',   label: '🧪 Cohérence des items', btn: 'btn-coherence',   panel: 'coherence-panel',   fn: () => showCoherence(),  count: 'count-coherence' },
       ]},
       { label: 'Rattachement', tabs: [
         { hash: 'region-orphans', label: '🗺️ Régions orphelines', btn: 'btn-region-orphans', panel: 'region-orphan-panel', fn: () => showRegionOrphans() },
@@ -1894,6 +1896,7 @@ function refreshCurrentPanel() {
     'ghost-ids':    () => loadGhostIds(),
     'dead-links':   () => loadDeadLinks(),
     'orphan-ids':   () => loadOrphanIds(),
+    'coherence':    () => loadCoherence(),
     'region-orphans': () => loadRegionOrphans(),
     'mob-orphans':  () => loadMobOrphans(),
     'quest-orphans': () => loadQuestOrphans(),
@@ -7854,6 +7857,7 @@ window.saveQuestOrder = async () => {
   await loadQuestOrder();
 };
 
+_lazyPanel(() => import('./moderation-coherence.js?v=c0b26eab'), ['showCoherence', 'loadCoherence']);
 _lazyPanel(() => import('./moderation-users.js?v=e7d486e9'), ['showUsersPanel', 'loadUsers', 'filterUsers', 'suspendUser', 'unsuspendUser', 'setUserRole', 'deleteUserAccount']);
 
 

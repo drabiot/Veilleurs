@@ -105,6 +105,7 @@
     <button class="filter-btn" id="btn-ghost-ids"       onclick="showGhostIds()">🔗 IDs fantômes</button>
     <button class="filter-btn" id="btn-dead-links"      onclick="showDeadLinks()">💀 Liens morts</button>
     <button class="filter-btn" id="btn-self-craft"      onclick="showSelfCraft()">🔁 Crafts circulaires</button>
+    <button class="filter-btn" id="btn-coherence"       onclick="showCoherence()">🧪 Cohérence des items <span class="filter-count" id="count-coherence" style="display:none;">0</span></button>
     <button class="filter-btn" id="btn-orphan-ids"      onclick="showOrphanIds()">⚠️ IDs orphelins <span class="filter-count" id="count-orphan-ids" style="display:none;">0</span></button>
     <button class="filter-btn" id="btn-region-orphans"  onclick="showRegionOrphans()">🗺️ Régions orphelines</button>
     <button class="filter-btn" id="btn-mob-orphans"     onclick="showMobOrphans()">👾 Mobs orphelins</button>
@@ -300,6 +301,19 @@
       Ces références deviennent invalides si la soumission rejetée n'est pas restaurée ou recréée.
     </p>
     <div id="orphan-ids-list"><div class="empty">Chargement…</div></div>
+  </main>
+
+  <!-- Panneau Cohérence des items -->
+  <main class="main" id="coherence-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🧪 Cohérence des items</span>
+      <button class="btn btn-ghost" onclick="loadCoherence()" style="font-size:12px;">🔄 Rafraîchir</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      Items qui utilisent une valeur inexistante dans le jeu : rareté, catégorie, slot, stat, panoplie, classe, effet, niveau, tags incohérents.<br>
+      Les liens morts, IDs fantômes et champs requis ont leurs propres onglets.
+    </p>
+    <div id="coherence-list"><div class="empty">Chargement…</div></div>
   </main>
 
   <!-- Panneau IDs fantômes -->
@@ -1429,7 +1443,7 @@ window._VCL_DATA = {
   ALL_SLOTS:   typeof ALL_SLOTS   !== 'undefined' ? ALL_SLOTS   : [],
 };
 </script>
-<script type="module" src="moderation.js?v=fa6b5487"></script>
+<script type="module" src="moderation.js?v=91bd973e"></script>
 <script>
 if (window.innerWidth < 768) document.body.classList.add('sidebar-hidden');
 document.getElementById('mod-backdrop').addEventListener('click', () => {
