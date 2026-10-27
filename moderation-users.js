@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════
 
 export function init(ctx) {
-const { writeAudit: _writeAudit, escHtml, setHash: _setHash, MANAGED_TIERS, getTierDisplay: _getTierDisplay, db, ROLES, collection, getDocs, doc, updateDoc, deleteDoc, deleteField, serverTimestamp } = ctx;
+const { writeAudit: _writeAudit, escHtml, setHash: _setHash, MANAGED_TIERS, getTierDisplay: _getTierDisplay, db, ROLES, collection, getDocs, doc, updateDoc, deleteDoc, deleteField, serverTimestamp, toast, modal } = ctx;
 const { normalize, fuzzyMatch } = window.VCL;
 const ROLES_LIST = ROLES.filter(r => r !== 'visiteur');
 let _allUsers = [];

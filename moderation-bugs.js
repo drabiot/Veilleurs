@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════
 
 export function init(ctx) {
-const { writeAudit: _writeAudit, setHash: _setHash, showPanel: _showPanel, db, collection, getDocs, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query } = ctx;
+const { writeAudit: _writeAudit, setHash: _setHash, showPanel: _showPanel, db, collection, getDocs, doc, updateDoc, addDoc, deleteDoc, serverTimestamp, orderBy, query, toast, modal } = ctx;
 window.showBugsConnus = async function showBugsConnus() {
   _setHash('bugs-connus');
   _showPanel('bugs-connus-panel', 'btn-bugs-connus');

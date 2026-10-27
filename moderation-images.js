@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════
 
 export function init(ctx) {
-const { loadExternalScript: _loadExternalScript, cachedDocs, invalidateModCache, escHtml, setHash: _setHash, showPanel: _showPanel, db, COL, getDoc, doc, updateDoc, setDoc, hashName } = ctx;
+const { loadExternalScript: _loadExternalScript, cachedDocs, invalidateModCache, escHtml, setHash: _setHash, showPanel: _showPanel, db, COL, getDoc, doc, updateDoc, setDoc, hashName, toast , modal } = ctx;
 const { normalize, fuzzyMatch } = window.VCL;
 let _imgConfig = null; // { token, repo, branch, templates }
 let _imgSelectedItem = null;

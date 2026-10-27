@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════
 
 export function init(ctx) {
-const { writeAudit: _writeAudit, escHtml, setHash: _setHash, db, COL, collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, anonName } = ctx;
+const { writeAudit: _writeAudit, escHtml, setHash: _setHash, db, COL, collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, anonName, toast, modal } = ctx;
 const _LB_EXCLUDED_DOC = 'config/leaderboard_excluded';
 
 const _LB_SCAN_COLS = [

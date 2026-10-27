@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════
 
 export function init(ctx) {
-const { setHash: _setHash, showPanel: _showPanel, escHtml, db, COL, collection, getDocs, getDoc, doc, setDoc, addDoc, deleteDoc, serverTimestamp, writeBatch, sanitizeForFirestore, loadEventNames } = ctx;
+const { setHash: _setHash, showPanel: _showPanel, escHtml, db, COL, collection, getDocs, getDoc, doc, setDoc, addDoc, deleteDoc, serverTimestamp, writeBatch, sanitizeForFirestore, loadEventNames, toast, modal } = ctx;
 const { normalize } = window.VCL;
 const _EFFECT_SEED_TYPES = [
   { id:'heal',                 icon:'❤️',  color:'#e05252', label:'Points de vie',                        prefix:'+' },

@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════
 
 export function init(ctx) {
-const { escHtml, setHash: _setHash, db, collection, getDocs, getDoc, doc, updateDoc, setDoc } = ctx;
+const { escHtml, setHash: _setHash, db, collection, getDocs, getDoc, doc, updateDoc, setDoc, toast } = ctx;
 const ITEM_TAG_FIELDS = [
   { id: 'category', label: 'Catégorie', values: ['arme','armure','accessoire','consommable','nourriture','materiaux','ressources','outils','rune','parchemin','quete','donjon','monnaie'] },
   { id: 'rarity',   label: 'Rareté',   values: ['commun','rare','epique','legendaire','mythique','godlike','event'] },
