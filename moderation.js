@@ -2288,7 +2288,7 @@ window.deleteSub = async (id) => {
     toast('⛔ Erreur : ' + e.message, 'error');
   }
 };
-_lazyPanel(() => import('./moderation-quests.js?v=0'), ['showQuestOrder', 'renderQuestOrder', 'showQuestOrphans', 'loadQuestOrphans', 'saveQuestOrder', 'loadQuestOrder']);
+_lazyPanel(() => import('./moderation-quests.js?v=00fb0167'), ['showQuestOrder', 'renderQuestOrder', 'showQuestOrphans', 'loadQuestOrphans', 'saveQuestOrder', 'loadQuestOrder']);
 
 
 _lazyPanel(() => import('./moderation-users.js?v=e7d486e9'), ['showUsersPanel', 'loadUsers', 'filterUsers', 'suspendUser', 'unsuspendUser', 'setUserRole', 'deleteUserAccount']);
@@ -2297,7 +2297,7 @@ _lazyPanel(() => import('./moderation-users.js?v=e7d486e9'), ['showUsersPanel', 
 _lazyPanel(() => import('./moderation-leaderboard.js?v=6ffaeb75'), ['showLeaderboard', 'loadLeaderboard', 'resetHomeLeaderboard', 'undoHomeLeaderboardReset', 'showLeaderboardUser', 'openLbMigrateDialog', 'closeLbMigrateDialog', 'lbMigrateSearchUsers', 'confirmLbMigrate']);
 
 
-_lazyPanel(() => import('./moderation-sensible.js?v=0'), ['sensReload', 'sensEditItem', 'sensEditMob', 'sensEditPnj', 'sensFilterItemsPublic', 'sensFilterMobsPublic', 'sensItemToSensible', 'sensItemToPublic', 'sensMobToSensible', 'sensMobToPublic', 'sensFilterPnjPublic', 'sensPnjToSensible', 'sensPnjToPublic']);
+_lazyPanel(() => import('./moderation-sensible.js?v=2394bf23'), ['sensReload', 'sensEditItem', 'sensEditMob', 'sensEditPnj', 'sensFilterItemsPublic', 'sensFilterMobsPublic', 'sensItemToSensible', 'sensItemToPublic', 'sensMobToSensible', 'sensMobToPublic', 'sensFilterPnjPublic', 'sensPnjToSensible', 'sensPnjToPublic']);
 
 _lazyPanel(() => import('./moderation-audit.js?v=24907cd5'), ['showAuditLog', 'loadAuditLog', 'renderAuditLog', 'loadAuditLogMore']);
 
@@ -2318,7 +2318,7 @@ window.toggleSidebarSection = (id) => {
   if (chev) chev.textContent   = open ? '▾' : '▸';
 };
 
-_lazyPanel(() => import('./moderation-quality.js?v=0'), ['showCompletion', 'loadCompletion', 'renderCompletion', 'ignoreCompletionDoc', 'unignoreCompletionDoc', 'saveTableauDeChasse', 'saveCompletionFields', 'openCompletionInCreator', 'showCreatorValidation', 'loadCreatorValidation', '_setCvMode', '_setCvSubMode', '_onCvToggle', 'saveCreatorValidation']);
+_lazyPanel(() => import('./moderation-quality.js?v=f4b85019'), ['showCompletion', 'loadCompletion', 'renderCompletion', 'ignoreCompletionDoc', 'unignoreCompletionDoc', 'saveTableauDeChasse', 'saveCompletionFields', 'openCompletionInCreator', 'showCreatorValidation', 'loadCreatorValidation', '_setCvMode', '_setCvSubMode', '_onCvToggle', 'saveCreatorValidation']);
 
 
 // ── Auto-scroll pendant le drag dans n'importe quelle liste draggable ──
