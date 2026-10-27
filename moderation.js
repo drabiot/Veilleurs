@@ -9461,7 +9461,7 @@ function _renderLbRows(ranked, listEl, isSnapshot) {
   });
 }
 
-_lazyPanel(() => import('./moderation-leaderboard.js?v=0'), ['showLeaderboard', 'loadLeaderboard', 'resetHomeLeaderboard', 'undoHomeLeaderboardReset', 'showLeaderboardUser', 'openLbMigrateDialog', 'closeLbMigrateDialog', 'lbMigrateSearchUsers', 'confirmLbMigrate']);
+_lazyPanel(() => import('./moderation-leaderboard.js?v=77530f00'), ['showLeaderboard', 'loadLeaderboard', 'resetHomeLeaderboard', 'undoHomeLeaderboardReset', 'showLeaderboardUser', 'openLbMigrateDialog', 'closeLbMigrateDialog', 'lbMigrateSearchUsers', 'confirmLbMigrate']);
 
   const updateTitle = () => {
     const n = u.subs.length;
