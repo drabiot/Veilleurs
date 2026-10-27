@@ -364,7 +364,7 @@ export async function logPageView(section) {
 
     ops.push({ col: 'user_visits', id: visitorId,
       set: { pseudo, isAnonymous, lastSeen: today, ...(isFirstSeen && { firstSeen: today }) },
-      inc: { [`sections.${section}`]: 1, total: 1, [`devices.${device}`]: 1 } });
+      inc: { [`sections.${section}`]: 1, total: 1, [`devices.${device}`]: 1, [`dsec.${today}.${section}`]: 1 } });
   }
 
   if (ops.length) await _track(ops);

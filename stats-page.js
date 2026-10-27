@@ -168,7 +168,20 @@ function membersTable(s, ctx, esc) {
       total: s.anonRest.total, lastSeen: s.anonRest.lastSeen, sections: s.anonRest.sections });
   }
   const all = rows.length;
-  if (since) rows = rows.filter(u => (u.lastSeen || '').slice(0, 10) >= since);
+  if (since) {
+    // Profils suivis jour par jour (u.days) : compteurs de la période seulement.
+    // Profils plus anciens que ce suivi : on ne sait que leur dernière visite, on garde leurs compteurs totaux.
+    rows = rows.flatMap(u => {
+      if (!u.days || !Object.keys(u.days).length) return (u.lastSeen || '').slice(0, 10) >= since ? [u] : [];
+      const sections = {};
+      let total = 0;
+      for (const [d, secs] of Object.entries(u.days)) {
+        if (d < since) continue;
+        for (const [sec, n] of Object.entries(secs)) { sections[sec] = (sections[sec] || 0) + n; total += n; }
+      }
+      return total ? [{ ...u, sections, total }] : [];
+    });
+  }
   if (!all) return '';
   const filterBar = `<div class="stats-tabs" id="stats-period-bar" style="margin-bottom:10px;">${PERIODS.map(([id, label]) =>
     `<button class="stats-tab${id === period ? ' active' : ''}" data-period="${id}">${label}</button>`).join('')}

@@ -563,7 +563,7 @@ async function handleStats(request, env) {
   }
 
   // Résumé : tout est agrégé ici, la page n'a plus à télécharger ni à parcourir chaque profil
-  const date7 = String(body.date7 || ''), date30 = String(body.date30 || '');
+  const date7 = String(body.date7 || ''), date30 = String(body.date30 || ''), date35 = String(body.date35 || '');
   const dayStart = Number(body.dayStart) || 0, weekStart = Number(body.weekStart) || 0;
   const TOP_ANON = 40;
 
@@ -608,8 +608,14 @@ async function handleStats(request, env) {
 
   const slim = r => {
     const d = JSON.parse(r.data);
+    // Visites des 35 derniers jours : { 'YYYY-MM-DD': { section: n } } (clés plates « dsec.DATE.section »), pour filtrer par période
+    const days = {};
+    for (const [k, v] of Object.entries(d)) {
+      if (!k.startsWith('dsec.') || k.length < 17 || k.slice(5, 15) < date35) continue;
+      (days[k.slice(5, 15)] ??= {})[k.slice(16)] = v;
+    }
     return { id: r.id, pseudo: d.pseudo, isAnonymous: !!(d.isAnonymous ?? r.id.startsWith('anon_')), total: d.total || 0,
-      lastSeen: d.lastSeen || '', sections: uvGroups(d).sections || {} };
+      lastSeen: d.lastSeen || '', sections: uvGroups(d).sections || {}, days };
   };
   const memberRows = members.results.map(slim);
   // Les docs de visites gardent le nom connu au moment du tracking (souvent l'uid) : on affiche le nom actuel du compte (même règle que le journal de connexions)

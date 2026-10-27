@@ -16,7 +16,7 @@ const _loadExternalScript = url => new Promise((res, rej) => { const el = docume
 // Vérificateur de soumissions (OCR) : le script n'est chargé qu'au premier clic sur « Vérifier »
 {
   const _stub = async (id) => {
-    if (window.verifySubmission === _stub) await _loadExternalScript('submission-verify.js?v=4');
+    if (window.verifySubmission === _stub) await _loadExternalScript('submission-verify.js?v=e9de96eb');
     if (window.verifySubmission === _stub) { toast('Vérificateur indisponible', 'error'); return; }
     return window.verifySubmission(id);
   };
@@ -9778,11 +9778,11 @@ window.loadStatistiques = async function loadStatistiques() {
   const container = document.getElementById('stats-content');
   container.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const { renderStats, statsDay } = await import('./stats-page.js?v=3');
+    const { renderStats, statsDay } = await import('./stats-page.js?v=1032bf29');
     const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
     const [summary, repSnap, items] = await Promise.all([
       _fetchStats('summary', {
-        date7: statsDay(-6), date30: statsDay(-29),
+        date7: statsDay(-6), date30: statsDay(-29), date35: statsDay(-34),
         dayStart: midnight.getTime(), weekStart: midnight.getTime() - 6 * 86400000,
       }),
       getDocs(query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(10))).catch(() => ({ docs: [] })),
@@ -16729,7 +16729,7 @@ let _apiItemsTool = null;
 window.showApiItems = async function showApiItems() {
   _setHash('api-items');
   _showPanel('api-items-panel', 'btn-api-items');
-  const { createApiItemsTool } = await import('./moderation-api-items.js?v=17');
+  const { createApiItemsTool } = await import('./moderation-api-items.js?v=836e72a6');
   _apiItemsTool ??= createApiItemsTool({
     db, doc, setDoc, updateDoc, getDoc, writeBatch, serverTimestamp, deleteField,
     cachedDocs, invalidateModCache, store, COL, toast, modal,
