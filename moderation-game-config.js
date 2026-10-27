@@ -85,7 +85,7 @@ function _renderGameConfig() {
       <div style="${S.row}">
         <span style="${S.label}">Niveau max</span>
         <input type="number" id="gc-maxlevel" min="1" max="99" value="${_gcMaxLevel}"
-          style="${S.inp}width:80px;" oninput="_gcMaxLevel=+this.value">
+          style="${S.inp}width:110px;" oninput="_gcMaxLevel=+this.value">
         <span style="font-size:12px;color:var(--muted);">Niveau maximum des items et personnages</span>
       </div>
     </div>`;
