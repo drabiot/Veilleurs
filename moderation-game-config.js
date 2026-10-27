@@ -56,11 +56,15 @@ function _renderGameConfig() {
 
   for (let i = 0; i < _gcPaliers.length; i++) {
     const p = _gcPaliers[i];
+    const numId = typeof p.id === 'number' || (p.id !== '' && !isNaN(Number(p.id)));
     html += `
         <div style="${S.row}" id="gc-palier-row-${i}">
           <span style="${S.label}">ID</span>
-          <input type="number" min="1" max="99" value="${p.id}" style="${S.inp}width:64px;"
-            data-gc="id" data-idx="${i}" oninput="gcUpdatePalier(${i},'id',+this.value)">
+          ${numId
+            ? `<input type="number" min="1" max="99" value="${p.id}" style="${S.inp}width:64px;"
+            data-gc="id" data-idx="${i}" oninput="gcUpdatePalier(${i},'id',+this.value)">`
+            : `<input type="text" value="${p.id}" readonly title="ID texte réservé, non modifiable" style="${S.inp}width:96px;opacity:.8;"
+            data-gc="id" data-idx="${i}">`}
           <span style="${S.label}">Label</span>
           <input type="text" value="${p.label}" style="${S.inp}flex:1;"
             data-gc="label" data-idx="${i}" oninput="gcUpdatePalier(${i},'label',this.value)">
@@ -96,7 +100,7 @@ function _renderGameConfig() {
 window.gcUpdatePalier = (idx, field, val) => { _gcPaliers[idx][field] = val; };
 
 window.gcAddPalier = () => {
-  const maxId = _gcPaliers.reduce((m, p) => Math.max(m, p.id), 0);
+  const maxId = _gcPaliers.reduce((m, p) => Math.max(m, Number.isFinite(Number(p.id)) ? Number(p.id) : 0), 0);
   _gcPaliers.push({ id: maxId + 1, label: `Palier ${maxId + 1}`, color: '#a78bfa', floorName: '' });
   _renderGameConfig();
 };
