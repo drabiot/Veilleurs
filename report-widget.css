@@ -182,3 +182,29 @@
   border: 1px solid rgba(232,184,75,0.45);
   color: #e8b84b;
 }
+
+/* Contexte de fiche dans le widget + bouton « Signaler une erreur » des fiches */
+.vcl-report-ctx {
+  margin: 0 0 12px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  color: #e8b84b;
+  background: rgba(232,184,75,0.1);
+  border-left: 3px solid #e8b84b;
+  border-radius: 3px;
+}
+.vcl-report-ctx[hidden] { display: none; }
+.vcl-fiche-report {
+  background: transparent;
+  border: 1px solid rgba(232,184,75,0.4);
+  color: #e8b84b;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.2s, background 0.2s;
+}
+.vcl-fiche-report:hover { opacity: 1; background: rgba(232,184,75,0.15); }
+.vcl-fiche-report-wrap { margin-top: 18px; text-align: right; }

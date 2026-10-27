@@ -456,14 +456,21 @@ export async function logSearchQuery(term) {
 }
 
 /** Log un rapport bug/suggestion envoyé via le widget — collection reports. */
-export async function logReport(pseudo, page, text) {
+export async function logReport(pseudo, page, text, fiche = null) {
   try {
-    await addDoc(collection(db, 'reports'), {
+    const data = {
       pseudo: pseudo || 'Anonyme',
       page:   page   || '',
       text:   String(text || '').slice(0, 2000),
       createdAt: serverTimestamp(),
-    });
+    };
+    // Contexte de la fiche signalée (bouton « Signaler une erreur ») : type, id, nom
+    if (fiche && fiche.id) {
+      data.ficheType = String(fiche.type || '').slice(0, 20);
+      data.ficheId   = String(fiche.id).slice(0, 120);
+      data.ficheName = String(fiche.name || '').slice(0, 200);
+    }
+    await addDoc(collection(db, 'reports'), data);
     return true;
   } catch { return false; }
 }

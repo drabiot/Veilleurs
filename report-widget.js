@@ -4,6 +4,16 @@
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
+  // Libellés des types de fiche (affichés dans le widget et en modération)
+  const FICHE_LABELS = { item: 'Item', mob: 'Monstre', pnj: 'PNJ', quete: 'Quête', build: 'Build' };
+
+  // HTML d'un bouton « Signaler une erreur » lié à une fiche ; le clic est capté par délégation (cf. init)
+  window.vclReportFicheHtml = function (type, id, name) {
+    return '<button type="button" class="vcl-fiche-report" data-report-fiche="1"' +
+      ' data-rtype="' + escHtml(type) + '" data-rid="' + escHtml(id) + '" data-rname="' + escHtml(name || id) + '"' +
+      ' title="Signaler une erreur sur cette fiche">⚑ Signaler une erreur</button>';
+  };
+
   function init() {
     const logo = document.querySelector('.header-logo');
     if (!logo) return;
@@ -23,6 +33,7 @@
     overlay.innerHTML = [
       '<div class="vcl-report-modal">',
       '  <h3>Bug / Suggestion</h3>',
+      '  <p id="vcl-report-ctx" class="vcl-report-ctx" hidden></p>',
       '  <textarea id="vcl-report-text" placeholder="Décris le bug ou ta suggestion..." rows="5"></textarea>',
       '  <div class="vcl-report-actions">',
       '    <button id="vcl-report-cancel">Annuler</button>',
@@ -36,10 +47,28 @@
     const textEl   = document.getElementById('vcl-report-text');
     const statusEl = document.getElementById('vcl-report-status');
 
-    function close() { overlay.classList.add('hidden'); statusEl.textContent = ''; }
-    function open()  { overlay.classList.remove('hidden'); textEl.focus(); }
+    const ctxEl = document.getElementById('vcl-report-ctx');
+    let ficheCtx = null; // { type, id, name } de la fiche signalée, null = signalement général
 
-    btn.onclick = open;
+    function close() { overlay.classList.add('hidden'); statusEl.textContent = ''; ficheCtx = null; }
+    function open(ctx) {
+      ficheCtx = ctx && ctx.id ? ctx : null;
+      ctxEl.hidden = !ficheCtx;
+      ctxEl.textContent = ficheCtx
+        ? 'Fiche : ' + (FICHE_LABELS[ficheCtx.type] || ficheCtx.type) + ' · ' + (ficheCtx.name || ficheCtx.id)
+        : '';
+      overlay.classList.remove('hidden');
+      textEl.focus();
+    }
+
+    btn.onclick = () => open();
+    document.addEventListener('click', e => {
+      const b = e.target.closest?.('[data-report-fiche]');
+      if (!b) return;
+      e.preventDefault();
+      e.stopPropagation();
+      open({ type: b.dataset.rtype, id: b.dataset.rid, name: b.dataset.rname });
+    });
     document.getElementById('vcl-report-cancel').onclick = close;
     overlay.onclick = e => { if (e.target === overlay) close(); };
     document.addEventListener('keydown', e => { if (e.key === 'Escape') { close(); closeBugs(); } });
@@ -64,7 +93,7 @@
         }
         // Les signalements sont enregistrés dans Firestore (collection reports), lus par l'admin
         if (typeof window._vclLogReport !== 'function') throw new Error('envoi indisponible sur cette page');
-        const sent = await window._vclLogReport(pseudo, page, text);
+        const sent = await window._vclLogReport(pseudo, page, text, ficheCtx);
         if (!sent) throw new Error('envoi refusé, réessaie plus tard');
         statusEl.textContent = 'Envoyé !';
         textEl.value = '';

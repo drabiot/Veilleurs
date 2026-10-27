@@ -1428,6 +1428,8 @@ function showItem(id, initialQuality = false) {
       </div>
     </div>`;
 
+  // Bouton « Signaler une erreur » avec le contexte de la fiche
+  itemDisplay.querySelector('.item-sheet')?.insertAdjacentHTML('beforeend', `<div class="vcl-fiche-report-wrap">${window.vclReportFicheHtml?.('item', item.id, item.name) || ''}</div>`);
   window._vclLogItemView?.(id, item.name);
   bindCraftLinks();
   bindCraftTabs();

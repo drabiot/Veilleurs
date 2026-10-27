@@ -228,6 +228,28 @@ function contenuTab(s, ctx, esc) {
       ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${tags}</div>` : '<div class="stats-note">Pas encore de recherche enregistrée.</div>'}</div>`;
 }
 
+// ── Lien vers la fiche signalée (rapport avec contexte) ──
+const FICHE_REPORT_LABELS = { item: 'Item', mob: 'Monstre', pnj: 'PNJ', quete: 'Quête', build: 'Build' };
+function ficheReportUrl(type, id) {
+  const e = encodeURIComponent(id);
+  switch (type) {
+    case 'item':  return `Compendium/compendium.html#${e}`;
+    case 'mob':   return `Bestiaire/bestiaire.html#monstres/${e}`;
+    case 'pnj':   return `Bestiaire/bestiaire.html#personnages/${e}`;
+    case 'quete': return `Quetes/quetes.html#${e}`;
+    case 'build': return `Builds/builds.html?id=${e}`;
+    default:      return null;
+  }
+}
+function ficheLinkHtml(r, esc) {
+  if (!r.ficheId) return '';
+  const url = ficheReportUrl(r.ficheType, r.ficheId);
+  const label = `${FICHE_REPORT_LABELS[r.ficheType] || r.ficheType || 'Fiche'} · ${r.ficheName || r.ficheId}`;
+  return `<div class="stats-report-fiche">${url
+    ? `<a href="${esc(url)}" target="_blank" rel="noopener">🔗 ${esc(label)}</a>`
+    : esc(label)}</div>`;
+}
+
 // ── Onglet Qualité ────────────────────────────────────
 function qualiteTab(s, ctx, esc) {
   let html = '';
@@ -252,6 +274,7 @@ function qualiteTab(s, ctx, esc) {
     html += `<div class="stats-section"><div class="stats-section-title">Rapports récents (10 derniers)</div>${ctx.reports.map(r => `
       <div class="stats-report">
         <div class="stats-report-head"><b>${esc(r.pseudo || 'Anonyme')}</b><span>${esc(r.page || '')} · ${esc(fmtTime(r.ts))}</span></div>
+        ${ficheLinkHtml(r, esc)}
         <div class="stats-report-text">${esc((r.text || '').slice(0, 200))}</div>
       </div>`).join('')}</div>`;
   }

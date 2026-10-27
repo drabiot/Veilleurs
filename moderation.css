@@ -547,3 +547,7 @@ div.dq-sep { margin: 10px 0 6px; border: 1px solid var(--border); border-radius:
 .stats-report-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 12px; }
 .stats-report-head span { font-size: 10px; color: var(--muted); }
 .stats-report-text { font-size: 12px; color: var(--text-dim, #bbb); word-break: break-word; }
+
+.stats-report-fiche { font-size: 11px; margin: 2px 0 4px; }
+.stats-report-fiche a { color: var(--gold, #e8b84b); text-decoration: none; }
+.stats-report-fiche a:hover { text-decoration: underline; }

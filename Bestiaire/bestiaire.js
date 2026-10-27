@@ -463,6 +463,8 @@ function openModal(entity, pushHistory = true) {
     window._vclLogContentView?.('pnj', entity.id || entity._id, entity.name);
   }
   attachModalHandlers();
+  // Bouton « Signaler une erreur » avec le contexte de la fiche
+  modalContent.insertAdjacentHTML('beforeend', `<div class="vcl-fiche-report-wrap">${window.vclReportFicheHtml?.(activeTab === 'monstres' ? 'mob' : 'pnj', entity.id || entity._id, entity.name) || ''}</div>`);
 
   modalOverlay.style.top = '0';
   modalOverlay.classList.add('open');
