@@ -6415,6 +6415,7 @@ const PNJ_CATEGORIES = {
   craft: [
     "forgeron d'accessoires",
     "forgeron de clés",
+    "forgeron d'items secrets",
   ],
   artisans: [
     "alchimiste",

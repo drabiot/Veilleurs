@@ -200,6 +200,7 @@ function getList() { return activeTab === 'monstres' ? MOBS : PERSONNAGES; }
 function getPnjEffectiveTag(e) {
   if (e.occulte === true) return 'marchand_occulte';
   if (e.type === 'artisan_runes' || e.type === 'artisan_runes') return 'artisan_runes';
+  if (e.tag === 'fabricant_secrets' || e.tag === 'fabricant_secret') return 'forgeron_items_secrets';
   return e.tag;
 }
 
@@ -285,7 +286,7 @@ function updateCounts() {
       const el = document.getElementById(`count-${tag}`);
       if (el) el.textContent = filtered.filter(e => getPnjEffectiveTag(e) === tag).length;
     });
-    const groupExtras = { forgeron: ['refaconneur', 'fabricant_cles', 'fabricant_secrets'], marchand: ['repreneur_butin', 'marchand_occulte'] };
+    const groupExtras = { forgeron: ['refaconneur', 'fabricant_cles'], marchand: ['repreneur_butin', 'marchand_occulte'] };
     ['forgeron', 'marchand'].forEach(cat => {
       const el = document.getElementById(`group-count-${cat}`);
       if (el) el.textContent = filtered.filter(e => {
@@ -464,6 +465,7 @@ function openModal(entity, pushHistory = true) {
   }
   attachModalHandlers();
   // Bouton « Signaler une erreur » avec le contexte de la fiche
+  modalContent.insertAdjacentHTML('beforeend', `<div class="vcl-fiche-report-wrap">${window.vclReportFicheHtml?.(activeTab === 'monstres' ? 'mob' : 'pnj', entity.id || entity._id, entity.name) || ''}</div>`);
 
   modalOverlay.style.top = '0';
   modalOverlay.classList.add('open');
