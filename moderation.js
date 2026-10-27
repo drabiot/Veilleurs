@@ -9570,29 +9570,7 @@ window.loadTagRules = async function() {
   renderTagRulesList();
 };
 
-function renderTagRulesList() {
-  const listEl = document.getElementById('tag-rules-list');
-  if (!listEl) return;
-  if (!_tagRules.length) {
-    listEl.innerHTML = '<div style="font-size:12px;color:var(--muted);">Aucune règle définie.</div>';
-    return;
-  }
-  listEl.innerHTML = '';
-  _tagRules.forEach((rule, i) => {
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:6px 12px;border-bottom:1px solid var(--border);font-size:12px;';
-    const fieldLabel = ITEM_TAG_FIELDS.find(f => f.id === rule.field)?.label || rule.field;
-    row.innerHTML = `
-      <span style="color:var(--muted);min-width:80px;">${escHtml(fieldLabel)}</span>
-      <span style="color:var(--text);">=</span>
-      <span style="font-weight:600;min-width:80px;">${escHtml(String(rule.value))}</span>
-      <span style="color:var(--muted);">→ 🏷️</span>
-      <span style="color:var(--accent);font-weight:600;">${escHtml(rule.tag)}</span>
-      <button class="btn btn-ghost" onclick="deleteTagRule(${i})" style="font-size:11px;padding:2px 8px;margin-left:auto;">✕</button>
-    `;
-    listEl.appendChild(row);
-  });
-}
+_lazyPanel(() => import('./moderation-tags.js?v=0'), ['showTagsPanel', 'updateTagRuleValueOptions', 'loadTagRules', 'addTagRule', 'deleteTagRule', 'seedDefaultTagRules', 'applyTagRules']);
 
 window.addTagRule = async function() {
   const field = document.getElementById('tag-rule-field')?.value;
