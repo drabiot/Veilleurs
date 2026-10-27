@@ -148,13 +148,35 @@ function audienceTab(s, ctx, esc) {
     ${membersTable(s, ctx, esc)}`;
 }
 
+const PERIODS = [['total', 'Total'], ['today', "Aujourd'hui"], ['week', 'Cette semaine'], ['month', 'Ce mois-ci']];
+
+/** Premier jour (YYYY-MM-DD) de la période ; '' = pas de borne. Semaine = depuis lundi. */
+function periodStart(p) {
+  const now = new Date();
+  if (p === 'today') return statsDay(0);
+  if (p === 'week') return statsDay(-((now.getDay() + 6) % 7));
+  if (p === 'month') return statsDay(0).slice(0, 8) + '01';
+  return '';
+}
+
 function membersTable(s, ctx, esc) {
-  const rows = [...s.members];
-  if (s.anonRest) {
+  const period = window._statsPeriod || 'total';
+  const since = periodStart(period);
+  let rows = [...s.members];
+  if (s.anonRest && !since) {
     rows.push({ id: '__anon__', pseudo: `+${fmt(s.anonRest.n)} autres anonymes`, isAnonymous: true,
       total: s.anonRest.total, lastSeen: s.anonRest.lastSeen, sections: s.anonRest.sections });
   }
-  if (!rows.length) return '';
+  const all = rows.length;
+  if (since) rows = rows.filter(u => (u.lastSeen || '').slice(0, 10) >= since);
+  if (!all) return '';
+  const filterBar = `<div class="stats-tabs" id="stats-period-bar" style="margin-bottom:10px;">${PERIODS.map(([id, label]) =>
+    `<button class="stats-tab${id === period ? ' active' : ''}" data-period="${id}">${label}</button>`).join('')}
+    <span style="margin-left:auto;align-self:center;font-size:11px;color:var(--muted);">${fmt(rows.length)} visiteur${rows.length > 1 ? 's' : ''}</span></div>`;
+  if (!rows.length) {
+    return `<div class="stats-section" id="stats-membres-section"><div class="stats-section-title">Visites par membre</div>${filterBar}
+      <div class="stats-note">Aucun visiteur sur cette période.</div></div>`;
+  }
   const cols = ALL_SECTIONS.filter(sec => rows.some(u => u.sections?.[sec] > 0));
   const body = rows.map(u => {
     const badge = u.isAnonymous
@@ -169,7 +191,7 @@ function membersTable(s, ctx, esc) {
       <td style="text-align:right;color:var(--muted);font-size:11px;">${esc(fmtDate(u.lastSeen))}</td></tr>`;
   }).join('');
   return `<div class="stats-section" id="stats-membres-section">
-    <div class="stats-section-title">Visites par membre</div>
+    <div class="stats-section-title">Visites par membre</div>${filterBar}
     <div style="overflow-x:auto;"><table class="stats-table" id="stats-members-table">
       <thead><tr><th>Membre</th>${cols.map(c => `<th style="text-align:right;">${esc(SECTION_ICONS[c])}</th>`).join('')}<th style="text-align:right;">Total</th><th style="text-align:right;">Dernière visite</th></tr></thead>
       <tbody>${body}</tbody></table></div>
@@ -274,6 +296,14 @@ export function renderStats(container, s, ctx, deps) {
   container.onclick = async e => {
     const t = e.target.closest('.stats-tab');
     if (t) { tab = window._statsTab = t.dataset.tab; draw(); return; }
+
+    const per = e.target.closest('[data-period]');
+    if (per) {
+      window._statsPeriod = per.dataset.period;
+      const sec = container.querySelector('#stats-membres-section');
+      if (sec) sec.outerHTML = membersTable(s, ctx, esc);
+      return;
+    }
 
     const row = e.target.closest('.stats-member-row[data-uid]');
     const panel = container.querySelector('#stats-user-detail');
