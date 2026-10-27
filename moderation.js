@@ -12941,15 +12941,7 @@ window.runNormalize = async function() {
 
 // ── Migration IDs Occultes ─────────────────────────
 
-// ── Outils modération ──────────────────────────────
-window.showCalibrateur = function() {
-  _setHash('calibrateur');
-  _showPanel('calibrateur-panel', 'btn-calibrateur');
-  const iframe = document.getElementById('calibrateur-iframe');
-  if (!iframe.src || iframe.src === 'about:blank') {
-    iframe.src = 'Bestiaire/calibrateur.html';
-  }
-};
+_lazyPanel(() => import('./moderation-images.js?v=0'), ['showImagesTool', 'loadImagesTool', 'saveImagesConfig', 'imgFileDrop', 'imgFileSelect', 'imgUploadToGithub', 'resetImagesTool', 'switchImgTab', 'tpkOpenLightbox', 'tpkLbClose', 'tpkLbBgDown', 'tpkLoadZip', 'tpkRefreshGithub', 'tpkSelToInutile', 'tpkSelToIllisible', 'tpkSelClear', 'tpkRender', 'tpkLeftMore', 'tpkCreateVFolder', 'tpkDeleteVFolder', 'tpkCollapseAll', 'tpkVisualMatch', 'tpkMatchUpdateCount', 'tpkMatchSelectAll', 'tpkMatchApply', 'tpkSaveReference', 'previewNormalize', 'runNormalize', 'showCalibrateur', 'showCaptureSprites']);
 
 window.showCaptureSprites = function() {
   _setHash('capture-sprites');
