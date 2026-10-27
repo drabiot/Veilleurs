@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="builds.css" />
   <link rel="stylesheet" href="../Atelier/skilltree.css?v=9f7fe88a" />
   <link rel="stylesheet" href="../auth-widget.css" />
-  <link rel="stylesheet" href="../report-widget.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
@@ -158,7 +157,6 @@
 
   <div id="bc-tooltip" class="bc-tooltip" style="display:none"></div>
 
-  <script src="../report-widget.js"></script>
 
   <script src="../utils.js"></script>
   <script src="../Compendium/data.js"></script>
@@ -528,7 +526,6 @@
             </div>
             <span class="bc-time">${escHtml(ago)}</span>
             <div class="bc-actions">
-              <button type="button" class="bc-btn" data-report-fiche="1" data-rtype="build" data-rid="${escHtml(b._id)}" data-rname="${escHtml(b.name || 'Sans nom')}" title="Signaler une erreur sur ce build">⚑</button>
               <button class="bc-btn" data-action="share" data-id="${escHtml(b._id)}" title="Copier le lien">🔗</button>
               <button class="bc-btn primary" data-action="preview" data-id="${escHtml(b._id)}" title="Aperçu dans l'Atelier">◉ Aperçu</button>
               <button class="bc-btn fav ${isFav ? 'active' : ''}" data-action="fav" data-id="${escHtml(b._id)}" title="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">⭐</button>

@@ -1145,7 +1145,6 @@ function openModal(q) {
   modalContent.innerHTML = renderSheet(q);
   bindModalCheckboxes(q);
   // Bouton « Signaler une erreur » avec le contexte de la fiche
-  modalContent.insertAdjacentHTML('beforeend', `<div class="vcl-fiche-report-wrap">${window.vclReportFicheHtml?.('quete', q.id, q.titre || q.name || q.id) || ''}</div>`);
   window._vclLogContentView?.('quete', q.id, q.titre || q.name || q.id);
   modalOverlay.classList.add('open');
   /* Met à jour le hash sans dupliquer */
