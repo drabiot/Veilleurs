@@ -128,19 +128,20 @@ function populatePalierSelects(paliers) {
     sel.innerHTML = '<option value="">—</option>';
     for (const p of paliers) {
       if (p.id === 'event') continue; // Event : bouton dédié
+      if (p.id === 'worldboss' && selId === 'f-palier') continue; // Worldboss : drapeau dédié (items)
       if (p.id === -1 && !_isAdmin()) continue; // Archive : admins uniquement
       const opt = document.createElement('option');
       opt.value = String(p.id);
       opt.textContent = p.label;
       sel.appendChild(opt);
     }
-    if (currentVal && paliers.some(p => String(p.id) === currentVal && p.id !== 'event' && (p.id !== -1 || _isAdmin()))) {
+    if (currentVal && paliers.some(p => String(p.id) === currentVal && p.id !== 'event' && !(p.id === 'worldboss' && selId === 'f-palier') && (p.id !== -1 || _isAdmin()))) {
       sel.value = currentVal;
       delete sel.dataset.vclPending;
       sel.dispatchEvent(new Event('change', { bubbles: true }));
     }
   }
-  if (selEvent) _lockPalierEvent(true); // le select vient d'être reconstruit
+  if (selLockedPalier) _lockPalier(selLockedPalier); // le select vient d'être reconstruit
   refreshCustomSelects();
 }
 window.populatePalierSelects = populatePalierSelects;
@@ -1697,7 +1698,7 @@ function setRarity(r) {
   document.querySelectorAll('.r-btn[data-r]').forEach(b => b.classList.toggle('active', b.dataset.r === selRarity));
   const rarityField = document.getElementById('rarity-field');
   if (rarityField) rarityField.classList.toggle('unset', !selRarity);
-  if (selRarity === 'event' && !selEvent) _lockPalierEvent(true); // rareté Event => drapeau Event (palier verrouillé)
+  if (selRarity === 'event' && !selLockedPalier) _lockPalier('event'); // rareté Event => drapeau Event (palier verrouillé)
   syncPresetTagButtons();
   renderCustomTags();
   update();
@@ -1814,56 +1815,69 @@ function toggleSensible() {
   update();
 }
 
-let selEvent = false;          // bouton « Event » : verrouille le palier sur « event »
-let _palierBeforeEvent = '';   // palier choisi avant l'activation du bouton
+let selLockedPalier = '';      // drapeaux « Event » / « Worldboss » : verrouillent le palier sur « event » / « worldboss » ('' = aucun)
+let _palierBeforeLock = '';    // palier choisi avant l'activation d'un drapeau
+const _PALIER_FLAGS = { event: { btn: 'event-btn', label: 'Event' }, worldboss: { btn: 'worldboss-btn', label: 'World Boss' } };
 
-// Verrouille (ou libère) le sélecteur de palier sur « Event »
-function _lockPalierEvent(on) {
+// Verrouille le sélecteur de palier sur `id` ('event' | 'worldboss'), ou le libère avec ''
+function _lockPalier(id) {
   const sel = document.getElementById('f-palier');
   if (!sel) return;
-  const prev = [...sel.options].some(o => o.value === 'event');
-  if (on) {
-    if (!selEvent && sel.value && sel.value !== 'event') _palierBeforeEvent = sel.value;
-    selEvent = true;
-    if (!prev) {
-      const o = document.createElement('option');
-      o.value = 'event';
-      o.textContent = ((window._vcl_paliers || []).find(p => p.id === 'event') || {}).label || 'Event';
-      sel.appendChild(o);
-    }
-    sel.value = 'event';
+  const prevLock = selLockedPalier;
+  [...sel.options].filter(o => o.value in _PALIER_FLAGS).forEach(o => o.remove());
+  if (id) {
+    if (!prevLock && sel.value && sel.value !== id) _palierBeforeLock = sel.value;
+    selLockedPalier = id;
+    const o = document.createElement('option');
+    o.value = id;
+    o.textContent = ((window._vcl_paliers || []).find(p => p.id === id) || {}).label || _PALIER_FLAGS[id].label;
+    sel.appendChild(o);
+    sel.value = id;
     sel.disabled = true;
   } else {
-    selEvent = false;
-    [...sel.options].filter(o => o.value === 'event').forEach(o => o.remove());
+    selLockedPalier = '';
     sel.disabled = false;
-    sel.value = [...sel.options].some(o => o.value === _palierBeforeEvent) ? _palierBeforeEvent : '';
-    _palierBeforeEvent = '';
+    sel.value = [...sel.options].some(o => o.value === _palierBeforeLock) ? _palierBeforeLock : '';
+    _palierBeforeLock = '';
   }
-  document.getElementById('event-btn')?.classList.toggle('active', selEvent);
+  for (const [pid, f] of Object.entries(_PALIER_FLAGS)) document.getElementById(f.btn)?.classList.toggle('active', selLockedPalier === pid);
   _customSelUpdaters['f-palier']?.();
   sel.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function toggleEvent() { _lockPalierEvent(!selEvent); }
+function toggleEvent()     { _lockPalier(selLockedPalier === 'event'     ? '' : 'event'); }
+function toggleWorldboss() { _lockPalier(selLockedPalier === 'worldboss' ? '' : 'worldboss'); }
 
-// Champ « Évènement » : uniquement quand le palier est « Event »
+// Champ « Évènement » (palier Event) / « World Boss » (palier World Boss) : stocké dans item.event
+function _worldbossNames() {
+  const names = [];
+  const add = n => { n = (n || '').trim(); if (n && !names.some(x => x.toLowerCase() === n.toLowerCase())) names.push(n); };
+  if (typeof MOBS !== 'undefined') MOBS.filter(m => String(m.type || '').toLowerCase() === 'worldboss').forEach(m => add(m.name));
+  if (typeof ITEMS !== 'undefined') ITEMS.filter(i => i.palier === 'worldboss' && typeof i.event === 'string').forEach(i => add(i.event));
+  return names.sort((a, b) => a.localeCompare(b, 'fr'));
+}
 function _syncEventField() {
   const wrap = document.getElementById('event-name-field');
   const sel  = document.getElementById('f-event-name');
   if (!wrap || !sel) return;
-  const names = typeof EVENT_NAMES !== 'undefined' ? [...EVENT_NAMES] : [];
-  if (sel.dataset.built !== names.join('|')) { // (re)construit quand la collection `events` vient d'être chargée
+  const palier = document.getElementById('f-palier').value;
+  const isWb   = palier === 'worldboss';
+  const names  = isWb ? _worldbossNames() : (typeof EVENT_NAMES !== 'undefined' ? [...EVENT_NAMES] : []);
+  const key    = (isWb ? 'wb:' : 'ev:') + names.join('|');
+  if (sel.dataset.built !== key) { // (re)construit quand la liste change (collection `events` chargée, autre palier…)
     const cur = sel.value;
-    sel.dataset.built = names.join('|');
+    sel.dataset.built = key;
     [...sel.options].filter(o => o.value).forEach(o => o.remove());
+    sel.options[0].textContent = isWb ? 'Choisir un world boss…' : 'Choisir un évènement…';
     names.forEach(n => {
       const o = document.createElement('option'); o.value = n; o.textContent = n; sel.appendChild(o);
     });
     if (cur) { if (!names.includes(cur)) { const o = document.createElement('option'); o.value = cur; o.textContent = cur; sel.appendChild(o); } sel.value = cur; }
     _customSelUpdaters['f-event-name']?.();
   }
-  const on = document.getElementById('f-palier').value === 'event';
+  const lbl = wrap.querySelector('label');
+  if (lbl) lbl.textContent = isWb ? 'World Boss' : 'Évènement';
+  const on = palier === 'event' || isWb;
   wrap.style.display = on ? '' : 'none';
   if (!on) sel.value = '';
 }
@@ -1891,6 +1905,7 @@ function _setEventName(name) {
     const o = document.createElement('option'); o.value = name; o.textContent = name; sel.appendChild(o);
   }
   sel.value = name || '';
+  _customSelUpdaters['f-event-name']?.();
   _syncEventObtain();
 }
 
@@ -2052,7 +2067,7 @@ function _setPalierValue(elId, val) {
   const el = document.getElementById(elId);
   if (!el) return;
   const s = String(val);
-  if (elId === 'f-palier' && s === 'event') { _lockPalierEvent(true); return; } // palier Event = bouton Event actif
+  if (elId === 'f-palier' && (s === 'event' || s === 'worldboss')) { _lockPalier(s); return; } // palier Event / Worldboss = drapeau actif
   if (s === '-1' && !_isAdmin()) return; // Archive : admins uniquement
   el.value = s;
   if (el.value !== s) el.dataset.vclPending = s;
@@ -2645,7 +2660,7 @@ function resetFormSilent() {
   document.getElementById('qualite-btn')?.classList.remove('active');
   _autoEventName = '';
   _setEventName('');
-  if (selEvent) _lockPalierEvent(false);
+  if (selLockedPalier) _lockPalier('');
   const _evSec = document.getElementById('evolutif-evolutions-section');
   if (_evSec) _evSec.style.display = 'none';
   const _evList = document.getElementById('evolutif-evolutions-list');
@@ -4551,7 +4566,7 @@ function buildObj() {
   const category = document.getElementById('f-category').value;
   const cat      = document.getElementById('f-cat').value;
   const palier   = document.getElementById('f-palier').value;
-  const eventName = palier === 'event' ? (document.getElementById('f-event-name')?.value || '') : '';
+  const eventName = (palier === 'event' || palier === 'worldboss') ? (document.getElementById('f-event-name')?.value || '') : '';
   const lvl      = document.getElementById('f-lvl').value;
   const set      = setDrop ? setDrop.getValue() : '';
   const lore     = normalizeLore(document.getElementById('f-lore').value);
@@ -4602,7 +4617,7 @@ function buildObj() {
   const runeSlots = parseInt(document.getElementById('f-rune-slots').value);
   if (runeSlots > 0)             obj.rune_slots = runeSlots;
   if (selSensible)               obj.sensible  = true;
-  if (palier === 'event' && eventName) obj.event = eventName;
+  if ((palier === 'event' || palier === 'worldboss') && eventName) obj.event = eventName;
   if (Object.keys(stats).length)  obj.stats   = stats;
   if (selClasses.length)     obj.classes  = [...selClasses];
   if (effects.length)        obj.effects  = effects;
@@ -4676,6 +4691,7 @@ function validateForm() {
   if (isEquip && !cat)    warnings.push({ field:'f-cat',    msg:'Slot (cat) non sélectionné' });
   if (!palier)            errors.push ({ field:'f-palier', msg:'Palier obligatoire' });
   if (palier === 'event' && !document.getElementById('f-event-name')?.value) errors.push({ field:'f-event-name', msg:'Évènement obligatoire pour le palier Event' });
+  if (palier === 'worldboss' && !document.getElementById('f-event-name')?.value) errors.push({ field:'f-event-name', msg:'World Boss obligatoire pour le palier World Boss' });
   if (isEquip && !lvl)    warnings.push({ field:'f-lvl',    msg:'Niveau requis non renseigné' });
   const craftCount = getCraft().length;
   const craftCd    = document.getElementById('f-craft-cd')?.value.trim();
