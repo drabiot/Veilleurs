@@ -263,7 +263,7 @@ function buildDynamicMarkers() {
       gx:     p.coords.x,
       gy:     p.coords.z,
       name:   p.name || p.type,
-      desc:   questDesc || p.instructions || p.lore || p.description || p.tag || '',
+      desc:   questDesc || p.instructions || p.lore || p.description || '',
       link:   linked.length ? questLink : `../Bestiaire/bestiaire.html#personnages/${p._id || p.id}`,
       quests: linked,
     });
