@@ -933,12 +933,27 @@ function isQualityOnly(item) {
   return item.quality === true;
 }
 
-// Une version « Qualité » autonome n'a pas d'entrée dans la liste quand sa version normale existe dans le même palier (on y accède par le
-// bouton Normal / Qualité). Sans version normale visible (ex. fortifiants : normale restée en archive, ou inexistante), elle s'affiche seule.
+// Version normale « coquille » : aucune donnée propre (ni effets, ni craft, ni stats) alors qu'une version Qualité autonome existe.
+// C'est le cas d'un item qui n'existe qu'en version Qualité (ex. fortifiants) : la coquille est ignorée et l'item Qualité s'affiche
+// comme n'importe quel item, sans case Normal / Qualité. Dès qu'une vraie version normale est renseignée, la case apparaît.
+function _isShellNormal(item) {
+  if (isQualityOnly(item) || !ITEMS_BY_ID.has(getQualityItemId(item.id))) return false;
+  const filled = v => Array.isArray(v) ? v.length > 0 : !!v && (typeof v !== 'object' || Object.keys(v).length > 0);
+  return !(filled(item.effects) || filled(item.craft) || filled(item.stats));
+}
+
+// Vraie version normale d'un item Qualité autonome (null si absente ou si ce n'est qu'une coquille)
+function _realNormalOf(qualityItem) {
+  const normal = ITEMS_BY_ID.get(getNormalItemId(qualityItem.id));
+  return normal && normal.id !== qualityItem.id && !_isShellNormal(normal) ? normal : null;
+}
+
+// Entrées sans ligne dans la liste : une version « Qualité » dont la vraie version normale existe dans le même palier (on y accède par le
+// bouton Normal / Qualité), et une version normale « coquille » (l'item Qualité s'affiche seul à sa place).
 function _hiddenQualityItem(item) {
-  if (!isQualityOnly(item)) return false;
-  const normal = ITEMS_BY_ID.get(getNormalItemId(item.id));
-  return !!normal && normal.id !== item.id && String(normal.palier) === String(item.palier);
+  if (!isQualityOnly(item)) return _isShellNormal(item);
+  const normal = _realNormalOf(item);
+  return !!normal && String(normal.palier) === String(item.palier);
 }
 
 function getQualityItemId(normalId) {
@@ -1312,10 +1327,11 @@ function showItem(id, initialQuality = false) {
 
   // Item qualitatif chargé directement → rediriger vers le normal en mode qualité
   if (item.quality === true) {
-    const normalId   = getNormalItemId(id);
-    const normalItem = ITEMS_BY_ID.get(normalId);
-    if (normalItem) { showItem(normalId, true); return; }
+    const normalItem = _realNormalOf(item);
+    if (normalItem) { showItem(normalItem.id, true); return; }
   }
+  // Fiche normale « coquille » (ancien lien) → l'item Qualité autonome
+  if (_isShellNormal(item)) { showItem(getQualityItemId(id), false); return; }
 
   const qualityItemId = getQualityItemId(id);
   let qualityItem = ITEMS_BY_ID.get(qualityItemId) || null;
