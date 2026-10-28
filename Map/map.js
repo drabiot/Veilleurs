@@ -1446,7 +1446,8 @@ function renderMarkers() {
   document.querySelectorAll('.marker-filter').forEach(cb => {
     filterState[cb.dataset.type] = cb.checked;
   });
-  const isTypeVisible = (type) => !HIDDEN_MARKER_TYPES.has(type) && filterState[type] !== false;
+  // Pas de case dans la légende = pas affiché (sinon le pin reste visible sans moyen de le masquer)
+  const isTypeVisible = (type) => !HIDDEN_MARKER_TYPES.has(type) && filterState[type] === true;
 
   const markers = getFlatFloorMarkers(currentFloor);
 
@@ -2236,6 +2237,7 @@ function applyPinColorsToLegend() {
 
       container.appendChild(details);
     }
+    addOrphanTypesToLegend(container);
     return;
   }
 
@@ -2270,6 +2272,54 @@ function applyPinColorsToLegend() {
     _addLegendChangeListener(item.querySelector('input'));
     knownTypes.add(type);
   });
+  addOrphanTypesToLegend(container);
+}
+
+// Types présents sur la carte mais absents de la légende (ex. catégorie config incomplète) :
+// on leur ajoute une case pour qu'ils restent filtrables.
+function addOrphanTypesToLegend(container) {
+  const inLegend = new Set(
+    [...container.querySelectorAll('input.marker-filter[data-type]')].map(cb => cb.dataset.type)
+  );
+  const orphans = new Set();
+  for (const markers of Object.values(window._mapMarkers || {})) {
+    for (const m of markers) {
+      if (m.type && !HIDDEN_MARKER_TYPES.has(m.type) && !inLegend.has(m.type)) orphans.add(m.type);
+    }
+  }
+  if (!orphans.size) return;
+
+  const fsEmojis = window._map_pin_emojis || {};
+  const sep = document.createElement('div');
+  sep.className = 'sidebar-sep';
+  container.appendChild(sep);
+  const details = document.createElement('details');
+  details.open = true;
+  details.className = 'legend-group';
+  const summary = document.createElement('summary');
+  summary.className = 'legend-group-summary';
+  summary.textContent = '— Autres types —';
+  details.appendChild(summary);
+
+  for (const type of orphans) {
+    const color = getPinColor(type);
+    const item = document.createElement('label');
+    item.className = 'legend-item';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.className = 'marker-filter';
+    cb.dataset.type = type;
+    const dot = document.createElement('span');
+    dot.className = 'legend-emoji';
+    if (color) { dot.style.background = color; dot.style.boxShadow = `0 0 6px ${color}88`; }
+    dot.textContent = fsEmojis[type] || _map_EMOJI[type] || '📍';
+    const span = document.createElement('span');
+    span.textContent = getTypeLabel(type);
+    item.append(cb, dot, span);
+    details.appendChild(item);
+    _addLegendChangeListener(cb);
+  }
+  container.appendChild(details);
 }
 
 function focusQuestOnMap(questId) {
