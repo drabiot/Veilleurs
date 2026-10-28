@@ -146,6 +146,57 @@ window.setVclEventEmoji = async function(id, value) {
   }
 };
 
+// ── WORLDBOSS TOOL : emoji de chaque world boss (config/worldboss_emojis : { nom: emoji }, lu par le Compendium) ──
+const _WB_EMOJI_REF = () => doc(db, 'config', 'worldboss_emojis');
+const _readWbEmojis = async () => { const s = await getDoc(_WB_EMOJI_REF()); return s.exists() ? s.data() : {}; };
+
+window.showWorldbossTool = async function() {
+  _setHash('worldboss-tool');
+  _showPanel('worldboss-tool-panel', 'btn-worldboss-tool');
+  await _loadWorldbossList();
+};
+
+async function _loadWorldbossList() {
+  const list = document.getElementById('worldboss-list');
+  if (!list) return;
+  list.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [snap, emojis] = await Promise.all([getDocs(collection(db, COL.mobs)), _readWbEmojis()]);
+    const names = [...new Set(snap.docs.map(d => d.data()).filter(m => String(m.type || '').toLowerCase() === 'worldboss' && m.name).map(m => m.name))]
+      .sort((a, b) => a.localeCompare(b, 'fr'));
+    if (!names.length) {
+      list.innerHTML = '<div class="empty" style="color:var(--muted);">Aucun world boss. Crée un mob de type WorldBoss dans le Creator.</div>';
+      return;
+    }
+    list.innerHTML = names.map(n => {
+      const safe = escHtml(n);
+      return `<div style="display:flex;align-items:center;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;">
+        <span style="font-size:13px;display:flex;align-items:center;gap:8px;">
+          <input type="text" value="${escHtml(emojis[n] || '')}" placeholder="☠️" title="Emoji affiché dans le Compendium (vide = ☠️)" data-name="${safe}" onchange="setVclWorldbossEmoji(this.dataset.name, this.value)" style="width:44px;height:30px;text-align:center;font-size:16px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none;" />
+          ${safe}
+        </span>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    list.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`;
+  }
+}
+
+window.setVclWorldbossEmoji = async function(name, value) {
+  const v = (value || '').trim();
+  const emoji = v ? ([...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(v)][0]?.segment || '') : '';
+  try {
+    const emojis = await _readWbEmojis();
+    if (emoji) emojis[name] = emoji; else delete emojis[name];
+    await setDoc(_WB_EMOJI_REF(), emojis);
+    toast(emoji ? `Emoji : ${emoji}` : 'Emoji par défaut (☠️)', 'success');
+    await loadEventNames();
+    await _loadWorldbossList();
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
+
 window.createVclEvent = async function() {
   const inp = document.getElementById('event-name-input');
   const name = inp?.value?.trim();

@@ -504,6 +504,17 @@ export async function loadEventNames() {
     try { emojis = JSON.parse(localStorage.getItem(CKE) || '{}'); } catch { emojis = {}; }
   }
   window.EVENT_EMOJIS = emojis; // nom d'event -> emoji choisi dans l'outil modération « Events » (absent = emoji par défaut)
+  // Emoji des world boss (outil modération « Worldboss » : config/worldboss_emojis { nom: emoji })
+  const CKW = 'vcl_worldboss_emojis';
+  let wb = {};
+  try {
+    const s = await Promise.race([getDoc(doc(db, 'config', 'worldboss_emojis')), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000))]);
+    wb = s.exists() ? s.data() : {};
+    try { localStorage.setItem(CKW, JSON.stringify(wb)); } catch {}
+  } catch (e) {
+    try { wb = JSON.parse(localStorage.getItem(CKW) || '{}'); } catch { wb = {}; }
+  }
+  window.WORLDBOSS_EMOJIS = wb;
   if (names.length && typeof EVENT_NAMES !== 'undefined') EVENT_NAMES.splice(0, EVENT_NAMES.length, ...names);
   return names;
 }

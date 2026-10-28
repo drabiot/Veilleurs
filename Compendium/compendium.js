@@ -414,7 +414,7 @@ function buildSidebar(items, expandAll = false) {
           eb.className = 'event-block';
           const eh = document.createElement('div');
           eh.className = 'event-header' + (expandAll ? ' open' : '');
-          eh.innerHTML = `<span class="event-label">${palier === 'worldboss' ? '☠️' : escHtml((window.EVENT_EMOJIS || {})[evName] || '🎊')} ${escHtml(evName)} <span class="categorie-count">${total}</span></span><span class="categorie-arrow">▶</span>`;
+          eh.innerHTML = `<span class="event-label">${escHtml(palier === 'worldboss' ? ((window.WORLDBOSS_EMOJIS || {})[evName] || '☠️') : ((window.EVENT_EMOJIS || {})[evName] || '🎊'))} ${escHtml(evName)} <span class="categorie-count">${total}</span></span><span class="categorie-arrow">▶</span>`;
           const ebody = document.createElement('div');
           ebody.className = 'event-body' + (expandAll ? ' open' : '');
           eh.addEventListener('click', () => { eh.classList.toggle('open'); ebody.classList.toggle('open'); });

@@ -314,6 +314,7 @@ const HASH_PANELS = {
   'effects-tool':         () => showEffectsTool(),
   'events-tool':          () => showEventsTool(),
   'donjons-tool':         () => showDonjonsTool(),
+  'worldboss-tool':       () => showWorldbossTool(),
   'titres-tool':          () => showTitresTool(),
   'game-config':          () => showGameConfig(),
   'audit-log':            () => showAuditLog(),
@@ -474,6 +475,7 @@ const NAV_HUBS = [
         { hash: 'effects-tool', label: '✨ Effets',     btn: 'btn-effects-tool', panel: 'effects-tool-panel', fn: () => showEffectsTool() },
         { hash: 'events-tool',  label: '🎪 Events',     btn: 'btn-events-tool',  panel: 'events-tool-panel',  fn: () => showEventsTool() },
         { hash: 'donjons-tool', label: '🏰 Donjons',    btn: 'btn-donjons-tool', panel: 'donjons-tool-panel', fn: () => showDonjonsTool() },
+        { hash: 'worldboss-tool', label: '🌍 Worldboss', btn: 'btn-worldboss-tool', panel: 'worldboss-tool-panel', fn: () => showWorldbossTool() },
         { hash: 'titres-tool',  label: '🏅 Titres',     btn: 'btn-titres-tool',  panel: 'titres-tool-panel',  fn: () => showTitresTool() },
         { hash: 'tags',         label: '🏷️ Tags',       btn: 'btn-tags',         panel: 'tags-panel',         fn: () => showTagsPanel() },
       ]},
@@ -861,7 +863,7 @@ _lazyPanel(() => import('./moderation-map.js?v=b410280f'), ['showMapPanel', 'del
 _lazyPanel(() => import('./moderation-game-config.js?v=499a603d'), ['showGameConfig', 'gcUpdatePalier', 'gcAddPalier', 'gcRemovePalier', 'saveGameConfig']);
 
 
-_lazyPanel(() => import('./moderation-game-tools.js?v=eac2bf2e'), ['showEventsTool', 'moveVclEvent', 'createVclEvent', 'deleteVclEvent', 'showDonjonsTool', 'createVclDonjon', 'moveVclDonjon', 'deleteVclDonjon', 'showTitresTool', 'createVclTitre', 'addVclTitreStat', 'removeVclTitreStat', 'renameVclTitre', 'moveVclTitre', 'deleteVclTitre', 'showEffectsTool', 'seedEffectTypes', 'saveEffectTypes', 'switchEffectsTab', 'addEffectType', 'addEffectTemplate']);
+_lazyPanel(() => import('./moderation-game-tools.js?v=eac2bf2e'), ['showEventsTool', 'moveVclEvent', 'createVclEvent', 'deleteVclEvent', 'setVclEventEmoji', 'showWorldbossTool', 'setVclWorldbossEmoji', 'showDonjonsTool', 'createVclDonjon', 'moveVclDonjon', 'deleteVclDonjon', 'showTitresTool', 'createVclTitre', 'addVclTitreStat', 'removeVclTitreStat', 'renameVclTitre', 'moveVclTitre', 'deleteVclTitre', 'showEffectsTool', 'seedEffectTypes', 'saveEffectTypes', 'switchEffectsTab', 'addEffectType', 'addEffectTemplate']);
 
 
 _lazyPanel(() => import('./moderation-bugs.js?v=0490d991'), ['showBugsConnus', '_loadBugsConnus', 'saveBugForm', 'startEditBug', 'cancelEditBug', 'saveEditBug', 'deleteBug']);
