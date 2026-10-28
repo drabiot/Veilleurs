@@ -188,10 +188,10 @@ const PNJ_TO_MARKER_TYPE = {
   "forgeron de clés":        "craft_cles",
   "fabricant de clés":       "craft_cles",
   "fabricants de clés":      "craft_cles",
-  "forgeron d'items secrets":"craft_secrets",
+  "forgeron d'items secrets":"marchand_access",   // filtre « Vendeur d'Accessoires »
   "alchimiste":              "alchimiste",
   "bûcheron":                "bucheron",
-  "mineur":                  "mineur",
+  "mineur":                  "marchand_ressources",   // filtre « Marchand de Ressources »
   "repreneur de butin":      "repreneur_butin",
   "repreneur d'armes":       "repreneur_armes",
   "refaçonneur":             "refaconneur",
