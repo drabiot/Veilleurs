@@ -130,6 +130,7 @@
     });
     html += '</div>';
 
+    tooltip.style.width = '';
     tooltip.innerHTML = html;
     tooltip.classList.add('visible');
     positionTooltip(e, tooltip);
@@ -145,9 +146,11 @@
     const tooltip = document.getElementById('set-tooltip');
     if (!tooltip || !item) return;
     const rar = RARITIES[item.rarity] || { color: '#888', label: item.rarity || '' };
+    tooltip.style.width = item.competence ? '320px' : '';
     tooltip.innerHTML = '<div class="car-tt-header"><span class="car-tt-name" style="color:' + rar.color + '">' + item.name + '</span></div>' +
       '<div style="font-size:10px;color:rgba(255,255,255,.45);margin-bottom:6px;">' + rar.label + ' · ' + (item.palier == 'event' ? 'Event' : 'Palier ' + (item.palier == -1 ? 'Archive' : item.palier)) + '</div>' +
-      '<div class="car-tt-stats">' + (buildItemStatsHTML(item) || '<div style="font-size:10px;color:rgba(255,255,255,.35)">Aucune statistique</div>') + '</div>';
+      '<div class="car-tt-stats">' + (buildItemStatsHTML(item) || '<div style="font-size:10px;color:rgba(255,255,255,.35)">Aucune statistique</div>') + '</div>' +
+      buildSkillBoxHTML(item);
     tooltip.classList.add('visible');
     positionTooltip(e, tooltip);
   }
