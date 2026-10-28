@@ -85,7 +85,10 @@ async function _loadEventsList() {
       const ev = d.data();
       const safeName = escHtml(ev.name || d.id);
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;">
-        <span style="font-size:13px;">🎪 ${safeName}</span>
+        <span style="font-size:13px;display:flex;align-items:center;gap:8px;">
+          <input type="text" value="${escHtml(ev.emoji || '')}" placeholder="🎊" title="Emoji affiché dans le Compendium (vide = 🎊)" onchange="setVclEventEmoji('${d.id}', this.value)" style="width:44px;height:30px;text-align:center;font-size:16px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none;" />
+          ${safeName}
+        </span>
         <span style="display:flex;gap:6px;align-items:center;">
           <button class="btn btn-ghost btn-sm" title="Monter" ${i === 0 ? 'disabled' : ''} onclick="moveVclEvent('${d.id}',-1)" style="font-size:12px;">▲</button>
           <button class="btn btn-ghost btn-sm" title="Descendre" ${i === docs.length - 1 ? 'disabled' : ''} onclick="moveVclEvent('${d.id}',1)" style="font-size:12px;">▼</button>
@@ -126,6 +129,22 @@ async function _nextEventOrdre() {
   const snap = await getDocs(collection(db, COL.events));
   return snap.docs.reduce((m, d) => Math.max(m, d.data().ordre ?? 0), 0) + 1;
 }
+
+// Emoji d'un event (Compendium) : on ne garde que le 1er caractère « visuel » saisi ; vide = emoji par défaut
+window.setVclEventEmoji = async function(id, value) {
+  const v = (value || '').trim();
+  const emoji = v ? ([...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(v)][0]?.segment || '') : '';
+  try {
+    const batch = writeBatch(db);
+    batch.update(doc(db, COL.events, id), { emoji });
+    await batch.commit();
+    toast(emoji ? `Emoji : ${emoji}` : 'Emoji par défaut (🎊)', 'success');
+    await loadEventNames();
+    await _loadEventsList();
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
 
 window.createVclEvent = async function() {
   const inp = document.getElementById('event-name-input');

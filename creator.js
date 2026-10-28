@@ -5877,16 +5877,9 @@ function setMobType(type) {
   update();
 }
 
-// WorldBoss : agressif, région « Arène du WorldBoss » et coordonnées d'arène par défaut (toujours modifiables ensuite)
-const WORLDBOSS_REGION_ID = 'arene_du_worldboss';
-const WORLDBOSS_COORDS    = { x: 2438, z: 946 };
-async function _applyWorldBossDefaults() {
+// WorldBoss : agressif par défaut. Pas de région ni de coordonnées : chaque world boss vit dans une instance à part.
+function _applyWorldBossDefaults() {
   setBehavior('agressif');
-  const x = document.getElementById('mob-x'), z = document.getElementById('mob-z');
-  if (x && z && x.value === '' && z.value === '') { x.value = WORLDBOSS_COORDS.x; z.value = WORLDBOSS_COORDS.z; }
-  try { await loadMobRegions(); } catch (e) {}
-  const reg = _allMobRegions.find(r => r.id === WORLDBOSS_REGION_ID);
-  if (reg) selectMobRegion(reg);
   update();
 }
 

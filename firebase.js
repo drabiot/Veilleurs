@@ -483,8 +483,8 @@ window._vclLogReport = logReport;
 // Met à jour EVENT_NAMES (Compendium/data.js) en place, triée par `ordre` puis date de création.
 export async function loadEventNames() {
   if (typeof EVENT_NAMES === 'undefined') return null;
-  const CK = 'vcl_event_names';
-  let names = [];
+  const CK = 'vcl_event_names', CKE = 'vcl_event_emojis';
+  let names = [], emojis = {};
   try {
     // Timeout : si Firestore ne répond pas (quota, réseau, Firefox sans cache), on ne bloque pas le chargement de la page
     const snap = await Promise.race([
@@ -492,15 +492,18 @@ export async function loadEventNames() {
       new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000)),
     ]);
     const ts = d => d.createdAt?.seconds ?? 0;
-    names = snap.docs.map(d => d.data())
+    const evs = snap.docs.map(d => d.data())
       .filter(d => d.name)
-      .sort((a, b) => (a.ordre ?? 1e9) - (b.ordre ?? 1e9) || ts(a) - ts(b))
-      .map(d => d.name);
-    try { localStorage.setItem(CK, JSON.stringify(names)); } catch {}
+      .sort((a, b) => (a.ordre ?? 1e9) - (b.ordre ?? 1e9) || ts(a) - ts(b));
+    names = evs.map(d => d.name);
+    evs.forEach(d => { if (d.emoji) emojis[d.name] = d.emoji; });
+    try { localStorage.setItem(CK, JSON.stringify(names)); localStorage.setItem(CKE, JSON.stringify(emojis)); } catch {}
   } catch (e) {
     console.warn('[events]', e.message);
     try { names = JSON.parse(localStorage.getItem(CK) || '[]'); } catch { names = []; }
+    try { emojis = JSON.parse(localStorage.getItem(CKE) || '{}'); } catch { emojis = {}; }
   }
+  window.EVENT_EMOJIS = emojis; // nom d'event -> emoji choisi dans l'outil modération « Events » (absent = emoji par défaut)
   if (names.length && typeof EVENT_NAMES !== 'undefined') EVENT_NAMES.splice(0, EVENT_NAMES.length, ...names);
   return names;
 }
