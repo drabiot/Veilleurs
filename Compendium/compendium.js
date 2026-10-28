@@ -390,8 +390,8 @@ function buildSidebar(items, expandAll = false) {
         host.appendChild(cb);
       });
 
-      if (palier === 'event') {
-        // Une sous-catégorie par évènement (champ item.event), puis les catégories habituelles
+      if (palier === 'event' || palier === 'worldboss') {
+        // Une sous-catégorie par évènement / par world boss (champ item.event), puis les catégories habituelles
         const byEvent = {};
         for (const cat of Object.keys(grouped[palier])) {
           for (const it of grouped[palier][cat]) {
@@ -406,7 +406,7 @@ function buildSidebar(items, expandAll = false) {
           eb.className = 'event-block';
           const eh = document.createElement('div');
           eh.className = 'event-header' + (expandAll ? ' open' : '');
-          eh.innerHTML = `<span class="event-label">🎊 ${escHtml(evName)} <span class="categorie-count">${total}</span></span><span class="categorie-arrow">▶</span>`;
+          eh.innerHTML = `<span class="event-label">${palier === 'worldboss' ? '☠️' : '🎊'} ${escHtml(evName)} <span class="categorie-count">${total}</span></span><span class="categorie-arrow">▶</span>`;
           const ebody = document.createElement('div');
           ebody.className = 'event-body' + (expandAll ? ' open' : '');
           eh.addEventListener('click', () => { eh.classList.toggle('open'); ebody.classList.toggle('open'); });
