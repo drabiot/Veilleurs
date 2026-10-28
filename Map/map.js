@@ -283,6 +283,7 @@ function buildDynamicMarkers() {
       name:  r.name,
       desc:  r.lore || '',
       link:  '',
+      canTp: r.canTp === true,
     });
   }
 
@@ -1641,6 +1642,13 @@ let _tooltipHideTimer = null;
 function showTooltip(marker) {
   clearTimeout(_tooltipHideTimer);
   tooltipType.textContent = getTypeLabel(marker.type);
+  if (marker.canTp) {
+    const tp = document.createElement('span');
+    tp.className   = 'tooltip-tp';
+    tp.textContent = 'TP ✅';
+    tp.title       = 'Téléportation possible';
+    tooltipType.appendChild(tp);
+  }
   tooltipName.textContent = marker.name;
   tooltipDesc.textContent = marker.desc || '';
   if (marker.link) {
