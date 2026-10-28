@@ -1367,6 +1367,23 @@ function loadAccessoriesForClass(classId) {
 			return '<div class="istat-block">' + lines + runeSlotLine + '</div>';
 	}
 
+  // Encadré « compétence » des armes : blocs séparés par une ligne vide, 1re ligne « Titre: » en gras
+  function buildSkillBoxHTML(item) {
+    const raw = typeof item.competence === 'string' ? item.competence.trim() : '';
+    if (!raw) return '';
+    const esc = function(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+    const blocks = raw.split(/\n\s*\n/).map(function(block) {
+      const lines = block.split('\n');
+      const first = lines[0].trim();
+      const hasTitle = lines.length > 1 && /:$/.test(first);
+      return '<div class="item-skill-block">' +
+        (hasTitle ? '<div class="item-skill-title">' + esc(first.slice(0, -1)) + '</div>' : '') +
+        '<div class="item-skill-text">' + esc((hasTitle ? lines.slice(1) : lines).join('\n').trim()).replace(/\n/g, '<br>') + '</div>' +
+        '</div>';
+    }).join('');
+    return '<div class="item-skill-box">' + blocks + '</div>';
+  }
+
   function buildBadgesHTML(item) {
     let badges = '';
 
@@ -1581,6 +1598,7 @@ function loadAccessoriesForClass(classId) {
         '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · ' + (item.palier == 'event' ? 'Event' : 'Palier ' + (item.palier == -1 ? 'Archive' : item.palier)) + '</div>' +
         buildBadgesHTML(item) +
         buildItemStatsHTML(item) +
+        buildSkillBoxHTML(item) +
         '</div>';
 
     	if (!isLocked) {
