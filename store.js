@@ -10,7 +10,7 @@
      store.invalidate('items');                 // force re-fetch au prochain load()
 ══════════════════════════════════════════════════════ */
 
-import { loadCollection, loadEventNames, invalidateCache, COL, db, doc, onSnapshot } from './firebase.js';
+import { loadCollection, loadEventNames, invalidateCache, COL, db, doc, getDoc, onSnapshot } from './firebase.js';
 import { loader } from './components/page-loader.js';
 
 // Correspondance nom logique → nom collection Firestore
@@ -25,6 +25,16 @@ const COL_MAP = {
   zones:      COL.zones,
   donjons:    COL.donjons,
 };
+
+// Config des paliers (libellés « Palier 1 », « World Boss »…) lue par vclPalierLabel() (Compendium/data.js).
+window._vcl_paliers = window._vcl_paliers || [];
+async function _loadPalierLabels() {
+  try {
+    const snap = await getDoc(doc(db, 'config', 'paliers'));
+    const list = snap.exists() && snap.data().paliers;
+    if (Array.isArray(list) && list.length) window._vcl_paliers = list;
+  } catch (e) { console.warn('[store] config/paliers :', e.message); }
+}
 
 const _data    = {};
 let _ready     = false;
@@ -57,9 +67,11 @@ export const store = {
     const progress = opts.silent ? null : loader.begin(toLoad.length);
     let results;
     try {
-      results = await Promise.all(
-        toLoad.map(c => loadCollection(COL_MAP[c] ?? c).catch(() => []).finally(() => progress?.step()))
-      );
+      const [res] = await Promise.all([
+        Promise.all(toLoad.map(c => loadCollection(COL_MAP[c] ?? c).catch(() => []).finally(() => progress?.step()))),
+        _loadPalierLabels(),
+      ]);
+      results = res;
     } finally { progress?.end(); }
     toLoad.forEach((c, i) => { _data[c] = results[i]; });
 

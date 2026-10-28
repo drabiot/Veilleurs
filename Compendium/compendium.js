@@ -3,6 +3,14 @@
 /* ══════════════════════════════════
    DOM
 ══════════════════════════════════ */
+/* Libellé d'un palier d'après config/paliers (window._vcl_paliers, chargée par store.js) : « Palier 1 », « World Boss », « Archive »…
+   Repli (config pas encore chargée / palier absent) : ancien format. */
+function vclPalierLabel(p) {
+  const cfg = (window._vcl_paliers || []).find(x => String(x.id) === String(p));
+  if (cfg && cfg.label) return cfg.label;
+  return p == 'event' ? 'Event' : p == -1 ? 'Archive' : p == 'worldboss' ? 'World Boss' : 'Palier ' + p;
+}
+
 const sidebarTree   = document.getElementById('sidebar-tree');
 const searchInput   = document.getElementById('sidebar-search');
 const placeholder   = document.getElementById('glossary-placeholder');
@@ -302,7 +310,7 @@ function buildSidebar(items, expandAll = false) {
   const grouped = groupItems(items);
 
   Object.keys(grouped)
-    .sort((a, b) => { const r = (p => p == -1 ? 2 : p == 'event' ? 1 : 0); return r(a) - r(b) || (Number(a) - Number(b) || 0); })
+    .sort((a, b) => { const r = (p => p == -1 ? 3 : p == 'event' ? 2 : p == 'worldboss' ? 1 : 0); return r(a) - r(b) || (Number(a) - Number(b) || 0); })
     .forEach(palier => {
 
       /* ── Bloc Palier ── */
@@ -311,7 +319,7 @@ function buildSidebar(items, expandAll = false) {
 
       const ph = document.createElement('div');
       ph.className = 'palier-header' + (expandAll ? ' open' : '');
-      ph.innerHTML = `<span class="palier-label">⬡ ${palier == 'event' ? 'Event' : 'Palier ' + (palier == -1 ? 'Archive' : palier)}</span><span class="palier-arrow">▶</span>`;
+      ph.innerHTML = `<span class="palier-label">⬡ ${escHtml(vclPalierLabel(palier))}</span><span class="palier-arrow">▶</span>`;
 
       const pb = document.createElement('div');
       pb.className = 'palier-body' + (expandAll ? ' open' : '');
@@ -1398,7 +1406,7 @@ function showItem(id, initialQuality = false) {
             <span class="item-rarity-dot" style="background:${color};"></span>
             ${rlabel}
           </div>
-          ${(item.palier != null || (item.lvl != null && item.lvl !== '')) ? `<div class="item-meta-badges">${item.palier != null ? `<span class="item-meta-badge"><span class="imb-key">Palier</span><span class="imb-val">${item.palier == 'event' ? 'Event' : (item.palier == -1 ? 'Archive' : item.palier)}</span></span>` : ''}${item.lvl != null && item.lvl !== '' ? `<span class="item-meta-badge imb-lvl"><span class="imb-key">Niveau</span><span class="imb-val">${escHtml(String(item.lvl))}</span></span>` : ''}</div>` : ''}
+          ${(item.palier != null || (item.lvl != null && item.lvl !== '')) ? `<div class="item-meta-badges">${item.palier != null ? (() => { const pl = vclPalierLabel(item.palier), pm = pl.match(/^Palier\s+(.+)$/i); return `<span class="item-meta-badge">${pm ? '<span class="imb-key">Palier</span>' : ''}<span class="imb-val">${escHtml(pm ? pm[1] : pl)}</span></span>`; })() : ''}${item.lvl != null && item.lvl !== '' ? `<span class="item-meta-badge imb-lvl"><span class="imb-key">Niveau</span><span class="imb-val">${escHtml(String(item.lvl))}</span></span>` : ''}</div>` : ''}
           ${item.set && SETS?.[item.set] ? `<div class="item-set-badge" style="color:${SETS[item.set].color || '#888'};border-color:${SETS[item.set].color || '#888'}40;">◈ ${escHtml(SETS[item.set].label)}</div>` : ''}
           ${qualityToggle}
           <blockquote class="item-lore" id="item-lore-text"${String(v.lore || '').trim() ? '' : ' hidden'}>${parseText(v.lore)}</blockquote>

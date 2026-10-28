@@ -1,3 +1,11 @@
+/* Libellé d'un palier d'après config/paliers (window._vcl_paliers, chargée par store.js) : « Palier 1 », « World Boss », « Archive »…
+   Repli (config pas encore chargée / palier absent) : ancien format. */
+function vclPalierLabel(p) {
+  const cfg = (window._vcl_paliers || []).find(x => String(x.id) === String(p));
+  if (cfg && cfg.label) return cfg.label;
+  return p == 'event' ? 'Event' : p == -1 ? 'Archive' : p == 'worldboss' ? 'World Boss' : 'Palier ' + p;
+}
+
 (() => {
   'use strict';
 
@@ -148,7 +156,7 @@
     const rar = RARITIES[item.rarity] || { color: '#888', label: item.rarity || '' };
     tooltip.style.width = item.competence ? '320px' : '';
     tooltip.innerHTML = '<div class="car-tt-header"><span class="car-tt-name" style="color:' + rar.color + '">' + item.name + '</span></div>' +
-      '<div style="font-size:10px;color:rgba(255,255,255,.45);margin-bottom:6px;">' + rar.label + ' · ' + (item.palier == 'event' ? 'Event' : 'Palier ' + (item.palier == -1 ? 'Archive' : item.palier)) + '</div>' +
+      '<div style="font-size:10px;color:rgba(255,255,255,.45);margin-bottom:6px;">' + rar.label + ' · ' + vclPalierLabel(item.palier) + '</div>' +
       '<div class="car-tt-stats">' + (buildItemStatsHTML(item) || '<div style="font-size:10px;color:rgba(255,255,255,.35)">Aucune statistique</div>') + '</div>' +
       buildSkillBoxHTML(item);
     tooltip.classList.add('visible');
@@ -1230,7 +1238,7 @@ function loadAccessoriesForClass(classId) {
 	if (!wrap) return;
 	wrap.innerHTML = '';
 
-	const tiers = [...new Set(ITEMS.map(i => i.palier))].sort((a, b) => { const r = (p => p == -1 ? 2 : p == 'event' ? 1 : 0); return r(a) - r(b) || (Number(a) - Number(b) || 0); });
+	const tiers = [...new Set(ITEMS.map(i => i.palier))].sort((a, b) => { const r = (p => p == -1 ? 3 : p == 'event' ? 2 : p == 'worldboss' ? 1 : 0); return r(a) - r(b) || (Number(a) - Number(b) || 0); });
 
 	const all = document.createElement('button');
 	all.className = 'rarity-chip active';
@@ -1242,7 +1250,7 @@ function loadAccessoriesForClass(classId) {
 	const btn = document.createElement('button');
 	btn.className = 'rarity-chip';
 	btn.dataset.t = t;
-	btn.textContent = t === 'event' ? 'Event' : 'Palier ' + (t == -1 ? 'Archive' : t);
+	btn.textContent = vclPalierLabel(t);
 	wrap.appendChild(btn);
 	});
 
@@ -1598,7 +1606,7 @@ function loadAccessoriesForClass(classId) {
             '<div class="item-meta-name">' + item.name + (_isSecretItem(item) ? ' <span class="sensible-tag" title="Visible grâce à votre rôle">🔒</span>' : '') + '</div>' +
             buildItemLevelBadgeHTML(item) +
           '</div>' +
-        '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · ' + (item.palier == 'event' ? 'Event' : 'Palier ' + (item.palier == -1 ? 'Archive' : item.palier)) + '</div>' +
+        '<div class="item-meta-rarity" style="color:' + rarColor + '">' + rarLabel + ' · ' + vclPalierLabel(item.palier) + '</div>' +
         buildBadgesHTML(item) +
         buildItemStatsHTML(item) +
         buildSkillBoxHTML(item) +
