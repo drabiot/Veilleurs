@@ -219,7 +219,7 @@ window.toggleSidebar = function toggleSidebar() {
   localStorage.setItem('vcl_sidebar_hidden', hidden ? '1' : '');
 };
 
-_lazyPanel(() => import('./moderation-submissions.js?v=61da4ac3'), ['loadSubmissions', 'setFilter', 'setFilterSearch', 'loadSubDiff', 'applyDiffSelection', 'modImgFile', 'modImgDrop', 'modImgClear', 'modImgPaste', 'copyCode', 'toggleDetails', 'toggleEdit', 'onEditorInput', 'openInCreator', 'openEditorInCreator', 'approve', 'reject', 'restorePending', 'requestChanges', 'bulkDeleteSubs', 'bulkApproveSubs', 'deleteSub', 'renderSubs', 'updateCounts']);
+_lazyPanel(() => import('./moderation-submissions.js?v=e1cf1c23'), ['loadSubmissions', 'setFilter', 'setFilterSearch', 'loadSubDiff', 'applyDiffSelection', 'modImgFile', 'modImgDrop', 'modImgClear', 'modImgPaste', 'copyCode', 'toggleDetails', 'toggleEdit', 'onEditorInput', 'openInCreator', 'openEditorInCreator', 'approve', 'reject', 'restorePending', 'requestChanges', 'bulkDeleteSubs', 'bulkApproveSubs', 'deleteSub', 'renderSubs', 'updateCounts']);
 
 // id de région → nom affiché sur le wiki (« hanaka » → « Hanaka ») ; à défaut, l'id tel quel
 function _regionName(id) {
@@ -757,7 +757,7 @@ function _getTierDisplay(id) {
 
 
 
-_lazyPanel(() => import('./moderation-quests.js?v=00fb0167'), ['showQuestOrder', 'renderQuestOrder', 'showQuestOrphans', 'loadQuestOrphans', 'saveQuestOrder', 'loadQuestOrder']);
+_lazyPanel(() => import('./moderation-quests.js?v=a9cca48f'), ['showQuestOrder', 'renderQuestOrder', 'showQuestOrphans', 'loadQuestOrphans', 'saveQuestOrder', 'loadQuestOrder']);
 
 
 _lazyPanel(() => import('./moderation-users.js?v=e7d486e9'), ['showUsersPanel', 'loadUsers', 'filterUsers', 'suspendUser', 'unsuspendUser', 'setUserRole', 'deleteUserAccount']);
@@ -787,7 +787,7 @@ window.toggleSidebarSection = (id) => {
   if (chev) chev.textContent   = open ? '▾' : '▸';
 };
 
-_lazyPanel(() => import('./moderation-quality.js?v=ba2f8052'), ['showCompletion', 'loadCompletion', 'renderCompletion', 'ignoreCompletionDoc', 'unignoreCompletionDoc', 'saveTableauDeChasse', 'saveCompletionFields', 'openCompletionInCreator', 'showCreatorValidation', 'loadCreatorValidation', '_setCvMode', '_setCvSubMode', '_onCvToggle', 'saveCreatorValidation']);
+_lazyPanel(() => import('./moderation-quality.js?v=6946cb65'), ['showCompletion', 'loadCompletion', 'renderCompletion', 'ignoreCompletionDoc', 'unignoreCompletionDoc', 'saveTableauDeChasse', 'saveCompletionFields', 'openCompletionInCreator', 'showCreatorValidation', 'loadCreatorValidation', '_setCvMode', '_setCvSubMode', '_onCvToggle', 'saveCreatorValidation']);
 
 
 // ── Auto-scroll pendant le drag dans n'importe quelle liste draggable ──
@@ -859,7 +859,7 @@ _lazyPanel(() => import('./moderation-obtain-legacy.js?v=f9522b63'), ['showObtai
 _lazyPanel(() => import('./moderation-data-all.js?v=52fe6b52'), ['showDataAll', 'loadDataAll', 'onDataAllTypeChange', 'renderDataAll', 'deleteDataDuplicates']);
 
 
-_lazyPanel(() => import('./moderation-map.js?v=b410280f'), ['showMapPanel', 'deleteMapMarker', 'showZoneEditor', 'zeZoom', 'zeZoomReset', 'zeLayerChange', 'zeFloorChange', 'zeRenderSvg', 'zeRemovePoint', 'zeCheckSave', 'zoneEditorReset', 'zoneEditorSave', 'zeSearchMob', 'zeAddMobFromSelect', 'zeAddMob', 'zeRemoveMob', 'zeRenderMobList', 'showZoneList', 'loadZoneList', 'renderZoneList', 'migrateHardcodedZones', 'switchMapTab', 'loadPassages', 'renderPassageList', 'pgValidate', 'pgReset', 'pgSearchPins', 'pgAddLink', 'pgRemoveLink', 'saveNewPassage', 'deletePassage', 'loadAllMapPins', 'renderAllMapPins', 'loadPinColors', 'savePinColors', 'loadPinEmojis', 'savePinEmojis', 'saveIndividualPinEmoji', 'loadPinCategories', 'savePinCategories', 'loadPinTypes']);
+_lazyPanel(() => import('./moderation-map.js?v=569c3337'), ['showMapPanel', 'deleteMapMarker', 'showZoneEditor', 'zeZoom', 'zeZoomReset', 'zeLayerChange', 'zeFloorChange', 'zeRenderSvg', 'zeRemovePoint', 'zeCheckSave', 'zoneEditorReset', 'zoneEditorSave', 'zeSearchMob', 'zeAddMobFromSelect', 'zeAddMob', 'zeRemoveMob', 'zeRenderMobList', 'showZoneList', 'loadZoneList', 'renderZoneList', 'migrateHardcodedZones', 'switchMapTab', 'loadPassages', 'renderPassageList', 'pgValidate', 'pgReset', 'pgSearchPins', 'pgAddLink', 'pgRemoveLink', 'saveNewPassage', 'deletePassage', 'loadAllMapPins', 'renderAllMapPins', 'loadPinColors', 'savePinColors', 'loadPinEmojis', 'savePinEmojis', 'saveIndividualPinEmoji', 'loadPinCategories', 'savePinCategories', 'loadPinTypes']);
 
 
 _lazyPanel(() => import('./moderation-game-config.js?v=499a603d'), ['showGameConfig', 'gcUpdatePalier', 'gcAddPalier', 'gcRemovePalier', 'saveGameConfig']);
