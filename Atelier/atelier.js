@@ -57,7 +57,7 @@ function vclPalierLabel(p) {
   }
 
   /* Le palier « Event » a pour id 'event' : on le trie après les paliers numériques */
-  function _palierNum(p) { return p === 'event' ? 99 : (p || 0); }
+  function _palierNum(p) { return p === 'event' ? 99 : p === 'worldboss' ? 98 : (p || 0); }
 
   /* ══ VÉRIFICATION NIVEAU ══ */
   function itemAllowedForLevel(item, level) {
@@ -1257,7 +1257,7 @@ function loadAccessoriesForClass(classId) {
 	wrap.addEventListener('click', function(e) {
 	const chip = e.target.closest('.rarity-chip');
 	if (!chip || !('t' in chip.dataset)) return;
-	filterTier = chip.dataset.t !== '' ? (chip.dataset.t === 'event' ? 'event' : parseInt(chip.dataset.t)) : null;
+	filterTier = chip.dataset.t !== '' ? (isNaN(chip.dataset.t) ? chip.dataset.t : parseInt(chip.dataset.t)) : null;
 	wrap.querySelectorAll('.rarity-chip').forEach(c => c.classList.remove('active'));
 	chip.classList.add('active');
 	filterEvent = null;
@@ -1311,11 +1311,11 @@ function loadAccessoriesForClass(classId) {
       });
     }
     wrap.innerHTML = '';
-    if (filterTier !== 'event') { wrap.style.display = 'none'; return; }
-    const names = [...new Set(ITEMS.filter(i => i.palier === 'event' && typeof i.event === 'string' && i.event).map(i => i.event))]
+    if (filterTier !== 'event' && filterTier !== 'worldboss') { wrap.style.display = 'none'; return; }
+    const names = [...new Set(ITEMS.filter(i => i.palier === filterTier && typeof i.event === 'string' && i.event).map(i => i.event))]
       .sort((a, b) => { const r = n => { const i = EVENT_NAMES.indexOf(n); return i < 0 ? 999 : i; }; return r(a) - r(b) || a.localeCompare(b, 'fr'); });
     wrap.style.display = '';
-    [['', 'Tous les évènements']].concat(names.map(n => [n, n])).forEach(function(e) {
+    [['', filterTier === 'worldboss' ? 'Tous les world boss' : 'Tous les évènements']].concat(names.map(n => [n, n])).forEach(function(e) {
       const btn = document.createElement('button');
       btn.className = 'rarity-chip' + ((filterEvent || '') === e[0] ? ' active' : '');
       btn.dataset.e = e[0];
