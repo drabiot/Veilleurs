@@ -197,16 +197,18 @@ window.setVclWorldbossEmoji = async function(name, value) {
   }
 };
 
-// ── FORGERONS SECRETS TOOL : config/secret_forgerons { hidden, pnj: [ids], items: [ids] } (absent = position cachée ; lu par store.js) ──
+// ── FORGERONS SECRETS TOOL : config/secret_forgerons { hidden, pnj: [ids], items: [ids], revealedPnj: [ids], revealedItems: [ids] } (absent = position cachée ; lu par store.js) ──
+// revealedPnj / revealedItems = PNJ / items révélés un par un (visibles même quand le secret global est actif).
 // pnj / items = ajouts manuels : en plus des PNJ détectés par tag/type, ces PNJ sont cachés et l'obtain de ces items est remplacé.
 const _SF_REF = () => doc(db, 'config', 'secret_forgerons');
 const _sfAuto = p => ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'].includes(p.tag)
   || ["forgeron d'items secrets", 'fabricant secret'].includes(String(p.type || '').toLowerCase());
-const _sf = { cfg: { hidden: true, pnj: [], items: [] }, pnj: [], items: [] };
+const _sf = { cfg: { hidden: true, pnj: [], items: [], revealedPnj: [], revealedItems: [] }, pnj: [], items: [] };
+const _sfList = (c, k) => Array.isArray(c[k]) ? c[k] : [];
 
 async function _sfSave(patch) {
   const next = { ..._sf.cfg, ...patch };
-  await setDoc(_SF_REF(), { hidden: next.hidden !== false, pnj: next.pnj || [], items: next.items || [] });
+  await setDoc(_SF_REF(), { hidden: next.hidden !== false, pnj: next.pnj || [], items: next.items || [], revealedPnj: next.revealedPnj || [], revealedItems: next.revealedItems || [] });
   _sf.cfg = next;
 }
 
@@ -223,7 +225,7 @@ async function _loadSecretForgerons() {
   try {
     const [pSnap, iSnap, cfg] = await Promise.all([getDocs(collection(db, COL.pnj)), getDocs(collection(db, COL.items)), getDoc(_SF_REF())]);
     const c = cfg.exists() ? cfg.data() : {};
-    _sf.cfg = { hidden: c.hidden !== false, pnj: Array.isArray(c.pnj) ? c.pnj : [], items: Array.isArray(c.items) ? c.items : [] };
+    _sf.cfg = { hidden: c.hidden !== false, pnj: _sfList(c, 'pnj'), items: _sfList(c, 'items'), revealedPnj: _sfList(c, 'revealedPnj'), revealedItems: _sfList(c, 'revealedItems') };
     _sf.pnj = pSnap.docs.map(d => ({ ...d.data(), id: d.data().id ?? d.id }));
     _sf.items = iSnap.docs.map(d => ({ ...d.data(), id: d.data().id ?? d.id }));
     _renderSecretForgerons();
@@ -234,6 +236,10 @@ async function _loadSecretForgerons() {
 
 const _sfRow = (label, sub, btn) => `<div style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
     <span>${label}</span><span style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;">${sub}${btn}</span></div>`;
+const _sfRevealBtn = (kind, id) => {
+  const revealed = _sf.cfg[kind === 'pnj' ? 'revealedPnj' : 'revealedItems'].includes(id);
+  return `<button class="btn btn-ghost" data-id="${escHtml(id)}" onclick="sfToggleReveal('${kind}', this.dataset.id)" style="font-size:11px;padding:2px 8px;${revealed ? 'color:var(--success, #4caf50);border-color:var(--success, #4caf50);' : ''}" title="${revealed ? 'Visible — cliquer pour recacher' : 'Caché — cliquer pour révéler'}">${revealed ? '🔓 Révélé' : '🔒 Révéler'}</button>`;
+};
 const _sfRemoveBtn = (kind, id) => `<button class="btn btn-ghost" data-id="${escHtml(id)}" onclick="sfRemove('${kind}', this.dataset.id)" style="font-size:11px;padding:2px 8px;" title="Retirer de la liste secrète">✕</button>`;
 const _sfSearchBox = (kind, ph) => `<input type="text" id="sf-search-${kind}" oninput="sfSearch('${kind}')" placeholder="${ph}" style="width:100%;box-sizing:border-box;margin:8px 0 4px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none;font-size:13px;" /><div id="sf-results-${kind}" style="display:flex;flex-direction:column;gap:4px;"></div>`;
 
@@ -246,10 +252,10 @@ function _renderSecretForgerons() {
   const byId = (list, ids) => ids.map(id => list.find(x => x.id === id) || { id, name: id + ' (introuvable)' });
   const region = p => escHtml(String(p.region || '').replace(/_/g, ' '));
   const pnjRows = [
-    ...auto.map(p => _sfRow(escHtml(p.name || p.id), `${region(p)} · auto (tag/type)`, '')),
-    ...byId(_sf.pnj, _sf.cfg.pnj).map(p => _sfRow(escHtml(p.name || p.id), `${region(p)} · ajouté`, _sfRemoveBtn('pnj', p.id))),
+    ...auto.map(p => _sfRow(escHtml(p.name || p.id), `${region(p)} · auto (tag/type)`, _sfRevealBtn('pnj', p.id))),
+    ...byId(_sf.pnj, _sf.cfg.pnj).map(p => _sfRow(escHtml(p.name || p.id), `${region(p)} · ajouté`, _sfRevealBtn('pnj', p.id) + _sfRemoveBtn('pnj', p.id))),
   ].join('') || '<div class="empty" style="color:var(--muted);">Aucun PNJ.</div>';
-  const itemRows = byId(_sf.items, _sf.cfg.items).map(i => _sfRow(escHtml(i.name || i.id), escHtml(i.id), _sfRemoveBtn('items', i.id))).join('')
+  const itemRows = byId(_sf.items, _sf.cfg.items).map(i => _sfRow(escHtml(i.name || i.id), escHtml(i.id), _sfRevealBtn('items', i.id) + _sfRemoveBtn('items', i.id))).join('')
     || '<div class="empty" style="color:var(--muted);">Aucun item ajouté.</div>';
   const kept = k => document.getElementById('sf-search-' + k)?.value || '';
   const [sp, si] = [kept('pnj'), kept('items')];
@@ -288,6 +294,16 @@ window.sfAdd = async function(kind, id) {
   try {
     await _sfSave({ [key]: [..._sf.cfg[key], id] });
     toast('Ajouté à la liste secrète.', 'success');
+    _renderSecretForgerons();
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+};
+
+window.sfToggleReveal = async function(kind, id) {
+  const key = kind === 'pnj' ? 'revealedPnj' : 'revealedItems';
+  const on = _sf.cfg[key].includes(id);
+  try {
+    await _sfSave({ [key]: on ? _sf.cfg[key].filter(x => x !== id) : [..._sf.cfg[key], id] });
+    toast(on ? 'Recaché.' : 'Révélé.', 'success');
     _renderSecretForgerons();
   } catch (e) { toast('Erreur : ' + e.message, 'error'); }
 };
