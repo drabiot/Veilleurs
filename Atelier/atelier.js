@@ -2106,6 +2106,22 @@ function loadAccessoriesForClass(classId) {
     };
   }
 
+  /* Comparateur : instantané des stats du build courant (même format que statsSnapshot), puis ouverture de la page */
+  document.getElementById('btn-compare').addEventListener('click', function() {
+    const maxs = computeStats().maxs;
+    const snap = {};
+    Object.keys(maxs).forEach(function(k) {
+      if (typeof maxs[k] === 'number' && maxs[k] !== 0) snap[k] = Math.round(maxs[k] * 100) / 100;
+    });
+    try {
+      localStorage.setItem('vcl_compare_local', JSON.stringify({
+        name: document.getElementById('inp-name').value.trim() || 'Mon Build',
+        classe: activeClass || '', level: buildLevel, statsSnapshot: snap,
+      }));
+    } catch (e) {}
+    window.location.href = '../Builds/comparateur.html?ids=local';
+  });
+
   document.getElementById('btn-publish').addEventListener('click', function() {
     if (!window._auth?.currentUser) {
       const msg = 'Connecte-toi avec Discord pour publier ton build : il sera rattaché à ton compte, partageable par lien et visible dans le forum des builds.';
@@ -2170,6 +2186,7 @@ function loadAccessoriesForClass(classId) {
       '<span>Build <strong>' + escHtml(name) + '</strong> publié' +
       (visibility === 'unlisted' ? ' (lien uniquement)' : '') + '</span>' +
       '<a href="../Builds/builds.html" style="color:var(--gold,#d4b57e);text-decoration:none;font-size:12px;">Voir les builds →</a>' +
+      '<a href="../Builds/comparateur.html?ids=' + encodeURIComponent(buildId) + '" style="color:var(--gold,#d4b57e);text-decoration:none;font-size:12px;">⚖ Comparer</a>' +
       '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--muted,#888);cursor:pointer;padding:0 4px;">✕</button>';
     document.body.appendChild(toast);
     setTimeout(function() { toast.remove(); }, 6000);

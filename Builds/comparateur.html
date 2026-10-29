@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
+  <title>[VCL] - Comparateur de Builds</title>
+  <link rel="stylesheet" href="builds.css" />
+  <link rel="stylesheet" href="compare.css" />
+  <link rel="stylesheet" href="../auth-widget.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+<script src="../no-spin.js?v=b9169870" defer></script>
+<script src="../sw-register.js" defer></script>
+<link rel="preconnect" href="https://veilleurs.veilleurs-wiki.workers.dev" crossorigin />
+</head>
+<body>
+
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="moon"></div>
+    <div class="fog fog-1"></div>
+    <div class="fog fog-2"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <header class="site-header">
+    <div class="header-top">
+      <div class="header-left">
+        <div class="traffic-lights">
+          <span class="tl tl-red"></span>
+          <span class="tl tl-yellow"></span>
+          <span class="tl tl-green"></span>
+        </div>
+        <span class="header-sep">─────</span>
+        <a href="../index.html" class="header-logo">Veilleurs au Clair de Lune</a>
+      </div>
+      <div class="header-right"></div>
+    </div>
+    <nav class="header-nav">
+      <a href="../Patchnotes/patchnotes.html"    class="nav-link"><span class="nav-icon">📜</span><span class="nav-label">Patchnotes</span></a>
+      <a href="../Map/map.html"                  class="nav-link"><span class="nav-icon">🗺️</span><span class="nav-label">Carte</span></a>
+      <a href="../Compendium/compendium.html"    class="nav-link"><span class="nav-icon">📖</span><span class="nav-label">Compendium</span></a>
+      <a href="../Bestiaire/bestiaire.html"      class="nav-link"><span class="nav-icon">💀</span><span class="nav-label">Bestiaire</span></a>
+      <a href="../Quetes/quetes.html"            class="nav-link"><span class="nav-icon">❓</span><span class="nav-label">Quêtes</span></a>
+      <a href="../Atelier/atelier.html"          class="nav-link"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
+      <a href="builds.html"                      class="nav-link active"><span class="nav-icon">📋</span><span class="nav-label">Builds</span></a>
+    </nav>
+  </header>
+
+  <div class="page">
+    <main class="cmp-main">
+      <div class="builds-top-bar">
+        <div>
+          <div class="builds-title">Comparateur de Builds</div>
+          <div class="builds-subtitle">// 2 À 4 BUILDS · DIFFÉRENCES · SCORE</div>
+        </div>
+        <a href="builds.html" class="cmp-back">← Retour aux builds</a>
+      </div>
+
+      <div class="cmp-toolbar">
+        <button class="cmp-btn" id="cmp-add">＋ Ajouter un build</button>
+        <label class="cmp-check"><input type="checkbox" id="cmp-diff-only" /> Différences seulement</label>
+        <button class="cmp-btn" id="cmp-copy">🔗 Copier le lien</button>
+        <button class="cmp-btn" id="cmp-score-toggle">⚖ Score</button>
+      </div>
+
+      <div id="cmp-score-panel" class="cmp-score-panel" style="display:none">
+        <div class="cmp-score-head">
+          <b>Score pondéré</b>
+          <span class="cmp-hint">Chaque stat compte selon son poids (0 = ignorée) rapporté à son échelle de jeu. Le build au score le plus haut est désigné « meilleur ».</span>
+        </div>
+        <div class="cmp-presets" id="cmp-presets"></div>
+        <div class="cmp-weights" id="cmp-weights"></div>
+      </div>
+
+      <div id="cmp-picker" class="cmp-picker" style="display:none">
+        <input type="text" id="cmp-picker-search" class="search-input" placeholder="🔍  Rechercher un build ou un auteur…" autocomplete="off" />
+        <div id="cmp-picker-list" class="cmp-picker-list"></div>
+      </div>
+
+      <div id="cmp-body"><div class="builds-loading">Chargement…</div></div>
+    </main>
+  </div>
+
+  <script src="../utils.js"></script>
+  <script src="../Compendium/data.js"></script>
+  <script src="compare.js"></script>
+
+  <script type="module">
+    import { db, auth, COL } from '../firebase.js';
+    import { collection, query, where, limit, getDoc, getDocs, doc } from '../d1db.js';
+    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+    const C = window.VCLCompare;
+    const MAX_BUILDS = 4;
+    const LS_SEL = 'vcl_compare_sel';
+    const LS_LOCAL = 'vcl_compare_local';   // écrit par l'Atelier : { name, classe, level, statsSnapshot }
+    const LS_W = 'vcl_compare_weights';
+    const esc = window.VCL.escHtml;
+
+    let builds = [];        // [{ _id, name, classe, level, authorPseudo, statsSnapshot }]
+    let refIdx = 0;
+    let diffOnly = false;
+    let weights = {};
+    let pool = null;        // tous les builds publics (chargé à la demande pour le sélecteur)
+
+    try { weights = JSON.parse(localStorage.getItem(LS_W) || '{}') || {}; } catch { weights = {}; }
+
+    // Les builds « lien uniquement » exigent un jeton : attendre l'état auth, comme builds.html
+    await new Promise(resolve => { const u = onAuthStateChanged(auth, () => { u(); resolve(); }); });
+
+    function readLocal() {
+      try { const l = JSON.parse(localStorage.getItem(LS_LOCAL) || 'null'); return l && l.statsSnapshot ? l : null; } catch { return null; }
+    }
+
+    async function loadOne(id) {
+      if (id === 'local') {
+        const l = readLocal();
+        return l ? { _id: 'local', name: (l.name || 'Mon build') + ' (Atelier)', classe: l.classe, level: l.level, authorPseudo: 'Vous', statsSnapshot: l.statsSnapshot } : null;
+      }
+      try {
+        const s = await getDoc(doc(db, COL.buildsPublished, id));
+        return s.exists() ? { _id: s.id, ...s.data() } : null;
+      } catch { return null; }
+    }
+
+    function ids() { return builds.map(b => b._id); }
+    function syncUrl() {
+      const u = new URL(location.href);
+      if (builds.length) u.searchParams.set('ids', ids().join(',')); else u.searchParams.delete('ids');
+      history.replaceState(null, '', u);
+    }
+
+    const param = new URLSearchParams(location.search).get('ids');
+    const wanted = (param || '').split(',').map(s => s.trim()).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).slice(0, MAX_BUILDS);
+    builds = (await Promise.all(wanted.map(loadOne))).filter(Boolean);
+    render();
+
+    function classLabel(b) {
+      const c = (typeof CLASSES !== 'undefined') ? CLASSES.find(x => x.id === b.classe) : null;
+      return c ? c.ico + ' ' + c.label : (b.classe || '—');
+    }
+    function fmt(v, stat) { return v + C.unitOf(stat); }
+    function fmtDelta(d, stat) { return (d > 0 ? '+' : '') + C.round2(d) + C.unitOf(stat); }
+
+    function render() {
+      syncUrl();
+      document.getElementById('cmp-add').style.display = builds.length >= MAX_BUILDS ? 'none' : '';
+      const body = document.getElementById('cmp-body');
+      if (!builds.length) {
+        body.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">⚖</span>Aucun build à comparer.<br><span style="font-size:11px;opacity:.6">Utilise « Ajouter un build » ou coche ⚖ sur les cartes de la page Builds.</span></div>';
+        renderScorePanel();
+        return;
+      }
+      if (refIdx >= builds.length) refIdx = 0;
+
+      const hasScore = Object.values(weights).some(w => +w > 0);
+      const scores = (hasScore && builds.length >= 2) ? C.scoreBuilds(builds, weights, ALL_STATS) : null;
+      const groups = C.compareStats(builds, STAT_GROUPS, refIdx);
+      const n = builds.length;
+
+      let h = '<div class="cmp-table-wrap"><table class="cmp-table" style="--cols:' + n + '"><thead><tr><th class="cmp-stat-col"></th>';
+      builds.forEach((b, i) => {
+        const win = scores && scores.winner === i;
+        h += '<th class="cmp-head' + (i === refIdx ? ' is-ref' : '') + (win ? ' is-winner' : '') + '">' +
+          (win ? '<div class="cmp-crown">👑 Meilleur</div>' : '') +
+          '<div class="cmp-bname" title="' + esc(b.name || 'Sans nom') + '">' + esc(b.name || 'Sans nom') + '</div>' +
+          '<div class="cmp-bmeta">' + esc(classLabel(b)) + ' · Niv. ' + (b.level || 1) + '</div>' +
+          '<div class="cmp-bmeta">👤 ' + esc(b.authorPseudo || 'Anonyme') + '</div>' +
+          '<div class="cmp-hbtns">' +
+            '<button class="cmp-mini' + (i === refIdx ? ' on' : '') + '" data-ref="' + i + '" title="Calculer les écarts par rapport à ce build">' + (i === refIdx ? '● Référence' : '○ Référence') + '</button>' +
+            (b._id !== 'local' ? '<a class="cmp-mini" href="builds.html?id=' + encodeURIComponent(b._id) + '" title="Voir le build">↗</a>' : '') +
+            '<button class="cmp-mini" data-rm="' + i + '" title="Retirer">✕</button>' +
+          '</div></th>';
+      });
+      h += '</tr></thead><tbody>';
+
+      if (scores) {
+        h += '<tr class="cmp-score-row"><td class="cmp-stat-col">⚖ Score</td>';
+        scores.forEach((s, i) => {
+          h += '<td><div class="cmp-score-val">' + s.score + '</div>' +
+            '<div class="cmp-score-bar"><span style="width:' + s.pct + '%"></span></div>' +
+            '<div class="cmp-score-top">' + s.top.map(t => esc(t.stat.label)).join(', ') + '</div></td>';
+        });
+        h += '</tr>';
+      }
+
+      let shown = 0;
+      groups.forEach(g => {
+        const rows = diffOnly ? g.rows.filter(r => r.diff) : g.rows;
+        if (!rows.length) return;
+        h += '<tr class="cmp-group"><td colspan="' + (n + 1) + '">' + esc(g.label) + '</td></tr>';
+        rows.forEach(r => {
+          shown++;
+          h += '<tr class="cmp-row' + (r.diff ? ' has-diff' : '') + '"><td class="cmp-stat-col">' + (r.stat.icon || '') + ' ' + esc(r.stat.label) + '</td>';
+          r.values.forEach((v, i) => {
+            const d = r.deltas[i];
+            let cls = '';
+            if (r.diff) cls = r.best[i] ? ' best' : (r.worst[i] ? ' worst' : '');
+            let dh = '';
+            if (i !== refIdx && d !== 0) dh = '<span class="cmp-delta ' + (d > 0 ? 'up' : 'down') + '">' + fmtDelta(d, r.stat) + '</span>';
+            h += '<td class="cmp-cell' + cls + '"><span class="cmp-v">' + (v === 0 ? '—' : fmt(v, r.stat)) + '</span>' + dh + '</td>';
+          });
+          h += '</tr>';
+        });
+      });
+      h += '</tbody></table></div>';
+      if (!shown) h += '<div class="builds-empty" style="padding:24px 0">' + (diffOnly ? 'Aucune différence entre ces builds.' : 'Aucune stat enregistrée.') + '</div>';
+      if (n < 2) h += '<div class="cmp-hint" style="margin-top:12px">Ajoute au moins un second build pour voir les écarts.</div>';
+      body.innerHTML = h;
+
+      body.querySelectorAll('[data-ref]').forEach(el => el.addEventListener('click', () => { refIdx = +el.dataset.ref; render(); }));
+      body.querySelectorAll('[data-rm]').forEach(el => el.addEventListener('click', () => { builds.splice(+el.dataset.rm, 1); render(); }));
+      renderScorePanel();
+    }
+
+    // ── Panneau de score ──────────────────────────────────────────
+    function saveWeights() { try { localStorage.setItem(LS_W, JSON.stringify(weights)); } catch {} }
+
+    function renderScorePanel() {
+      const pr = document.getElementById('cmp-presets');
+      if (!pr.dataset.ready) {
+        pr.dataset.ready = '1';
+        pr.innerHTML = Object.keys(C.PRESETS).map(k => '<button class="cmp-mini" data-preset="' + esc(k) + '">' + esc(k) + '</button>').join('') +
+          '<button class="cmp-mini" data-preset="">Tout à 0</button>';
+        pr.addEventListener('click', e => {
+          const b = e.target.closest('[data-preset]');
+          if (!b) return;
+          weights = Object.assign({}, C.PRESETS[b.dataset.preset] || {});
+          saveWeights(); renderScorePanel(); render();
+        });
+      }
+      const wrap = document.getElementById('cmp-weights');
+      wrap.innerHTML = ALL_STATS.map(s =>
+        '<label class="cmp-w"><span>' + (s.icon || '') + ' ' + esc(s.label) + '</span>' +
+        '<input type="number" min="0" max="10" step="0.5" data-w="' + s.id + '" value="' + (+weights[s.id] || 0) + '" /></label>').join('');
+      wrap.querySelectorAll('[data-w]').forEach(inp => inp.addEventListener('change', () => {
+        const v = Math.max(0, Math.min(10, +inp.value || 0));
+        if (v) weights[inp.dataset.w] = v; else delete weights[inp.dataset.w];
+        saveWeights(); render();
+      }));
+    }
+
+    document.getElementById('cmp-score-toggle').addEventListener('click', () => {
+      const p = document.getElementById('cmp-score-panel');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    });
+    document.getElementById('cmp-diff-only').addEventListener('change', e => { diffOnly = e.target.checked; render(); });
+    document.getElementById('cmp-copy').addEventListener('click', async e => {
+      try { await navigator.clipboard.writeText(location.href); e.target.textContent = '✓ Lien copié'; }
+      catch { e.target.textContent = 'Copie impossible'; }
+      setTimeout(() => { e.target.textContent = '🔗 Copier le lien'; }, 1800);
+    });
+
+    // ── Sélecteur de build ────────────────────────────────────────
+    document.getElementById('cmp-add').addEventListener('click', async () => {
+      const p = document.getElementById('cmp-picker');
+      p.style.display = p.style.display === 'none' ? 'block' : 'none';
+      if (p.style.display === 'none') return;
+      const list = document.getElementById('cmp-picker-list');
+      if (!pool) {
+        list.innerHTML = '<div class="builds-loading">Chargement des builds…</div>';
+        try {
+          const snap = await getDocs(query(collection(db, COL.buildsPublished), where('visibility', '==', 'public'), limit(500)));
+          pool = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+        } catch { pool = []; }
+        const l = readLocal();
+        if (l) pool.unshift({ _id: 'local', name: (l.name || 'Mon build') + ' (Atelier — non publié)', classe: l.classe, level: l.level, authorPseudo: 'Vous', statsSnapshot: l.statsSnapshot });
+      }
+      renderPicker();
+      document.getElementById('cmp-picker-search').focus();
+    });
+    document.getElementById('cmp-picker-search').addEventListener('input', renderPicker);
+
+    function renderPicker() {
+      const q = window.VCL.normalize(document.getElementById('cmp-picker-search').value || '');
+      const used = new Set(ids());
+      const rows = (pool || []).filter(b => !used.has(b._id))
+        .filter(b => !q || window.VCL.fuzzyMatch(q, b.name || '') || window.VCL.fuzzyMatch(q, b.authorPseudo || ''))
+        .slice(0, 60);
+      document.getElementById('cmp-picker-list').innerHTML = rows.length
+        ? rows.map(b => '<button class="cmp-pick" data-pick="' + esc(b._id) + '"><b>' + esc(b.name || 'Sans nom') + '</b><span>' + esc(classLabel(b)) + ' · Niv. ' + (b.level || 1) + ' · 👤 ' + esc(b.authorPseudo || 'Anonyme') + '</span></button>').join('')
+        : '<div class="cmp-hint">Aucun build.</div>';
+      document.querySelectorAll('[data-pick]').forEach(el => el.addEventListener('click', () => {
+        const b = pool.find(x => x._id === el.dataset.pick);
+        if (!b || builds.length >= MAX_BUILDS) return;
+        builds.push(b);
+        document.getElementById('cmp-picker').style.display = 'none';
+        render();
+      }));
+    }
+  </script>
+</body>
+</html>

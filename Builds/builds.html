@@ -6,6 +6,7 @@
   <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
   <title>[VCL] - Builds Partagés</title>
   <link rel="stylesheet" href="builds.css" />
+  <link rel="stylesheet" href="compare.css" />
   <link rel="stylesheet" href="../Atelier/skilltree.css?v=9f7fe88a" />
   <link rel="stylesheet" href="../auth-widget.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -553,6 +554,7 @@
             <span class="bc-time">${escHtml(ago)}</span>
             <div class="bc-actions">
               <button class="bc-btn" data-action="share" data-id="${escHtml(b._id)}" title="Copier le lien">🔗</button>
+              <button class="bc-btn cmp ${_cmpSel().includes(b._id) ? 'active' : ''}" data-action="compare" data-id="${escHtml(b._id)}" title="Ajouter au comparateur">⚖</button>
               <button class="bc-btn primary" data-action="preview" data-id="${escHtml(b._id)}" title="Aperçu dans l'Atelier">◉ Aperçu</button>
               <button class="bc-btn fav ${isFav ? 'active' : ''}" data-action="fav" data-id="${escHtml(b._id)}" title="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">⭐</button>
             </div>
@@ -570,6 +572,7 @@
           if (action === 'delete')  _handleDelete(id);
           if (action === 'skills')  _handleSkills(id);
           if (action === 'share')   _handleShare(id);
+          if (action === 'compare') _toggleCompare(id, this);
           if (action === 'move-prev') _moveBuild(id, -1);
           if (action === 'move-next') _moveBuild(id, 1);
           if (action === 'preview') {
@@ -642,6 +645,35 @@
         });
       });
     }
+
+    // ── Comparateur : sélection de 2 à 4 builds (conservée dans localStorage) ──
+    function _cmpSel() {
+      try { const a = JSON.parse(localStorage.getItem('vcl_compare_sel') || '[]'); return Array.isArray(a) ? a : []; } catch { return []; }
+    }
+    function _cmpSave(a) { try { localStorage.setItem('vcl_compare_sel', JSON.stringify(a)); } catch {} }
+    function _toggleCompare(id, btn) {
+      let sel = _cmpSel();
+      if (sel.includes(id)) sel = sel.filter(x => x !== id);
+      else if (sel.length >= 4) { _showToast('⚖ 4 builds maximum dans le comparateur.'); return; }
+      else sel.push(id);
+      _cmpSave(sel);
+      btn.classList.toggle('active', sel.includes(id));
+      _renderCmpBar();
+    }
+    function _renderCmpBar() {
+      let bar = document.getElementById('cmp-bar');
+      const sel = _cmpSel();
+      if (!sel.length) { if (bar) bar.remove(); return; }
+      if (!bar) { bar = document.createElement('div'); bar.id = 'cmp-bar'; bar.className = 'cmp-bar'; document.body.appendChild(bar); }
+      bar.innerHTML = '<span>⚖ ' + sel.length + ' build' + (sel.length > 1 ? 's' : '') + ' sélectionné' + (sel.length > 1 ? 's' : '') + '</span>' +
+        '<a href="comparateur.html?ids=' + sel.map(encodeURIComponent).join(',') + '">Comparer →</a>' +
+        '<button id="cmp-bar-clear" title="Vider la sélection">✕</button>';
+      document.getElementById('cmp-bar-clear').addEventListener('click', () => {
+        _cmpSave([]); _renderCmpBar();
+        document.querySelectorAll('.bc-btn.cmp.active').forEach(b => b.classList.remove('active'));
+      });
+    }
+    _renderCmpBar();
 
     // ── Réordonnancement (admin) ──────────────────────────────────
     // Seulement sur la liste complète (aucun filtre) : sinon l'ordre des builds masqués serait ambigu.

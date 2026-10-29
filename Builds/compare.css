@@ -1,0 +1,71 @@
+/* ══ Comparateur de builds — complète builds.css ══ */
+.cmp-main { max-width: 1100px; margin: 0 auto; padding: 0 16px 60px; position: relative; z-index: 1; }
+.cmp-back { color: var(--gold); text-decoration: none; font-size: 12px; align-self: center; }
+.cmp-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 14px 0; }
+.cmp-btn, .cmp-mini {
+  background: var(--surface2); color: var(--text); border: 1px solid var(--rim2);
+  font: inherit; font-size: 12px; padding: 6px 12px; border-radius: 4px; cursor: pointer; text-decoration: none;
+}
+.cmp-btn:hover, .cmp-mini:hover { border-color: var(--gold-dim); color: var(--bright); }
+.cmp-mini { font-size: 10px; padding: 2px 7px; display: inline-block; }
+.cmp-mini.on { border-color: var(--gold); color: var(--gold); }
+.cmp-check { font-size: 12px; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.cmp-hint { color: var(--muted); font-size: 11px; }
+
+.cmp-table-wrap { overflow-x: auto; border: 1px solid var(--rim); border-radius: 6px; background: var(--surface); }
+.cmp-table { width: 100%; border-collapse: collapse; min-width: 520px; }
+.cmp-table th, .cmp-table td { padding: 7px 10px; border-bottom: 1px solid var(--rim); text-align: center; }
+.cmp-stat-col { text-align: left !important; width: 220px; color: var(--text); font-size: 12px; white-space: nowrap; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+.cmp-head { vertical-align: top; background: var(--surface2); }
+.cmp-head.is-ref { box-shadow: inset 0 -2px 0 var(--gold-dim); }
+.cmp-head.is-winner { background: var(--gold-glow); }
+.cmp-crown { color: var(--gold); font-size: 11px; font-weight: 700; }
+.cmp-bname { color: var(--bright); font-weight: 700; font-size: 13px; max-width: 200px; margin: 0 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmp-bmeta { font-size: 10px; color: var(--muted); }
+.cmp-hbtns { margin-top: 6px; display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+
+.cmp-group td { text-align: left; background: var(--deep); color: var(--gold); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.cmp-row:not(.has-diff) .cmp-cell { color: var(--muted); }
+.cmp-v { font-weight: 700; color: var(--bright); }
+.cmp-row:not(.has-diff) .cmp-v { color: var(--muted); font-weight: 400; }
+.cmp-cell.best { background: rgba(110, 190, 120, .10); }
+.cmp-cell.best .cmp-v { color: #8fd69a; }
+.cmp-cell.worst { background: rgba(217, 97, 74, .08); }
+.cmp-cell.worst .cmp-v { color: #e7826e; }
+.cmp-delta { display: block; font-size: 10px; }
+.cmp-delta.up { color: #8fd69a; }
+.cmp-delta.down { color: #e7826e; }
+
+.cmp-score-panel, .cmp-picker { background: var(--surface); border: 1px solid var(--rim); border-radius: 6px; padding: 12px; margin-bottom: 14px; }
+.cmp-score-head { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+.cmp-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.cmp-weights { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 14px; max-height: 260px; overflow-y: auto; }
+.cmp-w { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 11px; }
+.cmp-w input { width: 52px; background: var(--deep); color: var(--bright); border: 1px solid var(--rim2); border-radius: 3px; font: inherit; font-size: 11px; padding: 2px 4px; text-align: right; }
+
+.cmp-score-row td { background: var(--surface2); }
+.cmp-score-val { color: var(--gold); font-size: 18px; font-weight: 700; }
+.cmp-score-bar { height: 5px; background: var(--rim); border-radius: 3px; margin: 4px auto; max-width: 140px; overflow: hidden; }
+.cmp-score-bar span { display: block; height: 100%; background: var(--gold); }
+.cmp-score-top { font-size: 10px; color: var(--muted); }
+
+.cmp-picker-list { margin-top: 8px; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.cmp-pick { text-align: left; background: var(--deep); border: 1px solid var(--rim); color: var(--text); font: inherit; font-size: 12px; padding: 6px 10px; border-radius: 4px; cursor: pointer; display: flex; flex-direction: column; }
+.cmp-pick:hover { border-color: var(--gold-dim); }
+.cmp-pick b { color: var(--bright); }
+.cmp-pick span { color: var(--muted); font-size: 10px; }
+
+/* Barre flottante + case ⚖ sur la page Builds */
+.cmp-bar {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 50;
+  background: var(--surface2); border: 1px solid var(--gold-dim); border-radius: 8px; padding: 8px 14px;
+  display: flex; align-items: center; gap: 12px; font-size: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.5);
+}
+.cmp-bar a { color: var(--gold); text-decoration: none; font-weight: 700; }
+.cmp-bar button { background: none; border: none; color: var(--muted); cursor: pointer; font: inherit; }
+.bc-btn.cmp.active { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+
+@media (max-width: 640px) {
+  .cmp-stat-col { width: 130px; white-space: normal; }
+  .cmp-table th, .cmp-table td { padding: 6px 5px; }
+}
