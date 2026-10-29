@@ -270,7 +270,7 @@ function _mergeContributors(existing, newContrib, isMod = false) {
   return result.length ? result : [newContrib];
 }
 
-_lazyPanel(() => import('./moderation-orders.js?v=0ee74eeb'), ['showMobOrder', 'filterMobOrder', 'saveMobOrder', 'showItemOrder', 'filterItemOrder', 'saveItemOrder', 'showPnjOrder', 'filterPnjOrder', 'autoSortPnjOrder', 'savePnjOrder', 'showRegionOrder', 'filterRegionOrder', 'saveRegionOrder', 'showPanoplieOrder', 'renderPanoplieOrder', 'savePanoplieOrder', 'loadMobOrder', 'loadItemOrder', 'loadPnjOrder', 'loadRegionOrder', 'loadPanoplieOrder']);
+_lazyPanel(() => import('./moderation-orders.js?v=669c0ebf'), ['showMobOrder', 'filterMobOrder', 'saveMobOrder', 'showItemOrder', 'filterItemOrder', 'saveItemOrder', 'showPnjOrder', 'filterPnjOrder', 'autoSortPnjOrder', 'savePnjOrder', 'showRegionOrder', 'filterRegionOrder', 'saveRegionOrder', 'showPanoplieOrder', 'renderPanoplieOrder', 'savePanoplieOrder', 'loadMobOrder', 'loadItemOrder', 'loadPnjOrder', 'loadRegionOrder', 'loadPanoplieOrder']);
 
 
 let _activePanel = 'submissions';
