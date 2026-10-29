@@ -137,6 +137,7 @@
     <button class="filter-btn" id="btn-events-tool"        data-min-role="admin" onclick="showEventsTool()">🎪 Events</button>
     <button class="filter-btn" id="btn-donjons-tool"       data-min-role="admin" onclick="showDonjonsTool()">🏰 Donjons</button>
     <button class="filter-btn" id="btn-worldboss-tool"     data-min-role="admin" onclick="showWorldbossTool()">🌍 Worldboss</button>
+    <button class="filter-btn" id="btn-secret-forgerons"   data-min-role="admin" onclick="showSecretForgerons()">🔮 Forgerons secrets</button>
     <button class="filter-btn" id="btn-titres-tool"        data-min-role="admin" onclick="showTitresTool()">🏅 Titres</button>
     <button class="filter-btn" id="btn-tags"              data-min-role="admin" onclick="showTagsPanel()">🏷️  Tags</button>
     <button class="filter-btn" id="btn-bugs-connus" onclick="showBugsConnus()">🐛 Bugs Connus</button>
@@ -1307,6 +1308,17 @@ style="font-size:12px;">← Retour</button>
       Un emoji par world boss, affiché devant son nom dans le menu du Compendium. Les world boss sont les mobs de type «&nbsp;WorldBoss&nbsp;» (créés dans le Creator). Champ vide = ☠️.
     </p>
     <div id="worldboss-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+  </main>
+
+  <!-- Panneau Forgerons secrets (position cachée dans l'obtain, la carte et le bestiaire) -->
+  <main class="main" id="secret-forgerons-panel" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:700;">🔮 Forgerons d'items secrets</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      Tant que le secret est actif, ces PNJ (type «&nbsp;Forgeron d'items secrets&nbsp;» ou tag fabricant secret) n'apparaissent ni sur la carte ni dans le bestiaire, et l'obtention de leurs items affiche «&nbsp;Forgeron d'items secret - Position cachée pour l'instant&nbsp;». Leurs items restent visibles dans le Compendium et l'Atelier.
+    </p>
+    <div id="secret-forgerons-body"></div>
   </main>
 
   <!-- Panneau Donjons (sources d'obtention) -->

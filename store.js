@@ -36,6 +36,23 @@ async function _loadPalierLabels() {
   } catch (e) { console.warn('[store] config/paliers :', e.message); }
 }
 
+// Forgerons d'items secrets : leur position reste cachée (carte, bestiaire, localisation dans l'obtain) tant que
+// config/secret_forgerons.hidden n'est pas false (outil modération « Forgerons secrets »). Masqué par défaut.
+window._vcl_secret_forgerons_hidden = true;
+const _SECRET_FORGERON_TAGS  = ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'];
+const _SECRET_FORGERON_TYPES = ["forgeron d'items secrets", 'fabricant secret'];
+window.vclIsSecretForgeron = p => !!p && (_SECRET_FORGERON_TAGS.includes(p.tag) || _SECRET_FORGERON_TYPES.includes(String(p.type || '').toLowerCase()));
+window.vclIsSecretPnj = p => window._vcl_secret_forgerons_hidden !== false && window.vclIsSecretForgeron(p);
+async function _loadSecretForgerons() {
+  try {
+    const snap = await Promise.race([
+      getDoc(doc(db, 'config', 'secret_forgerons')),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000)),
+    ]);
+    window._vcl_secret_forgerons_hidden = !(snap.exists() && snap.data().hidden === false);
+  } catch (e) { console.warn('[store] config/secret_forgerons :', e.message); }
+}
+
 const _data    = {};
 let _ready     = false;
 let _callbacks = [];
@@ -70,6 +87,7 @@ export const store = {
       const [res] = await Promise.all([
         Promise.all(toLoad.map(c => loadCollection(COL_MAP[c] ?? c).catch(() => []).finally(() => progress?.step()))),
         _loadPalierLabels(),
+        _loadSecretForgerons(),
       ]);
       results = res;
     } finally { progress?.end(); }
@@ -137,11 +155,12 @@ export const store = {
   /**
    * Peuple les variables globales utilisées par les scripts classiques non encore migrés.
    * Appeler après store.load() si la page utilise encore ITEMS, MOBS, PERSONNAGES, SETS.
+   * `hideSecretPnj` : n'inclut pas les forgerons d'items secrets (bestiaire) tant qu'ils sont masqués.
    */
-  populateGlobals() {
+  populateGlobals({ hideSecretPnj = false } = {}) {
     if (typeof ITEMS       !== 'undefined') ITEMS.push(...(_data.items     ?? []));
     if (typeof MOBS        !== 'undefined') MOBS.push(...(_data.mobs      ?? []));
-    if (typeof PERSONNAGES !== 'undefined') PERSONNAGES.push(...(_data.pnj  ?? []));
+    if (typeof PERSONNAGES !== 'undefined') PERSONNAGES.push(...(_data.pnj ?? []).filter(p => !(hideSecretPnj && window.vclIsSecretPnj(p))));
     if (typeof SETS        !== 'undefined' && _data.sets) Object.assign(SETS, _data.sets);
   },
 };

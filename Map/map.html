@@ -370,7 +370,7 @@
     import { getDoc, doc } from '../d1db.js';
     logPageView('map');
     await store.load(['pnj', 'regions', 'mobs', 'quetes', 'donjons', 'zones', 'mapMarkers']);
-    window._map_pnj        = store.pnj;
+    window._map_pnj        = store.pnj.filter(p => !window.vclIsSecretPnj(p)); // forgerons d'items secrets : position cachée
     window._map_regions    = store.regions;
     window._map_mobs       = store.mobs;
     window._map_quetes     = store.quetes;

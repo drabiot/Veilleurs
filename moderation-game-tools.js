@@ -197,6 +197,51 @@ window.setVclWorldbossEmoji = async function(name, value) {
   }
 };
 
+// ── FORGERONS SECRETS TOOL : config/secret_forgerons { hidden } (absent ou true = position cachée ; lu par store.js) ──
+const _SF_REF = () => doc(db, 'config', 'secret_forgerons');
+const _isSecretForgeron = p => ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'].includes(p.tag)
+  || ["forgeron d'items secrets", 'fabricant secret'].includes(String(p.type || '').toLowerCase());
+
+window.showSecretForgerons = async function() {
+  _setHash('secret-forgerons');
+  _showPanel('secret-forgerons-panel', 'btn-secret-forgerons');
+  await _loadSecretForgerons();
+};
+
+async function _loadSecretForgerons() {
+  const body = document.getElementById('secret-forgerons-body');
+  if (!body) return;
+  body.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [snap, cfg] = await Promise.all([getDocs(collection(db, COL.pnj)), getDoc(_SF_REF())]);
+    const hidden = !(cfg.exists() && cfg.data().hidden === false);
+    const pnjs = snap.docs.map(d => d.data()).filter(_isSecretForgeron).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
+    const rows = pnjs.map(p => `<div style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:13px;display:flex;justify-content:space-between;gap:12px;">
+        <span>${escHtml(p.name || p.id || '?')}</span>
+        <span style="color:var(--muted);font-size:12px;">${escHtml(String(p.region || '').replace(/_/g, ' '))} · ${(p.craft || []).length} recette(s)</span>
+      </div>`).join('');
+    body.innerHTML = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <span style="font-size:14px;font-weight:700;color:${hidden ? 'var(--danger)' : 'var(--success, #4caf50)'};">${hidden ? '🔒 Secret actif — positions cachées' : '🔓 Secret levé — positions visibles'}</span>
+        <button class="btn ${hidden ? 'btn-primary' : 'btn-ghost'}" onclick="setSecretForgeronsHidden(${!hidden})" style="font-size:12px;">${hidden ? '🔓 Révéler les forgerons' : '🔒 Réactiver le secret'}</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${pnjs.length} forgeron(s) d'items secrets</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">${rows || '<div class="empty" style="color:var(--muted);">Aucun forgeron d\'items secrets.</div>'}</div>`;
+  } catch (e) {
+    body.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`;
+  }
+}
+
+window.setSecretForgeronsHidden = async function(hidden) {
+  if (!hidden && !await modal.confirm('Révéler les forgerons d\'items secrets ?\n\nIls réapparaissent sur la carte et dans le bestiaire, et leur position est de nouveau affichée dans l\'obtain.')) return;
+  try {
+    await setDoc(_SF_REF(), { hidden: !!hidden });
+    toast(hidden ? 'Secret actif : positions cachées.' : 'Secret levé : positions visibles.', 'success');
+    await _loadSecretForgerons();
+  } catch(e) {
+    toast('Erreur : ' + e.message, 'error');
+  }
+};
+
 window.createVclEvent = async function() {
   const inp = document.getElementById('event-name-input');
   const name = inp?.value?.trim();

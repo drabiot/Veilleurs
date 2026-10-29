@@ -159,6 +159,12 @@ function npcLocSuffix(p, regionName) {
   const hasC = c && c.x != null && c.y != null && c.z != null;
   return (region ? ` de ${region}` : '') + (hasC ? ` (${c.x},${c.y},${c.z})` : '');
 }
+// Forgerons d'items secrets masqués (outil modération « Forgerons secrets », store.js) : leur ligne d'obtain n'a ni nom, ni lieu, ni lien.
+const SECRET_FORGERON_OBTAIN = "Forgeron d'items secret - Position cachée pour l'instant";
+function secretPnjIds() {
+  if (typeof PERSONNAGES === 'undefined' || !Array.isArray(PERSONNAGES) || !window.vclIsSecretPnj) return [];
+  return PERSONNAGES.filter(p => window.vclIsSecretPnj(p)).map(p => p.id ?? p._id).filter(Boolean);
+}
 function autoObtainLines(item) {
   if (typeof PERSONNAGES === 'undefined' || !Array.isArray(PERSONNAGES) || !item) return [];
   const id = item.id ?? item._id;
@@ -168,6 +174,10 @@ function autoObtainLines(item) {
     const pid = p.id ?? p._id;
     if (!pid || !p.name) continue;
     const has = list => Array.isArray(list) && list.some(e => e && (e.id === id || e.itemId === id));
+    if (window.vclIsSecretPnj?.(p)) {
+      if ((has(p.craft) || has(p.sells)) && !lines.some(l => l.secret)) lines.push({ pid, secret: true, line: SECRET_FORGERON_OBTAIN });
+      continue;
+    }
     if (has(p.craft))      lines.push({ pid, line: `Fabricable au [npc:${pid}|${p.name}]${npcLocSuffix(p)}` });
     else if (has(p.sells)) lines.push({ pid, line: `Achetable au [npc:${pid}|${p.name}]${npcLocSuffix(p)}` });
   }
@@ -188,7 +198,17 @@ function autoMobLootLines(item) {
 }
 function withAutoObtain(item, text) {
   let base = typeof text === 'string' ? text : '';
-  const extra = autoObtainLines(item).filter(l => !base.includes(`[npc:${l.pid}|`) && !base.includes(`[npc:${l.pid}]`)).map(l => l.line);
+  // Ligne écrite à la main qui cite un forgeron secret masqué : remplacée en entier (elle peut donner son lieu), une seule fois
+  const secretIds = secretPnjIds();
+  if (secretIds.length && base) {
+    base = base.split('\n')
+      .map(l => secretIds.some(sid => l.includes(`[npc:${sid}|`) || l.includes(`[npc:${sid}]`)) ? l.replace(/^(\s*[-*]\s+)?.*$/, (m, bullet) => (bullet || '') + SECRET_FORGERON_OBTAIN) : l)
+      .filter((l, i, a) => !l.includes(SECRET_FORGERON_OBTAIN) || a.findIndex(x => x.includes(SECRET_FORGERON_OBTAIN)) === i)
+      .join('\n');
+  }
+  const extra = autoObtainLines(item)
+    .filter(l => l.secret ? !base.includes(l.line) : !base.includes(`[npc:${l.pid}|`) && !base.includes(`[npc:${l.pid}]`))
+    .map(l => l.line);
   const mobExtra = autoMobLootLines(item).filter(l => !base.includes(`[${l.mid}|`)).map(l => l.line);
   if (mobExtra.length) {
     const lines = base.split('\n');

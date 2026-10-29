@@ -431,7 +431,7 @@
 
     try {
       await store.load(['items', 'mobs', 'pnj', 'regions']);
-      store.populateGlobals();
+      store.populateGlobals({ hideSecretPnj: true });
       window._regionIndex = new Map(store.regions.map(r => [r.id, r.name || r.id]));
       window._regionOrderIndex = new Map(store.regions.map(r => [r.id, r.ordre ?? 9999]));
     } catch (err) {

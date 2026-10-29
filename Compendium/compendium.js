@@ -864,6 +864,11 @@ function renderNpcHeader(recette, index) {
   const _findById = (arr, id) => arr?.find(m => (m.id || m._id) === id) || arr?.find(m => (m.id || m._id)?.startsWith(id + '_'));
   const npcMob   = (typeof MOBS  !== 'undefined') && _findById(MOBS, recette.npcId);
   const npcPnj   = (typeof PERSONNAGES !== 'undefined') && _findById(PERSONNAGES, recette.npcId);
+  if (!npcItem && !npcMob && npcPnj && window.vclIsSecretPnj?.(npcPnj)) { // forgeron d'items secret masqué : ni nom, ni lien vers sa fiche
+    return `<div class="craft-npc-header craft-npc-header--plain">
+      <span class="craft-npc-label">${escHtml(SECRET_FORGERON_OBTAIN)}</span>
+    </div>`;
+  }
   const npc      = npcItem || npcMob || npcPnj;
   const npcName  = npc ? (npc.name || label) : label;
   const npcImg   = npc ? getItemImg(npc) : null;
