@@ -1405,7 +1405,7 @@ function renderSheet(q) {
 const TITLES = {
   main: ['Quêtes Principales', '// PRINCIPALES · VEILLEURS AU CLAIR DE LUNE'],
   sec:  ['Quêtes Secondaires', '// SECONDAIRES · VEILLEURS AU CLAIR DE LUNE'],
-  ter:  ['Quêtes Tertiaires',  '// TERTIAIRES · VEILLEURS AU CLAIR DE LUNE'],
+  ter:  ['Quêtes Fractured Underworld',  '// FRACTURED UNDERWORLD · VEILLEURS AU CLAIR DE LUNE'],
 };
 function updateHeader() {
   const [t, s] = TITLES[activeTab];

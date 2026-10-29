@@ -1179,7 +1179,7 @@ const _AP_PNJ_TO_TYPE = {
 
 const _AP_TYPE_LABELS = {
   région: 'Région', donjon: 'Donjon', boss: 'Boss', mini_boss: 'Mini-Boss', zone_monstre: 'Zone Monstres',
-  quête_principale: 'Quête Principale', quête_secondaire: 'Quête Secondaire', quête_tertiaire: 'Quête Tertiaire',
+  quête_principale: 'Quête Principale', quête_secondaire: 'Quête Secondaire', quête_tertiaire: 'Quête Fractured Underworld',
   craft_armes: "Forgeron d'Armes", craft_armures: "Forgeron d'Armures",
   craft_accessoires: "Forgeron d'Accessoires", craft_lingots: 'Forgeron de Lingots', craft_cles: 'Fabricants de Clés',
   craft_secrets: "Forgeron d'Items Secrets",

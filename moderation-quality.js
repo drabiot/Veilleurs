@@ -33,7 +33,7 @@ const _CF_DEFS = {
   'items:classes':   { type:'multicheckbox', opts:[['guerrier','⚔️ Guerrier'],['assassin','🗡️ Assassin'],['archer','🏹 Archer'],['mage','📖 Mage'],['shaman','🌿 Shaman']] },
   'mobs:type':       { type:'select', opts:[['monstre','👹 Monstre'],['sbire','💀 Sbire'],['mini_boss','⚡ Mini-Boss'],['worldboss','🌍 WorldBoss'],['boss','🔥 Boss']] },
   'mobs:region':     { type:'dbselect', colName:'regions', labelKey:'name' },
-  'quetes:type':     { type:'select', opts:[['main','⚔️ Principale'],['sec','🗺️ Secondaire'],['ter','📋 Tertiaire']] },
+  'quetes:type':     { type:'select', opts:[['main','⚔️ Principale'],['sec','🗺️ Secondaire'],['ter','📋 Fractured Underworld']] },
   'quetes:zone':     { type:'dbselect', colName:'regions', labelKey:'name' },
   'pnj:type':        { type:'select', opts:[['marchand','🛒 Marchand'],['donneur_quete','📜 Donneur quête'],['forgeron','⚒️ Forgeron'],['aubergiste','🍺 Aubergiste'],['instructeur','📚 Instructeur'],['autre','❓ Autre']] },
   'pnj:region':      { type:'dbselect', colName:'regions', labelKey:'name' },
@@ -734,7 +734,7 @@ const QUALITY_SUBCATEGORIES = {
   quetes: [
     { id: 'main', label: '⚔️ Principale' },
     { id: 'sec',  label: '🗺️ Secondaire' },
-    { id: 'ter',  label: '📋 Tertiaire' },
+    { id: 'ter',  label: '📋 Fractured Underworld' },
   ],
 };
 

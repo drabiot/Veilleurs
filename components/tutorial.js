@@ -200,14 +200,14 @@
         {
           selector: '.mode-btn[data-mode="quest"]',
           title: '📜 Mode Quête',
-          body: 'Pour soumettre une quête principale, secondaire ou tertiaire.',
+          body: 'Pour soumettre une quête principale, secondaire ou Fractured Underworld.',
           position: 'bottom',
           onEnter: function () { if (typeof switchMode === 'function') switchMode('quest'); },
         },
         {
           selector: '[data-tuto="quest-identity"]',
           title: '📜 Identité',
-          body: 'Titre, type (Principale/Secondaire/Tertiaire), palier, zone et PNJ donneur. Les coordonnées de départ localisent le point de départ sur la carte.',
+          body: 'Titre, type (Principale/Secondaire/Fractured Underworld), palier, zone et PNJ donneur. Les coordonnées de départ localisent le point de départ sur la carte.',
           position: 'right',
           onEnter: function () { forceShowSection('[data-tuto="quest-identity"]'); },
         },

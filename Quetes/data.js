@@ -4,7 +4,7 @@
 ══════════════════════════════════════════════════════════════ */
 
 /* ── Labels / icônes ── */
-const TYPE_LABELS   = { main: 'Principale', sec: 'Secondaire', ter: 'Tertiaire' };
+const TYPE_LABELS   = { main: 'Principale', sec: 'Secondaire', ter: 'Fractured Underworld' };
 const TYPE_ICONS    = { main: '🔥', sec: '💬', ter: '❓' };
 
 /* RARITIES + rarityColor → définis dans /utils.js (source unique) */

@@ -978,7 +978,7 @@ function initObtainData() {
   _loadFirestoreDonjons();
   _loadDonjonsLoot();
   if (typeof QUETES_DATA !== 'undefined') {
-    const TYPE_LABELS_Q = { main: 'Principale', sec: 'Secondaire', ter: 'Tertiaire' };
+    const TYPE_LABELS_Q = { main: 'Principale', sec: 'Secondaire', ter: 'Fractured Underworld' };
     allQuetes = QUETES_DATA.map(q => ({
       id: q.id, name: q.titre || q.name || q.id,
       subtitle: (TYPE_LABELS_Q[q.type] || q.type || '') + (q.palier ? ' · Palier ' + q.palier : ''),
@@ -2382,7 +2382,7 @@ async function _buildQuestLoadDrop() {
   const buildFromData = (quests) => {
     const idx = quests.map(q => ({
       id: q.id || q._id, name: q.titre || q.name || q.id || q._id,
-      subtitle: [q._pending ? '⏳' : null, q.type ? { main:'Principale',sec:'Secondaire',ter:'Tertiaire' }[q.type]||q.type : '', q.palier ? 'P'+q.palier : ''].filter(Boolean).join(' · '),
+      subtitle: [q._pending ? '⏳' : null, q.type ? { main:'Principale',sec:'Secondaire',ter:'Fractured Underworld' }[q.type]||q.type : '', q.palier ? 'P'+q.palier : ''].filter(Boolean).join(' · '),
       search: (q._pending ? '⏳ ' : '') + ((q.titre||q.name||'') + ' ' + (q.id||q._id||'')).toLowerCase(),
       _raw: q
     }));
@@ -7689,7 +7689,7 @@ function onQuestTypeChange() {
 
 // ── Preview
 const QUEST_TYPE_COLORS = { main: '#e07c50', secondary: '#6aaad4', tertiary: '#82c470' };
-const QUEST_TYPE_LABELS = { main: 'Principale', secondary: 'Secondaire', tertiary: 'Tertiaire' };
+const QUEST_TYPE_LABELS = { main: 'Principale', secondary: 'Secondaire', tertiary: 'Fractured Underworld' };
 
 function renderQuestPreview(obj) {
   const wrap = document.getElementById('preview-wrap');

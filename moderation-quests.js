@@ -18,7 +18,7 @@ let _questPalierSubCollapsed = new Set(); // clés : "type-palier"
 let _questCollapseInit       = false;
 
 const QUEST_TYPE_ORDER  = ['main', 'sec', 'ter'];
-const QUEST_TYPE_LABELS_MOD = { main: '⚔️ Principale', sec: '🗺️ Secondaire', ter: '📋 Tertiaire' };
+const QUEST_TYPE_LABELS_MOD = { main: '⚔️ Principale', sec: '🗺️ Secondaire', ter: '📋 Fractured Underworld' };
 const QUEST_TYPE_COLORS_MOD = { main: '#e07c50',        sec: '#6aaad4',        ter: '#82c470'     };
 
 window.showQuestOrder = async () => {

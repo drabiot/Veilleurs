@@ -46,7 +46,7 @@ const TYPE_LABELS = {
   zone_monstre:       'Zone Monstres',
   quête_principale:   'Quête Principale',
   quête_secondaire:   'Quête Secondaire',
-  quête_tertiaire:    'Quête Tertiaire',
+  quête_tertiaire:    'Quête Fractured Underworld',
   craft_armes:        'Forgeron d\'Armes',
   craft_armures:      'Forgeron d\'Armures',
   craft_accessoires:  'Forgeron d\'Accessoires',
