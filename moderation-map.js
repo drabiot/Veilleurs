@@ -32,9 +32,21 @@ window.deleteMapMarker = async function deleteMapMarker(id) {
    ÉDITEUR DE ZONES (polygones zone_monstre)
 ══════════════════════════════════════════════════════ */
 
-let _zePoints  = [];
+const ZE_SIZE = 900;           // la carte est affichée dans un repère 900×900 (calibration MAP_CALIBRATION)
+const SVG_NS  = 'http://www.w3.org/2000/svg';
+
+let _zePoints  = [];           // [{px, py, gx, gy}]
 let _zeFloor   = 1;
 let _zeLayer   = 'surface';
+let _zeEditId  = null;         // id de la zone en cours d'édition (null = nouvelle)
+let _zeZones   = [];           // zones existantes (toutes), pour l'aperçu et l'édition
+let _zeCreatedAt = undefined;
+
+// ── Pan / Zoom state ──────────────────────────────────
+let _zeScale = 0.6;
+let _zePanX  = 0;
+let _zePanY  = 0;
+let _zeDrag  = null;           // geste en cours : { kind: 'pan'|'vertex', ... }
 
 window.showZoneEditor = function showZoneEditor() {
   _setHash('zones');
@@ -43,13 +55,6 @@ window.showZoneEditor = function showZoneEditor() {
   _zeInit();
 };
 
-// ── Pan / Zoom state ──────────────────────────────────
-let _zeScale  = 0.6;
-let _zePanX   = 0;
-let _zePanY   = 0;
-let _zeDragging = false;
-let _zeDragStart = null;
-
 function _zeApplyTransform() {
   const canvas = document.getElementById('ze-canvas');
   if (canvas) canvas.style.transform = `translate(${_zePanX}px,${_zePanY}px) scale(${_zeScale})`;
@@ -57,84 +62,148 @@ function _zeApplyTransform() {
   if (label) label.textContent = Math.round(_zeScale * 100) + '%';
 }
 
-window.zeZoom = function zeZoom(factor) {
-  const vp = document.getElementById('ze-viewport');
-  if (!vp) return;
-  const newScale = Math.min(4, Math.max(0.15, _zeScale * factor));
-  const cx = vp.clientWidth  / 2;
-  const cy = vp.clientHeight / 2;
+function _zeZoomAt(cx, cy, factor) {
+  const newScale = Math.min(8, Math.max(0.1, _zeScale * factor));
   _zePanX  = cx - (cx - _zePanX) * (newScale / _zeScale);
   _zePanY  = cy - (cy - _zePanY) * (newScale / _zeScale);
   _zeScale = newScale;
   _zeApplyTransform();
   zeRenderSvg();
+}
+
+window.zeZoom = function zeZoom(factor) {
+  const vp = document.getElementById('ze-viewport');
+  if (vp) _zeZoomAt(vp.clientWidth / 2, vp.clientHeight / 2, factor);
 };
 
 window.zeZoomReset = function zeZoomReset() {
   const vp = document.getElementById('ze-viewport');
-  if (!vp) return;
-  _zeScale = Math.min(vp.clientWidth / 900, vp.clientHeight / 900);
-  _zePanX  = (vp.clientWidth  - 900 * _zeScale) / 2;
-  _zePanY  = (vp.clientHeight - 900 * _zeScale) / 2;
+  if (!vp || !vp.clientWidth) return;
+  _zeScale = Math.min(vp.clientWidth / ZE_SIZE, vp.clientHeight / ZE_SIZE);
+  _zePanX  = (vp.clientWidth  - ZE_SIZE * _zeScale) / 2;
+  _zePanY  = (vp.clientHeight - ZE_SIZE * _zeScale) / 2;
   _zeApplyTransform();
   zeRenderSvg();
 };
+
+// Position souris → repère image 900×900
+function _zeToImg(e) {
+  const rect = document.getElementById('ze-viewport').getBoundingClientRect();
+  return { x: (e.clientX - rect.left - _zePanX) / _zeScale, y: (e.clientY - rect.top - _zePanY) / _zeScale };
+}
+const _zeClamp = v => Math.min(ZE_SIZE, Math.max(0, v));
+
+function _zeMakePoint(px, py) {
+  px = _zeClamp(px); py = _zeClamp(py);
+  const g = _zePixelToGame(px, py);
+  return { px, py, gx: g.x, gy: g.y };
+}
 
 function _zeInitPanZoom() {
   const vp = document.getElementById('ze-viewport');
   if (!vp || vp._zeEventsAttached) return;
   vp._zeEventsAttached = true;
 
-  // Mouse wheel → zoom toward cursor
   vp.addEventListener('wheel', e => {
     e.preventDefault();
-    const rect   = vp.getBoundingClientRect();
-    const cx     = e.clientX - rect.left;
-    const cy     = e.clientY - rect.top;
-    const factor = e.deltaY < 0 ? 1.12 : 0.89;
-    const newS   = Math.min(4, Math.max(0.15, _zeScale * factor));
-    _zePanX = cx - (cx - _zePanX) * (newS / _zeScale);
-    _zePanY = cy - (cy - _zePanY) * (newS / _zeScale);
-    _zeScale = newS;
-    _zeApplyTransform();
-    zeRenderSvg();
+    const rect = vp.getBoundingClientRect();
+    _zeZoomAt(e.clientX - rect.left, e.clientY - rect.top, e.deltaY < 0 ? 1.15 : 1 / 1.15);
   }, { passive: false });
 
-  // Right-click drag → pan
-  vp.addEventListener('mousedown', e => {
-    if (e.button !== 2) return;
-    e.preventDefault();
-    _zeDragging  = true;
-    _zeDragStart = { x: e.clientX - _zePanX, y: e.clientY - _zePanY };
-    vp.style.cursor = 'grabbing';
-  });
-  window.addEventListener('mousemove', e => {
-    if (!_zeDragging) return;
-    _zePanX = e.clientX - _zeDragStart.x;
-    _zePanY = e.clientY - _zeDragStart.y;
-    _zeApplyTransform();
-  });
-  window.addEventListener('mouseup', e => {
-    if (e.button !== 2 || !_zeDragging) return;
-    _zeDragging = false;
-    vp.style.cursor = '';
-  });
   vp.addEventListener('contextmenu', e => e.preventDefault());
 
-  // Left click on SVG → add point
-  const svg = document.getElementById('ze-svg');
-  if (svg) {
-    svg.addEventListener('click', e => {
-      if (_zeDragging) return;
-      const vpRect = vp.getBoundingClientRect();
-      const px = (e.clientX - vpRect.left - _zePanX) / _zeScale;
-      const py = (e.clientY - vpRect.top  - _zePanY) / _zeScale;
-      if (px < 0 || py < 0 || px > 900 || py > 900) return;
-      const game = _zePixelToGame(px, py);
-      _zePoints.push({ px, py, gx: game.x, gy: game.y });
+  vp.addEventListener('mousedown', e => {
+    if (e.button !== 0 && e.button !== 2) return;
+    e.preventDefault();
+    const vertEl = e.target.closest?.('[data-vi]');
+    const midEl  = e.target.closest?.('[data-mid]');
+    const zoneEl = e.target.closest?.('[data-zone]');
+    const base = { sx: e.clientX, sy: e.clientY, moved: false };
+    if (e.button === 2) {
+      _zeDrag = { ...base, kind: 'pan', button: 2, ox: _zePanX, oy: _zePanY, vi: vertEl ? +vertEl.dataset.vi : -1 };
+    } else if (vertEl) {
+      _zeDrag = { ...base, kind: 'vertex', i: +vertEl.dataset.vi };
+    } else if (midEl) {
+      // insère un sommet au milieu de l'arête puis le déplace
+      const i = +midEl.dataset.mid;
+      const a = _zePoints[i], b = _zePoints[(i + 1) % _zePoints.length];
+      _zePoints.splice(i + 1, 0, _zeMakePoint((a.px + b.px) / 2, (a.py + b.py) / 2));
+      _zeDrag = { ...base, kind: 'vertex', i: i + 1, inserted: true };
+      zeRenderSvg(); zeUpdateOutput();
+    } else {
+      _zeDrag = { ...base, kind: 'pan', button: 0, ox: _zePanX, oy: _zePanY, zoneId: zoneEl ? zoneEl.dataset.zone : null };
+    }
+    vp.style.cursor = _zeDrag.kind === 'vertex' ? 'grabbing' : '';
+  });
+
+  window.addEventListener('mousemove', e => {
+    const vp2 = document.getElementById('ze-viewport');
+    if (!vp2) return;
+    const info = document.getElementById('ze-cursor-info');
+    if (info && vp2.offsetParent) {
+      const r = vp2.getBoundingClientRect();
+      if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+        const p = _zeToImg(e);
+        if (p.x >= 0 && p.y >= 0 && p.x <= ZE_SIZE && p.y <= ZE_SIZE) {
+          const g = _zePixelToGame(p.x, p.y);
+          info.textContent = `X: ${g.x}  Z: ${g.y}`;
+        }
+      }
+    }
+    if (!_zeDrag) return;
+    const dx = e.clientX - _zeDrag.sx, dy = e.clientY - _zeDrag.sy;
+    if (!_zeDrag.moved && Math.hypot(dx, dy) > 4) _zeDrag.moved = true;
+    if (!_zeDrag.moved) return;
+    if (_zeDrag.kind === 'pan') {
+      _zePanX = _zeDrag.ox + dx;
+      _zePanY = _zeDrag.oy + dy;
+      _zeApplyTransform();
+    } else if (_zeDrag.kind === 'vertex') {
+      const p = _zeToImg(e);
+      _zePoints[_zeDrag.i] = _zeMakePoint(p.x, p.y);
       zeRenderSvg();
       zeUpdateOutput();
-    });
+    }
+  });
+
+  window.addEventListener('mouseup', e => {
+    const d = _zeDrag;
+    if (!d) return;
+    _zeDrag = null;
+    vp.style.cursor = '';
+    if (d.kind === 'pan' && !d.moved) {
+      if (d.button === 2) {
+        if (d.vi >= 0) zeRemovePoint(d.vi);
+      } else if (d.zoneId && _zePoints.length === 0) {
+        _zeLoadZone(d.zoneId);
+      } else {
+        const p = _zeToImg(e);
+        if (p.x >= 0 && p.y >= 0 && p.x <= ZE_SIZE && p.y <= ZE_SIZE) {
+          _zePoints.push(_zeMakePoint(p.x, p.y));
+          zeRenderSvg();
+          zeUpdateOutput();
+        }
+      }
+    }
+  });
+
+  // Ctrl+Z : retire le dernier sommet (uniquement quand l'éditeur est visible et qu'aucun champ n'a le focus)
+  document.addEventListener('keydown', e => {
+    if (!vp.offsetParent) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      if (_zePoints.length) zeRemovePoint(_zePoints.length - 1);
+    }
+  });
+
+  if (window.ResizeObserver) {
+    let lastW = vp.clientWidth;
+    new ResizeObserver(() => {
+      const w = vp.clientWidth;
+      if (w && !lastW) zeZoomReset();   // le panneau vient d'être affiché
+      lastW = w;
+    }).observe(vp);
   }
 }
 
@@ -150,43 +219,69 @@ function _zeUpdateLayerButtons() {
   if (!sur || !sub) return;
   const onSurface = _zeLayer !== 'underground';
   sur.style.background = onSurface ? 'var(--accent)' : 'transparent';
-  sur.style.color      = onSurface ? '#fff' : 'var(--muted)';
+  sur.style.color      = onSurface ? 'var(--on-accent)' : 'var(--muted)';
   sub.style.background = !onSurface ? 'var(--accent)' : 'transparent';
-  sub.style.color      = !onSurface ? '#fff' : 'var(--muted)';
+  sub.style.color      = !onSurface ? 'var(--on-accent)' : 'var(--muted)';
+}
+
+function _zeRefreshMap() {
+  const img = document.getElementById('ze-map-img');
+  if (img) img.src = _zeMapSrc();
+  _zeUpdateLayerButtons();
+  zeRenderSvg();
+  _zeRenderOthers();
 }
 
 window.zeLayerChange = function zeLayerChange(layer) {
   _zeLayer = layer;
-  const img = document.getElementById('ze-map-img');
-  if (img) img.src = _zeMapSrc();
-  _zeUpdateLayerButtons();
+  _zeRefreshMap();
 };
+
+window.zeFloorChange = function zeFloorChange() {
+  _zeFloor = parseInt(document.getElementById('ze-floor')?.value || '1');
+  _zeRefreshMap();
+};
+
+async function _zeLoadZones() {
+  try {
+    const snap = await getDocs(collection(db, COL.zones));
+    _zeZones = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+  } catch (e) {
+    console.warn('[ZoneEditor] chargement zones échoué', e);
+  }
+  zeRenderSvg();
+  _zeRenderOthers();
+}
 
 function _zeInit() {
   _zeFloor = parseInt(document.getElementById('ze-floor')?.value || '1');
   _zeLayer = 'surface';
+  _zePoints = [];
+  _zeMobsList = [];
+  _zeEditId = null;
+  _zeCreatedAt = undefined;
+  _zeSetMode();
+  ['ze-name', 'ze-desc', 'ze-mob-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const r = document.getElementById('ze-mob-results');
+  if (r) r.style.display = 'none';
   const img = document.getElementById('ze-map-img');
   if (img) img.src = _zeMapSrc();
   _zeUpdateLayerButtons();
-  _zePoints   = [];
-  _zeMobsList = [];
-  const s = document.getElementById('ze-mob-search');
-  const r = document.getElementById('ze-mob-results');
-  if (s) s.value = '';
-  if (r) r.style.display = 'none';
   _zeInitPanZoom();
   zeZoomReset();
-  zeRenderSvg();
   zeUpdateOutput();
   zeRenderMobList();
   _zeLoadMobs();
+  _zeLoadZones();
 }
 
-window.zeFloorChange = function zeFloorChange() {
-  _zeFloor = parseInt(document.getElementById('ze-floor')?.value || '1');
-  const img = document.getElementById('ze-map-img');
-  if (img) img.src = _zeMapSrc();
-};
+function _zeSetMode() {
+  const el = document.getElementById('ze-mode');
+  if (!el) return;
+  const z = _zeEditId && _zeZones.find(z => z._id === _zeEditId);
+  el.textContent = _zeEditId ? '✏️ Édition : ' + (z?.name || _zeEditId) : 'Nouvelle zone';
+  el.style.color = _zeEditId ? 'var(--accent)' : 'var(--muted)';
+}
 
 // Calibration image → jeu
 function _zeCalib() {
@@ -198,40 +293,132 @@ function _zePixelToGame(px, py) {
   const scale = c.radiusGame / c.radiusPixel;
   return { x: Math.round(c.centerGame.x + (px - c.centerPixel.x) * scale), y: Math.round(c.centerGame.y + (py - c.centerPixel.y) * scale) };
 }
+function _zeGameToPixel(gx, gy) {
+  const c = _zeCalib();
+  if (!c) return { px: gx, py: gy };
+  const scale = c.radiusGame / c.radiusPixel;
+  return { px: c.centerPixel.x + (gx - c.centerGame.x) / scale, py: c.centerPixel.y + (gy - c.centerGame.y) / scale };
+}
+
+// Zones existantes visibles : même palier + même couche, hors zone en cours d'édition
+function _zeVisibleOthers() {
+  return _zeZones.filter(z => +z.floor === _zeFloor && !!z.is_underground === (_zeLayer === 'underground')
+    && z._id !== _zeEditId && Array.isArray(z.polygon) && z.polygon.length >= 3);
+}
+
+function _zeSvg(tag, attrs, parent) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(el);
+  return el;
+}
 
 window.zeRenderSvg = function zeRenderSvg() {
-  const svg   = document.getElementById('ze-svg');
+  const svg = document.getElementById('ze-svg');
   if (!svg) return;
   const color = document.getElementById('ze-color')?.value || '#ff4444';
+  const k = 1 / _zeScale;            // taille constante à l'écran quel que soit le zoom
   svg.innerHTML = '';
-  if (_zePoints.length >= 2) {
-    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    poly.setAttribute('points', _zePoints.map(p => `${p.px},${p.py}`).join(' '));
-    poly.setAttribute('fill',            color + '44');
-    poly.setAttribute('stroke',          color);
-    poly.setAttribute('stroke-width',    String(2 / _zeScale));
-    poly.setAttribute('stroke-linejoin', 'round');
-    svg.appendChild(poly);
+
+  // Autres zones (arrière-plan, cliquables quand aucun point n'est posé)
+  _zeVisibleOthers().forEach(z => {
+    const pts = z.polygon.map(p => _zeGameToPixel(p.x, p.z));
+    const zc = z.color || '#e0ac60';
+    _zeSvg('polygon', {
+      points: pts.map(p => `${p.px},${p.py}`).join(' '),
+      fill: zc + '30', stroke: zc, 'stroke-width': 1.5 * k, 'stroke-linejoin': 'round', 'stroke-dasharray': `${6 * k} ${4 * k}`,
+      'data-zone': z._id, style: 'cursor:pointer;',
+    }, svg).appendChild(Object.assign(document.createElementNS(SVG_NS, 'title'), { textContent: (z.name || z._id) + ' — clic pour éditer' }));
+    const cx = pts.reduce((s, p) => s + p.px, 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + p.py, 0) / pts.length;
+    const t = _zeSvg('text', {
+      x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'middle', 'font-size': 11 * k, 'font-weight': 700,
+      fill: '#fff', stroke: '#000', 'stroke-width': 3 * k, 'paint-order': 'stroke', style: 'pointer-events:none;',
+    }, svg);
+    t.textContent = z.name || '';
+  });
+
+  const n = _zePoints.length;
+  if (n >= 2) {
+    const pts = _zePoints.map(p => `${p.px},${p.py}`).join(' ');
+    if (n >= 3) {
+      _zeSvg('polygon', { points: pts, fill: color + '55', stroke: color, 'stroke-width': 2.5 * k, 'stroke-linejoin': 'round', style: 'pointer-events:none;' }, svg);
+    } else {
+      _zeSvg('polyline', { points: pts, fill: 'none', stroke: color, 'stroke-width': 2.5 * k, style: 'pointer-events:none;' }, svg);
+    }
+    // arêtes : poignée « + » au milieu pour insérer un sommet
+    if (n >= 3) {
+      _zePoints.forEach((a, i) => {
+        const b = _zePoints[(i + 1) % n];
+        const mx = (a.px + b.px) / 2, my = (a.py + b.py) / 2;
+        const g = _zeSvg('g', { 'data-mid': i, style: 'cursor:copy;' }, svg);
+        _zeSvg('circle', { cx: mx, cy: my, r: 6 * k, fill: '#000a', stroke: color, 'stroke-width': 1.5 * k }, g);
+        _zeSvg('path', { d: `M${mx - 3 * k},${my} H${mx + 3 * k} M${mx},${my - 3 * k} V${my + 3 * k}`, stroke: '#fff', 'stroke-width': 1.5 * k, style: 'pointer-events:none;' }, g);
+      });
+    }
   }
   _zePoints.forEach((p, i) => {
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.style.cursor = 'pointer';
-    g.addEventListener('click', ev => { ev.stopPropagation(); zeRemovePoint(i); });
-    const r = 7 / _zeScale;
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', p.px); circle.setAttribute('cy', p.py);
-    circle.setAttribute('r', r); circle.setAttribute('fill', color);
-    circle.setAttribute('stroke', '#fff'); circle.setAttribute('stroke-width', String(2 / _zeScale));
-    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    label.setAttribute('x', p.px); label.setAttribute('y', p.py);
-    label.setAttribute('text-anchor', 'middle'); label.setAttribute('dominant-baseline', 'middle');
-    label.setAttribute('font-size', String(9 / _zeScale)); label.setAttribute('font-weight', '700');
-    label.setAttribute('fill', '#fff'); label.style.pointerEvents = 'none';
-    label.textContent = i + 1;
-    g.appendChild(circle); g.appendChild(label);
-    svg.appendChild(g);
+    const g = _zeSvg('g', { 'data-vi': i, style: 'cursor:grab;' }, svg);
+    _zeSvg('circle', { cx: p.px, cy: p.py, r: 9 * k, fill: color, stroke: '#fff', 'stroke-width': 2 * k }, g);
+    const t = _zeSvg('text', {
+      x: p.px, y: p.py, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 10 * k, 'font-weight': 700,
+      fill: '#fff', stroke: '#000', 'stroke-width': 2 * k, 'paint-order': 'stroke', style: 'pointer-events:none;',
+    }, g);
+    t.textContent = i + 1;
   });
 };
+
+function _zeRenderOthers() {
+  const el = document.getElementById('ze-others');
+  if (!el) return;
+  const others = _zeVisibleOthers().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  el.innerHTML = '';
+  if (!others.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--muted);">Aucune autre zone</div>';
+    return;
+  }
+  others.forEach(z => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:4px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;';
+    const dot = document.createElement('span');
+    dot.style.cssText = 'width:12px;height:12px;border-radius:3px;flex-shrink:0;background:' + (z.color || '#e0ac60') + ';';
+    const nm = document.createElement('span');
+    nm.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    nm.textContent = z.name || z._id;
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-ghost btn-sm';
+    btn.style.cssText = 'font-size:10px;padding:2px 8px;';
+    btn.textContent = '✏️ Éditer';
+    btn.addEventListener('click', () => _zeLoadZone(z._id));
+    row.append(dot, nm, btn);
+    el.appendChild(row);
+  });
+}
+
+// Charge une zone existante dans l'éditeur (la sauvegarde la met à jour au lieu d'en créer une)
+async function _zeLoadZone(id) {
+  const z = _zeZones.find(z => z._id === id);
+  if (!z) return;
+  if (_zePoints.length && !await modal.confirm('Remplacer le tracé en cours ?', 'Les points non sauvegardés seront perdus.')) return;
+  _zeEditId = id;
+  _zeCreatedAt = z.createdAt;
+  _zeFloor = +z.floor || 1;
+  _zeLayer = z.is_underground ? 'underground' : 'surface';
+  const floorSel = document.getElementById('ze-floor');
+  if (floorSel) floorSel.value = String(_zeFloor);
+  document.getElementById('ze-name').value = z.name || '';
+  document.getElementById('ze-desc').value = z.desc || z.description || '';
+  document.getElementById('ze-color').value = /^#[0-9a-f]{6}$/i.test(z.color || '') ? z.color : '#e0ac60';
+  _zePoints = (z.polygon || []).map(p => {
+    const px = _zeGameToPixel(p.x, p.z);
+    return { px: px.px, py: px.py, gx: p.x, gy: p.z };
+  });
+  _zeMobsList = (z.mobs || []).map(mid => _zeMobsDb.find(m => (m._id || m.id) === mid) || { _id: mid, name: mid });
+  _zeSetMode();
+  _zeRefreshMap();
+  zeUpdateOutput();
+  zeRenderMobList();
+}
 
 window.zeRemovePoint = function zeRemovePoint(i) {
   _zePoints.splice(i, 1);
@@ -264,11 +451,11 @@ window.zeCheckSave = function zeCheckSave() {
 window.zoneEditorReset = function zoneEditorReset() {
   _zePoints   = [];
   _zeMobsList = [];
-  _zeLayer    = 'surface';
-  _zeUpdateLayerButtons();
-  const img = document.getElementById('ze-map-img');
-  if (img) img.src = _zeMapSrc();
-  zeRenderSvg();
+  _zeEditId   = null;
+  _zeCreatedAt = undefined;
+  ['ze-name', 'ze-desc'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  _zeSetMode();
+  _zeRefreshMap();
   zeUpdateOutput();
   zeRenderMobList();
 };
@@ -282,17 +469,24 @@ window.zoneEditorSave = async function zoneEditorSave() {
   const polygon = _zePoints.map(p => ({ x: p.gx, z: p.gy }));
   const cx = Math.round(_zePoints.reduce((s, p) => s + p.gx, 0) / _zePoints.length);
   const cy = Math.round(_zePoints.reduce((s, p) => s + p.gy, 0) / _zePoints.length);
-  const obj = { floor: _zeFloor, name, color, polygon, gx: cx, gy: cy, is_underground: _zeLayer === 'underground', createdAt: serverTimestamp() };
-  if (desc) obj.desc = desc;
-  if (_zeMobsList.length > 0) obj.mobs = _zeMobsList.map(m => m._id || m.id);
+  const obj = { floor: _zeFloor, name, color, polygon, gx: cx, gy: cy, is_underground: _zeLayer === 'underground' };
+  const mobIds = _zeMobsList.map(m => m._id || m.id);
   try {
-    const newId = `zone_${Date.now()}`;
-    await setDoc(doc(db, COL.zones, newId), obj);
-    toast('✓ Zone sauvegardée !', 'success');
+    if (_zeEditId) {
+      // mise à jour d'une zone existante : on conserve createdAt et on écrase desc/mobs
+      obj.desc = desc || '';
+      obj.mobs = mobIds;
+      await setDoc(doc(db, COL.zones, _zeEditId), obj, { merge: true });
+    } else {
+      obj.createdAt = serverTimestamp();
+      if (desc) obj.desc = desc;
+      if (mobIds.length > 0) obj.mobs = mobIds;
+      await setDoc(doc(db, COL.zones, `zone_${Date.now()}`), obj);
+    }
+    toast(_zeEditId ? '✓ Zone mise à jour !' : '✓ Zone sauvegardée !', 'success');
     invalidateCache(COL.zones);
     zoneEditorReset();
-    document.getElementById('ze-name').value = '';
-    document.getElementById('ze-desc').value = '';
+    _zeLoadZones();
   } catch(err) {
     toast('⛔ Erreur : ' + err.message, 'error');
   }
