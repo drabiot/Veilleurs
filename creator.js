@@ -978,7 +978,7 @@ function initObtainData() {
   _loadFirestoreDonjons();
   _loadDonjonsLoot();
   if (typeof QUETES_DATA !== 'undefined') {
-    const TYPE_LABELS_Q = { main: 'Principale', sec: 'Secondaire', ter: 'Fractured Underworld' };
+    const TYPE_LABELS_Q = { main: 'Principale', sec: 'Secondaire', fu: 'Fractured Underworld' };
     allQuetes = QUETES_DATA.map(q => ({
       id: q.id, name: q.titre || q.name || q.id,
       subtitle: (TYPE_LABELS_Q[q.type] || q.type || '') + (q.palier ? ' · Palier ' + q.palier : ''),
@@ -2382,7 +2382,7 @@ async function _buildQuestLoadDrop() {
   const buildFromData = (quests) => {
     const idx = quests.map(q => ({
       id: q.id || q._id, name: q.titre || q.name || q.id || q._id,
-      subtitle: [q._pending ? '⏳' : null, q.type ? { main:'Principale',sec:'Secondaire',ter:'Fractured Underworld' }[q.type]||q.type : '', q.palier ? 'P'+q.palier : ''].filter(Boolean).join(' · '),
+      subtitle: [q._pending ? '⏳' : null, q.type ? { main:'Principale',sec:'Secondaire',fu:'Fractured Underworld' }[q.type]||q.type : '', q.palier ? 'P'+q.palier : ''].filter(Boolean).join(' · '),
       search: (q._pending ? '⏳ ' : '') + ((q.titre||q.name||'') + ' ' + (q.id||q._id||'')).toLowerCase(),
       _raw: q
     }));
@@ -6431,7 +6431,7 @@ const PNJ_TYPE_TAGS = {
   "quêtes":                  "quetes",
   "quête principale":        "quete_principale",
   "quête secondaire":        "quete_secondaire",
-  "quête tertiaire":         "quete_tertiaire",
+  "quête fractured underworld":         "quete_fractured_underworld",
   "donjon":                  "donjon",
   "marchand occulte":        "marchand_occulte",
   "fabricant secret":        "fabricant_secret",
@@ -6441,7 +6441,7 @@ const PNJ_TYPE_TAGS = {
 // Catégories UI du creator PNJ
 const PNJ_CATEGORIES = {
   // Types retirés du creator parce qu'ils ne sont plus affichés sur la carte : forgeron d'armes / d'armures / de lingots, repreneur d'armes,
-  // marchand itinérant, marchand d'équipement, quête tertiaire, fabricant secret, autres. Les PNJ déjà enregistrés avec ces types restent éditables.
+  // marchand itinérant, marchand d'équipement, quête fractured underworld, fabricant secret, autres. Les PNJ déjà enregistrés avec ces types restent éditables.
   craft: [
     "forgeron d'accessoires",
     "forgeron de clés",
@@ -6505,7 +6505,7 @@ const PNJ_TYPE_ICONS = {
   "recyclage d'armes":       "♻️",
   "quête principale":        "💬",
   "quête secondaire":        "❓",
-  "quête tertiaire":         "📋",
+  "quête fractured underworld":         "📋",
   "donjon":                  "🏰",
   "fabricant secret":        "🔒",
   "marchand occulte":        "🩸",
@@ -7643,7 +7643,7 @@ let _questNpcDrop = null;
 const QUEST_TYPE_TO_PNJ_TYPES = {
   main: ['quête principale'],
   sec:  ['quête secondaire', 'quêtes'],
-  ter:  ['quête tertiaire', 'quêtes'],
+  fu:  ['quête fractured underworld', 'quêtes'],
 };
 
 function initQuestNpcDrop() {
@@ -7688,8 +7688,8 @@ function onQuestTypeChange() {
 }
 
 // ── Preview
-const QUEST_TYPE_COLORS = { main: '#e07c50', secondary: '#6aaad4', tertiary: '#82c470' };
-const QUEST_TYPE_LABELS = { main: 'Principale', secondary: 'Secondaire', tertiary: 'Fractured Underworld' };
+const QUEST_TYPE_COLORS = { main: '#e07c50', secondary: '#6aaad4', fu: '#82c470' };
+const QUEST_TYPE_LABELS = { main: 'Principale', secondary: 'Secondaire', fu: 'Fractured Underworld' };
 
 function renderQuestPreview(obj) {
   const wrap = document.getElementById('preview-wrap');

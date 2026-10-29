@@ -76,7 +76,7 @@ body.quetes-page { overflow: hidden; }
 
 .sort-btn.active-main { color: var(--quete-main); background: rgba(224,124,80,.08); box-shadow: inset 0 -2px 0 var(--quete-main); font-weight:700; }
 .sort-btn.active-sec  { color: var(--quete-sec);  background: rgba(106,170,212,.08); box-shadow: inset 0 -2px 0 var(--quete-sec); font-weight:700; }
-.sort-btn.active-ter  { color: var(--quete-ter);  background: rgba(130,196,112,.08); box-shadow: inset 0 -2px 0 var(--quete-ter); font-weight:700; }
+.sort-btn.active-fu  { color: var(--quete-fu);  background: rgba(130,196,112,.08); box-shadow: inset 0 -2px 0 var(--quete-fu); font-weight:700; }
 .sort-btn.active-inv  { color: var(--gold); background: rgba(224,172,96,.08); box-shadow: inset 0 -2px 0 var(--gold); font-weight:700; }
 
 .sidebar-scroll {
@@ -470,7 +470,7 @@ body.quetes-page { overflow: hidden; }
 }
 .quete-card.main .type-stripe { background: var(--quete-main); box-shadow: 2px 0 8px var(--quete-main-dim); }
 .quete-card.sec  .type-stripe { background: var(--zone-color);  box-shadow: 2px 0 8px var(--zone-dim); }
-.quete-card.ter  .type-stripe { background: var(--quete-ter);  box-shadow: 2px 0 8px var(--quete-ter-dim); }
+.quete-card.fu  .type-stripe { background: var(--quete-fu);  box-shadow: 2px 0 8px var(--quete-fu-dim); }
 
 /* Body : flex-grow pour pousser le footer en bas, overflow hidden */
 .card-body {
@@ -494,7 +494,7 @@ body.quetes-page { overflow: hidden; }
 }
 .quete-card.main .card-title { color: var(--quete-main); }
 .quete-card.sec  .card-title { color: var(--quete-sec); }
-.quete-card.ter  .card-title { color: var(--quete-ter); }
+.quete-card.fu  .card-title { color: var(--quete-fu); }
 
 .card-top-right {
   display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;
@@ -624,7 +624,7 @@ body.quetes-page { overflow: hidden; }
 .progress-fill { height: 100%; transition: width .3s ease; }
 .quete-card.main .progress-fill { background: var(--quete-main); }
 .quete-card.sec  .progress-fill { background: var(--quete-sec); }
-.quete-card.ter  .progress-fill { background: var(--quete-ter); }
+.quete-card.fu  .progress-fill { background: var(--quete-fu); }
 .progress-lbl { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); white-space: nowrap; }
 
 .card-npc {
@@ -846,8 +846,8 @@ body.quetes-page { overflow: hidden; }
 .qicon-main::before, .qicon-main::after { border-color: var(--quete-main); }
 .qicon-sec  { background: rgba(106,170,212,.10); border-color: rgba(106,170,212,.3); color: var(--quete-sec); }
 .qicon-sec::before, .qicon-sec::after { border-color: var(--quete-sec); }
-.qicon-ter  { background: rgba(130,196,112,.10); border-color: rgba(130,196,112,.3); color: var(--quete-ter); }
-.qicon-ter::before, .qicon-ter::after { border-color: var(--quete-ter); }
+.qicon-fu  { background: rgba(130,196,112,.10); border-color: rgba(130,196,112,.3); color: var(--quete-fu); }
+.qicon-fu::before, .qicon-fu::after { border-color: var(--quete-fu); }
 
 .quest-sheet-info { display: flex; flex-direction: column; gap: 10px; padding-top: 2px; }
 .quest-sheet-name {
@@ -861,7 +861,7 @@ body.quetes-page { overflow: hidden; }
 }
 .qbadge-main { background: rgba(224,124,80,.10); color: var(--quete-main); border-color: rgba(224,124,80,.35); }
 .qbadge-sec  { background: rgba(106,170,212,.10); color: var(--quete-sec); border-color: rgba(106,170,212,.35); }
-.qbadge-ter  { background: rgba(130,196,112,.10); color: var(--quete-ter); border-color: rgba(130,196,112,.35); }
+.qbadge-fu  { background: rgba(130,196,112,.10); color: var(--quete-fu); border-color: rgba(130,196,112,.35); }
 .quest-status-badge {
   font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .08em;
   padding: 3px 9px; border: 1px solid;
@@ -918,7 +918,7 @@ body.quetes-page { overflow: hidden; }
 .obj-item.done .obj-text { text-decoration: line-through; }
 .obj-item-main { border-left-color: rgba(224,124,80,.4); }
 .obj-item-sec  { border-left-color: rgba(106,170,212,.4); }
-.obj-item-ter  { border-left-color: rgba(130,196,112,.4); }
+.obj-item-fu  { border-left-color: rgba(130,196,112,.4); }
 
 /* Séquences */
 .obj-group {

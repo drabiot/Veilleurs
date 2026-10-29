@@ -4,8 +4,8 @@
 ══════════════════════════════════════════════════════════════ */
 
 /* ── Labels / icônes ── */
-const TYPE_LABELS   = { main: 'Principale', sec: 'Secondaire', ter: 'Fractured Underworld' };
-const TYPE_ICONS    = { main: '🔥', sec: '💬', ter: '❓' };
+const TYPE_LABELS   = { main: 'Principale', sec: 'Secondaire', fu: 'Fractured Underworld' };
+const TYPE_ICONS    = { main: '🔥', sec: '💬', fu: '❓' };
 
 /* RARITIES + rarityColor → définis dans /utils.js (source unique) */
 const rarityColor = getRarityColor;

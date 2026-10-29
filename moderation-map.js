@@ -1343,7 +1343,7 @@ window.loadAllMapPins = async function loadAllMapPins() {
 const _AP_PNJ_TO_TYPE = {
   "quête principale":        "quête_principale",
   "quête secondaire":        "quête_secondaire",
-  "quête tertiaire":         "quête_tertiaire",
+  "quête fractured underworld":         "quête_fractured_underworld",
   "quêtes":                  "quête_secondaire",
   "donjon":                  "donjon",
   "forgeron d'armes":        "craft_armes",
@@ -1373,7 +1373,7 @@ const _AP_PNJ_TO_TYPE = {
 
 const _AP_TYPE_LABELS = {
   région: 'Région', donjon: 'Donjon', boss: 'Boss', mini_boss: 'Mini-Boss', zone_monstre: 'Zone Monstres',
-  quête_principale: 'Quête Principale', quête_secondaire: 'Quête Secondaire', quête_tertiaire: 'Quête Fractured Underworld',
+  quête_principale: 'Quête Principale', quête_secondaire: 'Quête Secondaire', quête_fractured_underworld: 'Quête Fractured Underworld',
   craft_armes: "Forgeron d'Armes", craft_armures: "Forgeron d'Armures",
   craft_accessoires: "Forgeron d'Accessoires", craft_lingots: 'Forgeron de Lingots', craft_cles: 'Fabricants de Clés',
   craft_secrets: "Forgeron d'Items Secrets",
@@ -1396,7 +1396,7 @@ function _apGetType(p) {
   if (p._source === 'donjon') return 'donjon';
   if (p._source === 'region') return 'région';
   if (p._source === 'quete') {
-    const QT = { main: 'quête_principale', sec: 'quête_secondaire', ter: 'quête_tertiaire', secondary: 'quête_secondaire', tertiary: 'quête_tertiaire' };
+    const QT = { main: 'quête_principale', sec: 'quête_secondaire', fu: 'quête_fractured_underworld', secondary: 'quête_secondaire' };
     return QT[p.type] || 'quête_principale';
   }
   return p.type || 'autre';
@@ -1566,7 +1566,7 @@ function renderPinColorForm() {
 
   const DEFAULT_COLORS = {
     donjon: '#ef4444', boss: '#dc2626', zone_monstre: '#fb923c',
-    quête_principale: '#f59e0b', quête_secondaire: '#10b981', quête_tertiaire: '#06b6d4',
+    quête_principale: '#f59e0b', quête_secondaire: '#10b981', quête_fractured_underworld: '#06b6d4',
     craft_armes: '#8b5cf6', craft_armures: '#7c3aed', craft_accessoires: '#a78bfa',
     craft_lingots: '#6d28d9', craft_cles: '#4c1d95', craft_secrets: '#8b3c00', craft_runes: '#3a1a6e',
     alchimiste: '#34d399', bucheron: '#65a30d', mineur: '#92400e', refaconneur: '#a16207',
@@ -1634,7 +1634,7 @@ let _pinEmojis = {};
 
 const _DEFAULT_EMOJIS = {
   région: '📍', donjon: '⚔️', boss: '☠️', mini_boss: '💀', zone_monstre: '💀',
-  quête_principale: '💬', quête_secondaire: '❓', quête_tertiaire: '📋',
+  quête_principale: '💬', quête_secondaire: '❓', quête_fractured_underworld: '📋',
   craft_armes: '⚒️', craft_armures: '🛡️', craft_accessoires: '💍',
   craft_lingots: '🔩', craft_cles: '🗝️', craft_secrets: '🔮', craft_runes: '🔮',
   alchimiste: '⚗️', bucheron: '🪓', mineur: '⛏️', refaconneur: '🔧',

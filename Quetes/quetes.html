@@ -77,8 +77,8 @@
         <button class="sort-btn" data-tab="sec">
           <span class="sort-icon">💬</span><span class="sort-label">Second.</span>
         </button>
-        <button class="sort-btn" data-tab="ter">
-          <span class="sort-icon">❓</span><span class="sort-label">Terti.</span>
+        <button class="sort-btn" data-tab="fu">
+          <span class="sort-icon">❓</span><span class="sort-label">F.U.</span>
         </button>
         <button class="sort-btn" data-tab="inv" id="inv-tab-btn">
           <span class="sort-icon">🎒</span><span class="sort-label">Inv.</span>
@@ -224,7 +224,7 @@
       invPanel.style.display = invMode ? '' : 'none';
 
       document.querySelectorAll('.sort-btn').forEach(b =>
-        b.classList.remove('active-main','active-sec','active-ter','active-inv')
+        b.classList.remove('active-main','active-sec','active-fu','active-inv')
       );
       if (invMode) {
         document.getElementById('inv-tab-btn').classList.add('active-inv');
@@ -247,7 +247,6 @@
     /* Normalise une quête Firestore pour la rendre compatible avec le format QUETES statique */
     function normalizeFirestoreQuest(q) {
       if (q.type === 'secondary') q.type = 'sec';
-      if (q.type === 'tertiary')  q.type = 'ter';
       if (Array.isArray(q.recompenses)) {
         q.recompenses = q.recompenses.map(r => {
           if (r.type === 'exp'  && r.label && r.xp  == null) r.xp   = parseInt(r.label)  || 0;

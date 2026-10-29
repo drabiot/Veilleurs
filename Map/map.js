@@ -46,7 +46,7 @@ const TYPE_LABELS = {
   zone_monstre:       'Zone Monstres',
   quête_principale:   'Quête Principale',
   quête_secondaire:   'Quête Secondaire',
-  quête_tertiaire:    'Quête Fractured Underworld',
+  quête_fractured_underworld:    'Quête Fractured Underworld',
   craft_armes:        'Forgeron d\'Armes',
   craft_armures:      'Forgeron d\'Armures',
   craft_accessoires:  'Forgeron d\'Accessoires',
@@ -75,7 +75,7 @@ const TYPE_LABELS = {
 
 // Types retirés de la carte : marqueurs masqués, plus de filtre dans la légende
 const HIDDEN_MARKER_TYPES = new Set([
-  'quête_tertiaire', 'craft_armes', 'craft_armures', 'craft_accessoires', 'craft_lingots',
+  'quête_fractured_underworld', 'craft_armes', 'craft_armures', 'craft_accessoires', 'craft_lingots',
   'craft_runes', 'repreneur_armes', 'marchand_itinerant', 'marchand_equipement', 'crate', 'autre',
 ]);
 
@@ -86,7 +86,7 @@ const _map_EMOJI = {
   zone_monstre:       '💀',
   quête_principale:   '💬',
   quête_secondaire:   '❓',
-  quête_tertiaire:    '📋',
+  quête_fractured_underworld:    '📋',
   craft_armes:        '⚒️',
   craft_armures:      '🛡️',
   craft_accessoires:  '💍',
@@ -123,7 +123,7 @@ const DEFAULT_PIN_COLORS = {
   zone_monstre:        '#7a3030',
   quête_principale:    '#b8893a',
   quête_secondaire:    '#d4b57e',
-  quête_tertiaire:     '#a89060',
+  quête_fractured_underworld:     '#a89060',
   craft_armes:         '#6a4daa',
   craft_armures:       '#5a3d9a',
   craft_accessoires:   '#7a5dba',
@@ -175,7 +175,7 @@ function _typeToHsl(str) {
 const PNJ_TO_MARKER_TYPE = {
   "quête principale":        "quête_principale",
   "quête secondaire":        "quête_secondaire",
-  "quête tertiaire":         "quête_tertiaire",
+  "quête fractured underworld":         "quête_fractured_underworld",
   "quêtes":                  "quête_secondaire",
   "donjon":                  "donjon",
   "forgeron d'armes":        "craft_armes",
@@ -362,12 +362,12 @@ function buildDynamicMarkers() {
     });
   }
 
-  // Marqueurs de quêtes migrés depuis map_markers (quête_principale, _secondaire, _tertiaire)
-  const QUEST_MARKER_TYPES = new Set(['quête_principale', 'quête_secondaire', 'quête_tertiaire']);
+  // Marqueurs de quêtes migrés depuis map_markers (quête_principale, _secondaire, _fractured_underworld)
+  const QUEST_MARKER_TYPES = new Set(['quête_principale', 'quête_secondaire', 'quête_fractured_underworld']);
   const MM_TYPE_NORM = {
     main: 'quête_principale', primary: 'quête_principale',
     sec:  'quête_secondaire', secondary: 'quête_secondaire',
-    ter:  'quête_tertiaire',  tertiary:  'quête_tertiaire',
+    fu:  'quête_fractured_underworld',
   };
 
   // Index des questIds couverts par un map_marker du bon type (évite les doublons)
@@ -400,8 +400,8 @@ function buildDynamicMarkers() {
 
   // Quêtes Firestore avec coords directes (nouvelles quêtes créées via le creator)
   const _FS_QUEST_TYPE = {
-    main: 'quête_principale', sec: 'quête_secondaire', ter: 'quête_tertiaire',
-    secondary: 'quête_secondaire', tertiary: 'quête_tertiaire',
+    main: 'quête_principale', sec: 'quête_secondaire', fu: 'quête_fractured_underworld',
+    secondary: 'quête_secondaire',
   };
   for (const q of (window._map_quetes || [])) {
     if (!q.coords || q.coords.x == null || q.coords.z == null) continue;
@@ -476,7 +476,7 @@ function buildDynamicMarkers() {
   }
 
   // Marqueurs génériques (types personnalisés, non-quête) depuis map_markers
-  const QUEST_TYPES_HANDLED = new Set(['quête_principale', 'quête_secondaire', 'quête_tertiaire']);
+  const QUEST_TYPES_HANDLED = new Set(['quête_principale', 'quête_secondaire', 'quête_fractured_underworld']);
   for (const mm of (window._map_mapMarkers || [])) {
     const mmType = MM_TYPE_NORM[mm.type] || mm.type;
     if (QUEST_TYPES_HANDLED.has(mmType)) continue;

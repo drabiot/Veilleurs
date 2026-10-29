@@ -9,8 +9,8 @@
   r.style.setProperty('--quete-main-dim', 'rgba(224,124,80,.4)');
   r.style.setProperty('--quete-sec',      '#6aaad4');
   r.style.setProperty('--quete-sec-dim',  'rgba(106,170,212,.4)');
-  r.style.setProperty('--quete-ter',      '#82c470');
-  r.style.setProperty('--quete-ter-dim',  'rgba(130,196,112,.4)');
+  r.style.setProperty('--quete-fu',      '#82c470');
+  r.style.setProperty('--quete-fu-dim',  'rgba(130,196,112,.4)');
 })();
 
 /* ══════════════════════════════════
@@ -1110,7 +1110,7 @@ function navigateToQuest(id, { pushState = true } = {}) {
     activeStatut = 'all';
     document.querySelector('input[name="statut-filter"][value="all"]').checked = true;
     document.querySelectorAll('.sort-btn').forEach(btn => {
-      btn.classList.remove('active-main', 'active-sec', 'active-ter');
+      btn.classList.remove('active-main', 'active-sec', 'active-fu');
       if (btn.dataset.tab === q.type) btn.classList.add(`active-${q.type}`);
     });
     refreshAll();
@@ -1405,7 +1405,7 @@ function renderSheet(q) {
 const TITLES = {
   main: ['Quêtes Principales', '// PRINCIPALES · VEILLEURS AU CLAIR DE LUNE'],
   sec:  ['Quêtes Secondaires', '// SECONDAIRES · VEILLEURS AU CLAIR DE LUNE'],
-  ter:  ['Quêtes Fractured Underworld',  '// FRACTURED UNDERWORLD · VEILLEURS AU CLAIR DE LUNE'],
+  fu:  ['Quêtes Fractured Underworld',  '// FRACTURED UNDERWORLD · VEILLEURS AU CLAIR DE LUNE'],
 };
 function updateHeader() {
   const [t, s] = TITLES[activeTab];
@@ -1422,7 +1422,7 @@ function setActiveTab(tab) {
   activeStatut = 'all';
   document.querySelector('input[name="statut-filter"][value="all"]').checked = true;
   document.querySelectorAll('.sort-btn').forEach(btn => {
-    btn.classList.remove('active-main', 'active-sec', 'active-ter');
+    btn.classList.remove('active-main', 'active-sec', 'active-fu');
     if (btn.dataset.tab === tab) btn.classList.add(`active-${tab}`);
   });
   refreshAll();

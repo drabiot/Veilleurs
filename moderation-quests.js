@@ -17,9 +17,9 @@ let _questPalierCollapsed    = new Set();
 let _questPalierSubCollapsed = new Set(); // clés : "type-palier"
 let _questCollapseInit       = false;
 
-const QUEST_TYPE_ORDER  = ['main', 'sec', 'ter'];
-const QUEST_TYPE_LABELS_MOD = { main: '⚔️ Principale', sec: '🗺️ Secondaire', ter: '📋 Fractured Underworld' };
-const QUEST_TYPE_COLORS_MOD = { main: '#e07c50',        sec: '#6aaad4',        ter: '#82c470'     };
+const QUEST_TYPE_ORDER  = ['main', 'sec', 'fu'];
+const QUEST_TYPE_LABELS_MOD = { main: '⚔️ Principale', sec: '🗺️ Secondaire', fu: '📋 Fractured Underworld' };
+const QUEST_TYPE_COLORS_MOD = { main: '#e07c50',        sec: '#6aaad4',        fu: '#82c470'     };
 
 window.showQuestOrder = async () => {
   _setHash('quest-order');
@@ -186,7 +186,7 @@ window.loadQuestOrphans = async function loadQuestOrphans() {
       byType[t].push(q);
     }
 
-    const typeOrder = ['main','sec','ter','—'];
+    const typeOrder = ['main','sec','fu','—'];
     for (const type of typeOrder) {
       const group = byType[type];
       if (!group || !group.length) continue;

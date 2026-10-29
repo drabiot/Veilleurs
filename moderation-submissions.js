@@ -414,7 +414,7 @@ function _buildPrettySummary(data, type) {
     if (data.inCodex) field('Codex',  '✓ Dans le Codex', 'var(--success)');
     if (data.lore)    field('Lore', `<i style="color:var(--muted)">${esc(data.lore).slice(0,200)}${data.lore.length>200?'…':''}</i>`);
   } else if (type === 'quest') {
-    const QUEST_TYPE_LABELS = { main:'⚔️ Principale', sec:'🗺️ Secondaire', ter:'📋 Fractured Underworld' };
+    const QUEST_TYPE_LABELS = { main:'⚔️ Principale', sec:'🗺️ Secondaire', fu:'📋 Fractured Underworld' };
     if (data.type)    field('Type',   QUEST_TYPE_LABELS[data.type]||data.type);
     if (data.palier)  field('Palier', 'Palier ' + (data.palier == -1 ? 'Archive' : data.palier));
     if (data.npc)     field('PNJ',    data.npc);
