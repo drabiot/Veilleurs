@@ -65,6 +65,22 @@ async function loadMobOrder() {
 
 function renderMobOrder() {
   const listEl  = document.getElementById('mob-order-list');
+  // Emoji d'un mob (champ mob.emoji, affiché sur la carte) : sauvegardé dès la saisie
+  listEl.onchange = async e => {
+    const inp = e.target.closest?.('.mob-order-emoji');
+    if (!inp) return;
+    const mob = _mobOrderData.find(m => String(m.id) === inp.closest('.mob-order-row')?.dataset.id);
+    if (!mob) return;
+    const v = inp.value.trim();
+    const emoji = v ? ([...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(v)][0]?.segment || '') : '';
+    try {
+      await updateDoc(doc(db, 'mobs', String(mob.id)), { emoji });
+      mob.emoji = emoji; inp.value = emoji;
+      invalidateModCache('mobs');
+      toast(emoji ? `Emoji de ${mob.name || mob.id} : ${emoji}` : 'Emoji par défaut (💀)', 'success');
+    } catch (err) { toast('Erreur : ' + err.message, 'error'); }
+  };
+  listEl.onmousedown = e => { if (e.target.closest?.('.mob-order-emoji')) e.stopPropagation(); };
   const searchQ = normalize(document.getElementById('mob-order-search').value.trim());
   listEl.innerHTML = '';
 
@@ -80,6 +96,7 @@ function renderMobOrder() {
       row.innerHTML = `
         <span class="mob-order-handle" style="color:var(--border);">⠿</span>
         <span class="mob-order-index" style="display:inline-flex;align-items:center;justify-content:center;">${globalIdx}</span>
+        <input type="text" class="mob-order-emoji" value="${escHtml(mob.emoji||'')}" placeholder="💀" title="Emoji du mob sur la carte (vide = 💀)" draggable="false" style="width:36px;height:26px;text-align:center;font-size:15px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none;padding:0;">
         <span class="mob-order-name">${mob.name||mob.id}${mob._sensible ? ' <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;vertical-align:middle;">🔒</span>' : ''}</span>
         <span class="mob-order-tag">${mobTag(mob)}</span>
         <button class="ed-edit-btn" title="Modifier : ${mob.name||mob.id}\nID : ${mob.id}">✏️</button>`;
@@ -128,6 +145,7 @@ function renderMobOrder() {
       row.innerHTML  = `
         <span class="mob-order-handle">⠿</span>
         <input type="number" class="mob-order-index" value="${palierIdx+1}" min="1" max="${palierMobs.length}" title="Position dans ce palier">
+        <input type="text" class="mob-order-emoji" value="${escHtml(mob.emoji||'')}" placeholder="💀" title="Emoji du mob sur la carte (vide = 💀)" draggable="false" style="width:36px;height:26px;text-align:center;font-size:15px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none;padding:0;">
         <span class="mob-order-name">${mob.name||mob.id}${mob._sensible ? ' <span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.3);color:#f87171;vertical-align:middle;">🔒</span>' : ''}</span>
         <span class="mob-order-tag">${mobTag(mob)}</span>
         <button class="ed-edit-btn" title="Modifier : ${mob.name||mob.id}\nID : ${mob.id}" draggable="false">✏️</button>`;

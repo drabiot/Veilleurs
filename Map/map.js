@@ -313,6 +313,7 @@ function buildDynamicMarkers() {
         gy:    s.z,
         name:  m.name,
         desc:  m.lore || '',
+        emoji: m.emoji || undefined, // emoji du mob (liste des mobs en modération) : remplace le ☠️ du pin
         link:  `../Bestiaire/bestiaire.html#monstres/${id}`,
       });
     });
