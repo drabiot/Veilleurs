@@ -198,6 +198,7 @@ function autoMobLootLines(item) {
 }
 function withAutoObtain(item, text) {
   let base = typeof text === 'string' ? text : '';
+  if (window.vclIsSecretItem?.(item)) return SECRET_FORGERON_OBTAIN; // item ajouté à la liste secrète : obtain entièrement caché
   // Ligne écrite à la main qui cite un forgeron secret masqué : remplacée en entier (elle peut donner son lieu), une seule fois
   const secretIds = secretPnjIds();
   if (secretIds.length && base) {

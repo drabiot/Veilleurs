@@ -41,15 +41,22 @@ async function _loadPalierLabels() {
 window._vcl_secret_forgerons_hidden = true;
 const _SECRET_FORGERON_TAGS  = ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'];
 const _SECRET_FORGERON_TYPES = ["forgeron d'items secrets", 'fabricant secret'];
-window.vclIsSecretForgeron = p => !!p && (_SECRET_FORGERON_TAGS.includes(p.tag) || _SECRET_FORGERON_TYPES.includes(String(p.type || '').toLowerCase()));
+// Ajouts manuels (outil modération) : config/secret_forgerons.pnj = ids de PNJ, .items = ids d'items dont l'obtain est caché
+window._vcl_secret_pnj_ids = new Set();
+window._vcl_secret_item_ids = new Set();
+window.vclIsSecretForgeron = p => !!p && (_SECRET_FORGERON_TAGS.includes(p.tag) || _SECRET_FORGERON_TYPES.includes(String(p.type || '').toLowerCase()) || window._vcl_secret_pnj_ids.has(p.id ?? p._id));
 window.vclIsSecretPnj = p => window._vcl_secret_forgerons_hidden !== false && window.vclIsSecretForgeron(p);
+window.vclIsSecretItem = it => window._vcl_secret_forgerons_hidden !== false && !!it && window._vcl_secret_item_ids.has(it.id ?? it._id);
 async function _loadSecretForgerons() {
   try {
     const snap = await Promise.race([
       getDoc(doc(db, 'config', 'secret_forgerons')),
       new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 4000)),
     ]);
-    window._vcl_secret_forgerons_hidden = !(snap.exists() && snap.data().hidden === false);
+    const cfg = snap.exists() ? snap.data() : {};
+    window._vcl_secret_forgerons_hidden = cfg.hidden !== false;
+    window._vcl_secret_pnj_ids = new Set(Array.isArray(cfg.pnj) ? cfg.pnj : []);
+    window._vcl_secret_item_ids = new Set(Array.isArray(cfg.items) ? cfg.items : []);
   } catch (e) { console.warn('[store] config/secret_forgerons :', e.message); }
 }
 

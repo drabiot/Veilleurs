@@ -197,10 +197,18 @@ window.setVclWorldbossEmoji = async function(name, value) {
   }
 };
 
-// ── FORGERONS SECRETS TOOL : config/secret_forgerons { hidden } (absent ou true = position cachée ; lu par store.js) ──
+// ── FORGERONS SECRETS TOOL : config/secret_forgerons { hidden, pnj: [ids], items: [ids] } (absent = position cachée ; lu par store.js) ──
+// pnj / items = ajouts manuels : en plus des PNJ détectés par tag/type, ces PNJ sont cachés et l'obtain de ces items est remplacé.
 const _SF_REF = () => doc(db, 'config', 'secret_forgerons');
-const _isSecretForgeron = p => ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'].includes(p.tag)
+const _sfAuto = p => ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'].includes(p.tag)
   || ["forgeron d'items secrets", 'fabricant secret'].includes(String(p.type || '').toLowerCase());
+const _sf = { cfg: { hidden: true, pnj: [], items: [] }, pnj: [], items: [] };
+
+async function _sfSave(patch) {
+  const next = { ..._sf.cfg, ...patch };
+  await setDoc(_SF_REF(), { hidden: next.hidden !== false, pnj: next.pnj || [], items: next.items || [] });
+  _sf.cfg = next;
+}
 
 window.showSecretForgerons = async function() {
   _setHash('secret-forgerons');
@@ -213,33 +221,93 @@ async function _loadSecretForgerons() {
   if (!body) return;
   body.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const [snap, cfg] = await Promise.all([getDocs(collection(db, COL.pnj)), getDoc(_SF_REF())]);
-    const hidden = !(cfg.exists() && cfg.data().hidden === false);
-    const pnjs = snap.docs.map(d => d.data()).filter(_isSecretForgeron).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
-    const rows = pnjs.map(p => `<div style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:13px;display:flex;justify-content:space-between;gap:12px;">
-        <span>${escHtml(p.name || p.id || '?')}</span>
-        <span style="color:var(--muted);font-size:12px;">${escHtml(String(p.region || '').replace(/_/g, ' '))} · ${(p.craft || []).length} recette(s)</span>
-      </div>`).join('');
-    body.innerHTML = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
-        <span style="font-size:14px;font-weight:700;color:${hidden ? 'var(--danger)' : 'var(--success, #4caf50)'};">${hidden ? '🔒 Secret actif — positions cachées' : '🔓 Secret levé — positions visibles'}</span>
-        <button class="btn ${hidden ? 'btn-primary' : 'btn-ghost'}" onclick="setSecretForgeronsHidden(${!hidden})" style="font-size:12px;">${hidden ? '🔓 Révéler les forgerons' : '🔒 Réactiver le secret'}</button>
-      </div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">${pnjs.length} forgeron(s) d'items secrets</div>
-      <div style="display:flex;flex-direction:column;gap:6px;">${rows || '<div class="empty" style="color:var(--muted);">Aucun forgeron d\'items secrets.</div>'}</div>`;
+    const [pSnap, iSnap, cfg] = await Promise.all([getDocs(collection(db, COL.pnj)), getDocs(collection(db, COL.items)), getDoc(_SF_REF())]);
+    const c = cfg.exists() ? cfg.data() : {};
+    _sf.cfg = { hidden: c.hidden !== false, pnj: Array.isArray(c.pnj) ? c.pnj : [], items: Array.isArray(c.items) ? c.items : [] };
+    _sf.pnj = pSnap.docs.map(d => ({ ...d.data(), id: d.data().id ?? d.id }));
+    _sf.items = iSnap.docs.map(d => ({ ...d.data(), id: d.data().id ?? d.id }));
+    _renderSecretForgerons();
   } catch (e) {
     body.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`;
   }
 }
 
+const _sfRow = (label, sub, btn) => `<div style="padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:13px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+    <span>${label}</span><span style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;">${sub}${btn}</span></div>`;
+const _sfRemoveBtn = (kind, id) => `<button class="btn btn-ghost" data-id="${escHtml(id)}" onclick="sfRemove('${kind}', this.dataset.id)" style="font-size:11px;padding:2px 8px;" title="Retirer de la liste secrète">✕</button>`;
+const _sfSearchBox = (kind, ph) => `<input type="text" id="sf-search-${kind}" oninput="sfSearch('${kind}')" placeholder="${ph}" style="width:100%;box-sizing:border-box;margin:8px 0 4px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none;font-size:13px;" /><div id="sf-results-${kind}" style="display:flex;flex-direction:column;gap:4px;"></div>`;
+
+function _renderSecretForgerons() {
+  const body = document.getElementById('secret-forgerons-body');
+  if (!body) return;
+  const hidden = _sf.cfg.hidden !== false;
+  const manualPnj = new Set(_sf.cfg.pnj);
+  const auto = _sf.pnj.filter(p => _sfAuto(p) && !manualPnj.has(p.id)).sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr'));
+  const byId = (list, ids) => ids.map(id => list.find(x => x.id === id) || { id, name: id + ' (introuvable)' });
+  const region = p => escHtml(String(p.region || '').replace(/_/g, ' '));
+  const pnjRows = [
+    ...auto.map(p => _sfRow(escHtml(p.name || p.id), `${region(p)} · auto (tag/type)`, '')),
+    ...byId(_sf.pnj, _sf.cfg.pnj).map(p => _sfRow(escHtml(p.name || p.id), `${region(p)} · ajouté`, _sfRemoveBtn('pnj', p.id))),
+  ].join('') || '<div class="empty" style="color:var(--muted);">Aucun PNJ.</div>';
+  const itemRows = byId(_sf.items, _sf.cfg.items).map(i => _sfRow(escHtml(i.name || i.id), escHtml(i.id), _sfRemoveBtn('items', i.id))).join('')
+    || '<div class="empty" style="color:var(--muted);">Aucun item ajouté.</div>';
+  const kept = k => document.getElementById('sf-search-' + k)?.value || '';
+  const [sp, si] = [kept('pnj'), kept('items')];
+  body.innerHTML = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+      <span style="font-size:14px;font-weight:700;color:${hidden ? 'var(--danger)' : 'var(--success, #4caf50)'};">${hidden ? '🔒 Secret actif — positions cachées' : '🔓 Secret levé — positions visibles'}</span>
+      <button class="btn ${hidden ? 'btn-primary' : 'btn-ghost'}" onclick="setSecretForgeronsHidden(${!hidden})" style="font-size:12px;">${hidden ? '🔓 Révéler les forgerons' : '🔒 Réactiver le secret'}</button>
+    </div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:6px;">🧑 PNJ secrets <span style="color:var(--muted);font-weight:400;">— cachés de la carte et du bestiaire ; leur obtain est remplacé</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px;">${pnjRows}</div>
+    ${_sfSearchBox('pnj', 'Ajouter un PNJ (nom)…')}
+    <div style="font-size:13px;font-weight:700;margin:20px 0 6px;">📦 Items secrets <span style="color:var(--muted);font-weight:400;">— leur obtain est remplacé par « Forgeron d'items secret - Position cachée pour l'instant »</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px;">${itemRows}</div>
+    ${_sfSearchBox('items', 'Ajouter un item (nom)…')}`;
+  document.getElementById('sf-search-pnj').value = sp;
+  document.getElementById('sf-search-items').value = si;
+  window.sfSearch('pnj'); window.sfSearch('items');
+}
+
+window.sfSearch = function(kind) {
+  const q = normalize(document.getElementById('sf-search-' + kind)?.value.trim() || '');
+  const el = document.getElementById('sf-results-' + kind);
+  if (!el) return;
+  if (!q) { el.innerHTML = ''; return; }
+  const taken = new Set(kind === 'pnj' ? _sf.cfg.pnj : _sf.cfg.items);
+  const matches = (kind === 'pnj' ? _sf.pnj : _sf.items)
+    .filter(x => !taken.has(x.id) && !(kind === 'pnj' && _sfAuto(x)) && (normalize(x.name || '').includes(q) || normalize(x.id || '').includes(q)))
+    .slice(0, 12);
+  el.innerHTML = matches.map(x => _sfRow(escHtml(x.name || x.id), kind === 'pnj' ? escHtml(String(x.region || '').replace(/_/g, ' ')) : escHtml(x.id),
+    `<button class="btn btn-ghost" data-id="${escHtml(x.id)}" onclick="sfAdd('${kind}', this.dataset.id)" style="font-size:11px;padding:2px 8px;color:var(--danger);border-color:var(--danger);">🔒 Rendre secret</button>`)).join('')
+    || '<div class="empty" style="color:var(--muted);font-size:12px;">Aucun résultat.</div>';
+};
+
+window.sfAdd = async function(kind, id) {
+  const key = kind === 'pnj' ? 'pnj' : 'items';
+  if (_sf.cfg[key].includes(id)) return;
+  try {
+    await _sfSave({ [key]: [..._sf.cfg[key], id] });
+    toast('Ajouté à la liste secrète.', 'success');
+    _renderSecretForgerons();
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+};
+
+window.sfRemove = async function(kind, id) {
+  const key = kind === 'pnj' ? 'pnj' : 'items';
+  try {
+    await _sfSave({ [key]: _sf.cfg[key].filter(x => x !== id) });
+    toast('Retiré de la liste secrète.', 'success');
+    _renderSecretForgerons();
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+};
+
 window.setSecretForgeronsHidden = async function(hidden) {
   if (!hidden && !await modal.confirm('Révéler les forgerons d\'items secrets ?\n\nIls réapparaissent sur la carte et dans le bestiaire, et leur position est de nouveau affichée dans l\'obtain.')) return;
   try {
-    await setDoc(_SF_REF(), { hidden: !!hidden });
+    await _sfSave({ hidden: !!hidden });
     toast(hidden ? 'Secret actif : positions cachées.' : 'Secret levé : positions visibles.', 'success');
-    await _loadSecretForgerons();
-  } catch(e) {
-    toast('Erreur : ' + e.message, 'error');
-  }
+    _renderSecretForgerons();
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
 };
 
 window.createVclEvent = async function() {
