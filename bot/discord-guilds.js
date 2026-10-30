@@ -22,6 +22,7 @@ const BOT_ALLOW = (1n << 10n) | (1n << 11n) | (1n << 14n) | (1n << 15n) | (1n <<
 const BATCH = parseInt(process.env.DISCORD_GUILD_BATCH, 10) || 400; // posts max par serveur et par passage (le passage s'arrête de toute façon à RUN_MINUTES)
 const CONCURRENCY = parseInt(process.env.DISCORD_CONCURRENCY, 10) || 4; // salons traités en parallèle
 const POST_DELAY = parseInt(process.env.DISCORD_POST_DELAY_MS, 10) || 800; // pause entre deux posts d'un même salon ; discord.js gère les 429 en plus
+const sigOf = g => [g.updatedAt || 0, g.initial, !!g.groupSets, g.replace !== false].join('|');
 const log = (...a) => console.log(`[discord-guilds ${new Date().toISOString().slice(11, 19)}]`, ...a);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const has = (l, v) => (l || []).map(String).includes(String(v));
@@ -167,7 +168,7 @@ async function guildPass(rest, g, st, getCtx) {
     await workerBot('report', { guildId: g.id, patch: { purge: false, posted: 0, pending: 0, lastError: '', log: [`Bot : ${n} post(s) supprimé(s) sur demande`] } });
     return;
   }
-  if (g.status !== 'approved' || g.paused || !items.size) return;
+  if (g.status !== 'approved' || g.paused || (fetched.full && !items.size)) return;
 
   if (!!st.groupSets !== !!cfg.groupSets) {
     for (const [key, e] of Object.entries(st.posts)) { if (timeUp()) return; await deletePost(rest, e); delete st.posts[key]; await sleep(500); }
@@ -237,7 +238,7 @@ async function guildPass(rest, g, st, getCtx) {
     }
   }
   const pending = Math.max(0, todo.length - sent);
-  st.pending = pending; st.cfgAt = g.updatedAt || 0;
+  st.pending = pending; st.sig = sigOf(g);
   if (pending === 0 && !error) st.rev = fetched.rev; // sinon : lecture complète au prochain passage
   const patch = { posted: Object.keys(st.posts).length, pending, initialDone: pending === 0 };
   if (sent) { patch.lastSentAt = Date.now(); logs.push(`Bot : ${sent} post(s) envoyé(s), ${pending} restant(s)`); }
@@ -264,7 +265,7 @@ async function pass(rest) {
   for (const g of active) { const st = await loadGuildState(g.id); st._id = g.id; states.set(g.id, st); }
   if (sending.length) {
     // lecture complète si un serveur n'a jamais été lu, a un envoi en cours, des items en échec, ou des réglages modifiés ; sinon seulement les changements
-    const needFull = sending.some(g => { const st = states.get(g.id); return !st.baselined || st.pending > 0 || !st.rev || st.cfgAt !== (g.updatedAt || 0); });
+    const needFull = sending.some(g => { const st = states.get(g.id); return !st.baselined || st.pending > 0 || !st.rev || st.sig !== sigOf(g); });
     await refreshItems(needFull ? 0 : Math.min(...sending.map(g => states.get(g.id).rev)));
   }
   for (const g of active) {
