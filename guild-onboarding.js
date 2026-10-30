@@ -145,6 +145,7 @@ function cleanConfig(c, stored, realIds) {
     forum: c.forum !== false,
     hideThreshold: Math.max(0, Math.min(1000, parseInt(c.hideThreshold, 10) || 0)),
     replace: c.replace !== false,
+    eventTags: c.eventTags === true, // tag de forum par événement (Noël, Halloween…), créé et appliqué par le bot
     groupSets: c.groupSets === true, // un seul post par set (nom du set), au lieu d'un post par item
     channels: [],
   };
