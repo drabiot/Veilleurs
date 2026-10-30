@@ -87,7 +87,7 @@ function translate(s) {
 }
 
 const outputs = new Set();           // textes déjà en anglais (valeurs du dictionnaire) : jamais « manquants »
-const looksFrench = s => /[a-zA-ZÀ-ÿ]{3,}/.test(s) && !/^[\d\s.,:;/\\|+\-–—×x%()[\]#@*•·→←↑↓✦✕✓]+$/.test(s);
+const looksFrench = s => /[a-zA-ZÀ-ÿ]{3,}/.test(s) && !/^\[[A-Za-z]{2,5}\]\s*\S+$/.test(s) && !/^[\d\s.,:;/\\|+\-–—×x%()[\]#@*•·→←↑↓✦✕✓]+$/.test(s);
 
 function translateTextNode(node) {
   const raw = node.nodeValue;
