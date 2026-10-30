@@ -123,7 +123,11 @@ function render() {
   const u = document.getElementById('dg-user');
   u.innerHTML = S.me ? `${esc(S.me.user.name)} <button class="dg-btn" onclick="DG.logout()" style="padding:3px 10px;font-size:11px;">Déconnexion</button>` : '';
   const f = ({ login: rLogin, guild: rGuild, bot: rBot, form: rForm, recap: rRecap, status: rStatus })[S.step] || rLogin;
+  // Le rendu remplace tout le contenu : on garde la position de défilement (style.css a scroll-behavior: smooth, d'où « instant »)
+  const y = window.scrollY, step = render.lastStep;
   app.innerHTML = stepsBar() + f();
+  render.lastStep = S.step;
+  window.scrollTo({ top: step === S.step ? y : 0, behavior: 'instant' });
 }
 
 function rLogin() {
