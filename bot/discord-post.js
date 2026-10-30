@@ -21,6 +21,7 @@ async function readConfig(id) {
 }
 
 /** Données nécessaires au dessin des cartes + liste des forgerons / items secrets à masquer (voir moderation « Forgerons secrets »). */
+const _secretish = p => { const n = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); return n(p.tag).includes('secret') || n(p.type).includes('secret') || /secret|occulte/.test(n(p.name)); }; // forgeron / marchand d'items secrets : détecté tout seul (tag, type ou nom)
 async function buildContext() {
   const [items, panoplies, pnj, sf] = await Promise.all([sync('items').then(rows), sync('panoplies').then(rows), sync('personnages').then(rows), readConfig('secret_forgerons')]);
   const maps = { panoplieData: {}, panoplieMap: {}, pnjMap: {}, allItems: items.map(i => ({ ...i, id: i.id ?? i._id })) };
@@ -28,7 +29,7 @@ async function buildContext() {
   pnj.forEach(p => { maps.pnjMap[p.id ?? p._id] = p; });
   const hidden = sf.hidden !== false;
   const revealedPnj = new Set(sf.revealedPnj || []), revealedItems = new Set(sf.revealedItems || []);
-  const secretPnj = new Set(pnj.filter(p => hidden && (['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'].includes(p.tag)
+  const secretPnj = new Set(pnj.filter(p => hidden && (_secretish(p) || ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'].includes(p.tag)
     || ["forgeron d'items secrets", 'fabricant secret'].includes(String(p.type || '').toLowerCase()) || (sf.pnj || []).includes(p.id ?? p._id)) && !revealedPnj.has(p.id ?? p._id)).map(p => p.id ?? p._id));
   const secretItems = new Set(hidden ? (sf.items || []).filter(i => !revealedItems.has(i)) : []);
   return { maps, secretPnj, secretItems };

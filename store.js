@@ -47,7 +47,8 @@ window._vcl_secret_item_ids = new Set();
 // Révélations individuelles : .revealedPnj / .revealedItems = ids visibles même quand le secret global est actif
 window._vcl_revealed_pnj_ids = new Set();
 window._vcl_revealed_item_ids = new Set();
-window.vclIsSecretForgeron = p => !!p && (_SECRET_FORGERON_TAGS.includes(p.tag) || _SECRET_FORGERON_TYPES.includes(String(p.type || '').toLowerCase()) || window._vcl_secret_pnj_ids.has(p.id ?? p._id));
+const _secretish = p => { const n = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); return n(p.tag).includes('secret') || n(p.type).includes('secret') || /secret|occulte/.test(n(p.name)); }; // forgeron / marchand d'items secrets : détecté tout seul (tag, type ou nom)
+window.vclIsSecretForgeron = p => !!p && (_SECRET_FORGERON_TAGS.includes(p.tag) || _SECRET_FORGERON_TYPES.includes(String(p.type || '').toLowerCase()) || _secretish(p) || window._vcl_secret_pnj_ids.has(p.id ?? p._id));
 window.vclIsSecretPnj = p => window._vcl_secret_forgerons_hidden !== false && window.vclIsSecretForgeron(p) && !window._vcl_revealed_pnj_ids.has(p.id ?? p._id);
 window.vclIsSecretItem = it => window._vcl_secret_forgerons_hidden !== false && !!it && window._vcl_secret_item_ids.has(it.id ?? it._id) && !window._vcl_revealed_item_ids.has(it.id ?? it._id);
 async function _loadSecretForgerons() {

@@ -201,7 +201,8 @@ window.setVclWorldbossEmoji = async function(name, value) {
 // revealedPnj / revealedItems = PNJ / items révélés un par un (visibles même quand le secret global est actif).
 // pnj / items = ajouts manuels : en plus des PNJ détectés par tag/type, ces PNJ sont cachés et l'obtain de ces items est remplacé.
 const _SF_REF = () => doc(db, 'config', 'secret_forgerons');
-const _sfAuto = p => ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'].includes(p.tag)
+const _secretish = p => { const n = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); return n(p.tag).includes('secret') || n(p.type).includes('secret') || /secret|occulte/.test(n(p.name)); }; // forgeron / marchand d'items secrets : détecté tout seul (tag, type ou nom)
+const _sfAuto = p => ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'].includes(p.tag) || _secretish(p)
   || ["forgeron d'items secrets", 'fabricant secret'].includes(String(p.type || '').toLowerCase());
 const _sf = { cfg: { hidden: true, pnj: [], items: [], revealedPnj: [], revealedItems: [] }, pnj: [], items: [] };
 const _sfList = (c, k) => Array.isArray(c[k]) ? c[k] : [];

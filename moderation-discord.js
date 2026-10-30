@@ -1610,6 +1610,7 @@ async function _channelOfItem(it, { auto = false } = {}) {
   return c.id;
 }
 
+const _secretish = p => { const n = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); return n(p.tag).includes('secret') || n(p.type).includes('secret') || /secret|occulte/.test(n(p.name)); }; // forgeron / marchand d'items secrets : détecté tout seul (tag, type ou nom)
 // Forgerons / items secrets : la carte ne montre ni leur nom ni leur lieu (outil « Forgerons secrets »)
 async function _maskSecret(item) {
   const SECRET = "Forgeron d'items secret - Position cachée pour l'instant";
@@ -1621,7 +1622,7 @@ async function _maskSecret(item) {
   if (typeof item.obtain !== 'string') return item;
   const pnj = await cachedDocs(COL.pnj).catch(() => []);
   const secretIds = pnj.filter(p => !(sf.revealedPnj || []).includes(p.id ?? p._id) && (
-    ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'].includes(p.tag)
+    _secretish(p) || ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'].includes(p.tag)
     || ["forgeron d'items secrets", 'fabricant secret'].includes(String(p.type || '').toLowerCase())
     || (sf.pnj || []).includes(p.id ?? p._id))).map(p => p.id ?? p._id);
   const obtain = item.obtain.split('\n').map(l => secretIds.some(s => l.includes(`[npc:${s}|`) || l.includes(`[npc:${s}]`)) ? SECRET : l).join('\n');
