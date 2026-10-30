@@ -440,7 +440,11 @@ const _drBtn = (label, fn, kind = '') => {
   return `<button class="btn btn-ghost" onclick="${fn}" style="font-size:12px;padding:6px 12px;${style}">${label}</button>`;
 };
 
-function _drCard(c, i) {
+// Liste des salons du plan : groupée par catégorie Discord (repliée), une ligne compacte par salon ; réglages détaillés dans « ⚙️ » (dépliable)
+let _drOpenRows = new Set(), _drOpenGroups = new Set(), _drView = { pal: '', todo: false };
+const _drGroupKey = c => c.categoryName || (c.categoryId && (_drCats().find(k => k.id === c.categoryId) || {}).name) || '— sans catégorie —';
+
+function _drDetail(c, i) { // réglages détaillés d'un salon (type, catégorie, quoi envoyer)
   const cats = _drCats();
   const catSel = `<select onchange="drSetCategory(${i}, this.value)" title="Catégorie Discord où ranger ce salon" style="${_drField}">
       <option value="">📁 sans catégorie</option>
@@ -452,37 +456,59 @@ function _drCard(c, i) {
       <div style="display:flex;gap:5px;flex-wrap:wrap;">${options}</div></div>`;
   const itemChips = _DR_CATS.map(([k, l]) => _drChip((c.itemCats || []).includes(k), l, `drToggle(${i}, 'itemCats', '${k}')`)).join(' ');
   const palChips = _drPaliers.map(p => _drChip((c.paliers || []).map(String).includes(String(p.id)), escHtml(p.label || String(p.id)), `drToggle(${i}, 'paliers', '${escHtml(String(p.id))}')`)).join(' ');
+  return `<div style="margin:4px 0 10px 26px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+      <select onchange="drSet(${i}, 'type', this.value)" style="${_drField}" ${c.id ? 'disabled title="Le type ne peut pas changer après la création"' : ''}><option value="forum" ${c.type !== 'text' ? 'selected' : ''}>🗂 Forum (un fil par item)</option><option value="text" ${c.type === 'text' ? 'selected' : ''}># Salon texte</option></select>
+      ${catSel}
+      ${_drAlive(c) ? '' : `<input type="text" inputmode="numeric" placeholder="ou colle l'ID d'un salon existant" onchange="drLink(${i}, this.value)" style="${_drField}width:230px;font-family:monospace;">`}
+    </div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;">
+      ${group('Catégories d\'items <em>(aucune = toutes)</em>', 'itemCats', itemChips)}
+      ${group('Paliers <em>(aucun = tous)</em>', 'paliers', palChips)}
+    </div></div>`;
+}
+
+function _drRow(c, i) {
+  const alive = _drAlive(c);
   const catLabels = (c.itemCats || []).map(k => (_DR_CATS.find(q => q[0] === k) || [0, k])[1]);
   const palLabels = (c.paliers || []).map(_drPalLabel);
   const n = _drCount(c);
-  const summary = `📌 Reçoit <strong>${catLabels.length ? catLabels.join(', ') : 'toutes les catégories'}</strong> · <strong>${palLabels.length ? palLabels.join(', ') : 'tous les paliers'}</strong> — <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${c.id && _drPostCounts[c.id] ? ` · déjà ${_drPostCounts[c.id]} posté${_drPostCounts[c.id] > 1 ? 's' : ''}` : ''}`;
-  const badge = _drAlive(c)
-    ? `<span style="font-size:12px;color:var(--success, #4caf50);white-space:nowrap;" title="ID ${escHtml(c.id)}">✓ en place</span>`
-    : c.id
-      ? `<span style="font-size:12px;color:var(--danger);white-space:nowrap;" title="ID ${escHtml(c.id)}">⚠️ introuvable sur Discord (supprimé ?)</span>`
-      : `<span style="font-size:12px;color:#e0a24c;white-space:nowrap;">● pas encore créé</span>`;
-  const actions = _drAlive(c)
-    ? `${_drBtn('📤 Envoyer toute la data de ce salon', `drSendChannel(${i}, 'all')`, 'primary')}
-       ${_drBtn('Seulement les manquants', `drSendChannel(${i}, 'missing')`)}
-       ${_drBtn('🧹 Vider ce salon', `drClearChannel(${i})`, 'danger')}`
-    : `${_drBtn('✨ Créer ce salon', `drCreate(${i})`, 'primary')}
-       <input type="text" inputmode="numeric" placeholder="ou colle l'ID d'un salon existant" onchange="drLink(${i}, this.value)" style="${_drField}width:230px;font-family:monospace;">`;
-  return `<div style="border:1px solid var(--border);border-left:4px solid ${_drAlive(c) ? 'var(--success, #4caf50)' : c.id ? 'var(--danger)' : '#e0a24c'};border-radius:10px;padding:14px 16px;margin-bottom:14px;background:var(--surface);">
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-      <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" style="${_drField}width:210px;font-weight:700;font-size:14px;">
-      <select onchange="drSet(${i}, 'type', this.value)" style="${_drField}" ${c.id ? 'disabled title="Le type ne peut pas changer après la création"' : ''}><option value="forum" ${c.type !== 'text' ? 'selected' : ''}>🗂 Forum (un fil par item)</option><option value="text" ${c.type === 'text' ? 'selected' : ''}># Salon texte</option></select>
-      ${catSel}
-      <span style="margin-left:auto;">${badge}</span>
-    </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">${summary}</div>
-    <details style="margin-bottom:12px;"><summary style="cursor:pointer;font-size:12px;color:var(--accent);">Choisir quoi envoyer dans ce salon</summary>
-      <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;">
-        ${group('Catégories d\'items <em>(aucune = toutes)</em>', 'itemCats', itemChips)}
-        ${group('Paliers <em>(aucun = tous)</em>', 'paliers', palChips)}
-      </div></details>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">${actions}<span style="margin-left:auto;"></span>${_drBtn('Retirer du plan', `drRemove(${i})`)}</div>
-  </div>`;
+  const dot = alive ? '<span title="En place">🟢</span>' : c.id ? '<span title="Introuvable sur Discord (supprimé ?)">🔴</span>' : '<span title="Pas encore créé">🟠</span>';
+  const ib = (icon, title, fn, danger) => `<button class="btn btn-ghost" title="${title}" onclick="${fn}" style="padding:2px 8px;font-size:12px;${danger ? 'color:var(--danger);border-color:var(--danger);' : ''}">${icon}</button>`;
+  const actions = (alive
+    ? ib('📤', 'Envoyer toute la data de ce salon', `drSendChannel(${i}, 'all')`) + ib('➕', 'Envoyer seulement les manquants', `drSendChannel(${i}, 'missing')`) + ib('🧹', 'Vider ce salon (supprime ses posts)', `drClearChannel(${i})`, true)
+    : ib(c.id ? '🔁' : '✨', c.id ? 'Recréer ce salon (introuvable sur Discord)' : 'Créer ce salon', `drCreate(${i})`))
+    + ib('⚙️', 'Réglages de ce salon', `drToggleRow(${i})`) + ib('🗑', 'Retirer du plan', `drRemove(${i})`);
+  return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+      ${dot}
+      <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" style="${_drField}width:190px;font-weight:700;">
+      <span style="flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(catLabels.join(', ') + ' · ' + palLabels.join(', '))}">${catLabels.length ? catLabels.join(', ') : 'toutes catégories'} · ${palLabels.length ? palLabels.join(', ') : 'tous paliers'} · <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${alive && _drPostCounts[c.id] ? ` · ${_drPostCounts[c.id]} posts` : ''}${c.id && !alive ? ' · <span style="color:var(--danger);">introuvable</span>' : ''}</span>
+      <span style="display:flex;gap:4px;flex:none;">${actions}</span>
+    </div>${_drOpenRows.has(i) ? _drDetail(c, i) : ''}`;
 }
+
+function _drList() {
+  if (!_dr.channels.length) return '<div class="empty" style="color:var(--muted);">Aucun salon dans le plan. « Proposer un plan » en crée un à partir des items (une catégorie par palier, un forum par type d\'item).</div>';
+  const palIds = [...new Set(_dr.channels.flatMap(c => (c.paliers || []).map(String)))];
+  const view = _drView;
+  const filterRow = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;"><span style="font-size:11px;color:var(--muted);">Afficher :</span>
+      ${_drChip(!view.pal && !view.todo, 'Tout', 'drView(\'\', false)')}
+      ${palIds.map(p => _drChip(view.pal === p, escHtml(_drPalLabel(p)), `drView('${escHtml(p)}', false)`)).join('')}
+      ${_drChip(view.todo, '⚠️ À traiter (pas en place)', 'drView(\'\', true)')}</div>`;
+  const idx = _dr.channels.map((c, i) => i).filter(i => { const c = _dr.channels[i]; return !(view.todo && _drAlive(c)) && !(view.pal && !(c.paliers || []).map(String).includes(view.pal)); });
+  const groups = new Map();
+  idx.forEach(i => { const k = _drGroupKey(_dr.channels[i]); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(i); });
+  if (!idx.length) return filterRow + '<div class="empty" style="color:var(--muted);">Aucun salon ne correspond à ce filtre.</div>';
+  return filterRow + [...groups].map(([k, list]) => {
+    const alive = list.filter(i => _drAlive(_dr.channels[i])).length, todo = list.length - alive;
+    return `<details data-k="${escHtml(k)}" ontoggle="drGroupToggled(this)" ${_drOpenGroups.has(k) || view.todo || view.pal ? 'open' : ''} style="border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:var(--surface);">
+      <summary style="cursor:pointer;padding:8px 12px;font-size:13px;font-weight:700;">${escHtml(k)} <span style="font-weight:400;font-size:12px;color:var(--muted);">— ${list.length} salon${list.length > 1 ? 's' : ''} · ${alive} en place${todo ? ` · <span style="color:#e0a24c;">${todo} à traiter</span>` : ''}</span></summary>
+      <div style="padding:2px 12px 8px;">${list.map(i => _drRow(_dr.channels[i], i)).join('')}</div></details>`;
+  }).join('');
+}
+window.drToggleRow = i => { _drOpenRows.has(i) ? _drOpenRows.delete(i) : _drOpenRows.add(i); _renderDiscordRoutes(); };
+window.drView = (pal, todo) => { _drView = { pal, todo }; _renderDiscordRoutes(); };
+window.drGroupToggled = el => { const k = el.dataset.k; if (el.open) _drOpenGroups.add(k); else _drOpenGroups.delete(k); };
 
 function _renderDiscordRoutes() {
   const body = document.getElementById('discord-routes-body');
@@ -505,7 +531,7 @@ function _renderDiscordRoutes() {
       ${_drBtn('➕ Ajouter un salon', 'drAdd()')}
       ${_drBtn('✨ Créer tous les salons manquants', 'drReconcile()', 'primary')}
     </div>
-    ${_dr.channels.map(_drCard).join('') || '<div class="empty" style="color:var(--muted);">Aucun salon dans le plan. « Proposer un plan » en crée un à partir des items (une catégorie par palier, un forum par type d\'item).</div>'}`;
+    ${_drList()}`;
   html += _drStep(3, 'Envoi', 'poster les items dans leurs salons') + `
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
       ${_drBtn('🚀 Tout mettre en place (salons + envoi)', 'drSetupAll()', 'primary')}
