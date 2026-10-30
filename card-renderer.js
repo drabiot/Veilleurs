@@ -53,9 +53,12 @@ function parseObtainData(raw) {
       let m
       while ((m = npcRe.exec(l)) !== null) npcIds.push(m[1].trim())
       l = l.replace(/^[-*•◆]\s*/, '')
+      // point final auto (comme le Compendium), sauf ponctuation finale ou simple entrée de drop « [mob|Nom][taux] »
+      const addDot = !/[.!?…:;,]$/.test(l) && !/\[\d+(?:[.,]\d+)?\]$/.test(l) && !/^\[[^\]|]+\|[^\]]*\]$/.test(l)
       l = l.replace(/\[(?:[a-zA-Z]+:)?[^\]|]+\|([^\]]+)\]/g, '$1')
       l = l.replace(/\[(\d+(?:[.,]\d+)?)\]/g, ' ($1%)')
       l = l.replace(/\s+/g, ' ').trim()
+      if (addDot && l) l += '.'
       return l ? { text: l, npcIds } : null
     })
     .filter(Boolean)
