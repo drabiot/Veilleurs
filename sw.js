@@ -3,7 +3,7 @@
    - pages, scripts, styles : le réseau d'abord (toujours la dernière version), le cache seulement si le réseau est coupé ;
    - données du wiki (Worker Cloudflare), Discord, statistiques : jamais mises en cache ici (le site gère déjà son cache de données).
    Changer VERSION vide les anciens caches. */
-const VERSION = 'vcl-v1';
+const VERSION = 'vcl-v2';
 const IMG_CACHE = VERSION + '-img';
 const PAGE_CACHE = VERSION + '-pages';
 const MAX_IMG = 600;
@@ -38,7 +38,8 @@ async function staleWhileRevalidate(req, cacheName) {
 async function networkFirst(req) {
   const cache = await caches.open(PAGE_CACHE);
   try {
-    const res = await fetch(req);
+    // no-cache : revalide toujours auprès du serveur (sinon le cache HTTP de l'hébergeur peut servir une vieille page ~10 min)
+    const res = await fetch(req, { cache: 'no-cache' });
     if (res && res.ok) cache.put(req, res.clone()).then(() => trim(cache, MAX_PAGES)).catch(() => {});
     return res;
   } catch (err) {
