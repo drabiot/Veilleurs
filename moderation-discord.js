@@ -747,9 +747,9 @@ const SLOT_TAG_INFO = {
   artefact:   { label: 'Artefact',         ico: '🔮' },
 };
 
-const SLOT_TAG_KEPT = ['arme_p', 'arme_s', 'casque', 'plastron', 'jambières', 'bottes']; // seuls emplacements en tag (comme le bot)
-async function _ensureSlotTag(channelId, category) {
-  const info = SLOT_TAG_KEPT.includes(category) ? SLOT_TAG_INFO[category] : null;
+async function _ensureSlotTag(channelId, category, twoHanded) {
+  if (twoHanded) return _ensureTag(channelId, 'Deux mains', '⚔️', 'slot');
+  const info = SLOT_TAG_INFO[category];
   if (!info) return null;
   return _ensureTag(channelId, info.label, info.ico.replace(/️/g, ''), 'slot');
 }
@@ -801,7 +801,7 @@ async function _sendSingleItemDiscord(item) {
     const tagId = await _ensureTag(channelId, rarLabel, rarEmoji, 'rarity');
     if (tagId) tags.push(tagId);
   }
-  const slotTagId = await _ensureSlotTag(channelId, item.cat === 'jambieres' ? 'jambières' : item.cat);
+  const slotTagId = await _ensureSlotTag(channelId, item.cat === 'jambieres' ? 'jambières' : item.cat, item.twoHanded);
   if (slotTagId && !tags.includes(slotTagId)) tags.push(slotTagId);
   const CLASSES = window._VCL_DATA?.CLASSES || [];
   const sortedClasses = [...(item.classes || [])].sort((a, b) => {
@@ -1683,8 +1683,20 @@ window.discordSyncItem = async function(id, opts = {}) {
   return true;
 };
 
+// File des items acceptés (config/discord_approved : { items: { id: date } }) : le bot n'envoie tout seul QUE ces items (nouveaux ou modifiés par une soumission approuvée)
+async function _markApproved(id) {
+  const ref = doc(db, 'config', 'discord_approved');
+  const snap = await getDoc(ref);
+  const items = (snap.exists() && snap.data().items) || {};
+  items[String(id)] = Date.now();
+  const keys = Object.keys(items);
+  if (keys.length > 3000) keys.sort((a, b) => items[a] - items[b]).slice(0, keys.length - 2000).forEach(k => delete items[k]);
+  await setDoc(ref, { items });
+}
+
 // Appelé par l'approbation d'une soumission d'item : jamais bloquant, jamais d'erreur remontée au modérateur
 window.discordAutoSync = async function(id) {
+  try { await _markApproved(id); } catch (e) { console.warn('[discord approved]', e); toast('📣 Discord : item non mis en file pour le bot (' + e.message + ')', 'warning', 7000); }
   try {
     if (await window.discordSyncItem(id, { auto: true })) toast('📣 Item posté / mis à jour sur Discord.', 'success');
   } catch (e) { console.warn('[discord auto]', e); toast('📣 Discord : ' + e.message, 'warning', 7000); }

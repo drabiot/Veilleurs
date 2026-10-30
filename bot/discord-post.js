@@ -76,8 +76,11 @@ const tagIdFor = (ch, eventName) => eventName ? (ch.available_tags || []).find(t
 
 // ── Tags de forum d'un item : classe(s), rareté, emplacement (arme principale / secondaire, pièce d'armure) ──
 const RARITY_TAG_EMOJI = { commun: '🌿', rare: '💎', epique: '💜', legendaire: '⭐', mythique: '🌸', godlike: '🔥', event: '🎉' };
-const SLOT_TAGS = { arme_p: ['Arme Principale', '⚔️'], arme_s: ['Arme Secondaire', '🛡️'], casque: ['Casque', '🧢'], plastron: ['Plastron', '👔'], 'jambières': ['Jambières', '👖'], bottes: ['Bottes', '👢'] };
-const SLOT_GROUPS = { arme_p: ['arme_p', 'arme_s'], arme_s: ['arme_p', 'arme_s'], casque: ['casque', 'plastron', 'jambières', 'bottes'], plastron: ['casque', 'plastron', 'jambières', 'bottes'], 'jambières': ['casque', 'plastron', 'jambières', 'bottes'], bottes: ['casque', 'plastron', 'jambières', 'bottes'] };
+const SLOT_TAGS = { arme_p: ['Arme Principale', '⚔️'], arme_s: ['Arme Secondaire', '🛡️'], casque: ['Casque', '🧢'], plastron: ['Plastron', '👔'], 'jambières': ['Jambières', '👖'], bottes: ['Bottes', '👢'],
+  amulette: ['Amulette', '📿'], anneau: ['Anneau', '💍'], bracelet: ['Bracelet', '⭕'], gants: ['Gants', '🧤'], artefact: ['Artefact', '🔮'] };
+const TWO_HANDED_TAG = ['Deux mains', '⚔️'];
+const _W = ['arme_p', 'arme_s'], _A = ['casque', 'plastron', 'jambières', 'bottes'], _J = ['amulette', 'anneau', 'bracelet', 'gants', 'artefact'];
+const SLOT_GROUPS = Object.fromEntries([..._W.map(k => [k, _W]), ..._A.map(k => [k, _A]), ..._J.map(k => [k, _J])]);
 const noVS = e => String(e || '').replace(/\uFE0F/g, '');
 /** wanted = tags de cet item ; universe = tous ceux qu'un item du même type peut demander (créés d'un coup : une seule modification du salon). */
 function itemTagSpecs(item) {
@@ -89,8 +92,9 @@ function itemTagSpecs(item) {
   if (item.rarity && RARITY_TAG_EMOJI[item.rarity]) wanted.push({ name: RAR[item.rarity] || item.rarity, emoji: RARITY_TAG_EMOJI[item.rarity] });
   const sk = slotKey(item.cat);
   if (slot(sk)) wanted.push(slot(sk));
+  if (item.twoHanded) wanted.push({ name: TWO_HANDED_TAG[0], emoji: noVS(TWO_HANDED_TAG[1]) });
   for (const c of item.classes || []) { const cl = classes.find(x => x.id === c); if (cl) wanted.push({ name: cl.label, emoji: noVS(cl.ico) }); }
-  const universe = [...wanted, ...(SLOT_GROUPS[sk] || []).map(slot).filter(Boolean), ...classes.map(c => ({ name: c.label, emoji: noVS(c.ico) })), ...rarity.map(r => ({ name: r.name, emoji: r.emoji }))];
+  const universe = [...wanted, ...(_W.includes(sk) ? [{ name: TWO_HANDED_TAG[0], emoji: noVS(TWO_HANDED_TAG[1]) }] : []), ...(SLOT_GROUPS[sk] || []).map(slot).filter(Boolean), ...classes.map(c => ({ name: c.label, emoji: noVS(c.ico) })), ...rarity.map(r => ({ name: r.name, emoji: r.emoji }))];
   return { wanted, universe };
 }
 /** Ids des tags de l'item dans ce forum ; crée ceux qui manquent (20 tags max par forum). Un salon texte n'a pas de tags. */

@@ -75,7 +75,8 @@ function fitsChannel(cfg, c, it) {
 /** Travail à faire pour un serveur. Pur (testé).
  *  Unité de publication = un item, ou (option « grouper les sets ») tous les items d'un même set d'un même salon (clé « set:<set>|<salon> »).
  *  → { todo: [{ key, it, items, ch, h, old? }], hashFix: [[clé, h]], gone: [clé] } */
-function plan(cfg, st, itemMap, full = true, deleted = []) {
+function plan(cfg, st, itemMap, full = true, deleted = [], gate = null) {
+  const approved = i => !!gate && gate.q[i._id] > (st.ap?.[i._id] || 0); // soumission approuvée depuis le dernier envoi de cet item
   const units = new Map();
   for (const [id, it] of itemMap) {
     const ch = route(cfg, it);
@@ -92,9 +93,9 @@ function plan(cfg, st, itemMap, full = true, deleted = []) {
     u.it = u.items[0];
     u.h = u.set ? hashOf(u.items) : hashOf(u.it);
     const e = st.posts[u.key];
-    if (!e) { if (u.items.some(i => !st.seen[i._id])) todo.push({ ...u }); continue; }
+    if (!e) { if (u.items.some(i => !st.seen[i._id] || approved(i))) todo.push({ ...u }); continue; }
     if (e.channelId !== u.ch.id) todo.push({ ...u, old: e });          // règle changée : déplacé
-    else if (e.h !== u.h) { if (cfg.replace !== false) todo.push({ ...u, old: e }); else hashFix.push([u.key, u.h]); }
+    else if (e.h !== u.h) { if (cfg.replace !== false && (!gate || u.items.some(approved))) todo.push({ ...u, old: e }); else hashFix.push([u.key, u.h]); } // avec le filtre : un item modifié sans passer par une soumission approuvée n'est pas renvoyé
   }
   // supprimé du wiki : tous les items du post absents de la lecture complète, ou tous listés comme supprimés (lecture incrémentale)
   for (const [key, e] of Object.entries(st.posts)) {
@@ -205,13 +206,18 @@ async function guildPass(rest, g, st, getCtx) {
     if (cfg._main) await mergeBrowserPosts(rest, cfg, st); // posts déjà faits depuis la modération : suivis (remplacés si l'item change ensuite)
     logs.push(`Bot : ${matching.length} item(s) concerné(s) sur ${items.size}. ` + (cfg.initial !== 'all' ? 'Mode « nouveaux seulement » : rien envoyé, seuls les prochains items le seront.' : `Envoi de tous : ${matching.length} post(s).`) + (matching.length === 0 && concerned.length ? ' Aucun ne correspond : vérifie filtres et salons.' : ''));
   }
+  // Mode « nouveaux seulement » : seuls les items ACCEPTÉS (soumission approuvée, file config/discord_approved écrite par la modération) partent tout seuls.
+  // Un item arrivé autrement dans le wiki est noté « vu » sans poster ; un renvoi demandé (salon / item) passe par st.force et part quand même.
+  st.ap ||= {}; st.force ||= {};
+  const gate = cfg.initial !== 'all' ? { q: (await dp.readConfig('discord_approved')).items || {} } : null;
+  if (gate) for (const id of items.keys()) if (!st.seen[id] && !st.posts[id] && !st.force[id] && !(gate.q[id] > (st.ap[id] || 0))) st.seen[id] = 1;
   // Demandes d'un chef de serveur sur un salon (page de gestion) : « tout renvoyer » ou « seulement les manquants »
   for (const r of g.requests || []) {
     const ch = eligible.find(c => c.id === r.id);
     if (!ch) { doneReq.push(r.id); continue; }
     if (timeUp()) break;
     if (r.mode === 'all') for (const [key, e] of Object.entries(st.posts)) if (e.channelId === ch.id) { await deletePost(rest, e); delete st.posts[key]; await sleep(300); }
-    for (const it of items.values()) if (fitsChannel(g, ch, it)) delete st.seen[it._id]; // redevient « à envoyer »
+    for (const it of items.values()) if (fitsChannel(g, ch, it)) { delete st.seen[it._id]; st.force[it._id] = 1; } // redevient « à envoyer »
     doneReq.push(r.id);
     logs.push(`Bot : « ${ch.name} » — ${r.mode === 'all' ? 'renvoi de toute la data' : 'envoi des items manquants'} pris en compte`);
   }
@@ -222,7 +228,7 @@ async function guildPass(rest, g, st, getCtx) {
     if (!it) { logs.push(`Bot : item « ${r.id} » introuvable dans le wiki`); doneItems.push(r.id); continue; }
     if (!eligible.some(c => c.id && fitsChannel(g, c, it))) { logs.push(`Bot : « ${it.name} » : aucun salon inscrit ne reçoit cet item (inscris-toi au salon qui lui correspond)`); doneItems.push(r.id); continue; }
     for (const [key, e] of Object.entries(st.posts)) if (key === r.id || (e.ids || []).includes(r.id)) { await deletePost(rest, e); delete st.posts[key]; await sleep(300); }
-    delete st.seen[r.id];
+    delete st.seen[r.id]; st.force[r.id] = 1;
     logs.push(`Bot : « ${it.name} » : renvoi en cours`);
     doneItems.push(r.id);
   }
@@ -240,7 +246,7 @@ async function guildPass(rest, g, st, getCtx) {
     const sets = new Set([...items.values()].filter(i => i.set && route(cfg, i)).map(i => i.set));
     if (sets.size) { const ctx = await getCtx(); map = new Map(items); for (const it of ctx.maps.allItems) if (sets.has(it.set)) map.set(it.id ?? it._id, { _id: it.id ?? it._id, ...it }); }
   }
-  const { todo, hashFix, gone } = plan(cfg, st, map, fetched.full, fetched.deleted);
+  const { todo, hashFix, gone } = plan(cfg, st, map, fetched.full, fetched.deleted, gate);
   // réglages ou statut changés depuis le dernier passage : on écrit toujours le résultat, même s'il n'y a rien à envoyer (sinon l'historique reste muet)
   if (st.sig !== undefined && st.sig !== sigOf(g) && fetched.full) {
     const concerned = [...map.values()].filter(it => route(cfg, it)).length;
@@ -282,6 +288,7 @@ async function guildPass(rest, g, st, getCtx) {
               : await dp.postItem(rest, b.ch.id, b.it, ctx, chInfo.get(b.ch.id), { eventTags: !!cfg.eventTags });
             st.posts[b.key] = { channelId: b.ch.id, threadId: r.threadId, messageId: r.messageId, ...(r.messageIds ? { messageIds: r.messageIds } : {}), ...(b.set ? { ids: b.items.map(i => i._id) } : {}), h: b.h };
             sent++;
+            for (const i of b.items) { delete st.force[i._id]; if (gate && gate.q[i._id]) st.ap[i._id] = gate.q[i._id]; }
             if (sent % 25 === 0) { try { await workerBot('report', { guildId: g.id, patch: { posted: Object.keys(st.posts).length, pending: Math.max(0, todo.length - sent), lastSentAt: Date.now() } }); } catch { /* indicatif */ } } // progression visible en cours d'envoi
             if (sent % 5 === 0) await saveGuildState(g.id, st); // état sauvegardé tous les 5 posts (au pire quelques doublons après un plantage)
             await sleep(POST_DELAY);
