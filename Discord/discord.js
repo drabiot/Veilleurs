@@ -320,20 +320,21 @@ function manageRow(c, i, d, real) {
   let actions = '';
   if (sub && exists) actions += ib('📤', 'Renvoyer toute la data de ce salon', `DG.chSend(${i}, 'all')`) + ib('➕', 'Envoyer seulement les items manquants', `DG.chSend(${i}, 'missing')`) + ib('🧹', 'Vider ce salon (supprime ses posts)', `DG.chClear(${i})`, true);
   else if (sub && d.mode === 'create') actions += ib(c.id ? '🔁' : '✨', c.id ? 'Recréer ce salon (introuvable sur Discord)' : 'Créer ce salon maintenant', `DG.chCreate(${i})`);
-  actions += ib('⚙️', 'Réglages de ce salon', `DG.chOpen(${i})`) + ib('🗑', 'Supprimer ce salon', `DG.chDelete(${i})`);
+  const ro = planMode(d) === 'auto'; // plan automatique : lecture seule
+  if (!ro) actions += ib('⚙️', 'Réglages de ce salon', `DG.chOpen(${i})`) + ib('🗑', 'Supprimer ce salon', `DG.chDelete(${i})`);
   const cats = (c.itemCats || []).map(k => (CATS.find(x => x[0] === k) || [0, k])[1]).join(', ') || 'toutes catégories';
   const pals = (c.paliers || []).map(palierLabel).join(', ') || 'tous paliers';
   const n = itemsOf(c, d), inRoom = S.info?.postCounts?.[c.id] || 0;
   const dot = !sub ? '⚪' : exists ? '🟢' : '🟠';
   const dotTitle = !sub ? "Pas inscrit : rien n'est envoyé dans ce salon" : exists ? 'Inscrit et présent sur Discord' : c.id ? 'Introuvable sur Discord (supprimé ?)' : 'Sera créé automatiquement';
   const note = sub && !exists ? ` · <span style="color:var(--gold)">${c.id ? 'introuvable sur Discord' : d.mode === 'create' ? 'sera créé automatiquement' : 'choisis un salon existant (⚙️)'}</span>` : '';
-  const nameField = `<input type="text" value="${esc(c.name)}" onchange="DG.chRename(${i}, this.value)" style="width:190px;font-weight:700">`;
+  const nameField = ro ? `<span style="width:190px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.name)}">${esc(c.name)}</span>` : `<input type="text" value="${esc(c.name)}" onchange="DG.chRename(${i}, this.value)" style="width:190px;font-weight:700">`;
   const link = c.id ? ` <a href="https://discord.com/channels/${esc(S.guild.id)}/${esc(c.id)}" target="_blank" rel="noopener" title="Ouvrir sur Discord" style="text-decoration:none">↗</a>` : '';
   return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:wrap">
       <span title="${esc(dotTitle)}">${dot}</span>${nameField}${link}
       <span style="flex:1;min-width:160px;font-size:12px;color:var(--muted)">${cats} · ${pals}${n != null ? ` · <strong style="color:var(--gold)" title="${inRoom} item${inRoom > 1 ? 's' : ''} déjà dans ce salon sur ${n} dans le wiki">${inRoom}/${n} items</strong>` : ''}${note}</span>
       <span style="display:flex;gap:4px;flex:none;flex-wrap:wrap">${subBtn}${actions}</span>
-    </div>${M.open.has(i) ? manageDetail(c, i, d) : ''}`;
+    </div>${M.open.has(i) && !ro ? manageDetail(c, i, d) : ''}`;
 }
 
 function manageDetail(c, i, d) { // réglages détaillés d'un salon : catégorie Discord, type, quoi y envoyer
@@ -347,6 +348,24 @@ function manageDetail(c, i, d) { // réglages détaillés d'un salon : catégori
     <div class="dg-chips">${chips(CATS.map(x => [x[0], x[1]]), c.itemCats || [], `DG.chToggle.bind(null, ${i}, 'itemCats')`)}</div>
     <div class="dg-hint">Paliers <em>(aucun = tous)</em></div>
     <div class="dg-chips">${chips(S.paliers.map(p => [p.id, esc(p.label)]), c.paliers || [], `DG.chToggle.bind(null, ${i}, 'paliers')`)}</div></div>`;
+}
+
+// Deux modes de plan : automatique (modèle Veilleurs : une catégorie par palier hors archive × un salon pour CHAQUE type d'item, même vide, tenu à jour tout seul)
+// ou personnalisé (le chef construit son plan, rien n'est ajouté tout seul). Défaut : automatique si le plan est vide, personnalisé sinon.
+const planMode = d => d.planMode || ((d.channels || []).length ? 'custom' : 'auto');
+function fullTemplate(d) {
+  const styled = d.styled !== false, type = d.forum === false ? 'text' : 'forum';
+  const order = S.paliers.map(p => String(p.id));
+  const pals = [...new Set([...order, ...(S.combos || []).map(x => String(x[1]))])].filter(p => p !== '-1')
+    .sort((a, b) => { const ia = order.indexOf(a), ib = order.indexOf(b); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib); });
+  const cats = [...new Set([...CATS.map(c => c[0]), ...(S.combos || []).map(x => x[0])])];
+  const out = [];
+  for (const pal of pals) for (const cat of cats) {
+    const known = CATS.find(c => c[0] === cat);
+    out.push({ name: styled ? (known ? catStyled(cat) : styleChannel('📦', cat)) : (known ? known[2] : cat), type,
+      categoryName: styled ? styleCategory(pal, palierLabel(pal)) : palierLabel(pal), itemCats: [cat], paliers: [pal] });
+  }
+  return out;
 }
 
 /** Salons du modèle Veilleurs (un par catégorie d'items × palier existant dans le wiki) qui ne sont pas encore dans le plan du serveur. */
@@ -369,10 +388,20 @@ function manageVirtualRow(t, k, d) {
     </div>`;
 }
 
+function modeBar(d) {
+  const auto = planMode(d) === 'auto';
+  const tab = (on, label, mode, hint) => `<button class="dg-btn${on ? ' primary' : ''}" onclick="DG.chMode('${mode}')" title="${esc(hint)}">${label}</button>`;
+  return `<div class="dg-row" style="margin:6px 0 4px">${tab(auto, '🤖 Plan automatique', 'auto', 'Le plan des Veilleurs, tenu à jour tout seul')}${tab(!auto, '✏️ Plan personnalisé', 'custom', 'Tu construis ton propre plan')}</div>
+    <p class="dg-hint">${auto
+      ? "Le plan des Veilleurs : une catégorie par palier, un salon par type d'item. Il se met à jour tout seul quand le wiki gagne un type d'item ou un palier (ex. des outils au palier 2). Tu t'inscris aux salons qui t'intéressent."
+      : "Ton propre plan : tu ajoutes, renommes, retires et règles les salons comme tu veux. Rien n'est ajouté tout seul."}</p>`;
+}
+
 function manageBlock(d) {
   const real = S.info?.channels;
   const all = (d.channels || []).map((c, i) => [c, i]);
-  S.tpl = templateMissing(d);
+  const auto = planMode(d) === 'auto';
+  S.tpl = auto ? [] : templateMissing(d); // en automatique, le modèle EST le plan : rien à proposer en plus
   const virt = S.tpl.map((t, k) => [t, 'v' + k]);
   const palIds = [...new Set([...all, ...virt].flatMap(([c]) => (c.paliers || []).map(String)))];
   const shown = [...all, ...(M.sub ? [] : virt)].filter(([c]) => (!M.sub || isSub(c)) && (!M.pal || has(c.paliers, M.pal)));
@@ -391,10 +420,11 @@ function manageBlock(d) {
       <div style="padding:2px 12px 8px">${list.map(([c, i]) => typeof i === 'string' ? manageVirtualRow(c, +i.slice(1), d) : manageRow(c, i, d, real)).join('')}</div></details>`;
   }).join('') || '<div class="dg-hint">Aucun salon à afficher.</div>';
   const missing = d.mode === 'create' && all.some(([c]) => isSub(c) && c.name && !c.id);
-  return `<div style="margin-top:14px"><h3 style="margin-top:0">Salons (${all.length} dans ton plan${virt.length ? ` · ${virt.length} autres proposés` : ''})</h3>
+  return `<div style="margin-top:14px"><h3 style="margin-top:0">Salons (${all.length} dans ${auto ? 'le plan' : 'ton plan'}${virt.length ? ` · ${virt.length} autres proposés` : ''})</h3>
+    ${modeBar(d)}
     <p class="dg-hint">📡 <strong>Inscrit</strong> = salon activé : il est créé si besoin et reçoit les nouveaux items (un item modifié remplace son ancien post). <strong>Pas inscrit</strong> = rien n'est envoyé dans ce salon. <strong>12/250 items</strong> = 12 items déjà postés dans le salon, sur 250 dans le wiki.</p>
     <div class="dg-row" style="margin:6px 0"><button class="dg-btn" onclick="DG.chSubAll(${!allSub})">${allSub ? '✅ Inscrit à tous (désinscrire)' : "📡 S'inscrire à tous les salons"}</button>
-      <button class="dg-btn primary" onclick="DG.chNew()">➕ Nouveau salon</button>
+      ${auto ? '' : '<button class="dg-btn primary" onclick="DG.chNew()">➕ Nouveau salon</button>'}
       ${missing ? '<button class="dg-btn primary" onclick="DG.makeChannels()">✨ Créer les salons inscrits manquants</button>' : ''}
       <button class="dg-btn" onclick="DG.refreshInfo()" title="Relit les salons du serveur">🔄 Revérifier</button>
       <a class="dg-btn" href="https://discord.com/channels/${esc(S.guild.id)}" target="_blank" rel="noopener">Ouvrir le serveur ↗</a></div>
@@ -439,6 +469,7 @@ const DG = window.DG = {
       if (!j.botPresent) { if (!quiet) { S.err = 'Le bot n\'est pas encore sur ce serveur.'; render(); } return; }
       clearInterval(S.poll); S.err = '';
       S.info = j; S.doc = j.config;
+      if (j.config && planMode(j.config) === 'auto') await DG.autoSync();
       if (j.config) { await loadCombos(); S.cfg = { ...defaultCfg(), ...j.config }; S.step = 'status'; }
       else { await loadCombos(); S.cfg = defaultCfg(); S.cfg.forum = !!j.community; regenPlan(); S.step = 'form'; }
       render();
@@ -509,6 +540,17 @@ const DG = window.DG = {
   chOpen(i) { M.open.has(i) ? M.open.delete(i) : M.open.add(i); render(); },
   chGroup(el) { const k = el.dataset.k; if (el.open) M.groups.add(k); else M.groups.delete(k); },
   chView(pal, sub) { M.pal = pal; M.sub = sub; render(); },
+  async autoSync() { // recalcule le plan automatique (nouveau type d'item / palier)
+    try { await loadCombos(); const j = await api('auto_sync', { guildId: S.guild.id, template: fullTemplate(S.doc) }); if (j.config) S.doc = j.config; } catch (e) { S.err = e.message; }
+  },
+  async chMode(mode) {
+    if (planMode(S.doc) === mode) return;
+    if (mode === 'auto' && (S.doc.channels || []).length && !confirm("Passer en plan automatique ?\n\nTon plan personnalisé est mis de côté (retrouvé si tu reviens en personnalisé) et remplacé par le plan des Veilleurs : une catégorie par palier, un salon pour chaque type d'item. Les salons déjà créés et leur inscription sont conservés ; ceux hors modèle sortent du plan (rien n'est supprimé sur Discord).")) return;
+    await loadCombos();
+    const j = await DG.chCall('set_plan_mode', { mode, template: mode === 'auto' ? fullTemplate(S.doc) : undefined });
+    if (j) S.msg = mode === 'auto' ? 'Plan automatique actif.' : 'Plan personnalisé : tu peux le modifier.';
+    render();
+  },
   async chSubTemplate(k) {
     const t = S.tpl?.[k]; if (!t) return;
     S.msg = `Création de « ${t.name} »…`; S.err = ''; render();

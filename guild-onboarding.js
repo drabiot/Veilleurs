@@ -23,7 +23,8 @@ const BOT_ALLOW = P.VIEW | P.SEND | P.EMBED | P.ATTACH | P.HISTORY | P.MANAGE_TH
 
 export const ITEM_CATS = ['arme', 'armure', 'accessoire', 'outils', 'rune', 'consommable', 'nourriture', 'materiaux', 'ressources', 'parchemin', 'quete', 'donjon', 'monnaie'];
 const SNOW = /^\d{15,25}$/;
-const MAX_CHANNELS = 60;
+const MAX_CHANNELS = 120;
+const CAT_RE = /^[a-z_]{2,30}$/; // type d'item (vient du wiki : pas de liste figée)
 const CREATE_BUDGET = 12; // créations Discord par appel (limite de sous-requêtes d'un Worker)
 
 const jparse = s => { try { return s ? JSON.parse(s) : null; } catch { return null; } };
@@ -154,7 +155,7 @@ function cleanConfig(c, stored, realIds) {
     prefix: sanitizeName(c.prefix, 20),
     access: one(c.access, ['everyone', 'roles', 'admins'], 'everyone'),
     roleIds: strList(c.roleIds, SNOW, 20),
-    itemCats: strList(c.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x)),
+    itemCats: strList(c.itemCats, CAT_RE, ITEM_CATS.length),
     paliers: strList(c.paliers, /^[\w\-]{1,30}$/, 30),
     initial: one(c.initial, ['all', 'new'], 'new'),
     forum: c.forum !== false,
@@ -173,7 +174,7 @@ function cleanConfig(c, stored, realIds) {
     if (!id && !name) continue;
     out.channels.push({
       name, type: ch.type === 'text' ? 'text' : 'forum', categoryName: sanitizeName(ch.categoryName, 100),
-      id, itemCats: strList(ch.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x)),
+      id, itemCats: strList(ch.itemCats, CAT_RE, ITEM_CATS.length),
       paliers: strList(ch.paliers, /^[\w\-]{1,30}$/, 30),
       created: !!(id && prev.get(id)?.created), // posé uniquement par le worker (jamais par le navigateur)
       subscribed: ch.subscribed !== false && ch.skip !== true, ...(ch.noPrefix === true ? { noPrefix: true } : {}), // inscrit = activé : le salon est créé si besoin et reçoit les items
@@ -226,6 +227,23 @@ async function purgeStep(env, guildId, doc, json, resend) {
   } else pushLog(doc, 'Tous les posts sont supprimés (envoi en pause : « Reprendre » renverra tout si le réglage est « tous les items »)');
   await dgPut(env, guildId, doc);
   return json({ ok: true, done: true, config: doc });
+}
+
+/** Modèle Veilleurs envoyé par la page (un salon par type d'item × palier) → entrées validées. */
+function cleanTemplate(tpl) {
+  return (Array.isArray(tpl) ? tpl : []).slice(0, MAX_CHANNELS).map(t => {
+    const name = slug(t?.name), cats = strList(t?.itemCats, CAT_RE, 1), pals = strList(t?.paliers, /^[\w\-]{1,30}$/, 1);
+    return name && cats.length === 1 && pals.length === 1 ? { name, categoryName: sanitizeName(t.categoryName, 100), itemCats: cats, paliers: pals } : null;
+  }).filter(Boolean);
+}
+/** Plan automatique = le modèle : les salons déjà au plan (id, inscription, nom) sont gardés, les nouveaux types / paliers arrivent « pas inscrits », ceux hors modèle sortent du plan (rien n'est supprimé sur Discord). */
+function mergeTemplate(doc, tpl) {
+  const key = c => ((c.itemCats || []).length === 1 && (c.paliers || []).length === 1 ? c.itemCats[0] + '|' + c.paliers[0] : '');
+  const old = new Map((doc.channels || []).filter(c => key(c)).map(c => [key(c), c]));
+  const next = tpl.map(t => old.get(t.itemCats[0] + '|' + t.paliers[0]) || { name: t.name, type: doc.forum === false ? 'text' : 'forum', categoryName: t.categoryName, id: '', itemCats: t.itemCats, paliers: t.paliers, created: false, subscribed: false });
+  const changed = next.length !== (doc.channels || []).length || next.some((c, i) => c !== doc.channels[i]);
+  doc.channels = next;
+  return changed;
 }
 
 /** Supprime les posts du bot dans UN salon (par paquets de 40 appels) ; leurs items sont notés « déjà vus » pour ne pas être renvoyés tout de suite. */
@@ -398,7 +416,7 @@ export async function handleGuildApi(request, env, deps) {
       if (doc.channels.length >= MAX_CHANNELS) return json({ error: 'Trop de salons dans le plan.' }, 400);
       const n = slug(body.channel?.name);
       if (!n) return json({ error: 'Nom de salon requis.' }, 400);
-      doc.channels.push({ name: n, type: body.channel?.type === 'text' ? 'text' : 'forum', categoryName: sanitizeName(body.channel?.categoryName, 100), id: '', itemCats: strList(body.channel?.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x)), paliers: strList(body.channel?.paliers, /^[\w\-]{1,30}$/, 30), created: false, subscribed: true, ...(body.channel?.usePrefix ? {} : { noPrefix: true }) });
+      doc.channels.push({ name: n, type: body.channel?.type === 'text' ? 'text' : 'forum', categoryName: sanitizeName(body.channel?.categoryName, 100), id: '', itemCats: strList(body.channel?.itemCats, CAT_RE, ITEM_CATS.length), paliers: strList(body.channel?.paliers, /^[\w\-]{1,30}$/, 30), created: false, subscribed: true, ...(body.channel?.usePrefix ? {} : { noPrefix: true }) });
       // les filtres généraux du serveur ne doivent pas bloquer un salon ajouté ensuite : on les élargit à sa catégorie / son palier
       const ch0 = doc.channels[doc.channels.length - 1];
       if ((doc.itemCats || []).length) ch0.itemCats.forEach(x => { if (!doc.itemCats.includes(x)) doc.itemCats.push(x); });
@@ -415,7 +433,7 @@ export async function handleGuildApi(request, env, deps) {
         pushLog(doc, `Salon « ${c.name} » renommé « ${nn} »`); c.name = nn;
       }
       if (typeof p.categoryName === 'string' && !c.id) c.categoryName = sanitizeName(p.categoryName, 100);
-      if (Array.isArray(p.itemCats)) c.itemCats = strList(p.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x));
+      if (Array.isArray(p.itemCats)) c.itemCats = strList(p.itemCats, CAT_RE, ITEM_CATS.length);
       if (Array.isArray(p.paliers)) c.paliers = strList(p.paliers, /^[\w\-]{1,30}$/, 30);
       if (p.type && !c.id) c.type = p.type === 'text' ? 'text' : 'forum';
     }
@@ -429,6 +447,30 @@ export async function handleGuildApi(request, env, deps) {
     doc.updatedAt = Date.now();
     pushLog(doc, body.value ? 'Inscrit à tous les salons' : 'Désinscrit de tous les salons');
     await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
+  // ── Mode du plan : automatique (modèle Veilleurs tenu à jour) ou personnalisé ──
+  if (action === 'set_plan_mode') {
+    const mode = body.mode === 'auto' ? 'auto' : 'custom';
+    if (doc.planMode === mode) return json({ ok: true, config: doc });
+    if (mode === 'auto') {
+      doc.customPlan = JSON.parse(JSON.stringify(doc.channels || [])); // l'ancien plan est mis de côté
+      doc.planMode = 'auto';
+      mergeTemplate(doc, cleanTemplate(body.template));
+      pushLog(doc, 'Plan automatique activé (modèle Veilleurs tenu à jour) ; l\'ancien plan est mis de côté');
+    } else {
+      doc.planMode = 'custom';
+      if (Array.isArray(doc.customPlan)) { doc.channels = doc.customPlan; delete doc.customPlan; }
+      pushLog(doc, 'Plan personnalisé activé : le plan n\'est plus modifié automatiquement');
+    }
+    doc.updatedAt = Date.now();
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+  if (action === 'auto_sync') {
+    if (doc.planMode !== 'auto') return json({ ok: true, config: doc, unchanged: true });
+    if (mergeTemplate(doc, cleanTemplate(body.template))) { doc.updatedAt = Date.now(); pushLog(doc, 'Plan automatique mis à jour (le modèle Veilleurs a changé)'); await dgPut(env, guildId, doc); }
     return json({ ok: true, config: doc });
   }
 
