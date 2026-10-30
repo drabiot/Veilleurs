@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
+  <title>[VCL] - Data to translate</title>
+  <script src="../sw-register.js" defer></script>
+  <style>
+    :root { --bg: #0e0c0a; --surface: #17130f; --surface2: #1f1a14; --rim: #3a3024; --text: #d8cdb8; --muted: #8f836e; --gold: #e0ac60; --ok: #7fb069; --warn: #e0a040; --bad: #d9674f; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 'JetBrains Mono', ui-monospace, Consolas, monospace; }
+    a { color: var(--gold); }
+    header { position: sticky; top: 0; z-index: 5; background: rgba(14, 12, 10, .96); border-bottom: 1px solid var(--rim); padding: 10px 18px; }
+    h1 { margin: 0 0 6px; font-size: 16px; color: var(--gold); font-weight: 700; letter-spacing: .04em; }
+    .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .bar > * { font: inherit; font-size: 12px; }
+    input[type=text], input[type=search], select, textarea { background: var(--surface2); color: var(--text); border: 1px solid var(--rim); border-radius: 5px; padding: 5px 8px; font: inherit; }
+    button { font: inherit; font-size: 12px; background: var(--surface2); color: var(--text); border: 1px solid var(--rim); border-radius: 5px; padding: 5px 11px; cursor: pointer; }
+    button:hover { border-color: var(--gold); }
+    button.primary { background: var(--gold); border-color: var(--gold); color: #1a1208; font-weight: 700; }
+    .stats { color: var(--muted); font-size: 12px; margin-left: auto; }
+    .stats b { color: var(--text); }
+    main { max-width: 1180px; margin: 0 auto; padding: 14px 18px 80px; }
+    details.help { background: var(--surface); border: 1px solid var(--rim); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; }
+    details.help summary { cursor: pointer; color: var(--gold); font-weight: 700; }
+    details.help ul { margin: 8px 0 2px; padding-left: 18px; }
+    details.help li { margin: 3px 0; }
+    code { background: var(--surface2); padding: 0 4px; border-radius: 3px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; background: var(--surface); border: 1px solid var(--rim); border-left: 3px solid var(--rim); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+    .row.st-ok { border-left-color: var(--ok); }
+    .row.st-doubt { border-left-color: var(--warn); }
+    .row.edited { background: #1b1810; }
+    .meta { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
+    .tag { border: 1px solid var(--rim); border-radius: 10px; padding: 0 8px; }
+    .badge-ok { color: var(--ok); border-color: var(--ok); } .badge-doubt { color: var(--warn); border-color: var(--warn); }
+    .fr { white-space: pre-wrap; word-break: break-word; background: var(--bg); border: 1px dashed var(--rim); border-radius: 5px; padding: 6px 9px; user-select: text; }
+    textarea { width: 100%; min-height: 36px; resize: vertical; white-space: pre-wrap; }
+    .warns { color: var(--bad); font-size: 12px; margin-top: 4px; }
+    .warns.soft { color: var(--warn); }
+    .claude { grid-column: 1 / -1; font-size: 12px; color: var(--warn); background: rgba(224, 160, 64, .08); border-radius: 5px; padding: 5px 9px; }
+    .act { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .act input[type=text] { flex: 1; min-width: 180px; font-size: 12px; }
+    .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+    #glossary { columns: 3 200px; font-size: 12px; margin: 6px 0 0; }
+    #glossary div { break-inside: avoid; }
+    dialog { background: var(--surface); color: var(--text); border: 1px solid var(--gold); border-radius: 10px; padding: 16px; max-width: 520px; }
+    dialog::backdrop { background: rgba(0, 0, 0, .6); }
+    @media (max-width: 720px) { .row { grid-template-columns: 1fr; } .stats { margin-left: 0; width: 100%; } }
+    body.locked > *:not(#gate) { display: none !important; }
+    #gate { display: none; max-width: 460px; margin: 18vh auto 0; padding: 22px; background: var(--surface); border: 1px solid var(--rim); border-radius: 10px; text-align: center; }
+    body.locked #gate { display: block; }
+    #gate h2 { margin: 0 0 8px; font-size: 16px; color: var(--gold); }
+    #gate p { color: var(--muted); font-size: 13px; margin: 6px 0 14px; }
+  </style>
+</head>
+<body class="locked">
+  <div id="gate"><h2>Data to translate</h2><p id="gate-msg">Checking your access…</p><button class="primary" id="gate-login" style="display:none">Log in with Discord</button></div>
+  <header>
+    <h1>📦 Data to translate — new items, mobs, quests, regions</h1>
+    <a href="review.html" style="font-size:12px;margin-left:10px">← Translation review</a>
+    <div class="bar">
+      <select id="f-col" title="Type of sheet"></select>
+      <select id="f-age" title="How recently the sheet was added">
+        <option value="0">All dates</option><option value="7">Added in the last 7 days</option><option value="30">Added in the last 30 days</option>
+      </select>
+      <input type="search" id="f-q" placeholder="Search French or sheet name…" size="26" />
+      <span class="stats" id="stats"></span>
+    </div>
+    <div class="bar" style="margin-top:6px">
+      <input type="text" id="name" placeholder="Your name (optional)" size="18" />
+      <button class="primary" id="b-send">📨 Send to the admins</button>
+      <span style="color:var(--muted);font-size:12px">Same draft as the review tool: nothing goes live until an admin approves it.</span>
+    </div>
+  </header>
+  <main>
+    <details class="help">
+      <summary>How this works (read once)</summary>
+      <ul>
+        <li>This lists the <b>texts of the data sheets</b> (lore, descriptions, quest texts…) that have <b>no English yet</b>, newest sheets first. Names of items, mobs, NPCs, zones and events are never listed.</li>
+        <li>Write the English and click <b>Save</b> (<code>Ctrl+Enter</code>). If the text needs no translation (name, proper noun…), click <b>＝ No translation needed</b>.</li>
+        <li>Keep placeholders like <code>{n}</code> and markup like <code>[npc:…|…]</code> exactly as they are.</li>
+        <li>Then click <b>📨 Send to the admins</b>.</li>
+      </ul>
+    </details>
+    <div id="list"></div>
+    <div class="empty" id="empty" hidden>Nothing left to translate with these filters 🎉</div>
+    <div style="text-align:center"><button id="more" hidden></button></div>
+  </main>
+<script type="module">
+// Accès réservé : connexion Discord + rôle « traducteur » (rôle personnalisé) ou palier autorisé par la permission « tool_translate » (admin par défaut).
+// Remarque : simple porte d'interface ; les textes eux-mêmes (en.json) sont publics dans le dépôt.
+import { auth, db, getUserRole, loginWithDiscord, hasRole, ROLES } from '../firebase.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { doc, getDoc } from '../d1db.js';
+const TRANSLATOR_ROLE = 'traducteur';
+const msg = document.getElementById('gate-msg'), btn = document.getElementById('gate-login');
+const lock = (text, login) => { document.body.classList.add('locked'); msg.textContent = text; btn.style.display = login ? '' : 'none'; };
+btn.onclick = async () => { try { await loginWithDiscord(); } catch (e) { if (e.code !== 'auth/popup-closed-by-user') lock('Login failed: ' + e.message, true); } };
+async function check(user) {
+  if (!user) return lock('This tool is reserved for invited translators. Log in with Discord to continue.', true);
+  lock('Checking your access…', false);
+  try {
+    const role = await getUserRole(user.uid);
+    let tier = ROLES.includes(role) ? role : 'visiteur', min = 'admin';
+    try { const c = await getDoc(doc(db, 'config', 'customRoles')); const cr = (c.exists() ? c.data().roles || [] : []).find(r => r.id === role); if (cr && cr.baseTier) tier = cr.baseTier; } catch { /* rôles perso illisibles */ }
+    try { const p = await getDoc(doc(db, 'config', 'permissions')); if (p.exists()) min = p.data().minRole?.tool_translate ?? min; } catch { /* défaut : admin */ }
+    if (role === TRANSLATOR_ROLE || hasRole(tier, min)) document.body.classList.remove('locked');
+    else lock('Your account does not have access to this tool. Ask an admin to give you the translator role.', false);
+  } catch (e) { lock('Could not check your access: ' + e.message, false); }
+}
+onAuthStateChanged(auth, check);
+</script>
+<script type="module">
+import { loadCollection, COL } from '../firebase.js';
+const LS = 'vcl_i18n_review_draft';                // même brouillon que review.html / compare.html
+const $ = id => document.getElementById(id);
+const squash = s => String(s).replace(/\s+/g, ' ').trim();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const vars = s => [...String(s).matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(',');
+
+// Champs de texte libre à traduire, par collection ('a.b[]' = tableau). Les noms (name, label, zone, npc, event…) ne sont jamais traduits.
+const SPEC = {
+  items:   { label: 'Items',   col: COL.items,   fields: ['lore', 'quality.lore', 'effects[].label'] },
+  mobs:    { label: 'Mobs',    col: COL.mobs,    fields: ['lore', 'attacks[].desc'] },
+  quetes:  { label: 'Quests',  col: COL.quetes,  fields: ['titre', 'desc', 'objectifs[].texte'] },
+  regions: { label: 'Regions', col: COL.regions, fields: ['lore'] },
+};
+const nameOf = d => d.name || d.titre || d.label || d.id || '?';
+function pick(o, path) {
+  let cur = [o];
+  for (const part of path.split('.')) { const arr = part.endsWith('[]'), k = part.replace('[]', ''); cur = cur.flatMap(x => (x && x[k] != null ? (arr ? x[k] : [x[k]]) : [])); }
+  return cur.filter(v => typeof v === 'string' && v.trim());
+}
+
+let draft = { name: '', edits: {}, status: {}, notes: {}, added: [] };
+let dict = {}, keep = new Set(), sendMod = null, rows = [], shown = 0;
+const PAGE = 40;
+try { const d = JSON.parse(localStorage.getItem(LS) || 'null'); if (d) draft = { name: '', edits: {}, status: {}, notes: {}, added: [], ...d }; } catch { /* sans stockage */ }
+const saveDraft = () => { try { localStorage.setItem(LS, JSON.stringify(draft)); } catch { /* idem */ } stats(); };
+const done = fr => fr in dict || draft.added.some(a => squash(a.fr) === fr) || keep.has(fr);
+
+async function boot() {
+  $('list').innerHTML = '<div class="empty">Loading the data…</div>';
+  const get = async f => { try { const r = await fetch(f, { cache: 'no-store' }); return r.ok ? await r.json() : {}; } catch { return {}; } };
+  try { sendMod = await import('./send.js'); } catch { /* envoi indisponible */ }
+  const en = await get('./en.json');
+  keep = new Set((en._keep || []).map(squash));
+  for (const [k, v] of Object.entries(en)) if (!k.startsWith('_') && typeof v === 'string') dict[squash(k)] = v;
+  if (sendMod) for (const [k, v] of Object.entries(await sendMod.loadOverrides())) dict[squash(k)] = v;
+  $('name').value = draft.name || '';
+  const seen = new Map();
+  for (const [key, sp] of Object.entries(SPEC)) {
+    let docs = []; try { docs = await loadCollection(sp.col); } catch { /* collection illisible */ }
+    for (const d of docs) for (const f of sp.fields) for (const fr of pick(d, f)) {
+      const k = squash(fr), id = key + '|' + k;
+      if (seen.has(id)) { seen.get(id).also.push(nameOf(d)); continue; }
+      const r = { key, kind: sp.label, sheet: nameOf(d), field: f.replace('[]', ''), fr: k, at: +d._order || 0, also: [] };
+      seen.set(id, r); rows.push(r);
+    }
+  }
+  rows.sort((a, b) => b.at - a.at);
+  $('f-col').innerHTML = '<option value="">All types</option>' + Object.entries(SPEC).map(([k, s]) => `<option value="${k}">${s.label}</option>`).join('');
+  render();
+}
+
+function filtered() {
+  const col = $('f-col').value, age = +$('f-age').value, q = $('f-q').value.toLowerCase();
+  const min = age ? Date.now() - age * 864e5 : 0;
+  return rows.filter(r => !done(r.fr) && (!col || r.key === col) && (!min || r.at >= min) && (!q || (r.fr + ' ' + r.sheet).toLowerCase().includes(q)));
+}
+function stats() {
+  const todo = rows.filter(r => !done(r.fr)).length;
+  $('stats').innerHTML = `<b>${todo}</b> to translate · <b>${draft.added.length}</b> done in this draft`;
+  const n = sendMod ? sendMod.pendingItems(draft, dict).length : 0, sb = $('b-send');
+  sb.textContent = n ? `📨 Send to the admins (${n})` : '📨 Send to the admins'; sb.disabled = !sendMod;
+}
+function render(more) {
+  const list = filtered();
+  if (!more) { shown = 0; $('list').innerHTML = ''; }
+  const slice = list.slice(shown, shown + PAGE); shown += slice.length;
+  slice.forEach(r => $('list').appendChild(card(r)));
+  $('empty').hidden = list.length > 0;
+  $('more').hidden = shown >= list.length; $('more').textContent = `Show more (${list.length - shown} left)`;
+  stats();
+}
+function card(r) {
+  const el = document.createElement('div'); el.className = 'row';
+  el.innerHTML = `<div class="meta"><span class="tag">${esc(r.kind)}</span><b>${esc(r.sheet)}</b>${r.also.length ? `<span>+${r.also.length} more sheet(s) with the same text</span>` : ''}<span>· ${esc(r.field)}</span></div>
+    <div class="fr">${esc(r.fr)}</div><div><textarea rows="3" placeholder="English…"></textarea><div class="warns"></div></div>
+    <div class="act"><button class="primary" data-s>✔ Save</button><button data-same title="Name, proper noun… identical in English">＝ No translation needed</button></div>`;
+  const ta = el.querySelector('textarea'), w = el.querySelector('.warns');
+  const commit = en => {
+    if (!en.trim()) { w.textContent = 'Write the English text first.'; return; }
+    if (vars(en) !== vars(r.fr)) { w.textContent = 'Placeholders {…} differ from the French.'; return; }
+    draft.added.push({ fr: r.fr, en }); draft.status[r.fr] = 'ok'; dict[r.fr] = en;
+    saveDraft(); el.remove(); if (!$('list').children.length) render();
+  };
+  el.querySelector('[data-s]').onclick = () => commit(ta.value);
+  el.querySelector('[data-same]').onclick = () => commit(r.fr);
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commit(ta.value); } });
+  return el;
+}
+['f-col', 'f-age'].forEach(id => $(id).addEventListener('change', () => render()));
+$('f-q').addEventListener('input', () => render());
+$('more').onclick = () => render(true);
+$('name').addEventListener('change', () => { draft.name = $('name').value.trim(); saveDraft(); });
+$('b-send').onclick = async () => {
+  if (!sendMod) return alert('Sending is not available right now.');
+  const items = sendMod.pendingItems(draft, dict);
+  if (!items.length) return alert('Nothing new to send.');
+  if (!confirm('Send ' + items.length + ' proposal(s) to the admins? They review each one before anything is published.')) return;
+  const b = $('b-send'); b.disabled = true; b.textContent = 'Sending…';
+  try {
+    const r = await sendMod.sendProposals(draft, items, $('name').value.trim()); saveDraft();
+    alert(r.failed ? r.sent + ' sent, ' + r.failed + ' failed: ' + r.error : '✔ ' + r.sent + ' proposal(s) sent to the admins. Thank you!');
+  } catch (e) { alert('Could not send: ' + e.message); }
+  b.disabled = false; stats();
+};
+boot();
+</script>
+</body>
+</html>
