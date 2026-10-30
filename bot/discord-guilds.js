@@ -177,7 +177,7 @@ async function guildPass(rest, g, st, getCtx) {
   if (st.baselined && cfg.initial === 'all' && st.initial !== 'all') { // passage de « nouveaux seulement » à « tous » : les items notés comme vus doivent maintenant partir
     const n = Object.keys(st.seen).length;
     st.seen = {};
-    logs.push(`Bot : réglage passé à « envoyer tous les items » : ${n} item(s) jusque-là ignorés vont être envoyés`);
+    logs.push(`Bot : « tous les items » activé, ${n} item(s) ignorés jusque-là vont partir`);
   }
   st.initial = cfg.initial;
   if (!st.baselined) { // « seulement les nouveaux » : les items déjà dans le wiki sont notés comme vus
@@ -185,9 +185,7 @@ async function guildPass(rest, g, st, getCtx) {
     const concerned = [...items.values()].filter(it => it.category && it.palier != null);
     if (cfg.initial !== 'all') for (const it of matching) st.seen[it._id] = 1;
     st.baselined = true;
-    logs.push(`Bot : première lecture du wiki : ${items.size} items, ${matching.length} correspondent à tes salons et filtres` + (cfg.initial !== 'all'
-      ? ` — réglage « seulement les nouveaux » : ils sont notés comme déjà vus, rien n'est envoyé maintenant (seuls les items ajoutés plus tard le seront)`
-      : ` — envoi de tous : ${matching.length} post(s) à faire`) + (matching.length === 0 && concerned.length ? ' — AUCUN item ne correspond : vérifie les filtres et les salons' : ''));
+    logs.push(`Bot : ${matching.length} item(s) concerné(s) sur ${items.size}. ` + (cfg.initial !== 'all' ? 'Mode « nouveaux seulement » : rien envoyé, seuls les prochains items le seront.' : `Envoi de tous : ${matching.length} post(s).`) + (matching.length === 0 && concerned.length ? ' Aucun ne correspond : vérifie filtres et salons.' : ''));
   }
   // Lecture incrémentale + sets groupés : on complète avec les autres items des sets modifiés (tous les items viennent avec le contexte des cartes)
   let map = items;
