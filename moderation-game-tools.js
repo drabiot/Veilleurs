@@ -549,7 +549,7 @@ window.dgLoadGuilds = async () => {
           ${g.status !== 'approved' && g.status !== 'removing' ? b(['✅ Valider', id], `dgSetStatus(this.dataset.id,'approved')`) : ''}
           ${g.status === 'pending' ? b(['⛔ Refuser', id], `dgSetStatus(this.dataset.id,'refused')`, 'color:var(--danger);border-color:var(--danger);') : ''}
           ${g.status === 'approved' ? b(['⏸ Suspendre', id], `dgSetStatus(this.dataset.id,'suspended')`) : ''}
-          ${b(['🗑 Retirer', id], 'dgRemoveGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);')}</span></div>`; }).join('') || '<div style="color:var(--muted);font-size:12px;">Aucun serveur inscrit.</div>'}`;
+          ${g.status === 'removing' ? b(['🧽 Effacer la fiche', id], 'dgForgetGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);') : b(['🗑 Retirer', id], 'dgRemoveGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);')}</span></div>`; }).join('') || '<div style="color:var(--muted);font-size:12px;">Aucun serveur inscrit.</div>'}`;
   } catch (e) { el.innerHTML = `<div style="color:var(--danger);font-size:12px;">Serveurs inscrits illisibles : ${escHtml(e.message)}</div>`; }
 };
 window.dgSetStatus = async (id, status) => {
@@ -562,6 +562,12 @@ window.dgSetStatus = async (id, status) => {
   window.dgLoadGuilds();
 };
 // « Retirer » = même désinstallation que côté chef de serveur : le bot supprime ses posts, quitte le serveur puis efface la fiche (les salons créés sont conservés)
+// Désinstallation restée bloquée (bot arrêté…) : efface seulement la fiche ; le bot reste sur le serveur tant qu'il n'est pas retiré
+window.dgForgetGuild = async (id) => {
+  if (!await modal.confirm('Effacer la fiche de ce serveur ?\n\nLe bot ne nettoie rien et ne quitte pas le serveur (à faire à la main si besoin).')) return;
+  try { await deleteDoc(doc(db, 'discord_guilds', id)); toast('Fiche effacée.', 'success'); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+  window.dgLoadGuilds();
+};
 window.dgRemoveGuild = async (id) => {
   if (!await modal.confirm('Retirer ce serveur ?\n\nLe bot supprime ses posts, quitte le serveur et la fiche est effacée au prochain passage du bot.')) return;
   try {
