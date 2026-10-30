@@ -460,7 +460,7 @@ function _renderDiscordRoutes() {
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
       <span style="font-size:14px;font-weight:700;color:${_dr.enabled ? 'var(--success, #4caf50)' : 'var(--muted)'};">${_dr.enabled ? '🟢 Envoi automatique actif' : '⚪ Envoi automatique désactivé'}</span>
       <button class="btn ${_dr.enabled ? 'btn-ghost' : 'btn-primary'}" onclick="setDiscordEnabled(${!_dr.enabled})" style="font-size:12px;">${_dr.enabled ? '⏸ Désactiver' : '▶ Activer'}</button>
-      <span style="font-size:12px;">🤫 Masquer un salon avant un envoi de plus de <input type="number" min="0" value="${_dr.hideThreshold}" onchange="drSetThreshold(this.value)" style="${_drField}width:60px;text-align:center;"> items <span style="color:var(--muted);">(0 = jamais ; « Gérer les rôles » requis)</span></span>
+      <span style="font-size:12px;">🤫 Masquer un salon avant un envoi de plus de <input type="text" inputmode="numeric" value="${_dr.hideThreshold}" onchange="drSetThreshold(this.value)" style="${_drField}width:60px;text-align:center;"> items <span style="color:var(--muted);">(0 = jamais ; « Gérer les rôles » requis)</span></span>
     </div>
     ${_drTree()}${cards}
     <div style="margin-top:26px;border:1px solid var(--danger);border-radius:8px;padding:12px 14px;">
