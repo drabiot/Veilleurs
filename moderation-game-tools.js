@@ -391,6 +391,8 @@ const _drSave = () => { if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; 
 const _drPersist = async () => { try { await _drSave(); } catch (e) { toast('Erreur : ' + e.message, 'error'); } };
 const _drField = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
 const _drChip = (on, label, onclick) => `<button type="button" onclick="${onclick}" style="font-size:11px;padding:3px 9px;border-radius:12px;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};background:${on ? 'rgba(224,172,96,.18)' : 'var(--surface2)'};color:${on ? 'var(--accent)' : 'var(--muted)'};">${label}</button>`;
+// Salon réellement présent sur le serveur ? Si la liste des salons n'a pas pu être lue, on ne contredit pas l'id mémorisé.
+const _drAlive = c => !!c.id && ((_drGuildErr && !_drGuildChans.length) || _drGuildChans.some(x => x.id === c.id));
 const _drCats = () => _drGuildChans.filter(x => x.type === 4).sort((a, b) => a.position - b.position);
 // Nom envoyé à Discord : espaces -> tirets, caractères interdits retirés. Discord met en minuscules les lettres ASCII d'un salon (pas celles d'une catégorie) :
 // les majuscules des salons passent par des lettres Unicode « grasses » (𝗔𝗿𝗺𝗲𝘀), comme le nom d'un serveur en police spéciale.
@@ -454,16 +456,18 @@ function _drCard(c, i) {
   const palLabels = (c.paliers || []).map(_drPalLabel);
   const n = _drCount(c);
   const summary = `📌 Reçoit <strong>${catLabels.length ? catLabels.join(', ') : 'toutes les catégories'}</strong> · <strong>${palLabels.length ? palLabels.join(', ') : 'tous les paliers'}</strong> — <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${c.id && _drPostCounts[c.id] ? ` · déjà ${_drPostCounts[c.id]} posté${_drPostCounts[c.id] > 1 ? 's' : ''}` : ''}`;
-  const badge = c.id
+  const badge = _drAlive(c)
     ? `<span style="font-size:12px;color:var(--success, #4caf50);white-space:nowrap;" title="ID ${escHtml(c.id)}">✓ en place</span>`
-    : `<span style="font-size:12px;color:#e0a24c;white-space:nowrap;">● pas encore créé</span>`;
-  const actions = c.id
+    : c.id
+      ? `<span style="font-size:12px;color:var(--danger);white-space:nowrap;" title="ID ${escHtml(c.id)}">⚠️ introuvable sur Discord (supprimé ?)</span>`
+      : `<span style="font-size:12px;color:#e0a24c;white-space:nowrap;">● pas encore créé</span>`;
+  const actions = _drAlive(c)
     ? `${_drBtn('📤 Envoyer toute la data de ce salon', `drSendChannel(${i}, 'all')`, 'primary')}
        ${_drBtn('Seulement les manquants', `drSendChannel(${i}, 'missing')`)}
        ${_drBtn('🧹 Vider ce salon', `drClearChannel(${i})`, 'danger')}`
     : `${_drBtn('✨ Créer ce salon', `drCreate(${i})`, 'primary')}
        <input type="text" inputmode="numeric" placeholder="ou colle l'ID d'un salon existant" onchange="drLink(${i}, this.value)" style="${_drField}width:230px;font-family:monospace;">`;
-  return `<div style="border:1px solid var(--border);border-left:4px solid ${c.id ? 'var(--success, #4caf50)' : '#e0a24c'};border-radius:10px;padding:14px 16px;margin-bottom:14px;background:var(--surface);">
+  return `<div style="border:1px solid var(--border);border-left:4px solid ${_drAlive(c) ? 'var(--success, #4caf50)' : c.id ? 'var(--danger)' : '#e0a24c'};border-radius:10px;padding:14px 16px;margin-bottom:14px;background:var(--surface);">
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
       <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" style="${_drField}width:210px;font-weight:700;font-size:14px;">
       <select onchange="drSet(${i}, 'type', this.value)" style="${_drField}" ${c.id ? 'disabled title="Le type ne peut pas changer après la création"' : ''}><option value="forum" ${c.type !== 'text' ? 'selected' : ''}>🗂 Forum (un fil par item)</option><option value="text" ${c.type === 'text' ? 'selected' : ''}># Salon texte</option></select>
@@ -491,7 +495,7 @@ function _renderDiscordRoutes() {
   if (!_dr.guildId) { body.innerHTML = html + '<div class="empty" style="color:var(--muted);margin-top:14px;">Choisis un serveur pour voir ce qui y est déjà en place et le configurer.</div>'; return; }
 
   const real = _drGuildChans.filter(x => x.type !== 4).length, ncat = _drCats().length;
-  const ready = _dr.channels.filter(c => c.id).length;
+  const ready = _dr.channels.filter(_drAlive).length;
   html += `<details style="margin-top:12px;"><summary style="cursor:pointer;font-size:12px;color:var(--accent);">👀 Voir ce qui existe déjà sur ce serveur (${ncat} catégories, ${real} salons)</summary><div style="margin-top:8px;">${_drTree()}</div></details>`;
   html += _drStep(2, 'Salons', `${_dr.channels.length} dans le plan · ${ready} en place`);
   html += `<div id="discord-setup-msg" style="font-size:12px;color:var(--accent);min-height:18px;margin-bottom:8px;">${escHtml(_drBusyMsg)}</div>
