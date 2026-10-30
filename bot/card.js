@@ -128,27 +128,29 @@ function parseObtainData(raw) {
   }).filter(Boolean);
 }
 
+// Formats : [{name, npcId, items}] (récent) · [[{qty,id}], …] (plusieurs recettes) · [{qty,id}] (une seule, ancien) → { recipes: [{ npc, ingredients }] }
 function parseCraftData(item, allItems, pnjMap) {
   const craftList = item.craft;
   if (!craftList?.length) return null;
-  // Formats : [{name, npcId, items}] (récent) · [[{qty,id}], …] (plusieurs recettes) · [{qty,id}] (une seule, ancien). Plusieurs recettes : la 1re qui demande autre chose que de la monnaie (sinon la 1re)
   const isNew = !Array.isArray(craftList[0]) && typeof craftList[0] === 'object' && 'items' in craftList[0];
-  const nested = Array.isArray(craftList[0]);
-  const recipe = isNew ? craftList[0]
-    : nested ? { name: null, npcId: null, items: craftList.find(r => (r || []).some(ci => ci?.id && !CURRENCIES[ci.id])) || craftList[0] }
-    : { name: null, npcId: null, items: craftList };
-  const npc = recipe.name
-    || (recipe.npcId && pnjMap[recipe.npcId]?.name)
-    || (recipe.npcId ? recipe.npcId.replace(/_/g, ' ') : null);
-  const ingredients = (recipe.items || []).filter(ci => ci?.id).map(ci => {
-    const cur = CURRENCIES[ci.id]; // monnaie (Cols…) : pas un item, emoji + libellé comme sur le Compendium
-    if (cur) return { name: cur.label, id: ci.id, qty: ci.qty, item: null, currency: cur };
-    const found = allItems.find(a => a.id === ci.id);
-    return { name: found?.name || ci.id.replace(/_/g, ' '), id: ci.id, qty: ci.qty, item: found || { id: ci.id } };
-  });
-  if (!npc && !ingredients.length) return null;
-  return { npc, ingredients };
+  const raw = isNew ? craftList : Array.isArray(craftList[0]) ? craftList.map(items => ({ items })) : [{ items: craftList }];
+  const recipes = raw.map(recipe => {
+    const npc = recipe.name
+      || (recipe.npcId && pnjMap[recipe.npcId]?.name)
+      || (recipe.npcId ? recipe.npcId.replace(/_/g, ' ') : null);
+    const ingredients = (recipe.items || []).filter(ci => ci?.id).map(ci => {
+      const cur = CURRENCIES[ci.id]; // monnaie (Cols…) : pas un item, emoji + libellé comme sur le Compendium
+      if (cur) return { name: cur.label, id: ci.id, qty: ci.qty, item: null, currency: cur };
+      const found = allItems.find(a => a.id === ci.id);
+      return { name: found?.name || ci.id.replace(/_/g, ' '), id: ci.id, qty: ci.qty, item: found || { id: ci.id } };
+    });
+    return { npc, ingredients };
+  }).filter(r => r.npc || r.ingredients.length);
+  return recipes.length ? { recipes } : null;
 }
+// Plusieurs recettes : chacune a un titre (« Recette 2 » à défaut de PNJ)
+const craftRecipeTitle = (craftData, r, i) => r.npc ? 'Craft  ' + r.npc : (craftData.recipes.length > 1 ? 'Recette ' + (i + 1) : null);
+const craftRows = craftData => craftData.recipes.reduce((n, r, i) => n + (craftRecipeTitle(craftData, r, i) ? 1 : 0) + r.ingredients.length, 0);
 
 // ── Texture URL resolution ───────────────────────────────────────
 function resolveIconUrl(item) {
@@ -245,7 +247,7 @@ function estimateCardHeight(item, compact, panoplieData, allItems, pnjMap) {
     framesH += F_TITLE + F_PADV + obtainData.length * F_ROW + F_PADV + F_GAP;
   }
   if (craftData) {
-    const cRows = (craftData.npc ? 2 : 0) + craftData.ingredients.length;
+    const cRows = craftRows(craftData);
     framesH += F_TITLE + F_PADV + cRows * F_ROW + F_PADV + F_GAP;
   }
   return Math.max(topH + framesH + 34, 260);
@@ -633,49 +635,52 @@ async function drawItemCard(canvas, item, exportScale = null, maps = {}) {
   }
 
   if (craftData) {
-    const cRows = (craftData.npc ? 1 : 0) + craftData.ingredients.length;
+    const cRows = craftRows(craftData);
     const crH = F_TITLE + F_PADV + cRows * F_ROW + F_PADV;
     drawFrame(ctx, FRAME_X, frameY, FRAME_W, crH, 'CRAFT', '#7db3d4', F_TITLE);
     let craftY = frameY + F_TITLE + F_PADV;
-    if (craftData.npc) {
-      ctx.font = rowFont; ctx.fillStyle = C.goldDim;
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText('Craft  ' + craftData.npc, FRAME_X + F_PADH, craftY + F_ROW / 2);
-      craftY += F_ROW;
-    }
-    const ingIcons = await Promise.all(
-      craftData.ingredients.map(ing => (ing.currency ? null : loadImage(resolveIconUrl(ing.item))))
-    );
-    for (let i = 0; i < craftData.ingredients.length; i++) {
-      const ing = craftData.ingredients[i], ico = ingIcons[i];
-      const cy  = craftY + F_ROW / 2;
-      const isz = 14;
-      if (ing.currency) {
-        ctx.font = '12px "Segoe UI Emoji", sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = C.text;
-        ctx.fillText(ing.currency.emoji, FRAME_X + F_PADH, cy);
-      } else if (ico) {
-        const s  = Math.min(isz / ico.width, isz / ico.height);
-        const dw = ico.width * s, dh = ico.height * s;
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(ico, FRAME_X + F_PADH + (isz - dw) / 2, cy - isz / 2 + (isz - dh) / 2, dw, dh);
-        ctx.imageSmoothingEnabled = true;
+    for (const [ri, rec] of craftData.recipes.entries()) {
+      const title = craftRecipeTitle(craftData, rec, ri);
+      if (title) {
+        ctx.font = rowFont; ctx.fillStyle = C.goldDim;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(title, FRAME_X + F_PADH, craftY + F_ROW / 2);
+        craftY += F_ROW;
       }
-      ctx.font = rowFont; ctx.fillStyle = C.text;
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      const qtyStr   = `  x${ing.qty}`;
-      const qtyW     = ctx.measureText(qtyStr).width;
-      const nameMaxW = FRAME_W - F_PADH * 2 - isz - 5 - qtyW;
-      let ingName = ing.name;
-      if (ctx.measureText(ingName).width > nameMaxW) {
-        while (ctx.measureText(ingName + '…').width > nameMaxW && ingName.length > 1) ingName = ingName.slice(0, -1);
-        ingName += '…';
+      const ingIcons = await Promise.all(
+        rec.ingredients.map(ing => (ing.currency ? null : loadImage(resolveIconUrl(ing.item))))
+      );
+      for (let i = 0; i < rec.ingredients.length; i++) {
+        const ing = rec.ingredients[i], ico = ingIcons[i];
+        const cy  = craftY + F_ROW / 2;
+        const isz = 14;
+        if (ing.currency) {
+          ctx.font = '12px "Segoe UI Emoji", sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = C.text;
+          ctx.fillText(ing.currency.emoji, FRAME_X + F_PADH, cy);
+        } else if (ico) {
+          const s  = Math.min(isz / ico.width, isz / ico.height);
+          const dw = ico.width * s, dh = ico.height * s;
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(ico, FRAME_X + F_PADH + (isz - dw) / 2, cy - isz / 2 + (isz - dh) / 2, dw, dh);
+          ctx.imageSmoothingEnabled = true;
+        }
+        ctx.font = rowFont; ctx.fillStyle = C.text;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        const qtyStr   = `  x${ing.qty}`;
+        const qtyW     = ctx.measureText(qtyStr).width;
+        const nameMaxW = FRAME_W - F_PADH * 2 - isz - 5 - qtyW;
+        let ingName = ing.name;
+        if (ctx.measureText(ingName).width > nameMaxW) {
+          while (ctx.measureText(ingName + '…').width > nameMaxW && ingName.length > 1) ingName = ingName.slice(0, -1);
+          ingName += '…';
+        }
+        const nameColor = ing.currency ? ing.currency.color : (ing.item?.rarity ? getRarityColor(ing.item.rarity) : C.text);
+        ctx.fillStyle = nameColor;
+        ctx.fillText(ingName, FRAME_X + F_PADH + isz + 5, cy);
+        ctx.fillStyle = C.muted;
+        ctx.fillText(qtyStr, FRAME_X + F_PADH + isz + 5 + ctx.measureText(ingName).width, cy);
+        craftY += F_ROW;
       }
-      const nameColor = ing.currency ? ing.currency.color : (ing.item?.rarity ? getRarityColor(ing.item.rarity) : C.text);
-      ctx.fillStyle = nameColor;
-      ctx.fillText(ingName, FRAME_X + F_PADH + isz + 5, cy);
-      ctx.fillStyle = C.muted;
-      ctx.fillText(qtyStr, FRAME_X + F_PADH + isz + 5 + ctx.measureText(ingName).width, cy);
-      craftY += F_ROW;
     }
     frameY += crH + F_GAP;
   }
