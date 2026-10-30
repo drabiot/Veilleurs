@@ -1664,7 +1664,7 @@ async function _loadItem(id) {
 /** Reposte l'item dans son salon (supprime d'abord toute ancienne version). `auto` : ne fait rien si l'envoi automatique est désactivé. */
 window.discordSyncItem = async function(id, opts = {}) {
   const r = await _routes(true);
-  if (opts.auto && !r.enabled) return false;
+  if (opts.auto && r.enabled === false) return false; // actif par défaut : seul un « false » explicite le coupe
   const item = await _loadItem(id);
   const channel = await _channelOfItem(item, { auto: !!opts.auto });
   if (!channel) { if (opts.auto) return false; throw new Error(`Aucun salon pour ${_itemKey(item)} (ni salon par défaut)`); }

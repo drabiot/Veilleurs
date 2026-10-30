@@ -334,7 +334,7 @@ window.setSecretForgeronsHidden = async function(hidden) {
 const _DR_REF = () => doc(db, 'config', 'discord_routes');
 const _DR_CATS = [['arme', '⚔️ Armes', 'armes'], ['armure', '🛡️ Armures', 'armures'], ['accessoire', '💍 Accessoires', 'accessoires'], ['outils', '🛠️ Outils', 'outils'], ['rune', '🔮 Runes', 'runes'], ['consommable', '🧪 Consommables', 'consommables'],
   ['nourriture', '🍖 Nourriture', 'nourriture'], ['materiaux', '🧱 Matériaux', 'materiaux'], ['ressources', '⛏️ Ressources', 'ressources'], ['parchemin', '📃 Parchemins', 'parchemins'], ['quete', '📜 Quête', 'quete'], ['donjon', '🏰 Donjon', 'donjon'], ['monnaie', '🪙 Monnaie', 'monnaie']];
-let _dr = { enabled: false, hideThreshold: 10, guildId: '', plans: {}, channels: [], createdByBot: {} };
+let _dr = { enabled: true, hideThreshold: 10, guildId: '', plans: {}, channels: [], createdByBot: {} };
 let _drItems = [], _drPaliers = [], _drGuilds = [], _drGuildChans = [], _drGuildErr = '', _drPostCounts = {}, _drBusyMsg = '';
 
 async function _drCall(action, payload = {}) {
@@ -361,8 +361,9 @@ window.showDiscordRoutes = async function() {
   try {
     const [cfg, pal] = await Promise.all([getDoc(_DR_REF()), getDoc(doc(db, 'config', 'paliers'))]);
     const c = cfg.exists() ? cfg.data() : {};
-    _dr = { enabled: c.enabled === true, hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, channels: Array.isArray(c.channels) ? c.channels : [], createdByBot: c.createdByBot && typeof c.createdByBot === 'object' ? c.createdByBot : {} };
+    _dr = { enabled: c.enabled !== false || c.autoDefaultApplied !== true, // actif par défaut (migration unique : autoDefaultApplied) hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, channels: Array.isArray(c.channels) ? c.channels : [], createdByBot: c.createdByBot && typeof c.createdByBot === 'object' ? c.createdByBot : {} };
     _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []);
+    if (c.autoDefaultApplied !== true) await _drPersist(); // migration unique : l'envoi automatique est actif par défaut (le bot lit cette valeur)
     if (!_drPaliers.length) _drPaliers = [{ id: 1, label: 'Palier 1' }, { id: 2, label: 'Palier 2' }, { id: 3, label: 'Palier 3' }, { id: 'event', label: 'Event' }, { id: 'worldboss', label: 'World Boss' }];
     try { _drItems = (await getDocs(collection(db, COL.items))).docs.map(d => d.data()); } catch { _drItems = []; }
     try { _drGuilds = await _drCall('get_bot_guilds'); _drGuildErr = ''; } catch (e) { _drGuilds = []; _drGuildErr = e.message; }
@@ -387,7 +388,7 @@ async function _drLoadGuildChans() {
   } catch { _drPostCounts = {}; }
 }
 
-const _drSave = () => { if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; return setDoc(_DR_REF(), { enabled: _dr.enabled, hideThreshold: _dr.hideThreshold, guildId: _dr.guildId, plans: _dr.plans, channels: _dr.channels, createdByBot: _dr.createdByBot }); };
+const _drSave = () => { if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; return setDoc(_DR_REF(), { autoDefaultApplied: true, enabled: _dr.enabled, hideThreshold: _dr.hideThreshold, guildId: _dr.guildId, plans: _dr.plans, channels: _dr.channels, createdByBot: _dr.createdByBot }); };
 const _drPersist = async () => { try { await _drSave(); } catch (e) { toast('Erreur : ' + e.message, 'error'); } };
 const _drField = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
 const _drChip = (on, label, onclick) => `<button type="button" onclick="${onclick}" style="font-size:11px;padding:3px 9px;border-radius:12px;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};background:${on ? 'rgba(224,172,96,.18)' : 'var(--surface2)'};color:${on ? 'var(--accent)' : 'var(--muted)'};">${label}</button>`;

@@ -48,13 +48,13 @@ async function pass() {
 
   const cfg = await dp.readConfig('discord_routes');
   const routes = cfg.routes || {};
-  const ctx = cfg.enabled ? await dp.buildContext() : null;
+  const ctx = cfg.enabled !== false ? await dp.buildContext() : null;
   const chCache = new Map();
   const failed = new Set();
   for (const item of fresh) {
     const id = item._id;
     const channelId = routes[`${item.category}_${item.palier}`] || cfg.default || '';
-    if (!cfg.enabled || !channelId) { seen.add(id); continue; }
+    if (cfg.enabled === false || !channelId) { seen.add(id); continue; }
     try {
       if (!chCache.has(channelId)) chCache.set(channelId, await rest.get(`/channels/${channelId}`));
       await dp.postItem(rest, channelId, item, ctx, chCache.get(channelId));
