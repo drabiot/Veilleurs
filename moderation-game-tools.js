@@ -544,6 +544,7 @@ window.dgLoadGuilds = async () => {
         return `<div data-row="${escHtml(id)}" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;">
           <strong style="min-width:180px;">${escHtml(g.guildName || id)}</strong><span style="color:${col};">${lbl}${g.paused ? ' · en pause (chef)' : ''}</span>${g.modifiedAfterApproval ? ' <span style="color:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:1px 8px;" title="Le chef de serveur a changé ses réglages depuis ta validation (appliqué tout de suite). Ouvre l\'historique pour voir.">✏️ modifié après validation</span>' : ''}
           <span style="color:var(--muted);">par ${escHtml(g.ownerName || '?')} · ${g.channels?.length || 0} salon(s) · ${g.mode === 'create' ? 'salons créés' : 'salons existants'} · ${g.posted || 0} post(s)${g.pending ? ' (+' + g.pending + ' en attente)' : ''}</span>
+          ${g.pending ? `<span title="${g.posted || 0} envoyés sur ${(g.posted || 0) + g.pending}" style="display:inline-block;width:140px;height:8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;overflow:hidden;vertical-align:middle;"><i style="display:block;height:100%;width:${Math.round(100 * (g.posted || 0) / ((g.posted || 0) + g.pending))}%;background:var(--accent);"></i></span><span style="color:var(--muted);">${Math.round(100 * (g.posted || 0) / ((g.posted || 0) + g.pending))}% · ${g.posted || 0}/${(g.posted || 0) + g.pending}</span>` : ''}
           ${g.lastError ? `<span style="color:var(--danger);" title="${escHtml(g.lastError)}">⚠️ erreur</span>` : ''}
           <span style="margin-left:auto;display:flex;gap:6px;">
           ${g.status !== 'approved' && g.status !== 'removing' ? b(['✅ Valider', id], `dgSetStatus(this.dataset.id,'approved')`) : ''}
@@ -552,6 +553,9 @@ window.dgLoadGuilds = async () => {
           ${g.modifiedAfterApproval ? b(['👍 Vu', id], 'dgAck(this.dataset.id)') : ''}
           ${b(['📜 Historique', id], 'dgToggleLog(this.dataset.id)')}
           ${g.status === 'removing' ? b(['🧽 Effacer la fiche', id], 'dgForgetGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);') : b(['🗑 Retirer', id], 'dgRemoveGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);')}</span></div>`; }).join('') || '<div style="color:var(--muted);font-size:12px;">Aucun serveur inscrit.</div>'}`;
+    // envoi en cours : la liste se rafraîchit toute seule (barre de progression)
+    clearTimeout(window._dgTimer);
+    if (list.some(g => g.pending > 0 && g.status === 'approved') && document.getElementById('discord-guilds-body')) window._dgTimer = setTimeout(() => { if (!document.querySelector('[id^="dg-log-"]')) window.dgLoadGuilds(); }, 10000);
   } catch (e) { el.innerHTML = `<div style="color:var(--danger);font-size:12px;">Serveurs inscrits illisibles : ${escHtml(e.message)}</div>`; }
 };
 // Historique d'un serveur : actions réellement faites (worker, bot, modération)

@@ -201,6 +201,7 @@ async function guildPass(rest, g, st, getCtx) {
   for (const id of gone) { try { await deletePost(rest, st.posts[id]); delete st.posts[id]; await sleep(500); } catch (e) { error = e.message; } }
 
   const batch = todo.slice(0, BATCH);
+  if (todo.length && (g.pending !== todo.length)) { try { await workerBot('report', { guildId: g.id, patch: { posted: Object.keys(st.posts).length, pending: todo.length } }); } catch { /* indicatif */ } } // la barre de progression apparaît dès le début
   if (batch.length) {
     const ctx = await getCtx();
     const counts = new Map();
@@ -223,6 +224,7 @@ async function guildPass(rest, g, st, getCtx) {
               : await dp.postItem(rest, b.ch.id, b.it, ctx, chInfo.get(b.ch.id));
             st.posts[b.key] = { channelId: b.ch.id, threadId: r.threadId, messageId: r.messageId, ...(r.messageIds ? { messageIds: r.messageIds } : {}), ...(b.set ? { ids: b.items.map(i => i._id) } : {}), h: b.h };
             sent++;
+            if (sent % 25 === 0) { try { await workerBot('report', { guildId: g.id, patch: { posted: Object.keys(st.posts).length, pending: Math.max(0, todo.length - sent), lastSentAt: Date.now() } }); } catch { /* indicatif */ } } // progression visible en cours d'envoi
             if (sent % 5 === 0) await saveGuildState(g.id, st); // état sauvegardé tous les 5 posts (au pire quelques doublons après un plantage)
             await sleep(POST_DELAY);
           } catch (e) {

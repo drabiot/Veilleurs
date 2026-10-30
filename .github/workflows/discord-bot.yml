@@ -27,6 +27,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Police d'emoji pour les cartes (sans elle : carrés à la place des icônes)
+        run: sudo apt-get install -y --no-install-recommends fonts-noto-color-emoji
       - name: Passage du bot
         id: run
         run: node bot/discord-watch.js --once

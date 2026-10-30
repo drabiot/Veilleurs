@@ -140,6 +140,15 @@ function statusBadge(g) {
   return g.paused ? '<span class="dg-badge warn">en pause</span>' : '<span class="dg-badge ok">actif</span>';
 }
 
+function watchProgress() {
+  clearInterval(S.prog);
+  if (S.step !== 'status' || !S.doc?.pending || S.doc.status !== 'approved') return;
+  S.prog = setInterval(async () => {
+    if (S.step !== 'status') return clearInterval(S.prog);
+    try { const j = await api('inspect', { guildId: S.guild.id }); if (j.config) { S.doc = j.config; render(); } } catch { /* au prochain tour */ }
+  }, 10000);
+}
+
 function render() {
   const u = document.getElementById('dg-user');
   u.innerHTML = S.me ? `${esc(S.me.user.name)} <button class="dg-btn" onclick="DG.logout()" style="padding:3px 10px;font-size:11px;">Déconnexion</button>` : '';
@@ -149,6 +158,7 @@ function render() {
   app.innerHTML = stepsBar() + f();
   render.lastStep = S.step;
   window.scrollTo({ top: step === S.step ? y : 0, behavior: 'instant' });
+  watchProgress();
 }
 
 function rLogin() {
@@ -290,7 +300,8 @@ function rStatus() {
   const when = t => t ? new Date(t).toLocaleString('fr-FR') : '—';
   const missing = d.mode === 'create' && d.channels.some(c => c.name && !c.id);
   return `<div class="dg-card"><h2>« ${esc(g.name)} » — statut</h2><p style="font-size:14px">${txt}</p>
-    <dl class="dg-recap"><dt>Posts envoyés</dt><dd>${d.posted ?? 0}${d.pending ? ` · restants : ${d.pending}` : ''}</dd><dt>Dernier envoi</dt><dd>${when(d.lastSentAt)}</dd>
+    <dl class="dg-recap"><dt>Posts envoyés</dt><dd>${d.posted ?? 0}${d.pending ? ` · restants : ${d.pending}` : ''}
+      ${d.pending ? `<div class="dg-bar"><i style="width:${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))}%"></i></div><div class="dg-hint">${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))} % — ${d.posted || 0} sur ${(d.posted || 0) + d.pending}</div>` : ''}</dd><dt>Dernier envoi</dt><dd>${when(d.lastSentAt)}</dd>
     ${d.lastError ? `<dt>Dernière erreur du bot</dt><dd style="color:var(--removed)">${esc(d.lastError)}</dd>` : ''}${d.purge ? '<dt>En cours</dt><dd>suppression des posts…</dd>' : ''}</dl>
     ${missing ? '<p class="dg-err">Certains salons du plan ne sont pas encore créés. <button class="dg-btn" onclick="DG.makeChannels()">Créer les salons manquants</button></p>' : ''}
     ${st === 'removing' ? '' : `<div class="dg-row">

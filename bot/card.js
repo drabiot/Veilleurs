@@ -37,16 +37,20 @@ function localTtf(file) {
   reg(fontsource('jetbrains-mono', `jetbrains-mono-latin-${w}-normal.woff2`), 'JetBrains Mono');
   reg(localTtf(`JetBrainsMono-${label}.ttf`), 'JetBrains Mono');
 });
-// Emoji fallback (Windows — others: install Noto Emoji and adjust path)
-reg('C:/Windows/Fonts/seguiemj.ttf', 'Segoe UI Emoji');
+// Emoji : toutes les polices de la carte citent « Segoe UI Emoji ». Windows : la vraie police ; Linux (GitHub Actions) : Noto Color Emoji
+// (paquet fonts-noto-color-emoji, installé par discord-bot.yml) enregistrée sous ce même nom ; sans elle les emojis s'affichent en carrés.
+for (const p of ['C:/Windows/Fonts/seguiemj.ttf', '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf', '/usr/share/fonts/noto/NotoColorEmoji.ttf', '/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf']) {
+  if (fs.existsSync(p)) { reg(p, 'Segoe UI Emoji'); break; }
+}
 
 // ── Load constants from Compendium/data.js ───────────────────────
 let STAT_GROUPS = [], CATEGORIES = {}, EFFECT_META = {}, CLASSES = [], ALL_SLOTS = [];
+let CURRENCIES = {};
 let resolveObtain = s => s; // [obtain:forge] → texte (même fonction que le site, voir OBTAIN_TEXTS de data.js)
 try {
   const code = fs.readFileSync(path.join(WIKI_ROOT, 'Compendium', 'data.js'), 'utf8');
-  const result = new Function(`${code}\nreturn { STAT_GROUPS, CATEGORIES, EFFECT_META, CLASSES, ALL_SLOTS, resolveObtain };`)();
-  ({ STAT_GROUPS, CATEGORIES, EFFECT_META, CLASSES, ALL_SLOTS, resolveObtain } = result);
+  const result = new Function(`${code}\nreturn { STAT_GROUPS, CATEGORIES, EFFECT_META, CLASSES, ALL_SLOTS, resolveObtain, CURRENCIES };`)();
+  ({ STAT_GROUPS, CATEGORIES, EFFECT_META, CLASSES, ALL_SLOTS, resolveObtain, CURRENCIES } = result);
 } catch (e) {
   console.error('[card] Failed to load Compendium/data.js constants:', e.message);
 }
@@ -105,6 +109,7 @@ async function loadImage(url) {
 function parseObtainData(raw) {
   if (!raw) return [];
   raw = resolveObtain(raw);
+  raw = raw.replace(/(Obtenable pendant l'Event )\[([^\]]+)\]/g, '$1$2'); // crochets = syntaxe de stockage, pas d'affichage (même règle que le Compendium)
   return raw.split('\n').map(line => {
     let l = line.trim().replace(/^Autre source — /, '');
     if (!l) return null;
@@ -129,6 +134,8 @@ function parseCraftData(item, allItems, pnjMap) {
     || (recipe.npcId && pnjMap[recipe.npcId]?.name)
     || (recipe.npcId ? recipe.npcId.replace(/_/g, ' ') : null);
   const ingredients = (recipe.items || []).map(ci => {
+    const cur = CURRENCIES[ci.id]; // monnaie (Cols…) : pas un item, emoji + libellé comme sur le Compendium
+    if (cur) return { name: cur.label, id: ci.id, qty: ci.qty, item: null, currency: cur };
     const found = allItems.find(a => a.id === ci.id);
     return { name: found?.name || ci.id.replace(/_/g, ' '), id: ci.id, qty: ci.qty, item: found || { id: ci.id } };
   });
@@ -444,7 +451,7 @@ async function drawItemCard(canvas, item, exportScale = null, maps = {}) {
       ctx.font = `500 ${setNameSz}px "JetBrains Mono", "Segoe UI Emoji"`;
     }
     ctx.fillStyle = C.goldDim; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
-    ctx.fillText(`⬡ ${setLabel}`, IX, curY);
+    ctx.fillText(`🧩 ${setLabel}`, IX, curY); // emoji (⬡ n'existe dans aucune police : carré)
     curY += setNameSz + 5;
 
     const bonusEntries = setPan?.bonuses
@@ -590,15 +597,7 @@ async function drawItemCard(canvas, item, exportScale = null, maps = {}) {
     drawFrame(ctx, FRAME_X, frameY, FRAME_W, oH, 'OBTENIR', '#7db3d4', F_TITLE);
     obtainData.forEach((line, i) => {
       const cy = frameY + F_TITLE + F_PADV + i * F_ROW + F_ROW / 2;
-      let coordStr = null;
-      for (const npcId of line.npcIds) {
-        const npc = pnjMap[npcId];
-        if (!npc?.coords) continue;
-        const parts = [];
-        if (npc.coords.x != null && npc.coords.x !== '') parts.push(`X${npc.coords.x}`);
-        if (npc.coords.z != null && npc.coords.z !== '') parts.push(`Z${npc.coords.z}`);
-        if (parts.length) { coordStr = 'Pin ' + parts.join('  '); break; }
-      }
+      const coordStr = null; // pas de badge « Pin X Z » : les coordonnées sont déjà écrites dans le texte
       const bPad = 6, bGap = 6, bH = 14;
       ctx.font = '700 9px "JetBrains Mono", "Segoe UI Emoji"';
       const bW    = coordStr ? ctx.measureText(coordStr).width + bPad * 2 : 0;
@@ -638,13 +637,16 @@ async function drawItemCard(canvas, item, exportScale = null, maps = {}) {
       craftY += F_ROW;
     }
     const ingIcons = await Promise.all(
-      craftData.ingredients.map(ing => loadImage(resolveIconUrl(ing.item)))
+      craftData.ingredients.map(ing => (ing.currency ? null : loadImage(resolveIconUrl(ing.item))))
     );
     for (let i = 0; i < craftData.ingredients.length; i++) {
       const ing = craftData.ingredients[i], ico = ingIcons[i];
       const cy  = craftY + F_ROW / 2;
       const isz = 14;
-      if (ico) {
+      if (ing.currency) {
+        ctx.font = '12px "Segoe UI Emoji", sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = C.text;
+        ctx.fillText(ing.currency.emoji, FRAME_X + F_PADH, cy);
+      } else if (ico) {
         const s  = Math.min(isz / ico.width, isz / ico.height);
         const dw = ico.width * s, dh = ico.height * s;
         ctx.imageSmoothingEnabled = false;
@@ -661,7 +663,11 @@ async function drawItemCard(canvas, item, exportScale = null, maps = {}) {
         while (ctx.measureText(ingName + '…').width > nameMaxW && ingName.length > 1) ingName = ingName.slice(0, -1);
         ingName += '…';
       }
-      ctx.fillText(ingName + qtyStr, FRAME_X + F_PADH + isz + 5, cy);
+      const nameColor = ing.currency ? ing.currency.color : (ing.item?.rarity ? getRarityColor(ing.item.rarity) : C.text);
+      ctx.fillStyle = nameColor;
+      ctx.fillText(ingName, FRAME_X + F_PADH + isz + 5, cy);
+      ctx.fillStyle = C.muted;
+      ctx.fillText(qtyStr, FRAME_X + F_PADH + isz + 5 + ctx.measureText(ingName).width, cy);
       craftY += F_ROW;
     }
     frameY += crH + F_GAP;

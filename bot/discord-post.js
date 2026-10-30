@@ -24,7 +24,7 @@ async function readConfig(id) {
 async function buildContext() {
   const [items, panoplies, pnj, sf] = await Promise.all([sync('items').then(rows), sync('panoplies').then(rows), sync('personnages').then(rows), readConfig('secret_forgerons')]);
   const maps = { panoplieData: {}, panoplieMap: {}, pnjMap: {}, allItems: items.map(i => ({ ...i, id: i.id ?? i._id })) };
-  panoplies.forEach(p => { const id = p.id ?? p._id; maps.panoplieData[id] = p; maps.panoplieMap[id] = p.name || id; });
+  panoplies.forEach(p => { const id = p.id ?? p._id; maps.panoplieData[id] = p; maps.panoplieMap[id] = p.label || p.name || id; }); // le nom d'un set est dans « label » (comme sur le site)
   pnj.forEach(p => { maps.pnjMap[p.id ?? p._id] = p; });
   const hidden = sf.hidden !== false;
   const revealedPnj = new Set(sf.revealedPnj || []), revealedItems = new Set(sf.revealedItems || []);
