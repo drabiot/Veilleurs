@@ -72,7 +72,8 @@
     </div>
     <div class="bar" style="margin-top:6px">
       <input type="text" id="name" placeholder="Your name (optional)" size="18" />
-      <button class="primary" id="b-export">⬇ Download my changes</button>
+      <button class="primary" id="b-send" title="Send your corrections, new texts and doubts to the admins, who validate each one">📨 Send to the admins</button>
+      <button id="b-export" title="Save a copy of your work as a file (backup)">⬇ Backup file</button>
       <button id="b-import">⬆ Load a saved file</button>
       <button id="b-reset" title="Forget everything done in this browser">Reset</button>
       <a id="preview" href="../index.html?lang=en" target="_blank" rel="noopener">Open the wiki in English ↗</a>
@@ -89,7 +90,7 @@
         <li>Orange boxes are notes from the first-pass translator (Claude) pointing at the real doubts. Start with “⚠ Unsure only”.</li>
         <li>Keep placeholders like <code>{n}</code> or <code>{name}</code> exactly as they are (they get replaced by numbers/names). Keep <code>\n</code> line breaks. Names of items, mobs and NPCs are never translated.</li>
         <li>Discord terms must match the <b>English Discord app</b> (“Manage Server”, “Manage Channels”, “Forum”, “Thread”…). Game/wiki terms follow the glossary below.</li>
-        <li>Your work is saved automatically in <b>this browser</b>. To send it: <b>⬇ Download my changes</b> and give the file to an admin. To continue on another computer: <b>⬆ Load a saved file</b>.</li>
+        <li>Your work is saved automatically in <b>this browser</b>. To send it: click <b>📨 Send to the admins</b> — they review each proposal, and nothing goes live until an admin approves it (you can send again after more edits). <b>⬇ Backup file</b> saves a copy; <b>⬆ Load a saved file</b> restores it on another computer.</li>
         <li>To see a text in context, open the page in English (link above, or add <code>?lang=en</code> to any page address).</li>
       </ul>
       <details style="margin-top:8px"><summary style="font-weight:400;color:var(--muted)">Glossary (one fixed translation per term)</summary><div id="glossary"></div></details>
@@ -230,9 +231,12 @@ function render() {
   stats();
 }
 
+let sendMod = null;
 function stats() {
   const c = { ok: 0, doubt: 0, auto: 0 }; keys.forEach(k => c[statusOf(k)]++);
   $('stats').innerHTML = `<b>${keys.length}</b> entries · <b>${c.ok}</b> reviewed · <b>${c.doubt}</b> unsure · <b>${c.auto}</b> to review · <b>${Object.keys(draft.edits).length + draft.added.length}</b> edited by you`;
+  const n = sendMod ? sendMod.pendingItems(draft, dict).length : 0, sb = $('b-send');
+  if (sb && !sb.disabled) sb.textContent = '📨 Send to the admins' + (n ? ' (' + n + ')' : '');
 }
 
 // ── Actions ────────────────────────────────────────────────────────────
@@ -269,6 +273,7 @@ async function boot() {
   if (!en) { $('list').innerHTML = '<div class="empty">Could not load en.json.</div>'; return; }
   noGloss = new Set((en._noglossary || []).map(squash));
   dict = Object.fromEntries(Object.entries(en).filter(([k, v]) => !k.startsWith('_') && typeof v === 'string'));
+  try { sendMod = await import('./send.js?v=00000000'); Object.assign(dict, await sendMod.loadOverrides()); } catch { /* sans le module d'envoi : le bouton reste inactif */ }   // + corrections déjà validées par les admins
   keys = Object.keys(dict); review = rv.entries || {}; glossary = gl.terms || {}; caseSens = new Set(gl.caseSensitive || []);
   $('glossary').innerHTML = Object.entries(glossary).map(([a, b]) => `<div>${a} → <b>${b}</b></div>`).join('');
   loadDraft(); $('name').value = draft.name || '';
@@ -285,6 +290,18 @@ $('f-q').addEventListener('input', () => { limit = 100; clearTimeout(boot.t); bo
 $('more').onclick = () => { limit += 100; render(); };
 $('name').addEventListener('change', () => { draft.name = $('name').value.trim(); saveDraft(); });
 $('b-export').onclick = exportChanges;
+$('b-send').onclick = async () => {
+  if (!sendMod) return alert('Sending is not available right now (the module could not be loaded).');
+  const items = sendMod.pendingItems(draft, dict);
+  if (!items.length) return alert('Nothing new to send.');
+  if (!confirm('Send ' + items.length + ' proposal(s) to the admins? They review each one before anything is published.')) return;
+  const b = $('b-send'); b.disabled = true; b.textContent = 'Sending…';
+  try {
+    const r = await sendMod.sendProposals(draft, items, $('name').value.trim()); saveDraft();
+    alert(r.failed ? r.sent + ' sent, ' + r.failed + ' failed: ' + r.error : '✔ ' + r.sent + ' proposal(s) sent to the admins. Thank you!');
+  } catch (e) { alert('Could not send: ' + e.message); }
+  b.disabled = false; stats();
+};
 $('b-import').onclick = () => $('file').click();
 $('file').onchange = e => { if (e.target.files[0]) importFile(e.target.files[0]); e.target.value = ''; };
 $('b-reset').onclick = () => { if (confirm('Forget ALL your work in this browser? (Download first if you want to keep it.)')) { try { localStorage.removeItem(LS); } catch { /* ok */ } location.reload(); } };

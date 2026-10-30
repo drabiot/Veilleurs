@@ -86,10 +86,12 @@ async function loadCtx(env, idToken) {
   const tierOf = r => BASE_TIERS.includes(r) ? BASE_TIERS.indexOf(r)
     : BASE_TIERS.indexOf((custom?.roles || []).find(x => x.id === r)?.baseTier || 'visiteur');
   const tier = uid ? tierOf(role) : 0;
-  return { uid, role, tier, perms: perms?.collections || {}, creator };
+  return { uid, role, tier, perms: perms?.collections || {}, creator, toolMin: perms?.minRole || {} };
 }
 
 const need = (ctx, level) => level === 'public' || ctx.tier >= TIER[level];
+// Traducteur : rôle perso « traducteur » ou palier autorisé par la permission « tool_translate » (admin par défaut), comme i18n/review.html
+const isTranslator = ctx => !!ctx.uid && (ctx.role === 'traducteur' || ctx.tier >= (TIER[ctx.toolMin?.tool_translate || 'admin'] ?? 3));
 
 function colRule(ctx, col) {
   const d = COL_DEFAULTS[col];
@@ -113,6 +115,7 @@ function canRead(ctx, col, id, data, listing) {
     case 'builds_sensible': return isContrib;
     case 'submissions': return isAdmin || (isContrib && data?.status === 'pending') || (!!ctx.uid && data?.submittedBy === ctx.uid);
     case 'reports': return isContrib;
+    case 'translation_proposals': return isAdmin || (!!ctx.uid && data?.submittedBy === ctx.uid);   // les propositions : modération + leur auteur
     default: { const r = colRule(ctx, col); return !!r && need(ctx, r.read); }
   }
 }
@@ -169,6 +172,16 @@ function canWrite(ctx, op, col, id, old, neu) {
       return isAdmin || ((isContrib || (authed && old?.submittedBy === ctx.uid)) && old?.status === 'pending' && neu?.status === 'pending');
     }
     case 'reports': return op === 'create' ? Object.keys(neu || {}).length <= 20 : isContrib;
+    case 'translation_proposals': {
+      // Propositions de traduction (i18n/review.html, i18n/compare.html) → onglet « Traduction » de la modération
+      if (op === 'delete') return isAdmin || (authed && old?.submittedBy === ctx.uid && old?.status === 'pending');
+      if (isAdmin) return true;
+      const str = (v, max) => typeof v === 'string' && v.length >= 1 && v.length <= max;
+      if (op === 'create') return isTranslator(ctx) && neu?.submittedBy === ctx.uid && neu?.status === 'pending' && ['edit', 'new', 'flag'].includes(neu?.kind)
+        && str(neu?.fr, 2000) && str(neu?.en, 2000) && typeof neu?.submitterName === 'string' && neu.submitterName.length <= 80 && Object.keys(neu).length <= 15;
+      return authed && old?.submittedBy === ctx.uid && old?.status === 'pending' && neu?.status === 'pending' && isTranslator(ctx)
+        && changed(old, neu).every(k => ['en', 'note', 'doubt', 'kind', 'oldEn', 'submitterName', 'at'].includes(k)) && str(neu?.en, 2000);
+    }
     
     default: {
       const r = colRule(ctx, top);

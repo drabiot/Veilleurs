@@ -322,6 +322,7 @@ const HASH_PANELS = {
   'tags':                 () => showTagsPanel(),
   'statistiques':         () => showStatistiques(),
   'bugs-connus':          () => showBugsConnus(),
+  'translations':         () => showTranslations(),
   'api-items':            () => showApiItems(),
   'config':               () => showConfigHub(),
 };
@@ -481,6 +482,7 @@ const NAV_HUBS = [
       ]},
       { label: 'Communication', tabs: [
         { hash: 'bugs-connus',  label: '🐛 Bugs connus',      btn: 'btn-bugs-connus',      panel: 'bugs-connus-panel',      fn: () => showBugsConnus() },
+        { hash: 'translations', label: '🌐 Traduction',       btn: 'btn-translations',     panel: 'translations-panel',     fn: () => showTranslations(), count: 'count-translations' },
       ]},
     ]},
   { key: 'studio', btn: 'btn-studio-hub', badge: null, legacy: 'studio-legacy-btns', def: 'images',
@@ -866,6 +868,8 @@ _lazyPanel(() => import('./moderation-game-tools.js?v=5b63ecd5'), ['showEventsTo
 
 
 _lazyPanel(() => import('./moderation-bugs.js?v=0490d991'), ['showBugsConnus', '_loadBugsConnus', 'saveBugForm', 'startEditBug', 'cancelEditBug', 'saveEditBug', 'deleteBug']);
+
+_lazyPanel(() => import('./moderation-translations.js?v=00000000'), ['showTranslations', '_loadTranslations', 'trDecide', 'trAcceptAll', 'trSetStatus', 'trSearch', 'trExport', 'trClean']);
 
 // ══════════════════════════════════════════════════════
 //  ONGLET API (items SAO) — logique dans moderation-api-items.js

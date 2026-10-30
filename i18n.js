@@ -240,13 +240,30 @@ function injectSwitch() {
   host.insertBefore(wrap, host.firstChild);
 }
 
+// ── Corrections validées par la modération (onglet « Traduction ») ─
+// Stockées dans la base (config/i18n_<langue> = { map: { texte français: anglais } }) : elles s'appliquent sans mise en ligne.
+// Un jour elles sont reportées dans i18n/en.json (tools/i18n-apply.js) puis retirées de la base. Échec ou lenteur : on les ignore.
+const WORKER = 'https://veilleurs.veilleurs-wiki.workers.dev';
+const OV_KEY = 'vcl_i18n_overrides_' + lang;
+async function overrides() {
+  try { const c = JSON.parse(sessionStorage.getItem(OV_KEY) || 'null'); if (c && Date.now() - c.t < 5 * 60000) return c.map; } catch { /* pas de cache */ }
+  try {
+    const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 2500);
+    const r = await fetch(WORKER + '/db/read', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ col: 'config', id: 'i18n_' + lang }), signal: ctl.signal });
+    clearTimeout(timer);
+    const map = (await r.json())?.doc?.d?.map || {};
+    try { sessionStorage.setItem(OV_KEY, JSON.stringify({ t: Date.now(), map })); } catch { /* ok */ }
+    return map;
+  } catch { return {}; }
+}
+
 // ── Démarrage ────────────────────────────────────────────────────
 async function boot() {
   injectSwitch();
   if (lang === 'fr') return;           // le français est la source : rien à traduire
   try {
-    const r = await fetch(new URL(`./i18n/${lang}.json`, import.meta.url), { cache: 'no-cache' });
-    if (r.ok) compile(await r.json());
+    const [r, over] = await Promise.all([fetch(new URL(`./i18n/${lang}.json`, import.meta.url), { cache: 'no-cache' }), overrides()]);
+    if (r.ok) { const dict = await r.json(); Object.assign(dict, over); compile(dict); }   // les corrections validées par la modération passent avant le fichier du dépôt
   } catch { /* sans dictionnaire : le site reste en français */ }
   walk(document.body);
   const t = translate(document.title);

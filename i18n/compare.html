@@ -52,7 +52,7 @@
     <button id="b-miss" class="on" title="Outline French texts that have no English yet">⚠ Show untranslated</button>
     <button id="b-sync" class="on" title="Scrolling or changing page on one side does the same on the other">⇅ Sync scroll &amp; pages</button>
     <button id="b-next" title="Jump to the next untranslated text on the page">Next untranslated →</button>
-    <span class="sp"><span id="count">0 changes</span> · <input id="name" type="text" placeholder="Your name" size="12" /> <button id="b-dl" class="primary">⬇ Download my changes</button> <a href="review.html">List view</a></span>
+    <span class="sp"><span id="count">0 changes</span> · <input id="name" type="text" placeholder="Your name" size="12" /> <button id="b-send" class="primary" title="Send your corrections, new texts and doubts to the admins, who validate each one">📨 Send to the admins</button> <button id="b-dl" title="Save a copy of your work as a file (backup)">⬇ Backup</button> <a href="review.html">List view</a></span>
   </header>
 
   <div id="work">
@@ -79,6 +79,7 @@
 import { auth, db, getUserRole, loginWithDiscord, hasRole, ROLES } from '../firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { doc, getDoc } from '../d1db.js';
+import { pendingItems, sendProposals, loadOverrides } from './send.js?v=00000000';
 const TRANSLATOR_ROLE = 'traducteur';
 const msg = document.getElementById('gate-msg'), btn = document.getElementById('gate-login');
 const lock = (text, login) => { document.body.classList.add('locked'); msg.textContent = text; btn.style.display = login ? '' : 'none'; };
@@ -116,7 +117,11 @@ let dict = {}, keep = new Set(), exact = new Map(), patterns = [], draft = { nam
 const state = { pick: true, miss: true, sync: true, current: null };
 const loadDraft = () => { try { const d = JSON.parse(localStorage.getItem(LS) || 'null'); if (d) draft = { name: '', edits: {}, status: {}, notes: {}, added: [], ...d }; } catch { /* sans stockage */ } };
 const saveDraft = () => { try { localStorage.setItem(LS, JSON.stringify(draft)); } catch { /* idem */ } counter(); };
-const counter = () => { $('count').textContent = `${Object.keys(draft.edits).length + draft.added.length} changes`; };
+const counter = () => {
+  $('count').textContent = `${Object.keys(draft.edits).length + draft.added.length} changes`;
+  const n = pendingItems(draft, dict).length, sb = $('b-send');
+  if (sb && !sb.disabled) sb.textContent = '📨 Send to the admins' + (n ? ` (${n})` : '');
+};
 const enOf = k => (k in draft.edits ? draft.edits[k] : (dict[k] ?? ''));
 
 function compile() {
@@ -295,6 +300,17 @@ $('go').onclick = () => { const v = $('custom').value.trim(); if (v) load(v); };
 $('custom').addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click(); });
 $('page').onchange = () => load($('page').value);
 $('name').addEventListener('change', () => { draft.name = $('name').value.trim(); saveDraft(); });
+$('b-send').onclick = async () => {
+  const items = pendingItems(draft, dict);
+  if (!items.length) return alert('Nothing new to send.');
+  if (!confirm(`Send ${items.length} proposal(s) to the admins? They review each one before anything is published.`)) return;
+  const b = $('b-send'); b.disabled = true; b.textContent = 'Sending…';
+  try {
+    const r = await sendProposals(draft, items, $('name').value.trim()); saveDraft();
+    alert(r.failed ? `${r.sent} sent, ${r.failed} failed: ${r.error}` : `✔ ${r.sent} proposal(s) sent to the admins. Thank you!`);
+  } catch (e) { alert('Could not send: ' + e.message); }
+  b.disabled = false; counter();
+};
 $('b-dl').onclick = () => {
   const out = { format: 'vcl-i18n-review/1', reviewer: $('name').value.trim(), date: new Date().toISOString(), edits: {}, status: draft.status, notes: draft.notes, added: draft.added };
   for (const [k, v] of Object.entries(draft.edits)) if (v !== dict[k]) out.edits[k] = v;
@@ -307,6 +323,7 @@ async function start() {
   loadDraft(); $('name').value = draft.name || ''; counter();
   $('page').innerHTML = PAGES.map(([l, u]) => `<option value="${u}">${l}</option>`).join('');
   try { dict = await (await fetch('./en.json', { cache: 'no-store' })).json(); } catch { dict = {}; }
+  Object.assign(dict, await loadOverrides());   // + corrections déjà validées par les admins
   keep = new Set((dict._keep || []).map(squash));
   for (const a of draft.added) if (!(a.fr in dict)) dict[a.fr] = a.en;
   compile();
