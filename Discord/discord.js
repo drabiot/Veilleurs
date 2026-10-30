@@ -652,10 +652,10 @@ const DG = window.DG = {
   chDelete(i) {
     const c = S.doc.channels[i]; if (!c) return;
     const m = document.createElement('div'); m.className = 'dg-modal';
-    const real = Array.isArray(S.info?.channels) && c.id && S.info.channels.some(x => x.id === c.id);
+    const real = Array.isArray(S.info?.channels) && c.id && c.created && S.info.channels.some(x => x.id === c.id); // seulement un salon créé par le bot
     m.innerHTML = `<div class="box"><h2>Supprimer « ${esc(c.name)} » ?</h2>
-      ${real ? `<p><b>Supprimer sur Discord</b> : le salon et tous ses posts disparaissent du serveur, définitivement.${c.created ? '' : ' ⚠️ Ce salon existait avant le bot.'}</p>` : ''}
-      <p><b>Retirer du plan seulement</b> : le salon Discord et ses posts restent, le bot n'y envoie plus rien.</p>
+      ${real ? `<p><b>Supprimer sur Discord</b> : le salon et tous ses posts disparaissent du serveur, définitivement.</p>` : ''}
+      <p><b>Retirer du plan seulement</b> : le salon Discord et ses posts restent, le bot n'y envoie plus rien.</p>${c.id && !c.created ? "<p class='dg-hint'>Ce salon existait avant le bot : le bot ne supprime que les salons qu'il a créés (supprime-le toi-même depuis Discord si besoin).</p>" : ''}
       <div class="dg-row"><button class="dg-btn" id="dl-no">Annuler</button><button class="dg-btn" id="dl-plan">Retirer du plan seulement</button>${real ? '<button class="dg-btn danger" id="dl-disc">Supprimer sur Discord</button>' : ''}</div></div>`;
     document.body.appendChild(m);
     const go = async onDiscord => { m.remove(); await DG.chCall('delete_channel', { index: i, onDiscord }); M.open.clear(); if (!S.err) await DG.refreshInfo(); else render(); };

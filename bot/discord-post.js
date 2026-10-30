@@ -80,7 +80,7 @@ async function postChain(rest, channelId, ch, title, content, icon, cards, tagId
   const forum = ch.type === 15 || ch.type === 16;
   const queue = [...cards];
   const head = icon ? [icon] : [queue.shift()]; // sans texture, la première carte ouvre le post
-  const body = (files, text) => ({ content: text, attachments: files.map((x, i) => ({ id: i, filename: x.name })) });
+  const body = (files, text) => ({ content: text, attachments: files.map((x, i) => ({ id: i, filename: x.name })), allowed_mentions: { parse: [] } }); // jamais de ping
   let threadId = null; const ids = [];
   if (forum) {
     const t = await rest.post(`/channels/${channelId}/threads`, { body: { name: String(title).slice(0, 100), message: body(head, content), ...(tagIds.length ? { applied_tags: tagIds.slice(0, 5) } : {}) }, files: head });

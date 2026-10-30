@@ -15,3 +15,10 @@ Page publique `Discord/discord.html` : un chef de serveur configure lui-même le
 - Au-delà de **100 serveurs**, Discord exige la vérification du bot (et l'intent éventuel). Prévoir la demande avant.
 - Le worker n'est pas déployé par la CI : `npx wrangler deploy` à lancer à la main depuis `repo/`.
 - Les forums demandent le mode Communauté sur le serveur (la page propose les salons texte sinon).
+
+## Sécurité (garde-fous)
+- **Qui peut piloter le bot sur un serveur** : propriétaire, Administrateur, ou « Gérer le serveur » **et** « Gérer les salons » (sinon le bot, qui a « Gérer les salons », ferait pour lui ce qu'il ne peut pas faire lui-même). Chaque action revérifie que la session gère bien le serveur visé ; le navigateur n'a jamais ADMIN_SECRET.
+- **Ce que le bot peut supprimer** : uniquement des salons / catégories **qu'il a créés** (drapeau `created` / `createdCategories`, posés par le worker et jamais par le navigateur), les posts qu'il a lui-même envoyés (suivis dans son état), et lui-même (il quitte le serveur). Un salon existant peut seulement être retiré du plan. Une catégorie existante n'est jamais renommée sur Discord. Les identifiants sont validés (numériques) avant tout appel de suppression.
+- **Jamais de ping** : tous les messages du bot envoient `allowed_mentions: { parse: [] }` (un nom d'item « @everyone » ne notifie personne).
+- **Limite de débit** : création, suppression, renvoi, vidage… limités par serveur et par heure (KV) pour ne pas saturer l'API Discord partagée par tous les serveurs.
+- **Admin** : `ADMIN_SECRET` protège `/guild/bot` (état du bot, sessions « 🛠 Gérer ») ; les collections `discord_guilds`, `bot_state`, `discord_posts` ne sont pas lisibles / inscriptibles via `/db/*` par le public.

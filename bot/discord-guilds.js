@@ -108,7 +108,9 @@ function plan(cfg, st, itemMap, full = true, deleted = []) {
 }
 
 // ── Suppression d'un post suivi ──
+const SNOWF = /^\d{15,25}$/;
 async function deletePost(rest, e) {
+  if ([e.threadId, e.messageId, ...(e.messageIds || [])].filter(Boolean).some(x => !SNOWF.test(String(x))) || (e.channelId && !SNOWF.test(String(e.channelId)))) return; // identifiant suspect : on n'appelle pas Discord
   try {
     if (e.threadId) await rest.delete(`/channels/${e.threadId}`);
     else if (e.messageIds?.length) for (const m of e.messageIds) await rest.delete(`/channels/${e.channelId}/messages/${m}`);
@@ -151,10 +153,10 @@ async function purgePosts(rest, st) {
 async function uninstall(rest, g, st) {
   const rm = g.removal || {};
   if (rm.deleteChannels) {
-    for (const c of g.channels || []) if (c.created && c.id) { try { await rest.delete(`/channels/${c.id}`); } catch (e) { if (e.status !== 404) log('suppression salon', c.id, e.message); } await sleep(500); }
+    for (const c of g.channels || []) if (c.created && c.id && SNOWF.test(String(c.id))) { try { await rest.delete(`/channels/${c.id}`); } catch (e) { if (e.status !== 404) log('suppression salon', c.id, e.message); } await sleep(500); }
     let all = []; try { all = await rest.get(`/guilds/${g.id}/channels`); } catch { /* serveur déjà quitté */ }
     for (const cid of g.createdCategories || []) { // catégorie créée par le bot : supprimée seulement si elle est vide
-      if (all.some(x => x.parent_id === cid)) continue;
+      if (!SNOWF.test(String(cid)) || all.some(x => x.parent_id === cid)) continue;
       try { await rest.delete(`/channels/${cid}`); } catch (e) { if (e.status !== 404) log('suppression catégorie', cid, e.message); }
       await sleep(500);
     }

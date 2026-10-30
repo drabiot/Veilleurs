@@ -24,6 +24,7 @@ const BOT_ALLOW = P.VIEW | P.SEND | P.EMBED | P.ATTACH | P.HISTORY | P.MANAGE_TH
 export const ITEM_CATS = ['arme', 'armure', 'accessoire', 'outils', 'rune', 'consommable', 'nourriture', 'materiaux', 'ressources', 'parchemin', 'quete', 'donjon', 'monnaie'];
 const SNOW = /^\d{15,25}$/;
 const MAX_CHANNELS = 120;
+const SAFE_PATH = /^\/channels\/\d{15,25}(\/messages\/\d{15,25})?$/; // seuls chemins que le worker supprime
 const CAT_RE = /^[a-z_]{2,30}$/; // type d'item (vient du wiki : pas de liste figée)
 const CREATE_BUDGET = 12; // créations Discord par appel (limite de sous-requêtes d'un Worker)
 
@@ -52,6 +53,15 @@ async function dgDelete(env, id) {
 const pushLog = (doc, msg) => { (doc.log ||= []).push({ t: Date.now(), m: String(msg).slice(0, 240) }); doc.log = doc.log.slice(-60); };
 const TRIGGER_LABEL = { started: 'Bot lancé à la demande (les envois commencent dans ~20 s)', 'no-token': 'Lancement automatique indisponible (pas de jeton GitHub) : prochain passage planifié (10 min)', throttled: 'Bot déjà lancé il y a moins d\'une minute' };
 const triggerText = r => TRIGGER_LABEL[r] || ('Lancement du bot refusé par GitHub (' + r + ')');
+
+// Limite par serveur et par heure (KV) : un chef ne peut pas saturer l'API Discord que le bot partage avec tous les serveurs
+async function rateLimited(env, key, max) {
+  if (!env.WIKI_CACHE) return false;
+  const k = 'rl:' + key, n = parseInt(await env.WIKI_CACHE.get(k) || '0', 10);
+  if (n >= max) return true;
+  await env.WIKI_CACHE.put(k, String(n + 1), { expirationTtl: 3600 });
+  return false;
+}
 
 // ── Appels Discord avec le jeton du bot ──
 async function dc(env, method, path, body) {
@@ -130,7 +140,7 @@ export async function finishGuildOauth(env, accessToken) {
   const all = gr.ok ? await gr.json() : [];
   const guilds = (Array.isArray(all) ? all : []).filter(g => {
     const perms = BigInt(g.permissions || '0');
-    return g.owner || (perms & 0x20n) || (perms & 0x8n); // Gérer le serveur ou Administrateur
+    return g.owner || (perms & 0x8n) || ((perms & 0x20n) && (perms & 0x10n)); // propriétaire, Administrateur, ou Gérer le serveur + Gérer les salons
   }).slice(0, 90).map(g => ({ id: g.id, name: g.name, icon: g.icon || '', owner: !!g.owner }));
   if (!env.WIKI_CACHE) throw new Error('KV WIKI_CACHE absent : session impossible.');
   const sid = [...crypto.getRandomValues(new Uint8Array(24))].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -212,7 +222,7 @@ async function purgeStep(env, guildId, doc, json, resend, plog = pushLog) {
   for (const [key, e] of Object.entries(posts)) {
     const calls = e.threadId ? [`/channels/${e.threadId}`] : (e.messageIds?.length ? e.messageIds : [e.messageId]).filter(Boolean).map(m => `/channels/${e.channelId}/messages/${m}`);
     if (budget < calls.length) break;
-    for (const p of calls) { await dc(env, 'DELETE', p); budget--; }
+    for (const p of calls) { if (!SAFE_PATH.test(p)) continue; await dc(env, 'DELETE', p); budget--; }
     delete posts[key]; deleted++;
   }
   const left = Object.keys(posts).length;
@@ -259,7 +269,7 @@ async function clearChannelStep(env, guildId, doc, c, json, plog = pushLog) {
     if (e.channelId !== c.id) continue;
     const calls = e.threadId ? [`/channels/${e.threadId}`] : (e.messageIds?.length ? e.messageIds : [e.messageId]).filter(Boolean).map(m => `/channels/${e.channelId}/messages/${m}`);
     if (budget < calls.length) break;
-    for (const p of calls) { await dc(env, 'DELETE', p); budget--; }
+    for (const p of calls) { if (!SAFE_PATH.test(p)) continue; await dc(env, 'DELETE', p); budget--; }
     for (const id of (e.ids || [key])) st.seen[id] = 1;
     delete posts[key]; deleted++;
   }
@@ -295,7 +305,7 @@ async function uninstallStep(env, guildId, doc, body, json, plog = pushLog) {
     for (const [key, e] of Object.entries(posts)) {
       const calls = e.threadId ? [`/channels/${e.threadId}`] : (e.messageIds?.length ? e.messageIds : [e.messageId]).filter(Boolean).map(m => `/channels/${e.channelId}/messages/${m}`);
       if (budget < calls.length) break;
-      for (const p of calls) { await dc(env, 'DELETE', p); budget--; }
+      for (const p of calls) { if (!SAFE_PATH.test(p)) continue; await dc(env, 'DELETE', p); budget--; }
       delete posts[key];
     }
     const left = Object.keys(posts).length;
@@ -307,6 +317,7 @@ async function uninstallStep(env, guildId, doc, body, json, plog = pushLog) {
     for (const c of doc.channels || []) {
       if (!(c.created && c.id)) continue;
       if (budget <= 0) break;
+      if (!SNOW.test(String(c.id))) continue;
       const r = await dc(env, 'DELETE', `/channels/${c.id}`); budget--;
       if (gone(r)) { c.id = ''; c.created = false; }
     }
@@ -317,6 +328,7 @@ async function uninstallStep(env, guildId, doc, body, json, plog = pushLog) {
       for (const cid of [...doc.createdCategories]) {
         if (budget <= 0) break;
         if (Array.isArray(all.data) && all.data.some(x => x.parent_id === cid)) { doc.createdCategories = doc.createdCategories.filter(x => x !== cid); continue; } // contient autre chose : on la garde
+        if (!SNOW.test(String(cid))) continue;
         const r = await dc(env, 'DELETE', `/channels/${cid}`); budget--;
         if (gone(r)) doc.createdCategories = doc.createdCategories.filter(x => x !== cid);
       }
@@ -485,7 +497,8 @@ export async function handleGuildApi(request, env, deps) {
     if (!entries.length) return json({ error: 'Catégorie introuvable dans le plan.' }, 404);
     const withPrefix = n => (entries[0].noPrefix ? n : [doc.prefix, n].filter(Boolean).join(' '));
     const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
-    const cat = chs.ok && Array.isArray(chs.data) ? chs.data.find(x => x.type === 4 && nkey(x.name) === nkey(withPrefix(from))) : null;
+    const cat0 = chs.ok && Array.isArray(chs.data) ? chs.data.find(x => x.type === 4 && nkey(x.name) === nkey(withPrefix(from))) : null;
+    const cat = cat0 && (doc.createdCategories || []).includes(cat0.id) ? cat0 : null; // une catégorie qui existait avant le bot n'est jamais renommée sur Discord
     if (cat) { const r = await dc(env, 'PATCH', `/channels/${cat.id}`, { name: withPrefix(to).slice(0, 100) }); if (!r.ok) return json({ error: 'Renommage refusé par Discord : ' + (r.data?.message || r.status) }, 502); }
     entries.forEach(c => { c.categoryName = to; });
     doc.updatedAt = Date.now();
@@ -525,6 +538,7 @@ export async function handleGuildApi(request, env, deps) {
     const i = parseInt(body.index, 10), c = (doc.channels || [])[i];
     if (!c) return json({ error: 'Salon introuvable dans le plan.' }, 404);
     let note = '';
+    if (body.onDiscord && c.id && !c.created) return json({ error: "Ce salon existait avant le bot : il ne peut être que retiré du plan (le bot ne supprime que les salons qu'il a créés)." }, 403);
     if (body.onDiscord && c.id) {
       const info = await dc(env, 'GET', `/channels/${c.id}`);
       if (info.ok && info.data.guild_id !== guildId) return json({ error: "Ce salon n'appartient pas à ce serveur." }, 403);
@@ -553,6 +567,7 @@ export async function handleGuildApi(request, env, deps) {
     return clearChannelStep(env, guildId, doc, c, json, plog);
   }
 
+  if (['create_channels', 'delete_channel', 'rename_category', 'send_request', 'send_item', 'clear_channel'].includes(action) && !sess.admin && await rateLimited(env, `${action}:${guildId}`, action === 'create_channels' ? 150 : 100)) return json({ error: 'Trop d\'actions en peu de temps : réessaie dans une heure.' }, 429);
   if (action === 'create_channels') {
     const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
     if (!chs.ok) return json({ error: 'Serveur illisible par le bot.' }, 502);
