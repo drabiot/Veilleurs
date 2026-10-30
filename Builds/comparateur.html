@@ -158,7 +158,11 @@
       return c ? c.ico + ' ' + c.label : (b.classe || '—');
     }
     function fmt(v, stat) { return v + C.unitOf(stat); }
-    function fmtDelta(d, stat) { return (d > 0 ? '+' : '') + C.round2(d) + C.unitOf(stat); }
+    function fmtDelta(d, stat, ref) {
+      let t = (d > 0 ? '+' : '') + C.round2(d) + C.unitOf(stat);
+      if (ref) { const p = Math.round(d / Math.abs(ref) * 1000) / 10; t += ' <i class="cmp-pct">(' + (p > 0 ? '+' : '') + p + '%)</i>'; }
+      return t;
+    }
 
     function render() {
       syncUrl();
@@ -215,7 +219,7 @@
             let cls = '';
             if (r.diff) cls = r.best[i] ? ' best' : (r.worst[i] ? ' worst' : '');
             let dh = '';
-            if (i !== refIdx && d !== 0) dh = '<span class="cmp-delta ' + (d > 0 ? 'up' : 'down') + '">' + fmtDelta(d, r.stat) + '</span>';
+            if (i !== refIdx && d !== 0) dh = '<span class="cmp-delta ' + (d > 0 ? 'up' : 'down') + '">' + fmtDelta(d, r.stat, r.values[refIdx]) + '</span>';
             h += '<td class="cmp-cell' + cls + '"><span class="cmp-v">' + (v === 0 ? '—' : fmt(v, r.stat)) + '</span>' + dh + '</td>';
           });
           h += '</tr>';
