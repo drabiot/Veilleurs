@@ -161,6 +161,7 @@ function cleanConfig(c, stored, realIds) {
     hideThreshold: Math.max(0, Math.min(1000, parseInt(c.hideThreshold, 10) || 0)),
     replace: c.replace !== false,
     eventTags: c.eventTags === true, // tag de forum par événement (Noël, Halloween…), créé et appliqué par le bot
+    styled: c.styled !== false, // style Veilleurs des noms (sert aux salons proposés par le modèle)
     groupSets: c.groupSets === true, // un seul post par set (nom du set), au lieu d'un post par item
     channels: [],
   };
@@ -175,7 +176,7 @@ function cleanConfig(c, stored, realIds) {
       id, itemCats: strList(ch.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x)),
       paliers: strList(ch.paliers, /^[\w\-]{1,30}$/, 30),
       created: !!(id && prev.get(id)?.created), // posé uniquement par le worker (jamais par le navigateur)
-      subscribed: ch.subscribed !== false && ch.skip !== true, // inscrit = activé : le salon est créé si besoin et reçoit les items
+      subscribed: ch.subscribed !== false && ch.skip !== true, ...(ch.noPrefix === true ? { noPrefix: true } : {}), // inscrit = activé : le salon est créé si besoin et reçoit les items
     });
   }
   return out;
@@ -393,7 +394,11 @@ export async function handleGuildApi(request, env, deps) {
       if (doc.channels.length >= MAX_CHANNELS) return json({ error: 'Trop de salons dans le plan.' }, 400);
       const n = slug(body.channel?.name);
       if (!n) return json({ error: 'Nom de salon requis.' }, 400);
-      doc.channels.push({ name: n, type: body.channel?.type === 'text' ? 'text' : 'forum', categoryName: sanitizeName(body.channel?.categoryName, 100), id: '', itemCats: strList(body.channel?.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x)), paliers: strList(body.channel?.paliers, /^[\w\-]{1,30}$/, 30), created: false, subscribed: true });
+      doc.channels.push({ name: n, type: body.channel?.type === 'text' ? 'text' : 'forum', categoryName: sanitizeName(body.channel?.categoryName, 100), id: '', itemCats: strList(body.channel?.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x)), paliers: strList(body.channel?.paliers, /^[\w\-]{1,30}$/, 30), created: false, subscribed: true, ...(body.channel?.usePrefix ? {} : { noPrefix: true }) });
+      // les filtres généraux du serveur ne doivent pas bloquer un salon ajouté ensuite : on les élargit à sa catégorie / son palier
+      const ch0 = doc.channels[doc.channels.length - 1];
+      if ((doc.itemCats || []).length) ch0.itemCats.forEach(x => { if (!doc.itemCats.includes(x)) doc.itemCats.push(x); });
+      if ((doc.paliers || []).length) ch0.paliers.forEach(x => { if (!doc.paliers.includes(x)) doc.paliers.push(x); });
       pushLog(doc, `Salon « ${n} » ajouté au plan`);
     } else if (!c) return json({ error: 'Salon introuvable dans le plan.' }, 404);
     else if (action === 'remove_channel') { doc.channels.splice(i, 1); pushLog(doc, `Salon « ${c.name} » retiré du plan (le salon Discord n'est pas supprimé)`); }
@@ -437,6 +442,31 @@ export async function handleGuildApi(request, env, deps) {
     return json({ ok: true, config: doc });
   }
 
+  if (action === 'delete_channel') {
+    const i = parseInt(body.index, 10), c = (doc.channels || [])[i];
+    if (!c) return json({ error: 'Salon introuvable dans le plan.' }, 404);
+    let note = '';
+    if (body.onDiscord && c.id) {
+      const info = await dc(env, 'GET', `/channels/${c.id}`);
+      if (info.ok && info.data.guild_id !== guildId) return json({ error: "Ce salon n'appartient pas à ce serveur." }, 403);
+      if (info.ok) { const r = await dc(env, 'DELETE', `/channels/${c.id}`); if (!r.ok) return json({ error: 'Suppression refusée par Discord : ' + (r.data?.message || r.status) }, 502); note = ' et supprimé sur Discord'; }
+      else if (info.status !== 404) return json({ error: 'Salon illisible par le bot : ' + (info.data?.message || info.status) }, 502);
+      // posts de ce salon : oubliés (ils sont partis avec le salon)
+      const stateKey = 'guild_' + guildId;
+      const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'bot_state' AND id = ? AND deleted = 0").bind(stateKey).first();
+      const st = jparse(row?.data);
+      if (st?.posts) {
+        for (const [key, e] of Object.entries(st.posts)) if (e.channelId === c.id) { for (const id of (e.ids || [key])) (st.seen ||= {})[id] = 1; delete st.posts[key]; }
+        await env.DB.prepare("INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('bot_state', ?, ?, 0, 0, 0) ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, deleted = 0").bind(stateKey, JSON.stringify(st)).run();
+        doc.posted = Object.keys(st.posts).length;
+      }
+    }
+    doc.channels.splice(i, 1); doc.updatedAt = Date.now();
+    pushLog(doc, `Salon « ${c.name} » retiré du plan${note}`);
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
   // vider un salon : suppression immédiate de ses posts (par paquets), sans renvoi automatique
   if (action === 'clear_channel') {
     const c = (doc.channels || [])[parseInt(body.index, 10)];
@@ -445,7 +475,6 @@ export async function handleGuildApi(request, env, deps) {
   }
 
   if (action === 'create_channels') {
-    if (doc.mode !== 'create') return json({ error: 'Ce serveur utilise des salons existants.' }, 400);
     const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
     if (!chs.ok) return json({ error: 'Serveur illisible par le bot.' }, 502);
     const all = chs.data;
@@ -461,7 +490,7 @@ export async function handleGuildApi(request, env, deps) {
       const typeNum = c.type === 'text' ? 0 : 15;
       // catégorie : retrouvée par nom (sans tenir compte de la casse) ou créée
       let parentId;
-      const catName = [doc.prefix, c.categoryName].filter(Boolean).join(' ').slice(0, 100); // préfixe seul = une catégorie unique
+      const catName = (c.noPrefix ? c.categoryName : [doc.prefix, c.categoryName].filter(Boolean).join(' ')).slice(0, 100); // préfixe seul = une catégorie unique
       if (catName) {
         let cat = all.find(x => x.type === 4 && nkey(x.name) === nkey(catName));
         if (!cat) {

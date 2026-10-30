@@ -322,7 +322,7 @@ function manageRow(c, i, d, real) {
   let actions = '';
   if (sub && exists) actions += ib('📤', 'Renvoyer toute la data de ce salon', `DG.chSend(${i}, 'all')`) + ib('➕', 'Envoyer seulement les items manquants', `DG.chSend(${i}, 'missing')`) + ib('🧹', 'Vider ce salon (supprime ses posts)', `DG.chClear(${i})`, true);
   else if (sub && d.mode === 'create') actions += ib(c.id ? '🔁' : '✨', c.id ? 'Recréer ce salon (introuvable sur Discord)' : 'Créer ce salon maintenant', `DG.chCreate(${i})`);
-  actions += ib('⚙️', 'Réglages de ce salon', `DG.chOpen(${i})`) + ib('🗑', 'Retirer du plan (le salon Discord n\'est pas supprimé)', `DG.chRemove(${i})`);
+  actions += ib('⚙️', 'Réglages de ce salon', `DG.chOpen(${i})`) + ib('🗑', 'Supprimer ce salon', `DG.chDelete(${i})`);
   const cats = (c.itemCats || []).map(k => (CATS.find(x => x[0] === k) || [0, k])[1]).join(', ') || 'toutes catégories';
   const pals = (c.paliers || []).map(palierLabel).join(', ') || 'tous paliers';
   const n = itemsOf(c, d);
@@ -351,30 +351,52 @@ function manageDetail(c, i, d) { // réglages détaillés d'un salon : catégori
     <div class="dg-chips">${chips(S.paliers.map(p => [p.id, esc(p.label)]), c.paliers || [], `DG.chToggle.bind(null, ${i}, 'paliers')`)}</div></div>`;
 }
 
+/** Salons du modèle Veilleurs (un par catégorie d'items × palier existant dans le wiki) qui ne sont pas encore dans le plan du serveur. */
+function templateMissing(d) {
+  if (!S.combos) return [];
+  const plan = buildPlan('default', { combos: S.combos, cats: [], paliers: [], paliers_all: S.paliers, palierLabel, forum: d.forum !== false, styled: d.styled !== false });
+  const mine = d.channels || [];
+  return plan.filter(t => !mine.some(c => (c.itemCats || []).length === 1 && (c.paliers || []).length === 1 && c.itemCats[0] === t.itemCats[0] && String(c.paliers[0]) === String(t.paliers[0])));
+}
+
+function manageVirtualRow(t, k, d) {
+  const cats = (t.itemCats || []).map(x => (CATS.find(q => q[0] === x) || [0, x])[1]).join(', ');
+  const pals = (t.paliers || []).map(palierLabel).join(', ');
+  const n = itemsOf(t, d);
+  return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:wrap">
+      <span title="Proposé par le modèle Veilleurs : pas encore dans ton plan">⚪</span>
+      <span style="width:190px;font-weight:700;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(t.name)}">${esc(t.name)}</span>
+      <span style="flex:1;min-width:160px;font-size:12px;color:var(--muted)">${cats} · ${pals}${n != null ? ` · <strong style="color:var(--gold)">${n} item${n > 1 ? 's' : ''}</strong>` : ''}</span>
+      <button class="dg-btn" title="S'inscrire : le salon est créé sur ton serveur et reçoit les nouveaux items." onclick="DG.chSubTemplate(${k})" style="padding:2px 9px;font-size:12px">📡 S'inscrire</button>
+    </div>`;
+}
+
 function manageBlock(d) {
   const real = S.info?.channels;
   const all = (d.channels || []).map((c, i) => [c, i]);
-  const palIds = [...new Set(all.flatMap(([c]) => (c.paliers || []).map(String)))];
-  const shown = all.filter(([c]) => (!M.sub || isSub(c)) && (!M.pal || has(c.paliers, M.pal)));
+  S.tpl = templateMissing(d);
+  const virt = S.tpl.map((t, k) => [t, 'v' + k]);
+  const palIds = [...new Set([...all, ...virt].flatMap(([c]) => (c.paliers || []).map(String)))];
+  const shown = [...all, ...(M.sub ? [] : virt)].filter(([c]) => (!M.sub || isSub(c)) && (!M.pal || has(c.paliers, M.pal)));
   const groups = new Map();
   shown.forEach(([c, i]) => { const k = c.categoryName || '— sans catégorie —'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push([c, i]); });
   const nSub = all.filter(([c]) => isSub(c)).length;
-  const allSub = nSub === all.length && all.length > 0;
+  const allSub = nSub === all.length && all.length > 0 && !virt.length;
   const filters = `<div class="dg-row" style="margin:8px 0 10px;gap:6px"><span class="dg-hint">Afficher :</span>
       ${chip(!M.pal && !M.sub, 'Tout', "DG.chView('', false)")}
       ${palIds.map(p => chip(M.pal === p, esc(palierLabel(p)), `DG.chView('${esc(p)}', false)`)).join('')}
       ${chip(M.sub, '📡 Inscrits', "DG.chView('', true)")}</div>`;
   const groupsHtml = [...groups].map(([k, list]) => {
-    const ins = list.filter(([c]) => isSub(c)).length;
+    const ins = list.filter(([c, i]) => typeof i !== 'string' && isSub(c)).length;
     return `<details data-k="${esc(k)}" ontoggle="DG.chGroup(this)" ${M.groups.has(k) || M.pal || M.sub ? 'open' : ''} style="border:1px solid var(--rim);border-radius:8px;margin-bottom:8px;background:var(--deep)">
       <summary style="cursor:pointer;padding:8px 12px;font-weight:700;color:var(--bright)">${esc(k)} <span style="font-weight:400;font-size:12px;color:var(--muted)">— ${list.length} salon${list.length > 1 ? 's' : ''} · ${ins} inscrit${ins > 1 ? 's' : ''}</span></summary>
-      <div style="padding:2px 12px 8px">${list.map(([c, i]) => manageRow(c, i, d, real)).join('')}</div></details>`;
+      <div style="padding:2px 12px 8px">${list.map(([c, i]) => typeof i === 'string' ? manageVirtualRow(c, +i.slice(1), d) : manageRow(c, i, d, real)).join('')}</div></details>`;
   }).join('') || '<div class="dg-hint">Aucun salon à afficher.</div>';
   const missing = d.mode === 'create' && all.some(([c]) => isSub(c) && c.name && !c.id);
-  return `<div style="margin-top:14px"><h3 style="margin-top:0">Salons (${all.length})</h3>
+  return `<div style="margin-top:14px"><h3 style="margin-top:0">Salons (${all.length} dans ton plan${virt.length ? ` · ${virt.length} autres proposés` : ''})</h3>
     <p class="dg-hint">📡 <strong>Inscrit</strong> = salon activé : il est créé si besoin et reçoit les nouveaux items (un item modifié remplace son ancien post). <strong>Pas inscrit</strong> = rien n'est envoyé dans ce salon.</p>
     <div class="dg-row" style="margin:6px 0"><button class="dg-btn" onclick="DG.chSubAll(${!allSub})">${allSub ? '✅ Inscrit à tous (désinscrire)' : "📡 S'inscrire à tous les salons"}</button>
-      <button class="dg-btn" onclick="DG.chAdd()">➕ Ajouter un salon</button>
+      <button class="dg-btn primary" onclick="DG.chNew()">➕ Nouveau salon</button>
       ${missing ? '<button class="dg-btn primary" onclick="DG.makeChannels()">✨ Créer les salons inscrits manquants</button>' : ''}
       <button class="dg-btn" onclick="DG.refreshInfo()" title="Relit les salons du serveur">🔄 Revérifier</button>
       <a class="dg-btn" href="https://discord.com/channels/${esc(S.guild.id)}" target="_blank" rel="noopener">Ouvrir le serveur ↗</a></div>
@@ -489,12 +511,76 @@ const DG = window.DG = {
   chOpen(i) { M.open.has(i) ? M.open.delete(i) : M.open.add(i); render(); },
   chGroup(el) { const k = el.dataset.k; if (el.open) M.groups.add(k); else M.groups.delete(k); },
   chView(pal, sub) { M.pal = pal; M.sub = sub; render(); },
-  async chSubAll(v) { const j = await DG.chCall('subscribe_all', { value: v }); if (j) S.msg = v ? 'Inscrit à tous les salons.' : 'Désinscrit de tous les salons.'; render(); },
-  async chAdd() {
-    const name = (prompt('Nom du nouveau salon :') || '').trim();
-    if (!name) return;
-    await DG.chCall('add_channel', { channel: { name, type: S.doc.forum === false ? 'text' : 'forum', categoryName: '', itemCats: [], paliers: [] } });
-    M.open.add(S.doc.channels.length - 1); render();
+  async chSubTemplate(k) {
+    const t = S.tpl?.[k]; if (!t) return;
+    S.msg = `Création de « ${t.name} »…`; S.err = ''; render();
+    const j = await DG.chCall('add_channel', { channel: { name: t.name, type: t.type, categoryName: t.categoryName, itemCats: t.itemCats, paliers: t.paliers, usePrefix: true } });
+    if (j) { await DG.makeChannels(true, S.doc.channels.length - 1).catch(() => {}); S.msg = 'Salon créé et inscrit : il recevra les nouveaux items (💡 « 📤 » pour y envoyer ceux qui existent déjà).'; }
+    render();
+  },
+  async chSubAll(v) {
+    if (v && (S.tpl || []).length) { // « tout » = aussi les salons proposés par le modèle
+      if (!confirm(`Créer et inscrire ${S.tpl.length} salon${S.tpl.length > 1 ? 's' : ''} de plus sur ton serveur (le modèle Veilleurs complet) ?`)) return;
+      S.msg = 'Création des salons…'; S.err = ''; render();
+      for (const t of [...S.tpl]) await DG.chCall('add_channel', { channel: { name: t.name, type: t.type, categoryName: t.categoryName, itemCats: t.itemCats, paliers: t.paliers, usePrefix: true } });
+      await DG.chCall('subscribe_all', { value: true });
+      await DG.makeChannels(true).catch(() => {});
+      S.msg = 'Tous les salons du modèle sont créés et inscrits.'; render(); return;
+    }
+    const j = await DG.chCall('subscribe_all', { value: v }); if (j) S.msg = v ? 'Inscrit à tous les salons.' : 'Désinscrit de tous les salons.'; render();
+  },
+  // ➕ Nouveau salon : nom, type, catégorie Discord, quoi y envoyer ; il est créé tout de suite, inscrit, et peut recevoir les items existants
+  chNew() {
+    const cats = (S.info?.channels || []).filter(x => x.type === 4);
+    const m = document.createElement('div'); m.className = 'dg-modal';
+    const draft = { itemCats: [], paliers: [] };
+    const chipsHtml = () => `<div class="dg-hint">Catégories d'items <em>(aucune = toutes)</em></div><div class="dg-chips">${CATS.map(([k, l]) => chip(draft.itemCats.includes(k), l, `this.closest('.dg-modal')._tgl('itemCats','${k}')`)).join('')}</div>
+      <div class="dg-hint">Paliers <em>(aucun = tous)</em></div><div class="dg-chips">${S.paliers.map(p => chip(draft.paliers.includes(String(p.id)), esc(p.label), `this.closest('.dg-modal')._tgl('paliers','${esc(String(p.id))}')`)).join('')}</div>`;
+    m.innerHTML = `<div class="box" style="max-width:560px"><h2>➕ Nouveau salon</h2>
+      <div class="dg-row" style="margin-top:0"><label class="dg-hint">Nom <input type="text" id="nc-name" placeholder="ex. ⚔️・Armes" style="width:220px"></label>
+        <select id="nc-type"><option value="forum" ${S.doc.forum === false ? '' : 'selected'}>🗂 Forum (un fil par item)</option><option value="text" ${S.doc.forum === false ? 'selected' : ''}># Salon texte</option></select></div>
+      <div class="dg-row"><label class="dg-hint">Catégorie Discord <select id="nc-cat"><option value="">— sans catégorie —</option>${cats.map(k => `<option value="${esc(k.name)}">${esc(k.name)}</option>`).join('')}<option value="__new__">➕ Nouvelle catégorie…</option></select></label>
+        <input type="text" id="nc-newcat" placeholder="nom de la nouvelle catégorie" style="display:none;width:220px"></div>
+      <div id="nc-chips">${chipsHtml()}</div>
+      <label class="dg-opt on" style="margin-top:10px"><input type="checkbox" id="nc-send" checked><span>Envoyer tout de suite les items existants qui correspondent<small>Sinon, seuls les prochains nouveaux items y seront envoyés (le salon est inscrit dans les deux cas).</small></span></label>
+      <div class="dg-err" id="nc-err" style="display:none"></div>
+      <div class="dg-row"><button class="dg-btn" id="nc-no">Annuler</button><button class="dg-btn primary" id="nc-ok">Créer le salon</button></div></div>`;
+    document.body.appendChild(m);
+    m._tgl = (key, id) => { const l = draft[key]; const i = l.indexOf(id); if (i < 0) l.push(id); else l.splice(i, 1); m.querySelector('#nc-chips').innerHTML = chipsHtml(); };
+    m.querySelector('#nc-cat').onchange = e => { m.querySelector('#nc-newcat').style.display = e.target.value === '__new__' ? '' : 'none'; };
+    m.querySelector('#nc-no').onclick = () => m.remove();
+    m.querySelector('#nc-ok').onclick = async () => {
+      const name = m.querySelector('#nc-name').value.trim(), err = m.querySelector('#nc-err');
+      let cat = m.querySelector('#nc-cat').value; if (cat === '__new__') cat = m.querySelector('#nc-newcat').value.trim();
+      if (!slug(name)) { err.textContent = 'Donne un nom au salon.'; err.style.display = ''; return; }
+      const btn = m.querySelector('#nc-ok'); btn.disabled = true; btn.textContent = 'Création…';
+      const send = m.querySelector('#nc-send').checked, type = m.querySelector('#nc-type').value;
+      const j = await DG.chCall('add_channel', { channel: { name, type, categoryName: cat, itemCats: draft.itemCats, paliers: draft.paliers } });
+      if (!j) { err.textContent = S.err; err.style.display = ''; btn.disabled = false; btn.textContent = 'Créer le salon'; return; }
+      const idx = S.doc.channels.length - 1;
+      await DG.makeChannels(true, idx).catch(() => {});
+      const made = S.doc.channels[idx];
+      m.remove();
+      if (made && made.id && send) await DG.chCall('send_request', { index: idx, mode: 'all' });
+      S.msg = made && made.id ? (send ? 'Salon créé : les items existants vont y être envoyés (la barre de progression avance).' : 'Salon créé et inscrit : il recevra les prochains nouveaux items.') : '';
+      if (!(made && made.id)) S.err = S.err || "Le salon n'a pas pu être créé (le bot a-t-il « Gérer les salons » ?). Il reste dans le plan : réessaie avec ✨.";
+      render();
+    };
+  },
+  // 🗑 Supprimer un salon : sur Discord et/ou seulement du plan
+  chDelete(i) {
+    const c = S.doc.channels[i]; if (!c) return;
+    const m = document.createElement('div'); m.className = 'dg-modal';
+    const real = Array.isArray(S.info?.channels) && c.id && S.info.channels.some(x => x.id === c.id);
+    m.innerHTML = `<div class="box"><h2>Supprimer « ${esc(c.name)} » ?</h2>
+      ${real ? `<p><b>Supprimer sur Discord</b> : le salon et tous ses posts disparaissent du serveur, définitivement.${c.created ? '' : ' ⚠️ Ce salon existait avant le bot.'}</p>` : ''}
+      <p><b>Retirer du plan seulement</b> : le salon Discord et ses posts restent, le bot n'y envoie plus rien.</p>
+      <div class="dg-row"><button class="dg-btn" id="dl-no">Annuler</button><button class="dg-btn" id="dl-plan">Retirer du plan seulement</button>${real ? '<button class="dg-btn danger" id="dl-disc">Supprimer sur Discord</button>' : ''}</div></div>`;
+    document.body.appendChild(m);
+    const go = async onDiscord => { m.remove(); await DG.chCall('delete_channel', { index: i, onDiscord }); M.open.clear(); if (!S.err) await DG.refreshInfo(); else render(); };
+    m.querySelector('#dl-no').onclick = () => m.remove();
+    m.querySelector('#dl-plan').onclick = () => go(false);
+    const d = m.querySelector('#dl-disc'); if (d) d.onclick = () => go(true);
   },
   async chRemove(i) {
     if (!confirm('Retirer ce salon du plan ?\n\nLe salon Discord et ses posts ne sont pas supprimés.')) return;
