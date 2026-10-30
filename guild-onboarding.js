@@ -507,6 +507,15 @@ export async function handleGuildApi(request, env, deps) {
     return json({ ok: true, config: doc });
   }
 
+  // « Revérifier » : le bot contrôle que les posts suivis existent encore sur Discord (posts supprimés à la main)
+  if (action === 'verify_posts') {
+    doc.verify = Date.now();
+    plog(doc, 'Vérification des posts demandée (posts supprimés à la main sur Discord)');
+    if (doc.status === 'approved' && !doc.paused) plog(doc, triggerText(await triggerBot(env)));
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
   // renvoyer une SÉLECTION d'items (liste « manquants » d'un salon) : même mécanisme que l'item précis, en un seul appel
   if (action === 'send_items') {
     const ids = [...new Set((Array.isArray(body.itemIds) ? body.itemIds : []).map(String).filter(x => /^[\w\-.]{1,120}$/.test(x)))].slice(0, 300);
@@ -580,7 +589,7 @@ export async function handleGuildApi(request, env, deps) {
     return clearChannelStep(env, guildId, doc, c, json, plog);
   }
 
-  if (['create_channels', 'delete_channel', 'rename_category', 'send_request', 'send_item', 'send_items', 'clear_channel'].includes(action) && !sess.admin && await rateLimited(env, `${action}:${guildId}`, action === 'create_channels' ? 150 : 100)) return json({ error: 'Trop d\'actions en peu de temps : réessaie dans une heure.' }, 429);
+  if (['create_channels', 'delete_channel', 'rename_category', 'send_request', 'send_item', 'send_items', 'clear_channel', 'verify_posts'].includes(action) && !sess.admin && await rateLimited(env, `${action}:${guildId}`, action === 'create_channels' ? 150 : 100)) return json({ error: 'Trop d\'actions en peu de temps : réessaie dans une heure.' }, 429);
   if (action === 'create_channels') {
     const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
     if (!chs.ok) return json({ error: 'Serveur illisible par le bot.' }, 502);
@@ -733,6 +742,7 @@ export async function handleGuildBot(request, env, deps) {
     for (const k of REPORT_KEYS) if (body.patch && k in body.patch) doc[k] = body.patch[k];
     if (Array.isArray(body.patch?.log)) body.patch.log.slice(0, 10).forEach(m => pushLog(doc, m));
     if (Array.isArray(body.patch?.requestsDone)) doc.requests = (doc.requests || []).filter(r => !body.patch.requestsDone.includes(r.id));
+    if (body.patch?.verifyDone) delete doc.verify;
     if (Array.isArray(body.patch?.itemRequestsDone)) doc.itemRequests = (doc.itemRequests || []).filter(r => !body.patch.itemRequestsDone.includes(r.id));
     // salon supprimé sur Discord : en mode « créé par le bot », on oublie son id pour que la page propose de le recréer
     for (const cid of (Array.isArray(body.patch?.badChannels) ? body.patch.badChannels : []).slice(0, 20)) {

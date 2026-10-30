@@ -21,6 +21,4 @@ binding = "DB"
 database_name = "veilleurs"
 database_id = "8deed6e8-1a17-4339-86ef-fad656a886a9"
 
-# Plus de synchro Firestore → D1 (D1 est la source de vérité). Seule tâche planifiée : lancer le bot Discord (GitHub Actions) toutes les 10 min.
-[triggers]
-crons = ["*/10 * * * *"]
+# Aucune tâche planifiée : le bot Discord (GitHub Actions) est lancé par des événements (item écrit, validation, ouverture de la page…), jamais à intervalle de temps.

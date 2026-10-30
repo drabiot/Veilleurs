@@ -173,6 +173,49 @@ async function unlock(rest, st, channelId) {
 }
 
 // ── Purge / désinstallation ──
+// ── Posts supprimés à la main sur Discord (vérifiés à l'ouverture de la page / « Revérifier ») : retirés du suivi (le compteur du salon redevient juste), notés « vus » pour ne pas être reposés tout seuls ──
+// Forum : fils actifs du serveur + fils archivés publics de chaque salon ; salon texte : message par message. Si Discord ne répond pas, on ne retire rien.
+const VERIFY_MAX_TEXT = 300;
+async function archivedThreads(rest, chId) {
+  const ids = new Set(); let before = '';
+  for (let page = 0; page < 12; page++) {
+    const r = await rest.get(`/channels/${chId}/threads/archived/public`, { query: new URLSearchParams({ limit: '100', ...(before ? { before } : {}) }) });
+    (r.threads || []).forEach(t => ids.add(t.id));
+    if (!r.has_more || !(r.threads || []).length) break;
+    before = r.threads[r.threads.length - 1].thread_metadata?.archive_timestamp || '';
+    if (!before) break;
+  }
+  return ids;
+}
+async function verifyPosts(rest, g, st, logs) {
+  const keys = Object.keys(st.posts);
+  if (!keys.length) return 0;
+  const byCh = new Map();
+  for (const k of keys) { const e = st.posts[k]; (byCh.get(e.channelId) || byCh.set(e.channelId, []).get(e.channelId)).push(k); }
+  const gone = [];
+  let active = null;
+  try { active = new Set(((await rest.get(`/guilds/${g.id}/threads/active`)).threads || []).map(t => t.id)); } catch { return 0; } // Discord illisible : rien n'est retiré
+  let textChecked = 0;
+  for (const [chId, ks] of byCh) {
+    if (timeUp()) break;
+    let info; try { info = await rest.get(`/channels/${chId}`); } catch (e) { if (e.status === 404 || e.code === 10003) { gone.push(...ks); } continue; } // salon supprimé : tous ses posts sont partis
+    if (info.type === 15 || info.type === 16) {
+      let arch; try { arch = await archivedThreads(rest, chId); } catch { continue; }
+      for (const k of ks) { const e = st.posts[k]; if (e.threadId && !active.has(e.threadId) && !arch.has(e.threadId)) gone.push(k); }
+    } else {
+      for (const k of ks) {
+        const e = st.posts[k], mid = e.messageIds?.[0] || e.messageId;
+        if (!mid || textChecked >= VERIFY_MAX_TEXT) continue;
+        textChecked++;
+        try { await rest.get(`/channels/${chId}/messages/${mid}`); } catch (er) { if (er.status === 404 || er.code === 10008) gone.push(k); }
+      }
+    }
+  }
+  for (const k of gone) { for (const id of (st.posts[k].ids || [k])) st.seen[id] = 1; delete st.posts[k]; }
+  if (gone.length) { st.rev = 0; logs.push(`Bot : ${gone.length} post(s) supprimé(s) à la main sur Discord : retirés du suivi (ils réapparaissent dans « manquants »)`); } // st.rev = 0 : lecture complète au prochain passage (liste des manquants à jour)
+  return gone.length;
+}
+
 async function purgePosts(rest, st) {
   let n = 0;
   for (const [id, e] of Object.entries(st.posts)) { await deletePost(rest, e); delete st.posts[id]; n++; await sleep(500); }
@@ -203,6 +246,7 @@ async function guildPass(rest, g, st, getCtx) {
   const cfg = { ...g, channels: eligible };
   const doneReq = []; // demandes d'envoi à la demande traitées
   const doneItems = []; // demandes « renvoyer cet item » traitées
+  let verifyDone = false; // demande « Revérifier » traitée
   const logs = []; // entrées d'historique visibles dans la modération
   const badCh = new Set(); // salons introuvables (supprimés sur Discord)
   for (const chId of Object.keys(st.locks)) { try { await unlock(rest, st, chId); } catch { delete st.locks[chId]; } } // verrou resté après un plantage
@@ -213,6 +257,9 @@ async function guildPass(rest, g, st, getCtx) {
     return;
   }
   if (g.status !== 'approved' || g.paused || (fetched.full && !items.size)) return;
+  if (g.verify && g.verify !== st.verifyReq) { // posts toujours présents sur Discord ? Seulement quand c'est demandé : ouverture de la page par le chef ou « Revérifier » (aucune vérification à intervalle de temps)
+    try { await verifyPosts(rest, g, st, logs); st.verifyReq = g.verify; verifyDone = true; } catch (e) { log(`${g.guildName} : vérification des posts impossible (${e.message})`); }
+  }
 
   if (!!st.groupSets !== !!cfg.groupSets) {
     for (const [key, e] of Object.entries(st.posts)) { if (timeUp()) return; await deletePost(rest, e); delete st.posts[key]; await sleep(500); }
@@ -348,11 +395,12 @@ async function guildPass(rest, g, st, getCtx) {
   for (const e of Object.values(st.posts)) patch.channelPosts[e.channelId] = (patch.channelPosts[e.channelId] || 0) + (e.ids ? e.ids.length : 1);
   if (doneReq.length) patch.requestsDone = doneReq;
   if (doneItems.length) patch.itemRequestsDone = doneItems;
+  if (verifyDone) patch.verifyDone = true;
   if (missingChanged && !cfg._main) { patch.missing = mr.missing; patch.missingN = mr.missingN; } // la page du chef affiche « N manquants » par salon
   if (missingChanged && cfg._main) { try { await workerBot('main_missing', { byChannel: mr.missingN }); } catch { /* au prochain passage */ } } // serveur principal : le plan de la modération affiche le compte
   if (badCh.size) patch.badChannels = [...badCh];
   if (error || g.lastError) patch.lastError = error;
-  if (sent || error || logs.length || doneReq.length || doneItems.length || (missingChanged && !cfg._main) || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
+  if (sent || error || logs.length || doneReq.length || doneItems.length || verifyDone || (missingChanged && !cfg._main) || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
   if (sent) log(`${g.guildName} : ${sent} post(s) envoyé(s), ${pending} restant(s).`);
   return { sent, pending };
 }
@@ -435,7 +483,7 @@ async function pass(rest) {
   for (const g of active) { const st = await loadGuildState(g.id); st._id = g.id; states.set(g.id, st); }
   if (sending.length) {
     // lecture complète si un serveur n'a jamais été lu, a un envoi en cours, des items en échec, ou des réglages modifiés ; sinon seulement les changements
-    const needFull = sending.some(g => { const st = states.get(g.id); return !st.baselined || st.pending > 0 || !st.rev || st.sig !== sigOf(g) || (g.requests || []).length > 0 || (g.itemRequests || []).length > 0 || (g.channels || []).some(c => c.id && c.subscribed !== false && !c.skip && !st.subs?.[c.id]); });
+    const needFull = sending.some(g => { const st = states.get(g.id); return !st.baselined || st.pending > 0 || !st.rev || st.sig !== sigOf(g) || (g.requests || []).length > 0 || (g.verify && g.verify !== st.verifyReq) || (g.itemRequests || []).length > 0 || (g.channels || []).some(c => c.id && c.subscribed !== false && !c.skip && !st.subs?.[c.id]); });
     await refreshItems(needFull ? 0 : Math.min(...sending.map(g => states.get(g.id).rev)));
   }
   for (const g of active) {

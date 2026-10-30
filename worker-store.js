@@ -10,7 +10,7 @@
 
    Droits : reprise des règles Firestore (Save/firestore.rules.local-copy), évaluées ici côté serveur avec le rôle lu dans `users`. */
 
-import { maybeTriggerBot } from './guild-onboarding.js';
+import { triggerBot } from './guild-onboarding.js';
 
 const BASE_TIERS = ['visiteur', 'membre', 'contributeur', 'admin'];
 const TIER = { public: 0, visiteur: 0, membre: 1, contributeur: 2, admin: 3 };
@@ -260,7 +260,8 @@ export async function handleStoreWrite(request, env, cors, execCtx) {
   await env.DB.batch([env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'"), ...stmts]);
   const rev = (await env.DB.prepare("SELECT v FROM meta WHERE k = 'rev'").first())?.v;
   // un item écrit, modifié ou supprimé : le bot Discord est lancé tout de suite (posts ajoutés / remplacés / supprimés sur les serveurs), au lieu d'attendre le cron
-  if (execCtx && ops.some(o => o.col === 'items')) execCtx.waitUntil(maybeTriggerBot(env).catch(() => {}));
+  // (aussi : file des soumissions acceptées, que le bot lit avant de poster un nouvel item)
+  if (execCtx && ops.some(o => o.col === 'items' || (o.col === 'config' && o.id === 'discord_approved'))) execCtx.waitUntil(triggerBot(env).catch(() => {}));
   return json({ ok: true, rev, ids }, 200, cors);
 }
 

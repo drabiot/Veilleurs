@@ -605,6 +605,7 @@ const _DG_STATUS = { pending: ['â³ En attente', 'var(--accent)'], approved: ['ð
 window.dgLoadGuilds = async () => {
   const el = document.getElementById('discord-guilds-body');
   if (!el) return;
+  if (!window._dgOpened) { window._dgOpened = true; (async () => { try { await fetch(WORKER_URL + '/guild/bot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: await getWorkerSecret(), action: 'trigger' }) }); } catch { /* sans jeton GitHub : rien */ } })(); } // ouverture du panneau : le bot passe
   try {
     const snap = await getDocs(collection(db, 'discord_guilds'));
     const list = snap.docs.map(d => ({ _id: d.id, ...d.data() })).sort((a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1) || String(a.guildName).localeCompare(String(b.guildName), 'fr'));

@@ -143,7 +143,7 @@ function statusBadge(g) {
 
 function watchProgress() {
   clearInterval(S.prog);
-  if (S.step !== 'status' || !(S.doc?.pending || (S.doc?.itemRequests || []).length || (S.doc?.requests || []).length) || S.doc.status !== 'approved') return; // envoi en cours ou demandes en attente
+  if (S.step !== 'status' || !(S.doc?.pending || S.doc?.verify || (S.doc?.itemRequests || []).length || (S.doc?.requests || []).length) || S.doc.status !== 'approved') return; // envoi en cours ou demandes en attente
   S.prog = setInterval(async () => {
     if (S.step !== 'status') return clearInterval(S.prog);
     try { const j = await api('inspect', { guildId: S.guild.id }); if (j.config) { S.doc = j.config; S.info = j; render(); } } catch { /* au prochain tour */ }
@@ -446,7 +446,7 @@ function manageBlock(d) {
     <div class="dg-row" style="margin:6px 0"><button class="dg-btn" onclick="DG.chSubAll(${!allSub})">${allSub ? '✅ Inscrit à tous (désinscrire)' : "📡 S'inscrire à tous les salons"}</button>
       ${auto ? '' : '<button class="dg-btn primary" onclick="DG.chNew()">➕ Nouveau salon</button>'}
       ${missing ? '<button class="dg-btn primary" onclick="DG.makeChannels()">✨ Créer les salons inscrits manquants</button>' : ''}
-      <button class="dg-btn" onclick="DG.refreshInfo()" title="Relit les salons du serveur">🔄 Revérifier</button>
+      <button class="dg-btn" onclick="DG.refreshInfo()" title="Relit les salons du serveur et fait contrôler au bot que les posts existent encore (posts supprimés à la main)">🔄 Revérifier</button>
       <a class="dg-btn" href="https://discord.com/channels/${esc(S.guild.id)}" target="_blank" rel="noopener">Ouvrir le serveur ↗</a></div>
     ${filters}${groupsHtml}</div>`;
 }
@@ -505,6 +505,8 @@ const DG = window.DG = {
       clearInterval(S.poll); S.err = '';
       S.info = j; S.doc = j.config;
       if (j.config && planMode(j.config) === 'auto') await DG.autoSync();
+      // ouverture de la page : le bot contrôle que les posts suivis existent encore (posts supprimés à la main) et traite ce qui attend
+      if (j.config && j.config.status === 'approved' && !(S.vo ||= new Set()).has(S.guild.id)) { S.vo.add(S.guild.id); api('verify_posts', { guildId: S.guild.id }).then(r => { if (r.config) { S.doc = r.config; render(); } }).catch(() => {}); }
       if (j.config) { await loadCombos(); S.cfg = { ...defaultCfg(), ...j.config }; S.step = 'status'; }
       else { await loadCombos(); S.cfg = defaultCfg(); S.cfg.forum = !!j.community; regenPlan(); S.step = 'form'; }
       render();
@@ -559,7 +561,7 @@ const DG = window.DG = {
     } catch (e) { S.err = e.message; }
     S.busy = false; render();
   },
-  async refreshInfo() { try { const j = await api('inspect', { guildId: S.guild.id }); if (j.botPresent) { S.info = j; if (j.config) S.doc = j.config; } S.err = ''; } catch (e) { S.err = e.message; } render(); },
+  async refreshInfo() { try { if (S.doc?.status === 'approved') await api('verify_posts', { guildId: S.guild.id }).then(j => { if (j.config) S.doc = j.config; S.msg = 'Vérification des posts demandée : le bot contrôle ce qui existe encore sur Discord (le compteur se met à jour dans la minute).'; }).catch(() => {}); const j = await api('inspect', { guildId: S.guild.id }); if (j.botPresent) { S.info = j; if (j.config) S.doc = j.config; } S.err = ''; } catch (e) { S.err = e.message; } render(); },
   // ── gestion salon par salon (écran « Salons » de la page de statut) ──
   async chCall(action, extra) {
     try { const j = await api(action, { guildId: S.guild.id, ...extra }); if (j.config) S.doc = j.config; S.err = ''; return j; }
