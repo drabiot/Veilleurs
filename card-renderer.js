@@ -64,21 +64,27 @@ function parseObtainData(raw) {
     .filter(Boolean)
 }
 
+// Formats de craft : [{name, npcId, items}] (PNJ), [[ingrédients], …] (recettes imbriquées), [ingrédients] (plat)
 function parseCraftData(item, allItems, pnjMap) {
   const craftList = item.craft
   if (!craftList?.length) return null
-  const isNew = typeof craftList[0] === 'object' && 'items' in craftList[0]
-  const recipe = isNew ? craftList[0] : { name: null, npcId: null, items: craftList }
-  const npc = recipe.name
-    || (recipe.npcId && pnjMap[recipe.npcId]?.name)
-    || (recipe.npcId ? recipe.npcId.replace(/_/g, ' ') : null)
-  const ingredients = (recipe.items || []).map(ci => {
-    const found = allItems.find(a => a.id === ci.id)
-    return { name: found?.name || ci.id.replace(/_/g, ' '), id: ci.id, qty: ci.qty, item: found || { id: ci.id } }
-  })
-  if (!npc && !ingredients.length) return null
-  return { npc, ingredients }
+  const first = craftList[0]
+  const isNew = first && !Array.isArray(first) && typeof first === 'object' && 'items' in first
+  const raw = isNew ? craftList : Array.isArray(first) ? craftList.map(items => ({ items })) : [{ items: craftList }]
+  const recipes = raw.map(recipe => {
+    const npc = recipe.name
+      || (recipe.npcId && pnjMap[recipe.npcId]?.name)
+      || (recipe.npcId ? recipe.npcId.replace(/_/g, ' ') : null)
+    const ingredients = (recipe.items || []).filter(ci => ci?.id).map(ci => {
+      const found = allItems.find(a => a.id === ci.id)
+      return { name: found?.name || String(ci.id).replace(/_/g, ' '), id: ci.id, qty: ci.qty, item: found || { id: ci.id } }
+    })
+    return { npc, ingredients }
+  }).filter(r => r.npc || r.ingredients.length)
+  return recipes.length ? { recipes } : null
 }
+// Titre d'une recette : « Craft PNJ » si un PNJ est nommé, sinon « Recette N » quand il y en a plusieurs
+const craftTitle = (craftData, r, i) => r.npc ? '⚒  ' + r.npc : (craftData.recipes.length > 1 ? 'Recette ' + (i + 1) : null)
 
 // ── Résolution URL texture ────────────────────────────────────────────
 function resolveIconUrl(item) {
@@ -155,7 +161,7 @@ function estimateCardHeight(item, compact, panoplieData, allItems, pnjMap) {
     framesH += F_TITLE + F_PADV + obtainData.length * F_ROW + F_PADV + F_GAP
   }
   if (craftData) {
-    const cRows = (craftData.npc ? 2 : 0) + craftData.ingredients.length
+    const cRows = craftData.recipes.reduce((n, r, i) => n + (r.npc ? 2 : craftTitle(craftData, r, i) ? 1 : 0) + r.ingredients.length, 0)
     framesH += F_TITLE + F_PADV + cRows * F_ROW + F_PADV + F_GAP
   }
   return Math.max(topH + framesH + 34, 260)
@@ -617,7 +623,6 @@ export async function drawItemCard(canvas, item, exportScale = null, maps = {}) 
 
   if (obtainData.length || craftData) {
     const oRows  = obtainData.length
-    const cRows  = craftData ? (craftData.npc ? 1 : 0) + craftData.ingredients.length : 0
     if (obtainData.length) {
       const oH = F_TITLE + F_PADV + oRows * F_ROW + F_PADV
       drawFrame(ctx, FRAME_X, frameY, FRAME_W, oH, 'OBTENIR', '#7db3d4', F_TITLE)
@@ -660,60 +665,66 @@ export async function drawItemCard(canvas, item, exportScale = null, maps = {}) 
     }
 
     if (craftData) {
+      // lignes de titre (nom du PNJ sur 2 lignes max) de chaque recette, calculées avant la hauteur du cadre
+      const titleLines = craftData.recipes.map((rec, ri) => {
+        const title = craftTitle(craftData, rec, ri)
+        if (!title) return []
+        ctx.font = rowFont
+        const maxW = FRAME_W - F_PADH * 2
+        const lines = []
+        let cur = ''
+        for (const w of title.split(' ')) {
+          const test = cur ? cur + ' ' + w : w
+          if (ctx.measureText(test).width > maxW && cur) {
+            lines.push(cur); cur = w
+            if (lines.length >= 2) break
+          } else { cur = test }
+        }
+        if (cur && lines.length < 2) lines.push(cur)
+        return lines
+      })
+      const cRows = craftData.recipes.reduce((n, rec, ri) => n + titleLines[ri].length + rec.ingredients.length, 0)
       const crH = F_TITLE + F_PADV + cRows * F_ROW + F_PADV
       drawFrame(ctx, FRAME_X, frameY, FRAME_W, crH, 'CRAFT', '#7db3d4', F_TITLE)
       let craftY = frameY + F_TITLE + F_PADV
-      if (craftData.npc) {
-        ctx.font = rowFont; ctx.fillStyle = C.goldDim
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
-        const npcText  = '⚒  ' + craftData.npc
-        const npcMaxW  = FRAME_W - F_PADH * 2
-        const npcWords = npcText.split(' ')
-        const npcLines = []
-        let npcCur = ''
-        for (const w of npcWords) {
-          const test = npcCur ? npcCur + ' ' + w : w
-          if (ctx.measureText(test).width > npcMaxW && npcCur) {
-            npcLines.push(npcCur); npcCur = w
-            if (npcLines.length >= 2) break
-          } else { npcCur = test }
-        }
-        if (npcCur && npcLines.length < 2) npcLines.push(npcCur)
-        for (const line of npcLines) {
+      for (const [ri, rec] of craftData.recipes.entries()) {
+        for (const line of titleLines[ri]) {
+          ctx.font = rowFont; ctx.fillStyle = C.goldDim
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
           ctx.fillText(line, FRAME_X + F_PADH, craftY + F_ROW / 2)
           craftY += F_ROW
         }
-      }
-      const ingIcons = await Promise.all(
-        craftData.ingredients.map(ing => loadImage(resolveIconUrl(ing.item)))
-      )
-      for (let i = 0; i < craftData.ingredients.length; i++) {
-        const ing = craftData.ingredients[i], ico = ingIcons[i]
-        const cy  = craftY + F_ROW / 2
-        const isz = 14
-        if (ico) {
-          const s  = Math.min(isz / ico.naturalWidth, isz / ico.naturalHeight)
-          const dw = ico.naturalWidth * s, dh = ico.naturalHeight * s
-          ctx.imageSmoothingEnabled = false
-          ctx.drawImage(ico, FRAME_X + F_PADH + (isz - dw) / 2, cy - isz / 2 + (isz - dh) / 2, dw, dh)
-          ctx.imageSmoothingEnabled = true
-        } else if (ing.id === 'cols') {
-          ctx.font = '13px serif'; ctx.fillStyle = C.muted
+        const ingIcons = await Promise.all(
+          rec.ingredients.map(ing => loadImage(resolveIconUrl(ing.item)))
+        )
+        for (let i = 0; i < rec.ingredients.length; i++) {
+          const ing = rec.ingredients[i], ico = ingIcons[i]
+          const cy  = craftY + F_ROW / 2
+          const isz = 14
+          if (ico) {
+            const s  = Math.min(isz / ico.naturalWidth, isz / ico.naturalHeight)
+            const dw = ico.naturalWidth * s, dh = ico.naturalHeight * s
+            ctx.imageSmoothingEnabled = false
+            ctx.drawImage(ico, FRAME_X + F_PADH + (isz - dw) / 2, cy - isz / 2 + (isz - dh) / 2, dw, dh)
+            ctx.imageSmoothingEnabled = true
+          } else if (ing.id === 'cols') {
+            ctx.font = '13px serif'; ctx.fillStyle = C.muted
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
+            ctx.fillText('🪙', FRAME_X + F_PADH, cy)
+          }
+          ctx.font = rowFont; ctx.fillStyle = C.text
           ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
-          ctx.fillText('🪙', FRAME_X + F_PADH, cy)
+          const qtyStr   = `  ×${ing.qty}`
+          const qtyW     = ctx.measureText(qtyStr).width
+          const nameMaxW = FRAME_W - F_PADH * 2 - isz - 5 - qtyW
+          let ingName = ing.name
+          if (ctx.measureText(ingName).width > nameMaxW) {
+            while (ctx.measureText(ingName + '…').width > nameMaxW && ingName.length > 1) ingName = ingName.slice(0, -1)
+            ingName += '…'
+          }
+          ctx.fillText(ingName + qtyStr, FRAME_X + F_PADH + isz + 5, cy)
+          craftY += F_ROW
         }
-        ctx.font = rowFont; ctx.fillStyle = C.text
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
-        const qtyStr   = `  ×${ing.qty}`
-        const qtyW     = ctx.measureText(qtyStr).width
-        const nameMaxW = FRAME_W - F_PADH * 2 - isz - 5 - qtyW
-        let ingName = ing.name
-        if (ctx.measureText(ingName).width > nameMaxW) {
-          while (ctx.measureText(ingName + '…').width > nameMaxW && ingName.length > 1) ingName = ingName.slice(0, -1)
-          ingName += '…'
-        }
-        ctx.fillText(ingName + qtyStr, FRAME_X + F_PADH + isz + 5, cy)
-        craftY += F_ROW
       }
       frameY += crH + F_GAP
     }
