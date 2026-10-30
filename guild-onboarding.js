@@ -507,11 +507,24 @@ export async function handleGuildApi(request, env, deps) {
     return json({ ok: true, config: doc });
   }
 
+  // renvoyer une SÉLECTION d'items (liste « manquants » d'un salon) : même mécanisme que l'item précis, en un seul appel
+  if (action === 'send_items') {
+    const ids = [...new Set((Array.isArray(body.itemIds) ? body.itemIds : []).map(String).filter(x => /^[\w\-.]{1,120}$/.test(x)))].slice(0, 300);
+    if (!ids.length) return json({ error: 'Aucun item sélectionné.' }, 400);
+    doc.itemRequests = [...(doc.itemRequests || []).filter(r => !ids.includes(r.id)), ...ids.map(id => ({ id, at: Date.now() }))].slice(-500);
+    doc.updatedAt = Date.now();
+    plog(doc, `Envoi demandé pour ${ids.length} item${ids.length > 1 ? 's' : ''} manquant${ids.length > 1 ? 's' : ''}`);
+    if (doc.status === 'approved' && !doc.paused) plog(doc, triggerText(await triggerBot(env)));
+    else plog(doc, 'Envoi en attente : ' + (doc.status !== 'approved' ? 'le serveur doit d\'abord être validé' : 'l\'envoi est en pause'));
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
   // renvoyer UN item précis : le bot supprime son ancien post (s'il existe) et le reposte dans le salon inscrit qui le reçoit
   if (action === 'send_item') {
     const itemId = String(body.itemId || '');
     if (!/^[\w\-.]{1,120}$/.test(itemId)) return json({ error: 'Item invalide.' }, 400);
-    doc.itemRequests = [...(doc.itemRequests || []).filter(r => r.id !== itemId), { id: itemId, at: Date.now() }].slice(-30);
+    doc.itemRequests = [...(doc.itemRequests || []).filter(r => r.id !== itemId), { id: itemId, at: Date.now() }].slice(-500);
     doc.updatedAt = Date.now();
     plog(doc, `Renvoi demandé pour l'item « ${itemId} »`);
     if (doc.status === 'approved' && !doc.paused) plog(doc, triggerText(await triggerBot(env)));
@@ -567,7 +580,7 @@ export async function handleGuildApi(request, env, deps) {
     return clearChannelStep(env, guildId, doc, c, json, plog);
   }
 
-  if (['create_channels', 'delete_channel', 'rename_category', 'send_request', 'send_item', 'clear_channel'].includes(action) && !sess.admin && await rateLimited(env, `${action}:${guildId}`, action === 'create_channels' ? 150 : 100)) return json({ error: 'Trop d\'actions en peu de temps : réessaie dans une heure.' }, 429);
+  if (['create_channels', 'delete_channel', 'rename_category', 'send_request', 'send_item', 'send_items', 'clear_channel'].includes(action) && !sess.admin && await rateLimited(env, `${action}:${guildId}`, action === 'create_channels' ? 150 : 100)) return json({ error: 'Trop d\'actions en peu de temps : réessaie dans une heure.' }, 429);
   if (action === 'create_channels') {
     const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
     if (!chs.ok) return json({ error: 'Serveur illisible par le bot.' }, 502);
@@ -614,7 +627,7 @@ export async function handleGuildApi(request, env, deps) {
 }
 
 // ══ POST /guild/bot ══ (processus Node permanent)
-const REPORT_KEYS = ['lastSentAt', 'lastError', 'posted', 'pending', 'initialDone', 'purge', 'paused', 'channelPosts'];
+const REPORT_KEYS = ['lastSentAt', 'lastError', 'posted', 'pending', 'initialDone', 'purge', 'paused', 'channelPosts', 'missing', 'missingN'];
 
 export async function handleGuildBot(request, env, deps) {
   const { json } = deps;
@@ -650,6 +663,22 @@ export async function handleGuildBot(request, env, deps) {
     const rows = (await env.DB.prepare(`SELECT id FROM docs WHERE col = 'discord_posts' AND deleted = 0 AND json_extract(data, '$.itemId') IN (${ids.map(() => '?').join(',')})`).bind(...ids).all()).results;
     if (rows.length) await env.DB.batch([env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'"), ...rows.map(r => env.DB.prepare("UPDATE docs SET deleted = 1, updated_at = (SELECT v FROM meta WHERE k = 'rev') WHERE col = 'discord_posts' AND id = ?").bind(r.id))]);
     return json({ ok: true, dropped: rows.length });
+  }
+  if (body.action === 'main_missing') {
+    const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'config' AND id = 'discord_routes' AND deleted = 0").bind().first();
+    const cfg = jparse(row?.data);
+    if (!cfg) return json({ error: 'config/discord_routes absente' }, 404);
+    const by = body.byChannel && typeof body.byChannel === 'object' ? body.byChannel : {};
+    let changed = false;
+    for (const c of cfg.channels || []) {
+      const n = c.id && SNOW.test(String(c.id)) ? (parseInt(by[c.id], 10) || 0) : 0;
+      if ((c.missingN || 0) !== n) { if (n) c.missingN = n; else delete c.missingN; changed = true; }
+    }
+    if (changed) await env.DB.batch([
+      env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'"),
+      env.DB.prepare("INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('config', 'discord_routes', ?, (SELECT v FROM meta WHERE k = 'rev'), 0, 0) ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at, deleted = 0").bind(JSON.stringify(cfg)),
+    ]);
+    return json({ ok: true, changed });
   }
   if (body.action === 'main_patch') {
     const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'config' AND id = 'discord_routes' AND deleted = 0").bind().first();

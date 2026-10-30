@@ -72,6 +72,34 @@ function fitsChannel(cfg, c, it) {
   return !(Number(it.palier) === -1 && !has(c.paliers, '-1') && !has(cfg.paliers, '-1'));
 }
 
+// ── Items manquants : concernent un salon inscrit (route) mais n'ont aucun post suivi (st.posts, y compris les ids d'un post de set) ──
+// En mode « nouveaux seulement », un item créé directement par un modérateur n'est pas posté tout seul : le chef le voit ici et le renvoie à la main.
+const MISSING_CAP = 300, MISSING_TOTAL_CAP = 1500; // par salon / au total (taille du document du serveur)
+function updateMissing(cfg, st, itemMap, full, deleted) {
+  const tracked = new Set();
+  for (const [key, e] of Object.entries(st.posts)) { tracked.add(key); (e.ids || []).forEach(i => tracked.add(i)); }
+  const m = full ? {} : (st.missing || {}); // lecture incrémentale : on ne recalcule que les items lus
+  if (!full) for (const id of deleted || []) for (const k of Object.keys(m)) delete m[k][id];
+  for (const [id, it] of itemMap) {
+    for (const k of Object.keys(m)) delete m[k][id];
+    const ch = route(cfg, it); // même règle que l'envoi : filtres, salon le plus précis, pas d'archive sans salon dédié
+    if (ch && !tracked.has(id)) { (m[ch.id] ||= {})[id] = it.name || id; if (!full) st.recent = [id, ...(st.recent || []).filter(x => x !== id)].slice(0, 80); }
+  }
+  for (const k of Object.keys(m)) if (!Object.keys(m[k]).length) delete m[k];
+  st.missing = m;
+}
+function missingReport(st) { // { missing: { salon: [{ id, name }] } (plafonné), missingN: { salon: total } }
+  const missing = {}, missingN = {}; let total = 0;
+  for (const [ch, o] of Object.entries(st.missing || {})) {
+    const recent = (st.recent || []).filter(id => id in o);
+    const ids = [...recent, ...Object.keys(o).filter(id => !recent.includes(id)).sort((a, b) => String(o[a]).localeCompare(String(o[b]), 'fr'))];
+    missingN[ch] = ids.length;
+    const list = ids.slice(0, Math.max(0, Math.min(MISSING_CAP, MISSING_TOTAL_CAP - total)));
+    total += list.length; missing[ch] = list.map(id => ({ id, name: o[id] }));
+  }
+  return { missing, missingN };
+}
+
 /** Travail à faire pour un serveur. Pur (testé).
  *  Unité de publication = un item, ou (option « grouper les sets ») tous les items d'un même set d'un même salon (clé « set:<set>|<salon> »).
  *  → { todo: [{ key, it, items, ch, h, old? }], hashFix: [[clé, h]], gone: [clé] } */
@@ -306,6 +334,9 @@ async function guildPass(rest, g, st, getCtx) {
     }
   }
   const pending = Math.max(0, todo.length - sent);
+  updateMissing(cfg, st, map, fetched.full, fetched.deleted);
+  const mr = missingReport(st);
+  const missingChanged = cfg._main ? JSON.stringify(mr.missingN) !== JSON.stringify(Object.fromEntries((g.channels || []).filter(c => c.id && c.missingN).map(c => [c.id, c.missingN]))) : (JSON.stringify(mr.missingN) !== JSON.stringify(g.missingN || {}) || JSON.stringify(mr.missing) !== JSON.stringify(g.missing || {}));
   st.pending = pending; st.sig = sigOf(g);
   if (pending === 0 && !error) st.rev = fetched.rev; // sinon : lecture complète au prochain passage
   const patch = { posted: Object.keys(st.posts).length, pending, initialDone: pending === 0 };
@@ -317,9 +348,11 @@ async function guildPass(rest, g, st, getCtx) {
   for (const e of Object.values(st.posts)) patch.channelPosts[e.channelId] = (patch.channelPosts[e.channelId] || 0) + (e.ids ? e.ids.length : 1);
   if (doneReq.length) patch.requestsDone = doneReq;
   if (doneItems.length) patch.itemRequestsDone = doneItems;
+  if (missingChanged && !cfg._main) { patch.missing = mr.missing; patch.missingN = mr.missingN; } // la page du chef affiche « N manquants » par salon
+  if (missingChanged && cfg._main) { try { await workerBot('main_missing', { byChannel: mr.missingN }); } catch { /* au prochain passage */ } } // serveur principal : le plan de la modération affiche le compte
   if (badCh.size) patch.badChannels = [...badCh];
   if (error || g.lastError) patch.lastError = error;
-  if (sent || error || logs.length || doneReq.length || doneItems.length || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
+  if (sent || error || logs.length || doneReq.length || doneItems.length || (missingChanged && !cfg._main) || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
   if (sent) log(`${g.guildName} : ${sent} post(s) envoyé(s), ${pending} restant(s).`);
   return { sent, pending };
 }

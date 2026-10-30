@@ -143,7 +143,7 @@ function statusBadge(g) {
 
 function watchProgress() {
   clearInterval(S.prog);
-  if (S.step !== 'status' || !S.doc?.pending || S.doc.status !== 'approved') return;
+  if (S.step !== 'status' || !(S.doc?.pending || (S.doc?.itemRequests || []).length || (S.doc?.requests || []).length) || S.doc.status !== 'approved') return; // envoi en cours ou demandes en attente
   S.prog = setInterval(async () => {
     if (S.step !== 'status') return clearInterval(S.prog);
     try { const j = await api('inspect', { guildId: S.guild.id }); if (j.config) { S.doc = j.config; S.info = j; render(); } } catch { /* au prochain tour */ }
@@ -299,7 +299,7 @@ function rRecap() {
 
 // ═══ Gestion salon par salon (même écran que la modération, sans les outils réservés aux admins) ═══
 // Inscrit = salon activé : créé si besoin et il reçoit les nouveaux items (les items modifiés sont remplacés). Pas inscrit = rien n'est envoyé dans ce salon.
-const M = { open: new Set(), groups: new Set(), pal: '', sub: false };
+const M = { open: new Set(), groups: new Set(), pal: '', sub: false, miss: new Set(), sel: new Set() }; // miss : salons dont la liste « manquants » est ouverte ; sel : items cochés
 const isSub = c => c.subscribed !== false && !c.skip;
 function itemsOf(c, d) { // nombre d'items du wiki concernés par un salon (compteurs lus une fois)
   if (!S.counts) return null;
@@ -321,6 +321,8 @@ function manageRow(c, i, d, real) {
     ? `<button class="dg-btn" title="Inscrit : le salon est activé, il reçoit les nouveaux items. Cliquer pour se désinscrire." onclick="DG.chSub(${i}, false)" style="padding:2px 9px;font-size:12px;color:var(--added);border-color:var(--added);">✅ Inscrit</button>`
     : `<button class="dg-btn" title="S'inscrire : activer ce salon (créé si besoin, il recevra les nouveaux items)." onclick="DG.chSub(${i}, true)" style="padding:2px 9px;font-size:12px;">📡 S'inscrire</button>`;
   let actions = '';
+  const nMiss = sub && exists ? (d.missingN?.[c.id] || 0) : 0;
+  if (nMiss) actions += `<button class="dg-btn" title="Items du wiki qui concernent ce salon mais n'y ont aucun post : clique pour les voir et les envoyer" onclick="DG.missOpen('${esc(c.id)}')" style="padding:2px 9px;font-size:12px;color:var(--gold);border-color:var(--gold)">⚠ ${nMiss} manquant${nMiss > 1 ? 's' : ''}</button>`;
   if (sub && exists) actions += ib('📤', 'Renvoyer toute la data de ce salon', `DG.chSend(${i}, 'all')`) + ib('➕', 'Envoyer seulement les items manquants', `DG.chSend(${i}, 'missing')`) + ib('🧹', 'Vider ce salon (supprime ses posts)', `DG.chClear(${i})`, true);
   else if (sub && d.mode === 'create') actions += ib(c.id ? '🔁' : '✨', c.id ? 'Recréer ce salon (introuvable sur Discord)' : 'Créer ce salon maintenant', `DG.chCreate(${i})`);
   const ro = planMode(d) === 'auto'; // plan automatique : lecture seule
@@ -337,7 +339,21 @@ function manageRow(c, i, d, real) {
       <span title="${esc(dotTitle)}">${dot}</span>${nameField}${link}
       <span style="flex:1;min-width:160px;font-size:12px;color:var(--muted)">${cats} · ${pals}${n != null ? ` · <strong style="color:var(--gold)" title="${inRoom} item${inRoom > 1 ? 's' : ''} déjà dans ce salon sur ${n} dans le wiki">${inRoom}/${n} items</strong>` : ''}${note}</span>
       <span style="display:flex;gap:4px;flex:none;flex-wrap:wrap">${subBtn}${actions}</span>
-    </div>${M.open.has(i) && !ro ? manageDetail(c, i, d) : ''}`;
+    </div>${M.open.has(i) && !ro ? manageDetail(c, i, d) : ''}${c.id && M.miss.has(c.id) ? missingPanel(c, d) : ''}`;
+}
+
+/** Liste des items manquants d'un salon (rapportée par le bot) : cases à cocher + envoi de la sélection. */
+function missingPanel(c, d) {
+  const list = (d.missing?.[c.id] || []), total = d.missingN?.[c.id] || list.length;
+  const asked = new Set((d.itemRequests || []).map(r => r.id)); // déjà demandés : le bot s'en occupe
+  const pickable = list.filter(x => !asked.has(x.id));
+  const chosen = pickable.filter(x => M.sel.has(x.id)).length;
+  const rows = list.map(x => `<label style="display:flex;align-items:center;gap:8px;padding:2px 0;font-size:12px;${asked.has(x.id) ? 'opacity:.6' : 'cursor:pointer'}"><input type="checkbox" ${asked.has(x.id) ? 'disabled' : ''} ${M.sel.has(x.id) ? 'checked' : ''} data-id="${esc(x.id)}" onchange="DG.missToggle(this.dataset.id, this.checked)"> ${esc(x.name)}${asked.has(x.id) ? ' <span style="color:var(--gold)">⏳ en cours d\'envoi</span>' : ''}</label>`).join('');
+  return `<div class="dg-detail" style="margin:4px 0 10px 26px;padding:10px 12px;border:1px solid var(--rim);border-radius:8px;background:var(--surface2)">
+    <div class="dg-hint" style="margin-top:0">${total} item${total > 1 ? 's' : ''} du wiki concernent ce salon sans y avoir de post${total > list.length ? ` (les ${list.length} premiers sont listés)` : ''}.</div>
+    <div class="dg-row" style="margin:6px 0"><button class="dg-btn" onclick="DG.missAll('${esc(c.id)}')">☑ Tout sélectionner</button><button class="dg-btn" onclick="DG.missNone()">☐ Rien</button>
+      <button class="dg-btn primary" ${chosen ? '' : 'disabled'} onclick="DG.missSend()">📤 Envoyer la sélection (${chosen})</button></div>
+    <div style="max-height:260px;overflow:auto">${rows || '<div class="dg-hint">Rien à afficher.</div>'}</div></div>`;
 }
 
 function manageDetail(c, i, d) { // réglages détaillés d'un salon : catégorie Discord, type, quoi y envoyer
@@ -571,6 +587,17 @@ const DG = window.DG = {
         <span style="color:var(--muted)">${room ? '→ ' + esc(room.name) : '⚠️ aucun salon inscrit ne reçoit cet item'}</span>
         <button class="dg-btn" ${room ? '' : 'disabled'} data-id="${esc(i.id)}" onclick="DG.sendItem(this.dataset.id)" style="padding:3px 10px;font-size:12px">📤 Envoyer / renvoyer</button></div>`;
     }).join('') || '<div class="dg-hint">Aucun item trouvé.</div>';
+  },
+  missOpen(chId) { if (M.miss.has(chId)) M.miss.delete(chId); else M.miss.add(chId); render(); },
+  missToggle(id, on) { if (on) M.sel.add(id); else M.sel.delete(id); render(); },
+  missAll(chId) { const asked = new Set((S.doc.itemRequests || []).map(r => r.id)); (S.doc.missing?.[chId] || []).forEach(x => { if (!asked.has(x.id)) M.sel.add(x.id); }); render(); },
+  missNone() { M.sel.clear(); render(); },
+  async missSend() { // la sélection devient des demandes d'envoi : le bot supprime l'éventuel ancien post puis poste ; la progression s'affiche en haut de page
+    const ids = [...M.sel].slice(0, 300);
+    if (!ids.length) return;
+    const j = await DG.chCall('send_items', { itemIds: ids });
+    if (j) { M.sel.clear(); S.msg = `Envoi demandé pour ${ids.length} item${ids.length > 1 ? 's' : ''} : le bot les poste (la barre de progression avance, ils passent « en cours d'envoi » dans la liste).`; }
+    render();
   },
   async sendItem(id) {
     const j = await DG.chCall('send_item', { itemId: id });
