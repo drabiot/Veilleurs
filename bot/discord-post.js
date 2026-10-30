@@ -49,9 +49,10 @@ async function postItem(rest, channelId, item, ctx, channelInfo) {
   const png = await card.generateCardBuffer(it, ctx.maps, 3);
   const name = `${it.id}.png`;
   const content = `**${it.name}** · ${RAR[it.rarity] || it.rarity || ''}\n${WIKI}/Compendium/compendium.html#${it.id}`;
-  const files = [{ name, data: png }];
+  const icon = await card.generateIconBuffer(it, 160).catch(() => null); // texture : 1re image du message = miniature du post dans la liste du forum
+  const files = [...(icon ? [{ name: `${it.id}_texture.png`, data: icon }] : []), { name, data: png }];
   const ch = channelInfo || await rest.get(`/channels/${channelId}`);
-  const message = { content, attachments: [{ id: 0, filename: name }] };
+  const message = { content, attachments: files.map((f, i) => ({ id: i, filename: f.name })) };
   if (ch.type === 15 || ch.type === 16) { const t = await rest.post(`/channels/${channelId}/threads`, { body: { name: String(it.name).slice(0, 100), message }, files }); return { threadId: t.id, messageId: t.message?.id || null }; }
   const m = await rest.post(`/channels/${channelId}/messages`, { body: message, files });
   return { threadId: null, messageId: m.id };
@@ -67,6 +68,8 @@ async function postSet(rest, channelId, setName, items, ctx, channelInfo) {
     const it = publicItem(item, ctx);
     files.push({ name: `${it.id}.png`, data: await card.generateCardBuffer(it, ctx.maps, 3) });
   }
+  const icon = await card.generateIconBuffer(publicItem(sorted[0], ctx), 160).catch(() => null);
+  if (icon) files.unshift({ name: `${sorted[0].id ?? sorted[0]._id}_texture.png`, data: icon }); // 1re image du message = miniature du post
   const chunks = []; for (let i = 0; i < files.length; i += 10) chunks.push(files.slice(i, i + 10));
   const msgBody = (chunk, first) => ({ content: first ? `**${setName}**\n${links}`.slice(0, 2000) : '', attachments: chunk.map((f, i) => ({ id: i, filename: f.name })) });
   const forum = ch.type === 15 || ch.type === 16;

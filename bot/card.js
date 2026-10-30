@@ -686,4 +686,17 @@ async function generateCardBuffer(item, maps = {}, scale = 3) {
   return canvas.encode('png');
 }
 
-module.exports = { generateCardBuffer };
+/** Texture de l'item en grand format net (pixels non lissés) sur fond sombre : sert de miniature au post (Discord prend la 1re image du message). null si pas de texture. */
+async function generateIconBuffer(item, size = 160) {
+  const img = await loadImage(resolveIconUrl(item));
+  if (!img) return null;
+  const c = createCanvas(size, size), ctx = c.getContext('2d');
+  ctx.fillStyle = '#191410'; ctx.fillRect(0, 0, size, size);
+  ctx.imageSmoothingEnabled = false;
+  const k = Math.min(size * 0.86 / img.width, size * 0.86 / img.height);
+  const w = img.width * k, h = img.height * k;
+  ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+  return c.toBuffer('image/png');
+}
+
+module.exports = { generateCardBuffer, generateIconBuffer };
