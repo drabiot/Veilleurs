@@ -554,7 +554,7 @@ export async function handleGuildApi(request, env, deps) {
     doc.updatedAt = Date.now();
     plog(doc, `Envoi des items manquants demandé dans ${chs.length} salon(s)`);
     if (doc.status === 'approved' && !doc.paused) plog(doc, triggerText(await triggerBot(env)));
-    else plog(doc, 'Envoi en attente : ' + (doc.status !== 'approved' ? 'le serveur doit d'abord être validé' : 'l'envoi est en pause'));
+    else plog(doc, 'Envoi en attente : ' + (doc.status !== 'approved' ? 'le serveur doit d\'abord être validé' : 'l\'envoi est en pause'));
     await dgPut(env, guildId, doc);
     return json({ ok: true, config: doc, count: chs.length });
   }
