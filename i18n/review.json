@@ -1,0 +1,1433 @@
+{
+  "_comment": "Métadonnées de relecture des traductions (voir i18n/review.html). Clé = texte français. status : auto = traduit par Claude, pas relu · doubt = Claude hésite (voir note) · ok = relu par un humain.",
+  "entries": {
+    "[VCL] - Le bot sur ton serveur Discord": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le bot des Veilleurs sur ton serveur Discord": {
+      "page": "discord",
+      "status": "doubt",
+      "note": "« Veilleurs » = the guild's members: translated « Watchers » like the rest of the site (glossary). Could also stay « Veilleurs » as a brand name."
+    },
+    "Reçois automatiquement, dans ton serveur, une fiche (carte image) de chaque item du wiki, mise à jour quand l'item change. Tu règles tout toi-même, en quelques minutes.": {
+      "page": "discord",
+      "status": "doubt",
+      "note": "« fiche (carte image) » = an image card of the item. Is « card » the right word, or « item card » / « item sheet »?"
+    },
+    "Comment ça marche": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tu te connectes avec Discord (le site voit seulement ton identité et la liste de tes serveurs, jamais tes messages) puis tu choisis un serveur dont tu as la permission « Gérer le serveur ». Tu invites le bot, tu règles où et quoi envoyer, et tu confirmes. L'équipe du wiki valide ensuite l'inscription (anti-abus) :": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "rien n'est envoyé avant cette validation": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ce que le bot peut faire :": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "voir et écrire dans les salons que tu lui désignes, créer des fils/posts, joindre des images, créer les catégories et salons du plan que tu choisis, et — seulement si tu l'as demandé — masquer un salon pendant un gros envoi (pour éviter que tout le monde soit notifié). Il ne lit pas tes messages et n'écrit rien en dehors des salons du plan.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ce qui est stocké chez nous :": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "l'identifiant de ton serveur, son nom, les identifiants des salons et rôles choisis, tes réglages, ton identifiant et ton pseudo Discord (pour savoir qui a inscrit le serveur), et l'état d'envoi. Rien d'autre.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tout retirer :": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "bouton « Désinstaller » sur la page de statut. Tu peux aussi cocher « supprimer les salons créés par le bot » et « supprimer ses posts » ; le bot quitte alors le serveur et tes réglages sont effacés. Tu peux aussi simplement l'exclure depuis Discord.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "1 · Connexion": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "2 · Serveur": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "4 · Réglages": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "désinstallation…": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "bot présent, non configuré": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "bot absent": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "refusé": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "suspendu": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "en attente de validation": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "en pause": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "actif": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "✅ Vérification terminée : les compteurs de posts sont à jour.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tu agis à la place du chef de serveur : tout ce que tu fais est noté « Modération » dans l'historique": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🛠 Mode modération": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Connecte-toi avec Discord pour choisir le serveur à configurer. Seuls les serveurs où tu as la permission": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Gérer le serveur": {
+      "page": "discord",
+      "status": "doubt",
+      "note": "Must match the exact Discord permission name in the English Discord client."
+    },
+    "(ou dont tu es propriétaire) seront proposés.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Se connecter avec Discord": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Choisis ton serveur": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Voir / modifier": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Configurer": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Aucun serveur trouvé où tu peux gérer le serveur. Demande à un administrateur, ou vérifie ton compte Discord.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Invite le bot sur « {name} »": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le bot a besoin de : voir et écrire dans les salons, créer des fils, joindre des fichiers, gérer les salons (créer ceux de ton plan) et gérer les rôles (masquer un salon pendant un gros envoi). Tu peux ensuite lui retirer des droits dans les réglages de ton serveur.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Inviter le bot": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "J'ai invité le bot : vérifier": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "← Autre serveur": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "La détection est automatique dès que le bot est sur le serveur.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "— choisir un salon —": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Sans catégorie": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Hors de tes filtres « Quoi envoyer » : ce salon ne sera pas créé": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "hors filtres : non créé": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "nom-du-salon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "catégorie Discord": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Retirer": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Catégories d'items (aucune = toutes)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Paliers (aucun = tous)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tout": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "tous les paliers": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Réglages pour « {name} »": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "① Quoi envoyer ?": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Catégories d'items (aucune sélection = toutes)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Paliers (aucune sélection = tous sauf l'Archive ; Event et World Boss sont des paliers comme les autres)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Seulement les nouveaux items": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Les items déjà dans le wiki ne sont pas envoyés.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoyer tous les items maintenant": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Environ {n} items : l'envoi peut durer plusieurs heures (le bot respecte les limites de Discord).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "L'envoi peut durer plusieurs heures.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "② Où envoyer ?": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Crée les salons pour moi": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le bot crée catégories et salons (tu pourras les renommer ensuite).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "J'ai déjà mes salons": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tu choisis, pour chaque catégorie d'items / palier, un salon existant.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Recommandé : une catégorie Discord par palier + un salon par catégorie d'items": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ex. « Palier 1 » → #armes, #armures… (seulement les combinaisons qui existent dans le wiki).": {
+      "page": "discord",
+      "status": "doubt",
+      "note": "The channel/category names created on Discord stay in French (armes, armures, PALIER 1…) in both languages, so the example keeps the real names. Should English servers get English names instead?"
+    },
+    "Un seul salon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tous les items dans un seul salon.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Personnalisé": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Pars du plan recommandé puis ajoute, retire, renomme, regroupe.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Style Veilleurs (emojis, majuscules, lettres stylisées)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ex. « 🌱 PALIER 1 » / « ⚔️・𝗔𝗿𝗺𝗲𝘀 ». Décoche pour des noms simples (armes, armures…) ; remet le plan à zéro.": {
+      "page": "discord",
+      "status": "doubt",
+      "note": "Same remark as above: names shown are the real (French) names created on Discord."
+    },
+    "Préfixe de catégorie (facultatif)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Aucun salon dans le plan.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "➕ Ajouter un salon / une règle": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salons qui seront créés :": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "sur {n}. Décoche ceux dont tu n'as pas besoin, clique sur un nom pour le changer. Ils sont créés vides : le bot n'y poste que les items qui existent.": {
+      "page": "discord",
+      "status": "doubt",
+      "note": "Sentence continues after a bold number: « Channels that will be created: **12** of 12. … »"
+    },
+    "Créer ce salon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "aucun item pour l'instant": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "③ Qui voit les salons créés ?": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tout le monde": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Lecture seule : personne d'autre que le bot ne peut écrire.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Certains rôles": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Aucun rôle trouvé.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Administrateurs seulement": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "S'applique aux salons créés par le bot. Pour tes salons existants, tes propres réglages de droits restent inchangés.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ignoré : tes salons existants gardent leurs droits.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Forum : un post (fil) par item": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⚠️ Les forums demandent le mode Communauté sur ton serveur.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salon texte : un message par item": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Un tag par événement (Noël, Halloween…)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le bot crée les tags dans tes forums (20 maximum par forum) et applique automatiquement le bon tag aux items d'un événement, avec son emoji. Permet de filtrer par événement.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Grouper les items d'un même set dans un seul post": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Par exemple tous les accessoires d'un set ensemble ; le post porte le nom du set (jusqu'à 10 cartes par message, la suite dans des messages suivants). Si tu changes cette option plus tard, le bot supprime ses anciens posts et les reposte autrement.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Remplacer l'ancien post quand un item est mis à jour": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Sinon, l'ancien post reste tel quel.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Récapitulatif →": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Récapitulatif": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Serveur": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salons ({n})": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "créés par le bot —": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "existants —": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Accès": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "tout le monde (lecture seule)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "rôles : {names}": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "administrateurs seulement": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoi": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "toutes les catégories": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "tous les items existants": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "nouveaux items seulement": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "salon texte": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "items groupés par set (un post par set)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "un post par item": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "tags par événement": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "remplacement de l'ancien post": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "ancien post conservé": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "tous paliers": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "toutes catégories": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ce serveur est déjà validé : tes modifications sont appliquées tout de suite, sans nouvelle validation.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "L'équipe du wiki est prévenue de la modification et peut suspendre le serveur si besoin.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ton inscription est toujours en attente de validation : tes modifications sont prises en compte, rien n'est envoyé avant la validation.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ce serveur est refusé ou suspendu par l'équipe du wiki : tes modifications sont enregistrées mais rien n'est envoyé.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "En confirmant, tu inscris ce serveur : l'équipe du wiki doit le valider avant tout envoi (rien n'est envoyé avant). Tu pourras modifier, mettre en pause ou tout désinstaller à cette même adresse.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "← Modifier": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Enregistrer les modifications": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Confirmer l'inscription": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Inscrit : le salon est activé, il reçoit les nouveaux items. Cliquer pour se désinscrire.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "✅ Inscrit": {
+      "page": "discord",
+      "status": "doubt",
+      "note": "« Inscrit / S'inscrire » = the channel is opted in to receive items. « Subscribed / Subscribe » is my pick; alternatives: « Enabled / Enable », « Active »."
+    },
+    "S'inscrire : activer ce salon (créé si besoin, il recevra les nouveaux items).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "📡 S'inscrire": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Items du wiki qui concernent ce salon mais n'y ont aucun post : clique pour les voir et les envoyer": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⚠ {n} manquants": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⚠ {n} manquant": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Renvoyer toute la data de ce salon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoyer seulement les items manquants": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Vider ce salon (supprime ses posts)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Recréer ce salon (introuvable sur Discord)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Créer ce salon maintenant": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Réglages de ce salon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Supprimer ce salon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Pas inscrit : rien n'est envoyé dans ce salon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Inscrit et présent sur Discord": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Introuvable sur Discord (supprimé ?)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Sera créé automatiquement": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "introuvable sur Discord": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "sera créé automatiquement": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "choisis un salon existant (⚙️)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Renommer ce salon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ouvrir sur Discord": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{a} item déjà dans ce salon sur {n} dans le wiki": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{a} items déjà dans ce salon sur {n} dans le wiki": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⏳ en cours d'envoi": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{n} items du wiki concernent ce salon sans y avoir de post": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{n} item du wiki concerne ce salon sans y avoir de post": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "(les {n} premiers sont listés)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "☑ Tout sélectionner": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "☐ Rien": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "📤 Envoyer la sélection ({n})": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Rien à afficher.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Catégorie Discord": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🗂 Forum (un fil par item)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "# Salon texte": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Catégories d'items": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "(aucune = toutes)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Paliers": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "(aucun = tous)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Proposé par le modèle Veilleurs : pas encore dans ton plan": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "0 item dans ce salon sur {n} dans le wiki": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "S'inscrire : le salon est créé sur ton serveur et reçoit les nouveaux items.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🤖 Plan automatique": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "✏️ Plan personnalisé": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le plan des Veilleurs, tenu à jour tout seul": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tu construis ton propre plan": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le plan des Veilleurs : une catégorie par palier, un salon par type d'item. Il se met à jour tout seul quand le wiki gagne un type d'item ou un palier (ex. des outils au palier 2). Tu t'inscris aux salons qui t'intéressent, et tu peux renommer salons et catégories : les noms du wiki des Veilleurs ne sont que les noms par défaut.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ton propre plan : tu ajoutes, renommes, retires et règles les salons comme tu veux. Rien n'est ajouté tout seul.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "— sans catégorie —": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Renommer cette catégorie": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salons ({n} dans {where})": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "le plan": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "ton plan": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{n} autres proposés": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{n} salons": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{n} salon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{n} inscrits": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{n} inscrit": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Inscrit": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "= salon activé : il est créé si besoin et reçoit les nouveaux items (un item modifié remplace son ancien post).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Pas inscrit": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "= rien n'est envoyé dans ce salon.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "= 12 items déjà postés dans le salon, sur 250 dans le wiki.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "✅ Inscrit à tous (désinscrire)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "📡 S'inscrire à tous les salons": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "➕ Nouveau salon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "✨ Créer les salons inscrits manquants": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Relit les salons du serveur et fait contrôler au bot que les posts existent encore (posts supprimés à la main)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Vérification…": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🔄 Revérifier": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ouvrir le serveur ↗": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Afficher :": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "📡 Inscrits": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Aucun salon à afficher.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoyer / renvoyer un item": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Cherche une fiche du wiki : le bot supprime son ancien post (s'il existe) et le reposte dans le salon inscrit qui la reçoit.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Nom de l'item…": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Aucun item trouvé.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⚠️ aucun salon inscrit ne reçoit cet item": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "📤 Envoyer / renvoyer": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⏸ Envoi en pause.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "▶ Reprendre": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le bot s’arrête après le post en cours ; le reste est conservé et reprend à « Reprendre »": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⏸ Mettre en pause": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⏹ Arrêter et annuler les demandes": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Met en pause et annule les envois demandés (salon, item, manquants)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⏳ En attente de validation par l'équipe du wiki. Rien n'est envoyé tant que ce n'est pas validé.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⏸ En pause : rien n'est envoyé.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🟢 Actif : le bot envoie les items.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⛔ Inscription refusée par l'équipe du wiki.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⏸ Suspendu par l'équipe du wiki.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🧹 Désinstallation en cours (quelques minutes) : le bot nettoie puis quitte le serveur.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "« {name} » — statut": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Posts envoyés": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{a} · restants : {b}": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{p} % — {a} sur {b}": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Dernier envoi": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Dernière erreur du bot": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "suppression des posts…": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "✏️ Modifier les réglages": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "📤 Envoyer toute la data manquante": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le bot envoie, dans chaque salon inscrit, les items sans post (rien n’est supprimé)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🔁 Tout supprimer et renvoyer": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Supprime tous les posts puis renvoie tous les items": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🗑 Supprimer tous les posts": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Désinstaller": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "← Mes serveurs": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le bot n'est pas encore sur ce serveur.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Vérification des posts impossible : {m}": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Choisis au moins un salon existant.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le plan est vide : aucune combinaison ne correspond à tes filtres.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Chaque salon doit avoir un nom.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Choisis au moins un rôle (ou un autre accès).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Inscription enregistrée. Elle doit être validée par l'équipe du wiki.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Modifications enregistrées et appliquées tout de suite (serveur déjà validé).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Réglages enregistrés.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "La vérification des posts n'a pas pu être demandée : {m}": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le bot contrôle maintenant les posts sur Discord (quelques secondes) : les compteurs se mettent à jour tout seuls.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "✅ Salons relus : tout est à jour.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoi demandé pour {n} items : le bot les poste (la barre de progression avance, ils passent « en cours d'envoi » dans la liste).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoi demandé pour {n} item : le bot les poste (la barre de progression avance, ils passent « en cours d'envoi » dans la liste).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Renvoi demandé : le bot supprime l'ancien post et reposte l'item (dans la minute).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Nouveau nom de la catégorie :": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Passer en plan automatique ? Ton plan personnalisé est mis de côté (retrouvé si tu reviens en personnalisé) et remplacé par le plan des Veilleurs : une catégorie par palier, un salon pour chaque type d'item. Les salons déjà créés et leur inscription sont conservés ; ceux hors modèle sortent du plan (rien n'est supprimé sur Discord).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Plan automatique actif.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Plan personnalisé : tu peux le modifier.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Création de « {name} »…": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salon créé et inscrit : il recevra les nouveaux items (💡 « 📤 » pour y envoyer ceux qui existent déjà).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Créer et inscrire {n} salons de plus sur ton serveur (le modèle Veilleurs complet) ?": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Créer et inscrire {n} salon de plus sur ton serveur (le modèle Veilleurs complet) ?": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Création des salons…": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tous les salons du modèle sont créés et inscrits.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Inscrit à tous les salons.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Désinscrit de tous les salons.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "ex. ⚔️・Armes": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Nom": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "➕ Nouvelle catégorie…": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "nom de la nouvelle catégorie": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoyer tout de suite les items existants qui correspondent": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Sinon, seuls les prochains nouveaux items y seront envoyés (le salon est inscrit dans les deux cas).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Créer le salon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Création…": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Donne un nom au salon.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salon créé : les items existants vont y être envoyés (la barre de progression avance).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salon créé et inscrit : il recevra les prochains nouveaux items.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le salon n'a pas pu être créé (le bot a-t-il « Gérer les salons » ?). Il reste dans le plan : réessaie avec ✨.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Supprimer « {name} » ?": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Supprimer sur Discord": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Retirer du plan seulement": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ce salon existait avant le bot : le bot ne supprime que les salons qu'il a créés (supprime-le toi-même depuis Discord si besoin).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Retirer ce salon du plan ? Le salon Discord et ses posts ne sont pas supprimés.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Renvoyer toute la data de ce salon ? Ses posts actuels sont supprimés puis tous les items concernés sont renvoyés.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Renvoi demandé : le bot s'en occupe (la barre de progression ci-dessus avance).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoi des items manquants demandé : le bot s'en occupe.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoi des items manquants demandé dans {n} salon(s) : le bot s'en occupe (la barre de progression avance).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Vider ce salon ? Tous les posts du bot dans ce salon sont supprimés (ils ne sont pas renvoyés automatiquement).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Suppression des posts du salon…": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Suppression des posts du salon… (reste {n})": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salon vidé.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salons créés.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Création des salons : {m} Tu peux réessayer depuis la page de statut.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Arrêter l’envoi ? Le bot s’arrête et les demandes en attente (salons, items, manquants) sont annulées. Les posts déjà envoyés restent. L’envoi est mis en pause : « Reprendre » pour repartir.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoi arrêté et demandes annulées (en pause).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoi mis en pause.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Envoi repris.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Suppression des posts en cours…": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Suppression des posts en cours… (reste {n})": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tous les posts sont supprimés. Le bot renvoie tous les items (compte une à deux minutes pour démarrer, la progression s'affiche ici).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tous les posts sont supprimés. L'envoi est mis en pause.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Suppression incomplète : relance le bouton pour terminer.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Supprimer TOUS les posts envoyés par le bot sur ce serveur ? L'envoi est mis en pause ensuite.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tout supprimer puis tout renvoyer ? Tous les posts du bot sont supprimés, puis TOUS les items (selon tes salons et filtres) sont renvoyés depuis le début. Ça peut prendre un moment.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Désinstaller « {name} »": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le bot cesse d'envoyer, quitte le serveur et tes réglages sont effacés de notre base.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Supprimer aussi les salons et catégories créés par le bot": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Leurs posts disparaissent avec eux.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Supprimer tous les posts du bot (si les salons sont conservés)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Désinstallation en cours…": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Désinstallation en cours… (reste {n})": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Désinstallé : le bot a quitté le serveur.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Désinstallation partiellement faite : relance « Désinstaller » pour terminer.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le serveur du wiki n'est pas à jour : cette fonction demande un redéploiement du worker (npx wrangler deploy).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Erreur": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "D1 non configurée": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Session expirée : reconnecte-toi avec Discord.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Tu ne gères pas ce serveur (ou la session est trop ancienne : reconnecte-toi).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Désinstallation en cours.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Serveur illisible par le bot : le bot n'a plus accès à ce serveur (permissions retirées ?).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Serveur illisible par le bot : le bot n'est plus sur ce serveur (réinvite-le).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Serveur illisible par le bot : Discord limite les requêtes : réessaie dans quelques secondes.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Serveur illisible par le bot : {m}.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le plan de salons est vide.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ce serveur n'est pas encore inscrit : enregistre d'abord les réglages.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Trop de salons dans le plan.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Nom de salon requis.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salon introuvable dans le plan.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Renommage refusé par Discord : {m}": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Donne un nom à la catégorie.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Catégorie introuvable dans le plan.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Aucun item sélectionné.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Item invalide.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Aucun salon inscrit et créé : inscris-toi à des salons d'abord.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ce salon n'existe pas encore : crée-le d'abord.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ce salon existait avant le bot : il ne peut être que retiré du plan (le bot ne supprime que les salons qu'il a créés).": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Ce salon n'appartient pas à ce serveur.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Suppression refusée par Discord : {m}": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salon illisible par le bot : {m}": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Salon introuvable.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Trop d'actions en peu de temps : réessaie dans une heure.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{m} (les forums demandent le mode Communauté : choisis « salons texte »)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "{m} (le bot a-t-il « Gérer les salons » ?)": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⚔️ Armes": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🛡️ Armures": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "💍 Accessoires": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🛠️ Outils": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🧪 Consommables": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🍖 Nourriture": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🧱 Matériaux": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "⛏️ Ressources": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "📃 Parchemins": {
+      "page": "discord",
+      "status": "doubt",
+      "note": "Check against the in-game English name for « Parchemin »."
+    },
+    "📜 Quête": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🏰 Donjon": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "🪙 Monnaie": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Supprimer sur Discord :": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "le salon et tous ses posts disparaissent du serveur, définitivement.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Retirer du plan seulement :": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "le salon Discord et ses posts restent, le bot n'y envoie plus rien.": {
+      "page": "discord",
+      "status": "auto"
+    }
+  }
+}

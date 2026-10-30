@@ -17,10 +17,13 @@ const FILE = path.join(ROOT, 'i18n', 'en.json');
 const raw = fs.readFileSync(FILE, 'utf8');
 let dict;
 try { dict = JSON.parse(raw); } catch (e) { console.error('✗ en.json invalide :', e.message); process.exit(1); }
-const glossary = JSON.parse(fs.readFileSync(path.join(ROOT, 'i18n', 'glossary.json'), 'utf8')).terms || {};
+const glossaryFile = JSON.parse(fs.readFileSync(path.join(ROOT, 'i18n', 'glossary.json'), 'utf8'));
+const glossary = glossaryFile.terms || {};
+const caseSensitive = new Set(glossaryFile.caseSensitive || []);   // termes ambigus en minuscule (ex. « carte » = card, « Carte » = Map)
 
 const errors = [], warns = [];
 const keep = new Set((dict._keep || []).map(s => s.replace(/\s+/g, ' ').trim()));
+const noGloss = new Set((dict._noglossary || []).map(s => s.replace(/\s+/g, ' ').trim()));   // clés exemptées du glossaire (nom réel d'un salon, exemple…)
 const vars = s => [...String(s).matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(',');
 const squash = s => s.replace(/\s+/g, ' ').trim();
 
@@ -32,7 +35,7 @@ for (const m of raw.matchAll(/^\s*"((?:[^"\\]|\\.)*)"\s*:/gm)) {
 }
 for (const [k, n] of seen) if (n > 1 && !k.startsWith('_')) errors.push(`clé en double (${n}×) : "${k}"`);
 
-const wordRe = w => new RegExp('(^|[^\\p{L}])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^\\p{L}])', 'iu');
+const wordRe = (w, cs) => new RegExp('(^|[^\\p{L}])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^\\p{L}])', cs ? 'u' : 'iu');
 const FR_STOP = /(^|\s)(le|la|les|des|du|une|et|pour|avec|dans|sur|est|sont|vous|nous)(\s|$)/i;
 const FR_ACCENT = /[àâçéèêëîïôûùüœ]/i;
 
@@ -42,12 +45,13 @@ for (const [k, v] of Object.entries(dict)) {
   count++;
   if (typeof v !== 'string' || !v.trim()) { errors.push(`valeur vide : "${k}"`); continue; }
   if (vars(k) !== vars(v)) errors.push(`variables différentes : "${k}" → "${v}"`);
-  if (squash(k) === squash(v) && !keep.has(squash(k))) warns.push(`identique (ajouter à _keep ?) : "${k}"`);
+  if (squash(k) === squash(v) && !keep.has(squash(k)) && !/\{\w+\}/.test(k)) warns.push(`identique (ajouter à _keep ?) : "${k}"`);
   if (FR_STOP.test(v) || FR_ACCENT.test(v)) warns.push(`reste de français ? : "${k}" → "${v}"`);
   // le nom de la guilde est un nom propre : on l'enlève avant de tester le glossaire
   const kClean = k.replace(/veilleurs au clair de lune/gi, '');
   for (const [fr, en] of Object.entries(glossary)) {
-    if (wordRe(fr).test(kClean) &&!wordRe(en).test(v) && !new RegExp(en, 'i').test(v)) errors.push(`glossaire « ${fr} » → « ${en} » non respecté : "${k}" → "${v}"`);
+    if (noGloss.has(squash(k))) break;
+    if (wordRe(fr, caseSensitive.has(fr)).test(kClean) && !wordRe(en).test(v) && !new RegExp(en, 'i').test(v)) errors.push(`glossaire « ${fr} » → « ${en} » non respecté : "${k}" → "${v}"`);
   }
 }
 

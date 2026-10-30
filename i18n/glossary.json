@@ -1,5 +1,6 @@
 {
   "_comment": "Termes du jeu / du wiki : une seule traduction autorisée. tools/i18n-check.js vérifie que chaque entrée de en.json dont la clé contient le terme français contient bien le terme anglais.",
+  "caseSensitive": ["Carte"],
   "terms": {
     "Palier": "Tier",
     "Paliers": "Tiers",

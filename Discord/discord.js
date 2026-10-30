@@ -16,6 +16,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const slug = n => String(n || '').trim().replace(/\s+/g, '-').replace(/[\\/#@:*?"<>|`\u0000-\u001f]/g, '').slice(0, 100);
 // Traduction (i18n.js) : la clé est le texte français, voir i18n/en.json. Sans i18n.js (ou en français) le texte reste tel quel.
 const T = (s, v) => (window.VCL_I18N ? window.VCL_I18N.t(s, v) : (v ? s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '') : s));
+const many = n => (document.documentElement.lang === 'en' ? n !== 1 : n > 1);
 const catName = k => T((CATS.find(x => x[0] === k) || [0, k])[1]);
 const has = (l, v) => (l || []).map(String).includes(String(v));
 const toggle = (l, v) => (has(l, v) ? l.filter(x => String(x) !== String(v)) : [...l, String(v)]);
@@ -66,7 +67,7 @@ async function api(action, extra = {}) {
   const r = await fetch(WORKER + '/guild/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: S.session, action, ...extra }) });
   const j = await r.json().catch(() => ({}));
   if (j.expired) { sessionStorage.removeItem(SESSION_KEY); S.session = ''; S.step = 'login'; render(); }
-  if (!r.ok) { const er = new Error(T(j.error === 'Action inconnue' ? "Le serveur du wiki n'est pas à jour : cette fonction demande un redéploiement du worker (npx wrangler deploy)." : (j.error || ('Erreur ' + r.status)))); er.removing = !!j.removing; throw er; }
+  if (!r.ok) { const er = new Error(T(j.error === 'Action inconnue' ? "Le serveur du wiki n'est pas à jour : cette fonction demande un redéploiement du worker (npx wrangler deploy)." : (j.error || (T('Erreur') + ' ' + r.status)))); er.removing = !!j.removing; throw er; }
   return j;
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -274,7 +275,7 @@ function compactPlan() {
 function itemsIn(ch) {
   if (!S.counts || ch.itemCats.length !== 1 || ch.paliers.length !== 1) return '';
   const n = S.counts[ch.itemCats[0] + '|' + ch.paliers[0]] || 0;
-  return n ? ' · ' + T(n > 1 ? '{n} items' : '{n} item', { n }) : ' · ' + T("aucun item pour l'instant");
+  return n ? ' · ' + T(many(n) ? '{n} items' : '{n} item', { n }) : ' · ' + T("aucun item pour l'instant");
 }
 
 /** Réglages envoyés : les salons décochés ne sont pas créés. */
@@ -340,7 +341,7 @@ function manageRow(c, i, d, real) {
   const link = c.id ? ` <a href="https://discord.com/channels/${esc(S.guild.id)}/${esc(c.id)}" target="_blank" rel="noopener" title="Ouvrir sur Discord" style="text-decoration:none">↗</a>` : '';
   return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:wrap">
       <span title="${esc(dotTitle)}">${dot}</span>${nameField}${link}
-      <span style="flex:1;min-width:160px;font-size:12px;color:var(--muted)">${cats} · ${pals}${n != null ? ` · <strong style="color:var(--gold)" title="${inRoom} item${inRoom > 1 ? 's' : ''} déjà dans ce salon sur ${n} dans le wiki">${inRoom}/${n} items</strong>` : ''}${note}</span>
+      <span style="flex:1;min-width:160px;font-size:12px;color:var(--muted)">${cats} · ${pals}${n != null ? ` · <strong style="color:var(--gold)" title="${esc(T(many(inRoom) ? '{a} items déjà dans ce salon sur {n} dans le wiki' : '{a} item déjà dans ce salon sur {n} dans le wiki', { a: inRoom, n }))}">${inRoom}/${n} items</strong>` : ''}${note}</span>
       <span style="display:flex;gap:4px;flex:none;flex-wrap:wrap">${subBtn}${actions}</span>
     </div>${M.open.has(i) && !ro ? manageDetail(c, i, d) : ''}${c.id && M.miss.has(c.id) ? missingPanel(c, d) : ''}`;
 }
@@ -439,7 +440,7 @@ function manageBlock(d) {
   const groupsHtml = [...groups].map(([k, list]) => {
     const ins = list.filter(([c, i]) => typeof i !== 'string' && isSub(c)).length;
     return `<details data-k="${esc(k)}" ontoggle="DG.chGroup(this)" ${M.groups.has(k) || M.pal || M.sub ? 'open' : ''} style="border:1px solid var(--rim);border-radius:8px;margin-bottom:8px;background:var(--deep)">
-      <summary style="cursor:pointer;padding:8px 12px;font-weight:700;color:var(--bright)">${esc(k)} <button class="dg-btn" data-k="${esc(k === '— sans catégorie —' ? '' : k)}" onclick="event.preventDefault();event.stopPropagation();DG.chRenameCat(this.dataset.k)" title="Renommer cette catégorie" style="padding:0 7px;font-size:11px">✏️</button> <span style="font-weight:400;font-size:12px;color:var(--muted)">— ${T(list.length > 1 ? '{n} salons' : '{n} salon', { n: list.length })} · ${T(ins > 1 ? '{n} inscrits' : '{n} inscrit', { n: ins })}</span></summary>
+      <summary style="cursor:pointer;padding:8px 12px;font-weight:700;color:var(--bright)">${esc(k)} <button class="dg-btn" data-k="${esc(k === '— sans catégorie —' ? '' : k)}" onclick="event.preventDefault();event.stopPropagation();DG.chRenameCat(this.dataset.k)" title="Renommer cette catégorie" style="padding:0 7px;font-size:11px">✏️</button> <span style="font-weight:400;font-size:12px;color:var(--muted)">— ${T(many(list.length) ? '{n} salons' : '{n} salon', { n: list.length })} · ${T(many(ins) ? '{n} inscrits' : '{n} inscrit', { n: ins })}</span></summary>
       <div style="padding:2px 12px 8px">${list.map(([c, i]) => typeof i === 'string' ? manageVirtualRow(c, +i.slice(1), d) : manageRow(c, i, d, real)).join('')}</div></details>`;
   }).join('') || '<div class="dg-hint">Aucun salon à afficher.</div>';
   const missing = d.mode === 'create' && all.some(([c]) => isSub(c) && c.name && !c.id);
@@ -714,8 +715,8 @@ const DG = window.DG = {
     const m = document.createElement('div'); m.className = 'dg-modal';
     const real = Array.isArray(S.info?.channels) && c.id && c.created && S.info.channels.some(x => x.id === c.id); // seulement un salon créé par le bot
     m.innerHTML = `<div class="box"><h2>Supprimer « ${esc(c.name)} » ?</h2>
-      ${real ? `<p><b>Supprimer sur Discord</b> : le salon et tous ses posts disparaissent du serveur, définitivement.</p>` : ''}
-      <p><b>Retirer du plan seulement</b> : le salon Discord et ses posts restent, le bot n'y envoie plus rien.</p>${c.id && !c.created ? "<p class='dg-hint'>Ce salon existait avant le bot : le bot ne supprime que les salons qu'il a créés (supprime-le toi-même depuis Discord si besoin).</p>" : ''}
+      ${real ? `<p><b>Supprimer sur Discord :</b> le salon et tous ses posts disparaissent du serveur, définitivement.</p>` : ''}
+      <p><b>Retirer du plan seulement :</b> le salon Discord et ses posts restent, le bot n'y envoie plus rien.</p>${c.id && !c.created ? "<p class='dg-hint'>Ce salon existait avant le bot : le bot ne supprime que les salons qu'il a créés (supprime-le toi-même depuis Discord si besoin).</p>" : ''}
       <div class="dg-row"><button class="dg-btn" id="dl-no">Annuler</button><button class="dg-btn" id="dl-plan">Retirer du plan seulement</button>${real ? '<button class="dg-btn danger" id="dl-disc">Supprimer sur Discord</button>' : ''}</div></div>`;
     document.body.appendChild(m);
     const go = async onDiscord => { m.remove(); await DG.chCall('delete_channel', { index: i, onDiscord }); M.open.clear(); if (!S.err) await DG.refreshInfo(); else render(); };

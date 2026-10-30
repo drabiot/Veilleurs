@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
+  <title>[VCL] - Translation review</title>
+  <style>
+    :root { --bg: #0e0c0a; --surface: #17130f; --surface2: #1f1a14; --rim: #3a3024; --text: #d8cdb8; --muted: #8f836e; --gold: #e0ac60; --ok: #7fb069; --warn: #e0a040; --bad: #d9674f; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 'JetBrains Mono', ui-monospace, Consolas, monospace; }
+    a { color: var(--gold); }
+    header { position: sticky; top: 0; z-index: 5; background: rgba(14, 12, 10, .96); border-bottom: 1px solid var(--rim); padding: 10px 18px; }
+    h1 { margin: 0 0 6px; font-size: 16px; color: var(--gold); font-weight: 700; letter-spacing: .04em; }
+    .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .bar > * { font: inherit; font-size: 12px; }
+    input[type=text], input[type=search], select, textarea { background: var(--surface2); color: var(--text); border: 1px solid var(--rim); border-radius: 5px; padding: 5px 8px; font: inherit; }
+    button { font: inherit; font-size: 12px; background: var(--surface2); color: var(--text); border: 1px solid var(--rim); border-radius: 5px; padding: 5px 11px; cursor: pointer; }
+    button:hover { border-color: var(--gold); }
+    button.primary { background: var(--gold); border-color: var(--gold); color: #1a1208; font-weight: 700; }
+    .stats { color: var(--muted); font-size: 12px; margin-left: auto; }
+    .stats b { color: var(--text); }
+    main { max-width: 1180px; margin: 0 auto; padding: 14px 18px 80px; }
+    details.help { background: var(--surface); border: 1px solid var(--rim); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; }
+    details.help summary { cursor: pointer; color: var(--gold); font-weight: 700; }
+    details.help ul { margin: 8px 0 2px; padding-left: 18px; }
+    details.help li { margin: 3px 0; }
+    code { background: var(--surface2); padding: 0 4px; border-radius: 3px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; background: var(--surface); border: 1px solid var(--rim); border-left: 3px solid var(--rim); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+    .row.st-ok { border-left-color: var(--ok); }
+    .row.st-doubt { border-left-color: var(--warn); }
+    .row.edited { background: #1b1810; }
+    .meta { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
+    .tag { border: 1px solid var(--rim); border-radius: 10px; padding: 0 8px; }
+    .badge-ok { color: var(--ok); border-color: var(--ok); } .badge-doubt { color: var(--warn); border-color: var(--warn); }
+    .fr { white-space: pre-wrap; word-break: break-word; background: var(--bg); border: 1px dashed var(--rim); border-radius: 5px; padding: 6px 9px; user-select: text; }
+    textarea { width: 100%; min-height: 36px; resize: vertical; white-space: pre-wrap; }
+    .warns { color: var(--bad); font-size: 12px; margin-top: 4px; }
+    .warns.soft { color: var(--warn); }
+    .claude { grid-column: 1 / -1; font-size: 12px; color: var(--warn); background: rgba(224, 160, 64, .08); border-radius: 5px; padding: 5px 9px; }
+    .act { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .act input[type=text] { flex: 1; min-width: 180px; font-size: 12px; }
+    .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+    #glossary { columns: 3 200px; font-size: 12px; margin: 6px 0 0; }
+    #glossary div { break-inside: avoid; }
+    dialog { background: var(--surface); color: var(--text); border: 1px solid var(--gold); border-radius: 10px; padding: 16px; max-width: 520px; }
+    dialog::backdrop { background: rgba(0, 0, 0, .6); }
+    @media (max-width: 720px) { .row { grid-template-columns: 1fr; } .stats { margin-left: 0; width: 100%; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌐 Translation review — French → English</h1>
+    <div class="bar">
+      <select id="f-status" title="Filter by status">
+        <option value="todo">To review (auto + unsure)</option><option value="doubt">⚠ Unsure only</option><option value="auto">🤖 Not reviewed</option>
+        <option value="ok">✔ Reviewed</option><option value="edited">✎ Edited by me</option><option value="all">Everything</option>
+      </select>
+      <select id="f-page" title="Filter by page"></select>
+      <input type="search" id="f-q" placeholder="Search French or English…" size="26" />
+      <button id="b-add" title="Add a text that is missing from the dictionary">+ New entry</button>
+      <button id="b-ok-all" title="Mark every entry currently shown as reviewed">✔ Mark all shown as OK</button>
+      <span class="stats" id="stats"></span>
+    </div>
+    <div class="bar" style="margin-top:6px">
+      <input type="text" id="name" placeholder="Your name (optional)" size="18" />
+      <button class="primary" id="b-export">⬇ Download my changes</button>
+      <button id="b-import">⬆ Load a saved file</button>
+      <button id="b-reset" title="Forget everything done in this browser">Reset</button>
+      <a id="preview" href="../index.html?lang=en" target="_blank" rel="noopener">Open the wiki in English ↗</a>
+      <input type="file" id="file" accept=".json,application/json" hidden />
+    </div>
+  </header>
+
+  <main>
+    <details class="help" id="help">
+      <summary>How this works (read once)</summary>
+      <ul>
+        <li><b>Left</b> = original French (read-only). <b>Right</b> = the English that is shown on the site: edit it if it is wrong or unnatural.</li>
+        <li>Click <b>✔ OK</b> (or <code>Ctrl+Enter</code> in the box) when an entry is good. Click <b>⚠ Unsure</b> + write a note if you can't decide — Paul will look at it.</li>
+        <li>Orange boxes are notes from the first-pass translator (Claude) pointing at the real doubts. Start with “⚠ Unsure only”.</li>
+        <li>Keep placeholders like <code>{n}</code> or <code>{name}</code> exactly as they are (they get replaced by numbers/names). Keep <code>\n</code> line breaks. Names of items, mobs and NPCs are never translated.</li>
+        <li>Discord terms must match the <b>English Discord app</b> (“Manage Server”, “Manage Channels”, “Forum”, “Thread”…). Game/wiki terms follow the glossary below.</li>
+        <li>Your work is saved automatically in <b>this browser</b>. To send it: <b>⬇ Download my changes</b> and give the file to Paul. To continue on another computer: <b>⬆ Load a saved file</b>.</li>
+        <li>To see a text in context, open the page in English (link above, or add <code>?lang=en</code> to any page address).</li>
+      </ul>
+      <details style="margin-top:8px"><summary style="font-weight:400;color:var(--muted)">Glossary (one fixed translation per term)</summary><div id="glossary"></div></details>
+    </details>
+    <div id="list"></div>
+    <div class="empty" id="empty" hidden>Nothing to show with these filters.</div>
+    <div style="text-align:center"><button id="more" hidden></button></div>
+  </main>
+
+  <dialog id="dlg-add">
+    <form method="dialog" id="add-form">
+      <p style="margin-top:0"><b>New entry</b> — a French text of the site that has no English yet. The French must be the <b>exact</b> text shown on the page.</p>
+      <p><textarea id="add-fr" rows="3" placeholder="French (exact)" style="width:100%"></textarea></p>
+      <p><textarea id="add-en" rows="3" placeholder="English" style="width:100%"></textarea></p>
+      <div class="act"><button value="cancel">Cancel</button><button class="primary" value="ok" id="add-ok">Add</button></div>
+    </form>
+  </dialog>
+
+<script>
+(() => {
+'use strict';
+const LS = 'vcl_i18n_review_draft';
+const PAGE_URLS = { discord: '../Discord/discord.html' };       // page tag → page à ouvrir en anglais
+const squash = s => String(s).replace(/\s+/g, ' ').trim();
+const $ = id => document.getElementById(id);
+const vars = s => [...String(s).matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(',');
+const wordRe = (w, cs) => new RegExp('(^|[^\\p{L}])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '($|[^\\p{L}])', cs ? 'u' : 'iu');
+const FR_STOP = /(^|\s)(le|la|les|des|du|une|et|pour|avec|dans|sur|est|sont|vous|nous)(\s|$)/i, FR_ACCENT = /[àâçéèêëîïôûùüœ]/i;
+
+let dict = {}, review = {}, glossary = {}, caseSens = new Set(), noGloss = new Set(), keys = [];
+let draft = { name: '', edits: {}, status: {}, notes: {}, added: [] };
+let shown = [], limit = 100;
+
+const loadDraft = () => { try { const d = JSON.parse(localStorage.getItem(LS) || 'null'); if (d) draft = { name: '', edits: {}, status: {}, notes: {}, added: [], ...d }; } catch { /* navigateur sans stockage */ } };
+const saveDraft = () => { try { localStorage.setItem(LS, JSON.stringify(draft)); } catch { /* idem */ } stats(); };
+
+const enOf = k => (k in draft.edits ? draft.edits[k] : (dict[k] ?? ''));
+const statusOf = k => draft.status[k] || review[squash(k)]?.status || 'auto';
+const pageOf = k => review[squash(k)]?.page || (draft.added.some(a => a.fr === k) ? 'new' : 'general');
+const claudeNote = k => review[squash(k)]?.note || '';
+const isEdited = k => (k in draft.edits) || draft.added.some(a => a.fr === k) || (k in draft.status) || (k in draft.notes);
+
+function warnings(k, en) {
+  const w = [], soft = [];
+  if (!en.trim()) { w.push('Empty translation.'); return { w, soft }; }
+  if (vars(k) !== vars(en)) w.push('Placeholders differ: French has {' + (vars(k) || '—').replace(/,/g, '} {') + '}, English has {' + (vars(en) || '—').replace(/,/g, '} {') + '}.');
+  if (!noGloss.has(squash(k))) {
+    const kk = k.replace(/veilleurs au clair de lune/gi, '');
+    for (const [fr, e] of Object.entries(glossary)) if (wordRe(fr, caseSens.has(fr)).test(kk) && !wordRe(e).test(en) && !new RegExp(e, 'i').test(en)) w.push(`Glossary: “${fr}” should be “${e}”.`);
+  }
+  if (FR_STOP.test(en) || FR_ACCENT.test(en)) soft.push('Looks like it still contains French — intended?');
+  return { w, soft };
+}
+
+// ── Rendu ──────────────────────────────────────────────────────────────
+function matches(k) {
+  const st = statusOf(k), f = $('f-status').value, p = $('f-page').value, q = $('f-q').value.trim().toLowerCase();
+  if (f === 'todo' && st === 'ok') return false;
+  if (['doubt', 'auto', 'ok'].includes(f) && st !== f) return false;
+  if (f === 'edited' && !isEdited(k)) return false;
+  if (p !== 'all' && pageOf(k) !== p) return false;
+  if (q && !(k.toLowerCase().includes(q) || enOf(k).toLowerCase().includes(q))) return false;
+  return true;
+}
+
+function rowEl(k) {
+  const el = document.createElement('article');
+  el.className = 'row'; el.dataset.k = k;
+  el.innerHTML = '<div class="meta"></div><div class="fr"></div><div><textarea rows="1" spellcheck="true" lang="en"></textarea><div class="warns"></div></div><div class="claude" hidden></div><div class="act"><button class="b-ok">✔ OK</button><button class="b-doubt">⚠ Unsure</button><input type="text" class="note" placeholder="Your note for Paul (optional)…" /></div>';
+  el.querySelector('.fr').textContent = k;
+  const ta = el.querySelector('textarea'), note = el.querySelector('.note');
+  ta.value = enOf(k); note.value = draft.notes[k] || '';
+  const cn = claudeNote(k); if (cn) { const c = el.querySelector('.claude'); c.hidden = false; c.textContent = '🤖 Translator’s note: ' + cn; }
+  const fit = () => { ta.style.height = 'auto'; ta.style.height = Math.max(36, ta.scrollHeight + 2) + 'px'; };
+  ta.addEventListener('input', () => {
+    const base = dict[k] ?? draft.added.find(a => a.fr === k)?.en ?? '';
+    if (draft.added.some(a => a.fr === k)) draft.added.find(a => a.fr === k).en = ta.value;
+    else if (ta.value === base) delete draft.edits[k]; else draft.edits[k] = ta.value;
+    saveDraft(); paint(el); fit();
+  });
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); setStatus(k, 'ok', el); (el.nextElementSibling?.querySelector('textarea'))?.focus(); } });
+  note.addEventListener('change', () => { if (note.value.trim()) draft.notes[k] = note.value.trim(); else delete draft.notes[k]; saveDraft(); paint(el); });
+  el.querySelector('.b-ok').onclick = () => setStatus(k, statusOf(k) === 'ok' ? 'auto' : 'ok', el);
+  el.querySelector('.b-doubt').onclick = () => setStatus(k, statusOf(k) === 'doubt' ? 'auto' : 'doubt', el);
+  paint(el); requestAnimationFrame(fit);
+  return el;
+}
+
+function paint(el) {
+  const k = el.dataset.k, st = statusOf(k), { w, soft } = warnings(k, el.querySelector('textarea').value);
+  el.classList.remove('st-ok', 'st-doubt'); if (st !== 'auto') el.classList.add('st-' + st);
+  el.classList.toggle('edited', isEdited(k));
+  const badge = { ok: '<span class="tag badge-ok">✔ reviewed</span>', doubt: '<span class="tag badge-doubt">⚠ unsure</span>', auto: '<span class="tag">🤖 not reviewed</span>' }[st];
+  el.querySelector('.meta').innerHTML = `<span class="tag">${pageOf(k)}</span>${badge}${(k in draft.edits) ? '<span class="tag">✎ edited</span>' : ''}`;
+  const box = el.querySelector('.warns');
+  box.classList.toggle('soft', !w.length && !!soft.length);
+  box.textContent = [...w, ...soft].join(' ');
+  el.querySelector('.b-ok').textContent = st === 'ok' ? '✔ Reviewed (click to undo)' : '✔ OK';
+  el.querySelector('.b-doubt').textContent = st === 'doubt' ? '⚠ Unsure (click to undo)' : '⚠ Unsure';
+}
+
+function setStatus(k, st, el) {
+  const base = review[squash(k)]?.status || 'auto';
+  if (st === base) delete draft.status[k]; else draft.status[k] = st;
+  saveDraft(); if (el) paint(el);
+}
+
+function render() {
+  shown = keys.filter(matches);
+  const list = $('list'); list.textContent = '';
+  shown.slice(0, limit).forEach(k => list.appendChild(rowEl(k)));
+  $('empty').hidden = shown.length > 0;
+  const more = $('more'); more.hidden = shown.length <= limit; more.textContent = `Show ${Math.min(100, shown.length - limit)} more (${shown.length - limit} left)`;
+  stats();
+}
+
+function stats() {
+  const c = { ok: 0, doubt: 0, auto: 0 }; keys.forEach(k => c[statusOf(k)]++);
+  $('stats').innerHTML = `<b>${keys.length}</b> entries · <b>${c.ok}</b> reviewed · <b>${c.doubt}</b> unsure · <b>${c.auto}</b> to review · <b>${Object.keys(draft.edits).length + draft.added.length}</b> edited by you`;
+}
+
+// ── Actions ────────────────────────────────────────────────────────────
+function exportChanges() {
+  const out = { format: 'vcl-i18n-review/1', reviewer: $('name').value.trim(), date: new Date().toISOString(), edits: {}, status: draft.status, notes: draft.notes, added: draft.added };
+  for (const [k, v] of Object.entries(draft.edits)) if (v !== dict[k]) out.edits[k] = v;
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `i18n-review-${(out.reviewer || 'reviewer').replace(/\W+/g, '_')}-${out.date.slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+async function importFile(file) {
+  let d; try { d = JSON.parse(await file.text()); } catch { alert('This file is not valid JSON.'); return; }
+  if (d.format !== 'vcl-i18n-review/1') { alert('This is not a review file from this tool.'); return; }
+  if (!confirm('Merge this file into your current work? (entries in the file win)')) return;
+  Object.assign(draft.edits, d.edits || {}); Object.assign(draft.status, d.status || {}); Object.assign(draft.notes, d.notes || {});
+  for (const a of d.added || []) { const i = draft.added.findIndex(x => x.fr === a.fr); if (i < 0) draft.added.push(a); else draft.added[i] = a; }
+  if (d.reviewer && !$('name').value) $('name').value = d.reviewer;
+  addedToKeys(); saveDraft(); render();
+}
+
+function addedToKeys() { for (const a of draft.added) if (!keys.includes(a.fr)) { keys.push(a.fr); dict[a.fr] = a.en; } fillPages(); }
+
+function fillPages() {
+  const sel = $('f-page'), cur = sel.value || 'all', pages = [...new Set(keys.map(pageOf))].sort();
+  sel.innerHTML = '<option value="all">All pages</option>' + pages.map(p => `<option value="${p}">${p}</option>`).join('');
+  sel.value = pages.includes(cur) ? cur : 'all';
+}
+
+// ── Démarrage ──────────────────────────────────────────────────────────
+async function boot() {
+  const get = async (f, fallback) => { try { const r = await fetch(f, { cache: 'no-store' }); return r.ok ? await r.json() : fallback; } catch { return fallback; } };
+  const [en, rv, gl] = await Promise.all([get('./en.json', null), get('./review.json', {}), get('./glossary.json', {})]);
+  if (!en) { $('list').innerHTML = '<div class="empty">Could not load en.json.</div>'; return; }
+  noGloss = new Set((en._noglossary || []).map(squash));
+  dict = Object.fromEntries(Object.entries(en).filter(([k, v]) => !k.startsWith('_') && typeof v === 'string'));
+  keys = Object.keys(dict); review = rv.entries || {}; glossary = gl.terms || {}; caseSens = new Set(gl.caseSensitive || []);
+  $('glossary').innerHTML = Object.entries(glossary).map(([a, b]) => `<div>${a} → <b>${b}</b></div>`).join('');
+  loadDraft(); $('name').value = draft.name || '';
+  for (const a of draft.added) if (!(a.fr in dict)) { dict[a.fr] = a.en; keys.push(a.fr); }
+  fillPages();
+  let first = true; try { first = !localStorage.getItem('vcl_i18n_review_seen'); localStorage.setItem('vcl_i18n_review_seen', '1'); } catch { /* sans stockage : l'aide reste ouverte */ }
+  $('help').open = first;
+  const pg = new URLSearchParams(location.search).get('page'); if (pg && [...$('f-page').options].some(o => o.value === pg)) $('f-page').value = pg;
+  render();
+}
+
+['f-status', 'f-page'].forEach(id => $(id).addEventListener('change', () => { limit = 100; render(); updatePreview(); }));
+$('f-q').addEventListener('input', () => { limit = 100; clearTimeout(boot.t); boot.t = setTimeout(render, 200); });
+$('more').onclick = () => { limit += 100; render(); };
+$('name').addEventListener('change', () => { draft.name = $('name').value.trim(); saveDraft(); });
+$('b-export').onclick = exportChanges;
+$('b-import').onclick = () => $('file').click();
+$('file').onchange = e => { if (e.target.files[0]) importFile(e.target.files[0]); e.target.value = ''; };
+$('b-reset').onclick = () => { if (confirm('Forget ALL your work in this browser? (Download first if you want to keep it.)')) { try { localStorage.removeItem(LS); } catch { /* ok */ } location.reload(); } };
+$('b-ok-all').onclick = () => { if (!shown.length || !confirm(`Mark the ${shown.length} entries currently shown as reviewed?`)) return; shown.forEach(k => { if (!(review[squash(k)]?.status === 'ok')) draft.status[k] = 'ok'; else delete draft.status[k]; }); saveDraft(); render(); };
+$('b-add').onclick = () => { $('add-fr').value = $('add-en').value = ''; $('dlg-add').showModal(); };
+$('add-form').addEventListener('submit', e => {
+  if (e.submitter?.value !== 'ok') return;
+  const fr = $('add-fr').value.trim(), en = $('add-en').value.trim();
+  if (!fr || !en || fr in dict) { e.preventDefault(); alert(!fr || !en ? 'Both fields are required.' : 'This French text already exists.'); return; }
+  draft.added.push({ fr, en }); draft.status[fr] = 'ok'; addedToKeys(); saveDraft(); $('f-status').value = 'edited'; render();
+});
+function updatePreview() { const p = $('f-page').value; $('preview').href = (PAGE_URLS[p] || '../index.html') + '?lang=en&i18n_debug=1'; }
+
+boot().then(updatePreview);
+})();
+</script>
+</body>
+</html>
