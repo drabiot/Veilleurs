@@ -94,7 +94,7 @@ async function loadLeaderboard() {
       return `
         <div class="podium-slot ${cls}">
           ${isFst ? '<div class="podium-crown">✦</div>' : ''}
-          <div class="podium-name">${data.name}</div>
+          <div class="podium-name" data-no-i18n>${data.name}</div>
           ${badge(data) ? `<div class="podium-honor">${badge(data)}</div>` : ''}
           <div class="podium-score">${data.count} contribution${data.count > 1 ? 's' : ''}</div>
           <div class="podium-block">${rank}</div>
@@ -113,7 +113,7 @@ async function loadLeaderboard() {
       lbBody.innerHTML = rest.map((u, i) => `
         <div class="lb-row">
           <span class="lb-rank">#${i + 4}</span>
-          <span class="lb-name">${u.name}${badge(u)}</span>
+          <span class="lb-name" data-no-i18n>${u.name}${badge(u)}</span>
           <span class="lb-count">${u.count}</span>
         </div>`).join('');
     } else {
