@@ -167,7 +167,10 @@ const setLabel = (ctx, id) => { const p = ctx.maps.panoplieData?.[id]; return p?
 
 // ── Un passage sur un serveur ──
 async function guildPass(rest, g, st, getCtx) {
-  const cfg = g;
+  st.subs ||= {}; // salons dont les items déjà présents dans le wiki ont été notés « vus » à l'inscription
+  const eligible = (g.channels || []).filter(c => c.subscribed !== false && !c.skip);
+  const cfg = { ...g, channels: eligible };
+  const doneReq = []; // demandes d'envoi à la demande traitées
   const logs = []; // entrées d'historique visibles dans la modération
   const badCh = new Set(); // salons introuvables (supprimés sur Discord)
   for (const chId of Object.keys(st.locks)) { try { await unlock(rest, st, chId); } catch { delete st.locks[chId]; } } // verrou resté après un plantage
@@ -198,6 +201,23 @@ async function guildPass(rest, g, st, getCtx) {
     st.baselined = true;
     if (cfg._main) await mergeBrowserPosts(cfg, st); // posts déjà faits depuis la modération : suivis (remplacés si l'item change ensuite)
     logs.push(`Bot : ${matching.length} item(s) concerné(s) sur ${items.size}. ` + (cfg.initial !== 'all' ? 'Mode « nouveaux seulement » : rien envoyé, seuls les prochains items le seront.' : `Envoi de tous : ${matching.length} post(s).`) + (matching.length === 0 && concerned.length ? ' Aucun ne correspond : vérifie filtres et salons.' : ''));
+  }
+  // Demandes d'un chef de serveur sur un salon (page de gestion) : « tout renvoyer » ou « seulement les manquants »
+  for (const r of g.requests || []) {
+    const ch = eligible.find(c => c.id === r.id);
+    if (!ch) { doneReq.push(r.id); continue; }
+    if (timeUp()) break;
+    if (r.mode === 'all') for (const [key, e] of Object.entries(st.posts)) if (e.channelId === ch.id) { await deletePost(rest, e); delete st.posts[key]; await sleep(300); }
+    for (const it of items.values()) if (fitsChannel(g, ch, it)) delete st.seen[it._id]; // redevient « à envoyer »
+    doneReq.push(r.id);
+    logs.push(`Bot : « ${ch.name} » — ${r.mode === 'all' ? 'renvoi de toute la data' : 'envoi des items manquants'} pris en compte`);
+  }
+  // Inscription à un salon après coup : ses items déjà présents sont notés « vus » (sauf mode « tous ») pour ne pas tout renvoyer ; états antérieurs : migration silencieuse
+  if (!st.subs._m) { st.subs._m = 1; if (st.baselined) eligible.forEach(c => { if (c.id) st.subs[c.id] = true; }); }
+  for (const c of eligible) {
+    if (!c.id || st.subs[c.id]) continue;
+    if (g.initial !== 'all') for (const it of items.values()) if (fitsChannel(g, c, it)) st.seen[it._id] = 1;
+    st.subs[c.id] = true;
   }
   if (cfg._main) { await mergeBrowserPosts(cfg, st); await ensureMainChannels(rest, cfg, st, logs); }
   // Lecture incrémentale + sets groupés : on complète avec les autres items des sets modifiés (tous les items viennent avec le contexte des cartes)
@@ -272,9 +292,10 @@ async function guildPass(rest, g, st, getCtx) {
   if (error && error !== g.lastError) logs.push(`Bot : erreur — ${error}`);
   if (gone.length) logs.push(`Bot : ${gone.length} post(s) supprimé(s) (items retirés du wiki)`);
   if (logs.length) patch.log = logs;
+  if (doneReq.length) patch.requestsDone = doneReq;
   if (badCh.size) patch.badChannels = [...badCh];
   if (error || g.lastError) patch.lastError = error;
-  if (sent || error || logs.length || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
+  if (sent || error || logs.length || doneReq.length || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
   if (sent) log(`${g.guildName} : ${sent} post(s) envoyé(s), ${pending} restant(s).`);
   return { sent, pending };
 }
@@ -308,7 +329,7 @@ async function ensureMainChannels(rest, g, st, logs) {
       const type = c.type === 'text' ? 0 : 15;
       let ch = all.find(x => x.type === type && key(x.name) === key(c.name) && (x.parent_id || '') === (parent?.id || ''));
       if (!ch) { ch = await rest.post(`/guilds/${g.id}/channels`, { body: { name: c.name.slice(0, 100), type, parent_id: parent?.id } }); all.push(ch); await sleep(400); }
-      c.id = ch.id; if (parent) c.categoryId = parent.id;
+      c.id = ch.id; if (parent) c.categoryId = parent.id; st.subs[ch.id] = true;
       updates.push({ name: c.name, categoryName: c.categoryName || '', id: ch.id, categoryId: parent?.id || '', newCategory });
       logs.push(`Bot : salon « ${c.name} » créé automatiquement (nouvel item à envoyer)`);
     } catch (e) { logs.push(`Bot : création du salon « ${c.name} » impossible (${e.message})`); }
@@ -348,7 +369,7 @@ async function pass(rest) {
   for (const g of active) { const st = await loadGuildState(g.id); st._id = g.id; states.set(g.id, st); }
   if (sending.length) {
     // lecture complète si un serveur n'a jamais été lu, a un envoi en cours, des items en échec, ou des réglages modifiés ; sinon seulement les changements
-    const needFull = sending.some(g => { const st = states.get(g.id); return !st.baselined || st.pending > 0 || !st.rev || st.sig !== sigOf(g); });
+    const needFull = sending.some(g => { const st = states.get(g.id); return !st.baselined || st.pending > 0 || !st.rev || st.sig !== sigOf(g) || (g.requests || []).length > 0 || (g.channels || []).some(c => c.id && c.subscribed !== false && !c.skip && !st.subs?.[c.id]); });
     await refreshItems(needFull ? 0 : Math.min(...sending.map(g => states.get(g.id).rev)));
   }
   for (const g of active) {
