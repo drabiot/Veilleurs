@@ -735,7 +735,7 @@ function _populateAllPalierSelects() {
 }
 
 
-_lazyPanel(() => import('./moderation-discord.js?v=d21b4d8f'), ['showDiscordWebhooks', 'discordRenderSync', 'discordSyncItem', 'discordAutoSync', 'discordCancelBulk', 'discordResendAll', 'discordResendChannel', 'discordResendItem', 'discordDeletePost', 'discordDeleteAllPosts', 'discordDeleteChannelPosts', 'discordRestoreVisibility', 'discordSendMissing', 'discordSearchItems', 'discordFilterPosts', 'loadDiscordWebhooks', 'deleteChannelPosts', 'saveDiscordWebhooks', 'switchDwTab', 'dwEmbedRemove', 'dwEmbedAdd', 'dwUnsentCheckAll', 'dwUnsentDelete', 'dwPublishUnsentSend', 'dwPublishFilter', 'dwPublishCheckAll', 'dwPublishSelected', 'reorderAllChannelTags', 'testNewSubmissionWebhook', 'testDiscordWebhook']);
+_lazyPanel(() => import('./moderation-discord.js?v=5aef7267'), ['showDiscordWebhooks', 'discordRenderSync', 'discordSyncItem', 'discordAutoSync', 'discordCancelBulk', 'discordResendAll', 'discordResendChannel', 'discordResendItem', 'discordDeletePost', 'discordDeleteAllPosts', 'discordDeleteChannelPosts', 'discordRestoreVisibility', 'discordSendMissing', 'discordSearchItems', 'discordFilterPosts', 'loadDiscordWebhooks', 'deleteChannelPosts', 'saveDiscordWebhooks', 'switchDwTab', 'dwEmbedRemove', 'dwEmbedAdd', 'dwUnsentCheckAll', 'dwUnsentDelete', 'dwPublishUnsentSend', 'dwPublishFilter', 'dwPublishCheckAll', 'dwPublishSelected', 'reorderAllChannelTags', 'testNewSubmissionWebhook', 'testDiscordWebhook']);
 
 
 // ── Gestion des Rôles ─────────────────────────────────
