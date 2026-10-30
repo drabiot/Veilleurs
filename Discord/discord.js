@@ -266,8 +266,8 @@ function rRecap() {
     <dt>Accès</dt><dd>${{ everyone: 'tout le monde (lecture seule)', roles: 'rôles : ' + c.roleIds.map(id => esc((S.info.roles.find(r => r.id === id) || {}).name || id)).join(', '), admins: 'administrateurs seulement' }[c.access]}</dd>
     <dt>Envoi</dt><dd>${c.itemCats.map(catLbl).join(', ') || 'toutes les catégories'} · ${c.paliers.map(palierLabel).join(', ') || 'tous les paliers'} · ${c.initial === 'all' ? 'tous les items existants' + (n != null ? ' (~' + n + ')' : '') : 'nouveaux items seulement'}</dd>
     <dt>Options</dt><dd>${c.forum ? 'forum' : 'salon texte'} · ${c.groupSets ? 'items groupés par set (un post par set)' : 'un post par item'} · masquage au-delà de ${c.hideThreshold || '∞ (jamais)'} items · ${c.replace ? "remplacement de l'ancien post" : 'ancien post conservé'}</dd></dl>
-    <p class="dg-hint" style="margin-top:12px">En confirmant, tu inscris ce serveur : l'équipe du wiki doit le valider avant tout envoi. Tu pourras modifier, mettre en pause ou tout désinstaller à cette même adresse.</p>
-    <div class="dg-row"><button class="dg-btn" onclick="DG.step('form')">← Modifier</button><button class="dg-btn primary" id="dg-confirm" onclick="DG.confirm()" ${S.busy ? 'disabled' : ''}>Confirmer l'inscription</button></div>
+    <p class="dg-hint" style="margin-top:12px">${S.doc?.status === 'approved' ? '<strong>Ce serveur est déjà validé : tes modifications sont appliquées tout de suite, sans nouvelle validation.</strong> L\'équipe du wiki est prévenue de la modification et peut suspendre le serveur si besoin.' : S.doc?.status === 'pending' ? 'Ton inscription est toujours en attente de validation : tes modifications sont prises en compte, rien n\'est envoyé avant la validation.' : S.doc?.status === 'refused' || S.doc?.status === 'suspended' ? 'Ce serveur est refusé ou suspendu par l\'équipe du wiki : tes modifications sont enregistrées mais rien n\'est envoyé.' : 'En confirmant, tu inscris ce serveur : l\'équipe du wiki doit le valider avant tout envoi (rien n\'est envoyé avant). Tu pourras modifier, mettre en pause ou tout désinstaller à cette même adresse.'}</p>
+    <div class="dg-row"><button class="dg-btn" onclick="DG.step('form')">← Modifier</button><button class="dg-btn primary" id="dg-confirm" onclick="DG.confirm()" ${S.busy ? 'disabled' : ''}>${S.doc ? 'Enregistrer les modifications' : "Confirmer l'inscription"}</button></div>
     <div class="dg-bar" id="dg-bar" style="display:none"><i></i></div>${msgs()}</div>`;
 }
 
@@ -357,7 +357,7 @@ const DG = window.DG = {
       const j = await api('save', { guildId: S.guild.id, config: finalCfg() });
       S.doc = j.config;
       if (S.doc.mode === 'create' && S.doc.channels.some(c => c.name && !c.id)) await DG.makeChannels(true);
-      S.msg = S.doc.status === 'pending' ? 'Inscription enregistrée. Elle doit être validée par l\'équipe du wiki.' : 'Réglages enregistrés.';
+      S.msg = S.doc.status === 'pending' ? 'Inscription enregistrée. Elle doit être validée par l\'équipe du wiki.' : S.doc.status === 'approved' ? 'Modifications enregistrées et appliquées tout de suite (serveur déjà validé).' : 'Réglages enregistrés.';
       S.step = 'status';
     } catch (e) { S.err = e.message; }
     S.busy = false; render();

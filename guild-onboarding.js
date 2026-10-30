@@ -288,11 +288,12 @@ export async function handleGuildApi(request, env, deps) {
     if (cfg.mode === 'existing' && !cfg.channels.some(x => x.id)) return json({ error: 'Choisis au moins un salon existant.' }, 400);
     if (cfg.mode === 'create' && !cfg.channels.length) return json({ error: 'Le plan de salons est vide.' }, 400);
     if (cfg.access === 'roles' && !cfg.roleIds.length) return json({ error: 'Choisis au moins un rôle (ou un autre accès).' }, 400);
-    const now = Date.now(), isNew = !doc;
+    const now = Date.now(), isNew = !doc, wasApproved = doc?.status === 'approved';
     doc = { ...(doc || {}), ...cfg, guildId, guildName, ownerId: doc?.ownerId || sess.user.id, ownerName: doc?.ownerName || sess.user.name,
       status: doc?.status || 'pending', paused: doc ? !!doc.paused : false, createdAt: doc?.createdAt || now, updatedAt: now,
       createdCategories: doc?.createdCategories || [] };
     pushLog(doc, isNew ? `Inscription enregistrée par ${sess.user.name} (${cfg.channels.length} salon(s), ${cfg.mode === 'create' ? 'à créer' : 'existants'}) : en attente de validation` : `Réglages modifiés par ${sess.user.name} (${cfg.channels.length} salon(s))`);
+    if (wasApproved) { doc.modifiedAfterApproval = true; pushLog(doc, 'Modification appliquée tout de suite (serveur déjà validé, pas de nouvelle validation) : à vérifier par la modération'); }
     if (doc.status === 'approved' && !doc.paused) pushLog(doc, triggerText(await triggerBot(env)));
     await dgPut(env, guildId, doc);
     return json({ ok: true, config: doc });

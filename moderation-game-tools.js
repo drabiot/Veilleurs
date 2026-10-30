@@ -542,13 +542,14 @@ window.dgLoadGuilds = async () => {
       <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Ils s'inscrivent eux-mêmes sur la page <a href="Discord/discord.html" target="_blank" style="color:var(--accent);">Discord/discord.html</a>. Aucun envoi avant validation. Le chef de serveur garde sa pause / sa désinstallation.</p>
       ${list.map(g => { const [lbl, col] = _DG_STATUS[g.status] || [g.status, 'var(--muted)']; const id = g._id;
         return `<div data-row="${escHtml(id)}" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;">
-          <strong style="min-width:180px;">${escHtml(g.guildName || id)}</strong><span style="color:${col};">${lbl}${g.paused ? ' · en pause (chef)' : ''}</span>
+          <strong style="min-width:180px;">${escHtml(g.guildName || id)}</strong><span style="color:${col};">${lbl}${g.paused ? ' · en pause (chef)' : ''}</span>${g.modifiedAfterApproval ? ' <span style="color:var(--accent);border:1px solid var(--accent);border-radius:10px;padding:1px 8px;" title="Le chef de serveur a changé ses réglages depuis ta validation (appliqué tout de suite). Ouvre l\'historique pour voir.">✏️ modifié après validation</span>' : ''}
           <span style="color:var(--muted);">par ${escHtml(g.ownerName || '?')} · ${g.channels?.length || 0} salon(s) · ${g.mode === 'create' ? 'salons créés' : 'salons existants'} · ${g.posted || 0} post(s)${g.pending ? ' (+' + g.pending + ' en attente)' : ''}</span>
           ${g.lastError ? `<span style="color:var(--danger);" title="${escHtml(g.lastError)}">⚠️ erreur</span>` : ''}
           <span style="margin-left:auto;display:flex;gap:6px;">
           ${g.status !== 'approved' && g.status !== 'removing' ? b(['✅ Valider', id], `dgSetStatus(this.dataset.id,'approved')`) : ''}
           ${g.status === 'pending' ? b(['⛔ Refuser', id], `dgSetStatus(this.dataset.id,'refused')`, 'color:var(--danger);border-color:var(--danger);') : ''}
           ${g.status === 'approved' ? b(['⏸ Suspendre', id], `dgSetStatus(this.dataset.id,'suspended')`) : ''}
+          ${g.modifiedAfterApproval ? b(['👍 Vu', id], 'dgAck(this.dataset.id)') : ''}
           ${b(['📜 Historique', id], 'dgToggleLog(this.dataset.id)')}
           ${g.status === 'removing' ? b(['🧽 Effacer la fiche', id], 'dgForgetGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);') : b(['🗑 Retirer', id], 'dgRemoveGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);')}</span></div>`; }).join('') || '<div style="color:var(--muted);font-size:12px;">Aucun serveur inscrit.</div>'}`;
   } catch (e) { el.innerHTML = `<div style="color:var(--danger);font-size:12px;">Serveurs inscrits illisibles : ${escHtml(e.message)}</div>`; }
@@ -566,12 +567,19 @@ window.dgToggleLog = async (id) => {
   row.insertAdjacentHTML('afterend', `<div id="dg-log-${escHtml(id)}" style="margin:-2px 0 8px 12px;padding:8px 12px;font-size:11px;line-height:1.7;background:var(--surface2);border:1px solid var(--border);border-radius:8px;max-height:260px;overflow:auto;">
     ${d.lastError ? `<div style="color:var(--danger);">Dernière erreur : ${escHtml(d.lastError)}</div>` : ''}${lines}</div>`);
 };
+window.dgAck = async (id) => {
+  try {
+    const s = await getDoc(doc(db, 'discord_guilds', id));
+    if (s.exists()) await setDoc(doc(db, 'discord_guilds', id), _dgLogAdd({ ...s.data(), modifiedAfterApproval: false }, 'Modification vue par la modération'));
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+  window.dgLoadGuilds();
+};
 const _dgLogAdd = (d, m) => ({ ...d, log: [...(d.log || []), { t: Date.now(), m }].slice(-60) });
 window.dgSetStatus = async (id, status) => {
   try {
     const s = await getDoc(doc(db, 'discord_guilds', id));
     if (!s.exists()) throw new Error('serveur introuvable');
-    await setDoc(doc(db, 'discord_guilds', id), _dgLogAdd({ ...s.data(), status }, { approved: 'Validé par la modération', refused: 'Refusé par la modération', suspended: 'Suspendu par la modération' }[status] || ('Statut : ' + status)));
+    await setDoc(doc(db, 'discord_guilds', id), _dgLogAdd({ ...s.data(), status, modifiedAfterApproval: false }, { approved: 'Validé par la modération', refused: 'Refusé par la modération', suspended: 'Suspendu par la modération' }[status] || ('Statut : ' + status)));
     if (status === 'approved') {
       // lance le bot tout de suite (sinon : prochain passage, 10 min au plus)
       let res = '';
