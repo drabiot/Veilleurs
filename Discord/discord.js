@@ -186,7 +186,7 @@ function rGuild() {
 function rBot() {
   const g = S.guild;
   return `<div class="dg-card"><h2>Invite le bot sur « ${esc(g.name)} »</h2>
-    <p>Le bot a besoin de : voir et écrire dans les salons, créer des fils, joindre des fichiers, gérer les salons (créer ceux de ton plan) et gérer les rôles (masquer un salon pendant un gros envoi). Tu peux ensuite lui retirer des droits dans les réglages de ton serveur.</p>
+    <p>Le bot a besoin de : voir et écrire dans les salons, créer des fils, joindre des fichiers et gérer les salons (créer ceux de ton plan). Tu peux ensuite lui retirer des droits dans les réglages de ton serveur.</p>
     <div class="dg-row"><a class="dg-btn discord" href="${esc(S.invite)}" target="_blank" rel="noopener" onclick="DG.watchBot()">Inviter le bot</a>
     <button class="dg-btn" onclick="DG.checkBot()">J'ai invité le bot : vérifier</button>
     <button class="dg-btn" onclick="DG.back()">← Autre serveur</button></div>

@@ -62,7 +62,7 @@ function compile(dict) {
   for (const [k, v] of Object.entries(dict)) {
     if (k.startsWith('_') || typeof v !== 'string') continue;       // _comment, _keep…
     if (/\{\w+\}/.test(k)) {
-      const re = new RegExp('^' + esc(squash(k)).replace(/\\\{(\w+)\\\}/g, (_, n) => `(?<${n}>.+?)`) + '$');
+      const re = new RegExp('^' + esc(squash(k)).replace(/\\\{(\w+)\\\}/g, (_, n) => (n === 'num' ? '(?<num>\\d+)' : `(?<${n}>.+?)`)) + '$');
       patterns.push({ re, tpl: v });
       templates.set(squash(k), v);
     } else exact.set(squash(k), v);

@@ -192,7 +192,7 @@ export default {
         return json(await r.json(), r.ok ? 200 : r.status);
       }
 
-      // Droits d'un rôle / membre sur un salon (masquer un salon pendant un envoi en lot) : le bot doit avoir « Gérer les rôles »
+      // Droits d'un rôle / membre sur un salon (ne sert plus qu'à rétablir un salon resté masqué par l'ancien système) : le bot doit avoir « Gérer les rôles »
       if (action === 'set_overwrite') {
         const r = await fetch(`https://discord.com/api/v10/channels/${body.channelId}/permissions/${body.overwriteId}`, {
           method: 'PUT', headers: botHdr, body: JSON.stringify({ type: body.type === 1 ? 1 : 0, allow: String(body.allow || '0'), deny: String(body.deny || '0') }),

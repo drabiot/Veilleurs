@@ -14,7 +14,7 @@
 
 const API = 'https://discord.com/api/v10';
 const DEFAULT_CLIENT_ID = '1499589814624845936';
-const INVITE_PERMS = '326686067728'; // voir/écrire/créer fils/joindre fichiers/gérer salons/gérer rôles
+const INVITE_PERMS = '326417632272'; // voir/écrire/créer fils/joindre fichiers/gérer salons (plus « gérer rôles » : le masquage de salons n'existe plus)
 
 const P = { VIEW: 1n << 10n, SEND: 1n << 11n, EMBED: 1n << 14n, ATTACH: 1n << 15n, HISTORY: 1n << 16n,
   PUB_THREADS: 1n << 35n, PRIV_THREADS: 1n << 36n, SEND_THREADS: 1n << 38n, MANAGE_THREADS: 1n << 34n };
