@@ -589,7 +589,6 @@
             <span class="bc-time">${escHtml(ago)}</span>
             <div class="bc-actions">
               <button class="bc-btn" data-action="share" data-id="${escHtml(b._id)}" title="Copier le lien">🔗</button>
-              <button class="bc-btn cmp ${_cmpSel().includes(b._id) ? 'active' : ''}" data-action="compare" data-id="${escHtml(b._id)}" title="Ajouter au comparateur">⚖</button>
               <button class="bc-btn primary" data-action="preview" data-id="${escHtml(b._id)}" title="Aperçu dans l'Atelier">◉ Aperçu</button>
               <button class="bc-btn fav ${isFav ? 'active' : ''}" data-action="fav" data-id="${escHtml(b._id)}" title="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">⭐</button>
             </div>
