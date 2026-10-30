@@ -10,8 +10,8 @@
    - seen : items déjà dans le wiki à l'inscription quand « seulement les nouveaux » (jamais postés tant qu'ils ne reçoivent pas de post).
    - locks : droits d'origine des salons masqués pendant un gros envoi (rétablis au passage suivant même après un plantage).
    Mise à jour d'un item = suppression de l'ancien post puis nouveau post (si « remplacer » est actif).
-   Débit : DISCORD_GUILD_BATCH posts max par serveur et par passage (40), 1,5 s entre deux posts, discord.js gère les 429 ;
-   le passage s'arrête proprement après RUN_MINUTES (12) : le reste est repris au passage suivant.
+   Débit : jusqu'à DISCORD_GUILD_BATCH (400) posts par serveur et par passage, 0,8 s entre deux posts, discord.js gère les 429 ;
+   le passage s'arrête proprement après RUN_MINUTES (14) ; s'il reste des posts et que ça avance, le workflow se relance aussitôt (voir discord-bot.yml).
    Au-delà de 100 serveurs, Discord exige la vérification du bot.
 ══════════════════════════════════════════════ */
 const crypto = require('crypto');
@@ -19,7 +19,8 @@ const dp = require('./discord-post.js');
 
 const VIEW = 1n << 10n;
 const BOT_ALLOW = (1n << 10n) | (1n << 11n) | (1n << 14n) | (1n << 15n) | (1n << 16n) | (1n << 34n) | (1n << 35n) | (1n << 38n);
-const BATCH = parseInt(process.env.DISCORD_GUILD_BATCH, 10) || 40;
+const BATCH = parseInt(process.env.DISCORD_GUILD_BATCH, 10) || 400; // posts max par serveur et par passage (le passage s'arrête de toute façon à RUN_MINUTES)
+const POST_DELAY = parseInt(process.env.DISCORD_POST_DELAY_MS, 10) || 800; // pause entre deux posts d'un même salon ; discord.js gère les 429 en plus
 const log = (...a) => console.log(`[discord-guilds ${new Date().toISOString().slice(11, 19)}]`, ...a);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const has = (l, v) => (l || []).map(String).includes(String(v));
@@ -213,8 +214,8 @@ async function guildPass(rest, g, st, getCtx) {
             : await dp.postItem(rest, b.ch.id, b.it, ctx, chInfo.get(b.ch.id));
           st.posts[b.key] = { channelId: b.ch.id, threadId: r.threadId, messageId: r.messageId, ...(r.messageIds ? { messageIds: r.messageIds } : {}), ...(b.set ? { ids: b.items.map(i => i._id) } : {}), h: b.h };
           sent++;
-          await saveGuildState(g.id, st);
-          await sleep(1500);
+          if (sent % 5 === 0) await saveGuildState(g.id, st); // état sauvegardé tous les 5 posts (au pire quelques doublons après un plantage)
+          await sleep(POST_DELAY);
         } catch (e) {
           error = `${b.it.name} : ${e.message}`;
           log(`${g.guildName} : échec ${error}`);
@@ -236,11 +237,13 @@ async function guildPass(rest, g, st, getCtx) {
   if (error || g.lastError) patch.lastError = error;
   if (sent || error || logs.length || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
   if (sent) log(`${g.guildName} : ${sent} post(s) envoyé(s), ${pending} restant(s).`);
+  return { sent, pending };
 }
 
 /** Passage complet sur tous les serveurs inscrits. */
 async function pass(rest) {
   if (!process.env.ADMIN_SECRET) { if (!pass.warned) { pass.warned = true; log('ADMIN_SECRET absent : envoi multi-serveurs désactivé.'); } return; }
+  pass.more = false; // vrai si un envoi avance mais n'est pas fini : le workflow se relance tout de suite
   pass.deadline = Date.now() + (parseFloat(process.env.RUN_MINUTES) || 12) * 60e3;
   const { guilds } = await workerBot('list');
   const active = guilds.filter(g => g.status === 'removing' || g.purge || (g.status === 'approved' && !g.paused));
@@ -265,7 +268,8 @@ async function pass(rest) {
         log(`${g.guildName || g.id} : désinstallé.`);
         continue;
       }
-      await guildPass(rest, g, st, getCtx);
+      const r = await guildPass(rest, g, st, getCtx);
+      if (r && r.sent > 0 && r.pending > 0) pass.more = true;
     } catch (e) {
       log(`${g.guildName || g.id} : erreur ${e.message}`);
       try { await workerBot('report', { guildId: g.id, patch: { lastError: String(e.message).slice(0, 300) } }); } catch { /* worker injoignable */ }

@@ -14,11 +14,12 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write   # pour se relancer tant qu'un gros envoi n'est pas fini
 
 jobs:
   send:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,8 +28,15 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Passage du bot
+        id: run
         run: node bot/discord-watch.js --once
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
-          RUN_MINUTES: 12
+          RUN_MINUTES: 14
+      # Un gros envoi avance mais n'est pas fini : on enchaîne tout de suite avec un nouveau passage (sans attendre les 10 min du cron)
+      - name: Relance si envoi en cours
+        if: steps.run.outputs.more == 'true'
+        run: gh workflow run discord-bot.yml --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}

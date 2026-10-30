@@ -81,5 +81,7 @@ async function pass() {
     if (process.env.DISCORD_MULTI !== '0') { try { await guilds.pass(rest); } catch (e) { failed = true; log('Multi-serveurs :', e.message); } }
     if (!once) await sleep(every);
   } while (!once);
+  // Envoi en cours mais pas fini : le workflow se relance aussitôt (sinon il attendrait le prochain passage planifié)
+  if (guilds.pass.more && process.env.GITHUB_OUTPUT) require('fs').appendFileSync(process.env.GITHUB_OUTPUT, 'more=true\n');
   if (failed) process.exitCode = 1; // le passage échoué apparaît en rouge dans l'onglet Actions
 })();
