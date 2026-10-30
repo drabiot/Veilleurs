@@ -64,6 +64,7 @@ const PERM_SECTIONS = [
     { id: 'tool_diagnostic', label: '🔍 Diagnostic',           desc: 'IDs fantômes, régions orphelines',  defaultRole: 'contributeur' },
     { id: 'tool_capture',    label: '📸 Capture Sprites',      desc: 'Capture d\'images de sprites',      defaultRole: 'contributeur' },
     { id: '_users',          label: 'Gestion membres',         desc: 'Modifier les rôles utilisateurs — dans les rules Firestore', defaultRole: 'admin',         serverSide: true },
+    { id: 'tool_translate',  label: '🌍 Relecture des traductions', desc: 'Page i18n/review.html (le rôle perso « traducteur » y accède aussi)', defaultRole: 'admin' },
     { id: 'tool_trash',      label: '🗑️ Corbeille',            desc: 'Restaurer les éléments supprimés',  defaultRole: 'admin' },
     { id: 'tool_leaderboard',label: '🏆 Classement',           desc: 'Leaderboard des contributions',     defaultRole: 'admin' },
     { id: 'tool_audit_log',  label: '📋 Journal d\'audit',     desc: 'Historique des actions',            defaultRole: 'admin' },

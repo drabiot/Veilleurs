@@ -31,10 +31,6 @@
       "page": "discord",
       "status": "auto"
     },
-    "voir et écrire dans les salons que tu lui désignes, créer des fils/posts, joindre des images, créer les catégories et salons du plan que tu choisis, et — seulement si tu l'as demandé — masquer un salon pendant un gros envoi (pour éviter que tout le monde soit notifié). Il ne lit pas tes messages et n'écrit rien en dehors des salons du plan.": {
-      "page": "discord",
-      "status": "auto"
-    },
     "Ce qui est stocké chez nous :": {
       "page": "discord",
       "status": "auto"
@@ -141,10 +137,6 @@
       "status": "auto"
     },
     "Invite le bot sur « {name} »": {
-      "page": "discord",
-      "status": "auto"
-    },
-    "Le bot a besoin de : voir et écrire dans les salons, créer des fils, joindre des fichiers, gérer les salons (créer ceux de ton plan) et gérer les rôles (masquer un salon pendant un gros envoi). Tu peux ensuite lui retirer des droits dans les réglages de ton serveur.": {
       "page": "discord",
       "status": "auto"
     },
@@ -1426,6 +1418,1629 @@
       "status": "auto"
     },
     "le salon Discord et ses posts restent, le bot n'y envoie plus rien.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Connecte-toi avec Discord pour publier des builds et voir tes contributions comptées dans le leaderboard.": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Continuer avec Discord": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Décris le bug ou ta suggestion...": {
+      "page": "general",
+      "status": "auto"
+    },
+    "envoi indisponible sur cette page": {
+      "page": "general",
+      "status": "auto"
+    },
+    "envoi refusé, réessaie plus tard": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Envoyé !": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Quête": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Signaler une erreur sur cette fiche": {
+      "page": "general",
+      "status": "auto"
+    },
+    "⚑ Signaler une erreur": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Aucun résultat pour « {a} »": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Glisser pour réordonner": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Visible grâce à votre rôle": {
+      "page": "general",
+      "status": "doubt",
+      "note": "A 🔒 marker on secret items: only visible to users whose role allows it."
+    },
+    "0 résultat": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Voir sur la carte": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Voir dans le Compendium — {a}": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Voir dans le Bestiaire — {a}": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Chargement de la carte…": {
+      "page": "map",
+      "status": "auto"
+    },
+    "de Ressources": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "Recyclage d'Accessoires": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "Recyclage d'Armes": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "Recyclage d'Access.": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Vendeur d'Access.": {
+      "page": "map",
+      "status": "auto"
+    },
+    "— Recyclage —": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Mineur": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "Fabricants de Clés": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Marchand de Ressources": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Marchand d'Équipement": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Marchand de Consommable": {
+      "page": "map",
+      "status": "auto"
+    },
+    "— l'item donné → les pièces reçues": {
+      "page": "bestiary",
+      "status": "doubt",
+      "note": "Recycling NPC: 'les pièces' = coins/currency, not 'pieces of gear'."
+    },
+    "{num} entrées": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "{num} entrée": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "// PNJ & VENDEURS · VEILLEURS AU CLAIR DE LUNE": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "📍 Accès": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "Agrandir le modèle 3D": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "Clic + glisser pour tourner · Échap pour fermer": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "Difficulté": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "{num} pièce": {
+      "page": "compendium",
+      "status": "auto"
+    },
+    "🔄 Évolutions": {
+      "page": "compendium",
+      "status": "auto"
+    },
+    "de recharge sur {t}": {
+      "page": "compendium",
+      "status": "auto"
+    },
+    "Évolue depuis :": {
+      "page": "compendium",
+      "status": "auto"
+    },
+    "Peut évoluer en :": {
+      "page": "compendium",
+      "status": "auto"
+    },
+    "{n} · Étage {f}": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Étage {n}": {
+      "page": "map",
+      "status": "auto"
+    },
+    "{num} éléments": {
+      "page": "map",
+      "status": "auto"
+    },
+    "✓ Copié !": {
+      "page": "map",
+      "status": "auto"
+    },
+    "✕ JSON invalide — vérifiez le contenu.": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Cliquez pour déployer": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Couleur personnalisée": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Pin personnel — clic pour supprimer": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Point de quête": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Région": {
+      "page": "map",
+      "status": "auto"
+    },
+    "Téléportation possible": {
+      "page": "map",
+      "status": "auto"
+    },
+    "[Qualité]": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "{num} quêtes": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "{num} quête": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "{num} quêtes suivies": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "{num} quête suivie": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "✅ {num} quêtes réalisables": {
+      "page": "quests",
+      "status": "doubt",
+      "note": "« réalisable » = you own every required item (with the current inventory)."
+    },
+    "✅ {num} quête réalisable": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "// SECONDAIRES · VEILLEURS AU CLAIR DE LUNE": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "↳ Séquence": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "🎯 Ne plus suivre": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "🎯 Sélectionnez des quêtes": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "🗺️ Voir sur la carte →": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Aucune quête réalisable avec cet inventaire": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Composants de craft": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Copier le lien de la quête": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Marquer à faire": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Marquer terminée": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Ne plus suivre": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Ouvrir la quête — tous les items réunis !": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "pour les quêtes sélectionnées": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "pour suivre vos items": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Quêtes Fractured Underworld": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Quêtes Secondaires": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Récompenses": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Suivre cette quête": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Terminée": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "Vider la sélection": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "X:{a} · Z:{b} — cliquer pour voir": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "⇅ Admin : pour réordonner, choisis « Ordre du wiki » et retire les filtres / la recherche.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "⇅ Mode admin : glisse les cartes (ou utilise ◀ ▶) pour choisir l'ordre vu par tous les visiteurs.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "◉ Aperçu": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "⚖ 4 builds maximum dans le comparateur.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "⚠️ Erreur lors du chargement de l'aperçu.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "⚠️ Impossible de copier le lien.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "✓ Build supprimé.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "✓ Ordre enregistré.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "✕ Erreur : ordre non enregistré.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "✕ Erreur lors de la suppression.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "✕ Supprimer le Build": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "🔒 Connectez-vous pour utiliser les favoris.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "🔒 Connectez-vous pour voir vos builds.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "🔒 Connectez-vous pour voir vos favoris.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "🔗 Lien copié !": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "à l'instant": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Ajouter au comparateur": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Aperçu dans l'Atelier": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Arbre de compétences": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Aucun build trouvé.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Aucun favori pour l'instant.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Aucune stat enregistrée": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Chargement de vos builds…": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Chargement de vos favoris…": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Chargement du build…": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Cliquez sur ⭐ sur un build pour l'ajouter.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Connectez-vous pour voir vos builds.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Connectez-vous pour voir vos favoris.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Connectez-vous pour publier.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Copier le lien": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Déplacer après": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Déplacer avant": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Erreur lors du chargement.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Erreur lors du chargement. Vérifiez la console.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Nouveau nom du build (60 caractères max) :": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Ordre du wiki": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Prévisualisations": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "sélectionné": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Soyez le premier à publier !": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Un build identique (même nom, mêmes équipements et arbre de compétences) existe déjà.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "(Atelier — non publié)": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "[VCL] - Comparateur de Builds": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "// 2 À 4 BUILDS · DIFFÉRENCES · SCORE": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "← Retour aux builds": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "＋ Ajouter un build": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "○ Référence": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "● Référence": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "✓ Lien copié": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "🔍 Rechercher un build ou un auteur…": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "🔗 Copier le lien": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Ajoute au moins un second build pour voir les écarts.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Aucun build à comparer.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Aucune différence entre ces builds.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Aucune stat enregistrée.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Calculer les écarts par rapport à ce build": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Chaque stat compte selon son poids (0 = ignorée) rapporté à son échelle de jeu. Le build au score le plus haut est désigné « meilleur ».": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Comparateur de Builds": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Différences seulement": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Score pondéré": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Tout à 0": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Utilise « Ajouter un build » ou coche ⚖ sur les cartes de la page Builds.": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Voir le build": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Dégâts": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "Mobilité": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "⚖ Comparer": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "🎯 Build Optimisé": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Titre": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Classe": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Niveau": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Fixe tes exigences : l'outil cherche le meilleur équipement qui les respecte, puis maximise tes stats prioritaires.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Stats minimum": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "+ Ajouter une stat minimum": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Stats prioritaires à maximiser (jusqu'à 3)": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "🎯 Générer": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Comparer ce build à des builds publiés": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "— priorité —": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "⚔ Équipables": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "⚠ Changement de classe": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "⚠ Changement de Niveau": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "⚠ Collez un JSON valide.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "⚠ Connectez-vous pour publier.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "⚠ Donnez un nom à votre build avant de publier.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "⛔ Erreur pendant la génération.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "✕ JSON invalide ou format non reconnu.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "⬡ Résumé Global": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Activé : masque les items dont le niveau requis dépasse le niveau du build": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Afficher les panoplies": {
+      "page": "atelier",
+      "status": "doubt",
+      "note": "« Panoplie » = equipment set (armor set with set bonuses). I used « set »."
+    },
+    "Masquer les panoplies": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Aucun item équipé avec un craft.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Aucun titre disponible pour le moment.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Clique sur Générer pour une autre variante.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Cliquer pour retirer ce titre": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Connecte-toi avec Discord pour publier ton build : il sera rattaché à ton compte, partageable par lien et visible dans le forum des builds.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Passer au niveau": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Passer en": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "supprimera": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Emplacement de Rune sélectionné": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Emplacement de Runes": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Emplacement sélectionné": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Équipez des items craftables dans l'Atelier.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Erreur lors de la publication.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Impossible de tout respecter pour cette classe et ce niveau : voici le plus proche.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "publié": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Quantité possédée": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Recherche du meilleur équipement…": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Tous les évènements": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Tous les items · cliquez sur un emplacement pour filtrer": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Tous les world boss": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Voir les builds →": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "⟳ Réinitialiser l’arbre": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Case de départ": {
+      "page": "atelier",
+      "status": "doubt",
+      "note": "« case » = a cell/node of the skill-tree grid."
+    },
+    "cette compétence.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Choisis une classe pour filtrer": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Choisis une classe pour modifier ses cases.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Choisis une classe pour voir les effets": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Clique pour débloquer": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Clique pour la retirer.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Compétence": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Compétence débloquée.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Coût : 1 point de compétence": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Échec de l’enregistrement :": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Filtrer par stat": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Il faut avoir débloqué les 4 compétences voisines.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Il faut avoir pris les 4 cases autour.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Il faut d’abord débloquer une compétence voisine.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Il faut une case voisine déjà prise.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Impossible : d’autres cases en dépendent.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Mode édition : clique une case pour changer son effet.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Modifications annulées.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Modifications enregistrées.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Plus de points de compétence.": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "Points dépensés": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "0 entrée": {
+      "page": "bestiary",
+      "status": "auto"
+    },
+    "0 quête": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "0 quête suivie": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "✅ 0 quête réalisable": {
+      "page": "quests",
+      "status": "auto"
+    },
+    "⏱ À la consommation, applique": {
+      "page": "compendium",
+      "status": "auto"
+    },
+    "de recharge sur les objets du même type": {
+      "page": "compendium",
+      "status": "auto"
+    },
+    "item dont le niveau requis est trop élevé :": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "items dont le niveau requis est trop élevé :": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "item incompatible :": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "items incompatibles :": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "« Nous sommes le bouclier dressé face à l'obscurité. Nous sommes la lanterne qui guide les égarés »": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Accessoires Manquants ou Nouveaux": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Actions groupées : complète ou remet en cours plusieurs quêtes en même temps": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Affichage des statistique individuelle d'un item et des stats globales du build": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Affiche désormais les stats générales des items type armes, armures et accessoires": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Affiche le set d'un item ainsi que les items complémentaires au set": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Ajout d'un encadré permettant de savoir comment accéder au PNJ souhaité": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Ajout d'un leaderboard en temps réel sur la page d'accueil": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Ajout d'un onglet pour les Quêtes hors Principales et Secondaires": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Ajout d'une interface utilisateur pour soumettre des objets sur le Wiki": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Ajout de certains monstres hors Codex": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Ajout de nombreux items dans le Tableau de Chasse": {
+      "page": "patchnotes",
+      "status": "doubt",
+      "note": "« Tableau de Chasse » = the Creator's board listing entries with missing data, which contributors can fill in. I used « Hunt Board » (matches « Hunt Update »)."
+    },
+    "Ajout des Armes & Accessoires": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Ajout des dernières textures manquantes": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Ajout des derniers items manquantes": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Ajout des Items du Palier 3": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Alerte dans le creator si on a un item dejà existant": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Amélioration des presets de consommables dans le Creator": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Amélioration du chargement des Paliers": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Amélioration du lien entre le Bestiaire et la Carte interactive": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Amélioration du Tableau de Chasse": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Amélioration interne des outils de modération": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Application du patch": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "appliqué": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Atelier pour créer des builds": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Barre de recherche pour affiner ses options": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Bouton Build Aléatoire pour explorer des combinaisons inattendues": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Bûcherons": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Changement de l'aspect visuel du creator pour mieux correspondre au site": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Checklist pour gérer l'onglet craft": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Coordonnées des lieux des Ressources": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Correction de la statistique de vitesse de déplacement afin d'uniformiser les valeurs en %": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Correction des erreurs lié aux Quêtes": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Correction du lien cassé du Bestiaire vers le Compendium": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Corrections des liens morts": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Création d'un environnement viable pour créer et accepter des équipement sur le Wiki": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Dans le PNJ creator, charge automatiquement le craft d'un item sélectionné": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Début d'une visualisation 3D pour les monstres": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Début de la Création du Wiki": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Début des Quêtes Principales": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Derniers Repreneurs de Butins": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Détextion des doublons": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Differentes attaques des monstres": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Différentiation des raretés": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Différentiation entre monstres et personnages": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Effet de surbrillance pour différencier les cartes des souterrains de la carte de surface": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Effets pour les consommables en tout genre": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Équipements": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Éradication d'Erreurs Typographiques répétées": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Erreurs de liens et d'Orthographe": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Événements Halloween / Noël / Saint Valentin / Nouvel An Chinois": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Fabricants de Clefs & Fabricants Secrets": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Forgerons d'Accessoires & de Lingots": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Guide de Ressources Mineur / Bûcheron / Herboriste": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Guide des Donjons": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Guide et Lieu des Ressources métier — Mineur / Bûcheron / Herboriste": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Guide sur le Métier de Bûcheron": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Il est maintenant possible de publier et partager ses builds avec la communauté. Chaque build publié reçoit un lien unique que tu peux partager directement": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Il est possible de changer la taille des cartes pour le Bestiaire et les Quêtes": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Il n'est plus nécessaire d'écrire un commentaire pour modifier un objet déjà présent sur le wiki": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Il vous est possible de voir le statut de vos soumissions ainsi que nos retours": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Import/export JSON amélioré pour sauvegarder ou échanger ses builds hors du wiki": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Indications du Niveau théorique requis et la taille d'un groupe pour les Donjons": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Indications du Niveau théorique requis pour les Monstres": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "L'Atelier ne va plus prendre en compte les statistiques négatives lors d'une recherche par stats": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "L'ordre des statistiques sur les items correspond maintenant à l'ordre des stats globales": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "La création de pins a été améliorée avec un choix de couleur, de nom et d'emoji visibles": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "La Majorité des Armes et Panoplies ont une Texture de Référence": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "La page d'accueil ne redirige plus vers le Patchnote": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "La version mobile est enfin là. Le wiki est maintenant à porté de main": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Le Métier Fermier devient Herboriste (comme dans le jeu)": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Le Palier 3 est enfin cartographié": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Leaderboard des contributeurs en lien avec le creator": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les comptes validés ont maintenant accès aux informations sensibles sans avoir à les connaître": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les images des items secrets sont maintenant corrigées": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les images et les noms des consommables de qualité sont maintenant corrects chez les PNJs et autres": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les items du Compendium sont liés aux items auxquels ils participent dans leur recette": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les items secrets sont marqués d'une mention 🔒": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les Items sensibles ne sont plus exporté/importé dans l'Atelier": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les liens des PNJ ont été revus et améliorés": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les mini-boss sont enfin considérés comme des boss": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les pins faits main peuvent désormais être définis par des coordonnées": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les pins sont maintenant lié à la base de donné et seront donc ajouté automatiquement": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les PNJ ont désormais la possibilité d'être sensibles": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Les Quêtes dont maintenant la disticntion avec les items de Qualité": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Linkage du Compendium vers les Quêtes": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Lissages des Textes": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Majorité des Quêtes Secondaires": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Marchands d'Outils, d'Accessoires & d'Équipements": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Marchands Itinérants": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Meilleur historique des soumissions vers le wiki": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Meilleur système de liens": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Meilleurs Liens entre les Ressources": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Méthode d'obtention": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Méthode de fabrication": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Méthode de trie pour définir ses envies, cols, exp, rentabilité, ordre alphabétique...": {
+      "page": "patchnotes",
+      "status": "doubt",
+      "note": "« cols » = the game's currency (Col); kept as is."
+    },
+    "Migration de Bestiare": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Migration des Quêtes": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Mise à jour du Logo de la Guilde et du Wiki": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Mode prévisualisation : consulte un build partagé avant de le sauvegarder dans un de tes emplacements": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Modification Graphique des Armes & certaines Panoplies jugées trop faibles visuellement": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Nombre approximatif de ressources par zone": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Nouveau badge évolutif qui permet de link vers ses évolutions": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Nouveau obtain pour les items d'event": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Nouveaux Liens en direction des items de métier ou exclusifs à un marchand / forgeron": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Nouveaux lieux dans les cartes du Palier 1 & du Palier 2": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Nouveaux Monstres et certains de leurs Visuels": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Nouvel Onglet du Palier 2": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Nouvelles Entrées d'Événements": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Onglet de Craft pour voir les Matériaux nécessaires": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Onglet Stats supprimé si pas nécessaire dans le creator": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Outils et leurs Visuels": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Page d'Introduction au Wiki": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Page de Sommaire": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Page Événement regroupant": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Panneau inventaire enrichi : visualise les ingrédients de craft nécessaires pour tes quêtes suivies, directement dans l'interface": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Panoplie du Magicien": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Patchnote du": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Permet de visualiser les différentes Panoplies disponibles dans cet étage": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Peu importe où l'on se situe sur la map, les pins de la surface et des souterrains sont désormais visibles": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Photos pour illuster ses propos": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Plusieurs onglets pour différiencier un item": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "possibilité d'avoir plusieurs stuff (jusqu'à 3 différents) dans l'Atelier": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Possibilité de choisir ses attributs": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "possibilite de choisir ses équipements sans choisir de slot dans l'Atelier": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Possibilité de choisir son niveau": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Possibilité des créer ses propres pins": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Premiers Visuels des Monstres": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Quêtes Principales & Secondaires": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Quêtes Secondaires finies": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Rajout d'une partie des Armes Kobold": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Rajout de certains Accessoires Secrets et leur moyen d'obtention": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Récompenses des Quêtes": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Redéfinition des pins": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Redirection des items des monstres ou des personnages vers le Compendium": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Redirection des items des Quêtes vers le Compendium": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Redirection des Quêtes vers la Map Interactive": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Redirection du bestiaire vers la Map Interactive": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Refonte du système de qualité des consommables": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Régions & ses Visuels": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Répertorie tous les Accessoires d'une Panoplie donnée": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Repreneurs de Butins": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Restructuration interne des outils de modération": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Si des informations sont manquante un popup s'affiche pour vous signaler ce qu'il manque et les compléter directement depuis ce dernier": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Souterrains du Palier 3": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Suivi de quêtes : marque les quêtes que tu suis pour afficher les composants dont tu auras besoin pour les compléter dans l'inventaire": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Suppression de +600 deadlinks": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Suppressions d'onglets obsolètes ou inutiles": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Système & Interfaces": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Système d'Importation/Exportation de ses stuff, optimisé pour discord": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Système d'importation/exportation des pins faits main": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Système de placement de Runes": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Système de Progression intelligente": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Toutes les quêtes possèdent désormais leurs coordonnées de départ": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Travail et maintenance du Gitbook": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Un tableau de chasse est présent dans le Creator pour contribuer au wiki en corrigeant des informations manquantes": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Visuels des Accessoires": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Visuels des Monstres": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Visuels des Régions": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Visuels Manquants des dernières Armes & Panoplies": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Zone de commentaire": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "🏰 Fondation Update": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Nouvel An Lunaire": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Carte interactive": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Carte Interactive": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Map Interactive": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Palier 1": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Palier 2": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Selection d'un Palier": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Marchands Occultes": {
+      "page": "patchnotes",
+      "status": "auto"
+    },
+    "Nouveaux pins": {
+      "page": "patchnotes2",
+      "status": "auto"
+    },
+    "Armes Kobold": {
+      "page": "patchnotes2",
+      "status": "auto"
+    },
+    "Personnages Importants": {
+      "page": "patchnotes2",
+      "status": "auto"
+    },
+    "Alchimistes": {
+      "page": "patchnotes2",
+      "status": "auto"
+    },
+    "Nouvel Onglet Panoplie": {
+      "page": "patchnotes2",
+      "status": "auto"
+    },
+    "Nouveaux Accessoires": {
+      "page": "patchnotes2",
+      "status": "auto"
+    },
+    "Onglet Ressources": {
+      "page": "patchnotes2",
+      "status": "auto"
+    },
+    "Indications Visuelles": {
+      "page": "patchnotes2",
+      "status": "auto"
+    },
+    "Nouvelles Armes": {
+      "page": "patchnotes2",
+      "status": "auto"
+    },
+    "Corrections d'Erreurs d'Orthographe": {
+      "page": "patchnotes2",
+      "status": "auto"
+    },
+    "voir et écrire dans les salons que tu lui désignes, créer des fils/posts, joindre des images, créer les catégories et salons du plan que tu choisis. Les posts sont envoyés sans notification (pas de ping, pas de push sur téléphone). Il ne lit pas tes messages et n'écrit rien en dehors des salons du plan.": {
+      "page": "discord",
+      "status": "auto"
+    },
+    "Le bot a besoin de : voir et écrire dans les salons, créer des fils, joindre des fichiers et gérer les salons (créer ceux de ton plan). Tu peux ensuite lui retirer des droits dans les réglages de ton serveur.": {
       "page": "discord",
       "status": "auto"
     }

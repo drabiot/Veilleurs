@@ -689,7 +689,7 @@ _lazyPanel(() => import('./moderation-trash.js?v=6311a2da'), ['showTrash', 'load
 let CREATOR_PALIERS = [1, 2, 3]; // mis à jour dynamiquement depuis Firestore config/paliers
 let _paliersOpts = null; // options du champ palier (null = défaut du Tableau de chasse), lu par moderation-quality.js
 let _paliersConfig = []; // données complètes { id, label, color, floorName }
-_lazyPanel(() => import('./moderation-roles.js?v=ac9e1251'), ['showPermissions', 'loadPermissions', '_setPermission', '_setCustomRoleBaseTier', 'showDiscordRoles', 'loadDiscordRoles', 'saveDiscordRoles', 'togglePermTech', '_setCollectionPerm', 'loadRoles', 'showCreateRoleForm', 'hideCreateRoleForm', 'createRole', 'deleteRole', 'showGenerateRulesModal', 'closeRulesModal', 'copyGeneratedRules', 'toggleCreatorTool', 'toggleCreatorPalier']);
+_lazyPanel(() => import('./moderation-roles.js?v=1d2f83bc'), ['showPermissions', 'loadPermissions', '_setPermission', '_setCustomRoleBaseTier', 'showDiscordRoles', 'loadDiscordRoles', 'saveDiscordRoles', 'togglePermTech', '_setCollectionPerm', 'loadRoles', 'showCreateRoleForm', 'hideCreateRoleForm', 'createRole', 'deleteRole', 'showGenerateRulesModal', 'closeRulesModal', 'copyGeneratedRules', 'toggleCreatorTool', 'toggleCreatorPalier']);
 
 
 async function _loadPaliersConfig() {

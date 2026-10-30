@@ -51,7 +51,7 @@ for (const [k, v] of Object.entries(dict)) {
   const kClean = k.replace(/veilleurs au clair de lune/gi, '');
   for (const [fr, en] of Object.entries(glossary)) {
     if (noGloss.has(squash(k))) break;
-    if (wordRe(fr, caseSensitive.has(fr)).test(kClean) && !wordRe(en).test(v) && !new RegExp(en, 'i').test(v)) errors.push(`glossaire « ${fr} » → « ${en} » non respecté : "${k}" → "${v}"`);
+    if (wordRe(fr, caseSensitive.has(fr)).test(kClean) && !wordRe(en).test(v) && !new RegExp(en.replace(/s$/, ''), 'i').test(v)) errors.push(`glossaire « ${fr} » → « ${en} » non respecté : "${k}" → "${v}"`);
   }
 }
 
