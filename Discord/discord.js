@@ -151,7 +151,7 @@ function watchProgress() {
 
 function render() {
   const u = document.getElementById('dg-user');
-  u.innerHTML = S.me ? `${esc(S.me.user.name)} <button class="dg-btn" onclick="DG.logout()" style="padding:3px 10px;font-size:11px;">Déconnexion</button>` : '';
+  u.innerHTML = S.me ? `${S.me.admin ? '<span class="dg-badge warn" title="Tu agis à la place du chef de serveur : tout ce que tu fais est noté « Modération » dans l\'historique">🛠 Mode modération</span> ' : ''}${esc(S.me.user.name)} <button class="dg-btn" onclick="DG.logout()" style="padding:3px 10px;font-size:11px;">Déconnexion</button>` : '';
   const f = ({ login: rLogin, guild: rGuild, bot: rBot, form: rForm, recap: rRecap, status: rStatus })[S.step] || rLogin;
   // Le rendu remplace tout le contenu : on garde la position de défilement (style.css a scroll-behavior: smooth, d'où « instant »)
   const y = window.scrollY, step = render.lastStep;
@@ -721,10 +721,12 @@ async function refreshMe() { try { S.me = await api('me'); } catch (e) { S.err =
 (async function init() {
   const h = new URLSearchParams(location.hash.slice(1));
   if (h.get('vcl-guild')) { S.session = h.get('vcl-guild'); sessionStorage.setItem(SESSION_KEY, S.session); history.replaceState(null, '', location.pathname + location.search); }
+  const openGuild = h.get('guild'); // lien de la modération : on ouvre directement la gestion de ce serveur
   await loadWikiMeta();
   if (!S.session) { render(); return; }
   await refreshMe();
   S.step = S.me ? 'guild' : 'login';
   render();
+  if (S.me && openGuild && S.me.guilds.some(g => g.id === openGuild)) await DG.pick(openGuild);
 })();
 })();

@@ -198,11 +198,11 @@ function overwrites(env, guildId, cfg) {
 
 /** Supprime tous les posts du bot sur le serveur (par paquets de 40 appels Discord : la page rappelle jusqu'à done) et remet l'état à zéro.
  *  resend = « tout recommencer » : renvoie ensuite TOUS les items (réglage « tous » forcé, envoi repris, bot lancé). Sinon l'envoi reste en pause. */
-async function purgeStep(env, guildId, doc, json, resend) {
+async function purgeStep(env, guildId, doc, json, resend, plog = pushLog) {
   const stateKey = 'guild_' + guildId;
   if (!doc.purging) { // on met en pause d'abord pour que le bot n'ajoute pas de posts pendant le nettoyage
     doc.purging = true; doc.paused = true; doc.updatedAt = Date.now();
-    pushLog(doc, resend ? 'Tout recommencer demandé : suppression de tous les posts puis renvoi complet' : 'Suppression de tous les posts demandée (envoi mis en pause)');
+    plog(doc, resend ? 'Tout recommencer demandé : suppression de tous les posts puis renvoi complet' : 'Suppression de tous les posts demandée (envoi mis en pause)');
     await dgPut(env, guildId, doc);
   }
   const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'bot_state' AND id = ? AND deleted = 0").bind(stateKey).first();
@@ -222,9 +222,9 @@ async function purgeStep(env, guildId, doc, json, resend) {
   doc.purging = false; doc.purge = false; doc.posted = 0; doc.pending = 0; doc.lastError = ''; doc.updatedAt = Date.now();
   if (resend) {
     doc.initial = 'all'; doc.paused = false;
-    pushLog(doc, 'Posts supprimés : renvoi de tous les items demandé');
-    if (doc.status === 'approved') pushLog(doc, triggerText(await triggerBot(env)));
-  } else pushLog(doc, 'Tous les posts sont supprimés (envoi en pause : « Reprendre » renverra tout si le réglage est « tous les items »)');
+    plog(doc, 'Posts supprimés : renvoi de tous les items demandé');
+    if (doc.status === 'approved') plog(doc, triggerText(await triggerBot(env)));
+  } else plog(doc, 'Tous les posts sont supprimés (envoi en pause : « Reprendre » renverra tout si le réglage est « tous les items »)');
   await dgPut(env, guildId, doc);
   return json({ ok: true, done: true, config: doc });
 }
@@ -247,7 +247,7 @@ function mergeTemplate(doc, tpl) {
 }
 
 /** Supprime les posts du bot dans UN salon (par paquets de 40 appels) ; leurs items sont notés « déjà vus » pour ne pas être renvoyés tout de suite. */
-async function clearChannelStep(env, guildId, doc, c, json) {
+async function clearChannelStep(env, guildId, doc, c, json, plog = pushLog) {
   const stateKey = 'guild_' + guildId;
   const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'bot_state' AND id = ? AND deleted = 0").bind(stateKey).first();
   const st = jparse(row?.data) || {};
@@ -265,14 +265,14 @@ async function clearChannelStep(env, guildId, doc, c, json) {
   await env.DB.prepare("INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('bot_state', ?, ?, 0, 0, 0) ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, deleted = 0").bind(stateKey, JSON.stringify({ ...st, posts })).run();
   if (left) return json({ ok: true, progress: true, left, deleted });
   doc.posted = Object.keys(posts).length; doc.updatedAt = Date.now();
-  pushLog(doc, `« ${c.name} » vidé : ses posts sont supprimés`);
+  plog(doc, `« ${c.name} » vidé : ses posts sont supprimés`);
   await dgPut(env, guildId, doc);
   return json({ ok: true, done: true, config: doc });
 }
 
 /** Désinstallation d'un serveur : par paquets (budget d'appels Discord d'un Worker) ; l'appelant rappelle tant que la réponse n'est pas done.
  *  Utilisée par la page d'inscription (chef de serveur) et par la modération (action « uninstall » de /guild/bot). */
-async function uninstallStep(env, guildId, doc, body, json) {
+async function uninstallStep(env, guildId, doc, body, json, plog = pushLog) {
   const stateKey = 'guild_' + guildId;
   const dropState = () => env.DB.prepare("UPDATE docs SET deleted = 1 WHERE col = 'bot_state' AND id = ?").bind(stateKey).run();
   const present = (await botGuildIds(env)).has(guildId);
@@ -280,7 +280,7 @@ async function uninstallStep(env, guildId, doc, body, json) {
   if (!doc) { await dc(env, 'DELETE', `/users/@me/guilds/${guildId}`); _botGuilds = null; return json({ ok: true, done: true }); }
   if (doc.status !== 'removing') { doc.status = 'removing'; doc.removal = { deleteChannels: !!body.deleteChannels, deletePosts: !!body.deletePosts }; }
   doc.updatedAt = Date.now();
-  if (!doc.log?.some(x => x.m.startsWith('Désinstallation demandée'))) pushLog(doc, `Désinstallation demandée (salons créés : ${doc.removal?.deleteChannels ? 'supprimés' : 'conservés'}, posts : ${doc.removal?.deletePosts || doc.removal?.deleteChannels ? 'supprimés' : 'conservés'})`);
+  if (!doc.log?.some(x => x.m.startsWith('Désinstallation demandée'))) plog(doc, `Désinstallation demandée (salons créés : ${doc.removal?.deleteChannels ? 'supprimés' : 'conservés'}, posts : ${doc.removal?.deletePosts || doc.removal?.deleteChannels ? 'supprimés' : 'conservés'})`);
   const rm = doc.removal || {};
   let budget = 40;
   const gone = r => r.ok || [404, 403].includes(r.status); // déjà supprimé / plus accessible : on oublie
@@ -337,6 +337,7 @@ export async function handleGuildApi(request, env, deps) {
     ? jparse(await env.WIKI_CACHE.get('gs:' + body.session)) : null;
   if (!sess) return json({ error: 'Session expirée : reconnecte-toi avec Discord.', expired: true }, 401);
 
+  const plog = (d, m) => pushLog(d, (sess.admin ? '🛠 Modération — ' : '') + m); // qui a agi : le chef de serveur ou la modération
   const action = body.action;
   const clientId = env.DISCORD_CLIENT_ID || DEFAULT_CLIENT_ID;
   const invite = gid => `https://discord.com/oauth2/authorize?${new URLSearchParams({ client_id: clientId, permissions: INVITE_PERMS, scope: 'bot', ...(gid ? { guild_id: gid, disable_guild_select: 'true' } : {}) })}`;
@@ -346,7 +347,7 @@ export async function handleGuildApi(request, env, deps) {
     const [present, rows] = await Promise.all([botGuildIds(env),
       ids.length ? env.DB.prepare(`SELECT id, data FROM docs WHERE col = 'discord_guilds' AND deleted = 0 AND id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all() : { results: [] }]);
     const regs = new Map(rows.results.map(r => [r.id, jparse(r.data) || {}]));
-    return json({ user: sess.user, guilds: sess.guilds.map(g => ({ ...g, botPresent: present.has(g.id),
+    return json({ user: sess.user, admin: !!sess.admin, guilds: sess.guilds.map(g => ({ ...g, botPresent: present.has(g.id),
       status: regs.get(g.id)?.status || null, paused: !!regs.get(g.id)?.paused })), inviteUrls: Object.fromEntries(ids.map(i => [i, invite(i)])) });
   }
 
@@ -356,7 +357,7 @@ export async function handleGuildApi(request, env, deps) {
   const guildName = sess.guilds.find(g => g.id === guildId).name;
   let doc = await dgGet(env, guildId);
 
-  if (action === 'uninstall') return uninstallStep(env, guildId, doc, body, json);
+  if (action === 'uninstall') return uninstallStep(env, guildId, doc, body, json, plog);
 
   const present = (await botGuildIds(env)).has(guildId);
   if (!present) return json({ botPresent: false, inviteUrl: invite(guildId) });
@@ -389,9 +390,9 @@ export async function handleGuildApi(request, env, deps) {
     doc = { ...(doc || {}), ...cfg, guildId, guildName, ownerId: doc?.ownerId || sess.user.id, ownerName: doc?.ownerName || sess.user.name,
       status: doc?.status || 'pending', paused: doc ? !!doc.paused : false, createdAt: doc?.createdAt || now, updatedAt: now,
       createdCategories: doc?.createdCategories || [] };
-    pushLog(doc, isNew ? `Inscription enregistrée par ${sess.user.name} (${cfg.channels.length} salon(s), ${cfg.mode === 'create' ? 'à créer' : 'existants'}) : en attente de validation` : `Réglages modifiés par ${sess.user.name} (${cfg.channels.length} salon(s))`);
-    if (wasApproved) { doc.modifiedAfterApproval = true; pushLog(doc, 'Modification appliquée tout de suite (serveur déjà validé, pas de nouvelle validation) : à vérifier par la modération'); }
-    if (doc.status === 'approved' && !doc.paused) pushLog(doc, triggerText(await triggerBot(env)));
+    plog(doc, isNew ? `Inscription enregistrée par ${sess.user.name} (${cfg.channels.length} salon(s), ${cfg.mode === 'create' ? 'à créer' : 'existants'}) : en attente de validation` : `Réglages modifiés par ${sess.user.name} (${cfg.channels.length} salon(s))`);
+    if (wasApproved) { doc.modifiedAfterApproval = true; plog(doc, 'Modification appliquée tout de suite (serveur déjà validé, pas de nouvelle validation) : à vérifier par la modération'); }
+    if (doc.status === 'approved' && !doc.paused) plog(doc, triggerText(await triggerBot(env)));
     await dgPut(env, guildId, doc);
     return json({ ok: true, config: doc });
   }
@@ -400,13 +401,13 @@ export async function handleGuildApi(request, env, deps) {
 
   if (action === 'set_paused') {
     doc.paused = !!body.paused; doc.updatedAt = Date.now();
-    pushLog(doc, doc.paused ? 'Envoi mis en pause par le chef de serveur' : 'Envoi repris par le chef de serveur');
-    if (doc.status === 'approved' && !doc.paused) pushLog(doc, triggerText(await triggerBot(env)));
+    plog(doc, doc.paused ? 'Envoi mis en pause par le chef de serveur' : 'Envoi repris par le chef de serveur');
+    if (doc.status === 'approved' && !doc.paused) plog(doc, triggerText(await triggerBot(env)));
     await dgPut(env, guildId, doc);
     return json({ ok: true, config: doc });
   }
 
-  if (action === 'purge' || action === 'restart') return purgeStep(env, guildId, doc, json, action === 'restart');
+  if (action === 'purge' || action === 'restart') return purgeStep(env, guildId, doc, json, action === 'restart', plog);
 
   // ── Gestion salon par salon (écran de gestion de la page) ──
   if (action === 'update_channel' || action === 'remove_channel' || action === 'add_channel') {
@@ -421,16 +422,16 @@ export async function handleGuildApi(request, env, deps) {
       const ch0 = doc.channels[doc.channels.length - 1];
       if ((doc.itemCats || []).length) ch0.itemCats.forEach(x => { if (!doc.itemCats.includes(x)) doc.itemCats.push(x); });
       if ((doc.paliers || []).length) ch0.paliers.forEach(x => { if (!doc.paliers.includes(x)) doc.paliers.push(x); });
-      pushLog(doc, `Salon « ${n} » ajouté au plan`);
+      plog(doc, `Salon « ${n} » ajouté au plan`);
     } else if (!c) return json({ error: 'Salon introuvable dans le plan.' }, 404);
-    else if (action === 'remove_channel') { doc.channels.splice(i, 1); pushLog(doc, `Salon « ${c.name} » retiré du plan (le salon Discord n'est pas supprimé)`); }
+    else if (action === 'remove_channel') { doc.channels.splice(i, 1); plog(doc, `Salon « ${c.name} » retiré du plan (le salon Discord n'est pas supprimé)`); }
     else {
       const p = body.patch || {};
-      if ('subscribed' in p) { c.subscribed = !!p.subscribed; delete c.skip; pushLog(doc, `« ${c.name} » : ${c.subscribed ? 'inscrit (salon activé : il reçoit les items)' : 'pas inscrit (rien n\'est envoyé dans ce salon)'}`); }
+      if ('subscribed' in p) { c.subscribed = !!p.subscribed; delete c.skip; plog(doc, `« ${c.name} » : ${c.subscribed ? 'inscrit (salon activé : il reçoit les items)' : 'pas inscrit (rien n\'est envoyé dans ce salon)'}`); }
       if (typeof p.name === 'string' && slug(p.name) && slug(p.name) !== c.name) {
         const nn = slug(p.name);
         if (c.id && c.created) { const r = await dc(env, 'PATCH', `/channels/${c.id}`, { name: nn }); if (!r.ok) return json({ error: 'Renommage refusé par Discord : ' + (r.data?.message || r.status) }, 502); } // salons créés par le bot : renommés aussi sur Discord
-        pushLog(doc, `Salon « ${c.name} » renommé « ${nn} »`); c.name = nn;
+        plog(doc, `Salon « ${c.name} » renommé « ${nn} »`); c.name = nn;
       }
       if (typeof p.categoryName === 'string' && !c.id) c.categoryName = sanitizeName(p.categoryName, 100);
       if (Array.isArray(p.itemCats)) c.itemCats = strList(p.itemCats, CAT_RE, ITEM_CATS.length);
@@ -445,7 +446,7 @@ export async function handleGuildApi(request, env, deps) {
   if (action === 'subscribe_all') {
     (doc.channels || []).forEach(c => { c.subscribed = !!body.value; delete c.skip; });
     doc.updatedAt = Date.now();
-    pushLog(doc, body.value ? 'Inscrit à tous les salons' : 'Désinscrit de tous les salons');
+    plog(doc, body.value ? 'Inscrit à tous les salons' : 'Désinscrit de tous les salons');
     await dgPut(env, guildId, doc);
     return json({ ok: true, config: doc });
   }
@@ -458,11 +459,11 @@ export async function handleGuildApi(request, env, deps) {
       doc.customPlan = JSON.parse(JSON.stringify(doc.channels || [])); // l'ancien plan est mis de côté
       doc.planMode = 'auto';
       mergeTemplate(doc, cleanTemplate(body.template));
-      pushLog(doc, 'Plan automatique activé (modèle Veilleurs tenu à jour) ; l\'ancien plan est mis de côté');
+      plog(doc, 'Plan automatique activé (modèle Veilleurs tenu à jour) ; l\'ancien plan est mis de côté');
     } else {
       doc.planMode = 'custom';
       if (Array.isArray(doc.customPlan)) { doc.channels = doc.customPlan; delete doc.customPlan; }
-      pushLog(doc, 'Plan personnalisé activé : le plan n\'est plus modifié automatiquement');
+      plog(doc, 'Plan personnalisé activé : le plan n\'est plus modifié automatiquement');
     }
     doc.updatedAt = Date.now();
     await dgPut(env, guildId, doc);
@@ -470,7 +471,7 @@ export async function handleGuildApi(request, env, deps) {
   }
   if (action === 'auto_sync') {
     if (doc.planMode !== 'auto') return json({ ok: true, config: doc, unchanged: true });
-    if (mergeTemplate(doc, cleanTemplate(body.template))) { doc.updatedAt = Date.now(); pushLog(doc, 'Plan automatique mis à jour (le modèle Veilleurs a changé)'); await dgPut(env, guildId, doc); }
+    if (mergeTemplate(doc, cleanTemplate(body.template))) { doc.updatedAt = Date.now(); plog(doc, 'Plan automatique mis à jour (le modèle Veilleurs a changé)'); await dgPut(env, guildId, doc); }
     return json({ ok: true, config: doc });
   }
 
@@ -481,9 +482,9 @@ export async function handleGuildApi(request, env, deps) {
     const mode = body.mode === 'missing' ? 'missing' : 'all';
     doc.requests = [...(doc.requests || []).filter(r => r.id !== c.id), { id: c.id, mode, at: Date.now() }].slice(-30);
     doc.updatedAt = Date.now();
-    pushLog(doc, `« ${c.name} » : ${mode === 'all' ? 'renvoi de toute la data demandé' : 'envoi des items manquants demandé'}`);
-    if (doc.status === 'approved' && !doc.paused) pushLog(doc, triggerText(await triggerBot(env)));
-    else pushLog(doc, 'Envoi en attente : ' + (doc.status !== 'approved' ? 'le serveur doit d\'abord être validé' : 'l\'envoi est en pause'));
+    plog(doc, `« ${c.name} » : ${mode === 'all' ? 'renvoi de toute la data demandé' : 'envoi des items manquants demandé'}`);
+    if (doc.status === 'approved' && !doc.paused) plog(doc, triggerText(await triggerBot(env)));
+    else plog(doc, 'Envoi en attente : ' + (doc.status !== 'approved' ? 'le serveur doit d\'abord être validé' : 'l\'envoi est en pause'));
     await dgPut(env, guildId, doc);
     return json({ ok: true, config: doc });
   }
@@ -508,7 +509,7 @@ export async function handleGuildApi(request, env, deps) {
       }
     }
     doc.channels.splice(i, 1); doc.updatedAt = Date.now();
-    pushLog(doc, `Salon « ${c.name} » retiré du plan${note}`);
+    plog(doc, `Salon « ${c.name} » retiré du plan${note}`);
     await dgPut(env, guildId, doc);
     return json({ ok: true, config: doc });
   }
@@ -517,7 +518,7 @@ export async function handleGuildApi(request, env, deps) {
   if (action === 'clear_channel') {
     const c = (doc.channels || [])[parseInt(body.index, 10)];
     if (!c || !c.id) return json({ error: 'Salon introuvable.' }, 404);
-    return clearChannelStep(env, guildId, doc, c, json);
+    return clearChannelStep(env, guildId, doc, c, json, plog);
   }
 
   if (action === 'create_channels') {
@@ -557,7 +558,7 @@ export async function handleGuildApi(request, env, deps) {
     }
     doc.updatedAt = Date.now();
     const remaining = doc.channels.filter(c => c.name && !c.id && c.subscribed !== false && !c.skip).length;
-    pushLog(doc, failure ? `Création de salons : échec (${failure})` : `Création de salons : ${madeNow} créé(s) sur Discord, ${remaining} restant(s)`);
+    plog(doc, failure ? `Création de salons : échec (${failure})` : `Création de salons : ${madeNow} créé(s) sur Discord, ${remaining} restant(s)`);
     await dgPut(env, guildId, doc);
     return json({ ok: !failure, error: failure ? failure + (/community|forum/i.test(failure) ? ' (les forums demandent le mode Communauté : choisis « salons texte »)' : ' (le bot a-t-il « Gérer les salons » ?)') : undefined, created: madeNow, remaining, config: doc });
   }
@@ -582,6 +583,16 @@ export async function handleGuildBot(request, env, deps) {
     return json({ ok: true, result });
   }
   // Serveur principal (plan de la modération, config/discord_routes) : posts déjà faits depuis le navigateur, et ids des salons créés par le bot
+  // Modération : session de gestion pour UN serveur inscrit (même écran que son chef de serveur, actions faites « Modération » dans l'historique)
+  if (body.action === 'admin_session') {
+    const gid = String(body.guildId || '');
+    const d = SNOW.test(gid) ? await dgGet(env, gid) : null;
+    if (!d) return json({ error: 'Serveur non inscrit.' }, 404);
+    if (!env.WIKI_CACHE) return json({ error: 'KV WIKI_CACHE absent.' }, 503);
+    const sid = [...crypto.getRandomValues(new Uint8Array(24))].map(b => b.toString(16).padStart(2, '0')).join('');
+    await env.WIKI_CACHE.put('gs:' + sid, JSON.stringify({ admin: true, user: { id: 'moderation', name: 'Modération', avatar: '' }, guilds: [{ id: gid, name: d.guildName || gid, icon: '', owner: false }] }), { expirationTtl: 7200 });
+    return json({ ok: true, session: sid });
+  }
   if (body.action === 'main_posts') {
     const rows = (await env.DB.prepare("SELECT data FROM docs WHERE col = 'discord_posts' AND deleted = 0").all()).results;
     return json({ posts: rows.map(r => jparse(r.data)).filter(d => d && d.itemId && d.channelId).map(d => ({ itemId: String(d.itemId), channelId: String(d.channelId), threadId: d.threadId || null, messageId: d.messageId || null })) });

@@ -622,6 +622,7 @@ window.dgLoadGuilds = async () => {
           ${g.status === 'pending' ? b(['⛔ Refuser', id], `dgSetStatus(this.dataset.id,'refused')`, 'color:var(--danger);border-color:var(--danger);') : ''}
           ${g.status === 'approved' ? b(['⏸ Suspendre', id], `dgSetStatus(this.dataset.id,'suspended')`) : ''}
           ${g.modifiedAfterApproval ? b(['👍 Vu', id], 'dgAck(this.dataset.id)') : ''}
+          ${g.status !== 'removing' ? b(['🛠 Gérer', id], 'dgManage(this.dataset.id)', 'border-color:var(--accent);color:var(--accent);') : ''}
           ${b(['👁 Choix', id], 'dgToggleChoices(this.dataset.id)')}
           ${b(['📜 Historique', id], 'dgToggleLog(this.dataset.id)')}
           ${g.status === 'removing' ? b(['🧽 Effacer la fiche', id], 'dgForgetGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);') : b(['🗑 Retirer', id], 'dgRemoveGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);')}</span></div>`; }).join('') || '<div style="color:var(--muted);font-size:12px;">Aucun serveur inscrit.</div>'}`;
@@ -632,6 +633,16 @@ window.dgLoadGuilds = async () => {
 };
 // Historique d'un serveur : actions réellement faites (worker, bot, modération)
 // Choix d'un serveur inscrit (réglages, plan, inscriptions, posts par salon) : ce que son chef de serveur a configuré sur Discord/discord.html
+// Ouvre l'écran de gestion du serveur (celui de son chef) avec une session « Modération » : on agit à sa place s'il nous le demande
+window.dgManage = async (id) => {
+  const w = window.open('about:blank', '_blank');
+  try {
+    const j = await (await fetch(WORKER_URL + '/guild/bot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: await getWorkerSecret(), action: 'admin_session', guildId: id }) })).json();
+    if (!j.session) throw new Error(j.error || 'session impossible');
+    const url = new URL('Discord/discord.html', location.href); url.hash = new URLSearchParams({ 'vcl-guild': j.session, guild: id }).toString();
+    if (w) w.location.href = url.toString(); else location.href = url.toString();
+  } catch (e) { if (w) w.close(); toast('Erreur : ' + e.message, 'error'); }
+};
 window.dgToggleChoices = async (id) => {
   const box = document.getElementById('dg-choices-' + id);
   if (box) { box.remove(); return; }
