@@ -313,6 +313,15 @@ async function guildPass(rest, g, st, getCtx) {
   if (batch.length) {
     const ctx = await getCtx();
     const chInfo = new Map();
+    let lastCheck = Date.now(), halted = false;
+    const stopNow = async () => { // pause / arrêt demandé par le chef de serveur pendant le passage : vérifié au plus toutes les 4 s
+      if (halted || cfg._main) return halted;
+      if (Date.now() - lastCheck < 4000) return false;
+      lastCheck = Date.now();
+      try { halted = !!(await workerBot('is_paused', { guildId: g.id })).paused; } catch { /* au prochain tour */ }
+      if (halted) logs.push('Bot : envoi interrompu (pause demandée)');
+      return halted;
+    };
     {
       if (cfg.eventTags) { // tags d'événement : créés une fois par forum pour tous les événements du lot
         const byCh = new Map();
@@ -326,7 +335,7 @@ async function guildPass(rest, g, st, getCtx) {
       const queue = [...batch.reduce((m, x) => m.set(x.ch.id, [...(m.get(x.ch.id) || []), x]), new Map()).values()];
       const doGroup = async list => {
         for (const b of list) {
-          if (timeUp()) break;
+          if (timeUp() || await stopNow()) break;
           try {
             if (!chInfo.has(b.ch.id)) chInfo.set(b.ch.id, await rest.get(`/channels/${b.ch.id}`));
             if (b.old) { await deletePost(rest, b.old); delete st.posts[b.key]; }

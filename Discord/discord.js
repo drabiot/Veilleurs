@@ -465,6 +465,18 @@ function itemSearchBlock() {
     <div id="dg-isr" style="margin-top:8px"></div></div>`;
 }
 
+/** Pause / reprise / arrêt de l'envoi, visibles dès qu'un envoi est en cours ou en pause. */
+function sendControls(d, st) {
+  if (st !== 'approved' && st !== 'pending') return '';
+  const busy = !!d.pending || (d.requests || []).length || (d.itemRequests || []).length;
+  if (!busy && !d.paused) return '';
+  return `<div class="dg-row" style="margin:10px 0">
+    ${d.paused ? '<span class="dg-hint" style="color:var(--removed)">⏸ Envoi en pause.</span> <button class="dg-btn primary" onclick="DG.pause(false)">▶ Reprendre</button>'
+      : '<button class="dg-btn" onclick="DG.pause(true)" title="Le bot s’arrête après le post en cours ; le reste est conservé et reprend à « Reprendre »">⏸ Mettre en pause</button>'}
+    ${(d.requests || []).length || (d.itemRequests || []).length ? '<button class="dg-btn danger" onclick="DG.stopSend()" title="Met en pause et annule les envois demandés (salon, item, manquants)">⏹ Arrêter et annuler les demandes</button>' : ''}
+  </div>`;
+}
+
 function rStatus() {
   const d = S.doc, g = S.guild, st = d.status;
   const txt = { pending: '⏳ En attente de validation par l\'équipe du wiki. Rien n\'est envoyé tant que ce n\'est pas validé.', approved: d.paused ? '⏸ En pause : rien n\'est envoyé.' : '🟢 Actif : le bot envoie les items.',
@@ -474,6 +486,7 @@ function rStatus() {
     <dl class="dg-recap"><dt>Posts envoyés</dt><dd>${d.posted ?? 0}${d.pending ? ` · restants : ${d.pending}` : ''}
       ${d.pending ? `<div class="dg-bar"><i style="width:${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))}%"></i></div><div class="dg-hint">${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))} % — ${d.posted || 0} sur ${(d.posted || 0) + d.pending}</div>` : ''}</dd><dt>Dernier envoi</dt><dd>${when(d.lastSentAt)}</dd>
     ${d.lastError ? `<dt>Dernière erreur du bot</dt><dd style="color:var(--removed)">${esc(d.lastError)}</dd>` : ''}${d.purge ? '<dt>En cours</dt><dd>suppression des posts…</dd>' : ''}</dl>
+    ${sendControls(d, st)}
     ${manageBlock(d)}
     ${st === 'removing' ? '' : itemSearchBlock()}
     ${st === 'removing' ? '' : `<div class="dg-row">
@@ -749,6 +762,10 @@ const DG = window.DG = {
       try { const j = await api('inspect', { guildId: S.guild.id }); if (j.botPresent) S.info = j; } catch { /* l'état sera relu à la demande */ }
       if (!inner) { S.msg = 'Salons créés.'; render(); }
     } catch (e) { S.err = 'Création des salons : ' + e.message + ' Tu peux réessayer depuis la page de statut.'; if (!inner) render(); else throw e; }
+  },
+  async stopSend() {
+    if (!confirm("Arrêter l’envoi ?\n\nLe bot s’arrête et les demandes en attente (salons, items, manquants) sont annulées. Les posts déjà envoyés restent. L’envoi est mis en pause : « Reprendre » pour repartir.")) return;
+    try { const j = await api('set_paused', { guildId: S.guild.id, paused: true, cancel: true }); S.doc = j.config; S.msg = 'Envoi arrêté et demandes annulées (en pause).'; S.err = ''; } catch (e) { S.err = e.message; } render();
   },
   async pause(p) { try { const j = await api('set_paused', { guildId: S.guild.id, paused: p }); S.doc = j.config; S.msg = p ? 'Envoi mis en pause.' : 'Envoi repris.'; S.err = ''; } catch (e) { S.err = e.message; } render(); },
   // Suppression des posts par le worker, par paquets : on rappelle jusqu'à la fin (resend : puis tout est renvoyé)

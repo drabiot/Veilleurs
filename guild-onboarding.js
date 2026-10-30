@@ -417,7 +417,8 @@ export async function handleGuildApi(request, env, deps) {
 
   if (action === 'set_paused') {
     doc.paused = !!body.paused; doc.updatedAt = Date.now();
-    plog(doc, doc.paused ? 'Envoi mis en pause par le chef de serveur' : 'Envoi repris par le chef de serveur');
+    if (doc.paused && body.cancel) { doc.requests = []; doc.itemRequests = []; } // « Arrêter » : pause + demandes en attente annulées
+    plog(doc, doc.paused ? (body.cancel ? 'Envoi arrêté par le chef de serveur (demandes en attente annulées)' : 'Envoi mis en pause par le chef de serveur') : 'Envoi repris par le chef de serveur');
     if (doc.status === 'approved' && !doc.paused) plog(doc, triggerText(await triggerBot(env)));
     await dgPut(env, guildId, doc);
     return json({ ok: true, config: doc });
@@ -750,6 +751,7 @@ export async function handleGuildBot(request, env, deps) {
   }
   const id = String(body.guildId || '');
   if (!SNOW.test(id)) return json({ error: 'guildId invalide' }, 400);
+  if (body.action === 'is_paused') { const d = await dgGet(env, id); return json({ paused: !!d && (!!d.paused || d.status !== 'approved') }); } // le bot s'interrompt en cours de passage
   if (body.action === 'uninstall') return uninstallStep(env, id, await dgGet(env, id), body, json); // retrait demandé par la modération
   if (body.action === 'ack_remove') { await dgDelete(env, id); return json({ ok: true }); }
   if (body.action === 'report') {
