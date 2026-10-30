@@ -238,10 +238,10 @@ function estimateCardHeight(item, compact, panoplieData, allItems, pnjMap) {
   const statsCount = item.stats ? Object.values(item.stats).filter(v => v !== 0 && v != null).length : 0;
   const efxCount   = item.effects?.length || 0;
   if (statsCount || efxCount) {
-    const rows = Math.min(Math.max(statsCount, efxCount), 8);
+    const rows = Math.max(statsCount, efxCount);
     framesH += F_TITLE + F_PADV + rows * F_ROW + F_PADV + F_GAP;
   }
-  const obtainData = parseObtainData(item.obtain).slice(0, 5);
+  const obtainData = parseObtainData(item.obtain);
   const craftData  = parseCraftData(item, allItems, pnjMap);
   if (obtainData.length) {
     framesH += F_TITLE + F_PADV + obtainData.length * F_ROW + F_PADV + F_GAP;
@@ -581,24 +581,24 @@ async function drawItemCard(canvas, item, exportScale = null, maps = {}) {
   const eW = FRAME_W - sW - F_GAP;
 
   if (stats.length || effects.length) {
-    const maxR = Math.min(Math.max(stats.length, effects.length), 8);
+    const maxR = Math.max(stats.length, effects.length);
     const fH   = F_TITLE + F_PADV + maxR * F_ROW + F_PADV;
     const both = stats.length > 0 && effects.length > 0;
     if (stats.length) {
       const sx = FRAME_X, sw2 = both ? sW : FRAME_W;
       drawFrame(ctx, sx, frameY, sw2, fH, 'STATISTIQUES', C.gold, F_TITLE);
-      drawStatsCol(sx, sw2, frameY, Math.min(stats.length, 8), both ? 14 : 22);
+      drawStatsCol(sx, sw2, frameY, stats.length, both ? 14 : 22);
     }
     if (effects.length) {
       const ex2 = both ? eX : FRAME_X, ew2 = both ? eW : FRAME_W;
       drawFrame(ctx, ex2, frameY, ew2, fH, 'EFFETS', C.gold, F_TITLE);
-      drawEffectsCol(ex2, ew2, frameY, Math.min(effects.length, 8), both ? 14 : 22);
+      drawEffectsCol(ex2, ew2, frameY, effects.length, both ? 14 : 22);
     }
     frameY += fH + F_GAP;
   }
 
   // Obtenir / Craft
-  const obtainData = parseObtainData(item.obtain).slice(0, 5);
+  const obtainData = parseObtainData(item.obtain);
   const craftData  = parseCraftData(item, allItems, pnjMap);
 
   if (obtainData.length) {
