@@ -1847,7 +1847,7 @@ window.discordRenderSync = async function() {
 async function _ow(action, p) { const r = await _workerCall(action, p); if (!r) throw new Error('permissions Discord refusées (le bot a-t-il « Gérer les rôles » ?)'); return r; }
 
 // ── Masquer un salon pendant un envoi en lot (évite les pings) ──
-// @everyone perd « Voir le salon » le temps de l'envoi ; l'état d'origine est noté dans config/discord_lock pour pouvoir le rétablir même après un plantage.
+// @everyone ET tous les rôles qui voient le salon perdent « Voir le salon » le temps de l'envoi ; l'état d'origine est noté dans config/discord_lock pour pouvoir le rétablir même après un plantage.
 const _VIEW = 1n << 10n;
 const _BOT_ALLOW = (1n << 10n) | (1n << 11n) | (1n << 14n) | (1n << 15n) | (1n << 16n) | (1n << 34n) | (1n << 35n) | (1n << 38n); // voir, écrire, liens, fichiers, historique, gérer/créer fils, écrire dans les fils
 const _LOCK_REF = () => doc(db, 'config', 'discord_lock');
@@ -1861,23 +1861,38 @@ async function _lockChannel(channelId) {
     throw new Error(`salon ${channelId} inaccessible (${le.status || '?'}${msg ? ' ' + msg : ''})` + (le.status === 403 ? ' : le bot ne voit pas ce salon, vérifie ses permissions « Voir le salon »' : le.status === 404 ? ' : salon supprimé sur Discord' : ''));
   }
   const guildId = ch.guild_id;
-  const orig = (ch.permission_overwrites || []).find(o => o.id === guildId);
+  const ovs = ch.permission_overwrites || [];
   const snap = await getDoc(_LOCK_REF());
   const saved = snap.exists() ? snap.data() : {};
   if (!saved[channelId]) { // ne jamais écraser un état d'origine déjà noté (verrou resté après un plantage)
-    saved[channelId] = { guildId, existed: !!orig, allow: orig?.allow || '0', deny: orig?.deny || '0' };
+    // cibles masquées : @everyone + tout rôle/membre qui voit le salon (surcharge « Voir » ou permission « Voir les salons » du rôle). Les rôles administrateur ne peuvent pas être masqués.
+    const ADMIN = 1n << 3n;
+    const ids = new Set([guildId]);
+    for (const o of ovs) if (o.id !== guildId && (BigInt(o.allow) & _VIEW)) ids.add(o.id);
+    const roles = await _workerCall('get_guild_roles', {});
+    if (Array.isArray(roles)) for (const r of roles) { const pm = BigInt(r.permissions || '0'); if (!r.managed && r.id !== guildId && (pm & _VIEW) && !(pm & ADMIN)) ids.add(r.id); }
+    const targets = [];
+    for (const id of ids) {
+      const ov = ovs.find(o => o.id === id);
+      targets.push({ id, type: ov ? ov.type : 0, existed: !!ov, allow: ov?.allow || '0', deny: ov?.deny || '0' });
+    }
+    saved[channelId] = { guildId, targets };
     await setDoc(_LOCK_REF(), saved);
   }
   _botId ??= (await _workerCall('get_bot_user', {}))?.id;
   if (_botId) await _ow('set_overwrite', { channelId, overwriteId: _botId, type: 1, allow: _BOT_ALLOW.toString(), deny: '0' }); // le bot garde l'accès
   const o = saved[channelId];
-  await _ow('set_overwrite', { channelId, overwriteId: guildId, type: 0, allow: (BigInt(o.allow) & ~_VIEW).toString(), deny: (BigInt(o.deny) | _VIEW).toString() });
+  const list = o.targets || [{ id: o.guildId, type: 0, existed: o.existed, allow: o.allow, deny: o.deny }];
+  for (const t of list) await _ow('set_overwrite', { channelId, overwriteId: t.id, type: t.type, allow: (BigInt(t.allow) & ~_VIEW).toString(), deny: (BigInt(t.deny) | _VIEW).toString() });
 }
 async function _unlockChannel(channelId, saved) {
   const o = saved[channelId];
   if (!o) return;
-  if (o.existed) await _ow('set_overwrite', { channelId, overwriteId: o.guildId, type: 0, allow: o.allow, deny: o.deny });
-  else await _ow('delete_overwrite', { channelId, overwriteId: o.guildId });
+  const list = o.targets || [{ id: o.guildId, type: 0, existed: o.existed, allow: o.allow, deny: o.deny }];
+  for (const t of list) {
+    if (t.existed) await _ow('set_overwrite', { channelId, overwriteId: t.id, type: t.type, allow: t.allow, deny: t.deny });
+    else await _ow('delete_overwrite', { channelId, overwriteId: t.id });
+  }
 }
 async function _restoreLocked(ids) {
   const snap = await getDoc(_LOCK_REF());
