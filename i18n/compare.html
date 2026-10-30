@@ -50,7 +50,7 @@
     <button id="go">Open</button>
     <button id="b-pick" class="on" title="Click a text in the French page to translate it">🎯 Pick</button>
     <button id="b-miss" class="on" title="Outline French texts that have no English yet">⚠ Show untranslated</button>
-    <button id="b-sync" class="on" title="Scrolling one side scrolls the other">⇅ Sync scroll</button>
+    <button id="b-sync" class="on" title="Scrolling or changing page on one side does the same on the other">⇅ Sync scroll &amp; pages</button>
     <button id="b-next" title="Jump to the next untranslated text on the page">Next untranslated →</button>
     <span class="sp"><span id="count">0 changes</span> · <input id="name" type="text" placeholder="Your name" size="12" /> <button id="b-dl" class="primary">⬇ Download my changes</button> <a href="review.html">List view</a></span>
   </header>
@@ -67,7 +67,7 @@
         <div class="fr" id="e-fr"></div>
         <div class="hint">English</div>
         <textarea id="e-en" spellcheck="true"></textarea>
-        <input id="e-note" type="text" placeholder="Note for Paul (optional)…" />
+        <input id="e-note" type="text" placeholder="Note for admins (optional)…" />
         <div class="row"><button class="primary" id="e-ok">✔ Save & OK</button><button id="e-doubt">⚠ Unsure</button><button id="e-next">Save & next →</button></div>
         <div class="hint">Keep placeholders like <code>{n}</code> exactly as they are. Names of items, mobs and NPCs are not translated.</div>
       </div>
@@ -95,7 +95,7 @@ async function check(user) {
     if (role === TRANSLATOR_ROLE || hasRole(tier, min)) {
       document.body.classList.remove('locked');
       if (!started) { started = true; start(); }
-    } else lock('Your account does not have access to this tool. Ask Paul to give you the translator role.', false);
+    } else lock('Your account does not have access to this tool. Ask an admin to give you the translator role.', false);
   } catch (e) { lock('Could not check your access: ' + e.message, false); }
 }
 onAuthStateChanged(auth, check);
@@ -271,7 +271,26 @@ toggle('b-pick', 'pick', () => { docOf(fr)?.querySelectorAll('.vcl-hover').forEa
 toggle('b-miss', 'miss', markMissing);
 toggle('b-sync', 'sync');
 $('b-next').onclick = nextMissing;
-function load(page) { fr.src = page; en.src = page; }
+function load(page) { fr.src = page; en.src = page; lastLoc = { fr: null, en: null }; }
+
+// Navigation liée : quand on change de page (lien, onglet, #ancre) dans un cadre, l'autre suit.
+// Les deux cadres sont de même origine, on compare donc simplement leurs adresses.
+let lastLoc = { fr: null, en: null };
+const locOf = f => { try { const l = f.contentWindow.location; return l.href === 'about:blank' ? null : l.pathname + l.search + l.hash; } catch { return null; } };
+function syncNav() {
+  if (!state.sync) return;
+  const a = locOf(fr), b = locOf(en);
+  if (a === null || b === null) return;                        // un des cadres charge encore
+  if (lastLoc.fr === null) { lastLoc = { fr: a, en: b }; return; }   // premier relevé après load()
+  const frMoved = a !== lastLoc.fr, enMoved = b !== lastLoc.en;
+  if (frMoved && !enMoved && a !== b) { en.contentWindow.location.assign(a); lastLoc = { fr: a, en: a }; }
+  else if (enMoved && !frMoved && a !== b) { fr.contentWindow.location.assign(b); lastLoc = { fr: b, en: b }; }
+  else lastLoc = { fr: a, en: b };
+  const file = lastLoc.fr.split('#')[0].split('?')[0].split('/').pop();   // la liste déroulante suit la page affichée
+  const opt = [...$('page').options].find(o => o.value.split('/').pop() === file);
+  if (opt) $('page').value = opt.value;
+}
+setInterval(syncNav, 400);
 $('go').onclick = () => { const v = $('custom').value.trim(); if (v) load(v); };
 $('custom').addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click(); });
 $('page').onchange = () => load($('page').value);

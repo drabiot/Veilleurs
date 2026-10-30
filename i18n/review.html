@@ -85,11 +85,11 @@
       <summary>How this works (read once)</summary>
       <ul>
         <li><b>Left</b> = original French (read-only). <b>Right</b> = the English that is shown on the site: edit it if it is wrong or unnatural.</li>
-        <li>Click <b>✔ OK</b> (or <code>Ctrl+Enter</code> in the box) when an entry is good. Click <b>⚠ Unsure</b> + write a note if you can't decide — Paul will look at it.</li>
+        <li>Click <b>✔ OK</b> (or <code>Ctrl+Enter</code> in the box) when an entry is good. Click <b>⚠ Unsure</b> + write a note if you can't decide — the admins will look at it.</li>
         <li>Orange boxes are notes from the first-pass translator (Claude) pointing at the real doubts. Start with “⚠ Unsure only”.</li>
         <li>Keep placeholders like <code>{n}</code> or <code>{name}</code> exactly as they are (they get replaced by numbers/names). Keep <code>\n</code> line breaks. Names of items, mobs and NPCs are never translated.</li>
         <li>Discord terms must match the <b>English Discord app</b> (“Manage Server”, “Manage Channels”, “Forum”, “Thread”…). Game/wiki terms follow the glossary below.</li>
-        <li>Your work is saved automatically in <b>this browser</b>. To send it: <b>⬇ Download my changes</b> and give the file to Paul. To continue on another computer: <b>⬆ Load a saved file</b>.</li>
+        <li>Your work is saved automatically in <b>this browser</b>. To send it: <b>⬇ Download my changes</b> and give the file to an admin. To continue on another computer: <b>⬆ Load a saved file</b>.</li>
         <li>To see a text in context, open the page in English (link above, or add <code>?lang=en</code> to any page address).</li>
       </ul>
       <details style="margin-top:8px"><summary style="font-weight:400;color:var(--muted)">Glossary (one fixed translation per term)</summary><div id="glossary"></div></details>
@@ -127,7 +127,7 @@ async function check(user) {
     try { const c = await getDoc(doc(db, 'config', 'customRoles')); const cr = (c.exists() ? c.data().roles || [] : []).find(r => r.id === role); if (cr && cr.baseTier) tier = cr.baseTier; } catch { /* rôles perso illisibles */ }
     try { const p = await getDoc(doc(db, 'config', 'permissions')); if (p.exists()) min = p.data().minRole?.tool_translate ?? min; } catch { /* défaut : admin */ }
     if (role === TRANSLATOR_ROLE || hasRole(tier, min)) document.body.classList.remove('locked');
-    else lock('Your account does not have access to this tool. Ask Paul to give you the translator role.', false);
+    else lock('Your account does not have access to this tool. Ask an admin to give you the translator role.', false);
   } catch (e) { lock('Could not check your access: ' + e.message, false); }
 }
 onAuthStateChanged(auth, check);
@@ -182,7 +182,7 @@ function matches(k) {
 function rowEl(k) {
   const el = document.createElement('article');
   el.className = 'row'; el.dataset.k = k;
-  el.innerHTML = '<div class="meta"></div><div class="fr"></div><div><textarea rows="1" spellcheck="true" lang="en"></textarea><div class="warns"></div></div><div class="claude" hidden></div><div class="act"><button class="b-ok">✔ OK</button><button class="b-doubt">⚠ Unsure</button><input type="text" class="note" placeholder="Your note for Paul (optional)…" /></div>';
+  el.innerHTML = '<div class="meta"></div><div class="fr"></div><div><textarea rows="1" spellcheck="true" lang="en"></textarea><div class="warns"></div></div><div class="claude" hidden></div><div class="act"><button class="b-ok">✔ OK</button><button class="b-doubt">⚠ Unsure</button><input type="text" class="note" placeholder="Note for admins (optional)…" /></div>';
   el.querySelector('.fr').textContent = k;
   const ta = el.querySelector('textarea'), note = el.querySelector('.note');
   ta.value = enOf(k); note.value = draft.notes[k] || '';
