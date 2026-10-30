@@ -751,14 +751,17 @@ window.drRemove = async (i) => {
   _dr.channels.splice(i, 1); await _drPersist(); _renderDiscordRoutes(); window.discordRenderSync();
 };
 
-// Plan par défaut : une catégorie Discord par palier, un forum par catégorie d'items qui a des items à ce palier (l'archive est exclue)
+// Plan par défaut = modèle « Veilleurs » : une catégorie Discord par palier (archive exclue), un forum pour CHAQUE type d'item du wiki dans chacune,
+// même sans item pour l'instant : un type d'item ou un palier ajouté plus tard rejoint le plan en relançant « Proposer un plan » (les salons déjà au plan ne bougent pas).
 window.drDefaultPlan = async () => {
   const snap = await getDocs(collection(db, COL.items));
-  const combos = new Map();
-  snap.docs.forEach(d => { const x = d.data(); if (!x.category || x.palier == null || Number(x.palier) === -1) return; combos.set(`${x.category}|${x.palier}`, [x.category, String(x.palier)]); });
+  const cats = new Set(_DR_CATS.map(q => q[0])), pals = new Set(_drPaliers.map(q => String(q.id)));
+  snap.docs.forEach(d => { const x = d.data(); if (x.category) cats.add(x.category); if (x.palier != null) pals.add(String(x.palier)); });
+  pals.delete('-1');
   const palierOrder = p => { const i = _drPaliers.findIndex(q => String(q.id) === p); return i < 0 ? 999 : i; };
   const catOrder = c => { const i = _DR_CATS.findIndex(q => q[0] === c); return i < 0 ? 999 : i; };
-  const wanted = [...combos.values()].sort((a, b) => palierOrder(a[1]) - palierOrder(b[1]) || catOrder(a[0]) - catOrder(b[0]));
+  const wanted = [];
+  [...pals].sort((a, b) => palierOrder(a) - palierOrder(b)).forEach(pal => [...cats].sort((a, b) => catOrder(a) - catOrder(b)).forEach(cat => wanted.push([cat, pal])));
   let added = 0;
   for (const [cat, pal] of wanted) {
     if (_dr.channels.some(c => (c.itemCats || []).join() === cat && (c.paliers || []).map(String).join() === pal)) continue;
@@ -768,7 +771,7 @@ window.drDefaultPlan = async () => {
     added++;
   }
   await _drPersist(); _renderDiscordRoutes();
-  toast(added ? `${added} salon(s) ajouté(s) au plan (une catégorie par palier). Retire ou modifie ce que tu ne veux pas, puis « Créer / répertorier ».` : 'Le plan couvre déjà tous les items.', added ? 'success' : 'info', 8000);
+  toast(added ? `${added} salon(s) ajouté(s) au plan (tous les types d'items × chaque palier). Retire ou modifie ce que tu ne veux pas, puis « Créer / répertorier ».` : 'Le plan contient déjà tous les types d'items de tous les paliers.', added ? 'success' : 'info', 8000);
 };
 
 // Retrouve (par nom) ou crée la catégorie puis le salon d'une entrée du plan, et mémorise leur ID
