@@ -69,6 +69,7 @@
         <textarea id="e-en" spellcheck="true"></textarea>
         <input id="e-note" type="text" placeholder="Note for admins (optional)…" />
         <div class="row"><button class="primary" id="e-ok">✔ Save & OK</button><button id="e-doubt">⚠ Unsure</button><button id="e-next">Save & next →</button></div>
+        <div class="row"><button id="e-same" title="Name, event, proper noun… the English is identical to the French: marks it as translated and goes to the next one">＝ No translation needed (keep as is) →</button></div>
         <div class="hint">Keep placeholders like <code>{n}</code> exactly as they are. Names of items, mobs and NPCs are not translated.</div>
       </div>
     </aside>
@@ -267,6 +268,7 @@ function nextMissing() {
 }
 $('e-ok').onclick = () => save('ok');
 $('e-doubt').onclick = () => save('doubt');
+$('e-same').onclick = () => { if (!state.current) return; $('e-en').value = state.current.key; if (save('ok')) nextMissing(); };
 $('e-next').onclick = () => { if (save('ok')) nextMissing(); };
 $('e-en').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); if (save('ok')) nextMissing(); } });
 
