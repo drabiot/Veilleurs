@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="report-widget.css">
 <script src="no-spin.js?v=b9169870" defer></script>
 <script src="sw-register.js" defer></script>
+<script type="module" src="i18n.js"></script>
 <link rel="preconnect" href="https://veilleurs.veilleurs-wiki.workers.dev" crossorigin />
 </head>
 <body>
@@ -123,7 +124,7 @@
         <span class="chev">▾</span>
       </div>
       <div class="sec-body">
-        <div class="hint" style="color:#c8922a;border-left:3px solid #e8a838;padding-left:8px;background:rgba(232,168,56,.07);">
+        <div class="hint" data-i18n-html style="color:#c8922a;border-left:3px solid #e8a838;padding-left:8px;background:rgba(232,168,56,.07);">
           📋 Joins un screen de <b>l'infobulle</b> et/ou du <b>sprite</b> de l'item — ça nous permet de vérifier le nom exact, les stats et le sprite avant de valider ta soumission.
         </div>
         <div id="screens-drop-zone"
@@ -132,7 +133,7 @@
              ondragover="event.preventDefault();this.style.borderColor='#e8a838'"
              ondragleave="this.style.borderColor='rgba(232,168,56,.35)'"
              ondrop="onScreensDrop(event)">
-          <div id="screens-placeholder" style="color:var(--muted);font-size:12px;pointer-events:none;">
+          <div id="screens-placeholder" data-i18n-html style="color:var(--muted);font-size:12px;pointer-events:none;">
             📋 Colle (Ctrl+V), glisse-dépose ou <u>clique</u> pour ajouter des screenshots
           </div>
           <div id="screens-preview-list" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px;"></div>
@@ -337,7 +338,7 @@
           <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Templates</div>
           <div id="effect-templates" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
         </div>
-        <div class="hint">Chaque ligne = <b>un effet</b> quand l'item est utilisé. Choisis l'<b>effet</b>, la <b>valeur</b> (+ l'<b>unité</b> si besoin : PV, %, /s), et la <b>durée</b> seulement si l'effet dure (vide = instantané). Ex : <i>boost_sante · 10 · PV · 15 min</i> → +10 PV pendant 15 min. Le niveau requis se règle dans « Niveau requis » plus haut, pas ici.</div>
+        <div class="hint" data-i18n-html>Chaque ligne = <b>un effet</b> quand l'item est utilisé. Choisis l'<b>effet</b>, la <b>valeur</b> (+ l'<b>unité</b> si besoin : PV, %, /s), et la <b>durée</b> seulement si l'effet dure (vide = instantané). Ex : <i>boost_sante · 10 · PV · 15 min</i> → +10 PV pendant 15 min. Le niveau requis se règle dans « Niveau requis » plus haut, pas ici.</div>
         <div id="effects-list" style="display:flex;flex-direction:column;gap:6px;"></div>
         <button class="btn btn-ghost btn-sm" style="width:100%" onclick="addEffect()">+ Ajouter un effet</button>
 
@@ -585,7 +586,7 @@
       <div class="section" id="pnj-craft-section">
         <div class="sec-head" onclick="toggleSec(this)">⚒️ Craft <span class="chev">▾</span></div>
         <div class="sec-body">
-          <div class="hint">Chaque carte = une recette fabriquée par ce PNJ, <b>ou une vente</b> : une vente est un craft qui ne coûte que des <b>Cols</b> (ingrédient « Cols », quantité = prix).</div>
+          <div class="hint" data-i18n-html>Chaque carte = une recette fabriquée par ce PNJ, <b>ou une vente</b> : une vente est un craft qui ne coûte que des <b>Cols</b> (ingrédient « Cols », quantité = prix).</div>
           <div id="pnj-crafts-list" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;margin-bottom:8px;"></div>
           <div style="display:flex;gap:6px;">
             <button class="btn btn-ghost btn-sm" style="flex:1" onclick="addPnjCraft()">+ Ajouter une recette</button>
@@ -1054,7 +1055,7 @@
       <div class="preview-wrap" id="preview-wrap">
       </div>
       <div id="chasse-preview-banner" style="display:none;"></div>
-      <div id="guest-note" style="display:none;margin:140px 14px 24px;font-size:11px;line-height:1.5;color:var(--muted);opacity:.7;text-align:center;">
+      <div id="guest-note" data-i18n-html style="display:none;margin:140px 14px 24px;font-size:11px;line-height:1.5;color:var(--muted);opacity:.7;text-align:center;">
         ℹ️ Tu contribues en tant qu'invité : tes contributions ne sont pas comptées dans le leaderboard.
         <a href="#" onclick="openLoginModal();return false" style="color:var(--accent);">Connecte-toi avec Discord</a> pour qu'elles soient rattachées à ton compte et comptabilisées.
       </div>

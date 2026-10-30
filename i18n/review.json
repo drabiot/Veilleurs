@@ -3469,6 +3469,1808 @@
       "page": "general",
       "status": "doubt",
       "note": "Generic pattern: translates both sides of « A · B » texts (e.g. « Rare · Archive »). Keep it last."
+    },
+    "✏️ Édition de": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "— Choisir —": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher un mob…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Choisir un évènement…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ID généré": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nom affiché *": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nom affiché": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Palier": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Choisir le point sur la carte interactive": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📍 Carte": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✕ Non": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "— Aucun —": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🗡️ Drop de Mob": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "(optionnel)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📍 Coordonnées": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚠️ ID déjà existant": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher un set…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Évènement": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🗑 Vider": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "(facultatif)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🔍 Rechercher une région…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Dans le Codex": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✓ Oui": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher un PNJ à éditer…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher une région à éditer…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher un item à éditer…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher un mob à éditer…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher une panoplie à éditer…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher une quête à éditer…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Créer un item": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Créer un mob": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Créer un PNJ": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Créer une panoplie": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Créer une région (codex ou non)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Tutoriel interactif": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🛡️ Modération": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Pseudo affiché dans la soumission Discord": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "👤 Pseudo…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Changer mon pseudo": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Soumettre (Ctrl + S ou Ctrl + Entrée)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "◈ Soumettre": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Connecte-toi avec ton compte Discord : tes contributions seront rattachées à ton compte et comptées dans le leaderboard.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Changer ton pseudo :": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nouveau pseudo": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ex : nouveau_pseudo": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Mot de passe actuel": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Tu seras invité à ré-authentifier via Google.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📍 Région": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🔗 Panoplie": {
+      "page": "creator",
+      "status": "doubt",
+      "note": "« Panoplie » = equipment set with set bonuses; « Set » used everywhere."
+    },
+    "📂 Charger / Éditer un item existant": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Charge un item existant dans le formulaire pour l'éditer, puis copie le résultat.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✕ Nouveau item": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "— optionnel mais fortement recommandé": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📋 Identité": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚠️ ID déjà existant — il est possible que cet item existe déjà sur le wiki !": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✓ Drop orphelin": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rareté": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "— obligatoire": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Drapeaux": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Verrouille le palier sur « Event »": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Verrouille le palier sur « World Boss » et permet de choisir le boss": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🔄 Évolutif": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Marque l'item comme occulte (occulte: true) et génère un ID de forme nom_p{palier} (ex: amulette_occulte_p1) pour distinguer les paliers": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✦ Occulte": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Marque cet item comme version qualité d'un consommable (quality: true) — génère un ID avec suffixe _qualite": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Catégorie *": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Slot interne": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nom de la compétence": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ex : Tir multiple": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rareté de la compétence": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "(Optionnel)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Type d'arme": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚔️⚔️ Deux mains": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Emplacements de Runes": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Set / Panoplie": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🔄 Évolutions possibles": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "— items vers lesquels cet item peut évoluer": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⬆️ Évolue depuis": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "— items depuis lesquels cet item peut être obtenu par évolution": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Classes (vide = toutes)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🔍 Rechercher une stat…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Dégâts Physique %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Dégâts d'Arme %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Dégâts Magiques %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Dégâts Compétence %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Dégâts Projectile %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Crit Dégâts %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Crit Compétence Chance %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Crit Dégâts Compétence %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Durabilite de la Garde": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Blocage %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Puissance de Blocage %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Esquive %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Réduction Dégâts %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Réduction Chutes %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ténacité %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Résistance Recul %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Chance de Parade %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Hâte %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Vitesse Déplacement": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Vol de Vie %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Vampirisme de sort %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Soins Reçus %": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Régén. Santé /s": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Régén. Mana /s": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Régén. Stamina /s": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✨ Effets (consommable)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "❤️ Potion de Soin": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "💧 Potion de Mana": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "👟 Potion de Stamina": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "💨 Fortifiant d'Endurance": {
+      "page": "creator",
+      "status": "doubt",
+      "note": "« Fortifiant » = a consumable that gives a lasting buff (« tonic », « fortifier », « elixir »?). Check the in-game English name."
+    },
+    "📚 Fortifiant de Connaissance": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚔️ Fortifiant de Férocité": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "💓 Fortifiant de Vitalité": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⏳ Fortifiant de Patience": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🛡️ Fortifiant de Résistance": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🧪 Potion [qualité]": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⏱ Utilisation": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Temps avant de pouvoir réutiliser l'item": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Délai de recharge": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nombre de fois que l'item peut être utilisé": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Utilisations": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ex : un fortifiant bloque les autres fortifiants pendant 1 h": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "À la consommation, applique une recharge sur d'autres items": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Début de la phrase (facultatif). Ex : Vous rend des PV immédiatement et applique": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "À la consommation, applique": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "de recharge sur": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ex : tout les fortifiants": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ingrédients pour fabriquer cet item. Recherche par nom dans tous les items existants.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚠️ IDs orphelins — cliquer pour ajouter": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+ Ajouter un ingrédient": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⏱ CD de craft": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Délai avant de pouvoir recrafter cet item. Mettez « aucun » si pas de restriction.": {
+      "page": "creator",
+      "status": "doubt",
+      "note": "« aucun » is the literal value the system expects, so it stays French."
+    },
+    "✖ Quantité fabriquée": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ex : 3 (vide = 1 seul exemplaire)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nombre d'exemplaires obtenus d'un seul craft (« ×3 » en jeu). Laisser vide pour 1.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📖 Lore & Obtention": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Sources d'obtention": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🌿 Ressource": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "💬 Autre": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+ Ajouter": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Drops de ce mob — clique pour ajouter": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ajout manuel :": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+ Ajouter ce mob": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚠️ Texte existant (prioritaire sur le builder)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Utiliser le builder": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🖼️ Image Discord": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Colle une image (Ctrl+V) ou glisse-dépose. Elle sera jointe à la soumission Discord.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📋 Colle une image ici ou clique pour en choisir une": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📂 Charger / Éditer un PNJ existant": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Charge un PNJ existant dans le formulaire pour l'éditer.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✕ Nouveau PNJ": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🧑 Identité": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Type du PNJ *": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📜 Quêtes": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "💬 Autres": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nom personnalisé…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🕳️ Oui": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "(optionnel — comment accéder à ce PNJ)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+ Ajouter une recette": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ajoute une recette dont l'ingrédient est déjà « Cols » : il ne reste qu'à choisir l'item et le prix": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🛒 + Ajouter une vente": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Chaque carte = un item que le joueur donne au PNJ, contre des Pièces de Recyclage après un délai.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+ Ajouter un recyclage": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📂 Charger / Éditer une région existante": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Charge une région existante dans le formulaire pour l'éditer.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✕ Nouvelle région": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📍 Identité": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✈️ Oui": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📂 Charger / Éditer une panoplie existante": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Charge une panoplie existante dans le formulaire pour l'éditer.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✕ Nouvelle panoplie": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🔗 Identité": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "La couleur de la panoplie est définie par la modération lors de la validation.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+ Ajouter un bonus": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Chaque ligne définit une stat qui s'active à partir de X pièces équipées. Tu peux avoir plusieurs stats pour le même palier.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📂 Charger / Éditer une quête existante": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Charge une quête existante dans le formulaire pour l'éditer.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✕ Nouvelle quête": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📜 Identité": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Titre *": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚔️ Principale": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🗺️ Secondaire": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nom du PNJ…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📍 Coordonnées du départ": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "(lieu du donneur de quête)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "* obligatoire": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🎯 Objectifs": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Liste d'objectifs. Activez → Suite pour indiquer une suite logique entre deux étapes.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+ Ajouter un objectif": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🏆 Récompenses": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+ Ajouter une récompense": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📂 Charger / Éditer un mob existant": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Charge un mob existant dans le formulaire pour l'éditer.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✕ Nouveau mob": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "👾 Identité": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ennemi standard du monde": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🐺 Monstre": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ennemi puissant, temps de réapparition": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Boss de zone, long temps de réapparition": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Invoqué par un autre monstre": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🗡️ Sbire": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Boss mondial : agressif, instance à part (pas de coordonnées)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Comportement": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Attaque le joueur à vue": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚔️ Agressif": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Attaque si le joueur l'attaque en premier": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚖️ Neutre": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "N'attaque jamais le joueur": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🕊️ Passif": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Temps de spawn": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📍 Localisation": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Le mob apparaît à plusieurs endroits (ou plusieurs exemplaires du boss)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+ Ajouter un autre endroit": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "* requis si Codex": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Items droppés par ce mob. Chance en % (0–100). Les IDs non encore définis sont acceptés — ils apparaîtront dans le tracker d'IDs fantômes.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nombre entre 0 et 100, ou '?' si inconnu": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+ Ajouter un drop": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📋 Historique": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🎯 Chasse": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Items soumis cette session": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Aucun item soumis pour l'instant.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Creator indisponible": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Aucun outil de création n'est disponible pour le moment. Reviens plus tard !": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📨 Soumettre": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "— chance non définie": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "— Choisir un donjon —": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "— Choisir un event —": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "{f} est requis.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "↩ Modifs demandées": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+ Ingrédient": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "+{n} de plus…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⏳ En attente": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⏳ En attente de validation": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚠️ Entre ton pseudo avant de soumettre.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚠️ La panoplie \"{n}\" existe déjà dans la base. Votre soumission sera traitée comme une modification. Continuer ?": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚠️ La quête \"{n}\" existe déjà dans la base. Votre soumission sera traitée comme une modification. Continuer ?": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚠️ La région \"{n}\" existe déjà dans la base. Votre soumission sera traitée comme une modification. Continuer ?": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚠️ Le mob \"{n}\" existe déjà dans la base. Votre soumission sera traitée comme une modification. Continuer ?": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⛔ Corrige les erreurs avant de copier": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⛔ Des champs restent manquants.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⛔ Erreur de soumission :": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⛔ Le palier est obligatoire.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⛔ Nom et ID obligatoires — remplis-les dans le formulaire.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⛔ Renseigne le % d'obtention (0-100, ou ? si inconnu).": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⛔ Un objectif a des coordonnées mais aucun titre. Sans titre, les coordonnées ne seront pas enregistrées.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✈️ Téléportation": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✏️ Créer": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✓ Acceptée": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✓ Qualité": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✓ Soumis ! En attente de validation.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✓ Soumission mise à jour !": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "✕ Refusée": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "➕ Créer « {n} »": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🎯 Tableau de chasse —": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🏆 Top 10 des contributeurs": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📋 Compléter les champs manquants": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📍 Cliquez sur la carte pour placer le point": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📍 Coordonnées :": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📍 Lieu associé": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📍 Régions": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🔍 Chercher un PNJ…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "🧱 Matériau": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Au moins un bonus est requis.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Aucun bonus défini": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Aucun bonus. Clique sur « + Ajouter un bonus ».": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Aucun donjon — créez-en dans la Modération (Config › Donjons)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Aucun drop listé pour ce mob.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Aucun event — créez-en dans la Modération": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Aucun résultat.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Aucune contribution trouvée.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Aucune région": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Catégorie non sélectionnée": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "CD de craft *": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "CD de craft recommandé (ex: 24h, aucun)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ce pseudo est déjà utilisé.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ce que fait l'item quand on l'utilise": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Cet ID est déjà attendu par :": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Chargement des events…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Charger dans le formulaire": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Choisir un world boss…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Combien (ex : 10 pour +10 PV)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Combien de temps dure l'effet. Laisser vide si l'effet est instantané": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Coordonnées": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Coordonnées (X, Y, Z) requises.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Coût (Cols)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Craft de {n}": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Décris ce que tu as modifié pour que la modération sache quoi vérifier…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Délai": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Description de l'item…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Durée": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "En attente": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Erreur de chargement": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Événement": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Évènement obligatoire pour le palier Event": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ex : Parler à Abraham": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Firebase non initialisé": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ID manquant — remplis le titre.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ID manquant (remplis le nom)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ID manquant (remplis le titre)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Indique une suite logique vers l'étape suivante": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ingrédient": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ingrédients": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ingrédient…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ingrédients": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Jambières": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "L'outil \"{n}\" est actuellement désactivé.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Le lore est obligatoire pour une région Codex": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Le lore est obligatoire pour une région Codex.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Le lore est obligatoire si le mob est dans le Codex": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Le lore est obligatoire si le mob est dans le Codex.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Le nom est obligatoire.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Le palier Archive est réservé aux admins": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Le palier est obligatoire": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Le palier est obligatoire.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Le pseudo est obligatoire.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Les coordonnées sont obligatoires pour une région.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Les coordonnées X, Y et Z sont obligatoires": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Lore (= description de la compétence)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Lore obligatoire (description de la compétence)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Module non chargé": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Mot de passe incorrect.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Mot de passe obligatoire pour ré-authentifier.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nom affiché manquant": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nom et ID obligatoires": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nom et ID obligatoires.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Non disponible (non connecté).": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Note pour la modération (optionnel pour un nouvel item)…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Obligatoire : pourcentage d'obtention (0-100), ou ? si le taux est inconnu": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Pièces": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Pièces reçues": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Pour des cas particuliers, détaillez ici précisément le moyen d'obtention de cet item.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Pseudo invalide (2-32 caractères, lettres/chiffres/espace/-/_/[/]).": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Qté": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rareté *": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rareté non sélectionnée": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Ré-authentification annulée.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Recharger dans le formulaire": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher un donjon…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher un ingrédient…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher un item…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher un PNJ (forgeron, marchand…)…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Rechercher une quête…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Réinitialiser le formulaire ?": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Remplace le texte automatique (facultatif)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Résultat…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Session expirée, reconnecte-toi.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Slot (cat) non sélectionné": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Soumission en attente de modération": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Supprimer de l'historique": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Tableau de chasse vide.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Tape pour filtrer…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Texte affiché": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Texte affiché (facultatif)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Type de quête obligatoire": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Type de quête obligatoire.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Unité": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Unité de la durée : s, min ou h": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Valider et soumettre": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Version qualité de l'item (quality: true)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "vide = instantané": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "World Boss obligatoire pour le palier World Boss": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Noël 2025": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Saint-Valentin 2026": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Nouvel An Lunaire 2026": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Faille Corrompue 2026": {
+      "page": "creator",
+      "status": "doubt",
+      "note": "Event name — « Faille » = rift/breach. Literal guess."
+    },
+    "⚠️ Une soumission avec ce nom est déjà en attente de validation. Continuer quand même ?": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚠️ Une soumission avec ce titre est déjà en attente de validation. Continuer quand même ?": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "est déjà en attente de validation. S'agit-il d'une modification de cet item, ou d'un nouvel item différent ?": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "existe déjà. S'agit-il d'une modification de cet item, ou d'un nouvel item différent ?": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "📋 Joins un screen de <b>l'infobulle</b> et/ou du <b>sprite</b> de l'item — ça nous permet de vérifier le nom exact, les stats et le sprite avant de valider ta soumission.": {
+      "page": "creator",
+      "status": "doubt",
+      "note": "HTML entry (the whole sentence incl. its bold tags is one unit) — keep the <b> tags."
+    },
+    "📋 Colle (Ctrl+V), glisse-dépose ou <u>clique</u> pour ajouter des screenshots": {
+      "page": "creator",
+      "status": "doubt",
+      "note": "HTML entry — keep the <u> tags."
+    },
+    "Chaque ligne = <b>un effet</b> quand l'item est utilisé. Choisis l'<b>effet</b>, la <b>valeur</b> (+ l'<b>unité</b> si besoin : PV, %, /s), et la <b>durée</b> seulement si l'effet dure (vide = instantané). Ex : <i>boost_sante · 10 · PV · 15 min</i> → +10 PV pendant 15 min. Le niveau requis se règle dans « Niveau requis » plus haut, pas ici.": {
+      "page": "creator",
+      "status": "doubt",
+      "note": "HTML entry — keep the tags. « PV » = HP (Points de Vie); the id « boost_sante » is a literal value."
+    },
+    "Chaque carte = une recette fabriquée par ce PNJ, <b>ou une vente</b> : une vente est un craft qui ne coûte que des <b>Cols</b> (ingrédient « Cols », quantité = prix).": {
+      "page": "creator",
+      "status": "doubt",
+      "note": "HTML entry — keep the tags."
+    },
+    "ℹ️ Tu contribues en tant qu'invité : tes contributions ne sont pas comptées dans le leaderboard. <a href=\"#\" onclick=\"openLoginModal();return false\" style=\"color:var(--accent);\">Connecte-toi avec Discord</a> pour qu'elles soient rattachées à ton compte et comptabilisées.": {
+      "page": "creator",
+      "status": "doubt",
+      "note": "HTML entry — keep the <a …> tag untouched, translate only the visible text."
+    },
+    "+ Ajouter un effet": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "{n}/{t} mots retrouvés": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚠️ Aucune capture jointe : rien à vérifier.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⛔ Vérification impossible :": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Chargement du moteur de lecture (1re fois : ~15 Mo)…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Lecture automatique imparfaite : ⚠️ / ❓ = à vérifier à l'œil, pas forcément une erreur. Rareté (couleur du fond) et palier ne sont pas vérifiés.": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Lecture de la capture {n}/{t}…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ligne « Niveau » non retrouvée": {
+      "page": "creator-c",
+      "status": "doubt",
+      "note": "« Niveau » is the in-game label read from the screenshot — kept in French on purpose (OCR looks for that word)."
+    },
+    "lu {n} (chiffre proche, probablement une erreur de lecture)": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "lu sur la capture : {n}": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "ni la stat ni la valeur": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "non retrouvée :": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Préparation…": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "stat vue, valeur absente ou différente": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Texte lu sur la capture": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "valeur vue, mais pas à côté du nom de la stat": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "← Préc.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "▸ Créer un Item": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "▸ Créer un Mob": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "▸ Créer un PNJ": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "▸ Créer une Panoplie": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "▸ Créer une Quête": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "▸ Créer une Région": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "📍 Mode Région": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "📜 Mode Quête": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Active le mode Item pour soumettre armes, armures, consommables et autres objets du jeu.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Ajoute le lore (texte narratif) et les sources d'obtention : drops de mobs, donjons, PNJ marchands, quêtes, ressources récoltables.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Ajoute les items droppés et leur taux de drop (0–100 %). Tu peux mettre \"?\" si le taux est inconnu. Les IDs fantômes sont signalés et acceptés.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Ajoute les statistiques de l'item. Min seul = valeur fixe. Min + Max = plage aléatoire. Les stats sont groupées par catégorie (offensif, défensif…).": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Aperçu en temps réel": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Bienvenue dans le Creator !": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Ce panneau montre une prévisualisation de ta soumission en direct. L'onglet Historique liste les soumissions de la session.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Cet outil permet de soumettre du contenu wiki (items, mobs, PNJ, régions, quêtes, panoplies) à la modération. Ce guide te montrera les étapes essentielles.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Choisis la catégorie (Craft, Artisans, Commerce…) puis le type spécifique. Renseigne les coordonnées et la région pour le placer sur la carte.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Colle (Ctrl+V), glisse ou clique pour ajouter des captures. Une infobulle + un sprite permettent aux modérateurs de valider rapidement ta soumission.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Définis les bonus actifs selon le nombre de pièces équipées. Ex : +5 Force à 2 pièces, +10 Force à 4 pièces.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Entre ton pseudo dans le champ 👤, ou connecte-toi avec 🔑 Connexion pour des soumissions trackées. Les comptes ont accès à plus de fonctionnalités.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Envoie la panoplie à la modération.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Envoie la quête à la modération.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Envoie la région à la modération.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Envoie le mob à la modération. Indique la région et les coordonnées pour les boss et mini-boss.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Envoie le PNJ à la modération.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Étape": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Items, XP et monnaie obtenus à la fin de la quête.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Le formulaire": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Le nom génère l'ID unique automatiquement. Choisis la rareté, la catégorie, le slot et le palier. Les champs * sont obligatoires.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Les sections sont dépliables — clique sur un en-tête pour l'ouvrir ou fermer. Les champs marqués * sont obligatoires.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Liste les étapes de la quête. Chaque objectif peut être chaîné au suivant pour indiquer une progression logique.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Nom du set — l'ID est généré automatiquement. Les items portant cet ID de set seront liés à cette panoplie.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Nom, palier et coordonnées. Coche \"Codex\" si elle apparaît dans le codex — le lore devient obligatoire. Coche \"Téléportation\" si accessible via le téléporteur.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Nom, type (Monstre/Mini-Boss/Boss/Sbire), comportement (Agressif/Neutre/Passif). Coche \"Codex\" si ce mob a une entrée — le lore devient alors obligatoire.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Pour soumettre un ennemi : monstre standard, mini-boss, boss ou sbire.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Pour soumettre un personnage non-joueur : marchand, artisan, donneur de quêtes, etc.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Pour soumettre un set d'équipement avec des bonus liés au nombre de pièces équipées.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Pour soumettre une quête principale, secondaire ou Fractured Underworld.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Pour soumettre une zone ou région du jeu.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Prêt ? Clique pour envoyer l'item à la modération. Une note optionnelle peut être ajoutée en bas de page avant de soumettre.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Quand le formulaire est prêt, clique ici pour envoyer ta soumission à la modération. Elle sera vérifiée avant d'être publiée sur le wiki.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Sélectionne ici le type de contenu à soumettre : Item, Mob, PNJ, Région, Quête ou Panoplie. Chaque mode a son formulaire dédié.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Si l'item se craft, liste les ingrédients et leurs quantités. Les IDs non encore existants sont acceptés — ils apparaissent en \"drop orphelin\".": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Si le PNJ vend des items, liste-les avec leur prix d'achat et de rachat. Recherche les items par nom dans la liste existante.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Titre, type (Principale/Secondaire/Fractured Underworld), palier, zone et PNJ donneur. Les coordonnées de départ localisent le point de départ sur la carte.": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Type de contenu": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Étape {num} / {t}": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "✕ Fermer": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "Suivant →": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "✓ Terminer": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "📜 Objets de Quête": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "Créer une quête": {
+      "page": "creator",
+      "status": "auto"
+    },
+    "⚔️ Mode Item": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "👾 Mode Mob": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "🧑 Mode PNJ": {
+      "page": "tutorial",
+      "status": "auto"
+    },
+    "🔗 Mode Panoplie": {
+      "page": "tutorial",
+      "status": "auto"
     }
   }
 }

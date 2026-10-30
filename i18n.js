@@ -122,7 +122,7 @@ const htmlHosts = n => (n.nodeType === 1 ? n : n.parentElement)?.closest('[data-
 function translateHtml(el) {
   const key = squash(el.innerHTML);
   if (el._vclOut === key) return;                 // déjà traduit (ou notre propre mutation)
-  const out = translate(key);
+  const out = exact.get(key) ?? null;             // exact seulement : les motifs génériques ne doivent pas toucher un bloc de HTML
   if (out == null) {
     if (DEBUG && looksFrench(el.textContent) && !outputs.has(key)) missing.set(key, (missing.get(key) || 0) + 1);
     return;
