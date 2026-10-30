@@ -98,6 +98,7 @@ async function loadCombos() {
     const m = new Map(); let n = 0;
     (j.docs || []).forEach(x => { const c = x.d.category, p = x.d.palier; if (!c || p == null) return; n++; m.set(`${c}|${p}`, [c, String(p)]); });
     S.combos = [...m.values()]; S.itemCount = n;
+    S.itemIdx = (j.docs || []).map(x => ({ id: x.id, name: String(x.d.name || x.id), category: x.d.category, palier: x.d.palier }));
     S.counts = {}; (j.docs || []).forEach(x => { const k = `${x.d.category}|${x.d.palier}`; S.counts[k] = (S.counts[k] || 0) + 1; });
   } catch { S.combos = CATS.flatMap(c => ['1', '2', '3', 'event', 'worldboss'].map(p => [c[0], p])); S.itemCount = null; S.counts = {}; }
 }
@@ -155,7 +156,9 @@ function render() {
   const f = ({ login: rLogin, guild: rGuild, bot: rBot, form: rForm, recap: rRecap, status: rStatus })[S.step] || rLogin;
   // Le rendu remplace tout le contenu : on garde la position de défilement (style.css a scroll-behavior: smooth, d'où « instant »)
   const y = window.scrollY, step = render.lastStep;
+  const isq = document.getElementById('dg-isq'), keep = isq ? { v: isq.value, f: document.activeElement === isq } : null;
   app.innerHTML = stepsBar() + f();
+  if (keep) { const n = document.getElementById('dg-isq'); if (n) { n.value = keep.v; DG.itemSearch(keep.v); if (keep.f) n.focus(); } }
   render.lastStep = S.step;
   window.scrollTo({ top: step === S.step ? y : 0, behavior: 'instant' });
   watchProgress();
@@ -328,7 +331,7 @@ function manageRow(c, i, d, real) {
   const dot = !sub ? '⚪' : exists ? '🟢' : '🟠';
   const dotTitle = !sub ? "Pas inscrit : rien n'est envoyé dans ce salon" : exists ? 'Inscrit et présent sur Discord' : c.id ? 'Introuvable sur Discord (supprimé ?)' : 'Sera créé automatiquement';
   const note = sub && !exists ? ` · <span style="color:var(--gold)">${c.id ? 'introuvable sur Discord' : d.mode === 'create' ? 'sera créé automatiquement' : 'choisis un salon existant (⚙️)'}</span>` : '';
-  const nameField = ro ? `<span style="width:190px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.name)}">${esc(c.name)}</span>` : `<input type="text" value="${esc(c.name)}" onchange="DG.chRename(${i}, this.value)" style="width:190px;font-weight:700">`;
+  const nameField = `<input type="text" value="${esc(c.name)}" onchange="DG.chRename(${i}, this.value)" style="width:190px;font-weight:700" title="Renommer ce salon">`;
   const link = c.id ? ` <a href="https://discord.com/channels/${esc(S.guild.id)}/${esc(c.id)}" target="_blank" rel="noopener" title="Ouvrir sur Discord" style="text-decoration:none">↗</a>` : '';
   return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:wrap">
       <span title="${esc(dotTitle)}">${dot}</span>${nameField}${link}
@@ -393,7 +396,7 @@ function modeBar(d) {
   const tab = (on, label, mode, hint) => `<button class="dg-btn${on ? ' primary' : ''}" onclick="DG.chMode('${mode}')" title="${esc(hint)}">${label}</button>`;
   return `<div class="dg-row" style="margin:6px 0 4px">${tab(auto, '🤖 Plan automatique', 'auto', 'Le plan des Veilleurs, tenu à jour tout seul')}${tab(!auto, '✏️ Plan personnalisé', 'custom', 'Tu construis ton propre plan')}</div>
     <p class="dg-hint">${auto
-      ? "Le plan des Veilleurs : une catégorie par palier, un salon par type d'item. Il se met à jour tout seul quand le wiki gagne un type d'item ou un palier (ex. des outils au palier 2). Tu t'inscris aux salons qui t'intéressent."
+      ? "Le plan des Veilleurs : une catégorie par palier, un salon par type d'item. Il se met à jour tout seul quand le wiki gagne un type d'item ou un palier (ex. des outils au palier 2). Tu t'inscris aux salons qui t'intéressent, et tu peux renommer salons et catégories : les noms du wiki des Veilleurs ne sont que les noms par défaut."
       : "Ton propre plan : tu ajoutes, renommes, retires et règles les salons comme tu veux. Rien n'est ajouté tout seul."}</p>`;
 }
 
@@ -416,7 +419,7 @@ function manageBlock(d) {
   const groupsHtml = [...groups].map(([k, list]) => {
     const ins = list.filter(([c, i]) => typeof i !== 'string' && isSub(c)).length;
     return `<details data-k="${esc(k)}" ontoggle="DG.chGroup(this)" ${M.groups.has(k) || M.pal || M.sub ? 'open' : ''} style="border:1px solid var(--rim);border-radius:8px;margin-bottom:8px;background:var(--deep)">
-      <summary style="cursor:pointer;padding:8px 12px;font-weight:700;color:var(--bright)">${esc(k)} <span style="font-weight:400;font-size:12px;color:var(--muted)">— ${list.length} salon${list.length > 1 ? 's' : ''} · ${ins} inscrit${ins > 1 ? 's' : ''}</span></summary>
+      <summary style="cursor:pointer;padding:8px 12px;font-weight:700;color:var(--bright)">${esc(k)} <button class="dg-btn" data-k="${esc(k === '— sans catégorie —' ? '' : k)}" onclick="event.preventDefault();event.stopPropagation();DG.chRenameCat(this.dataset.k)" title="Renommer cette catégorie" style="padding:0 7px;font-size:11px">✏️</button> <span style="font-weight:400;font-size:12px;color:var(--muted)">— ${list.length} salon${list.length > 1 ? 's' : ''} · ${ins} inscrit${ins > 1 ? 's' : ''}</span></summary>
       <div style="padding:2px 12px 8px">${list.map(([c, i]) => typeof i === 'string' ? manageVirtualRow(c, +i.slice(1), d) : manageRow(c, i, d, real)).join('')}</div></details>`;
   }).join('') || '<div class="dg-hint">Aucun salon à afficher.</div>';
   const missing = d.mode === 'create' && all.some(([c]) => isSub(c) && c.name && !c.id);
@@ -432,6 +435,20 @@ function manageBlock(d) {
     ${filters}${groupsHtml}</div>`;
 }
 
+const plain = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+/** Salon inscrit (et créé) qui recevrait cet item, comme le bot le calcule ; null si aucun. */
+function roomOf(it, d) {
+  const fit = (l, v) => !(l || []).length || has(l, v);
+  const spec = c => ((c.itemCats || []).length > 0) + ((c.paliers || []).length > 0);
+  return (d.channels || []).filter(c => c.id && isSub(c) && fit(c.itemCats, it.category) && fit(c.paliers, it.palier)).sort((a, b) => spec(b) - spec(a))[0] || null;
+}
+function itemSearchBlock() {
+  return `<div style="margin-top:18px"><h3 style="margin-top:0">Envoyer / renvoyer un item</h3>
+    <p class="dg-hint" style="margin-top:0">Cherche une fiche du wiki : le bot supprime son ancien post (s'il existe) et le reposte dans le salon inscrit qui la reçoit.</p>
+    <input type="text" id="dg-isq" placeholder="Nom de l'item…" oninput="DG.itemSearch(this.value)" style="width:100%;box-sizing:border-box">
+    <div id="dg-isr" style="margin-top:8px"></div></div>`;
+}
+
 function rStatus() {
   const d = S.doc, g = S.guild, st = d.status;
   const txt = { pending: '⏳ En attente de validation par l\'équipe du wiki. Rien n\'est envoyé tant que ce n\'est pas validé.', approved: d.paused ? '⏸ En pause : rien n\'est envoyé.' : '🟢 Actif : le bot envoie les items.',
@@ -442,6 +459,7 @@ function rStatus() {
       ${d.pending ? `<div class="dg-bar"><i style="width:${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))}%"></i></div><div class="dg-hint">${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))} % — ${d.posted || 0} sur ${(d.posted || 0) + d.pending}</div>` : ''}</dd><dt>Dernier envoi</dt><dd>${when(d.lastSentAt)}</dd>
     ${d.lastError ? `<dt>Dernière erreur du bot</dt><dd style="color:var(--removed)">${esc(d.lastError)}</dd>` : ''}${d.purge ? '<dt>En cours</dt><dd>suppression des posts…</dd>' : ''}</dl>
     ${manageBlock(d)}
+    ${st === 'removing' ? '' : itemSearchBlock()}
     ${st === 'removing' ? '' : `<div class="dg-row">
       <button class="dg-btn" onclick="DG.edit()">✏️ Modifier les réglages</button>
       ${st === 'approved' || st === 'pending' ? `<button class="dg-btn" onclick="DG.pause(${!d.paused})">${d.paused ? '▶ Reprendre' : '⏸ Mettre en pause'}</button>` : ''}
@@ -541,6 +559,28 @@ const DG = window.DG = {
   chOpen(i) { M.open.has(i) ? M.open.delete(i) : M.open.add(i); render(); },
   chGroup(el) { const k = el.dataset.k; if (el.open) M.groups.add(k); else M.groups.delete(k); },
   chView(pal, sub) { M.pal = pal; M.sub = sub; render(); },
+  itemSearch(q) {
+    const out = document.getElementById('dg-isr'); if (!out) return;
+    const k = plain(q).trim();
+    if (k.length < 2) { out.innerHTML = ''; return; }
+    const d = S.doc, list = (S.itemIdx || []).filter(i => plain(i.name).includes(k) || plain(i.id).includes(k)).slice(0, 8);
+    out.innerHTML = list.map(i => {
+      const room = roomOf(i, d);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:5px 10px;margin-bottom:4px;background:var(--surface2);border:1px solid var(--rim);border-radius:6px;font-size:12px;flex-wrap:wrap">
+        <span style="flex:1;min-width:180px"><b>${esc(i.name)}</b> <span style="color:var(--muted)">· ${esc((CATS.find(c => c[0] === i.category) || [0, i.category || '?'])[1])} · ${esc(palierLabel(i.palier))}</span></span>
+        <span style="color:var(--muted)">${room ? '→ ' + esc(room.name) : '⚠️ aucun salon inscrit ne reçoit cet item'}</span>
+        <button class="dg-btn" ${room ? '' : 'disabled'} data-id="${esc(i.id)}" onclick="DG.sendItem(this.dataset.id)" style="padding:3px 10px;font-size:12px">📤 Envoyer / renvoyer</button></div>`;
+    }).join('') || '<div class="dg-hint">Aucun item trouvé.</div>';
+  },
+  async sendItem(id) {
+    const j = await DG.chCall('send_item', { itemId: id });
+    S.msg = j ? "Renvoi demandé : le bot supprime l'ancien post et reposte l'item (dans la minute)." : ''; render();
+  },
+  async chRenameCat(from) {
+    const to = (prompt('Nouveau nom de la catégorie :', from) || '').trim();
+    if (!to || to === from) return;
+    S.msg = ''; await DG.chCall('rename_category', { from, to }); render();
+  },
   async autoSync() { // recalcule le plan automatique (nouveau type d'item / palier)
     try { await loadCombos(); const j = await api('auto_sync', { guildId: S.guild.id, template: fullTemplate(S.doc) }); if (j.config) S.doc = j.config; } catch (e) { S.err = e.message; }
   },

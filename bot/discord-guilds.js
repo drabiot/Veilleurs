@@ -171,6 +171,7 @@ async function guildPass(rest, g, st, getCtx) {
   const eligible = (g.channels || []).filter(c => c.subscribed !== false && !c.skip);
   const cfg = { ...g, channels: eligible };
   const doneReq = []; // demandes d'envoi à la demande traitées
+  const doneItems = []; // demandes « renvoyer cet item » traitées
   const logs = []; // entrées d'historique visibles dans la modération
   const badCh = new Set(); // salons introuvables (supprimés sur Discord)
   for (const chId of Object.keys(st.locks)) { try { await unlock(rest, st, chId); } catch { delete st.locks[chId]; } } // verrou resté après un plantage
@@ -211,6 +212,17 @@ async function guildPass(rest, g, st, getCtx) {
     for (const it of items.values()) if (fitsChannel(g, ch, it)) delete st.seen[it._id]; // redevient « à envoyer »
     doneReq.push(r.id);
     logs.push(`Bot : « ${ch.name} » — ${r.mode === 'all' ? 'renvoi de toute la data' : 'envoi des items manquants'} pris en compte`);
+  }
+  // Renvoi d'un item précis demandé par le chef de serveur : ancien post supprimé, l'item redevient « à envoyer » (salon inscrit qui le reçoit)
+  for (const r of g.itemRequests || []) {
+    if (timeUp()) break;
+    const it = items.get(r.id);
+    if (!it) { logs.push(`Bot : item « ${r.id} » introuvable dans le wiki`); doneItems.push(r.id); continue; }
+    if (!eligible.some(c => c.id && fitsChannel(g, c, it))) { logs.push(`Bot : « ${it.name} » : aucun salon inscrit ne reçoit cet item (inscris-toi au salon qui lui correspond)`); doneItems.push(r.id); continue; }
+    for (const [key, e] of Object.entries(st.posts)) if (key === r.id || (e.ids || []).includes(r.id)) { await deletePost(rest, e); delete st.posts[key]; await sleep(300); }
+    delete st.seen[r.id];
+    logs.push(`Bot : « ${it.name} » : renvoi en cours`);
+    doneItems.push(r.id);
   }
   // Inscription à un salon après coup : ses items déjà présents sont notés « vus » (sauf mode « tous ») pour ne pas tout renvoyer ; états antérieurs : migration silencieuse
   if (!st.subs._m) { st.subs._m = 1; if (st.baselined) eligible.forEach(c => { if (c.id) st.subs[c.id] = true; }); }
@@ -295,9 +307,10 @@ async function guildPass(rest, g, st, getCtx) {
   patch.channelPosts = {}; // posts par salon (la modération montre ce que chaque serveur a reçu)
   for (const e of Object.values(st.posts)) patch.channelPosts[e.channelId] = (patch.channelPosts[e.channelId] || 0) + (e.ids ? e.ids.length : 1);
   if (doneReq.length) patch.requestsDone = doneReq;
+  if (doneItems.length) patch.itemRequestsDone = doneItems;
   if (badCh.size) patch.badChannels = [...badCh];
   if (error || g.lastError) patch.lastError = error;
-  if (sent || error || logs.length || doneReq.length || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
+  if (sent || error || logs.length || doneReq.length || doneItems.length || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
   if (sent) log(`${g.guildName} : ${sent} post(s) envoyé(s), ${pending} restant(s).`);
   return { sent, pending };
 }
@@ -380,7 +393,7 @@ async function pass(rest) {
   for (const g of active) { const st = await loadGuildState(g.id); st._id = g.id; states.set(g.id, st); }
   if (sending.length) {
     // lecture complète si un serveur n'a jamais été lu, a un envoi en cours, des items en échec, ou des réglages modifiés ; sinon seulement les changements
-    const needFull = sending.some(g => { const st = states.get(g.id); return !st.baselined || st.pending > 0 || !st.rev || st.sig !== sigOf(g) || (g.requests || []).length > 0 || (g.channels || []).some(c => c.id && c.subscribed !== false && !c.skip && !st.subs?.[c.id]); });
+    const needFull = sending.some(g => { const st = states.get(g.id); return !st.baselined || st.pending > 0 || !st.rev || st.sig !== sigOf(g) || (g.requests || []).length > 0 || (g.itemRequests || []).length > 0 || (g.channels || []).some(c => c.id && c.subscribed !== false && !c.skip && !st.subs?.[c.id]); });
     await refreshItems(needFull ? 0 : Math.min(...sending.map(g => states.get(g.id).rev)));
   }
   for (const g of active) {

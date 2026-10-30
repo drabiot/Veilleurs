@@ -240,7 +240,9 @@ function cleanTemplate(tpl) {
 function mergeTemplate(doc, tpl) {
   const key = c => ((c.itemCats || []).length === 1 && (c.paliers || []).length === 1 ? c.itemCats[0] + '|' + c.paliers[0] : '');
   const old = new Map((doc.channels || []).filter(c => key(c)).map(c => [key(c), c]));
-  const next = tpl.map(t => old.get(t.itemCats[0] + '|' + t.paliers[0]) || { name: t.name, type: doc.forum === false ? 'text' : 'forum', categoryName: t.categoryName, id: '', itemCats: t.itemCats, paliers: t.paliers, created: false, subscribed: false });
+  const catOf = new Map(); // palier → catégorie telle que le chef l'a nommée
+  (doc.channels || []).forEach(c => { if ((c.paliers || []).length === 1 && c.categoryName) catOf.set(c.paliers[0], c.categoryName); });
+  const next = tpl.map(t => old.get(t.itemCats[0] + '|' + t.paliers[0]) || { name: t.name, type: doc.forum === false ? 'text' : 'forum', categoryName: catOf.get(t.paliers[0]) || t.categoryName, id: '', itemCats: t.itemCats, paliers: t.paliers, created: false, subscribed: false });
   const changed = next.length !== (doc.channels || []).length || next.some((c, i) => c !== doc.channels[i]);
   doc.channels = next;
   return changed;
@@ -475,6 +477,36 @@ export async function handleGuildApi(request, env, deps) {
     return json({ ok: true, config: doc });
   }
 
+  // Renommer une catégorie : toutes ses entrées du plan, et la vraie catégorie sur Discord si on la retrouve (nom du plan avec le préfixe du serveur)
+  if (action === 'rename_category') {
+    const from = String(body.from || ''), to = sanitizeName(body.to, 100);
+    if (!to) return json({ error: 'Donne un nom à la catégorie.' }, 400);
+    const entries = (doc.channels || []).filter(c => (c.categoryName || '') === from);
+    if (!entries.length) return json({ error: 'Catégorie introuvable dans le plan.' }, 404);
+    const withPrefix = n => (entries[0].noPrefix ? n : [doc.prefix, n].filter(Boolean).join(' '));
+    const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
+    const cat = chs.ok && Array.isArray(chs.data) ? chs.data.find(x => x.type === 4 && nkey(x.name) === nkey(withPrefix(from))) : null;
+    if (cat) { const r = await dc(env, 'PATCH', `/channels/${cat.id}`, { name: withPrefix(to).slice(0, 100) }); if (!r.ok) return json({ error: 'Renommage refusé par Discord : ' + (r.data?.message || r.status) }, 502); }
+    entries.forEach(c => { c.categoryName = to; });
+    doc.updatedAt = Date.now();
+    plog(doc, `Catégorie « ${from || 'sans nom'} » renommée « ${to} »${cat ? ' (aussi sur Discord)' : ''}`);
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
+  // renvoyer UN item précis : le bot supprime son ancien post (s'il existe) et le reposte dans le salon inscrit qui le reçoit
+  if (action === 'send_item') {
+    const itemId = String(body.itemId || '');
+    if (!/^[\w\-.]{1,120}$/.test(itemId)) return json({ error: 'Item invalide.' }, 400);
+    doc.itemRequests = [...(doc.itemRequests || []).filter(r => r.id !== itemId), { id: itemId, at: Date.now() }].slice(-30);
+    doc.updatedAt = Date.now();
+    plog(doc, `Renvoi demandé pour l'item « ${itemId} »`);
+    if (doc.status === 'approved' && !doc.paused) plog(doc, triggerText(await triggerBot(env)));
+    else plog(doc, 'Envoi en attente : ' + (doc.status !== 'approved' ? 'le serveur doit d\'abord être validé' : 'l\'envoi est en pause'));
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
   // envoi à la demande pour un salon : traité par le bot (cartes dessinées côté Node)
   if (action === 'send_request') {
     const c = (doc.channels || [])[parseInt(body.index, 10)];
@@ -657,6 +689,7 @@ export async function handleGuildBot(request, env, deps) {
     for (const k of REPORT_KEYS) if (body.patch && k in body.patch) doc[k] = body.patch[k];
     if (Array.isArray(body.patch?.log)) body.patch.log.slice(0, 10).forEach(m => pushLog(doc, m));
     if (Array.isArray(body.patch?.requestsDone)) doc.requests = (doc.requests || []).filter(r => !body.patch.requestsDone.includes(r.id));
+    if (Array.isArray(body.patch?.itemRequestsDone)) doc.itemRequests = (doc.itemRequests || []).filter(r => !body.patch.itemRequestsDone.includes(r.id));
     // salon supprimé sur Discord : en mode « créé par le bot », on oublie son id pour que la page propose de le recréer
     for (const cid of (Array.isArray(body.patch?.badChannels) ? body.patch.badChannels : []).slice(0, 20)) {
       const c = (doc.channels || []).find(x => x.id === cid);
