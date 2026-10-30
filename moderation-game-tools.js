@@ -334,7 +334,7 @@ window.setSecretForgeronsHidden = async function(hidden) {
 const _DR_REF = () => doc(db, 'config', 'discord_routes');
 const _DR_CATS = [['arme', '⚔️ Armes', 'armes'], ['armure', '🛡️ Armures', 'armures'], ['accessoire', '💍 Accessoires', 'accessoires'], ['outils', '🛠️ Outils', 'outils'], ['rune', '🔮 Runes', 'runes'], ['consommable', '🧪 Consommables', 'consommables'],
   ['nourriture', '🍖 Nourriture', 'nourriture'], ['materiaux', '🧱 Matériaux', 'materiaux'], ['ressources', '⛏️ Ressources', 'ressources'], ['parchemin', '📃 Parchemins', 'parchemins'], ['quete', '📜 Quête', 'quete'], ['donjon', '🏰 Donjon', 'donjon'], ['monnaie', '🪙 Monnaie', 'monnaie']];
-let _dr = { enabled: false, hideThreshold: 10, guildId: '', plans: {}, channels: [] };
+let _dr = { enabled: false, hideThreshold: 10, guildId: '', plans: {}, channels: [], createdByBot: {} };
 let _drPaliers = [], _drGuilds = [], _drGuildChans = [], _drGuildErr = '', _drPostCounts = {}, _drBusyMsg = '';
 
 async function _drCall(action, payload = {}) {
@@ -343,6 +343,14 @@ async function _drCall(action, payload = {}) {
   if (!r.ok) throw new Error(j.message || j.error || ('Discord ' + r.status));
   return j;
 }
+async function _drDel(id) {
+  const r = await _drCall('delete_thread', { threadId: id });
+  if (r && r.status && ![200, 204, 404].includes(r.status)) throw new Error('Discord ' + r.status);
+}
+const _drNoteCreated = (kind, id) => {
+  const g = (_dr.createdByBot[_dr.guildId] ??= { channels: [], categories: [] });
+  if (!g[kind].includes(id)) g[kind].push(id);
+};
 const _drSleep = ms => new Promise(r => setTimeout(r, ms));
 
 window.showDiscordRoutes = async function() {
@@ -353,7 +361,7 @@ window.showDiscordRoutes = async function() {
   try {
     const [cfg, pal] = await Promise.all([getDoc(_DR_REF()), getDoc(doc(db, 'config', 'paliers'))]);
     const c = cfg.exists() ? cfg.data() : {};
-    _dr = { enabled: c.enabled === true, hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, channels: Array.isArray(c.channels) ? c.channels : [] };
+    _dr = { enabled: c.enabled === true, hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, channels: Array.isArray(c.channels) ? c.channels : [], createdByBot: c.createdByBot && typeof c.createdByBot === 'object' ? c.createdByBot : {} };
     _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []);
     if (!_drPaliers.length) _drPaliers = [{ id: 1, label: 'Palier 1' }, { id: 2, label: 'Palier 2' }, { id: 3, label: 'Palier 3' }, { id: 'event', label: 'Event' }, { id: 'worldboss', label: 'World Boss' }];
     try { _drGuilds = await _drCall('get_bot_guilds'); _drGuildErr = ''; } catch (e) { _drGuilds = []; _drGuildErr = e.message; }
@@ -377,7 +385,7 @@ async function _drLoadGuildChans() {
   } catch { _drPostCounts = {}; }
 }
 
-const _drSave = () => { if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; return setDoc(_DR_REF(), { enabled: _dr.enabled, hideThreshold: _dr.hideThreshold, guildId: _dr.guildId, plans: _dr.plans, channels: _dr.channels }); };
+const _drSave = () => { if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; return setDoc(_DR_REF(), { enabled: _dr.enabled, hideThreshold: _dr.hideThreshold, guildId: _dr.guildId, plans: _dr.plans, channels: _dr.channels, createdByBot: _dr.createdByBot }); };
 const _drPersist = async () => { try { await _drSave(); } catch (e) { toast('Erreur : ' + e.message, 'error'); } };
 const _drField = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
 const _drChip = (on, label, onclick) => `<button type="button" onclick="${onclick}" style="font-size:11px;padding:3px 9px;border-radius:12px;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};background:${on ? 'rgba(224,172,96,.18)' : 'var(--surface2)'};color:${on ? 'var(--accent)' : 'var(--muted)'};">${label}</button>`;
@@ -454,7 +462,12 @@ function _renderDiscordRoutes() {
       <button class="btn ${_dr.enabled ? 'btn-ghost' : 'btn-primary'}" onclick="setDiscordEnabled(${!_dr.enabled})" style="font-size:12px;">${_dr.enabled ? '⏸ Désactiver' : '▶ Activer'}</button>
       <span style="font-size:12px;">🤫 Masquer un salon avant un envoi de plus de <input type="number" min="0" value="${_dr.hideThreshold}" onchange="drSetThreshold(this.value)" style="${_drField}width:60px;text-align:center;"> items <span style="color:var(--muted);">(0 = jamais ; « Gérer les rôles » requis)</span></span>
     </div>
-    ${_drTree()}${cards}`;
+    ${_drTree()}${cards}
+    <div style="margin-top:26px;border:1px solid var(--danger);border-radius:8px;padding:12px 14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:6px;">🧨 Zone de danger — désinstaller sur ce serveur</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Supprime tous les posts du bot, <strong>uniquement les salons et catégories que le bot a lui-même créés</strong> (les salons existants que tu as seulement « répertoriés » ne sont jamais supprimés ; une catégorie créée par le bot n'est supprimée que si elle est vide ensuite), efface le plan de ce serveur, puis fait <strong>quitter le serveur au bot</strong>. Irréversible.</div>
+      <button class="btn btn-ghost" onclick="drUninstall()" style="font-size:12px;color:var(--danger);border-color:var(--danger);">🧨 Tout supprimer et quitter le serveur</button>
+    </div>`;
 }
 
 const _drMsg = t => { _drBusyMsg = t; const el = document.getElementById('discord-setup-msg'); if (el) el.textContent = t; };
@@ -526,7 +539,7 @@ async function _drEnsure(c) {
   if (!parentId && c.categoryName) {
     const known = _drCats().find(k => k.name.toLowerCase() === c.categoryName.toLowerCase());
     if (known) parentId = known.id;
-    else { const k = await _drCall('create_channel', { name: c.categoryName, type: 4 }); _drGuildChans.push(k); parentId = k.id; await _drSleep(400); }
+    else { const k = await _drCall('create_channel', { name: c.categoryName, type: 4 }); _drGuildChans.push(k); parentId = k.id; _drNoteCreated('categories', k.id); await _drSleep(400); }
   }
   c.categoryId = parentId;
   const type = _drTypeNum(c);
@@ -534,7 +547,7 @@ async function _drEnsure(c) {
     || (!parentId ? _drGuildChans.find(x => x.type === type && x.name === name) : null);
   if (existing) { c.id = existing.id; return 'adopté'; }
   const ch = await _drCall('create_channel', { name, type, parentId: parentId || undefined });
-  _drGuildChans.push(ch); c.id = ch.id;
+  _drGuildChans.push(ch); c.id = ch.id; _drNoteCreated('channels', ch.id);
   await _drSleep(400);
   return 'créé';
 }
@@ -572,6 +585,52 @@ window.drCreate = async (i) => {
   try { await _drLoadGuildChans(); const r = await _drEnsure(_dr.channels[i]); await _drSave(); toast(r ? `Salon « ${_dr.channels[i].name} » ${r}.` : 'Déjà répertorié.', 'success'); }
   catch (e) { toast('Création impossible : ' + e.message + ' (le bot a-t-il « Gérer les salons » ?)', 'error', 8000); }
   await _drLoadGuildChans(); _renderDiscordRoutes(); window.discordRenderSync();
+};
+
+window.drUninstall = async () => {
+  if (!_dr.guildId) { toast('Choisis un serveur.', 'warning'); return; }
+  const gname = (_drGuilds.find(g => g.id === _dr.guildId) || {}).name || _dr.guildId;
+  await _drLoadGuildChans();
+  const inGuild = new Set(_drGuildChans.map(x => x.id));
+  const mine = _dr.createdByBot[_dr.guildId] || { channels: [], categories: [] };
+  const delChannels = mine.channels.filter(id => inGuild.has(id));
+  const delCats = mine.categories.filter(id => inGuild.has(id));
+  const snap = await getDocs(collection(db, 'discord_posts'));
+  const posts = snap.docs.map(d => ({ _id: d.id, ...d.data() })).filter(p => inGuild.has(p.channelId));
+  const survivors = posts.filter(p => !delChannels.includes(p.channelId)); // posts dans des salons conservés : supprimés un par un
+  if (!await modal.confirm(`Désinstaller sur « ${gname} » ?\n\n• ${posts.length} post(s) du bot supprimés (${survivors.length} un par un, le reste part avec ses salons)\n• ${delChannels.length} salon(s) créés par le bot supprimés\n• ${delCats.length} catégorie(s) créées par le bot supprimées si elles sont vides\n• le plan de ce serveur effacé\n• le bot quitte le serveur\n\nLes autres salons du serveur ne sont pas touchés.`)) return;
+  const typed = (prompt(`Pour confirmer, tape exactement le nom du serveur :\n${gname}`) || '').trim();
+  if (typed !== gname) { toast('Nom différent : désinstallation annulée.', 'warning'); return; }
+  const fails = [];
+  try {
+    for (const [n, p] of survivors.entries()) {
+      _drMsg(`Suppression des posts : ${n + 1}/${survivors.length}…`);
+      try { if (p.threadId) await _drDel(p.threadId); await deleteDoc(doc(db, 'discord_posts', p._id)); } catch (e) { fails.push('post ' + (p.itemName || p._id)); }
+      await _drSleep(500);
+    }
+    for (const [n, id] of delChannels.entries()) {
+      _drMsg(`Suppression des salons : ${n + 1}/${delChannels.length}…`);
+      try { await _drDel(id); } catch (e) { fails.push('salon ' + id); }
+      await _drSleep(500);
+    }
+    for (const p of posts.filter(p => delChannels.includes(p.channelId))) { try { await deleteDoc(doc(db, 'discord_posts', p._id)); } catch {} } // suivi des posts partis avec leurs salons
+    await _drLoadGuildChans(); // catégories créées par le bot : supprimées seulement si vides
+    for (const id of delCats) {
+      if (_drGuildChans.some(x => x.parent_id === id)) { fails.push('catégorie non vide conservée'); continue; }
+      try { await _drDel(id); } catch (e) { fails.push('catégorie ' + id); }
+      await _drSleep(500);
+    }
+    _drMsg('Le bot quitte le serveur…');
+    await _drCall('leave_guild', { guildId: _dr.guildId });
+  } catch (e) { fails.push(e.message); }
+  delete _dr.createdByBot[_dr.guildId];
+  delete _dr.plans[_dr.guildId];
+  _dr.channels = []; _dr.guildId = '';
+  await _drPersist();
+  try { _drGuilds = await _drCall('get_bot_guilds'); } catch { _drGuilds = []; }
+  _drGuildChans = []; _drMsg('');
+  toast(fails.length ? `Désinstallé avec ${fails.length} souci(s) : ${fails.slice(0, 3).join(', ')}` : 'Désinstallé : posts, salons et catégories du bot supprimés, le bot a quitté le serveur.', fails.length ? 'warning' : 'success', 10000);
+  _renderDiscordRoutes(); window.discordRenderSync();
 };
 
 window.setDiscordEnabled = async function(on) {

@@ -164,6 +164,11 @@ export default {
         return json(await r.json(), r.ok ? 200 : r.status);
       }
 
+      if (action === 'leave_guild') { // le bot quitte le serveur (irréversible : il faut le réinviter pour revenir)
+        const r = await fetch(`https://discord.com/api/v10/users/@me/guilds/${body.guildId}`, { method: 'DELETE', headers: botHdr });
+        return r.ok ? json({ status: r.status }) : json(await r.json().catch(() => ({})), r.status);
+      }
+
       if (action === 'get_guild_channels') {
         const r = await fetch(`https://discord.com/api/v10/guilds/${body.guildId || env.DISCORD_GUILD_ID}/channels`, { headers: botHdr });
         return json(await r.json(), r.ok ? 200 : r.status);
