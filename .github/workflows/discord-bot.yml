@@ -4,7 +4,7 @@ name: Discord bot
 # Secrets GitHub à créer (Settings → Secrets and variables → Actions) : BOT_TOKEN, ADMIN_SECRET.
 on:
   schedule:
-    - cron: '*/10 * * * *'   # GitHub peut retarder une tâche planifiée de quelques minutes
+    - cron: '*/30 * * * *'   # secours : le worker Cloudflare lance déjà le bot toutes les 10 min (GitHub retarde ou saute parfois ses crons)
   workflow_dispatch:
 
 # Jamais deux passages en même temps (même état, mêmes salons)
