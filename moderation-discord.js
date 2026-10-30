@@ -550,11 +550,12 @@ async function _workerCall(action, payload) {
 }
 
 
-async function _postBotForumThread(channelId, threadName, content, fileBlob, fileName, tagIds) {
+async function _postBotForumThread(channelId, threadName, content, fileBlob, fileName, tagIds, extra = null) {
   const secret = await _getWorkerSecret();
   const message = {};
   if (content) message.content = content;
-  message.attachments = [{ id: 0, filename: fileName }];
+  message.attachments = [{ id: 0, filename: fileName }, ...(extra ? [{ id: 1, filename: extra.name }] : [])];
+  message.allowed_mentions = { parse: [] };
   const thread = { name: threadName, message };
   if (tagIds?.length) thread.applied_tags = tagIds;
 
@@ -565,6 +566,7 @@ async function _postBotForumThread(channelId, threadName, content, fileBlob, fil
   fd.append('thread', JSON.stringify(thread));
   if (fileBlob && fileName) fd.append('file', fileBlob, fileName);
   fd.append('fileName', fileName);
+  if (extra) { fd.append('file2', extra.blob, extra.name); fd.append('fileName2', extra.name); }
 
   try {
     let r = await fetch(`${WORKER_URL}?action=post_thread`, { method: 'POST', body: fd });
@@ -780,6 +782,7 @@ async function _sendSingleItemDiscord(item) {
 
   const cardBlob  = await generateCardBlob(item, maps, 3);
   const cardFname = `${item.id || item._id || 'item'}_card.png`;
+  const iconBlob  = await import('./card-renderer.js').then(m => m.generateIconBlob(item, 160)).catch(() => null);
 
   const itemId   = item._id || item.id;
   const wikiUrl  = itemId ? `https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${itemId}` : null;
@@ -821,7 +824,10 @@ async function _sendSingleItemDiscord(item) {
   await _reorderChannelTags(channelId);
 
   console.log('[send] applied_tags order:', tags);
-  const res = await _postBotForumThread(channelId, item.name || 'Item', content, cardBlob, cardFname, tags);
+  // texture d'abord : Discord en fait la miniature du post dans la liste du forum ; la carte vient ensuite
+  const res = iconBlob
+    ? await _postBotForumThread(channelId, item.name || 'Item', content, iconBlob, `${item.id || item._id || 'item'}_texture.png`, tags, { blob: cardBlob, name: cardFname })
+    : await _postBotForumThread(channelId, item.name || 'Item', content, cardBlob, cardFname, tags);
   if (!res) throw new Error('Échec de l\'envoi bot Discord');
 
   if (postDocId) {

@@ -124,7 +124,10 @@ export default {
 
         const outFd = new FormData();
         outFd.append('payload_json', JSON.stringify(thread));
+        // 1er fichier = miniature du post dans le forum (texture), 2e = carte : le fichier d'index 0 est la 1re image du message
+        const file2 = fd.get('file2'), fileName2 = fd.get('fileName2');
         if (file && fileName) outFd.append('files[0]', file, fileName);
+        if (file2 && fileName2) outFd.append('files[1]', file2, fileName2);
 
         const r = await fetch(`https://discord.com/api/v10/channels/${channelId}/threads`, {
           method: 'POST',

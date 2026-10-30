@@ -662,7 +662,7 @@ export async function drawItemCard(canvas, item, exportScale = null, maps = {}) 
           const parts = []
           if (npc.coords.x != null && npc.coords.x !== '') parts.push(`X${npc.coords.x}`)
           if (npc.coords.z != null && npc.coords.z !== '') parts.push(`Z${npc.coords.z}`)
-          if (parts.length) { coordStr = '📍 ' + parts.join('  '); break }
+          // badge « Pin X Z » retiré : coordonnées déjà dans le texte
         }
         const bPad = 6, bGap = 6, bH = 14
         ctx.font = '700 9px "JetBrains Mono"'
@@ -776,5 +776,20 @@ export async function drawItemCard(canvas, item, exportScale = null, maps = {}) 
 export async function generateCardBlob(item, maps = {}, scale = 3) {
   const canvas = document.createElement('canvas')
   await drawItemCard(canvas, item, scale, maps)
+  return new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+}
+
+// Texture de l'item en grand format net sur fond sombre : 1re image du message = miniature du post dans la liste du forum (comme le bot). null si pas de texture.
+export async function generateIconBlob(item, size = 160) {
+  const img = await loadImage(resolveIconUrl(item))
+  if (!img) return null
+  const canvas = document.createElement('canvas')
+  canvas.width = size; canvas.height = size
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#191410'; ctx.fillRect(0, 0, size, size)
+  ctx.imageSmoothingEnabled = false
+  const k = Math.min(size * 0.86 / img.naturalWidth, size * 0.86 / img.naturalHeight)
+  const w = img.naturalWidth * k, h = img.naturalHeight * k
+  ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
   return new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
 }
