@@ -361,7 +361,8 @@ window.showDiscordRoutes = async function() {
   try {
     const [cfg, pal] = await Promise.all([getDoc(_DR_REF()), getDoc(doc(db, 'config', 'paliers'))]);
     const c = cfg.exists() ? cfg.data() : {};
-    _dr = { enabled: c.enabled !== false || c.autoDefaultApplied !== true, // actif par défaut (migration unique : autoDefaultApplied) hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, channels: Array.isArray(c.channels) ? c.channels : [], createdByBot: c.createdByBot && typeof c.createdByBot === 'object' ? c.createdByBot : {} };
+    // actif par défaut ; migration unique (autoDefaultApplied) pour un envoi automatique laissé désactivé avant ce changement
+    _dr = { enabled: c.enabled !== false || c.autoDefaultApplied !== true, hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, channels: Array.isArray(c.channels) ? c.channels : [], createdByBot: c.createdByBot && typeof c.createdByBot === 'object' ? c.createdByBot : {} };
     _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []);
     if (c.autoDefaultApplied !== true) await _drPersist(); // migration unique : l'envoi automatique est actif par défaut (le bot lit cette valeur)
     if (!_drPaliers.length) _drPaliers = [{ id: 1, label: 'Palier 1' }, { id: 2, label: 'Palier 2' }, { id: 3, label: 'Palier 3' }, { id: 'event', label: 'Event' }, { id: 'worldboss', label: 'World Boss' }];
