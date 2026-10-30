@@ -1440,11 +1440,20 @@ function _buildApprovalEmbed(obj, imageFilename, activeFields = null, itemNames 
   }
 
   if (has('craft') && obj.craft?.length) {
-    const lines = obj.craft.map(c => {
-      const name = itemNames?.get(c.id) || c.name || c.id.replace(/_/g, ' ');
-      return `\`${c.qty}×\`  **${name}**`;
+    // 3 formats : [{name, items}] (PNJ), [[ingrédients], …] (imbriqué), [ingrédients] (plat)
+    const first = obj.craft[0];
+    const recipes = (first && !Array.isArray(first) && 'items' in first ? obj.craft : Array.isArray(first) ? obj.craft.map(items => ({ items })) : [{ items: obj.craft }])
+      .map(r => ({ title: r.name || '', items: (r.items || []).filter(c => c?.id) }))
+      .filter(r => r.items.length);
+    const blocks = recipes.map((r, i) => {
+      const lines = r.items.map(c => {
+        const name = itemNames?.get(c.id) || c.name || String(c.id).replace(/_/g, ' ');
+        return `\`${c.qty}×\`  **${name}**`;
+      });
+      const title = r.title || (recipes.length > 1 ? `Recette ${i + 1}` : '');
+      return (title ? `*${title}*\n` : '') + lines.join('\n');
     });
-    mainParts.push('🔨 **Craft**\n' + lines.join('\n'));
+    if (blocks.length) mainParts.push('🔨 **Craft**\n' + blocks.join('\n\n'));
   }
 
   if (mainParts.length) {
