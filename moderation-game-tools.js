@@ -598,7 +598,7 @@ window.drUninstall = async () => {
   const snap = await getDocs(collection(db, 'discord_posts'));
   const posts = snap.docs.map(d => ({ _id: d.id, ...d.data() })).filter(p => inGuild.has(p.channelId));
   const survivors = posts.filter(p => !delChannels.includes(p.channelId)); // posts dans des salons conservés : supprimés un par un
-  if (!await modal.confirm(`Désinstaller sur « ${gname} » ?\n\n• ${posts.length} post(s) du bot supprimés (${survivors.length} un par un, le reste part avec ses salons)\n• ${delChannels.length} salon(s) créés par le bot supprimés\n• ${delCats.length} catégorie(s) créées par le bot supprimées si elles sont vides\n• le plan de ce serveur effacé\n• le bot quitte le serveur\n\nLes autres salons du serveur ne sont pas touchés.`)) return;
+  if (!await modal.confirm(`Désinstaller sur « ${gname} » ? Seront supprimés : ${posts.length} post(s) du bot, ${delChannels.length} salon(s) créé(s) par le bot, ${delCats.length} catégorie(s) créée(s) par le bot (si elles sont vides). Le plan de ce serveur sera effacé et le bot quittera le serveur. Les autres salons ne sont pas touchés. Irréversible.`)) return;
   const typed = (prompt(`Pour confirmer, tape exactement le nom du serveur :\n${gname}`) || '').trim();
   if (typed !== gname) { toast('Nom différent : désinstallation annulée.', 'warning'); return; }
   const fails = [];
