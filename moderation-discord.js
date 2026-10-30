@@ -544,7 +544,7 @@ async function _workerCall(action, payload) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ secret, action, ...payload }),
   });
-  if (!r.ok) { const t = await r.text().catch(() => ''); console.warn('[worker]', action, r.status, t.slice(0, 200)); return null; }
+  if (!r.ok) { const t = await r.text().catch(() => ''); console.warn('[worker]', action, r.status, t.slice(0, 200)); _workerCall.lastError = { status: r.status, text: t }; return null; }
   return r.json();
 }
 
@@ -1833,7 +1833,11 @@ let _botId = null;
 
 async function _lockChannel(channelId) {
   const ch = await _workerCall('get_channel', { channelId });
-  if (!ch?.id) throw new Error('salon introuvable : ' + channelId);
+  if (!ch?.id) { // raison réelle renvoyée par Discord : 404 = salon supprimé, 403 = le bot n'a pas accès au salon (permissions)
+    const le = _workerCall.lastError || {};
+    let msg = ''; try { msg = JSON.parse(le.text || '{}').message || ''; } catch { /* texte brut */ }
+    throw new Error(`salon ${channelId} inaccessible (${le.status || '?'}${msg ? ' ' + msg : ''})` + (le.status === 403 ? ' : le bot ne voit pas ce salon, vérifie ses permissions « Voir le salon »' : le.status === 404 ? ' : salon supprimé sur Discord' : ''));
+  }
   const guildId = ch.guild_id;
   const orig = (ch.permission_overwrites || []).find(o => o.id === guildId);
   const snap = await getDoc(_LOCK_REF());
