@@ -268,7 +268,13 @@ const DG = window.DG = {
       if (j.config) { S.cfg = { ...defaultCfg(), ...j.config }; S.step = 'status'; }
       else { await loadCombos(); S.cfg = defaultCfg(); S.cfg.forum = !!j.community; regenPlan(); S.step = 'form'; }
       render();
-    } catch (e) { clearInterval(S.poll); S.err = e.message; render(); }
+    } catch (e) {
+      clearInterval(S.poll);
+      // désinstallation en cours : écran de statut plutôt qu'une erreur sur l'écran d'invitation
+      if (/Désinstallation en cours/.test(e.message)) { S.doc = { status: 'removing', channels: [], mode: 'existing', paused: false }; S.step = 'status'; S.err = ''; }
+      else S.err = e.message;
+      render();
+    }
   },
   async edit() { await loadCombos(); S.cfg = { ...defaultCfg(), ...S.doc }; S.cfg.channels = JSON.parse(JSON.stringify(S.doc.channels || [])); S.step = 'form'; render(); },
   set(k, v) {
