@@ -219,7 +219,7 @@ window.toggleSidebar = function toggleSidebar() {
   localStorage.setItem('vcl_sidebar_hidden', hidden ? '1' : '');
 };
 
-_lazyPanel(() => import('./moderation-submissions.js?v=623ebe87'), ['loadSubmissions', 'setFilter', 'setFilterSearch', 'loadSubDiff', 'applyDiffSelection', 'modImgFile', 'modImgDrop', 'modImgClear', 'modImgPaste', 'copyCode', 'toggleDetails', 'toggleEdit', 'onEditorInput', 'openInCreator', 'openEditorInCreator', 'approve', 'reject', 'restorePending', 'requestChanges', 'bulkDeleteSubs', 'bulkApproveSubs', 'deleteSub', 'renderSubs', 'updateCounts']);
+_lazyPanel(() => import('./moderation-submissions.js?v=370d4b9c'), ['loadSubmissions', 'setFilter', 'setFilterSearch', 'loadSubDiff', 'applyDiffSelection', 'modImgFile', 'modImgDrop', 'modImgClear', 'modImgPaste', 'copyCode', 'toggleDetails', 'toggleEdit', 'onEditorInput', 'openInCreator', 'openEditorInCreator', 'approve', 'reject', 'restorePending', 'requestChanges', 'bulkDeleteSubs', 'bulkApproveSubs', 'deleteSub', 'renderSubs', 'updateCounts']);
 
 // id de région → nom affiché sur le wiki (« hanaka » → « Hanaka ») ; à défaut, l'id tel quel
 function _regionName(id) {
@@ -735,7 +735,7 @@ function _populateAllPalierSelects() {
 }
 
 
-_lazyPanel(() => import('./moderation-discord.js?v=c3dddcc5'), ['showDiscordWebhooks', 'discordRenderSync', 'discordSyncItem', 'discordAutoSync', 'discordCancelBulk', 'discordResendAll', 'discordResendChannel', 'discordResendItem', 'discordDeletePost', 'discordDeleteAllPosts', 'discordDeleteChannelPosts', 'discordCreateChannel', 'discordSearchItems', 'discordFilterPosts', 'loadDiscordWebhooks', 'deleteChannelPosts', 'saveDiscordWebhooks', 'switchDwTab', 'dwEmbedRemove', 'dwEmbedAdd', 'dwUnsentCheckAll', 'dwUnsentDelete', 'dwPublishUnsentSend', 'dwPublishFilter', 'dwPublishCheckAll', 'dwPublishSelected', 'reorderAllChannelTags', 'testNewSubmissionWebhook', 'testDiscordWebhook']);
+_lazyPanel(() => import('./moderation-discord.js?v=3312b87b'), ['showDiscordWebhooks', 'discordRenderSync', 'discordSyncItem', 'discordAutoSync', 'discordCancelBulk', 'discordResendAll', 'discordResendChannel', 'discordResendItem', 'discordDeletePost', 'discordDeleteAllPosts', 'discordDeleteChannelPosts', 'discordCreateChannel', 'discordSearchItems', 'discordFilterPosts', 'loadDiscordWebhooks', 'deleteChannelPosts', 'saveDiscordWebhooks', 'switchDwTab', 'dwEmbedRemove', 'dwEmbedAdd', 'dwUnsentCheckAll', 'dwUnsentDelete', 'dwPublishUnsentSend', 'dwPublishFilter', 'dwPublishCheckAll', 'dwPublishSelected', 'reorderAllChannelTags', 'testNewSubmissionWebhook', 'testDiscordWebhook']);
 
 
 // ── Gestion des Rôles ─────────────────────────────────
@@ -867,7 +867,7 @@ _lazyPanel(() => import('./moderation-map.js?v=3b718245'), ['showMapPanel', 'del
 _lazyPanel(() => import('./moderation-game-config.js?v=499a603d'), ['showGameConfig', 'gcUpdatePalier', 'gcAddPalier', 'gcRemovePalier', 'saveGameConfig']);
 
 
-_lazyPanel(() => import('./moderation-game-tools.js?v=6d37f2c1'), ['showEventsTool', 'moveVclEvent', 'createVclEvent', 'deleteVclEvent', 'setVclEventEmoji', 'showWorldbossTool', 'setVclWorldbossEmoji', 'showSecretForgerons', 'setSecretForgeronsHidden', 'showDiscordRoutes', 'setDiscordRoute', 'setDiscordEnabled', 'showDonjonsTool', 'createVclDonjon', 'moveVclDonjon', 'deleteVclDonjon', 'showTitresTool', 'createVclTitre', 'addVclTitreStat', 'removeVclTitreStat', 'renameVclTitre', 'moveVclTitre', 'deleteVclTitre', 'showEffectsTool', 'seedEffectTypes', 'saveEffectTypes', 'switchEffectsTab', 'addEffectType', 'addEffectTemplate']);
+_lazyPanel(() => import('./moderation-game-tools.js?v=2e339d2e'), ['showEventsTool', 'moveVclEvent', 'createVclEvent', 'deleteVclEvent', 'setVclEventEmoji', 'showWorldbossTool', 'setVclWorldbossEmoji', 'showSecretForgerons', 'setSecretForgeronsHidden', 'showDiscordRoutes', 'setDiscordRoute', 'setDiscordEnabled', 'showDonjonsTool', 'createVclDonjon', 'moveVclDonjon', 'deleteVclDonjon', 'showTitresTool', 'createVclTitre', 'addVclTitreStat', 'removeVclTitreStat', 'renameVclTitre', 'moveVclTitre', 'deleteVclTitre', 'showEffectsTool', 'seedEffectTypes', 'saveEffectTypes', 'switchEffectsTab', 'addEffectType', 'addEffectTemplate']);
 
 
 _lazyPanel(() => import('./moderation-bugs.js?v=0490d991'), ['showBugsConnus', '_loadBugsConnus', 'saveBugForm', 'startEditBug', 'cancelEditBug', 'saveEditBug', 'deleteBug']);
