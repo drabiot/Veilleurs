@@ -159,6 +159,13 @@ export default {
         return json(await r.json(), r.ok ? 200 : r.status);
       }
 
+      if (action === 'create_channel') { // salon (forum = 15, texte = 0) dans le serveur ; le bot doit avoir « Gérer les salons »
+        const r = await fetch(`https://discord.com/api/v10/guilds/${env.DISCORD_GUILD_ID}/channels`, {
+          method: 'POST', headers: botHdr, body: JSON.stringify({ name: String(body.name || '').slice(0, 100), type: body.type === 0 ? 0 : 15, parent_id: body.parentId || undefined }),
+        });
+        return json(await r.json(), r.ok ? 200 : r.status);
+      }
+
       if (action === 'get_webhook') {
         const r = await fetch(`https://discord.com/api/v10/webhooks/${body.webhookId}/${body.webhookToken}`);
         return json(await r.json(), r.ok ? 200 : r.status);

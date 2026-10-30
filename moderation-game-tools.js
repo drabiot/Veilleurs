@@ -345,6 +345,7 @@ window.showDiscordRoutes = async function() {
     _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []).filter(p => p.id !== -1);
     if (!_drPaliers.length) _drPaliers = [{ id: 1, label: 'Palier 1' }, { id: 2, label: 'Palier 2' }, { id: 3, label: 'Palier 3' }, { id: 'event', label: 'Event' }, { id: 'worldboss', label: 'World Boss' }];
     _renderDiscordRoutes();
+    window.discordRenderSync(); // actions manuelles (module Discord chargé à la demande)
   } catch (e) { body.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`; }
 };
 

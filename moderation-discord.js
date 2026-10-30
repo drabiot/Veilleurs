@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════
 
 export function init(ctx) {
-const { generateCardBlob, getWorkerSecret: _getWorkerSecret, WORKER_URL, cachedDocs, setHash: _setHash, db, COL, collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, limit, toast, modal, escHtml } = ctx;
+const { desanitizeFromFirestore, generateCardBlob, getWorkerSecret: _getWorkerSecret, WORKER_URL, cachedDocs, setHash: _setHash, db, COL, collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, limit, toast, modal, escHtml } = ctx;
 const _ee = escHtml;
 // ── Discord Webhooks ──────────────────────────────────
 let _dwConfig = null;
@@ -581,7 +581,8 @@ async function _postBotForumThread(channelId, threadName, content, fileBlob, fil
 }
 
 async function _getChannelId(key) {
-  const val = _dwConfig?.[key];
+  const r = await _routes(); // salons réglés dans l'onglet « 📣 Discord » (config/discord_routes) ; sinon salon par défaut
+  const val = r.routes?.[key] || r.default || _dwConfig?.[key];
   if (!val) return null;
   // Migration : si valeur = URL webhook, dériver le channel ID automatiquement
   if (val.startsWith('http')) {
@@ -763,6 +764,7 @@ async function _deleteExistingDiscordPost(docId) {
 }
 
 async function _sendSingleItemDiscord(item) {
+  item = await _maskSecret(item);
   const cat    = item.category;
   const palier = item.palier;
   if (!cat || !palier) throw new Error('Catégorie ou palier manquant');
@@ -1574,4 +1576,228 @@ function _renderEmbedPreview() {
     <p style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic;">Aperçu avec un item fictif — image non chargée en local, visible en production.</p>
   `;
 }
+const { normalize } = window.VCL;
+
+// ══════════════════════════════════════════════════════
+// SYNCHRO DISCORD — envoi / mise à jour / suppression des posts d'items (salons : config/discord_routes ; suivi : discord_posts)
+// Automatique : un item approuvé en soumission est (re)posté dans son salon, l'ancienne version est supprimée.
+// Manuel : onglet « 📣 Discord » (supprimer un post / tous / ceux d'un salon, renvoyer un item / tous / ceux d'un salon, créer un salon).
+// ══════════════════════════════════════════════════════
+let _drCfg = null;
+async function _routes(force) {
+  if (!_drCfg || force) { const s = await getDoc(doc(db, 'config', 'discord_routes')); _drCfg = s.exists() ? s.data() : {}; }
+  return _drCfg;
+}
+const _itemKey = it => `${it.category}_${it.palier}`;
+async function _channelOfItem(it, { auto = false } = {}) {
+  const r = await _routes();
+  const specific = r.routes?.[_itemKey(it)];
+  if (auto && Number(it.palier) === -1 && !specific) return null; // l'archive n'est pas postée sans salon dédié
+  return specific || r.default || null;
+}
+
+// Forgerons / items secrets : la carte ne montre ni leur nom ni leur lieu (outil « Forgerons secrets »)
+async function _maskSecret(item) {
+  const SECRET = "Forgeron d'items secret - Position cachée pour l'instant";
+  let sf = {};
+  try { const s = await getDoc(doc(db, 'config', 'secret_forgerons')); sf = s.exists() ? s.data() : {}; } catch {}
+  if (sf.hidden === false) return item;
+  const id = item.id ?? item._id;
+  if ((sf.items || []).includes(id) && !(sf.revealedItems || []).includes(id)) return { ...item, obtain: SECRET };
+  if (typeof item.obtain !== 'string') return item;
+  const pnj = await cachedDocs(COL.pnj).catch(() => []);
+  const secretIds = pnj.filter(p => !(sf.revealedPnj || []).includes(p.id ?? p._id) && (
+    ['fabricant_secrets', 'fabricant_secret', 'forgeron_items_secrets'].includes(p.tag)
+    || ["forgeron d'items secrets", 'fabricant secret'].includes(String(p.type || '').toLowerCase())
+    || (sf.pnj || []).includes(p.id ?? p._id))).map(p => p.id ?? p._id);
+  const obtain = item.obtain.split('\n').map(l => secretIds.some(s => l.includes(`[npc:${s}|`) || l.includes(`[npc:${s}]`)) ? SECRET : l).join('\n');
+  return { ...item, obtain };
+}
+
+async function _allPosts() {
+  const snap = await getDocs(collection(db, 'discord_posts'));
+  return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+}
+async function _deletePost(post) {
+  if (post.threadId) {
+    const r = await _workerCall('delete_thread', { threadId: post.threadId });
+    if (!r || (r.status && r.status !== 204 && r.status !== 404 && r.status !== 200)) throw new Error('suppression Discord refusée (' + (r?.status ?? '?') + ')');
+  }
+  await deleteDoc(doc(db, 'discord_posts', post._id));
+}
+async function _deleteItemPosts(itemId) {
+  for (const p of (await _allPosts()).filter(p => String(p.itemId) === String(itemId))) await _deletePost(p);
+}
+
+async function _loadItem(id) {
+  const snap = await getDoc(doc(db, 'items', String(id)));
+  if (!snap.exists()) throw new Error('Item introuvable : ' + id);
+  return desanitizeFromFirestore({ _id: snap.id, id: snap.id, ...snap.data() });
+}
+
+/** Reposte l'item dans son salon (supprime d'abord toute ancienne version). `auto` : ne fait rien si l'envoi automatique est désactivé. */
+window.discordSyncItem = async function(id, opts = {}) {
+  const r = await _routes(true);
+  if (opts.auto && !r.enabled) return false;
+  const item = await _loadItem(id);
+  const channel = await _channelOfItem(item, { auto: !!opts.auto });
+  if (!channel) { if (opts.auto) return false; throw new Error(`Aucun salon pour ${_itemKey(item)} (ni salon par défaut)`); }
+  await _deleteItemPosts(item._id);
+  await _sendSingleItemDiscord(item);
+  return true;
+};
+
+// Appelé par l'approbation d'une soumission d'item : jamais bloquant, jamais d'erreur remontée au modérateur
+window.discordAutoSync = async function(id) {
+  try {
+    if (await window.discordSyncItem(id, { auto: true })) toast('📣 Item posté / mis à jour sur Discord.', 'success');
+  } catch (e) { console.warn('[discord auto]', e); toast('📣 Discord : ' + e.message, 'warning', 7000); }
+};
+
+// ── Opérations en lot (avec arrêt possible) ──
+let _drCancel = false, _drBusy = false;
+const _drSleep = ms => new Promise(r => setTimeout(r, ms));
+function _drProgress(txt, busy) {
+  const el = document.getElementById('discord-sync-progress');
+  if (el) el.innerHTML = txt ? `${escHtml(txt)} ${busy ? '<button class="btn btn-ghost" onclick="discordCancelBulk()" style="font-size:11px;padding:2px 8px;margin-left:8px;">⏹ Arrêter</button>' : ''}` : '';
+}
+window.discordCancelBulk = () => { _drCancel = true; };
+async function _bulk(label, list, fn, delay = 1500) {
+  if (_drBusy) { toast('Une opération est déjà en cours.', 'warning'); return; }
+  _drBusy = true; _drCancel = false;
+  let ok = 0, fail = 0;
+  for (const [i, x] of list.entries()) {
+    if (_drCancel) break;
+    _drProgress(`${label} : ${i + 1}/${list.length} (échecs : ${fail})`, true);
+    try { await fn(x); ok++; } catch (e) { fail++; console.warn('[discord bulk]', e); }
+    if (i + 1 < list.length) await _drSleep(delay);
+  }
+  const stopped = _drCancel;
+  _drBusy = false; _drCancel = false;
+  _drProgress(`${label} terminé${stopped ? ' (arrêté)' : ''} : ${ok} ok, ${fail} échec(s).`, false);
+  toast(`${label} : ${ok} ok, ${fail} échec(s).`, fail ? 'warning' : 'success');
+  await window.discordRenderSync();
+}
+
+async function _itemsForChannel(channelId) {
+  const items = (await cachedDocs(COL.items).catch(() => [])).map(i => ({ ...i, id: i.id ?? i._id }));
+  const out = [];
+  for (const it of items) {
+    if (!it.category || it.palier == null) continue;
+    const ch = await _channelOfItem(it, { auto: true });
+    if (ch && (!channelId || ch === channelId)) out.push(it);
+  }
+  return out;
+}
+
+window.discordResendAll = async function() {
+  const list = await _itemsForChannel(null);
+  if (!list.length) { toast('Aucun item à envoyer (aucun salon réglé).', 'warning'); return; }
+  if (!await modal.confirm(`Renvoyer ${list.length} item(s) ?\n\nChaque ancien post est supprimé puis recréé (environ ${Math.ceil(list.length * 2.5 / 60)} min).`)) return;
+  await _bulk('Renvoi', list, it => window.discordSyncItem(it.id));
+};
+window.discordResendChannel = async function(channelId) {
+  const list = await _itemsForChannel(channelId);
+  if (!list.length) { toast('Aucun item pour ce salon.', 'warning'); return; }
+  if (!await modal.confirm(`Renvoyer les ${list.length} item(s) du salon ${channelId} ?`)) return;
+  await _bulk('Renvoi', list, it => window.discordSyncItem(it.id));
+};
+window.discordResendItem = async function(id) {
+  try { await window.discordSyncItem(id); toast('Item renvoyé.', 'success'); await window.discordRenderSync(); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+};
+window.discordDeletePost = async function(docId) {
+  try { const p = (await _allPosts()).find(x => x._id === docId); if (p) await _deletePost(p); toast('Post supprimé.', 'success'); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+  await window.discordRenderSync();
+};
+window.discordDeleteAllPosts = async function() {
+  const posts = await _allPosts();
+  if (!posts.length) { toast('Aucun post suivi.', 'warning'); return; }
+  if (!await modal.confirm(`Supprimer les ${posts.length} posts Discord ?\n\n(Les items du wiki ne sont pas touchés.)`)) return;
+  await _bulk('Suppression', posts, _deletePost, 600);
+};
+window.discordDeleteChannelPosts = async function(channelId) {
+  const posts = (await _allPosts()).filter(p => p.channelId === channelId);
+  if (!posts.length) { toast('Aucun post suivi dans ce salon.', 'warning'); return; }
+  if (!await modal.confirm(`Supprimer les ${posts.length} posts du salon ${channelId} ?`)) return;
+  await _bulk('Suppression', posts, _deletePost, 600);
+};
+
+window.discordCreateChannel = async function() {
+  const name = document.getElementById('discord-new-channel-name')?.value.trim();
+  const type = parseInt(document.getElementById('discord-new-channel-type')?.value || '15');
+  if (!name) { toast('Nom du salon requis.', 'error'); return; }
+  const r = await _workerCall('create_channel', { name, type });
+  if (!r || !r.id) { toast('Création impossible : ' + (r?.message || 'le bot n\'a pas la permission « Gérer les salons »'), 'error', 8000); return; }
+  try { await navigator.clipboard.writeText(r.id); } catch {}
+  toast(`Salon créé : #${r.name} (ID ${r.id}, copié). Colle-le dans la grille ci-dessus.`, 'success', 9000);
+  document.getElementById('discord-new-channel-name').value = '';
+  const out = document.getElementById('discord-new-channel-out');
+  if (out) out.textContent = `Dernier salon créé : #${r.name} — ID ${r.id}`;
+};
+
+let _drItems = [], _drPosts = [];
+window.discordSearchItems = function() {
+  const q = normalize(document.getElementById('discord-resend-search')?.value.trim() || '');
+  const el = document.getElementById('discord-resend-results');
+  if (!el) return;
+  if (!q) { el.innerHTML = ''; return; }
+  el.innerHTML = _drItems.filter(i => normalize(i.name || '').includes(q)).slice(0, 8).map(i =>
+    `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;">
+       <span>${escHtml(i.name)} <span style="color:var(--muted);">· ${escHtml(i.category || '')} P${escHtml(String(i.palier))}</span></span>
+       <button class="btn btn-ghost" data-id="${escHtml(i.id)}" onclick="discordResendItem(this.dataset.id)" style="font-size:11px;padding:2px 8px;">🔄 Envoyer / renvoyer</button></div>`).join('')
+    || '<div style="color:var(--muted);font-size:12px;">Aucun résultat.</div>';
+};
+window.discordFilterPosts = function() {
+  const q = normalize(document.getElementById('discord-posts-filter')?.value.trim() || '');
+  const el = document.getElementById('discord-posts-list');
+  if (!el) return;
+  const list = _drPosts.filter(p => !q || normalize(p.itemName || '').includes(q)).slice(0, 100);
+  el.innerHTML = list.map(p =>
+    `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;">
+       <span>${escHtml(p.itemName || p.itemId)} <span style="color:var(--muted);">· ${escHtml(p.webhookKey || '')} · salon ${escHtml(String(p.channelId || '?'))}</span></span>
+       <span style="display:flex;gap:6px;">
+         <button class="btn btn-ghost" data-id="${escHtml(String(p.itemId))}" onclick="discordResendItem(this.dataset.id)" style="font-size:11px;padding:2px 8px;" title="Supprimer et reposter">🔄</button>
+         <button class="btn btn-ghost" data-id="${escHtml(p._id)}" onclick="discordDeletePost(this.dataset.id)" style="font-size:11px;padding:2px 8px;color:var(--danger);border-color:var(--danger);" title="Supprimer ce post">🗑</button>
+       </span></div>`).join('') || '<div style="color:var(--muted);font-size:12px;">Aucun post.</div>';
+};
+
+window.discordRenderSync = async function() {
+  const el = document.getElementById('discord-sync-body');
+  if (!el) return;
+  try {
+    const [r, posts, items] = await Promise.all([_routes(true), _allPosts(), cachedDocs(COL.items).catch(() => [])]);
+    _drPosts = posts.sort((a, b) => String(a.itemName).localeCompare(String(b.itemName), 'fr'));
+    _drItems = items.map(i => ({ ...i, id: i.id ?? i._id }));
+    const channels = [...new Set([...(r.default ? [r.default] : []), ...Object.values(r.routes || {})])];
+    const perChannel = channels.map(c => `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;margin-bottom:6px;">
+        <code style="min-width:170px;">${escHtml(c)}</code><span style="color:var(--muted);">${posts.filter(p => p.channelId === c).length} post(s)</span>
+        <button class="btn btn-ghost" data-id="${escHtml(c)}" onclick="discordResendChannel(this.dataset.id)" style="font-size:11px;padding:2px 8px;">🔄 Renvoyer ses items</button>
+        <button class="btn btn-ghost" data-id="${escHtml(c)}" onclick="discordDeleteChannelPosts(this.dataset.id)" style="font-size:11px;padding:2px 8px;color:var(--danger);border-color:var(--danger);">🗑 Supprimer ses posts</button></div>`).join('')
+      || '<div style="color:var(--muted);font-size:12px;">Aucun salon réglé.</div>';
+    const field = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-size:12px;outline:none;';
+    el.innerHTML = `
+      <div id="discord-sync-progress" style="font-size:12px;color:var(--accent);min-height:18px;margin-bottom:8px;"></div>
+      <div style="font-size:14px;font-weight:700;margin:6px 0 8px;">🛠 Actions manuelles</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+        <button class="btn btn-ghost" onclick="discordResendAll()" style="font-size:12px;">🔄 Renvoyer tous les items</button>
+        <button class="btn btn-ghost" onclick="discordDeleteAllPosts()" style="font-size:12px;color:var(--danger);border-color:var(--danger);">🗑 Supprimer tous les posts (${posts.length})</button>
+      </div>
+      <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Par salon</div>${perChannel}
+      <div style="font-size:12px;font-weight:700;margin:14px 0 6px;">Envoyer / renvoyer un item</div>
+      <input type="text" id="discord-resend-search" oninput="discordSearchItems()" placeholder="Nom de l'item…" style="${field}width:100%;box-sizing:border-box;">
+      <div id="discord-resend-results" style="display:flex;flex-direction:column;gap:4px;margin-top:6px;"></div>
+      <div style="font-size:12px;font-weight:700;margin:14px 0 6px;">Posts existants (${posts.length})</div>
+      <input type="text" id="discord-posts-filter" oninput="discordFilterPosts()" placeholder="Filtrer par nom…" style="${field}width:100%;box-sizing:border-box;margin-bottom:6px;">
+      <div id="discord-posts-list" style="display:flex;flex-direction:column;gap:4px;max-height:360px;overflow:auto;"></div>
+      <div style="font-size:14px;font-weight:700;margin:22px 0 8px;">➕ Créer un salon</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <input type="text" id="discord-new-channel-name" placeholder="nom-du-salon" style="${field}width:220px;">
+        <select id="discord-new-channel-type" style="${field}"><option value="15">Forum (un fil par item)</option><option value="0">Salon texte</option></select>
+        <button class="btn btn-primary" onclick="discordCreateChannel()" style="font-size:12px;">Créer</button>
+      </div>
+      <div id="discord-new-channel-out" style="font-size:12px;color:var(--muted);margin-top:6px;">Le bot doit avoir la permission « Gérer les salons ». L'ID du salon créé est copié, à coller dans la grille.</div>`;
+    window.discordFilterPosts();
+  } catch (e) { el.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`; }
+};
+
 }

@@ -735,7 +735,7 @@ function _populateAllPalierSelects() {
 }
 
 
-_lazyPanel(() => import('./moderation-discord.js?v=c3dddcc5'), ['showDiscordWebhooks', 'loadDiscordWebhooks', 'deleteChannelPosts', 'saveDiscordWebhooks', 'switchDwTab', 'dwEmbedRemove', 'dwEmbedAdd', 'dwUnsentCheckAll', 'dwUnsentDelete', 'dwPublishUnsentSend', 'dwPublishFilter', 'dwPublishCheckAll', 'dwPublishSelected', 'reorderAllChannelTags', 'testNewSubmissionWebhook', 'testDiscordWebhook']);
+_lazyPanel(() => import('./moderation-discord.js?v=c3dddcc5'), ['showDiscordWebhooks', 'discordRenderSync', 'discordSyncItem', 'discordAutoSync', 'discordCancelBulk', 'discordResendAll', 'discordResendChannel', 'discordResendItem', 'discordDeletePost', 'discordDeleteAllPosts', 'discordDeleteChannelPosts', 'discordCreateChannel', 'discordSearchItems', 'discordFilterPosts', 'loadDiscordWebhooks', 'deleteChannelPosts', 'saveDiscordWebhooks', 'switchDwTab', 'dwEmbedRemove', 'dwEmbedAdd', 'dwUnsentCheckAll', 'dwUnsentDelete', 'dwPublishUnsentSend', 'dwPublishFilter', 'dwPublishCheckAll', 'dwPublishSelected', 'reorderAllChannelTags', 'testNewSubmissionWebhook', 'testDiscordWebhook']);
 
 
 // ── Gestion des Rôles ─────────────────────────────────

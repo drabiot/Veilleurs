@@ -1165,6 +1165,7 @@ window.approve = async (id) => {
 
       // Item approuvé : les PNJ qui le fabriquent / vendent déjà y écrivent leur source d'obtention
       if (sub.type === 'item') {
+        window.discordAutoSync(String(dataId)); // post Discord créé / remplacé (si l'envoi automatique est actif)
         _syncItemObtain(String(dataId)).then(n => { if (n.length) toast(`Obtain mis à jour : ${n.slice(0, 4).join(', ')}${n.length > 4 ? ` (+${n.length - 4})` : ''}`, 'success', 6000); }).catch(e => console.warn('[obtain item]', e));
       }
 
