@@ -334,7 +334,7 @@ window.setSecretForgeronsHidden = async function(hidden) {
 const _DR_REF = () => doc(db, 'config', 'discord_routes');
 const _DR_CATS = [['arme', '⚔️ Armes', 'armes'], ['armure', '🛡️ Armures', 'armures'], ['accessoire', '💍 Accessoires', 'accessoires'], ['outils', '🛠️ Outils', 'outils'], ['rune', '🔮 Runes', 'runes'], ['consommable', '🧪 Consommables', 'consommables'],
   ['nourriture', '🍖 Nourriture', 'nourriture'], ['materiaux', '🧱 Matériaux', 'materiaux'], ['ressources', '⛏️ Ressources', 'ressources'], ['parchemin', '📃 Parchemins', 'parchemins'], ['quete', '📜 Quête', 'quete'], ['donjon', '🏰 Donjon', 'donjon'], ['monnaie', '🪙 Monnaie', 'monnaie']];
-let _dr = { enabled: true, hideThreshold: 10, guildId: '', plans: {}, channels: [], createdByBot: {} };
+let _dr = { enabled: true, hideThreshold: 10, guildId: '', plans: {}, planModes: {}, customPlans: {}, channels: [], createdByBot: {} };
 let _drItems = [], _drPaliers = [], _drGuilds = [], _drGuildChans = [], _drGuildErr = '', _drPostCounts = {}, _drBusyMsg = '';
 
 async function _drCall(action, payload = {}) {
@@ -362,11 +362,13 @@ window.showDiscordRoutes = async function() {
     const [cfg, pal] = await Promise.all([getDoc(_DR_REF()), getDoc(doc(db, 'config', 'paliers'))]);
     const c = cfg.exists() ? cfg.data() : {};
     // actif par défaut ; migration unique (autoDefaultApplied) pour un envoi automatique laissé désactivé avant ce changement
-    _dr = { enabled: c.enabled !== false || c.autoDefaultApplied !== true, hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, channels: Array.isArray(c.channels) ? c.channels : [], createdByBot: c.createdByBot && typeof c.createdByBot === 'object' ? c.createdByBot : {} };
+    _dr = { enabled: c.enabled !== false || c.autoDefaultApplied !== true, hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, planModes: c.planModes && typeof c.planModes === 'object' ? c.planModes : {}, customPlans: c.customPlans && typeof c.customPlans === 'object' ? c.customPlans : {}, channels: Array.isArray(c.channels) ? c.channels : [], createdByBot: c.createdByBot && typeof c.createdByBot === 'object' ? c.createdByBot : {} };
     _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []);
     if (c.autoDefaultApplied !== true) await _drPersist(); // migration unique : l'envoi automatique est actif par défaut (le bot lit cette valeur)
     if (!_drPaliers.length) _drPaliers = [{ id: 1, label: 'Palier 1' }, { id: 2, label: 'Palier 2' }, { id: 3, label: 'Palier 3' }, { id: 'event', label: 'Event' }, { id: 'worldboss', label: 'World Boss' }];
     try { _drItems = (await getDocs(collection(db, COL.items))).docs.map(d => d.data()); } catch { _drItems = []; }
+    _drFixMode();
+    if (_dr.guildId && _drMode() === 'auto') await _drAutoSync();
     try { _drGuilds = await _drCall('get_bot_guilds'); _drGuildErr = ''; } catch (e) { _drGuilds = []; _drGuildErr = e.message; }
     await _drLoadGuildChans();
     _renderDiscordRoutes();
@@ -412,7 +414,7 @@ async function _drLoadGuildChans() {
   } catch { _drPostCounts = {}; }
 }
 
-const _drSave = () => { if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; return setDoc(_DR_REF(), { autoDefaultApplied: true, enabled: _dr.enabled, hideThreshold: _dr.hideThreshold, guildId: _dr.guildId, plans: _dr.plans, channels: _dr.channels, createdByBot: _dr.createdByBot }); };
+const _drSave = () => { if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; return setDoc(_DR_REF(), { autoDefaultApplied: true, enabled: _dr.enabled, hideThreshold: _dr.hideThreshold, guildId: _dr.guildId, plans: _dr.plans, planModes: _dr.planModes, customPlans: _dr.customPlans, channels: _dr.channels, createdByBot: _dr.createdByBot }); };
 const _drPersist = async () => { try { await _drSave(); } catch (e) { toast('Erreur : ' + e.message, 'error'); } };
 const _drField = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
 const _drChip = (on, label, onclick) => `<button type="button" onclick="${onclick}" style="font-size:11px;padding:3px 9px;border-radius:12px;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};background:${on ? 'rgba(224,172,96,.18)' : 'var(--surface2)'};color:${on ? 'var(--accent)' : 'var(--muted)'};">${label}</button>`;
@@ -496,6 +498,7 @@ function _drDetail(c, i) { // réglages détaillés d'un salon (type, catégorie
 }
 
 function _drRow(c, i) {
+  const auto = _drMode() === 'auto';
   const alive = _drAlive(c);
   const catLabels = (c.itemCats || []).map(k => (_DR_CATS.find(q => q[0] === k) || [0, k])[1]);
   const palLabels = (c.paliers || []).map(_drPalLabel);
@@ -507,17 +510,17 @@ function _drRow(c, i) {
   const actions = (alive
     ? ib('📤', 'Envoyer toute la data de ce salon', `drSendChannel(${i}, 'all')`) + ib('➕', 'Envoyer seulement les manquants', `drSendChannel(${i}, 'missing')`) + ib('🧹', 'Vider ce salon (supprime ses posts)', `drClearChannel(${i})`, true)
     : ib(c.id ? '🔁' : '✨', c.id ? 'Recréer ce salon (introuvable sur Discord)' : 'Créer ce salon', `drCreate(${i})`))
-    + ib('⚙️', 'Réglages de ce salon', `drToggleRow(${i})`) + ib('🗑', 'Retirer du plan', `drRemove(${i})`);
+    + (auto ? '' : ib('⚙️', 'Réglages de ce salon', `drToggleRow(${i})`) + ib('🗑', 'Retirer du plan', `drRemove(${i})`));
   return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
       <span title="${!c.subscribed ? 'Pas inscrit : rien n\'est envoyé dans ce salon' : alive ? 'Inscrit et en place : le bot peut utiliser ce salon' : escHtml(_drWhy(c))}">${!c.subscribed ? '⚪' : alive ? '🟢' : '🟠'}</span>
-      <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" style="${_drField}width:190px;font-weight:700;">
+      <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" ${auto ? 'readonly title="Plan automatique : passe en plan personnalisé pour renommer"' : ''} style="${_drField}width:190px;font-weight:700;">
       <span style="flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(catLabels.join(', ') + ' · ' + palLabels.join(', '))}">${catLabels.length ? catLabels.join(', ') : 'toutes catégories'} · ${palLabels.length ? palLabels.join(', ') : 'tous paliers'} · <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${alive && _drPostCounts[c.id] ? ` · ${_drPostCounts[c.id]} posts` : ''}${c.subscribed ? (alive ? ' · <span style="color:var(--success, #4caf50);">📡 inscrit</span>' : ` · <span style="color:#e0a24c;">${escHtml(c.id ? _drWhy(c) : 'sera créé automatiquement au premier item')}</span>`) : ''}</span>
       <span style="display:flex;gap:4px;flex:none;">${subBtn}${actions}</span>
-    </div>${_drOpenRows.has(i) ? _drDetail(c, i) : ''}`;
+    </div>${_drOpenRows.has(i) && !auto ? _drDetail(c, i) : ''}`;
 }
 
 function _drList() {
-  if (!_dr.channels.length) return '<div class="empty" style="color:var(--muted);">Aucun salon dans le plan. « Proposer un plan » en crée un à partir des items (une catégorie par palier, un forum par type d\'item).</div>';
+  if (!_dr.channels.length) return '<div class="empty" style="color:var(--muted);">Aucun salon dans le plan. Passe en « Plan automatique » ou ajoute tes salons.</div>';
   const palIds = [...new Set(_dr.channels.flatMap(c => (c.paliers || []).map(String)))];
   const view = _drView;
   const filterRow = `<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;"><span style="font-size:11px;color:var(--muted);">Afficher :</span>
@@ -563,10 +566,9 @@ function _renderDiscordRoutes() {
   html += `<details style="margin-top:12px;"><summary style="cursor:pointer;font-size:12px;color:var(--accent);">👀 Voir ce qui existe déjà sur ce serveur (${ncat} catégories, ${real} salons)</summary><div style="margin-top:8px;">${_drTree()}</div></details>`;
   html += _drStep(2, 'Salons', `${_dr.channels.length} dans le plan · ${inscritsN} inscrit${inscritsN > 1 ? 's' : ''}`);
   html += `<div id="discord-setup-msg" style="font-size:12px;color:var(--accent);min-height:18px;margin-bottom:8px;">${escHtml(_drBusyMsg)}</div>
+    ${_drModeBar()}
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-      ${_drBtn('📋 Proposer un plan', 'drDefaultPlan()')}
-      ${_drBtn('🎨 Style Veilleurs (majuscules + emojis)', 'drRestyle()')}
-      ${_drBtn('➕ Ajouter un salon', 'drAdd()')}
+      ${_drMode() === 'custom' ? _drBtn('➕ Ajouter un salon', 'drAdd()') + _drBtn('🎨 Style Veilleurs (majuscules + emojis)', 'drRestyle()') : ''}
       ${_drBtn('✨ Créer tous les salons manquants', 'drReconcile()', 'primary')}
       ${_drBtn(_dr.channels.some(c => !c.subscribed) ? '📡 S\'inscrire à tous les salons' : '✅ Inscrit à tous (désinscrire)', _dr.channels.some(c => !c.subscribed) ? 'drSubAll(true)' : 'drSubAll(false)')}
     </div>
@@ -695,6 +697,8 @@ window.drSetGuild = async (id) => {
   if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; // le plan de l'ancien serveur est conservé
   _dr.guildId = id;
   _dr.channels = id && Array.isArray(_dr.plans[id]) ? _dr.plans[id] : [];
+  _drFixMode();
+  if (id && _drMode() === 'auto') await _drAutoSync();
   await _drPersist();
   _drMsg('Lecture du serveur…');
   await _drLoadGuildChans();
@@ -751,28 +755,67 @@ window.drRemove = async (i) => {
   _dr.channels.splice(i, 1); await _drPersist(); _renderDiscordRoutes(); window.discordRenderSync();
 };
 
-// Plan par défaut = modèle « Veilleurs » : une catégorie Discord par palier (archive exclue), un forum pour CHAQUE type d'item du wiki dans chacune,
-// même sans item pour l'instant : un type d'item ou un palier ajouté plus tard rejoint le plan en relançant « Proposer un plan » (les salons déjà au plan ne bougent pas).
-window.drDefaultPlan = async () => {
-  const snap = await getDocs(collection(db, COL.items));
+// Deux modes de plan par serveur :
+//  - automatique : le plan des Veilleurs = une catégorie par palier (archive exclue) × un forum pour CHAQUE type d'item du wiki, même sans item pour l'instant.
+//    Il se recalcule à l'ouverture du panneau : un type d'item ou un palier ajouté au wiki rejoint tout seul le plan.
+//  - personnalisé : le plan est celui que tu construis toi-même.
+// Un plan déjà rempli avant ce choix reste personnalisé ; un serveur sans plan démarre en automatique (choix mémorisé dès la première ouverture)
+const _drMode = () => _dr.planModes[_dr.guildId] || (_dr.channels.length ? 'custom' : 'auto');
+const _drFixMode = () => { if (_dr.guildId && !_dr.planModes[_dr.guildId]) _dr.planModes[_dr.guildId] = _drMode(); };
+const _drCombo = c => (c.itemCats || []).length === 1 && (c.paliers || []).length === 1 ? `${c.itemCats[0]}|${c.paliers[0]}` : '';
+
+// Reconstruit le plan automatique ; les salons déjà au plan (ID, inscription, nom) sont conservés, les salons hors modèle sortent du plan (ils restent sur Discord)
+async function _drAutoSync() {
+  let docs = [];
+  try { docs = (await getDocs(collection(db, COL.items))).docs.map(d => d.data()); } catch { docs = _drItems; }
   const cats = new Set(_DR_CATS.map(q => q[0])), pals = new Set(_drPaliers.map(q => String(q.id)));
-  snap.docs.forEach(d => { const x = d.data(); if (x.category) cats.add(x.category); if (x.palier != null) pals.add(String(x.palier)); });
+  docs.forEach(x => { if (x.category) cats.add(x.category); if (x.palier != null) pals.add(String(x.palier)); });
   pals.delete('-1');
   const palierOrder = p => { const i = _drPaliers.findIndex(q => String(q.id) === p); return i < 0 ? 999 : i; };
   const catOrder = c => { const i = _DR_CATS.findIndex(q => q[0] === c); return i < 0 ? 999 : i; };
-  const wanted = [];
-  [...pals].sort((a, b) => palierOrder(a) - palierOrder(b)).forEach(pal => [...cats].sort((a, b) => catOrder(a) - catOrder(b)).forEach(cat => wanted.push([cat, pal])));
-  let added = 0;
-  for (const [cat, pal] of wanted) {
-    if (_dr.channels.some(c => (c.itemCats || []).join() === cat && (c.paliers || []).map(String).join() === pal)) continue;
+  const old = new Map(_dr.channels.map(c => [_drCombo(c), c]));
+  const next = [];
+  [...pals].sort((a, b) => palierOrder(a) - palierOrder(b)).forEach(pal => [...cats].sort((a, b) => catOrder(a) - catOrder(b)).forEach(cat => {
+    const kept = old.get(`${cat}|${pal}`);
+    if (kept) { next.push(kept); return; }
     const [, label] = _DR_CATS.find(q => q[0] === cat) || [0, '📦 ' + cat];
     const [emoji, ...words] = label.split(' ');
-    _dr.channels.push({ name: _drStyleChannel(emoji, words.join(' ')), type: 'forum', categoryName: _drStyleCategory(pal), itemCats: [cat], paliers: [pal] });
-    added++;
+    next.push({ name: _drStyleChannel(emoji, words.join(' ')), type: 'forum', categoryName: _drStyleCategory(pal), itemCats: [cat], paliers: [pal] });
+  }));
+  const changed = next.length !== _dr.channels.length || next.some((c, i) => c !== _dr.channels[i]);
+  _dr.channels = next;
+  if (changed) await _drPersist();
+}
+
+function _drModeBar() {
+  const auto = _drMode() === 'auto';
+  const tab = (on, label, fn, hint) => `<button class="btn ${on ? 'btn-primary' : 'btn-ghost'}" onclick="${fn}" title="${hint}" style="font-size:13px;padding:6px 14px;">${label}</button>`;
+  return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+      ${tab(auto, '🤖 Plan automatique', "drSetMode('auto')", 'Le plan des Veilleurs, tenu à jour tout seul')}
+      ${tab(!auto, '✏️ Plan personnalisé', "drSetMode('custom')", 'Tu construis ton propre plan')}</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5;">${auto
+      ? 'Le plan des Veilleurs : une catégorie par palier, un salon par type d\'item. Il se met à jour tout seul quand le wiki gagne un type d\'item ou un palier (ex. des outils au palier 2).'
+      : 'Ton propre plan : tu ajoutes, retires et règles les salons comme tu veux. Rien n\'est ajouté tout seul.'}</div>`;
+}
+
+window.drSetMode = async (mode) => {
+  if (!_dr.guildId) { toast('Choisis d\'abord un serveur.', 'warning'); return; }
+  if (_drMode() === mode) return;
+  if (mode === 'auto') {
+    if (_dr.channels.length && !await modal.confirm('Passer en plan automatique ?\n\nTon plan personnalisé est mis de côté (retrouvé si tu reviens en personnalisé) et remplacé par le plan des Veilleurs. Les salons déjà créés sur Discord sont retrouvés par leur nom, rien n\'est supprimé.')) return;
+    _dr.customPlans[_dr.guildId] = _dr.channels;
+    _dr.planModes[_dr.guildId] = 'auto';
+    await _drAutoSync();
+  } else {
+    _dr.planModes[_dr.guildId] = 'custom';
+    if (Array.isArray(_dr.customPlans[_dr.guildId])) _dr.channels = _dr.customPlans[_dr.guildId];
   }
-  await _drPersist(); _renderDiscordRoutes();
-  toast(added ? `${added} salon(s) ajouté(s) au plan (tous les types d'items × chaque palier). Retire ou modifie ce que tu ne veux pas, puis « Créer / répertorier ».` : 'Le plan contient déjà tous les types d'items de tous les paliers.', added ? 'success' : 'info', 8000);
+  await _drPersist();
+  await _drLoadGuildChans();
+  _renderDiscordRoutes(); window.discordRenderSync();
+  toast(mode === 'auto' ? 'Plan automatique actif.' : 'Plan personnalisé : tu peux le modifier.', 'success');
 };
+
 
 // Retrouve (par nom) ou crée la catégorie puis le salon d'une entrée du plan, et mémorise leur ID
 async function _drEnsure(c) {
@@ -821,8 +864,8 @@ window.drSetupAll = async () => {
   if (!_dr.guildId) { toast('Choisis d\'abord un serveur.', 'warning'); return; }
   const gname = (_drGuilds.find(g => g.id === _dr.guildId) || {}).name || _dr.guildId;
   const planned = _dr.channels.length;
-  if (!await modal.confirm(`Tout mettre en place sur « ${gname} » ?\n\n1. ${planned ? `${planned} salon(s) du plan` : 'plan par défaut (une catégorie par palier, un forum par catégorie d\'items)'} : catégories et salons créés s'ils n'existent pas, retrouvés sinon\n2. envoi de tous les items qui n'ont pas encore de post\n\nL'envoi peut durer longtemps (garde cet onglet ouvert, tu peux l'arrêter).`)) return;
-  if (!_dr.channels.length) await window.drDefaultPlan();
+  if (!await modal.confirm(`Tout mettre en place sur « ${gname} » ?\n\n1. ${planned} salon(s) du plan : catégories et salons créés s'ils n'existent pas, retrouvés sinon\n2. envoi de tous les items qui n'ont pas encore de post\n\nL'envoi peut durer longtemps (garde cet onglet ouvert, tu peux l'arrêter).`)) return;
+  if (!_dr.channels.length) { toast('Le plan est vide : ajoute des salons ou passe en plan automatique.', 'warning'); return; }
   if (!await window.drReconcile()) { toast('Création des salons incomplète : envoi des items annulé.', 'warning'); return; }
   await window.discordSendMissing();
 };
