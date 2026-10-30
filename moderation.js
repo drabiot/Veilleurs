@@ -867,7 +867,7 @@ _lazyPanel(() => import('./moderation-map.js?v=3b718245'), ['showMapPanel', 'del
 _lazyPanel(() => import('./moderation-game-config.js?v=499a603d'), ['showGameConfig', 'gcUpdatePalier', 'gcAddPalier', 'gcRemovePalier', 'saveGameConfig']);
 
 
-_lazyPanel(() => import('./moderation-game-tools.js?v=7209b238'), ['showEventsTool', 'moveVclEvent', 'createVclEvent', 'deleteVclEvent', 'setVclEventEmoji', 'showWorldbossTool', 'setVclWorldbossEmoji', 'showSecretForgerons', 'setSecretForgeronsHidden', 'showDiscordRoutes', 'setDiscordRoute', 'setDiscordEnabled', 'showDonjonsTool', 'createVclDonjon', 'moveVclDonjon', 'deleteVclDonjon', 'showTitresTool', 'createVclTitre', 'addVclTitreStat', 'removeVclTitreStat', 'renameVclTitre', 'moveVclTitre', 'deleteVclTitre', 'showEffectsTool', 'seedEffectTypes', 'saveEffectTypes', 'switchEffectsTab', 'addEffectType', 'addEffectTemplate']);
+_lazyPanel(() => import('./moderation-game-tools.js?v=0ed738b5'), ['showEventsTool', 'moveVclEvent', 'createVclEvent', 'deleteVclEvent', 'setVclEventEmoji', 'showWorldbossTool', 'setVclWorldbossEmoji', 'showSecretForgerons', 'setSecretForgeronsHidden', 'showDiscordRoutes', 'setDiscordRoute', 'setDiscordEnabled', 'showDonjonsTool', 'createVclDonjon', 'moveVclDonjon', 'deleteVclDonjon', 'showTitresTool', 'createVclTitre', 'addVclTitreStat', 'removeVclTitreStat', 'renameVclTitre', 'moveVclTitre', 'deleteVclTitre', 'showEffectsTool', 'seedEffectTypes', 'saveEffectTypes', 'switchEffectsTab', 'addEffectType', 'addEffectTemplate']);
 
 
 _lazyPanel(() => import('./moderation-bugs.js?v=0490d991'), ['showBugsConnus', '_loadBugsConnus', 'saveBugForm', 'startEditBug', 'cancelEditBug', 'saveEditBug', 'deleteBug']);
