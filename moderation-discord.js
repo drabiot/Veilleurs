@@ -1617,16 +1617,22 @@ async function _maskSecret(item) {
   return { ...item, obtain };
 }
 
-async function _allPosts() {
+let _postsCache = null;
+async function _allPosts(force) {
+  if (_postsCache && !force) return _postsCache; // gardé le temps d'un lot (réinitialisé au début et à la fin)
   const snap = await getDocs(collection(db, 'discord_posts'));
-  return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+  const list = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+  if (_drBusy) _postsCache = list;
+  return list;
 }
 async function _deletePost(post) {
   if (post.threadId) {
     const r = await _workerCall('delete_thread', { threadId: post.threadId });
-    if (!r || (r.status && r.status !== 204 && r.status !== 404 && r.status !== 200)) throw new Error('suppression Discord refusée (' + (r?.status ?? '?') + ')');
+    // 404 / 403 : le fil n'existe plus (ou vit sur un serveur / salon que le bot ne voit plus) : on oublie simplement le suivi
+    if (!r || (r.status && ![200, 204, 403, 404].includes(r.status))) throw new Error('suppression Discord refusée (' + (r?.status ?? '?') + ')');
   }
   await deleteDoc(doc(db, 'discord_posts', post._id));
+  if (_postsCache) _postsCache = _postsCache.filter(p => p._id !== post._id);
 }
 async function _deleteItemPosts(itemId) {
   for (const p of (await _allPosts()).filter(p => String(p.itemId) === String(itemId))) await _deletePost(p);
@@ -1667,7 +1673,8 @@ function _drProgress(txt, busy) {
 window.discordCancelBulk = () => { _drCancel = true; };
 async function _bulk(label, list, fn, delay = 1500) {
   if (_drBusy) { toast('Une opération est déjà en cours.', 'warning'); return; }
-  _drBusy = true; _drCancel = false;
+  _drBusy = true; _drCancel = false; _postsCache = null;
+  await _allPosts(true);
   let ok = 0, fail = 0;
   for (const [i, x] of list.entries()) {
     if (_drCancel) break;
@@ -1676,7 +1683,7 @@ async function _bulk(label, list, fn, delay = 1500) {
     if (i + 1 < list.length) await _drSleep(delay);
   }
   const stopped = _drCancel;
-  _drBusy = false; _drCancel = false;
+  _drBusy = false; _drCancel = false; _postsCache = null;
   _drProgress(`${label} terminé${stopped ? ' (arrêté)' : ''} : ${ok} ok, ${fail} échec(s).`, false);
   toast(`${label} : ${ok} ok, ${fail} échec(s).`, fail ? 'warning' : 'success');
   await window.discordRenderSync();
@@ -1704,6 +1711,16 @@ window.discordResendChannel = async function(channelId) {
   if (!list.length) { toast('Aucun item pour ce salon.', 'warning'); return; }
   if (!await modal.confirm(`Renvoyer les ${list.length} item(s) du salon ${channelId} ?`)) return;
   await _withHidden(list.map(() => channelId), () => _bulk('Renvoi', list, it => window.discordSyncItem(it.id)));
+};
+// Envoie les items qui n'ont pas encore de post dans leur salon actuel (premier envoi, ou reprise après un arrêt)
+window.discordSendMissing = async function() {
+  const [posts, all] = await Promise.all([_allPosts(true), _itemsForChannel(null)]);
+  const hasPost = new Set(posts.map(p => String(p.itemId) + '|' + p.channelId));
+  const list = [];
+  for (const it of all) { const ch = await _channelOfItem(it, { auto: true }); if (ch && !hasPost.has(String(it.id) + '|' + ch)) list.push({ it, ch }); }
+  if (!list.length) { toast('Tous les items ont déjà leur post.', 'success'); return; }
+  if (!await modal.confirm(`Envoyer ${list.length} item(s) sans post ?\n\nDurée estimée : ${Math.ceil(list.length * 5 / 60)} min environ. Garde cet onglet ouvert (tu peux arrêter et reprendre : seuls les manquants sont envoyés).`)) return;
+  await _withHidden(list.map(x => x.ch), () => _bulk('Envoi', list, x => window.discordSyncItem(x.it.id), 1200));
 };
 window.discordResendItem = async function(id) {
   try { await window.discordSyncItem(id); toast('Item renvoyé.', 'success'); await window.discordRenderSync(); } catch (e) { toast('Erreur : ' + e.message, 'error'); }

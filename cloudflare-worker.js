@@ -159,13 +159,18 @@ export default {
         return json(await r.json(), r.ok ? 200 : r.status);
       }
 
+      if (action === 'get_bot_guilds') {
+        const r = await fetch('https://discord.com/api/v10/users/@me/guilds', { headers: botHdr });
+        return json(await r.json(), r.ok ? 200 : r.status);
+      }
+
       if (action === 'get_guild_channels') {
-        const r = await fetch(`https://discord.com/api/v10/guilds/${env.DISCORD_GUILD_ID}/channels`, { headers: botHdr });
+        const r = await fetch(`https://discord.com/api/v10/guilds/${body.guildId || env.DISCORD_GUILD_ID}/channels`, { headers: botHdr });
         return json(await r.json(), r.ok ? 200 : r.status);
       }
 
       if (action === 'create_channel') { // salon dans le serveur (forum = 15, texte = 0, catégorie = 4) ; le bot doit avoir « Gérer les salons »
-        const r = await fetch(`https://discord.com/api/v10/guilds/${env.DISCORD_GUILD_ID}/channels`, {
+        const r = await fetch(`https://discord.com/api/v10/guilds/${body.guildId || env.DISCORD_GUILD_ID}/channels`, {
           method: 'POST', headers: botHdr, body: JSON.stringify({ name: String(body.name || '').slice(0, 100), type: [0, 4, 15].includes(body.type) ? body.type : 15, parent_id: body.parentId || undefined }),
         });
         return json(await r.json(), r.ok ? 200 : r.status);

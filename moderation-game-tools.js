@@ -326,21 +326,24 @@ window.setSecretForgeronsHidden = async function(hidden) {
   } catch (e) { toast('Erreur : ' + e.message, 'error'); }
 };
 
-// ── DISCORD TOOL : où et quoi poster (config/discord_routes) ──
-//   { enabled, channels: [{ name, type: 'forum'|'text', categoryId?, categoryName?, id?, itemCats: [catégories d'items], paliers: [paliers] }] }
-// Un salon reçoit les items dont la catégorie ET le palier correspondent (liste vide = tous). Plusieurs salons possibles ; le plus précis gagne.
-// Le salon (et sa catégorie Discord) est créé par le bot depuis ce panneau ; son ID est ensuite mémorisé (id).
+// ── DISCORD TOOL : serveur, salons, quoi poster (config/discord_routes) ──
+//   { enabled, hideThreshold, guildId, plans: { <serveur>: [salons] }, channels: [salons du serveur actif] }
+//   salon = { name, type: 'forum'|'text', categoryId?, categoryName?, id?, itemCats: [catégories d'items], paliers: [paliers] }
+// Un salon reçoit les items dont la catégorie ET le palier correspondent (liste vide = tous) ; le plus précis gagne.
+// « Créer / répertorier » : pour chaque salon du plan, retrouve la catégorie / le salon existant sur le serveur (par nom) ou le crée, et mémorise son ID.
 const _DR_REF = () => doc(db, 'config', 'discord_routes');
-const _DR_CATS = [['arme', '⚔️ Armes'], ['armure', '🛡️ Armures'], ['accessoire', '💍 Accessoires'], ['outils', '🛠️ Outils'], ['rune', '🔮 Runes'], ['consommable', '🧪 Consommables'],
-  ['nourriture', '🍖 Nourriture'], ['materiaux', '🧱 Matériaux'], ['ressources', '⛏️ Ressources'], ['parchemin', '📃 Parchemins'], ['quete', '📜 Quête'], ['donjon', '🏰 Donjon'], ['monnaie', '🪙 Monnaie']];
-let _dr = { enabled: false, hideThreshold: 10, channels: [] }, _drPaliers = [], _drGuildCats = [], _drGuildErr = '';
+const _DR_CATS = [['arme', '⚔️ Armes', 'armes'], ['armure', '🛡️ Armures', 'armures'], ['accessoire', '💍 Accessoires', 'accessoires'], ['outils', '🛠️ Outils', 'outils'], ['rune', '🔮 Runes', 'runes'], ['consommable', '🧪 Consommables', 'consommables'],
+  ['nourriture', '🍖 Nourriture', 'nourriture'], ['materiaux', '🧱 Matériaux', 'materiaux'], ['ressources', '⛏️ Ressources', 'ressources'], ['parchemin', '📃 Parchemins', 'parchemins'], ['quete', '📜 Quête', 'quete'], ['donjon', '🏰 Donjon', 'donjon'], ['monnaie', '🪙 Monnaie', 'monnaie']];
+let _dr = { enabled: false, hideThreshold: 10, guildId: '', plans: {}, channels: [] };
+let _drPaliers = [], _drGuilds = [], _drGuildChans = [], _drGuildErr = '', _drPostCounts = {}, _drBusyMsg = '';
 
 async function _drCall(action, payload = {}) {
-  const r = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: await getWorkerSecret(), action, ...payload }) });
+  const r = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: await getWorkerSecret(), action, guildId: _dr.guildId || undefined, ...payload }) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(j.message || j.error || ('Discord ' + r.status));
   return j;
 }
+const _drSleep = ms => new Promise(r => setTimeout(r, ms));
 
 window.showDiscordRoutes = async function() {
   _setHash('discord-routes');
@@ -350,75 +353,132 @@ window.showDiscordRoutes = async function() {
   try {
     const [cfg, pal] = await Promise.all([getDoc(_DR_REF()), getDoc(doc(db, 'config', 'paliers'))]);
     const c = cfg.exists() ? cfg.data() : {};
-    _dr = { enabled: c.enabled === true, hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, channels: Array.isArray(c.channels) ? c.channels : [] };
+    _dr = { enabled: c.enabled === true, hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, channels: Array.isArray(c.channels) ? c.channels : [] };
     _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []);
     if (!_drPaliers.length) _drPaliers = [{ id: 1, label: 'Palier 1' }, { id: 2, label: 'Palier 2' }, { id: 3, label: 'Palier 3' }, { id: 'event', label: 'Event' }, { id: 'worldboss', label: 'World Boss' }];
-    await _drLoadGuild();
+    try { _drGuilds = await _drCall('get_bot_guilds'); _drGuildErr = ''; } catch (e) { _drGuilds = []; _drGuildErr = e.message; }
+    await _drLoadGuildChans();
     _renderDiscordRoutes();
     window.discordRenderSync(); // actions manuelles (module Discord chargé à la demande)
   } catch (e) { body.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`; }
 };
 
-async function _drLoadGuild() {
+async function _drLoadGuildChans() {
+  _drGuildChans = [];
+  if (!_dr.guildId) return;
   try {
-    const chans = await _drCall('get_guild_channels');
-    _drGuildCats = chans.filter(x => x.type === 4).sort((a, b) => a.position - b.position).map(x => ({ id: x.id, name: x.name }));
+    _drGuildChans = await _drCall('get_guild_channels');
     _drGuildErr = '';
-  } catch (e) { _drGuildCats = []; _drGuildErr = e.message; }
+  } catch (e) { _drGuildErr = e.message; }
+  try {
+    const snap = await getDocs(collection(db, 'discord_posts'));
+    _drPostCounts = {};
+    snap.docs.forEach(d => { const ch = d.data().channelId; if (ch) _drPostCounts[ch] = (_drPostCounts[ch] || 0) + 1; });
+  } catch { _drPostCounts = {}; }
 }
 
-const _drSave = () => setDoc(_DR_REF(), { enabled: _dr.enabled, hideThreshold: _dr.hideThreshold, channels: _dr.channels });
+const _drSave = () => { if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; return setDoc(_DR_REF(), { enabled: _dr.enabled, hideThreshold: _dr.hideThreshold, guildId: _dr.guildId, plans: _dr.plans, channels: _dr.channels }); };
+const _drPersist = async () => { try { await _drSave(); } catch (e) { toast('Erreur : ' + e.message, 'error'); } };
 const _drField = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
 const _drChip = (on, label, onclick) => `<button type="button" onclick="${onclick}" style="font-size:11px;padding:3px 9px;border-radius:12px;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};background:${on ? 'rgba(224,172,96,.18)' : 'var(--surface2)'};color:${on ? 'var(--accent)' : 'var(--muted)'};">${label}</button>`;
+const _drCats = () => _drGuildChans.filter(x => x.type === 4).sort((a, b) => a.position - b.position);
+const _drSlug = n => String(n || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_àâäçéèêëîïôöùûüœ]/g, '');
+const _drTypeNum = c => c.type === 'text' ? 0 : 15;
+const _drPalLabel = id => (_drPaliers.find(p => String(p.id) === String(id)) || {}).label || String(id);
+
+function _drTree() {
+  if (!_dr.guildId) return '';
+  if (_drGuildErr && !_drGuildChans.length) return `<div style="font-size:12px;color:var(--danger);margin-bottom:10px;">Serveur illisible (${escHtml(_drGuildErr)}). Le worker est-il redéployé et le bot présent sur ce serveur ?</div>`;
+  const linked = new Set(_dr.channels.map(c => c.id).filter(Boolean));
+  const icon = t => t === 15 ? '🗂' : t === 0 ? '#' : t === 5 ? '📢' : '•';
+  const chip = x => `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border-radius:10px;font-size:11px;background:var(--surface2);border:1px solid ${linked.has(x.id) ? 'var(--success, #4caf50)' : 'var(--border)'};color:${linked.has(x.id) ? 'var(--success, #4caf50)' : 'var(--muted)'};" title="${linked.has(x.id) ? 'Répertorié dans le plan' : 'Non répertorié'}">${icon(x.type)} ${escHtml(x.name)}${_drPostCounts[x.id] ? ` · ${_drPostCounts[x.id]} posts` : ''}${linked.has(x.id) ? ' ✓' : ''}</span>`;
+  const real = _drGuildChans.filter(x => x.type !== 4);
+  const cats = _drCats();
+  const rows = cats.map(k => `<div style="margin-bottom:4px;"><strong style="font-size:12px;">📁 ${escHtml(k.name)}</strong> ${real.filter(x => x.parent_id === k.id).sort((a, b) => a.position - b.position).map(chip).join('') || '<span style="color:var(--muted);font-size:11px;">vide</span>'}</div>`).join('');
+  const orphans = real.filter(x => !x.parent_id || !cats.some(k => k.id === x.parent_id));
+  return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:14px;background:var(--surface);">
+    <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Sur le serveur <span style="color:var(--muted);font-weight:400;">(${cats.length} catégorie(s), ${real.length} salon(s) — vert = répertorié)</span></div>
+    ${rows || ''}${orphans.length ? `<div><strong style="font-size:12px;">Sans catégorie</strong> ${orphans.map(chip).join('')}</div>` : ''}
+    ${!cats.length && !orphans.length ? '<div style="color:var(--muted);font-size:12px;">Serveur vide.</div>' : ''}</div>`;
+}
 
 function _renderDiscordRoutes() {
+  const body = document.getElementById('discord-routes-body');
+  const guildSel = `<select onchange="drSetGuild(this.value)" style="${_drField}min-width:260px;font-weight:700;">
+      <option value="">— choisis un serveur Discord —</option>
+      ${_drGuilds.map(g => `<option value="${escHtml(g.id)}" ${g.id === _dr.guildId ? 'selected' : ''}>${escHtml(g.name)}</option>`).join('')}</select>`;
+  const head = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;"><strong style="font-size:13px;">Serveur</strong>${guildSel}
+      ${_drGuildErr && !_drGuilds.length ? `<span style="font-size:12px;color:var(--danger);">Serveurs illisibles (${escHtml(_drGuildErr)}) — redéploie le worker.</span>` : ''}</div>`;
+  if (!_dr.guildId) { body.innerHTML = head + '<div class="empty" style="color:var(--muted);">Choisis un serveur pour voir ce qui y est déjà en place et le configurer.</div>'; return; }
+
   const cards = _dr.channels.map((c, i) => {
+    const cats = _drCats();
     const catSel = `<select onchange="drSetCategory(${i}, this.value)" style="${_drField}">
         <option value="">— aucune catégorie —</option>
-        ${_drGuildCats.map(k => `<option value="id:${escHtml(k.id)}" ${c.categoryId === k.id ? 'selected' : ''}>${escHtml(k.name)}</option>`).join('')}
-        <option value="__new__" ${!c.categoryId && c.categoryName ? 'selected' : ''}>➕ Nouvelle catégorie…</option></select>
-      ${!c.categoryId && c.categoryName !== undefined && c.categoryName !== null && (c.categoryName || c._newCat) ? `<input type="text" value="${escHtml(c.categoryName || '')}" placeholder="Nom de la nouvelle catégorie" onchange="drSet(${i}, 'categoryName', this.value)" style="${_drField}width:200px;">` : ''}`;
+        ${cats.map(k => `<option value="id:${escHtml(k.id)}" ${c.categoryId === k.id ? 'selected' : ''}>${escHtml(k.name)}</option>`).join('')}
+        ${c.categoryName && !c.categoryId ? `<option value="__new__" selected>➕ ${escHtml(c.categoryName)} (à créer)</option>` : ''}
+        <option value="__prompt__">➕ Nouvelle catégorie…</option></select>`;
     const itemChips = _DR_CATS.map(([k, l]) => _drChip((c.itemCats || []).includes(k), l, `drToggle(${i}, 'itemCats', '${k}')`)).join(' ');
     const palChips = _drPaliers.map(p => _drChip((c.paliers || []).map(String).includes(String(p.id)), escHtml(p.label || String(p.id)), `drToggle(${i}, 'paliers', '${escHtml(String(p.id))}')`)).join(' ');
     const status = c.id
-      ? `<span style="color:var(--success, #4caf50);">✓ créé</span> <code>${escHtml(c.id)}</code>`
-      : `<span style="color:var(--muted);">pas encore créé</span> <button class="btn btn-primary" onclick="drCreate(${i})" style="font-size:11px;padding:3px 10px;">Créer le salon</button>
+      ? `<span style="color:var(--success, #4caf50);">✓ répertorié</span> <code>${escHtml(c.id)}</code>`
+      : `<span style="color:var(--muted);">pas encore créé</span> <button class="btn btn-primary" onclick="drCreate(${i})" style="font-size:11px;padding:3px 10px;">Créer / répertorier</button>
          <input type="text" inputmode="numeric" placeholder="ou ID d'un salon existant" onchange="drLink(${i}, this.value)" style="${_drField}width:190px;font-family:monospace;">`;
     return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px;background:var(--surface);">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-        <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" ${c.id ? 'title="Renommer ici ne renomme pas le salon sur Discord"' : ''} style="${_drField}width:200px;font-weight:700;">
+        <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" style="${_drField}width:200px;font-weight:700;">
         <select onchange="drSet(${i}, 'type', this.value)" style="${_drField}" ${c.id ? 'disabled' : ''}><option value="forum" ${c.type !== 'text' ? 'selected' : ''}>Forum (un fil par item)</option><option value="text" ${c.type === 'text' ? 'selected' : ''}>Salon texte</option></select>
         ${catSel}
         <span style="margin-left:auto;font-size:12px;">${status}</span>
-        <button class="btn btn-ghost" onclick="drRemove(${i})" style="font-size:11px;padding:3px 9px;color:var(--danger);border-color:var(--danger);" title="Retire ce salon de la config (le salon Discord n'est pas supprimé)">🗑</button>
+        <button class="btn btn-ghost" onclick="drRemove(${i})" style="font-size:11px;padding:3px 9px;color:var(--danger);border-color:var(--danger);" title="Retire ce salon du plan (le salon Discord n'est pas supprimé)">🗑</button>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Quoi envoyer — catégories d'items <em>(aucune sélection = toutes)</em></div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">${itemChips}</div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Paliers <em>(aucune sélection = tous)</em></div>
       <div style="display:flex;gap:5px;flex-wrap:wrap;">${palChips}</div>
     </div>`;
-  }).join('') || '<div class="empty" style="color:var(--muted);">Aucun salon. Ajoute-en un.</div>';
-  document.getElementById('discord-routes-body').innerHTML = `
+  }).join('') || '<div class="empty" style="color:var(--muted);">Aucun salon dans le plan. « Plan par défaut » en propose un à partir des items.</div>';
+
+  const btn = (label, fn, extra = '') => `<button class="btn btn-ghost" onclick="${fn}" style="font-size:12px;${extra}">${label}</button>`;
+  body.innerHTML = head + `
+    <div id="discord-setup-msg" style="font-size:12px;color:var(--accent);min-height:18px;margin-bottom:6px;">${escHtml(_drBusyMsg)}</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
+      ${btn('🚀 Tout mettre en place', 'drSetupAll()', 'border-color:var(--accent);color:var(--accent);font-weight:700;')}
+      ${btn('📋 Plan par défaut', 'drDefaultPlan()')}
+      ${btn('🧩 Créer / répertorier les salons', 'drReconcile()')}
+      ${btn('📤 Envoyer les items manquants', 'discordSendMissing()')}
+      ${btn('➕ Ajouter un salon', 'drAdd()')}
+    </div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
       <span style="font-size:14px;font-weight:700;color:${_dr.enabled ? 'var(--success, #4caf50)' : 'var(--muted)'};">${_dr.enabled ? '🟢 Envoi automatique actif' : '⚪ Envoi automatique désactivé'}</span>
       <button class="btn ${_dr.enabled ? 'btn-ghost' : 'btn-primary'}" onclick="setDiscordEnabled(${!_dr.enabled})" style="font-size:12px;">${_dr.enabled ? '⏸ Désactiver' : '▶ Activer'}</button>
-      <button class="btn btn-ghost" onclick="drAdd()" style="font-size:12px;">➕ Ajouter un salon</button>
-      <button class="btn btn-ghost" onclick="drCreateAll()" style="font-size:12px;">🏗 Créer les salons manquants</button>
+      <span style="font-size:12px;">🤫 Masquer un salon avant un envoi de plus de <input type="number" min="0" value="${_dr.hideThreshold}" onchange="drSetThreshold(this.value)" style="${_drField}width:60px;text-align:center;"> items <span style="color:var(--muted);">(0 = jamais ; « Gérer les rôles » requis)</span></span>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;margin-bottom:14px;">🤫 Avant un envoi de plus de <input type="number" min="0" value="${_dr.hideThreshold}" onchange="drSetThreshold(this.value)" style="${_drField}width:64px;text-align:center;"> items dans un salon, le masquer aux membres (évite les pings), puis le rétablir. <span style="color:var(--muted);">0 = ne jamais masquer. Ne concerne que « Renvoyer… » ; le bot a besoin de « Gérer les rôles ».</span></div>
-    ${_drGuildErr ? `<div style="font-size:12px;color:var(--danger);margin-bottom:10px;">Catégories Discord indisponibles (${escHtml(_drGuildErr)}) : tu peux quand même saisir un nom de nouvelle catégorie.</div>` : ''}
-    ${cards}`;
+    ${_drTree()}${cards}`;
 }
 
-const _drPersist = async () => { try { await _drSave(); } catch (e) { toast('Erreur : ' + e.message, 'error'); } };
+const _drMsg = t => { _drBusyMsg = t; const el = document.getElementById('discord-setup-msg'); if (el) el.textContent = t; };
+
+window.drSetGuild = async (id) => {
+  if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; // le plan de l'ancien serveur est conservé
+  _dr.guildId = id;
+  _dr.channels = id && Array.isArray(_dr.plans[id]) ? _dr.plans[id] : [];
+  await _drPersist();
+  _drMsg('Lecture du serveur…');
+  await _drLoadGuildChans();
+  _drMsg('');
+  _renderDiscordRoutes();
+  window.discordRenderSync();
+};
 window.drSetThreshold = async (v) => { const n = parseInt(v, 10); _dr.hideThreshold = Number.isFinite(n) && n >= 0 ? n : 10; await _drPersist(); _renderDiscordRoutes(); };
 window.drAdd = async () => { _dr.channels.push({ name: '', type: 'forum', itemCats: [], paliers: [] }); await _drPersist(); _renderDiscordRoutes(); };
 window.drSet = async (i, k, v) => { _dr.channels[i][k] = String(v).trim(); await _drPersist(); _renderDiscordRoutes(); };
 window.drSetCategory = async (i, v) => {
   const c = _dr.channels[i];
-  if (v === '__new__') { c.categoryId = ''; c.categoryName = c.categoryName || ''; c._newCat = true; }
-  else if (v.startsWith('id:')) { c.categoryId = v.slice(3); c.categoryName = ''; delete c._newCat; }
-  else { c.categoryId = ''; c.categoryName = ''; delete c._newCat; }
+  if (v === '__prompt__') { const n = (prompt('Nom de la nouvelle catégorie Discord :') || '').trim(); if (!n) { _renderDiscordRoutes(); return; } c.categoryId = ''; c.categoryName = n; }
+  else if (v.startsWith('id:')) { c.categoryId = v.slice(3); c.categoryName = ''; }
+  else if (v === '__new__') { /* inchangé */ }
+  else { c.categoryId = ''; c.categoryName = ''; }
   await _drPersist(); _renderDiscordRoutes();
 };
 window.drToggle = async (i, k, v) => {
@@ -432,41 +492,90 @@ window.drLink = async (i, v) => {
   _dr.channels[i].id = v; await _drPersist(); _renderDiscordRoutes();
 };
 window.drRemove = async (i) => {
-  if (!await modal.confirm('Retirer ce salon de la config ?\n\nLe salon Discord et ses posts ne sont pas supprimés.')) return;
+  if (!await modal.confirm('Retirer ce salon du plan ?\n\nLe salon Discord et ses posts ne sont pas supprimés.')) return;
   _dr.channels.splice(i, 1); await _drPersist(); _renderDiscordRoutes(); window.discordRenderSync();
 };
 
-async function _drCreateOne(i) {
-  const c = _dr.channels[i];
-  if (c.id) return;
-  const name = (c.name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_àâäçéèêëîïôöùûüœ]/g, '');
-  if (!name) throw new Error('Nom de salon requis');
-  let parentId = c.categoryId || '';
-  if (!parentId && c.categoryName) {
-    const known = _drGuildCats.find(k => k.name.toLowerCase() === c.categoryName.toLowerCase());
-    if (known) parentId = known.id;
-    else { const cat = await _drCall('create_channel', { name: c.categoryName, type: 4 }); parentId = cat.id; _drGuildCats.push({ id: cat.id, name: cat.name }); }
-    c.categoryId = parentId;
+// Plan par défaut : une catégorie Discord par palier, un forum par catégorie d'items qui a des items à ce palier (l'archive est exclue)
+window.drDefaultPlan = async () => {
+  const snap = await getDocs(collection(db, COL.items));
+  const combos = new Map();
+  snap.docs.forEach(d => { const x = d.data(); if (!x.category || x.palier == null || Number(x.palier) === -1) return; combos.set(`${x.category}|${x.palier}`, [x.category, String(x.palier)]); });
+  const palierOrder = p => { const i = _drPaliers.findIndex(q => String(q.id) === p); return i < 0 ? 999 : i; };
+  const catOrder = c => { const i = _DR_CATS.findIndex(q => q[0] === c); return i < 0 ? 999 : i; };
+  const wanted = [...combos.values()].sort((a, b) => palierOrder(a[1]) - palierOrder(b[1]) || catOrder(a[0]) - catOrder(b[0]));
+  let added = 0;
+  for (const [cat, pal] of wanted) {
+    if (_dr.channels.some(c => (c.itemCats || []).join() === cat && (c.paliers || []).map(String).join() === pal)) continue;
+    const name = (_DR_CATS.find(q => q[0] === cat) || [0, 0, cat])[2];
+    _dr.channels.push({ name, type: 'forum', categoryName: _drPalLabel(pal), itemCats: [cat], paliers: [pal] });
+    added++;
   }
-  const r = await _drCall('create_channel', { name, type: c.type === 'text' ? 0 : 15, parentId: parentId || undefined });
-  c.id = r.id; delete c._newCat;
-  await _drSave();
-}
-window.drCreate = async (i) => {
-  try { await _drCreateOne(i); toast(`Salon « ${_dr.channels[i].name} » créé.`, 'success'); } catch (e) { toast('Création impossible : ' + e.message + ' (le bot a-t-il « Gérer les salons » ?)', 'error', 8000); }
-  _renderDiscordRoutes(); window.discordRenderSync();
+  await _drPersist(); _renderDiscordRoutes();
+  toast(added ? `${added} salon(s) ajouté(s) au plan (une catégorie par palier). Retire ou modifie ce que tu ne veux pas, puis « Créer / répertorier ».` : 'Le plan couvre déjà tous les items.', added ? 'success' : 'info', 8000);
 };
-window.drCreateAll = async () => {
-  const todo = _dr.channels.map((c, i) => [c, i]).filter(([c]) => !c.id && c.name);
-  if (!todo.length) { toast('Aucun salon à créer.', 'warning'); return; }
-  let ok = 0;
-  for (const [, i] of todo) { try { await _drCreateOne(i); ok++; } catch (e) { toast(`« ${_dr.channels[i].name} » : ${e.message}`, 'error', 8000); } }
-  toast(`${ok}/${todo.length} salon(s) créé(s).`, ok === todo.length ? 'success' : 'warning');
-  _renderDiscordRoutes(); window.discordRenderSync();
+
+// Retrouve (par nom) ou crée la catégorie puis le salon d'une entrée du plan, et mémorise leur ID
+async function _drEnsure(c) {
+  const byId = new Map(_drGuildChans.map(x => [x.id, x]));
+  if (c.id && !byId.has(c.id)) c.id = ''; // supprimé sur Discord : on le recrée
+  if (c.id) return false;
+  const name = _drSlug(c.name);
+  if (!name) throw new Error('nom de salon requis');
+  let parentId = c.categoryId && byId.has(c.categoryId) ? c.categoryId : '';
+  if (!parentId && c.categoryName) {
+    const known = _drCats().find(k => k.name.toLowerCase() === c.categoryName.toLowerCase());
+    if (known) parentId = known.id;
+    else { const k = await _drCall('create_channel', { name: c.categoryName, type: 4 }); _drGuildChans.push(k); parentId = k.id; await _drSleep(400); }
+  }
+  c.categoryId = parentId;
+  const type = _drTypeNum(c);
+  const existing = _drGuildChans.find(x => x.type === type && x.name === name && (x.parent_id || '') === parentId)
+    || (!parentId ? _drGuildChans.find(x => x.type === type && x.name === name) : null);
+  if (existing) { c.id = existing.id; return 'adopté'; }
+  const ch = await _drCall('create_channel', { name, type, parentId: parentId || undefined });
+  _drGuildChans.push(ch); c.id = ch.id;
+  await _drSleep(400);
+  return 'créé';
+}
+
+window.drReconcile = async () => {
+  if (!_dr.guildId) { toast('Choisis un serveur.', 'warning'); return false; }
+  const todo = _dr.channels.filter(c => c.name);
+  if (!todo.length) { toast('Le plan est vide : « Plan par défaut » ou « Ajouter un salon ».', 'warning'); return false; }
+  _drMsg('Lecture du serveur…');
+  await _drLoadGuildChans();
+  let made = 0, adopted = 0, failed = 0;
+  for (const [n, c] of todo.entries()) {
+    _drMsg(`Salons : ${n + 1}/${todo.length} (${c.name})…`);
+    try { const r = await _drEnsure(c); if (r === 'créé') made++; else if (r === 'adopté') adopted++; await _drSave(); }
+    catch (e) { failed++; toast(`« ${c.name} » : ${e.message} (le bot a-t-il « Gérer les salons » ?)`, 'error', 9000); }
+  }
+  await _drLoadGuildChans();
+  _drMsg(`Salons : ${made} créé(s), ${adopted} retrouvé(s), ${failed} échec(s).`);
+  _renderDiscordRoutes();
+  window.discordRenderSync();
+  return failed === 0;
+};
+
+window.drSetupAll = async () => {
+  if (!_dr.guildId) { toast('Choisis d\'abord un serveur.', 'warning'); return; }
+  const gname = (_drGuilds.find(g => g.id === _dr.guildId) || {}).name || _dr.guildId;
+  const planned = _dr.channels.length;
+  if (!await modal.confirm(`Tout mettre en place sur « ${gname} » ?\n\n1. ${planned ? `${planned} salon(s) du plan` : 'plan par défaut (une catégorie par palier, un forum par catégorie d\'items)'} : catégories et salons créés s'ils n'existent pas, retrouvés sinon\n2. envoi de tous les items qui n'ont pas encore de post\n\nL'envoi peut durer longtemps (garde cet onglet ouvert, tu peux l'arrêter).`)) return;
+  if (!_dr.channels.length) await window.drDefaultPlan();
+  if (!await window.drReconcile()) { toast('Création des salons incomplète : envoi des items annulé.', 'warning'); return; }
+  await window.discordSendMissing();
+};
+
+window.drCreate = async (i) => {
+  try { await _drLoadGuildChans(); const r = await _drEnsure(_dr.channels[i]); await _drSave(); toast(r ? `Salon « ${_dr.channels[i].name} » ${r}.` : 'Déjà répertorié.', 'success'); }
+  catch (e) { toast('Création impossible : ' + e.message + ' (le bot a-t-il « Gérer les salons » ?)', 'error', 8000); }
+  await _drLoadGuildChans(); _renderDiscordRoutes(); window.discordRenderSync();
 };
 
 window.setDiscordEnabled = async function(on) {
-  if (on && !await modal.confirm('Activer l\'envoi automatique ?\n\nChaque item approuvé en soumission sera posté (ou remplacé) dans son salon, avec sa carte. Les items déjà publiés ne sont pas envoyés.')) return;
+  if (on && !await modal.confirm('Activer l\'envoi automatique ?\n\nChaque item approuvé en soumission sera posté (ou remplacé) dans son salon, avec sa carte. Les items déjà publiés ne sont pas envoyés (utilise « Envoyer les items manquants »).')) return;
   _dr.enabled = !!on;
   await _drPersist();
   toast(on ? 'Envoi automatique activé.' : 'Envoi automatique désactivé.', 'success');
