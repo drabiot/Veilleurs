@@ -326,6 +326,62 @@ window.setSecretForgeronsHidden = async function(hidden) {
   } catch (e) { toast('Erreur : ' + e.message, 'error'); }
 };
 
+// ── DISCORD TOOL : où le bot poste les nouveaux items (config/discord_routes { enabled, default, routes: { "<catégorie>_<palier>": "<id salon>" } }) ──
+// Lu par bot/discord-watch.js : chaque nouvel item est posté (avec sa carte) dans routes[catégorie_palier], sinon dans le salon par défaut.
+const _DR_REF = () => doc(db, 'config', 'discord_routes');
+const _DR_CATS = [['arme', '⚔️ Armes'], ['armure', '🛡️ Armures'], ['accessoire', '💍 Accessoires'], ['outils', '🛠️ Outils'], ['rune', '🔮 Runes'], ['consommable', '🧪 Consommables'],
+  ['nourriture', '🍖 Nourriture'], ['materiaux', '🧱 Matériaux'], ['ressources', '⛏️ Ressources'], ['parchemin', '📃 Parchemins'], ['quete', '📜 Quête'], ['donjon', '🏰 Donjon'], ['monnaie', '🪙 Monnaie']];
+let _dr = { enabled: false, default: '', routes: {} }, _drPaliers = [];
+
+window.showDiscordRoutes = async function() {
+  _setHash('discord-routes');
+  _showPanel('discord-routes-panel', 'btn-discord-routes');
+  const body = document.getElementById('discord-routes-body');
+  body.innerHTML = '<div class="empty">Chargement…</div>';
+  try {
+    const [cfg, pal] = await Promise.all([getDoc(_DR_REF()), getDoc(doc(db, 'config', 'paliers'))]);
+    const c = cfg.exists() ? cfg.data() : {};
+    _dr = { enabled: c.enabled === true, default: c.default || '', routes: c.routes && typeof c.routes === 'object' ? c.routes : {} };
+    _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []).filter(p => p.id !== -1);
+    if (!_drPaliers.length) _drPaliers = [{ id: 1, label: 'Palier 1' }, { id: 2, label: 'Palier 2' }, { id: 3, label: 'Palier 3' }, { id: 'event', label: 'Event' }, { id: 'worldboss', label: 'World Boss' }];
+    _renderDiscordRoutes();
+  } catch (e) { body.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`; }
+};
+
+function _renderDiscordRoutes() {
+  const inp = 'width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:11px;outline:none;font-family:monospace;';
+  const head = _drPaliers.map(p => `<th style="text-align:left;padding:4px 6px;font-size:11px;color:var(--muted);">${escHtml(p.label || String(p.id))}</th>`).join('');
+  const rows = _DR_CATS.map(([cat, label]) => `<tr><td style="padding:4px 10px 4px 0;font-size:12px;white-space:nowrap;">${label}</td>${_drPaliers.map(p => {
+    const key = `${cat}_${p.id}`;
+    return `<td style="padding:3px 6px;"><input type="text" inputmode="numeric" data-key="${escHtml(key)}" value="${escHtml(_dr.routes[key] || '')}" placeholder="ID du salon" onchange="setDiscordRoute(this.dataset.key, this.value)" style="${inp}"></td>`;
+  }).join('')}</tr>`).join('');
+  document.getElementById('discord-routes-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+      <span style="font-size:14px;font-weight:700;color:${_dr.enabled ? 'var(--success, #4caf50)' : 'var(--muted)'};">${_dr.enabled ? '🟢 Envoi automatique actif' : '⚪ Envoi automatique désactivé'}</span>
+      <button class="btn ${_dr.enabled ? 'btn-ghost' : 'btn-primary'}" onclick="setDiscordEnabled(${!_dr.enabled})" style="font-size:12px;">${_dr.enabled ? '⏸ Désactiver' : '▶ Activer'}</button>
+    </div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Salon par défaut</div>
+    <div style="max-width:320px;margin-bottom:18px;"><input type="text" inputmode="numeric" value="${escHtml(_dr.default)}" placeholder="ID du salon (utilisé si aucune case ci-dessous)" onchange="setDiscordRoute('default', this.value)" style="${inp}"></div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Salon par catégorie et palier <span style="color:var(--muted);font-weight:400;">— vide = salon par défaut</span></div>
+    <div style="overflow-x:auto;"><table style="border-collapse:collapse;min-width:640px;"><thead><tr><th></th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+const _drSave = async () => setDoc(_DR_REF(), { enabled: _dr.enabled, default: _dr.default, routes: _dr.routes });
+
+window.setDiscordRoute = async function(key, value) {
+  const v = String(value || '').trim();
+  if (v && !/^\d{15,25}$/.test(v)) { toast('ID de salon invalide (chiffres uniquement : clic droit sur le salon → Copier l\'identifiant).', 'error'); _renderDiscordRoutes(); return; }
+  if (key === 'default') _dr.default = v; else if (v) _dr.routes[key] = v; else delete _dr.routes[key];
+  try { await _drSave(); toast(v ? 'Salon enregistré.' : 'Salon retiré.', 'success'); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+};
+
+window.setDiscordEnabled = async function(on) {
+  if (on && !await modal.confirm('Activer l\'envoi automatique ?\n\nChaque NOUVEL item publié sera posté dans le salon réglé ici (avec sa carte). Les items déjà existants ne sont pas envoyés. Le bot (bot/discord-watch.js) doit tourner.')) return;
+  _dr.enabled = !!on;
+  try { await _drSave(); toast(on ? 'Envoi automatique activé.' : 'Envoi automatique désactivé.', 'success'); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+  _renderDiscordRoutes();
+};
+
 window.createVclEvent = async function() {
   const inp = document.getElementById('event-name-input');
   const name = inp?.value?.trim();
