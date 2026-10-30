@@ -308,6 +308,7 @@ function rStatus() {
     ${st === 'removing' ? '' : `<div class="dg-row">
       <button class="dg-btn" onclick="DG.edit()">✏️ Modifier les réglages</button>
       ${st === 'approved' || st === 'pending' ? `<button class="dg-btn" onclick="DG.pause(${!d.paused})">${d.paused ? '▶ Reprendre' : '⏸ Mettre en pause'}</button>` : ''}
+      <button class="dg-btn" onclick="DG.restart()" title="Supprime tous les posts puis renvoie tous les items">🔁 Tout supprimer et renvoyer</button>
       <button class="dg-btn danger" onclick="DG.purge()">🗑 Supprimer tous les posts</button>
       <button class="dg-btn danger" onclick="DG.uninstallDlg()">Désinstaller</button>
       <button class="dg-btn" onclick="DG.back()">← Mes serveurs</button></div>`}
@@ -403,9 +404,29 @@ const DG = window.DG = {
     } catch (e) { S.err = 'Création des salons : ' + e.message + ' Tu peux réessayer depuis la page de statut.'; if (!inner) render(); else throw e; }
   },
   async pause(p) { try { const j = await api('set_paused', { guildId: S.guild.id, paused: p }); S.doc = j.config; S.msg = p ? 'Envoi mis en pause.' : 'Envoi repris.'; S.err = ''; } catch (e) { S.err = e.message; } render(); },
-  async purge() {
-    if (!confirm('Supprimer TOUS les posts envoyés par le bot sur ce serveur ?\n\nL\'envoi est mis en pause ensuite (reprends-le quand tu veux : tout sera renvoyé si tu as choisi « tous les items »).')) return;
-    try { const j = await api('purge', { guildId: S.guild.id }); S.doc = j.config; S.msg = 'Suppression demandée : le bot s\'en occupe sous quelques minutes.'; S.err = ''; } catch (e) { S.err = e.message; } render();
+  // Suppression des posts par le worker, par paquets : on rappelle jusqu'à la fin (resend : puis tout est renvoyé)
+  async wipe(resend) {
+    S.err = ''; S.msg = 'Suppression des posts en cours…'; render();
+    try {
+      let j;
+      for (let i = 0; i < 200; i++) {
+        j = await api(resend ? 'restart' : 'purge', { guildId: S.guild.id });
+        if (j.done || !j.progress) break;
+        S.msg = `Suppression des posts en cours… (reste ${j.left})`; render();
+        await sleep(600);
+      }
+      if (j.done) { S.doc = j.config; S.msg = resend ? 'Tous les posts sont supprimés. Le bot renvoie tous les items (compte une à deux minutes pour démarrer, la progression s\'affiche ici).' : 'Tous les posts sont supprimés. L\'envoi est en pause.'; }
+      else S.msg = 'Suppression incomplète : relance le bouton pour terminer.';
+    } catch (e) { S.err = e.message; S.msg = ''; }
+    render();
+  },
+  purge() {
+    if (!confirm('Supprimer TOUS les posts envoyés par le bot sur ce serveur ?\n\nL\'envoi est mis en pause ensuite.')) return;
+    return DG.wipe(false);
+  },
+  restart() {
+    if (!confirm('Tout supprimer puis tout renvoyer ?\n\nTous les posts du bot sont supprimés, puis TOUS les items (selon tes salons et filtres) sont renvoyés depuis le début. Ça peut prendre un moment.')) return;
+    return DG.wipe(true);
   },
   uninstallDlg() {
     const m = document.createElement('div'); m.className = 'dg-modal';

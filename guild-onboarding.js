@@ -178,6 +178,39 @@ function overwrites(env, guildId, cfg) {
   return list;
 }
 
+/** Supprime tous les posts du bot sur le serveur (par paquets de 40 appels Discord : la page rappelle jusqu'à done) et remet l'état à zéro.
+ *  resend = « tout recommencer » : renvoie ensuite TOUS les items (réglage « tous » forcé, envoi repris, bot lancé). Sinon l'envoi reste en pause. */
+async function purgeStep(env, guildId, doc, json, resend) {
+  const stateKey = 'guild_' + guildId;
+  if (!doc.purging) { // on met en pause d'abord pour que le bot n'ajoute pas de posts pendant le nettoyage
+    doc.purging = true; doc.paused = true; doc.updatedAt = Date.now();
+    pushLog(doc, resend ? 'Tout recommencer demandé : suppression de tous les posts puis renvoi complet' : 'Suppression de tous les posts demandée (envoi mis en pause)');
+    await dgPut(env, guildId, doc);
+  }
+  const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'bot_state' AND id = ? AND deleted = 0").bind(stateKey).first();
+  const st = jparse(row?.data) || {};
+  const posts = st.posts || {};
+  let budget = 40, deleted = 0;
+  for (const [key, e] of Object.entries(posts)) {
+    const calls = e.threadId ? [`/channels/${e.threadId}`] : (e.messageIds?.length ? e.messageIds : [e.messageId]).filter(Boolean).map(m => `/channels/${e.channelId}/messages/${m}`);
+    if (budget < calls.length) break;
+    for (const p of calls) { await dc(env, 'DELETE', p); budget--; }
+    delete posts[key]; deleted++;
+  }
+  const left = Object.keys(posts).length;
+  const next = left ? { ...st, posts } : { ...st, posts: {}, seen: {}, baselined: false, rev: 0, pending: 0, sig: '' }; // plus rien : le bot repartira de zéro
+  await env.DB.prepare(`INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('bot_state', ?, ?, 0, 0, 0) ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, deleted = 0`).bind(stateKey, JSON.stringify(next)).run();
+  if (left) return json({ ok: true, progress: true, left, deleted });
+  doc.purging = false; doc.purge = false; doc.posted = 0; doc.pending = 0; doc.lastError = ''; doc.updatedAt = Date.now();
+  if (resend) {
+    doc.initial = 'all'; doc.paused = false;
+    pushLog(doc, 'Posts supprimés : renvoi de tous les items demandé');
+    if (doc.status === 'approved') pushLog(doc, triggerText(await triggerBot(env)));
+  } else pushLog(doc, 'Tous les posts sont supprimés (envoi en pause : « Reprendre » renverra tout si le réglage est « tous les items »)');
+  await dgPut(env, guildId, doc);
+  return json({ ok: true, done: true, config: doc });
+}
+
 /** Désinstallation d'un serveur : par paquets (budget d'appels Discord d'un Worker) ; l'appelant rappelle tant que la réponse n'est pas done.
  *  Utilisée par la page d'inscription (chef de serveur) et par la modération (action « uninstall » de /guild/bot). */
 async function uninstallStep(env, guildId, doc, body, json) {
@@ -310,12 +343,7 @@ export async function handleGuildApi(request, env, deps) {
     return json({ ok: true, config: doc });
   }
 
-  if (action === 'purge') { // supprime tous les posts du bot (fait par le processus Node) ; envoi mis en pause pour ne pas tout renvoyer
-    doc.purge = true; doc.paused = true; doc.updatedAt = Date.now();
-    pushLog(doc, 'Suppression de tous les posts demandée (envoi mis en pause) : faite au prochain passage du bot');
-    await dgPut(env, guildId, doc);
-    return json({ ok: true, config: doc });
-  }
+  if (action === 'purge' || action === 'restart') return purgeStep(env, guildId, doc, json, action === 'restart');
 
   if (action === 'create_channels') {
     if (doc.mode !== 'create') return json({ error: 'Ce serveur utilise des salons existants.' }, 400);
