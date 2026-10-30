@@ -479,6 +479,7 @@ function rStatus() {
     ${st === 'removing' ? '' : `<div class="dg-row">
       <button class="dg-btn" onclick="DG.edit()">✏️ Modifier les réglages</button>
       ${st === 'approved' || st === 'pending' ? `<button class="dg-btn" onclick="DG.pause(${!d.paused})">${d.paused ? '▶ Reprendre' : '⏸ Mettre en pause'}</button>` : ''}
+      ${st === 'approved' ? '<button class="dg-btn primary" onclick="DG.sendAllMissing()" title="Le bot envoie, dans chaque salon inscrit, les items sans post (rien n’est supprimé)">📤 Envoyer toute la data manquante</button>' : ''}
       <button class="dg-btn" onclick="DG.restart()" title="Supprime tous les posts puis renvoie tous les items">🔁 Tout supprimer et renvoyer</button>
       <button class="dg-btn danger" onclick="DG.purge()">🗑 Supprimer tous les posts</button>
       <button class="dg-btn danger" onclick="DG.uninstallDlg()">Désinstaller</button>
@@ -713,6 +714,11 @@ const DG = window.DG = {
     if (mode === 'all' && !confirm('Renvoyer toute la data de ce salon ?\n\nSes posts actuels sont supprimés puis tous les items concernés sont renvoyés.')) return;
     const j = await DG.chCall('send_request', { index: i, mode });
     if (j) S.msg = mode === 'all' ? 'Renvoi demandé : le bot s\'en occupe (la barre de progression ci-dessus avance).' : 'Envoi des items manquants demandé : le bot s\'en occupe.';
+    render();
+  },
+  async sendAllMissing() {
+    const j = await DG.chCall('send_all_missing', {});
+    if (j) S.msg = `Envoi des items manquants demandé dans ${j.count} salon(s) : le bot s'en occupe (la barre de progression avance).`;
     render();
   },
   async chClear(i) {

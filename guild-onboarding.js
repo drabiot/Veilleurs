@@ -544,6 +544,20 @@ export async function handleGuildApi(request, env, deps) {
     return json({ ok: true, config: doc });
   }
 
+  // envoi des items manquants dans tous les salons inscrits et créés : une demande « missing » par salon, traitée par le bot
+  if (action === 'send_all_missing') {
+    const chs = (doc.channels || []).filter(c => c.id && c.subscribed !== false && !c.skip);
+    if (!chs.length) return json({ error: "Aucun salon inscrit et créé : inscris-toi à des salons d'abord." }, 400);
+    const ids = new Set(chs.map(c => c.id));
+    doc.requests = [...(doc.requests || []).filter(r => !ids.has(r.id)), ...chs.map(c => ({ id: c.id, mode: 'missing', at: Date.now() }))].slice(-300);
+    doc.updatedAt = Date.now();
+    plog(doc, `Envoi des items manquants demandé dans ${chs.length} salon(s)`);
+    if (doc.status === 'approved' && !doc.paused) plog(doc, triggerText(await triggerBot(env)));
+    else plog(doc, 'Envoi en attente : ' + (doc.status !== 'approved' ? 'le serveur doit d'abord être validé' : 'l'envoi est en pause'));
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc, count: chs.length });
+  }
+
   // envoi à la demande pour un salon : traité par le bot (cartes dessinées côté Node)
   if (action === 'send_request') {
     const c = (doc.channels || [])[parseInt(body.index, 10)];
@@ -591,7 +605,7 @@ export async function handleGuildApi(request, env, deps) {
     return clearChannelStep(env, guildId, doc, c, json, plog);
   }
 
-  if (['create_channels', 'delete_channel', 'rename_category', 'send_request', 'send_item', 'send_items', 'clear_channel', 'verify_posts'].includes(action) && !sess.admin && await rateLimited(env, `${action}:${guildId}`, action === 'create_channels' ? 150 : 100)) return json({ error: 'Trop d\'actions en peu de temps : réessaie dans une heure.' }, 429);
+  if (['create_channels', 'delete_channel', 'rename_category', 'send_request', 'send_all_missing', 'send_item', 'send_items', 'clear_channel', 'verify_posts'].includes(action) && !sess.admin && await rateLimited(env, `${action}:${guildId}`, action === 'create_channels' ? 150 : 100)) return json({ error: 'Trop d\'actions en peu de temps : réessaie dans une heure.' }, 429);
   if (action === 'create_channels') {
     const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
     if (!chs.ok) return json({ error: 'Serveur illisible par le bot : ' + whyUnreadable(chs) + '.' }, 502);
