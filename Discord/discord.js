@@ -395,10 +395,16 @@ const DG = window.DG = {
     m.querySelector('#un-ok').onclick = async () => {
       const deleteChannels = m.querySelector('#un-ch').checked, deletePosts = m.querySelector('#un-po').checked; m.remove();
       try {
-        const j = await api('uninstall', { guildId: S.guild.id, deleteChannels, deletePosts });
-        if (j.done) { S.msg = 'Désinstallé.'; await refreshMe(); S.step = 'guild'; }
-        else { S.msg = j.message; S.doc = { ...S.doc, status: 'removing' }; }
-        S.err = '';
+        S.msg = 'Désinstallation en cours…'; S.err = ''; render();
+        let j;
+        for (let i = 0; i < 60; i++) { // le worker travaille par paquets : on rappelle jusqu'à la fin
+          j = await api('uninstall', { guildId: S.guild.id, deleteChannels, deletePosts });
+          if (j.done || !j.progress) break;
+          S.msg = `Désinstallation en cours… (reste ${j.left})`; render();
+          await sleep(800);
+        }
+        if (j.done) { S.msg = 'Désinstallé : le bot a quitté le serveur.'; S.doc = null; S.guild = null; await refreshMe(); S.step = 'guild'; }
+        else { S.msg = 'Désinstallation partiellement faite : relance « Désinstaller » pour terminer.'; S.doc = { ...S.doc, status: 'removing' }; }
       } catch (e) { S.err = e.message; }
       render();
     };

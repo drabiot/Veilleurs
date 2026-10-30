@@ -80,6 +80,26 @@ async function botGuildIds(env) {
   return ids;
 }
 
+// ── Lancer le bot tout de suite (GitHub Actions, workflow discord-bot.yml) au lieu d'attendre le prochain passage de 10 min ──
+// Secret du worker GITHUB_DISPATCH_TOKEN : jeton GitHub « fine-grained » limité au dépôt, permission Actions = lecture et écriture.
+// Au plus un lancement par minute (KV) ; sans jeton, rien ne se passe et le passage planifié fait le travail.
+const GH_REPO = 'drabiot/Veilleurs';
+export async function triggerBot(env) {
+  if (!env.GITHUB_DISPATCH_TOKEN) return 'no-token';
+  try {
+    if (env.WIKI_CACHE) {
+      if (await env.WIKI_CACHE.get('bot_trigger')) return 'throttled';
+      await env.WIKI_CACHE.put('bot_trigger', '1', { expirationTtl: 60 });
+    }
+    const r = await fetch(`https://api.github.com/repos/${GH_REPO}/actions/workflows/discord-bot.yml/dispatches`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.GITHUB_DISPATCH_TOKEN}`, Accept: 'application/vnd.github+json', 'User-Agent': 'veilleurs-worker', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ref: 'main' }),
+    });
+    return r.status === 204 ? 'started' : 'error-' + r.status;
+  } catch { return 'error'; }
+}
+
 // ══ Connexion : fin du flux OAuth (appelée par handleDiscordCallback quand state.m === 'guilds') ══
 export async function finishGuildOauth(env, accessToken) {
   const bearer = { Authorization: `Bearer ${accessToken}` };
@@ -180,17 +200,61 @@ export async function handleGuildApi(request, env, deps) {
   const guildName = sess.guilds.find(g => g.id === guildId).name;
   let doc = await dgGet(env, guildId);
 
+  // Désinstallation faite par le worker lui-même (immédiate, sans attendre le bot) : par paquets de 40 appels Discord, la page rappelle jusqu'à done.
+  // Si la page est fermée en route, le statut « removing » reste et le bot (GitHub Actions) termine.
   if (action === 'uninstall') {
+    const stateKey = 'guild_' + guildId;
+    const dropState = () => env.DB.prepare("UPDATE docs SET deleted = 1 WHERE col = 'bot_state' AND id = ?").bind(stateKey).run();
     const present = (await botGuildIds(env)).has(guildId);
-    if (!doc || !present) { // jamais inscrit, ou bot déjà parti : rien à nettoyer côté bot
-      if (present) await dc(env, 'DELETE', `/users/@me/guilds/${guildId}`);
-      if (doc) await dgDelete(env, guildId);
-      _botGuilds = null;
-      return json({ ok: true, done: true });
+    if (!present) { if (doc) { await dgDelete(env, guildId); await dropState(); } return json({ ok: true, done: true }); }
+    if (!doc) { await dc(env, 'DELETE', `/users/@me/guilds/${guildId}`); _botGuilds = null; return json({ ok: true, done: true }); }
+    if (doc.status !== 'removing') { doc.status = 'removing'; doc.removal = { deleteChannels: !!body.deleteChannels, deletePosts: !!body.deletePosts }; }
+    doc.updatedAt = Date.now();
+    const rm = doc.removal || {};
+    let budget = 40;
+    const gone = r => r.ok || [404, 403].includes(r.status); // déjà supprimé / plus accessible : on oublie
+    const more = async (left) => { await dgPut(env, guildId, doc); return json({ ok: true, done: false, progress: true, left }); };
+
+    if (rm.deletePosts && !rm.deleteChannels) { // posts suivis par le bot (état D1) : supprimés ici
+      const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'bot_state' AND id = ? AND deleted = 0").bind(stateKey).first();
+      const st = jparse(row?.data) || {};
+      const posts = st.posts || {};
+      for (const [key, e] of Object.entries(posts)) {
+        const calls = e.threadId ? [`/channels/${e.threadId}`] : (e.messageIds?.length ? e.messageIds : [e.messageId]).filter(Boolean).map(m => `/channels/${e.channelId}/messages/${m}`);
+        if (budget < calls.length) break;
+        for (const p of calls) { await dc(env, 'DELETE', p); budget--; }
+        delete posts[key];
+      }
+      const left = Object.keys(posts).length;
+      await env.DB.prepare(`INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('bot_state', ?, ?, 0, 0, 0) ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, deleted = 0`).bind(stateKey, JSON.stringify({ ...st, posts })).run();
+      if (left) return more(left);
     }
-    doc.status = 'removing'; doc.removal = { deleteChannels: !!body.deleteChannels, deletePosts: !!body.deletePosts }; doc.updatedAt = Date.now();
-    await dgPut(env, guildId, doc);
-    return json({ ok: true, done: false, message: "Désinstallation demandée : le bot supprime ce que tu as coché puis quitte le serveur (quelques minutes)." });
+
+    if (rm.deleteChannels) { // salons créés par le bot, puis catégories créées par le bot et devenues vides
+      for (const c of doc.channels || []) {
+        if (!(c.created && c.id)) continue;
+        if (budget <= 0) break;
+        const r = await dc(env, 'DELETE', `/channels/${c.id}`); budget--;
+        if (gone(r)) { c.id = ''; c.created = false; }
+      }
+      const left = (doc.channels || []).filter(c => c.created && c.id).length;
+      if (left) return more(left);
+      if ((doc.createdCategories || []).length && budget > 2) {
+        const all = await dc(env, 'GET', `/guilds/${guildId}/channels`); budget--;
+        for (const cid of [...doc.createdCategories]) {
+          if (budget <= 0) break;
+          if (Array.isArray(all.data) && all.data.some(x => x.parent_id === cid)) { doc.createdCategories = doc.createdCategories.filter(x => x !== cid); continue; } // contient autre chose : on la garde
+          const r = await dc(env, 'DELETE', `/channels/${cid}`); budget--;
+          if (gone(r)) doc.createdCategories = doc.createdCategories.filter(x => x !== cid);
+        }
+        if (doc.createdCategories.length) return more(doc.createdCategories.length);
+      }
+    }
+
+    await dc(env, 'DELETE', `/users/@me/guilds/${guildId}`); // le bot quitte le serveur
+    _botGuilds = null;
+    await dgDelete(env, guildId); await dropState();
+    return json({ ok: true, done: true });
   }
 
   const present = (await botGuildIds(env)).has(guildId);
@@ -221,6 +285,7 @@ export async function handleGuildApi(request, env, deps) {
       status: doc?.status || 'pending', paused: doc ? !!doc.paused : false, createdAt: doc?.createdAt || now, updatedAt: now,
       createdCategories: doc?.createdCategories || [] };
     await dgPut(env, guildId, doc);
+    if (doc.status === 'approved' && !doc.paused) await triggerBot(env);
     return json({ ok: true, config: doc });
   }
 
@@ -229,6 +294,7 @@ export async function handleGuildApi(request, env, deps) {
   if (action === 'set_paused') {
     doc.paused = !!body.paused; doc.updatedAt = Date.now();
     await dgPut(env, guildId, doc);
+    if (doc.status === 'approved' && !doc.paused) await triggerBot(env);
     return json({ ok: true, config: doc });
   }
 
@@ -292,6 +358,7 @@ export async function handleGuildBot(request, env, deps) {
   if (!env.ADMIN_SECRET || body.secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
   if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
 
+  if (body.action === 'trigger') return json({ ok: true, result: await triggerBot(env) });
   if (body.action === 'list') {
     const rows = (await env.DB.prepare("SELECT id, data FROM docs WHERE col = 'discord_guilds' AND deleted = 0").all()).results;
     return json({ guilds: rows.map(r => ({ id: r.id, ...jparse(r.data) })) });
