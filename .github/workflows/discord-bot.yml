@@ -1,0 +1,34 @@
+name: Discord bot
+
+# Envoi des items sur Discord (serveur principal + serveurs inscrits via Discord/discord.html), sans PC allumé.
+# Secrets GitHub à créer (Settings → Secrets and variables → Actions) : BOT_TOKEN, ADMIN_SECRET.
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # GitHub peut retarder une tâche planifiée de quelques minutes
+  workflow_dispatch:
+
+# Jamais deux passages en même temps (même état, mêmes salons)
+concurrency:
+  group: discord-bot
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Passage du bot
+        run: node bot/discord-watch.js --once
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          RUN_MINUTES: 12

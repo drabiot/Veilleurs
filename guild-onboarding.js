@@ -292,6 +292,22 @@ export async function handleGuildBot(request, env, deps) {
     const rows = (await env.DB.prepare("SELECT id, data FROM docs WHERE col = 'discord_guilds' AND deleted = 0").all()).results;
     return json({ guilds: rows.map(r => ({ id: r.id, ...jparse(r.data) })) });
   }
+  // État du bot (le bot tourne dans GitHub Actions, sans disque persistant) : docs col 'bot_state', illisible / non inscriptible via /db/*
+  if (body.action === 'state_get' || body.action === 'state_set') {
+    const key = String(body.key || '');
+    if (!/^(main|guild_\d{15,25})$/.test(key)) return json({ error: 'clé invalide' }, 400);
+    if (body.action === 'state_get') {
+      const r = await env.DB.prepare("SELECT data FROM docs WHERE col = 'bot_state' AND id = ? AND deleted = 0").bind(key).first();
+      return json({ value: r ? jparse(r.data) : null });
+    }
+    const raw = JSON.stringify(body.value ?? null);
+    if (raw.length > 900000) return json({ error: 'état trop gros' }, 413);
+    await env.DB.batch(body.value == null ? [
+      env.DB.prepare("UPDATE docs SET deleted = 1 WHERE col = 'bot_state' AND id = ?").bind(key),
+    ] : [env.DB.prepare(`INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('bot_state', ?, ?, 0, 0, 0)
+      ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, deleted = 0`).bind(key, raw)]);
+    return json({ ok: true });
+  }
   const id = String(body.guildId || '');
   if (!SNOW.test(id)) return json({ error: 'guildId invalide' }, 400);
   if (body.action === 'ack_remove') { await dgDelete(env, id); return json({ ok: true }); }
