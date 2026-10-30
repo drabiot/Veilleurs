@@ -42,7 +42,12 @@ function buildPlan(structure, o) {
   if (structure === 'single') return [{ name: styled ? styleChannel('📜', 'Items') : 'items-veilleurs', type, categoryName: '', id: '', itemCats: [], paliers: [] }];
   const order = (arr, v) => { const i = arr.indexOf(String(v)); return i < 0 ? 999 : i; };
   const palOrder = o.paliers_all.map(p => String(p.id));
-  const list = combos.filter(([c, p]) => fitsCat(c) && fitsPal(p))
+  // Un palier coché explicitement reçoit ses salons même s'il n'a pas encore d'items (pour les futurs items) : on complète avec toutes les catégories voulues
+  const exist = new Set(combos.map(([c, p]) => c + '|' + p));
+  const wantedCats = cats.length ? cats : [...new Set(combos.map(x => x[0]))];
+  const extra = [];
+  for (const p of paliers) for (const c of wantedCats) if (!exist.has(c + '|' + p)) extra.push([c, String(p)]);
+  const list = [...combos, ...extra].filter(([c, p]) => fitsCat(c) && fitsPal(p))
     .sort((a, b) => order(palOrder, a[1]) - order(palOrder, b[1]) || CATS.findIndex(x => x[0] === a[0]) - CATS.findIndex(x => x[0] === b[0]));
   return list.map(([c, p]) => ({ name: chName(c), type, categoryName: catName(p), id: '', itemCats: [c], paliers: [String(p)] }));
 }
@@ -245,7 +250,14 @@ function compactPlan() {
       ${g.cat ? `<div class="top" style="margin:6px 0 4px"><span class="dg-hint">📁</span><input type="text" value="${esc(g.cat)}" onchange="DG.setCat(${gi}, this.value)" style="width:230px;font-weight:700"></div>` : ''}
       ${g.rows.map(([ch, i]) => `<div class="top" style="margin:2px 0 2px 22px;opacity:${ch.skip ? .45 : 1}"><input type="checkbox" ${ch.skip ? '' : 'checked'} onchange="DG.skipCh(${i},!this.checked)" title="Créer ce salon">
         <input type="text" value="${esc(ch.name)}" onchange="DG.setCh(${i},'name',this.value)" style="width:240px">
-        <span class="dg-hint">${ch.itemCats.map(k => (CATS.find(x => x[0] === k) || [0, k])[1]).join(', ') || 'tout'}</span></div>`).join('')}`).join('')}</div>`;
+        <span class="dg-hint">${ch.itemCats.map(k => (CATS.find(x => x[0] === k) || [0, k])[1]).join(', ') || 'tout'}${itemsIn(ch)}</span></div>`).join('')}`).join('')}</div>`;
+}
+
+/** « · N items » / « · aucun item pour l'instant » pour un salon qui vise une catégorie et un palier précis. */
+function itemsIn(ch) {
+  if (!S.counts || ch.itemCats.length !== 1 || ch.paliers.length !== 1) return '';
+  const n = S.counts[ch.itemCats[0] + '|' + ch.paliers[0]] || 0;
+  return n ? ` · ${n} item${n > 1 ? 's' : ''}` : ' · aucun item pour l\'instant';
 }
 
 /** Réglages envoyés : les salons décochés ne sont pas créés. */
