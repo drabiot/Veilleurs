@@ -42,10 +42,11 @@ reg('C:/Windows/Fonts/seguiemj.ttf', 'Segoe UI Emoji');
 
 // ── Load constants from Compendium/data.js ───────────────────────
 let STAT_GROUPS = [], CATEGORIES = {}, EFFECT_META = {}, CLASSES = [], ALL_SLOTS = [];
+let resolveObtain = s => s; // [obtain:forge] → texte (même fonction que le site, voir OBTAIN_TEXTS de data.js)
 try {
   const code = fs.readFileSync(path.join(WIKI_ROOT, 'Compendium', 'data.js'), 'utf8');
-  const result = new Function(`${code}\nreturn { STAT_GROUPS, CATEGORIES, EFFECT_META, CLASSES, ALL_SLOTS };`)();
-  ({ STAT_GROUPS, CATEGORIES, EFFECT_META, CLASSES, ALL_SLOTS } = result);
+  const result = new Function(`${code}\nreturn { STAT_GROUPS, CATEGORIES, EFFECT_META, CLASSES, ALL_SLOTS, resolveObtain };`)();
+  ({ STAT_GROUPS, CATEGORIES, EFFECT_META, CLASSES, ALL_SLOTS, resolveObtain } = result);
 } catch (e) {
   console.error('[card] Failed to load Compendium/data.js constants:', e.message);
 }
@@ -103,6 +104,7 @@ async function loadImage(url) {
 // ── Parsers ──────────────────────────────────────────────────────
 function parseObtainData(raw) {
   if (!raw) return [];
+  raw = resolveObtain(raw);
   return raw.split('\n').map(line => {
     let l = line.trim().replace(/^Autre source — /, '');
     if (!l) return null;
