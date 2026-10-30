@@ -1730,11 +1730,11 @@ window.discordResendChannel = async function(channelId) {
   await _withHidden(list.map(() => channelId), () => _bulk('Renvoi', list, it => window.discordSyncItem(it.id)));
 };
 // Envoie les items qui n'ont pas encore de post dans leur salon actuel (premier envoi, ou reprise après un arrêt)
-window.discordSendMissing = async function() {
+window.discordSendMissing = async function(onlyChannel) {
   const [posts, all] = await Promise.all([_allPosts(true), _itemsForChannel(null)]);
   const hasPost = new Set(posts.map(p => String(p.itemId) + '|' + p.channelId));
   const list = [];
-  for (const it of all) { const ch = await _channelOfItem(it, { auto: true }); if (ch && !hasPost.has(String(it.id) + '|' + ch)) list.push({ it, ch }); }
+  for (const it of all) { const ch = await _channelOfItem(it, { auto: true }); if (ch && (!onlyChannel || ch === onlyChannel) && !hasPost.has(String(it.id) + '|' + ch)) list.push({ it, ch }); }
   if (!list.length) { toast('Tous les items ont déjà leur post.', 'success'); return; }
   if (!await modal.confirm(`Envoyer ${list.length} item(s) sans post ?\n\nDurée estimée : ${Math.ceil(list.length * 5 / 60)} min environ. Garde cet onglet ouvert (tu peux arrêter et reprendre : seuls les manquants sont envoyés).`)) return;
   await _withHidden(list.map(x => x.ch), () => _bulk('Envoi', list, x => window.discordSyncItem(x.it.id), 1200));

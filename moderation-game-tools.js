@@ -335,7 +335,7 @@ const _DR_REF = () => doc(db, 'config', 'discord_routes');
 const _DR_CATS = [['arme', '⚔️ Armes', 'armes'], ['armure', '🛡️ Armures', 'armures'], ['accessoire', '💍 Accessoires', 'accessoires'], ['outils', '🛠️ Outils', 'outils'], ['rune', '🔮 Runes', 'runes'], ['consommable', '🧪 Consommables', 'consommables'],
   ['nourriture', '🍖 Nourriture', 'nourriture'], ['materiaux', '🧱 Matériaux', 'materiaux'], ['ressources', '⛏️ Ressources', 'ressources'], ['parchemin', '📃 Parchemins', 'parchemins'], ['quete', '📜 Quête', 'quete'], ['donjon', '🏰 Donjon', 'donjon'], ['monnaie', '🪙 Monnaie', 'monnaie']];
 let _dr = { enabled: false, hideThreshold: 10, guildId: '', plans: {}, channels: [], createdByBot: {} };
-let _drPaliers = [], _drGuilds = [], _drGuildChans = [], _drGuildErr = '', _drPostCounts = {}, _drBusyMsg = '';
+let _drItems = [], _drPaliers = [], _drGuilds = [], _drGuildChans = [], _drGuildErr = '', _drPostCounts = {}, _drBusyMsg = '';
 
 async function _drCall(action, payload = {}) {
   const r = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: await getWorkerSecret(), action, guildId: _dr.guildId || undefined, ...payload }) });
@@ -364,6 +364,7 @@ window.showDiscordRoutes = async function() {
     _dr = { enabled: c.enabled === true, hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, channels: Array.isArray(c.channels) ? c.channels : [], createdByBot: c.createdByBot && typeof c.createdByBot === 'object' ? c.createdByBot : {} };
     _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []);
     if (!_drPaliers.length) _drPaliers = [{ id: 1, label: 'Palier 1' }, { id: 2, label: 'Palier 2' }, { id: 3, label: 'Palier 3' }, { id: 'event', label: 'Event' }, { id: 'worldboss', label: 'World Boss' }];
+    try { _drItems = (await getDocs(collection(db, COL.items))).docs.map(d => d.data()); } catch { _drItems = []; }
     try { _drGuilds = await _drCall('get_bot_guilds'); _drGuildErr = ''; } catch (e) { _drGuilds = []; _drGuildErr = e.message; }
     await _drLoadGuildChans();
     _renderDiscordRoutes();
@@ -411,109 +412,104 @@ function _drTree() {
     ${!cats.length && !orphans.length ? '<div style="color:var(--muted);font-size:12px;">Serveur vide.</div>' : ''}</div>`;
 }
 
-function _renderDiscordRoutes() {
-  const body = document.getElementById('discord-routes-body');
-  const guildSel = `<select onchange="drSetGuild(this.value)" style="${_drField}min-width:260px;font-weight:700;">
-      <option value="">— choisis un serveur Discord —</option>
-      ${_drGuilds.map(g => `<option value="${escHtml(g.id)}" ${g.id === _dr.guildId ? 'selected' : ''}>${escHtml(g.name)}</option>`).join('')}</select>`;
-  const head = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;"><strong style="font-size:13px;">Serveur</strong>${guildSel}
-      ${_drGuildErr && !_drGuilds.length ? `<span style="font-size:12px;color:var(--danger);">Serveurs illisibles (${escHtml(_drGuildErr)}) — redéploie le worker.</span>` : ''}</div>`;
-  if (!_dr.guildId) { body.innerHTML = head + '<div class="empty" style="color:var(--muted);">Choisis un serveur pour voir ce qui y est déjà en place et le configurer.</div>'; return; }
+const _drCount = c => {
+  const cats = c.itemCats || [], pal = (c.paliers || []).map(String);
+  return _drItems.filter(i => (!cats.length || cats.includes(i.category)) && (!pal.length || pal.includes(String(i.palier))) && !(Number(i.palier) === -1 && !pal.includes('-1'))).length;
+};
+const _drStep = (n, title, sub) => `<div style="display:flex;align-items:baseline;gap:10px;margin:26px 0 10px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#1a1208;font-weight:800;font-size:13px;flex-shrink:0;">${n}</span><span style="font-size:15px;font-weight:700;">${title}</span><span style="font-size:12px;color:var(--muted);">${sub || ''}</span></div>`;
+const _drBtn = (label, fn, kind = '') => {
+  const style = kind === 'primary' ? 'border-color:var(--accent);color:var(--accent);font-weight:700;' : kind === 'danger' ? 'color:var(--danger);border-color:var(--danger);' : '';
+  return `<button class="btn btn-ghost" onclick="${fn}" style="font-size:12px;padding:6px 12px;${style}">${label}</button>`;
+};
 
-  const cards = _dr.channels.map((c, i) => {
-    const cats = _drCats();
-    const catSel = `<select onchange="drSetCategory(${i}, this.value)" style="${_drField}">
-        <option value="">— aucune catégorie —</option>
-        ${cats.map(k => `<option value="id:${escHtml(k.id)}" ${c.categoryId === k.id ? 'selected' : ''}>${escHtml(k.name)}</option>`).join('')}
-        ${c.categoryName && !c.categoryId ? `<option value="__new__" selected>➕ ${escHtml(c.categoryName)} (à créer)</option>` : ''}
-        <option value="__prompt__">➕ Nouvelle catégorie…</option></select>`;
-    const itemChips = _DR_CATS.map(([k, l]) => _drChip((c.itemCats || []).includes(k), l, `drToggle(${i}, 'itemCats', '${k}')`)).join(' ');
-    const palChips = _drPaliers.map(p => _drChip((c.paliers || []).map(String).includes(String(p.id)), escHtml(p.label || String(p.id)), `drToggle(${i}, 'paliers', '${escHtml(String(p.id))}')`)).join(' ');
-    const status = c.id
-      ? `<span style="color:var(--success, #4caf50);">✓ répertorié</span> <code>${escHtml(c.id)}</code>`
-      : `<span style="color:var(--muted);">pas encore créé</span> <button class="btn btn-primary" onclick="drCreate(${i})" style="font-size:11px;padding:3px 10px;">Créer / répertorier</button>
-         <input type="text" inputmode="numeric" placeholder="ou ID d'un salon existant" onchange="drLink(${i}, this.value)" style="${_drField}width:190px;font-family:monospace;">`;
-    return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px;background:var(--surface);">
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-        <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" style="${_drField}width:200px;font-weight:700;">
-        <select onchange="drSet(${i}, 'type', this.value)" style="${_drField}" ${c.id ? 'disabled' : ''}><option value="forum" ${c.type !== 'text' ? 'selected' : ''}>Forum (un fil par item)</option><option value="text" ${c.type === 'text' ? 'selected' : ''}>Salon texte</option></select>
-        ${catSel}
-        <span style="margin-left:auto;font-size:12px;">${status}</span>
-        <button class="btn btn-ghost" onclick="drRemove(${i})" style="font-size:11px;padding:3px 9px;color:var(--danger);border-color:var(--danger);" title="Retire ce salon du plan (le salon Discord n'est pas supprimé)">🗑</button>
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Quoi envoyer — catégories d'items <em>(aucune sélection = toutes)</em></div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">${itemChips}</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Paliers <em>(aucune sélection = tous)</em></div>
-      <div style="display:flex;gap:5px;flex-wrap:wrap;">${palChips}</div>
-    </div>`;
-  }).join('') || '<div class="empty" style="color:var(--muted);">Aucun salon dans le plan. « Plan par défaut » en propose un à partir des items.</div>';
-
-  const btn = (label, fn, extra = '') => `<button class="btn btn-ghost" onclick="${fn}" style="font-size:12px;${extra}">${label}</button>`;
-  body.innerHTML = head + `
-    <div id="discord-setup-msg" style="font-size:12px;color:var(--accent);min-height:18px;margin-bottom:6px;">${escHtml(_drBusyMsg)}</div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;">
-      ${btn('🚀 Tout mettre en place', 'drSetupAll()', 'border-color:var(--accent);color:var(--accent);font-weight:700;')}
-      ${btn('📋 Plan par défaut', 'drDefaultPlan()')}
-      ${btn('🧩 Créer / répertorier les salons', 'drReconcile()')}
-      ${btn('📤 Envoyer les items manquants', 'discordSendMissing()')}
-      ${btn('➕ Ajouter un salon', 'drAdd()')}
+function _drCard(c, i) {
+  const cats = _drCats();
+  const catSel = `<select onchange="drSetCategory(${i}, this.value)" title="Catégorie Discord où ranger ce salon" style="${_drField}">
+      <option value="">📁 sans catégorie</option>
+      ${cats.map(k => `<option value="id:${escHtml(k.id)}" ${c.categoryId === k.id ? 'selected' : ''}>📁 ${escHtml(k.name)}</option>`).join('')}
+      ${c.categoryName && !c.categoryId ? `<option value="__new__" selected>📁 ${escHtml(c.categoryName)} (sera créée)</option>` : ''}
+      <option value="__prompt__">➕ Nouvelle catégorie…</option></select>`;
+  const group = (title, key, options) => `<div style="flex:1;min-width:260px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px;"><span>${title}</span><a href="#" onclick="drClear(${i}, '${key}');return false;" style="color:var(--muted);">tout effacer</a></div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">${options}</div></div>`;
+  const itemChips = _DR_CATS.map(([k, l]) => _drChip((c.itemCats || []).includes(k), l, `drToggle(${i}, 'itemCats', '${k}')`)).join(' ');
+  const palChips = _drPaliers.map(p => _drChip((c.paliers || []).map(String).includes(String(p.id)), escHtml(p.label || String(p.id)), `drToggle(${i}, 'paliers', '${escHtml(String(p.id))}')`)).join(' ');
+  const catLabels = (c.itemCats || []).map(k => (_DR_CATS.find(q => q[0] === k) || [0, k])[1]);
+  const palLabels = (c.paliers || []).map(_drPalLabel);
+  const n = _drCount(c);
+  const summary = `📌 Reçoit <strong>${catLabels.length ? catLabels.join(', ') : 'toutes les catégories'}</strong> · <strong>${palLabels.length ? palLabels.join(', ') : 'tous les paliers'}</strong> — <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${c.id && _drPostCounts[c.id] ? ` · déjà ${_drPostCounts[c.id]} posté${_drPostCounts[c.id] > 1 ? 's' : ''}` : ''}`;
+  const badge = c.id
+    ? `<span style="font-size:12px;color:var(--success, #4caf50);white-space:nowrap;" title="ID ${escHtml(c.id)}">✓ en place</span>`
+    : `<span style="font-size:12px;color:#e0a24c;white-space:nowrap;">● pas encore créé</span>`;
+  const actions = c.id
+    ? `${_drBtn('📤 Envoyer toute la data de ce salon', `drSendChannel(${i}, 'all')`, 'primary')}
+       ${_drBtn('Seulement les manquants', `drSendChannel(${i}, 'missing')`)}
+       ${_drBtn('🧹 Vider ce salon', `drClearChannel(${i})`, 'danger')}`
+    : `${_drBtn('✨ Créer ce salon', `drCreate(${i})`, 'primary')}
+       <input type="text" inputmode="numeric" placeholder="ou colle l'ID d'un salon existant" onchange="drLink(${i}, this.value)" style="${_drField}width:230px;font-family:monospace;">`;
+  return `<div style="border:1px solid var(--border);border-left:4px solid ${c.id ? 'var(--success, #4caf50)' : '#e0a24c'};border-radius:10px;padding:14px 16px;margin-bottom:14px;background:var(--surface);">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+      <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" style="${_drField}width:210px;font-weight:700;font-size:14px;">
+      <select onchange="drSet(${i}, 'type', this.value)" style="${_drField}" ${c.id ? 'disabled title="Le type ne peut pas changer après la création"' : ''}><option value="forum" ${c.type !== 'text' ? 'selected' : ''}>🗂 Forum (un fil par item)</option><option value="text" ${c.type === 'text' ? 'selected' : ''}># Salon texte</option></select>
+      ${catSel}
+      <span style="margin-left:auto;">${badge}</span>
     </div>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
-      <span style="font-size:14px;font-weight:700;color:${_dr.enabled ? 'var(--success, #4caf50)' : 'var(--muted)'};">${_dr.enabled ? '🟢 Envoi automatique actif' : '⚪ Envoi automatique désactivé'}</span>
-      <button class="btn ${_dr.enabled ? 'btn-ghost' : 'btn-primary'}" onclick="setDiscordEnabled(${!_dr.enabled})" style="font-size:12px;">${_dr.enabled ? '⏸ Désactiver' : '▶ Activer'}</button>
-      <span style="font-size:12px;">🤫 Masquer un salon avant un envoi de plus de <input type="text" inputmode="numeric" value="${_dr.hideThreshold}" onchange="drSetThreshold(this.value)" style="${_drField}width:60px;text-align:center;"> items <span style="color:var(--muted);">(0 = jamais ; « Gérer les rôles » requis)</span></span>
-    </div>
-    ${_drTree()}${cards}
-    <div style="margin-top:26px;border:1px solid var(--danger);border-radius:8px;padding:12px 14px;">
-      <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:6px;">🧨 Zone de danger — désinstaller sur ce serveur</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5;">Supprime tous les posts du bot, <strong>uniquement les salons et catégories que le bot a lui-même créés</strong> (les salons existants que tu as seulement « répertoriés » ne sont jamais supprimés ; une catégorie créée par le bot n'est supprimée que si elle est vide ensuite), efface le plan de ce serveur, puis fait <strong>quitter le serveur au bot</strong>. Irréversible.</div>
-      <button class="btn btn-ghost" onclick="drUninstall()" style="font-size:12px;color:var(--danger);border-color:var(--danger);">🧨 Tout supprimer et quitter le serveur</button>
-    </div>`;
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">${summary}</div>
+    <details style="margin-bottom:12px;"><summary style="cursor:pointer;font-size:12px;color:var(--accent);">Choisir quoi envoyer dans ce salon</summary>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;">
+        ${group('Catégories d\'items <em>(aucune = toutes)</em>', 'itemCats', itemChips)}
+        ${group('Paliers <em>(aucun = tous)</em>', 'paliers', palChips)}
+      </div></details>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">${actions}<span style="margin-left:auto;"></span>${_drBtn('Retirer du plan', `drRemove(${i})`)}</div>
+  </div>`;
 }
 
-// ── SERVEURS INSCRITS (page publique Discord/discord.html) : collection discord_guilds ──
-// Rien ne s'envoie avant « Valider » ; le chef de serveur peut mettre en pause / désinstaller de son côté. Le bot (bot/discord-guilds.js) lit cette collection via le worker.
-const _DG_STATUS = { pending: ['⏳ En attente', 'var(--accent)'], approved: ['🟢 Validé', 'var(--success, #4caf50)'], refused: ['⛔ Refusé', 'var(--danger)'], suspended: ['⏸ Suspendu', 'var(--danger)'], removing: ['🧹 Désinstallation', 'var(--muted)'] };
-window.dgLoadGuilds = async () => {
-  const el = document.getElementById('discord-guilds-body');
-  if (!el) return;
-  try {
-    const snap = await getDocs(collection(db, 'discord_guilds'));
-    const list = snap.docs.map(d => ({ _id: d.id, ...d.data() })).sort((a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1) || String(a.guildName).localeCompare(String(b.guildName), 'fr'));
-    const b = (label, fn, extra = '') => `<button class="btn btn-ghost" data-id="${escHtml(label[1])}" onclick="${fn}" style="font-size:11px;padding:2px 8px;${extra}">${label[0]}</button>`;
-    el.innerHTML = `<div style="font-size:15px;font-weight:700;margin-bottom:4px;">🌐 Serveurs inscrits (${list.length}) <span style="font-size:11px;color:var(--muted);font-weight:400;">· au-delà de 100 serveurs Discord exige la vérification du bot</span></div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Ils s'inscrivent eux-mêmes sur la page <a href="Discord/discord.html" target="_blank" style="color:var(--accent);">Discord/discord.html</a>. Aucun envoi avant validation. Le chef de serveur garde sa pause / sa désinstallation.</p>
-      ${list.map(g => { const [lbl, col] = _DG_STATUS[g.status] || [g.status, 'var(--muted)']; const id = g._id;
-        return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;">
-          <strong style="min-width:180px;">${escHtml(g.guildName || id)}</strong><span style="color:${col};">${lbl}${g.paused ? ' · en pause (chef)' : ''}</span>
-          <span style="color:var(--muted);">par ${escHtml(g.ownerName || '?')} · ${g.channels?.length || 0} salon(s) · ${g.mode === 'create' ? 'salons créés' : 'salons existants'} · ${g.posted || 0} post(s)${g.pending ? ' (+' + g.pending + ' en attente)' : ''}</span>
-          ${g.lastError ? `<span style="color:var(--danger);" title="${escHtml(g.lastError)}">⚠️ erreur</span>` : ''}
-          <span style="margin-left:auto;display:flex;gap:6px;">
-          ${g.status !== 'approved' && g.status !== 'removing' ? b(['✅ Valider', id], `dgSetStatus(this.dataset.id,'approved')`) : ''}
-          ${g.status === 'pending' ? b(['⛔ Refuser', id], `dgSetStatus(this.dataset.id,'refused')`, 'color:var(--danger);border-color:var(--danger);') : ''}
-          ${g.status === 'approved' ? b(['⏸ Suspendre', id], `dgSetStatus(this.dataset.id,'suspended')`) : ''}
-          ${b(['🗑 Retirer', id], 'dgRemoveGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);')}</span></div>`; }).join('') || '<div style="color:var(--muted);font-size:12px;">Aucun serveur inscrit.</div>'}`;
-  } catch (e) { el.innerHTML = `<div style="color:var(--danger);font-size:12px;">Serveurs inscrits illisibles : ${escHtml(e.message)}</div>`; }
+function _renderDiscordRoutes() {
+  const body = document.getElementById('discord-routes-body');
+  const guildSel = `<select onchange="drSetGuild(this.value)" style="${_drField}min-width:280px;font-weight:700;font-size:14px;">
+      <option value="">— choisis un serveur Discord —</option>
+      ${_drGuilds.map(g => `<option value="${escHtml(g.id)}" ${g.id === _dr.guildId ? 'selected' : ''}>${escHtml(g.name)}</option>`).join('')}</select>`;
+  const intro = `<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:6px;">Le bot poste chaque item du wiki dans un salon Discord, avec sa carte image. Choisis le serveur, prépare les salons, puis envoie. Ensuite, chaque item approuvé est posté (ou remplacé) tout seul si l'envoi automatique est actif.</div>`;
+  let html = intro + _drStep(1, 'Serveur', 'où le bot doit poster') + `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">${guildSel}
+      ${_drGuildErr && !_drGuilds.length ? `<span style="font-size:12px;color:var(--danger);">Serveurs illisibles (${escHtml(_drGuildErr)}) — le worker est-il à jour ?</span>` : ''}</div>`;
+  if (!_dr.guildId) { body.innerHTML = html + '<div class="empty" style="color:var(--muted);margin-top:14px;">Choisis un serveur pour voir ce qui y est déjà en place et le configurer.</div>'; return; }
+
+  const real = _drGuildChans.filter(x => x.type !== 4).length, ncat = _drCats().length;
+  const ready = _dr.channels.filter(c => c.id).length;
+  html += `<details style="margin-top:12px;"><summary style="cursor:pointer;font-size:12px;color:var(--accent);">👀 Voir ce qui existe déjà sur ce serveur (${ncat} catégories, ${real} salons)</summary><div style="margin-top:8px;">${_drTree()}</div></details>`;
+  html += _drStep(2, 'Salons', `${_dr.channels.length} dans le plan · ${ready} en place`);
+  html += `<div id="discord-setup-msg" style="font-size:12px;color:var(--accent);min-height:18px;margin-bottom:8px;">${escHtml(_drBusyMsg)}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      ${_drBtn('📋 Proposer un plan', 'drDefaultPlan()')}
+      ${_drBtn('➕ Ajouter un salon', 'drAdd()')}
+      ${_drBtn('✨ Créer tous les salons manquants', 'drReconcile()', 'primary')}
+    </div>
+    ${_dr.channels.map(_drCard).join('') || '<div class="empty" style="color:var(--muted);">Aucun salon dans le plan. « Proposer un plan » en crée un à partir des items (une catégorie par palier, un forum par type d\'item).</div>'}`;
+  html += _drStep(3, 'Envoi', 'poster les items dans leurs salons') + `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      ${_drBtn('🚀 Tout mettre en place (salons + envoi)', 'drSetupAll()', 'primary')}
+      ${_drBtn('📤 Envoyer les items manquants (tous salons)', 'discordSendMissing()')}
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface);">
+      <span style="font-size:14px;font-weight:700;color:${_dr.enabled ? 'var(--success, #4caf50)' : 'var(--muted)'};">${_dr.enabled ? '🟢 Envoi automatique actif' : '⚪ Envoi automatique désactivé'}</span>
+      <button class="btn ${_dr.enabled ? 'btn-ghost' : 'btn-primary'}" onclick="setDiscordEnabled(${!_dr.enabled})" style="font-size:12px;">${_dr.enabled ? '⏸ Désactiver' : '▶ Activer'}</button>
+      <span style="font-size:12px;color:var(--muted);">Quand un item est approuvé, il est posté (ou remplacé) dans son salon.</span>
+    </div>
+    <div style="font-size:12px;margin-top:12px;">🤫 Avant un envoi de plus de <input type="text" inputmode="numeric" value="${_dr.hideThreshold}" onchange="drSetThreshold(this.value)" style="${_drField}width:56px;text-align:center;"> items dans un salon, le masquer aux membres (évite les pings), puis le rétablir. <span style="color:var(--muted);">0 = jamais · nécessite « Gérer les rôles ».</span></div>`;
+  html += `<details style="margin-top:30px;border:1px solid var(--danger);border-radius:8px;padding:10px 14px;"><summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--danger);">🧨 Zone de danger — désinstaller sur ce serveur</summary>
+      <div style="font-size:12px;color:var(--muted);margin:10px 0;line-height:1.5;">Supprime tous les posts du bot sur ce serveur, <strong>uniquement les salons et catégories que le bot a lui-même créés</strong> (les salons existants seulement « répertoriés » ne sont jamais supprimés ; une catégorie créée par le bot n'est supprimée que si elle est vide ensuite), efface le plan de ce serveur, puis fait <strong>quitter le serveur au bot</strong>. Irréversible.</div>
+      ${_drBtn('🧨 Tout supprimer et quitter le serveur', 'drUninstall()', 'danger')}</details>`;
+  body.innerHTML = html;
+}
+
+window.drClear = async (i, k) => { _dr.channels[i][k] = []; await _drPersist(); _renderDiscordRoutes(); };
+window.drSendChannel = async (i, mode) => {
+  const c = _dr.channels[i];
+  if (!c.id) { toast('Crée d\'abord le salon.', 'warning'); return; }
+  if (mode === 'missing') await window.discordSendMissing(c.id); else await window.discordResendChannel(c.id);
+  await _drLoadGuildChans(); _renderDiscordRoutes();
 };
-window.dgSetStatus = async (id, status) => {
-  try {
-    const s = await getDoc(doc(db, 'discord_guilds', id));
-    if (!s.exists()) throw new Error('serveur introuvable');
-    await setDoc(doc(db, 'discord_guilds', id), { ...s.data(), status });
-    toast(status === 'approved' ? 'Serveur validé : le bot enverra au prochain passage (5 min).' : 'Statut mis à jour.', 'success');
-  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
-  window.dgLoadGuilds();
-};
-// « Retirer » = même désinstallation que côté chef de serveur : le bot supprime ses posts, quitte le serveur puis efface la fiche (les salons créés sont conservés)
-window.dgRemoveGuild = async (id) => {
-  if (!await modal.confirm('Retirer ce serveur ?\n\nLe bot supprime ses posts, quitte le serveur et la fiche est effacée au prochain passage du bot.')) return;
-  try {
-    const s = await getDoc(doc(db, 'discord_guilds', id));
-    if (s.exists()) await setDoc(doc(db, 'discord_guilds', id), { ...s.data(), status: 'removing', removal: { deleteChannels: false, deletePosts: true } });
-    toast('Retrait demandé.', 'success');
-  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
-  window.dgLoadGuilds();
-};
+window.drClearChannel = async (i) => { await window.discordDeleteChannelPosts(_dr.channels[i].id); await _drLoadGuildChans(); _renderDiscordRoutes(); };
 
 const _drMsg = t => { _drBusyMsg = t; const el = document.getElementById('discord-setup-msg'); if (el) el.textContent = t; };
 
