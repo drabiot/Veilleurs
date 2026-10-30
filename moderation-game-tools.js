@@ -581,19 +581,28 @@ window.dgSetStatus = async (id, status) => {
   } catch (e) { toast('Erreur : ' + e.message, 'error'); }
   window.dgLoadGuilds();
 };
-// « Retirer » = même désinstallation que côté chef de serveur : le bot supprime ses posts, quitte le serveur puis efface la fiche (les salons créés sont conservés)
-// Désinstallation restée bloquée (bot arrêté…) : efface seulement la fiche ; le bot reste sur le serveur tant qu'il n'est pas retiré
+// Désinstallation restée bloquée (ancienne demande jamais traitée) : efface seulement la fiche ; le bot reste sur le serveur tant qu'il n'est pas retiré
 window.dgForgetGuild = async (id) => {
   if (!await modal.confirm('Effacer la fiche de ce serveur ?\n\nLe bot ne nettoie rien et ne quitte pas le serveur (à faire à la main si besoin).')) return;
   try { await deleteDoc(doc(db, 'discord_guilds', id)); toast('Fiche effacée.', 'success'); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
   window.dgLoadGuilds();
 };
+// « Retirer » : désinstallation immédiate faite par le worker (paquets de 40 appels Discord, on rappelle jusqu'à la fin) :
+// posts supprimés, salons créés par le bot supprimés si demandé, le bot quitte le serveur, la fiche est effacée.
 window.dgRemoveGuild = async (id) => {
-  if (!await modal.confirm('Retirer ce serveur ?\n\nLe bot supprime ses posts, quitte le serveur et la fiche est effacée au prochain passage du bot.')) return;
+  if (!await modal.confirm('Retirer ce serveur ?\n\nLe bot supprime ses posts, quitte le serveur et la fiche est effacée.')) return;
+  const deleteChannels = await modal.confirm('Supprimer aussi les salons et catégories créés par le bot ?\n\nOK = oui, Annuler = les garder.');
+  const bar = document.getElementById('discord-guilds-body');
   try {
-    const s = await getDoc(doc(db, 'discord_guilds', id));
-    if (s.exists()) await setDoc(doc(db, 'discord_guilds', id), _dgLogAdd({ ...s.data(), status: 'removing', removal: { deleteChannels: false, deletePosts: true } }, 'Retrait demandé par la modération (posts supprimés, le bot quitte le serveur)'));
-    toast('Retrait demandé.', 'success');
+    let j;
+    for (let i = 0; i < 60; i++) {
+      j = await (await fetch(WORKER_URL + '/guild/bot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: await getWorkerSecret(), action: 'uninstall', guildId: id, deleteChannels, deletePosts: true }) })).json();
+      if (j.error) throw new Error(j.error);
+      if (j.done || !j.progress) break;
+      toast('Désinstallation en cours… (reste ' + j.left + ')', 'info', 1500);
+      await _drSleep(800);
+    }
+    toast(j.done ? 'Serveur retiré : le bot a quitté le serveur.' : 'Retrait partiel : relance « Retirer » pour terminer.', j.done ? 'success' : 'warning');
   } catch (e) { toast('Erreur : ' + e.message, 'error'); }
   window.dgLoadGuilds();
 };

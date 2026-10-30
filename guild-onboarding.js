@@ -177,6 +177,64 @@ function overwrites(env, guildId, cfg) {
   return list;
 }
 
+/** Désinstallation d'un serveur : par paquets (budget d'appels Discord d'un Worker) ; l'appelant rappelle tant que la réponse n'est pas done.
+ *  Utilisée par la page d'inscription (chef de serveur) et par la modération (action « uninstall » de /guild/bot). */
+async function uninstallStep(env, guildId, doc, body, json) {
+  const stateKey = 'guild_' + guildId;
+  const dropState = () => env.DB.prepare("UPDATE docs SET deleted = 1 WHERE col = 'bot_state' AND id = ?").bind(stateKey).run();
+  const present = (await botGuildIds(env)).has(guildId);
+  if (!present) { if (doc) { await dgDelete(env, guildId); await dropState(); } return json({ ok: true, done: true }); }
+  if (!doc) { await dc(env, 'DELETE', `/users/@me/guilds/${guildId}`); _botGuilds = null; return json({ ok: true, done: true }); }
+  if (doc.status !== 'removing') { doc.status = 'removing'; doc.removal = { deleteChannels: !!body.deleteChannels, deletePosts: !!body.deletePosts }; }
+  doc.updatedAt = Date.now();
+  if (!doc.log?.some(x => x.m.startsWith('Désinstallation demandée'))) pushLog(doc, `Désinstallation demandée (salons créés : ${doc.removal?.deleteChannels ? 'supprimés' : 'conservés'}, posts : ${doc.removal?.deletePosts || doc.removal?.deleteChannels ? 'supprimés' : 'conservés'})`);
+  const rm = doc.removal || {};
+  let budget = 40;
+  const gone = r => r.ok || [404, 403].includes(r.status); // déjà supprimé / plus accessible : on oublie
+  const more = async (left) => { await dgPut(env, guildId, doc); return json({ ok: true, done: false, progress: true, left }); };
+
+  if (rm.deletePosts && !rm.deleteChannels) { // posts suivis par le bot (état D1) : supprimés ici
+    const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'bot_state' AND id = ? AND deleted = 0").bind(stateKey).first();
+    const st = jparse(row?.data) || {};
+    const posts = st.posts || {};
+    for (const [key, e] of Object.entries(posts)) {
+      const calls = e.threadId ? [`/channels/${e.threadId}`] : (e.messageIds?.length ? e.messageIds : [e.messageId]).filter(Boolean).map(m => `/channels/${e.channelId}/messages/${m}`);
+      if (budget < calls.length) break;
+      for (const p of calls) { await dc(env, 'DELETE', p); budget--; }
+      delete posts[key];
+    }
+    const left = Object.keys(posts).length;
+    await env.DB.prepare(`INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('bot_state', ?, ?, 0, 0, 0) ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, deleted = 0`).bind(stateKey, JSON.stringify({ ...st, posts })).run();
+    if (left) return more(left);
+  }
+
+  if (rm.deleteChannels) { // salons créés par le bot, puis catégories créées par le bot et devenues vides
+    for (const c of doc.channels || []) {
+      if (!(c.created && c.id)) continue;
+      if (budget <= 0) break;
+      const r = await dc(env, 'DELETE', `/channels/${c.id}`); budget--;
+      if (gone(r)) { c.id = ''; c.created = false; }
+    }
+    const left = (doc.channels || []).filter(c => c.created && c.id).length;
+    if (left) return more(left);
+    if ((doc.createdCategories || []).length && budget > 2) {
+      const all = await dc(env, 'GET', `/guilds/${guildId}/channels`); budget--;
+      for (const cid of [...doc.createdCategories]) {
+        if (budget <= 0) break;
+        if (Array.isArray(all.data) && all.data.some(x => x.parent_id === cid)) { doc.createdCategories = doc.createdCategories.filter(x => x !== cid); continue; } // contient autre chose : on la garde
+        const r = await dc(env, 'DELETE', `/channels/${cid}`); budget--;
+        if (gone(r)) doc.createdCategories = doc.createdCategories.filter(x => x !== cid);
+      }
+      if (doc.createdCategories.length) return more(doc.createdCategories.length);
+    }
+  }
+
+  await dc(env, 'DELETE', `/users/@me/guilds/${guildId}`); // le bot quitte le serveur
+  _botGuilds = null;
+  await dgDelete(env, guildId); await dropState();
+  return json({ ok: true, done: true });
+}
+
 export async function handleGuildApi(request, env, deps) {
   const { json } = deps;
   let body;
@@ -205,63 +263,7 @@ export async function handleGuildApi(request, env, deps) {
   const guildName = sess.guilds.find(g => g.id === guildId).name;
   let doc = await dgGet(env, guildId);
 
-  // Désinstallation faite par le worker lui-même (immédiate, sans attendre le bot) : par paquets de 40 appels Discord, la page rappelle jusqu'à done.
-  // Si la page est fermée en route, le statut « removing » reste et le bot (GitHub Actions) termine.
-  if (action === 'uninstall') {
-    const stateKey = 'guild_' + guildId;
-    const dropState = () => env.DB.prepare("UPDATE docs SET deleted = 1 WHERE col = 'bot_state' AND id = ?").bind(stateKey).run();
-    const present = (await botGuildIds(env)).has(guildId);
-    if (!present) { if (doc) { await dgDelete(env, guildId); await dropState(); } return json({ ok: true, done: true }); }
-    if (!doc) { await dc(env, 'DELETE', `/users/@me/guilds/${guildId}`); _botGuilds = null; return json({ ok: true, done: true }); }
-    if (doc.status !== 'removing') { doc.status = 'removing'; doc.removal = { deleteChannels: !!body.deleteChannels, deletePosts: !!body.deletePosts }; }
-    doc.updatedAt = Date.now();
-    if (!doc.log?.some(x => x.m.startsWith('Désinstallation demandée'))) pushLog(doc, `Désinstallation demandée (salons créés : ${doc.removal?.deleteChannels ? 'supprimés' : 'conservés'}, posts : ${doc.removal?.deletePosts || doc.removal?.deleteChannels ? 'supprimés' : 'conservés'})`);
-    const rm = doc.removal || {};
-    let budget = 40;
-    const gone = r => r.ok || [404, 403].includes(r.status); // déjà supprimé / plus accessible : on oublie
-    const more = async (left) => { await dgPut(env, guildId, doc); return json({ ok: true, done: false, progress: true, left }); };
-
-    if (rm.deletePosts && !rm.deleteChannels) { // posts suivis par le bot (état D1) : supprimés ici
-      const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'bot_state' AND id = ? AND deleted = 0").bind(stateKey).first();
-      const st = jparse(row?.data) || {};
-      const posts = st.posts || {};
-      for (const [key, e] of Object.entries(posts)) {
-        const calls = e.threadId ? [`/channels/${e.threadId}`] : (e.messageIds?.length ? e.messageIds : [e.messageId]).filter(Boolean).map(m => `/channels/${e.channelId}/messages/${m}`);
-        if (budget < calls.length) break;
-        for (const p of calls) { await dc(env, 'DELETE', p); budget--; }
-        delete posts[key];
-      }
-      const left = Object.keys(posts).length;
-      await env.DB.prepare(`INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('bot_state', ?, ?, 0, 0, 0) ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, deleted = 0`).bind(stateKey, JSON.stringify({ ...st, posts })).run();
-      if (left) return more(left);
-    }
-
-    if (rm.deleteChannels) { // salons créés par le bot, puis catégories créées par le bot et devenues vides
-      for (const c of doc.channels || []) {
-        if (!(c.created && c.id)) continue;
-        if (budget <= 0) break;
-        const r = await dc(env, 'DELETE', `/channels/${c.id}`); budget--;
-        if (gone(r)) { c.id = ''; c.created = false; }
-      }
-      const left = (doc.channels || []).filter(c => c.created && c.id).length;
-      if (left) return more(left);
-      if ((doc.createdCategories || []).length && budget > 2) {
-        const all = await dc(env, 'GET', `/guilds/${guildId}/channels`); budget--;
-        for (const cid of [...doc.createdCategories]) {
-          if (budget <= 0) break;
-          if (Array.isArray(all.data) && all.data.some(x => x.parent_id === cid)) { doc.createdCategories = doc.createdCategories.filter(x => x !== cid); continue; } // contient autre chose : on la garde
-          const r = await dc(env, 'DELETE', `/channels/${cid}`); budget--;
-          if (gone(r)) doc.createdCategories = doc.createdCategories.filter(x => x !== cid);
-        }
-        if (doc.createdCategories.length) return more(doc.createdCategories.length);
-      }
-    }
-
-    await dc(env, 'DELETE', `/users/@me/guilds/${guildId}`); // le bot quitte le serveur
-    _botGuilds = null;
-    await dgDelete(env, guildId); await dropState();
-    return json({ ok: true, done: true });
-  }
+  if (action === 'uninstall') return uninstallStep(env, guildId, doc, body, json);
 
   const present = (await botGuildIds(env)).has(guildId);
   if (!present) return json({ botPresent: false, inviteUrl: invite(guildId) });
@@ -396,6 +398,7 @@ export async function handleGuildBot(request, env, deps) {
   }
   const id = String(body.guildId || '');
   if (!SNOW.test(id)) return json({ error: 'guildId invalide' }, 400);
+  if (body.action === 'uninstall') return uninstallStep(env, id, await dgGet(env, id), body, json); // retrait demandé par la modération
   if (body.action === 'ack_remove') { await dgDelete(env, id); return json({ ok: true }); }
   if (body.action === 'report') {
     const doc = await dgGet(env, id);
