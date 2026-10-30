@@ -176,7 +176,6 @@
         <div class="field">
           <label>Drapeaux</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button id="sensible-btn"  class="r-btn" style="--c:#f87171;width:fit-content;"  onclick="toggleSensible()">🔒 Sensible</button>
             <button id="event-btn"     class="r-btn" style="--c:#a855f7;width:fit-content;"  onclick="toggleEvent()" title="Verrouille le palier sur « Event »">🎊 Event</button>
             <button id="worldboss-btn" class="r-btn" style="--c:#38bdf8;width:fit-content;"  onclick="toggleWorldboss()" title="Verrouille le palier sur « World Boss » et permet de choisir le boss">🌍 Worldboss</button>
             <button id="evolutif-btn"  class="r-btn" style="--c:#60a5fa;width:fit-content;"  onclick="toggleEvolutif()">🔄 Évolutif</button>
@@ -579,12 +578,6 @@
             <label>Instructions <span style="color:var(--muted);font-size:10px;font-weight:400;">(optionnel — comment accéder à ce PNJ)</span></label>
             <textarea id="pnj-instructions" placeholder="Ex : Accessible uniquement après la quête X, dans la salle secrète derrière le tableau…" rows="3" oninput="update()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 10px;font-size:13px;outline:none;resize:vertical;font-family:inherit;transition:border-color .15s;box-sizing:border-box;"></textarea>
           </div>
-          <div class="field" style="margin-top:6px;">
-            <label>Drapeaux</label>
-            <div style="margin-top:4px;">
-              <button id="pnj-sensible-btn" class="r-btn" style="--c:#f87171;width:fit-content;" onclick="togglePnjSensible()">🔒 Sensible</button>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -952,12 +945,6 @@
                 <button id="mob-codex-no"  class="btn btn-ghost btn-sm" onclick="setMobCodex(false)">✕ Non</button>
               </div>
             </div>
-            <div class="field">
-              <label>Mob sensible</label>
-              <div style="margin-top:4px;">
-                <button id="mob-sensible-btn" class="r-btn" style="--c:#f87171;width:fit-content;" onclick="toggleMobSensible()">🔒 Sensible</button>
-              </div>
-            </div>
             <div class="field" id="mob-spawntime-field" style="display:none;">
               <label>Temps de spawn</label>
               <input type="text" id="mob-spawntime" placeholder="4m" oninput="update()" style="font-family:monospace;font-size:13px;">
@@ -1107,15 +1094,6 @@ import { db, auth, onAuthStateChanged,
          hasRole,
          changePseudoSecurely } from './firebase.js';
 
-async function _canViewItemsSecret(baseRole) {
-  let minRole = 'contributeur';
-  try {
-    const snap = await getDoc(doc(db, 'config', 'permissions'));
-    if (snap.exists()) minRole = snap.data().minRole?.view_items_secret ?? minRole;
-  } catch {}
-  return hasRole(baseRole, minRole);
-}
-
 let _customRolesCache = null;
 async function _resolveBaseRole(role) {
   const STD = ['visiteur', 'membre', 'contributeur', 'admin'];
@@ -1183,20 +1161,6 @@ onAuthStateChanged(auth, async user => {
       if (window._vcl_lastCreatorConfig !== undefined && typeof applyCreatorConfig === 'function') {
         applyCreatorConfig(window._vcl_lastCreatorConfig);
       }
-      // Charger/injecter les items sensibles (list restreinte aux contribs — doit s'exécuter après auth)
-      if (await _canViewItemsSecret(baseRole)) {
-        if (!window._vcl_hiddenItemsLoaded) {
-          try {
-            const hiddenSnap = await getDocs(collection(db, 'items_hidden'));
-            const hiddenItems = hiddenSnap.docs.map(d => ({ _id: d.id, ...d.data() }));
-            window._vcl_sensibleItemIds   = new Set(hiddenItems.map(it => it.id).filter(Boolean));
-            window._vcl_hiddenItemsLoaded = hiddenItems;
-          } catch(e) {}
-        }
-        if (window._vcl_hiddenItemsLoaded && typeof window._vcl_appendHiddenItemsToIndex === 'function') {
-          window._vcl_appendHiddenItemsToIndex(window._vcl_hiddenItemsLoaded);
-        }
-      }
       // Recharger les soumissions pending avec le bon filtre sensible
       window._vcl_appendPendingToIndices?.();
     } catch {}
@@ -1235,7 +1199,6 @@ const _pValidation = _pre(getDoc(doc(db, 'config', 'creator_validation')));
 const _pPinTypes   = _pre(getDoc(doc(db, 'config', 'custom_pin_types')));
 const _pTagRules   = _pre(getDoc(doc(db, 'config', 'tag_rules')));
 const _pPending    = _pre(getDocs(query(collection(db, 'submissions'), where('status', '==', 'pending'))));
-const _pHidden     = _pre(getDocs(collection(db, 'items_hidden')));
 
 // Charger les paliers et MAX_LEVEL depuis Firestore, peupler les selects
 try {
@@ -1331,19 +1294,6 @@ try {
 } catch(e) {
   console.warn('[VCL Creator] Soumissions en attente non chargées:', e);
 }
-// Charger les items sensibles (items_hidden) — IDs pour détection de doublons + index pour dropdowns
-try {
-  const hiddenSnap = await _pHidden;
-  const hiddenItems = hiddenSnap.docs.map(d => ({ _id: d.id, ...d.data() }));
-  window._vcl_sensibleItemIds   = new Set(hiddenItems.map(it => it.id).filter(Boolean));
-  window._vcl_hiddenItemsLoaded = hiddenItems;
-  // Injecter si le rôle est déjà connu (auth a déjà résolu) — sinon le callback onAuthStateChanged le fera
-  if (window._vcl_role && hasRole(window._vcl_base_role || window._vcl_role, 'contributeur') && typeof window._vcl_appendHiddenItemsToIndex === 'function') {
-    window._vcl_appendHiddenItemsToIndex(hiddenItems);
-  }
-} catch(e) {
-  window._vcl_sensibleItemIds = new Set();
-}
 // Exposer une fonction de chargement des events pour le Creator
 window._vcl_fetchEvents = async () => {
   try {
@@ -1393,7 +1343,7 @@ window._modal = modal;
   <textarea id="submitter-comment" rows="1" placeholder="Note pour la modération (optionnel pour un nouvel item)…" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-size:12px;outline:none;resize:none;border-radius:6px;font-family:inherit;line-height:1.4;transition:border-color .15s;height:34px;overflow:hidden;" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';this.style.borderColor=this.value?'var(--accent)':'var(--border)'"></textarea>
 </div>
 
-<script src="creator.js?v=fee7e7d6"></script>
+<script src="creator.js?v=4b4d0747"></script>
 <script>
 (function() {
   window._creatorScreenshots = [];

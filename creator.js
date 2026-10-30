@@ -455,7 +455,7 @@ function saveForm() {
       scrollName: document.getElementById('f-scroll-name')?.value || '',
       scrollRarity: document.getElementById('f-scroll-rarity')?.value || '',
       obtainOverride: document.getElementById('f-obtain-override').value,
-      selRarity, selClasses, selTwoHanded, selSensible, selEvolutif, selOcculte, evolutifEvolutions,
+      selRarity, selClasses, selTwoHanded, selEvolutif, selOcculte, evolutifEvolutions,
       activeTags: [...activeTags],
       obtainSources,
       stats: (() => {
@@ -487,7 +487,6 @@ function saveForm() {
         lore:      document.getElementById('mob-lore')?.value   || '',
         spawnTime: document.getElementById('mob-spawntime')?.value || '',
         inCodex:   mobInCodex,
-        sensible:  mobSensible,
         loot: getMobLoot(),
         x:    document.getElementById('mob-x')?.value || '',
         y:    document.getElementById('mob-y')?.value || '',
@@ -508,7 +507,6 @@ function saveForm() {
         y:             document.getElementById('pnj-y')?.value        || '',
         z:             document.getElementById('pnj-z')?.value        || '',
         underground:   pnjUnderground,
-        sensible:      pnjSensible,
         recycles: pnjRecycles.map(r => ({ itemId: r.itemId, qty: r.qty, reward: r.reward, time: r.time, cost: r.cost })),
         crafts: pnjCrafts.map(c => ({ resultId: c.resultId, time: c.time, quality: c.quality, ingredients: c.ingredients.map(i => ({ itemId: i.itemId, qty: i.qty })) })),
       },
@@ -593,10 +591,6 @@ function restoreForm(forcedMode) {
       document.getElementById('obtain-override-wrap').style.display = '';
     }
     if (d.selRarity) setRarity(d.selRarity);
-    if (d.selSensible) {
-      selSensible = true;
-      document.getElementById('sensible-btn').classList.add('active');
-    }
     if (d.selTwoHanded) {
       selTwoHanded = true;
       document.getElementById('twohanded-btn').classList.add('active');
@@ -684,7 +678,6 @@ function restoreForm(forcedMode) {
       if (m.lore)      document.getElementById('mob-lore').value = m.lore;
       if (m.spawnTime) document.getElementById('mob-spawntime').value = m.spawnTime;
       if (m.inCodex !== undefined) setMobCodex(m.inCodex);
-      if (m.sensible) { mobSensible = true; document.getElementById('mob-sensible-btn')?.classList.add('active'); }
       if (m.x !== undefined && m.x !== '') document.getElementById('mob-x').value = m.x;
       if (m.y !== undefined && m.y !== '') document.getElementById('mob-y').value = m.y;
       if (m.z !== undefined && m.z !== '') document.getElementById('mob-z').value = m.z;
@@ -713,7 +706,6 @@ function restoreForm(forcedMode) {
       else if (p.id) document.getElementById('pnj-id').value = p.id;
       if (p.displayName)  document.getElementById('pnj-display-name').value  = p.displayName;
       if (p.instructions) document.getElementById('pnj-instructions').value  = p.instructions;
-      if (p.sensible) { pnjSensible = true; document.getElementById('pnj-sensible-btn')?.classList.add('active'); }
       if (p.type)   { _restorePnjTypeUI(p.type); onPnjTypeChange(); }
       if (p.palier) _setPalierValue('pnj-palier', p.palier);
       if (p.region) document.getElementById('pnj-region').value = p.region;
@@ -1803,17 +1795,10 @@ function onCatChange() {
   update();
 }
 
-let selSensible  = false;
 let selTwoHanded = false;
 let selEvolutif  = false;
 let selOcculte   = false;
 let selQualite   = false;
-
-function toggleSensible() {
-  selSensible = !selSensible;
-  document.getElementById('sensible-btn').classList.toggle('active', selSensible);
-  update();
-}
 
 let selLockedPalier = '';      // drapeaux « Event » / « Worldboss » : verrouillent le palier sur « event » / « worldboss » ('' = aucun)
 let _palierBeforeLock = '';    // palier choisi avant l'activation d'un drapeau
@@ -2088,28 +2073,6 @@ function ensureAllItemsIndex() {
   if (!allItemsIndex.some(i => i.id === 'cols')) allItemsIndex.unshift({ id: 'cols', name: '🪙 Cols', subtitle: 'Monnaie', search: 'cols monnaie currency or argent gold prix', _raw: { id: 'cols', name: 'Cols' } });
 }
 
-function appendHiddenItemsToIndex(hiddenItems) {
-  if (!Array.isArray(hiddenItems) || !hiddenItems.length) return;
-  ensureAllItemsIndex();
-  const rarityLabel = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
-  const existingIds = new Set(allItemsIndex.map(i => String(i.id)));
-  for (const it of hiddenItems) {
-    const id = it.id || it._id;
-    if (!id || existingIds.has(String(id))) continue;
-    allItemsIndex.push({
-      id,
-      name: it.name || id,
-      subtitle: ['🔒', rarityLabel[it.rarity] || it.rarity, it.category, it.palier ? 'P'+it.palier : ''].filter(Boolean).join(' · '),
-      search: ('🔒 ' + (it.name || '') + ' ' + id + ' ' + (it.category || '')).toLowerCase(),
-      _sensible: true,
-      _raw: it
-    });
-    existingIds.add(String(id));
-  }
-  if (pnjCrafts?.length && document.getElementById('pnj-crafts-list') && typeof renderPnjCrafts === 'function') renderPnjCrafts();
-  if (!loadDrop && typeof initLoadSearch === 'function') initLoadSearch();
-}
-window._vcl_appendHiddenItemsToIndex = appendHiddenItemsToIndex;
 
 async function appendPendingToIndices() {
   const getDocs = window._vcl_getDocs;
@@ -2119,7 +2082,6 @@ async function appendPendingToIndices() {
   const db      = window._vcl_db;
   if (!getDocs || !col || !query || !where || !db) return;
 
-  const canViewSensible = !!window._vcl_can_view_sensible;
   let pendingDocs;
   try {
     const snap = await getDocs(query(col(db, 'submissions'), where('status', '==', 'pending')));
@@ -2129,7 +2091,6 @@ async function appendPendingToIndices() {
   const byType = { item: [], mob: [], pnj: [], region: [], quest: [] };
   for (const sub of pendingDocs) {
     if (!sub.data?.id) continue;
-    if (sub.data.sensible && !canViewSensible) continue;
     if (byType[sub.type]) byType[sub.type].push(sub);
   }
 
@@ -2145,7 +2106,7 @@ async function appendPendingToIndices() {
       allItemsIndex.push({
         id: it.id,
         name: it.name || it.id,
-        subtitle: ['⏳', it.sensible ? '🔒' : null, rl[it.rarity] || it.rarity, it.category].filter(Boolean).join(' · '),
+        subtitle: ['⏳', rl[it.rarity] || it.rarity, it.category].filter(Boolean).join(' · '),
         search: ('⏳ ' + (it.name || '') + ' ' + id + ' ' + (it.category || '')).toLowerCase(),
         _pending: true, _raw: it
       });
@@ -2500,11 +2461,6 @@ function loadItem(item) {
   }
 
   // Classes
-  // Sensible
-  if (item.sensible) {
-    selSensible = true;
-    document.getElementById('sensible-btn').classList.add('active');
-  }
 
   _setEventName(typeof item.event === 'string' ? item.event : '');
 
@@ -2656,7 +2612,7 @@ function resetFormSilent() {
   _skipSave = true;
   document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel textarea').forEach(i => i.value = '');
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
-  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selSensible = false; selEvolutif = false; selOcculte = false; selQualite = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
+  selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selEvolutif = false; selOcculte = false; selQualite = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
   document.getElementById('qualite-btn')?.classList.remove('active');
   _autoEventName = '';
   _setEventName('');
@@ -2678,7 +2634,6 @@ function resetFormSilent() {
   document.getElementById('occulte-btn')?.classList.remove('active');
   const rarityField = document.getElementById('rarity-field');
   if (rarityField) rarityField.classList.add('unset');
-  document.getElementById('sensible-btn').classList.remove('active');
   document.getElementById('twohanded-btn').classList.remove('active');
   activeTags = new Set();
   obtainSources = [];
@@ -2714,7 +2669,6 @@ function loadMob(mob) {
   if (mob.behavior) setBehavior(mob.behavior);
   if (mob.palier)   _setPalierValue('mob-palier', mob.palier);
   if (mob.inCodex !== undefined) setMobCodex(mob.inCodex);
-  if (mob.sensible) { mobSensible = true; document.getElementById('mob-sensible-btn').classList.add('active'); }
   if (mob.region) {
     const regionEl = document.getElementById('mob-region');
     regionEl.value = mob.region;
@@ -2794,7 +2748,6 @@ function loadPnj(pnj) {
     document.getElementById('pnj-z').value = pnj.coords.z ?? '';
   }
   setPnjUnderground(!!pnj.is_underground);
-  if (pnj.sensible) { pnjSensible = true; document.getElementById('pnj-sensible-btn')?.classList.add('active'); }
   // Restore sells — push entries with data, then render once
   ensureAllItemsIndex();
   const sells = Array.isArray(pnj.sells) ? pnj.sells
@@ -3174,7 +3127,7 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
     q = q.toLowerCase();
     const results = q.length < 1
       ? []
-      : items.filter(it => it.sensible ? it.search.includes(q) : fuzzyMatch(q, it.search)).slice(0, 40);
+      : items.filter(it => fuzzyMatch(q, it.search)).slice(0, 40);
     list.innerHTML = '';
     focusedIdx = -1;
     if (q.length >= 1) {
@@ -4264,7 +4217,6 @@ function renderMobPreview() {
   if (obj.palier)   h += `<span style="color:var(--muted)">Palier ${obj.palier}</span>`;
   if (regionName)   h += `<span style="color:var(--muted)">📍 ${escHtml(regionName)}</span>`;
   if (obj.inCodex)  h += `<span class="mob-card-badge" style="background:rgba(74,222,128,.1);color:#4ade80;border:1px solid rgba(74,222,128,.3);">Codex</span>`;
-  if (obj.sensible) h += `<span class="mob-card-badge" style="background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.3);">🔒 Sensible</span>`;
   if (obj.spawnTime) h += `<span style="color:var(--muted)">⏱ ${escHtml(obj.spawnTime)}</span>`;
   h += `</div></div>`;
 
@@ -4608,7 +4560,6 @@ function buildObj() {
     if (_imgUrl) obj.images = [_imgUrl];
   }
   if (selTwoHanded)              obj.twoHanded  = true;
-  if (cat === 'artefact')        obj.unique     = true;
   if (selEvolutif)                               obj.evolutif    = true;
   if (selEvolutif && evolutifEvolutions.length)  obj.evolutions  = evolutifEvolutions.map(e => e.id);
   if (selEvolutif && evolutifEvolvedFrom.length) obj.evolvedFrom = evolutifEvolvedFrom.map(e => e.id);
@@ -4616,7 +4567,6 @@ function buildObj() {
   if (selQualite)                obj.quality  = true;
   const runeSlots = parseInt(document.getElementById('f-rune-slots').value);
   if (runeSlots > 0)             obj.rune_slots = runeSlots;
-  if (selSensible)               obj.sensible  = true;
   if ((palier === 'event' || palier === 'worldboss') && eventName) obj.event = eventName;
   if (Object.keys(stats).length)  obj.stats   = stats;
   if (selClasses.length)     obj.classes  = [...selClasses];
@@ -4848,8 +4798,6 @@ function isDuplicate(id) {
     return ITEMS.some(it => (it.id || it._id) === id);
   }
   if (typeof ITEMS !== 'undefined' && ITEMS.some(it => (it.id || it._id) === id)) return true;
-  // Items sensibles approuvés (stockés dans items_hidden, absents de ITEMS)
-  if (window._vcl_sensibleItemIds?.has(id)) return true;
   // Vérifier aussi les soumissions en attente (items non encore approuvés)
   const pending = window._vcl_pendingItems || [];
   return pending.some(s => s.data?.id === id);
@@ -5171,12 +5119,6 @@ const RARITY_COLORS_HEX = {
 
 function findTargetRegion(obj) {
   const p   = `P${obj.palier || 1}`;
-  if (obj.sensible) {
-    if (obj.category === 'arme')       return `Sensible > Armes > Palier ${obj.palier || 1}`;
-    if (obj.category === 'accessoire') return `Sensible > Accessoires > Palier ${obj.palier || 1}`;
-    if (obj.category === 'armure')     return `Sensible > Armures > Palier ${obj.palier || 1}`;
-    return `Sensible > Items > Palier ${obj.palier || 1}`;
-  }
   const tags = obj.tags    || [];
   const cls  = obj.classes || [];
   const cat  = obj.cat     || '';
@@ -5852,11 +5794,9 @@ function setRegCodex(val) {
 // ═══════════════════════════════════════════════════
 // MOB — STATE
 // ═══════════════════════════════════════════════════
-let pnjSensible     = false;
 
 let mobIdLocked     = false;
 let mobInCodex      = true;
-let mobSensible     = false;
 let mobLootEntries  = [];
 let mobLootUid      = 0;
 
@@ -5888,18 +5828,6 @@ function setBehavior(val) {
   ['agressif','neutre','passif'].forEach(b => {
     document.getElementById('beh-' + b).classList.toggle('active', b === val);
   });
-  update();
-}
-
-function togglePnjSensible() {
-  pnjSensible = !pnjSensible;
-  document.getElementById('pnj-sensible-btn').classList.toggle('active', pnjSensible);
-  update();
-}
-
-function toggleMobSensible() {
-  mobSensible = !mobSensible;
-  document.getElementById('mob-sensible-btn').classList.toggle('active', mobSensible);
   update();
 }
 
@@ -6283,7 +6211,6 @@ function buildMobObj() {
   if (regionId) obj.region   = regionId;
   if (id && palier) obj.images = [`../img/mobs/P${palier}/${id}.png`];
   obj.inCodex  = mobInCodex;
-  if (mobSensible) obj.sensible = true;
   if (lore)     obj.lore     = lore;
   if (spawnTime && (type === 'boss' || type === 'mini_boss' || type === 'worldboss')) obj.spawnTime = spawnTime;
   const cx = document.getElementById('mob-x')?.value;
@@ -6332,9 +6259,8 @@ function _setMobMoreCoords(list) {
 // MOB — RESET
 // ═══════════════════════════════════════════════════
 function resetMobForm() {
-  mobIdLocked = false; mobInCodex = true; mobSensible = false; mobLootEntries = [];
+  mobIdLocked = false; mobInCodex = true; mobLootEntries = [];
   _setMobMoreCoords([]);
-  const sensBtn = document.getElementById('mob-sensible-btn'); if (sensBtn) sensBtn.classList.remove('active');
   ['mob-name','mob-id','mob-lore','mob-spawntime','mob-regionid','mob-x','mob-y','mob-z'].forEach(fid => {
     const el = document.getElementById(fid); if (el) el.value = '';
   });
@@ -6891,7 +6817,6 @@ function buildPnjObj() {
   if (cx !== '' && cy !== '' && cz !== '') obj.coords = { x: +cx, y: +cy, z: +cz };
   if (id) obj.images = [`../img/compendium/montages/${id}.png`];
   if (instructions) obj.instructions = instructions;
-  if (pnjSensible) obj.sensible = true;
 
   // Les recettes qui ne coûtent que des Cols (sans durée ni qualité) sont des ventes : elles vont dans `sells`, les autres dans `craft`.
   const sells = [], crafts = [];
@@ -7131,8 +7056,7 @@ function renderPanopliePreview() {
 // PNJ / RÉGION — RESET
 // ═══════════════════════════════════════════════════
 function resetPnjForm() {
-  pnjCrafts = []; pnjRecycles = []; pnjIdLocked = false; pnjSensible = false;
-  const sensBtn = document.getElementById('pnj-sensible-btn'); if (sensBtn) sensBtn.classList.remove('active');
+  pnjCrafts = []; pnjRecycles = []; pnjIdLocked = false;
   ['pnj-id','pnj-region','pnj-region-search','pnj-x','pnj-y','pnj-z','pnj-display-name','pnj-instructions'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
