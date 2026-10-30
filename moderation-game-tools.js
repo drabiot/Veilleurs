@@ -375,13 +375,22 @@ window.showDiscordRoutes = async function() {
   } catch (e) { body.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`; }
 };
 
+let _drAccess = {}; // id de salon → true (utilisable) / message d'erreur
 async function _drLoadGuildChans() {
   _drGuildChans = [];
+  _drAccess = {};
   if (!_dr.guildId) return;
   try {
     _drGuildChans = await _drCall('get_guild_channels');
     _drGuildErr = '';
   } catch (e) { _drGuildErr = e.message; }
+  const toCheck = _dr.channels.filter(c => c.id && _drGuildChans.some(x => x.id === c.id)).map(c => c.id);
+  for (let i = 0; i < toCheck.length; i += 5) { // 5 à la fois
+    await Promise.all(toCheck.slice(i, i + 5).map(async id => {
+      try { const ch = await _drCall('get_channel', { channelId: id }); _drAccess[id] = ch && ch.id ? true : 'réponse vide'; }
+      catch (e) { _drAccess[id] = e.message || 'inaccessible'; }
+    }));
+  }
   try {
     const snap = await getDocs(collection(db, 'discord_posts'));
     _drPostCounts = {};
@@ -394,7 +403,9 @@ const _drPersist = async () => { try { await _drSave(); } catch (e) { toast('Err
 const _drField = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
 const _drChip = (on, label, onclick) => `<button type="button" onclick="${onclick}" style="font-size:11px;padding:3px 9px;border-radius:12px;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};background:${on ? 'rgba(224,172,96,.18)' : 'var(--surface2)'};color:${on ? 'var(--accent)' : 'var(--muted)'};">${label}</button>`;
 // Salon réellement présent sur le serveur ? Si la liste des salons n'a pas pu être lue, on ne contredit pas l'id mémorisé.
-const _drAlive = c => !!c.id && ((_drGuildErr && !_drGuildChans.length) || _drGuildChans.some(x => x.id === c.id));
+const _drAlive = c => !!c.id && ((_drGuildErr && !_drGuildChans.length) || (_drGuildChans.some(x => x.id === c.id) && _drAccess[c.id] !== undefined && _drAccess[c.id] === true));
+// raison quand ce n'est pas « en place » (pour l'infobulle et le texte)
+const _drWhy = c => !c.id ? 'pas encore créé' : !_drGuildChans.some(x => x.id === c.id) ? 'introuvable sur le serveur (supprimé ?)' : _drAccess[c.id] === true ? '' : 'le bot ne peut pas ouvrir ce salon (' + (_drAccess[c.id] || 'accès non vérifié') + ')';
 const _drCats = () => _drGuildChans.filter(x => x.type === 4).sort((a, b) => a.position - b.position);
 // Nom envoyé à Discord : espaces -> tirets, caractères interdits retirés. Discord met en minuscules les lettres ASCII d'un salon (pas celles d'une catégorie) :
 // les majuscules des salons passent par des lettres Unicode « grasses » (𝗔𝗿𝗺𝗲𝘀), comme le nom d'un serveur en police spéciale.
@@ -481,8 +492,9 @@ function _drRow(c, i) {
     : ib(c.id ? '🔁' : '✨', c.id ? 'Recréer ce salon (introuvable sur Discord)' : 'Créer ce salon', `drCreate(${i})`))
     + ib('⚙️', 'Réglages de ce salon', `drToggleRow(${i})`) + ib('🗑', 'Retirer du plan', `drRemove(${i})`);
   return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+      <span title="${alive ? 'En place : le bot peut utiliser ce salon' : escHtml(_drWhy(c))}">${alive ? '🟢' : '🟠'}</span>
       <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" style="${_drField}width:190px;font-weight:700;">
-      <span style="flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(catLabels.join(', ') + ' · ' + palLabels.join(', '))}">${catLabels.length ? catLabels.join(', ') : 'toutes catégories'} · ${palLabels.length ? palLabels.join(', ') : 'tous paliers'} · <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${alive && _drPostCounts[c.id] ? ` · ${_drPostCounts[c.id]} posts` : ''}${c.id && !alive ? ' · <span style="color:var(--danger);">introuvable</span>' : !c.id ? ' · <span style="color:#e0a24c;">à créer</span>' : ''}</span>
+      <span style="flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(catLabels.join(', ') + ' · ' + palLabels.join(', '))}">${catLabels.length ? catLabels.join(', ') : 'toutes catégories'} · ${palLabels.length ? palLabels.join(', ') : 'tous paliers'} · <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${alive && _drPostCounts[c.id] ? ` · ${_drPostCounts[c.id]} posts` : ''}${!alive ? ` · <span style="color:#e0a24c;">${escHtml(_drWhy(c))}</span>` : ''}</span>
       <span style="display:flex;gap:4px;flex:none;">${actions}</span>
     </div>${_drOpenRows.has(i) ? _drDetail(c, i) : ''}`;
 }
