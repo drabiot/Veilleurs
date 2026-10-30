@@ -186,7 +186,7 @@ function rForm() {
   const palChips = S.paliers.map(p => chip(has(c.paliers, p.id), esc(p.label), `DG.tgl('paliers','${esc(p.id)}')`)).join('');
   const roleChips = (S.info.roles || []).map(r => chip(has(c.roleIds, r.id), esc(r.name), `DG.tgl('roleIds','${r.id}')`)).join('');
   const compact = creating && c.structure !== 'custom';
-  const routes = compact ? '' : c.channels.map((ch, i) => `<div class="dg-route"><div class="top">
+  const routes = compact ? '' : c.channels.map((ch, i) => `<div class="dg-route" style="${creating && outOfFilter(ch) ? 'opacity:.4' : ''}"><div class="top">${creating && outOfFilter(ch) ? '<span class="dg-badge warn" title="Hors de tes filtres « Quoi envoyer » : ce salon ne sera pas créé">hors filtres : non créé</span>' : ''}
       ${creating ? `<input type="text" value="${esc(ch.name)}" placeholder="nom-du-salon" onchange="DG.setCh(${i},'name',this.value)" style="width:190px;font-weight:700">
         <input type="text" value="${esc(ch.categoryName)}" placeholder="catégorie Discord" onchange="DG.setCh(${i},'categoryName',this.value)" style="width:170px">`
       : `<select onchange="DG.setCh(${i},'id',this.value)" style="min-width:230px">${chanOptions(ch.id)}</select>`}
@@ -239,7 +239,7 @@ function compactPlan() {
   const c = S.cfg;
   const groups = [];
   c.channels.forEach((ch, i) => { let g = groups.find(x => x.cat === ch.categoryName); if (!g) groups.push(g = { cat: ch.categoryName, rows: [] }); g.rows.push([ch, i]); });
-  const kept = c.channels.filter(x => !x.skip).length;
+  const kept = finalCfg().channels.length;
   return `<div class="dg-hint" style="margin-top:12px">Salons qui seront créés : <strong>${kept}</strong> sur ${c.channels.length}. Décoche ceux dont tu n'as pas besoin, clique sur un nom pour le changer. Ils sont créés vides : le bot n'y poste que les items qui existent.</div>
     <div class="dg-route" style="max-height:420px;overflow:auto">${groups.map((g, gi) => `
       ${g.cat ? `<div class="top" style="margin:6px 0 4px"><span class="dg-hint">📁</span><input type="text" value="${esc(g.cat)}" onchange="DG.setCat(${gi}, this.value)" style="width:230px;font-weight:700"></div>` : ''}
@@ -249,7 +249,12 @@ function compactPlan() {
 }
 
 /** Réglages envoyés : les salons décochés ne sont pas créés. */
-const finalCfg = () => ({ ...S.cfg, channels: S.cfg.channels.filter(x => !x.skip) });
+// Un salon dont les catégories (ou paliers) ne recoupent pas les filtres « Quoi envoyer » ne recevrait jamais rien : on ne le crée pas (mode personnalisé : plan non régénéré)
+const outOfFilter = ch => {
+  const c = S.cfg, miss = (mine, global) => mine.length && global.length && !mine.some(x => has(global, x));
+  return miss(ch.itemCats || [], c.itemCats) || miss(ch.paliers || [], c.paliers);
+};
+const finalCfg = () => ({ ...S.cfg, channels: S.cfg.channels.filter(x => !x.skip && !(S.cfg.mode === 'create' && outOfFilter(x))) });
 
 function rRecap() {
   const c = finalCfg(), creating = c.mode === 'create', n = estimate(c);
