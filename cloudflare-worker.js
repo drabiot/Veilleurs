@@ -12,7 +12,7 @@
 
 // ── Constantes ──────────────────────────────────────────────
 import { handleStoreRead, handleStoreWrite, authUid } from './worker-store.js';
-import { handleGuildApi, handleGuildBot, finishGuildOauth, triggerBot } from './guild-onboarding.js';
+import { handleGuildApi, handleGuildBot, finishGuildOauth, maybeTriggerBot } from './guild-onboarding.js';
 
 const FIREBASE_KEY   = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
 const CF_ACCOUNT_ID  = 'db3d4d15175ddbfbd2720490acc8fb53'; // identifiant public du compte Cloudflare (pas un secret)
@@ -74,7 +74,7 @@ export default {
   // Cron Cloudflare (wrangler.toml → [triggers]) : lance le bot sur GitHub Actions toutes les 10 min. Plus fiable que le cron de GitHub,
   // qui peut ne pas démarrer ou retarder de plusieurs dizaines de minutes. Sans GITHUB_DISPATCH_TOKEN, ne fait rien (le cron GitHub reste en secours).
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(triggerBot(env));
+    ctx.waitUntil(maybeTriggerBot(env));
   },
   async fetch(request, env, ctx) {
     if (request.method === 'OPTIONS') {

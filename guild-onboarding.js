@@ -105,6 +105,21 @@ export async function triggerBot(env) {
   } catch { return 'error'; }
 }
 
+/** Appelé par le cron Cloudflare : ne lance le bot que s'il y a quelque chose à faire (items du wiki modifiés depuis le dernier lancement,
+ *  envoi ou nettoyage en cours sur un serveur) ou, au plus, toutes les heures par sécurité. Évite des exécutions GitHub inutiles. */
+export async function maybeTriggerBot(env) {
+  if (!env.GITHUB_DISPATCH_TOKEN || !env.DB) return 'no-token';
+  const rev = String((await env.DB.prepare("SELECT MAX(updated_at) AS m FROM docs WHERE col = 'items'").first())?.m ?? 0);
+  const busy = await env.DB.prepare("SELECT 1 AS x FROM docs WHERE col = 'discord_guilds' AND deleted = 0 AND (COALESCE(json_extract(data, '$.pending'), 0) > 0 OR json_extract(data, '$.status') = 'removing' OR json_extract(data, '$.purge') = 1) LIMIT 1").first();
+  const lastRev = env.WIKI_CACHE ? await env.WIKI_CACHE.get('bot_items_rev') : null;
+  const lastAt = env.WIKI_CACHE ? parseInt(await env.WIKI_CACHE.get('bot_last_cron') || '0', 10) : 0;
+  const due = rev !== lastRev || !!busy || Date.now() - lastAt > 3600000;
+  if (!due) return 'skipped';
+  const r = await triggerBot(env);
+  if (env.WIKI_CACHE && (r === 'started' || r === 'throttled')) { await env.WIKI_CACHE.put('bot_items_rev', rev); await env.WIKI_CACHE.put('bot_last_cron', String(Date.now())); }
+  return r;
+}
+
 // ══ Connexion : fin du flux OAuth (appelée par handleDiscordCallback quand state.m === 'guilds') ══
 export async function finishGuildOauth(env, accessToken) {
   const bearer = { Authorization: `Bearer ${accessToken}` };

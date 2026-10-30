@@ -22,7 +22,7 @@ const BOT_ALLOW = (1n << 10n) | (1n << 11n) | (1n << 14n) | (1n << 15n) | (1n <<
 const BATCH = parseInt(process.env.DISCORD_GUILD_BATCH, 10) || 400; // posts max par serveur et par passage (le passage s'arrête de toute façon à RUN_MINUTES)
 const CONCURRENCY = parseInt(process.env.DISCORD_CONCURRENCY, 10) || 4; // salons traités en parallèle
 const POST_DELAY = parseInt(process.env.DISCORD_POST_DELAY_MS, 10) || 800; // pause entre deux posts d'un même salon ; discord.js gère les 429 en plus
-const sigOf = g => [g.updatedAt || 0, g.initial, !!g.groupSets, !!g.eventTags, g.replace !== false].join('|');
+const sigOf = g => [g.updatedAt || 0, g.status, !!g.paused, g.initial, !!g.groupSets, !!g.eventTags, g.replace !== false].join('|');
 const log = (...a) => console.log(`[discord-guilds ${new Date().toISOString().slice(11, 19)}]`, ...a);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const has = (l, v) => (l || []).map(String).includes(String(v));
@@ -197,6 +197,11 @@ async function guildPass(rest, g, st, getCtx) {
     if (sets.size) { const ctx = await getCtx(); map = new Map(items); for (const it of ctx.maps.allItems) if (sets.has(it.set)) map.set(it.id ?? it._id, { _id: it.id ?? it._id, ...it }); }
   }
   const { todo, hashFix, gone } = plan(cfg, st, map, fetched.full, fetched.deleted);
+  // réglages ou statut changés depuis le dernier passage : on écrit toujours le résultat, même s'il n'y a rien à envoyer (sinon l'historique reste muet)
+  if (st.sig !== undefined && st.sig !== sigOf(g) && fetched.full) {
+    const concerned = [...map.values()].filter(it => route(cfg, it)).length;
+    logs.push(`Bot : passage effectué — ${concerned} item(s) concerné(s), ${Object.keys(st.posts).length} déjà envoyé(s), ${todo.length} à envoyer${todo.length ? '' : ' : tout est à jour'}`);
+  }
   for (const [id, h] of hashFix) st.posts[id].h = h;
   let error = '', sent = 0;
   for (const id of gone) { try { await deletePost(rest, st.posts[id]); delete st.posts[id]; await sleep(500); } catch (e) { error = e.message; } }
