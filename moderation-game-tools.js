@@ -622,6 +622,7 @@ window.dgLoadGuilds = async () => {
           ${g.status === 'pending' ? b(['⛔ Refuser', id], `dgSetStatus(this.dataset.id,'refused')`, 'color:var(--danger);border-color:var(--danger);') : ''}
           ${g.status === 'approved' ? b(['⏸ Suspendre', id], `dgSetStatus(this.dataset.id,'suspended')`) : ''}
           ${g.modifiedAfterApproval ? b(['👍 Vu', id], 'dgAck(this.dataset.id)') : ''}
+          ${b(['👁 Choix', id], 'dgToggleChoices(this.dataset.id)')}
           ${b(['📜 Historique', id], 'dgToggleLog(this.dataset.id)')}
           ${g.status === 'removing' ? b(['🧽 Effacer la fiche', id], 'dgForgetGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);') : b(['🗑 Retirer', id], 'dgRemoveGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);')}</span></div>`; }).join('') || '<div style="color:var(--muted);font-size:12px;">Aucun serveur inscrit.</div>'}`;
     // envoi en cours : la liste se rafraîchit toute seule (barre de progression)
@@ -630,6 +631,48 @@ window.dgLoadGuilds = async () => {
   } catch (e) { el.innerHTML = `<div style="color:var(--danger);font-size:12px;">Serveurs inscrits illisibles : ${escHtml(e.message)}</div>`; }
 };
 // Historique d'un serveur : actions réellement faites (worker, bot, modération)
+// Choix d'un serveur inscrit (réglages, plan, inscriptions, posts par salon) : ce que son chef de serveur a configuré sur Discord/discord.html
+window.dgToggleChoices = async (id) => {
+  const box = document.getElementById('dg-choices-' + id);
+  if (box) { box.remove(); return; }
+  const row = document.querySelector(`[data-row="${id}"]`);
+  if (!row) return;
+  const s = await getDoc(doc(db, 'discord_guilds', id));
+  const d = s.exists() ? s.data() : null;
+  if (!d) return;
+  const CAT = Object.fromEntries(_DR_CATS.map(q => [q[0], q[1]]));
+  const palLabel = p => (_drPaliers.find(x => String(x.id) === String(p)) || {}).label || String(p);
+  const list = (arr, fmt) => (arr && arr.length) ? arr.map(fmt).join(', ') : '<em>tout</em>';
+  const kv = (k, v) => `<div style="display:flex;gap:8px;padding:2px 0;"><span style="color:var(--muted);min-width:190px;">${k}</span><span>${v}</span></div>`;
+  const yes = (v, t = 'oui', f = 'non') => v ? t : f;
+  const auto = (d.planMode || ((d.channels || []).length ? 'custom' : 'auto')) === 'auto';
+  const reglages = [
+    kv('Chef de serveur', `${escHtml(d.ownerName || '?')} <span style="color:var(--muted);">(${escHtml(d.ownerId || '?')})</span>`),
+    kv('Serveur Discord', `<a href="https://discord.com/channels/${escHtml(id)}" target="_blank" style="color:var(--accent);">${escHtml(d.guildName || id)} ↗</a>`),
+    kv('Inscrit le', d.createdAt ? new Date(d.createdAt).toLocaleString('fr-FR') : '—') + kv('Dernière modification', d.updatedAt ? new Date(d.updatedAt).toLocaleString('fr-FR') : '—'),
+    kv('Plan', auto ? '🤖 automatique (modèle Veilleurs tenu à jour)' : '✏️ personnalisé') + kv('Salons', d.mode === 'create' ? 'créés par le bot' : 'salons existants du serveur'),
+    kv('Qui voit les salons', { everyone: 'tout le monde (lecture seule)', roles: `rôles choisis (${(d.roleIds || []).length})`, admins: 'administrateurs seulement' }[d.access] || '?'),
+    kv('Envoi initial', d.initial === 'all' ? 'tous les items existants' : 'seulement les nouveaux items'),
+    kv('Format', `${d.forum === false ? 'salon texte' : 'forum'} · ${yes(d.groupSets, 'items groupés par set', 'un post par item')}${d.forum !== false ? ' · tags par événement : ' + yes(d.eventTags) : ''}`),
+    kv('Remplacer un post modifié', yes(d.replace !== false)) + kv('Masquage anti-ping', d.hideThreshold ? `au-delà de ${d.hideThreshold} items` : 'jamais'),
+    kv('Filtres généraux', `catégories : ${list(d.itemCats, k => CAT[k] || k)} · paliers : ${list(d.paliers, palLabel)}`),
+    kv('Envoi', `${d.posted || 0} posts${d.pending ? ` (+${d.pending} en attente)` : ''}${d.paused ? ' · <b style="color:var(--accent);">en pause (chef)</b>' : ''}`),
+  ].join('');
+  const chans = d.channels || [];
+  const posts = d.channelPosts || {};
+  const groups = new Map();
+  chans.forEach(c => { const k = c.categoryName || '— sans catégorie —'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(c); });
+  const nIns = chans.filter(c => c.subscribed !== false && !c.skip).length;
+  const salons = [...groups].map(([k, cs]) => `<div style="margin:6px 0 2px;font-weight:700;">${escHtml(k)} <span style="font-weight:400;color:var(--muted);">— ${cs.filter(c => c.subscribed !== false && !c.skip).length}/${cs.length} inscrit(s)</span></div>
+    ${cs.map(c => { const ins = c.subscribed !== false && !c.skip; const n = c.id ? (posts[c.id] || 0) : 0;
+      return `<div style="display:flex;gap:8px;align-items:center;padding:1px 0 1px 14px;${ins ? '' : 'opacity:.55;'}"><span>${ins ? '✅' : '⚪'}</span>
+        <span style="min-width:200px;">${c.id ? `<a href="https://discord.com/channels/${escHtml(id)}/${escHtml(c.id)}" target="_blank" style="color:inherit;">${escHtml(c.name)} ↗</a>` : escHtml(c.name)}</span>
+        <span style="color:var(--muted);">${list(c.itemCats, k2 => CAT[k2] || k2)} · ${list(c.paliers, palLabel)}</span>
+        <span style="margin-left:auto;color:var(--muted);">${c.id ? `${n} post${n > 1 ? 's' : ''} · ${c.created ? 'créé par le bot' : 'salon existant'}` : (ins ? 'sera créé' : 'pas créé')}</span></div>`; }).join('')}`).join('');
+  row.insertAdjacentHTML('afterend', `<div id="dg-choices-${escHtml(id)}" style="margin:-2px 0 8px 12px;padding:10px 14px;font-size:12px;line-height:1.6;background:var(--surface2);border:1px solid var(--border);border-radius:8px;">
+    <div style="font-weight:700;margin-bottom:4px;">Choix du chef de serveur</div>${reglages}
+    <div style="font-weight:700;margin:10px 0 2px;">Salons (${chans.length} au plan · ${nIns} inscrit${nIns > 1 ? 's' : ''})</div>${salons || '<em>aucun salon</em>'}</div>`);
+};
 window.dgToggleLog = async (id) => {
   const box = document.getElementById('dg-log-' + id);
   if (box) { box.remove(); return; }

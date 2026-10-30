@@ -566,7 +566,7 @@ export async function handleGuildApi(request, env, deps) {
 }
 
 // ══ POST /guild/bot ══ (processus Node permanent)
-const REPORT_KEYS = ['lastSentAt', 'lastError', 'posted', 'pending', 'initialDone', 'purge', 'paused'];
+const REPORT_KEYS = ['lastSentAt', 'lastError', 'posted', 'pending', 'initialDone', 'purge', 'paused', 'channelPosts'];
 
 export async function handleGuildBot(request, env, deps) {
   const { json } = deps;

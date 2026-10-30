@@ -292,6 +292,8 @@ async function guildPass(rest, g, st, getCtx) {
   if (error && error !== g.lastError) logs.push(`Bot : erreur — ${error}`);
   if (gone.length) logs.push(`Bot : ${gone.length} post(s) supprimé(s) (items retirés du wiki)`);
   if (logs.length) patch.log = logs;
+  patch.channelPosts = {}; // posts par salon (la modération montre ce que chaque serveur a reçu)
+  for (const e of Object.values(st.posts)) patch.channelPosts[e.channelId] = (patch.channelPosts[e.channelId] || 0) + (e.ids ? e.ids.length : 1);
   if (doneReq.length) patch.requestsDone = doneReq;
   if (badCh.size) patch.badChannels = [...badCh];
   if (error || g.lastError) patch.lastError = error;

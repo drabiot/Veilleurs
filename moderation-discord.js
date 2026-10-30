@@ -8,6 +8,7 @@ const { desanitizeFromFirestore, generateCardBlob, getWorkerSecret: _getWorkerSe
 const _ee = escHtml;
 // ── Discord Webhooks ──────────────────────────────────
 let _dwConfig = null;
+const _tagCacheMem = {}, _tagTypeMem = {}; // id de tag par salon+nom, type de tag par id
 const DW_CATEGORIES = [
   { id: 'arme',       label: '⚔️ Arme' },
   { id: 'armure',     label: '🛡️ Armure' },
@@ -602,20 +603,18 @@ const TAG_TYPE_PRIORITY = { rarity: 0, slot: 1, set: 2, class: 3 };
 async function _ensureTag(channelId, tagName, emoji = null, type = 'class') {
   if (!channelId || !tagName) return null;
   const name = tagName.slice(0, 20);
-  if (!_dwConfig._tagCache)     _dwConfig._tagCache     = {};
-  if (!_dwConfig._tagTypeCache) _dwConfig._tagTypeCache = {};
   const cacheKey = `${channelId}::${name}`;
-  if (_dwConfig._tagCache[cacheKey]) {
-    console.log(`[ensureTag] cache hit: "${name}" type=${type} id=${_dwConfig._tagCache[cacheKey]}`);
-    return _dwConfig._tagCache[cacheKey];
+  if (_tagCacheMem[cacheKey]) {
+    console.log(`[ensureTag] cache hit: "${name}" type=${type} id=${_tagCacheMem[cacheKey]}`);
+    return _tagCacheMem[cacheKey];
   }
 
   const chan = await _workerCall('get_channel', { channelId });
   if (!chan) return null;
   const existing = (chan.available_tags || []).find(t => t.name === name);
   if (existing) {
-    _dwConfig._tagCache[cacheKey]        = existing.id;
-    _dwConfig._tagTypeCache[existing.id] = type;
+    _tagCacheMem[cacheKey]        = existing.id;
+    _tagTypeMem[existing.id] = type;
     console.log(`[ensureTag] existing: "${name}" type=${type} id=${existing.id}`);
     return existing.id;
   }
@@ -628,8 +627,8 @@ async function _ensureTag(channelId, tagName, emoji = null, type = 'class') {
   });
   const created = (updated?.available_tags || []).find(t => t.name === name);
   if (created) {
-    _dwConfig._tagCache[cacheKey]        = created.id;
-    _dwConfig._tagTypeCache[created.id]  = type;
+    _tagCacheMem[cacheKey]        = created.id;
+    _tagTypeMem[created.id]  = type;
     console.log(`[ensureTag] created: "${name}" type=${type} id=${created.id}`);
     return created.id;
   }
@@ -643,7 +642,7 @@ async function _reorderChannelTags(channelId) {
   const chan = await _workerCall('get_channel', { channelId });
   if (!chan?.available_tags?.length) return;
 
-  const typeCache = _dwConfig._tagTypeCache || {};
+  const typeCache = _tagTypeMem;
   const rarityNames = new Set(Object.values(window.VCL.RARITIES || {}).map(r => r.label));
   const CLASSES = window._VCL_DATA?.CLASSES || [];
   const classNames = new Set(CLASSES.map(c => c.label));

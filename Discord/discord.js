@@ -63,7 +63,7 @@ async function api(action, extra = {}) {
   const r = await fetch(WORKER + '/guild/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: S.session, action, ...extra }) });
   const j = await r.json().catch(() => ({}));
   if (j.expired) { sessionStorage.removeItem(SESSION_KEY); S.session = ''; S.step = 'login'; render(); }
-  if (!r.ok) throw new Error(j.error || ('Erreur ' + r.status));
+  if (!r.ok) throw new Error(j.error === 'Action inconnue' ? "Le serveur du wiki n'est pas à jour : cette fonction demande un redéploiement du worker (npx wrangler deploy)." : (j.error || ('Erreur ' + r.status)));
   return j;
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -422,6 +422,7 @@ function manageBlock(d) {
   const missing = d.mode === 'create' && all.some(([c]) => isSub(c) && c.name && !c.id);
   return `<div style="margin-top:14px"><h3 style="margin-top:0">Salons (${all.length} dans ${auto ? 'le plan' : 'ton plan'}${virt.length ? ` · ${virt.length} autres proposés` : ''})</h3>
     ${modeBar(d)}
+    ${S.err ? `<div class="dg-err" style="margin:6px 0">⛔ ${esc(S.err)}</div>` : ''}
     <p class="dg-hint">📡 <strong>Inscrit</strong> = salon activé : il est créé si besoin et reçoit les nouveaux items (un item modifié remplace son ancien post). <strong>Pas inscrit</strong> = rien n'est envoyé dans ce salon. <strong>12/250 items</strong> = 12 items déjà postés dans le salon, sur 250 dans le wiki.</p>
     <div class="dg-row" style="margin:6px 0"><button class="dg-btn" onclick="DG.chSubAll(${!allSub})">${allSub ? '✅ Inscrit à tous (désinscrire)' : "📡 S'inscrire à tous les salons"}</button>
       ${auto ? '' : '<button class="dg-btn primary" onclick="DG.chNew()">➕ Nouveau salon</button>'}
