@@ -333,7 +333,7 @@ window.setSecretForgeronsHidden = async function(hidden) {
 const _DR_REF = () => doc(db, 'config', 'discord_routes');
 const _DR_CATS = [['arme', '⚔️ Armes'], ['armure', '🛡️ Armures'], ['accessoire', '💍 Accessoires'], ['outils', '🛠️ Outils'], ['rune', '🔮 Runes'], ['consommable', '🧪 Consommables'],
   ['nourriture', '🍖 Nourriture'], ['materiaux', '🧱 Matériaux'], ['ressources', '⛏️ Ressources'], ['parchemin', '📃 Parchemins'], ['quete', '📜 Quête'], ['donjon', '🏰 Donjon'], ['monnaie', '🪙 Monnaie']];
-let _dr = { enabled: false, channels: [] }, _drPaliers = [], _drGuildCats = [], _drGuildErr = '';
+let _dr = { enabled: false, hideThreshold: 10, channels: [] }, _drPaliers = [], _drGuildCats = [], _drGuildErr = '';
 
 async function _drCall(action, payload = {}) {
   const r = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: await getWorkerSecret(), action, ...payload }) });
@@ -350,7 +350,7 @@ window.showDiscordRoutes = async function() {
   try {
     const [cfg, pal] = await Promise.all([getDoc(_DR_REF()), getDoc(doc(db, 'config', 'paliers'))]);
     const c = cfg.exists() ? cfg.data() : {};
-    _dr = { enabled: c.enabled === true, channels: Array.isArray(c.channels) ? c.channels : [] };
+    _dr = { enabled: c.enabled === true, hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, channels: Array.isArray(c.channels) ? c.channels : [] };
     _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []);
     if (!_drPaliers.length) _drPaliers = [{ id: 1, label: 'Palier 1' }, { id: 2, label: 'Palier 2' }, { id: 3, label: 'Palier 3' }, { id: 'event', label: 'Event' }, { id: 'worldboss', label: 'World Boss' }];
     await _drLoadGuild();
@@ -367,7 +367,7 @@ async function _drLoadGuild() {
   } catch (e) { _drGuildCats = []; _drGuildErr = e.message; }
 }
 
-const _drSave = () => setDoc(_DR_REF(), { enabled: _dr.enabled, channels: _dr.channels });
+const _drSave = () => setDoc(_DR_REF(), { enabled: _dr.enabled, hideThreshold: _dr.hideThreshold, channels: _dr.channels });
 const _drField = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
 const _drChip = (on, label, onclick) => `<button type="button" onclick="${onclick}" style="font-size:11px;padding:3px 9px;border-radius:12px;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};background:${on ? 'rgba(224,172,96,.18)' : 'var(--surface2)'};color:${on ? 'var(--accent)' : 'var(--muted)'};">${label}</button>`;
 
@@ -405,11 +405,13 @@ function _renderDiscordRoutes() {
       <button class="btn btn-ghost" onclick="drAdd()" style="font-size:12px;">➕ Ajouter un salon</button>
       <button class="btn btn-ghost" onclick="drCreateAll()" style="font-size:12px;">🏗 Créer les salons manquants</button>
     </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;margin-bottom:14px;">🤫 Avant un envoi de plus de <input type="number" min="0" value="${_dr.hideThreshold}" onchange="drSetThreshold(this.value)" style="${_drField}width:64px;text-align:center;"> items dans un salon, le masquer aux membres (évite les pings), puis le rétablir. <span style="color:var(--muted);">0 = ne jamais masquer. Ne concerne que « Renvoyer… » ; le bot a besoin de « Gérer les rôles ».</span></div>
     ${_drGuildErr ? `<div style="font-size:12px;color:var(--danger);margin-bottom:10px;">Catégories Discord indisponibles (${escHtml(_drGuildErr)}) : tu peux quand même saisir un nom de nouvelle catégorie.</div>` : ''}
     ${cards}`;
 }
 
 const _drPersist = async () => { try { await _drSave(); } catch (e) { toast('Erreur : ' + e.message, 'error'); } };
+window.drSetThreshold = async (v) => { const n = parseInt(v, 10); _dr.hideThreshold = Number.isFinite(n) && n >= 0 ? n : 10; await _drPersist(); _renderDiscordRoutes(); };
 window.drAdd = async () => { _dr.channels.push({ name: '', type: 'forum', itemCats: [], paliers: [] }); await _drPersist(); _renderDiscordRoutes(); };
 window.drSet = async (i, k, v) => { _dr.channels[i][k] = String(v).trim(); await _drPersist(); _renderDiscordRoutes(); };
 window.drSetCategory = async (i, v) => {

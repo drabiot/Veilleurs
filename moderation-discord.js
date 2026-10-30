@@ -1703,7 +1703,7 @@ window.discordResendChannel = async function(channelId) {
   const list = await _itemsForChannel(channelId);
   if (!list.length) { toast('Aucun item pour ce salon.', 'warning'); return; }
   if (!await modal.confirm(`Renvoyer les ${list.length} item(s) du salon ${channelId} ?`)) return;
-  await _withHidden([channelId], () => _bulk('Renvoi', list, it => window.discordSyncItem(it.id)));
+  await _withHidden(list.map(() => channelId), () => _bulk('Renvoi', list, it => window.discordSyncItem(it.id)));
 };
 window.discordResendItem = async function(id) {
   try { await window.discordSyncItem(id); toast('Item renvoyé.', 'success'); await window.discordRenderSync(); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
@@ -1773,7 +1773,7 @@ window.discordRenderSync = async function() {
         <button class="btn btn-ghost" onclick="discordResendAll()" style="font-size:12px;">🔄 Renvoyer tous les items</button>
         <button class="btn btn-ghost" onclick="discordDeleteAllPosts()" style="font-size:12px;color:var(--danger);border-color:var(--danger);">🗑 Supprimer tous les posts (${posts.length})</button>
       </div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:12px;cursor:pointer;"><input type="checkbox" id="discord-hide-during" checked> 🤫 Masquer le salon aux membres pendant un envoi en lot (évite les pings) <button class="btn btn-ghost" onclick="event.preventDefault();discordRestoreVisibility()" style="font-size:11px;padding:2px 8px;">🔓 Rétablir la visibilité</button></label>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:12px;color:var(--muted);">🤫 Masquage anti-ping : réglé plus haut. <button class="btn btn-ghost" onclick="discordRestoreVisibility()" style="font-size:11px;padding:2px 8px;">🔓 Rétablir la visibilité</button></div>
       <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Par salon</div>${perChannel}
       <div style="font-size:12px;font-weight:700;margin:14px 0 6px;">Envoyer / renvoyer un item</div>
       <input type="text" id="discord-resend-search" oninput="discordSearchItems()" placeholder="Nom de l'item…" style="${field}width:100%;box-sizing:border-box;">
@@ -1823,10 +1823,16 @@ async function _restoreLocked(ids) {
   for (const id of (ids || Object.keys(saved))) { await _unlockChannel(id, saved); delete saved[id]; }
   await setDoc(_LOCK_REF(), saved);
 }
-/** Exécute fn avec les salons masqués (si la case est cochée), puis les rétablit quoi qu'il arrive. */
+/** Exécute fn avec les salons masqués AVANT l'envoi, puis les rétablit quoi qu'il arrive.
+ *  channelIds = un salon par item à envoyer ; seuls les salons qui reçoivent plus de config/discord_routes.hideThreshold items
+ *  (10 par défaut, 0 = ne jamais masquer) sont masqués. */
 async function _withHidden(channelIds, fn) {
-  const hide = document.getElementById('discord-hide-during')?.checked !== false;
-  const ids = [...new Set(channelIds.filter(Boolean))];
+  const cfg = await _routes(true);
+  const threshold = Number.isFinite(cfg.hideThreshold) ? cfg.hideThreshold : 10;
+  const hide = threshold > 0;
+  const counts = new Map();
+  channelIds.filter(Boolean).forEach(id => counts.set(id, (counts.get(id) || 0) + 1));
+  const ids = [...counts].filter(([, n]) => n > threshold).map(([id]) => id);
   const locked = [];
   try {
     if (hide) for (const id of ids) { try { await _lockChannel(id); locked.push(id); } catch (e) { toast('Masquage impossible pour ' + id + ' : ' + e.message + ' (envoi quand même)', 'warning', 7000); } }
