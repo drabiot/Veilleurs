@@ -1,0 +1,55 @@
+/* Page d'inscription des serveurs Discord — palette du site (voir ../style.css) */
+.dg-page { overflow-y: auto; }
+.dg-header { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--rim); background: rgba(14,12,10,.85); }
+.dg-logo { color: var(--gold); text-decoration: none; font-family: 'Cinzel', serif; font-weight: 600; font-size: 14px; }
+.dg-user { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.dg-main { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 28px 18px 80px; }
+.dg-main h1 { font-family: 'Cinzel', serif; font-size: 26px; color: var(--bright); margin-bottom: 8px; }
+.dg-main h2 { font-family: 'Cinzel', serif; font-size: 17px; color: var(--gold); margin-bottom: 10px; }
+.dg-main h3 { font-size: 13px; color: var(--bright); margin: 18px 0 6px; }
+.dg-lead { color: var(--text); margin-bottom: 20px; }
+.dg-card { background: var(--surface); border: 1px solid var(--rim); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
+.dg-card p { margin-bottom: 10px; font-size: 13px; }
+.dg-card strong { color: var(--bright); }
+.dg-steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; font-size: 11px; }
+.dg-steps span { padding: 3px 10px; border-radius: 12px; border: 1px solid var(--rim2); color: var(--muted); }
+.dg-steps span.on { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+.dg-steps span.done { color: var(--added); border-color: var(--added); }
+.dg-btn { font: inherit; font-size: 13px; padding: 8px 16px; border-radius: 6px; cursor: pointer; border: 1px solid var(--rim2); background: var(--surface2); color: var(--text); text-decoration: none; display: inline-block; }
+.dg-btn:hover { border-color: var(--gold-dim); color: var(--bright); }
+.dg-btn.primary { background: var(--gold); border-color: var(--gold); color: #1a1208; font-weight: 700; }
+.dg-btn.primary:hover { filter: brightness(1.1); color: #1a1208; }
+.dg-btn.discord { background: #5865F2; border-color: #5865F2; color: #fff; font-weight: 700; }
+.dg-btn.danger { border-color: var(--removed); color: var(--removed); }
+.dg-btn:disabled { opacity: .5; cursor: not-allowed; }
+.dg-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.dg-guilds { display: grid; gap: 10px; }
+.dg-guild { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--rim); border-radius: 8px; background: var(--deep); }
+.dg-guild img, .dg-guild .ph { width: 40px; height: 40px; border-radius: 50%; background: var(--rim); flex: none; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+.dg-guild .name { flex: 1; min-width: 0; font-weight: 700; color: var(--bright); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dg-badge { font-size: 11px; padding: 2px 9px; border-radius: 10px; border: 1px solid var(--rim2); color: var(--muted); }
+.dg-badge.ok { color: var(--added); border-color: var(--added); }
+.dg-badge.warn { color: var(--gold); border-color: var(--gold-dim); }
+.dg-badge.bad { color: var(--removed); border-color: var(--removed); }
+.dg-field, .dg-card select, .dg-card input[type=text], .dg-card input[type=number] { font: inherit; font-size: 12px; background: var(--surface2); border: 1px solid var(--rim2); border-radius: 6px; color: var(--text); padding: 6px 9px; outline: none; max-width: 100%; }
+.dg-card input:focus, .dg-card select:focus { border-color: var(--gold-dim); }
+.dg-opt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border: 1px solid var(--rim); border-radius: 8px; margin-bottom: 6px; cursor: pointer; font-size: 12px; }
+.dg-opt.on { border-color: var(--gold); background: var(--gold-glow); }
+.dg-opt input { margin-top: 3px; }
+.dg-opt small { display: block; color: var(--muted); }
+.dg-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.dg-chip { font: inherit; font-size: 11px; padding: 3px 9px; border-radius: 12px; cursor: pointer; border: 1px solid var(--rim2); background: var(--surface2); color: var(--muted); }
+.dg-chip.on { border-color: var(--gold); background: var(--gold-glow); color: var(--gold); }
+.dg-hint { font-size: 11px; color: var(--muted); margin: 4px 0 6px; }
+.dg-route { border: 1px solid var(--rim); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; background: var(--deep); }
+.dg-route .top { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.dg-err { color: var(--removed); font-size: 12px; margin-top: 10px; }
+.dg-ok { color: var(--added); font-size: 12px; margin-top: 10px; }
+.dg-recap { font-size: 12px; }
+.dg-recap dt { color: var(--muted); margin-top: 8px; }
+.dg-recap dd { color: var(--bright); }
+.dg-bar { height: 8px; background: var(--rim); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+.dg-bar > i { display: block; height: 100%; background: var(--gold); width: 0; transition: width .3s; }
+.dg-modal { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.dg-modal .box { background: var(--surface); border: 1px solid var(--rim2); border-radius: 10px; padding: 20px; max-width: 460px; width: 100%; }
+@media (max-width: 600px) { .dg-main h1 { font-size: 20px; } .dg-guild { flex-wrap: wrap; } }

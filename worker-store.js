@@ -32,6 +32,7 @@ const COL_DEFAULTS = {
   trash:         { read: 'contributeur', write: 'contributeur' },
   discord_posts: { read: 'admin',        write: 'admin' },
   secrets:       { read: 'admin',        write: 'admin' },
+  discord_guilds: { read: 'admin',       write: 'admin' }, // serveurs Discord inscrits (page Discord/discord.html) ; écrits par le worker après vérification OAuth
   audit_log:     { read: 'admin',        write: 'contributeur', noUpdate: true, deleteTier: 'admin' },
   events:        { read: 'public',       write: 'admin' },
   known_bugs:    { read: 'public',       write: 'contributeur' },

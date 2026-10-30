@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
+  <title>[VCL] - Le bot sur ton serveur Discord</title>
+  <link rel="stylesheet" href="../style.css" />
+  <link rel="stylesheet" href="discord.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://veilleurs.veilleurs-wiki.workers.dev" crossorigin />
+</head>
+<body class="dg-page">
+  <div class="ambient-bg" aria-hidden="true"><div class="moon"></div><div class="fog fog-1"></div><div class="fog fog-2"></div><div class="vignette"></div></div>
+
+  <header class="dg-header">
+    <a href="../index.html" class="dg-logo">← Veilleurs au Clair de Lune</a>
+    <span id="dg-user" class="dg-user"></span>
+  </header>
+
+  <main class="dg-main">
+    <h1>Le bot des Veilleurs sur ton serveur Discord</h1>
+    <p class="dg-lead">Reçois automatiquement, dans ton serveur, une fiche (carte image) de chaque item du wiki, mise à jour quand l'item change. Tu règles tout toi-même, en quelques minutes.</p>
+
+    <section class="dg-card" id="dg-how">
+      <h2>Comment ça marche</h2>
+      <p>Tu te connectes avec Discord (le site voit seulement ton identité et la liste de tes serveurs, jamais tes messages) puis tu choisis un serveur dont tu as la permission « Gérer le serveur ». Tu invites le bot, tu règles où et quoi envoyer, et tu confirmes. L'équipe du wiki valide ensuite l'inscription (anti-abus) : <strong>rien n'est envoyé avant cette validation</strong>.</p>
+      <p><strong>Ce que le bot peut faire :</strong> voir et écrire dans les salons que tu lui désignes, créer des fils/posts, joindre des images, créer les catégories et salons du plan que tu choisis, et — seulement si tu l'as demandé — masquer un salon pendant un gros envoi (pour éviter que tout le monde soit notifié). Il ne lit pas tes messages et n'écrit rien en dehors des salons du plan.</p>
+      <p><strong>Ce qui est stocké chez nous :</strong> l'identifiant de ton serveur, son nom, les identifiants des salons et rôles choisis, tes réglages, ton identifiant et ton pseudo Discord (pour savoir qui a inscrit le serveur), et l'état d'envoi. Rien d'autre.</p>
+      <p><strong>Tout retirer :</strong> bouton « Désinstaller » sur la page de statut. Tu peux aussi cocher « supprimer les salons créés par le bot » et « supprimer ses posts » ; le bot quitte alors le serveur et tes réglages sont effacés. Tu peux aussi simplement l'exclure depuis Discord.</p>
+    </section>
+
+    <div id="dg-app"><div class="dg-card">Chargement…</div></div>
+  </main>
+
+  <script src="discord.js"></script>
+</body>
+</html>

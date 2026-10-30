@@ -368,6 +368,7 @@ window.showDiscordRoutes = async function() {
     await _drLoadGuildChans();
     _renderDiscordRoutes();
     window.discordRenderSync(); // actions manuelles (module Discord chargé à la demande)
+    window.dgLoadGuilds();
   } catch (e) { body.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`; }
 };
 
@@ -469,6 +470,50 @@ function _renderDiscordRoutes() {
       <button class="btn btn-ghost" onclick="drUninstall()" style="font-size:12px;color:var(--danger);border-color:var(--danger);">🧨 Tout supprimer et quitter le serveur</button>
     </div>`;
 }
+
+// ── SERVEURS INSCRITS (page publique Discord/discord.html) : collection discord_guilds ──
+// Rien ne s'envoie avant « Valider » ; le chef de serveur peut mettre en pause / désinstaller de son côté. Le bot (bot/discord-guilds.js) lit cette collection via le worker.
+const _DG_STATUS = { pending: ['⏳ En attente', 'var(--accent)'], approved: ['🟢 Validé', 'var(--success, #4caf50)'], refused: ['⛔ Refusé', 'var(--danger)'], suspended: ['⏸ Suspendu', 'var(--danger)'], removing: ['🧹 Désinstallation', 'var(--muted)'] };
+window.dgLoadGuilds = async () => {
+  const el = document.getElementById('discord-guilds-body');
+  if (!el) return;
+  try {
+    const snap = await getDocs(collection(db, 'discord_guilds'));
+    const list = snap.docs.map(d => ({ _id: d.id, ...d.data() })).sort((a, b) => (a.status === 'pending' ? 0 : 1) - (b.status === 'pending' ? 0 : 1) || String(a.guildName).localeCompare(String(b.guildName), 'fr'));
+    const b = (label, fn, extra = '') => `<button class="btn btn-ghost" data-id="${escHtml(label[1])}" onclick="${fn}" style="font-size:11px;padding:2px 8px;${extra}">${label[0]}</button>`;
+    el.innerHTML = `<div style="font-size:15px;font-weight:700;margin-bottom:4px;">🌐 Serveurs inscrits (${list.length}) <span style="font-size:11px;color:var(--muted);font-weight:400;">· au-delà de 100 serveurs Discord exige la vérification du bot</span></div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Ils s'inscrivent eux-mêmes sur la page <a href="Discord/discord.html" target="_blank" style="color:var(--accent);">Discord/discord.html</a>. Aucun envoi avant validation. Le chef de serveur garde sa pause / sa désinstallation.</p>
+      ${list.map(g => { const [lbl, col] = _DG_STATUS[g.status] || [g.status, 'var(--muted)']; const id = g._id;
+        return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;">
+          <strong style="min-width:180px;">${escHtml(g.guildName || id)}</strong><span style="color:${col};">${lbl}${g.paused ? ' · en pause (chef)' : ''}</span>
+          <span style="color:var(--muted);">par ${escHtml(g.ownerName || '?')} · ${g.channels?.length || 0} salon(s) · ${g.mode === 'create' ? 'salons créés' : 'salons existants'} · ${g.posted || 0} post(s)${g.pending ? ' (+' + g.pending + ' en attente)' : ''}</span>
+          ${g.lastError ? `<span style="color:var(--danger);" title="${escHtml(g.lastError)}">⚠️ erreur</span>` : ''}
+          <span style="margin-left:auto;display:flex;gap:6px;">
+          ${g.status !== 'approved' && g.status !== 'removing' ? b(['✅ Valider', id], `dgSetStatus(this.dataset.id,'approved')`) : ''}
+          ${g.status === 'pending' ? b(['⛔ Refuser', id], `dgSetStatus(this.dataset.id,'refused')`, 'color:var(--danger);border-color:var(--danger);') : ''}
+          ${g.status === 'approved' ? b(['⏸ Suspendre', id], `dgSetStatus(this.dataset.id,'suspended')`) : ''}
+          ${b(['🗑 Retirer', id], 'dgRemoveGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);')}</span></div>`; }).join('') || '<div style="color:var(--muted);font-size:12px;">Aucun serveur inscrit.</div>'}`;
+  } catch (e) { el.innerHTML = `<div style="color:var(--danger);font-size:12px;">Serveurs inscrits illisibles : ${escHtml(e.message)}</div>`; }
+};
+window.dgSetStatus = async (id, status) => {
+  try {
+    const s = await getDoc(doc(db, 'discord_guilds', id));
+    if (!s.exists()) throw new Error('serveur introuvable');
+    await setDoc(doc(db, 'discord_guilds', id), { ...s.data(), status });
+    toast(status === 'approved' ? 'Serveur validé : le bot enverra au prochain passage (5 min).' : 'Statut mis à jour.', 'success');
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+  window.dgLoadGuilds();
+};
+// « Retirer » = même désinstallation que côté chef de serveur : le bot supprime ses posts, quitte le serveur puis efface la fiche (les salons créés sont conservés)
+window.dgRemoveGuild = async (id) => {
+  if (!await modal.confirm('Retirer ce serveur ?\n\nLe bot supprime ses posts, quitte le serveur et la fiche est effacée au prochain passage du bot.')) return;
+  try {
+    const s = await getDoc(doc(db, 'discord_guilds', id));
+    if (s.exists()) await setDoc(doc(db, 'discord_guilds', id), { ...s.data(), status: 'removing', removal: { deleteChannels: false, deletePosts: true } });
+    toast('Retrait demandé.', 'success');
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+  window.dgLoadGuilds();
+};
 
 const _drMsg = t => { _drBusyMsg = t; const el = document.getElementById('discord-setup-msg'); if (el) el.textContent = t; };
 

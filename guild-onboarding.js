@@ -1,0 +1,307 @@
+/* ══ guild-onboarding.js — Inscription des serveurs Discord tiers (page Discord/discord.html) ══
+   Importé par cloudflare-worker.js. Réglages d'un serveur = un document `discord_guilds/<guildId>` dans la table `docs` de D1.
+
+   1. Connexion Discord (scope `identify guilds`) : GET /discord/callback (state m = 'guilds') garde les serveurs où la personne
+      a « Gérer le serveur » / « Administrateur » / est propriétaire, les range dans KV (WIKI_CACHE, clé gs:<session>, 2 h) et
+      renvoie un identifiant de session au navigateur (fragment #vcl-guild=…). Le jeton OAuth Discord n'est jamais conservé.
+   2. POST /guild/api { session, action, … } : tout passe par la session ci-dessus ; chaque action revérifie que la personne gère bien
+      guildId. Le navigateur public n'a donc jamais ADMIN_SECRET. Actions : me, inspect, save, create_channels, set_paused, purge, uninstall.
+   3. POST /guild/bot { secret: ADMIN_SECRET, action } : réservé au processus Node permanent (bot/discord-guilds.js) :
+      list (tous les serveurs), report (compte rendu d'envoi), ack_remove (fin de désinstallation).
+
+   Statut (`status`, modifié uniquement par la modération du wiki ou le worker) : pending → approved | refused | suspended ; removing (désinstallation demandée).
+   `paused` est le réglage du chef de serveur. L'envoi n'a lieu que si status = approved ET paused = false. */
+
+const API = 'https://discord.com/api/v10';
+const DEFAULT_CLIENT_ID = '1499589814624845936';
+const INVITE_PERMS = '326686067728'; // voir/écrire/créer fils/joindre fichiers/gérer salons/gérer rôles
+
+const P = { VIEW: 1n << 10n, SEND: 1n << 11n, EMBED: 1n << 14n, ATTACH: 1n << 15n, HISTORY: 1n << 16n,
+  PUB_THREADS: 1n << 35n, PRIV_THREADS: 1n << 36n, SEND_THREADS: 1n << 38n, MANAGE_THREADS: 1n << 34n };
+const READ_ONLY_DENY = P.SEND | P.PUB_THREADS | P.PRIV_THREADS | P.SEND_THREADS;
+const BOT_ALLOW = P.VIEW | P.SEND | P.EMBED | P.ATTACH | P.HISTORY | P.MANAGE_THREADS | P.PUB_THREADS | P.SEND_THREADS;
+
+export const ITEM_CATS = ['arme', 'armure', 'accessoire', 'outils', 'rune', 'consommable', 'nourriture', 'materiaux', 'ressources', 'parchemin', 'quete', 'donjon', 'monnaie'];
+const SNOW = /^\d{15,25}$/;
+const MAX_CHANNELS = 60;
+const CREATE_BUDGET = 12; // créations Discord par appel (limite de sous-requêtes d'un Worker)
+
+const jparse = s => { try { return s ? JSON.parse(s) : null; } catch { return null; } };
+
+// ── Documents D1 (même schéma que worker-store.js : révision globale incrémentée à chaque écriture) ──
+async function dgGet(env, id) {
+  const r = await env.DB.prepare("SELECT data, deleted FROM docs WHERE col = 'discord_guilds' AND id = ?").bind(id).first();
+  return r && !r.deleted ? jparse(r.data) : null;
+}
+async function dgPut(env, id, data) {
+  await env.DB.batch([
+    env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'"),
+    env.DB.prepare(`INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('discord_guilds', ?, ?, (SELECT v FROM meta WHERE k = 'rev'), 0, 0)
+      ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at, deleted = 0`).bind(id, JSON.stringify(data)),
+  ]);
+}
+async function dgDelete(env, id) {
+  await env.DB.batch([
+    env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'"),
+    env.DB.prepare("UPDATE docs SET deleted = 1, updated_at = (SELECT v FROM meta WHERE k = 'rev') WHERE col = 'discord_guilds' AND id = ?").bind(id),
+  ]);
+}
+
+// ── Appels Discord avec le jeton du bot ──
+async function dc(env, method, path, body) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const r = await fetch(API + path, {
+      method, headers: { Authorization: `Bot ${env.BOT_TOKEN}`, 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    if (r.status === 429 && attempt === 0) { // limite de débit : une seule attente courte
+      const wait = Math.min(3, (await r.json().catch(() => ({}))).retry_after || 1);
+      await new Promise(res => setTimeout(res, wait * 1000));
+      continue;
+    }
+    const data = r.status === 204 ? {} : await r.json().catch(() => ({}));
+    return { ok: r.ok, status: r.status, data };
+  }
+}
+
+let _botGuilds = null; // { at, ids } 20 s
+async function botGuildIds(env) {
+  if (_botGuilds && Date.now() - _botGuilds.at < 20000) return _botGuilds.ids;
+  const ids = new Set();
+  let after = '';
+  for (let i = 0; i < 5; i++) { // 200 serveurs par page
+    const r = await dc(env, 'GET', `/users/@me/guilds?limit=200${after ? '&after=' + after : ''}`);
+    if (!r.ok || !Array.isArray(r.data)) break;
+    r.data.forEach(g => ids.add(g.id));
+    if (r.data.length < 200) break;
+    after = r.data[r.data.length - 1].id;
+  }
+  _botGuilds = { at: Date.now(), ids };
+  return ids;
+}
+
+// ══ Connexion : fin du flux OAuth (appelée par handleDiscordCallback quand state.m === 'guilds') ══
+export async function finishGuildOauth(env, accessToken) {
+  const bearer = { Authorization: `Bearer ${accessToken}` };
+  const me = await (await fetch(`${API}/users/@me`, { headers: bearer })).json();
+  if (!me.id) throw new Error('Profil Discord introuvable.');
+  const gr = await fetch(`${API}/users/@me/guilds`, { headers: bearer });
+  const all = gr.ok ? await gr.json() : [];
+  const guilds = (Array.isArray(all) ? all : []).filter(g => {
+    const perms = BigInt(g.permissions || '0');
+    return g.owner || (perms & 0x20n) || (perms & 0x8n); // Gérer le serveur ou Administrateur
+  }).slice(0, 90).map(g => ({ id: g.id, name: g.name, icon: g.icon || '', owner: !!g.owner }));
+  if (!env.WIKI_CACHE) throw new Error('KV WIKI_CACHE absent : session impossible.');
+  const sid = [...crypto.getRandomValues(new Uint8Array(24))].map(b => b.toString(16).padStart(2, '0')).join('');
+  await env.WIKI_CACHE.put('gs:' + sid, JSON.stringify({ user: { id: me.id, name: me.global_name || me.username, avatar: me.avatar || '' }, guilds }), { expirationTtl: 7200 });
+  return sid;
+}
+
+// ══ POST /guild/api ══
+function sanitizeName(s, max) { return String(s || '').replace(/[\u0000-\u001f<>@#`]/g, '').trim().slice(0, max); }
+const slug = n => sanitizeName(n, 100).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_àâäçéèêëîïôöùûüœ]/g, '').replace(/-+/g, '-').slice(0, 100);
+const strList = (a, re, max) => (Array.isArray(a) ? a : []).map(String).filter(x => re.test(x)).slice(0, max);
+
+/** Réglages envoyés par le navigateur → réglages acceptés (tout est revalidé ici). */
+function cleanConfig(c, stored, realIds) {
+  const one = (v, list, d) => (list.includes(v) ? v : d);
+  const out = {
+    mode: one(c.mode, ['existing', 'create'], 'create'),
+    structure: one(c.structure, ['default', 'single', 'custom'], 'default'),
+    prefix: sanitizeName(c.prefix, 20),
+    access: one(c.access, ['everyone', 'roles', 'admins'], 'everyone'),
+    roleIds: strList(c.roleIds, SNOW, 20),
+    itemCats: strList(c.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x)),
+    paliers: strList(c.paliers, /^[\w\-]{1,30}$/, 30),
+    initial: one(c.initial, ['all', 'new'], 'new'),
+    forum: c.forum !== false,
+    hideThreshold: Math.max(0, Math.min(1000, parseInt(c.hideThreshold, 10) || 0)),
+    replace: c.replace !== false,
+    channels: [],
+  };
+  const prev = new Map((stored?.channels || []).filter(x => x.id).map(x => [x.id, x]));
+  for (const ch of (Array.isArray(c.channels) ? c.channels : []).slice(0, MAX_CHANNELS)) {
+    const id = SNOW.test(String(ch.id || '')) ? String(ch.id) : '';
+    if (id && realIds && !realIds.has(id)) throw new Error(`Salon introuvable sur le serveur : ${id}`);
+    const name = slug(ch.name);
+    if (!id && !name) continue;
+    out.channels.push({
+      name, type: ch.type === 'text' ? 'text' : 'forum', categoryName: sanitizeName(ch.categoryName, 100),
+      id, itemCats: strList(ch.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x)),
+      paliers: strList(ch.paliers, /^[\w\-]{1,30}$/, 30),
+      created: !!(id && prev.get(id)?.created), // posé uniquement par le worker (jamais par le navigateur)
+    });
+  }
+  return out;
+}
+
+/** Droits d'accès des salons créés : lecture seule pour le public voulu, le bot garde la main. */
+function overwrites(env, guildId, cfg) {
+  const ov = (id, type, allow, deny) => ({ id, type, allow: String(allow), deny: String(deny) });
+  const list = [ov(env.DISCORD_CLIENT_ID || DEFAULT_CLIENT_ID, 1, BOT_ALLOW, 0)];
+  const see = P.VIEW | P.HISTORY;
+  if (cfg.access === 'everyone') list.push(ov(guildId, 0, see, READ_ONLY_DENY));
+  else {
+    list.push(ov(guildId, 0, 0, P.VIEW | READ_ONLY_DENY));
+    if (cfg.access === 'roles') for (const r of cfg.roleIds) list.push(ov(r, 0, see, READ_ONLY_DENY));
+  }
+  return list;
+}
+
+export async function handleGuildApi(request, env, deps) {
+  const { json } = deps;
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
+  if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
+  const sess = env.WIKI_CACHE && /^[0-9a-f]{48}$/.test(String(body.session || ''))
+    ? jparse(await env.WIKI_CACHE.get('gs:' + body.session)) : null;
+  if (!sess) return json({ error: 'Session expirée : reconnecte-toi avec Discord.', expired: true }, 401);
+
+  const action = body.action;
+  const clientId = env.DISCORD_CLIENT_ID || DEFAULT_CLIENT_ID;
+  const invite = gid => `https://discord.com/oauth2/authorize?${new URLSearchParams({ client_id: clientId, permissions: INVITE_PERMS, scope: 'bot', ...(gid ? { guild_id: gid, disable_guild_select: 'true' } : {}) })}`;
+
+  if (action === 'me') {
+    const ids = sess.guilds.map(g => g.id);
+    const [present, rows] = await Promise.all([botGuildIds(env),
+      ids.length ? env.DB.prepare(`SELECT id, data FROM docs WHERE col = 'discord_guilds' AND deleted = 0 AND id IN (${ids.map(() => '?').join(',')})`).bind(...ids).all() : { results: [] }]);
+    const regs = new Map(rows.results.map(r => [r.id, jparse(r.data) || {}]));
+    return json({ user: sess.user, guilds: sess.guilds.map(g => ({ ...g, botPresent: present.has(g.id),
+      status: regs.get(g.id)?.status || null, paused: !!regs.get(g.id)?.paused })), inviteUrls: Object.fromEntries(ids.map(i => [i, invite(i)])) });
+  }
+
+  // Toutes les autres actions visent un serveur que la personne gère
+  const guildId = String(body.guildId || '');
+  if (!SNOW.test(guildId) || !sess.guilds.some(g => g.id === guildId)) return json({ error: 'Tu ne gères pas ce serveur (ou la session est trop ancienne : reconnecte-toi).' }, 403);
+  const guildName = sess.guilds.find(g => g.id === guildId).name;
+  let doc = await dgGet(env, guildId);
+
+  if (action === 'uninstall') {
+    const present = (await botGuildIds(env)).has(guildId);
+    if (!doc || !present) { // jamais inscrit, ou bot déjà parti : rien à nettoyer côté bot
+      if (present) await dc(env, 'DELETE', `/users/@me/guilds/${guildId}`);
+      if (doc) await dgDelete(env, guildId);
+      _botGuilds = null;
+      return json({ ok: true, done: true });
+    }
+    doc.status = 'removing'; doc.removal = { deleteChannels: !!body.deleteChannels, deletePosts: !!body.deletePosts }; doc.updatedAt = Date.now();
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, done: false, message: "Désinstallation demandée : le bot supprime ce que tu as coché puis quitte le serveur (quelques minutes)." });
+  }
+
+  const present = (await botGuildIds(env)).has(guildId);
+  if (!present) return json({ botPresent: false, inviteUrl: invite(guildId) });
+  if (doc?.status === 'removing') return json({ error: 'Désinstallation en cours.', removing: true }, 409);
+
+  if (action === 'inspect') {
+    const [chs, roles, g] = await Promise.all([dc(env, 'GET', `/guilds/${guildId}/channels`), dc(env, 'GET', `/guilds/${guildId}/roles`), dc(env, 'GET', `/guilds/${guildId}`)]);
+    if (!chs.ok) return json({ error: 'Serveur illisible par le bot (permissions ?).', detail: chs.data?.message }, 502);
+    return json({ botPresent: true, community: !!g.data?.features?.includes('COMMUNITY'),
+      channels: chs.data.filter(c => [0, 4, 5, 15].includes(c.type)).map(c => ({ id: c.id, name: c.name, type: c.type, parent_id: c.parent_id || null, position: c.position })),
+      roles: (roles.data || []).filter(r => r.id !== guildId && !r.managed).sort((a, b) => b.position - a.position).map(r => ({ id: r.id, name: r.name, color: r.color })),
+      config: doc });
+  }
+
+  if (action === 'save') {
+    const c = body.config || {};
+    const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
+    if (!chs.ok) return json({ error: 'Serveur illisible par le bot.' }, 502);
+    const real = new Set(chs.data.filter(x => x.type !== 4).map(x => x.id));
+    let cfg;
+    try { cfg = cleanConfig(c, doc, real); } catch (e) { return json({ error: e.message }, 400); }
+    if (cfg.mode === 'existing' && !cfg.channels.some(x => x.id)) return json({ error: 'Choisis au moins un salon existant.' }, 400);
+    if (cfg.mode === 'create' && !cfg.channels.length) return json({ error: 'Le plan de salons est vide.' }, 400);
+    if (cfg.access === 'roles' && !cfg.roleIds.length) return json({ error: 'Choisis au moins un rôle (ou un autre accès).' }, 400);
+    const now = Date.now();
+    doc = { ...(doc || {}), ...cfg, guildId, guildName, ownerId: doc?.ownerId || sess.user.id, ownerName: doc?.ownerName || sess.user.name,
+      status: doc?.status || 'pending', paused: doc ? !!doc.paused : false, createdAt: doc?.createdAt || now, updatedAt: now,
+      createdCategories: doc?.createdCategories || [] };
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
+  if (!doc) return json({ error: "Ce serveur n'est pas encore inscrit : enregistre d'abord les réglages." }, 404);
+
+  if (action === 'set_paused') {
+    doc.paused = !!body.paused; doc.updatedAt = Date.now();
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
+  if (action === 'purge') { // supprime tous les posts du bot (fait par le processus Node) ; envoi mis en pause pour ne pas tout renvoyer
+    doc.purge = true; doc.paused = true; doc.updatedAt = Date.now();
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
+  if (action === 'create_channels') {
+    if (doc.mode !== 'create') return json({ error: 'Ce serveur utilise des salons existants.' }, 400);
+    const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
+    if (!chs.ok) return json({ error: 'Serveur illisible par le bot.' }, 502);
+    const all = chs.data;
+    const ow = overwrites(env, guildId, doc);
+    let budget = CREATE_BUDGET, madeNow = 0, failure = null;
+    doc.createdCategories ||= [];
+    for (const c of doc.channels) {
+      if (c.id && all.some(x => x.id === c.id)) continue;
+      c.id = '';
+      if (!c.name) continue;
+      if (budget <= 0) break;
+      const typeNum = c.type === 'text' ? 0 : 15;
+      // catégorie : retrouvée par nom (sans tenir compte de la casse) ou créée
+      let parentId;
+      const catName = [doc.prefix, c.categoryName].filter(Boolean).join(' ').slice(0, 100); // préfixe seul = une catégorie unique
+      if (catName) {
+        let cat = all.find(x => x.type === 4 && x.name.toLowerCase() === catName.toLowerCase());
+        if (!cat) {
+          if (budget < 2) break;
+          const r = await dc(env, 'POST', `/guilds/${guildId}/channels`, { name: catName, type: 4, permission_overwrites: ow });
+          budget--;
+          if (!r.ok) { failure = r.data?.message || ('Discord ' + r.status); break; }
+          cat = r.data; all.push(cat); doc.createdCategories.push(cat.id); madeNow++;
+        }
+        parentId = cat.id;
+      }
+      const existing = all.find(x => x.type === typeNum && x.name === c.name && (x.parent_id || undefined) === parentId);
+      if (existing) { c.id = existing.id; continue; }
+      const r = await dc(env, 'POST', `/guilds/${guildId}/channels`, { name: c.name, type: typeNum, parent_id: parentId, permission_overwrites: ow });
+      budget--;
+      if (!r.ok) { failure = r.data?.message || ('Discord ' + r.status); break; }
+      all.push(r.data); c.id = r.data.id; c.created = true; madeNow++;
+    }
+    doc.updatedAt = Date.now();
+    await dgPut(env, guildId, doc);
+    const remaining = doc.channels.filter(c => c.name && !c.id).length;
+    return json({ ok: !failure, error: failure ? failure + (/community|forum/i.test(failure) ? ' (les forums demandent le mode Communauté : choisis « salons texte »)' : ' (le bot a-t-il « Gérer les salons » ?)') : undefined, created: madeNow, remaining, config: doc });
+  }
+
+  return json({ error: 'Action inconnue' }, 400);
+}
+
+// ══ POST /guild/bot ══ (processus Node permanent)
+const REPORT_KEYS = ['lastSentAt', 'lastError', 'posted', 'pending', 'initialDone', 'purge', 'paused'];
+
+export async function handleGuildBot(request, env, deps) {
+  const { json } = deps;
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
+  if (!env.ADMIN_SECRET || body.secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+  if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
+
+  if (body.action === 'list') {
+    const rows = (await env.DB.prepare("SELECT id, data FROM docs WHERE col = 'discord_guilds' AND deleted = 0").all()).results;
+    return json({ guilds: rows.map(r => ({ id: r.id, ...jparse(r.data) })) });
+  }
+  const id = String(body.guildId || '');
+  if (!SNOW.test(id)) return json({ error: 'guildId invalide' }, 400);
+  if (body.action === 'ack_remove') { await dgDelete(env, id); return json({ ok: true }); }
+  if (body.action === 'report') {
+    const doc = await dgGet(env, id);
+    if (!doc) return json({ ok: true, gone: true });
+    for (const k of REPORT_KEYS) if (body.patch && k in body.patch) doc[k] = body.patch[k];
+    if (typeof doc.lastError === 'string') doc.lastError = doc.lastError.slice(0, 300);
+    await dgPut(env, id, doc);
+    return json({ ok: true });
+  }
+  return json({ error: 'Action inconnue' }, 400);
+}

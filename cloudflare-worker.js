@@ -12,6 +12,7 @@
 
 // ── Constantes ──────────────────────────────────────────────
 import { handleStoreRead, handleStoreWrite, authUid } from './worker-store.js';
+import { handleGuildApi, handleGuildBot, finishGuildOauth } from './guild-onboarding.js';
 
 const FIREBASE_KEY   = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
 const CF_ACCOUNT_ID  = 'db3d4d15175ddbfbd2720490acc8fb53'; // identifiant public du compte Cloudflare (pas un secret)
@@ -77,6 +78,8 @@ export default {
     const _path = new URL(request.url).pathname;
     if (_path === '/discord/callback' && request.method === 'GET') return handleDiscordCallback(request, env);
     if (_path === '/discord/start' && request.method === 'POST') return handleDiscordStart(request, env);
+    if (_path === '/guild/api' && request.method === 'POST') return handleGuildApi(request, env, { json });
+    if (_path === '/guild/bot' && request.method === 'POST') return handleGuildBot(request, env, { json });
     if (_path === '/db/sync' && request.method === 'GET') return handleDbSync(new URL(request.url), env);
     if (_path === '/db/read' && request.method === 'POST') return handleStoreRead(request, env, corsHeaders());
     if (_path === '/db/write' && request.method === 'POST') return handleStoreWrite(request, env, corsHeaders());
@@ -340,10 +343,11 @@ async function handleDiscordStart(request, env) {
     uid = (await r.json()).users?.[0]?.localId;
     if (!uid) return json({ error: 'Session invalide, reconnecte-toi.' }, 401);
   }
-  const state = await signState({ m: body.mode === 'link' ? 'link' : 'login', uid, o: body.origin, exp: Date.now() + 10 * 60000,
-    r: body.redirect ? 1 : 0, p: /^\/[\w\-./]*$/.test(body.path || '') ? body.path : '/' }, env);
+  const guilds = body.mode === 'guilds'; // inscription d'un serveur : scope `guilds`, retour en redirection plein écran
+  const state = await signState({ m: guilds ? 'guilds' : body.mode === 'link' ? 'link' : 'login', uid, o: body.origin, exp: Date.now() + 10 * 60000,
+    r: guilds || body.redirect ? 1 : 0, p: /^\/[\w\-./]*$/.test(body.path || '') ? body.path : '/' }, env);
   const url = `https://discord.com/oauth2/authorize?${new URLSearchParams({
-    client_id: env.DISCORD_CLIENT_ID, response_type: 'code', scope: 'identify',
+    client_id: env.DISCORD_CLIENT_ID, response_type: 'code', scope: guilds ? 'identify guilds' : 'identify',
     redirect_uri: `${new URL(request.url).origin}/discord/callback`, state,
   })}`;
   return json({ url });
@@ -389,6 +393,10 @@ async function handleDiscordCallback(request, env) {
     });
     const tok = await tr.json();
     if (!tok.access_token) return fail("Échec de l'authentification Discord.");
+    if (state.m === 'guilds') { // inscription d'un serveur (guild-onboarding.js) : pas de compte du site, juste une session
+      const sid = await finishGuildOauth(env, tok.access_token);
+      return new Response(null, { status: 302, headers: { Location: `${state.o}${state.p || '/'}#${new URLSearchParams({ 'vcl-guild': sid })}`, 'Cache-Control': 'no-store' } });
+    }
     const me = await (await fetch(`${DISCORD_API}/users/@me`, { headers: { Authorization: `Bearer ${tok.access_token}` } })).json();
     if (!me.id) return fail('Profil Discord introuvable.');
 
