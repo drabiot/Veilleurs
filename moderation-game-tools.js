@@ -384,6 +384,20 @@ async function _drLoadGuildChans() {
     _drGuildChans = await _drCall('get_guild_channels');
     _drGuildErr = '';
   } catch (e) { _drGuildErr = e.message; }
+  // Salons déjà présents sur le serveur (créés par le formulaire d'inscription, à la main…) mais pas encore liés au plan : reconnus par nom, type et catégorie, sans rien créer
+  if (_drGuildChans.length) {
+    const used = new Set(_dr.channels.map(c => c.id).filter(Boolean));
+    let linked = 0;
+    for (const c of _dr.channels) {
+      if (c.id && _drGuildChans.some(x => x.id === c.id)) continue;
+      const name = _drSlug(c.name); if (!name) continue;
+      const wantCat = c.categoryName ? _drCats().find(k => _drKey(k.name) === _drKey(c.categoryName)) : null;
+      if (c.categoryName && !wantCat) continue; // la catégorie n'existe pas : le salon non plus
+      const ex = _drGuildChans.find(x => x.type === _drTypeNum(c) && !used.has(x.id) && _drKey(x.name) === _drKey(name) && (!wantCat || x.parent_id === wantCat.id));
+      if (ex) { c.id = ex.id; if (wantCat) c.categoryId = wantCat.id; used.add(ex.id); linked++; }
+    }
+    if (linked) { try { await _drSave(); toast(`${linked} salon(s) déjà présent(s) sur le serveur reconnu(s) et lié(s) au plan.`, 'success', 6000); } catch { /* sera relié au prochain chargement */ } }
+  }
   const toCheck = _dr.channels.filter(c => c.id && _drGuildChans.some(x => x.id === c.id)).map(c => c.id);
   for (let i = 0; i < toCheck.length; i += 5) { // 5 à la fois
     await Promise.all(toCheck.slice(i, i + 5).map(async id => {
