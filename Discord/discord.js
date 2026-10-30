@@ -467,7 +467,7 @@ function itemSearchBlock() {
 
 /** Pause / reprise / arrêt de l'envoi, visibles dès qu'un envoi est en cours ou en pause. */
 function sendControls(d, st) {
-  if (st !== 'approved' && st !== 'pending') return '';
+  if (st === 'removing') return '';
   const busy = !!d.pending || (d.requests || []).length || (d.itemRequests || []).length;
   if (!busy && !d.paused) return '';
   return `<div class="dg-row" style="margin:10px 0">
@@ -491,8 +491,8 @@ function rStatus() {
     ${st === 'removing' ? '' : itemSearchBlock()}
     ${st === 'removing' ? '' : `<div class="dg-row">
       <button class="dg-btn" onclick="DG.edit()">✏️ Modifier les réglages</button>
-      ${st === 'approved' || st === 'pending' ? `<button class="dg-btn" onclick="DG.pause(${!d.paused})">${d.paused ? '▶ Reprendre' : '⏸ Mettre en pause'}</button>` : ''}
-      ${st === 'approved' ? '<button class="dg-btn primary" onclick="DG.sendAllMissing()" title="Le bot envoie, dans chaque salon inscrit, les items sans post (rien n’est supprimé)">📤 Envoyer toute la data manquante</button>' : ''}
+      ${st !== 'removing' ? `<button class="dg-btn" onclick="DG.pause(${!d.paused})">${d.paused ? '▶ Reprendre' : '⏸ Mettre en pause'}</button>` : ''}
+      ${st !== 'removing' ? '<button class="dg-btn primary" onclick="DG.sendAllMissing()" title="Le bot envoie, dans chaque salon inscrit, les items sans post (rien n’est supprimé)">📤 Envoyer toute la data manquante</button>' : ''}
       <button class="dg-btn" onclick="DG.restart()" title="Supprime tous les posts puis renvoie tous les items">🔁 Tout supprimer et renvoyer</button>
       <button class="dg-btn danger" onclick="DG.purge()">🗑 Supprimer tous les posts</button>
       <button class="dg-btn danger" onclick="DG.uninstallDlg()">Désinstaller</button>
