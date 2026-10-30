@@ -507,7 +507,7 @@ const DG = window.DG = {
       S.info = j; S.doc = j.config;
       if (j.config && planMode(j.config) === 'auto') await DG.autoSync();
       // ouverture de la page : le bot contrôle que les posts suivis existent encore (posts supprimés à la main) et traite ce qui attend
-      if (j.config && j.config.status === 'approved' && !(S.vo ||= new Set()).has(S.guild.id)) { S.vo.add(S.guild.id); api('verify_posts', { guildId: S.guild.id }).then(r => { if (r.config) { S.doc = r.config; render(); } }).catch(() => {}); }
+      if (j.config && j.config.status === 'approved' && !(S.vo ||= new Set()).has(S.guild.id)) { S.vo.add(S.guild.id); api('verify_posts', { guildId: S.guild.id }).then(r => { if (r.config) { S.doc = r.config; render(); } }).catch(e => { S.err = 'Vérification des posts impossible : ' + e.message; render(); }); }
       if (j.config) { await loadCombos(); S.cfg = { ...defaultCfg(), ...j.config }; S.step = 'status'; }
       else { await loadCombos(); S.cfg = defaultCfg(); S.cfg.forum = !!j.community; regenPlan(); S.step = 'form'; }
       render();
@@ -567,11 +567,13 @@ const DG = window.DG = {
     S.checking = true; S.err = ''; S.msg = ''; render(); // l'animation démarre tout de suite
     const t0 = Date.now();
     try {
-      if (S.doc?.status === 'approved') { try { const r = await api('verify_posts', { guildId: S.guild.id }); if (r.config) S.doc = r.config; } catch { /* la relecture ci-dessous dit ce qui ne va pas */ } }
+      let verifyErr = '';
+      if (S.doc?.status === 'approved') { try { const r = await api('verify_posts', { guildId: S.guild.id }); if (r.config) S.doc = r.config; } catch (e) { verifyErr = e.message; } }
       const j = await api('inspect', { guildId: S.guild.id });
       if (j.botPresent) { S.info = j; if (j.config) S.doc = j.config; }
       const wait = 900 - (Date.now() - t0); if (wait > 0) await sleep(wait); // l'animation reste visible même quand tout est rapide
-      S.msg = S.doc?.verify ? 'Le bot contrôle maintenant les posts sur Discord (quelques secondes) : les compteurs se mettent à jour tout seuls.' : '✅ Salons relus : tout est à jour.';
+      if (verifyErr) { S.err = 'La vérification des posts n\'a pas pu être demandée : ' + verifyErr; S.msg = ''; }
+      else S.msg = S.doc?.verify ? 'Le bot contrôle maintenant les posts sur Discord (quelques secondes) : les compteurs se mettent à jour tout seuls.' : '✅ Salons relus : tout est à jour.';
     } catch (e) { S.err = e.message; }
     S.checking = false; render();
   },

@@ -175,18 +175,7 @@ async function unlock(rest, st, channelId) {
 // ── Purge / désinstallation ──
 // ── Posts supprimés à la main sur Discord (vérifiés à l'ouverture de la page / « Revérifier ») : retirés du suivi (le compteur du salon redevient juste), notés « vus » pour ne pas être reposés tout seuls ──
 // Forum : fils actifs du serveur + fils archivés publics de chaque salon ; salon texte : message par message. Si Discord ne répond pas, on ne retire rien.
-const VERIFY_MAX_TEXT = 300;
-async function archivedThreads(rest, chId) {
-  const ids = new Set(); let before = '';
-  for (let page = 0; page < 12; page++) {
-    const r = await rest.get(`/channels/${chId}/threads/archived/public`, { query: new URLSearchParams({ limit: '100', ...(before ? { before } : {}) }) });
-    (r.threads || []).forEach(t => ids.add(t.id));
-    if (!r.has_more || !(r.threads || []).length) break;
-    before = r.threads[r.threads.length - 1].thread_metadata?.archive_timestamp || '';
-    if (!before) break;
-  }
-  return ids;
-}
+const VERIFY_MAX_TEXT = 300, VERIFY_MAX_THREADS = 600;
 async function verifyPosts(rest, g, st, logs) {
   const keys = Object.keys(st.posts);
   if (!keys.length) return 0;
@@ -195,13 +184,17 @@ async function verifyPosts(rest, g, st, logs) {
   const gone = [];
   let active = null;
   try { active = new Set(((await rest.get(`/guilds/${g.id}/threads/active`)).threads || []).map(t => t.id)); } catch { return 0; } // Discord illisible : rien n'est retiré
-  let textChecked = 0;
+  let textChecked = 0, threadChecked = 0;
   for (const [chId, ks] of byCh) {
     if (timeUp()) break;
     let info; try { info = await rest.get(`/channels/${chId}`); } catch (e) { if (e.status === 404 || e.code === 10003) { gone.push(...ks); } continue; } // salon supprimé : tous ses posts sont partis
     if (info.type === 15 || info.type === 16) {
-      let arch; try { arch = await archivedThreads(rest, chId); } catch { continue; }
-      for (const k of ks) { const e = st.posts[k]; if (e.threadId && !active.has(e.threadId) && !arch.has(e.threadId)) gone.push(k); }
+      for (const k of ks) {
+        const e = st.posts[k];
+        if (!e.threadId || active.has(e.threadId) || threadChecked >= VERIFY_MAX_THREADS) continue; // actif : il existe ; sinon (archivé ou supprimé) on le demande à Discord
+        threadChecked++;
+        try { await rest.get(`/channels/${e.threadId}`); } catch (er) { if (er.status === 404 || er.code === 10003) gone.push(k); } // 404 = supprimé ; toute autre erreur : on ne retire rien
+      }
     } else {
       for (const k of ks) {
         const e = st.posts[k], mid = e.messageIds?.[0] || e.messageId;
