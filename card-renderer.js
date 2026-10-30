@@ -85,6 +85,30 @@ function parseCraftData(item, allItems, pnjMap) {
 }
 // Titre d'une recette : « Craft PNJ » si un PNJ est nommé, sinon « Recette N » quand il y en a plusieurs
 const craftTitle = (craftData, r, i) => r.npc ? '⚒  ' + r.npc : (craftData.recipes.length > 1 ? 'Recette ' + (i + 1) : null)
+// 2 ou 3 recettes : une colonne par recette (équilibre le cadre) ; sinon empilées
+const craftCols = craftData => craftData.recipes.length > 1 && craftData.recipes.length <= 3 ? craftData.recipes.length : 1
+const craftRows = craftData => {
+  const rows = (r, i) => (craftTitle(craftData, r, i) ? 1 : 0) + r.ingredients.length
+  return craftCols(craftData) > 1 ? Math.max(...craftData.recipes.map(rows)) : craftData.recipes.reduce((n, r, i) => n + rows(r, i), 0)
+}
+// Recette à laquelle renvoie une ligne d'OBTENIR (repère « 1 », « 2 ») : achat → recette qui ne coûte que de la monnaie, fabrication → l'autre
+const recipeOfObtain = (text, craftData) => {
+  if (!craftData || craftData.recipes.length < 2) return -1
+  const onlyCurrency = r => r.ingredients.length > 0 && r.ingredients.every(x => x.id === 'cols')
+  if (/achet|vendu|vend\b|boutique|marchand/i.test(text)) return craftData.recipes.findIndex(onlyCurrency)
+  if (/fabri|forge|craft|artisan/i.test(text)) return craftData.recipes.findIndex(r => !onlyCurrency(r))
+  return -1
+}
+// pastille numérotée (centre cx, cy)
+function drawNumBadge(ctx, cx, cy, n) {
+  ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2)
+  ctx.fillStyle = C.goldDim + '40'; ctx.fill()
+  ctx.strokeStyle = C.goldDim; ctx.lineWidth = 1; ctx.stroke()
+  ctx.font = '700 9px "JetBrains Mono"'; ctx.fillStyle = C.gold
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+  ctx.fillText(String(n), cx, cy + 0.5)
+  ctx.textAlign = 'left'
+}
 
 // ── Résolution URL texture ────────────────────────────────────────────
 function resolveIconUrl(item) {
@@ -161,7 +185,7 @@ function estimateCardHeight(item, compact, panoplieData, allItems, pnjMap) {
     framesH += F_TITLE + F_PADV + obtainData.length * F_ROW + F_PADV + F_GAP
   }
   if (craftData) {
-    const cRows = craftData.recipes.reduce((n, r, i) => n + (r.npc ? 2 : craftTitle(craftData, r, i) ? 1 : 0) + r.ingredients.length, 0)
+    const cRows = craftRows(craftData)
     framesH += F_TITLE + F_PADV + cRows * F_ROW + F_PADV + F_GAP
   }
   return Math.max(topH + framesH + 34, 260)
@@ -626,8 +650,11 @@ export async function drawItemCard(canvas, item, exportScale = null, maps = {}) 
     if (obtainData.length) {
       const oH = F_TITLE + F_PADV + oRows * F_ROW + F_PADV
       drawFrame(ctx, FRAME_X, frameY, FRAME_W, oH, 'OBTENIR', '#7db3d4', F_TITLE)
+      const badges = obtainData.map(l => recipeOfObtain(l.text, craftData))
+      const badgeW = badges.some(b => b >= 0) ? 20 : 0 // texte décalé pour aligner toutes les lignes
       obtainData.forEach((line, i) => {
         const cy = frameY + F_TITLE + F_PADV + i * F_ROW + F_ROW / 2
+        if (badges[i] >= 0) drawNumBadge(ctx, FRAME_X + F_PADH + 7, cy, badges[i] + 1)
         let coordStr = null
         for (const npcId of line.npcIds) {
           const npc = pnjMap[npcId]
@@ -640,7 +667,7 @@ export async function drawItemCard(canvas, item, exportScale = null, maps = {}) 
         const bPad = 6, bGap = 6, bH = 14
         ctx.font = '700 9px "JetBrains Mono"'
         const bW    = coordStr ? ctx.measureText(coordStr).width + bPad * 2 : 0
-        const maxTW = FRAME_W - F_PADH * 2 - (coordStr ? bW + bGap : 0)
+        const maxTW = FRAME_W - F_PADH * 2 - badgeW - (coordStr ? bW + bGap : 0)
         ctx.font = rowFont
         let txt = line.text
         if (ctx.measureText(txt).width > maxTW) {
@@ -648,9 +675,9 @@ export async function drawItemCard(canvas, item, exportScale = null, maps = {}) 
           txt += '…'
         }
         ctx.fillStyle = C.text; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
-        ctx.fillText(txt, FRAME_X + F_PADH, cy)
+        ctx.fillText(txt, FRAME_X + F_PADH + badgeW, cy)
         if (coordStr) {
-          const bX = FRAME_X + F_PADH + ctx.measureText(txt).width + bGap
+          const bX = FRAME_X + F_PADH + badgeW + ctx.measureText(txt).width + bGap
           const bY = cy - bH / 2
           roundRect(ctx, bX, bY, bW, bH, 3)
           ctx.fillStyle = C.goldDim + '28'; ctx.fill()
@@ -665,65 +692,65 @@ export async function drawItemCard(canvas, item, exportScale = null, maps = {}) 
     }
 
     if (craftData) {
-      // lignes de titre (nom du PNJ sur 2 lignes max) de chaque recette, calculées avant la hauteur du cadre
-      const titleLines = craftData.recipes.map((rec, ri) => {
-        const title = craftTitle(craftData, rec, ri)
-        if (!title) return []
-        ctx.font = rowFont
-        const maxW = FRAME_W - F_PADH * 2
-        const lines = []
-        let cur = ''
-        for (const w of title.split(' ')) {
-          const test = cur ? cur + ' ' + w : w
-          if (ctx.measureText(test).width > maxW && cur) {
-            lines.push(cur); cur = w
-            if (lines.length >= 2) break
-          } else { cur = test }
-        }
-        if (cur && lines.length < 2) lines.push(cur)
-        return lines
-      })
-      const cRows = craftData.recipes.reduce((n, rec, ri) => n + titleLines[ri].length + rec.ingredients.length, 0)
+      const cRows = craftRows(craftData)
       const crH = F_TITLE + F_PADV + cRows * F_ROW + F_PADV
       drawFrame(ctx, FRAME_X, frameY, FRAME_W, crH, 'CRAFT', '#7db3d4', F_TITLE)
-      let craftY = frameY + F_TITLE + F_PADV
-      for (const [ri, rec] of craftData.recipes.entries()) {
-        for (const line of titleLines[ri]) {
-          ctx.font = rowFont; ctx.fillStyle = C.goldDim
-          ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
-          ctx.fillText(line, FRAME_X + F_PADH, craftY + F_ROW / 2)
-          craftY += F_ROW
-        }
-        const ingIcons = await Promise.all(
-          rec.ingredients.map(ing => loadImage(resolveIconUrl(ing.item)))
-        )
-        for (let i = 0; i < rec.ingredients.length; i++) {
-          const ing = rec.ingredients[i], ico = ingIcons[i]
-          const cy  = craftY + F_ROW / 2
-          const isz = 14
-          if (ico) {
-            const s  = Math.min(isz / ico.naturalWidth, isz / ico.naturalHeight)
-            const dw = ico.naturalWidth * s, dh = ico.naturalHeight * s
-            ctx.imageSmoothingEnabled = false
-            ctx.drawImage(ico, FRAME_X + F_PADH + (isz - dw) / 2, cy - isz / 2 + (isz - dh) / 2, dw, dh)
-            ctx.imageSmoothingEnabled = true
-          } else if (ing.id === 'cols') {
-            ctx.font = '13px serif'; ctx.fillStyle = C.muted
+      const nCols = craftCols(craftData)
+      const colGap = 14
+      const colW = (FRAME_W - F_PADH * 2 - (nCols - 1) * colGap) / nCols
+      const columns = nCols > 1 ? craftData.recipes.map((_, i) => [i]) : [craftData.recipes.map((_, i) => i)]
+      for (const [ci, recipeIdxs] of columns.entries()) {
+        const colX = FRAME_X + F_PADH + ci * (colW + colGap)
+        let craftY = frameY + F_TITLE + F_PADV
+        for (const ri of recipeIdxs) {
+          const rec = craftData.recipes[ri]
+          const title = craftTitle(craftData, rec, ri)
+          if (title) {
+            const multi = craftData.recipes.length > 1
+            if (multi) drawNumBadge(ctx, colX + 7, craftY + F_ROW / 2, ri + 1)
+            const tx = colX + (multi ? 20 : 0)
+            ctx.font = rowFont; ctx.fillStyle = C.goldDim
             ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
-            ctx.fillText('🪙', FRAME_X + F_PADH, cy)
+            let t = multi && !rec.npc ? 'Recette' : title
+            const tMax = colW - (tx - colX)
+            if (ctx.measureText(t).width > tMax) {
+              while (ctx.measureText(t + '…').width > tMax && t.length > 1) t = t.slice(0, -1)
+              t += '…'
+            }
+            ctx.fillText(t, tx, craftY + F_ROW / 2)
+            craftY += F_ROW
           }
-          ctx.font = rowFont; ctx.fillStyle = C.text
-          ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
-          const qtyStr   = `  ×${ing.qty}`
-          const qtyW     = ctx.measureText(qtyStr).width
-          const nameMaxW = FRAME_W - F_PADH * 2 - isz - 5 - qtyW
-          let ingName = ing.name
-          if (ctx.measureText(ingName).width > nameMaxW) {
-            while (ctx.measureText(ingName + '…').width > nameMaxW && ingName.length > 1) ingName = ingName.slice(0, -1)
-            ingName += '…'
+          const ingIcons = await Promise.all(
+            rec.ingredients.map(ing => loadImage(resolveIconUrl(ing.item)))
+          )
+          for (let i = 0; i < rec.ingredients.length; i++) {
+            const ing = rec.ingredients[i], ico = ingIcons[i]
+            const cy  = craftY + F_ROW / 2
+            const isz = 14
+            if (ico) {
+              const s  = Math.min(isz / ico.naturalWidth, isz / ico.naturalHeight)
+              const dw = ico.naturalWidth * s, dh = ico.naturalHeight * s
+              ctx.imageSmoothingEnabled = false
+              ctx.drawImage(ico, colX + (isz - dw) / 2, cy - isz / 2 + (isz - dh) / 2, dw, dh)
+              ctx.imageSmoothingEnabled = true
+            } else if (ing.id === 'cols') {
+              ctx.font = '13px serif'; ctx.fillStyle = C.muted
+              ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
+              ctx.fillText('🪙', colX, cy)
+            }
+            ctx.font = rowFont; ctx.fillStyle = C.text
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
+            const qtyStr   = `  ×${ing.qty}`
+            const qtyW     = ctx.measureText(qtyStr).width
+            const nameMaxW = colW - isz - 5 - qtyW
+            let ingName = ing.name
+            if (ctx.measureText(ingName).width > nameMaxW) {
+              while (ctx.measureText(ingName + '…').width > nameMaxW && ingName.length > 1) ingName = ingName.slice(0, -1)
+              ingName += '…'
+            }
+            ctx.fillText(ingName + qtyStr, colX + isz + 5, cy)
+            craftY += F_ROW
           }
-          ctx.fillText(ingName + qtyStr, FRAME_X + F_PADH + isz + 5, cy)
-          craftY += F_ROW
         }
       }
       frameY += crH + F_GAP
