@@ -49,7 +49,7 @@ async function dgDelete(env, id) {
 
 // ── Historique des actions réellement faites (doc.log, 60 dernières), lu dans la modération ──
 const pushLog = (doc, msg) => { (doc.log ||= []).push({ t: Date.now(), m: String(msg).slice(0, 240) }); doc.log = doc.log.slice(-60); };
-const TRIGGER_LABEL = { started: 'Bot lancé à la demande (les envois commencent dans ~1 min)', 'no-token': 'Lancement automatique indisponible (pas de jeton GitHub) : prochain passage planifié (10 min)', throttled: 'Bot déjà lancé il y a moins d\'une minute' };
+const TRIGGER_LABEL = { started: 'Bot lancé à la demande (les envois commencent dans ~20 s)', 'no-token': 'Lancement automatique indisponible (pas de jeton GitHub) : prochain passage planifié (10 min)', throttled: 'Bot déjà lancé il y a moins d\'une minute' };
 const triggerText = r => TRIGGER_LABEL[r] || ('Lancement du bot refusé par GitHub (' + r + ')');
 
 // ── Appels Discord avec le jeton du bot ──

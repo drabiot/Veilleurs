@@ -584,7 +584,7 @@ window.dgSetStatus = async (id, status) => {
       // lance le bot tout de suite (sinon : prochain passage, 10 min au plus)
       let res = '';
       try { res = (await (await fetch(WORKER_URL + '/guild/bot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: await getWorkerSecret(), action: 'trigger', guildId: id }) })).json()).result; } catch { /* prochain passage */ }
-      toast(res === 'started' ? 'Serveur validé : le bot est lancé, les envois commencent dans une minute.' : 'Serveur validé : le bot enverra au prochain passage (10 min au plus).', 'success');
+      toast(res === 'started' ? 'Serveur validé : le bot est lancé, les envois commencent dans ~20 s.' : 'Serveur validé : le bot enverra au prochain passage (10 min au plus).', 'success');
     } else toast('Statut mis à jour.', 'success');
   } catch (e) { toast('Erreur : ' + e.message, 'error'); }
   window.dgLoadGuilds();
