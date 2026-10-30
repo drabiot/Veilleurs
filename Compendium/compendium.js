@@ -181,10 +181,22 @@ function inlineLinks(str) {
   });
 }
 
-function parseText(str) {
+// Ajoute un point final à chaque ligne d'obtain, sauf si elle finit déjà par une ponctuation
+// ou si c'est une simple entrée de liste « [mob|Nom][taux] » (lien seul, suivi du badge de drop).
+function addObtainDots(str) {
+  return str.split('\n').map(l => {
+    const t = l.replace(/\s+$/, '');
+    if (!t.trim() || /[.!?…:;,]$/.test(t)) return l;
+    if (/\[\d+(?:\.\d+)?\]$/.test(t) || /^\s*(?:[-*]\s+)?\[[^\]|]+\|[^\]]*\]$/.test(t)) return l;
+    return t + '.';
+  }).join('\n');
+}
+
+function parseText(str, obtainDots) {
   if (!str) return '';
   str = resolveObtain(str);
   str = str.replace(/(Obtenable pendant l'Event )\[([^\]]+)\]/g, '$1$2'); // crochets = syntaxe de stockage, pas d'affichage
+  if (obtainDots) str = addObtainDots(str);
 
   const lines = str.split('\n');
 
@@ -1437,7 +1449,7 @@ function showItem(id, initialQuality = false) {
       <div class="item-sep"></div>
       ${renderEvolutionChain(item)}
       <div class="item-section-title">Comment obtenir cet item</div>
-      <div class="item-obtain" id="item-obtain-text">${parseText(withAutoObtain(activeData(), v.obtain))}</div>
+      <div class="item-obtain" id="item-obtain-text">${parseText(withAutoObtain(activeData(), v.obtain), true)}</div>
       ${hasRow ? `
       <div class="effects-craft-titles" id="effects-craft-titles">
         <div class="item-section-title">${currentEffects?.length ? 'Effets' : ''}</div>
@@ -1484,7 +1496,7 @@ function showItem(id, initialQuality = false) {
       const v2 = getVariant();
       loreEl.innerHTML   = parseText(v2.lore);
       loreEl.hidden      = !String(v2.lore || '').trim(); // pas de lore : pas de bloc vide
-      obtainEl.innerHTML = parseText(withAutoObtain(d2, v2.obtain));
+      obtainEl.innerHTML = parseText(withAutoObtain(d2, v2.obtain), true);
       const nameEl = document.getElementById('item-name-text');
       if (nameEl) nameEl.textContent = d2.name || item.name;
       craftWrap.innerHTML = renderCraft(getCraft()) + craftYieldHtml(d2);
