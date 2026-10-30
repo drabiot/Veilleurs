@@ -43,47 +43,52 @@ function publicItem(item, ctx) {
   return { ...item, id, obtain };
 }
 
-/** Poste l'item dans le salon : un fil par item (forum) ou un message (salon texte). */
-async function postItem(rest, channelId, item, ctx, channelInfo) {
-  const it = publicItem(item, ctx);
-  const png = await card.generateCardBuffer(it, ctx.maps, 3);
-  const name = `${it.id}.png`;
-  const content = `**${it.name}** · ${RAR[it.rarity] || it.rarity || ''}\n${WIKI}/Compendium/compendium.html#${it.id}`;
-  const icon = await card.generateIconBuffer(it, 160).catch(() => null); // texture : 1re image du message = miniature du post dans la liste du forum
-  const files = [...(icon ? [{ name: `${it.id}_texture.png`, data: icon }] : []), { name, data: png }];
-  const ch = channelInfo || await rest.get(`/channels/${channelId}`);
-  const message = { content, attachments: files.map((f, i) => ({ id: i, filename: f.name })) };
-  if (ch.type === 15 || ch.type === 16) { const t = await rest.post(`/channels/${channelId}/threads`, { body: { name: String(it.name).slice(0, 100), message }, files }); return { threadId: t.id, messageId: t.message?.id || null }; }
-  const m = await rest.post(`/channels/${channelId}/messages`, { body: message, files });
-  return { threadId: null, messageId: m.id };
+/** Poste un message de tête (texte + texture = miniature du post) puis chaque carte dans SON propre message, à la chaîne (pas de grille d'images empilées).
+ *  Forum : un fil (le message de tête en est le premier message) ; salon texte : messages à la suite. Renvoie les ids pour pouvoir tout supprimer / remplacer. */
+async function postChain(rest, channelId, ch, title, content, icon, cards) {
+  const forum = ch.type === 15 || ch.type === 16;
+  const queue = [...cards];
+  const head = icon ? [icon] : [queue.shift()]; // sans texture, la première carte ouvre le post
+  const body = (files, text) => ({ content: text, attachments: files.map((x, i) => ({ id: i, filename: x.name })) });
+  let threadId = null; const ids = [];
+  if (forum) {
+    const t = await rest.post(`/channels/${channelId}/threads`, { body: { name: String(title).slice(0, 100), message: body(head, content) }, files: head });
+    threadId = t.id; ids.push(t.message?.id || null);
+  } else {
+    const m = await rest.post(`/channels/${channelId}/messages`, { body: body(head, content), files: head });
+    ids.push(m.id);
+  }
+  const target = forum ? threadId : channelId;
+  for (const card1 of queue) {
+    const m = await rest.post(`/channels/${target}/messages`, { body: body([card1], ''), files: [card1] });
+    ids.push(m.id);
+  }
+  return { threadId, messageId: ids[0], messageIds: ids.filter(Boolean) };
 }
 
-/** Poste tous les items d'un set dans UN post : fil de forum (ou message) au nom du set, une carte par item (10 images par message, la suite en messages suivants). */
+/** Poste l'item dans le salon : un fil par item (forum) ou des messages (salon texte). */
+async function postItem(rest, channelId, item, ctx, channelInfo) {
+  const it = publicItem(item, ctx);
+  const ch = channelInfo || await rest.get(`/channels/${channelId}`);
+  const cardFile = { name: `${it.id}.png`, data: await card.generateCardBuffer(it, ctx.maps, 3) };
+  const icon = await card.generateIconBuffer(it, 160).catch(() => null); // texture : 1re image du fil = miniature dans la liste du forum
+  const content = `**${it.name}** · ${RAR[it.rarity] || it.rarity || ''}\n[Voir sur le wiki](<${WIKI}/Compendium/compendium.html#${it.id}>)`;
+  return postChain(rest, channelId, ch, it.name, content, icon && { name: `${it.id}_texture.png`, data: icon }, [cardFile]);
+}
+
+/** Poste tous les items d'un set dans UN post au nom du set : liste de liens nommés, texture du premier item en miniature, puis une carte par message. */
 async function postSet(rest, channelId, setName, items, ctx, channelInfo) {
   const ch = channelInfo || await rest.get(`/channels/${channelId}`);
   const sorted = [...items].sort((a, b) => String(a.name).localeCompare(String(b.name), 'fr'));
   const links = sorted.map(i => `[${i.name}](<${WIKI}/Compendium/compendium.html#${i.id ?? i._id}>)`).join('\n');
-  const files = [];
+  const cards = [];
   for (const item of sorted) {
     const it = publicItem(item, ctx);
-    files.push({ name: `${it.id}.png`, data: await card.generateCardBuffer(it, ctx.maps, 3) });
+    cards.push({ name: `${it.id}.png`, data: await card.generateCardBuffer(it, ctx.maps, 3) });
   }
-  const icon = await card.generateIconBuffer(publicItem(sorted[0], ctx), 160).catch(() => null);
-  if (icon) files.unshift({ name: `${sorted[0].id ?? sorted[0]._id}_texture.png`, data: icon }); // 1re image du message = miniature du post
-  const chunks = []; for (let i = 0; i < files.length; i += 10) chunks.push(files.slice(i, i + 10));
-  const msgBody = (chunk, first) => ({ content: first ? `**${setName}**\n${links}`.slice(0, 2000) : '', attachments: chunk.map((f, i) => ({ id: i, filename: f.name })) });
-  const forum = ch.type === 15 || ch.type === 16;
-  let threadId = null; const messageIds = [];
-  for (const [n, chunk] of chunks.entries()) {
-    if (n === 0 && forum) {
-      const t = await rest.post(`/channels/${channelId}/threads`, { body: { name: String(setName).slice(0, 100), message: msgBody(chunk, true) }, files: chunk });
-      threadId = t.id; messageIds.push(t.message?.id || null);
-    } else {
-      const m = await rest.post(`/channels/${forum ? threadId : channelId}/messages`, { body: msgBody(chunk, n === 0), files: chunk });
-      messageIds.push(m.id);
-    }
-  }
-  return { threadId, messageId: messageIds[0], messageIds: messageIds.filter(Boolean) };
+  const first = publicItem(sorted[0], ctx);
+  const icon = await card.generateIconBuffer(first, 160).catch(() => null);
+  return postChain(rest, channelId, ch, setName, `**${setName}**\n${links}`.slice(0, 2000), icon && { name: `${first.id ?? first._id}_texture.png`, data: icon }, cards);
 }
 
 module.exports = { postSet, WORKER, sync, rows, readConfig, buildContext, publicItem, postItem };
