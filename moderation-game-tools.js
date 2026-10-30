@@ -569,6 +569,7 @@ window.dgToggleLog = async (id) => {
   const fmt = t => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const lines = (d.log || []).slice().reverse().map(x => `<div><span style="color:var(--muted);">${fmt(x.t)}</span> ${escHtml(x.m)}</div>`).join('') || '<div style="color:var(--muted);">Aucune action enregistrée pour l\'instant.</div>';
   row.insertAdjacentHTML('afterend', `<div id="dg-log-${escHtml(id)}" style="margin:-2px 0 8px 12px;padding:8px 12px;font-size:11px;line-height:1.7;background:var(--surface2);border:1px solid var(--border);border-radius:8px;max-height:260px;overflow:auto;">
+    ${(d.posted || 0) + (d.pending || 0) ? (() => { const tot = (d.posted || 0) + (d.pending || 0), pct = Math.round(100 * (d.posted || 0) / tot); return `<div style="margin-bottom:8px;"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span>Envoi : ${d.posted || 0} / ${tot} posts</span><span>${pct} %</span></div><div style="height:8px;background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;"><i style="display:block;height:100%;width:${pct}%;background:var(--accent);"></i></div></div>`; })() : ''}
     ${d.lastError ? `<div style="color:var(--danger);">Dernière erreur : ${escHtml(d.lastError)}</div>` : ''}${lines}</div>`);
 };
 window.dgAck = async (id) => {

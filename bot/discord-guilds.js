@@ -161,6 +161,7 @@ const setLabel = (ctx, id) => { const p = ctx.maps.panoplieData?.[id]; return p?
 async function guildPass(rest, g, st, getCtx) {
   const cfg = g;
   const logs = []; // entrées d'historique visibles dans la modération
+  const badCh = new Set(); // salons introuvables (supprimés sur Discord)
   for (const chId of Object.keys(st.locks)) { try { await unlock(rest, st, chId); } catch { delete st.locks[chId]; } } // verrou resté après un plantage
   if (g.purge) {
     const n = await purgePosts(rest, st);
@@ -237,6 +238,7 @@ async function guildPass(rest, g, st, getCtx) {
             await sleep(POST_DELAY);
           } catch (e) {
             error = `${b.it.name} : ${e.message}`;
+            if (e.code === 10003) badCh.add(b.ch.id);
             log(`${g.guildName} : échec ${error}`);
             if ([10003, 50001, 50013].includes(e.code) || [403, 404].includes(e.status)) break; // salon supprimé / droits retirés : inutile d'insister ce passage
           }
@@ -255,6 +257,7 @@ async function guildPass(rest, g, st, getCtx) {
   if (error && error !== g.lastError) logs.push(`Bot : erreur — ${error}`);
   if (gone.length) logs.push(`Bot : ${gone.length} post(s) supprimé(s) (items retirés du wiki)`);
   if (logs.length) patch.log = logs;
+  if (badCh.size) patch.badChannels = [...badCh];
   if (error || g.lastError) patch.lastError = error;
   if (sent || error || logs.length || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
   if (sent) log(`${g.guildName} : ${sent} post(s) envoyé(s), ${pending} restant(s).`);

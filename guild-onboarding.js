@@ -407,6 +407,13 @@ export async function handleGuildBot(request, env, deps) {
     if (!doc) return json({ ok: true, gone: true });
     for (const k of REPORT_KEYS) if (body.patch && k in body.patch) doc[k] = body.patch[k];
     if (Array.isArray(body.patch?.log)) body.patch.log.slice(0, 10).forEach(m => pushLog(doc, m));
+    // salon supprimé sur Discord : en mode « créé par le bot », on oublie son id pour que la page propose de le recréer
+    for (const cid of (Array.isArray(body.patch?.badChannels) ? body.patch.badChannels : []).slice(0, 20)) {
+      const c = (doc.channels || []).find(x => x.id === cid);
+      if (!c) continue;
+      pushLog(doc, `Salon « ${c.name || cid} » introuvable sur Discord (supprimé ?)` + (doc.mode === 'create' ? ' : à recréer avec « Créer les salons manquants » sur la page de statut' : ' : choisis un autre salon dans « Modifier les réglages »'));
+      if (doc.mode === 'create') { c.id = ''; c.created = false; }
+    }
     if (typeof doc.lastError === 'string') doc.lastError = doc.lastError.slice(0, 300);
     await dgPut(env, id, doc);
     return json({ ok: true });
