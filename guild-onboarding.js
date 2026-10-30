@@ -47,11 +47,16 @@ async function dgDelete(env, id) {
   ]);
 }
 
+// ── Historique des actions réellement faites (doc.log, 60 dernières), lu dans la modération ──
+const pushLog = (doc, msg) => { (doc.log ||= []).push({ t: Date.now(), m: String(msg).slice(0, 240) }); doc.log = doc.log.slice(-60); };
+const TRIGGER_LABEL = { started: 'Bot lancé à la demande (les envois commencent dans ~1 min)', 'no-token': 'Lancement automatique indisponible (pas de jeton GitHub) : prochain passage planifié (10 min)', throttled: 'Bot déjà lancé il y a moins d\'une minute' };
+const triggerText = r => TRIGGER_LABEL[r] || ('Lancement du bot refusé par GitHub (' + r + ')');
+
 // ── Appels Discord avec le jeton du bot ──
 async function dc(env, method, path, body) {
   for (let attempt = 0; attempt < 2; attempt++) {
     const r = await fetch(API + path, {
-      method, headers: { Authorization: `Bot ${env.BOT_TOKEN}`, 'Content-Type': 'application/json' },
+      method, headers: { Authorization: `Bot ${env.BOT_TOKEN}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) }, // Discord refuse un DELETE qui annonce du JSON sans corps
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (r.status === 429 && attempt === 0) { // limite de débit : une seule attente courte
@@ -210,6 +215,7 @@ export async function handleGuildApi(request, env, deps) {
     if (!doc) { await dc(env, 'DELETE', `/users/@me/guilds/${guildId}`); _botGuilds = null; return json({ ok: true, done: true }); }
     if (doc.status !== 'removing') { doc.status = 'removing'; doc.removal = { deleteChannels: !!body.deleteChannels, deletePosts: !!body.deletePosts }; }
     doc.updatedAt = Date.now();
+    if (!doc.log?.some(x => x.m.startsWith('Désinstallation demandée'))) pushLog(doc, `Désinstallation demandée (salons créés : ${doc.removal?.deleteChannels ? 'supprimés' : 'conservés'}, posts : ${doc.removal?.deletePosts || doc.removal?.deleteChannels ? 'supprimés' : 'conservés'})`);
     const rm = doc.removal || {};
     let budget = 40;
     const gone = r => r.ok || [404, 403].includes(r.status); // déjà supprimé / plus accessible : on oublie
@@ -280,12 +286,13 @@ export async function handleGuildApi(request, env, deps) {
     if (cfg.mode === 'existing' && !cfg.channels.some(x => x.id)) return json({ error: 'Choisis au moins un salon existant.' }, 400);
     if (cfg.mode === 'create' && !cfg.channels.length) return json({ error: 'Le plan de salons est vide.' }, 400);
     if (cfg.access === 'roles' && !cfg.roleIds.length) return json({ error: 'Choisis au moins un rôle (ou un autre accès).' }, 400);
-    const now = Date.now();
+    const now = Date.now(), isNew = !doc;
     doc = { ...(doc || {}), ...cfg, guildId, guildName, ownerId: doc?.ownerId || sess.user.id, ownerName: doc?.ownerName || sess.user.name,
       status: doc?.status || 'pending', paused: doc ? !!doc.paused : false, createdAt: doc?.createdAt || now, updatedAt: now,
       createdCategories: doc?.createdCategories || [] };
+    pushLog(doc, isNew ? `Inscription enregistrée par ${sess.user.name} (${cfg.channels.length} salon(s), ${cfg.mode === 'create' ? 'à créer' : 'existants'}) : en attente de validation` : `Réglages modifiés par ${sess.user.name} (${cfg.channels.length} salon(s))`);
+    if (doc.status === 'approved' && !doc.paused) pushLog(doc, triggerText(await triggerBot(env)));
     await dgPut(env, guildId, doc);
-    if (doc.status === 'approved' && !doc.paused) await triggerBot(env);
     return json({ ok: true, config: doc });
   }
 
@@ -293,13 +300,15 @@ export async function handleGuildApi(request, env, deps) {
 
   if (action === 'set_paused') {
     doc.paused = !!body.paused; doc.updatedAt = Date.now();
+    pushLog(doc, doc.paused ? 'Envoi mis en pause par le chef de serveur' : 'Envoi repris par le chef de serveur');
+    if (doc.status === 'approved' && !doc.paused) pushLog(doc, triggerText(await triggerBot(env)));
     await dgPut(env, guildId, doc);
-    if (doc.status === 'approved' && !doc.paused) await triggerBot(env);
     return json({ ok: true, config: doc });
   }
 
   if (action === 'purge') { // supprime tous les posts du bot (fait par le processus Node) ; envoi mis en pause pour ne pas tout renvoyer
     doc.purge = true; doc.paused = true; doc.updatedAt = Date.now();
+    pushLog(doc, 'Suppression de tous les posts demandée (envoi mis en pause) : faite au prochain passage du bot');
     await dgPut(env, guildId, doc);
     return json({ ok: true, config: doc });
   }
@@ -340,8 +349,9 @@ export async function handleGuildApi(request, env, deps) {
       all.push(r.data); c.id = r.data.id; c.created = true; madeNow++;
     }
     doc.updatedAt = Date.now();
-    await dgPut(env, guildId, doc);
     const remaining = doc.channels.filter(c => c.name && !c.id).length;
+    pushLog(doc, failure ? `Création de salons : échec (${failure})` : `Création de salons : ${madeNow} créé(s) sur Discord, ${remaining} restant(s)`);
+    await dgPut(env, guildId, doc);
     return json({ ok: !failure, error: failure ? failure + (/community|forum/i.test(failure) ? ' (les forums demandent le mode Communauté : choisis « salons texte »)' : ' (le bot a-t-il « Gérer les salons » ?)') : undefined, created: madeNow, remaining, config: doc });
   }
 
@@ -358,7 +368,12 @@ export async function handleGuildBot(request, env, deps) {
   if (!env.ADMIN_SECRET || body.secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
   if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
 
-  if (body.action === 'trigger') return json({ ok: true, result: await triggerBot(env) });
+  if (body.action === 'trigger') {
+    const result = await triggerBot(env);
+    const gid = String(body.guildId || '');
+    if (SNOW.test(gid)) { const d = await dgGet(env, gid); if (d) { pushLog(d, triggerText(result)); await dgPut(env, gid, d); } }
+    return json({ ok: true, result });
+  }
   if (body.action === 'list') {
     const rows = (await env.DB.prepare("SELECT id, data FROM docs WHERE col = 'discord_guilds' AND deleted = 0").all()).results;
     return json({ guilds: rows.map(r => ({ id: r.id, ...jparse(r.data) })) });
@@ -386,6 +401,7 @@ export async function handleGuildBot(request, env, deps) {
     const doc = await dgGet(env, id);
     if (!doc) return json({ ok: true, gone: true });
     for (const k of REPORT_KEYS) if (body.patch && k in body.patch) doc[k] = body.patch[k];
+    if (Array.isArray(body.patch?.log)) body.patch.log.slice(0, 10).forEach(m => pushLog(doc, m));
     if (typeof doc.lastError === 'string') doc.lastError = doc.lastError.slice(0, 300);
     await dgPut(env, id, doc);
     return json({ ok: true });

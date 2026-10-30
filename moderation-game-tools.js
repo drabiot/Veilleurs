@@ -541,7 +541,7 @@ window.dgLoadGuilds = async () => {
     el.innerHTML = `<div style="font-size:15px;font-weight:700;margin-bottom:4px;">🌐 Serveurs inscrits (${list.length}) <span style="font-size:11px;color:var(--muted);font-weight:400;">· au-delà de 100 serveurs Discord exige la vérification du bot</span></div>
       <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">Ils s'inscrivent eux-mêmes sur la page <a href="Discord/discord.html" target="_blank" style="color:var(--accent);">Discord/discord.html</a>. Aucun envoi avant validation. Le chef de serveur garde sa pause / sa désinstallation.</p>
       ${list.map(g => { const [lbl, col] = _DG_STATUS[g.status] || [g.status, 'var(--muted)']; const id = g._id;
-        return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;">
+        return `<div data-row="${escHtml(id)}" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 12px;margin-bottom:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;">
           <strong style="min-width:180px;">${escHtml(g.guildName || id)}</strong><span style="color:${col};">${lbl}${g.paused ? ' · en pause (chef)' : ''}</span>
           <span style="color:var(--muted);">par ${escHtml(g.ownerName || '?')} · ${g.channels?.length || 0} salon(s) · ${g.mode === 'create' ? 'salons créés' : 'salons existants'} · ${g.posted || 0} post(s)${g.pending ? ' (+' + g.pending + ' en attente)' : ''}</span>
           ${g.lastError ? `<span style="color:var(--danger);" title="${escHtml(g.lastError)}">⚠️ erreur</span>` : ''}
@@ -549,18 +549,33 @@ window.dgLoadGuilds = async () => {
           ${g.status !== 'approved' && g.status !== 'removing' ? b(['✅ Valider', id], `dgSetStatus(this.dataset.id,'approved')`) : ''}
           ${g.status === 'pending' ? b(['⛔ Refuser', id], `dgSetStatus(this.dataset.id,'refused')`, 'color:var(--danger);border-color:var(--danger);') : ''}
           ${g.status === 'approved' ? b(['⏸ Suspendre', id], `dgSetStatus(this.dataset.id,'suspended')`) : ''}
+          ${b(['📜 Historique', id], 'dgToggleLog(this.dataset.id)')}
           ${g.status === 'removing' ? b(['🧽 Effacer la fiche', id], 'dgForgetGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);') : b(['🗑 Retirer', id], 'dgRemoveGuild(this.dataset.id)', 'color:var(--danger);border-color:var(--danger);')}</span></div>`; }).join('') || '<div style="color:var(--muted);font-size:12px;">Aucun serveur inscrit.</div>'}`;
   } catch (e) { el.innerHTML = `<div style="color:var(--danger);font-size:12px;">Serveurs inscrits illisibles : ${escHtml(e.message)}</div>`; }
 };
+// Historique d'un serveur : actions réellement faites (worker, bot, modération)
+window.dgToggleLog = async (id) => {
+  const box = document.getElementById('dg-log-' + id);
+  if (box) { box.remove(); return; }
+  const row = document.querySelector(`[data-row="${id}"]`);
+  if (!row) return;
+  const s = await getDoc(doc(db, 'discord_guilds', id));
+  const d = s.exists() ? s.data() : {};
+  const fmt = t => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const lines = (d.log || []).slice().reverse().map(x => `<div><span style="color:var(--muted);">${fmt(x.t)}</span> ${escHtml(x.m)}</div>`).join('') || '<div style="color:var(--muted);">Aucune action enregistrée pour l\'instant.</div>';
+  row.insertAdjacentHTML('afterend', `<div id="dg-log-${escHtml(id)}" style="margin:-2px 0 8px 12px;padding:8px 12px;font-size:11px;line-height:1.7;background:var(--surface2);border:1px solid var(--border);border-radius:8px;max-height:260px;overflow:auto;">
+    ${d.lastError ? `<div style="color:var(--danger);">Dernière erreur : ${escHtml(d.lastError)}</div>` : ''}${lines}</div>`);
+};
+const _dgLogAdd = (d, m) => ({ ...d, log: [...(d.log || []), { t: Date.now(), m }].slice(-60) });
 window.dgSetStatus = async (id, status) => {
   try {
     const s = await getDoc(doc(db, 'discord_guilds', id));
     if (!s.exists()) throw new Error('serveur introuvable');
-    await setDoc(doc(db, 'discord_guilds', id), { ...s.data(), status });
+    await setDoc(doc(db, 'discord_guilds', id), _dgLogAdd({ ...s.data(), status }, { approved: 'Validé par la modération', refused: 'Refusé par la modération', suspended: 'Suspendu par la modération' }[status] || ('Statut : ' + status)));
     if (status === 'approved') {
       // lance le bot tout de suite (sinon : prochain passage, 10 min au plus)
       let res = '';
-      try { res = (await (await fetch(WORKER_URL + '/guild/bot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: await getWorkerSecret(), action: 'trigger' }) })).json()).result; } catch { /* prochain passage */ }
+      try { res = (await (await fetch(WORKER_URL + '/guild/bot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: await getWorkerSecret(), action: 'trigger', guildId: id }) })).json()).result; } catch { /* prochain passage */ }
       toast(res === 'started' ? 'Serveur validé : le bot est lancé, les envois commencent dans une minute.' : 'Serveur validé : le bot enverra au prochain passage (10 min au plus).', 'success');
     } else toast('Statut mis à jour.', 'success');
   } catch (e) { toast('Erreur : ' + e.message, 'error'); }
@@ -577,7 +592,7 @@ window.dgRemoveGuild = async (id) => {
   if (!await modal.confirm('Retirer ce serveur ?\n\nLe bot supprime ses posts, quitte le serveur et la fiche est effacée au prochain passage du bot.')) return;
   try {
     const s = await getDoc(doc(db, 'discord_guilds', id));
-    if (s.exists()) await setDoc(doc(db, 'discord_guilds', id), { ...s.data(), status: 'removing', removal: { deleteChannels: false, deletePosts: true } });
+    if (s.exists()) await setDoc(doc(db, 'discord_guilds', id), _dgLogAdd({ ...s.data(), status: 'removing', removal: { deleteChannels: false, deletePosts: true } }, 'Retrait demandé par la modération (posts supprimés, le bot quitte le serveur)'));
     toast('Retrait demandé.', 'success');
   } catch (e) { toast('Erreur : ' + e.message, 'error'); }
   window.dgLoadGuilds();

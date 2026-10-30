@@ -157,11 +157,12 @@ const setLabel = (ctx, id) => { const p = ctx.maps.panoplieData?.[id]; return p?
 // ── Un passage sur un serveur ──
 async function guildPass(rest, g, st, getCtx) {
   const cfg = g;
+  const logs = []; // entrées d'historique visibles dans la modération
   for (const chId of Object.keys(st.locks)) { try { await unlock(rest, st, chId); } catch { delete st.locks[chId]; } } // verrou resté après un plantage
   if (g.purge) {
     const n = await purgePosts(rest, st);
     log(`${g.guildName} : ${n} post(s) supprimé(s) sur demande.`);
-    await workerBot('report', { guildId: g.id, patch: { purge: false, posted: 0, pending: 0, lastError: '' } });
+    await workerBot('report', { guildId: g.id, patch: { purge: false, posted: 0, pending: 0, lastError: '', log: [`Bot : ${n} post(s) supprimé(s) sur demande`] } });
     return;
   }
   if (g.status !== 'approved' || g.paused || !items.size) return;
@@ -173,8 +174,13 @@ async function guildPass(rest, g, st, getCtx) {
     return; // le repost se fait au passage suivant (lecture complète)
   }
   if (!st.baselined) { // « seulement les nouveaux » : les items déjà dans le wiki sont notés comme vus
-    if (cfg.initial !== 'all') for (const [id, it] of items) if (route(cfg, it)) st.seen[id] = 1;
+    const matching = [...items.values()].filter(it => route(cfg, it));
+    const concerned = [...items.values()].filter(it => it.category && it.palier != null);
+    if (cfg.initial !== 'all') for (const it of matching) st.seen[it._id] = 1;
     st.baselined = true;
+    logs.push(`Bot : première lecture du wiki : ${items.size} items, ${matching.length} correspondent à tes salons et filtres` + (cfg.initial !== 'all'
+      ? ` — réglage « seulement les nouveaux » : ils sont notés comme déjà vus, rien n'est envoyé maintenant (seuls les items ajoutés plus tard le seront)`
+      : ` — envoi de tous : ${matching.length} post(s) à faire`) + (matching.length === 0 && concerned.length ? ' — AUCUN item ne correspond : vérifie les filtres et les salons' : ''));
   }
   // Lecture incrémentale + sets groupés : on complète avec les autres items des sets modifiés (tous les items viennent avec le contexte des cartes)
   let map = items;
@@ -223,9 +229,12 @@ async function guildPass(rest, g, st, getCtx) {
   st.pending = pending; st.cfgAt = g.updatedAt || 0;
   if (pending === 0 && !error) st.rev = fetched.rev; // sinon : lecture complète au prochain passage
   const patch = { posted: Object.keys(st.posts).length, pending, initialDone: pending === 0 };
-  if (sent) patch.lastSentAt = Date.now();
+  if (sent) { patch.lastSentAt = Date.now(); logs.push(`Bot : ${sent} post(s) envoyé(s), ${pending} restant(s)`); }
+  if (error && error !== g.lastError) logs.push(`Bot : erreur — ${error}`);
+  if (gone.length) logs.push(`Bot : ${gone.length} post(s) supprimé(s) (items retirés du wiki)`);
+  if (logs.length) patch.log = logs;
   if (error || g.lastError) patch.lastError = error;
-  if (sent || error || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
+  if (sent || error || logs.length || g.lastError || g.posted !== patch.posted || g.pending !== pending) await workerBot('report', { guildId: g.id, patch });
   if (sent) log(`${g.guildName} : ${sent} post(s) envoyé(s), ${pending} restant(s).`);
 }
 

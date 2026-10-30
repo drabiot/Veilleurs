@@ -168,7 +168,7 @@ export default {
       }
 
       if (action === 'leave_guild') { // le bot quitte le serveur (irréversible : il faut le réinviter pour revenir)
-        const r = await fetch(`https://discord.com/api/v10/users/@me/guilds/${body.guildId}`, { method: 'DELETE', headers: botHdr });
+        const r = await fetch(`https://discord.com/api/v10/users/@me/guilds/${body.guildId}`, { method: 'DELETE', headers: { 'Authorization': `Bot ${env.BOT_TOKEN}` } }); // pas de Content-Type sans corps (Discord répond « invalid JSON »)
         return r.ok ? json({ status: r.status }) : json(await r.json().catch(() => ({})), r.status);
       }
 
@@ -198,7 +198,7 @@ export default {
       }
 
       if (action === 'delete_overwrite') {
-        const r = await fetch(`https://discord.com/api/v10/channels/${body.channelId}/permissions/${body.overwriteId}`, { method: 'DELETE', headers: botHdr });
+        const r = await fetch(`https://discord.com/api/v10/channels/${body.channelId}/permissions/${body.overwriteId}`, { method: 'DELETE', headers: { 'Authorization': `Bot ${env.BOT_TOKEN}` } });
         return r.ok ? json({ status: r.status }) : json(await r.json().catch(() => ({})), r.status);
       }
 
