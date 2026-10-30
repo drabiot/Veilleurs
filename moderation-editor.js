@@ -835,7 +835,6 @@ window.editorGoBack = function() {
   if (_ed.origin === 'region-orphan')  { showRegionOrphans(); return; }
   if (_ed.origin === 'mob-orphan')     { showMobOrphans();    return; }
   if (_ed.origin === 'quest-orphan')  { showQuestOrphans();  return; }
-  if (_ed.origin === 'migration')       { showMigration();       return; }
   if (_ed.origin === 'completion')      { showCompletion(); return; }
   if (_ed.origin === 'allpins')         { showMapPanel(); switchMapTab('allpins'); return; }
   if (_ed.origin === 'data-all')        { showDataAll();        return; }

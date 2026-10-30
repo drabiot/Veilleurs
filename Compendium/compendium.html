@@ -127,45 +127,6 @@
     import { collection, getDocs, getDoc, doc }
       from '../d1db.js';
 
-    let _sensitiveLoaded = false;
-
-    async function _canViewSensitiveItems(baseRole) {
-      return false; // système « sensible » supprimé
-      let minRole = 'contributeur';
-      try {
-        const snap = await getDoc(doc(db, 'config', 'permissions'));
-        if (snap.exists()) minRole = snap.data().minRole?.view_items_secret ?? minRole;
-      } catch {}
-      return hasRole(baseRole, minRole);
-    }
-
-    async function _loadSensitiveItems() {
-      return; // système « sensible » supprimé
-      if (_sensitiveLoaded) return;
-      _sensitiveLoaded = true;
-      try {
-        // loadCollection : cache localStorage 1h (invalidé par wiki_version), évite de relire
-        // les 2 collections complètes à chaque visite des comptes contributeur+.
-        const [hiddenDocs, secretDocs] = await Promise.all([
-          loadCollection(COL.itemsHidden),
-          loadCollection(COL.itemsSecret),
-        ]);
-        const secretById = new Map(secretDocs.map(d => [d._id, d]));
-        let added = false;
-        const existing = new Set(ITEMS.map(i => String(i.id || i._id)));
-        for (const hidden of hiddenDocs) {
-          const itemId = String(hidden.id || '');
-          const secret = itemId ? (secretById.get(itemId) || {}) : {};
-          const item = { ...hidden, ...secret, _id: hidden._id, sensible: true };
-          if (!existing.has(String(hidden.id || hidden._id))) {
-            ITEMS.push(item);
-            added = true;
-          }
-        }
-        if (added) window._pageInit?.();
-      } catch (e) { console.warn('[Compendium] items sensibles:', e); }
-    }
-
     try {
       await store.load(['items', 'mobs', 'pnj', 'panoplies']);
       store.populateGlobals();
@@ -174,10 +135,6 @@
     }
     window._pageInit?.();
 
-    document.addEventListener('vcl:auth-ready', async e => {
-      if (await _canViewSensitiveItems(e.detail.baseRole)) await _loadSensitiveItems();
-    }, { once: true });
-    if (window._vcl_base_role && await _canViewSensitiveItems(window._vcl_base_role)) await _loadSensitiveItems();
   </script>
   <script type="module" src="../auth-widget.js"></script>
   <script src="../report-widget.js"></script>

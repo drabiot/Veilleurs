@@ -301,7 +301,6 @@ const HASH_PANELS = {
   'leaderboard':    () => showLeaderboard(),
   'permissions':    () => showPermissions(),
   'discord-roles':  () => showDiscordRoles(),
-  'migration':        () => showMigration(),
   'completion':       () => showCompletion(),
   'creator-validation': () => showCreatorValidation(),
   'obtain-legacy':     () => showObtainLegacy(),
@@ -438,9 +437,6 @@ const NAV_HUBS = [
         { hash: 'region-order',   label: '📍 Régions',   btn: 'btn-region-order',   panel: 'region-order-panel',   fn: () => showRegionOrder() },
         { hash: 'quest-order',    label: '📜 Quêtes',    btn: 'btn-quest-order',    panel: 'quest-order-panel',    fn: () => showQuestOrder() },
         { hash: 'panoplie-order', label: '🔗 Panoplies', btn: 'btn-panoplie-order', panel: 'panoplie-order-panel', fn: () => showPanoplieOrder() },
-      ]},
-      { label: 'Visibilité', tabs: [
-        { hash: 'migration', label: '🔒 Sensible', btn: 'btn-migration', panel: 'migration-panel', fn: () => showMigration() },
       ]},
       { label: 'Source externe', tabs: [
         { hash: 'api-items', label: '🔌 API', btn: 'btn-api-items', panel: 'api-items-panel', fn: () => showApiItems() },
@@ -640,7 +636,7 @@ const _edCache = { regions: null, sets: null };
 const _shared = {};
 const _orderData = k => _shared[k]?.data ?? [];
 
-_lazyPanel(() => import('./moderation-editor.js?v=df351add'), ['cpSvDown', 'cpHueDown', 'cpHexInput', 'cpRgbInput', 'edPickPreset', 'edSwitchTab', 'edAddGenField', 'edRenameField', 'edDelGenRow', 'edOpenRegions', 'edCloseRegions', 'edFilterRegions', 'edSelectRegion', 'showEditor', 'editorGoBack', 'saveEditor', 'deleteCurrentEntry']);
+_lazyPanel(() => import('./moderation-editor.js?v=7d94172e'), ['cpSvDown', 'cpHueDown', 'cpHexInput', 'cpRgbInput', 'edPickPreset', 'edSwitchTab', 'edAddGenField', 'edRenameField', 'edDelGenRow', 'edOpenRegions', 'edCloseRegions', 'edFilterRegions', 'edSelectRegion', 'showEditor', 'editorGoBack', 'saveEditor', 'deleteCurrentEntry']);
 
 
 
@@ -768,11 +764,10 @@ _lazyPanel(() => import('./moderation-users.js?v=e7d486e9'), ['showUsersPanel', 
 _lazyPanel(() => import('./moderation-leaderboard.js?v=6ffaeb75'), ['showLeaderboard', 'loadLeaderboard', 'resetHomeLeaderboard', 'undoHomeLeaderboardReset', 'showLeaderboardUser', 'openLbMigrateDialog', 'closeLbMigrateDialog', 'lbMigrateSearchUsers', 'confirmLbMigrate']);
 
 
-_lazyPanel(() => import('./moderation-sensible.js?v=2394bf23'), ['sensReload', 'sensEditItem', 'sensEditMob', 'sensEditPnj', 'sensFilterItemsPublic', 'sensFilterMobsPublic', 'sensItemToSensible', 'sensItemToPublic', 'sensMobToSensible', 'sensMobToPublic', 'sensFilterPnjPublic', 'sensPnjToSensible', 'sensPnjToPublic']);
 
 _lazyPanel(() => import('./moderation-audit.js?v=24907cd5'), ['showAuditLog', 'loadAuditLog', 'renderAuditLog', 'loadAuditLogMore']);
 
-_lazyPanel(() => import('./moderation-stats.js?v=4d38d6b4'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques', 'showMigration', 'sensRunKeyMigration']);
+_lazyPanel(() => import('./moderation-stats.js?v=de7e5b96'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques']);
 
 
 _lazyPanel(() => import('./moderation-tags.js?v=922eadc4'), ['showTagsPanel', 'updateTagRuleValueOptions', 'loadTagRules', 'addTagRule', 'deleteTagRule', 'seedDefaultTagRules', 'applyTagRules']);

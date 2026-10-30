@@ -503,7 +503,6 @@
       } catch(e) { console.warn('[Atelier] ?preview:', e); }
     }
 
-    let _secretLoaded = false;
     // Titres (config/titres, gérés dans Modération > Titres) : chaque titre donne des stats au build
     (async function loadTitres() {
       try {
@@ -513,47 +512,6 @@
       window.dispatchEvent(new Event('vcl:titres'));
     })();
 
-    async function _canViewSecretItems(baseRole) {
-      return false; // système « sensible » supprimé
-      let minRole = 'contributeur';
-      try {
-        const snap = await getDoc(doc(db, 'config', 'permissions'));
-        if (snap.exists()) minRole = snap.data().minRole?.view_items_secret ?? minRole;
-      } catch {}
-      return hasRole(baseRole, minRole);
-    }
-    async function _loadSecretItems() {
-      return; // système « sensible » supprimé
-      if (_secretLoaded) return;
-      _secretLoaded = true;
-      try {
-        const snap = await getDocs(collection(db, COL.itemsHidden));
-        const existing = new Set(ITEMS.map(i => i.id || i._id));
-        window._hiddenItemIds = window._hiddenItemIds || new Set();
-        let added = false;
-        for (const d of snap.docs) {
-          const item = desanitizeFromFirestore({ _id: d.id, ...d.data() });
-          if (!existing.has(item.id || item._id)) {
-            if (!item.images?.length && !item.image && !item.img && window._atelierSensibleImg) {
-              const p = window._atelierSensibleImg(item.category || item.cat, item.id || item._id, item.palier, item.event);
-              if (p) { item.img = p; item.images = [p]; }
-            }
-            ITEMS.push(item);
-            window._hiddenItemIds.add(item.id || item._id);
-            added = true;
-          }
-        }
-        if (added) window._atelierRefreshPicker?.();
-      } catch (e) { console.warn('[Atelier] items sensibles:', e); }
-    }
-    document.addEventListener('vcl:auth-ready', async e => {
-      window._canSeeSensibleItems = await _canViewSecretItems(e.detail.baseRole);
-      if (window._canSeeSensibleItems) await _loadSecretItems();
-    }, { once: true });
-    if (window._vcl_base_role) {
-      window._canSeeSensibleItems = await _canViewSecretItems(window._vcl_base_role);
-      if (window._canSeeSensibleItems) await _loadSecretItems();
-    }
   </script>
   <script type="module" src="../auth-widget.js"></script>
   <script src="../report-widget.js"></script>

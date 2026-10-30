@@ -14,6 +14,9 @@ const ARCHIVE = { id: '-1', label: 'Archive' };
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const slug = n => String(n || '').trim().replace(/\s+/g, '-').replace(/[\\/#@:*?"<>|`\u0000-\u001f]/g, '').slice(0, 100);
+// Traduction (i18n.js) : la clé est le texte français, voir i18n/en.json. Sans i18n.js (ou en français) le texte reste tel quel.
+const T = (s, v) => (window.VCL_I18N ? window.VCL_I18N.t(s, v) : (v ? s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '') : s));
+const catName = k => T((CATS.find(x => x[0] === k) || [0, k])[1]);
 const has = (l, v) => (l || []).map(String).includes(String(v));
 const toggle = (l, v) => (has(l, v) ? l.filter(x => String(x) !== String(v)) : [...l, String(v)]);
 
@@ -63,7 +66,7 @@ async function api(action, extra = {}) {
   const r = await fetch(WORKER + '/guild/api', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session: S.session, action, ...extra }) });
   const j = await r.json().catch(() => ({}));
   if (j.expired) { sessionStorage.removeItem(SESSION_KEY); S.session = ''; S.step = 'login'; render(); }
-  if (!r.ok) throw new Error(j.error === 'Action inconnue' ? "Le serveur du wiki n'est pas à jour : cette fonction demande un redéploiement du worker (npx wrangler deploy)." : (j.error || ('Erreur ' + r.status)));
+  if (!r.ok) { const er = new Error(T(j.error === 'Action inconnue' ? "Le serveur du wiki n'est pas à jour : cette fonction demande un redéploiement du worker (npx wrangler deploy)." : (j.error || ('Erreur ' + r.status)))); er.removing = !!j.removing; throw er; }
   return j;
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -103,6 +106,7 @@ async function loadCombos() {
   } catch { S.combos = CATS.flatMap(c => ['1', '2', '3', 'event', 'worldboss'].map(p => [c[0], p])); S.itemCount = null; S.counts = {}; }
 }
 const palierLabel = id => (S.paliers.find(p => p.id === String(id)) || {}).label || String(id);
+const palShow = id => T(palierLabel(id)); // affichage : palierLabel sert aussi à nommer les salons créés (noms inchangés d'une langue à l'autre)
 function estimate(cfg) { // nombre d'items concernés par les filtres généraux
   if (!S.counts) return null;
   let n = 0;
@@ -128,7 +132,7 @@ function regenPlan() {
 const STEPS = [['login', '1 · Connexion'], ['guild', '2 · Serveur'], ['bot', '3 · Bot'], ['form', '4 · Réglages'], ['recap', '5 · Confirmation']];
 const stepsBar = () => `<div class="dg-steps">${STEPS.map(([k, l], i) => {
   const cur = STEPS.findIndex(s => s[0] === (S.step === 'status' ? 'recap' : S.step)); return `<span class="${i === cur ? 'on' : i < cur ? 'done' : ''}">${l}</span>`; }).join('')}</div>`;
-const msgs = () => (S.err ? `<div class="dg-err">⛔ ${esc(S.err)}</div>` : '') + (S.msg ? `<div class="dg-ok">${esc(S.msg)}</div>` : '');
+const msgs = () => (S.err ? `<div class="dg-err"><span>⛔</span> ${esc(S.err)}</div>` : '') + (S.msg ? `<div class="dg-ok">${esc(S.msg)}</div>` : '');
 const chip = (on, label, fn) => `<button type="button" class="dg-chip ${on ? 'on' : ''}" onclick="${fn}">${label}</button>`;
 const iconUrl = g => g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64` : '';
 
@@ -211,7 +215,7 @@ function rForm() {
       ${c.structure === 'custom' || !creating ? `<button class="dg-btn danger" style="padding:3px 9px" onclick="DG.delCh(${i})" title="Retirer">🗑</button>` : ''}</div>
     ${c.structure === 'custom' || !creating ? `<div class="dg-hint">Catégories d'items (aucune = toutes)</div><div class="dg-chips">${CATS.map(([k, l]) => chip(has(ch.itemCats, k), l, `DG.tglCh(${i},'itemCats','${k}')`)).join('')}</div>
       <div class="dg-hint">Paliers (aucun = tous)</div><div class="dg-chips">${S.paliers.map(p => chip(has(ch.paliers, p.id), esc(p.label), `DG.tglCh(${i},'paliers','${esc(p.id)}')`)).join('')}</div>`
-      : `<div class="dg-hint">${ch.itemCats.map(k => (CATS.find(x => x[0] === k) || [0, k])[1]).join(', ') || 'Tout'} · ${ch.paliers.map(palierLabel).join(', ') || 'tous les paliers'}</div>`}</div>`).join('');
+      : `<div class="dg-hint">${ch.itemCats.map(catName).join(', ') || T('Tout')} · ${ch.paliers.map(palShow).join(', ') || T('tous les paliers')}</div>`}</div>`).join('');
   const n = estimate(c);
   return `<div class="dg-card"><h2>Réglages pour « ${esc(S.guild.name)} »</h2>
     <h3>① Quoi envoyer ?</h3>
@@ -263,14 +267,14 @@ function compactPlan() {
       ${g.cat ? `<div class="top" style="margin:6px 0 4px"><span class="dg-hint">📁</span><input type="text" value="${esc(g.cat)}" onchange="DG.setCat(${gi}, this.value)" style="width:230px;font-weight:700"></div>` : ''}
       ${g.rows.map(([ch, i]) => `<div class="top" style="margin:2px 0 2px 22px;opacity:${ch.skip ? .45 : 1}"><input type="checkbox" ${ch.skip ? '' : 'checked'} onchange="DG.skipCh(${i},!this.checked)" title="Créer ce salon">
         <input type="text" value="${esc(ch.name)}" onchange="DG.setCh(${i},'name',this.value)" style="width:240px">
-        <span class="dg-hint">${ch.itemCats.map(k => (CATS.find(x => x[0] === k) || [0, k])[1]).join(', ') || 'tout'}${itemsIn(ch)}</span></div>`).join('')}`).join('')}</div>`;
+        <span class="dg-hint">${ch.itemCats.map(catName).join(', ') || T('tout')}${itemsIn(ch)}</span></div>`).join('')}`).join('')}</div>`;
 }
 
 /** « · N items » / « · aucun item pour l'instant » pour un salon qui vise une catégorie et un palier précis. */
 function itemsIn(ch) {
   if (!S.counts || ch.itemCats.length !== 1 || ch.paliers.length !== 1) return '';
   const n = S.counts[ch.itemCats[0] + '|' + ch.paliers[0]] || 0;
-  return n ? ` · ${n} item${n > 1 ? 's' : ''}` : ' · aucun item pour l\'instant';
+  return n ? ' · ' + T(n > 1 ? '{n} items' : '{n} item', { n }) : ' · ' + T("aucun item pour l'instant");
 }
 
 /** Réglages envoyés : les salons décochés ne sont pas créés. */
@@ -283,14 +287,14 @@ const finalCfg = () => ({ ...S.cfg, channels: S.cfg.channels.filter(x => !x.skip
 
 function rRecap() {
   const c = finalCfg(), creating = c.mode === 'create', n = estimate(c);
-  const catLbl = k => (CATS.find(x => x[0] === k) || [0, k])[1];
-  const lines = c.channels.map(ch => `${creating ? `<strong>${esc(ch.categoryName ? [c.prefix, ch.categoryName].filter(Boolean).join(' ') + ' / ' : c.prefix ? esc(c.prefix) + ' / ' : '')}${esc(ch.name)}</strong>` : `<strong>#${esc((S.info.channels.find(x => x.id === ch.id) || {}).name || '?')}</strong>`} ← ${ch.itemCats.map(catLbl).join(', ') || 'tout'} · ${ch.paliers.map(palierLabel).join(', ') || 'tous paliers'}`);
+  const catLbl = catName;
+  const lines = c.channels.map(ch => `${creating ? `<strong>${esc(ch.categoryName ? [c.prefix, ch.categoryName].filter(Boolean).join(' ') + ' / ' : c.prefix ? esc(c.prefix) + ' / ' : '')}${esc(ch.name)}</strong>` : `<strong>#${esc((S.info.channels.find(x => x.id === ch.id) || {}).name || '?')}</strong>`} ← ${ch.itemCats.map(catLbl).join(', ') || T('tout')} · ${ch.paliers.map(palShow).join(', ') || T('tous paliers')}`);
   return `<div class="dg-card"><h2>Récapitulatif</h2><dl class="dg-recap">
     <dt>Serveur</dt><dd>${esc(S.guild.name)}</dd>
     <dt>Salons (${c.channels.length})</dt><dd>${creating ? 'créés par le bot' : 'existants'} — ${lines.map(l => `<div>${l}</div>`).join('')}</dd>
     <dt>Accès</dt><dd>${{ everyone: 'tout le monde (lecture seule)', roles: 'rôles : ' + c.roleIds.map(id => esc((S.info.roles.find(r => r.id === id) || {}).name || id)).join(', '), admins: 'administrateurs seulement' }[c.access]}</dd>
-    <dt>Envoi</dt><dd>${c.itemCats.map(catLbl).join(', ') || 'toutes les catégories'} · ${c.paliers.map(palierLabel).join(', ') || 'tous les paliers'} · ${c.initial === 'all' ? 'tous les items existants' + (n != null ? ' (~' + n + ')' : '') : 'nouveaux items seulement'}</dd>
-    <dt>Options</dt><dd>${c.forum ? 'forum' : 'salon texte'} · ${c.groupSets ? 'items groupés par set (un post par set)' : 'un post par item'}${c.forum && c.eventTags ? ' · tags par événement' : ''} · ${c.replace ? "remplacement de l'ancien post" : 'ancien post conservé'}</dd></dl>
+    <dt>Envoi</dt><dd>${c.itemCats.map(catLbl).join(', ') || T('toutes les catégories')} · ${c.paliers.map(palShow).join(', ') || T('tous les paliers')} · ${c.initial === 'all' ? T('tous les items existants') + (n != null ? ' (~' + n + ')' : '') : T('nouveaux items seulement')}</dd>
+    <dt>Options</dt><dd>${T(c.forum ? 'forum' : 'salon texte')} · ${T(c.groupSets ? 'items groupés par set (un post par set)' : 'un post par item')}${c.forum && c.eventTags ? ' · ' + T('tags par événement') : ''} · ${T(c.replace ? "remplacement de l'ancien post" : 'ancien post conservé')}</dd></dl>
     <p class="dg-hint" style="margin-top:12px">${S.doc?.status === 'approved' ? '<strong>Ce serveur est déjà validé : tes modifications sont appliquées tout de suite, sans nouvelle validation.</strong> L\'équipe du wiki est prévenue de la modification et peut suspendre le serveur si besoin.' : S.doc?.status === 'pending' ? 'Ton inscription est toujours en attente de validation : tes modifications sont prises en compte, rien n\'est envoyé avant la validation.' : S.doc?.status === 'refused' || S.doc?.status === 'suspended' ? 'Ce serveur est refusé ou suspendu par l\'équipe du wiki : tes modifications sont enregistrées mais rien n\'est envoyé.' : 'En confirmant, tu inscris ce serveur : l\'équipe du wiki doit le valider avant tout envoi (rien n\'est envoyé avant). Tu pourras modifier, mettre en pause ou tout désinstaller à cette même adresse.'}</p>
     <div class="dg-row"><button class="dg-btn" onclick="DG.step('form')">← Modifier</button><button class="dg-btn primary" id="dg-confirm" onclick="DG.confirm()" ${S.busy ? 'disabled' : ''}>${S.doc ? 'Enregistrer les modifications' : "Confirmer l'inscription"}</button></div>
     <div class="dg-bar" id="dg-bar" style="display:none"><i></i></div>${msgs()}</div>`;
@@ -326,8 +330,8 @@ function manageRow(c, i, d, real) {
   else if (sub && d.mode === 'create') actions += ib(c.id ? '🔁' : '✨', c.id ? 'Recréer ce salon (introuvable sur Discord)' : 'Créer ce salon maintenant', `DG.chCreate(${i})`);
   const ro = planMode(d) === 'auto'; // plan automatique : lecture seule
   if (!ro) actions += ib('⚙️', 'Réglages de ce salon', `DG.chOpen(${i})`) + ib('🗑', 'Supprimer ce salon', `DG.chDelete(${i})`);
-  const cats = (c.itemCats || []).map(k => (CATS.find(x => x[0] === k) || [0, k])[1]).join(', ') || 'toutes catégories';
-  const pals = (c.paliers || []).map(palierLabel).join(', ') || 'tous paliers';
+  const cats = (c.itemCats || []).map(catName).join(', ') || T('toutes catégories');
+  const pals = (c.paliers || []).map(palShow).join(', ') || T('tous paliers');
   const n = itemsOf(c, d), inRoom = S.info?.postCounts?.[c.id] || 0;
   const dot = !sub ? '⚪' : exists ? '🟢' : '🟠';
   const dotTitle = !sub ? "Pas inscrit : rien n'est envoyé dans ce salon" : exists ? 'Inscrit et présent sur Discord' : c.id ? 'Introuvable sur Discord (supprimé ?)' : 'Sera créé automatiquement';
@@ -349,7 +353,7 @@ function missingPanel(c, d) {
   const chosen = pickable.filter(x => M.sel.has(x.id)).length;
   const rows = list.map(x => `<label style="display:flex;align-items:center;gap:8px;padding:2px 0;font-size:12px;${asked.has(x.id) ? 'opacity:.6' : 'cursor:pointer'}"><input type="checkbox" ${asked.has(x.id) ? 'disabled' : ''} ${M.sel.has(x.id) ? 'checked' : ''} data-id="${esc(x.id)}" onchange="DG.missToggle(this.dataset.id, this.checked)"> ${esc(x.name)}${asked.has(x.id) ? ' <span style="color:var(--gold)">⏳ en cours d\'envoi</span>' : ''}</label>`).join('');
   return `<div class="dg-detail" style="margin:4px 0 10px 26px;padding:10px 12px;border:1px solid var(--rim);border-radius:8px;background:var(--surface2)">
-    <div class="dg-hint" style="margin-top:0">${total} item${total > 1 ? 's' : ''} du wiki concernent ce salon sans y avoir de post${total > list.length ? ` (les ${list.length} premiers sont listés)` : ''}.</div>
+    <div class="dg-hint" style="margin-top:0">${T(total > 1 ? '{n} items du wiki concernent ce salon sans y avoir de post' : '{n} item du wiki concerne ce salon sans y avoir de post', { n: total })}${total > list.length ? ' ' + T('(les {n} premiers sont listés)', { n: list.length }) : ''}.</div>
     <div class="dg-row" style="margin:6px 0"><button class="dg-btn" onclick="DG.missAll('${esc(c.id)}')">☑ Tout sélectionner</button><button class="dg-btn" onclick="DG.missNone()">☐ Rien</button>
       <button class="dg-btn primary" ${chosen ? '' : 'disabled'} onclick="DG.missSend()">📤 Envoyer la sélection (${chosen})</button></div>
     <div style="max-height:260px;overflow:auto">${rows || '<div class="dg-hint">Rien à afficher.</div>'}</div></div>`;
@@ -395,8 +399,8 @@ function templateMissing(d) {
 }
 
 function manageVirtualRow(t, k, d) {
-  const cats = (t.itemCats || []).map(x => (CATS.find(q => q[0] === x) || [0, x])[1]).join(', ');
-  const pals = (t.paliers || []).map(palierLabel).join(', ');
+  const cats = (t.itemCats || []).map(catName).join(', ');
+  const pals = (t.paliers || []).map(palShow).join(', ');
   const n = itemsOf(t, d);
   return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:wrap">
       <span title="Proposé par le modèle Veilleurs : pas encore dans ton plan">⚪</span>
@@ -435,13 +439,13 @@ function manageBlock(d) {
   const groupsHtml = [...groups].map(([k, list]) => {
     const ins = list.filter(([c, i]) => typeof i !== 'string' && isSub(c)).length;
     return `<details data-k="${esc(k)}" ontoggle="DG.chGroup(this)" ${M.groups.has(k) || M.pal || M.sub ? 'open' : ''} style="border:1px solid var(--rim);border-radius:8px;margin-bottom:8px;background:var(--deep)">
-      <summary style="cursor:pointer;padding:8px 12px;font-weight:700;color:var(--bright)">${esc(k)} <button class="dg-btn" data-k="${esc(k === '— sans catégorie —' ? '' : k)}" onclick="event.preventDefault();event.stopPropagation();DG.chRenameCat(this.dataset.k)" title="Renommer cette catégorie" style="padding:0 7px;font-size:11px">✏️</button> <span style="font-weight:400;font-size:12px;color:var(--muted)">— ${list.length} salon${list.length > 1 ? 's' : ''} · ${ins} inscrit${ins > 1 ? 's' : ''}</span></summary>
+      <summary style="cursor:pointer;padding:8px 12px;font-weight:700;color:var(--bright)">${esc(k)} <button class="dg-btn" data-k="${esc(k === '— sans catégorie —' ? '' : k)}" onclick="event.preventDefault();event.stopPropagation();DG.chRenameCat(this.dataset.k)" title="Renommer cette catégorie" style="padding:0 7px;font-size:11px">✏️</button> <span style="font-weight:400;font-size:12px;color:var(--muted)">— ${T(list.length > 1 ? '{n} salons' : '{n} salon', { n: list.length })} · ${T(ins > 1 ? '{n} inscrits' : '{n} inscrit', { n: ins })}</span></summary>
       <div style="padding:2px 12px 8px">${list.map(([c, i]) => typeof i === 'string' ? manageVirtualRow(c, +i.slice(1), d) : manageRow(c, i, d, real)).join('')}</div></details>`;
   }).join('') || '<div class="dg-hint">Aucun salon à afficher.</div>';
   const missing = d.mode === 'create' && all.some(([c]) => isSub(c) && c.name && !c.id);
-  return `<div style="margin-top:14px"><h3 style="margin-top:0">Salons (${all.length} dans ${auto ? 'le plan' : 'ton plan'}${virt.length ? ` · ${virt.length} autres proposés` : ''})</h3>
+  return `<div style="margin-top:14px"><h3 style="margin-top:0">${T('Salons ({n} dans {where})', { n: all.length, where: T(auto ? 'le plan' : 'ton plan') + (virt.length ? ' · ' + T('{n} autres proposés', { n: virt.length }) : '') })}</h3>
     ${modeBar(d)}
-    ${S.err ? `<div class="dg-err" style="margin:6px 0">⛔ ${esc(S.err)}</div>` : ''}
+    ${S.err ? `<div class="dg-err" style="margin:6px 0"><span>⛔</span> ${esc(S.err)}</div>` : ''}
     <p class="dg-hint">📡 <strong>Inscrit</strong> = salon activé : il est créé si besoin et reçoit les nouveaux items (un item modifié remplace son ancien post). <strong>Pas inscrit</strong> = rien n'est envoyé dans ce salon. <strong>12/250 items</strong> = 12 items déjà postés dans le salon, sur 250 dans le wiki.</p>
     <div class="dg-row" style="margin:6px 0"><button class="dg-btn" onclick="DG.chSubAll(${!allSub})">${allSub ? '✅ Inscrit à tous (désinscrire)' : "📡 S'inscrire à tous les salons"}</button>
       ${auto ? '' : '<button class="dg-btn primary" onclick="DG.chNew()">➕ Nouveau salon</button>'}
@@ -481,7 +485,7 @@ function rStatus() {
   const d = S.doc, g = S.guild, st = d.status;
   const txt = { pending: '⏳ En attente de validation par l\'équipe du wiki. Rien n\'est envoyé tant que ce n\'est pas validé.', approved: d.paused ? '⏸ En pause : rien n\'est envoyé.' : '🟢 Actif : le bot envoie les items.',
     refused: '⛔ Inscription refusée par l\'équipe du wiki.', suspended: '⏸ Suspendu par l\'équipe du wiki.', removing: '🧹 Désinstallation en cours (quelques minutes) : le bot nettoie puis quitte le serveur.' }[st] || st;
-  const when = t => t ? new Date(t).toLocaleString('fr-FR') : '—';
+  const when = t => t ? new Date(t).toLocaleString(document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR') : '—';
   return `<div class="dg-card"><h2>« ${esc(g.name)} » — statut</h2><p style="font-size:14px">${txt}</p>
     <dl class="dg-recap"><dt>Posts envoyés</dt><dd>${d.posted ?? 0}${d.pending ? ` · restants : ${d.pending}` : ''}
       ${d.pending ? `<div class="dg-bar"><i style="width:${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))}%"></i></div><div class="dg-hint">${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))} % — ${d.posted || 0} sur ${(d.posted || 0) + d.pending}</div>` : ''}</dd><dt>Dernier envoi</dt><dd>${when(d.lastSentAt)}</dd>
@@ -527,7 +531,7 @@ const DG = window.DG = {
     } catch (e) {
       clearInterval(S.poll);
       // désinstallation en cours : écran de statut plutôt qu'une erreur sur l'écran d'invitation
-      if (/Désinstallation en cours/.test(e.message)) { S.doc = { status: 'removing', channels: [], mode: 'existing', paused: false }; S.step = 'status'; S.err = ''; }
+      if (e.removing || /Désinstallation en cours/.test(e.message)) { S.doc = { status: 'removing', channels: [], mode: 'existing', paused: false }; S.step = 'status'; S.err = ''; }
       else S.err = e.message;
       render();
     }
@@ -612,7 +616,7 @@ const DG = window.DG = {
     out.innerHTML = list.map(i => {
       const room = roomOf(i, d);
       return `<div style="display:flex;align-items:center;gap:10px;padding:5px 10px;margin-bottom:4px;background:var(--surface2);border:1px solid var(--rim);border-radius:6px;font-size:12px;flex-wrap:wrap">
-        <span style="flex:1;min-width:180px"><b>${esc(i.name)}</b> <span style="color:var(--muted)">· ${esc((CATS.find(c => c[0] === i.category) || [0, i.category || '?'])[1])} · ${esc(palierLabel(i.palier))}</span></span>
+        <span style="flex:1;min-width:180px"><b>${esc(i.name)}</b> <span style="color:var(--muted)">· ${esc(catName(i.category || '?'))} · ${esc(palShow(i.palier))}</span></span>
         <span style="color:var(--muted)">${room ? '→ ' + esc(room.name) : '⚠️ aucun salon inscrit ne reçoit cet item'}</span>
         <button class="dg-btn" ${room ? '' : 'disabled'} data-id="${esc(i.id)}" onclick="DG.sendItem(this.dataset.id)" style="padding:3px 10px;font-size:12px">📤 Envoyer / renvoyer</button></div>`;
     }).join('') || '<div class="dg-hint">Aucun item trouvé.</div>';
@@ -633,7 +637,7 @@ const DG = window.DG = {
     S.msg = j ? "Renvoi demandé : le bot supprime l'ancien post et reposte l'item (dans la minute)." : ''; render();
   },
   async chRenameCat(from) {
-    const to = (prompt('Nouveau nom de la catégorie :', from) || '').trim();
+    const to = (prompt(T('Nouveau nom de la catégorie :'), from) || '').trim();
     if (!to || to === from) return;
     S.msg = ''; await DG.chCall('rename_category', { from, to }); render();
   },
@@ -642,7 +646,7 @@ const DG = window.DG = {
   },
   async chMode(mode) {
     if (planMode(S.doc) === mode) return;
-    if (mode === 'auto' && (S.doc.channels || []).length && !confirm("Passer en plan automatique ?\n\nTon plan personnalisé est mis de côté (retrouvé si tu reviens en personnalisé) et remplacé par le plan des Veilleurs : une catégorie par palier, un salon pour chaque type d'item. Les salons déjà créés et leur inscription sont conservés ; ceux hors modèle sortent du plan (rien n'est supprimé sur Discord).")) return;
+    if (mode === 'auto' && (S.doc.channels || []).length && !confirm(T("Passer en plan automatique ?\n\nTon plan personnalisé est mis de côté (retrouvé si tu reviens en personnalisé) et remplacé par le plan des Veilleurs : une catégorie par palier, un salon pour chaque type d'item. Les salons déjà créés et leur inscription sont conservés ; ceux hors modèle sortent du plan (rien n'est supprimé sur Discord)."))) return;
     await loadCombos();
     const j = await DG.chCall('set_plan_mode', { mode, template: mode === 'auto' ? fullTemplate(S.doc) : undefined });
     if (j) S.msg = mode === 'auto' ? 'Plan automatique actif.' : 'Plan personnalisé : tu peux le modifier.';
@@ -657,7 +661,7 @@ const DG = window.DG = {
   },
   async chSubAll(v) {
     if (v && (S.tpl || []).length) { // « tout » = aussi les salons proposés par le modèle
-      if (!confirm(`Créer et inscrire ${S.tpl.length} salon${S.tpl.length > 1 ? 's' : ''} de plus sur ton serveur (le modèle Veilleurs complet) ?`)) return;
+      if (!confirm(T(S.tpl.length > 1 ? 'Créer et inscrire {n} salons de plus sur ton serveur (le modèle Veilleurs complet) ?' : 'Créer et inscrire {n} salon de plus sur ton serveur (le modèle Veilleurs complet) ?', { n: S.tpl.length }))) return;
       S.msg = 'Création des salons…'; S.err = ''; render();
       for (const t of [...S.tpl]) await DG.chCall('add_channel', { channel: { name: t.name, type: t.type, categoryName: t.categoryName, itemCats: t.itemCats, paliers: t.paliers, usePrefix: true } });
       await DG.chCall('subscribe_all', { value: true });
@@ -720,11 +724,11 @@ const DG = window.DG = {
     const d = m.querySelector('#dl-disc'); if (d) d.onclick = () => go(true);
   },
   async chRemove(i) {
-    if (!confirm('Retirer ce salon du plan ?\n\nLe salon Discord et ses posts ne sont pas supprimés.')) return;
+    if (!confirm(T('Retirer ce salon du plan ?\n\nLe salon Discord et ses posts ne sont pas supprimés.'))) return;
     await DG.chCall('remove_channel', { index: i }); M.open.clear(); render();
   },
   async chSend(i, mode) {
-    if (mode === 'all' && !confirm('Renvoyer toute la data de ce salon ?\n\nSes posts actuels sont supprimés puis tous les items concernés sont renvoyés.')) return;
+    if (mode === 'all' && !confirm(T('Renvoyer toute la data de ce salon ?\n\nSes posts actuels sont supprimés puis tous les items concernés sont renvoyés.'))) return;
     const j = await DG.chCall('send_request', { index: i, mode });
     if (j) S.msg = mode === 'all' ? 'Renvoi demandé : le bot s\'en occupe (la barre de progression ci-dessus avance).' : 'Envoi des items manquants demandé : le bot s\'en occupe.';
     render();
@@ -735,7 +739,7 @@ const DG = window.DG = {
     render();
   },
   async chClear(i) {
-    if (!confirm('Vider ce salon ?\n\nTous les posts du bot dans ce salon sont supprimés (ils ne sont pas renvoyés automatiquement).')) return;
+    if (!confirm(T('Vider ce salon ?\n\nTous les posts du bot dans ce salon sont supprimés (ils ne sont pas renvoyés automatiquement).'))) return;
     S.msg = 'Suppression des posts du salon…'; S.err = ''; render();
     let j;
     for (let n = 0; n < 200; n++) {
@@ -764,7 +768,7 @@ const DG = window.DG = {
     } catch (e) { S.err = 'Création des salons : ' + e.message + ' Tu peux réessayer depuis la page de statut.'; if (!inner) render(); else throw e; }
   },
   async stopSend() {
-    if (!confirm("Arrêter l’envoi ?\n\nLe bot s’arrête et les demandes en attente (salons, items, manquants) sont annulées. Les posts déjà envoyés restent. L’envoi est mis en pause : « Reprendre » pour repartir.")) return;
+    if (!confirm(T("Arrêter l’envoi ?\n\nLe bot s’arrête et les demandes en attente (salons, items, manquants) sont annulées. Les posts déjà envoyés restent. L’envoi est mis en pause : « Reprendre » pour repartir."))) return;
     try { const j = await api('set_paused', { guildId: S.guild.id, paused: true, cancel: true }); S.doc = j.config; S.msg = 'Envoi arrêté et demandes annulées (en pause).'; S.err = ''; } catch (e) { S.err = e.message; } render();
   },
   async pause(p) { try { const j = await api('set_paused', { guildId: S.guild.id, paused: p }); S.doc = j.config; S.msg = p ? 'Envoi mis en pause.' : 'Envoi repris.'; S.err = ''; } catch (e) { S.err = e.message; } render(); },
@@ -785,11 +789,11 @@ const DG = window.DG = {
     render();
   },
   purge() {
-    if (!confirm('Supprimer TOUS les posts envoyés par le bot sur ce serveur ?\n\nL\'envoi est mis en pause ensuite.')) return;
+    if (!confirm(T('Supprimer TOUS les posts envoyés par le bot sur ce serveur ?\n\nL\'envoi est mis en pause ensuite.'))) return;
     return DG.wipe(false);
   },
   restart() {
-    if (!confirm('Tout supprimer puis tout renvoyer ?\n\nTous les posts du bot sont supprimés, puis TOUS les items (selon tes salons et filtres) sont renvoyés depuis le début. Ça peut prendre un moment.')) return;
+    if (!confirm(T('Tout supprimer puis tout renvoyer ?\n\nTous les posts du bot sont supprimés, puis TOUS les items (selon tes salons et filtres) sont renvoyés depuis le début. Ça peut prendre un moment.'))) return;
     return DG.wipe(true);
   },
   uninstallDlg() {
@@ -824,6 +828,7 @@ async function refreshMe() { try { S.me = await api('me'); } catch (e) { S.err =
 
 // ═══ Démarrage ═══
 (async function init() {
+  for (let i = 0; i < 100 && !window.VCL_I18N; i++) await sleep(20); // i18n.js (module) a fini de charger le dictionnaire
   const h = new URLSearchParams(location.hash.slice(1));
   if (h.get('vcl-guild')) { S.session = h.get('vcl-guild'); sessionStorage.setItem(SESSION_KEY, S.session); history.replaceState(null, '', location.pathname + location.search); }
   const openGuild = h.get('guild'); // lien de la modération : on ouvre directement la gestion de ce serveur

@@ -18,7 +18,7 @@ const LANGUAGES = [
   { code: 'en', label: 'English' },
 ];
 const SUPPORTED = LANGUAGES.map(l => l.code);
-const ATTRS = ['title', 'placeholder', 'alt', 'aria-label', 'data-tooltip', 'data-label'];
+const ATTRS = ['title', 'placeholder', 'alt', 'aria-label', 'data-tooltip', 'data-label', 'label'];
 const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'NOSCRIPT', 'CODE', 'PRE']);
 
 const safe = (op, v) => { try { return op === 'get' ? localStorage.getItem(LS_KEY) : localStorage.setItem(LS_KEY, v); } catch { return null; } };
@@ -49,6 +49,7 @@ export function setLang(l) {
 // ── Dictionnaire ─────────────────────────────────────────────────
 const exact = new Map();
 const patterns = [];                 // { re, tpl }
+const templates = new Map();         // clé à variables → modèle anglais (pour t(clé, {vars}))
 const missing = new Map();           // texte français non traduit → occurrences (debug)
 const keep = new Set();              // textes à laisser tels quels (pas « manquants »)
 const DEBUG = new URLSearchParams(location.search).has('i18n_debug');
@@ -63,6 +64,7 @@ function compile(dict) {
     if (/\{\w+\}/.test(k)) {
       const re = new RegExp('^' + esc(squash(k)).replace(/\\\{(\w+)\\\}/g, (_, n) => `(?<${n}>.+?)`) + '$');
       patterns.push({ re, tpl: v });
+      templates.set(squash(k), v);
     } else exact.set(squash(k), v);
     outputs.add(squash(v.replace(/\{\w+\}/g, ' ')));
   }
@@ -231,7 +233,12 @@ await boot();
 window.VCL_I18N = {
   lang,
   setLang,
-  t: s => (lang !== 'fr' ? (translate(s) ?? s) : s),   // pour les textes construits dans le code
+  // pour les textes construits dans le code : t('texte fr') ou t('{n} résultats', { n: 3 }) (la clé est le modèle du dictionnaire)
+  t: (s, vars) => {
+    const fill = tpl => (vars ? tpl.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '') : tpl);
+    if (lang === 'fr') return fill(s);
+    return vars ? fill(templates.get(squash(s)) ?? s) : (translate(s) ?? s);
+  },
   missing: () => [...missing.entries()].sort((a, b) => b[1] - a[1]),
   size: () => exact.size + patterns.length,
 };
