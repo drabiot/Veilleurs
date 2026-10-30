@@ -475,16 +475,14 @@ function _drRow(c, i) {
   const catLabels = (c.itemCats || []).map(k => (_DR_CATS.find(q => q[0] === k) || [0, k])[1]);
   const palLabels = (c.paliers || []).map(_drPalLabel);
   const n = _drCount(c);
-  const dot = alive ? '<span title="En place">🟢</span>' : c.id ? '<span title="Introuvable sur Discord (supprimé ?)">🔴</span>' : '<span title="Pas encore créé">🟠</span>';
   const ib = (icon, title, fn, danger) => `<button class="btn btn-ghost" title="${title}" onclick="${fn}" style="padding:2px 8px;font-size:12px;${danger ? 'color:var(--danger);border-color:var(--danger);' : ''}">${icon}</button>`;
   const actions = (alive
     ? ib('📤', 'Envoyer toute la data de ce salon', `drSendChannel(${i}, 'all')`) + ib('➕', 'Envoyer seulement les manquants', `drSendChannel(${i}, 'missing')`) + ib('🧹', 'Vider ce salon (supprime ses posts)', `drClearChannel(${i})`, true)
     : ib(c.id ? '🔁' : '✨', c.id ? 'Recréer ce salon (introuvable sur Discord)' : 'Créer ce salon', `drCreate(${i})`))
     + ib('⚙️', 'Réglages de ce salon', `drToggleRow(${i})`) + ib('🗑', 'Retirer du plan', `drRemove(${i})`);
   return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
-      ${dot}
       <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" style="${_drField}width:190px;font-weight:700;">
-      <span style="flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(catLabels.join(', ') + ' · ' + palLabels.join(', '))}">${catLabels.length ? catLabels.join(', ') : 'toutes catégories'} · ${palLabels.length ? palLabels.join(', ') : 'tous paliers'} · <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${alive && _drPostCounts[c.id] ? ` · ${_drPostCounts[c.id]} posts` : ''}${c.id && !alive ? ' · <span style="color:var(--danger);">introuvable</span>' : ''}</span>
+      <span style="flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(catLabels.join(', ') + ' · ' + palLabels.join(', '))}">${catLabels.length ? catLabels.join(', ') : 'toutes catégories'} · ${palLabels.length ? palLabels.join(', ') : 'tous paliers'} · <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${alive && _drPostCounts[c.id] ? ` · ${_drPostCounts[c.id]} posts` : ''}${c.id && !alive ? ' · <span style="color:var(--danger);">introuvable</span>' : !c.id ? ' · <span style="color:#e0a24c;">à créer</span>' : ''}</span>
       <span style="display:flex;gap:4px;flex:none;">${actions}</span>
     </div>${_drOpenRows.has(i) ? _drDetail(c, i) : ''}`;
 }
