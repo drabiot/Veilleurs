@@ -87,7 +87,7 @@ export default {
     if (_path === '/guild/bot' && request.method === 'POST') return handleGuildBot(request, env, { json });
     if (_path === '/db/sync' && request.method === 'GET') return handleDbSync(new URL(request.url), env);
     if (_path === '/db/read' && request.method === 'POST') return handleStoreRead(request, env, corsHeaders());
-    if (_path === '/db/write' && request.method === 'POST') return handleStoreWrite(request, env, corsHeaders());
+    if (_path === '/db/write' && request.method === 'POST') return handleStoreWrite(request, env, corsHeaders(), ctx);
     if (_path === '/db/refresh' && request.method === 'POST') return handleDbRefresh(request, env, ctx);
     if (_path === '/db/resync' && request.method === 'POST') return handleDbResync(request, env);
     if (_path === '/me' && request.method === 'POST') return handleMe(request, env);

@@ -586,6 +586,13 @@ export async function handleGuildBot(request, env, deps) {
     const rows = (await env.DB.prepare("SELECT data FROM docs WHERE col = 'discord_posts' AND deleted = 0").all()).results;
     return json({ posts: rows.map(r => jparse(r.data)).filter(d => d && d.itemId && d.channelId).map(d => ({ itemId: String(d.itemId), channelId: String(d.channelId), threadId: d.threadId || null, messageId: d.messageId || null })) });
   }
+  if (body.action === 'main_posts_drop') { // fiches d'items supprimées : leurs suivis de posts (écrits par la modération) sont effacés
+    const ids = (Array.isArray(body.itemIds) ? body.itemIds : []).map(String).slice(0, 200);
+    if (!ids.length) return json({ ok: true, dropped: 0 });
+    const rows = (await env.DB.prepare(`SELECT id FROM docs WHERE col = 'discord_posts' AND deleted = 0 AND json_extract(data, '$.itemId') IN (${ids.map(() => '?').join(',')})`).bind(...ids).all()).results;
+    if (rows.length) await env.DB.batch([env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'"), ...rows.map(r => env.DB.prepare("UPDATE docs SET deleted = 1, updated_at = (SELECT v FROM meta WHERE k = 'rev') WHERE col = 'discord_posts' AND id = ?").bind(r.id))]);
+    return json({ ok: true, dropped: rows.length });
+  }
   if (body.action === 'main_patch') {
     const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'config' AND id = 'discord_routes' AND deleted = 0").bind().first();
     const cfg = jparse(row?.data);

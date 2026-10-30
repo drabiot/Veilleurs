@@ -199,7 +199,7 @@ async function guildPass(rest, g, st, getCtx) {
     const concerned = [...items.values()].filter(it => it.category && it.palier != null);
     if (cfg.initial !== 'all') for (const it of matching) st.seen[it._id] = 1;
     st.baselined = true;
-    if (cfg._main) await mergeBrowserPosts(cfg, st); // posts déjà faits depuis la modération : suivis (remplacés si l'item change ensuite)
+    if (cfg._main) await mergeBrowserPosts(rest, cfg, st); // posts déjà faits depuis la modération : suivis (remplacés si l'item change ensuite)
     logs.push(`Bot : ${matching.length} item(s) concerné(s) sur ${items.size}. ` + (cfg.initial !== 'all' ? 'Mode « nouveaux seulement » : rien envoyé, seuls les prochains items le seront.' : `Envoi de tous : ${matching.length} post(s).`) + (matching.length === 0 && concerned.length ? ' Aucun ne correspond : vérifie filtres et salons.' : ''));
   }
   // Demandes d'un chef de serveur sur un salon (page de gestion) : « tout renvoyer » ou « seulement les manquants »
@@ -219,7 +219,7 @@ async function guildPass(rest, g, st, getCtx) {
     if (g.initial !== 'all') for (const it of items.values()) if (fitsChannel(g, c, it)) st.seen[it._id] = 1;
     st.subs[c.id] = true;
   }
-  if (cfg._main) { await mergeBrowserPosts(cfg, st); await ensureMainChannels(rest, cfg, st, logs); }
+  if (cfg._main) { await mergeBrowserPosts(rest, cfg, st); await ensureMainChannels(rest, cfg, st, logs); }
   // Lecture incrémentale + sets groupés : on complète avec les autres items des sets modifiés (tous les items viennent avec le contexte des cartes)
   let map = items;
   if (cfg.groupSets && !fetched.full) {
@@ -303,9 +303,18 @@ async function guildPass(rest, g, st, getCtx) {
 // ── Serveur principal : plan de la modération (config/discord_routes), salons « inscrits » ──
 // Un salon inscrit reçoit automatiquement les nouveaux items qui le concernent ; s'il n'existe pas encore, le bot le crée (avec sa catégorie) au premier item.
 // Les posts faits à la main depuis la modération sont suivis (donc remplacés si l'item change) ; l'envoi navigateur saute les salons inscrits.
-async function mergeBrowserPosts(g, st) {
+async function mergeBrowserPosts(rest, g, st) {
   const { posts } = await workerBot('main_posts');
   const chIds = new Set((g.channels || []).map(c => c.id).filter(Boolean));
+  // Fiche supprimée : son post fait depuis la modération disparaît aussi (même dans un salon non inscrit), puis son suivi est effacé
+  const planIds = g._allChannelIds || chIds, dropped = [];
+  for (const p of posts) {
+    if (!planIds.has(p.channelId) || st.posts[p.itemId] || items.has(p.itemId)) continue;
+    if (fetched.full ? !items.size : !fetched.deleted.includes(p.itemId)) continue; // lecture incrémentale : seulement si l'item est listé supprimé
+    if (timeUp()) break;
+    try { await deletePost(rest, p); dropped.push(p.itemId); await sleep(300); } catch (e) { log('Serveur principal : suppression du post de', p.itemId, e.message); }
+  }
+  if (dropped.length) { await workerBot('main_posts_drop', { itemIds: dropped }); log(`Serveur principal : ${dropped.length} post(s) supprimé(s) (fiches retirées du wiki)`); }
   for (const p of posts) {
     if (!chIds.has(p.channelId) || st.posts[p.itemId]) continue;
     const it = items.get(p.itemId);
@@ -345,7 +354,7 @@ async function mainPass(rest) {
   pass.deadline = Date.now() + (parseFloat(process.env.RUN_MINUTES) || 12) * 60e3;
   pass.more = pass.more || false;
   const g = { id: cfg.guildId, guildName: 'Serveur principal', status: 'approved', paused: false, initial: 'new', replace: true, groupSets: false, eventTags: false, hideThreshold: Number.isFinite(cfg.hideThreshold) ? cfg.hideThreshold : 10,
-    itemCats: [], paliers: [], channels: subs, updatedAt: [...subs.map(c => [c.name, c.id || '', (c.itemCats || []).join(), (c.paliers || []).join()].join('/'))].join('|'), _main: true };
+    itemCats: [], paliers: [], channels: subs, _allChannelIds: new Set((Array.isArray(cfg.channels) ? cfg.channels : []).map(c => c.id).filter(Boolean)), updatedAt: [...subs.map(c => [c.name, c.id || '', (c.itemCats || []).join(), (c.paliers || []).join()].join('/'))].join('|'), _main: true };
   const st = await loadGuildState(g.id); st._id = g.id;
   const needFull = !st.baselined || st.pending > 0 || !st.rev || st.sig !== sigOf(g);
   await refreshItems(needFull ? 0 : st.rev);

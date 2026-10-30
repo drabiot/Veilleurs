@@ -10,6 +10,8 @@
 
    Droits : reprise des règles Firestore (Save/firestore.rules.local-copy), évaluées ici côté serveur avec le rôle lu dans `users`. */
 
+import { maybeTriggerBot } from './guild-onboarding.js';
+
 const BASE_TIERS = ['visiteur', 'membre', 'contributeur', 'admin'];
 const TIER = { public: 0, visiteur: 0, membre: 1, contributeur: 2, admin: 3 };
 const FIREBASE_KEY = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
@@ -218,7 +220,7 @@ const VALID_COL = /^[A-Za-z0-9_]+(\/[A-Za-z0-9_\-]{1,120}\/[A-Za-z0-9_]+)*$/;
 const VALID_ID  = /^[^\/]{1,400}$/;
 
 /* ── POST /db/write ── */
-export async function handleStoreWrite(request, env, cors) {
+export async function handleStoreWrite(request, env, cors, execCtx) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400, cors); }
   const ops = Array.isArray(body.ops) ? body.ops : [];
@@ -257,6 +259,8 @@ export async function handleStoreWrite(request, env, cors) {
   // une seule révision pour tout le lot : incrément d'abord, puis les écritures la lisent
   await env.DB.batch([env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'"), ...stmts]);
   const rev = (await env.DB.prepare("SELECT v FROM meta WHERE k = 'rev'").first())?.v;
+  // un item écrit, modifié ou supprimé : le bot Discord est lancé tout de suite (posts ajoutés / remplacés / supprimés sur les serveurs), au lieu d'attendre le cron
+  if (execCtx && ops.some(o => o.col === 'items')) execCtx.waitUntil(maybeTriggerBot(env).catch(() => {}));
   return json({ ok: true, rev, ids }, 200, cors);
 }
 
