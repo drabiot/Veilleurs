@@ -175,6 +175,7 @@ function cleanConfig(c, stored, realIds) {
       id, itemCats: strList(ch.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x)),
       paliers: strList(ch.paliers, /^[\w\-]{1,30}$/, 30),
       created: !!(id && prev.get(id)?.created), // posé uniquement par le worker (jamais par le navigateur)
+      subscribed: ch.subscribed !== false && ch.skip !== true, // inscrit = activé : le salon est créé si besoin et reçoit les items
     });
   }
   return out;
@@ -222,6 +223,30 @@ async function purgeStep(env, guildId, doc, json, resend) {
     pushLog(doc, 'Posts supprimés : renvoi de tous les items demandé');
     if (doc.status === 'approved') pushLog(doc, triggerText(await triggerBot(env)));
   } else pushLog(doc, 'Tous les posts sont supprimés (envoi en pause : « Reprendre » renverra tout si le réglage est « tous les items »)');
+  await dgPut(env, guildId, doc);
+  return json({ ok: true, done: true, config: doc });
+}
+
+/** Supprime les posts du bot dans UN salon (par paquets de 40 appels) ; leurs items sont notés « déjà vus » pour ne pas être renvoyés tout de suite. */
+async function clearChannelStep(env, guildId, doc, c, json) {
+  const stateKey = 'guild_' + guildId;
+  const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'bot_state' AND id = ? AND deleted = 0").bind(stateKey).first();
+  const st = jparse(row?.data) || {};
+  const posts = st.posts || {}; st.seen ||= {};
+  let budget = 40, deleted = 0;
+  for (const [key, e] of Object.entries(posts)) {
+    if (e.channelId !== c.id) continue;
+    const calls = e.threadId ? [`/channels/${e.threadId}`] : (e.messageIds?.length ? e.messageIds : [e.messageId]).filter(Boolean).map(m => `/channels/${e.channelId}/messages/${m}`);
+    if (budget < calls.length) break;
+    for (const p of calls) { await dc(env, 'DELETE', p); budget--; }
+    for (const id of (e.ids || [key])) st.seen[id] = 1;
+    delete posts[key]; deleted++;
+  }
+  const left = Object.values(posts).filter(e => e.channelId === c.id).length;
+  await env.DB.prepare("INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('bot_state', ?, ?, 0, 0, 0) ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, deleted = 0").bind(stateKey, JSON.stringify({ ...st, posts })).run();
+  if (left) return json({ ok: true, progress: true, left, deleted });
+  doc.posted = Object.keys(posts).length; doc.updatedAt = Date.now();
+  pushLog(doc, `« ${c.name} » vidé : ses posts sont supprimés`);
   await dgPut(env, guildId, doc);
   return json({ ok: true, done: true, config: doc });
 }
@@ -360,6 +385,57 @@ export async function handleGuildApi(request, env, deps) {
 
   if (action === 'purge' || action === 'restart') return purgeStep(env, guildId, doc, json, action === 'restart');
 
+  // ── Gestion salon par salon (écran de gestion de la page) ──
+  if (action === 'update_channel' || action === 'remove_channel' || action === 'add_channel') {
+    doc.channels ||= [];
+    const i = parseInt(body.index, 10), c = doc.channels[i];
+    if (action === 'add_channel') {
+      if (doc.channels.length >= MAX_CHANNELS) return json({ error: 'Trop de salons dans le plan.' }, 400);
+      const n = slug(body.channel?.name);
+      if (!n) return json({ error: 'Nom de salon requis.' }, 400);
+      doc.channels.push({ name: n, type: body.channel?.type === 'text' ? 'text' : 'forum', categoryName: sanitizeName(body.channel?.categoryName, 100), id: '', itemCats: strList(body.channel?.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x)), paliers: strList(body.channel?.paliers, /^[\w\-]{1,30}$/, 30), created: false, subscribed: true });
+      pushLog(doc, `Salon « ${n} » ajouté au plan`);
+    } else if (!c) return json({ error: 'Salon introuvable dans le plan.' }, 404);
+    else if (action === 'remove_channel') { doc.channels.splice(i, 1); pushLog(doc, `Salon « ${c.name} » retiré du plan (le salon Discord n'est pas supprimé)`); }
+    else {
+      const p = body.patch || {};
+      if ('subscribed' in p) { c.subscribed = !!p.subscribed; delete c.skip; pushLog(doc, `« ${c.name} » : ${c.subscribed ? 'inscrit (salon activé : il reçoit les items)' : 'pas inscrit (rien n\'est envoyé dans ce salon)'}`); }
+      if (typeof p.name === 'string' && slug(p.name) && slug(p.name) !== c.name) {
+        const nn = slug(p.name);
+        if (c.id && c.created) { const r = await dc(env, 'PATCH', `/channels/${c.id}`, { name: nn }); if (!r.ok) return json({ error: 'Renommage refusé par Discord : ' + (r.data?.message || r.status) }, 502); } // salons créés par le bot : renommés aussi sur Discord
+        pushLog(doc, `Salon « ${c.name} » renommé « ${nn} »`); c.name = nn;
+      }
+      if (typeof p.categoryName === 'string' && !c.id) c.categoryName = sanitizeName(p.categoryName, 100);
+      if (Array.isArray(p.itemCats)) c.itemCats = strList(p.itemCats, /^[a-z]{3,20}$/, ITEM_CATS.length).filter(x => ITEM_CATS.includes(x));
+      if (Array.isArray(p.paliers)) c.paliers = strList(p.paliers, /^[\w\-]{1,30}$/, 30);
+      if (p.type && !c.id) c.type = p.type === 'text' ? 'text' : 'forum';
+    }
+    doc.updatedAt = Date.now();
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
+  // envoi à la demande pour un salon : traité par le bot (cartes dessinées côté Node)
+  if (action === 'send_request') {
+    const c = (doc.channels || [])[parseInt(body.index, 10)];
+    if (!c || !c.id) return json({ error: "Ce salon n'existe pas encore : crée-le d'abord." }, 400);
+    const mode = body.mode === 'missing' ? 'missing' : 'all';
+    doc.requests = [...(doc.requests || []).filter(r => r.id !== c.id), { id: c.id, mode, at: Date.now() }].slice(-30);
+    doc.updatedAt = Date.now();
+    pushLog(doc, `« ${c.name} » : ${mode === 'all' ? 'renvoi de toute la data demandé' : 'envoi des items manquants demandé'}`);
+    if (doc.status === 'approved' && !doc.paused) pushLog(doc, triggerText(await triggerBot(env)));
+    else pushLog(doc, 'Envoi en attente : ' + (doc.status !== 'approved' ? 'le serveur doit d\'abord être validé' : 'l\'envoi est en pause'));
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
+  // vider un salon : suppression immédiate de ses posts (par paquets), sans renvoi automatique
+  if (action === 'clear_channel') {
+    const c = (doc.channels || [])[parseInt(body.index, 10)];
+    if (!c || !c.id) return json({ error: 'Salon introuvable.' }, 404);
+    return clearChannelStep(env, guildId, doc, c, json);
+  }
+
   if (action === 'create_channels') {
     if (doc.mode !== 'create') return json({ error: 'Ce serveur utilise des salons existants.' }, 400);
     const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
@@ -368,7 +444,8 @@ export async function handleGuildApi(request, env, deps) {
     const ow = overwrites(env, guildId, doc);
     let budget = CREATE_BUDGET, madeNow = 0, failure = null;
     doc.createdCategories ||= [];
-    for (const c of doc.channels) {
+    for (const [ci, c] of doc.channels.entries()) {
+      if (c.subscribed === false || c.skip || (Number.isInteger(body.only) && body.only !== ci)) continue; // pas inscrit : jamais créé ; ou création d'un seul salon
       if (c.id && all.some(x => x.id === c.id)) continue;
       c.id = '';
       if (!c.name) continue;
@@ -396,7 +473,7 @@ export async function handleGuildApi(request, env, deps) {
       all.push(r.data); c.id = r.data.id; c.created = true; madeNow++;
     }
     doc.updatedAt = Date.now();
-    const remaining = doc.channels.filter(c => c.name && !c.id).length;
+    const remaining = doc.channels.filter(c => c.name && !c.id && c.subscribed !== false && !c.skip).length;
     pushLog(doc, failure ? `Création de salons : échec (${failure})` : `Création de salons : ${madeNow} créé(s) sur Discord, ${remaining} restant(s)`);
     await dgPut(env, guildId, doc);
     return json({ ok: !failure, error: failure ? failure + (/community|forum/i.test(failure) ? ' (les forums demandent le mode Communauté : choisis « salons texte »)' : ' (le bot a-t-il « Gérer les salons » ?)') : undefined, created: madeNow, remaining, config: doc });
@@ -478,6 +555,7 @@ export async function handleGuildBot(request, env, deps) {
     if (!doc) return json({ ok: true, gone: true });
     for (const k of REPORT_KEYS) if (body.patch && k in body.patch) doc[k] = body.patch[k];
     if (Array.isArray(body.patch?.log)) body.patch.log.slice(0, 10).forEach(m => pushLog(doc, m));
+    if (Array.isArray(body.patch?.requestsDone)) doc.requests = (doc.requests || []).filter(r => !body.patch.requestsDone.includes(r.id));
     // salon supprimé sur Discord : en mode « créé par le bot », on oublie son id pour que la page propose de le recréer
     for (const cid of (Array.isArray(body.patch?.badChannels) ? body.patch.badChannels : []).slice(0, 20)) {
       const c = (doc.channels || []).find(x => x.id === cid);
