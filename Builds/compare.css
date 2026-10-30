@@ -83,3 +83,7 @@
 }
 .cmp-pick-group { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); margin: 8px 0 2px; }
 .cmp-pick.is-disabled { opacity: .5; cursor: not-allowed; }
+
+.cmp-nostats-note { border: 1px solid var(--gold-dim); border-radius: 4px; padding: 8px 10px; margin: 4px 0 8px; line-height: 1.5; }
+.cmp-nostats-note.flash { animation: cmpFlash 1.2s ease; }
+@keyframes cmpFlash { 0%,60% { background: var(--gold-glow); border-color: var(--gold); } 100% { background: transparent; } }

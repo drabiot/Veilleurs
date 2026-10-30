@@ -292,7 +292,7 @@
       const used = new Set(ids());
       const match = b => !q || window.VCL.fuzzyMatch(q, b.name || '') || window.VCL.fuzzyMatch(q, b.authorPseudo || '');
       const row = b => '<button class="cmp-pick' + (b._noStats ? ' is-disabled' : '') + '" data-pick="' + esc(b._id) + '"><b>' + esc(b.name || 'Sans nom') + '</b><span>' + esc(classLabel(b)) + ' · Niv. ' + (b.level || 1) + ' · ' +
-        (b._noStats ? 'ouvre ce build dans l’Atelier pour calculer ses stats' : '👤 ' + esc(b.authorPseudo || 'Anonyme')) + '</span></button>';
+        (b._noStats ? '⚠ stats non calculées — ouvre-le dans l’Atelier (voir note)' : '👤 ' + esc(b.authorPseudo || 'Anonyme')) + '</span></button>';
       const locals = [];
       const l = readLocal();
       if (l) locals.push({ _id: 'local', name: (l.name || 'Mon build') + ' (Atelier — dernier comparé)', classe: l.classe, level: l.level, authorPseudo: 'Vous', statsSnapshot: l.statsSnapshot });
@@ -300,13 +300,14 @@
       const lrows = locals.filter(b => !used.has(b._id)).filter(match);
       const rows = (pool || []).filter(b => !used.has(b._id)).filter(match).slice(0, 60);
       document.getElementById('cmp-picker-list').innerHTML =
-        (lrows.length ? '<div class="cmp-pick-group">Mes builds (Atelier, locaux)</div>' + lrows.map(row).join('') : '') +
+        (lrows.length ? '<div class="cmp-pick-group">Mes builds (Atelier, locaux)</div>' + (lrows.some(b => b._noStats) ? '<div class="cmp-hint cmp-nostats-note" id="cmp-nostats-note">ℹ️ Les builds grisés ne peuvent pas encore être comparés : leurs stats sont calculées par l’Atelier et enregistrées seulement quand tu ouvres le build dedans. Ouvre-le une fois dans l’Atelier (onglet Build 1 / 2 / 3), puis reviens ici.</div>' : '') + lrows.map(row).join('') : '') +
         (rows.length ? '<div class="cmp-pick-group">Builds publiés</div>' + rows.map(row).join('') : '') ||
         '<div class="cmp-hint">Aucun build.</div>';
       const all = locals.concat(pool || []);
       document.querySelectorAll('[data-pick]').forEach(el => el.addEventListener('click', () => {
         const b = all.find(x => x._id === el.dataset.pick);
-        if (!b || b._noStats || builds.length >= MAX_BUILDS) return;
+        if (b && b._noStats) { const n = document.getElementById('cmp-nostats-note'); if (n) { n.classList.remove('flash'); void n.offsetWidth; n.classList.add('flash'); } return; }
+        if (!b || builds.length >= MAX_BUILDS) return;
         builds.push(b);
         document.getElementById('cmp-picker').style.display = 'none';
         render();
