@@ -501,14 +501,17 @@ function _drRow(c, i) {
   const palLabels = (c.paliers || []).map(_drPalLabel);
   const n = _drCount(c);
   const ib = (icon, title, fn, danger) => `<button class="btn btn-ghost" title="${title}" onclick="${fn}" style="padding:2px 8px;font-size:12px;${danger ? 'color:var(--danger);border-color:var(--danger);' : ''}">${icon}</button>`;
-  const actions = (alive
+  const skipped = !!c.skip && !alive;
+  const actions = (skipped
+    ? ib('↩️', 'Réactiver ce salon (il redevient « à traiter »)', `drSkip(${i}, false)`)
+    : alive
     ? ib('📤', 'Envoyer toute la data de ce salon', `drSendChannel(${i}, 'all')`) + ib('➕', 'Envoyer seulement les manquants', `drSendChannel(${i}, 'missing')`) + ib('🧹', 'Vider ce salon (supprime ses posts)', `drClearChannel(${i})`, true)
-    : ib(c.id ? '🔁' : '✨', c.id ? 'Recréer ce salon (introuvable sur Discord)' : 'Créer ce salon', `drCreate(${i})`))
+    : ib(c.id ? '🔁' : '✨', c.id ? 'Recréer ce salon (introuvable sur Discord)' : 'Créer ce salon', `drCreate(${i})`) + ib('🚫', 'Ignorer : je ne veux pas de ce salon (non créé, plus compté « à traiter »)', `drSkip(${i}, true)`))
     + ib('⚙️', 'Réglages de ce salon', `drToggleRow(${i})`) + ib('🗑', 'Retirer du plan', `drRemove(${i})`);
   return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
-      <span title="${alive ? 'En place : le bot peut utiliser ce salon' : escHtml(_drWhy(c))}">${alive ? '🟢' : '🟠'}</span>
+      <span title="${alive ? 'En place : le bot peut utiliser ce salon' : skipped ? 'Ignoré (non voulu)' : escHtml(_drWhy(c))}">${alive ? '🟢' : skipped ? '⚪' : '🟠'}</span>
       <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" style="${_drField}width:190px;font-weight:700;">
-      <span style="flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(catLabels.join(', ') + ' · ' + palLabels.join(', '))}">${catLabels.length ? catLabels.join(', ') : 'toutes catégories'} · ${palLabels.length ? palLabels.join(', ') : 'tous paliers'} · <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${alive && _drPostCounts[c.id] ? ` · ${_drPostCounts[c.id]} posts` : ''}${!alive ? ` · <span style="color:#e0a24c;">${escHtml(_drWhy(c))}</span>` : ''}</span>
+      <span style="flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(catLabels.join(', ') + ' · ' + palLabels.join(', '))}">${catLabels.length ? catLabels.join(', ') : 'toutes catégories'} · ${palLabels.length ? palLabels.join(', ') : 'tous paliers'} · <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${alive && _drPostCounts[c.id] ? ` · ${_drPostCounts[c.id]} posts` : ''}${skipped ? ' · <span style="color:var(--muted);">ignoré (non voulu)</span>' : !alive ? ` · <span style="color:#e0a24c;">${escHtml(_drWhy(c))}</span>` : ''}</span>
       <span style="display:flex;gap:4px;flex:none;">${actions}</span>
     </div>${_drOpenRows.has(i) ? _drDetail(c, i) : ''}`;
 }
@@ -521,17 +524,18 @@ function _drList() {
       ${_drChip(!view.pal && !view.todo, 'Tout', 'drView(\'\', false)')}
       ${palIds.map(p => _drChip(view.pal === p, escHtml(_drPalLabel(p)), `drView('${escHtml(p)}', false)`)).join('')}
       ${_drChip(view.todo, '⚠️ À traiter (pas en place)', 'drView(\'\', true)')}</div>`;
-  const idx = _dr.channels.map((c, i) => i).filter(i => { const c = _dr.channels[i]; return !(view.todo && _drAlive(c)) && !(view.pal && !(c.paliers || []).map(String).includes(view.pal)); });
+  const idx = _dr.channels.map((c, i) => i).filter(i => { const c = _dr.channels[i]; return !(view.todo && (_drAlive(c) || c.skip)) && !(view.pal && !(c.paliers || []).map(String).includes(view.pal)); });
   const groups = new Map();
   idx.forEach(i => { const k = _drGroupKey(_dr.channels[i]); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(i); });
   if (!idx.length) return filterRow + '<div class="empty" style="color:var(--muted);">Aucun salon ne correspond à ce filtre.</div>';
   return filterRow + [...groups].map(([k, list]) => {
-    const alive = list.filter(i => _drAlive(_dr.channels[i])).length, todo = list.length - alive;
+    const alive = list.filter(i => _drAlive(_dr.channels[i])).length, ign = list.filter(i => _dr.channels[i].skip && !_drAlive(_dr.channels[i])).length, todo = list.length - alive - ign;
     return `<details data-k="${escHtml(k)}" ontoggle="drGroupToggled(this)" ${_drOpenGroups.has(k) || view.todo || view.pal ? 'open' : ''} style="border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:var(--surface);">
-      <summary style="cursor:pointer;padding:8px 12px;font-size:13px;font-weight:700;">${escHtml(k)} <span style="font-weight:400;font-size:12px;color:var(--muted);">— ${list.length} salon${list.length > 1 ? 's' : ''} · ${alive} en place${todo ? ` · <span style="color:#e0a24c;">${todo} à traiter</span>` : ''}</span></summary>
+      <summary style="cursor:pointer;padding:8px 12px;font-size:13px;font-weight:700;">${escHtml(k)} <span style="font-weight:400;font-size:12px;color:var(--muted);">— ${list.length} salon${list.length > 1 ? 's' : ''} · ${alive} en place${todo ? ` · <span style="color:#e0a24c;">${todo} à traiter</span>` : ''}${ign ? ` · ${ign} ignoré${ign > 1 ? 's' : ''}` : ''}</span></summary>
       <div style="padding:2px 12px 8px;">${list.map(i => _drRow(_dr.channels[i], i)).join('')}</div></details>`;
   }).join('');
 }
+window.drSkip = async (i, v) => { _dr.channels[i].skip = !!v; await _drPersist(); _renderDiscordRoutes(); };
 window.drToggleRow = i => { _drOpenRows.has(i) ? _drOpenRows.delete(i) : _drOpenRows.add(i); _renderDiscordRoutes(); };
 window.drView = (pal, todo) => { _drView = { pal, todo }; _renderDiscordRoutes(); };
 window.drGroupToggled = el => { const k = el.dataset.k; if (el.open) _drOpenGroups.add(k); else _drOpenGroups.delete(k); };
@@ -547,9 +551,9 @@ function _renderDiscordRoutes() {
   if (!_dr.guildId) { body.innerHTML = html + '<div class="empty" style="color:var(--muted);margin-top:14px;">Choisis un serveur pour voir ce qui y est déjà en place et le configurer.</div>'; return; }
 
   const real = _drGuildChans.filter(x => x.type !== 4).length, ncat = _drCats().length;
-  const ready = _dr.channels.filter(_drAlive).length;
+  const ready = _dr.channels.filter(_drAlive).length, ignored = _dr.channels.filter(c => c.skip && !_drAlive(c)).length;
   html += `<details style="margin-top:12px;"><summary style="cursor:pointer;font-size:12px;color:var(--accent);">👀 Voir ce qui existe déjà sur ce serveur (${ncat} catégories, ${real} salons)</summary><div style="margin-top:8px;">${_drTree()}</div></details>`;
-  html += _drStep(2, 'Salons', `${_dr.channels.length} dans le plan · ${ready} en place`);
+  html += _drStep(2, 'Salons', `${_dr.channels.length - ignored} dans le plan · ${ready} en place${ignored ? ` · ${ignored} ignoré${ignored > 1 ? 's' : ''}` : ''}`);
   html += `<div id="discord-setup-msg" style="font-size:12px;color:var(--accent);min-height:18px;margin-bottom:8px;">${escHtml(_drBusyMsg)}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
       ${_drBtn('📋 Proposer un plan', 'drDefaultPlan()')}
@@ -784,7 +788,7 @@ async function _drEnsure(c) {
 
 window.drReconcile = async () => {
   if (!_dr.guildId) { toast('Choisis un serveur.', 'warning'); return false; }
-  const todo = _dr.channels.filter(c => c.name);
+  const todo = _dr.channels.filter(c => c.name && !(c.skip && !_drAlive(c)));
   if (!todo.length) { toast('Le plan est vide : « Plan par défaut » ou « Ajouter un salon ».', 'warning'); return false; }
   _drMsg('Lecture du serveur…');
   await _drLoadGuildChans();
