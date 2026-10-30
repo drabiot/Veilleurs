@@ -145,7 +145,7 @@ function watchProgress() {
   if (S.step !== 'status' || !S.doc?.pending || S.doc.status !== 'approved') return;
   S.prog = setInterval(async () => {
     if (S.step !== 'status') return clearInterval(S.prog);
-    try { const j = await api('inspect', { guildId: S.guild.id }); if (j.config) { S.doc = j.config; render(); } } catch { /* au prochain tour */ }
+    try { const j = await api('inspect', { guildId: S.guild.id }); if (j.config) { S.doc = j.config; S.info = j; render(); } } catch { /* au prochain tour */ }
   }, 10000);
 }
 
@@ -305,8 +305,6 @@ function itemsOf(c, d) { // nombre d'items du wiki concernés par un salon (comp
     const [cat, pal] = k.split('|');
     if ((c.itemCats || []).length && !has(c.itemCats, cat)) continue;
     if ((c.paliers || []).length ? !has(c.paliers, pal) : pal === '-1') continue;
-    if ((d.itemCats || []).length && !has(d.itemCats, cat)) continue;
-    if ((d.paliers || []).length && !has(d.paliers, pal)) continue;
     n += v;
   }
   return n;
@@ -325,7 +323,7 @@ function manageRow(c, i, d, real) {
   actions += ib('⚙️', 'Réglages de ce salon', `DG.chOpen(${i})`) + ib('🗑', 'Supprimer ce salon', `DG.chDelete(${i})`);
   const cats = (c.itemCats || []).map(k => (CATS.find(x => x[0] === k) || [0, k])[1]).join(', ') || 'toutes catégories';
   const pals = (c.paliers || []).map(palierLabel).join(', ') || 'tous paliers';
-  const n = itemsOf(c, d);
+  const n = itemsOf(c, d), inRoom = S.info?.postCounts?.[c.id] || 0;
   const dot = !sub ? '⚪' : exists ? '🟢' : '🟠';
   const dotTitle = !sub ? "Pas inscrit : rien n'est envoyé dans ce salon" : exists ? 'Inscrit et présent sur Discord' : c.id ? 'Introuvable sur Discord (supprimé ?)' : 'Sera créé automatiquement';
   const note = sub && !exists ? ` · <span style="color:var(--gold)">${c.id ? 'introuvable sur Discord' : d.mode === 'create' ? 'sera créé automatiquement' : 'choisis un salon existant (⚙️)'}</span>` : '';
@@ -333,7 +331,7 @@ function manageRow(c, i, d, real) {
   const link = c.id ? ` <a href="https://discord.com/channels/${esc(S.guild.id)}/${esc(c.id)}" target="_blank" rel="noopener" title="Ouvrir sur Discord" style="text-decoration:none">↗</a>` : '';
   return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:wrap">
       <span title="${esc(dotTitle)}">${dot}</span>${nameField}${link}
-      <span style="flex:1;min-width:160px;font-size:12px;color:var(--muted)">${cats} · ${pals}${n != null ? ` · <strong style="color:var(--gold)">${n} item${n > 1 ? 's' : ''}</strong>` : ''}${note}</span>
+      <span style="flex:1;min-width:160px;font-size:12px;color:var(--muted)">${cats} · ${pals}${n != null ? ` · <strong style="color:var(--gold)" title="${inRoom} item${inRoom > 1 ? 's' : ''} déjà dans ce salon sur ${n} dans le wiki">${inRoom}/${n} items</strong>` : ''}${note}</span>
       <span style="display:flex;gap:4px;flex:none;flex-wrap:wrap">${subBtn}${actions}</span>
     </div>${M.open.has(i) ? manageDetail(c, i, d) : ''}`;
 }
@@ -366,7 +364,7 @@ function manageVirtualRow(t, k, d) {
   return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:wrap">
       <span title="Proposé par le modèle Veilleurs : pas encore dans ton plan">⚪</span>
       <span style="width:190px;font-weight:700;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(t.name)}">${esc(t.name)}</span>
-      <span style="flex:1;min-width:160px;font-size:12px;color:var(--muted)">${cats} · ${pals}${n != null ? ` · <strong style="color:var(--gold)">${n} item${n > 1 ? 's' : ''}</strong>` : ''}</span>
+      <span style="flex:1;min-width:160px;font-size:12px;color:var(--muted)">${cats} · ${pals}${n != null ? ` · <strong style="color:var(--gold)" title="0 item dans ce salon sur ${n} dans le wiki">0/${n} items</strong>` : ''}</span>
       <button class="dg-btn" title="S'inscrire : le salon est créé sur ton serveur et reçoit les nouveaux items." onclick="DG.chSubTemplate(${k})" style="padding:2px 9px;font-size:12px">📡 S'inscrire</button>
     </div>`;
 }
@@ -394,7 +392,7 @@ function manageBlock(d) {
   }).join('') || '<div class="dg-hint">Aucun salon à afficher.</div>';
   const missing = d.mode === 'create' && all.some(([c]) => isSub(c) && c.name && !c.id);
   return `<div style="margin-top:14px"><h3 style="margin-top:0">Salons (${all.length} dans ton plan${virt.length ? ` · ${virt.length} autres proposés` : ''})</h3>
-    <p class="dg-hint">📡 <strong>Inscrit</strong> = salon activé : il est créé si besoin et reçoit les nouveaux items (un item modifié remplace son ancien post). <strong>Pas inscrit</strong> = rien n'est envoyé dans ce salon.</p>
+    <p class="dg-hint">📡 <strong>Inscrit</strong> = salon activé : il est créé si besoin et reçoit les nouveaux items (un item modifié remplace son ancien post). <strong>Pas inscrit</strong> = rien n'est envoyé dans ce salon. <strong>12/250 items</strong> = 12 items déjà postés dans le salon, sur 250 dans le wiki.</p>
     <div class="dg-row" style="margin:6px 0"><button class="dg-btn" onclick="DG.chSubAll(${!allSub})">${allSub ? '✅ Inscrit à tous (désinscrire)' : "📡 S'inscrire à tous les salons"}</button>
       <button class="dg-btn primary" onclick="DG.chNew()">➕ Nouveau salon</button>
       ${missing ? '<button class="dg-btn primary" onclick="DG.makeChannels()">✨ Créer les salons inscrits manquants</button>' : ''}

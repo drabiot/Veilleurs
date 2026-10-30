@@ -347,7 +347,11 @@ export async function handleGuildApi(request, env, deps) {
   if (action === 'inspect') {
     const [chs, roles, g] = await Promise.all([dc(env, 'GET', `/guilds/${guildId}/channels`), dc(env, 'GET', `/guilds/${guildId}/roles`), dc(env, 'GET', `/guilds/${guildId}`)]);
     if (!chs.ok) return json({ error: 'Serveur illisible par le bot (permissions ?).', detail: chs.data?.message }, 502);
-    return json({ botPresent: true, community: !!g.data?.features?.includes('COMMUNITY'),
+    // items déjà postés par salon (un post de set compte tous ses items)
+    const stRow = await env.DB.prepare("SELECT data FROM docs WHERE col = 'bot_state' AND id = ? AND deleted = 0").bind('guild_' + guildId).first();
+    const postCounts = {};
+    for (const [key, e] of Object.entries(jparse(stRow?.data)?.posts || {})) postCounts[e.channelId] = (postCounts[e.channelId] || 0) + ((e.ids || [key]).length);
+    return json({ botPresent: true, postCounts, community: !!g.data?.features?.includes('COMMUNITY'),
       channels: chs.data.filter(c => [0, 4, 5, 15].includes(c.type)).map(c => ({ id: c.id, name: c.name, type: c.type, parent_id: c.parent_id || null, position: c.position })),
       roles: (roles.data || []).filter(r => r.id !== guildId && !r.managed).sort((a, b) => b.position - a.position).map(r => ({ id: r.id, name: r.name, color: r.color })),
       config: doc });
