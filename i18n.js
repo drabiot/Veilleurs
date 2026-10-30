@@ -5,6 +5,7 @@
    d'après le dictionnaire i18n/en.json : { "texte français exact": "English text" }.
    • Marche sur le HTML statique ET sur ce que les scripts affichent ensuite (MutationObserver).
    • Une clé peut contenir des variables : "{n} résultats" → "{n} results".
+     {num} = un nombre (chiffres seulement) · {tr_x} = valeur captée traduite à son tour (ex. "{tr_a} · {tr_b}" pour « Rare · Archive »).
    • Les noms d'items/mobs/PNJ ne sont jamais traduits (pas dans le dictionnaire).
    • Un bloc peut être exclu avec l'attribut  data-no-i18n.
    • Debug : ajouter ?i18n_debug=1 → window.VCL_I18N.missing() liste les textes restés en français.
@@ -77,7 +78,7 @@ function translate(s) {
   if (hit != null) return hit;
   for (const p of patterns) {
     const m = p.re.exec(n);
-    if (m) return p.tpl.replace(/\{(\w+)\}/g, (_, k) => (m.groups[k] ?? ''));
+    if (m) return p.tpl.replace(/\{(\w+)\}/g, (_, k) => { const v = m.groups[k] ?? ''; return k.startsWith('tr_') ? (translate(v) ?? v) : v; });   // {tr_x} : la valeur captée est elle-même traduite
   }
   return null;
 }

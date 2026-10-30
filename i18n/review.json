@@ -3043,6 +3043,432 @@
     "Le bot a besoin de : voir et écrire dans les salons, créer des fils, joindre des fichiers et gérer les salons (créer ceux de ton plan). Tu peux ensuite lui retirer des droits dans les réglages de ton serveur.": {
       "page": "discord",
       "status": "auto"
+    },
+    "Dégâts d'Attaque": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "🗡️ Dégâts d'Attaque": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Dégâts Physique": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "💥 Dégâts Physique": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Dégâts d'Arme": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "⚔️ Dégâts d'Arme": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Dégâts Magiques": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "📖 Dégâts Magiques": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Dégâts de Compétence": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "✨ Dégâts de Compétence": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Dégâts de Projectile": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "🏹 Dégâts de Projectile": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Vitesse d'Attaque": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "💨 Vitesse d'Attaque": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Chance Critique Compétence": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "🎯 Chance Critique Compétence": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Crit Dégâts Compétence": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "💢 Crit Dégâts Compétence": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Durabilité de la Garde": {
+      "page": "stats",
+      "status": "doubt",
+      "note": "Guard = blocking stance with a shield? « Guard Durability » is a guess."
+    },
+    "🛡️ Durabilité de la Garde": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Blocage": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "🧱 Blocage": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Puissance de Blocage": {
+      "page": "stats",
+      "status": "doubt",
+      "note": "« Block Power » vs « Block Strength »?"
+    },
+    "💪 Puissance de Blocage": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Esquive": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "💨 Esquive": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Réduction de Chutes": {
+      "page": "stats",
+      "status": "doubt",
+      "note": "Fall damage reduction — check the in-game wording."
+    },
+    "🦘 Réduction de Chutes": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Ténacité": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "🏋️ Ténacité": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Résistance au Recul": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "🔒 Résistance au Recul": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Chance de Parade": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "⚜️ Chance de Parade": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Vitesse Accroupi": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "🐾 Vitesse Accroupi": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Vol de Vie": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "🩸 Vol de Vie": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Vampirisme de sort": {
+      "page": "stats",
+      "status": "doubt",
+      "note": "In-game stat id is « omnivamp ». « Spell Vamp » vs « Omnivamp » / « Spell Vampirism »?"
+    },
+    "👄 Vampirisme de sort": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Puissance de Soin": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "💚 Puissance de Soin": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Soins Reçus": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "🩹 Soins Reçus": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Régénération Santé": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "💓 Régénération Santé": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Régénération Mana": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "💦 Régénération Mana": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Régénération Stamina": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "👟 Régénération Stamina": {
+      "page": "stats",
+      "status": "auto"
+    },
+    "Chance Coups Critiques": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Offensif": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Défensif": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Mobilité & Ressources": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Régénération & Soutien": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Diminuer": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Augmenter": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Favoris": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Ajouter aux favoris": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Niv. {n}": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Tous": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Agressif": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Neutre": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Passif": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Parchemins": {
+      "page": "general",
+      "status": "auto"
+    },
+    "🗺️ Principaux": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Zone Monstres": {
+      "page": "general",
+      "status": "auto"
+    },
+    "💬 Quêtes": {
+      "page": "general",
+      "status": "auto"
+    },
+    "🛒 Commerce": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Vendeur d'Accessoires": {
+      "page": "general",
+      "status": "auto"
+    },
+    "♻️ Recyclage": {
+      "page": "general",
+      "status": "auto"
+    },
+    "🦠 Autres": {
+      "page": "general",
+      "status": "auto"
+    },
+    "Sous-sol": {
+      "page": "general",
+      "status": "auto"
+    },
+    "❄️ Noël 2025": {
+      "page": "general",
+      "status": "auto"
+    },
+    "🐉 Nouvel An Lunaire 2026": {
+      "page": "general",
+      "status": "auto"
+    },
+    "❤️ Saint-Valentin 2026": {
+      "page": "general",
+      "status": "auto"
+    },
+    "👾 Faille Corrompue 2026": {
+      "page": "general",
+      "status": "doubt",
+      "note": "Event name: « Faille » = rift/breach? Kept literal."
+    },
+    "1er janvier {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} janvier {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "1er février {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} février {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "1er mars {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} mars {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "1er avril {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} avril {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "1er mai {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} mai {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "1er juin {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} juin {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "1er juillet {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} juillet {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "1er août {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} août {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "1er septembre {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} septembre {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "1er octobre {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} octobre {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "1er novembre {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} novembre {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "1er décembre {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "{num} décembre {year}": {
+      "page": "dates",
+      "status": "auto"
+    },
+    "Level {num} requis": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "⚠ Niv. {num}": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "⚔️ Deux mains": {
+      "page": "atelier",
+      "status": "auto"
+    },
+    "{tr_a} · {tr_b}": {
+      "page": "general",
+      "status": "doubt",
+      "note": "Generic pattern: translates both sides of « A · B » texts (e.g. « Rare · Archive »). Keep it last."
     }
   }
 }
