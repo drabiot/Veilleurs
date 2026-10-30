@@ -294,29 +294,103 @@ function rRecap() {
     <div class="dg-bar" id="dg-bar" style="display:none"><i></i></div>${msgs()}</div>`;
 }
 
+// ═══ Gestion salon par salon (même écran que la modération, sans les outils réservés aux admins) ═══
+// Inscrit = salon activé : créé si besoin et il reçoit les nouveaux items (les items modifiés sont remplacés). Pas inscrit = rien n'est envoyé dans ce salon.
+const M = { open: new Set(), groups: new Set(), pal: '', sub: false };
+const isSub = c => c.subscribed !== false && !c.skip;
+function itemsOf(c, d) { // nombre d'items du wiki concernés par un salon (compteurs lus une fois)
+  if (!S.counts) return null;
+  let n = 0;
+  for (const [k, v] of Object.entries(S.counts)) {
+    const [cat, pal] = k.split('|');
+    if ((c.itemCats || []).length && !has(c.itemCats, cat)) continue;
+    if ((c.paliers || []).length ? !has(c.paliers, pal) : pal === '-1') continue;
+    if ((d.itemCats || []).length && !has(d.itemCats, cat)) continue;
+    if ((d.paliers || []).length && !has(d.paliers, pal)) continue;
+    n += v;
+  }
+  return n;
+}
+
+function manageRow(c, i, d, real) {
+  const exists = !!c.id && Array.isArray(real) && real.some(x => x.id === c.id);
+  const sub = isSub(c);
+  const ib = (icon, title, fn, danger) => `<button class="dg-btn" title="${esc(title)}" onclick="${fn}" style="padding:2px 8px;font-size:12px;${danger ? 'color:var(--removed);border-color:var(--removed);' : ''}">${icon}</button>`;
+  const subBtn = sub
+    ? `<button class="dg-btn" title="Inscrit : le salon est activé, il reçoit les nouveaux items. Cliquer pour se désinscrire." onclick="DG.chSub(${i}, false)" style="padding:2px 9px;font-size:12px;color:var(--added);border-color:var(--added);">✅ Inscrit</button>`
+    : `<button class="dg-btn" title="S'inscrire : activer ce salon (créé si besoin, il recevra les nouveaux items)." onclick="DG.chSub(${i}, true)" style="padding:2px 9px;font-size:12px;">📡 S'inscrire</button>`;
+  let actions = '';
+  if (sub && exists) actions += ib('📤', 'Renvoyer toute la data de ce salon', `DG.chSend(${i}, 'all')`) + ib('➕', 'Envoyer seulement les items manquants', `DG.chSend(${i}, 'missing')`) + ib('🧹', 'Vider ce salon (supprime ses posts)', `DG.chClear(${i})`, true);
+  else if (sub && d.mode === 'create') actions += ib(c.id ? '🔁' : '✨', c.id ? 'Recréer ce salon (introuvable sur Discord)' : 'Créer ce salon maintenant', `DG.chCreate(${i})`);
+  actions += ib('⚙️', 'Réglages de ce salon', `DG.chOpen(${i})`) + ib('🗑', 'Retirer du plan (le salon Discord n\'est pas supprimé)', `DG.chRemove(${i})`);
+  const cats = (c.itemCats || []).map(k => (CATS.find(x => x[0] === k) || [0, k])[1]).join(', ') || 'toutes catégories';
+  const pals = (c.paliers || []).map(palierLabel).join(', ') || 'tous paliers';
+  const n = itemsOf(c, d);
+  const dot = !sub ? '⚪' : exists ? '🟢' : '🟠';
+  const dotTitle = !sub ? "Pas inscrit : rien n'est envoyé dans ce salon" : exists ? 'Inscrit et présent sur Discord' : c.id ? 'Introuvable sur Discord (supprimé ?)' : 'Sera créé automatiquement';
+  const note = sub && !exists ? ` · <span style="color:var(--gold)">${c.id ? 'introuvable sur Discord' : d.mode === 'create' ? 'sera créé automatiquement' : 'choisis un salon existant (⚙️)'}</span>` : '';
+  const nameField = `<input type="text" value="${esc(c.name)}" onchange="DG.chRename(${i}, this.value)" style="width:190px;font-weight:700">`;
+  const link = c.id ? ` <a href="https://discord.com/channels/${esc(S.guild.id)}/${esc(c.id)}" target="_blank" rel="noopener" title="Ouvrir sur Discord" style="text-decoration:none">↗</a>` : '';
+  return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;flex-wrap:wrap">
+      <span title="${esc(dotTitle)}">${dot}</span>${nameField}${link}
+      <span style="flex:1;min-width:160px;font-size:12px;color:var(--muted)">${cats} · ${pals}${n != null ? ` · <strong style="color:var(--gold)">${n} item${n > 1 ? 's' : ''}</strong>` : ''}${note}</span>
+      <span style="display:flex;gap:4px;flex:none;flex-wrap:wrap">${subBtn}${actions}</span>
+    </div>${M.open.has(i) ? manageDetail(c, i, d) : ''}`;
+}
+
+function manageDetail(c, i, d) { // réglages détaillés d'un salon : catégorie Discord, type, quoi y envoyer
+  const chips = (list, chosen, fn) => list.map(([id, label]) => chip(has(chosen, id), label, `${fn}('${esc(id)}')`)).join('');
+  return `<div style="margin:4px 0 10px 26px;padding:10px 12px;border:1px solid var(--rim);border-radius:8px;background:var(--surface2)">
+    <div class="dg-row" style="margin-top:0">
+      ${c.id ? '' : `<label class="dg-hint">Catégorie Discord <input type="text" value="${esc(c.categoryName)}" onchange="DG.chPatch(${i}, { categoryName: this.value })" style="width:190px"></label>
+      <select onchange="DG.chPatch(${i}, { type: this.value })"><option value="forum" ${c.type !== 'text' ? 'selected' : ''}>🗂 Forum (un fil par item)</option><option value="text" ${c.type === 'text' ? 'selected' : ''}># Salon texte</option></select>`}
+    </div>
+    <div class="dg-hint">Catégories d'items <em>(aucune = toutes)</em></div>
+    <div class="dg-chips">${chips(CATS.map(x => [x[0], x[1]]), c.itemCats || [], `DG.chToggle.bind(null, ${i}, 'itemCats')`)}</div>
+    <div class="dg-hint">Paliers <em>(aucun = tous)</em></div>
+    <div class="dg-chips">${chips(S.paliers.map(p => [p.id, esc(p.label)]), c.paliers || [], `DG.chToggle.bind(null, ${i}, 'paliers')`)}</div></div>`;
+}
+
+function manageBlock(d) {
+  const real = S.info?.channels;
+  const all = (d.channels || []).map((c, i) => [c, i]);
+  const palIds = [...new Set(all.flatMap(([c]) => (c.paliers || []).map(String)))];
+  const shown = all.filter(([c]) => (!M.sub || isSub(c)) && (!M.pal || has(c.paliers, M.pal)));
+  const groups = new Map();
+  shown.forEach(([c, i]) => { const k = c.categoryName || '— sans catégorie —'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push([c, i]); });
+  const nSub = all.filter(([c]) => isSub(c)).length;
+  const allSub = nSub === all.length && all.length > 0;
+  const filters = `<div class="dg-row" style="margin:8px 0 10px;gap:6px"><span class="dg-hint">Afficher :</span>
+      ${chip(!M.pal && !M.sub, 'Tout', "DG.chView('', false)")}
+      ${palIds.map(p => chip(M.pal === p, esc(palierLabel(p)), `DG.chView('${esc(p)}', false)`)).join('')}
+      ${chip(M.sub, '📡 Inscrits', "DG.chView('', true)")}</div>`;
+  const groupsHtml = [...groups].map(([k, list]) => {
+    const ins = list.filter(([c]) => isSub(c)).length;
+    return `<details data-k="${esc(k)}" ontoggle="DG.chGroup(this)" ${M.groups.has(k) || M.pal || M.sub ? 'open' : ''} style="border:1px solid var(--rim);border-radius:8px;margin-bottom:8px;background:var(--deep)">
+      <summary style="cursor:pointer;padding:8px 12px;font-weight:700;color:var(--bright)">${esc(k)} <span style="font-weight:400;font-size:12px;color:var(--muted)">— ${list.length} salon${list.length > 1 ? 's' : ''} · ${ins} inscrit${ins > 1 ? 's' : ''}</span></summary>
+      <div style="padding:2px 12px 8px">${list.map(([c, i]) => manageRow(c, i, d, real)).join('')}</div></details>`;
+  }).join('') || '<div class="dg-hint">Aucun salon à afficher.</div>';
+  const missing = d.mode === 'create' && all.some(([c]) => isSub(c) && c.name && !c.id);
+  return `<div style="margin-top:14px"><h3 style="margin-top:0">Salons (${all.length})</h3>
+    <p class="dg-hint">📡 <strong>Inscrit</strong> = salon activé : il est créé si besoin et reçoit les nouveaux items (un item modifié remplace son ancien post). <strong>Pas inscrit</strong> = rien n'est envoyé dans ce salon.</p>
+    <div class="dg-row" style="margin:6px 0"><button class="dg-btn" onclick="DG.chSubAll(${!allSub})">${allSub ? '✅ Inscrit à tous (désinscrire)' : "📡 S'inscrire à tous les salons"}</button>
+      <button class="dg-btn" onclick="DG.chAdd()">➕ Ajouter un salon</button>
+      ${missing ? '<button class="dg-btn primary" onclick="DG.makeChannels()">✨ Créer les salons inscrits manquants</button>' : ''}
+      <button class="dg-btn" onclick="DG.refreshInfo()" title="Relit les salons du serveur">🔄 Revérifier</button>
+      <a class="dg-btn" href="https://discord.com/channels/${esc(S.guild.id)}" target="_blank" rel="noopener">Ouvrir le serveur ↗</a></div>
+    ${filters}${groupsHtml}</div>`;
+}
+
 function rStatus() {
   const d = S.doc, g = S.guild, st = d.status;
   const txt = { pending: '⏳ En attente de validation par l\'équipe du wiki. Rien n\'est envoyé tant que ce n\'est pas validé.', approved: d.paused ? '⏸ En pause : rien n\'est envoyé.' : '🟢 Actif : le bot envoie les items.',
     refused: '⛔ Inscription refusée par l\'équipe du wiki.', suspended: '⏸ Suspendu par l\'équipe du wiki.', removing: '🧹 Désinstallation en cours (quelques minutes) : le bot nettoie puis quitte le serveur.' }[st] || st;
   const when = t => t ? new Date(t).toLocaleString('fr-FR') : '—';
-  const missing = d.mode === 'create' && d.channels.some(c => c.name && !c.id);
-  // liste des salons avec lien direct vers Discord et état réel (comparé aux salons lus sur le serveur)
-  const real = S.info?.channels;
-  const chRows = (d.channels || []).filter(c => c.name || c.id).map(c => {
-    const present = !!c.id && Array.isArray(real) && real.some(x => x.id === c.id);
-    const state = !c.id ? '⏳ pas encore créé' : !Array.isArray(real) ? '' : present ? '✅ présent sur Discord' : '⚠️ introuvable sur Discord';
-    const link = c.id ? `<a href="https://discord.com/channels/${esc(S.guild.id)}/${esc(c.id)}" target="_blank" rel="noopener" style="color:var(--gold)">${esc(c.name)}</a>` : esc(c.name);
-    return `<div style="font-size:12px;padding:2px 0;">${link} <span style="color:var(--muted)">${state}</span></div>`;
-  }).join('');
-  const chBlock = chRows ? `<details style="margin:10px 0"><summary style="cursor:pointer;font-size:12px;color:var(--gold)">Salons du plan (${(d.channels || []).filter(c => c.name || c.id).length}) — voir sur Discord</summary>${chRows}
-    <div class="dg-row"><button class="dg-btn" onclick="DG.refreshInfo()">🔄 Revérifier sur Discord</button> <a class="dg-btn" href="https://discord.com/channels/${esc(S.guild.id)}" target="_blank" rel="noopener">Ouvrir le serveur</a></div>
-    <div class="dg-hint">Si tu ne vois pas les salons : ils sont lisibles par « ${d.access === 'everyone' ? 'tout le monde' : d.access === 'roles' ? 'les rôles choisis seulement' : 'les administrateurs seulement'} » ; vérifie aussi que tu es sur le bon serveur.</div></details>` : '';
   return `<div class="dg-card"><h2>« ${esc(g.name)} » — statut</h2><p style="font-size:14px">${txt}</p>
     <dl class="dg-recap"><dt>Posts envoyés</dt><dd>${d.posted ?? 0}${d.pending ? ` · restants : ${d.pending}` : ''}
       ${d.pending ? `<div class="dg-bar"><i style="width:${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))}%"></i></div><div class="dg-hint">${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))} % — ${d.posted || 0} sur ${(d.posted || 0) + d.pending}</div>` : ''}</dd><dt>Dernier envoi</dt><dd>${when(d.lastSentAt)}</dd>
     ${d.lastError ? `<dt>Dernière erreur du bot</dt><dd style="color:var(--removed)">${esc(d.lastError)}</dd>` : ''}${d.purge ? '<dt>En cours</dt><dd>suppression des posts…</dd>' : ''}</dl>
-    ${chBlock}
-    ${missing ? '<p class="dg-err">Certains salons du plan ne sont pas encore créés. <button class="dg-btn" onclick="DG.makeChannels()">Créer les salons manquants</button></p>' : ''}
+    ${manageBlock(d)}
     ${st === 'removing' ? '' : `<div class="dg-row">
       <button class="dg-btn" onclick="DG.edit()">✏️ Modifier les réglages</button>
       ${st === 'approved' || st === 'pending' ? `<button class="dg-btn" onclick="DG.pause(${!d.paused})">${d.paused ? '▶ Reprendre' : '⏸ Mettre en pause'}</button>` : ''}
@@ -333,7 +407,7 @@ const DG = window.DG = {
   step(s) { S.step = s; S.err = S.msg = ''; render(); },
   back() { clearInterval(S.poll); S.guild = null; S.doc = null; S.err = S.msg = ''; S.step = 'guild'; refreshMe().then(render); },
   async pick(id) {
-    S.guild = S.me.guilds.find(g => g.id === id); S.err = S.msg = '';
+    S.guild = S.me.guilds.find(g => g.id === id); S.err = S.msg = ''; M.open.clear(); M.groups.clear(); M.pal = ''; M.sub = false;
     S.invite = S.me.inviteUrls[id];
     S.step = 'bot'; render();
     await DG.checkBot();
@@ -345,7 +419,7 @@ const DG = window.DG = {
       if (!j.botPresent) { if (!quiet) { S.err = 'Le bot n\'est pas encore sur ce serveur.'; render(); } return; }
       clearInterval(S.poll); S.err = '';
       S.info = j; S.doc = j.config;
-      if (j.config) { S.cfg = { ...defaultCfg(), ...j.config }; S.step = 'status'; }
+      if (j.config) { await loadCombos(); S.cfg = { ...defaultCfg(), ...j.config }; S.step = 'status'; }
       else { await loadCombos(); S.cfg = defaultCfg(); S.cfg.forum = !!j.community; regenPlan(); S.step = 'form'; }
       render();
     } catch (e) {
@@ -400,12 +474,56 @@ const DG = window.DG = {
     S.busy = false; render();
   },
   async refreshInfo() { try { const j = await api('inspect', { guildId: S.guild.id }); if (j.botPresent) { S.info = j; if (j.config) S.doc = j.config; } S.err = ''; } catch (e) { S.err = e.message; } render(); },
-  async makeChannels(inner) {
+  // ── gestion salon par salon (écran « Salons » de la page de statut) ──
+  async chCall(action, extra) {
+    try { const j = await api(action, { guildId: S.guild.id, ...extra }); if (j.config) S.doc = j.config; S.err = ''; return j; }
+    catch (e) { S.err = e.message; return null; }
+  },
+  async chPatch(i, patch) { await DG.chCall('update_channel', { index: i, patch }); render(); },
+  async chSub(i, v) { S.msg = ''; await DG.chPatch(i, { subscribed: v }); },
+  async chRename(i, v) { await DG.chPatch(i, { name: v }); },
+  chToggle(i, key, id) {
+    const cur = (S.doc.channels[i][key] || []).map(String), v = String(id);
+    DG.chPatch(i, { [key]: cur.includes(v) ? cur.filter(x => x !== v) : [...cur, v] });
+  },
+  chOpen(i) { M.open.has(i) ? M.open.delete(i) : M.open.add(i); render(); },
+  chGroup(el) { const k = el.dataset.k; if (el.open) M.groups.add(k); else M.groups.delete(k); },
+  chView(pal, sub) { M.pal = pal; M.sub = sub; render(); },
+  async chSubAll(v) { const j = await DG.chCall('subscribe_all', { value: v }); if (j) S.msg = v ? 'Inscrit à tous les salons.' : 'Désinscrit de tous les salons.'; render(); },
+  async chAdd() {
+    const name = (prompt('Nom du nouveau salon :') || '').trim();
+    if (!name) return;
+    await DG.chCall('add_channel', { channel: { name, type: S.doc.forum === false ? 'text' : 'forum', categoryName: '', itemCats: [], paliers: [] } });
+    M.open.add(S.doc.channels.length - 1); render();
+  },
+  async chRemove(i) {
+    if (!confirm('Retirer ce salon du plan ?\n\nLe salon Discord et ses posts ne sont pas supprimés.')) return;
+    await DG.chCall('remove_channel', { index: i }); M.open.clear(); render();
+  },
+  async chSend(i, mode) {
+    if (mode === 'all' && !confirm('Renvoyer toute la data de ce salon ?\n\nSes posts actuels sont supprimés puis tous les items concernés sont renvoyés.')) return;
+    const j = await DG.chCall('send_request', { index: i, mode });
+    if (j) S.msg = mode === 'all' ? 'Renvoi demandé : le bot s\'en occupe (la barre de progression ci-dessus avance).' : 'Envoi des items manquants demandé : le bot s\'en occupe.';
+    render();
+  },
+  async chClear(i) {
+    if (!confirm('Vider ce salon ?\n\nTous les posts du bot dans ce salon sont supprimés (ils ne sont pas renvoyés automatiquement).')) return;
+    S.msg = 'Suppression des posts du salon…'; S.err = ''; render();
+    let j;
+    for (let n = 0; n < 200; n++) {
+      j = await DG.chCall('clear_channel', { index: i });
+      if (!j || j.done || !j.progress) break;
+      S.msg = `Suppression des posts du salon… (reste ${j.left})`; render(); await sleep(500);
+    }
+    S.msg = j && j.done ? 'Salon vidé.' : ''; render();
+  },
+  async chCreate(i) { await DG.makeChannels(false, i); },
+  async makeChannels(inner, only) {
     const bar = () => document.getElementById('dg-bar');
     try {
       let total = null;
       for (let i = 0; i < 20; i++) {
-        const j = await api('create_channels', { guildId: S.guild.id });
+        const j = await api('create_channels', { guildId: S.guild.id, ...(Number.isInteger(only) ? { only } : {}) });
         S.doc = j.config;
         total ??= j.remaining + j.created;
         const b = bar(); if (b) { b.style.display = 'block'; b.firstElementChild.style.width = Math.round(100 * (1 - j.remaining / Math.max(1, total))) + '%'; }

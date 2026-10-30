@@ -415,6 +415,14 @@ export async function handleGuildApi(request, env, deps) {
     return json({ ok: true, config: doc });
   }
 
+  if (action === 'subscribe_all') {
+    (doc.channels || []).forEach(c => { c.subscribed = !!body.value; delete c.skip; });
+    doc.updatedAt = Date.now();
+    pushLog(doc, body.value ? 'Inscrit à tous les salons' : 'Désinscrit de tous les salons');
+    await dgPut(env, guildId, doc);
+    return json({ ok: true, config: doc });
+  }
+
   // envoi à la demande pour un salon : traité par le bot (cartes dessinées côté Node)
   if (action === 'send_request') {
     const c = (doc.channels || [])[parseInt(body.index, 10)];
