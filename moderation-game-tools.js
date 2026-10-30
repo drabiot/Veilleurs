@@ -392,7 +392,23 @@ const _drPersist = async () => { try { await _drSave(); } catch (e) { toast('Err
 const _drField = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
 const _drChip = (on, label, onclick) => `<button type="button" onclick="${onclick}" style="font-size:11px;padding:3px 9px;border-radius:12px;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};background:${on ? 'rgba(224,172,96,.18)' : 'var(--surface2)'};color:${on ? 'var(--accent)' : 'var(--muted)'};">${label}</button>`;
 const _drCats = () => _drGuildChans.filter(x => x.type === 4).sort((a, b) => a.position - b.position);
-const _drSlug = n => String(n || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_àâäçéèêëîïôöùûüœ]/g, '');
+// Nom envoyé à Discord : espaces -> tirets, caractères interdits retirés. Discord met en minuscules les lettres ASCII d'un salon (pas celles d'une catégorie) :
+// les majuscules des salons passent par des lettres Unicode « grasses » (𝗔𝗿𝗺𝗲𝘀), comme le nom d'un serveur en police spéciale.
+const _drSlug = n => String(n || '').trim().replace(/\s+/g, '-').replace(/[\\/#@:*?"<>|`]/g, '');
+// Clé de comparaison (retrouver un salon / une catégorie existants) : NFKC ramène 𝗔𝗿𝗺𝗲𝘀 à « armes », sans emoji ni séparateurs
+const _drKey = n => String(n || '').normalize('NFKC').toLowerCase().replace(/[^a-z0-9àâäçéèêëîïôöùûüœ]/g, '');
+const _drFancy = text => [...String(text).normalize('NFD')].map(ch => {
+  const c = ch.codePointAt(0);
+  if (c >= 65 && c <= 90) return String.fromCodePoint(0x1D5D4 + c - 65);
+  if (c >= 97 && c <= 122) return String.fromCodePoint(0x1D5EE + c - 97);
+  if (c >= 48 && c <= 57) return String.fromCodePoint(0x1D7EC + c - 48);
+  return ch;
+}).join('');
+const _drCap = t => String(t).replace(/(^|[\s-])(\S)/g, (m, a, b) => a + b.toUpperCase());
+const _DR_PAL_EMOJI = { '1': '🌱', '2': '🔥', '3': '🌲', event: '🎉', worldboss: '🌍', '-1': '📦' };
+// Style « Veilleurs » : salon = emoji・𝗡𝗼𝗺 ; catégorie = emoji NOM EN MAJUSCULES
+const _drStyleChannel = (emoji, name) => `${emoji ? emoji + '・' : ''}${_drFancy(_drCap(name))}`;
+const _drStyleCategory = palier => `${_DR_PAL_EMOJI[String(palier)] || '📁'} ${_drPalLabel(palier).toUpperCase()}`;
 const _drTypeNum = c => c.type === 'text' ? 0 : 15;
 const _drPalLabel = id => (_drPaliers.find(p => String(p.id) === String(id)) || {}).label || String(id);
 
@@ -481,6 +497,7 @@ function _renderDiscordRoutes() {
   html += `<div id="discord-setup-msg" style="font-size:12px;color:var(--accent);min-height:18px;margin-bottom:8px;">${escHtml(_drBusyMsg)}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
       ${_drBtn('📋 Proposer un plan', 'drDefaultPlan()')}
+      ${_drBtn('🎨 Style Veilleurs (majuscules + emojis)', 'drRestyle()')}
       ${_drBtn('➕ Ajouter un salon', 'drAdd()')}
       ${_drBtn('✨ Créer tous les salons manquants', 'drReconcile()', 'primary')}
     </div>
@@ -526,7 +543,30 @@ window.drSetGuild = async (id) => {
 };
 window.drSetThreshold = async (v) => { const n = parseInt(v, 10); _dr.hideThreshold = Number.isFinite(n) && n >= 0 ? n : 10; await _drPersist(); _renderDiscordRoutes(); };
 window.drAdd = async () => { _dr.channels.push({ name: '', type: 'forum', itemCats: [], paliers: [] }); await _drPersist(); _renderDiscordRoutes(); };
-window.drSet = async (i, k, v) => { _dr.channels[i][k] = String(v).trim(); await _drPersist(); _renderDiscordRoutes(); };
+window.drSet = async (i, k, v) => {
+  const c = _dr.channels[i];
+  c[k] = String(v).trim();
+  if (k === 'name' && c.id && c.name) {
+    try { await _drCall('patch_channel', { channelId: c.id, patch: { name: _drSlug(c.name) } }); toast('Salon renommé sur Discord.', 'success'); }
+    catch (e) { toast('Renommage Discord impossible : ' + e.message, 'error', 8000); }
+  }
+  await _drPersist(); _renderDiscordRoutes();
+};
+
+// Remet au style Veilleurs les salons du plan pas encore créés (un seul type d'item et un seul palier)
+window.drRestyle = async () => {
+  let n = 0;
+  for (const c of _dr.channels) {
+    if (c.id || (c.itemCats || []).length !== 1) continue;
+    const [, label] = _DR_CATS.find(q => q[0] === c.itemCats[0]) || [0, '📦 ' + c.itemCats[0]];
+    const [emoji, ...words] = label.split(' ');
+    c.name = _drStyleChannel(emoji, words.join(' '));
+    if (!c.categoryId && (c.paliers || []).length === 1) c.categoryName = _drStyleCategory(c.paliers[0]);
+    n++;
+  }
+  await _drPersist(); _renderDiscordRoutes();
+  toast(n ? `${n} salon(s) mis au style Veilleurs (majuscules + emojis). Les salons déjà créés ne changent pas.` : 'Aucun salon à restyler (les salons déjà créés ne changent pas).', n ? 'success' : 'info', 7000);
+};
 window.drSetCategory = async (i, v) => {
   const c = _dr.channels[i];
   if (v === '__prompt__') { const n = (prompt('Nom de la nouvelle catégorie Discord :') || '').trim(); if (!n) { _renderDiscordRoutes(); return; } c.categoryId = ''; c.categoryName = n; }
@@ -561,8 +601,9 @@ window.drDefaultPlan = async () => {
   let added = 0;
   for (const [cat, pal] of wanted) {
     if (_dr.channels.some(c => (c.itemCats || []).join() === cat && (c.paliers || []).map(String).join() === pal)) continue;
-    const name = (_DR_CATS.find(q => q[0] === cat) || [0, 0, cat])[2];
-    _dr.channels.push({ name, type: 'forum', categoryName: _drPalLabel(pal), itemCats: [cat], paliers: [pal] });
+    const [, label] = _DR_CATS.find(q => q[0] === cat) || [0, '📦 ' + cat];
+    const [emoji, ...words] = label.split(' ');
+    _dr.channels.push({ name: _drStyleChannel(emoji, words.join(' ')), type: 'forum', categoryName: _drStyleCategory(pal), itemCats: [cat], paliers: [pal] });
     added++;
   }
   await _drPersist(); _renderDiscordRoutes();
@@ -578,14 +619,14 @@ async function _drEnsure(c) {
   if (!name) throw new Error('nom de salon requis');
   let parentId = c.categoryId && byId.has(c.categoryId) ? c.categoryId : '';
   if (!parentId && c.categoryName) {
-    const known = _drCats().find(k => k.name.toLowerCase() === c.categoryName.toLowerCase());
+    const known = _drCats().find(k => _drKey(k.name) === _drKey(c.categoryName));
     if (known) parentId = known.id;
     else { const k = await _drCall('create_channel', { name: c.categoryName, type: 4 }); _drGuildChans.push(k); parentId = k.id; _drNoteCreated('categories', k.id); await _drSleep(400); }
   }
   c.categoryId = parentId;
   const type = _drTypeNum(c);
-  const existing = _drGuildChans.find(x => x.type === type && x.name === name && (x.parent_id || '') === parentId)
-    || (!parentId ? _drGuildChans.find(x => x.type === type && x.name === name) : null);
+  const existing = _drGuildChans.find(x => x.type === type && _drKey(x.name) === _drKey(name) && (x.parent_id || '') === parentId)
+    || (!parentId ? _drGuildChans.find(x => x.type === type && _drKey(x.name) === _drKey(name)) : null);
   if (existing) { c.id = existing.id; return 'adopté'; }
   const ch = await _drCall('create_channel', { name, type, parentId: parentId || undefined });
   _drGuildChans.push(ch); c.id = ch.id; _drNoteCreated('channels', ch.id);
@@ -640,8 +681,8 @@ window.drUninstall = async () => {
   const posts = snap.docs.map(d => ({ _id: d.id, ...d.data() })).filter(p => inGuild.has(p.channelId));
   const survivors = posts.filter(p => !delChannels.includes(p.channelId)); // posts dans des salons conservés : supprimés un par un
   if (!await modal.confirm(`Désinstaller sur « ${gname} » ? Seront supprimés : ${posts.length} post(s) du bot, ${delChannels.length} salon(s) créé(s) par le bot, ${delCats.length} catégorie(s) créée(s) par le bot (si elles sont vides). Le plan de ce serveur sera effacé et le bot quittera le serveur. Les autres salons ne sont pas touchés. Irréversible.`)) return;
-  const typed = (prompt(`Pour confirmer, tape exactement le nom du serveur :\n${gname}`) || '').trim();
-  if (typed !== gname) { toast('Nom différent : désinstallation annulée.', 'warning'); return; }
+  const typed = (prompt(`Serveur : ${gname}\n\nPour confirmer la suppression, tape le mot SUPPRIMER :`) || '').trim();
+  if (typed.toUpperCase() !== 'SUPPRIMER') { toast('Mot de confirmation différent : désinstallation annulée.', 'warning'); return; }
   const fails = [];
   try {
     for (const [n, p] of survivors.entries()) {
