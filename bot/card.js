@@ -131,12 +131,16 @@ function parseObtainData(raw) {
 function parseCraftData(item, allItems, pnjMap) {
   const craftList = item.craft;
   if (!craftList?.length) return null;
-  const isNew = typeof craftList[0] === 'object' && 'items' in craftList[0];
-  const recipe = isNew ? craftList[0] : { name: null, npcId: null, items: craftList };
+  // Formats : [{name, npcId, items}] (récent) · [[{qty,id}], …] (plusieurs recettes) · [{qty,id}] (une seule, ancien). Plusieurs recettes : la 1re qui demande autre chose que de la monnaie (sinon la 1re)
+  const isNew = !Array.isArray(craftList[0]) && typeof craftList[0] === 'object' && 'items' in craftList[0];
+  const nested = Array.isArray(craftList[0]);
+  const recipe = isNew ? craftList[0]
+    : nested ? { name: null, npcId: null, items: craftList.find(r => (r || []).some(ci => ci?.id && !CURRENCIES[ci.id])) || craftList[0] }
+    : { name: null, npcId: null, items: craftList };
   const npc = recipe.name
     || (recipe.npcId && pnjMap[recipe.npcId]?.name)
     || (recipe.npcId ? recipe.npcId.replace(/_/g, ' ') : null);
-  const ingredients = (recipe.items || []).map(ci => {
+  const ingredients = (recipe.items || []).filter(ci => ci?.id).map(ci => {
     const cur = CURRENCIES[ci.id]; // monnaie (Cols…) : pas un item, emoji + libellé comme sur le Compendium
     if (cur) return { name: cur.label, id: ci.id, qty: ci.qty, item: null, currency: cur };
     const found = allItems.find(a => a.id === ci.id);
