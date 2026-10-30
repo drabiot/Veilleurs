@@ -1625,6 +1625,23 @@ async function _allPosts(force) {
   if (_drBusy) _postsCache = list;
   return list;
 }
+// Salons du serveur sélectionné (config/discord_routes.guildId) : les actions de masse ne touchent que les posts de ce serveur
+let _gset = null;
+async function _guildSet(force) {
+  const r = await _routes();
+  if (!r.guildId) return null;
+  if (!force && _gset && _gset.g === r.guildId && Date.now() - _gset.at < 60000) return _gset.ids;
+  try {
+    const chans = await _workerCall('get_guild_channels', { guildId: r.guildId });
+    if (Array.isArray(chans)) { _gset = { g: r.guildId, at: Date.now(), ids: new Set(chans.map(c => c.id)) }; return _gset.ids; }
+  } catch {}
+  return null;
+}
+/** Posts suivis dans les salons du serveur sélectionné ; null si aucun serveur n'est choisi ou lisible (on ne supprime alors rien en masse). */
+async function _scopedPosts(force) {
+  const [posts, set] = await Promise.all([_allPosts(force), _guildSet(force)]);
+  return set ? posts.filter(p => set.has(p.channelId)) : null;
+}
 async function _deletePost(post) {
   if (post.threadId) {
     const r = await _workerCall('delete_thread', { threadId: post.threadId });
@@ -1635,7 +1652,7 @@ async function _deletePost(post) {
   if (_postsCache) _postsCache = _postsCache.filter(p => p._id !== post._id);
 }
 async function _deleteItemPosts(itemId) {
-  for (const p of (await _allPosts()).filter(p => String(p.itemId) === String(itemId))) await _deletePost(p);
+  for (const p of ((await _scopedPosts()) || []).filter(p => String(p.itemId) === String(itemId))) await _deletePost(p); // seulement sur le serveur sélectionné
 }
 
 async function _loadItem(id) {
@@ -1730,13 +1747,14 @@ window.discordDeletePost = async function(docId) {
   await window.discordRenderSync();
 };
 window.discordDeleteAllPosts = async function() {
-  const posts = await _allPosts();
-  if (!posts.length) { toast('Aucun post suivi.', 'warning'); return; }
-  if (!await modal.confirm(`Supprimer les ${posts.length} posts Discord ?\n\n(Les items du wiki ne sont pas touchés.)`)) return;
+  const posts = await _scopedPosts(true);
+  if (!posts) { toast('Choisis un serveur (et vérifie que le worker est à jour) : sans ça, aucune suppression en masse.', 'warning'); return; }
+  if (!posts.length) { toast('Aucun post suivi sur ce serveur.', 'warning'); return; }
+  if (!await modal.confirm(`Supprimer les ${posts.length} posts Discord de ce serveur ?\n\n(Les posts des autres serveurs et les items du wiki ne sont pas touchés.)`)) return;
   await _bulk('Suppression', posts, _deletePost, 600);
 };
 window.discordDeleteChannelPosts = async function(channelId) {
-  const posts = (await _allPosts()).filter(p => p.channelId === channelId);
+  const posts = (await _allPosts(true)).filter(p => p.channelId === channelId);
   if (!posts.length) { toast('Aucun post suivi dans ce salon.', 'warning'); return; }
   if (!await modal.confirm(`Supprimer les ${posts.length} posts du salon ${channelId} ?`)) return;
   await _bulk('Suppression', posts, _deletePost, 600);
@@ -1772,7 +1790,8 @@ window.discordRenderSync = async function() {
   const el = document.getElementById('discord-sync-body');
   if (!el) return;
   try {
-    const [r, posts, items] = await Promise.all([_routes(true), _allPosts(), cachedDocs(COL.items).catch(() => [])]);
+    const [r, scoped, items] = await Promise.all([_routes(true), _scopedPosts(true), cachedDocs(COL.items).catch(() => [])]);
+    const posts = scoped || [];
     _drPosts = posts.sort((a, b) => String(a.itemName).localeCompare(String(b.itemName), 'fr'));
     _drItems = items.map(i => ({ ...i, id: i.id ?? i._id }));
     const chInfo = new Map((r.channels || []).filter(c => c.id).map(c => [c.id, c.name]));
@@ -1788,14 +1807,14 @@ window.discordRenderSync = async function() {
       <div style="font-size:14px;font-weight:700;margin:6px 0 8px;">🛠 Actions manuelles</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
         <button class="btn btn-ghost" onclick="discordResendAll()" style="font-size:12px;">🔄 Renvoyer tous les items</button>
-        <button class="btn btn-ghost" onclick="discordDeleteAllPosts()" style="font-size:12px;color:var(--danger);border-color:var(--danger);">🗑 Supprimer tous les posts (${posts.length})</button>
+        <button class="btn btn-ghost" onclick="discordDeleteAllPosts()" style="font-size:12px;color:var(--danger);border-color:var(--danger);">🗑 Supprimer tous les posts de ce serveur (${posts.length})</button>
       </div>
       <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:12px;color:var(--muted);">🤫 Masquage anti-ping : réglé plus haut. <button class="btn btn-ghost" onclick="discordRestoreVisibility()" style="font-size:11px;padding:2px 8px;">🔓 Rétablir la visibilité</button></div>
       <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Par salon</div>${perChannel}
       <div style="font-size:12px;font-weight:700;margin:14px 0 6px;">Envoyer / renvoyer un item</div>
       <input type="text" id="discord-resend-search" oninput="discordSearchItems()" placeholder="Nom de l'item…" style="${field}width:100%;box-sizing:border-box;">
       <div id="discord-resend-results" style="display:flex;flex-direction:column;gap:4px;margin-top:6px;"></div>
-      <div style="font-size:12px;font-weight:700;margin:14px 0 6px;">Posts existants (${posts.length})</div>
+      <div style="font-size:12px;font-weight:700;margin:14px 0 6px;">Posts existants sur ce serveur (${posts.length})${scoped ? '' : ' <span style="color:var(--danger);font-weight:400;">— choisis un serveur pour les voir</span>'}</div>
       <input type="text" id="discord-posts-filter" oninput="discordFilterPosts()" placeholder="Filtrer par nom…" style="${field}width:100%;box-sizing:border-box;margin-bottom:6px;">
       <div id="discord-posts-list" style="display:flex;flex-direction:column;gap:4px;max-height:360px;overflow:auto;"></div>
 `;
