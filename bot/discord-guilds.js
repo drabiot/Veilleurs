@@ -36,15 +36,16 @@ async function workerBot(action, extra = {}) {
   return j;
 }
 
-// ── Items du wiki, gardés en mémoire (synchro incrémentale) ──
+// ── Items du wiki : seulement ce qui a changé depuis la révision la plus ancienne des serveurs actifs ──
+// Lecture complète (since = 0) seulement si un serveur en a besoin : premier passage, envoi en cours, réglages modifiés.
 const items = new Map();
-let itemsRev = 0;
-async function refreshItems() {
-  const j = await dp.sync('items', itemsRev);
+const fetched = { rev: 0, full: false, deleted: [] };
+async function refreshItems(since) {
+  const j = await dp.sync('items', since);
   if (j.error) throw new Error('items : ' + j.error);
+  items.clear();
   for (const x of j.docs) items.set(x.id, { _id: x.id, ...x.d });
-  for (const id of j.deleted || []) items.delete(id);
-  itemsRev = j.rev;
+  Object.assign(fetched, { rev: j.rev, full: since === 0, deleted: j.deleted || [] });
 }
 const hashOf = it => crypto.createHash('sha1').update(JSON.stringify(it)).digest('base64').slice(0, 12);
 
@@ -59,7 +60,7 @@ function route(cfg, it) {
 }
 
 /** Travail à faire pour un serveur : { todo: [{ it, ch, old?, h }], hashFix: [[itemId, h]] , gone: [itemId] }. Pur (testé). */
-function plan(cfg, st, itemMap) {
+function plan(cfg, st, itemMap, full = true, deleted = []) {
   const todo = [], hashFix = [], gone = [];
   for (const [id, it] of itemMap) {
     const ch = route(cfg, it);
@@ -69,7 +70,8 @@ function plan(cfg, st, itemMap) {
     if (e.channelId !== ch.id) todo.push({ it, ch, h, old: e });           // règle changée : déplacé
     else if (e.h !== h) { if (cfg.replace !== false) todo.push({ it, ch, h, old: e }); else hashFix.push([id, h]); }
   }
-  for (const id of Object.keys(st.posts)) if (!itemMap.has(id)) gone.push(id); // item supprimé du wiki
+  // item supprimé du wiki : absent de la lecture complète, ou listé comme supprimé dans la lecture incrémentale
+  for (const id of Object.keys(st.posts)) if (full ? !itemMap.has(id) : deleted.includes(id)) gone.push(id);
   const pal = p => (p == null ? 999 : isNaN(Number(p)) ? 500 : Number(p));
   todo.sort((a, b) => pal(a.it.palier) - pal(b.it.palier) || String(a.it.category).localeCompare(b.it.category));
   return { todo, hashFix, gone };
@@ -146,7 +148,7 @@ async function guildPass(rest, g, st, getCtx) {
     if (cfg.initial !== 'all') for (const [id, it] of items) if (route(cfg, it)) st.seen[id] = 1;
     st.baselined = true;
   }
-  const { todo, hashFix, gone } = plan(cfg, st, items);
+  const { todo, hashFix, gone } = plan(cfg, st, items, fetched.full, fetched.deleted);
   for (const [id, h] of hashFix) st.posts[id].h = h;
   let error = '', sent = 0;
   for (const id of gone) { try { await deletePost(rest, st.posts[id]); delete st.posts[id]; await sleep(500); } catch (e) { error = e.message; } }
@@ -182,6 +184,8 @@ async function guildPass(rest, g, st, getCtx) {
     }
   }
   const pending = Math.max(0, todo.length - sent);
+  st.pending = pending; st.cfgAt = g.updatedAt || 0;
+  if (pending === 0 && !error) st.rev = fetched.rev; // sinon : lecture complète au prochain passage
   const patch = { posted: Object.keys(st.posts).length, pending, initialDone: pending === 0 };
   if (sent) patch.lastSentAt = Date.now();
   if (error || g.lastError) patch.lastError = error;
@@ -197,10 +201,17 @@ async function pass(rest) {
   const active = guilds.filter(g => g.status === 'removing' || g.purge || (g.status === 'approved' && !g.paused));
   let ctxP = null;
   const getCtx = () => (ctxP ??= dp.buildContext());
-  if (active.some(g => g.status === 'approved' && !g.paused)) await refreshItems();
+  const sending = active.filter(g => g.status === 'approved' && !g.paused);
+  const states = new Map();
+  for (const g of active) { const st = await loadGuildState(g.id); st._id = g.id; states.set(g.id, st); }
+  if (sending.length) {
+    // lecture complète si un serveur n'a jamais été lu, a un envoi en cours, des items en échec, ou des réglages modifiés ; sinon seulement les changements
+    const needFull = sending.some(g => { const st = states.get(g.id); return !st.baselined || st.pending > 0 || !st.rev || st.cfgAt !== (g.updatedAt || 0); });
+    await refreshItems(needFull ? 0 : Math.min(...sending.map(g => states.get(g.id).rev)));
+  }
   for (const g of active) {
     if (timeUp()) { log('Durée maximale atteinte : suite au prochain passage.'); break; }
-    const st = await loadGuildState(g.id); st._id = g.id;
+    const st = states.get(g.id);
     try {
       if (g.status === 'removing') {
         await uninstall(rest, g, st);
