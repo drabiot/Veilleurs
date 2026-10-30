@@ -24,7 +24,10 @@ const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'NOSCRIPT', 'CODE', 'P
 
 const safe = (op, v) => { try { return op === 'get' ? localStorage.getItem(LS_KEY) : localStorage.setItem(LS_KEY, v); } catch { return null; } };
 
+// Cadre d'une page de comparaison (i18n/compare.html) : la langue est portée par le nom de la fenêtre, sans toucher au choix mémorisé du visiteur
+const frameLang = /^vcl-lang:(\w+)$/.exec(window.name || '')?.[1];
 function detectLang() {
+  if (SUPPORTED.includes(frameLang)) return frameLang;
   const url = new URL(location.href);
   const q = url.searchParams.get('lang');
   if (SUPPORTED.includes(q)) {
@@ -113,6 +116,22 @@ function translateAttrs(el) {
   }
 }
 
+// Phrase coupée par des balises (<b>, <a>…) : l'élément porte data-i18n-html et se traduit EN ENTIER, balises comprises.
+// Clé du dictionnaire = son innerHTML (espaces compactés), valeur = le HTML anglais.
+const htmlHosts = n => (n.nodeType === 1 ? n : n.parentElement)?.closest('[data-i18n-html]');
+function translateHtml(el) {
+  const key = squash(el.innerHTML);
+  if (el._vclOut === key) return;                 // déjà traduit (ou notre propre mutation)
+  const out = translate(key);
+  if (out == null) {
+    if (DEBUG && looksFrench(el.textContent) && !outputs.has(key)) missing.set(key, (missing.get(key) || 0) + 1);
+    return;
+  }
+  outputs.add(out);
+  el.innerHTML = out;
+  el._vclOut = squash(el.innerHTML);
+}
+
 const skipped = n => {
   const el = n.nodeType === 1 ? n : n.parentElement;
   return !el || SKIP_TAGS.has(el.tagName) || el.closest('[data-no-i18n]');
@@ -120,11 +139,18 @@ const skipped = n => {
 
 function walk(root) {
   if (!root || skipped(root)) return;
+  const host = htmlHosts(root);
+  if (host) { translateHtml(host); return; }
   if (root.nodeType === 3) { translateTextNode(root); return; }
   if (root.nodeType !== 1) return;
   translateAttrs(root);
   const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
-    acceptNode: n => (n.nodeType === 1 && (SKIP_TAGS.has(n.tagName) || n.hasAttribute('data-no-i18n')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT),
+    acceptNode: n => {
+      if (n.nodeType !== 1) return NodeFilter.FILTER_ACCEPT;
+      if (SKIP_TAGS.has(n.tagName) || n.hasAttribute('data-no-i18n')) return NodeFilter.FILTER_REJECT;
+      if (n.hasAttribute('data-i18n-html')) { translateAttrs(n); translateHtml(n); return NodeFilter.FILTER_REJECT; }   // traité en bloc
+      return NodeFilter.FILTER_ACCEPT;
+    },
   });
   let n = tw.nextNode();
   while (n) { if (n.nodeType === 3) translateTextNode(n); else translateAttrs(n); n = tw.nextNode(); }
@@ -134,7 +160,7 @@ function observe() {
   const mo = new MutationObserver(records => {
     for (const r of records) {
       if (r.type === 'childList') r.addedNodes.forEach(walk);
-      else if (r.type === 'characterData') { if (!skipped(r.target)) translateTextNode(r.target); }
+      else if (r.type === 'characterData') { if (skipped(r.target)) continue; const h = htmlHosts(r.target); if (h) translateHtml(h); else translateTextNode(r.target); }
       else if (r.type === 'attributes' && !skipped(r.target)) translateAttrs(r.target);
     }
   });

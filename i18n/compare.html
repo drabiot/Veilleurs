@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
+  <title>[VCL] - Translation side by side</title>
+  <style>
+    :root { --bg: #0e0c0a; --surface: #17130f; --surface2: #1f1a14; --rim: #3a3024; --text: #d8cdb8; --muted: #8f836e; --gold: #e0ac60; --ok: #7fb069; --warn: #e0a040; --bad: #d9674f; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.5 'JetBrains Mono', ui-monospace, Consolas, monospace; display: flex; flex-direction: column; }
+    a { color: var(--gold); }
+    input, select, textarea, button { font: inherit; font-size: 12px; background: var(--surface2); color: var(--text); border: 1px solid var(--rim); border-radius: 5px; padding: 5px 9px; }
+    button { cursor: pointer; } button:hover { border-color: var(--gold); }
+    button.primary { background: var(--gold); border-color: var(--gold); color: #1a1208; font-weight: 700; }
+    button.on { border-color: var(--gold); color: var(--gold); }
+    header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 14px; background: rgba(14,12,10,.96); border-bottom: 1px solid var(--rim); }
+    header h1 { margin: 0 8px 0 0; font-size: 14px; color: var(--gold); letter-spacing: .04em; }
+    .sp { margin-left: auto; color: var(--muted); font-size: 12px; }
+    #work { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr 340px; }
+    .col { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid var(--rim); }
+    .col .cap { padding: 3px 10px; font-size: 11px; color: var(--muted); background: var(--surface); border-bottom: 1px solid var(--rim); }
+    .col iframe { flex: 1; width: 100%; border: 0; background: #fff0; }
+    #panel { padding: 12px; overflow: auto; background: var(--surface); display: flex; flex-direction: column; gap: 8px; }
+    #panel h2 { margin: 0; font-size: 13px; color: var(--gold); }
+    #panel .fr { white-space: pre-wrap; word-break: break-word; background: var(--bg); border: 1px dashed var(--rim); border-radius: 5px; padding: 6px 9px; user-select: text; }
+    #panel textarea { width: 100%; min-height: 90px; resize: vertical; }
+    #panel .row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .badge { display: inline-block; border: 1px solid var(--rim); border-radius: 10px; padding: 0 8px; font-size: 11px; color: var(--muted); }
+    .badge.ok { color: var(--ok); border-color: var(--ok); } .badge.miss { color: var(--bad); border-color: var(--bad); } .badge.doubt { color: var(--warn); border-color: var(--warn); }
+    .hint { color: var(--muted); font-size: 12px; }
+    body.locked > *:not(#gate) { display: none !important; }
+    #gate { display: none; max-width: 460px; margin: 18vh auto 0; padding: 22px; background: var(--surface); border: 1px solid var(--rim); border-radius: 10px; text-align: center; }
+    body.locked #gate { display: block; }
+    #gate h2 { margin: 0 0 8px; font-size: 16px; color: var(--gold); }
+    #gate p { color: var(--muted); font-size: 13px; margin: 6px 0 14px; }
+    @media (max-width: 1000px) { #work { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr auto; } }
+  </style>
+</head>
+<body class="locked">
+  <div id="gate"><h2>Translation side by side</h2><p id="gate-msg">Checking your access…</p><button class="primary" id="gate-login" style="display:none">Log in with Discord</button></div>
+
+  <header>
+    <h1>🌍 Side by side</h1>
+    <select id="page" title="Page to translate"></select>
+    <input id="custom" type="text" placeholder="…or a path, e.g. ../Quetes/quetes.html" size="28" />
+    <button id="go">Open</button>
+    <button id="b-pick" class="on" title="Click a text in the French page to translate it">🎯 Pick</button>
+    <button id="b-miss" class="on" title="Outline French texts that have no English yet">⚠ Show untranslated</button>
+    <button id="b-sync" class="on" title="Scrolling one side scrolls the other">⇅ Sync scroll</button>
+    <button id="b-next" title="Jump to the next untranslated text on the page">Next untranslated →</button>
+    <span class="sp"><span id="count">0 changes</span> · <input id="name" type="text" placeholder="Your name" size="12" /> <button id="b-dl" class="primary">⬇ Download my changes</button> <a href="review.html">List view</a></span>
+  </header>
+
+  <div id="work">
+    <div class="col"><div class="cap">🇫🇷 Français (source)</div><iframe id="fr" name="vcl-lang:fr" title="French"></iframe></div>
+    <div class="col"><div class="cap">🇬🇧 English (what visitors see)</div><iframe id="en" name="vcl-lang:en" title="English"></iframe></div>
+    <aside id="panel">
+      <h2>Translate</h2>
+      <div class="hint" id="hint">Click a text in the French page (left). Texts outlined in red have no English yet. Your work is saved in this browser and shared with the list view.</div>
+      <div id="editor" style="display:none; flex-direction:column; gap:8px;">
+        <div><span id="st" class="badge"></span> <span id="pat" class="badge" style="display:none">pattern</span></div>
+        <div class="hint">French</div>
+        <div class="fr" id="e-fr"></div>
+        <div class="hint">English</div>
+        <textarea id="e-en" spellcheck="true"></textarea>
+        <input id="e-note" type="text" placeholder="Note for Paul (optional)…" />
+        <div class="row"><button class="primary" id="e-ok">✔ Save & OK</button><button id="e-doubt">⚠ Unsure</button><button id="e-next">Save & next →</button></div>
+        <div class="hint">Keep placeholders like <code>{n}</code> exactly as they are. Names of items, mobs and NPCs are not translated.</div>
+      </div>
+    </aside>
+  </div>
+
+<script type="module">
+// Accès réservé : même règle que review.html (connexion Discord + rôle « traducteur » ou permission « tool_translate »).
+import { auth, db, getUserRole, loginWithDiscord, hasRole, ROLES } from '../firebase.js';
+import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import { doc, getDoc } from '../d1db.js';
+const TRANSLATOR_ROLE = 'traducteur';
+const msg = document.getElementById('gate-msg'), btn = document.getElementById('gate-login');
+const lock = (text, login) => { document.body.classList.add('locked'); msg.textContent = text; btn.style.display = login ? '' : 'none'; };
+btn.onclick = async () => { try { await loginWithDiscord(); } catch (e) { if (e.code !== 'auth/popup-closed-by-user') lock('Login failed: ' + e.message, true); } };
+let started = false;
+async function check(user) {
+  if (!user) return lock('This tool is reserved for invited translators. Log in with Discord to continue.', true);
+  lock('Checking your access…', false);
+  try {
+    const role = await getUserRole(user.uid);
+    let tier = ROLES.includes(role) ? role : 'visiteur', min = 'admin';
+    try { const c = await getDoc(doc(db, 'config', 'customRoles')); const cr = (c.exists() ? c.data().roles || [] : []).find(r => r.id === role); if (cr && cr.baseTier) tier = cr.baseTier; } catch { /* rôles perso illisibles */ }
+    try { const p = await getDoc(doc(db, 'config', 'permissions')); if (p.exists()) min = p.data().minRole?.tool_translate ?? min; } catch { /* défaut : admin */ }
+    if (role === TRANSLATOR_ROLE || hasRole(tier, min)) {
+      document.body.classList.remove('locked');
+      if (!started) { started = true; start(); }
+    } else lock('Your account does not have access to this tool. Ask Paul to give you the translator role.', false);
+  } catch (e) { lock('Could not check your access: ' + e.message, false); }
+}
+onAuthStateChanged(auth, check);
+
+// ── Outil ─────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const squash = s => String(s).replace(/\s+/g, ' ').trim();
+const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const LS = 'vcl_i18n_review_draft';          // même brouillon que review.html
+const PAGES = [
+  ['Home', '../index.html'], ['Compendium', '../Compendium/compendium.html'], ['Bestiary', '../Bestiaire/bestiaire.html'], ['Workshop (Atelier)', '../Atelier/atelier.html'],
+  ['Map', '../Map/map.html'], ['Quests', '../Quetes/quetes.html'], ['Builds', '../Builds/builds.html'], ['Discord bot page', '../Discord/discord.html'], ['Patch notes', '../Patchnotes/patchnotes.html'],
+];
+const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'NOSCRIPT', 'CODE', 'PRE']);
+const looksFrench = s => /[a-zA-ZÀ-ÿ]{3,}/.test(s) && !/^[\d\s.,:;/\\|+\-–—×x%()[\]#@*•·→←↑↓✦✕✓]+$/.test(s);
+
+let dict = {}, keep = new Set(), exact = new Map(), patterns = [], draft = { name: '', edits: {}, status: {}, notes: {}, added: [] };
+const state = { pick: true, miss: true, sync: true, current: null };
+const loadDraft = () => { try { const d = JSON.parse(localStorage.getItem(LS) || 'null'); if (d) draft = { name: '', edits: {}, status: {}, notes: {}, added: [], ...d }; } catch { /* sans stockage */ } };
+const saveDraft = () => { try { localStorage.setItem(LS, JSON.stringify(draft)); } catch { /* idem */ } counter(); };
+const counter = () => { $('count').textContent = `${Object.keys(draft.edits).length + draft.added.length} changes`; };
+const enOf = k => (k in draft.edits ? draft.edits[k] : (dict[k] ?? ''));
+
+function compile() {
+  exact = new Map(); patterns = [];
+  for (const [k, v] of Object.entries(dict)) {
+    if (k.startsWith('_') || typeof v !== 'string') continue;
+    if (/\{\w+\}/.test(k)) patterns.push({ key: k, re: new RegExp('^' + esc(squash(k)).replace(/\\\{(\w+)\\\}/g, (_, n) => (n === 'num' ? '(?<num>\\d+)' : `(?<${n}>.+?)`)) + '$') });
+    else exact.set(squash(k), k);
+  }
+}
+/** Clé du dictionnaire qui correspond à ce texte français : exacte, ou modèle à variables. */
+function keyFor(text) {
+  const n = squash(text);
+  if (exact.has(n)) return { key: exact.get(n), pattern: false };
+  for (const p of patterns) if (p.re.test(n)) return { key: p.key, pattern: true };
+  return null;
+}
+const isMissing = text => { const n = squash(text); return looksFrench(n) && !keep.has(n) && !keyFor(n); };
+
+// ── Cadres ────────────────────────────────────────────────────────
+const fr = $('fr'), en = $('en');
+const docOf = f => { try { return f.contentDocument; } catch { return null; } };
+const other = f => (f === fr ? en : fr);
+let lock_ = false;
+const pathOf = (el, root) => { const p = []; while (el && el !== root && el.parentElement) { p.push([...el.parentElement.children].indexOf(el)); el = el.parentElement; } return p.reverse(); };
+const byPath = (root, p) => p.reduce((e, i) => (e ? e.children[i] : null), root);
+const ratio = el => { const m = el.scrollHeight - el.clientHeight; return m > 0 ? el.scrollTop / m : 0; };
+
+function onScroll(from, e) {
+  if (!state.sync || lock_) return;
+  const d = docOf(from), o = docOf(other(from));
+  if (!d || !o) return;
+  const t = e.target === d ? d.scrollingElement : e.target;
+  if (!t || t.nodeType !== 1) return;
+  const mirror = t === d.scrollingElement ? o.scrollingElement : byPath(o.documentElement, pathOf(t, d.documentElement));
+  if (!mirror) return;
+  lock_ = true;
+  mirror.scrollTop = ratio(t) * Math.max(0, mirror.scrollHeight - mirror.clientHeight);
+  requestAnimationFrame(() => { lock_ = false; });
+}
+
+const FRAME_CSS = `.vcl-hover{outline:2px solid #e0ac60 !important;cursor:crosshair !important}.vcl-miss{outline:1px dashed #d9674f !important;background:rgba(217,103,79,.10) !important}.vcl-sel{outline:2px solid #7fb069 !important}`;
+
+function textNodes(root) {
+  const out = [], tw = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => (n.parentElement && !SKIP.has(n.parentElement.tagName) && !n.parentElement.closest('[data-no-i18n],#vcl-lang-menu') && n.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT) });
+  for (let n = tw.nextNode(); n; n = tw.nextNode()) out.push(n);
+  return out;
+}
+function markMissing() {
+  const d = docOf(fr); if (!d || !d.body) return;
+  d.querySelectorAll('.vcl-miss').forEach(e => e.classList.remove('vcl-miss'));
+  if (!state.miss) return;
+  for (const n of textNodes(d.body)) if (isMissing(n.nodeValue)) n.parentElement.classList.add('vcl-miss');
+}
+let markTimer = null;
+const markSoon = () => { clearTimeout(markTimer); markTimer = setTimeout(markMissing, 500); };
+
+/** Texte sous le clic : le nœud de texte exact (c'est lui que le dictionnaire traduit). */
+function textAt(d, x, y) {
+  let node = null;
+  if (d.caretRangeFromPoint) { const r = d.caretRangeFromPoint(x, y); node = r && r.startContainer; }
+  else if (d.caretPositionFromPoint) { const c = d.caretPositionFromPoint(x, y); node = c && c.offsetNode; }
+  if (node && node.nodeType === 3 && node.nodeValue.trim() && !SKIP.has(node.parentElement?.tagName)) return { text: node.nodeValue, el: node.parentElement };
+  const el = d.elementFromPoint(x, y);
+  if (el) for (const a of ['title', 'placeholder', 'alt', 'aria-label']) { const v = el.getAttribute(a); if (v && v.trim()) return { text: v, el }; }
+  return null;
+}
+
+function wire(frame) {
+  const d = docOf(frame); if (!d || !d.documentElement) return;
+  const st = d.createElement('style'); st.textContent = FRAME_CSS; d.head.appendChild(st);
+  d.addEventListener('scroll', e => onScroll(frame, e), true);
+  if (frame !== fr) return;
+  let hov = null;
+  d.addEventListener('mousemove', e => {
+    if (!state.pick) return;
+    const t = textAt(d, e.clientX, e.clientY);
+    if (hov && hov !== t?.el) hov.classList.remove('vcl-hover');
+    hov = t?.el || null; if (hov) hov.classList.add('vcl-hover');
+  }, true);
+  d.addEventListener('click', e => {
+    if (!state.pick) return;
+    const t = textAt(d, e.clientX, e.clientY);
+    e.preventDefault(); e.stopPropagation();
+    if (t) openEditor(t.text, t.el);
+  }, true);
+  new MutationObserver(markSoon).observe(d.documentElement, { childList: true, subtree: true, characterData: true });
+  markSoon();
+}
+fr.addEventListener('load', () => wire(fr));
+en.addEventListener('load', () => { wire(en); });
+
+// ── Éditeur ───────────────────────────────────────────────────────
+function openEditor(text, el) {
+  const hit = keyFor(text);
+  const key = hit ? hit.key : squash(text);
+  state.current = { key, el, isNew: !hit, text: squash(text) };
+  const d = docOf(fr); d?.querySelectorAll('.vcl-sel').forEach(x => x.classList.remove('vcl-sel')); el?.classList.add('vcl-sel');
+  $('hint').style.display = 'none'; $('editor').style.display = 'flex';
+  $('e-fr').textContent = key;
+  $('e-en').value = hit || draft.added.some(a => a.fr === key) ? enOf(key) || (draft.added.find(a => a.fr === key)?.en ?? '') : '';
+  $('e-note').value = draft.notes[key] || '';
+  const stat = draft.status[key];
+  $('st').className = 'badge ' + (hit || draft.added.some(a => a.fr === key) ? (stat === 'doubt' ? 'doubt' : 'ok') : 'miss');
+  $('st').textContent = hit || draft.added.some(a => a.fr === key) ? (stat === 'doubt' ? 'unsure' : 'translated') : 'not translated';
+  $('pat').style.display = hit?.pattern ? '' : 'none';
+  $('e-en').focus();
+}
+
+/** Aperçu immédiat dans le cadre anglais : on remplace l'ancien texte (ou le français resté tel quel) par la nouvelle valeur. */
+function preview(oldEn, newEn, fr_) {
+  const d = docOf(en); if (!d || !d.body) return;
+  const targets = new Set([squash(fr_)]); if (oldEn) targets.add(squash(oldEn));
+  for (const n of textNodes(d.body)) if (targets.has(squash(n.nodeValue))) n.nodeValue = n.nodeValue.replace(n.nodeValue.trim(), newEn);
+}
+
+function save(status) {
+  const c = state.current; if (!c) return false;
+  const k = c.key, v = $('e-en').value, note = $('e-note').value.trim();
+  if (!v.trim()) { alert('Write the English text first.'); return false; }
+  const oldEn = enOf(k) || (draft.added.find(a => a.fr === k)?.en ?? '');
+  const a = draft.added.find(x => x.fr === k);
+  if (a) a.en = v;
+  else if (k in dict) { if (v === dict[k]) delete draft.edits[k]; else draft.edits[k] = v; }
+  else { draft.added.push({ fr: k, en: v }); dict[k] = v; compile(); }
+  draft.status[k] = status;
+  if (note) draft.notes[k] = note; else delete draft.notes[k];
+  saveDraft();
+  preview(oldEn, v, k);
+  markMissing();
+  $('st').className = 'badge ' + (status === 'doubt' ? 'doubt' : 'ok'); $('st').textContent = status === 'doubt' ? 'unsure' : 'translated';
+  return true;
+}
+function nextMissing() {
+  const d = docOf(fr); if (!d) return;
+  const all = [...d.querySelectorAll('.vcl-miss')];
+  if (!all.length) { alert('No untranslated text left on this page (as far as it is loaded).'); return; }
+  const cur = state.current?.el; const i = all.indexOf(cur);
+  const el = all[(i + 1) % all.length];
+  el.scrollIntoView({ block: 'center' });
+  const tn = textNodes(el).find(n => isMissing(n.nodeValue)) || textNodes(el)[0];
+  if (tn) openEditor(tn.nodeValue, el);
+}
+$('e-ok').onclick = () => save('ok');
+$('e-doubt').onclick = () => save('doubt');
+$('e-next').onclick = () => { if (save('ok')) nextMissing(); };
+$('e-en').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); if (save('ok')) nextMissing(); } });
+
+// ── Barre ─────────────────────────────────────────────────────────
+const toggle = (id, key, after) => { $(id).onclick = () => { state[key] = !state[key]; $(id).classList.toggle('on', state[key]); after?.(); }; };
+toggle('b-pick', 'pick', () => { docOf(fr)?.querySelectorAll('.vcl-hover').forEach(x => x.classList.remove('vcl-hover')); });
+toggle('b-miss', 'miss', markMissing);
+toggle('b-sync', 'sync');
+$('b-next').onclick = nextMissing;
+function load(page) { fr.src = page; en.src = page; }
+$('go').onclick = () => { const v = $('custom').value.trim(); if (v) load(v); };
+$('custom').addEventListener('keydown', e => { if (e.key === 'Enter') $('go').click(); });
+$('page').onchange = () => load($('page').value);
+$('name').addEventListener('change', () => { draft.name = $('name').value.trim(); saveDraft(); });
+$('b-dl').onclick = () => {
+  const out = { format: 'vcl-i18n-review/1', reviewer: $('name').value.trim(), date: new Date().toISOString(), edits: {}, status: draft.status, notes: draft.notes, added: draft.added };
+  for (const [k, v] of Object.entries(draft.edits)) if (v !== dict[k]) out.edits[k] = v;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
+  a.download = `i18n-review-${(out.reviewer || 'reviewer').replace(/\W+/g, '_')}-${out.date.slice(0, 10)}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+};
+
+async function start() {
+  loadDraft(); $('name').value = draft.name || ''; counter();
+  $('page').innerHTML = PAGES.map(([l, u]) => `<option value="${u}">${l}</option>`).join('');
+  try { dict = await (await fetch('./en.json', { cache: 'no-store' })).json(); } catch { dict = {}; }
+  keep = new Set((dict._keep || []).map(squash));
+  for (const a of draft.added) if (!(a.fr in dict)) dict[a.fr] = a.en;
+  compile();
+  load(PAGES[0][1]);
+}
+</script>
+</body>
+</html>
