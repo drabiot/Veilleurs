@@ -159,11 +159,34 @@ export default {
         return json(await r.json(), r.ok ? 200 : r.status);
       }
 
-      if (action === 'create_channel') { // salon (forum = 15, texte = 0) dans le serveur ; le bot doit avoir « Gérer les salons »
+      if (action === 'get_guild_channels') {
+        const r = await fetch(`https://discord.com/api/v10/guilds/${env.DISCORD_GUILD_ID}/channels`, { headers: botHdr });
+        return json(await r.json(), r.ok ? 200 : r.status);
+      }
+
+      if (action === 'create_channel') { // salon dans le serveur (forum = 15, texte = 0, catégorie = 4) ; le bot doit avoir « Gérer les salons »
         const r = await fetch(`https://discord.com/api/v10/guilds/${env.DISCORD_GUILD_ID}/channels`, {
-          method: 'POST', headers: botHdr, body: JSON.stringify({ name: String(body.name || '').slice(0, 100), type: body.type === 0 ? 0 : 15, parent_id: body.parentId || undefined }),
+          method: 'POST', headers: botHdr, body: JSON.stringify({ name: String(body.name || '').slice(0, 100), type: [0, 4, 15].includes(body.type) ? body.type : 15, parent_id: body.parentId || undefined }),
         });
         return json(await r.json(), r.ok ? 200 : r.status);
+      }
+
+      if (action === 'get_bot_user') {
+        const r = await fetch('https://discord.com/api/v10/users/@me', { headers: botHdr });
+        return json(await r.json(), r.ok ? 200 : r.status);
+      }
+
+      // Droits d'un rôle / membre sur un salon (masquer un salon pendant un envoi en lot) : le bot doit avoir « Gérer les rôles »
+      if (action === 'set_overwrite') {
+        const r = await fetch(`https://discord.com/api/v10/channels/${body.channelId}/permissions/${body.overwriteId}`, {
+          method: 'PUT', headers: botHdr, body: JSON.stringify({ type: body.type === 1 ? 1 : 0, allow: String(body.allow || '0'), deny: String(body.deny || '0') }),
+        });
+        return r.ok ? json({ status: r.status }) : json(await r.json().catch(() => ({})), r.status);
+      }
+
+      if (action === 'delete_overwrite') {
+        const r = await fetch(`https://discord.com/api/v10/channels/${body.channelId}/permissions/${body.overwriteId}`, { method: 'DELETE', headers: botHdr });
+        return r.ok ? json({ status: r.status }) : json(await r.json().catch(() => ({})), r.status);
       }
 
       if (action === 'get_webhook') {

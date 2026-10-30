@@ -769,7 +769,7 @@ async function _sendSingleItemDiscord(item) {
   const palier = item.palier;
   if (!cat || !palier) throw new Error('Catégorie ou palier manquant');
   const key = `${cat}_${palier}`;
-  const channelId0 = await _getChannelId(key);
+  const channelId0 = await _channelOfItem(item);
   if (!channelId0) throw new Error(`Aucun channel configuré pour ${key}`);
 
   const [panList, pnjList] = await Promise.all([
@@ -1591,9 +1591,12 @@ async function _routes(force) {
 const _itemKey = it => `${it.category}_${it.palier}`;
 async function _channelOfItem(it, { auto = false } = {}) {
   const r = await _routes();
-  const specific = r.routes?.[_itemKey(it)];
-  if (auto && Number(it.palier) === -1 && !specific) return null; // l'archive n'est pas postée sans salon dédié
-  return specific || r.default || null;
+  const fits = (c, k, v) => !(c[k] || []).length || c[k].map(String).includes(String(v));
+  const spec = c => ((c.itemCats || []).length > 0) + ((c.paliers || []).length > 0);
+  const c = (r.channels || []).filter(c => c.id && fits(c, 'itemCats', it.category) && fits(c, 'paliers', it.palier)).sort((x, y) => spec(y) - spec(x))[0];
+  if (!c) return null;
+  if (auto && Number(it.palier) === -1 && !(c.paliers || []).map(String).includes('-1')) return null; // l'archive n'est pas postée sans salon dédié
+  return c.id;
 }
 
 // Forgerons / items secrets : la carte ne montre ni leur nom ni leur lieu (outil « Forgerons secrets »)
@@ -1694,13 +1697,13 @@ window.discordResendAll = async function() {
   const list = await _itemsForChannel(null);
   if (!list.length) { toast('Aucun item à envoyer (aucun salon réglé).', 'warning'); return; }
   if (!await modal.confirm(`Renvoyer ${list.length} item(s) ?\n\nChaque ancien post est supprimé puis recréé (environ ${Math.ceil(list.length * 2.5 / 60)} min).`)) return;
-  await _bulk('Renvoi', list, it => window.discordSyncItem(it.id));
+  await _withHidden(await Promise.all(list.map(it => _channelOfItem(it, { auto: true }))), () => _bulk('Renvoi', list, it => window.discordSyncItem(it.id)));
 };
 window.discordResendChannel = async function(channelId) {
   const list = await _itemsForChannel(channelId);
   if (!list.length) { toast('Aucun item pour ce salon.', 'warning'); return; }
   if (!await modal.confirm(`Renvoyer les ${list.length} item(s) du salon ${channelId} ?`)) return;
-  await _bulk('Renvoi', list, it => window.discordSyncItem(it.id));
+  await _withHidden([channelId], () => _bulk('Renvoi', list, it => window.discordSyncItem(it.id)));
 };
 window.discordResendItem = async function(id) {
   try { await window.discordSyncItem(id); toast('Item renvoyé.', 'success'); await window.discordRenderSync(); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
@@ -1720,19 +1723,6 @@ window.discordDeleteChannelPosts = async function(channelId) {
   if (!posts.length) { toast('Aucun post suivi dans ce salon.', 'warning'); return; }
   if (!await modal.confirm(`Supprimer les ${posts.length} posts du salon ${channelId} ?`)) return;
   await _bulk('Suppression', posts, _deletePost, 600);
-};
-
-window.discordCreateChannel = async function() {
-  const name = document.getElementById('discord-new-channel-name')?.value.trim();
-  const type = parseInt(document.getElementById('discord-new-channel-type')?.value || '15');
-  if (!name) { toast('Nom du salon requis.', 'error'); return; }
-  const r = await _workerCall('create_channel', { name, type });
-  if (!r || !r.id) { toast('Création impossible : ' + (r?.message || 'le bot n\'a pas la permission « Gérer les salons »'), 'error', 8000); return; }
-  try { await navigator.clipboard.writeText(r.id); } catch {}
-  toast(`Salon créé : #${r.name} (ID ${r.id}, copié). Colle-le dans la grille ci-dessus.`, 'success', 9000);
-  document.getElementById('discord-new-channel-name').value = '';
-  const out = document.getElementById('discord-new-channel-out');
-  if (out) out.textContent = `Dernier salon créé : #${r.name} — ID ${r.id}`;
 };
 
 let _drItems = [], _drPosts = [];
@@ -1768,9 +1758,10 @@ window.discordRenderSync = async function() {
     const [r, posts, items] = await Promise.all([_routes(true), _allPosts(), cachedDocs(COL.items).catch(() => [])]);
     _drPosts = posts.sort((a, b) => String(a.itemName).localeCompare(String(b.itemName), 'fr'));
     _drItems = items.map(i => ({ ...i, id: i.id ?? i._id }));
-    const channels = [...new Set([...(r.default ? [r.default] : []), ...Object.values(r.routes || {})])];
+    const chInfo = new Map((r.channels || []).filter(c => c.id).map(c => [c.id, c.name]));
+    const channels = [...chInfo.keys()];
     const perChannel = channels.map(c => `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;margin-bottom:6px;">
-        <code style="min-width:170px;">${escHtml(c)}</code><span style="color:var(--muted);">${posts.filter(p => p.channelId === c).length} post(s)</span>
+        <strong style="min-width:170px;">#${escHtml(chInfo.get(c) || c)}</strong><span style="color:var(--muted);">${posts.filter(p => p.channelId === c).length} post(s)</span>
         <button class="btn btn-ghost" data-id="${escHtml(c)}" onclick="discordResendChannel(this.dataset.id)" style="font-size:11px;padding:2px 8px;">🔄 Renvoyer ses items</button>
         <button class="btn btn-ghost" data-id="${escHtml(c)}" onclick="discordDeleteChannelPosts(this.dataset.id)" style="font-size:11px;padding:2px 8px;color:var(--danger);border-color:var(--danger);">🗑 Supprimer ses posts</button></div>`).join('')
       || '<div style="color:var(--muted);font-size:12px;">Aucun salon réglé.</div>';
@@ -1782,6 +1773,7 @@ window.discordRenderSync = async function() {
         <button class="btn btn-ghost" onclick="discordResendAll()" style="font-size:12px;">🔄 Renvoyer tous les items</button>
         <button class="btn btn-ghost" onclick="discordDeleteAllPosts()" style="font-size:12px;color:var(--danger);border-color:var(--danger);">🗑 Supprimer tous les posts (${posts.length})</button>
       </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:12px;cursor:pointer;"><input type="checkbox" id="discord-hide-during" checked> 🤫 Masquer le salon aux membres pendant un envoi en lot (évite les pings) <button class="btn btn-ghost" onclick="event.preventDefault();discordRestoreVisibility()" style="font-size:11px;padding:2px 8px;">🔓 Rétablir la visibilité</button></label>
       <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Par salon</div>${perChannel}
       <div style="font-size:12px;font-weight:700;margin:14px 0 6px;">Envoyer / renvoyer un item</div>
       <input type="text" id="discord-resend-search" oninput="discordSearchItems()" placeholder="Nom de l'item…" style="${field}width:100%;box-sizing:border-box;">
@@ -1789,15 +1781,62 @@ window.discordRenderSync = async function() {
       <div style="font-size:12px;font-weight:700;margin:14px 0 6px;">Posts existants (${posts.length})</div>
       <input type="text" id="discord-posts-filter" oninput="discordFilterPosts()" placeholder="Filtrer par nom…" style="${field}width:100%;box-sizing:border-box;margin-bottom:6px;">
       <div id="discord-posts-list" style="display:flex;flex-direction:column;gap:4px;max-height:360px;overflow:auto;"></div>
-      <div style="font-size:14px;font-weight:700;margin:22px 0 8px;">➕ Créer un salon</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <input type="text" id="discord-new-channel-name" placeholder="nom-du-salon" style="${field}width:220px;">
-        <select id="discord-new-channel-type" style="${field}"><option value="15">Forum (un fil par item)</option><option value="0">Salon texte</option></select>
-        <button class="btn btn-primary" onclick="discordCreateChannel()" style="font-size:12px;">Créer</button>
-      </div>
-      <div id="discord-new-channel-out" style="font-size:12px;color:var(--muted);margin-top:6px;">Le bot doit avoir la permission « Gérer les salons ». L'ID du salon créé est copié, à coller dans la grille.</div>`;
+`;
     window.discordFilterPosts();
   } catch (e) { el.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`; }
+};
+
+async function _ow(action, p) { const r = await _workerCall(action, p); if (!r) throw new Error('permissions Discord refusées (le bot a-t-il « Gérer les rôles » ?)'); return r; }
+
+// ── Masquer un salon pendant un envoi en lot (évite les pings) ──
+// @everyone perd « Voir le salon » le temps de l'envoi ; l'état d'origine est noté dans config/discord_lock pour pouvoir le rétablir même après un plantage.
+const _VIEW = 1n << 10n;
+const _BOT_ALLOW = (1n << 10n) | (1n << 11n) | (1n << 14n) | (1n << 15n) | (1n << 16n) | (1n << 34n) | (1n << 35n) | (1n << 38n); // voir, écrire, liens, fichiers, historique, gérer/créer fils, écrire dans les fils
+const _LOCK_REF = () => doc(db, 'config', 'discord_lock');
+let _botId = null;
+
+async function _lockChannel(channelId) {
+  const ch = await _workerCall('get_channel', { channelId });
+  if (!ch?.id) throw new Error('salon introuvable : ' + channelId);
+  const guildId = ch.guild_id;
+  const orig = (ch.permission_overwrites || []).find(o => o.id === guildId);
+  const snap = await getDoc(_LOCK_REF());
+  const saved = snap.exists() ? snap.data() : {};
+  if (!saved[channelId]) { // ne jamais écraser un état d'origine déjà noté (verrou resté après un plantage)
+    saved[channelId] = { guildId, existed: !!orig, allow: orig?.allow || '0', deny: orig?.deny || '0' };
+    await setDoc(_LOCK_REF(), saved);
+  }
+  _botId ??= (await _workerCall('get_bot_user', {}))?.id;
+  if (_botId) await _ow('set_overwrite', { channelId, overwriteId: _botId, type: 1, allow: _BOT_ALLOW.toString(), deny: '0' }); // le bot garde l'accès
+  const o = saved[channelId];
+  await _ow('set_overwrite', { channelId, overwriteId: guildId, type: 0, allow: (BigInt(o.allow) & ~_VIEW).toString(), deny: (BigInt(o.deny) | _VIEW).toString() });
+}
+async function _unlockChannel(channelId, saved) {
+  const o = saved[channelId];
+  if (!o) return;
+  if (o.existed) await _ow('set_overwrite', { channelId, overwriteId: o.guildId, type: 0, allow: o.allow, deny: o.deny });
+  else await _ow('delete_overwrite', { channelId, overwriteId: o.guildId });
+}
+async function _restoreLocked(ids) {
+  const snap = await getDoc(_LOCK_REF());
+  const saved = snap.exists() ? snap.data() : {};
+  for (const id of (ids || Object.keys(saved))) { await _unlockChannel(id, saved); delete saved[id]; }
+  await setDoc(_LOCK_REF(), saved);
+}
+/** Exécute fn avec les salons masqués (si la case est cochée), puis les rétablit quoi qu'il arrive. */
+async function _withHidden(channelIds, fn) {
+  const hide = document.getElementById('discord-hide-during')?.checked !== false;
+  const ids = [...new Set(channelIds.filter(Boolean))];
+  const locked = [];
+  try {
+    if (hide) for (const id of ids) { try { await _lockChannel(id); locked.push(id); } catch (e) { toast('Masquage impossible pour ' + id + ' : ' + e.message + ' (envoi quand même)', 'warning', 7000); } }
+    return await fn();
+  } finally {
+    if (locked.length) { try { await _restoreLocked(locked); } catch (e) { toast('⚠️ Visibilité non rétablie : utilise « Rétablir la visibilité ». ' + e.message, 'error', 12000); } }
+  }
+}
+window.discordRestoreVisibility = async function() {
+  try { await _restoreLocked(); toast('Visibilité des salons rétablie.', 'success'); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
 };
 
 }

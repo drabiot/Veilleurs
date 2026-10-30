@@ -4,7 +4,7 @@
 // ══════════════════════════════════════════════════════
 
 export function init(ctx) {
-const { setHash: _setHash, showPanel: _showPanel, escHtml, db, COL, collection, getDocs, getDoc, doc, setDoc, addDoc, deleteDoc, serverTimestamp, writeBatch, sanitizeForFirestore, loadEventNames, toast, modal } = ctx;
+const { getWorkerSecret, WORKER_URL, setHash: _setHash, showPanel: _showPanel, escHtml, db, COL, collection, getDocs, getDoc, doc, setDoc, addDoc, deleteDoc, serverTimestamp, writeBatch, sanitizeForFirestore, loadEventNames, toast, modal } = ctx;
 const { normalize } = window.VCL;
 const _EFFECT_SEED_TYPES = [
   { id:'heal',                 icon:'❤️',  color:'#e05252', label:'Points de vie',                        prefix:'+' },
@@ -326,12 +326,21 @@ window.setSecretForgeronsHidden = async function(hidden) {
   } catch (e) { toast('Erreur : ' + e.message, 'error'); }
 };
 
-// ── DISCORD TOOL : où le bot poste les nouveaux items (config/discord_routes { enabled, default, routes: { "<catégorie>_<palier>": "<id salon>" } }) ──
-// Lu par bot/discord-watch.js : chaque nouvel item est posté (avec sa carte) dans routes[catégorie_palier], sinon dans le salon par défaut.
+// ── DISCORD TOOL : où et quoi poster (config/discord_routes) ──
+//   { enabled, channels: [{ name, type: 'forum'|'text', categoryId?, categoryName?, id?, itemCats: [catégories d'items], paliers: [paliers] }] }
+// Un salon reçoit les items dont la catégorie ET le palier correspondent (liste vide = tous). Plusieurs salons possibles ; le plus précis gagne.
+// Le salon (et sa catégorie Discord) est créé par le bot depuis ce panneau ; son ID est ensuite mémorisé (id).
 const _DR_REF = () => doc(db, 'config', 'discord_routes');
 const _DR_CATS = [['arme', '⚔️ Armes'], ['armure', '🛡️ Armures'], ['accessoire', '💍 Accessoires'], ['outils', '🛠️ Outils'], ['rune', '🔮 Runes'], ['consommable', '🧪 Consommables'],
   ['nourriture', '🍖 Nourriture'], ['materiaux', '🧱 Matériaux'], ['ressources', '⛏️ Ressources'], ['parchemin', '📃 Parchemins'], ['quete', '📜 Quête'], ['donjon', '🏰 Donjon'], ['monnaie', '🪙 Monnaie']];
-let _dr = { enabled: false, default: '', routes: {} }, _drPaliers = [];
+let _dr = { enabled: false, channels: [] }, _drPaliers = [], _drGuildCats = [], _drGuildErr = '';
+
+async function _drCall(action, payload = {}) {
+  const r = await fetch(WORKER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret: await getWorkerSecret(), action, ...payload }) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.message || j.error || ('Discord ' + r.status));
+  return j;
+}
 
 window.showDiscordRoutes = async function() {
   _setHash('discord-routes');
@@ -341,45 +350,124 @@ window.showDiscordRoutes = async function() {
   try {
     const [cfg, pal] = await Promise.all([getDoc(_DR_REF()), getDoc(doc(db, 'config', 'paliers'))]);
     const c = cfg.exists() ? cfg.data() : {};
-    _dr = { enabled: c.enabled === true, default: c.default || '', routes: c.routes && typeof c.routes === 'object' ? c.routes : {} };
-    _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []).filter(p => p.id !== -1);
+    _dr = { enabled: c.enabled === true, channels: Array.isArray(c.channels) ? c.channels : [] };
+    _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []);
     if (!_drPaliers.length) _drPaliers = [{ id: 1, label: 'Palier 1' }, { id: 2, label: 'Palier 2' }, { id: 3, label: 'Palier 3' }, { id: 'event', label: 'Event' }, { id: 'worldboss', label: 'World Boss' }];
+    await _drLoadGuild();
     _renderDiscordRoutes();
     window.discordRenderSync(); // actions manuelles (module Discord chargé à la demande)
   } catch (e) { body.innerHTML = `<div class="empty" style="color:var(--danger);">Erreur : ${escHtml(e.message)}</div>`; }
 };
 
-function _renderDiscordRoutes() {
-  const inp = 'width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:11px;outline:none;font-family:monospace;';
-  const head = _drPaliers.map(p => `<th style="text-align:left;padding:4px 6px;font-size:11px;color:var(--muted);">${escHtml(p.label || String(p.id))}</th>`).join('');
-  const rows = _DR_CATS.map(([cat, label]) => `<tr><td style="padding:4px 10px 4px 0;font-size:12px;white-space:nowrap;">${label}</td>${_drPaliers.map(p => {
-    const key = `${cat}_${p.id}`;
-    return `<td style="padding:3px 6px;"><input type="text" inputmode="numeric" data-key="${escHtml(key)}" value="${escHtml(_dr.routes[key] || '')}" placeholder="ID du salon" onchange="setDiscordRoute(this.dataset.key, this.value)" style="${inp}"></td>`;
-  }).join('')}</tr>`).join('');
-  document.getElementById('discord-routes-body').innerHTML = `
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-      <span style="font-size:14px;font-weight:700;color:${_dr.enabled ? 'var(--success, #4caf50)' : 'var(--muted)'};">${_dr.enabled ? '🟢 Envoi automatique actif' : '⚪ Envoi automatique désactivé'}</span>
-      <button class="btn ${_dr.enabled ? 'btn-ghost' : 'btn-primary'}" onclick="setDiscordEnabled(${!_dr.enabled})" style="font-size:12px;">${_dr.enabled ? '⏸ Désactiver' : '▶ Activer'}</button>
-    </div>
-    <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Salon par défaut</div>
-    <div style="max-width:320px;margin-bottom:18px;"><input type="text" inputmode="numeric" value="${escHtml(_dr.default)}" placeholder="ID du salon (utilisé si aucune case ci-dessous)" onchange="setDiscordRoute('default', this.value)" style="${inp}"></div>
-    <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Salon par catégorie et palier <span style="color:var(--muted);font-weight:400;">— vide = salon par défaut</span></div>
-    <div style="overflow-x:auto;"><table style="border-collapse:collapse;min-width:640px;"><thead><tr><th></th>${head}</tr></thead><tbody>${rows}</tbody></table></div>`;
+async function _drLoadGuild() {
+  try {
+    const chans = await _drCall('get_guild_channels');
+    _drGuildCats = chans.filter(x => x.type === 4).sort((a, b) => a.position - b.position).map(x => ({ id: x.id, name: x.name }));
+    _drGuildErr = '';
+  } catch (e) { _drGuildCats = []; _drGuildErr = e.message; }
 }
 
-const _drSave = async () => setDoc(_DR_REF(), { enabled: _dr.enabled, default: _dr.default, routes: _dr.routes });
+const _drSave = () => setDoc(_DR_REF(), { enabled: _dr.enabled, channels: _dr.channels });
+const _drField = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
+const _drChip = (on, label, onclick) => `<button type="button" onclick="${onclick}" style="font-size:11px;padding:3px 9px;border-radius:12px;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};background:${on ? 'rgba(224,172,96,.18)' : 'var(--surface2)'};color:${on ? 'var(--accent)' : 'var(--muted)'};">${label}</button>`;
 
-window.setDiscordRoute = async function(key, value) {
-  const v = String(value || '').trim();
-  if (v && !/^\d{15,25}$/.test(v)) { toast('ID de salon invalide (chiffres uniquement : clic droit sur le salon → Copier l\'identifiant).', 'error'); _renderDiscordRoutes(); return; }
-  if (key === 'default') _dr.default = v; else if (v) _dr.routes[key] = v; else delete _dr.routes[key];
-  try { await _drSave(); toast(v ? 'Salon enregistré.' : 'Salon retiré.', 'success'); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+function _renderDiscordRoutes() {
+  const cards = _dr.channels.map((c, i) => {
+    const catSel = `<select onchange="drSetCategory(${i}, this.value)" style="${_drField}">
+        <option value="">— aucune catégorie —</option>
+        ${_drGuildCats.map(k => `<option value="id:${escHtml(k.id)}" ${c.categoryId === k.id ? 'selected' : ''}>${escHtml(k.name)}</option>`).join('')}
+        <option value="__new__" ${!c.categoryId && c.categoryName ? 'selected' : ''}>➕ Nouvelle catégorie…</option></select>
+      ${!c.categoryId && c.categoryName !== undefined && c.categoryName !== null && (c.categoryName || c._newCat) ? `<input type="text" value="${escHtml(c.categoryName || '')}" placeholder="Nom de la nouvelle catégorie" onchange="drSet(${i}, 'categoryName', this.value)" style="${_drField}width:200px;">` : ''}`;
+    const itemChips = _DR_CATS.map(([k, l]) => _drChip((c.itemCats || []).includes(k), l, `drToggle(${i}, 'itemCats', '${k}')`)).join(' ');
+    const palChips = _drPaliers.map(p => _drChip((c.paliers || []).map(String).includes(String(p.id)), escHtml(p.label || String(p.id)), `drToggle(${i}, 'paliers', '${escHtml(String(p.id))}')`)).join(' ');
+    const status = c.id
+      ? `<span style="color:var(--success, #4caf50);">✓ créé</span> <code>${escHtml(c.id)}</code>`
+      : `<span style="color:var(--muted);">pas encore créé</span> <button class="btn btn-primary" onclick="drCreate(${i})" style="font-size:11px;padding:3px 10px;">Créer le salon</button>
+         <input type="text" inputmode="numeric" placeholder="ou ID d'un salon existant" onchange="drLink(${i}, this.value)" style="${_drField}width:190px;font-family:monospace;">`;
+    return `<div style="border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:12px;background:var(--surface);">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+        <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" ${c.id ? 'title="Renommer ici ne renomme pas le salon sur Discord"' : ''} style="${_drField}width:200px;font-weight:700;">
+        <select onchange="drSet(${i}, 'type', this.value)" style="${_drField}" ${c.id ? 'disabled' : ''}><option value="forum" ${c.type !== 'text' ? 'selected' : ''}>Forum (un fil par item)</option><option value="text" ${c.type === 'text' ? 'selected' : ''}>Salon texte</option></select>
+        ${catSel}
+        <span style="margin-left:auto;font-size:12px;">${status}</span>
+        <button class="btn btn-ghost" onclick="drRemove(${i})" style="font-size:11px;padding:3px 9px;color:var(--danger);border-color:var(--danger);" title="Retire ce salon de la config (le salon Discord n'est pas supprimé)">🗑</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Quoi envoyer — catégories d'items <em>(aucune sélection = toutes)</em></div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">${itemChips}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Paliers <em>(aucune sélection = tous)</em></div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;">${palChips}</div>
+    </div>`;
+  }).join('') || '<div class="empty" style="color:var(--muted);">Aucun salon. Ajoute-en un.</div>';
+  document.getElementById('discord-routes-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-size:14px;font-weight:700;color:${_dr.enabled ? 'var(--success, #4caf50)' : 'var(--muted)'};">${_dr.enabled ? '🟢 Envoi automatique actif' : '⚪ Envoi automatique désactivé'}</span>
+      <button class="btn ${_dr.enabled ? 'btn-ghost' : 'btn-primary'}" onclick="setDiscordEnabled(${!_dr.enabled})" style="font-size:12px;">${_dr.enabled ? '⏸ Désactiver' : '▶ Activer'}</button>
+      <button class="btn btn-ghost" onclick="drAdd()" style="font-size:12px;">➕ Ajouter un salon</button>
+      <button class="btn btn-ghost" onclick="drCreateAll()" style="font-size:12px;">🏗 Créer les salons manquants</button>
+    </div>
+    ${_drGuildErr ? `<div style="font-size:12px;color:var(--danger);margin-bottom:10px;">Catégories Discord indisponibles (${escHtml(_drGuildErr)}) : tu peux quand même saisir un nom de nouvelle catégorie.</div>` : ''}
+    ${cards}`;
+}
+
+const _drPersist = async () => { try { await _drSave(); } catch (e) { toast('Erreur : ' + e.message, 'error'); } };
+window.drAdd = async () => { _dr.channels.push({ name: '', type: 'forum', itemCats: [], paliers: [] }); await _drPersist(); _renderDiscordRoutes(); };
+window.drSet = async (i, k, v) => { _dr.channels[i][k] = String(v).trim(); await _drPersist(); _renderDiscordRoutes(); };
+window.drSetCategory = async (i, v) => {
+  const c = _dr.channels[i];
+  if (v === '__new__') { c.categoryId = ''; c.categoryName = c.categoryName || ''; c._newCat = true; }
+  else if (v.startsWith('id:')) { c.categoryId = v.slice(3); c.categoryName = ''; delete c._newCat; }
+  else { c.categoryId = ''; c.categoryName = ''; delete c._newCat; }
+  await _drPersist(); _renderDiscordRoutes();
+};
+window.drToggle = async (i, k, v) => {
+  const list = (_dr.channels[i][k] || []).map(String);
+  _dr.channels[i][k] = list.includes(v) ? list.filter(x => x !== v) : [...list, v];
+  await _drPersist(); _renderDiscordRoutes();
+};
+window.drLink = async (i, v) => {
+  v = String(v).trim();
+  if (!/^\d{15,25}$/.test(v)) { toast('ID invalide (chiffres : clic droit sur le salon → Copier l\'identifiant).', 'error'); return; }
+  _dr.channels[i].id = v; await _drPersist(); _renderDiscordRoutes();
+};
+window.drRemove = async (i) => {
+  if (!await modal.confirm('Retirer ce salon de la config ?\n\nLe salon Discord et ses posts ne sont pas supprimés.')) return;
+  _dr.channels.splice(i, 1); await _drPersist(); _renderDiscordRoutes(); window.discordRenderSync();
+};
+
+async function _drCreateOne(i) {
+  const c = _dr.channels[i];
+  if (c.id) return;
+  const name = (c.name || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_àâäçéèêëîïôöùûüœ]/g, '');
+  if (!name) throw new Error('Nom de salon requis');
+  let parentId = c.categoryId || '';
+  if (!parentId && c.categoryName) {
+    const known = _drGuildCats.find(k => k.name.toLowerCase() === c.categoryName.toLowerCase());
+    if (known) parentId = known.id;
+    else { const cat = await _drCall('create_channel', { name: c.categoryName, type: 4 }); parentId = cat.id; _drGuildCats.push({ id: cat.id, name: cat.name }); }
+    c.categoryId = parentId;
+  }
+  const r = await _drCall('create_channel', { name, type: c.type === 'text' ? 0 : 15, parentId: parentId || undefined });
+  c.id = r.id; delete c._newCat;
+  await _drSave();
+}
+window.drCreate = async (i) => {
+  try { await _drCreateOne(i); toast(`Salon « ${_dr.channels[i].name} » créé.`, 'success'); } catch (e) { toast('Création impossible : ' + e.message + ' (le bot a-t-il « Gérer les salons » ?)', 'error', 8000); }
+  _renderDiscordRoutes(); window.discordRenderSync();
+};
+window.drCreateAll = async () => {
+  const todo = _dr.channels.map((c, i) => [c, i]).filter(([c]) => !c.id && c.name);
+  if (!todo.length) { toast('Aucun salon à créer.', 'warning'); return; }
+  let ok = 0;
+  for (const [, i] of todo) { try { await _drCreateOne(i); ok++; } catch (e) { toast(`« ${_dr.channels[i].name} » : ${e.message}`, 'error', 8000); } }
+  toast(`${ok}/${todo.length} salon(s) créé(s).`, ok === todo.length ? 'success' : 'warning');
+  _renderDiscordRoutes(); window.discordRenderSync();
 };
 
 window.setDiscordEnabled = async function(on) {
-  if (on && !await modal.confirm('Activer l\'envoi automatique ?\n\nChaque NOUVEL item publié sera posté dans le salon réglé ici (avec sa carte). Les items déjà existants ne sont pas envoyés. Le bot (bot/discord-watch.js) doit tourner.')) return;
+  if (on && !await modal.confirm('Activer l\'envoi automatique ?\n\nChaque item approuvé en soumission sera posté (ou remplacé) dans son salon, avec sa carte. Les items déjà publiés ne sont pas envoyés.')) return;
   _dr.enabled = !!on;
-  try { await _drSave(); toast(on ? 'Envoi automatique activé.' : 'Envoi automatique désactivé.', 'success'); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+  await _drPersist();
+  toast(on ? 'Envoi automatique activé.' : 'Envoi automatique désactivé.', 'success');
   _renderDiscordRoutes();
 };
 
