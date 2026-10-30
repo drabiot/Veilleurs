@@ -8,20 +8,18 @@
      { posts: { <itemId>: { channelId, threadId, messageId, h } }, seen: { <itemId>: 1 }, baselined, locks }
    - posts : ce que le bot a posté (pour supprimer / remplacer) ; h = empreinte de l'item au moment du post.
    - seen : items déjà dans le wiki à l'inscription quand « seulement les nouveaux » (jamais postés tant qu'ils ne reçoivent pas de post).
-   - locks : droits d'origine des salons masqués pendant un gros envoi (rétablis au passage suivant même après un plantage).
+   - locks : ancien masquage anti-ping, supprimé : ne sert plus qu'à rétablir un salon resté masqué. Les posts partent maintenant sans notification (flag SUPPRESS_NOTIFICATIONS).
    Mise à jour d'un item = suppression de l'ancien post puis nouveau post (si « remplacer » est actif).
-   Débit : jusqu'à DISCORD_GUILD_BATCH (400) posts par serveur et par passage, 0,8 s entre deux posts, discord.js gère les 429 ;
+   Débit : jusqu'à DISCORD_GUILD_BATCH (400) posts par serveur et par passage, 0,3 s entre deux posts, 6 salons en parallèle, discord.js attend les 429 tout seul ;
    le passage s'arrête proprement après RUN_MINUTES (14) ; s'il reste des posts et que ça avance, le workflow se relance aussitôt (voir discord-bot.yml).
    Au-delà de 100 serveurs, Discord exige la vérification du bot.
 ══════════════════════════════════════════════ */
 const crypto = require('crypto');
 const dp = require('./discord-post.js');
 
-const VIEW = 1n << 10n;
-const BOT_ALLOW = (1n << 10n) | (1n << 11n) | (1n << 14n) | (1n << 15n) | (1n << 16n) | (1n << 34n) | (1n << 35n) | (1n << 38n);
 const BATCH = parseInt(process.env.DISCORD_GUILD_BATCH, 10) || 400; // posts max par serveur et par passage (le passage s'arrête de toute façon à RUN_MINUTES)
-const CONCURRENCY = parseInt(process.env.DISCORD_CONCURRENCY, 10) || 4; // salons traités en parallèle
-const POST_DELAY = parseInt(process.env.DISCORD_POST_DELAY_MS, 10) || 800; // pause entre deux posts d'un même salon ; discord.js gère les 429 en plus
+const CONCURRENCY = parseInt(process.env.DISCORD_CONCURRENCY, 10) || 6; // salons traités en parallèle
+const POST_DELAY = parseInt(process.env.DISCORD_POST_DELAY_MS, 10) || 300; // pause entre deux posts d'un même salon ; discord.js gère les 429 en plus
 const sigOf = g => [g.updatedAt || 0, g.status, !!g.paused, g.initial, !!g.groupSets, !!g.eventTags, g.replace !== false].join('|');
 const log = (...a) => console.log(`[discord-guilds ${new Date().toISOString().slice(11, 19)}]`, ...a);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -147,21 +145,7 @@ async function deletePost(rest, e) {
   } catch (err) { if (![404, 403, 10003, 10008].includes(err.status) && ![10003, 10008, 50001].includes(err.code)) throw err; } // déjà supprimé / plus accessible : on oublie
 }
 
-// ── Masquage anti-ping pendant un gros envoi ──
-let botId = null;
-async function lock(rest, st, channelId) {
-  const ch = await rest.get(`/channels/${channelId}`);
-  const guildId = ch.guild_id, ovs = ch.permission_overwrites || [];
-  botId ??= (await rest.get('/users/@me')).id;
-  if (!st.locks[channelId]) {
-    const ev = ovs.find(o => o.id === guildId);
-    const targets = [{ id: guildId, type: 0, existed: !!ev, allow: ev?.allow || '0', deny: ev?.deny || '0' }];
-    for (const o of ovs) if (o.id !== guildId && o.id !== botId && (BigInt(o.allow) & VIEW)) targets.push({ id: o.id, type: o.type, existed: true, allow: o.allow, deny: o.deny });
-    st.locks[channelId] = targets; await saveGuildState(st._id, st);
-  }
-  await rest.put(`/channels/${channelId}/permissions/${botId}`, { body: { type: 1, allow: BOT_ALLOW.toString(), deny: '0' } }); // le bot garde l'accès
-  for (const t of st.locks[channelId]) await rest.put(`/channels/${channelId}/permissions/${t.id}`, { body: { type: t.type, allow: (BigInt(t.allow) & ~VIEW).toString(), deny: (BigInt(t.deny) | VIEW).toString() } });
-}
+// ── Reste de l'ancien masquage anti-ping : ne sert plus qu'à rétablir un salon resté masqué (st.locks) ──
 async function unlock(rest, st, channelId) {
   for (const t of st.locks[channelId] || []) {
     try {
@@ -328,12 +312,8 @@ async function guildPass(rest, g, st, getCtx) {
   if (todo.length && (g.pending !== todo.length)) { try { await workerBot('report', { guildId: g.id, patch: { posted: Object.keys(st.posts).length, pending: todo.length } }); } catch { /* indicatif */ } } // la barre de progression apparaît dès le début
   if (batch.length) {
     const ctx = await getCtx();
-    const counts = new Map();
-    batch.forEach(b => counts.set(b.ch.id, (counts.get(b.ch.id) || 0) + 1));
-    const threshold = Number.isFinite(cfg.hideThreshold) ? cfg.hideThreshold : 10;
-    const locked = [];
     const chInfo = new Map();
-    try {
+    {
       if (cfg.eventTags) { // tags d'événement : créés une fois par forum pour tous les événements du lot
         const byCh = new Map();
         for (const b of batch) { const ev = b.items.map(dp.eventOf).find(Boolean); if (ev) byCh.set(b.ch.id, [...(byCh.get(b.ch.id) || []), ev]); }
@@ -342,7 +322,6 @@ async function guildPass(rest, g, st, getCtx) {
           catch (e) { logs.push(`Bot : tags d'événement impossibles dans ce forum (${e.message})`); }
         }
       }
-      if (threshold > 0) for (const [chId, n] of counts) if (n > threshold) { try { await lock(rest, st, chId); locked.push(chId); } catch (e) { log(`${g.guildName} : masquage impossible (${e.message}), envoi quand même`); } }
       // Un salon à la fois dans l'ordre (limites de débit par salon), mais plusieurs salons en parallèle : bien plus rapide quand il y a plusieurs salons
       const queue = [...batch.reduce((m, x) => m.set(x.ch.id, [...(m.get(x.ch.id) || []), x]), new Map()).values()];
       const doGroup = async list => {
@@ -369,8 +348,6 @@ async function guildPass(rest, g, st, getCtx) {
         }
       };
       await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => { while (queue.length) await doGroup(queue.shift()); }));
-    } finally {
-      for (const chId of locked) { try { await unlock(rest, st, chId); } catch (e) { log(`⚠️ visibilité non rétablie (${chId}) : ${e.message}`); error = 'visibilité non rétablie sur un salon'; } }
     }
   }
   const pending = Math.max(0, todo.length - sent);
@@ -451,7 +428,7 @@ async function mainPass(rest) {
   if (!subs.length) return;
   pass.deadline = Date.now() + (parseFloat(process.env.RUN_MINUTES) || 12) * 60e3;
   pass.more = pass.more || false;
-  const g = { id: cfg.guildId, guildName: 'Serveur principal', status: 'approved', paused: false, initial: 'new', replace: true, groupSets: false, eventTags: false, hideThreshold: Number.isFinite(cfg.hideThreshold) ? cfg.hideThreshold : 10,
+  const g = { id: cfg.guildId, guildName: 'Serveur principal', status: 'approved', paused: false, initial: 'new', replace: true, groupSets: false, eventTags: false,
     itemCats: [], paliers: [], channels: subs, _allChannelIds: new Set((Array.isArray(cfg.channels) ? cfg.channels : []).map(c => c.id).filter(Boolean)), updatedAt: [...subs.map(c => [c.name, c.id || '', (c.itemCats || []).join(), (c.paliers || []).join()].join('/'))].join('|'), _main: true };
   const st = await loadGuildState(g.id); st._id = g.id;
   const needFull = !st.baselined || st.pending > 0 || !st.rev || st.sig !== sigOf(g);

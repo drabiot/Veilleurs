@@ -327,14 +327,14 @@ window.setSecretForgeronsHidden = async function(hidden) {
 };
 
 // ── DISCORD TOOL : serveur, salons, quoi poster (config/discord_routes) ──
-//   { enabled, hideThreshold, guildId, plans: { <serveur>: [salons] }, channels: [salons du serveur actif] }
+//   { enabled, guildId, plans: { <serveur>: [salons] }, channels: [salons du serveur actif] }
 //   salon = { name, type: 'forum'|'text', categoryId?, categoryName?, id?, itemCats: [catégories d'items], paliers: [paliers] }
 // Un salon reçoit les items dont la catégorie ET le palier correspondent (liste vide = tous) ; le plus précis gagne.
 // « Créer / répertorier » : pour chaque salon du plan, retrouve la catégorie / le salon existant sur le serveur (par nom) ou le crée, et mémorise son ID.
 const _DR_REF = () => doc(db, 'config', 'discord_routes');
 const _DR_CATS = [['arme', '⚔️ Armes', 'armes'], ['armure', '🛡️ Armures', 'armures'], ['accessoire', '💍 Accessoires', 'accessoires'], ['outils', '🛠️ Outils', 'outils'], ['rune', '🔮 Runes', 'runes'], ['consommable', '🧪 Consommables', 'consommables'],
   ['nourriture', '🍖 Nourriture', 'nourriture'], ['materiaux', '🧱 Matériaux', 'materiaux'], ['ressources', '⛏️ Ressources', 'ressources'], ['parchemin', '📃 Parchemins', 'parchemins'], ['quete', '📜 Quête', 'quete'], ['donjon', '🏰 Donjon', 'donjon'], ['monnaie', '🪙 Monnaie', 'monnaie']];
-let _dr = { enabled: true, hideThreshold: 10, guildId: '', plans: {}, planModes: {}, customPlans: {}, channels: [], createdByBot: {} };
+let _dr = { enabled: true, guildId: '', plans: {}, planModes: {}, customPlans: {}, channels: [], createdByBot: {} };
 let _drItems = [], _drPaliers = [], _drGuilds = [], _drGuildChans = [], _drGuildErr = '', _drPostCounts = {}, _drBusyMsg = '';
 
 async function _drCall(action, payload = {}) {
@@ -362,7 +362,7 @@ window.showDiscordRoutes = async function() {
     const [cfg, pal] = await Promise.all([getDoc(_DR_REF()), getDoc(doc(db, 'config', 'paliers'))]);
     const c = cfg.exists() ? cfg.data() : {};
     // actif par défaut ; migration unique (autoDefaultApplied) pour un envoi automatique laissé désactivé avant ce changement
-    _dr = { enabled: c.enabled !== false || c.autoDefaultApplied !== true, hideThreshold: Number.isFinite(c.hideThreshold) ? c.hideThreshold : 10, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, planModes: c.planModes && typeof c.planModes === 'object' ? c.planModes : {}, customPlans: c.customPlans && typeof c.customPlans === 'object' ? c.customPlans : {}, channels: Array.isArray(c.channels) ? c.channels : [], createdByBot: c.createdByBot && typeof c.createdByBot === 'object' ? c.createdByBot : {} };
+    _dr = { enabled: c.enabled !== false || c.autoDefaultApplied !== true, guildId: c.guildId || '', plans: c.plans && typeof c.plans === 'object' ? c.plans : {}, planModes: c.planModes && typeof c.planModes === 'object' ? c.planModes : {}, customPlans: c.customPlans && typeof c.customPlans === 'object' ? c.customPlans : {}, channels: Array.isArray(c.channels) ? c.channels : [], createdByBot: c.createdByBot && typeof c.createdByBot === 'object' ? c.createdByBot : {} };
     _drPaliers = (pal.exists() && Array.isArray(pal.data().paliers) ? pal.data().paliers : []);
     if (c.autoDefaultApplied !== true) await _drPersist(); // migration unique : l'envoi automatique est actif par défaut (le bot lit cette valeur)
     if (!_drPaliers.length) _drPaliers = [{ id: 1, label: 'Palier 1' }, { id: 2, label: 'Palier 2' }, { id: 3, label: 'Palier 3' }, { id: 'event', label: 'Event' }, { id: 'worldboss', label: 'World Boss' }];
@@ -414,7 +414,7 @@ async function _drLoadGuildChans() {
   } catch { _drPostCounts = {}; }
 }
 
-const _drSave = () => { if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; return setDoc(_DR_REF(), { autoDefaultApplied: true, enabled: _dr.enabled, hideThreshold: _dr.hideThreshold, guildId: _dr.guildId, plans: _dr.plans, planModes: _dr.planModes, customPlans: _dr.customPlans, channels: _dr.channels, createdByBot: _dr.createdByBot }); };
+const _drSave = () => { if (_dr.guildId) _dr.plans[_dr.guildId] = _dr.channels; return setDoc(_DR_REF(), { autoDefaultApplied: true, enabled: _dr.enabled, guildId: _dr.guildId, plans: _dr.plans, planModes: _dr.planModes, customPlans: _dr.customPlans, channels: _dr.channels, createdByBot: _dr.createdByBot }); };
 const _drPersist = async () => { try { await _drSave(); } catch (e) { toast('Erreur : ' + e.message, 'error'); } };
 const _drField = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 8px;font-size:12px;outline:none;';
 const _drChip = (on, label, onclick) => `<button type="button" onclick="${onclick}" style="font-size:11px;padding:3px 9px;border-radius:12px;cursor:pointer;border:1px solid ${on ? 'var(--accent)' : 'var(--border)'};background:${on ? 'rgba(224,172,96,.18)' : 'var(--surface2)'};color:${on ? 'var(--accent)' : 'var(--muted)'};">${label}</button>`;
@@ -582,8 +582,7 @@ function _renderDiscordRoutes() {
       <span style="font-size:14px;font-weight:700;color:${_dr.enabled ? 'var(--success, #4caf50)' : 'var(--muted)'};">${_dr.enabled ? '🟢 Envoi automatique actif' : '⚪ Envoi automatique désactivé'}</span>
       <button class="btn ${_dr.enabled ? 'btn-ghost' : 'btn-primary'}" onclick="setDiscordEnabled(${!_dr.enabled})" style="font-size:12px;">${_dr.enabled ? '⏸ Désactiver' : '▶ Activer'}</button>
       <span style="font-size:12px;color:var(--muted);">Quand un item est approuvé, il est posté (ou remplacé) dans son salon.</span>
-    </div>
-    <div style="font-size:12px;margin-top:12px;">🤫 Avant un envoi de plus de <input type="text" inputmode="numeric" value="${_dr.hideThreshold}" onchange="drSetThreshold(this.value)" style="${_drField}width:56px;text-align:center;"> items dans un salon, le masquer aux membres (évite les pings), puis le rétablir. <span style="color:var(--muted);">0 = jamais · nécessite « Gérer les rôles ».</span></div>`;
+    </div>`;
   html += `<details style="margin-top:30px;border:1px solid var(--danger);border-radius:8px;padding:10px 14px;"><summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--danger);">🧨 Zone de danger — désinstaller sur ce serveur</summary>
       <div style="font-size:12px;color:var(--muted);margin:10px 0;line-height:1.5;">Supprime tous les posts du bot sur ce serveur, <strong>uniquement les salons et catégories que le bot a lui-même créés</strong> (les salons existants seulement « répertoriés » ne sont jamais supprimés ; une catégorie créée par le bot n'est supprimée que si elle est vide ensuite), efface le plan de ce serveur, puis fait <strong>quitter le serveur au bot</strong>. Irréversible.</div>
       ${_drBtn('🧨 Tout supprimer et quitter le serveur', 'drUninstall()', 'danger')}</details>`;
@@ -666,7 +665,7 @@ window.dgToggleChoices = async (id) => {
     kv('Qui voit les salons', { everyone: 'tout le monde (lecture seule)', roles: `rôles choisis (${(d.roleIds || []).length})`, admins: 'administrateurs seulement' }[d.access] || '?'),
     kv('Envoi initial', d.initial === 'all' ? 'tous les items existants' : 'seulement les nouveaux items'),
     kv('Format', `${d.forum === false ? 'salon texte' : 'forum'} · ${yes(d.groupSets, 'items groupés par set', 'un post par item')}${d.forum !== false ? ' · tags par événement : ' + yes(d.eventTags) : ''}`),
-    kv('Remplacer un post modifié', yes(d.replace !== false)) + kv('Masquage anti-ping', d.hideThreshold ? `au-delà de ${d.hideThreshold} items` : 'jamais'),
+    kv('Remplacer un post modifié', yes(d.replace !== false)),
     kv('Filtres généraux', `catégories : ${list(d.itemCats, k => CAT[k] || k)} · paliers : ${list(d.paliers, palLabel)}`),
     kv('Envoi', `${d.posted || 0} posts${d.pending ? ` (+${d.pending} en attente)` : ''}${d.paused ? ' · <b style="color:var(--accent);">en pause (chef)</b>' : ''}`),
   ].join('');
@@ -761,7 +760,6 @@ window.drSetGuild = async (id) => {
   _renderDiscordRoutes();
   window.discordRenderSync();
 };
-window.drSetThreshold = async (v) => { const n = parseInt(v, 10); _dr.hideThreshold = Number.isFinite(n) && n >= 0 ? n : 10; await _drPersist(); _renderDiscordRoutes(); };
 window.drAdd = async () => { _dr.channels.push({ name: '', type: 'forum', itemCats: [], paliers: [] }); await _drPersist(); _renderDiscordRoutes(); };
 window.drSet = async (i, k, v) => {
   const c = _dr.channels[i];

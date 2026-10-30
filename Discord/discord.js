@@ -116,7 +116,7 @@ function estimate(cfg) { // nombre d'items concernés par les filtres généraux
 
 // ═══ Configuration par défaut ═══
 function defaultCfg() {
-  return { mode: 'create', structure: 'default', prefix: '', access: 'everyone', roleIds: [], itemCats: [], paliers: [], initial: 'new', forum: true, hideThreshold: 10, replace: true, groupSets: false, eventTags: true, styled: true, channels: [] };
+  return { mode: 'create', structure: 'default', prefix: '', access: 'everyone', roleIds: [], itemCats: [], paliers: [], initial: 'new', forum: true, replace: true, groupSets: false, eventTags: true, styled: true, channels: [] };
 }
 function regenPlan() {
   const c = S.cfg;
@@ -245,7 +245,6 @@ function rForm() {
     <h3>④ Options</h3>
     ${optRadio('fo', '1', c.forum ? '1' : '0', 'Forum : un post (fil) par item', S.info.community ? '' : '⚠️ Les forums demandent le mode Communauté sur ton serveur.', "DG.set('forum',true)")}
     ${optRadio('fo', '0', c.forum ? '1' : '0', 'Salon texte : un message par item', '', "DG.set('forum',false)")}
-    <div class="dg-row"><label class="dg-hint">🤫 Masquer un salon pendant un envoi de plus de <input type="number" min="0" max="1000" value="${c.hideThreshold}" onchange="DG.set('hideThreshold',this.value)" style="width:70px"> items (0 = jamais) — évite que tout le monde soit notifié par une rafale ; le bot rétablit la visibilité ensuite.</label></div>
     ${c.forum ? `<label class="dg-opt ${c.eventTags ? 'on' : ''}" style="margin-top:8px"><input type="checkbox" ${c.eventTags ? 'checked' : ''} onchange="DG.set('eventTags',this.checked)"><span>Un tag par événement (Noël, Halloween…)<small>Le bot crée les tags dans tes forums (20 maximum par forum) et applique automatiquement le bon tag aux items d'un événement, avec son emoji. Permet de filtrer par événement.</small></span></label>` : ''}
     <label class="dg-opt ${c.groupSets ? 'on' : ''}" style="margin-top:8px"><input type="checkbox" ${c.groupSets ? 'checked' : ''} onchange="DG.set('groupSets',this.checked)"><span>Grouper les items d'un même set dans un seul post<small>Par exemple tous les accessoires d'un set ensemble ; le post porte le nom du set (jusqu'à 10 cartes par message, la suite dans des messages suivants). Si tu changes cette option plus tard, le bot supprime ses anciens posts et les reposte autrement.</small></span></label>
     <label class="dg-opt ${c.replace ? 'on' : ''}" style="margin-top:8px"><input type="checkbox" ${c.replace ? 'checked' : ''} onchange="DG.set('replace',this.checked)"><span>Remplacer l'ancien post quand un item est mis à jour<small>Sinon, l'ancien post reste tel quel.</small></span></label>
@@ -291,7 +290,7 @@ function rRecap() {
     <dt>Salons (${c.channels.length})</dt><dd>${creating ? 'créés par le bot' : 'existants'} — ${lines.map(l => `<div>${l}</div>`).join('')}</dd>
     <dt>Accès</dt><dd>${{ everyone: 'tout le monde (lecture seule)', roles: 'rôles : ' + c.roleIds.map(id => esc((S.info.roles.find(r => r.id === id) || {}).name || id)).join(', '), admins: 'administrateurs seulement' }[c.access]}</dd>
     <dt>Envoi</dt><dd>${c.itemCats.map(catLbl).join(', ') || 'toutes les catégories'} · ${c.paliers.map(palierLabel).join(', ') || 'tous les paliers'} · ${c.initial === 'all' ? 'tous les items existants' + (n != null ? ' (~' + n + ')' : '') : 'nouveaux items seulement'}</dd>
-    <dt>Options</dt><dd>${c.forum ? 'forum' : 'salon texte'} · ${c.groupSets ? 'items groupés par set (un post par set)' : 'un post par item'}${c.forum && c.eventTags ? ' · tags par événement' : ''} · masquage au-delà de ${c.hideThreshold || '∞ (jamais)'} items · ${c.replace ? "remplacement de l'ancien post" : 'ancien post conservé'}</dd></dl>
+    <dt>Options</dt><dd>${c.forum ? 'forum' : 'salon texte'} · ${c.groupSets ? 'items groupés par set (un post par set)' : 'un post par item'}${c.forum && c.eventTags ? ' · tags par événement' : ''} · ${c.replace ? "remplacement de l'ancien post" : 'ancien post conservé'}</dd></dl>
     <p class="dg-hint" style="margin-top:12px">${S.doc?.status === 'approved' ? '<strong>Ce serveur est déjà validé : tes modifications sont appliquées tout de suite, sans nouvelle validation.</strong> L\'équipe du wiki est prévenue de la modification et peut suspendre le serveur si besoin.' : S.doc?.status === 'pending' ? 'Ton inscription est toujours en attente de validation : tes modifications sont prises en compte, rien n\'est envoyé avant la validation.' : S.doc?.status === 'refused' || S.doc?.status === 'suspended' ? 'Ce serveur est refusé ou suspendu par l\'équipe du wiki : tes modifications sont enregistrées mais rien n\'est envoyé.' : 'En confirmant, tu inscris ce serveur : l\'équipe du wiki doit le valider avant tout envoi (rien n\'est envoyé avant). Tu pourras modifier, mettre en pause ou tout désinstaller à cette même adresse.'}</p>
     <div class="dg-row"><button class="dg-btn" onclick="DG.step('form')">← Modifier</button><button class="dg-btn primary" id="dg-confirm" onclick="DG.confirm()" ${S.busy ? 'disabled' : ''}>${S.doc ? 'Enregistrer les modifications' : "Confirmer l'inscription"}</button></div>
     <div class="dg-bar" id="dg-bar" style="display:none"><i></i></div>${msgs()}</div>`;
@@ -522,7 +521,6 @@ const DG = window.DG = {
   async edit() { await loadCombos(); S.cfg = { ...defaultCfg(), ...S.doc }; S.cfg.channels = JSON.parse(JSON.stringify(S.doc.channels || [])); S.step = 'form'; render(); },
   set(k, v) {
     const c = S.cfg;
-    if (k === 'hideThreshold') v = Math.max(0, parseInt(v, 10) || 0);
     c[k] = v;
     if (k === 'mode') { c.channels = []; c.structure = 'default'; if (v === 'existing') c.channels = [{ name: '', type: 'text', categoryName: '', id: '', itemCats: [], paliers: [] }]; }
     if (['mode', 'structure', 'forum'].includes(k)) { if (k === 'structure' && v === 'custom') { c.structure = 'default'; regenPlan(); c.structure = 'custom'; } else regenPlan(); }

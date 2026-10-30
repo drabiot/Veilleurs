@@ -172,7 +172,6 @@ function cleanConfig(c, stored, realIds) {
     paliers: strList(c.paliers, /^[\w\-]{1,30}$/, 30),
     initial: one(c.initial, ['all', 'new'], 'new'),
     forum: c.forum !== false,
-    hideThreshold: Math.max(0, Math.min(1000, parseInt(c.hideThreshold, 10) || 0)),
     replace: c.replace !== false,
     eventTags: c.eventTags === true, // tag de forum par événement (Noël, Halloween…), créé et appliqué par le bot
     styled: c.styled !== false, // style Veilleurs des noms (sert aux salons proposés par le modèle)

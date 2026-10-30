@@ -556,6 +556,7 @@ async function _postBotForumThread(channelId, threadName, content, fileBlob, fil
   if (content) message.content = content;
   message.attachments = [{ id: 0, filename: fileName }, ...(extra ? [{ id: 1, filename: extra.name }] : [])];
   message.allowed_mentions = { parse: [] };
+  message.flags = 4096; // SUPPRESS_NOTIFICATIONS : aucun push ni ping
   const thread = { name: threadName, message };
   if (tagIds?.length) thread.applied_tags = tagIds;
 
@@ -1038,10 +1039,10 @@ async function _sendSetGroupDiscord(subs) {
   let fetchUrl, payload;
   if (existingThreadId) {
     fetchUrl = `${url}?thread_id=${existingThreadId}&wait=true`;
-    payload  = {};
+    payload  = { flags: 4096 };
   } else {
     fetchUrl = `${url}?wait=true`;
-    payload  = { thread_name: threadName };
+    payload  = { thread_name: threadName, flags: 4096 };
     const appliedTags = _resolveTagRules(first.data, (_dwConfig.tagRules || {})[key] || []);
     if (appliedTags.length) payload.applied_tags = appliedTags;
   }
@@ -1142,10 +1143,10 @@ async function _sendSetGroupItemsDiscord(items) {
   let fetchUrl, payload;
   if (existingThreadId) {
     fetchUrl = `${url}?thread_id=${existingThreadId}&wait=true`;
-    payload  = {};
+    payload  = { flags: 4096 };
   } else {
     fetchUrl = `${url}?wait=true`;
-    payload  = { thread_name: threadName };
+    payload  = { thread_name: threadName, flags: 4096 };
     const appliedTags = _resolveTagRules(first, (_dwConfig.tagRules || {})[key] || []);
     if (appliedTags.length) payload.applied_tags = appliedTags;
   }
@@ -1710,7 +1711,8 @@ function _drProgress(txt, busy) {
   if (el) el.innerHTML = txt ? `${escHtml(txt)} ${busy ? '<button class="btn btn-ghost" onclick="discordCancelBulk()" style="font-size:11px;padding:2px 8px;margin-left:8px;">⏹ Arrêter</button>' : ''}` : '';
 }
 window.discordCancelBulk = () => { _drCancel = true; };
-async function _bulk(label, list, fn, delay = 1500) {
+// Séquentiel exprès : les items d'un même set partagent un fil, en parallèle ils en créeraient plusieurs. Les 429 sont attendus dans _postBotForumThread.
+async function _bulk(label, list, fn, delay = 700) {
   if (_drBusy) { toast('Une opération est déjà en cours.', 'warning'); return; }
   _drBusy = true; _drCancel = false; _postsCache = null;
   await _allPosts(true);
@@ -1743,13 +1745,13 @@ window.discordResendAll = async function() {
   const list = await _itemsForChannel(null);
   if (!list.length) { toast('Aucun item à envoyer (aucun salon réglé).', 'warning'); return; }
   if (!await modal.confirm(`Renvoyer ${list.length} item(s) ?\n\nChaque ancien post est supprimé puis recréé (environ ${Math.ceil(list.length * 2.5 / 60)} min).`)) return;
-  await _withHidden(await Promise.all(list.map(it => _channelOfItem(it, { auto: true }))), () => _bulk('Renvoi', list, it => window.discordSyncItem(it.id)));
+  await _bulk('Renvoi', list, it => window.discordSyncItem(it.id));
 };
 window.discordResendChannel = async function(channelId) {
   const list = await _itemsForChannel(channelId);
   if (!list.length) { toast('Aucun item pour ce salon.', 'warning'); return; }
   if (!await modal.confirm(`Renvoyer les ${list.length} item(s) du salon ${channelId} ?`)) return;
-  await _withHidden(list.map(() => channelId), () => _bulk('Renvoi', list, it => window.discordSyncItem(it.id)));
+  await _bulk('Renvoi', list, it => window.discordSyncItem(it.id));
 };
 // Envoie les items qui n'ont pas encore de post dans leur salon actuel (premier envoi, ou reprise après un arrêt)
 window.discordSendMissing = async function(onlyChannel) {
@@ -1759,7 +1761,7 @@ window.discordSendMissing = async function(onlyChannel) {
   for (const it of all) { const ch = await _channelOfItem(it, { auto: true }); if (ch && (!onlyChannel || ch === onlyChannel) && !hasPost.has(String(it.id) + '|' + ch)) list.push({ it, ch }); }
   if (!list.length) { toast('Tous les items ont déjà leur post.', 'success'); return; }
   if (!await modal.confirm(`Envoyer ${list.length} item(s) sans post ?\n\nDurée estimée : ${Math.ceil(list.length * 5 / 60)} min environ. Garde cet onglet ouvert (tu peux arrêter et reprendre : seuls les manquants sont envoyés).`)) return;
-  await _withHidden(list.map(x => x.ch), () => _bulk('Envoi', list, x => window.discordSyncItem(x.it.id), 1200));
+  await _bulk('Envoi', list, x => window.discordSyncItem(x.it.id));
 };
 window.discordResendItem = async function(id) {
   try { await window.discordSyncItem(id); toast('Item renvoyé.', 'success'); await window.discordRenderSync(); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
@@ -1773,13 +1775,13 @@ window.discordDeleteAllPosts = async function() {
   if (!posts) { toast('Choisis un serveur (et vérifie que le worker est à jour) : sans ça, aucune suppression en masse.', 'warning'); return; }
   if (!posts.length) { toast('Aucun post suivi sur ce serveur.', 'warning'); return; }
   if (!await modal.confirm(`Supprimer les ${posts.length} posts Discord de ce serveur ?\n\n(Les posts des autres serveurs et les items du wiki ne sont pas touchés.)`)) return;
-  await _bulk('Suppression', posts, _deletePost, 600);
+  await _bulk('Suppression', posts, _deletePost, 400);
 };
 window.discordDeleteChannelPosts = async function(channelId) {
   const posts = (await _allPosts(true)).filter(p => p.channelId === channelId);
   if (!posts.length) { toast('Aucun post suivi dans ce salon.', 'warning'); return; }
   if (!await modal.confirm(`Supprimer les ${posts.length} posts du salon ${channelId} ?`)) return;
-  await _bulk('Suppression', posts, _deletePost, 600);
+  await _bulk('Suppression', posts, _deletePost, 400);
 };
 
 let _drItems = [], _drPosts = [];
@@ -1831,7 +1833,7 @@ window.discordRenderSync = async function() {
         <button class="btn btn-ghost" onclick="discordResendAll()" style="font-size:12px;">🔄 Renvoyer tous les items</button>
         <button class="btn btn-ghost" onclick="discordDeleteAllPosts()" style="font-size:12px;color:var(--danger);border-color:var(--danger);">🗑 Supprimer tous les posts de ce serveur (${posts.length})</button>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:12px;color:var(--muted);">🤫 Masquage anti-ping : réglé plus haut. <button class="btn btn-ghost" onclick="discordRestoreVisibility()" style="font-size:11px;padding:2px 8px;">🔓 Rétablir la visibilité</button></div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:12px;color:var(--muted);">🤫 Envois sans notification (aucun ping). Salon resté masqué par l'ancien système ? <button class="btn btn-ghost" onclick="discordRestoreVisibility()" style="font-size:11px;padding:2px 8px;">🔓 Rétablir la visibilité</button></div>
       <div style="font-size:12px;font-weight:700;margin-bottom:6px;">Par salon</div>${perChannel}
       <div style="font-size:12px;font-weight:700;margin:14px 0 6px;">Envoyer / renvoyer un item</div>
       <input type="text" id="discord-resend-search" oninput="discordSearchItems()" placeholder="Nom de l'item…" style="${field}width:100%;box-sizing:border-box;">
@@ -1846,45 +1848,9 @@ window.discordRenderSync = async function() {
 
 async function _ow(action, p) { const r = await _workerCall(action, p); if (!r) throw new Error('permissions Discord refusées (le bot a-t-il « Gérer les rôles » ?)'); return r; }
 
-// ── Masquer un salon pendant un envoi en lot (évite les pings) ──
-// @everyone ET tous les rôles qui voient le salon perdent « Voir le salon » le temps de l'envoi ; l'état d'origine est noté dans config/discord_lock pour pouvoir le rétablir même après un plantage.
-const _VIEW = 1n << 10n;
-const _BOT_ALLOW = (1n << 10n) | (1n << 11n) | (1n << 14n) | (1n << 15n) | (1n << 16n) | (1n << 34n) | (1n << 35n) | (1n << 38n); // voir, écrire, liens, fichiers, historique, gérer/créer fils, écrire dans les fils
+// ── Reste de l'ancien masquage anti-ping (remplacé par l'envoi sans notification) ──
+// Ne sert plus qu'à rétablir un salon resté masqué (config/discord_lock) ; plus aucun salon n'est masqué à l'envoi.
 const _LOCK_REF = () => doc(db, 'config', 'discord_lock');
-let _botId = null;
-
-async function _lockChannel(channelId) {
-  const ch = await _workerCall('get_channel', { channelId });
-  if (!ch?.id) { // raison réelle renvoyée par Discord : 404 = salon supprimé, 403 = le bot n'a pas accès au salon (permissions)
-    const le = _workerCall.lastError || {};
-    let msg = ''; try { msg = JSON.parse(le.text || '{}').message || ''; } catch { /* texte brut */ }
-    throw new Error(`salon ${channelId} inaccessible (${le.status || '?'}${msg ? ' ' + msg : ''})` + (le.status === 403 ? ' : le bot ne voit pas ce salon, vérifie ses permissions « Voir le salon »' : le.status === 404 ? ' : salon supprimé sur Discord' : ''));
-  }
-  const guildId = ch.guild_id;
-  const ovs = ch.permission_overwrites || [];
-  const snap = await getDoc(_LOCK_REF());
-  const saved = snap.exists() ? snap.data() : {};
-  if (!saved[channelId]) { // ne jamais écraser un état d'origine déjà noté (verrou resté après un plantage)
-    // cibles masquées : @everyone + tout rôle/membre qui voit le salon (surcharge « Voir » ou permission « Voir les salons » du rôle). Les rôles administrateur ne peuvent pas être masqués.
-    const ADMIN = 1n << 3n;
-    const ids = new Set([guildId]);
-    for (const o of ovs) if (o.id !== guildId && (BigInt(o.allow) & _VIEW)) ids.add(o.id);
-    const roles = await _workerCall('get_guild_roles', {});
-    if (Array.isArray(roles)) for (const r of roles) { const pm = BigInt(r.permissions || '0'); if (!r.managed && r.id !== guildId && (pm & _VIEW) && !(pm & ADMIN)) ids.add(r.id); }
-    const targets = [];
-    for (const id of ids) {
-      const ov = ovs.find(o => o.id === id);
-      targets.push({ id, type: ov ? ov.type : 0, existed: !!ov, allow: ov?.allow || '0', deny: ov?.deny || '0' });
-    }
-    saved[channelId] = { guildId, targets };
-    await setDoc(_LOCK_REF(), saved);
-  }
-  _botId ??= (await _workerCall('get_bot_user', {}))?.id;
-  if (_botId) await _ow('set_overwrite', { channelId, overwriteId: _botId, type: 1, allow: _BOT_ALLOW.toString(), deny: '0' }); // le bot garde l'accès
-  const o = saved[channelId];
-  const list = o.targets || [{ id: o.guildId, type: 0, existed: o.existed, allow: o.allow, deny: o.deny }];
-  for (const t of list) await _ow('set_overwrite', { channelId, overwriteId: t.id, type: t.type, allow: (BigInt(t.allow) & ~_VIEW).toString(), deny: (BigInt(t.deny) | _VIEW).toString() });
-}
 async function _unlockChannel(channelId, saved) {
   const o = saved[channelId];
   if (!o) return;
@@ -1899,24 +1865,6 @@ async function _restoreLocked(ids) {
   const saved = snap.exists() ? snap.data() : {};
   for (const id of (ids || Object.keys(saved))) { await _unlockChannel(id, saved); delete saved[id]; }
   await setDoc(_LOCK_REF(), saved);
-}
-/** Exécute fn avec les salons masqués AVANT l'envoi, puis les rétablit quoi qu'il arrive.
- *  channelIds = un salon par item à envoyer ; seuls les salons qui reçoivent plus de config/discord_routes.hideThreshold items
- *  (10 par défaut, 0 = ne jamais masquer) sont masqués. */
-async function _withHidden(channelIds, fn) {
-  const cfg = await _routes(true);
-  const threshold = Number.isFinite(cfg.hideThreshold) ? cfg.hideThreshold : 10;
-  const hide = threshold > 0;
-  const counts = new Map();
-  channelIds.filter(Boolean).forEach(id => counts.set(id, (counts.get(id) || 0) + 1));
-  const ids = [...counts].filter(([, n]) => n > threshold).map(([id]) => id);
-  const locked = [];
-  try {
-    if (hide) for (const id of ids) { try { await _lockChannel(id); locked.push(id); } catch (e) { toast('Masquage impossible pour ' + id + ' : ' + e.message + ' (envoi quand même)', 'warning', 7000); } }
-    return await fn();
-  } finally {
-    if (locked.length) { try { await _restoreLocked(locked); } catch (e) { toast('⚠️ Visibilité non rétablie : utilise « Rétablir la visibilité ». ' + e.message, 'error', 12000); } }
-  }
 }
 window.discordRestoreVisibility = async function() {
   try { await _restoreLocked(); toast('Visibilité des salons rétablie.', 'success'); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
