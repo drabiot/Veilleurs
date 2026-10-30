@@ -47,7 +47,9 @@ async function refreshItems(since) {
   for (const x of j.docs) items.set(x.id, { _id: x.id, ...x.d });
   Object.assign(fetched, { rev: j.rev, full: since === 0, deleted: j.deleted || [] });
 }
-const hashOf = it => crypto.createHash('sha1').update(JSON.stringify(it)).digest('base64').slice(0, 12);
+// Empreinte stable : clés triées, sans identifiants (un même item lu de deux façons donne la même empreinte)
+const stable = it => JSON.stringify(Object.fromEntries(Object.entries(it).filter(([k]) => k !== '_id' && k !== 'id').sort(([a], [b]) => (a < b ? -1 : 1))));
+const hashOf = x => crypto.createHash('sha1').update(Array.isArray(x) ? x.map(stable).join('|') : stable(x)).digest('base64').slice(0, 12);
 
 /** Salon d'un serveur qui reçoit cet item (le plus précis gagne) ; null = non concerné. */
 function route(cfg, it) {
@@ -59,19 +61,36 @@ function route(cfg, it) {
   return (cfg.channels || []).filter(c => c.id && fits(c.itemCats, it.category) && fits(c.paliers, it.palier)).sort((a, b) => spec(b) - spec(a))[0] || null;
 }
 
-/** Travail à faire pour un serveur : { todo: [{ it, ch, old?, h }], hashFix: [[itemId, h]] , gone: [itemId] }. Pur (testé). */
+/** Travail à faire pour un serveur. Pur (testé).
+ *  Unité de publication = un item, ou (option « grouper les sets ») tous les items d'un même set d'un même salon (clé « set:<set>|<salon> »).
+ *  → { todo: [{ key, it, items, ch, h, old? }], hashFix: [[clé, h]], gone: [clé] } */
 function plan(cfg, st, itemMap, full = true, deleted = []) {
-  const todo = [], hashFix = [], gone = [];
+  const units = new Map();
   for (const [id, it] of itemMap) {
     const ch = route(cfg, it);
     if (!ch) continue;
-    const h = hashOf(it), e = st.posts[id];
-    if (!e) { if (!st.seen[id]) todo.push({ it, ch, h }); continue; }
-    if (e.channelId !== ch.id) todo.push({ it, ch, h, old: e });           // règle changée : déplacé
-    else if (e.h !== h) { if (cfg.replace !== false) todo.push({ it, ch, h, old: e }); else hashFix.push([id, h]); }
+    if (cfg.groupSets && it.set) {
+      const key = `set:${it.set}|${ch.id}`;
+      if (!units.has(key)) units.set(key, { key, set: it.set, items: [], ch });
+      units.get(key).items.push({ ...it, _id: it._id ?? id });
+    } else units.set(id, { key: id, items: [{ ...it, _id: it._id ?? id }], ch });
   }
-  // item supprimé du wiki : absent de la lecture complète, ou listé comme supprimé dans la lecture incrémentale
-  for (const id of Object.keys(st.posts)) if (full ? !itemMap.has(id) : deleted.includes(id)) gone.push(id);
+  const todo = [], hashFix = [], gone = [];
+  for (const u of units.values()) {
+    u.items.sort((a, b) => (a._id < b._id ? -1 : 1));
+    u.it = u.items[0];
+    u.h = u.set ? hashOf(u.items) : hashOf(u.it);
+    const e = st.posts[u.key];
+    if (!e) { if (u.items.some(i => !st.seen[i._id])) todo.push({ ...u }); continue; }
+    if (e.channelId !== u.ch.id) todo.push({ ...u, old: e });          // règle changée : déplacé
+    else if (e.h !== u.h) { if (cfg.replace !== false) todo.push({ ...u, old: e }); else hashFix.push([u.key, u.h]); }
+  }
+  // supprimé du wiki : tous les items du post absents de la lecture complète, ou tous listés comme supprimés (lecture incrémentale)
+  for (const [key, e] of Object.entries(st.posts)) {
+    if (units.has(key)) continue;
+    const ids = e.ids || [key];
+    if (full ? ids.every(i => !itemMap.has(i)) : ids.every(i => deleted.includes(i))) gone.push(key);
+  }
   const pal = p => (p == null ? 999 : isNaN(Number(p)) ? 500 : Number(p));
   todo.sort((a, b) => pal(a.it.palier) - pal(b.it.palier) || String(a.it.category).localeCompare(b.it.category));
   return { todo, hashFix, gone };
@@ -81,6 +100,7 @@ function plan(cfg, st, itemMap, full = true, deleted = []) {
 async function deletePost(rest, e) {
   try {
     if (e.threadId) await rest.delete(`/channels/${e.threadId}`);
+    else if (e.messageIds?.length) for (const m of e.messageIds) await rest.delete(`/channels/${e.channelId}/messages/${m}`);
     else if (e.messageId) await rest.delete(`/channels/${e.channelId}/messages/${e.messageId}`);
   } catch (err) { if (![404, 403, 10003, 10008].includes(err.status) && ![10003, 10008, 50001].includes(err.code)) throw err; } // déjà supprimé / plus accessible : on oublie
 }
@@ -132,6 +152,8 @@ async function uninstall(rest, g, st) {
   try { await rest.delete(`/users/@me/guilds/${g.id}`); } catch (e) { if (e.status !== 404) log('quitter', g.id, e.message); }
 }
 
+const setLabel = (ctx, id) => { const p = ctx.maps.panoplieData?.[id]; return p?.label || p?.name || String(id).replace(/_/g, ' '); };
+
 // ── Un passage sur un serveur ──
 async function guildPass(rest, g, st, getCtx) {
   const cfg = g;
@@ -144,11 +166,23 @@ async function guildPass(rest, g, st, getCtx) {
   }
   if (g.status !== 'approved' || g.paused || !items.size) return;
 
+  if (!!st.groupSets !== !!cfg.groupSets) {
+    for (const [key, e] of Object.entries(st.posts)) { if (timeUp()) return; await deletePost(rest, e); delete st.posts[key]; await sleep(500); }
+    st.groupSets = !!cfg.groupSets;
+    st.rev = 0; // lecture complète
+    return; // le repost se fait au passage suivant (lecture complète)
+  }
   if (!st.baselined) { // « seulement les nouveaux » : les items déjà dans le wiki sont notés comme vus
     if (cfg.initial !== 'all') for (const [id, it] of items) if (route(cfg, it)) st.seen[id] = 1;
     st.baselined = true;
   }
-  const { todo, hashFix, gone } = plan(cfg, st, items, fetched.full, fetched.deleted);
+  // Lecture incrémentale + sets groupés : on complète avec les autres items des sets modifiés (tous les items viennent avec le contexte des cartes)
+  let map = items;
+  if (cfg.groupSets && !fetched.full) {
+    const sets = new Set([...items.values()].filter(i => i.set && route(cfg, i)).map(i => i.set));
+    if (sets.size) { const ctx = await getCtx(); map = new Map(items); for (const it of ctx.maps.allItems) if (sets.has(it.set)) map.set(it.id ?? it._id, { _id: it.id ?? it._id, ...it }); }
+  }
+  const { todo, hashFix, gone } = plan(cfg, st, map, fetched.full, fetched.deleted);
   for (const [id, h] of hashFix) st.posts[id].h = h;
   let error = '', sent = 0;
   for (const id of gone) { try { await deletePost(rest, st.posts[id]); delete st.posts[id]; await sleep(500); } catch (e) { error = e.message; } }
@@ -167,9 +201,11 @@ async function guildPass(rest, g, st, getCtx) {
         if (timeUp()) break;
         try {
           if (!chInfo.has(b.ch.id)) chInfo.set(b.ch.id, await rest.get(`/channels/${b.ch.id}`));
-          if (b.old) { await deletePost(rest, b.old); delete st.posts[b.it._id]; }
-          const r = await dp.postItem(rest, b.ch.id, b.it, ctx, chInfo.get(b.ch.id));
-          st.posts[b.it._id] = { channelId: b.ch.id, threadId: r.threadId, messageId: r.messageId, h: b.h };
+          if (b.old) { await deletePost(rest, b.old); delete st.posts[b.key]; }
+          const r = b.set
+            ? await dp.postSet(rest, b.ch.id, setLabel(ctx, b.set), b.items, ctx, chInfo.get(b.ch.id))
+            : await dp.postItem(rest, b.ch.id, b.it, ctx, chInfo.get(b.ch.id));
+          st.posts[b.key] = { channelId: b.ch.id, threadId: r.threadId, messageId: r.messageId, ...(r.messageIds ? { messageIds: r.messageIds } : {}), ...(b.set ? { ids: b.items.map(i => i._id) } : {}), h: b.h };
           sent++;
           await saveGuildState(g.id, st);
           await sleep(1500);

@@ -13,25 +13,41 @@ const FALLBACK_PALIERS = [{ id: '1', label: 'Palier 1' }, { id: '2', label: 'Pal
 const ARCHIVE = { id: '-1', label: 'Archive' };
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const slug = n => String(n || '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_àâäçéèêëîïôöùûüœ]/g, '').replace(/-+/g, '-').slice(0, 100);
+const slug = n => String(n || '').trim().replace(/\s+/g, '-').replace(/[\\/#@:*?"<>|`\u0000-\u001f]/g, '').slice(0, 100);
 const has = (l, v) => (l || []).map(String).includes(String(v));
 const toggle = (l, v) => (has(l, v) ? l.filter(x => String(x) !== String(v)) : [...l, String(v)]);
 
+// Style « Veilleurs » (même que la modération) : salon = emoji・𝗡𝗼𝗺 (lettres grasses Unicode : Discord met les salons en minuscules) ; catégorie = emoji NOM EN MAJUSCULES
+const PAL_EMOJI = { '1': '🌱', '2': '🔥', '3': '🌲', event: '🎉', worldboss: '🌍', '-1': '📦' };
+const fancy = text => [...String(text).normalize('NFD')].map(ch => {
+  const c = ch.codePointAt(0);
+  if (c >= 65 && c <= 90) return String.fromCodePoint(0x1D5D4 + c - 65);
+  if (c >= 97 && c <= 122) return String.fromCodePoint(0x1D5EE + c - 97);
+  if (c >= 48 && c <= 57) return String.fromCodePoint(0x1D7EC + c - 48);
+  return ch;
+}).join('');
+const cap = t => String(t).replace(/(^|[\s-])(\S)/g, (m, a, b) => a + b.toUpperCase());
+const styleChannel = (emoji, name) => (emoji ? emoji + '・' : '') + fancy(cap(name));
+const styleCategory = (id, label) => (PAL_EMOJI[String(id)] || '📁') + ' ' + String(label).toUpperCase();
+const catStyled = c => { const x = CATS.find(q => q[0] === c); if (!x) return c; const [emoji, ...w] = x[1].split(' '); return styleChannel(emoji, w.join(' ')); };
+
 /** Plan de salons à créer. combos = [[catégorie, palier]] présents dans le wiki (ou tous si inconnu). */
 function buildPlan(structure, o) {
-  const { combos, cats, paliers, palierLabel, forum } = o; // cats/paliers : filtres choisis (vide = tout)
+  const { combos, cats, paliers, palierLabel, forum, styled = true } = o;
+  const chName = c => (styled ? catStyled(c) : (CATS.find(x => x[0] === c) || [0, 0, c])[2]);
+  const catName = p => (styled ? styleCategory(p, palierLabel(p)) : palierLabel(p)); // cats/paliers : filtres choisis (vide = tout)
   const type = forum ? 'forum' : 'text';
   const fitsCat = c => !cats.length || cats.includes(c);
   const fitsPal = p => (paliers.length ? paliers.map(String).includes(String(p)) : String(p) !== '-1'); // l'archive n'est envoyée que si elle est choisie
-  if (structure === 'single') return [{ name: 'items-veilleurs', type, categoryName: '', id: '', itemCats: [], paliers: [] }];
+  if (structure === 'single') return [{ name: styled ? styleChannel('📜', 'Items') : 'items-veilleurs', type, categoryName: '', id: '', itemCats: [], paliers: [] }];
   const order = (arr, v) => { const i = arr.indexOf(String(v)); return i < 0 ? 999 : i; };
   const palOrder = o.paliers_all.map(p => String(p.id));
   const list = combos.filter(([c, p]) => fitsCat(c) && fitsPal(p))
     .sort((a, b) => order(palOrder, a[1]) - order(palOrder, b[1]) || CATS.findIndex(x => x[0] === a[0]) - CATS.findIndex(x => x[0] === b[0]));
-  return list.map(([c, p]) => ({ name: (CATS.find(x => x[0] === c) || [0, 0, c])[2], type, categoryName: palierLabel(p), id: '', itemCats: [c], paliers: [String(p)] }));
+  return list.map(([c, p]) => ({ name: chName(c), type, categoryName: catName(p), id: '', itemCats: [c], paliers: [String(p)] }));
 }
 
-if (typeof document === 'undefined') { module.exports = { buildPlan, slug }; return; }
+if (typeof document === 'undefined') { module.exports = { buildPlan, slug, styleChannel, styleCategory }; return; }
 
 // ═══ État ═══
 const S = { session: sessionStorage.getItem(SESSION_KEY) || '', me: null, guild: null, info: null, cfg: null, doc: null,
@@ -94,12 +110,12 @@ function estimate(cfg) { // nombre d'items concernés par les filtres généraux
 
 // ═══ Configuration par défaut ═══
 function defaultCfg() {
-  return { mode: 'create', structure: 'default', prefix: '', access: 'everyone', roleIds: [], itemCats: [], paliers: [], initial: 'new', forum: true, hideThreshold: 10, replace: true, channels: [] };
+  return { mode: 'create', structure: 'default', prefix: '', access: 'everyone', roleIds: [], itemCats: [], paliers: [], initial: 'new', forum: true, hideThreshold: 10, replace: true, groupSets: false, styled: true, channels: [] };
 }
 function regenPlan() {
   const c = S.cfg;
   if (c.mode !== 'create' || c.structure === 'custom') return;
-  c.channels = buildPlan(c.structure, { combos: S.combos || [], cats: c.itemCats, paliers: c.paliers, paliers_all: S.paliers, palierLabel, forum: c.forum });
+  c.channels = buildPlan(c.structure, { combos: S.combos || [], cats: c.itemCats, paliers: c.paliers, paliers_all: S.paliers, palierLabel, forum: c.forum, styled: c.styled !== false });
 }
 
 // ═══ Rendu ═══
@@ -169,7 +185,8 @@ function rForm() {
   const catChips = CATS.map(([k, l]) => chip(has(c.itemCats, k), l, `DG.tgl('itemCats','${k}')`)).join('');
   const palChips = S.paliers.map(p => chip(has(c.paliers, p.id), esc(p.label), `DG.tgl('paliers','${esc(p.id)}')`)).join('');
   const roleChips = (S.info.roles || []).map(r => chip(has(c.roleIds, r.id), esc(r.name), `DG.tgl('roleIds','${r.id}')`)).join('');
-  const routes = c.channels.map((ch, i) => `<div class="dg-route"><div class="top">
+  const compact = creating && c.structure !== 'custom';
+  const routes = compact ? '' : c.channels.map((ch, i) => `<div class="dg-route"><div class="top">
       ${creating ? `<input type="text" value="${esc(ch.name)}" placeholder="nom-du-salon" onchange="DG.setCh(${i},'name',this.value)" style="width:190px;font-weight:700">
         <input type="text" value="${esc(ch.categoryName)}" placeholder="catégorie Discord" onchange="DG.setCh(${i},'categoryName',this.value)" style="width:170px">`
       : `<select onchange="DG.setCh(${i},'id',this.value)" style="min-width:230px">${chanOptions(ch.id)}</select>`}
@@ -179,42 +196,63 @@ function rForm() {
       : `<div class="dg-hint">${ch.itemCats.map(k => (CATS.find(x => x[0] === k) || [0, k])[1]).join(', ') || 'Tout'} · ${ch.paliers.map(palierLabel).join(', ') || 'tous les paliers'}</div>`}</div>`).join('');
   const n = estimate(c);
   return `<div class="dg-card"><h2>Réglages pour « ${esc(S.guild.name)} »</h2>
-    <h3>① Où envoyer ?</h3>
+    <h3>① Quoi envoyer ?</h3>
+    <div class="dg-hint">Catégories d'items (aucune sélection = toutes)</div><div class="dg-chips">${catChips}</div>
+    <div class="dg-hint">Paliers (aucune sélection = tous sauf l'Archive ; Event et World Boss sont des paliers comme les autres)</div><div class="dg-chips">${palChips}</div>
+    ${optRadio('in', 'new', c.initial, 'Seulement les nouveaux items', 'Les items déjà dans le wiki ne sont pas envoyés.', "DG.set('initial','new')")}
+    ${optRadio('in', 'all', c.initial, 'Envoyer tous les items maintenant', n != null ? `Environ ${n} items : l'envoi peut durer plusieurs heures (le bot respecte les limites de Discord).` : 'L\'envoi peut durer plusieurs heures.', "DG.set('initial','all')")}
+
+
+    <h3>② Où envoyer ?</h3>
     ${optRadio('mode', 'create', c.mode, 'Crée les salons pour moi', 'Le bot crée catégories et salons (tu pourras les renommer ensuite).', "DG.set('mode','create')")}
     ${optRadio('mode', 'existing', c.mode, "J'ai déjà mes salons", 'Tu choisis, pour chaque catégorie d\'items / palier, un salon existant.', "DG.set('mode','existing')")}
     ${creating ? `<h3>Structure</h3>
       ${optRadio('st', 'default', c.structure, 'Recommandé : une catégorie Discord par palier + un salon par catégorie d\'items', 'Ex. « Palier 1 » → #armes, #armures… (seulement les combinaisons qui existent dans le wiki).', "DG.set('structure','default')")}
       ${optRadio('st', 'single', c.structure, 'Un seul salon', 'Tous les items dans un seul salon.', "DG.set('structure','single')")}
       ${optRadio('st', 'custom', c.structure, 'Personnalisé', 'Pars du plan recommandé puis ajoute, retire, renomme, regroupe.', "DG.set('structure','custom')")}
+      <label class="dg-opt ${c.styled !== false ? 'on' : ''}" style="margin-top:8px"><input type="checkbox" ${c.styled !== false ? 'checked' : ''} onchange="DG.set('styled',this.checked)"><span>Style Veilleurs (emojis, majuscules, lettres stylisées)<small>Ex. « 🌱 PALIER 1 » / « ⚔️・𝗔𝗿𝗺𝗲𝘀 ». Décoche pour des noms simples (armes, armures…) ; remet le plan à zéro.</small></span></label>
       <div class="dg-row"><label class="dg-hint">Préfixe de catégorie (facultatif) <input type="text" maxlength="20" value="${esc(c.prefix)}" placeholder="VCL" onchange="DG.set('prefix',this.value)" style="width:120px"></label></div>` : ''}
-    <div style="margin-top:10px">${routes || '<div class="dg-hint">Aucun salon dans le plan.</div>'}
+    ${compact ? compactPlan() : ''}
+    <div style="margin-top:10px">${compact ? '' : routes || '<div class="dg-hint">Aucun salon dans le plan.</div>'}
       ${c.structure === 'custom' || !creating ? `<button class="dg-btn" onclick="DG.addCh()">➕ Ajouter un salon / une règle</button>` : ''}
       ${!creating && c.channels.length > 0 ? '' : ''}</div>
 
-    <h3>② Qui voit les salons créés ?</h3>
+    <h3>③ Qui voit les salons créés ?</h3>
     ${optRadio('ac', 'everyone', c.access, 'Tout le monde', 'Lecture seule : personne d\'autre que le bot ne peut écrire.', "DG.set('access','everyone')")}
     ${optRadio('ac', 'roles', c.access, 'Certains rôles', '', "DG.set('access','roles')")}
     ${c.access === 'roles' ? `<div class="dg-chips" style="margin:4px 0 8px 26px">${roleChips || '<span class="dg-hint">Aucun rôle trouvé.</span>'}</div>` : ''}
     ${optRadio('ac', 'admins', c.access, 'Administrateurs seulement', '', "DG.set('access','admins')")}
     <div class="dg-hint">${creating ? 'S\'applique aux salons créés par le bot. Pour tes salons existants, tes propres réglages de droits restent inchangés.' : 'Ignoré : tes salons existants gardent leurs droits.'}</div>
 
-    <h3>③ Quoi envoyer ?</h3>
-    <div class="dg-hint">Catégories d'items (aucune sélection = toutes)</div><div class="dg-chips">${catChips}</div>
-    <div class="dg-hint">Paliers (aucune sélection = tous sauf l'Archive ; Event et World Boss sont des paliers comme les autres)</div><div class="dg-chips">${palChips}</div>
-    ${optRadio('in', 'new', c.initial, 'Seulement les nouveaux items', 'Les items déjà dans le wiki ne sont pas envoyés.', "DG.set('initial','new')")}
-    ${optRadio('in', 'all', c.initial, 'Envoyer tous les items maintenant', n != null ? `Environ ${n} items : l'envoi peut durer plusieurs heures (le bot respecte les limites de Discord).` : 'L\'envoi peut durer plusieurs heures.', "DG.set('initial','all')")}
-
     <h3>④ Options</h3>
     ${optRadio('fo', '1', c.forum ? '1' : '0', 'Forum : un post (fil) par item', S.info.community ? '' : '⚠️ Les forums demandent le mode Communauté sur ton serveur.', "DG.set('forum',true)")}
     ${optRadio('fo', '0', c.forum ? '1' : '0', 'Salon texte : un message par item', '', "DG.set('forum',false)")}
     <div class="dg-row"><label class="dg-hint">🤫 Masquer un salon pendant un envoi de plus de <input type="number" min="0" max="1000" value="${c.hideThreshold}" onchange="DG.set('hideThreshold',this.value)" style="width:70px"> items (0 = jamais) — évite que tout le monde soit notifié par une rafale ; le bot rétablit la visibilité ensuite.</label></div>
+    <label class="dg-opt ${c.groupSets ? 'on' : ''}" style="margin-top:8px"><input type="checkbox" ${c.groupSets ? 'checked' : ''} onchange="DG.set('groupSets',this.checked)"><span>Grouper les items d'un même set dans un seul post<small>Par exemple tous les accessoires d'un set ensemble ; le post porte le nom du set (jusqu'à 10 cartes par message, la suite dans des messages suivants). Si tu changes cette option plus tard, le bot supprime ses anciens posts et les reposte autrement.</small></span></label>
     <label class="dg-opt ${c.replace ? 'on' : ''}" style="margin-top:8px"><input type="checkbox" ${c.replace ? 'checked' : ''} onchange="DG.set('replace',this.checked)"><span>Remplacer l'ancien post quand un item est mis à jour<small>Sinon, l'ancien post reste tel quel.</small></span></label>
 
     <div class="dg-row"><button class="dg-btn" onclick="DG.back()">← Autre serveur</button><button class="dg-btn primary" onclick="DG.toRecap()">Récapitulatif →</button></div>${msgs()}</div>`;
 }
 
+/** Plan « recommandé » / « un seul salon » : arbre compact ; on peut renommer ou décocher un salon (décoché = non créé). */
+function compactPlan() {
+  const c = S.cfg;
+  const groups = [];
+  c.channels.forEach((ch, i) => { let g = groups.find(x => x.cat === ch.categoryName); if (!g) groups.push(g = { cat: ch.categoryName, rows: [] }); g.rows.push([ch, i]); });
+  const kept = c.channels.filter(x => !x.skip).length;
+  return `<div class="dg-hint" style="margin-top:12px">Salons qui seront créés : <strong>${kept}</strong> sur ${c.channels.length}. Décoche ceux dont tu n'as pas besoin, clique sur un nom pour le changer. Ils sont créés vides : le bot n'y poste que les items qui existent.</div>
+    <div class="dg-route" style="max-height:420px;overflow:auto">${groups.map((g, gi) => `
+      ${g.cat ? `<div class="top" style="margin:6px 0 4px"><span class="dg-hint">📁</span><input type="text" value="${esc(g.cat)}" onchange="DG.setCat(${gi}, this.value)" style="width:230px;font-weight:700"></div>` : ''}
+      ${g.rows.map(([ch, i]) => `<div class="top" style="margin:2px 0 2px 22px;opacity:${ch.skip ? .45 : 1}"><input type="checkbox" ${ch.skip ? '' : 'checked'} onchange="DG.skipCh(${i},!this.checked)" title="Créer ce salon">
+        <input type="text" value="${esc(ch.name)}" onchange="DG.setCh(${i},'name',this.value)" style="width:240px">
+        <span class="dg-hint">${ch.itemCats.map(k => (CATS.find(x => x[0] === k) || [0, k])[1]).join(', ') || 'tout'}</span></div>`).join('')}`).join('')}</div>`;
+}
+
+/** Réglages envoyés : les salons décochés ne sont pas créés. */
+const finalCfg = () => ({ ...S.cfg, channels: S.cfg.channels.filter(x => !x.skip) });
+
 function rRecap() {
-  const c = S.cfg, creating = c.mode === 'create', n = estimate(c);
+  const c = finalCfg(), creating = c.mode === 'create', n = estimate(c);
   const catLbl = k => (CATS.find(x => x[0] === k) || [0, k])[1];
   const lines = c.channels.map(ch => `${creating ? `<strong>${esc(ch.categoryName ? [c.prefix, ch.categoryName].filter(Boolean).join(' ') + ' / ' : c.prefix ? esc(c.prefix) + ' / ' : '')}${esc(ch.name)}</strong>` : `<strong>#${esc((S.info.channels.find(x => x.id === ch.id) || {}).name || '?')}</strong>`} ← ${ch.itemCats.map(catLbl).join(', ') || 'tout'} · ${ch.paliers.map(palierLabel).join(', ') || 'tous paliers'}`);
   return `<div class="dg-card"><h2>Récapitulatif</h2><dl class="dg-recap">
@@ -222,7 +260,7 @@ function rRecap() {
     <dt>Salons (${c.channels.length})</dt><dd>${creating ? 'créés par le bot' : 'existants'} — ${lines.map(l => `<div>${l}</div>`).join('')}</dd>
     <dt>Accès</dt><dd>${{ everyone: 'tout le monde (lecture seule)', roles: 'rôles : ' + c.roleIds.map(id => esc((S.info.roles.find(r => r.id === id) || {}).name || id)).join(', '), admins: 'administrateurs seulement' }[c.access]}</dd>
     <dt>Envoi</dt><dd>${c.itemCats.map(catLbl).join(', ') || 'toutes les catégories'} · ${c.paliers.map(palierLabel).join(', ') || 'tous les paliers'} · ${c.initial === 'all' ? 'tous les items existants' + (n != null ? ' (~' + n + ')' : '') : 'nouveaux items seulement'}</dd>
-    <dt>Options</dt><dd>${c.forum ? 'forum' : 'salon texte'} · masquage au-delà de ${c.hideThreshold || '∞ (jamais)'} items · ${c.replace ? "remplacement de l'ancien post" : 'ancien post conservé'}</dd></dl>
+    <dt>Options</dt><dd>${c.forum ? 'forum' : 'salon texte'} · ${c.groupSets ? 'items groupés par set (un post par set)' : 'un post par item'} · masquage au-delà de ${c.hideThreshold || '∞ (jamais)'} items · ${c.replace ? "remplacement de l'ancien post" : 'ancien post conservé'}</dd></dl>
     <p class="dg-hint" style="margin-top:12px">En confirmant, tu inscris ce serveur : l'équipe du wiki doit le valider avant tout envoi. Tu pourras modifier, mettre en pause ou tout désinstaller à cette même adresse.</p>
     <div class="dg-row"><button class="dg-btn" onclick="DG.step('form')">← Modifier</button><button class="dg-btn primary" id="dg-confirm" onclick="DG.confirm()" ${S.busy ? 'disabled' : ''}>Confirmer l'inscription</button></div>
     <div class="dg-bar" id="dg-bar" style="display:none"><i></i></div>${msgs()}</div>`;
@@ -291,11 +329,16 @@ const DG = window.DG = {
     if (k === 'id') { const real = S.info.channels.find(x => x.id === v); if (real) { ch.name = real.name; ch.type = real.type === 15 ? 'forum' : 'text'; } }
     render();
   },
+  skipCh(i, v) { S.cfg.channels[i].skip = v; render(); },
+  setCat(gi, v) {
+    const cats = [...new Set(S.cfg.channels.map(ch => ch.categoryName))], old = cats[gi];
+    S.cfg.channels.forEach(ch => { if (ch.categoryName === old) ch.categoryName = String(v).trim().slice(0, 100); }); render();
+  },
   tglCh(i, k, v) { S.cfg.channels[i][k] = toggle(S.cfg.channels[i][k], v); render(); },
   delCh(i) { S.cfg.channels.splice(i, 1); render(); },
   addCh() { S.cfg.channels.push({ name: S.cfg.mode === 'create' ? 'nouveau-salon' : '', type: S.cfg.forum ? 'forum' : 'text', categoryName: '', id: '', itemCats: [], paliers: [] }); render(); },
   toRecap() {
-    const c = S.cfg; S.err = '';
+    const c = finalCfg(); S.err = '';
     if (c.mode === 'existing' && !c.channels.some(x => x.id)) S.err = 'Choisis au moins un salon existant.';
     else if (c.mode === 'create' && !c.channels.length) S.err = 'Le plan est vide : aucune combinaison ne correspond à tes filtres.';
     else if (c.mode === 'create' && c.channels.some(x => !slug(x.name))) S.err = 'Chaque salon doit avoir un nom.';
@@ -306,7 +349,7 @@ const DG = window.DG = {
   async confirm() {
     S.busy = true; S.err = S.msg = ''; render();
     try {
-      const j = await api('save', { guildId: S.guild.id, config: S.cfg });
+      const j = await api('save', { guildId: S.guild.id, config: finalCfg() });
       S.doc = j.config;
       if (S.doc.mode === 'create' && S.doc.channels.some(c => c.name && !c.id)) await DG.makeChannels(true);
       S.msg = S.doc.status === 'pending' ? 'Inscription enregistrée. Elle doit être validée par l\'équipe du wiki.' : 'Réglages enregistrés.';

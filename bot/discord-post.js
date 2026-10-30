@@ -57,4 +57,30 @@ async function postItem(rest, channelId, item, ctx, channelInfo) {
   return { threadId: null, messageId: m.id };
 }
 
-module.exports = { WORKER, sync, rows, readConfig, buildContext, publicItem, postItem };
+/** Poste tous les items d'un set dans UN post : fil de forum (ou message) au nom du set, une carte par item (10 images par message, la suite en messages suivants). */
+async function postSet(rest, channelId, setName, items, ctx, channelInfo) {
+  const ch = channelInfo || await rest.get(`/channels/${channelId}`);
+  const sorted = [...items].sort((a, b) => String(a.name).localeCompare(String(b.name), 'fr'));
+  const links = sorted.map(i => `[${i.name}](<${WIKI}/Compendium/compendium.html#${i.id ?? i._id}>)`).join('\n');
+  const files = [];
+  for (const item of sorted) {
+    const it = publicItem(item, ctx);
+    files.push({ name: `${it.id}.png`, data: await card.generateCardBuffer(it, ctx.maps, 3) });
+  }
+  const chunks = []; for (let i = 0; i < files.length; i += 10) chunks.push(files.slice(i, i + 10));
+  const msgBody = (chunk, first) => ({ content: first ? `**${setName}**\n${links}`.slice(0, 2000) : '', attachments: chunk.map((f, i) => ({ id: i, filename: f.name })) });
+  const forum = ch.type === 15 || ch.type === 16;
+  let threadId = null; const messageIds = [];
+  for (const [n, chunk] of chunks.entries()) {
+    if (n === 0 && forum) {
+      const t = await rest.post(`/channels/${channelId}/threads`, { body: { name: String(setName).slice(0, 100), message: msgBody(chunk, true) }, files: chunk });
+      threadId = t.id; messageIds.push(t.message?.id || null);
+    } else {
+      const m = await rest.post(`/channels/${forum ? threadId : channelId}/messages`, { body: msgBody(chunk, n === 0), files: chunk });
+      messageIds.push(m.id);
+    }
+  }
+  return { threadId, messageId: messageIds[0], messageIds: messageIds.filter(Boolean) };
+}
+
+module.exports = { postSet, WORKER, sync, rows, readConfig, buildContext, publicItem, postItem };

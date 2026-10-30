@@ -99,7 +99,10 @@ export async function finishGuildOauth(env, accessToken) {
 
 // ══ POST /guild/api ══
 function sanitizeName(s, max) { return String(s || '').replace(/[\u0000-\u001f<>@#`]/g, '').trim().slice(0, max); }
-const slug = n => sanitizeName(n, 100).toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-_àâäçéèêëîïôöùûüœ]/g, '').replace(/-+/g, '-').slice(0, 100);
+// Même règle que la modération : emojis et lettres Unicode « grasses » conservés (Discord met en minuscules les lettres ASCII d'un salon)
+const slug = n => String(n || '').trim().replace(/\s+/g, '-').replace(/[\\/#@:*?"<>|`\u0000-\u001f]/g, '').slice(0, 100);
+// Clé de comparaison pour retrouver un salon / une catégorie existants (NFKC ramène 𝗔𝗿𝗺𝗲𝘀 à « armes », sans emoji ni séparateurs)
+const nkey = n => String(n || '').normalize('NFKC').toLowerCase().replace(/[^a-z0-9àâäçéèêëîïôöùûüœ]/g, '');
 const strList = (a, re, max) => (Array.isArray(a) ? a : []).map(String).filter(x => re.test(x)).slice(0, max);
 
 /** Réglages envoyés par le navigateur → réglages acceptés (tout est revalidé ici). */
@@ -117,6 +120,7 @@ function cleanConfig(c, stored, realIds) {
     forum: c.forum !== false,
     hideThreshold: Math.max(0, Math.min(1000, parseInt(c.hideThreshold, 10) || 0)),
     replace: c.replace !== false,
+    groupSets: c.groupSets === true, // un seul post par set (nom du set), au lieu d'un post par item
     channels: [],
   };
   const prev = new Map((stored?.channels || []).filter(x => x.id).map(x => [x.id, x]));
@@ -252,7 +256,7 @@ export async function handleGuildApi(request, env, deps) {
       let parentId;
       const catName = [doc.prefix, c.categoryName].filter(Boolean).join(' ').slice(0, 100); // préfixe seul = une catégorie unique
       if (catName) {
-        let cat = all.find(x => x.type === 4 && x.name.toLowerCase() === catName.toLowerCase());
+        let cat = all.find(x => x.type === 4 && nkey(x.name) === nkey(catName));
         if (!cat) {
           if (budget < 2) break;
           const r = await dc(env, 'POST', `/guilds/${guildId}/channels`, { name: catName, type: 4, permission_overwrites: ow });
@@ -262,7 +266,7 @@ export async function handleGuildApi(request, env, deps) {
         }
         parentId = cat.id;
       }
-      const existing = all.find(x => x.type === typeNum && x.name === c.name && (x.parent_id || undefined) === parentId);
+      const existing = all.find(x => x.type === typeNum && nkey(x.name) === nkey(c.name) && (x.parent_id || undefined) === parentId);
       if (existing) { c.id = existing.id; continue; }
       const r = await dc(env, 'POST', `/guilds/${guildId}/channels`, { name: c.name, type: typeNum, parent_id: parentId, permission_overwrites: ow });
       budget--;
