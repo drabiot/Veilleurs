@@ -178,8 +178,23 @@
       getDoc, getDocs, doc, setDoc, deleteDoc, updateDoc, increment, serverTimestamp, writeBatch,
     } from '../d1db.js';
     import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { store } from '../store.js';
 
     logPageView('builds');
+
+    // Items du wiki : sert à retrouver l'image réelle d'un slot (builds publiés avec un chemin palier+id faux : archive, world boss…)
+    const _itemsById = new Map();
+    try {
+      await store.load(['items']);
+      store.populateGlobals();
+      (typeof ITEMS !== 'undefined' ? ITEMS : []).forEach(i => { if (i && i.id != null) _itemsById.set(String(i.id), i); });
+    } catch (e) { console.warn('[builds] items:', e); }
+    function _slotImgPath(slotId, b, stored) {
+      const id = (b.slots?.[slotId] || {}).id;
+      const it = id != null ? _itemsById.get(String(id)) : null;
+      const real = it && typeof getItemImg === 'function' ? getItemImg(it) : null;
+      return real || stored;
+    }
 
     // ── État ──────────────────────────────────────────────────────
     // Tout charger d'un coup : l'ordre choisi par les admins (champ `order`) est trié côté client, donc global
@@ -468,6 +483,23 @@
       _attachCardListeners();
     }
 
+    async function _handleRename(id) {
+      const b = allBuilds.find(x => x._id === id) || (shownBuilds || []).find(x => x._id === id);
+      if (!b) return;
+      const nv = prompt('Nouveau nom du build (60 caractères max) :', b.name || '');
+      if (nv === null) return;
+      const name = nv.trim().slice(0, 60);
+      if (!name || name === b.name) return;
+      try {
+        await updateDoc(doc(db, COL_BUILDS, id), { name, updatedAt: serverTimestamp() });
+        b.name = name;
+        _renderBuilds(allBuilds);
+      } catch (e) {
+        console.error('[builds] rename:', e);
+        alert('Renommage impossible : ' + (e.message || e));
+      }
+    }
+
     function _slotCell(slotId, b, canSeeSensible, runeNames) {
       const def         = _SLOT_DEFS.get(slotId);
       const ico         = def ? def.ico : '◻';
@@ -493,7 +525,7 @@
         return `<div class="bc-slot bc-slot-sensible" data-tip="Item sensible"${runeAttr}>?</div>`;
       }
 
-      const img      = slotImages[slotId];
+      const img      = _slotImgPath(slotId, b, slotImages[slotId]);
       const itemName = slots[slotId]?.name || '';
       const tipItem  = escHtml(itemName || label);
       if (img)      return `<div class="bc-slot" data-tip="${tipItem}"${runeAttr}><img src="../${img.replace(/^\.\.\//, '')}" alt="${escHtml(itemName || slotId)}" loading="lazy" onerror="this.classList.add('bc-slot-empty-img')" /></div>`;
@@ -526,6 +558,7 @@
             <div class="bc-name" title="${escHtml(b.name || 'Sans nom')}">${escHtml(b.name || 'Sans nom')}</div>
             <div class="bc-head-right">
               ${_canReorder() ? `<button class="bc-btn-move" data-action="move-prev" data-id="${escHtml(b._id)}" title="Déplacer avant">◀</button><button class="bc-btn-move" data-action="move-next" data-id="${escHtml(b._id)}" title="Déplacer après">▶</button>` : ''}
+              ${(isOwn || isAdm) ? `<button class="bc-btn-del bc-btn-ren" data-action="rename" data-id="${escHtml(b._id)}" title="Renommer">✎</button>` : ''}
               ${canDel ? `<button class="bc-btn-del" data-action="delete" data-id="${escHtml(b._id)}" title="${isAdm && !isOwn ? 'Supprimer (modération)' : 'Supprimer'}">✕</button>` : ''}
             </div>
           </div>
@@ -570,6 +603,7 @@
           const id     = this.dataset.id;
           if (action === 'fav')     _handleFav(id, this);
           if (action === 'delete')  _handleDelete(id);
+          if (action === 'rename')  _handleRename(id);
           if (action === 'skills')  _handleSkills(id);
           if (action === 'share')   _handleShare(id);
           if (action === 'compare') _toggleCompare(id, this);

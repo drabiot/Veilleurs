@@ -2075,7 +2075,8 @@ function loadAccessoriesForClass(classId) {
       const item = e[1];
       if (!item) return;
       const id  = getItemId(item);
-      const img = _sensibleImg(item.category || item.cat, id, item.palier, item.event);
+      // Chemin réel de l'item d'abord (worldboss/archive/dossiers spéciaux) ; reconstruction palier+id seulement en repli
+      const img = getItemImg(item) || _sensibleImg(item.category || item.cat, id, item.palier, item.event);
       if (_isSecretItem(item)) {
         // N'exposer ni l'ID ni le nom dans le doc public
         sensibleSlots[e[0]] = true;

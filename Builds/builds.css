@@ -736,3 +736,4 @@ html, body {
   .nav-link { padding: 8px 0; }
   .builds-center { padding: 12px 10px; }
 }
+.bc-btn-ren:hover { border-color: rgba(200,170,90,.4); color: var(--gold, #c8aa5a); background: rgba(200,170,90,.06); }
