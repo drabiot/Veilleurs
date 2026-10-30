@@ -174,6 +174,12 @@ async function guildPass(rest, g, st, getCtx) {
     st.rev = 0; // lecture complète
     return; // le repost se fait au passage suivant (lecture complète)
   }
+  if (st.baselined && cfg.initial === 'all' && st.initial !== 'all') { // passage de « nouveaux seulement » à « tous » : les items notés comme vus doivent maintenant partir
+    const n = Object.keys(st.seen).length;
+    st.seen = {};
+    logs.push(`Bot : réglage passé à « envoyer tous les items » : ${n} item(s) jusque-là ignorés vont être envoyés`);
+  }
+  st.initial = cfg.initial;
   if (!st.baselined) { // « seulement les nouveaux » : les items déjà dans le wiki sont notés comme vus
     const matching = [...items.values()].filter(it => route(cfg, it));
     const concerned = [...items.values()].filter(it => it.category && it.palier != null);
