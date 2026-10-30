@@ -300,10 +300,22 @@ function rStatus() {
     refused: '⛔ Inscription refusée par l\'équipe du wiki.', suspended: '⏸ Suspendu par l\'équipe du wiki.', removing: '🧹 Désinstallation en cours (quelques minutes) : le bot nettoie puis quitte le serveur.' }[st] || st;
   const when = t => t ? new Date(t).toLocaleString('fr-FR') : '—';
   const missing = d.mode === 'create' && d.channels.some(c => c.name && !c.id);
+  // liste des salons avec lien direct vers Discord et état réel (comparé aux salons lus sur le serveur)
+  const real = S.info?.channels;
+  const chRows = (d.channels || []).filter(c => c.name || c.id).map(c => {
+    const present = !!c.id && Array.isArray(real) && real.some(x => x.id === c.id);
+    const state = !c.id ? '⏳ pas encore créé' : !Array.isArray(real) ? '' : present ? '✅ présent sur Discord' : '⚠️ introuvable sur Discord';
+    const link = c.id ? `<a href="https://discord.com/channels/${esc(S.guild.id)}/${esc(c.id)}" target="_blank" rel="noopener" style="color:var(--gold)">${esc(c.name)}</a>` : esc(c.name);
+    return `<div style="font-size:12px;padding:2px 0;">${link} <span style="color:var(--muted)">${state}</span></div>`;
+  }).join('');
+  const chBlock = chRows ? `<details style="margin:10px 0"><summary style="cursor:pointer;font-size:12px;color:var(--gold)">Salons du plan (${(d.channels || []).filter(c => c.name || c.id).length}) — voir sur Discord</summary>${chRows}
+    <div class="dg-row"><button class="dg-btn" onclick="DG.refreshInfo()">🔄 Revérifier sur Discord</button> <a class="dg-btn" href="https://discord.com/channels/${esc(S.guild.id)}" target="_blank" rel="noopener">Ouvrir le serveur</a></div>
+    <div class="dg-hint">Si tu ne vois pas les salons : ils sont lisibles par « ${d.access === 'everyone' ? 'tout le monde' : d.access === 'roles' ? 'les rôles choisis seulement' : 'les administrateurs seulement'} » ; vérifie aussi que tu es sur le bon serveur.</div></details>` : '';
   return `<div class="dg-card"><h2>« ${esc(g.name)} » — statut</h2><p style="font-size:14px">${txt}</p>
     <dl class="dg-recap"><dt>Posts envoyés</dt><dd>${d.posted ?? 0}${d.pending ? ` · restants : ${d.pending}` : ''}
       ${d.pending ? `<div class="dg-bar"><i style="width:${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))}%"></i></div><div class="dg-hint">${Math.round(100 * (d.posted || 0) / ((d.posted || 0) + d.pending))} % — ${d.posted || 0} sur ${(d.posted || 0) + d.pending}</div>` : ''}</dd><dt>Dernier envoi</dt><dd>${when(d.lastSentAt)}</dd>
     ${d.lastError ? `<dt>Dernière erreur du bot</dt><dd style="color:var(--removed)">${esc(d.lastError)}</dd>` : ''}${d.purge ? '<dt>En cours</dt><dd>suppression des posts…</dd>' : ''}</dl>
+    ${chBlock}
     ${missing ? '<p class="dg-err">Certains salons du plan ne sont pas encore créés. <button class="dg-btn" onclick="DG.makeChannels()">Créer les salons manquants</button></p>' : ''}
     ${st === 'removing' ? '' : `<div class="dg-row">
       <button class="dg-btn" onclick="DG.edit()">✏️ Modifier les réglages</button>
@@ -387,6 +399,7 @@ const DG = window.DG = {
     } catch (e) { S.err = e.message; }
     S.busy = false; render();
   },
+  async refreshInfo() { try { const j = await api('inspect', { guildId: S.guild.id }); if (j.botPresent) { S.info = j; if (j.config) S.doc = j.config; } S.err = ''; } catch (e) { S.err = e.message; } render(); },
   async makeChannels(inner) {
     const bar = () => document.getElementById('dg-bar');
     try {
@@ -400,6 +413,7 @@ const DG = window.DG = {
         if (!j.remaining) break;
         await sleep(600);
       }
+      try { const j = await api('inspect', { guildId: S.guild.id }); if (j.botPresent) S.info = j; } catch { /* l'état sera relu à la demande */ }
       if (!inner) { S.msg = 'Salons créés.'; render(); }
     } catch (e) { S.err = 'Création des salons : ' + e.message + ' Tu peux réessayer depuis la page de statut.'; if (!inner) render(); else throw e; }
   },
