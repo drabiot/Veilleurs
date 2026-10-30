@@ -869,7 +869,7 @@ _lazyPanel(() => import('./moderation-game-tools.js?v=5b63ecd5'), ['showEventsTo
 
 _lazyPanel(() => import('./moderation-bugs.js?v=0490d991'), ['showBugsConnus', '_loadBugsConnus', 'saveBugForm', 'startEditBug', 'cancelEditBug', 'saveEditBug', 'deleteBug']);
 
-_lazyPanel(() => import('./moderation-translations.js?v=00000000'), ['showTranslations', '_loadTranslations', 'trDecide', 'trAcceptAll', 'trSetStatus', 'trSearch', 'trExport', 'trClean']);
+_lazyPanel(() => import('./moderation-translations.js?v=7dc401a8'), ['showTranslations', '_loadTranslations', 'trDecide', 'trAcceptAll', 'trSetStatus', 'trSearch', 'trExport', 'trClean']);
 
 // ══════════════════════════════════════════════════════
 //  ONGLET API (items SAO) — logique dans moderation-api-items.js

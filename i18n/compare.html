@@ -79,7 +79,7 @@
 import { auth, db, getUserRole, loginWithDiscord, hasRole, ROLES } from '../firebase.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { doc, getDoc } from '../d1db.js';
-import { pendingItems, sendProposals, loadOverrides } from './send.js?v=00000000';
+import { pendingItems, sendProposals, loadOverrides } from './send.js?v=6ec783d0';
 const TRANSLATOR_ROLE = 'traducteur';
 const msg = document.getElementById('gate-msg'), btn = document.getElementById('gate-login');
 const lock = (text, login) => { document.body.classList.add('locked'); msg.textContent = text; btn.style.display = login ? '' : 'none'; };

@@ -273,7 +273,7 @@ async function boot() {
   if (!en) { $('list').innerHTML = '<div class="empty">Could not load en.json.</div>'; return; }
   noGloss = new Set((en._noglossary || []).map(squash));
   dict = Object.fromEntries(Object.entries(en).filter(([k, v]) => !k.startsWith('_') && typeof v === 'string'));
-  try { sendMod = await import('./send.js?v=00000000'); Object.assign(dict, await sendMod.loadOverrides()); } catch { /* sans le module d'envoi : le bouton reste inactif */ }   // + corrections déjà validées par les admins
+  try { sendMod = await import('./send.js?v=6ec783d0'); Object.assign(dict, await sendMod.loadOverrides()); } catch { /* sans le module d'envoi : le bouton reste inactif */ }   // + corrections déjà validées par les admins
   keys = Object.keys(dict); review = rv.entries || {}; glossary = gl.terms || {}; caseSens = new Set(gl.caseSensitive || []);
   $('glossary').innerHTML = Object.entries(glossary).map(([a, b]) => `<div>${a} → <b>${b}</b></div>`).join('');
   loadDraft(); $('name').value = draft.name || '';
