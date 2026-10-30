@@ -74,6 +74,45 @@ async function ensureEventTags(rest, channelId, ch, eventNames) {
 }
 const tagIdFor = (ch, eventName) => eventName ? (ch.available_tags || []).find(t => normTag(t.name) === normTag(tagName(eventName)))?.id : undefined;
 
+// ── Tags de forum d'un item : classe(s), rareté, emplacement (arme principale / secondaire, pièce d'armure) ──
+const RARITY_TAG_EMOJI = { commun: '🌿', rare: '💎', epique: '💜', legendaire: '⭐', mythique: '🌸', godlike: '🔥', event: '🎉' };
+const SLOT_TAGS = { arme_p: ['Arme Principale', '⚔️'], arme_s: ['Arme Secondaire', '🛡️'], casque: ['Casque', '🧢'], plastron: ['Plastron', '👔'], 'jambières': ['Jambières', '👖'], bottes: ['Bottes', '👢'] };
+const SLOT_GROUPS = { arme_p: ['arme_p', 'arme_s'], arme_s: ['arme_p', 'arme_s'], casque: ['casque', 'plastron', 'jambières', 'bottes'], plastron: ['casque', 'plastron', 'jambières', 'bottes'], 'jambières': ['casque', 'plastron', 'jambières', 'bottes'], bottes: ['casque', 'plastron', 'jambières', 'bottes'] };
+const noVS = e => String(e || '').replace(/\uFE0F/g, '');
+/** wanted = tags de cet item ; universe = tous ceux qu'un item du même type peut demander (créés d'un coup : une seule modification du salon). */
+function itemTagSpecs(item) {
+  const classes = card.getClasses();
+  const rarity = Object.entries(RARITY_TAG_EMOJI).map(([id, e]) => ({ id, name: RAR[id] || id, emoji: e }));
+  const slotKey = c => (c === 'jambieres' ? 'jambières' : c);
+  const slot = k => (SLOT_TAGS[k] ? { name: SLOT_TAGS[k][0], emoji: noVS(SLOT_TAGS[k][1]) } : null);
+  const wanted = [];
+  if (item.rarity && RARITY_TAG_EMOJI[item.rarity]) wanted.push({ name: RAR[item.rarity] || item.rarity, emoji: RARITY_TAG_EMOJI[item.rarity] });
+  const sk = slotKey(item.cat);
+  if (slot(sk)) wanted.push(slot(sk));
+  for (const c of item.classes || []) { const cl = classes.find(x => x.id === c); if (cl) wanted.push({ name: cl.label, emoji: noVS(cl.ico) }); }
+  const universe = [...wanted, ...(SLOT_GROUPS[sk] || []).map(slot).filter(Boolean), ...classes.map(c => ({ name: c.label, emoji: noVS(c.ico) })), ...rarity.map(r => ({ name: r.name, emoji: r.emoji }))];
+  return { wanted, universe };
+}
+/** Ids des tags de l'item dans ce forum ; crée ceux qui manquent (20 tags max par forum). Un salon texte n'a pas de tags. */
+async function itemTagIds(rest, channelId, ch, item) {
+  if (!(ch.type === 15 || ch.type === 16)) return [];
+  const { wanted, universe } = itemTagSpecs(item);
+  if (!wanted.length) return [];
+  const find = sp => (ch.available_tags || []).find(t => normTag(t.name) === normTag(sp.name));
+  if (wanted.some(sp => !find(sp))) {
+    const have = ch.available_tags || [];
+    const keep = have.map(t => ({ id: t.id, name: t.name, moderated: !!t.moderated, emoji_id: t.emoji_id || null, emoji_name: t.emoji_name || null }));
+    const add = [];
+    for (const sp of universe) if (!find(sp) && !add.some(a => normTag(a.name) === normTag(sp.name))) add.push({ name: sp.name.slice(0, 20), emoji_name: sp.emoji || null });
+    const room = Math.max(0, 20 - have.length);
+    if (add.length && room) {
+      const updated = await rest.patch(`/channels/${channelId}`, { body: { available_tags: [...keep, ...add.slice(0, room)] } });
+      ch.available_tags = updated.available_tags || ch.available_tags;
+    }
+  }
+  return wanted.map(sp => find(sp)?.id).filter(Boolean);
+}
+
 /** Poste un message de tête (texte + texture = miniature du post) puis chaque carte dans SON propre message, à la chaîne (pas de grille d'images empilées).
  *  Forum : un fil (le message de tête en est le premier message) ; salon texte : messages à la suite. Renvoie les ids pour pouvoir tout supprimer / remplacer. */
 async function postChain(rest, channelId, ch, title, content, icon, cards, tagIds = []) {
@@ -104,7 +143,8 @@ async function postItem(rest, channelId, item, ctx, channelInfo, opts = {}) {
   const cardFile = { name: `${it.id}.png`, data: await card.generateCardBuffer(it, ctx.maps, 3) };
   const icon = await card.generateIconBuffer(it, 160).catch(() => null); // texture : 1re image du fil = miniature dans la liste du forum
   const content = `**${it.name}** · ${RAR[it.rarity] || it.rarity || ''}\n[Voir sur le wiki](<${WIKI}/Compendium/compendium.html#${it.id}>)`;
-  return postChain(rest, channelId, ch, it.name, content, icon && { name: `${it.id}_texture.png`, data: icon }, [cardFile], opts.eventTags ? [tagIdFor(ch, eventOf(it))].filter(Boolean) : []);
+  const tagIds = [...await itemTagIds(rest, channelId, ch, it), ...(opts.eventTags ? [tagIdFor(ch, eventOf(it))] : [])].filter(Boolean);
+  return postChain(rest, channelId, ch, it.name, content, icon && { name: `${it.id}_texture.png`, data: icon }, [cardFile], [...new Set(tagIds)].slice(0, 5));
 }
 
 /** Poste tous les items d'un set dans UN post au nom du set : liste de liens nommés, texture du premier item en miniature, puis une carte par message. */

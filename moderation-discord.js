@@ -747,9 +747,9 @@ const SLOT_TAG_INFO = {
   artefact:   { label: 'Artefact',         ico: '🔮' },
 };
 
-async function _ensureSlotTag(channelId, category, twoHanded) {
-  if (twoHanded) return _ensureTag(channelId, 'Deux mains', '⚔️', 'slot');
-  const info = SLOT_TAG_INFO[category];
+const SLOT_TAG_KEPT = ['arme_p', 'arme_s', 'casque', 'plastron', 'jambières', 'bottes']; // seuls emplacements en tag (comme le bot)
+async function _ensureSlotTag(channelId, category) {
+  const info = SLOT_TAG_KEPT.includes(category) ? SLOT_TAG_INFO[category] : null;
   if (!info) return null;
   return _ensureTag(channelId, info.label, info.ico.replace(/️/g, ''), 'slot');
 }
@@ -801,13 +801,8 @@ async function _sendSingleItemDiscord(item) {
     const tagId = await _ensureTag(channelId, rarLabel, rarEmoji, 'rarity');
     if (tagId) tags.push(tagId);
   }
-  const slotTagId = await _ensureSlotTag(channelId, item.cat, item.twoHanded);
+  const slotTagId = await _ensureSlotTag(channelId, item.cat === 'jambieres' ? 'jambières' : item.cat);
   if (slotTagId && !tags.includes(slotTagId)) tags.push(slotTagId);
-  if (item.set) {
-    const setLabel = panList.find(p => (p._id || p.id) === item.set)?.label || item.set.replace(/_/g, ' ');
-    const tagId = await _ensureTag(channelId, setLabel, '✨', 'set');
-    if (tagId && !tags.includes(tagId)) tags.push(tagId);
-  }
   const CLASSES = window._VCL_DATA?.CLASSES || [];
   const sortedClasses = [...(item.classes || [])].sort((a, b) => {
     const ai = CLASSES.findIndex(c => c.id === a);

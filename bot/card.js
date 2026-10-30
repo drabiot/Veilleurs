@@ -762,4 +762,4 @@ async function generateIconBuffer(item, size = 160) {
   return c.toBuffer('image/png');
 }
 
-module.exports = { generateCardBuffer, generateIconBuffer };
+module.exports = { generateCardBuffer, generateIconBuffer, getClasses: () => CLASSES };
