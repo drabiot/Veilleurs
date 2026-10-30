@@ -1333,11 +1333,14 @@ style="font-size:12px;">← Retour</button>
       <span style="font-size:15px;font-weight:700;">📣 Envoi Discord des nouveaux items</span>
     </div>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px;">
-      Définis les salons du bot : un nom, ce qu'on y envoie (catégories d'items et paliers) et la catégorie Discord où le ranger. « Créer le salon » le crée sur le serveur ; ensuite chaque item approuvé en soumission y est posté avec sa carte (l'ancien post est remplacé). Un salon forum crée un fil par item. Le bot a besoin des permissions « Gérer les salons » et « Gérer les rôles » (pour masquer un salon pendant un envoi en lot).
+      Les chefs de serveur configurent le bot eux-mêmes sur la page d'inscription. Ici tu vois l'état de chaque serveur (« 👁 Choix », « 📜 Historique », progression) et tu peux agir à leur place avec « 🛠 Gérer ». Rien n'est envoyé avant ta validation.
     </p>
     <div id="discord-guilds-body" style="margin-bottom:24px;"></div>
-    <div id="discord-routes-body"></div>
-    <div id="discord-sync-body" style="margin-top:28px;border-top:1px solid var(--border);padding-top:14px;"></div>
+    <details style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;background:var(--surface);">
+      <summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);">⚙️ Ancien outil : serveur principal du wiki (plan et envois manuels)</summary>
+      <div id="discord-routes-body" style="margin-top:12px;"></div>
+      <div id="discord-sync-body" style="margin-top:28px;border-top:1px solid var(--border);padding-top:14px;"></div>
+    </details>
   </main>
 
   <!-- Panneau Donjons (sources d'obtention) -->
