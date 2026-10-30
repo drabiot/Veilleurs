@@ -117,6 +117,7 @@
             <div class="builds-title">Builds Partagés</div>
             <div class="builds-subtitle">// FORUM · VEILLEURS AU CLAIR DE LUNE</div>
           </div>
+          <a href="comparateur.html" id="cmp-open" class="cmp-open-btn" title="Comparer des builds publiés ou tes builds de l'Atelier">⚖ Comparateur</a>
           <div class="search-wrap">
             <input type="text" id="search-input" class="search-input" placeholder="🔍  Rechercher un build, un auteur…" autocomplete="off" />
           </div>
@@ -579,6 +580,7 @@
             </div>
             <div class="bc-mq-bot">${botRow}<button class="bc-slot bc-skill" data-action="skills" data-id="${escHtml(b._id)}" title="Arbre de compétences" aria-label="Arbre de compétences"><span class="bc-skill-ico"></span></button></div>
           </div>
+          ${b.comment ? `<div class="bc-comment" title="${escHtml(b.comment)}">💬 ${escHtml(b.comment)}</div>` : ''}
           <div class="bc-foot">
             <div class="bc-social">
               <span title="Prévisualisations">◉ ${b.previewCount || 0}</span>
@@ -693,6 +695,13 @@
       _cmpSave(sel);
       btn.classList.toggle('active', sel.includes(id));
       _renderCmpBar();
+    (function () {
+      const a = document.getElementById('cmp-open');
+      if (a) a.addEventListener('click', function () {
+        const sel = _cmpSel();
+        if (sel.length) a.href = 'comparateur.html?ids=' + sel.map(encodeURIComponent).join(',');
+      });
+    })();
     }
     function _renderCmpBar() {
       let bar = document.getElementById('cmp-bar');

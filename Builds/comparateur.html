@@ -60,7 +60,7 @@
       </div>
 
       <div class="cmp-toolbar">
-        <button class="cmp-btn" id="cmp-add">＋ Ajouter un build</button>
+        <button class="cmp-btn" id="cmp-add">＋ Ajouter un build (publié ou local)</button>
         <label class="cmp-check"><input type="checkbox" id="cmp-diff-only" /> Différences seulement</label>
         <button class="cmp-btn" id="cmp-copy">🔗 Copier le lien</button>
         <button class="cmp-btn" id="cmp-score-toggle">⚖ Score</button>
@@ -115,7 +115,22 @@
       try { const l = JSON.parse(localStorage.getItem(LS_LOCAL) || 'null'); return l && l.statsSnapshot ? l : null; } catch { return null; }
     }
 
+    // Builds locaux de l'Atelier (3 emplacements) : stats enregistrées à chaque sauvegarde de l'Atelier
+    function readLocalSlots() {
+      const out = [];
+      for (let i = 0; i < 3; i++) {
+        try {
+          const p = JSON.parse(localStorage.getItem('vcl_atelier_' + i) || 'null');
+          if (!p || (!p.classe && !Object.keys(p.slots || {}).length)) continue;
+          const ss = p.stats && Object.keys(p.stats).length ? p.stats : null;
+          out.push({ _id: 'slot' + i, name: (p.name || 'Build ' + (i + 1)) + ' (Atelier ' + (i + 1) + ')', classe: p.classe, level: p.level, authorPseudo: 'Vous', statsSnapshot: ss || {}, _noStats: !ss });
+        } catch {}
+      }
+      return out;
+    }
+
     async function loadOne(id) {
+      if (/^slot\d$/.test(id)) return readLocalSlots().find(b => b._id === id) || null;
       if (id === 'local') {
         const l = readLocal();
         return l ? { _id: 'local', name: (l.name || 'Mon build') + ' (Atelier)', classe: l.classe, level: l.level, authorPseudo: 'Vous', statsSnapshot: l.statsSnapshot } : null;
@@ -171,7 +186,7 @@
           '<div class="cmp-bmeta">👤 ' + esc(b.authorPseudo || 'Anonyme') + '</div>' +
           '<div class="cmp-hbtns">' +
             '<button class="cmp-mini' + (i === refIdx ? ' on' : '') + '" data-ref="' + i + '" title="Calculer les écarts par rapport à ce build">' + (i === refIdx ? '● Référence' : '○ Référence') + '</button>' +
-            (b._id !== 'local' ? '<a class="cmp-mini" href="builds.html?id=' + encodeURIComponent(b._id) + '" title="Voir le build">↗</a>' : '') +
+            (b._id !== 'local' && !/^slot/.test(b._id) ? '<a class="cmp-mini" href="builds.html?id=' + encodeURIComponent(b._id) + '" title="Voir le build">↗</a>' : '') +
             '<button class="cmp-mini" data-rm="' + i + '" title="Retirer">✕</button>' +
           '</div></th>';
       });
@@ -266,8 +281,6 @@
           const snap = await getDocs(query(collection(db, COL.buildsPublished), where('visibility', '==', 'public'), limit(500)));
           pool = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
         } catch { pool = []; }
-        const l = readLocal();
-        if (l) pool.unshift({ _id: 'local', name: (l.name || 'Mon build') + ' (Atelier — non publié)', classe: l.classe, level: l.level, authorPseudo: 'Vous', statsSnapshot: l.statsSnapshot });
       }
       renderPicker();
       document.getElementById('cmp-picker-search').focus();
@@ -277,15 +290,23 @@
     function renderPicker() {
       const q = window.VCL.normalize(document.getElementById('cmp-picker-search').value || '');
       const used = new Set(ids());
-      const rows = (pool || []).filter(b => !used.has(b._id))
-        .filter(b => !q || window.VCL.fuzzyMatch(q, b.name || '') || window.VCL.fuzzyMatch(q, b.authorPseudo || ''))
-        .slice(0, 60);
-      document.getElementById('cmp-picker-list').innerHTML = rows.length
-        ? rows.map(b => '<button class="cmp-pick" data-pick="' + esc(b._id) + '"><b>' + esc(b.name || 'Sans nom') + '</b><span>' + esc(classLabel(b)) + ' · Niv. ' + (b.level || 1) + ' · 👤 ' + esc(b.authorPseudo || 'Anonyme') + '</span></button>').join('')
-        : '<div class="cmp-hint">Aucun build.</div>';
+      const match = b => !q || window.VCL.fuzzyMatch(q, b.name || '') || window.VCL.fuzzyMatch(q, b.authorPseudo || '');
+      const row = b => '<button class="cmp-pick' + (b._noStats ? ' is-disabled' : '') + '" data-pick="' + esc(b._id) + '"><b>' + esc(b.name || 'Sans nom') + '</b><span>' + esc(classLabel(b)) + ' · Niv. ' + (b.level || 1) + ' · ' +
+        (b._noStats ? 'ouvre ce build dans l’Atelier pour calculer ses stats' : '👤 ' + esc(b.authorPseudo || 'Anonyme')) + '</span></button>';
+      const locals = [];
+      const l = readLocal();
+      if (l) locals.push({ _id: 'local', name: (l.name || 'Mon build') + ' (Atelier — dernier comparé)', classe: l.classe, level: l.level, authorPseudo: 'Vous', statsSnapshot: l.statsSnapshot });
+      readLocalSlots().forEach(s => locals.push(s));
+      const lrows = locals.filter(b => !used.has(b._id)).filter(match);
+      const rows = (pool || []).filter(b => !used.has(b._id)).filter(match).slice(0, 60);
+      document.getElementById('cmp-picker-list').innerHTML =
+        (lrows.length ? '<div class="cmp-pick-group">Mes builds (Atelier, locaux)</div>' + lrows.map(row).join('') : '') +
+        (rows.length ? '<div class="cmp-pick-group">Builds publiés</div>' + rows.map(row).join('') : '') ||
+        '<div class="cmp-hint">Aucun build.</div>';
+      const all = locals.concat(pool || []);
       document.querySelectorAll('[data-pick]').forEach(el => el.addEventListener('click', () => {
-        const b = pool.find(x => x._id === el.dataset.pick);
-        if (!b || builds.length >= MAX_BUILDS) return;
+        const b = all.find(x => x._id === el.dataset.pick);
+        if (!b || b._noStats || builds.length >= MAX_BUILDS) return;
         builds.push(b);
         document.getElementById('cmp-picker').style.display = 'none';
         render();

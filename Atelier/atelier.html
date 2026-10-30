@@ -276,6 +276,10 @@
           <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Nom du build</label>
           <input id="publish-name-inp" class="input-name" type="text" maxlength="60" placeholder="Nom du build…" autocomplete="off" />
         </div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Commentaire <span style="opacity:.6">(optionnel)</span></label>
+          <textarea id="publish-comment-inp" class="modal-ta" style="min-height:80px" maxlength="500" placeholder="Explique ton build : style de jeu, points forts, conseils…"></textarea>
+        </div>
         <label class="export-secret-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
           <input type="checkbox" id="chk-publish-unlisted" />
           <span style="font-size:12px;">Lien uniquement — non répertorié dans le forum</span>

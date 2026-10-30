@@ -1704,6 +1704,18 @@ function loadAccessoriesForClass(classId) {
 		} catch(e) { activeBuildIndex = 0; }
 	})();
 
+	/* Instantané des stats max du build courant (même format que statsSnapshot publié) — lu par le comparateur */
+	function _statsSnapshot() {
+		const snap = {};
+		try {
+			const maxs = computeStats().maxs;
+			Object.keys(maxs).forEach(function(k) {
+				if (typeof maxs[k] === 'number' && maxs[k] !== 0) snap[k] = Math.round(maxs[k] * 100) / 100;
+			});
+		} catch (e) {}
+		return snap;
+	}
+
 	function saveToStorage() {
 		if (window._previewMode) return;
 		const equippedSlots = {};
@@ -1720,6 +1732,7 @@ function loadAccessoriesForClass(classId) {
 				titre: activeTitre || '',
 				slots: equippedSlots,
 				runes: equippedRunes,
+				stats: _statsSnapshot(),
 			}));
 			localStorage.setItem(META_KEY, JSON.stringify({ active: activeBuildIndex }));
 			window._vclActiveBuildKey = getBuildKey(activeBuildIndex);
@@ -2134,6 +2147,7 @@ function loadAccessoriesForClass(classId) {
     document.getElementById('publish-name-inp').value = currentName;
     document.getElementById('publish-error').style.display = 'none';
     document.getElementById('chk-publish-unlisted').checked = false;
+    document.getElementById('publish-comment-inp').value = '';
     document.getElementById('modal-title').textContent = '◈ Publier le Build';
     openModal('publish');
   });
@@ -2159,6 +2173,7 @@ function loadAccessoriesForClass(classId) {
       const visibility = document.getElementById('chk-publish-unlisted').checked ? 'unlisted' : 'public';
       const payload = _buildPublishPayload();
       payload.name = name;
+      payload.comment = document.getElementById('publish-comment-inp').value.trim();
       const stats = computeStats();
       const { publishBuild } = await import('../Builds/builds-publish.js');
       const buildId = await publishBuild({ payload, stats, visibility, auth: window._auth });
