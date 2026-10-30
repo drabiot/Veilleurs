@@ -65,13 +65,13 @@ async function rateLimited(env, key, max) {
 
 // ── Appels Discord avec le jeton du bot ──
 async function dc(env, method, path, body) {
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < 3; attempt++) {
     const r = await fetch(API + path, {
       method, headers: { Authorization: `Bot ${env.BOT_TOKEN}`, ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) }, // Discord refuse un DELETE qui annonce du JSON sans corps
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    if (r.status === 429 && attempt === 0) { // limite de débit : une seule attente courte
-      const wait = Math.min(3, (await r.json().catch(() => ({}))).retry_after || 1);
+    if ((r.status === 429 || r.status >= 500) && attempt < 2) { // limite de débit ou panne passagère de Discord : on réessaie (attente courte)
+      const wait = r.status === 429 ? Math.min(3, (await r.json().catch(() => ({}))).retry_after || 1) : 0.6;
       await new Promise(res => setTimeout(res, wait * 1000));
       continue;
     }
@@ -155,6 +155,9 @@ const slug = n => String(n || '').trim().replace(/\s+/g, '-').replace(/[\\/#@:*?
 // Clé de comparaison pour retrouver un salon / une catégorie existants (NFKC ramène 𝗔𝗿𝗺𝗲𝘀 à « armes », sans emoji ni séparateurs)
 const nkey = n => String(n || '').normalize('NFKC').toLowerCase().replace(/[^a-z0-9àâäçéèêëîïôöùûüœ]/g, '');
 const strList = (a, re, max) => (Array.isArray(a) ? a : []).map(String).filter(x => re.test(x)).slice(0, max);
+
+/** Raison lisible d'un refus de Discord (lecture du serveur impossible). */
+const whyUnreadable = r => ({ 403: "le bot n'a plus accès à ce serveur (permissions retirées ?)", 404: "le bot n'est plus sur ce serveur (réinvite-le)", 429: 'Discord limite les requêtes : réessaie dans quelques secondes' }[r.status] || ('Discord ' + (r.status || '?') + (r.data?.message ? ' : ' + r.data.message : '')));
 
 /** Réglages envoyés par le navigateur → réglages acceptés (tout est revalidé ici). */
 function cleanConfig(c, stored, realIds) {
@@ -379,21 +382,21 @@ export async function handleGuildApi(request, env, deps) {
 
   if (action === 'inspect') {
     const [chs, roles, g] = await Promise.all([dc(env, 'GET', `/guilds/${guildId}/channels`), dc(env, 'GET', `/guilds/${guildId}/roles`), dc(env, 'GET', `/guilds/${guildId}`)]);
-    if (!chs.ok) return json({ error: 'Serveur illisible par le bot (permissions ?).', detail: chs.data?.message }, 502);
+    if (!chs.ok) return json({ error: 'Serveur illisible par le bot : ' + whyUnreadable(chs) + '.', detail: chs.data?.message }, 502);
     // items déjà postés par salon (un post de set compte tous ses items)
     const stRow = await env.DB.prepare("SELECT data FROM docs WHERE col = 'bot_state' AND id = ? AND deleted = 0").bind('guild_' + guildId).first();
     const postCounts = {};
     for (const [key, e] of Object.entries(jparse(stRow?.data)?.posts || {})) postCounts[e.channelId] = (postCounts[e.channelId] || 0) + ((e.ids || [key]).length);
     return json({ botPresent: true, postCounts, community: !!g.data?.features?.includes('COMMUNITY'),
-      channels: chs.data.filter(c => [0, 4, 5, 15].includes(c.type)).map(c => ({ id: c.id, name: c.name, type: c.type, parent_id: c.parent_id || null, position: c.position })),
-      roles: (roles.data || []).filter(r => r.id !== guildId && !r.managed).sort((a, b) => b.position - a.position).map(r => ({ id: r.id, name: r.name, color: r.color })),
+      channels: (Array.isArray(chs.data) ? chs.data : []).filter(c => [0, 4, 5, 15].includes(c.type)).map(c => ({ id: c.id, name: c.name, type: c.type, parent_id: c.parent_id || null, position: c.position })),
+      roles: (Array.isArray(roles.data) ? roles.data : []).filter(r => r.id !== guildId && !r.managed).sort((a, b) => b.position - a.position).map(r => ({ id: r.id, name: r.name, color: r.color })),
       config: doc });
   }
 
   if (action === 'save') {
     const c = body.config || {};
     const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
-    if (!chs.ok) return json({ error: 'Serveur illisible par le bot.' }, 502);
+    if (!chs.ok) return json({ error: 'Serveur illisible par le bot : ' + whyUnreadable(chs) + '.' }, 502);
     const real = new Set(chs.data.filter(x => x.type !== 4).map(x => x.id));
     let cfg;
     try { cfg = cleanConfig(c, doc, real); } catch (e) { return json({ error: e.message }, 400); }
@@ -592,7 +595,7 @@ export async function handleGuildApi(request, env, deps) {
   if (['create_channels', 'delete_channel', 'rename_category', 'send_request', 'send_item', 'send_items', 'clear_channel', 'verify_posts'].includes(action) && !sess.admin && await rateLimited(env, `${action}:${guildId}`, action === 'create_channels' ? 150 : 100)) return json({ error: 'Trop d\'actions en peu de temps : réessaie dans une heure.' }, 429);
   if (action === 'create_channels') {
     const chs = await dc(env, 'GET', `/guilds/${guildId}/channels`);
-    if (!chs.ok) return json({ error: 'Serveur illisible par le bot.' }, 502);
+    if (!chs.ok) return json({ error: 'Serveur illisible par le bot : ' + whyUnreadable(chs) + '.' }, 502);
     const all = chs.data;
     const ow = overwrites(env, guildId, doc);
     let budget = CREATE_BUDGET, madeNow = 0, failure = null;

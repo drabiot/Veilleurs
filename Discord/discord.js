@@ -146,8 +146,8 @@ function watchProgress() {
   if (S.step !== 'status' || !(S.doc?.pending || S.doc?.verify || (S.doc?.itemRequests || []).length || (S.doc?.requests || []).length) || S.doc.status !== 'approved') return; // envoi en cours ou demandes en attente
   S.prog = setInterval(async () => {
     if (S.step !== 'status') return clearInterval(S.prog);
-    try { const j = await api('inspect', { guildId: S.guild.id }); if (j.config) { S.doc = j.config; S.info = j; render(); } } catch { /* au prochain tour */ }
-  }, 10000);
+    try { const was = !!S.doc?.verify; const j = await api('inspect', { guildId: S.guild.id }); if (j.config) { S.doc = j.config; S.info = j; if (was && !j.config.verify) { S.msg = '✅ Vérification terminée : les compteurs de posts sont à jour.'; } render(); } } catch { /* au prochain tour */ }
+  }, S.doc?.verify ? 3000 : 10000);
 }
 
 function render() {
@@ -417,6 +417,7 @@ function modeBar(d) {
 }
 
 function manageBlock(d) {
+  const verifying = !!d.verify && Date.now() - d.verify < 120000; // demande de vérification en cours (bot au travail)
   const real = S.info?.channels;
   const all = (d.channels || []).map((c, i) => [c, i]);
   const auto = planMode(d) === 'auto';
@@ -446,7 +447,7 @@ function manageBlock(d) {
     <div class="dg-row" style="margin:6px 0"><button class="dg-btn" onclick="DG.chSubAll(${!allSub})">${allSub ? '✅ Inscrit à tous (désinscrire)' : "📡 S'inscrire à tous les salons"}</button>
       ${auto ? '' : '<button class="dg-btn primary" onclick="DG.chNew()">➕ Nouveau salon</button>'}
       ${missing ? '<button class="dg-btn primary" onclick="DG.makeChannels()">✨ Créer les salons inscrits manquants</button>' : ''}
-      <button class="dg-btn" onclick="DG.refreshInfo()" title="Relit les salons du serveur et fait contrôler au bot que les posts existent encore (posts supprimés à la main)">🔄 Revérifier</button>
+      <button class="dg-btn${S.checking || verifying ? ' busy' : ''}" ${S.checking || verifying ? 'disabled' : ''} onclick="DG.refreshInfo()" title="Relit les salons du serveur et fait contrôler au bot que les posts existent encore (posts supprimés à la main)">${S.checking || verifying ? '<span class="dg-spin">🔄</span> Vérification…' : '🔄 Revérifier'}</button>
       <a class="dg-btn" href="https://discord.com/channels/${esc(S.guild.id)}" target="_blank" rel="noopener">Ouvrir le serveur ↗</a></div>
     ${filters}${groupsHtml}</div>`;
 }
@@ -561,7 +562,19 @@ const DG = window.DG = {
     } catch (e) { S.err = e.message; }
     S.busy = false; render();
   },
-  async refreshInfo() { try { if (S.doc?.status === 'approved') await api('verify_posts', { guildId: S.guild.id }).then(j => { if (j.config) S.doc = j.config; S.msg = 'Vérification des posts demandée : le bot contrôle ce qui existe encore sur Discord (le compteur se met à jour dans la minute).'; }).catch(() => {}); const j = await api('inspect', { guildId: S.guild.id }); if (j.botPresent) { S.info = j; if (j.config) S.doc = j.config; } S.err = ''; } catch (e) { S.err = e.message; } render(); },
+  async refreshInfo() {
+    if (S.checking) return;
+    S.checking = true; S.err = ''; S.msg = ''; render(); // l'animation démarre tout de suite
+    const t0 = Date.now();
+    try {
+      if (S.doc?.status === 'approved') { try { const r = await api('verify_posts', { guildId: S.guild.id }); if (r.config) S.doc = r.config; } catch { /* la relecture ci-dessous dit ce qui ne va pas */ } }
+      const j = await api('inspect', { guildId: S.guild.id });
+      if (j.botPresent) { S.info = j; if (j.config) S.doc = j.config; }
+      const wait = 900 - (Date.now() - t0); if (wait > 0) await sleep(wait); // l'animation reste visible même quand tout est rapide
+      S.msg = S.doc?.verify ? 'Le bot contrôle maintenant les posts sur Discord (quelques secondes) : les compteurs se mettent à jour tout seuls.' : '✅ Salons relus : tout est à jour.';
+    } catch (e) { S.err = e.message; }
+    S.checking = false; render();
+  },
   // ── gestion salon par salon (écran « Salons » de la page de statut) ──
   async chCall(action, extra) {
     try { const j = await api(action, { guildId: S.guild.id, ...extra }); if (j.config) S.doc = j.config; S.err = ''; return j; }
