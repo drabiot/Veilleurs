@@ -64,6 +64,14 @@ function route(cfg, it) {
   return (cfg.channels || []).filter(c => c.id && fits(c.itemCats, it.category) && fits(c.paliers, it.palier)).sort((a, b) => spec(b) - spec(a))[0] || null;
 }
 
+/** L'item concerne-t-il ce salon du plan (même si le salon n'est pas encore créé) ? */
+function fitsChannel(cfg, c, it) {
+  if (!it.category || it.palier == null) return false;
+  const fits = (list, v) => !(list || []).length || has(list, v);
+  if (!fits(cfg.itemCats, it.category) || !fits(cfg.paliers, it.palier) || !fits(c.itemCats, it.category) || !fits(c.paliers, it.palier)) return false;
+  return !(Number(it.palier) === -1 && !has(c.paliers, '-1') && !has(cfg.paliers, '-1'));
+}
+
 /** Travail à faire pour un serveur. Pur (testé).
  *  Unité de publication = un item, ou (option « grouper les sets ») tous les items d'un même set d'un même salon (clé « set:<set>|<salon> »).
  *  → { todo: [{ key, it, items, ch, h, old? }], hashFix: [[clé, h]], gone: [clé] } */
@@ -184,12 +192,14 @@ async function guildPass(rest, g, st, getCtx) {
   }
   st.initial = cfg.initial;
   if (!st.baselined) { // « seulement les nouveaux » : les items déjà dans le wiki sont notés comme vus
-    const matching = [...items.values()].filter(it => route(cfg, it));
+    const matching = [...items.values()].filter(it => (cfg.channels || []).some(c => fitsChannel(cfg, c, it)));
     const concerned = [...items.values()].filter(it => it.category && it.palier != null);
     if (cfg.initial !== 'all') for (const it of matching) st.seen[it._id] = 1;
     st.baselined = true;
+    if (cfg._main) await mergeBrowserPosts(cfg, st); // posts déjà faits depuis la modération : suivis (remplacés si l'item change ensuite)
     logs.push(`Bot : ${matching.length} item(s) concerné(s) sur ${items.size}. ` + (cfg.initial !== 'all' ? 'Mode « nouveaux seulement » : rien envoyé, seuls les prochains items le seront.' : `Envoi de tous : ${matching.length} post(s).`) + (matching.length === 0 && concerned.length ? ' Aucun ne correspond : vérifie filtres et salons.' : ''));
   }
+  if (cfg._main) { await mergeBrowserPosts(cfg, st); await ensureMainChannels(rest, cfg, st, logs); }
   // Lecture incrémentale + sets groupés : on complète avec les autres items des sets modifiés (tous les items viennent avec le contexte des cartes)
   let map = items;
   if (cfg.groupSets && !fetched.full) {
@@ -269,6 +279,61 @@ async function guildPass(rest, g, st, getCtx) {
   return { sent, pending };
 }
 
+// ── Serveur principal : plan de la modération (config/discord_routes), salons « inscrits » ──
+// Un salon inscrit reçoit automatiquement les nouveaux items qui le concernent ; s'il n'existe pas encore, le bot le crée (avec sa catégorie) au premier item.
+// Les posts faits à la main depuis la modération sont suivis (donc remplacés si l'item change) ; l'envoi navigateur saute les salons inscrits.
+async function mergeBrowserPosts(g, st) {
+  const { posts } = await workerBot('main_posts');
+  const chIds = new Set((g.channels || []).map(c => c.id).filter(Boolean));
+  for (const p of posts) {
+    if (!chIds.has(p.channelId) || st.posts[p.itemId]) continue;
+    const it = items.get(p.itemId);
+    if (!it) continue; // lecture incrémentale : l'item n'a pas changé, rien à faire
+    st.posts[p.itemId] = { channelId: p.channelId, threadId: p.threadId, messageId: p.messageId, h: hashOf(it) };
+  }
+}
+async function ensureMainChannels(rest, g, st, logs) {
+  const todo = (g.channels || []).filter(c => !c.id && c.name && [...items.values()].some(it => fitsChannel(g, c, it) && !st.seen[it._id] && !st.posts[it._id]));
+  if (!todo.length) return;
+  const all = await rest.get(`/guilds/${g.id}/channels`);
+  const key = n => String(n || '').normalize('NFKC').toLowerCase().replace(/[^a-z0-9àâäçéèêëîïôöùûüœ]/g, '');
+  const updates = [];
+  for (const c of todo.slice(0, 8)) {
+    try {
+      let parent = null, newCategory = false;
+      if (c.categoryName) {
+        parent = all.find(x => x.type === 4 && key(x.name) === key(c.categoryName));
+        if (!parent) { parent = await rest.post(`/guilds/${g.id}/channels`, { body: { name: c.categoryName.slice(0, 100), type: 4 } }); all.push(parent); newCategory = true; await sleep(400); }
+      }
+      const type = c.type === 'text' ? 0 : 15;
+      let ch = all.find(x => x.type === type && key(x.name) === key(c.name) && (x.parent_id || '') === (parent?.id || ''));
+      if (!ch) { ch = await rest.post(`/guilds/${g.id}/channels`, { body: { name: c.name.slice(0, 100), type, parent_id: parent?.id } }); all.push(ch); await sleep(400); }
+      c.id = ch.id; if (parent) c.categoryId = parent.id;
+      updates.push({ name: c.name, categoryName: c.categoryName || '', id: ch.id, categoryId: parent?.id || '', newCategory });
+      logs.push(`Bot : salon « ${c.name} » créé automatiquement (nouvel item à envoyer)`);
+    } catch (e) { logs.push(`Bot : création du salon « ${c.name} » impossible (${e.message})`); }
+  }
+  if (updates.length) await workerBot('main_patch', { updates }); // mémorise les ids dans le plan de la modération
+}
+async function mainPass(rest) {
+  if (!process.env.ADMIN_SECRET) return;
+  const cfg = await dp.readConfig('discord_routes');
+  if (!cfg || !cfg.guildId || cfg.enabled === false) return;
+  const subs = (Array.isArray(cfg.channels) ? cfg.channels : []).filter(c => c.subscribed && !c.skip);
+  if (!subs.length) return;
+  pass.deadline = Date.now() + (parseFloat(process.env.RUN_MINUTES) || 12) * 60e3;
+  pass.more = pass.more || false;
+  const g = { id: cfg.guildId, guildName: 'Serveur principal', status: 'approved', paused: false, initial: 'new', replace: true, groupSets: false, eventTags: false, hideThreshold: Number.isFinite(cfg.hideThreshold) ? cfg.hideThreshold : 10,
+    itemCats: [], paliers: [], channels: subs, updatedAt: [...subs.map(c => [c.name, c.id || '', (c.itemCats || []).join(), (c.paliers || []).join()].join('/'))].join('|'), _main: true };
+  const st = await loadGuildState(g.id); st._id = g.id;
+  const needFull = !st.baselined || st.pending > 0 || !st.rev || st.sig !== sigOf(g);
+  await refreshItems(needFull ? 0 : st.rev);
+  let ctxP = null;
+  try { const r = await guildPass(rest, g, st, () => (ctxP ??= dp.buildContext())); if (r && r.sent > 0 && r.pending > 0) pass.more = true; }
+  catch (e) { log(`Serveur principal : erreur ${e.message}`); }
+  await saveGuildState(g.id, st);
+}
+
 /** Passage complet sur tous les serveurs inscrits. */
 async function pass(rest) {
   if (!process.env.ADMIN_SECRET) { if (!pass.warned) { pass.warned = true; log('ADMIN_SECRET absent : envoi multi-serveurs désactivé.'); } return; }
@@ -307,4 +372,4 @@ async function pass(rest) {
   }
 }
 
-module.exports = { pass, route, plan, hashOf };
+module.exports = { pass, mainPass, route, plan, hashOf, fitsChannel };

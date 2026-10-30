@@ -1595,6 +1595,7 @@ async function _channelOfItem(it, { auto = false } = {}) {
   const spec = c => ((c.itemCats || []).length > 0) + ((c.paliers || []).length > 0);
   const c = (r.channels || []).filter(c => c.id && fits(c, 'itemCats', it.category) && fits(c, 'paliers', it.palier)).sort((x, y) => spec(y) - spec(x))[0];
   if (!c) return null;
+  if (auto && c.subscribed) return null; // salon inscrit : c'est le bot (GitHub Actions) qui envoie, sinon doublon
   if (auto && Number(it.palier) === -1 && !(c.paliers || []).map(String).includes('-1')) return null; // l'archive n'est pas postée sans salon dédié
   return c.id;
 }

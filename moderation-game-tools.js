@@ -502,6 +502,9 @@ function _drRow(c, i) {
   const n = _drCount(c);
   const ib = (icon, title, fn, danger) => `<button class="btn btn-ghost" title="${title}" onclick="${fn}" style="padding:2px 8px;font-size:12px;${danger ? 'color:var(--danger);border-color:var(--danger);' : ''}">${icon}</button>`;
   const skipped = !!c.skip && !alive;
+  const subBtn = skipped ? '' : c.subscribed
+    ? `<button class="btn btn-ghost" title="Inscrit : les nouveaux items concernés sont envoyés automatiquement (et le salon est créé au premier item s'il n'existe pas). Cliquer pour se désinscrire." onclick="drSub(${i}, false)" style="padding:2px 9px;font-size:12px;color:var(--success, #4caf50);border-color:var(--success, #4caf50);">✅ Inscrit</button>`
+    : `<button class="btn btn-ghost" title="S'inscrire : les nouveaux items concernés seront envoyés automatiquement, et le salon sera créé tout seul s'il n'existe pas encore." onclick="drSub(${i}, true)" style="padding:2px 9px;font-size:12px;">📡 S'inscrire</button>`;
   const actions = (skipped
     ? ib('↩️', 'Réactiver ce salon (il redevient « à traiter »)', `drSkip(${i}, false)`)
     : alive
@@ -511,8 +514,8 @@ function _drRow(c, i) {
   return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
       <span title="${alive ? 'En place : le bot peut utiliser ce salon' : skipped ? 'Ignoré (non voulu)' : escHtml(_drWhy(c))}">${alive ? '🟢' : skipped ? '⚪' : '🟠'}</span>
       <input type="text" value="${escHtml(c.name || '')}" placeholder="nom-du-salon" onchange="drSet(${i}, 'name', this.value)" style="${_drField}width:190px;font-weight:700;">
-      <span style="flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(catLabels.join(', ') + ' · ' + palLabels.join(', '))}">${catLabels.length ? catLabels.join(', ') : 'toutes catégories'} · ${palLabels.length ? palLabels.join(', ') : 'tous paliers'} · <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${alive && _drPostCounts[c.id] ? ` · ${_drPostCounts[c.id]} posts` : ''}${skipped ? ' · <span style="color:var(--muted);">ignoré (non voulu)</span>' : !alive ? ` · <span style="color:#e0a24c;">${escHtml(_drWhy(c))}</span>` : ''}</span>
-      <span style="display:flex;gap:4px;flex:none;">${actions}</span>
+      <span style="flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escHtml(catLabels.join(', ') + ' · ' + palLabels.join(', '))}">${catLabels.length ? catLabels.join(', ') : 'toutes catégories'} · ${palLabels.length ? palLabels.join(', ') : 'tous paliers'} · <strong style="color:var(--accent);">${n} item${n > 1 ? 's' : ''}</strong>${alive && _drPostCounts[c.id] ? ` · ${_drPostCounts[c.id]} posts` : ''}${c.subscribed && !skipped ? ' · <span style="color:var(--success, #4caf50);">📡 inscrit</span>' : ''}${skipped ? ' · <span style="color:var(--muted);">ignoré (non voulu)</span>' : !alive ? ` · <span style="color:#e0a24c;">${escHtml(_drWhy(c))}</span>` : ''}</span>
+      <span style="display:flex;gap:4px;flex:none;">${subBtn}${actions}</span>
     </div>${_drOpenRows.has(i) ? _drDetail(c, i) : ''}`;
 }
 
@@ -535,6 +538,15 @@ function _drList() {
       <div style="padding:2px 12px 8px;">${list.map(i => _drRow(_dr.channels[i], i)).join('')}</div></details>`;
   }).join('');
 }
+window.drSub = async (i, v) => {
+  _dr.channels[i].subscribed = !!v; await _drPersist();
+  if (v) toast('Inscrit : les nouveaux items concernés partent tout seuls dans ce salon (créé automatiquement au premier item s\'il n\'existe pas).', 'success', 7000);
+  _renderDiscordRoutes();
+};
+window.drSubAll = async (on) => {
+  _dr.channels.forEach(c => { if (!c.skip) c.subscribed = !!on; }); await _drPersist();
+  toast(on ? 'Tous les salons non ignorés sont inscrits.' : 'Désinscrit de tous les salons.', 'success'); _renderDiscordRoutes();
+};
 window.drSkip = async (i, v) => { _dr.channels[i].skip = !!v; await _drPersist(); _renderDiscordRoutes(); };
 window.drToggleRow = i => { _drOpenRows.has(i) ? _drOpenRows.delete(i) : _drOpenRows.add(i); _renderDiscordRoutes(); };
 window.drView = (pal, todo) => { _drView = { pal, todo }; _renderDiscordRoutes(); };
@@ -560,6 +572,7 @@ function _renderDiscordRoutes() {
       ${_drBtn('🎨 Style Veilleurs (majuscules + emojis)', 'drRestyle()')}
       ${_drBtn('➕ Ajouter un salon', 'drAdd()')}
       ${_drBtn('✨ Créer tous les salons manquants', 'drReconcile()', 'primary')}
+      ${_drBtn(_dr.channels.some(c => !c.skip && !c.subscribed) ? '📡 S\'inscrire à tous les salons' : '✅ Inscrit à tous (désinscrire)', _dr.channels.some(c => !c.skip && !c.subscribed) ? 'drSubAll(true)' : 'drSubAll(false)')}
     </div>
     ${_drList()}`;
   html += _drStep(3, 'Envoi', 'poster les items dans leurs salons') + `

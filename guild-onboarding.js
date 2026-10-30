@@ -421,6 +421,34 @@ export async function handleGuildBot(request, env, deps) {
     if (SNOW.test(gid)) { const d = await dgGet(env, gid); if (d) { pushLog(d, triggerText(result)); await dgPut(env, gid, d); } }
     return json({ ok: true, result });
   }
+  // Serveur principal (plan de la modération, config/discord_routes) : posts déjà faits depuis le navigateur, et ids des salons créés par le bot
+  if (body.action === 'main_posts') {
+    const rows = (await env.DB.prepare("SELECT data FROM docs WHERE col = 'discord_posts' AND deleted = 0").all()).results;
+    return json({ posts: rows.map(r => jparse(r.data)).filter(d => d && d.itemId && d.channelId).map(d => ({ itemId: String(d.itemId), channelId: String(d.channelId), threadId: d.threadId || null, messageId: d.messageId || null })) });
+  }
+  if (body.action === 'main_patch') {
+    const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'config' AND id = 'discord_routes' AND deleted = 0").bind().first();
+    const cfg = jparse(row?.data);
+    if (!cfg) return json({ error: 'config/discord_routes absente' }, 404);
+    let n = 0;
+    for (const u of (Array.isArray(body.updates) ? body.updates : []).slice(0, 60)) {
+      if (!SNOW.test(String(u.id || ''))) continue;
+      const c = (cfg.channels || []).find(x => x.name === u.name && (x.categoryName || '') === (u.categoryName || '') && !x.id);
+      if (!c) continue;
+      c.id = String(u.id); if (SNOW.test(String(u.categoryId || ''))) c.categoryId = String(u.categoryId); n++;
+      const mine = ((cfg.createdByBot ||= {})[cfg.guildId] ||= { channels: [], categories: [] });
+      if (!mine.channels.includes(c.id)) mine.channels.push(c.id);
+      if (u.newCategory && SNOW.test(String(u.categoryId || '')) && !mine.categories.includes(u.categoryId)) mine.categories.push(String(u.categoryId));
+    }
+    if (n) {
+      if (cfg.guildId) (cfg.plans ||= {})[cfg.guildId] = cfg.channels;
+      await env.DB.batch([
+        env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'"),
+        env.DB.prepare("INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('config', 'discord_routes', ?, (SELECT v FROM meta WHERE k = 'rev'), 0, 0) ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at, deleted = 0").bind(JSON.stringify(cfg)),
+      ]);
+    }
+    return json({ ok: true, updated: n });
+  }
   if (body.action === 'list') {
     const rows = (await env.DB.prepare("SELECT id, data FROM docs WHERE col = 'discord_guilds' AND deleted = 0").all()).results;
     return json({ guilds: rows.map(r => ({ id: r.id, ...jparse(r.data) })) });

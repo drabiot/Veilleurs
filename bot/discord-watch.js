@@ -76,7 +76,7 @@ async function pass() {
   log(`Démarré (${once ? 'un passage' : 'toutes les ' + every / 60e3 + ' min'}).`);
   let failed = false;
   do {
-    try { await pass(); } catch (e) { failed = true; log('Erreur :', e.message); }
+    try { await guilds.mainPass(rest); } catch (e) { failed = true; log('Serveur principal :', e.message); } // salons « inscrits » du plan de la modération
     // Serveurs inscrits via Discord/discord.html : état propre à chaque serveur, désactivable avec DISCORD_MULTI=0
     if (process.env.DISCORD_MULTI !== '0') { try { await guilds.pass(rest); } catch (e) { failed = true; log('Multi-serveurs :', e.message); } }
     if (!once) await sleep(every);
