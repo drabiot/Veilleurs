@@ -37,5 +37,13 @@ for (let pass = 0; pass < 6; pass++) {            // plusieurs passes : le hash 
   stale = changed;
   if (!changed || check) break;
 }
+// version.json : identifiant de la version en ligne (hash de tous les HTML/JS), lu par sw-register.js pour renouveler le cache des visiteurs
+if (!check && !stale) {
+  const NL = String.fromCharCode(10);
+  const id = crypto.createHash('sha1').update(files.map(f => path.relative(ROOT, f).split(path.sep).join('/') + ':' + hash(f)).sort().join(NL)).digest('hex').slice(0, 10);
+  const vf = path.join(ROOT, 'version.json');
+  let cur = ''; try { cur = JSON.parse(fs.readFileSync(vf, 'utf8')).v; } catch { /* absent */ }
+  if (cur !== id) fs.writeFileSync(vf, JSON.stringify({ v: id }) + NL);
+}
 if (check && stale) { console.error('Versions ?v= périmées : lance node tools/stamp-versions.js'); process.exit(1); }
 console.log(stale && !check ? 'Versions non stabilisées' : 'Versions à jour');
