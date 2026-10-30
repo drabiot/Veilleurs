@@ -20,6 +20,7 @@ const dp = require('./discord-post.js');
 const VIEW = 1n << 10n;
 const BOT_ALLOW = (1n << 10n) | (1n << 11n) | (1n << 14n) | (1n << 15n) | (1n << 16n) | (1n << 34n) | (1n << 35n) | (1n << 38n);
 const BATCH = parseInt(process.env.DISCORD_GUILD_BATCH, 10) || 400; // posts max par serveur et par passage (le passage s'arrête de toute façon à RUN_MINUTES)
+const CONCURRENCY = parseInt(process.env.DISCORD_CONCURRENCY, 10) || 4; // salons traités en parallèle
 const POST_DELAY = parseInt(process.env.DISCORD_POST_DELAY_MS, 10) || 800; // pause entre deux posts d'un même salon ; discord.js gère les 429 en plus
 const log = (...a) => console.log(`[discord-guilds ${new Date().toISOString().slice(11, 19)}]`, ...a);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -208,24 +209,29 @@ async function guildPass(rest, g, st, getCtx) {
     const chInfo = new Map();
     try {
       if (threshold > 0) for (const [chId, n] of counts) if (n > threshold) { try { await lock(rest, st, chId); locked.push(chId); } catch (e) { log(`${g.guildName} : masquage impossible (${e.message}), envoi quand même`); } }
-      for (const b of batch) {
-        if (timeUp()) break;
-        try {
-          if (!chInfo.has(b.ch.id)) chInfo.set(b.ch.id, await rest.get(`/channels/${b.ch.id}`));
-          if (b.old) { await deletePost(rest, b.old); delete st.posts[b.key]; }
-          const r = b.set
-            ? await dp.postSet(rest, b.ch.id, setLabel(ctx, b.set), b.items, ctx, chInfo.get(b.ch.id))
-            : await dp.postItem(rest, b.ch.id, b.it, ctx, chInfo.get(b.ch.id));
-          st.posts[b.key] = { channelId: b.ch.id, threadId: r.threadId, messageId: r.messageId, ...(r.messageIds ? { messageIds: r.messageIds } : {}), ...(b.set ? { ids: b.items.map(i => i._id) } : {}), h: b.h };
-          sent++;
-          if (sent % 5 === 0) await saveGuildState(g.id, st); // état sauvegardé tous les 5 posts (au pire quelques doublons après un plantage)
-          await sleep(POST_DELAY);
-        } catch (e) {
-          error = `${b.it.name} : ${e.message}`;
-          log(`${g.guildName} : échec ${error}`);
-          if ([10003, 50001, 50013].includes(e.code) || [403, 404].includes(e.status)) break; // salon supprimé / droits retirés : inutile d'insister ce passage
+      // Un salon à la fois dans l'ordre (limites de débit par salon), mais plusieurs salons en parallèle : bien plus rapide quand il y a plusieurs salons
+      const queue = [...batch.reduce((m, x) => m.set(x.ch.id, [...(m.get(x.ch.id) || []), x]), new Map()).values()];
+      const doGroup = async list => {
+        for (const b of list) {
+          if (timeUp()) break;
+          try {
+            if (!chInfo.has(b.ch.id)) chInfo.set(b.ch.id, await rest.get(`/channels/${b.ch.id}`));
+            if (b.old) { await deletePost(rest, b.old); delete st.posts[b.key]; }
+            const r = b.set
+              ? await dp.postSet(rest, b.ch.id, setLabel(ctx, b.set), b.items, ctx, chInfo.get(b.ch.id))
+              : await dp.postItem(rest, b.ch.id, b.it, ctx, chInfo.get(b.ch.id));
+            st.posts[b.key] = { channelId: b.ch.id, threadId: r.threadId, messageId: r.messageId, ...(r.messageIds ? { messageIds: r.messageIds } : {}), ...(b.set ? { ids: b.items.map(i => i._id) } : {}), h: b.h };
+            sent++;
+            if (sent % 5 === 0) await saveGuildState(g.id, st); // état sauvegardé tous les 5 posts (au pire quelques doublons après un plantage)
+            await sleep(POST_DELAY);
+          } catch (e) {
+            error = `${b.it.name} : ${e.message}`;
+            log(`${g.guildName} : échec ${error}`);
+            if ([10003, 50001, 50013].includes(e.code) || [403, 404].includes(e.status)) break; // salon supprimé / droits retirés : inutile d'insister ce passage
+          }
         }
-      }
+      };
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, async () => { while (queue.length) await doGroup(queue.shift()); }));
     } finally {
       for (const chId of locked) { try { await unlock(rest, st, chId); } catch (e) { log(`⚠️ visibilité non rétablie (${chId}) : ${e.message}`); error = 'visibilité non rétablie sur un salon'; } }
     }
