@@ -67,14 +67,14 @@
           <span>Différences seulement</span>
         </label>
         <span class="cmp-toolbar-grow"></span>
-        <button class="cmp-btn" id="cmp-score-toggle">⚖ Score pondéré</button>
+        <button class="cmp-btn" id="cmp-score-toggle">⚖ Calculer un score</button>
         <button class="cmp-btn" id="cmp-copy">🔗 Copier le lien</button>
       </div>
 
       <div id="cmp-score-panel" class="cmp-score-panel" style="display:none">
         <div class="cmp-score-head">
-          <b>Score pondéré</b>
-          <span class="cmp-hint">Chaque stat compte selon son poids (0 = ignorée) rapporté à son échelle de jeu. Le build au score le plus haut est désigné « meilleur ».</span>
+          <b>Calculer un score</b>
+          <span class="cmp-hint">Par défaut, le score général compte toutes les stats à égalité (chacune rapportée à son échelle de jeu). Ici, donne un poids à chaque stat (0 = ignorée) ou pars d'un profil pour obtenir un score personnalisé. Le build au score le plus haut est désigné « meilleur ».</span>
         </div>
         <div class="cmp-presets" id="cmp-presets"></div>
         <div class="cmp-weights" id="cmp-weights"></div>
@@ -213,7 +213,9 @@
       if (refIdx >= builds.length) refIdx = 0;
 
       const hasScore = Object.values(weights).some(w => +w > 0);
-      const scores = (hasScore && builds.length >= 2) ? C.scoreBuilds(builds, weights, ALL_STATS) : null;
+      // Sans poids personnalisés : score général (toutes les stats à égalité, chacune rapportée à son échelle de jeu)
+      const scoreW = hasScore ? weights : Object.fromEntries(ALL_STATS.map(s => [s.id, 1]));
+      const scores = builds.length >= 2 ? C.scoreBuilds(builds, scoreW, ALL_STATS) : null;
       const groups = C.compareStats(builds, STAT_GROUPS, refIdx);
       const n = builds.length;
 
@@ -250,7 +252,7 @@
       h += '</tr></thead><tbody>';
 
       if (scores) {
-        h += '<tr class="cmp-score-row"><td class="cmp-stat-col">⚖ Score pondéré</td>';
+        h += '<tr class="cmp-score-row"><td class="cmp-stat-col">⚖ ' + (hasScore ? 'Score personnalisé' : 'Score général') + '</td>';
         scores.forEach((s, i) => {
           h += '<td' + (scores.winner === i ? ' class="is-winner"' : '') + '><div class="cmp-score-val">' + s.score + '</div>' +
             '<div class="cmp-score-top">' + s.top.map(t => esc(t.stat.label)).join(' · ') + '</div></td>';
@@ -296,7 +298,7 @@
       if (!pr.dataset.ready) {
         pr.dataset.ready = '1';
         pr.innerHTML = Object.keys(C.PRESETS).map(k => '<button class="cmp-mini" data-preset="' + esc(k) + '">' + esc(k) + '</button>').join('') +
-          '<button class="cmp-mini" data-preset="">Tout à 0</button>';
+          '<button class="cmp-mini" data-preset="">↺ Score général</button>';
         pr.addEventListener('click', e => {
           const b = e.target.closest('[data-preset]');
           if (!b) return;

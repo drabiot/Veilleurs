@@ -75,6 +75,7 @@ const STAT_GROUPS = [
       { id:'crit_degats',         label:'Dégâts Coups Critiques',          icon:'💢',  unit:'%',  max:100  },
       { id:'crit_comp_chance',    label:'Chance Critique Compétence',      icon:'🎯',  unit:'%',  max:100  },
       { id:'crit_comp_degats',    label:'Crit Dégâts Compétence',           icon:'💢',  unit:'%',  max:100  },
+      { id:'hate',                label:'Hâte',                            icon:'🌀',  unit:'%',  max:100  },
     ]
   },
   {
@@ -96,7 +97,6 @@ const STAT_GROUPS = [
   {
     label: 'Mobilité & Ressources',
     stats: [
-      { id:'hate',                label:'Hâte',                            icon:'🌀',  unit:'%',  max:100  },
       { id:'vitesse_deplacement', label:'Vitesse de Déplacement',          icon:'💨',  unit:'%',  max:100  },
       { id:'vitesse_accroupi',    label:'Vitesse Accroupi',                icon:'🐾',  unit:'',   max:250   },
       { id:'mana',                label:'Mana',                            icon:'💧',  unit:'',   max:1000 },

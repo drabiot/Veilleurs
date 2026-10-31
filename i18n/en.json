@@ -2984,5 +2984,11 @@
   "Enregistrer": "Save",
   "Explique ton build : style de jeu, points forts, conseils…": "Explain your build: playstyle, strengths, tips…",
   "✓ Commentaire enregistré.": "✓ Comment saved.",
-  "✓ Commentaire retiré.": "✓ Comment removed."
+  "✓ Commentaire retiré.": "✓ Comment removed.",
+  "⚖ Calculer un score": "⚖ Calculate a score",
+  "Calculer un score": "Calculate a score",
+  "↺ Score général": "↺ General score",
+  "⚖ Score général": "⚖ General score",
+  "⚖ Score personnalisé": "⚖ Custom score",
+  "Par défaut, le score général compte toutes les stats à égalité (chacune rapportée à son échelle de jeu). Ici, donne un poids à chaque stat (0 = ignorée) ou pars d'un profil pour obtenir un score personnalisé. Le build au score le plus haut est désigné « meilleur ».": "By default, the general score counts every stat equally (each relative to its in-game scale). Here, give each stat a weight (0 = ignored) or start from a profile to get a custom score. The build with the highest score is flagged as “best”."
 }

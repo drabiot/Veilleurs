@@ -68,7 +68,7 @@
     'Dégâts':  { degats: 3, degats_physique: 1, degats_arme: 1, degats_magique: 1, degats_competence: 1, degats_projectile: 1, vitesse_attaque: 2, crit_chance: 1.5, crit_degats: 1.5, crit_comp_chance: 1, crit_comp_degats: 1 },
     'Tank':    { sante: 3, defense: 3, blocage: 1.5, puissance_bloc: 1, durabilite_garde: 1, reduction_degats: 2, tenacite: 1, res_recul: 0.5, chance_parade: 1, regen_sante: 1 },
     'Soutien': { puissance_soin: 3, soin_bonus: 2, soins_recus: 1, regen_mana: 1.5, mana: 1.5, hate: 1.5, regen_sante: 1 },
-    'Mobilité': { vitesse_deplacement: 3, vitesse_accroupi: 1, esquive: 2, stamina: 1.5, regen_stamina: 1.5, hate: 1 },
+    'Mobilité': { vitesse_deplacement: 3, vitesse_accroupi: 1, esquive: 2, stamina: 1.5, regen_stamina: 1.5 },
   };
 
   var api = { compareStats: compareStats, scoreBuilds: scoreBuilds, unitOf: unitOf, round2: round2, PRESETS: PRESETS };
