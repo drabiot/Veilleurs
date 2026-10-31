@@ -1014,7 +1014,7 @@ html, body {
    ============================================================ */
 .bc-meta { flex-wrap: wrap; }
 .bc-comment-chip {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0;
   padding: 3px 10px; border: 1px solid var(--rim2); border-radius: 999px; background: transparent;
   color: var(--text); font-family: inherit; font-size: 11px; cursor: help; transition: all .15s;
 }

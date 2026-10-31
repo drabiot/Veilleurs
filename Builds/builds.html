@@ -779,7 +779,6 @@
           <div class="bc-meta">
             <span class="bc-author">👤 ${escHtml(b.authorPseudo || 'Anonyme')}</span>
             ${unlistedBadge}${adminBadge}
-            ${b.comment ? `<button type="button" class="bc-comment-chip" data-comment-id="${escHtml(b._id)}" aria-label="Lire le commentaire de l'auteur">💬 <span>Commentaire</span></button>` : ''}
           </div>
           <div class="bc-mannequin-wrap">
             <div class="bc-mannequin-row">
@@ -800,6 +799,7 @@
                 <span title="Prévisualisations">${_ICO_EYE}<span class="bc-prev-count">${b.previewCount || 0}</span></span>
                 <span title="Favoris">${_ICO_STAR}<span class="bc-fav-count">${b.favoriteCount || 0}</span></span>
               </div>
+              ${b.comment ? `<button type="button" class="bc-comment-chip" data-comment-id="${escHtml(b._id)}" aria-label="Lire le commentaire de l'auteur">💬 <span>Commentaire</span></button>` : ''}
               <span class="bc-time">${escHtml(ago)}</span>
             </div>
             <div class="bc-actions">
