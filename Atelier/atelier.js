@@ -227,7 +227,7 @@ function initSkinViewer(W, colH) {
   window.__skinViewer.autoRotate  = false;
   window.__skinViewer.zoom        = 0.64;
   window.__skinViewer.globalLight = 3;
-  if (window.__skinViewer.playerObject) window.__skinViewer.playerObject.position.y = -5;   // laisse la place au titre au-dessus de la tête
+  if (window.__skinViewer.playerObject) window.__skinViewer.playerObject.position.y = -8;   // laisse la place au titre au-dessus de la tête
   window.__skinViewer.cameraLight = 1;
 
   canvas.addEventListener('wheel', function(e) {
