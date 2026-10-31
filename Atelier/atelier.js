@@ -2460,7 +2460,11 @@ function loadAccessoriesForClass(classId) {
       const row = document.createElement('button');
       row.type = 'button'; row.className = 'titre-row' + (t.id === activeTitre ? ' active' : '');
       row.setAttribute('role', 'option');
-      const chips = _titreChips(t).map(function(c) { return '<span class="titre-chip">' + escHtml(c) + '</span>'; }).join('');
+      const chips = Object.entries(t.stats || {}).filter(function(e) { return +e[1]; }).map(function(e) {
+        const st = STATS_BY_ID.get(e[0]), v = +e[1] || 0;
+        const unit = e[0] === 'vitesse_attaque' ? '%' : (st && st.unit ? st.unit : '');
+        return '<span class="titre-stat"><b' + (v < 0 ? ' class="neg"' : '') + '>' + (v > 0 ? '+' : '') + v + unit + '</b>' + escHtml(st ? st.label : e[0]) + '</span>';
+      }).join('');
       row.innerHTML = '<span class="titre-row-name">' + escHtml(t.name) + '</span>' + (chips ? '<span class="titre-row-stats">' + chips + '</span>' : '');
       row.addEventListener('click', function() { _chooseTitre(t.id === activeTitre ? null : t.id); }); // recliquer sur le titre actif le retire
       if (t.id === activeTitre) row.title = 'Cliquer pour retirer ce titre';
