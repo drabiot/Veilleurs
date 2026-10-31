@@ -3505,7 +3505,7 @@ function loadAccessoriesForClass(classId) {
     const mq   = document.querySelector('.mq');
     if (!wrap || !mq) return;
 
-    const G    = 10;
+    const G    = 14;
     const padW = 48;
     const padH = 40;
 
