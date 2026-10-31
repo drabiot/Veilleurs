@@ -1452,6 +1452,7 @@ function renderMarkers() {
   const isTypeVisible = (type) => !HIDDEN_MARKER_TYPES.has(type) && filterState[type] === true;
 
   const markers = getFlatFloorMarkers(currentFloor);
+  updateLegendAvailability(markers);
 
   const focusedList = _searchFocusId ? markers.filter(m => m.id === _searchFocusId) : [];
   const isMultiFocus = focusedList.length > 1;
@@ -1695,11 +1696,7 @@ toggleAll.addEventListener('change', () => {
 
 document.querySelectorAll('.marker-filter').forEach(cb => {
   cb.addEventListener('change', () => {
-    const all   = document.querySelectorAll('.marker-filter');
-    const allOn = [...all].every(c => c.checked);
-    const none  = [...all].every(c => !c.checked);
-    toggleAll.checked       = allOn;
-    toggleAll.indeterminate = !allOn && !none;
+    syncToggleAll();
     // Le filtre "donjon" contrôle la visibilité du tab Donjon
     if (cb.dataset.type === 'donjon') updateLayerBtnVisibility();
     renderMarkers();
@@ -2172,11 +2169,7 @@ function _cancelDeletePin() {
 ══════════════════════════════════ */
 function _addLegendChangeListener(cb) {
   cb.addEventListener('change', () => {
-    const all      = document.querySelectorAll('.marker-filter');
-    const toggleAll = document.getElementById('toggle-all-filters');
-    const allOn    = [...all].every(c => c.checked);
-    const none     = [...all].every(c => !c.checked);
-    if (toggleAll) { toggleAll.checked = allOn; toggleAll.indeterminate = !allOn && !none; }
+    syncToggleAll();
     renderMarkers();
     updateDungeonOverlay();
   });
@@ -2247,6 +2240,7 @@ function applyPinColorsToLegend() {
       container.appendChild(details);
     }
     addOrphanTypesToLegend(container);
+    updateLegendAvailability(getFlatFloorMarkers(currentFloor));
     return;
   }
 
@@ -2282,6 +2276,35 @@ function applyPinColorsToLegend() {
     knownTypes.add(type);
   });
   addOrphanTypesToLegend(container);
+  updateLegendAvailability(getFlatFloorMarkers(currentFloor));
+}
+
+// Légende : un filtre n'apparaît que s'il y a quelque chose à afficher sur l'étage courant (surface et sous-sol), pour ce visiteur.
+// _mapMarkers ne contient que les données visibles pour lui (une donnée réservée ne compte donc pas) ; zones de monstres et donjons ont leur propre source.
+// « Tout sélectionner » : son état ne tient compte que des filtres visibles sur l'étage courant
+function syncToggleAll() {
+  const toggleAll = document.getElementById('toggle-all-filters');
+  if (!toggleAll) return;
+  const vis = [...document.querySelectorAll('.marker-filter')].filter(c => !c.closest('.legend-empty'));
+  const allOn = vis.length > 0 && vis.every(c => c.checked);
+  const none  = vis.every(c => !c.checked);
+  toggleAll.checked       = allOn;
+  toggleAll.indeterminate = !allOn && !none;
+}
+
+function updateLegendAvailability(markers) {
+  const container = document.getElementById('legend-filters');
+  if (!container) return;
+  const present = new Set((markers || []).map(m => m.type));
+  if ((window._map_zones || []).some(z => +z.floor === currentFloor)) present.add('zone_monstre');
+  if (floorHasDungeon(currentFloor)) present.add('donjon');
+  container.querySelectorAll('input.marker-filter[data-type]').forEach(cb => {
+    cb.closest('.legend-item')?.classList.toggle('legend-empty', !present.has(cb.dataset.type));
+  });
+  container.querySelectorAll('.legend-group').forEach(g => {
+    g.classList.toggle('legend-empty', !g.querySelector('.legend-item:not(.legend-empty)'));
+  });
+  syncToggleAll();
 }
 
 // Types présents sur la carte mais absents de la légende (ex. catégorie config incomplète) :

@@ -142,6 +142,9 @@
 }
 .legend-toggle-all:has(input:checked) { border-style: solid; }
 
+/* Filtre sans rien à afficher sur l'étage courant (cf. updateLegendAvailability) */
+.legend-item.legend-empty, .legend-group.legend-empty { display: none !important; }
+
 /* Séparateurs de la légende : les en-têtes de groupe portent déjà leur filet */
 .legend-filters > .sidebar-sep { display: none; }
 
