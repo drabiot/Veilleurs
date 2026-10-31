@@ -2535,6 +2535,60 @@ function loadAccessoriesForClass(classId) {
     return best;
   }
 
+  // Arbre de compétences : choisit les cases (connectées au centre, plafonnées aux points du niveau) qui maximisent le score
+  // à équipement fixé. Glouton sur « chemin vers une case » : gain du chemin / longueur du chemin.
+  function _optTree(map, runes, req, prio) {
+    const ST = window.VCLSkillTree, fxAll = window.VCL_SKILL_EFFECTS;
+    if (!ST || !activeClass || !fxAll || !fxAll[activeClass]) return [];
+    const max = ST.maxPoints(buildLevel);
+    if (max <= 0) return [];
+    const savedEq = equipped, savedRunes = equippedRunes, savedNodes = skillNodes;
+    let base;
+    try {
+      equipped = map; equippedRunes = runes; skillNodes = [];
+      base = Object.assign({}, computeStats().mins); // le centre de l'arbre est déjà compté
+    } finally { equipped = savedEq; equippedRunes = savedRunes; skillNodes = savedNodes; }
+
+    const effOf = function(k) {
+      const fx = fxAll[activeClass][ST.numbers[k]];
+      return fx && STATS_BY_ID.has(fx.stats) ? fx : null;
+    };
+    const scoreWith = function(bonus) {
+      const mins = Object.assign({}, base);
+      Object.keys(bonus).forEach(function(s) { mins[s] = (mins[s] || 0) + bonus[s]; });
+      return _optScore(mins, req, prio);
+    };
+    const owned = { '0,0': 1 }, nodes = [], bonus = {};
+    while (nodes.length < max) {
+      // BFS depuis les cases possédées, à travers les cases libres
+      const par = {}, dist = {}, queue = [];
+      Object.keys(owned).forEach(function(k) { dist[k] = 0; queue.push(k); });
+      for (let qi = 0; qi < queue.length; qi++) {
+        const k = queue[qi];
+        Object.keys(ST.graph.adj[k] || {}).forEach(function(n) {
+          if (dist[n] !== undefined || !ST.graph.nodes[n]) return;
+          dist[n] = dist[k] + 1; par[n] = k; queue.push(n);
+        });
+      }
+      const cur = scoreWith(bonus);
+      let bestPath = null, bestRatio = 1e-12;
+      Object.keys(dist).forEach(function(t) {
+        if (!dist[t] || dist[t] > max - nodes.length) return;
+        const path = []; for (let k = t; !owned[k]; k = par[k]) path.unshift(k);
+        const b = Object.assign({}, bonus);
+        path.forEach(function(k) { const fx = effOf(k); if (fx) b[fx.stats] = (b[fx.stats] || 0) + fx.bonus; });
+        const ratio = (scoreWith(b) - cur) / path.length;
+        if (ratio > bestRatio) { bestRatio = ratio; bestPath = path; }
+      });
+      if (!bestPath) break;
+      bestPath.forEach(function(k) {
+        owned[k] = 1; nodes.push(k);
+        const fx = effOf(k); if (fx) bonus[fx.stats] = (bonus[fx.stats] || 0) + fx.bonus;
+      });
+    }
+    return ST.sanitize(nodes, max);
+  }
+
   function _optStatOptions(emptyLabel) {
     return '<option value="">' + emptyLabel + '</option>' + ALL_STATS.map(function(s) {
       return '<option value="' + s.id + '">' + (s.icon || '') + ' ' + s.label + '</option>';
@@ -2611,7 +2665,18 @@ function loadAccessoriesForClass(classId) {
         }
         _optFilter = { palier: excl, source: source, mobIds: sets.mobIds, pnjIds: sets.pnjIds };
         const pools = _optPrune(_optPools(), req, prio);
-        const found = _optSearch(pools, req, prio, Date.now() + 3000);
+        // 1) équipement sans arbre → 2) arbre pour cet équipement → 3) équipement refait avec l'arbre → 4) arbre final
+        skillNodes = [];
+        let found = _optSearch(pools, req, prio, Date.now() + 1500);
+        if (found) {
+          const t1 = _optTree(found.map, found.runes, req, prio);
+          skillNodes = t1;
+          const found2 = _optSearch(pools, req, prio, Date.now() + 1500);
+          if (found2) found = found2;
+          skillNodes = [];
+          const t2 = _optTree(found.map, found.runes, req, prio);
+          skillNodes = t2.length ? t2 : t1;
+        }
         equipped = found ? found.map : {};
         equippedRunes = found ? found.runes : {};
         buildGrid(); buildLevelPanel(); saveToStorage(); renderStats(); renderPickerInfo(); renderItemList();
