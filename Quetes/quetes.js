@@ -1273,6 +1273,8 @@ function _syncModalNav(q) {
   const i = ids.indexOf(q.id);
   const prev = document.getElementById('modal-prev');
   const next = document.getElementById('modal-next');
+  const pos = document.getElementById('modal-pos');
+  if (pos) pos.textContent = i >= 0 ? `${i + 1} / ${ids.length}` : '';
   if (prev) prev.disabled = i <= 0;
   if (next) next.disabled = i < 0 || i >= ids.length - 1;
 }
@@ -1376,6 +1378,29 @@ function updateNextBlocking(q) {
     }
   });
 }
+
+function _rerenderModal(q) {
+  modalContent.innerHTML = renderSheet(q);
+  bindModalCheckboxes(q);
+  buildGrid({ animate: false });
+  updateStatutCounts();
+  buildInventoryPanel();
+}
+window.modalToggleTrack = function(qid) {
+  const q = getQuestById(qid);
+  if (!q) return;
+  toggleTracked(qid);
+  modalContent.innerHTML = renderSheet(q);
+  bindModalCheckboxes(q);
+};
+window.modalToggleDone = function(qid) {
+  const q = getQuestById(qid);
+  if (!q) return;
+  toggleQuestDone(qid);
+  modalContent.innerHTML = renderSheet(q);
+  bindModalCheckboxes(q);
+  buildGrid({ animate: false });
+};
 
 window.questToggleAll = function(qid) {
   const q = getQuestById(qid);
@@ -1513,7 +1538,22 @@ function renderSheet(q) {
   /* Bouton "Copier le lien" */
   const shareUrl = `${location.origin}${location.pathname}#${q.id}`;
 
-  return `<div class="quest-sheet">
+  const accent = q.type === 'sec' ? zs.color : q.type === 'fu' ? 'var(--quete-fu)' : 'var(--quete-main)';
+
+  /* Objets à rassembler (agrégat des objectifs) */
+  const reqItems = getQuestRequiredItems(q);
+  const reqHTML = reqItems.length
+    ? `<div class="quest-section">
+        <div class="quest-section-title">Objets à rassembler</div>
+        <div class="quest-req-list">${reqItems.map(it => renderItemChip(it.id, it.qte, it.quality)).join('')}</div>
+      </div>`
+    : '';
+
+  const tracked = getTrackedIds().has(q.id);
+  const trackBtn = isDone ? '' : `<button class="quest-share-btn quest-track-btn${tracked ? ' on' : ''}" onclick="modalToggleTrack('${q.id}')">🎯 ${tracked ? 'Suivie' : 'Suivre'}</button>`;
+  const doneBtn = `<button class="quest-share-btn quest-done-btn${isDone ? ' on' : ''}" onclick="modalToggleDone('${q.id}')">${isDone ? '↩ Rouvrir' : '✓ Terminer'}</button>`;
+
+  return `<div class="quest-sheet quest-sheet-${q.type}" style="--accent:${accent}">
     <div class="quest-sheet-header">
       <div class="quest-type-icon qicon-${q.type}">${TYPE_ICONS[q.type]}</div>
       <div class="quest-sheet-info">
@@ -1525,6 +1565,7 @@ function renderSheet(q) {
             navigator.clipboard.writeText('${shareUrl}');
             this.textContent='✓ Copié';
             setTimeout(()=>this.textContent='⇗ Lien',1500)">⇗ Lien</button>
+          ${trackBtn}${doneBtn}
         </div>
         <div class="quest-meta-row">
           <div class="quest-meta-item">
@@ -1548,8 +1589,9 @@ function renderSheet(q) {
         <div class="quest-section-title">Description</div>
         <blockquote class="quest-lore">${q.desc}</blockquote>
       </div>
+      ${reqHTML}
       <div class="quest-section">
-        <div class="quest-section-title">Objectifs</div>
+        <div class="quest-section-title">Objectifs <span class="qst-count">${done}/${total}</span></div>
         <div class="quest-check-all-row">
           <button class="quest-check-all-btn quest-toggle-all-btn" onclick="questToggleAll('${q.id}')">
             ${isDone ? '○ Tout décocher' : '✓ Tout cocher'}
@@ -1559,7 +1601,7 @@ function renderSheet(q) {
       </div>
       <div class="quest-section">
         <div class="quest-section-title">Récompenses</div>
-        <div class="reward-list">${rewHTML}</div>
+        <div class="reward-list">${rewHTML || '<span class="card-no-rew">Aucune récompense</span>'}</div>
       </div>
     </div>
   </div>`;

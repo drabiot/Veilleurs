@@ -1273,7 +1273,7 @@ body.quetes-page { overflow: hidden; }
   transition: border-color .18s, background .18s, transform .18s, box-shadow .18s, opacity .18s;
 }
 .quete-card.main { --accent: var(--quete-main); }
-.quete-card.sec  { --accent: var(--quete-sec); }
+.quete-card.sec  { --accent: var(--zone-color, var(--quete-sec)); }  /* secondaires : couleur de la région */
 .quete-card.fu   { --accent: var(--quete-fu); }
 .quete-card:hover {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--gold-dim));
@@ -1517,3 +1517,119 @@ body.quetes-page { overflow: hidden; }
 .tb-badge[hidden] { display: none; }
 
 @media (max-width: 860px) { .quest-sort { flex: 1 1 100%; } }
+
+/* ══════════════════════════════════════════════════════════════
+   FICHE DE QUÊTE v2 — accent = type (secondaires : couleur de région)
+══════════════════════════════════════════════════════════════ */
+.quest-modal { max-width: 720px; }
+.quest-sheet { --accent: var(--quete-main); }
+
+.quest-sheet-header {
+  position: relative; grid-template-columns: 96px 1fr; gap: 22px; padding: 28px 30px 22px;
+  background:
+    radial-gradient(ellipse 70% 120% at 0% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+    linear-gradient(180deg, rgba(255,255,255,.025), transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 30%, var(--rim));
+}
+.quest-sheet-header::after {
+  content: ''; position: absolute; left: 0; bottom: -1px; width: 120px; height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+.quest-type-icon,
+.qicon-main, .qicon-sec, .qicon-fu {
+  width: 96px; height: 96px; font-size: 42px; border-radius: 3px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 22%, #14110d), color-mix(in srgb, var(--accent) 6%, #0e0c09));
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  color: var(--accent);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--accent) 22%, transparent), inset 0 0 18px rgba(0,0,0,.35);
+}
+.quest-type-icon::before, .quest-type-icon::after { border-color: var(--accent) !important; }
+
+.quest-sheet-name {
+  font-size: 22px; line-height: 1.2; padding-right: 150px; color: var(--bright);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.quest-type-badge { border-radius: 3px; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.quest-status-badge { border-radius: 3px; font-size: 10px; }
+
+.quest-share-btn {
+  font-size: 10px; padding: 3px 10px; border-radius: 3px; color: var(--q-text);
+}
+.quest-track-btn.on { color: var(--gold); border-color: rgba(224,172,96,.5); background: rgba(224,172,96,.12); }
+.quest-done-btn { color: var(--q-done); border-color: rgba(125,184,122,.35); }
+.quest-done-btn:hover { background: rgba(125,184,122,.12); border-color: var(--q-done); color: var(--q-done); }
+.quest-done-btn.on { color: var(--q-soft); border-color: var(--rim2); }
+
+.quest-meta-row { gap: 7px; margin-top: 6px; }
+.quest-meta-item { font-size: 12px; }
+.quest-meta-key { color: var(--q-soft); min-width: 62px; }
+.quest-meta-val { color: var(--q-text); }
+
+.modal-pos {
+  position: absolute; top: 18px; right: 120px; z-index: 10;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .06em; color: var(--q-soft);
+}
+
+/* Progression */
+.modal-progress-bar { padding: 11px 30px; gap: 14px; background: rgba(0,0,0,.2); }
+.modal-progress-fill {
+  top: auto; bottom: 0; height: 3px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 60%, #000), var(--accent));
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.modal-progress-lbl { color: var(--q-text); font-size: 11px; }
+
+/* Sections */
+.quest-section { padding: 20px 30px; }
+.quest-section-title {
+  font-size: 11px; color: var(--accent); letter-spacing: .22em; border-bottom: 1px solid color-mix(in srgb, var(--accent) 22%, var(--rim));
+  padding-bottom: 7px; margin-bottom: 14px;
+}
+.quest-section-title::before { color: var(--accent); opacity: 1; }
+.qst-count { margin-left: auto; font-family: 'JetBrains Mono', monospace; letter-spacing: .04em; font-weight: 400; color: var(--q-soft); font-size: 11px; }
+.quest-lore {
+  border-left: 3px solid var(--accent); border-radius: 0 3px 3px 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 7%, transparent), rgba(255,255,255,.015));
+  padding: 14px 18px; font-size: 14.5px;
+}
+.quest-req-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.quest-req-list .item-chip { margin-left: 0; padding: 4px 9px 4px 5px; border-radius: 3px; }
+.quest-req-list .chip-visual { width: 24px; height: 24px; }
+.quest-req-list .chip-name { font-size: 11px; }
+
+/* Objectifs : étapes reliées */
+.obj-list { gap: 0; position: relative; }
+.obj-item {
+  border-left-width: 3px; border-left-color: color-mix(in srgb, var(--accent) 55%, transparent) !important;
+  background: rgba(255,255,255,.025); margin: 0;
+  transition: opacity .2s, background .2s, border-color .2s;
+}
+.obj-list > .obj-item + .obj-item { margin-top: 5px; }
+.obj-item:hover { background: rgba(255,255,255,.045); }
+.obj-item.done { opacity: .55; border-left-color: var(--q-done) !important; background: rgba(125,184,122,.04); }
+.obj-item.done .obj-text { text-decoration-color: rgba(255,255,255,.35); }
+.obj-next-arrow {
+  height: 16px; line-height: 16px; font-size: 12px; margin: 0; color: var(--accent); opacity: .55;
+}
+.obj-group { border-radius: 3px; border-left: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); margin: 5px 0; }
+.obj-group-lbl { color: var(--accent); }
+.quest-check-all-btn { border-radius: 3px; padding: 5px 12px; font-size: 11px; color: var(--q-text); }
+
+/* Récompenses */
+.reward-list { gap: 10px; }
+.reward-full { padding: 11px 16px; min-width: 140px; border-radius: 3px; gap: 12px; }
+.reward-full-val { font-size: 22px; }
+.reward-full-unit { font-size: 10px; opacity: .8; }
+.reward-full-icon { font-size: 24px; }
+.reward-full-img { width: 40px; height: 40px; }
+.reward-full-name { font-size: 12px; }
+.reward-full-item { box-shadow: 0 0 14px color-mix(in srgb, var(--item-color, #c0a0dc) 14%, transparent); }
+
+@media (max-width: 640px) {
+  .quest-sheet-header { grid-template-columns: 1fr; padding: 22px 18px 18px; }
+  .quest-type-icon { width: 64px; height: 64px; font-size: 30px; }
+  .quest-sheet-name { padding-right: 0; font-size: 19px; }
+  .modal-pos { right: auto; left: 18px; top: 16px; }
+  .quest-section { padding: 16px 18px; }
+  .modal-progress-bar { padding: 10px 18px; }
+}
