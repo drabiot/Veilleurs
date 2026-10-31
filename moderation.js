@@ -856,7 +856,7 @@ _lazyPanel(() => import('./moderation-quality.js?v=8acdd552'), ['showCompletion'
 })();
 
 _lazyPanel(() => import('./moderation-images.js?v=f9a6d1cd'), ['showImagesTool', 'loadImagesTool', 'saveImagesConfig', 'imgFileDrop', 'imgFileSelect', 'imgUploadToGithub', 'resetImagesTool', 'switchImgTab', 'tpkOpenLightbox', 'tpkLbClose', 'tpkLbBgDown', 'tpkLoadZip', 'tpkRefreshGithub', 'tpkSelToInutile', 'tpkSelToIllisible', 'tpkSelClear', 'tpkRender', 'tpkLeftMore', 'tpkCreateVFolder', 'tpkDeleteVFolder', 'tpkCollapseAll', 'tpkVisualMatch', 'tpkMatchUpdateCount', 'tpkMatchSelectAll', 'tpkMatchApply', 'tpkSaveReference', 'previewNormalize', 'runNormalize', 'showCalibrateur', 'showCaptureSprites']);
-_lazyPanel(() => import('./moderation-obtain-legacy.js?v=f9522b63'), ['showObtainLegacy', 'loadObtainLegacy', 'filterObtainLegacy']);
+_lazyPanel(() => import('./moderation-obtain-legacy.js?v=578f5fb6'), ['showObtainLegacy', 'loadObtainLegacy', 'filterObtainLegacy']);
 _lazyPanel(() => import('./moderation-data-all.js?v=52fe6b52'), ['showDataAll', 'loadDataAll', 'onDataAllTypeChange', 'renderDataAll', 'deleteDataDuplicates']);
 
 
