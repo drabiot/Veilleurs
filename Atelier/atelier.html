@@ -315,6 +315,19 @@
             <select id="opt-prio-2" class="input-name opt-prio" style="flex:1 1 0; width:auto; min-width:0"></select>
           </div>
         </div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Catégories d'items à exclure</label>
+          <div id="opt-excl-paliers" style="display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px;"></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Source d'obtention</label>
+          <select id="opt-source" class="input-name">
+            <option value="">Toutes</option>
+            <option value="any">Uniquement mob ou PNJ</option>
+            <option value="mob">Uniquement mob (drop)</option>
+            <option value="pnj">Uniquement PNJ (achat / craft)</option>
+          </select>
+        </div>
         <div id="opt-result" class="modal-hint" style="display:none; font-size:12px; line-height:1.6;"></div>
         <div class="modal-foot">
           <button id="btn-opt-run" class="action-btn primary">🎯 Générer</button>
@@ -383,6 +396,7 @@
     const STATS_MODE = new URLSearchParams(location.search).has('vcl_stats');   // iframe cachée du comparateur : calcule les stats des builds locaux
     if (!STATS_MODE) logPageView('atelier');
     window.VCL_DB = { getHiddenByName, getHiddenById, getSecretById, COL };
+    window.store = store;
     window._auth = auth;
     // Charger MAX_LEVEL depuis Firestore avant d'initialiser l'atelier
     try {

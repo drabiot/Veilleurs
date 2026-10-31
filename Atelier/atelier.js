@@ -2363,6 +2363,31 @@ function loadAccessoriesForClass(classId) {
     return score;
   }
 
+  // Filtres du build optimisé : paliers exclus (Event, World Boss, Archive…) et source d'obtention (mob / PNJ)
+  let _optFilter = { palier: new Set(), source: '', mobIds: null, pnjIds: null };
+
+  function _optSourceSets() {
+    const mobIds = new Set(), pnjIds = new Set();
+    (window.store.mobs || []).forEach(function(m) { (Array.isArray(m.loot) ? m.loot : []).forEach(function(l) { if (l && l.id) mobIds.add(l.id); }); });
+    (window.store.pnj || []).forEach(function(p) {
+      if (window.vclIsSecretPnj && window.vclIsSecretPnj(p)) return;
+      [p.craft, p.sells].forEach(function(list) {
+        (Array.isArray(list) ? list : []).forEach(function(e) { const id = e && (e.id || e.itemId); if (id) pnjIds.add(id); });
+      });
+    });
+    return { mobIds: mobIds, pnjIds: pnjIds };
+  }
+
+  function _optItemAllowed(item) {
+    if (_optFilter.palier.has(String(item.palier))) return false;
+    const src = _optFilter.source;
+    if (!src) return true;
+    const id = item.id || item._id, ob = typeof item.obtain === 'string' ? item.obtain : '';
+    const isMob = _optFilter.mobIds.has(id) || /Obtenable en tuant/i.test(ob);
+    const isPnj = _optFilter.pnjIds.has(id) || /\[npc:/.test(ob);
+    return src === 'mob' ? isMob : src === 'pnj' ? isPnj : (isMob || isPnj);
+  }
+
   function _optPools() {
     const pools = {};
     ALL_SLOTS.forEach(function(slot) {
@@ -2371,7 +2396,7 @@ function loadAccessoriesForClass(classId) {
         if ((item.lvl || 1) > buildLevel) return false;
         if (!itemAllowedForClass(item, activeClass)) return false;
         if (_isSecretItem(item) && !window._canSeeSensibleItems) return false;
-        return true;
+        return _optItemAllowed(item);
       });
     });
     return pools;
@@ -2401,7 +2426,7 @@ function loadAccessoriesForClass(classId) {
 
   function _optRunePool() {
     return ITEMS.filter(function(item) {
-      return (item.cat === 'rune' || item.category === 'rune') && !(_isSecretItem(item) && !window._canSeeSensibleItems);
+      return (item.cat === 'rune' || item.category === 'rune') && !(_isSecretItem(item) && !window._canSeeSensibleItems) && _optItemAllowed(item);
     });
   }
 
@@ -2539,6 +2564,14 @@ function loadAccessoriesForClass(classId) {
     lvl.max = MAX_LEVEL; lvl.value = buildLevel;
     document.querySelectorAll('.opt-prio').forEach(function(sel) { const v = sel.value; sel.innerHTML = _optStatOptions('— priorité —'); sel.value = v; });
     if (!document.querySelector('#opt-mins .opt-min-stat')) _optAddMinRow();
+    const exWrap = document.getElementById('opt-excl-paliers');
+    const prevEx = new Set(Array.from(exWrap.querySelectorAll('input:checked')).map(function(c) { return c.value; }));
+    const tiers = Array.from(new Set(ITEMS.map(function(i) { return i.palier; }).filter(function(p) { return p !== undefined && p !== null; })))
+      .sort(function(a, b) { return _palierNum(b) - _palierNum(a); });
+    exWrap.innerHTML = tiers.map(function(p) {
+      return '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" value="' + String(p).replace(/"/g, '') + '"' +
+        (prevEx.has(String(p)) ? ' checked' : '') + ' /> ' + vclPalierLabel(p) + '</label>';
+    }).join('');
     document.getElementById('opt-result').style.display = 'none';
     openModal('optimize');
   });
@@ -2567,8 +2600,16 @@ function loadAccessoriesForClass(classId) {
 
     btn.disabled = true; btn.textContent = '⏳ Recherche…';
     out.style.display = 'block'; out.textContent = 'Recherche du meilleur équipement…';
-    setTimeout(function() {
+    const excl = new Set(Array.from(document.querySelectorAll('#opt-excl-paliers input:checked')).map(function(c) { return c.value; }));
+    const source = document.getElementById('opt-source').value;
+    setTimeout(async function() {
       try {
+        let sets = { mobIds: null, pnjIds: null };
+        if (source) {
+          try { await window.store.load(['mobs', 'pnj']); sets = _optSourceSets(); }
+          catch (e) { console.error('[Atelier] sources mob/PNJ :', e); out.textContent = '⛔ Impossible de charger les mobs / PNJ.'; return; }
+        }
+        _optFilter = { palier: excl, source: source, mobIds: sets.mobIds, pnjIds: sets.pnjIds };
         const pools = _optPrune(_optPools(), req, prio);
         const found = _optSearch(pools, req, prio, Date.now() + 3000);
         equipped = found ? found.map : {};
