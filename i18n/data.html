@@ -7,6 +7,7 @@
   <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
   <title>[VCL] - Data to translate</title>
   <script src="../sw-register.js" defer></script>
+  <script src="../map-overlay.js" defer></script>
   <style>
     :root { --bg: #0e0c0a; --surface: #17130f; --surface2: #1f1a14; --rim: #3a3024; --text: #d8cdb8; --muted: #8f836e; --gold: #e0ac60; --ok: #7fb069; --warn: #e0a040; --bad: #d9674f; }
     * { box-sizing: border-box; }
@@ -58,10 +59,6 @@
     .ctx .lines { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     .ctx b { color: var(--text); font-weight: 600; }
     .ctx a.map { color: var(--gold); cursor: pointer; text-decoration: none; border-bottom: 1px dotted currentColor; }
-    #map-dlg { width: min(900px, 94vw); height: min(640px, 86vh); padding: 0; overflow: hidden; display: none; flex-direction: column; }
-    #map-dlg[open] { display: flex; }
-    #map-dlg .mh { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; font-size: 12px; border-bottom: 1px solid var(--rim); }
-    #map-dlg iframe { flex: 1; border: 0; width: 100%; background: #000; }
 </style>
 </head>
 <body class="locked">
@@ -84,7 +81,6 @@
       <span style="color:var(--muted);font-size:12px">Same draft as the review tool: nothing goes live until an admin approves it.</span>
     </div>
   </header>
-  <dialog id="map-dlg"><div class="mh"><span id="map-title"></span><button id="map-close">✕ Close</button></div><iframe id="map-frame" title="Map"></iframe></dialog>
   <main>
     <details class="help">
       <summary>How this works (read once)</summary>
@@ -202,7 +198,9 @@ const more = (arr, n = 6) => arr.slice(0, n).map(esc).join(', ') + (arr.length >
 function mapLink(d, label) {
   const c = d.coords; if (!c || c.x == null || c.z == null) return '';
   const txt = c.y != null ? `${c.x}, ${c.y}, ${c.z}` : `${c.x}, ${c.z}`;
-  return `<a class="map" data-gx="${c.x}" data-gz="${c.z}" data-name="${esc(nameOf(d))}"${r_isPnj(d) ? ` data-pnj="${esc(idOf(d))}"` : ''} title="Open the map">📍 ${esc(label || txt)} ${label ? '(' + txt + ')' : ''}</a>`;
+  const q = new URLSearchParams({ ghost_gx: c.x, ghost_gz: c.z, ghost_name: nameOf(d) });
+  if (r_isPnj(d)) q.set('pnjId', idOf(d));
+  return `<a class="map" href="../Map/map.html?${esc(q.toString())}" data-map-title="${esc(nameOf(d))}" title="Open the map">📍 ${esc(label || txt)} ${label ? '(' + txt + ')' : ''}</a>`;
 }
 const r_isPnj = d => (ALL.pnj || []).includes(d);
 function context(r) {
@@ -237,15 +235,6 @@ function context(r) {
   if (!img && !L.length) return '';
   return `<div class="ctx">${img ? `<img src="${esc(img)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}<div class="lines">${L.map(l => `<div>${l}</div>`).join('')}</div></div>`;
 }
-document.addEventListener('click', e => {
-  const a = e.target.closest('a.map'); if (!a) return;
-  const q = new URLSearchParams({ embed: '1', ghost_gx: a.dataset.gx, ghost_gz: a.dataset.gz, ghost_name: a.dataset.name || '' });
-  if (a.dataset.pnj) q.set('pnjId', a.dataset.pnj);
-  $('map-title').textContent = '📍 ' + (a.dataset.name || '') + ' — ' + a.dataset.gx + ', ' + a.dataset.gz;
-  $('map-frame').src = '../Map/map.html?' + q;
-  $('map-dlg').showModal();
-});
-$('map-close').onclick = () => { $('map-dlg').close(); $('map-frame').src = 'about:blank'; };
 
 function filtered() {
   const col = $('f-col').value, age = +$('f-age').value, q = $('f-q').value.toLowerCase();
