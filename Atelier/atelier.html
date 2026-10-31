@@ -292,6 +292,10 @@
 
       <div id="modal-zone-optimize" style="display:none; flex-direction:column; gap:12px">
         <p class="modal-hint">Fixe tes exigences : l'outil cherche le meilleur équipement qui les respecte, puis maximise tes stats prioritaires.</p>
+        <div style="display:flex; flex-direction:column; gap:6px; font-size:12px;">
+          <label style="display:flex; align-items:flex-start; gap:6px; cursor:pointer;"><input type="radio" name="opt-mode" value="zero" checked /><span><b>De zéro</b> : vide l'équipement et cherche le meilleur build avec toutes les règles.</span></label>
+          <label style="display:flex; align-items:flex-start; gap:6px; cursor:pointer;"><input type="radio" name="opt-mode" value="complete" /><span><b>Compléter</b> : garde ce qui est déjà équipé (items, runes, arbre, classe, niveau) et remplit le reste.</span></label>
+        </div>
         <div style="display:flex; gap:10px;">
           <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
             <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Classe</label>
@@ -319,6 +323,22 @@
           <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Filtres d'items</label>
           <span style="font-size:11px; color:var(--muted);">Clique une puce : <b style="color:#7ac47a">✓ autorisé</b> (seulement ceux-là) → <b style="color:#d9614a">✕ interdit</b> → neutre.</span>
           <div id="opt-tri"></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Items à interdire</label>
+          <div style="position:relative;">
+            <input id="opt-excl-q" class="input-name" type="text" autocomplete="off" placeholder="Rechercher un item à exclure…" />
+            <div id="opt-excl-list" style="display:none; position:absolute; left:0; right:0; z-index:5; background:var(--bg2, #1a1612); border:1px solid rgba(255,255,255,.2);"></div>
+          </div>
+          <div id="opt-excl-chips" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Items obligatoires</label>
+          <div style="position:relative;">
+            <input id="opt-force-q" class="input-name" type="text" autocomplete="off" placeholder="Rechercher un item à imposer…" />
+            <div id="opt-force-list" style="display:none; position:absolute; left:0; right:0; z-index:5; background:var(--bg2, #1a1612); border:1px solid rgba(255,255,255,.2);"></div>
+          </div>
+          <div id="opt-force-chips" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
         </div>
         <div id="opt-result" class="modal-hint" style="display:none; font-size:12px; line-height:1.6;"></div>
         <div class="modal-foot">

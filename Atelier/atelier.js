@@ -2375,6 +2375,63 @@ function loadAccessoriesForClass(classId) {
   let _optTri = {};            // étiquette → 1 (autorisé) | -1 (interdit), mémorisé entre deux ouvertures de la fenêtre
   let _optFilter = null;       // { allow:Set, ban:Set, obtainOf:Map(id → Set) } figé au lancement
 
+  // Items interdits / imposés (barres de recherche) : id → nom, mémorisés entre deux ouvertures de la fenêtre
+  const _optExcl = new Map(), _optForce = new Map();
+
+  function _optNormName(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+
+  function _optSetupPicker(inputId, listId, chipsId, store) {
+    const inp = document.getElementById(inputId), list = document.getElementById(listId), chips = document.getElementById(chipsId);
+    const renderChips = function() {
+      chips.innerHTML = '';
+      store.forEach(function(name, id) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = name + ' ✕';
+        b.style.cssText = 'font-size:11px; padding:3px 8px; border-radius:4px; cursor:pointer; background:transparent; color:inherit; border:1px solid rgba(255,255,255,.25);';
+        b.addEventListener('click', function() { store.delete(id); renderChips(); });
+        chips.appendChild(b);
+      });
+    };
+    const hide = function() { list.style.display = 'none'; list.innerHTML = ''; };
+    inp.oninput = function() {
+      const q = _optNormName(inp.value.trim());
+      if (q.length < 2) { hide(); return; }
+      const hits = ITEMS.filter(function(i) {
+        const id = getItemId(i);
+        return i.cat !== 'rune' && i.category !== 'rune' && !store.has(id) && !(_isSecretItem(i) && !window._canSeeSensibleItems) && _optNormName(i.name).indexOf(q) >= 0;
+      }).slice(0, 8);
+      list.innerHTML = '';
+      hits.forEach(function(i) {
+        const row = document.createElement('div');
+        row.textContent = i.name + ' · ' + vclPalierLabel(i.palier);
+        row.style.cssText = 'padding:5px 8px; cursor:pointer; font-size:12px;';
+        row.addEventListener('mouseenter', function() { row.style.background = 'rgba(255,255,255,.08)'; });
+        row.addEventListener('mouseleave', function() { row.style.background = ''; });
+        row.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          store.set(getItemId(i), i.name); inp.value = ''; hide(); renderChips();
+        });
+        list.appendChild(row);
+      });
+      list.style.display = hits.length ? 'block' : 'none';
+    };
+    inp.onblur = hide;
+    inp.value = ''; hide(); renderChips();
+  }
+
+  function _optMode() {
+    const r = document.querySelector('input[name="opt-mode"]:checked');
+    return r ? r.value : 'zero';
+  }
+  function _optSyncMode() {
+    const complete = _optMode() === 'complete';
+    ['opt-class', 'opt-level'].forEach(function(id) {
+      const el = document.getElementById(id);
+      el.disabled = complete; el.style.opacity = complete ? '.45' : '';
+    });
+  }
+
   function _optObtainTypes() {
     const mobIds = new Set(), buyIds = new Set(), craftIds = new Set();
     (window.store.mobs || []).forEach(function(m) { (Array.isArray(m.loot) ? m.loot : []).forEach(function(l) { if (l && l.id) mobIds.add(l.id); }); });
@@ -2402,6 +2459,8 @@ function loadAccessoriesForClass(classId) {
   function _optItemAllowed(item) {
     const f = _optFilter;
     if (!f) return true;
+    if (f.forceIds.has(getItemId(item))) return true;
+    if (f.exclIds.has(getItemId(item))) return false;
     const tags = ['pal:' + item.palier];
     if (typeof item.event === 'string' && item.event) tags.push('evt:' + item.event);
     if (tags.some(function(t) { return f.ban.has(t); })) return false;
@@ -2462,6 +2521,15 @@ function loadAccessoriesForClass(classId) {
         return _optItemAllowed(item);
       });
     });
+    // Items imposés : le slot ne propose plus que cet item (premier slot libre de sa catégorie)
+    const taken = {};
+    const locked = _optFilter && _optFilter.locked ? _optFilter.locked : {};
+    Object.keys(locked).forEach(function(sid) { taken[sid] = true; pools[sid] = [locked[sid]]; });
+    (_optFilter ? _optFilter.forced : []).forEach(function(item) {
+      if (Object.keys(locked).some(function(sid) { return getItemId(locked[sid]) === getItemId(item); })) return;
+      const slot = ALL_SLOTS.find(function(s) { return !taken[s.id] && s.cats.includes(item.cat); });
+      if (slot) { taken[slot.id] = true; pools[slot.id] = [item]; }
+    });
     return pools;
   }
 
@@ -2493,7 +2561,8 @@ function loadAccessoriesForClass(classId) {
     });
   }
 
-  function _optSearch(pools, req, prio, deadline) {
+  function _optSearch(pools, req, prio, deadline, lockedRunes) {
+    lockedRunes = lockedRunes || {};
     const savedEq = equipped, savedRunes = equippedRunes;
     const slotIds = ALL_SLOTS.map(function(s) { return s.id; });
     const runePool = _optRunePool();
@@ -2544,6 +2613,7 @@ function loadAccessoriesForClass(classId) {
       for (let pass = 0; pass < 6; pass++) {
         let improved = false;
         runeKeysOf(map).sort(function() { return Math.random() - 0.5; }).forEach(function(key) {
+          if (lockedRunes[key]) return;
           runePool.forEach(function(r) {
             const rid = getItemId(r);
             if (runes[key] === rid) return;
@@ -2565,7 +2635,7 @@ function loadAccessoriesForClass(classId) {
     try {
       while (runs < 3 || (Date.now() < deadline && runs < 40)) {
         runs++;
-        const map = {}, runes = {};
+        const map = {}, runes = Object.assign({}, lockedRunes);
         // Une restart sur deux démarre sur une panoplie complète (impossible à atteindre en changeant un item à la fois)
         const seedSet = (runs % 2 === 0 && setIds.length) ? setIds[Math.floor(Math.random() * setIds.length)] : null;
         slotIds.forEach(function(sid) {
@@ -2600,7 +2670,7 @@ function loadAccessoriesForClass(classId) {
 
   // Arbre de compétences : choisit les cases (connectées au centre, plafonnées aux points du niveau) qui maximisent le score
   // à équipement fixé. Glouton sur « chemin vers une case » : gain du chemin / longueur du chemin.
-  function _optTree(map, runes, req, prio) {
+  function _optTree(map, runes, req, prio, startNodes) {
     const ST = window.VCLSkillTree, fxAll = window.VCL_SKILL_EFFECTS;
     if (!ST || !activeClass || !fxAll || !fxAll[activeClass]) return [];
     const max = ST.maxPoints(buildLevel);
@@ -2622,6 +2692,10 @@ function loadAccessoriesForClass(classId) {
       return _optScore(mins, req, prio);
     };
     const owned = { '0,0': 1 }, nodes = [], bonus = {};
+    ST.sanitize(startNodes || [], max).forEach(function(k) {
+      owned[k] = 1; nodes.push(k);
+      const fx = effOf(k); if (fx) bonus[fx.stats] = (bonus[fx.stats] || 0) + fx.bonus;
+    });
     while (nodes.length < max) {
       // BFS depuis les cases possédées, à travers les cases libres
       const par = {}, dist = {}, queue = [];
@@ -2682,6 +2756,10 @@ function loadAccessoriesForClass(classId) {
     document.querySelectorAll('.opt-prio').forEach(function(sel) { const v = sel.value; sel.innerHTML = _optStatOptions('— priorité —'); sel.value = v; });
     if (!document.querySelector('#opt-mins .opt-min-stat')) _optAddMinRow();
     _optRenderTri();
+    document.querySelectorAll('input[name="opt-mode"]').forEach(function(r) { r.onchange = _optSyncMode; });
+    _optSyncMode();
+    _optSetupPicker('opt-excl-q', 'opt-excl-list', 'opt-excl-chips', _optExcl);
+    _optSetupPicker('opt-force-q', 'opt-force-list', 'opt-force-chips', _optForce);
     document.getElementById('opt-result').style.display = 'none';
     openModal('optimize');
   });
@@ -2698,15 +2776,26 @@ function loadAccessoriesForClass(classId) {
     });
     const prio = Array.from(document.querySelectorAll('.opt-prio')).map(function(s) { return s.value; }).filter(Boolean);
 
-    // Point de départ : classe + niveau demandés, équipement vidé
-    equipped = {}; equippedRunes = {};
-    const newClass = document.getElementById('opt-class').value || null;
-    if (newClass !== activeClass) {
-      const cb = document.querySelector('#class-picker .class-btn[data-c="' + (newClass || '') + '"]');
-      if (cb) cb.click();
+    // Mode « compléter » : ce qui est équipé (items, runes, arbre) est gardé tel quel, classe et niveau aussi.
+    // Mode « de zéro » : classe + niveau demandés, équipement vidé.
+    const complete = _optMode() === 'complete';
+    const lockedItems = {}, lockedRunes = {};
+    let lockedNodes = [];
+    if (complete) {
+      const blocked = getBlockedSlots();
+      Object.keys(equipped).forEach(function(sid) { if (equipped[sid] && !blocked.has(sid)) lockedItems[sid] = equipped[sid]; });
+      Object.assign(lockedRunes, equippedRunes);
+      lockedNodes = skillNodes.slice();
+    } else {
+      equipped = {}; equippedRunes = {};
+      const newClass = document.getElementById('opt-class').value || null;
+      if (newClass !== activeClass) {
+        const cb = document.querySelector('#class-picker .class-btn[data-c="' + (newClass || '') + '"]');
+        if (cb) cb.click();
+      }
+      const newLvl = Math.max(1, Math.min(MAX_LEVEL, parseInt(document.getElementById('opt-level').value) || 1));
+      if (newLvl !== buildLevel) applyLevelChange(newLvl);
     }
-    const newLvl = Math.max(1, Math.min(MAX_LEVEL, parseInt(document.getElementById('opt-level').value) || 1));
-    if (newLvl !== buildLevel) applyLevelChange(newLvl);
 
     btn.disabled = true; btn.textContent = '⏳ Recherche…';
     out.style.display = 'block'; out.textContent = 'Recherche du meilleur équipement…';
@@ -2721,18 +2810,21 @@ function loadAccessoriesForClass(classId) {
           try { await window.store.load(['mobs', 'pnj']); obtainOf = _optObtainTypes(); }
           catch (e) { console.error('[Atelier] sources mob/PNJ :', e); out.textContent = '⛔ Impossible de charger les mobs / PNJ.'; return; }
         }
-        _optFilter = { allow: allow, ban: ban, obtainOf: obtainOf, banObtain: Array.from(ban).some(isObt) };
+        const forceIds = new Set(_optForce.keys());
+        const forced = ITEMS.filter(function(i) { return forceIds.has(getItemId(i)); });
+        _optFilter = { allow: allow, ban: ban, obtainOf: obtainOf, banObtain: Array.from(ban).some(isObt),
+                       exclIds: new Set(_optExcl.keys()), forceIds: forceIds, forced: forced, locked: lockedItems };
         const pools = _optPrune(_optPools(), req, prio);
         // 1) équipement sans arbre → 2) arbre pour cet équipement → 3) équipement refait avec l'arbre → 4) arbre final
-        skillNodes = [];
-        let found = _optSearch(pools, req, prio, Date.now() + 1500);
+        skillNodes = lockedNodes.slice();
+        let found = _optSearch(pools, req, prio, Date.now() + 1500, lockedRunes);
         if (found) {
-          const t1 = _optTree(found.map, found.runes, req, prio);
+          const t1 = _optTree(found.map, found.runes, req, prio, lockedNodes);
           skillNodes = t1;
-          const found2 = _optSearch(pools, req, prio, Date.now() + 1500);
+          const found2 = _optSearch(pools, req, prio, Date.now() + 1500, lockedRunes);
           if (found2) found = found2;
-          skillNodes = [];
-          const t2 = _optTree(found.map, found.runes, req, prio);
+          skillNodes = lockedNodes.slice();
+          const t2 = _optTree(found.map, found.runes, req, prio, lockedNodes);
           skillNodes = t2.length ? t2 : t1;
         }
         equipped = found ? found.map : {};
