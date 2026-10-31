@@ -149,6 +149,10 @@ function vclPalierLabel(p) {
     if (tooltip) tooltip.classList.remove('visible');
   }
 
+  function _toast(msg, type) {
+    import('../components/toast.js').then(function(m) { m.toast(msg, type); }).catch(function() {});
+  }
+
   // Survol d'un emplacement équipé : nom, rareté et stats de l'item
   function showSlotTooltip(e, item) {
     const tooltip = document.getElementById('set-tooltip');
@@ -156,11 +160,47 @@ function vclPalierLabel(p) {
     const rar = RARITIES[item.rarity] || { color: '#888', label: item.rarity || '' };
     tooltip.style.width = item.competence ? '320px' : '';
     tooltip.innerHTML = '<div class="car-tt-header"><span class="car-tt-name" style="color:' + rar.color + '">' + item.name + '</span></div>' +
-      '<div style="font-size:10px;color:rgba(255,255,255,.45);margin-bottom:6px;">' + rar.label + ' · ' + vclPalierLabel(item.palier) + '</div>' +
-      '<div class="car-tt-stats">' + (buildItemStatsHTML(item) || '<div style="font-size:10px;color:rgba(255,255,255,.35)">Aucune statistique</div>') + '</div>' +
+      '<div class="tt-sub">' + rar.label + ' · ' + vclPalierLabel(item.palier) + ' · Niv. ' + (item.lvl || 1) + '</div>' +
+      '<div class="car-tt-stats">' + (buildItemStatsHTML(item) || '<div class="tt-none">Aucune statistique</div>') + '</div>' +
       buildSkillBoxHTML(item);
     tooltip.classList.add('visible');
     positionTooltip(e, tooltip);
+  }
+
+  // Survol d'un item de la liste : stats + écart (vert/rouge) par rapport à l'item déjà équipé à l'emplacement visé
+  function _statHi(v) { return Array.isArray(v) ? v[1] : v; }
+  function buildCompareHTML(item, base) {
+    const a = item.stats || {}, b = base.stats || {};
+    const rows = ALL_STATS.filter(function(s) {
+      return (_statHi(a[s.id]) || 0) !== 0 || (_statHi(b[s.id]) || 0) !== 0;
+    }).map(function(s) {
+      const va = _statHi(a[s.id]) || 0, vb = _statHi(b[s.id]) || 0;
+      const d = Math.round((va - vb) * 100) / 100;
+      const unit = s.id === 'vitesse_attaque' ? '' : s.unit;
+      return '<div class="istat-row">' +
+        '<span class="istat-icon">' + s.icon + '</span>' +
+        '<span class="istat-label">' + s.label + '</span>' +
+        '<span class="istat-val"' + (va < 0 ? ' style="color:#d9614a"' : '') + '>' + (va ? va + unit : '—') + '</span>' +
+        '<span class="tt-delta ' + (d > 0 ? 'up' : d < 0 ? 'down' : 'eq') + '">' + (d === 0 ? '=' : (d > 0 ? '+' : '') + d + unit) + '</span>' +
+        '</div>';
+    }).join('');
+    return rows ? '<div class="istat-block">' + rows + '</div>' : '';
+  }
+  function showCompareTooltip(e, item) {
+    const tooltip = document.getElementById('set-tooltip');
+    if (!tooltip || !item) return false;
+    if (item.cat === 'rune' || item.category === 'rune') return false;
+    const slotId = activeSlot || findBestSlotForItem(item);
+    const base = slotId && equipped[slotId];
+    if (!base || base === item || (base.id && base.id === item.id)) return false;
+    const rar = RARITIES[item.rarity] || { color: '#888', label: item.rarity || '' };
+    tooltip.style.width = '';
+    tooltip.innerHTML = '<div class="car-tt-header"><span class="car-tt-name" style="color:' + rar.color + '">' + item.name + '</span></div>' +
+      '<div class="tt-sub">Comparé à <b>' + base.name + '</b></div>' +
+      '<div class="car-tt-stats">' + (buildCompareHTML(item, base) || '<div class="tt-none">Aucune statistique</div>') + '</div>';
+    tooltip.classList.add('visible');
+    positionTooltip(e, tooltip);
+    return true;
   }
 
   /* ══ SKIN 3D ══ */
@@ -522,6 +562,7 @@ function loadAccessoriesForClass(classId) {
       const btn = document.createElement('button');
       btn.className = 'class-btn' + (activeClass === cls.id ? ' active' : '');
       btn.dataset.c = cls.id;
+      if (cls.color) btn.style.setProperty('--cls', cls.color);
       btn.innerHTML = '<span class="class-btn-ico">' + cls.ico + '</span><span class="class-btn-label">' + cls.label + '</span>';
       wrap.appendChild(btn);
     });
@@ -630,8 +671,11 @@ function loadAccessoriesForClass(classId) {
 
   function drawSlot(el, slotDef) {
     const item = equipped[slotDef.id];
+    const prevItemId = el.dataset.itemId || '';
     el.innerHTML = '';
-    el.classList.remove('filled', 'active', 'slot-blocked');
+    el.classList.remove('filled', 'active', 'slot-blocked', 'slot-equip-anim');
+    el.style.removeProperty('--rar');
+    el.dataset.itemId = item ? String(getItemId(item) || item.name) : '';
     if (getBlockedSlots().has(slotDef.id)) {
 			el.classList.add('slot-blocked');
 			el.innerHTML =
@@ -650,6 +694,11 @@ function loadAccessoriesForClass(classId) {
     if (item) {
       el.classList.add('filled');
       const col = getRarityColor(item.rarity);
+      el.style.setProperty('--rar', col);
+      if (el.dataset.itemId !== prevItemId) {
+        void el.offsetWidth;
+        el.classList.add('slot-equip-anim');
+      }
       const dot = document.createElement('span');
       dot.className = 'slot-dot';
       dot.style.background = col;
@@ -773,7 +822,7 @@ function loadAccessoriesForClass(classId) {
         row.dataset.statId = stat.id;
         row.innerHTML =
           '<span class="stat-value" id="sv-' + stat.id + '">—</span>' +
-          '<div class="stat-bar-wrap"><div class="stat-bar-fill" id="sb-' + stat.id + '" style="width:0%"></div></div>' +
+          '<span class="stat-delta" id="sd-' + stat.id + '"></span>' +
           '<span class="stat-icon">' + stat.icon + '</span>' +
           '<span class="stat-name">' + stat.label + '</span>';
         list.appendChild(row);
@@ -1056,11 +1105,13 @@ function loadAccessoriesForClass(classId) {
     renderSetBonuses(result.setCounts);
     ALL_STATS.forEach(function(stat) {
       const valEl = document.getElementById('sv-' + stat.id);
-      const barEl = document.getElementById('sb-' + stat.id);
-      if (!valEl || !barEl) return;
+      if (!valEl) return;
 
       const lo = roundUp2(mins[stat.id] || 0);
       const hi = roundUp2(maxs[stat.id] || 0);
+      _flashStatDelta(stat.id, hi, valEl);
+      const rowEl = valEl.parentNode;
+      if (rowEl) rowEl.classList.toggle('stat-empty', hi === 0 && lo === 0);
       // Stats générales : la vitesse d'attaque s'affiche en % (sur les items elle est en /s)
       const unitTot = stat.id === 'vitesse_attaque' ? '%' : stat.unit;
 
@@ -1077,12 +1128,52 @@ function loadAccessoriesForClass(classId) {
 		valEl.className = 'stat-value nonzero has-range';
 	  }
 
-      const pct = Math.min(100, Math.round((hi / stat.max) * 100));
-      barEl.style.width = pct + '%';
-      if      (pct >= 75) barEl.style.background = '#d7af5f';
-      else if (pct >= 40) barEl.style.background = '#9a7040';
-      else                barEl.style.background = 'rgba(255,255,255,.12)';
     });
+    _updateBuildProgress();
+  }
+
+  // Interrupteur « Masquer les stats à 0 » du panneau Statistiques (choix mémorisé)
+  function initStatsHideEmpty() {
+    const box = document.getElementById('stats-hide-empty');
+    const list = document.getElementById('stats-list');
+    if (!box || !list || box.dataset.ready) return;
+    box.dataset.ready = '1';
+    try { box.checked = localStorage.getItem('vcl_atelier_hide_empty') === '1'; } catch (e) {}
+    const apply = function() { list.classList.toggle('hide-empty', box.checked); };
+    box.addEventListener('change', function() {
+      apply();
+      try { localStorage.setItem('vcl_atelier_hide_empty', box.checked ? '1' : '0'); } catch (e) {}
+    });
+    apply();
+  }
+
+  // Variation « +12 » qui s'affiche un instant à côté d'une stat quand sa valeur change
+  const _prevStatHi = {};
+  function _flashStatDelta(statId, hi, valEl) {
+    const prev = _prevStatHi[statId];
+    _prevStatHi[statId] = hi;
+    if (prev === undefined || prev === hi) return;
+    const dEl = document.getElementById('sd-' + statId);
+    if (!dEl) return;
+    const d = Math.round((hi - prev) * 100) / 100;
+    dEl.textContent = (d > 0 ? '+' : '') + d;
+    dEl.className = 'stat-delta ' + (d > 0 ? 'up' : 'down');
+    void dEl.offsetWidth;
+    dEl.classList.add('show');
+    valEl.classList.remove('bump'); void valEl.offsetWidth; valEl.classList.add('bump');
+  }
+
+  // Résumé du build (emplacements remplis) + guide de départ quand rien n'est équipé
+  function _updateBuildProgress() {
+    const total = ALL_SLOTS.length;
+    const filled = ALL_SLOTS.filter(function(s) { return equipped[s.id]; }).length;
+    const chip = document.getElementById('build-progress');
+    if (chip) {
+      chip.textContent = filled + ' / ' + total + ' emplacements';
+      chip.classList.toggle('complete', filled === total);
+    }
+    const guide = document.getElementById('atelier-guide');
+    if (guide) guide.hidden = filled > 0 || !!activeClass;
   }
 
   /* ══ SÉLECTION DE SLOT ══ */
@@ -1439,6 +1530,23 @@ function loadAccessoriesForClass(classId) {
     return fuzzyMatch(normalizedQuery, setDef.label);
   }
 
+  let _sortMode = 'default';
+  function _rarRank(r) { return Math.max(0, Object.keys(RARITIES).indexOf(r)); }
+  function _setPickerCount(n) {
+    const el = document.getElementById('picker-count');
+    if (el) el.textContent = n + ' item' + (n > 1 ? 's' : '');
+  }
+  // Remplit le menu de tri avec les options fixes + une entrée par stat
+  function buildSortSelect() {
+    const sel = document.getElementById('sel-sort');
+    if (!sel) return;
+    const statOpts = ALL_STATS.map(function(s) { return '<option value="stat:' + s.id + '">' + s.icon + ' ' + s.label + '</option>'; }).join('');
+    sel.innerHTML = '<option value="default">Ordre du jeu</option><option value="lvl">Niveau ↓</option><option value="rar">Rareté ↓</option><option value="name">Nom A→Z</option>' +
+      '<optgroup label="Par statistique">' + statOpts + '</optgroup>';
+    sel.value = _sortMode;
+    sel.addEventListener('change', function() { _sortMode = sel.value; renderItemList(); });
+  }
+
   function renderItemList() {
     const list = document.getElementById('items-list');
     const q    = normalize(filterQ);
@@ -1480,6 +1588,7 @@ function loadAccessoriesForClass(classId) {
         if (_palierNum(a.palier) !== _palierNum(b.palier)) return _palierNum(a.palier) - _palierNum(b.palier);
         return (a.ordre ?? 999) - (b.ordre ?? 999);
       });
+      _setPickerCount(runes.length);
       if (!runes.length) {
         list.innerHTML = '<div class="picker-empty-msg">Aucune rune disponible</div>';
         return;
@@ -1493,6 +1602,7 @@ function loadAccessoriesForClass(classId) {
         const isActive = equippedRunes[activeRuneSlot] === rid;
         row.className = 'item-row' + (isActive ? ' active' : '');
         const rarColor = (RARITIES[rune.rarity] || { color: '#888' }).color;
+        row.style.setProperty('--rar', rarColor);
         const rarLabel = (RARITIES[rune.rarity] || { label: rune.rarity }).label;
         const imgSrc = getItemImg(rune) || ('../img/compendium/textures/items/Runes/' + rid + '.png');
         row.innerHTML =
@@ -1567,6 +1677,7 @@ function loadAccessoriesForClass(classId) {
     }
 
     if (!visible.length) {
+      _setPickerCount(0);
       list.innerHTML = '<div class="picker-empty-msg">Aucun item compatible</div>';
       return;
     }
@@ -1580,6 +1691,15 @@ function loadAccessoriesForClass(classId) {
       if (bo !== null) return 1;
       return 0;
     });
+    // Tri choisi dans la barre du sélecteur (le tri de base reste l'ordre du jeu)
+    if (_sortMode === 'lvl')    visible.sort(function(a, b) { return (b.lvl || 1) - (a.lvl || 1); });
+    else if (_sortMode === 'rar')  visible.sort(function(a, b) { return _rarRank(b.rarity) - _rarRank(a.rarity); });
+    else if (_sortMode === 'name') visible.sort(function(a, b) { return String(a.name).localeCompare(String(b.name), 'fr'); });
+    else if (_sortMode.indexOf('stat:') === 0) {
+      const sid = _sortMode.slice(5);
+      visible.sort(function(a, b) { return (_statHi(b.stats && b.stats[sid]) || 0) - (_statHi(a.stats && a.stats[sid]) || 0); });
+    }
+    _setPickerCount(visible.length);
 
     list.innerHTML = '';
     const _frag = document.createDocumentFragment();
@@ -1588,6 +1708,8 @@ function loadAccessoriesForClass(classId) {
       const levelOk = itemAllowedForLevel(item, buildLevel);
 	  const isLocked    = !levelOk;
 	  row.className = 'item-row' + (isLocked ? ' item-locked' : '');
+      row._item = item;
+      row.style.setProperty('--rar', (RARITIES[item.rarity] || { color: '#888' }).color);
       // Actif si équipé dans le slot actif (ou dans n'importe quel slot si vue globale)
       const isActive = activeSlot
         ? (equipped[activeSlot] && equipped[activeSlot].id === item.id)
@@ -2044,6 +2166,7 @@ function loadAccessoriesForClass(classId) {
     if (!ta) return;
     ta.select();
     document.execCommand('copy');
+    _toast('Build copié dans le presse-papiers', 'success');
     const b = this;
     b.textContent = '✓ Copié !';
     setTimeout(function() { b.textContent = '◈ Copier'; }, 1600);
@@ -2088,6 +2211,7 @@ function loadAccessoriesForClass(classId) {
       } else { throw new Error('Format non reconnu'); }
       buildGrid(); buildLevelPanel(); saveToStorage(); renderStats(); renderPickerInfo(); renderItemList();
       closeModal();
+      _toast('Build importé', 'success');
     } catch(e) {
       if (errEl) { errEl.textContent = '✕ JSON invalide ou format non reconnu.'; errEl.style.display = 'block'; }
     }
@@ -3190,6 +3314,8 @@ function loadAccessoriesForClass(classId) {
 	  buildTierFilter();
     buildEquipFilter();
     buildStatsUI();
+    buildSortSelect();
+    initStatsHideEmpty();
 
     const _slotArea = document.body;
     _slotArea.addEventListener('mouseover', function(e) {
@@ -3210,7 +3336,9 @@ function loadAccessoriesForClass(classId) {
       const row = e.target.closest('.item-row');
       if (!row) { hideSetTooltip(); return; }
       const badge = row.querySelector('[data-set-id]');
-      if (badge) showSetTooltip(e, badge.dataset.setId);
+      if (e.target.closest('[data-set-id]') && badge) showSetTooltip(e, badge.dataset.setId);
+      else if (row._item && !row.classList.contains('item-locked') && showCompareTooltip(e, row._item)) { /* comparaison affichée */ }
+      else if (badge) showSetTooltip(e, badge.dataset.setId);
       else hideSetTooltip();
     });
     document.getElementById('items-list').addEventListener('mousemove', function(e) {
@@ -3898,6 +4026,14 @@ statsClose.addEventListener('click', function() {
   });
   pickerCloseBtn?.addEventListener('click', closePicker);
   backdrop?.addEventListener('click', closeAll);
+  document.getElementById('atelier-items-toggle')?.addEventListener('click', function() {
+    closeLeft();
+    if (sidebarRight.classList.contains('picker-open')) closePicker(); else openPicker();
+  });
+  document.getElementById('atelier-stats-toggle')?.addEventListener('click', function() {
+    closeAll();
+    setStatsOpen(!document.getElementById('stats-drawer').classList.contains('open'));
+  });
 
   document.addEventListener('atelier:slotSelected', function(e) {
     if (!isMobile()) return;

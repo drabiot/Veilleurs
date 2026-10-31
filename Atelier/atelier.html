@@ -67,29 +67,22 @@
   </header>
 
   <!-- ══ BANNIÈRE PRÉVISUALISATION ══ -->
-  <div id="preview-banner" style="display:none; position:fixed; top:90px; left:0; right:0; z-index:90;
-    background:rgba(10,45,25,.97); border-bottom:1px solid rgba(80,200,120,.2);
-    padding:9px 24px; align-items:center; gap:14px;
-    font-family:'JetBrains Mono',monospace; font-size:12px; color:#7dcc90;">
-    <span style="color:rgba(125,204,144,.7); font-size:10px; letter-spacing:.1em; text-transform:uppercase;">◈ Aperçu</span>
-    <span style="color:#a8e0b5;">Build non sauvegardé — aucun emplacement modifié.</span>
-    <div style="margin-left:auto; display:flex; gap:8px;">
-      <button id="btn-preview-save" style="padding:7px 18px; border:1px solid rgba(80,200,120,.85); border-radius:4px; background:rgba(40,160,80,.25); color:#a8f0bc; font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; cursor:pointer; letter-spacing:.04em; box-shadow:0 0 8px rgba(60,200,100,.2);">↓ Enregistrer</button>
-      <button id="btn-preview-discard" style="padding:5px 12px; border:1px solid rgba(200,100,80,.3); border-radius:3px; background:transparent; color:#c07868; font-family:'JetBrains Mono',monospace; font-size:11px; cursor:pointer;">✕ Quitter</button>
+  <div id="preview-banner" class="pv-banner">
+    <span class="pv-tag">◈ Aperçu</span>
+    <span class="pv-text">Build non sauvegardé — aucun emplacement modifié.</span>
+    <div class="pv-actions">
+      <button id="btn-preview-save" class="pv-save">↓ Enregistrer</button>
+      <button id="btn-preview-discard" class="pv-discard">✕ Quitter</button>
     </div>
   </div>
 
   <!-- ══ MODALE ENREGISTRER APERÇU ══ -->
-  <div id="preview-save-modal" style="display:none; position:fixed; inset:0; z-index:200;
-    background:rgba(0,0,0,.65); backdrop-filter:blur(3px);
-    align-items:center; justify-content:center;">
-    <div style="background:var(--surface); border:1px solid var(--rim2); border-radius:8px;
-      padding:28px 28px 24px; width:100%; max-width:400px; position:relative;
-      box-shadow:0 20px 60px rgba(0,0,0,.8); display:flex; flex-direction:column; gap:14px;">
-      <button id="btn-pvsm-close" style="position:absolute;top:12px;right:12px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 8px;">✕</button>
-      <div style="font-family:'Cinzel',serif;font-size:14px;font-weight:700;letter-spacing:.1em;color:var(--gold);">Enregistrer le Build</div>
-      <p style="font-size:12px;color:var(--muted);line-height:1.6;">Choisissez l'emplacement où enregistrer ce build :</p>
-      <div id="preview-save-slots" style="display:flex;flex-direction:column;gap:8px;"></div>
+  <div id="preview-save-modal" class="pv-modal">
+    <div class="pv-modal-box">
+      <button id="btn-pvsm-close" class="pv-modal-close">✕</button>
+      <div class="pv-modal-title">Enregistrer le Build</div>
+      <p class="pv-modal-hint">Choisissez l'emplacement où enregistrer ce build :</p>
+      <div id="preview-save-slots" class="pv-slots"></div>
     </div>
   </div>
 
@@ -154,17 +147,20 @@
 
         <div class="actions">
           <input id="inp-name" class="input-name" type="text" placeholder="Nom du stuff…" autocomplete="off" />
-          <div class="divider"></div>
-          <button id="btn-publish" class="action-btn primary">◈ Publier le Build</button>
-          <button id="btn-compare" class="action-btn" title="Comparer ce build à des builds publiés">⚖ Comparer</button>
-<button id="btn-random" class="action-btn">🎲 Build Aléatoire</button>
-          <button id="btn-optimize" class="action-btn">🎯 Build Optimisé</button>
-          <div class="divider"></div>
-          <div style="display:flex;gap:6px;">
-            <button id="btn-export" class="action-btn" style="flex:1;font-size:10px;padding:5px 8px;">↑ Export JSON</button>
-            <button id="btn-import" class="action-btn" style="flex:1;font-size:10px;padding:5px 8px;">↓ Import JSON</button>
+          <button id="btn-publish" class="action-btn primary cta">◈ Publier le Build</button>
+
+          <div class="actions-label">Outils</div>
+          <div class="tool-grid">
+            <button id="btn-compare" class="tool-btn" title="Comparer ce build à des builds publiés"><span class="tool-ico">⚖</span><span class="tool-lbl">Comparer</span></button>
+            <button id="btn-random" class="tool-btn" title="Build aléatoire"><span class="tool-ico">🎲</span><span class="tool-lbl">Aléatoire</span></button>
+            <button id="btn-optimize" class="tool-btn" title="Build optimisé"><span class="tool-ico">🎯</span><span class="tool-lbl">Optimisé</span></button>
           </div>
-          <div class="divider"></div>
+
+          <div class="actions-label">Données</div>
+          <div class="io-row">
+            <button id="btn-export" class="action-btn io-btn" title="Exporter le build en JSON">↑ Export</button>
+            <button id="btn-import" class="action-btn io-btn" title="Importer un build JSON">↓ Import</button>
+          </div>
           <button id="btn-reset"  class="action-btn danger">✕ Réinitialiser</button>
         </div>
       </aside>
@@ -175,6 +171,7 @@
           <div class="center-head-text">
             <div class="center-title">Atelier</div>
             <div class="center-sub">// CONSTRUCTEUR D'ÉQUIPEMENT · VEILLEURS AU CLAIR DE LUNE</div>
+            <span class="build-progress" id="build-progress">0 / 0 emplacements</span>
           </div>
           <div class="center-head-actions">
             <div class="titre-wrap">
@@ -194,8 +191,17 @@
             </button>
           </div>
         </div>
+        <div class="atelier-guide" id="atelier-guide" hidden>
+          <div class="ag-step"><span class="ag-num">1</span><span>Choisis une <b>classe</b></span></div>
+          <span class="ag-arrow">›</span>
+          <div class="ag-step"><span class="ag-num">2</span><span>Règle le <b>niveau</b></span></div>
+          <span class="ag-arrow">›</span>
+          <div class="ag-step"><span class="ag-num">3</span><span>Clique un <b>emplacement</b> pour l'équiper</span></div>
+        </div>
         <div class="mobile-atelier-bar">
           <button id="atelier-left-toggle" class="atelier-mobile-btn">≡ Classe</button>
+          <button id="atelier-items-toggle" class="atelier-mobile-btn">⬡ Items</button>
+          <button id="atelier-stats-toggle" class="atelier-mobile-btn ml-auto">◈ Stats</button>
         </div>
         <div class="center-body">
           <div class="mannequin-col">
@@ -229,6 +235,7 @@
                 <button class="sdp-close" id="stats-drawer-close">✕</button>
               </div>
               <div class="sdp-content">
+                <label class="sdp-toggle"><input type="checkbox" id="stats-hide-empty" /><span>Masquer les stats à 0</span></label>
                 <div class="set-bonuses" id="set-bonuses" style="display:none"></div>
                 <div class="stats-list" id="stats-list"></div>
               </div>
@@ -243,6 +250,10 @@
         </div>
         <div class="picker-filters-wrap" id="filters-wrap"></div>
         <div id="tier-wrap" class="tier-wrap picker-filters-wrap"></div>
+        <div class="picker-toolbar">
+          <span class="picker-count" id="picker-count"></span>
+          <label class="picker-sort"><span>Trier</span><select id="sel-sort" aria-label="Trier les items"></select></label>
+        </div>
         <div class="picker-items-list" id="items-list">
           <div class="picker-empty-msg">Sélectionnez un emplacement pour voir les items</div>
         </div>
@@ -544,17 +555,9 @@
               let slotName = 'Vide';
               if (raw) { try { slotName = JSON.parse(raw).name || ('Emplacement ' + (i + 1)); } catch {} }
               const btn = document.createElement('button');
-              btn.style.cssText = [
-                'display:flex','flex-direction:column','gap:3px',
-                'padding:10px 14px','border:1px solid var(--rim2)','border-radius:4px',
-                'background:transparent','cursor:pointer',
-                'font-family:"JetBrains Mono",monospace','text-align:left',
-                'transition:all .15s','width:100%',
-              ].join(';');
-              btn.innerHTML = '<span style="font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;">Emplacement ' + (i + 1) + '</span>' +
-                              '<span style="font-size:12px;color:var(--bright);">' + (slotName.replace(/</g,'&lt;')) + '</span>';
-              btn.addEventListener('mouseenter', function() { this.style.borderColor='var(--gold-dim)'; this.style.background='var(--gold-glow)'; });
-              btn.addEventListener('mouseleave', function() { this.style.borderColor='var(--rim2)'; this.style.background='transparent'; });
+              btn.className = 'pv-slot-btn';
+              btn.innerHTML = '<span class="pv-slot-n">Emplacement ' + (i + 1) + '</span>' +
+                              '<span class="pv-slot-name">' + (slotName.replace(/</g,'&lt;')) + '</span>';
               (function(idx) {
                 btn.addEventListener('click', function() { _exitPreview(idx); });
               })(i);
