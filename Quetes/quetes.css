@@ -1633,3 +1633,8 @@ body.quetes-page { overflow: hidden; }
   .quest-section { padding: 16px 18px; }
   .modal-progress-bar { padding: 10px 18px; }
 }
+
+/* Liste déroulante : fond sombre, texte lisible (sinon options blanc sur blanc) */
+.quest-sort { color-scheme: dark; }
+.quest-sort option { background: #17130e; color: #e3d6bb; }
+.quest-sort option:checked { background: #3a2c17; color: #f0c86a; }
