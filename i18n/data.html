@@ -54,7 +54,8 @@
     body.locked #gate { display: block; }
     #gate h2 { margin: 0 0 8px; font-size: 16px; color: var(--gold); }
     #gate p { color: var(--muted); font-size: 13px; margin: 6px 0 14px; }
-      .ctx { grid-column: 1 / -1; display: flex; gap: 12px; align-items: flex-start; font-size: 12px; color: var(--muted); }
+      .grp { margin: 18px 0 8px; padding: 6px 12px; background: var(--surface2); border-left: 3px solid var(--gold); border-radius: 4px; color: var(--gold); font-weight: 700; font-size: 13px; letter-spacing: .04em; position: sticky; top: 92px; z-index: 3; }
+    .ctx { grid-column: 1 / -1; display: flex; gap: 12px; align-items: flex-start; font-size: 12px; color: var(--muted); }
     .ctx img { width: 56px; height: 56px; object-fit: contain; image-rendering: pixelated; background: var(--bg); border: 1px solid var(--rim); border-radius: 6px; flex: none; }
     .ctx .lines { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
     .ctx b { color: var(--text); font-weight: 600; }
@@ -68,6 +69,9 @@
     <a href="review.html" style="font-size:12px;margin-left:10px">← Translation review</a>
     <div class="bar">
       <select id="f-col" title="Type of sheet"></select>
+      <select id="f-sort" title="Order">
+        <option value="logical">Logical order (tier → zone → NPC → what it crafts)</option><option value="new">Newest sheets first</option>
+      </select>
       <select id="f-age" title="How recently the sheet was added">
         <option value="0">All dates</option><option value="7">Added in the last 7 days</option><option value="30">Added in the last 30 days</option>
       </select>
@@ -146,6 +150,7 @@ function pick(o, path) {
 
 let draft = { name: '', edits: {}, status: {}, notes: {}, added: [] };
 const ALL = {};
+let lastGroup = null;
 let dict = {}, keep = new Set(), sendMod = null, rows = [], shown = 0;
 const PAGE = 40;
 try { const d = JSON.parse(localStorage.getItem(LS) || 'null'); if (d) draft = { name: '', edits: {}, status: {}, notes: {}, added: [], ...d }; } catch { /* sans stockage */ }
@@ -236,10 +241,57 @@ function context(r) {
   return `<div class="ctx">${img ? `<img src="${esc(img)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}<div class="lines">${L.map(l => `<div>${l}</div>`).join('')}</div></div>`;
 }
 
+// ── Ordre logique : palier → zone → PNJ suivi de ce qu'il fabrique / vend → mobs suivis de leurs drops → quêtes de la zone ──
+const PAL_ORDER = [1, 2, 3, 'event', 'worldboss', -1];
+const palLabel = p => p === 'event' ? 'Events' : p === 'worldboss' ? 'World bosses' : p === -1 ? 'Archive' : 'Tier ' + p;
+const palRank = p => { const i = PAL_ORDER.indexOf(p); return i < 0 ? 99 : i; };
+const byName = (a, b) => String(a.name || a.titre || a.label || '').localeCompare(String(b.name || b.titre || b.label || ''), 'fr');
+const byLvl = (a, b) => (+a.lvl || 0) - (+b.lvl || 0) || byName(a, b);
+let ORDER = null;   // doc → { rank, group }
+function buildOrder() {
+  if (!IDX) buildIndex();
+  ORDER = new Map(); let n = 0;
+  const put = (d, group) => { if (d && !ORDER.has(d)) ORDER.set(d, { rank: n++, group }); };
+  const regions = [...(ALL.regions || [])], pnj = ALL.pnj || [], mobs = ALL.mobs || [], quetes = ALL.quetes || [], items = ALL.items || [];
+  const itemIds = list => (list || []).map(e => IDX.item.get(e && (e.id || e.itemId))).filter(Boolean).sort(byLvl);
+  const pals = [...new Set([...regions, ...pnj, ...mobs, ...quetes, ...items].map(d => d.palier))].sort((a, b) => palRank(a) - palRank(b));
+  for (const pal of pals) {
+    const regs = regions.filter(r => r.palier === pal).sort((a, b) => (+a.ordre || 999) - (+b.ordre || 999) || byName(a, b));
+    const seenReg = new Set();
+    const doRegion = (r, rid, rname) => {
+      const g = `${palLabel(pal)} · ${rname}`;
+      if (r) put(r, g);
+      for (const p of pnj.filter(x => x.palier === pal && x.region === rid).sort(byName)) {
+        put(p, g);
+        itemIds(p.craft).forEach(i => put(i, g)); itemIds(p.sells).forEach(i => put(i, g));
+      }
+      for (const m of mobs.filter(x => x.palier === pal && x.region === rid).sort(byName)) {
+        put(m, g);
+        itemIds(m.loot).forEach(i => put(i, g));
+      }
+      for (const q of quetes.filter(x => x.palier === pal && x.zone === rname).sort((a, b) => (+a.ordre || 0) - (+b.ordre || 0))) put(q, g);
+    };
+    for (const r of regs) { seenReg.add(idOf(r)); doRegion(r, idOf(r), r.name); }
+    // PNJ / mobs dont la région n'est pas une région du palier (ou absente)
+    const rest = new Set([...pnj, ...mobs].filter(x => x.palier === pal && !seenReg.has(x.region)).map(x => x.region || ''));
+    for (const rid of [...rest].sort()) doRegion(null, rid, rid ? (IDX.region.get(rid)?.name || rid.replace(/_/g, ' ')) : 'No zone');
+    const g = `${palLabel(pal)} · Other`;
+    quetes.filter(x => x.palier === pal).sort((a, b) => (+a.ordre || 0) - (+b.ordre || 0)).forEach(q => put(q, g));
+    items.filter(x => x.palier === pal).sort((a, b) => String(a.event || '').localeCompare(String(b.event || '')) || String(a.category || '').localeCompare(String(b.category || '')) || byLvl(a, b)).forEach(i => put(i, `${palLabel(pal)} · ${i.event ? i.event : 'Items'}`));
+  }
+  [...(ALL.donjons || []), ...(ALL.panoplies || [])].forEach(d => put(d, 'Dungeons & sets'));
+  for (const k of Object.keys(ALL)) for (const d of ALL[k]) put(d, 'Other');
+}
+const sortRows = list => {
+  if ($('f-sort').value === 'new') return list;           // déjà trié du plus récent au plus ancien
+  if (!ORDER) buildOrder();
+  return list.slice().sort((a, b) => (ORDER.get(a.doc)?.rank ?? 1e9) - (ORDER.get(b.doc)?.rank ?? 1e9));
+};
+
 function filtered() {
   const col = $('f-col').value, age = +$('f-age').value, q = $('f-q').value.toLowerCase();
   const min = age ? Date.now() - age * 864e5 : 0;
-  return rows.filter(r => !done(r.fr) && (!col || r.key === col) && (!min || r.at >= min) && (!q || (r.fr + ' ' + r.sheet).toLowerCase().includes(q)));
+  return sortRows(rows.filter(r => !done(r.fr) && (!col || r.key === col) && (!min || r.at >= min) && (!q || (r.fr + ' ' + r.sheet).toLowerCase().includes(q))));
 }
 function stats() {
   const todo = rows.filter(r => !done(r.fr)).length;
@@ -249,9 +301,16 @@ function stats() {
 }
 function render(more) {
   const list = filtered();
-  if (!more) { shown = 0; $('list').innerHTML = ''; }
+  if (!more) { shown = 0; lastGroup = null; $('list').innerHTML = ''; }
   const slice = list.slice(shown, shown + PAGE); shown += slice.length;
-  slice.forEach(r => $('list').appendChild(card(r)));
+  const logical = $('f-sort').value === 'logical';
+  slice.forEach(r => {
+    if (logical) {
+      const g = ORDER.get(r.doc)?.group || 'Other';
+      if (g !== lastGroup) { const h = document.createElement('div'); h.className = 'grp'; h.textContent = g; $('list').appendChild(h); lastGroup = g; }
+    }
+    $('list').appendChild(card(r));
+  });
   $('empty').hidden = list.length > 0;
   $('more').hidden = shown >= list.length; $('more').textContent = `Show more (${list.length - shown} left)`;
   stats();
@@ -274,7 +333,7 @@ function card(r) {
   ta.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commit(ta.value); } });
   return el;
 }
-['f-col', 'f-age'].forEach(id => $(id).addEventListener('change', () => render()));
+['f-col', 'f-age', 'f-sort'].forEach(id => $(id).addEventListener('change', () => render()));
 $('f-q').addEventListener('input', () => render());
 $('b-same-all').onclick = () => {
   const list = filtered();
