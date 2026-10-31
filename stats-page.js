@@ -267,28 +267,6 @@ function contenuTab(s, ctx, esc) {
       ${tags ? `<div style="display:flex;flex-wrap:wrap;gap:6px;">${tags}</div>` : '<div class="stats-note">Pas encore de recherche enregistrée.</div>'}</div>`;
 }
 
-// ── Lien vers la fiche signalée (rapport avec contexte) ──
-const FICHE_REPORT_LABELS = { item: 'Item', mob: 'Monstre', pnj: 'PNJ', quete: 'Quête', build: 'Build' };
-function ficheReportUrl(type, id) {
-  const e = encodeURIComponent(id);
-  switch (type) {
-    case 'item':  return `Compendium/compendium.html#${e}`;
-    case 'mob':   return `Bestiaire/bestiaire.html#monstres/${e}`;
-    case 'pnj':   return `Bestiaire/bestiaire.html#personnages/${e}`;
-    case 'quete': return `Quetes/quetes.html#${e}`;
-    case 'build': return `Builds/builds.html?id=${e}`;
-    default:      return null;
-  }
-}
-function ficheLinkHtml(r, esc) {
-  if (!r.ficheId) return '';
-  const url = ficheReportUrl(r.ficheType, r.ficheId);
-  const label = `${FICHE_REPORT_LABELS[r.ficheType] || r.ficheType || 'Fiche'} · ${r.ficheName || r.ficheId}`;
-  return `<div class="stats-report-fiche">${url
-    ? `<a href="${esc(url)}" target="_blank" rel="noopener">🔗 ${esc(label)}</a>`
-    : esc(label)}</div>`;
-}
-
 // ── Onglet Qualité ────────────────────────────────────
 function qualiteTab(s, ctx, esc) {
   let html = '';
@@ -308,14 +286,6 @@ function qualiteTab(s, ctx, esc) {
       return `<div class="stats-sec-row"><div class="stats-sec-label">${label}</div>
         <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${pct}%;background:${color}">${n}/${total} (${pct}%)</div></div></div>`;
     }).join('')}</div>`;
-  }
-  if (ctx.reports.length) {
-    html += `<div class="stats-section"><div class="stats-section-title">Rapports récents (10 derniers)</div>${ctx.reports.map(r => `
-      <div class="stats-report">
-        <div class="stats-report-head"><b>${esc(r.pseudo || 'Anonyme')}</b><span>${esc(r.page || '')} · ${esc(fmtTime(r.ts))}</span></div>
-        ${ficheLinkHtml(r, esc)}
-        <div class="stats-report-text">${esc((r.text || '').slice(0, 200))}</div>
-      </div>`).join('')}</div>`;
   }
   return html || '<div class="empty">Rien à signaler.</div>';
 }
@@ -353,7 +323,7 @@ function userDetailHtml(u, fallbackName, esc) {
 /**
  * Affiche la page stats dans `container`.
  * @param s     résumé du worker (daily, hours, users, sections, members, anonRest, topItems, topSearches, logins)
- * @param ctx   { items, reports: [{pseudo, page, text, ts}], anonName(id) }
+ * @param ctx   { items, anonName(id) }
  * @param deps  { escHtml, loadUser(id) → user|null, loadAudit(uid) → [{label, target, ts}] }
  */
 export function renderStats(container, s, ctx, deps) {
@@ -361,14 +331,10 @@ export function renderStats(container, s, ctx, deps) {
   ctx = { ...ctx, today: statsDay(0) };
   const tabs = { audience: audienceTab, contenu: contenuTab, qualite: qualiteTab, infra: () => '<div id="cf-usage"><div style="color:var(--muted);font-size:12px;">Chargement…</div></div>' };
   let tab = window._statsTab && tabs[window._statsTab] ? window._statsTab : 'audience';
-  const seen0 = deps.reportsSeen?.() || 0;   // rapports plus récents = non lus (pastille jusqu'à l'ouverture de l'onglet Qualité)
-  const unread = (ctx.reports || []).filter(r => r.ts > seen0).length;
-  let seen = false;
 
   const draw = () => {
-    if (tab === 'qualite' && ctx.reports?.length && !seen) { seen = true; deps.markReportsSeen?.(Math.max(...ctx.reports.map(r => r.ts))); }
     container.innerHTML = `<div class="stats-tabs">${TABS.map(([id, label]) =>
-      `<button class="stats-tab${id === tab ? ' active' : ''}" data-tab="${id}">${label}${id === 'qualite' && unread && !seen ? ` <span class="filter-count">${unread}</span>` : ''}</button>`).join('')}</div>
+      `<button class="stats-tab${id === tab ? ' active' : ''}" data-tab="${id}">${label}</button>`).join('')}</div>
       <div class="stats-tab-body">${tabs[tab](s, ctx, esc)}</div>`;
     if (tab === 'infra') infraTab(container.querySelector('#cf-usage'), deps, esc);
   };

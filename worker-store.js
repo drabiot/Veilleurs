@@ -14,6 +14,7 @@ import { triggerBot } from './guild-onboarding.js';
 
 const BASE_TIERS = ['visiteur', 'membre', 'contributeur', 'admin'];
 const TIER = { public: 0, visiteur: 0, membre: 1, contributeur: 2, admin: 3 };
+const REPORTS_CHANNEL = '1566052542327291974';   // salon Discord où arrivent les signalements (bug / suggestion / erreur sur une fiche)
 const FIREBASE_KEY = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
 
 const json = (data, status = 200, cors = {}) =>
@@ -114,7 +115,7 @@ function canRead(ctx, col, id, data, listing) {
     case 'user_favorites': return !!ctx.uid && data?.uid === ctx.uid;
     case 'builds_sensible': return isContrib;
     case 'submissions': return isAdmin || (isContrib && data?.status === 'pending') || (!!ctx.uid && data?.submittedBy === ctx.uid);
-    case 'reports': return isContrib;
+    case 'reports': return isContrib || (!!ctx.uid && data?.submittedBy === ctx.uid);   // modération + l'auteur (pour voir la réponse des admins)
     case 'translation_proposals': return isAdmin || (!!ctx.uid && data?.submittedBy === ctx.uid);   // les propositions : modération + leur auteur
     default: { const r = colRule(ctx, col); return !!r && need(ctx, r.read); }
   }
@@ -171,7 +172,14 @@ function canWrite(ctx, op, col, id, old, neu) {
       if (op === 'delete') return isAdmin;
       return isAdmin || ((isContrib || (authed && old?.submittedBy === ctx.uid)) && old?.status === 'pending' && neu?.status === 'pending');
     }
-    case 'reports': return op === 'create' ? Object.keys(neu || {}).length <= 20 : isContrib;
+    case 'reports':
+      // Signalement : tout le monde peut en créer (submittedBy = son uid s'il est connecté, jamais celui d'un autre) ; la réponse est écrite par un admin ;
+      // l'auteur ne peut que marquer la réponse comme vue (replySeen)
+      if (op === 'create') return Object.keys(neu || {}).length <= 20 && (neu?.submittedBy == null || neu.submittedBy === ctx.uid);
+      if (op === 'delete') return isContrib;
+      if (isAdmin) return true;
+      if (authed && old?.submittedBy === ctx.uid) return changed(old, neu).every(k => k === 'replySeen');
+      return isContrib && changed(old, neu).every(k => !['reply', 'replyBy', 'replyAt', 'replySeen'].includes(k));
     case 'translation_proposals': {
       // Propositions de traduction (i18n/review.html, i18n/compare.html) → onglet « Traduction » de la modération
       if (op === 'delete') return isAdmin || (authed && old?.submittedBy === ctx.uid && old?.status === 'pending');
@@ -232,6 +240,29 @@ const newId = () => { const a = new Uint8Array(15); crypto.getRandomValues(a); r
 const VALID_COL = /^[A-Za-z0-9_]+(\/[A-Za-z0-9_\-]{1,120}\/[A-Za-z0-9_]+)*$/;
 const VALID_ID  = /^[^\/]{1,400}$/;
 
+/* ── Signalement (collection reports) → message dans le salon Discord des retours ── */
+const FICHE_TYPES = { item: 'Item', mob: 'Monstre', pnj: 'PNJ', quete: 'Quête', build: 'Build' };
+async function postReportToDiscord(env, id, r) {
+  if (!env.BOT_TOKEN) return;
+  const fiche = r.ficheId ? `${FICHE_TYPES[r.ficheType] || r.ficheType} · ${r.ficheName || r.ficheId}` : null;
+  const embed = {
+    title: fiche ? '⚑ Erreur signalée sur une fiche' : '⚑ Bug / Suggestion',
+    description: String(r.text || '').slice(0, 3900),
+    color: fiche ? 0xe8b84b : 0x5865f2,
+    fields: [
+      { name: 'Joueur', value: String(r.pseudo || 'Anonyme').slice(0, 100) + (r.submittedBy ? '' : ' (non connecté)'), inline: true },
+      { name: 'Page', value: String(r.page || '—').slice(0, 100), inline: true },
+      ...(fiche ? [{ name: 'Fiche', value: fiche.slice(0, 250) }] : []),
+    ],
+    footer: { text: 'ID ' + id + (r.submittedBy ? ' · répondre : modération → Retours' : ' · pas de compte, réponse impossible') },
+    timestamp: new Date().toISOString(),
+  };
+  await fetch(`https://discord.com/api/v10/channels/${REPORTS_CHANNEL}/messages`, {
+    method: 'POST', headers: { Authorization: `Bot ${env.BOT_TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
+  }).catch(() => {});
+}
+
 /* ── POST /db/write ── */
 export async function handleStoreWrite(request, env, cors, execCtx) {
   let body;
@@ -240,7 +271,7 @@ export async function handleStoreWrite(request, env, cors, execCtx) {
   if (!ops.length || ops.length > 200) return json({ error: 'ops invalide' }, 400, cors);
   const ctx = await loadCtx(env, body.idToken);
   const now = Date.now();
-  const stmts = [], ids = [], cache = new Map(); // cache : état des documents au fil du lot
+  const stmts = [], ids = [], newReports = [], cache = new Map(); // cache : état des documents au fil du lot
   const key = (c, i) => c + '\u0000' + i;
   for (const op of ops) {
     const { col } = op;
@@ -259,6 +290,7 @@ export async function handleStoreWrite(request, env, cors, execCtx) {
     if (!canWrite(ctx, kind, col, id, old, neu)) return json({ error: `Droits insuffisants (${col})`, denied: true }, 403, cors);
     cache.set(k, neu);
     ids.push(id);
+    if (col === 'reports' && kind === 'create') newReports.push([id, neu]);
     if (col === 'users') {
       if (op.op === 'delete') stmts.push(env.DB.prepare('DELETE FROM users WHERE uid = ?').bind(id));
       else stmts.push(env.DB.prepare(`INSERT INTO users (uid, data, discord_id, pseudo, pending) VALUES (?, ?, ?, ?, NULL)
@@ -275,6 +307,7 @@ export async function handleStoreWrite(request, env, cors, execCtx) {
   // un item écrit, modifié ou supprimé : le bot Discord est lancé tout de suite (posts ajoutés / remplacés / supprimés sur les serveurs), au lieu d'attendre le cron
   // (aussi : file des soumissions acceptées, que le bot lit avant de poster un nouvel item)
   if (execCtx && ops.some(o => o.col === 'items' || (o.col === 'config' && o.id === 'discord_approved'))) execCtx.waitUntil(triggerBot(env).catch(() => {}));
+  if (execCtx) for (const [rid, r] of newReports) execCtx.waitUntil(postReportToDiscord(env, rid, r));
   return json({ ok: true, rev, ids }, 200, cors);
 }
 

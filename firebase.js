@@ -473,6 +473,8 @@ export async function logReport(pseudo, page, text, fiche = null) {
       text:   String(text || '').slice(0, 2000),
       createdAt: serverTimestamp(),
     };
+    // Connecté : le signalement est lié au compte, ce qui permet aux admins de répondre (popup à la prochaine visite)
+    if (auth.currentUser) data.submittedBy = auth.currentUser.uid;
     // Contexte de la fiche signalée (bouton « Signaler une erreur ») : type, id, nom
     if (fiche && fiche.id) {
       data.ficheType = String(fiche.type || '').slice(0, 20);

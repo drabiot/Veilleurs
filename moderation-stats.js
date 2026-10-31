@@ -43,21 +43,17 @@ window.loadStatistiques = async function loadStatistiques() {
   const container = document.getElementById('stats-content');
   container.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const { renderStats, statsDay } = await import('./stats-page.js?v=1094bc3a');
+    const { renderStats, statsDay } = await import('./stats-page.js?v=1c7d5448');
     const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
-    const [summary, repSnap, items] = await Promise.all([
+    const [summary, items] = await Promise.all([
       _fetchStats('summary', {
         date7: statsDay(-6), date30: statsDay(-29), date35: statsDay(-34),
         dayStart: midnight.getTime(), weekStart: midnight.getTime() - 6 * 86400000,
       }),
-      getDocs(query(collection(db, 'reports'), orderBy('createdAt', 'desc'), limit(10))).catch(() => ({ docs: [] })),
       cachedDocs(COL.items).catch(() => []),
     ]);
-    const reports = repSnap.docs.map(d => { const r = d.data(); return { pseudo: r.pseudo, page: r.page, text: r.text, ficheType: r.ficheType, ficheId: r.ficheId, ficheName: r.ficheName, ts: r.createdAt?.toMillis?.() ?? 0 }; });
-    renderStats(container, summary, { items, reports, anonName }, {
+    renderStats(container, summary, { items, anonName }, {
       escHtml,
-      reportsSeen: () => window.vclReportsSeenAt?.() || 0,
-      markReportsSeen: ts => window.vclReportsSeen?.(ts),
       loadUser: id => _fetchStats('user', { id }).then(r => r.user),
       loadCloudflare: () => _fetchStats('cloudflare'),
       loadAudit: async uid => {
