@@ -213,7 +213,8 @@
 @media (prefers-reduced-motion: reduce) { .cmp-card, .cmp-row, .cmp-switch-knob { transition: none; } }
 
 /* ── Cellules : seule la meilleure valeur de la ligne ressort, en vert ── */
-.cmp-cell.best, .cmp-cell.worst { background: none; box-shadow: none; }
+.cmp-cell.worst { background: none; box-shadow: none; }
+.cmp-cell.best { background: rgba(110,190,120,.22); box-shadow: none; }
 .cmp-cell.worst .cmp-v { color: var(--bright); }
 .cmp-cell.best .cmp-v { color: #94dca0; }
 .cmp-cell.best .cmp-v::after { content: none; }
