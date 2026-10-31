@@ -86,6 +86,8 @@
     function close() { overlay.classList.add('hidden'); statusEl.textContent = ''; ficheCtx = null; }
     function open(ctx) {
       ficheCtx = ctx && ctx.id ? ctx : null;
+      // les textarea sont ignorées par l'observateur i18n : on traduit le placeholder à l'ouverture (i18n.js est chargé à ce moment-là)
+      textEl.placeholder = window.VCL_I18N?.t?.('Décris ton problème, ta suggestion ou ta question...') ?? textEl.placeholder;
       ctxEl.hidden = !ficheCtx;
       catsEl.hidden = !!ficheCtx;   // erreur sur une fiche : pas de catégorie à choisir
       ctxEl.textContent = ficheCtx

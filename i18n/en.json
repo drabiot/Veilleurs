@@ -2,7 +2,7 @@
   "_comment": "Clé = texte français EXACT de la page ; valeur = anglais. {x} = variable. Les noms d'items/mobs/PNJ ne se traduisent pas. Glossaire : i18n/glossary.json. Vérifier avec : node tools/i18n-check.js [--coverage]",
   "_keep": [
     "Veilleurs au Clair de Lune", "Veilleurs au", "Clair de Lune", "[ VCL ]", "Compendium", "Builds", "Hall of Fame",
-    "⚑ Bug / Suggestion", "Bug / Suggestion", "🐛 Bug", "💡 Suggestion", "🎫 Ticket", "👑 Admin", "[VCL] - Compendium", "◈ Type", "Boss", "Mini Boss", "≡ Items",
+    "⚑ Bug / Suggestion", "Bug / Suggestion", "Moonlight Watchers", "🐛 Bug", "💡 Suggestion", "🎫 Ticket", "👑 Admin", "[VCL] - Compendium", "◈ Type", "Boss", "Mini Boss", "≡ Items",
     "🗺 Zone", "Inv.", "— Craft —", "— Artisans —", "Zoom", "Emoji", "Passages", "Craft", "Progression", "Stats", "✕ Reset",
     "↑ Export JSON", "↓ Import JSON", "— versions", "PATCH", "NOTES", "🌙 Veilleurs au Clair de Lune 🌙", "Contributions",
     "// FORUM · VEILLEURS AU CLAIR DE LUNE", "Runes", "Rare", "Event", "Godlike", "rare", "🔮 Unique", "minimum", "maximum", "Cols",
@@ -2908,9 +2908,9 @@
   "NOUVEAU": "NEW",
   "⚑ Fiche": "⚑ Entry",
   "Dernier message : {d}": "Last message: {d}",
-  "Les Veilleurs · {d}": "The Watchers · {d}",
-  "Toi · {d}": "You · {d}",
   "Écrire aux Veilleurs…": "Write to the Watchers…",
   "Envoyé, les admins sont prévenus.": "Sent, the admins have been notified.",
-  "✔ Marquer comme résolu": "✔ Mark as resolved"
+  "✔ Marquer comme résolu": "✔ Mark as resolved",
+  "Toi": "You",
+  "Les Veilleurs": "The Watchers"
 }

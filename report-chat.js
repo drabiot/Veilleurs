@@ -8,6 +8,8 @@
 
 import { collection, doc, getDocs, query, where, updateDoc, arrayUnion } from './d1db.js';
 
+// les textarea sont ignorées par l'observateur i18n : leur placeholder se traduit ici
+const tr = s => window.VCL_I18N?.t?.(s) ?? s;
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const ms = t => t?.toMillis?.() ?? t?.__ts ?? (typeof t === 'number' ? t : 0);
 const fmt = t => t ? new Date(t).toLocaleString(document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
@@ -52,7 +54,7 @@ export function initReportChat(db, uid) {
   const bubbles = r => thread(r).map(m => {
     const admin = m.from === 'admin';
     return `<div class="vcl-chat-msg ${admin ? 'admin' : 'me'}">${admin ? `<img class="vcl-chat-avatar" src="${LOGO}" alt="">` : ''}
-      <div class="vcl-chat-stack"><div class="vcl-chat-who">${admin ? 'Les Veilleurs' : 'Toi'} · ${fmt(m.at)}</div>
+      <div class="vcl-chat-stack"><div class="vcl-chat-who"><span>${admin ? 'Les Veilleurs' : 'Toi'}</span> · <span>${fmt(m.at)}</span></div>
       <div class="vcl-chat-text" data-no-i18n>${esc(m.text).split('\n').join('<br>')}</div></div></div>`;
   }).join('');
 
@@ -67,7 +69,7 @@ export function initReportChat(db, uid) {
       </div>
       <div class="vcl-chat-detail" hidden>
         <div class="vcl-chat-log">${bubbles(r)}</div>
-        <div class="vcl-chat-send"><textarea rows="1" maxlength="2000" placeholder="Écrire aux Veilleurs…"></textarea><button type="button" class="vcl-chat-go">Envoyer</button></div>
+        <div class="vcl-chat-send"><textarea rows="1" maxlength="2000" placeholder="${esc(tr('Écrire aux Veilleurs…'))}"></textarea><button type="button" class="vcl-chat-go">Envoyer</button></div>
         <div class="vcl-chat-status"></div>
         ${st === 'closed' ? '' : '<button type="button" class="vcl-chat-resolve">✔ Marquer comme résolu</button>'}
       </div>

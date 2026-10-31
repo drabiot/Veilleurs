@@ -369,6 +369,17 @@ body > *:not(.ambient-bg):not(.vcl-report-overlay):not(.vcl-reply-overlay) { pos
   opacity: 0;
   animation: fade-up .6s ease .5s both;
 }
+.hero-title-en {
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: clamp(.9rem, 2.2vw, 1.35rem);
+  letter-spacing: .32em;
+  text-transform: uppercase;
+  color: var(--gold);
+  opacity: 0;
+  margin: 2px 0 10px;
+  animation: fade-up .6s ease .58s both;
+}
 .hero-title-sub {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 300;
