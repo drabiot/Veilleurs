@@ -53,7 +53,16 @@
     body.locked #gate { display: block; }
     #gate h2 { margin: 0 0 8px; font-size: 16px; color: var(--gold); }
     #gate p { color: var(--muted); font-size: 13px; margin: 6px 0 14px; }
-  </style>
+      .ctx { grid-column: 1 / -1; display: flex; gap: 12px; align-items: flex-start; font-size: 12px; color: var(--muted); }
+    .ctx img { width: 56px; height: 56px; object-fit: contain; image-rendering: pixelated; background: var(--bg); border: 1px solid var(--rim); border-radius: 6px; flex: none; }
+    .ctx .lines { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .ctx b { color: var(--text); font-weight: 600; }
+    .ctx a.map { color: var(--gold); cursor: pointer; text-decoration: none; border-bottom: 1px dotted currentColor; }
+    #map-dlg { width: min(900px, 94vw); height: min(640px, 86vh); padding: 0; overflow: hidden; display: none; flex-direction: column; }
+    #map-dlg[open] { display: flex; }
+    #map-dlg .mh { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; font-size: 12px; border-bottom: 1px solid var(--rim); }
+    #map-dlg iframe { flex: 1; border: 0; width: 100%; background: #000; }
+</style>
 </head>
 <body class="locked">
   <div id="gate"><h2>Data to translate</h2><p id="gate-msg">Checking your access…</p><button class="primary" id="gate-login" style="display:none">Log in with Discord</button></div>
@@ -75,6 +84,7 @@
       <span style="color:var(--muted);font-size:12px">Same draft as the review tool: nothing goes live until an admin approves it.</span>
     </div>
   </header>
+  <dialog id="map-dlg"><div class="mh"><span id="map-title"></span><button id="map-close">✕ Close</button></div><iframe id="map-frame" title="Map"></iframe></dialog>
   <main>
     <details class="help">
       <summary>How this works (read once)</summary>
@@ -139,6 +149,7 @@ function pick(o, path) {
 }
 
 let draft = { name: '', edits: {}, status: {}, notes: {}, added: [] };
+const ALL = {};
 let dict = {}, keep = new Set(), sendMod = null, rows = [], shown = 0;
 const PAGE = 40;
 try { const d = JSON.parse(localStorage.getItem(LS) || 'null'); if (d) draft = { name: '', edits: {}, status: {}, notes: {}, added: [], ...d }; } catch { /* sans stockage */ }
@@ -157,10 +168,11 @@ async function boot() {
   const seen = new Map();
   for (const [key, sp] of Object.entries(SPEC)) {
     let docs = []; try { docs = await loadCollection(sp.col); } catch { /* collection illisible */ }
+    ALL[key] = docs;
     for (const d of docs) for (const f of sp.fields) for (const fr of pick(d, f)) {
       const k = squash(fr), id = key + '|' + k;
       if (seen.has(id)) { seen.get(id).also.push(nameOf(d)); continue; }
-      const r = { key, kind: sp.label, sheet: nameOf(d), field: f.replace('[]', ''), fr: k, at: +d._order || 0, also: [] };
+      const r = { key, kind: sp.label, sheet: nameOf(d), field: f.replace('[]', ''), fr: k, at: +d._order || 0, also: [], doc: d };
       seen.set(id, r); rows.push(r);
     }
   }
@@ -168,6 +180,69 @@ async function boot() {
   $('f-col').innerHTML = '<option value="">All types</option>' + Object.entries(SPEC).map(([k, s]) => `<option value="${k}">${s.label}</option>`).join('');
   render();
 }
+
+// ── Contexte d'une fiche : aide le traducteur à savoir de quoi il s'agit ──
+const idOf = d => d.id ?? d._id;
+let IDX = null;
+function buildIndex() {
+  IDX = { item: new Map(), pnjCraft: new Map(), pnjSell: new Map(), usedIn: new Map(), region: new Map() };
+  for (const d of ALL.items || []) IDX.item.set(idOf(d), d);
+  for (const d of ALL.regions || []) IDX.region.set(idOf(d), d);
+  const push = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
+  for (const p of ALL.pnj || []) {
+    for (const e of p.craft || []) if (e && (e.id || e.itemId)) push(IDX.pnjCraft, e.id || e.itemId, p);
+    for (const e of p.sells || []) if (e && (e.id || e.itemId)) push(IDX.pnjSell, e.id || e.itemId, p);
+  }
+  for (const it of ALL.items || []) for (const e of it.craft || []) if (e && e.id) push(IDX.usedIn, e.id, it);
+}
+const nm = id => IDX.item.get(id)?.name || id;
+const more = (arr, n = 6) => arr.slice(0, n).map(esc).join(', ') + (arr.length > n ? ` … (+${arr.length - n})` : '');
+function mapLink(d, label) {
+  const c = d.coords; if (!c || c.x == null || c.z == null) return '';
+  const txt = c.y != null ? `${c.x}, ${c.y}, ${c.z}` : `${c.x}, ${c.z}`;
+  return `<a class="map" data-gx="${c.x}" data-gz="${c.z}" data-name="${esc(nameOf(d))}"${r_isPnj(d) ? ` data-pnj="${esc(idOf(d))}"` : ''} title="Open the map">📍 ${esc(label || txt)} ${label ? '(' + txt + ')' : ''}</a>`;
+}
+const r_isPnj = d => (ALL.pnj || []).includes(d);
+function context(r) {
+  if (!IDX) buildIndex();
+  const d = r.doc, id = idOf(d), L = [];
+  const img = (d.images && d.images[0]) || d.quality?.images?.[0] || '';
+  if (r.key === 'items') {
+    if (d.category || d.cat) L.push(`<b>${esc(d.category || '')}</b> ${esc(d.cat || '')}${d.lvl ? ' · lvl ' + d.lvl : ''}${d.rarity ? ' · ' + esc(d.rarity) : ''}`);
+    if (Array.isArray(d.craft) && d.craft.length) L.push('<b>Recipe:</b> ' + d.craft.map(e => `${e.qty || 1}× ${esc(nm(e.id))}`).join(', '));
+    const used = (IDX.usedIn.get(id) || []).map(i => i.name).filter(Boolean);
+    if (used.length) L.push('<b>Used to craft:</b> ' + more(used));
+    const by = IDX.pnjCraft.get(id) || [], sold = IDX.pnjSell.get(id) || [];
+    if (by.length) L.push('<b>Crafted by:</b> ' + by.slice(0, 3).map(p => mapLink(p, p.name)).join(', '));
+    if (sold.length) L.push('<b>Sold by:</b> ' + sold.slice(0, 3).map(p => mapLink(p, p.name)).join(', '));
+  } else if (r.key === 'pnj') {
+    const m = mapLink(d); if (m) L.push('<b>Location:</b> ' + m + (d.region ? ' · ' + esc(String(d.region).replace(/_/g, ' ')) : ''));
+    const cr = (d.craft || []).map(e => nm(e.id || e.itemId)), sl = (d.sells || []).map(e => nm(e.id || e.itemId));
+    if (cr.length) L.push(`<b>Crafts (${cr.length}):</b> ` + more(cr, 8));
+    if (sl.length) L.push(`<b>Sells (${sl.length}):</b> ` + more(sl, 8));
+    if (d.type) L.push('<b>Type:</b> ' + esc(d.type));
+  } else if (r.key === 'mobs') {
+    const reg = IDX.region.get(d.regionId); if (reg) L.push('<b>Region:</b> ' + esc(reg.name));
+    const m = mapLink(d); if (m) L.push(m);
+    const loot = (d.loot || []).map(l => nm(l.id)); if (loot.length) L.push('<b>Drops:</b> ' + more(loot, 8));
+    if (d.behavior) L.push('<b>Behavior:</b> ' + esc(d.behavior));
+  } else {
+    const m = mapLink(d); if (m) L.push(m);
+    if (r.key === 'quetes' && d.npc) L.push('<b>NPC:</b> ' + esc(d.npc) + (d.zone ? ' · ' + esc(d.zone) : ''));
+    if (r.key === 'regions' && d.lore) L.push(esc(d.lore.slice(0, 140)) + (d.lore.length > 140 ? '…' : ''));
+  }
+  if (!img && !L.length) return '';
+  return `<div class="ctx">${img ? `<img src="${esc(img)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ''}<div class="lines">${L.map(l => `<div>${l}</div>`).join('')}</div></div>`;
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('a.map'); if (!a) return;
+  const q = new URLSearchParams({ ghost_gx: a.dataset.gx, ghost_gz: a.dataset.gz, ghost_name: a.dataset.name || '' });
+  if (a.dataset.pnj) q.set('pnjId', a.dataset.pnj);
+  $('map-title').textContent = '📍 ' + (a.dataset.name || '') + ' — ' + a.dataset.gx + ', ' + a.dataset.gz;
+  $('map-frame').src = '../Map/map.html?' + q;
+  $('map-dlg').showModal();
+});
+$('map-close').onclick = () => { $('map-dlg').close(); $('map-frame').src = 'about:blank'; };
 
 function filtered() {
   const col = $('f-col').value, age = +$('f-age').value, q = $('f-q').value.toLowerCase();
@@ -192,6 +267,7 @@ function render(more) {
 function card(r) {
   const el = document.createElement('div'); el.className = 'row';
   el.innerHTML = `<div class="meta"><span class="tag">${esc(r.kind)}</span><b>${esc(r.sheet)}</b>${r.also.length ? `<span>+${r.also.length} more sheet(s) with the same text</span>` : ''}<span>· ${esc(r.field)}</span></div>
+    ${context(r)}
     <div class="fr">${esc(r.fr)}</div><div><textarea rows="3" placeholder="English…"></textarea><div class="warns"></div></div>
     <div class="act"><button class="primary" data-s>✔ Save</button><button data-same title="Name, proper noun… identical in English">＝ No translation needed</button></div>`;
   const ta = el.querySelector('textarea'), w = el.querySelector('.warns');
