@@ -24,28 +24,40 @@ async function _runCaptureQueue() {
   await ensureThree();
   while (_captureQueue.length > 0) {
     const { card, mob } = _captureQueue.shift();
-    if (!card.isConnected) continue;
+    if (card._stale) continue;   // carte remplacée entre-temps (données mises à jour)
     try {
       const url = await MonstreViewer3D.captureStatic(mob, 200);
-      if (!card.isConnected) continue;
       const wrap = card.querySelector('.card-img-wrap');
       if (!wrap) continue;
       wrap.querySelector('img')?.remove();
       wrap.querySelector('.card-img-placeholder')?.remove();
       const snap = document.createElement('img');
+      snap.className = 'loaded';
       snap.src = url;
       snap.alt = mob.name;
       wrap.insertBefore(snap, wrap.firstChild);
     } catch(e) {
       console.warn('[capture3D]', mob.id, e);
+    } finally {
+      card.classList.remove('is-capturing');   // en cas d'échec, le « ? » réapparaît
     }
   }
   _captureRunning = false;
 }
 let activePalier   = 'all';
-let activeTypes    = new Set(['boss', 'mini_boss', 'monstre', 'sbire', 'worldboss']);
-let activePnjTags  = new Set(Object.keys(typeof PNJ_TAG_LABELS !== 'undefined' ? PNJ_TAG_LABELS : {}));
-let searchQuery    = '';
+const ALL_TYPES      = ['boss', 'mini_boss', 'monstre', 'sbire', 'worldboss'];
+const ALL_BEHAVIORS  = ['agressif', 'neutre', 'passif'];
+let activeTypes      = new Set(ALL_TYPES);
+let activeBehaviors  = new Set(ALL_BEHAVIORS);
+let activeRegions    = null;   // null = toutes ; sinon Set des régions retenues (1er clic exclusif, comme les catégories PNJ)
+let activePnjTags    = new Set(Object.keys(typeof PNJ_TAG_LABELS !== 'undefined' ? PNJ_TAG_LABELS : {}));
+let searchQuery      = '';
+let activeSort       = (() => { try { return localStorage.getItem('vcl_bestiaire_sort') || 'default'; } catch { return 'default'; } })();
+
+// Accent des cartes par type (halo, bordure, dégradé) et intensité : boss/worldboss > mini-boss > le reste
+const TYPE_ACCENT = { boss: '#e05555', worldboss: '#38bdf8', mini_boss: '#d86f6f', monstre: '#e09050', sbire: '#8090c0' };
+const TYPE_TIER   = { boss: 'tier-boss', worldboss: 'tier-boss', mini_boss: 'tier-mini' };
+const REDUCED_MOTION = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 /* ══════════════════════════════════
    DOM
@@ -62,6 +74,12 @@ const modalContent  = document.getElementById('mob-modal-content');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 const typeSection   = document.getElementById('type-block');
 const pnjTagSection = document.getElementById('pnj-tag-block');
+const behaviorSection = document.getElementById('behavior-block');
+const regionSection = document.getElementById('region-block');
+const regionFilters = document.getElementById('region-filters');
+const mainTagline   = document.getElementById('main-tagline');
+const sortSelect    = document.getElementById('sort-select');
+const activeFiltersEl = document.getElementById('active-filters');
 
 /* ── Sélecteur taille de cartes ── */
 (function initCardSize() {
@@ -69,14 +87,18 @@ const pnjTagSection = document.getElementById('pnj-tag-block');
   if (saved !== 'medium') entityGrid.classList.add('size-' + saved);
   const btns = document.getElementById('card-size-btns');
   if (btns) {
-    btns.querySelectorAll('.card-size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === saved));
+    const mark = size => btns.querySelectorAll('.card-size-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.size === size);
+      b.setAttribute('aria-pressed', String(b.dataset.size === size));
+    });
+    mark(saved);
     btns.addEventListener('click', e => {
       const btn = e.target.closest('.card-size-btn');
       if (!btn) return;
       const size = btn.dataset.size;
       entityGrid.className = entityGrid.className.replace(/\bsize-\w+\b/g, '').trim();
       if (size !== 'medium') entityGrid.classList.add('size-' + size);
-      btns.querySelectorAll('.card-size-btn').forEach(b => b.classList.toggle('active', b.dataset.size === size));
+      mark(size);
       localStorage.setItem('vcl_bestiaire_size', size);
     });
   }
@@ -215,6 +237,8 @@ function getFiltered() {
     if (activePalier !== 'all' && e.palier !== activePalier) return false;
     if (activeTab === 'monstres') {
       if (!activeTypes.has(e.type)) return false;
+      if (e.behavior && !activeBehaviors.has(e.behavior)) return false;
+      if (activeRegions && !activeRegions.has(e.region || '')) return false;
     } else {
       const tag = getPnjEffectiveTag(e);
       if (tag && !activePnjTags.has(tag)) return false;
@@ -259,6 +283,18 @@ function getFiltered() {
       return normalize(a.name).localeCompare(normalize(b.name));
     });
   }
+
+  // Tri choisi : s'applique par-dessus l'ordre ci-dessus (tri stable → l'ordre du jeu reste le critère secondaire)
+  const byName = (a, b) => normalize(a.name).localeCompare(normalize(b.name));
+  if (activeSort === 'name')           filtered.sort(byName);
+  else if (activeSort === 'name-desc') filtered.sort((a, b) => byName(b, a));
+  else if (activeSort === 'type') {
+    const order = ['worldboss', 'boss', 'mini_boss', 'monstre', 'sbire'];
+    filtered.sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
+  } else if (activeSort === 'region') {
+    const regKey = e => e.region ? normalize(getRegionLabel(e.region)) : '￿';   // sans région → à la fin
+    filtered.sort((a, b) => regKey(a).localeCompare(regKey(b)));
+  }
   return filtered;
 }
 
@@ -272,9 +308,16 @@ function updateCounts() {
     const filtered = q ? list.filter(e =>
       fuzzyMatch(q, e.name) || fuzzyMatch(q, e.region||'')
     ) : list;
-    ['boss','mini_boss','monstre','sbire','worldboss'].forEach(t => {
+    ALL_TYPES.forEach(t => {
       const el = document.getElementById(`count-${t}`);
       if (el) el.textContent = filtered.filter(e => e.type === t).length;
+    });
+    ALL_BEHAVIORS.forEach(b => {
+      const el = document.getElementById(`count-beh-${b}`);
+      if (el) el.textContent = filtered.filter(e => e.behavior === b).length;
+    });
+    regionFilters.querySelectorAll('[data-region-count]').forEach(el => {
+      el.textContent = filtered.filter(e => (e.region || '') === el.dataset.regionCount).length;
     });
   } else {
     const list = PERSONNAGES.filter(e => activePalier === 'all' || e.palier === activePalier);
@@ -301,21 +344,40 @@ function updateCounts() {
 /* ══════════════════════════════════
    SIDEBAR — BLOCS COLLAPSE
 ══════════════════════════════════ */
+// Activable à la souris comme au clavier (Entrée / Espace)
+function onActivate(el, fn) {
+  el.setAttribute('role', 'button');
+  el.tabIndex = 0;
+  el.addEventListener('click', fn);
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(e); }
+  });
+}
+
+function setBlockOpen(header, body, open) {
+  header.classList.toggle('open', open);
+  body.classList.toggle('open', open);
+  header.setAttribute('aria-expanded', String(open));
+}
+const _userToggled = new Set();   // blocs que le visiteur a ouverts/fermés lui-même (on n'y touche plus)
 function initCollapsible(headerId, bodyId) {
   const header = document.getElementById(headerId);
   const body   = document.getElementById(bodyId);
   if (!header || !body) return;
-  header.addEventListener('click', () => {
-    header.classList.toggle('open');
-    body.classList.toggle('open');
+  header.setAttribute('aria-expanded', String(body.classList.contains('open')));
+  onActivate(header, () => {
+    _userToggled.add(headerId);
+    setBlockOpen(header, body, !body.classList.contains('open'));
   });
 }
 initCollapsible('palier-block-header',   'palier-block-body');
 initCollapsible('type-block-header',     'type-block-body');
+initCollapsible('behavior-block-header', 'behavior-block-body');
+initCollapsible('region-block-header',   'region-block-body');
 initCollapsible('pnj-tag-block-header',  'pnj-tag-block-body');
 
 document.querySelectorAll('.pnj-cat-header').forEach(header => {
-  header.addEventListener('click', () => {
+  onActivate(header, () => {
     const cat  = header.dataset.cat;
     const body  = document.getElementById(`group-body-${cat}`);
     const arrow = header.querySelector('.pnj-cat-arrow');
@@ -347,19 +409,148 @@ function buildPalierFilters() {
     btn.addEventListener('click', () => { activePalier = p; refreshAll(); });
     palierFilters.appendChild(btn);
   });
+
+  // Un seul palier : le bloc n'apporte rien, on le replie (sauf si le visiteur l'a ouvert lui-même)
+  if (!_userToggled.has('palier-block-header')) {
+    setBlockOpen(document.getElementById('palier-block-header'), document.getElementById('palier-block-body'), paliers.length > 1);
+  }
+}
+
+// Régions des monstres : liste dynamique, case cochée = région affichée
+function buildRegionFilters() {
+  const regions = [...new Set(MOBS.map(e => e.region || '').filter(Boolean))]
+    .sort((a, b) => getRegionLabel(a).localeCompare(getRegionLabel(b), 'fr'));
+  regionFilters.innerHTML = '';
+  regions.forEach(r => {
+    const row = document.createElement('label');
+    row.className = 'bfilter-row';
+    row.innerHTML = `
+      <input type="checkbox" class="region-filter-cb" value="${escHtml(r)}" ${!activeRegions || activeRegions.has(r) ? 'checked' : ''} />
+      <span class="bfilter-dot bfilter-region"></span>
+      <span class="bfilter-label">${escHtml(getRegionLabel(r))}</span>
+      <span class="bfilter-count" data-region-count="${escHtml(r)}"></span>`;
+    row.querySelector('input').addEventListener('change', e => {
+      const value = e.target.value;
+      if (!activeRegions) activeRegions = new Set([value]);
+      else if (activeRegions.has(value)) activeRegions.delete(value);
+      else activeRegions.add(value);
+      if (activeRegions.size === 0) activeRegions = null;
+      _syncRegionCheckboxes();
+      updateCounts();
+      buildGrid();
+    });
+    regionFilters.appendChild(row);
+  });
+  // Le bloc n'a pas d'intérêt tant qu'il n'y a qu'une région
+  regionSection.dataset.empty = regions.length > 1 ? '' : '1';
+  updateSidebarSections();
+}
+function _syncRegionCheckboxes() {
+  regionFilters.querySelectorAll('.region-filter-cb').forEach(c => { c.checked = !activeRegions || activeRegions.has(c.value); });
 }
 
 function updateSidebarSections() {
-  typeSection.style.display    = activeTab === 'monstres'   ? '' : 'none';
-  pnjTagSection.style.display  = activeTab === 'personnages' ? '' : 'none';
+  const mobs = activeTab === 'monstres';
+  typeSection.style.display     = mobs ? '' : 'none';
+  behaviorSection.style.display = mobs ? '' : 'none';
+  regionSection.style.display   = mobs && !regionSection.dataset.empty ? '' : 'none';
+  pnjTagSection.style.display   = mobs ? 'none' : '';
 }
 
 /* ══════════════════════════════════
    GRILLE
 ══════════════════════════════════ */
+// Cartes mises en cache : un filtre ou un tri ne recrée pas les cartes (images et captures 3D conservées)
+// et les déplace en douceur (FLIP) au lieu de tout reconstruire.
+const _cardCache = new Map();   // "onglet:id" → { card, sig }
+let _lastGridTab = null;
+let _modalOrigin = null;        // rectangle de la carte cliquée (origine de l'animation de la fiche)
+let _lastFocus   = null;        // élément à refocaliser à la fermeture de la fiche
+
+function _cardSig(e) {
+  return [e.name, e.type, e.tag, e.occulte, e.palier, e.behavior, e.region, e.sensible, e.inCodex, e.images?.[0] || e.img || '', e.morceaux?.length || 0].join('|');
+}
+
+function _openFromCard(card, entity) {
+  _modalOrigin = card.getBoundingClientRect();
+  _lastFocus   = card;
+  openModal(entity);
+}
+
+function makeCard(e) {
+  const isMob = activeTab === 'monstres';
+  const card = document.createElement('div');
+  card.className = 'entity-card';
+  card.dataset.id = e.id;
+  card.tabIndex = 0;
+  card.setAttribute('role', 'button');
+  card.setAttribute('aria-label', e.name);
+
+  const _eImg = e.images?.[0] || e.img;
+  // Grille : miniature WebP (≈10-30 Ko au lieu de 100-560 Ko) ; si elle n'existe pas encore, on retombe sur l'image d'origine
+  const _thumb = u => /\/img\/(mobs|compendium\/montages)\//.test(u || '') ? u.replace('/img/', '/img/thumbs/').replace(/\.(png|jpe?g)$/i, '.webp') : u;
+  const imgHTML = _eImg
+    ? `<img loading="lazy" decoding="async" src="${_thumb(_eImg)}" alt="${escHtml(e.name)}" onload="this.classList.add('loaded')" onerror="if(!this.dataset.fb&&this.src!==${JSON.stringify(_eImg).replace(/"/g, '&quot;')}){this.dataset.fb=1;this.src=${JSON.stringify(_eImg).replace(/"/g, '&quot;')}}else{this.style.display='none';this.nextElementSibling.style.display='flex'}">`
+    : '';
+  const phStyle = _eImg ? 'style="display:none"' : '';
+  const ph = `<span class="card-img-placeholder" ${phStyle} aria-hidden="true"><span class="ph-q">?</span></span>`;
+
+  const effTag = isMob ? null : getPnjEffectiveTag(e);
+  const typeKey   = isMob ? e.type : (effTag || 'pnj');
+  const typeLabel = isMob ? (TYPE_LABELS[e.type]||e.type) : (PNJ_TAG_LABELS[effTag]||effTag||'PNJ');
+  const typeBadge = `<span class="card-type-badge badge-${typeKey}" style="${!isMob && effTag ? `background:${PNJ_TAG_COLORS[effTag]}22;color:${PNJ_TAG_COLORS[effTag]};border-color:${PNJ_TAG_COLORS[effTag]}55` : ''}">${typeLabel}</span>`;
+
+  const accent = isMob ? TYPE_ACCENT[e.type] : PNJ_TAG_COLORS[effTag];
+  if (accent) card.style.setProperty('--tc', accent);
+  const tier = isMob ? TYPE_TIER[e.type] : '';
+  if (tier) card.classList.add(tier);
+
+  const palierBadge = `<span class="card-palier-badge">P${e.palier}</span>`;
+  const codexBadge = (isMob && e.inCodex) ? `<span class="card-codex-badge">📖</span>` : '';
+
+  let behaviorHTML = '';
+  if (isMob) {
+    behaviorHTML = `
+      <div class="card-behavior-row beh-${e.behavior}">
+        <span class="card-behavior-dot cdot-${e.behavior}"></span>
+        <span class="card-behavior-text">${escHtml(BEHAVIOR_LABELS[e.behavior]||e.behavior)}</span>
+      </div>`;
+  } else {
+    behaviorHTML = `
+      <div class="card-behavior-row is-plain">
+        <span class="card-behavior-text">${escHtml(getRegionLabel(e.region||''))}</span>
+      </div>`;
+  }
+
+  card.innerHTML = `
+    <div class="card-img-wrap">
+      ${imgHTML}${ph}
+      ${typeBadge}
+      ${palierBadge}
+      ${codexBadge}
+    </div>
+    <div class="card-info">
+      <div class="card-name">${escHtml(e.name)}${e.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">&#x1F512;</span>' : ''}</div>
+      ${behaviorHTML}
+    </div>`;
+
+  card.addEventListener('mousedown', (ev) => ev.preventDefault());
+  card.addEventListener('click', () => _openFromCard(card, e));
+  card.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); _openFromCard(card, e); }
+  });
+
+  if (e.morceaux && e.morceaux.length > 0 && typeof MonstreViewer3D !== 'undefined') {
+    if (!_eImg) card.classList.add('is-capturing');   // reflet de chargement en attendant la capture (plutôt que le « ? »)
+    _queueCapture(card, e);
+  }
+  return card;
+}
+
 function buildGrid() {
   const entities = getFiltered();
-  entityGrid.innerHTML = '';
+  renderActiveFilters();
+  entityGrid.querySelectorAll('.skel-card').forEach(n => n.remove());
 
   if (entities.length === 0) {
     gridEmpty.style.display = 'flex';
@@ -367,69 +558,169 @@ function buildGrid() {
     resultCount.textContent = '0 résultat';
     return;
   }
+  const wasHidden = entityGrid.style.display === 'none';
   gridEmpty.style.display = 'none';
   entityGrid.style.display = 'grid';
   resultCount.textContent = `${entities.length} entrée${entities.length>1?'s':''}`;
 
-  entities.forEach((e, idx) => {
-    const card = document.createElement('div');
-    card.className = 'entity-card';
-    card.dataset.id = e.id;
-    card.style.animationDelay = `${idx * 0.025}s`;
+  const tabChanged = _lastGridTab !== activeTab;
+  _lastGridTab = activeTab;
+  const animate = !REDUCED_MOTION && typeof Element.prototype.animate === 'function';
 
-    const isMob = activeTab === 'monstres';
+  // Positions avant le changement (FLIP) — pas à l'ouverture de la page ni au changement d'onglet
+  const before = new Map();
+  if (animate && !tabChanged && !wasHidden) {
+    for (const c of entityGrid.children) before.set(c, c.getBoundingClientRect());
+  }
 
-    const _eImg = e.images?.[0] || e.img;
-    // Grille : miniature WebP (≈10-30 Ko au lieu de 100-560 Ko) ; si elle n'existe pas encore, on retombe sur l'image d'origine
-    const _thumb = u => /\/img\/(mobs|compendium\/montages)\//.test(u || '') ? u.replace('/img/', '/img/thumbs/').replace(/\.(png|jpe?g)$/i, '.webp') : u;
-    const imgHTML = _eImg
-      ? `<img loading="lazy" decoding="async" src="${_thumb(_eImg)}" alt="${escHtml(e.name)}" onerror="if(!this.dataset.fb&&this.src!==${JSON.stringify(_eImg).replace(/"/g, '&quot;')}){this.dataset.fb=1;this.src=${JSON.stringify(_eImg).replace(/"/g, '&quot;')}}else{this.style.display='none';this.nextElementSibling.style.display='block'}">`
-      : '';
-    const phStyle = _eImg ? 'style="display:none"' : '';
-    const ph = `<span class="card-img-placeholder" ${phStyle}>${isMob ? '👾' : '🧑'}</span>`;
-
-        const effTag = isMob ? null : getPnjEffectiveTag(e);
-    const typeKey   = isMob ? e.type : (effTag || 'pnj');
-    const typeLabel = isMob ? (TYPE_LABELS[e.type]||e.type) : (PNJ_TAG_LABELS[effTag]||effTag||'PNJ');
-    const typeBadge = `<span class="card-type-badge badge-${typeKey}" style="${!isMob && effTag ? `background:${PNJ_TAG_COLORS[effTag]}22;color:${PNJ_TAG_COLORS[effTag]};border-color:${PNJ_TAG_COLORS[effTag]}55` : ''}">${typeLabel}</span>`;
-
-    const palierBadge = `<span class="card-palier-badge">P${e.palier}</span>`;
-	const codexBadge = (isMob && e.inCodex) ? `<span class="card-codex-badge">📖</span>` : '';
-
-    let behaviorHTML = '';
-    if (isMob) {
-      behaviorHTML = `
-        <div class="card-behavior-row">
-          <span class="card-behavior-dot cdot-${e.behavior}"></span>
-          <span class="card-behavior-text">${escHtml(BEHAVIOR_LABELS[e.behavior]||e.behavior)}</span>
-        </div>`;
-    } else {
-      behaviorHTML = `
-        <div class="card-behavior-row">
-          <span class="card-behavior-text" style="color:var(--muted)">${escHtml(getRegionLabel(e.region||''))}</span>
-        </div>`;
+  const wanted = entities.map(e => {
+    const key = activeTab + ':' + (e.id || e._id);
+    const sig = _cardSig(e);
+    let rec = _cardCache.get(key);
+    if (!rec || rec.sig !== sig) {
+      if (rec) rec.card._stale = true;
+      rec = { card: makeCard(e), sig };
+      _cardCache.set(key, rec);
     }
+    return rec.card;
+  });
 
-    card.innerHTML = `
-		<div class="card-img-wrap">
-			${imgHTML}${ph}
-			${typeBadge}
-			${palierBadge}
-			${codexBadge}
-		</div>
-		<div class="card-info">
-			<div class="card-name">${escHtml(e.name)}${e.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">&#x1F512;</span>' : ''}</div>
-			${behaviorHTML}
-		</div>`;
+  // Retire ce qui n'est plus affiché, puis range dans le nouvel ordre (sans toucher aux cartes déjà bien placées)
+  const wantedSet = new Set(wanted);
+  for (const c of [...entityGrid.children]) if (!wantedSet.has(c)) c.remove();
+  wanted.forEach((card, i) => {
+    if (entityGrid.children[i] !== card) entityGrid.insertBefore(card, entityGrid.children[i] || null);
+  });
 
-    card.addEventListener('mousedown', (ev) => ev.preventDefault());
-    card.addEventListener('click', () => openModal(e));
-    entityGrid.appendChild(card);
-
-    if (e.morceaux && e.morceaux.length > 0 && typeof MonstreViewer3D !== 'undefined') {
-      _queueCapture(card, e);
+  if (!animate) return;
+  const vh = window.innerHeight;
+  const visible = r => r.bottom > 0 && r.top < vh;
+  const ease = 'cubic-bezier(.2,.8,.2,1)';
+  let n = 0;
+  wanted.forEach(card => {
+    const now  = card.getBoundingClientRect();
+    const prev = before.get(card);
+    if (prev) {
+      const dx = prev.left - now.left, dy = prev.top - now.top;
+      if ((dx || dy) && (visible(now) || visible(prev))) {
+        card.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 380, easing: ease });
+      }
+    } else if (visible(now)) {
+      card.animate(
+        [{ opacity: 0, transform: 'translateY(10px) scale(.96)' }, { opacity: 1, transform: 'none' }],
+        { duration: 320, delay: Math.min(n++, 20) * 22, easing: ease, fill: 'backwards' }
+      );
     }
   });
+}
+
+/* ══════════════════════════════════
+   FILTRES ACTIFS (puces) + TRI
+══════════════════════════════════ */
+function _summary(labels) {
+  if (labels.length === 0) return '—';
+  return labels.length <= 2 ? labels.join(', ') : `${labels.slice(0, 2).join(', ')} +${labels.length - 2}`;
+}
+
+function _resetTypeFilters() {
+  activeTypes = new Set(ALL_TYPES);
+  document.querySelectorAll('.type-filter-cb').forEach(c => { c.checked = true; });
+}
+function _resetBehaviorFilters() {
+  activeBehaviors = new Set(ALL_BEHAVIORS);
+  document.querySelectorAll('.behavior-filter-cb').forEach(c => { c.checked = true; });
+}
+function _resetPnjTagFilters() {
+  activePnjTags = new Set(_allPnjTags);
+  _pnjTagsAllState = true;
+  _syncPnjTagCheckboxes();
+}
+
+function renderActiveFilters() {
+  const chips = [];
+  if (searchQuery) chips.push({ k: 'Recherche', v: searchQuery, reset: () => { searchInput.value = ''; searchQuery = ''; } });
+  if (activePalier !== 'all') chips.push({ k: 'Palier', v: String(activePalier), reset: () => { activePalier = 'all'; } });
+  if (activeTab === 'monstres') {
+    if (activeTypes.size < ALL_TYPES.length) {
+      chips.push({ k: 'Type', v: _summary(ALL_TYPES.filter(t => activeTypes.has(t)).map(t => TYPE_LABELS[t])), reset: _resetTypeFilters });
+    }
+    if (activeBehaviors.size < ALL_BEHAVIORS.length) {
+      chips.push({ k: 'Comportement', v: _summary(ALL_BEHAVIORS.filter(b => activeBehaviors.has(b)).map(b => BEHAVIOR_LABELS[b])), reset: _resetBehaviorFilters });
+    }
+    if (activeRegions) {
+      chips.push({ k: 'Région', v: _summary([...activeRegions].map(getRegionLabel)), reset: () => { activeRegions = null; } });
+    }
+  } else if (!_pnjTagsAllState) {
+    chips.push({ k: 'Catégorie', v: _summary([...activePnjTags].map(t => PNJ_TAG_LABELS[t] || t)), reset: _resetPnjTagFilters });
+  }
+
+  activeFiltersEl.replaceChildren();
+  activeFiltersEl.style.display = chips.length ? 'flex' : 'none';
+  chips.forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'af-chip';
+    b.title = 'Retirer ce filtre';
+    b.innerHTML = `<span class="af-k">${c.k}</span><span class="af-v"></span><span class="af-x" aria-hidden="true">✕</span>`;
+    b.querySelector('.af-v').textContent = c.v;
+    b.addEventListener('click', () => { c.reset(); refreshAll(); });
+    activeFiltersEl.appendChild(b);
+  });
+  if (chips.length > 1) {
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'af-clear';
+    clear.textContent = 'Tout réinitialiser';
+    clear.addEventListener('click', () => { chips.forEach(c => c.reset()); refreshAll(); });
+    activeFiltersEl.appendChild(clear);
+  }
+}
+
+const SORT_OPTIONS = {
+  monstres: [
+    ['default',   'Ordre par défaut'],
+    ['name',      'Nom (A → Z)'],
+    ['name-desc', 'Nom (Z → A)'],
+    ['type',      "Type (boss d'abord)"],
+    ['region',    'Région'],
+  ],
+  personnages: [
+    ['default',   'Ordre par défaut'],
+    ['name',      'Nom (A → Z)'],
+    ['name-desc', 'Nom (Z → A)'],
+    ['region',    'Région'],
+  ],
+};
+function buildSortOptions() {
+  const opts = SORT_OPTIONS[activeTab];
+  if (!opts.some(([v]) => v === activeSort)) activeSort = 'default';   // ex. « Type » n'existe pas pour les PNJ
+  sortSelect.replaceChildren(...opts.map(([v, label]) => {
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = label;
+    return o;
+  }));
+  sortSelect.value = activeSort;
+}
+
+/* Braises : quelques points lumineux qui montent lentement derrière les cartes */
+function initEmbers() {
+  if (REDUCED_MOTION) return;
+  const main = document.querySelector('.bestiaire-main');
+  if (!main || main.querySelector('.embers')) return;
+  const box = document.createElement('div');
+  box.className = 'embers';
+  box.setAttribute('aria-hidden', 'true');
+  for (let i = 0; i < 14; i++) {
+    const s = document.createElement('span');
+    s.style.setProperty('--x',  (4 + Math.random() * 92).toFixed(1) + '%');
+    s.style.setProperty('--s',  (1.5 + Math.random() * 2.5).toFixed(1) + 'px');
+    s.style.setProperty('--t',  (14 + Math.random() * 14).toFixed(1) + 's');
+    s.style.setProperty('--dl', (-Math.random() * 24).toFixed(1) + 's');
+    s.style.setProperty('--dx', (-40 + Math.random() * 80).toFixed(0) + 'px');
+    box.appendChild(s);
+  }
+  main.prepend(box);
 }
 
 /* ══════════════════════════════════
@@ -470,6 +761,22 @@ function openModal(entity, pushHistory = true) {
   modalOverlay.style.top = '0';
   modalOverlay.classList.add('open');
 
+  // La fiche « sort » de la carte cliquée : origine de l'animation = centre de la carte
+  const modalEl = document.getElementById('mob-modal');
+  if (modalEl) {
+    modalEl.style.animation = 'none';   // le rectangle est lu sans transformation d'entrée
+    if (_modalOrigin) {
+      const m = modalEl.getBoundingClientRect();
+      modalEl.style.transformOrigin = `${_modalOrigin.left + _modalOrigin.width / 2 - m.left}px ${_modalOrigin.top + _modalOrigin.height / 2 - m.top}px`;
+    } else {
+      modalEl.style.transformOrigin = '';
+    }
+    void modalEl.offsetWidth;
+    modalEl.style.animation = '';       // relance l'animation, même si une fiche était déjà ouverte
+  }
+  _modalOrigin = null;
+  modalCloseBtn.focus({ preventScroll: true });
+
   if (pushHistory) {
     pushHash(activeTab, entity.id || entity._id);
   }
@@ -477,7 +784,10 @@ function openModal(entity, pushHistory = true) {
 
 function _closeModalDOM() {
   if (_activeViewer) { _activeViewer.destroy(); _activeViewer = null; }
+  const wasOpen = modalOverlay.classList.contains('open');
   modalOverlay.classList.remove('open');
+  if (wasOpen && _lastFocus?.isConnected) _lastFocus.focus({ preventScroll: true });   // le clavier reprend là où il était
+  _lastFocus = null;
 }
 
 function closeModal() {
@@ -594,8 +904,8 @@ function renderMobSheet(mob) {
         <button class="btn-expand-3d" id="btn-expand-3d" title="Agrandir le modèle 3D">⛶</button>
       </div>`
     : (mob.images?.[0] || mob.img)
-      ? `<img loading="lazy" decoding="async" src="${mob.images?.[0] || mob.img}" alt="${escHtml(mob.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="mob-img-placeholder" style="display:none">👾</span>`
-      : `<span class="mob-img-placeholder">👾</span>`;
+      ? `<img loading="lazy" decoding="async" src="${mob.images?.[0] || mob.img}" alt="${escHtml(mob.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="mob-img-placeholder" style="display:none"><span class="ph-q">?</span></span>`
+      : `<span class="mob-img-placeholder"><span class="ph-q">?</span></span>`;
 
   let attacksHTML = '';
   if (mob.attacks && mob.attacks.length > 0) {
@@ -953,7 +1263,7 @@ function renderPNJSheet(pnj) {
           <div class="mob-image-bg" style="background:rgba(100,80,30,.85);"></div>
           <div class="mob-image-border" style="border-color:#c06c2055;"></div>
           <div class="mob-image-inner">
-            ${(pnj.images?.[0] || pnj.img) ? `<img loading="lazy" decoding="async" src="${pnj.images?.[0] || pnj.img}" alt="${escHtml(pnj.name)}">` : '<span class="mob-img-placeholder">🧑</span>'}
+            ${(pnj.images?.[0] || pnj.img) ? `<img loading="lazy" decoding="async" src="${pnj.images?.[0] || pnj.img}" alt="${escHtml(pnj.name)}">` : '<span class="mob-img-placeholder"><span class="ph-q">?</span></span>'}
           </div>
         </div>
                 <div class="mob-header-info">
@@ -995,9 +1305,11 @@ function updateHeader() {
   if (activeTab === 'monstres') {
     mainTitle.textContent    = 'Bestiaire';
     mainSubtitle.textContent = '// MONSTRES · VEILLEURS AU CLAIR DE LUNE';
+    mainTagline.textContent  = 'Toutes les créatures rencontrées au clair de lune : leurs attaques, leur butin et leurs repaires.';
   } else {
     mainTitle.textContent    = 'Personnages';
     mainSubtitle.textContent = '// PNJ & VENDEURS · VEILLEURS AU CLAIR DE LUNE';
+    mainTagline.textContent  = 'Forgerons, marchands et artisans du monde : où les trouver et ce qu\'ils proposent.';
   }
 }
 
@@ -1008,6 +1320,8 @@ function refreshAll() {
   updateHeader();
   updateSidebarSections();
   buildPalierFilters();
+  buildRegionFilters();
+  buildSortOptions();
   updateCounts();
   buildGrid();
 }
@@ -1041,6 +1355,21 @@ document.querySelectorAll('.type-filter-cb').forEach(cb => {
     updateCounts();
     buildGrid();
   });
+});
+
+document.querySelectorAll('.behavior-filter-cb').forEach(cb => {
+  cb.addEventListener('change', () => {
+    if (cb.checked) activeBehaviors.add(cb.value);
+    else            activeBehaviors.delete(cb.value);
+    updateCounts();
+    buildGrid();
+  });
+});
+
+sortSelect.addEventListener('change', () => {
+  activeSort = sortSelect.value;
+  try { localStorage.setItem('vcl_bestiaire_sort', activeSort); } catch {}
+  buildGrid();
 });
 
 // Filtres PNJ : 1er clic = exclusif (n'affiche que ce tag), clics suivants = additif.
@@ -1087,6 +1416,8 @@ function setLayout() {
 }
 setLayout();
 window.addEventListener('resize', setLayout);
+
+initEmbers();
 
 window._pageInit = function () {
   history.replaceState({ tab: activeTab, entityId: null }, '', location.hash || `#${activeTab}`);

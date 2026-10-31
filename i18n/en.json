@@ -2930,5 +2930,16 @@
   "fiches complètes": "complete entries",
   "Une fiche est complète quand tous ses champs requis sont renseignés. Ce chiffre ne mesure que les items déjà recensés, pas ceux qui restent à ajouter.": "An entry is complete when all of its required fields are filled in. This figure only covers items already catalogued, not those still to be added.",
   "Champs les plus souvent manquants :": "Most often missing fields:",
-  "Fiches complètes par palier": "Complete entries by floor"
+  "Fiches complètes par palier": "Complete entries by floor",
+  "_section_bestiaire_refonte": "Bestiaire : accroche, tri, filtres actifs, comportement / région (Bestiaire/bestiaire.js).",
+  "Toutes les créatures rencontrées au clair de lune : leurs attaques, leur butin et leurs repaires.": "Every creature met under the moonlight: their attacks, their loot and their lairs.",
+  "Forgerons, marchands et artisans du monde : où les trouver et ce qu'ils proposent.": "Blacksmiths, merchants and craftsmen of the world: where to find them and what they offer.",
+  "◈ Comportement": "◈ Behavior",
+  "◈ Région": "◈ Region",
+  "Trier": "Sort",
+  "Nom (A → Z)": "Name (A → Z)",
+  "Nom (Z → A)": "Name (Z → A)",
+  "Type (boss d'abord)": "Type (bosses first)",
+  "Recherche": "Search",
+  "Tout réinitialiser": "Reset all"
 }

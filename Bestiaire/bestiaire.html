@@ -311,7 +311,46 @@
           </div>
         </div>
 
-        <!-- ─ Le filtre Comportement a été retiré ─ -->
+        <!-- ─ Comportement (monstres) ─ -->
+        <div class="filter-block" id="behavior-block">
+          <div class="filter-block-header open" id="behavior-block-header">
+            <span class="palier-label">◈ Comportement</span>
+            <span class="palier-arrow">▶</span>
+          </div>
+          <div class="filter-block-body open" id="behavior-block-body">
+            <div class="bfilter-list" id="behavior-filters">
+              <label class="bfilter-row">
+                <input type="checkbox" class="behavior-filter-cb" value="agressif" checked />
+                <span class="bfilter-dot bfilter-agressif"></span>
+                <span class="bfilter-label">Agressif</span>
+                <span class="bfilter-count" id="count-beh-agressif"></span>
+              </label>
+              <label class="bfilter-row">
+                <input type="checkbox" class="behavior-filter-cb" value="neutre" checked />
+                <span class="bfilter-dot bfilter-neutre"></span>
+                <span class="bfilter-label">Neutre</span>
+                <span class="bfilter-count" id="count-beh-neutre"></span>
+              </label>
+              <label class="bfilter-row">
+                <input type="checkbox" class="behavior-filter-cb" value="passif" checked />
+                <span class="bfilter-dot bfilter-passif"></span>
+                <span class="bfilter-label">Passif</span>
+                <span class="bfilter-count" id="count-beh-passif"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─ Région (monstres) ─ -->
+        <div class="filter-block" id="region-block">
+          <div class="filter-block-header" id="region-block-header">
+            <span class="palier-label">◈ Région</span>
+            <span class="palier-arrow">▶</span>
+          </div>
+          <div class="filter-block-body" id="region-block-body">
+            <div class="bfilter-list" id="region-filters"></div>
+          </div>
+        </div>
 
       </div><!-- /sidebar-scroll -->
     </aside>
@@ -322,18 +361,22 @@
         <div>
           <h1 class="bestiaire-title" id="main-title">Bestiaire</h1>
           <p class="bestiaire-subtitle" id="main-subtitle">// MONSTRES · VEILLEURS AU CLAIR DE LUNE</p>
+          <p class="bestiaire-tagline" id="main-tagline">Toutes les créatures rencontrées au clair de lune : leurs attaques, leur butin et leurs repaires.</p>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;">
+        <div class="bestiaire-tools">
+          <select id="sort-select" class="sort-select" aria-label="Trier"></select>
           <div class="card-size-btns" id="card-size-btns">
-            <button class="card-size-btn" data-size="small" title="Petites icônes">⊞</button>
-            <button class="card-size-btn active" data-size="medium" title="Icônes moyennes">⊡</button>
-            <button class="card-size-btn" data-size="large" title="Grandes icônes">⊟</button>
+            <button class="card-size-btn" data-size="small" title="Petites icônes" aria-label="Petites icônes">⊞</button>
+            <button class="card-size-btn active" data-size="medium" title="Icônes moyennes" aria-label="Icônes moyennes">⊡</button>
+            <button class="card-size-btn" data-size="large" title="Grandes icônes" aria-label="Grandes icônes">⊟</button>
           </div>
-          <span id="result-count" class="result-count"></span>
+          <span id="result-count" class="result-count" aria-live="polite"></span>
         </div>
       </div>
 
-      <div id="entity-grid" class="entity-grid"><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div></div>
+      <div id="active-filters" class="active-filters" style="display:none;"></div>
+
+      <div id="entity-grid" class="entity-grid"><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div><div class="skel-card" aria-hidden="true"></div></div>
 
       <div id="grid-empty" class="grid-empty" style="display:none;">
         <div class="grid-empty-icon">🐗</div>
