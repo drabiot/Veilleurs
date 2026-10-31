@@ -60,8 +60,8 @@
       </div>
 
       <div class="cmp-toolbar">
-        <button class="cmp-btn cmp-btn-primary" id="cmp-add">＋ Ajouter un build</button>
-        <span class="cmp-toolbar-sep"></span>
+        <!-- Bouton masqué : les boutons du cadre (état vide, carte « Ajouter ») le déclenchent -->
+        <button class="cmp-btn" id="cmp-add" hidden style="display:none !important" aria-hidden="true" tabindex="-1">＋ Ajouter un build</button>
         <label class="cmp-switch" title="Masque les stats identiques sur tous les builds">
           <input type="checkbox" id="cmp-diff-only" /><span class="cmp-switch-track"><span class="cmp-switch-knob"></span></span>
           <span>Différences seulement</span>
