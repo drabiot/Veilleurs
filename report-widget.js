@@ -21,7 +21,7 @@
     if (!btnEl) return;
     const n = ticketState?.unread || 0;
     btnEl.classList.toggle('unread', n > 0);
-    btnEl.innerHTML = '💬 Nous contacter' + (n > 0 ? '<span class="vcl-report-count" aria-hidden="true">' + n + '</span>' : '');
+    btnEl.innerHTML = 'Nous contacter' + (n > 0 ? '<span class="vcl-report-count" aria-hidden="true">' + n + '</span>' : '');
     btnEl.title = n > 0 ? (n > 1 ? n + ' tickets avec une réponse des Veilleurs' : 'Un ticket avec une réponse des Veilleurs') : 'Signaler un bug, proposer une suggestion, poser une question';
   }
   window.vclSetTickets = s => { ticketState = s; paintBtn(); };

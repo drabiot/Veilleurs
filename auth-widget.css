@@ -49,12 +49,17 @@
 }
 
 .vcl-auth-role-badge {
-  padding: 3px 8px;
-  font-size: 10px;
-  font-weight: 700;
-  border-radius: 4px;
-  color: #000;
+  padding: 4px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .66rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  border-radius: 3px;
   white-space: nowrap;
+  /* couleur du rôle posée en JS (color) : bordure et fond en sont dérivés */
+  border: 1px solid color-mix(in srgb, currentColor 55%, transparent);
+  background: color-mix(in srgb, currentColor 10%, transparent);
 }
 
 /* ── Modal overlay ── */

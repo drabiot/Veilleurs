@@ -134,8 +134,8 @@ function _showUserUI(user, role, baseRole) {
     });
   }
   const badge = document.getElementById('vcl-role-badge');
-  badge.textContent = `${d.emoji} ${d.label}`;
-  badge.style.background = d.color;
+  badge.textContent = d.label;
+  badge.style.color = d.color;
   if (hasRole(baseRole, 'contributeur')) _injectModLink();
 
 }

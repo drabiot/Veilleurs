@@ -182,13 +182,13 @@ function flagSvg(code, n) {
 
 const LANG_CSS = `
 .vcl-lang{position:relative;display:inline-block;margin-right:8px;vertical-align:middle}
-.vcl-lang-btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid rgba(224,172,96,.4);color:#e0ac60;border-radius:4px;padding:2px 7px;font-family:inherit;font-size:11px;font-weight:600;line-height:1.2;letter-spacing:.06em;cursor:pointer}
-.vcl-lang-btn:hover,.vcl-lang-btn[aria-expanded="true"]{background:rgba(224,172,96,.12)}
+.vcl-lang-btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid #9a7040;color:#e0ac60;border-radius:3px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:500;line-height:1.2;letter-spacing:.08em;cursor:pointer;transition:background .2s,color .2s}
+.vcl-lang-btn:hover,.vcl-lang-btn[aria-expanded="true"]{background:#e0ac60;color:#0e0c0a}
 .vcl-lang-btn .caret{font-size:8px;opacity:.7}
 .vcl-lang-btn svg,.vcl-lang-opt svg{display:block;width:18px;height:12px;border-radius:2px;flex:none}
-.vcl-lang-menu{position:fixed !important;z-index:2147483000;min-width:128px;background:#15120e;border:1px solid rgba(224,172,96,.4);border-radius:6px;padding:3px;box-shadow:0 10px 28px rgba(0,0,0,.55)}
+.vcl-lang-menu{position:fixed !important;z-index:2147483000;min-width:128px;background:#15120e;border:1px solid #9a7040;border-radius:3px;padding:3px;box-shadow:0 10px 28px rgba(0,0,0,.55)}
 .vcl-lang-menu[hidden]{display:none}
-.vcl-lang-opt{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:0;border-radius:4px;color:#d8cdb8;padding:5px 8px;font-family:inherit;font-size:11px;font-weight:500;line-height:1.2;text-align:left;cursor:pointer}
+.vcl-lang-opt{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:0;border-radius:3px;color:#c9b99a;padding:6px 9px;font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.06em;font-weight:500;line-height:1.2;text-align:left;cursor:pointer}
 .vcl-lang-opt:hover,.vcl-lang-opt:focus-visible{background:rgba(224,172,96,.14);outline:none}
 .vcl-lang-opt .check{margin-left:auto;padding-left:10px;color:#e0ac60}
 `;
