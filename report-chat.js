@@ -50,15 +50,18 @@ export function initReportChat(db, uid) {
     const ov = document.createElement('div');
     ov.id = 'vcl-reply-overlay';
     ov.className = 'vcl-reply-overlay';
-    ov.innerHTML = '<div class="vcl-reply-modal vcl-chat-modal"><button type="button" class="vcl-chat-close" title="Fermer">✕</button>'
-      + '<h3>💬 Échanges avec les admins</h3>'
+    ov.innerHTML = '<div class="vcl-reply-modal vcl-chat-modal"><div class="vcl-reply-bar"><h3>💬 Échanges avec les admins</h3><button type="button" class="vcl-chat-close" title="Fermer">✕</button></div>'
+      + '<div class="vcl-chat-body">'
       + convs.map(r => `<div class="vcl-chat" data-id="${esc(r.id)}">
-          <div class="vcl-chat-head">${r.ficheId ? '⚑ ' + esc(r.ficheName || r.ficheId) + ' — ' : ''}${esc(String(r.text || '').slice(0, 80))}${unreadIds.includes(r.id) ? ' <span class="vcl-chat-new">nouveau</span>' : ''}</div>
+          <div class="vcl-chat-head">
+            <div class="vcl-chat-label">${r.ficheId ? '⚑ ' + esc(r.ficheName || r.ficheId) : 'Ton signalement'}${unreadIds.includes(r.id) ? '<span class="vcl-chat-new">NOUVEAU</span>' : ''}</div>
+            <div class="vcl-chat-quote">${esc(String(r.text || '').slice(0, 120))}</div>
+          </div>
           <div class="vcl-chat-log">${bubbles(r)}</div>
-          <div class="vcl-chat-send"><textarea rows="2" maxlength="2000" placeholder="Répondre aux admins…"></textarea><button type="button">Envoyer</button></div>
+          <div class="vcl-chat-send"><textarea rows="1" maxlength="2000" placeholder="Répondre aux admins…"></textarea><button type="button">Envoyer</button></div>
           <div class="vcl-chat-status"></div>
         </div>`).join('')
-      + '</div>';
+      + '</div></div>';
     document.body.appendChild(ov);
     const close = () => { ov.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = e => { if (e.key === 'Escape') close(); };
