@@ -271,7 +271,7 @@
             let cls = i === refIdx ? ' is-ref' : '';
             if (r.diff) cls += r.best[i] ? ' best' : (r.worst[i] ? ' worst' : '');
             let dh = '';
-            if (i !== refIdx && d !== 0) dh = '<span class="cmp-chip ' + (d > 0 ? 'up' : 'down') + '">' + fmtDelta(d, r.stat) + '</span>' + arrow(d, r.values[refIdx], i > refIdx);
+            if (i !== refIdx && d !== 0) dh = arrow(d, r.values[refIdx], i > refIdx);
             h += '<td class="cmp-cell' + cls + '"><span class="cmp-v">' + (v === 0 ? '—' : fmt(v, r.stat)) + '</span>' + dh + '</td>';
           });
           h += '</tr>';
