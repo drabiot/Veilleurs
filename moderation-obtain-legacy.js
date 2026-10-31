@@ -5,16 +5,17 @@
 
 export function init(ctx) {
 const { cachedDocs, invalidateModCache, setHash: _setHash, showPanel: _showPanel, COL, doc, escHtml } = ctx;
-// Patterns reconnus par le builder structuré (y compris anciens formats pour compatibilité)
+// Patterns reconnus par le builder structuré (y compris anciens formats pour compatibilité).
+// Fabricable / Achetable : le builder ajoute le lieu du PNJ (« … de Ville de Départ (x,y,z) »), comme le parseur du Creator.
 const OBTAIN_STRUCTURED_PATTERNS = [
   /^Obtenable en tuant:$/,
   /^Obtenable en finissant le donjon:$/,
   /^-\s*\[([^|]+)\|([^\]]+)\]\[([^\]]+)\]$/,
   /^Obtenable en récompense du \[npc:[^|]+\|[^\]]+\]$/,
-  /^Fabricable au \[npc:[^|]+\|[^\]]+\]$/,
+  /^Fabricable au \[npc:[^|]+\|[^\]]+\](?: de .*)?$/,
   /^\[obtain:[\w-]+(?::\d+)?\]$/,
   /^Fabricable à la Forge( du Fractured Underworld)?$/,
-  /^Achetable au \[npc:[^|]+\|[^\]]+\]$/,
+  /^Achetable au \[npc:[^|]+\|[^\]]+\](?: de .*)?$/,
   /^Récompense de la quête \[quest:[^|]+\|[^\]]+\]$/,
   /^Récompenses des quêtes\s*:$/,
   /^-\s*\[quest:[^|]+\|[^\]]+\]$/,
