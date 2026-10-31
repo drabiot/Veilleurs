@@ -1,0 +1,1272 @@
+/* Builds — page publique des builds (extrait de builds.html) */
+    import {
+      db, auth, COL,
+      desanitizeFromFirestore, logPageView, getUserRole,
+    } from '../firebase.js';
+    import {
+      collection, query, where, orderBy, limit, startAfter,
+      getDoc, getDocs, doc, setDoc, deleteDoc, updateDoc, increment, serverTimestamp, writeBatch,
+    } from '../d1db.js';
+    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { store } from '../store.js';
+
+    logPageView('builds');
+
+    // Items du wiki : sert à retrouver l'image réelle d'un slot (builds publiés avec un chemin palier+id faux : archive, world boss…)
+    const _itemsById = new Map();
+    try {
+      await store.load(['items']);
+      store.populateGlobals();
+      (typeof ITEMS !== 'undefined' ? ITEMS : []).forEach(i => { if (i && i.id != null) _itemsById.set(String(i.id), i); });
+    } catch (e) { console.warn('[builds] items:', e); }
+    function _slotImgPath(slotId, b, stored) {
+      const id = (b.slots?.[slotId] || {}).id;
+      const it = id != null ? _itemsById.get(String(id)) : null;
+      const real = it && typeof getItemImg === 'function' ? getItemImg(it) : null;
+      return real || stored;
+    }
+
+    // ── État ──────────────────────────────────────────────────────
+    // Tout charger d'un coup : l'ordre choisi par les admins (champ `order`) est trié côté client, donc global
+    const PAGE_SIZE    = 500;
+    const SIG          = "🌙𝓥𝓮𝓲𝓵𝓵𝓮𝓾𝓻𝓼 𝓪𝓾 𝓒𝓵𝓪𝓲𝓻 𝓭𝓮 𝓛𝓾𝓷𝓮🌙";
+    const COL_BUILDS   = COL.buildsPublished;
+    const COL_FAVS     = COL.userFavorites;
+
+    let currentUser      = null;
+    let currentUserRole  = 'visiteur';
+    let myFavoriteIds    = new Set();
+    let lastDoc          = null;
+    let hasMore          = false;
+    let allBuilds        = [];
+    let isSingleView     = false;
+    let filterMyBuilds   = false;
+
+    // Filtres
+    let filterClass    = '';
+    let filterMaxLevel = parseInt(document.getElementById('filter-level').max) || 30;
+    let filterStats    = {};
+    let filterFavOnly  = false;
+    let filterSearch   = '';
+    let sortBy         = 'manual';
+    let shownBuilds    = [];   // liste affichée (filtrée + triée), base du réordonnancement admin
+    let dragId         = null;
+
+    let pendingDeleteId  = null;
+
+    // ── URL params ────────────────────────────────────────────────
+    const urlParams   = new URLSearchParams(window.location.search);
+    const urlBuildId  = urlParams.get('id');
+    const urlMyBuilds = urlParams.get('my');
+
+    // Défini avant le premier chargement : le rendu des cartes en dépend (sinon erreur « before initialization » pour les visiteurs)
+    // Disposition des slots identique à l'atelier
+    const MQ_LEFT  = ['amulette','anneau1','anneau2','bracelet','gants'];
+    const MQ_RIGHT = ['casque','plastron','jambieres','bottes','arme_pr'];
+    const MQ_BOT   = ['artefact1','artefact2','artefact3','arme_sec'];
+    const _SLOT_DEFS = (typeof ALL_SLOTS !== 'undefined')
+      ? new Map(ALL_SLOTS.map(s => [s.id, s]))
+      : new Map();
+
+    // Icônes SVG des cartes (définies avant le premier rendu)
+    const _svg = d => `<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+    const _ICO_EYE  = _svg('<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>');
+    const _ICO_STAR = _svg('<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>');
+    const _ICO_LINK = _svg('<path d="M10 13a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7"/>');
+
+    // ── Auth ──────────────────────────────────────────────────────
+    onAuthStateChanged(auth, async user => {
+      currentUser = user;
+      const prevRole = currentUserRole;
+      if (user) {
+        await _loadMyFavorites();
+        try { currentUserRole = await getUserRole(user.uid); } catch {}
+      } else {
+        currentUserRole = 'visiteur';
+      }
+      _refreshFavButtons();
+      // Re-fetch sensible data if role changed (e.g., auth resolved after initial load)
+      const nowCanSee = ['contributeur', 'admin'].includes(currentUserRole);
+      const wasCanSee = ['contributeur', 'admin'].includes(prevRole);
+      if ((nowCanSee !== wasCanSee || (currentUserRole === 'admin') !== (prevRole === 'admin')) && allBuilds.length > 0) {
+        await _fetchSensibleData(allBuilds);
+        _renderBuilds(allBuilds);
+      }
+    });
+
+    async function _loadMyFavorites() {
+      if (!currentUser) return;
+      try {
+        const q = query(
+          collection(db, COL_FAVS),
+          where('uid', '==', currentUser.uid),
+          limit(200)
+        );
+        const snap = await getDocs(q);
+        myFavoriteIds = new Set(snap.docs.map(d => d.data().buildId));
+      } catch(e) { console.warn('[builds] favorites:', e); }
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    _buildClassChips();
+    _buildStatsFilters();
+    _setupEventListeners();
+    _setupDragReorder();
+
+    // Charger le niveau max depuis window si disponible
+    const maxLvl = window.MAX_LEVEL || 30;
+    document.getElementById('filter-level').max = maxLvl;
+    document.getElementById('filter-level').value = maxLvl;
+    _syncRange(document.getElementById('filter-level'));
+    document.getElementById('filter-level-val').textContent = maxLvl;
+    filterMaxLevel = maxLvl;
+
+    // Mode "mes builds"
+    if (urlMyBuilds && currentUser) {
+      // Attendre auth avant de charger
+    }
+
+    // Mode single build (lien direct)
+    if (urlBuildId) {
+      isSingleView = true;
+      // Attendre que l'état auth soit connu — sinon le token n'est pas encore attaché
+      // aux requêtes Firestore, ce qui fait échouer les builds unlisted (rule: isAuth())
+      await new Promise(resolve => { const u = onAuthStateChanged(auth, () => { u(); resolve(); }); });
+      await _loadSingleBuild(urlBuildId);
+    } else {
+      await _loadBuilds(false);
+    }
+
+    // ── Chargement builds ──────────────────────────────────────────
+    // Pas d'orderBy côté serveur → pas d'index composite requis.
+    // Tri et filtres secondaires appliqués client-side.
+    async function _loadBuilds(append) {
+      const grid = document.getElementById('builds-grid');
+      if (!append) {
+        grid.innerHTML = _skeletonHtml();
+        allBuilds = [];
+        lastDoc   = null;
+      }
+
+      try {
+        const constraints = [ where('visibility', '==', 'public'), limit(PAGE_SIZE) ];
+        if (append && lastDoc) constraints.push(startAfter(lastDoc));
+
+        const snap = await getDocs(query(collection(db, COL_BUILDS), ...constraints));
+
+        hasMore = snap.docs.length === PAGE_SIZE;
+        if (snap.docs.length > 0) lastDoc = snap.docs[snap.docs.length - 1];
+
+        const builds = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+        if (append) allBuilds = allBuilds.concat(builds);
+        else        allBuilds = builds;
+
+        await _fetchSensibleData(allBuilds);
+        _renderBuilds(allBuilds);
+      } catch(e) {
+        console.error('[builds] load:', e);
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">⚠️</span>Erreur lors du chargement. Vérifiez la console.</div>';
+      }
+    }
+
+    async function _loadMyBuilds() {
+      const grid = document.getElementById('builds-grid');
+      grid.innerHTML = _skeletonHtml();
+      if (!currentUser) {
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">🔒</span>Connectez-vous pour voir vos builds.</div>';
+        return;
+      }
+      try {
+        const snap = await getDocs(query(
+          collection(db, COL_BUILDS),
+          where('authorUid', '==', currentUser.uid),
+          limit(50)
+        ));
+        allBuilds = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+        await _fetchSensibleData(allBuilds);
+        _renderBuilds(allBuilds);
+      } catch(e) {
+        console.error('[builds] my builds:', e);
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">⚠️</span>Erreur lors du chargement.</div>';
+      }
+    }
+
+    async function _loadMyFavoritesBuilds() {
+      const grid = document.getElementById('builds-grid');
+      grid.innerHTML = _skeletonHtml();
+      if (!currentUser) {
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">🔒</span>Connectez-vous pour voir vos favoris.</div>';
+        return;
+      }
+      const ids = [...myFavoriteIds];
+      if (!ids.length) {
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">⭐</span>Aucun favori pour l\'instant.<br><span style="font-size:11px;opacity:.6">Cliquez sur ⭐ sur un build pour l\'ajouter.</span></div>';
+        return;
+      }
+      try {
+        const builds = await Promise.all(
+          ids.slice(0, 50).map(id =>
+            getDoc(doc(db, COL_BUILDS, id)).then(d => d.exists() ? { _id: d.id, ...d.data() } : null)
+          )
+        ).then(r => r.filter(Boolean));
+        allBuilds = builds;
+        await _fetchSensibleData(allBuilds);
+        _renderBuilds(builds);
+      } catch(e) {
+        console.error('[builds] favorites builds:', e);
+      }
+    }
+
+    async function _loadSingleBuild(buildId) {
+      const grid = document.getElementById('builds-grid');
+      grid.innerHTML = _skeletonHtml();
+      try {
+        const snap = await getDoc(doc(db, COL_BUILDS, buildId));
+        if (!snap.exists()) {
+          grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">🔍</span>Build introuvable.</div>';
+          return;
+        }
+        const build = { _id: snap.id, ...snap.data() };
+        if (build.visibility === 'unlisted') {
+          document.getElementById('single-build-banner').style.display = 'flex';
+        }
+        allBuilds = [build];
+        await _fetchSensibleData(allBuilds);
+        _renderBuilds([build]);
+      } catch(e) {
+        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">⚠️</span>Erreur lors du chargement.</div>';
+      }
+    }
+
+    // ── Sensible data fetch ───────────────────────────────────────
+    async function _fetchSensibleData(builds) {
+      if (!['contributeur', 'admin'].includes(currentUserRole)) return;
+      const toFetch = builds.filter(b => b.sensibleSlots && Object.keys(b.sensibleSlots).length > 0 && !b._sensibleData);
+      if (!toFetch.length) return;
+      await Promise.all(toFetch.map(async b => {
+        try {
+          const snap = await getDoc(doc(db, COL.buildsSensible, b._id));
+          if (snap.exists()) b._sensibleData = { slots: desanitizeFromFirestore(snap.data().slots || {}) };
+        } catch {}
+      }));
+    }
+
+    // ── Rendu ─────────────────────────────────────────────────────
+    function _renderBuilds(builds) {
+      const grid  = document.getElementById('builds-grid');
+      const count = document.getElementById('builds-count');
+
+      let filtered = [...builds];
+
+      // Filtres client-side
+      if (filterClass)    filtered = filtered.filter(b => b.classe === filterClass);
+      if (filterMaxLevel < maxLvl) filtered = filtered.filter(b => (b.level || 1) <= filterMaxLevel);
+
+      const statEntries = Object.entries(filterStats).filter(e => e[1] > 0);
+      if (statEntries.length) {
+        filtered = filtered.filter(b => {
+          const ss = b.statsSnapshot || {};
+          return statEntries.every(([id, min]) => (ss[id] || 0) >= min);
+        });
+      }
+
+      if (filterFavOnly && !isSingleView) filtered = filtered.filter(b => myFavoriteIds.has(b._id));
+
+      if (filterSearch) {
+        const q = normalize(filterSearch);
+        filtered = filtered.filter(b => fuzzyMatch(q, b.name || '') || fuzzyMatch(q, b.authorPseudo || ''));
+      }
+
+      // Tri client-side
+      filtered.sort(function(a, b) {
+        if (sortBy === 'manual') {
+          // Ordre choisi par les admins ; les builds jamais classés viennent après, du plus récent au plus ancien
+          const oa = typeof a.order === 'number' ? a.order : Infinity;
+          const ob = typeof b.order === 'number' ? b.order : Infinity;
+          if (oa !== ob) return oa < ob ? -1 : 1;
+          return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+        }
+        const va = sortBy === 'createdAt' ? (a.createdAt?.seconds || 0) : (a[sortBy] || 0);
+        const vb = sortBy === 'createdAt' ? (b.createdAt?.seconds || 0) : (b[sortBy] || 0);
+        return vb - va;
+      });
+      shownBuilds = filtered;
+
+      const canReorder = _canReorder();
+      grid.classList.toggle('reorderable', canReorder);
+
+      count.textContent = filtered.length
+        ? filtered.length + ' build' + (filtered.length > 1 ? 's' : '')
+        : '';
+
+      _renderActiveChips();
+
+      if (!filtered.length) {
+        grid.innerHTML = _emptyHtml();
+        grid.removeAttribute('aria-busy');
+        document.getElementById('load-more-btn').style.display = 'none';
+        return;
+      }
+
+      // FLIP : on mémorise la position des cartes avant le rendu, puis on les anime vers leur nouvelle place
+      const before = new Map([...grid.querySelectorAll('.build-card[data-id]')].map(c => [c.dataset.id, c.getBoundingClientRect()]));
+      grid.innerHTML = filtered.map((b, i) => _buildCard(b)).join('');
+      grid.removeAttribute('aria-busy');
+      _animateCards(grid, before);
+
+      const lmBtn = document.getElementById('load-more-btn');
+      lmBtn.style.display = (hasMore && !filterSearch && !filterFavOnly && !filterMyBuilds && !isSingleView) ? 'block' : 'none';
+
+      _attachCardListeners();
+    }
+
+    // ── Squelettes, état vide, animations ─────────────────────────
+    function _skeletonHtml(n = 6) {
+      const card = `
+        <div class="build-card skeleton" aria-hidden="true">
+          <div class="sk sk-line sk-title"></div>
+          <div class="sk sk-line sk-sub"></div>
+          <div class="sk sk-mannequin"></div>
+          <div class="sk sk-line sk-foot"></div>
+          <div class="sk sk-btn"></div>
+        </div>`;
+      document.getElementById('builds-grid')?.setAttribute('aria-busy', 'true');
+      return card.repeat(n);
+    }
+
+    function _filtersActive() {
+      return !!(filterClass || filterSearch || filterFavOnly || filterMyBuilds
+        || filterMaxLevel < maxLvl || Object.keys(filterStats).some(k => filterStats[k] > 0));
+    }
+
+    function _emptyHtml() {
+      if (_filtersActive()) {
+        return `<div class="builds-empty">
+          <span class="builds-empty-icon">🔍</span>
+          <div class="builds-empty-title">Aucun build ne correspond</div>
+          <p>Essaie d'assouplir tes filtres ou ta recherche.</p>
+          <div class="builds-empty-cta"><button type="button" class="action-btn primary" data-empty-reset>✕ Réinitialiser les filtres</button></div>
+        </div>`;
+      }
+      return `<div class="builds-empty">
+        <span class="builds-empty-icon">📋</span>
+        <div class="builds-empty-title">Aucun build trouvé.</div>
+        <p>Soyez le premier à publier !</p>
+        <div class="builds-empty-cta"><a class="action-btn primary" href="../Atelier/atelier.html">🔨 Créer un build dans l'Atelier</a></div>
+      </div>`;
+    }
+
+    function _animateCards(grid, before) {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const ease = 'cubic-bezier(.2,.7,.2,1)';
+      grid.querySelectorAll('.build-card[data-id]').forEach((card, i) => {
+        const prev = before.get(card.dataset.id);
+        if (prev) {
+          const now = card.getBoundingClientRect();
+          const dx = prev.left - now.left, dy = prev.top - now.top;
+          if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+            card.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 340, easing: ease });
+          }
+        } else {
+          card.animate([{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }],
+            { duration: 420, delay: Math.min(i, 12) * 40, easing: ease, fill: 'backwards' });
+        }
+      });
+    }
+
+    // ── Filtres actifs (chips retirables) + compteur du bouton Filtres ──
+    function _statLabel(id) {
+      for (const g of (typeof STAT_GROUPS !== 'undefined' ? STAT_GROUPS : [])) {
+        const s = g.stats.find(x => x.id === id);
+        if (s) return s.label;
+      }
+      return id;
+    }
+
+    function _renderActiveChips() {
+      const wrap = document.getElementById('active-chips');
+      const chips = [];
+      const add = (kind, key, inner) => chips.push(
+        `<button type="button" class="ac-chip" data-clear="${escHtml(kind)}" data-key="${escHtml(key || '')}" title="Retirer le filtre">${inner}<span class="ac-x" aria-hidden="true">✕</span></button>`);
+      let count = 0;
+      if (filterClass) {
+        const c = (typeof CLASSES !== 'undefined' ? CLASSES : []).find(x => x.id === filterClass);
+        add('class', '', `<span>${escHtml(c ? c.ico : '')}</span> <span>${escHtml(c ? c.label : filterClass)}</span>`); count++;
+      }
+      if (filterMaxLevel < maxLvl) { add('level', '', `<span class="ac-k">Niveau max</span> <span class="ac-v">${filterMaxLevel}</span>`); count++; }
+      Object.entries(filterStats).filter(e => e[1] > 0).forEach(([id, v]) => {
+        add('stat', id, `<span class="ac-k">${escHtml(_statLabel(id))}</span> <span class="ac-v">≥ ${v}</span>`); count++;
+      });
+      if (filterFavOnly)  { add('fav', '', '<span>⭐</span> <span>Favoris</span>'); count++; }
+      if (filterMyBuilds) { add('mine', '', '<span>👤</span> <span>Mes builds</span>'); count++; }
+      if (filterSearch)   { add('search', '', `<span class="ac-v">“${escHtml(filterSearch)}”</span>`); }
+      wrap.innerHTML = chips.join('');
+      wrap.hidden = !chips.length;
+      // Lignes de stats renseignées + pastille de compte par groupe
+      document.querySelectorAll('.stat-filter-row').forEach(r => r.classList.toggle('is-set', (filterStats[r.dataset.stat] || 0) > 0));
+      document.querySelectorAll('.stat-group').forEach(g => {
+        const n = g.querySelectorAll('.stat-filter-row.is-set').length;
+        const c = g.querySelector('.stat-group-count');
+        c.textContent = n; c.hidden = !n;
+      });
+      const badge = document.getElementById('filters-badge');
+      badge.textContent = count;
+      badge.hidden = !count;
+    }
+
+    function _clearFilter(kind, key) {
+      let needReload = false;
+      if (kind === 'class') {
+        filterClass = '';
+        document.querySelectorAll('.class-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
+      } else if (kind === 'level') {
+        filterMaxLevel = maxLvl;
+        const lv = document.getElementById('filter-level');
+        lv.value = maxLvl; _syncRange(lv);
+        document.getElementById('filter-level-val').textContent = maxLvl;
+      } else if (kind === 'stat') {
+        delete filterStats[key];
+        const inp = document.querySelector(`input[data-stat="${CSS.escape(key)}"]`);
+        if (inp) inp.value = '';
+      } else if (kind === 'fav') {
+        filterFavOnly = false; needReload = true;
+        document.getElementById('fav-toggle').classList.remove('active');
+      } else if (kind === 'mine') {
+        filterMyBuilds = false; needReload = true;
+        document.getElementById('my-builds-toggle').classList.remove('active');
+      } else if (kind === 'search') {
+        filterSearch = '';
+        document.getElementById('search-input').value = '';
+      }
+      if (needReload) _reload(); else _renderBuilds(allBuilds);
+    }
+
+    // Curseur doré : --p = part remplie de la piste
+    function _syncRange(el) {
+      const min = +el.min || 0, max = +el.max || 100;
+      el.style.setProperty('--p', ((el.value - min) / (max - min || 1) * 100) + '%');
+    }
+
+    // ── Modifier le commentaire d'un build déjà publié ─────────────
+    let pendingCommentId = null;
+    function _showModalZone(zone) {
+      document.getElementById('modal-zone-delete').style.display  = zone === 'delete'  ? 'flex' : 'none';
+      document.getElementById('modal-zone-comment').style.display = zone === 'comment' ? 'flex' : 'none';
+    }
+    function _handleEditComment(id) {
+      const b = allBuilds.find(x => x._id === id) || (shownBuilds || []).find(x => x._id === id);
+      if (!b) return;
+      pendingCommentId = id;
+      const ta = document.getElementById('comment-edit-inp');
+      ta.value = b.comment || '';
+      document.getElementById('comment-edit-count').textContent = ta.value.length;
+      document.getElementById('comment-edit-err').style.display = 'none';
+      document.getElementById('modal-title').textContent = '💬 Commentaire du build';
+      _showModalZone('comment');
+      document.getElementById('modal').classList.add('open');
+      ta.focus();
+    }
+    async function _saveComment() {
+      const id = pendingCommentId;
+      const b = allBuilds.find(x => x._id === id) || (shownBuilds || []).find(x => x._id === id);
+      if (!b) return;
+      const comment = document.getElementById('comment-edit-inp').value.trim().slice(0, 500);
+      const btn = document.getElementById('btn-comment-save');
+      btn.disabled = true;
+      try {
+        await updateDoc(doc(db, COL_BUILDS, id), { comment, updatedAt: serverTimestamp() });
+        b.comment = comment;
+        _closeModal();
+        _renderBuilds(allBuilds);
+        _showToast(comment ? '✓ Commentaire enregistré.' : '✓ Commentaire retiré.');
+      } catch (e) {
+        console.error('[builds] comment:', e);
+        const err = document.getElementById('comment-edit-err');
+        err.textContent = 'Enregistrement impossible : ' + (e.message || e);
+        err.style.display = 'block';
+      } finally { btn.disabled = false; }
+    }
+
+    async function _handleRename(id) {
+      const b = allBuilds.find(x => x._id === id) || (shownBuilds || []).find(x => x._id === id);
+      if (!b) return;
+      const nv = prompt('Nouveau nom du build (60 caractères max) :', b.name || '');
+      if (nv === null) return;
+      const name = nv.trim().slice(0, 60);
+      if (!name || name === b.name) return;
+      try {
+        await updateDoc(doc(db, COL_BUILDS, id), { name, updatedAt: serverTimestamp() });
+        b.name = name;
+        _renderBuilds(allBuilds);
+      } catch (e) {
+        console.error('[builds] rename:', e);
+        alert('Renommage impossible : ' + (e.message || e));
+      }
+    }
+
+    function _slotCell(slotId, b, canSeeSensible, runeNames) {
+      const def         = _SLOT_DEFS.get(slotId);
+      const ico         = def ? def.ico : '◻';
+      const label       = def ? def.label : slotId;
+      const slotImages  = b.slotImages || {};
+      const slots       = b.slots || {};
+      const isSensible  = !!(b.sensibleSlots || {})[slotId];
+      // runeNames: { "slotId_rune_0": "Nom Rune", ... } — stocké au publish
+      const prefix = slotId + '_rune_';
+      const slotRunes = Object.entries(runeNames)
+        .filter(([k]) => k.startsWith(prefix))
+        .map(([, name]) => name)
+        .filter(Boolean);
+      const runeAttr = slotRunes.length ? ` data-tip-rune="${escHtml(slotRunes.join(', '))}"` : '';
+
+      if (isSensible) {
+        if (canSeeSensible && b._sensibleData?.slots?.[slotId]) {
+          const s = b._sensibleData.slots[slotId];
+          const n = s.name || label;
+          if (s.img) return `<div class="bc-slot" data-tip="${escHtml(n)}"${runeAttr}><img src="../${s.img.replace(/^\.\.\//, '')}" alt="${escHtml(n)}" loading="lazy" onerror="this.classList.add('bc-slot-empty');this.remove()" /></div>`;
+          return `<div class="bc-slot bc-slot-noimg" data-tip="${escHtml(n)}"${runeAttr}><span class="bc-slot-text">${escHtml(n.slice(0,10))}</span></div>`;
+        }
+        return `<div class="bc-slot bc-slot-sensible" data-tip="Item sensible"${runeAttr}>?</div>`;
+      }
+
+      const img      = _slotImgPath(slotId, b, slotImages[slotId]);
+      const itemName = slots[slotId]?.name || '';
+      const tipItem  = escHtml(itemName || label);
+      // Rareté de l'item (bordure + lueur du slot, ligne colorée dans l'infobulle)
+      const wikiItem = slots[slotId]?.id != null ? _itemsById.get(String(slots[slotId].id)) : null;
+      const rar      = wikiItem && typeof RARITIES !== 'undefined' ? RARITIES[wikiItem.rarity] : null;
+      const rarAttr  = rar ? ` data-rar="${escHtml(wikiItem.rarity)}" data-tip-rar="${escHtml(rar.label)}" style="--rc:${escHtml(rar.color)}"` : '';
+      if (img)      return `<div class="bc-slot${rar ? ' bc-slot-rar' : ''}" tabindex="0" data-tip="${tipItem}"${runeAttr}${rarAttr}><img src="../${img.replace(/^\.\.\//, '')}" alt="${escHtml(itemName || slotId)}" loading="lazy" onerror="this.classList.add('bc-slot-empty-img')" /></div>`;
+      if (itemName) return `<div class="bc-slot bc-slot-noimg" data-tip="${tipItem}"${runeAttr}><span class="bc-slot-text">${escHtml(itemName.slice(0,10))}</span></div>`;
+      return `<div class="bc-slot bc-slot-empty" data-tip="${tipItem}"${runeAttr}>${escHtml(ico)}</div>`;
+    }
+
+    function _buildCard(b) {
+      const cls    = CLASSES?.find(c => c.id === b.classe);
+      const clsIco = cls ? cls.ico : '◈';
+      const clsLbl = cls ? cls.label : (b.classe || '—');
+      const ago    = _timeAgo(b.createdAt?.toDate?.() || new Date(b.createdAt?.seconds * 1000 || Date.now()));
+      const isFav  = myFavoriteIds.has(b._id);
+      const isOwn  = currentUser && b.authorUid === currentUser.uid;
+      const isAdm  = currentUserRole === 'admin';
+      const canDel = isOwn || isAdm;
+      const canSeeSensible = ['contributeur', 'admin'].includes(currentUserRole);
+
+      const runeNames = b.runeNames || {};
+      const colL   = MQ_LEFT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
+      const colR   = MQ_RIGHT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
+      const botRow = MQ_BOT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
+
+      const id = escHtml(b._id);
+      const menuItems = [
+        _canReorder() ? `<button type="button" role="menuitem" data-action="move-prev" data-id="${id}">◀ Déplacer avant</button><button type="button" role="menuitem" data-action="move-next" data-id="${id}">▶ Déplacer après</button>` : '',
+        (isOwn || isAdm) ? `<button type="button" role="menuitem" data-action="rename" data-id="${id}">✎ Renommer</button><button type="button" role="menuitem" data-action="comment" data-id="${id}">💬 Modifier le commentaire</button>` : '',
+        canDel ? `<button type="button" role="menuitem" class="danger" data-action="delete" data-id="${id}">✕ ${isAdm && !isOwn ? 'Supprimer (modération)' : 'Supprimer'}</button>` : '',
+      ].join('');
+
+      const unlistedBadge = (b.visibility === 'unlisted') ? `<span class="bc-unlisted-badge">🔗 Lien uniquement</span>` : '';
+      const adminBadge    = (!isOwn && isAdm) ? `<span class="bc-admin-badge">⬡ admin</span>` : '';
+
+      return `
+        <div class="build-card" data-id="${escHtml(b._id)}" data-cls="${escHtml(b.classe || '')}"${_canReorder() ? ' draggable="true"' : ''}>
+          <div class="bc-head">
+            <div class="bc-name" title="${escHtml(b.name || 'Sans nom')}">${escHtml(b.name || 'Sans nom')}</div>
+            ${menuItems ? `<div class="bc-head-right">
+              <button type="button" class="bc-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Plus d'actions" title="Plus d'actions">⋯</button>
+              <div class="bc-menu" role="menu">${menuItems}</div>
+            </div>` : ''}
+          </div>
+          <div class="bc-meta">
+            <span class="bc-author">👤 ${escHtml(b.authorPseudo || 'Anonyme')}</span>
+            ${unlistedBadge}${adminBadge}
+          </div>
+          <div class="bc-mannequin-wrap">
+            <div class="bc-mannequin-row">
+              <div class="bc-mq-col">${colL}</div>
+              <div class="bc-mq-center">
+                <span class="bc-mq-statsbtn" role="button" tabindex="0" data-stats-id="${escHtml(b._id)}">📊 Stats</span>
+                <span class="bc-mq-cls-ico">${escHtml(clsIco)}</span>
+                <span class="bc-mq-cls-name">${escHtml(clsLbl)}</span>
+                <span class="bc-mq-level">Niv.&nbsp;${b.level || 1}</span>
+              </div>
+              <div class="bc-mq-col">${colR}</div>
+            </div>
+            <div class="bc-mq-bot">${botRow}<button class="bc-slot bc-skill" data-action="skills" data-id="${escHtml(b._id)}" title="Arbre de compétences" aria-label="Arbre de compétences"><span class="bc-skill-ico"></span></button></div>
+          </div>
+          <div class="bc-foot">
+            <div class="bc-foot-meta">
+              <div class="bc-social">
+                <span title="Prévisualisations">${_ICO_EYE}<span class="bc-prev-count">${b.previewCount || 0}</span></span>
+                <span title="Favoris">${_ICO_STAR}<span class="bc-fav-count">${b.favoriteCount || 0}</span></span>
+              </div>
+              ${b.comment ? `<button type="button" class="bc-comment-chip" data-comment-id="${escHtml(b._id)}" aria-label="Lire le commentaire de l'auteur">💬 <span>Commentaire</span></button>` : ''}
+              <span class="bc-time">${escHtml(ago)}</span>
+            </div>
+            <div class="bc-actions">
+              <button class="bc-btn bc-btn-icon" data-action="share" data-id="${escHtml(b._id)}" title="Copier le lien" aria-label="Copier le lien">${_ICO_LINK}</button>
+              <button class="bc-btn primary" data-action="preview" data-id="${escHtml(b._id)}" title="Aperçu dans l'Atelier">◉ Aperçu</button>
+              <button class="bc-btn bc-btn-icon fav ${isFav ? 'active' : ''}" data-action="fav" data-id="${escHtml(b._id)}" aria-pressed="${isFav}" aria-label="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}" title="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${_ICO_STAR}</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function _attachCardListeners() {
+      document.querySelectorAll('[data-action]').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const action = this.dataset.action;
+          const id     = this.dataset.id;
+          if (action === 'fav')     _handleFav(id, this);
+          if (action === 'delete')  _handleDelete(id);
+          if (action === 'rename')  _handleRename(id);
+          if (action === 'comment') _handleEditComment(id);
+          if (action === 'skills')  _handleSkills(id);
+          if (action === 'share')   _handleShare(id);
+          if (action === 'compare') _toggleCompare(id, this);
+          if (action === 'move-prev') _moveBuild(id, -1);
+          if (action === 'move-next') _moveBuild(id, 1);
+          if (action === 'preview') {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = '… Chargement';
+            _handlePreview(id).catch(() => {
+              btn.disabled = false;
+              btn.textContent = '◉ Aperçu';
+              _showToast('⚠️ Erreur lors du chargement de l\'aperçu.');
+            });
+          }
+        });
+      });
+      // Infobulle « Stats » : toutes les stats du build, par groupe
+      const tip = document.getElementById('bc-tooltip');
+      function _statsTipHtml(b) {
+        const ss = b.statsSnapshot || {};
+        const groups = (typeof STAT_GROUPS !== 'undefined' ? STAT_GROUPS : []).map(g => {
+          const rows = g.stats.filter(st => ss[st.id]).map(st => {
+            const v = Math.round(ss[st.id] * 100) / 100;
+            return `<div class="bc-tip-stat"><span>${st.icon || ''} ${escHtml(st.label)}</span><b>${v}${escHtml(st.unit || '')}</b></div>`;
+          }).join('');
+          return rows ? `<div class="bc-tip-group">${escHtml(g.label || g.group || "")}</div>${rows}` : '';
+        }).join('');
+        return groups || '<div class="bc-tip-group">Aucune stat enregistrée</div>';
+      }
+      document.querySelectorAll('.bc-mq-statsbtn').forEach(el => {
+        el.addEventListener('mouseenter', function() {
+          const b = allBuilds.find(x => x._id === this.dataset.statsId);
+          if (!b) return;
+          tip.innerHTML = _statsTipHtml(b);
+          tip.classList.remove('bc-tooltip-comment');
+          tip.classList.add('bc-tooltip-stats');
+          tip.style.display = 'block';
+        });
+        el.addEventListener('mousemove', function(e) {
+          const w = tip.offsetWidth, h = tip.offsetHeight;
+          tip.style.left = Math.max(8, Math.min(e.clientX + 16, window.innerWidth - w - 8)) + 'px';
+          tip.style.top  = Math.max(8, Math.min(e.clientY - 12, window.innerHeight - h - 8)) + 'px';
+        });
+        el.addEventListener('mouseleave', function() {
+          tip.style.display = 'none';
+          tip.classList.remove('bc-tooltip-stats');
+        });
+      });
+      // Tooltips sur les thumbnails
+      function _fillSlotTip(el) {
+        const label = el.dataset.tip;
+        if (!label) return false;
+        tip.classList.remove('bc-tooltip-stats', 'bc-tooltip-comment');
+        tip.innerHTML = '';
+        tip.appendChild(document.createTextNode(label));
+        if (el.dataset.tipRar) {
+          const r = document.createElement('span');
+          r.className = 'bc-tip-rar';
+          r.style.color = el.style.getPropertyValue('--rc');
+          r.textContent = el.dataset.tipRar;
+          tip.appendChild(r);
+        }
+        if (el.dataset.tipRune) {
+          const runeSpan = document.createElement('span');
+          runeSpan.className = 'bc-tip-rune';
+          runeSpan.textContent = el.dataset.tipRune;
+          tip.appendChild(runeSpan);
+        }
+        tip.style.display = 'block';
+        return true;
+      }
+      // Place l'infobulle sous/au-dessus d'un élément (tactile + clavier), sans sortir de l'écran
+      function _placeTipNear(el) {
+        const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - 8)) + 'px';
+        tip.style.top  = (r.top - h - 8 < 8 ? r.bottom + 8 : r.top - h - 8) + 'px';
+      }
+      let _tipTimer = null;
+      document.querySelectorAll('.bc-slot[data-tip]').forEach(el => {
+        el.addEventListener('mouseenter', function() { _fillSlotTip(this); });
+        el.addEventListener('mousemove', function(e) {
+          tip.style.left = (e.clientX + 14) + 'px';
+          tip.style.top  = (e.clientY - 28) + 'px';
+        });
+        el.addEventListener('mouseleave', function() { tip.style.display = 'none'; });
+        el.addEventListener('focus', function() { if (_fillSlotTip(this)) _placeTipNear(this); });
+        el.addEventListener('blur',  function() { tip.style.display = 'none'; });
+        // Tactile : un appui affiche l'infobulle quelques secondes
+        el.addEventListener('click', function(e) {
+          if (!window.matchMedia('(hover: none)').matches) return;
+          if (_fillSlotTip(this)) { _placeTipNear(this); clearTimeout(_tipTimer); _tipTimer = setTimeout(() => { tip.style.display = 'none'; }, 2600); }
+        });
+      });
+      // Commentaire de l'auteur : texte complet (sauts de ligne conservés) au survol, au focus ou au tap
+      document.querySelectorAll('.bc-comment-chip').forEach(el => {
+        const show = () => {
+          const b = allBuilds.find(x => x._id === el.dataset.commentId);
+          if (!b || !b.comment) return false;
+          tip.classList.remove('bc-tooltip-stats');
+          tip.classList.add('bc-tooltip-comment');
+          tip.textContent = b.comment;
+          tip.style.display = 'block';
+          return true;
+        };
+        const hide = () => { tip.style.display = 'none'; tip.classList.remove('bc-tooltip-comment'); };
+        el.addEventListener('mouseenter', () => { if (show()) _placeTipNear(el); });
+        el.addEventListener('mouseleave', hide);
+        el.addEventListener('focus', () => { if (show()) _placeTipNear(el); });
+        el.addEventListener('blur', hide);
+        el.addEventListener('click', () => {
+          if (!window.matchMedia('(hover: none)').matches) return;
+          if (show()) { _placeTipNear(el); clearTimeout(_tipTimer); _tipTimer = setTimeout(hide, 9000); }
+        });
+      });
+      // Tactile / clavier : le bouton Stats s'ouvre aussi au tap et à Entrée
+      document.querySelectorAll('.bc-mq-statsbtn').forEach(el => {
+        const open = () => {
+          const b = allBuilds.find(x => x._id === el.dataset.statsId);
+          if (!b) return;
+          tip.innerHTML = _statsTipHtml(b);
+          tip.classList.remove('bc-tooltip-comment');
+          tip.classList.add('bc-tooltip-stats');
+          tip.style.display = 'block';
+          _placeTipNear(el);
+          clearTimeout(_tipTimer);
+          _tipTimer = setTimeout(() => { tip.style.display = 'none'; tip.classList.remove('bc-tooltip-stats'); }, 5000);
+        };
+        el.addEventListener('click', () => { if (window.matchMedia('(hover: none)').matches) open(); });
+        el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+        el.addEventListener('blur', () => { tip.style.display = 'none'; tip.classList.remove('bc-tooltip-stats'); });
+      });
+    }
+
+    // ── Menu ⋯ des cartes ──────────────────────────────────────────
+    document.addEventListener('click', e => {
+      const btn = e.target.closest?.('.bc-menu-btn');
+      document.querySelectorAll('.bc-menu.open').forEach(m => {
+        if (!btn || m !== btn.nextElementSibling) { m.classList.remove('open'); m.previousElementSibling?.setAttribute('aria-expanded', 'false'); }
+      });
+      if (btn) {
+        const m = btn.nextElementSibling;
+        const open = m.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(open));
+        if (open) m.querySelector('button')?.focus({ preventScroll: true });
+      }
+    }, true);
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      document.querySelectorAll('.bc-menu.open').forEach(m => { m.classList.remove('open'); m.previousElementSibling?.setAttribute('aria-expanded', 'false'); m.previousElementSibling?.focus(); });
+      document.getElementById('sort-dd')?.classList.remove('open');
+      _closeDrawer();
+    });
+
+    // ── Tri : menu déroulant à l'habillage du site (le <select> reste la source de vérité) ──
+    function _setupSortDropdown() {
+      const sel = document.getElementById('sort-select');
+      const dd = document.getElementById('sort-dd');
+      const btn = document.getElementById('sort-dd-btn');
+      const menu = document.getElementById('sort-dd-menu');
+      const val = document.getElementById('sort-dd-val');
+      menu.innerHTML = [...sel.options].map(o =>
+        `<li role="presentation"><button type="button" role="option" data-v="${escHtml(o.value)}">${escHtml(o.textContent)}</button></li>`).join('');
+      const sync = () => {
+        const o = sel.options[sel.selectedIndex];
+        val.textContent = o.textContent;
+        menu.querySelectorAll('button').forEach(b => {
+          const on = b.dataset.v === sel.value;
+          b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on));
+        });
+      };
+      const setOpen = on => { dd.classList.toggle('open', on); btn.setAttribute('aria-expanded', String(on)); };
+      btn.addEventListener('click', e => { e.stopPropagation(); setOpen(!dd.classList.contains('open')); if (dd.classList.contains('open')) menu.querySelector('.active')?.focus(); });
+      menu.addEventListener('click', e => {
+        const b = e.target.closest('button[data-v]');
+        if (!b) return;
+        sel.value = b.dataset.v;
+        sel.dispatchEvent(new Event('change'));
+        sync(); setOpen(false); btn.focus();
+      });
+      menu.addEventListener('keydown', e => {
+        const items = [...menu.querySelectorAll('button')], i = items.indexOf(document.activeElement);
+        if (e.key === 'ArrowDown') { e.preventDefault(); items[Math.min(i + 1, items.length - 1)].focus(); }
+        if (e.key === 'ArrowUp')   { e.preventDefault(); items[Math.max(i - 1, 0)].focus(); }
+      });
+      document.addEventListener('click', e => { if (!dd.contains(e.target)) setOpen(false); });
+      sync();
+    }
+
+    // ── Tiroir de filtres (mobile) ──────────────────────────────────
+    function _openDrawer()  { document.body.classList.add('drawer-open'); document.getElementById('filters-open').setAttribute('aria-expanded', 'true'); }
+    function _closeDrawer() { document.body.classList.remove('drawer-open'); document.getElementById('filters-open')?.setAttribute('aria-expanded', 'false'); }
+
+    // ── Comparateur : sélection de 2 à 4 builds (conservée dans localStorage) ──
+    function _cmpSel() {
+      try { const a = JSON.parse(localStorage.getItem('vcl_compare_sel') || '[]'); return Array.isArray(a) ? a : []; } catch { return []; }
+    }
+    function _cmpSave(a) { try { localStorage.setItem('vcl_compare_sel', JSON.stringify(a)); } catch {} }
+    function _toggleCompare(id, btn) {
+      let sel = _cmpSel();
+      if (sel.includes(id)) sel = sel.filter(x => x !== id);
+      else if (sel.length >= 4) { _showToast('⚖ 4 builds maximum dans le comparateur.'); return; }
+      else sel.push(id);
+      _cmpSave(sel);
+      btn.classList.toggle('active', sel.includes(id));
+      _renderCmpBar();
+    (function () {
+      const a = document.getElementById('cmp-open');
+      if (a) a.addEventListener('click', function () {
+        const sel = _cmpSel();
+        if (sel.length) a.href = 'comparateur.html?ids=' + sel.map(encodeURIComponent).join(',');
+      });
+    })();
+    }
+    function _renderCmpBar() {
+      let bar = document.getElementById('cmp-bar');
+      const sel = _cmpSel();
+      if (!sel.length) { if (bar) bar.remove(); return; }
+      if (!bar) { bar = document.createElement('div'); bar.id = 'cmp-bar'; bar.className = 'cmp-bar'; document.body.appendChild(bar); }
+      bar.innerHTML = '<span>⚖ ' + sel.length + ' build' + (sel.length > 1 ? 's' : '') + ' sélectionné' + (sel.length > 1 ? 's' : '') + '</span>' +
+        '<a href="comparateur.html?ids=' + sel.map(encodeURIComponent).join(',') + '">Comparer →</a>' +
+        '<button id="cmp-bar-clear" title="Vider la sélection">✕</button>';
+      document.getElementById('cmp-bar-clear').addEventListener('click', () => {
+        _cmpSave([]); _renderCmpBar();
+        document.querySelectorAll('.bc-btn.cmp.active').forEach(b => b.classList.remove('active'));
+      });
+    }
+    _renderCmpBar();
+
+    // ── Réordonnancement (admin) ──────────────────────────────────
+    // Seulement sur la liste complète (aucun filtre) : sinon l'ordre des builds masqués serait ambigu.
+    function _canReorder() {
+      return currentUserRole === 'admin' && sortBy === 'manual' && !isSingleView
+        && !filterClass && !filterSearch && !filterFavOnly && !filterMyBuilds
+        && filterMaxLevel >= maxLvl && !Object.keys(filterStats).length;
+    }
+
+    // Place `id` à l'index `toIdx` (dans la liste actuelle), renumérote tout et n'écrit que les `order` modifiés
+    async function _applyOrder(id, toIdx) {
+      const ids = shownBuilds.map(b => b._id);
+      const from = ids.indexOf(id);
+      if (from < 0 || toIdx < 0 || toIdx >= ids.length || from === toIdx) return;
+      ids.splice(toIdx, 0, ids.splice(from, 1)[0]);
+
+      const changed = [];
+      ids.forEach((bid, i) => {
+        const b = allBuilds.find(x => x._id === bid);
+        if (b && b.order !== i) changed.push({ b, prev: b.order, next: i });
+      });
+      changed.forEach(c => { c.b.order = c.next; });
+      _renderBuilds(allBuilds);
+
+      try {
+        const batch = writeBatch();
+        changed.forEach(c => batch.update(doc(db, COL_BUILDS, c.b._id), { order: c.next }));
+        await batch.commit();
+        _showToast('✓ Ordre enregistré.');
+      } catch(e) {
+        console.error('[builds] reorder:', e);
+        changed.forEach(c => { if (c.prev === undefined) delete c.b.order; else c.b.order = c.prev; });
+        _renderBuilds(allBuilds);
+        _showToast('✕ Erreur : ordre non enregistré.');
+      }
+    }
+
+    function _moveBuild(id, delta) {
+      const idx = shownBuilds.findIndex(b => b._id === id);
+      if (idx >= 0) _applyOrder(id, idx + delta);
+    }
+
+    function _setupDragReorder() {
+      const grid = document.getElementById('builds-grid');
+      const clear = () => grid.querySelectorAll('.drag-over,.dragging').forEach(c => c.classList.remove('drag-over', 'dragging'));
+      grid.addEventListener('dragstart', e => {
+        const card = e.target.closest?.('.build-card');
+        if (!card || !_canReorder()) return;
+        dragId = card.dataset.id;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', dragId);
+      });
+      grid.addEventListener('dragover', e => {
+        const card = e.target.closest?.('.build-card');
+        if (!dragId || !card) return;
+        e.preventDefault();
+        grid.querySelectorAll('.drag-over').forEach(c => { if (c !== card) c.classList.remove('drag-over'); });
+        if (card.dataset.id !== dragId) card.classList.add('drag-over');
+      });
+      grid.addEventListener('drop', e => {
+        const card = e.target.closest?.('.build-card');
+        if (!dragId || !card) return;
+        e.preventDefault();
+        const toIdx = shownBuilds.findIndex(b => b._id === card.dataset.id);
+        const id = dragId;
+        dragId = null;
+        clear();
+        if (toIdx >= 0) _applyOrder(id, toIdx);
+      });
+      grid.addEventListener('dragend', () => { dragId = null; clear(); });
+    }
+
+    // ── Actions ───────────────────────────────────────────────────
+    function _handleShare(buildId) {
+      const url = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'builds.html?id=' + buildId;
+      navigator.clipboard.writeText(url)
+        .then(() => _showToast('🔗 Lien copié !'))
+        .catch(() => _showToast('⚠️ Impossible de copier le lien.'));
+    }
+
+    function _handleSkills(buildId) {
+      const build = allBuilds.find(b => b._id === buildId);
+      if (!build || !window.VCLSkillTree) return;
+      window.VCLSkillTree.openReadOnly({
+        nodes:  Array.isArray(build.skillNodes) ? build.skillNodes : [],
+        level:  build.level || 1,
+        classe: build.classe || null,
+      });
+    }
+
+    async function _handlePreview(buildId) {
+      const build = allBuilds.find(b => b._id === buildId);
+      if (!build) return;
+
+      const slots = { ...desanitizeFromFirestore(build.slots || {}) };
+
+      const canSeeSensible = ['contributeur', 'admin'].includes(currentUserRole);
+
+      // Strip sensible slots for unauthorized users — guards against legacy builds
+      // where sensible item data may still be in the public `slots` field
+      if (!canSeeSensible) {
+        Object.keys(build.sensibleSlots || {}).forEach(id => delete slots[id]);
+      }
+
+      // Merge sensible slots for authorized users
+      if (canSeeSensible && build.sensibleSlots && Object.keys(build.sensibleSlots).length > 0) {
+        try {
+          const sensSnap = await getDoc(doc(db, COL.buildsSensible, buildId));
+          if (sensSnap.exists()) {
+            Object.assign(slots, desanitizeFromFirestore(sensSnap.data().slots || {}));
+          }
+        } catch {}
+      }
+
+      const previewBuild = {
+        v: 2, sig: SIG,
+        name:           build.name,
+        classe:         build.classe,
+        level:          build.level,
+        skillNodes:     Array.isArray(build.skillNodes) ? build.skillNodes : [],
+        slots,
+        runes:          desanitizeFromFirestore(build.runes || {}),
+        forkOf:         build._id,
+      };
+      localStorage.setItem('vcl_atelier_preview', JSON.stringify(previewBuild));
+      updateDoc(doc(db, COL_BUILDS, build._id), { previewCount: increment(1) }).catch(() => {});
+      window.location.href = '../Atelier/atelier.html?preview=1';
+    }
+
+    async function _handleFav(buildId, btnEl) {
+      if (!currentUser) {
+        _showToast('🔒 Connectez-vous pour utiliser les favoris.');
+        return;
+      }
+      const isFav = myFavoriteIds.has(buildId);
+      const favRef  = doc(db, COL_BUILDS + '/' + buildId + '/favoritedBy', currentUser.uid);
+      const flatRef = doc(db, COL_FAVS, currentUser.uid + '_' + buildId);
+      const buildRef = doc(db, COL_BUILDS, buildId);
+
+      // Optimistic UI
+      if (isFav) {
+        myFavoriteIds.delete(buildId);
+        btnEl.classList.remove('active');
+      } else {
+        myFavoriteIds.add(buildId);
+        btnEl.classList.add('active');
+      }
+      btnEl.setAttribute('aria-pressed', String(!isFav));
+
+      try {
+        if (isFav) {
+          await deleteDoc(favRef);
+          await deleteDoc(flatRef).catch(() => {});
+          await updateDoc(buildRef, { favoriteCount: increment(-1) });
+        } else {
+          await setDoc(favRef, { uid: currentUser.uid, addedAt: serverTimestamp() });
+          await setDoc(flatRef, { uid: currentUser.uid, buildId, addedAt: serverTimestamp() });
+          await updateDoc(buildRef, { favoriteCount: increment(1) });
+        }
+        // Mettre à jour le compteur affiché dans la card
+        const card = btnEl.closest('.build-card');
+        if (card) {
+          const build = allBuilds.find(b => b._id === buildId);
+          if (build) {
+            build.favoriteCount = (build.favoriteCount || 0) + (isFav ? -1 : 1);
+            const countEl = card.querySelector('.bc-fav-count');
+            if (countEl) countEl.textContent = Math.max(0, build.favoriteCount);
+          }
+        }
+      } catch(e) {
+        // Rollback
+        if (isFav) { myFavoriteIds.add(buildId); btnEl.classList.add('active'); }
+        else { myFavoriteIds.delete(buildId); btnEl.classList.remove('active'); }
+        console.error('[builds] fav toggle:', e);
+      }
+    }
+
+    function _handleDelete(buildId) {
+      pendingDeleteId = buildId;
+      document.getElementById('modal-title').textContent = '✕ Supprimer le Build';
+      _showModalZone('delete');
+      document.getElementById('modal').classList.add('open');
+    }
+
+    async function _confirmDelete() {
+      if (!pendingDeleteId || !currentUser) return;
+      try {
+        await deleteDoc(doc(db, COL_BUILDS, pendingDeleteId));
+        document.getElementById('modal').classList.remove('open');
+        allBuilds = allBuilds.filter(b => b._id !== pendingDeleteId);
+        pendingDeleteId = null;
+        _renderBuilds(allBuilds);
+        _showToast('✓ Build supprimé.');
+      } catch(e) {
+        _showToast('✕ Erreur lors de la suppression.');
+      }
+    }
+
+    // ── Favoris view ─────────────────────────────────────────────
+    function _refreshFavButtons() {
+      document.querySelectorAll('.bc-btn.fav').forEach(btn => {
+        const id = btn.dataset.id;
+        if (myFavoriteIds.has(id)) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function _timeAgo(date) {
+      if (!date || isNaN(date)) return '';
+      const diff = Date.now() - date.getTime();
+      const m = Math.floor(diff / 60000);
+      const h = Math.floor(diff / 3600000);
+      const d = Math.floor(diff / 86400000);
+      if (m < 1)  return 'à l\'instant';
+      if (m < 60) return 'il y a ' + m + 'min';
+      if (h < 24) return 'il y a ' + h + 'h';
+      if (d < 30) return 'il y a ' + d + 'j';
+      return 'il y a ' + Math.floor(d / 30) + ' mois';
+    }
+
+    function _showToast(msg) {
+      const t = document.getElementById('vcl-toast');
+      if (t) t.remove();
+      const el = document.createElement('div');
+      el.id = 'vcl-toast';
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3500);
+    }
+
+    // ── Build UI ─────────────────────────────────────────────────
+    function _buildClassChips() {
+      const wrap = document.getElementById('class-chips');
+      if (!wrap || typeof CLASSES === 'undefined') return;
+      const all = document.createElement('button');
+      all.className = 'class-chip active';
+      all.textContent = 'Toutes';
+      all.dataset.class = '';
+      wrap.appendChild(all);
+      CLASSES.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'class-chip';
+        btn.textContent = c.ico + ' ' + c.label;
+        btn.dataset.class = c.id;
+        wrap.appendChild(btn);
+      });
+      wrap.addEventListener('click', e => {
+        const chip = e.target.closest('.class-chip');
+        if (!chip) return;
+        wrap.querySelectorAll('.class-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        filterClass = chip.dataset.class;
+        _renderBuilds(allBuilds);
+      });
+    }
+
+    function _buildStatsFilters() {
+      const wrap = document.getElementById('stats-filter-list');
+      if (!wrap || typeof STAT_GROUPS === 'undefined') return;
+
+      STAT_GROUPS.forEach(group => {
+        const groupEl   = document.createElement('div');
+        groupEl.className = 'stat-group';
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'stat-group-toggle';
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.innerHTML = `<span class="stat-group-name">${escHtml(group.label)}</span><span class="stat-group-count" hidden></span><span class="stat-group-arrow" aria-hidden="true">▸</span>`;
+        const body = document.createElement('div');
+        body.className = 'stat-group-body';
+        body.style.display = 'none';
+
+        group.stats.forEach(s => {
+          const row = document.createElement('div');
+          row.className = 'stat-filter-row';
+          row.dataset.stat = s.id;
+          row.innerHTML = `<span class="sf-ico" aria-hidden="true">${escHtml(s.icon || '')}</span>
+            <label for="sf-${escHtml(s.id)}" title="${escHtml(s.label)}">${escHtml(s.label)}</label>
+            <input type="number" id="sf-${escHtml(s.id)}" min="0" step="1" placeholder="0" aria-label="${escHtml(s.label)} (minimum)" data-stat="${escHtml(s.id)}" />`;
+          body.appendChild(row);
+        });
+
+        toggleBtn.addEventListener('click', function() {
+          const isOpen = body.style.display !== 'none';
+          body.style.display = isOpen ? 'none' : 'flex';
+          this.setAttribute('aria-expanded', String(!isOpen));
+          this.classList.toggle('open', !isOpen);
+        });
+
+        groupEl.appendChild(toggleBtn);
+        groupEl.appendChild(body);
+        wrap.appendChild(groupEl);
+      });
+
+      wrap.addEventListener('input', e => {
+        const inp = e.target.closest('input[data-stat]');
+        if (!inp) return;
+        const val = parseInt(inp.value) || 0;
+        if (val > 0) filterStats[inp.dataset.stat] = val;
+        else delete filterStats[inp.dataset.stat];
+        _renderBuilds(allBuilds);
+      });
+    }
+
+    // ── Events ───────────────────────────────────────────────────
+    function _setupEventListeners() {
+      _setupSortDropdown();
+
+      // Tiroir de filtres (mobile)
+      document.getElementById('filters-open').addEventListener('click', _openDrawer);
+      document.getElementById('drawer-close').addEventListener('click', _closeDrawer);
+      document.getElementById('drawer-apply').addEventListener('click', _closeDrawer);
+      document.getElementById('drawer-backdrop').addEventListener('click', _closeDrawer);
+
+      // Chips de filtres actifs + bouton de l'état vide
+      document.getElementById('active-chips').addEventListener('click', e => {
+        const c = e.target.closest('.ac-chip');
+        if (c) _clearFilter(c.dataset.clear, c.dataset.key);
+      });
+      document.getElementById('builds-grid').addEventListener('click', e => {
+        if (e.target.closest('[data-empty-reset]')) document.getElementById('filter-reset').click();
+      });
+
+      // Search
+      document.getElementById('search-input').addEventListener('input', e => {
+        filterSearch = e.target.value.trim();
+        _renderBuilds(allBuilds);
+      });
+
+      // Niveau slider (client-side)
+      document.getElementById('filter-level').addEventListener('input', e => {
+        filterMaxLevel = parseInt(e.target.value);
+        _syncRange(e.target);
+        document.getElementById('filter-level-val').textContent = filterMaxLevel;
+        _renderBuilds(allBuilds);
+      });
+
+      // Sort (client-side uniquement — tri appliqué dans _renderBuilds)
+      document.getElementById('sort-select').addEventListener('change', e => {
+        sortBy = e.target.value;
+        _renderBuilds(allBuilds);
+      });
+
+      // Favoris toggle
+      document.getElementById('fav-toggle').addEventListener('click', function() {
+        if (!currentUser) {
+          _showToast('🔒 Connectez-vous pour voir vos favoris.');
+          return;
+        }
+        filterFavOnly  = !filterFavOnly;
+        filterMyBuilds = false;
+        this.classList.toggle('active', filterFavOnly);
+        document.getElementById('my-builds-toggle').classList.remove('active');
+        if (filterFavOnly) _loadMyFavoritesBuilds();
+        else _reload();
+      });
+
+      // Reset filtres
+      document.getElementById('filter-reset').addEventListener('click', () => {
+        filterClass = ''; filterStats = {}; filterFavOnly = false; filterSearch = ''; filterMyBuilds = false;
+        filterMaxLevel = maxLvl;
+        document.getElementById('filter-level').value = maxLvl;
+        _syncRange(document.getElementById('filter-level'));
+        document.getElementById('filter-level-val').textContent = maxLvl;
+        document.getElementById('search-input').value = '';
+        document.getElementById('fav-toggle').classList.remove('active');
+        document.getElementById('my-builds-toggle').classList.remove('active');
+        document.querySelectorAll('.class-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
+        document.querySelectorAll('input[data-stat]').forEach(i => { i.value = ''; });
+        _reload();
+      });
+
+      // Load more
+      document.getElementById('load-more-btn').addEventListener('click', async () => {
+        const btn = document.getElementById('load-more-btn');
+        btn.disabled = true;
+        btn.textContent = '…';
+        await _loadBuilds(true);
+        btn.disabled = false;
+        btn.textContent = '↓ Charger plus de builds';
+      });
+
+      // Modal suppression
+      document.getElementById('btn-modal-close').addEventListener('click', _closeModal);
+      document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) _closeModal(); });
+      document.getElementById('btn-delete-cancel').addEventListener('click', _closeModal);
+      document.getElementById('btn-delete-confirm').addEventListener('click', _confirmDelete);
+      document.getElementById('btn-comment-cancel').addEventListener('click', _closeModal);
+      document.getElementById('btn-comment-save').addEventListener('click', _saveComment);
+      document.getElementById('comment-edit-inp').addEventListener('input', e => {
+        document.getElementById('comment-edit-count').textContent = e.target.value.length;
+      });
+
+      // Mes Builds toggle
+      document.getElementById('my-builds-toggle').addEventListener('click', function() {
+        if (!currentUser) {
+          _showToast('🔒 Connectez-vous pour voir vos builds.');
+          return;
+        }
+        filterMyBuilds = !filterMyBuilds;
+        filterFavOnly  = false;
+        this.classList.toggle('active', filterMyBuilds);
+        document.getElementById('fav-toggle').classList.remove('active');
+        if (filterMyBuilds) _loadMyBuilds();
+        else _reload();
+      });
+    }
+
+    function _closeModal() {
+      document.getElementById('modal').classList.remove('open');
+      pendingDeleteId = null;
+      pendingCommentId = null;
+    }
+
+    async function _reload() {
+      if (isSingleView) return;
+      if (filterFavOnly) { await _loadMyFavoritesBuilds(); return; }
+      if (filterMyBuilds) { await _loadMyBuilds(); return; }
+      await _loadBuilds(false);
+    }
