@@ -103,6 +103,15 @@
 .cmp-cell.worst .cmp-v { color: #e7826e; }
 .cmp-cell.is-ref .cmp-v { text-decoration: none; }
 
+/* flèche + % posée sur la bordure, côté référence */
+.cmp-arrow { position: absolute; top: 50%; z-index: 2; display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -50%); pointer-events: none; font-weight: 700; line-height: 1; text-shadow: 0 0 5px var(--deep), 0 0 5px var(--deep), 0 0 8px var(--deep); }
+.cmp-arrow.to-right { left: 0; }
+.cmp-arrow.to-left { left: 100%; }
+.cmp-arrow .p { font-size: 11px; white-space: nowrap; }
+.cmp-arrow .a { font-size: 22px; margin-top: 1px; }
+.cmp-arrow.up { color: #94dca0; }
+.cmp-arrow.down { color: #e7826e; }
+
 /* variation par rapport à la référence */
 .cmp-chip { display: inline-flex; align-items: baseline; gap: 5px; margin-top: 3px; padding: 1px 7px; font-size: 10.5px; font-weight: 700; border: 1px solid transparent; }
 .cmp-chip i { font-style: normal; font-weight: 400; opacity: .75; font-size: 10px; }

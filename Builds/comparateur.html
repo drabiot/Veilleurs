@@ -176,12 +176,22 @@
     const wanted = (param || '').split(',').map(s => s.trim()).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).slice(0, MAX_BUILDS);
     builds = (await Promise.all(wanted.map(loadOne))).filter(Boolean);
     render();
+    // Dès l'arrivée : calcule en arrière-plan les stats des builds de l'Atelier qui n'en ont pas, pour que le sélecteur soit instantané
+    if (readLocalSlots().some(b => b._noStats)) fillSlotStats();
 
     function classLabel(b) {
       const c = (typeof CLASSES !== 'undefined') ? CLASSES.find(x => x.id === b.classe) : null;
       return c ? c.ico + ' ' + c.label : (b.classe || '—');
     }
     function fmt(v, stat) { return v + C.unitOf(stat); }
+    /** Flèche posée sur la bordure entre la valeur de référence et celle du build comparé : variation en %, verte (hausse) ou rouge (baisse).
+     *  Elle va toujours de la référence vers le build comparé (→ pour les colonnes à droite de la référence, ← pour celles à gauche). */
+    function arrow(d, ref, right) {
+      let pct = '';
+      if (ref) { const p = Math.round(d / Math.abs(ref) * 1000) / 10; pct = (p > 0 ? '+' : '') + p + '%'; }
+      return '<span class="cmp-arrow ' + (d > 0 ? 'up' : 'down') + (right ? ' to-right' : ' to-left') + '" aria-hidden="true">' +
+        (pct ? '<span class="p">' + pct + '</span>' : '') + '<span class="a">' + (right ? '→' : '←') + '</span></span>';
+    }
     function fmtDelta(d, stat, ref) {
       let t = (d > 0 ? '+' : '') + C.round2(d) + C.unitOf(stat);
       if (ref) { const p = Math.round(d / Math.abs(ref) * 1000) / 10; t += '<i>' + (p > 0 ? '+' : '') + p + '%</i>'; }
@@ -261,7 +271,7 @@
             let cls = i === refIdx ? ' is-ref' : '';
             if (r.diff) cls += r.best[i] ? ' best' : (r.worst[i] ? ' worst' : '');
             let dh = '';
-            if (i !== refIdx && d !== 0) dh = '<span class="cmp-chip ' + (d > 0 ? 'up' : 'down') + '">' + fmtDelta(d, r.stat, r.values[refIdx]) + '</span>';
+            if (i !== refIdx && d !== 0) dh = '<span class="cmp-chip ' + (d > 0 ? 'up' : 'down') + '">' + fmtDelta(d, r.stat) + '</span>' + arrow(d, r.values[refIdx], i > refIdx);
             h += '<td class="cmp-cell' + cls + '"><span class="cmp-v">' + (v === 0 ? '—' : fmt(v, r.stat)) + '</span>' + dh + '</td>';
           });
           h += '</tr>';
@@ -329,10 +339,8 @@
           pool = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
         } catch { pool = []; }
       }
-      if (readLocalSlots().some(b => b._noStats)) {
-        list.innerHTML = '<div class="builds-loading">⏳ Calcul des stats de tes builds de l’Atelier…</div>';
-        await fillSlotStats();
-      }
+      // Calcul des stats manquantes en arrière-plan : la liste s'affiche tout de suite et se met à jour une fois prête
+      if (readLocalSlots().some(b => b._noStats)) fillSlotStats().then(() => { if (p.style.display !== 'none') renderPicker(); });
       renderPicker();
       document.getElementById('cmp-picker-search').focus();
     });
@@ -342,8 +350,8 @@
       const q = window.VCL.normalize(document.getElementById('cmp-picker-search').value || '');
       const used = new Set(ids());
       const match = b => !q || window.VCL.fuzzyMatch(q, b.name || '') || window.VCL.fuzzyMatch(q, b.authorPseudo || '');
-      const row = b => '<button class="cmp-pick' + (b._noStats ? ' is-disabled' : '') + '" data-pick="' + esc(b._id) + '"><b>' + esc(b.name || 'Sans nom') + '</b><span>' + esc(classLabel(b)) + ' · Niv. ' + (b.level || 1) + ' · ' +
-        (b._noStats ? '⚠ stats non calculables — ouvre-le dans l’Atelier (voir note)' : '👤 ' + esc(b.authorPseudo || 'Anonyme')) + '</span></button>';
+      const row = b => '<button class="cmp-pick" data-pick="' + esc(b._id) + '"><b>' + esc(b.name || 'Sans nom') + '</b><span>' + esc(classLabel(b)) + ' · Niv. ' + (b.level || 1) + ' · ' +
+        (b._noStats ? (fillP ? '⏳ calcul des stats…' : '⏳ stats calculées au clic') : '👤 ' + esc(b.authorPseudo || 'Anonyme')) + '</span></button>';
       const locals = [];
       const l = readLocal();
       if (l) locals.push({ _id: 'local', name: (l.name || 'Mon build') + ' (Atelier — dernier comparé)', classe: l.classe, level: l.level, authorPseudo: 'Vous', statsSnapshot: l.statsSnapshot });
@@ -355,9 +363,15 @@
         (rows.length ? '<div class="cmp-pick-group">Builds publiés</div>' + rows.map(row).join('') : '') ||
         '<div class="cmp-hint">Aucun build.</div>';
       const all = locals.concat(pool || []);
-      document.querySelectorAll('[data-pick]').forEach(el => el.addEventListener('click', () => {
-        const b = all.find(x => x._id === el.dataset.pick);
-        if (b && b._noStats) { const n = document.getElementById('cmp-nostats-note'); if (n) { n.classList.remove('flash'); void n.offsetWidth; n.classList.add('flash'); } return; }
+      document.querySelectorAll('[data-pick]').forEach(el => el.addEventListener('click', async () => {
+        let b = all.find(x => x._id === el.dataset.pick);
+        if (b && b._noStats) {
+          // Stats pas encore calculées : on attend la fin du calcul en arrière-plan (déjà lancé), puis on reprend le build à jour
+          el.querySelector('span').textContent = '⏳ calcul des stats…';
+          await fillSlotStats();
+          b = readLocalSlots().find(x => x._id === el.dataset.pick);
+          if (!b || b._noStats) { el.querySelector('span').textContent = '⚠ stats non calculables — ouvre ce build dans l’Atelier puis reviens ici'; return; }
+        }
         if (!b || builds.length >= MAX_BUILDS) return;
         builds.push(b);
         document.getElementById('cmp-picker').style.display = 'none';
