@@ -2380,7 +2380,26 @@ function loadAccessoriesForClass(classId) {
 
   function _optNormName(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
 
-  function _optSetupPicker(inputId, listId, chipsId, store) {
+  // Classe / niveau effectivement utilisés par la génération (ceux du build en mode « compléter », ceux de la fenêtre sinon)
+  function _optConfig() {
+    if (_optMode() === 'complete') return { cls: activeClass || null, lvl: buildLevel };
+    return { cls: document.getElementById('opt-class').value || null, lvl: Math.max(1, parseInt(document.getElementById('opt-level').value) || 1) };
+  }
+  // Un item imposé doit être équipable avec cette config : classe, niveau et un slot de sa catégorie
+  function _optEligible(item) {
+    const c = _optConfig();
+    return (item.lvl || 1) <= c.lvl && itemAllowedForClass(item, c.cls) && ALL_SLOTS.some(function(s) { return s.cats.includes(item.cat); });
+  }
+  let _optForceRender = null;
+  function _optPruneForce() {
+    _optForce.forEach(function(name, id) {
+      const it = ITEMS.find(function(i) { return getItemId(i) === id; });
+      if (!it || !_optEligible(it)) _optForce.delete(id);
+    });
+    if (_optForceRender) _optForceRender();
+  }
+
+  function _optSetupPicker(inputId, listId, chipsId, store, eligible) {
     const inp = document.getElementById(inputId), list = document.getElementById(listId), chips = document.getElementById(chipsId);
     const renderChips = function() {
       chips.innerHTML = '';
@@ -2399,7 +2418,7 @@ function loadAccessoriesForClass(classId) {
       if (q.length < 2) { hide(); return; }
       const hits = ITEMS.filter(function(i) {
         const id = getItemId(i);
-        return i.cat !== 'rune' && i.category !== 'rune' && !store.has(id) && !(_isSecretItem(i) && !window._canSeeSensibleItems) && _optNormName(i.name).indexOf(q) >= 0;
+        return i.cat !== 'rune' && i.category !== 'rune' && !store.has(id) && (!eligible || eligible(i)) && !(_isSecretItem(i) && !window._canSeeSensibleItems) && _optNormName(i.name).indexOf(q) >= 0;
       }).slice(0, 8);
       list.innerHTML = '';
       hits.forEach(function(i) {
@@ -2418,6 +2437,7 @@ function loadAccessoriesForClass(classId) {
     };
     inp.onblur = hide;
     inp.value = ''; hide(); renderChips();
+    return renderChips;
   }
 
   function _optMode() {
@@ -2756,10 +2776,12 @@ function loadAccessoriesForClass(classId) {
     document.querySelectorAll('.opt-prio').forEach(function(sel) { const v = sel.value; sel.innerHTML = _optStatOptions('— priorité —'); sel.value = v; });
     if (!document.querySelector('#opt-mins .opt-min-stat')) _optAddMinRow();
     _optRenderTri();
-    document.querySelectorAll('input[name="opt-mode"]').forEach(function(r) { r.onchange = _optSyncMode; });
+    document.querySelectorAll('input[name="opt-mode"]').forEach(function(r) { r.onchange = function() { _optSyncMode(); _optPruneForce(); }; });
     _optSyncMode();
     _optSetupPicker('opt-excl-q', 'opt-excl-list', 'opt-excl-chips', _optExcl);
-    _optSetupPicker('opt-force-q', 'opt-force-list', 'opt-force-chips', _optForce);
+    _optForceRender = _optSetupPicker('opt-force-q', 'opt-force-list', 'opt-force-chips', _optForce, _optEligible);
+    ['opt-class', 'opt-level'].forEach(function(id) { var el = document.getElementById(id); el.onchange = _optPruneForce; el.oninput = _optPruneForce; });
+    _optPruneForce();
     document.getElementById('opt-result').style.display = 'none';
     openModal('optimize');
   });
@@ -2810,6 +2832,7 @@ function loadAccessoriesForClass(classId) {
           try { await window.store.load(['mobs', 'pnj']); obtainOf = _optObtainTypes(); }
           catch (e) { console.error('[Atelier] sources mob/PNJ :', e); out.textContent = '⛔ Impossible de charger les mobs / PNJ.'; return; }
         }
+        _optPruneForce();
         const forceIds = new Set(_optForce.keys());
         const forced = ITEMS.filter(function(i) { return forceIds.has(getItemId(i)); });
         _optFilter = { allow: allow, ban: ban, obtainOf: obtainOf, banObtain: Array.from(ban).some(isObt),
