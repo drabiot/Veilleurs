@@ -1441,25 +1441,15 @@ a.craft-ingredient-name:hover {
 .item-sheet > :nth-child(n+6) { animation-delay: .25s; }
 .item-image-inner img { animation: vcl-img-in .4s ease both; }
 
-/* ── Fiche : statistiques (groupes colorés, icônes, barre de proportion) ── */
-.stat-group-title {
-  display: flex; align-items: center; gap: 8px; padding: 10px 16px 3px 20px;
-  font-family: 'Cinzel', serif; font-size: 9px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--sc, var(--gold));
-}
-.stat-group-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, color-mix(in srgb, var(--sc, var(--gold)) 45%, transparent), transparent); }
-.stat-row { position: relative; min-height: 36px; padding-bottom: 3px; transition: background .15s; }
+/* ── Fiche : statistiques (icône teintée par groupe, sobre) ── */
+.stat-row { min-height: 34px; transition: background .15s; }
 .stat-row:hover { background: rgba(255,255,255,.03); }
 .stat-row-icon {
-  width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; opacity: 1;
-  background: color-mix(in srgb, var(--sc, var(--gold)) 16%, transparent); border: 1px solid color-mix(in srgb, var(--sc, var(--gold)) 32%, transparent);
+  width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; opacity: 1;
+  background: color-mix(in srgb, var(--sc, var(--gold)) 14%, transparent);
 }
 .stat-row-label { font-size: 11px; letter-spacing: .02em; text-transform: none; color: var(--text); }
 .stat-row-value { font-size: 13px; }
-.stat-bar { position: absolute; left: 20px; right: 16px; bottom: 3px; height: 2px; background: rgba(255,255,255,.05); border-radius: 2px; overflow: hidden; }
-.stat-bar::after {
-  content: ''; display: block; height: 100%; width: var(--p, 0%); border-radius: 2px;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--sc, var(--gold)) 50%, transparent), var(--sc, var(--gold))); box-shadow: 0 0 6px var(--sc, var(--gold));
-}
 
 /* ── Fiche : craft (ingrédients → résultat) ── */
 .craft-flow { display: flex; flex-direction: column; gap: 12px; padding: 14px; }

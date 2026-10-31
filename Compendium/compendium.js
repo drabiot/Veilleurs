@@ -267,10 +267,10 @@ function buildHome() {
         <span class="home-ring-val">${pct}<small>%</small></span>
       </div>
       <div class="home-hero-text">
-        <div class="home-kicker">Complétion du glossaire</div>
-        <div class="home-big"><b>${done}</b><i>/ ${counted.length}</i> <span>items complets</span></div>
-        <div class="home-hint">Un item est complet quand tous ses champs requis sont renseignés.</div>
-        ${topMiss.length ? `<div class="home-missing"><span>Il manque surtout :</span>${topMiss.map(([f, n]) => `<em>${escHtml(FIELD_LABELS[f] || f)}<small>${n}</small></em>`).join('')}</div>` : ''}
+        <div class="home-kicker">État des fiches</div>
+        <div class="home-big"><b>${done}</b><i>/ ${counted.length}</i> <span>fiches complètes</span></div>
+        <div class="home-hint">Une fiche est complète quand tous ses champs requis sont renseignés. Ce chiffre ne mesure que les items déjà recensés, pas ceux qui restent à ajouter.</div>
+        ${topMiss.length ? `<div class="home-missing"><span>Champs les plus souvent manquants :</span>${topMiss.map(([f, n]) => `<em>${escHtml(FIELD_LABELS[f] || f)}<small>${n}</small></em>`).join('')}</div>` : ''}
       </div>
     </div>
 
@@ -300,10 +300,10 @@ function buildHome() {
     </section>
 
     <section class="home-section">
-      <h3 class="home-title">Complétion par palier</h3>
+      <h3 class="home-title">Fiches complètes par palier</h3>
       <div class="home-paliers">${paliers.map(p => {
         const e = byPalier.get(p);
-        return `<button type="button" class="home-palier" data-palier="${escHtml(p)}">
+        return `<button type="button" class="home-palier" data-palier="${escHtml(p)}" title="${e.done} fiches complètes sur ${e.total} recensées dans ce palier">
           <span class="home-palier-label">${escHtml(vclPalierLabel(isNaN(+p) ? p : +p))}</span>
           ${bar(e.done, e.total)}
           <span class="home-palier-val">${e.total ? Math.floor(e.done / e.total * 100) : 0}%</span>
@@ -1303,19 +1303,14 @@ function renderItemStats(item) {
   if (hasStats) {
     html += '<div class="stat-rows">';
     const GROUP_COLORS = ['#e0795a', '#6aa8d8', '#8fcf8a', '#c79af0'];
-    const peak = v => Array.isArray(v) ? Math.max(...v.map(Number).filter(n => !isNaN(n)), 0) : (v != null && typeof v === 'object') ? Number(v.max ?? v.min) || 0 : Number(v) || 0;
     STAT_GROUPS.forEach((group, gi) => {
-      const defs = group.stats.filter(sd => stats[sd.id] != null);
-      if (!defs.length) return;
-      const sc = GROUP_COLORS[gi % GROUP_COLORS.length];
-      html += `<div class="stat-group-title" style="--sc:${sc}">${escHtml(group.label)}</div>`;
-      for (const statDef of defs) {
-        const pct = statDef.max ? Math.max(4, Math.min(100, Math.abs(peak(stats[statDef.id])) / statDef.max * 100)) : 0;
-        html += `<div class="stat-row" style="--sc:${sc};--p:${pct.toFixed(0)}%">
+      const sc = GROUP_COLORS[gi % GROUP_COLORS.length];   // la couleur du groupe teinte seulement l'icône
+      for (const statDef of group.stats) {
+        if (stats[statDef.id] == null) continue;
+        html += `<div class="stat-row" style="--sc:${sc}">
           <span class="stat-row-icon">${escHtml(statDef.icon)}</span>
           <span class="stat-row-label">${escHtml(statDef.label)}</span>
           <span class="stat-row-value">${_statValHtml(stats[statDef.id], statDef.unit)}</span>
-          ${pct ? '<span class="stat-bar"></span>' : ''}
         </div>`;
       }
     });
