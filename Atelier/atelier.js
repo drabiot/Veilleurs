@@ -2367,7 +2367,7 @@ function loadAccessoriesForClass(classId) {
      Étiquettes d'un item : « obt:<type> » (une ou plusieurs manières de l'obtenir), « pal:<palier> », « evt:<nom> ».
      - interdit palier / évènement : l'item est écarté ;
      - interdit type d'obtention : écarté seulement si TOUTES ses manières de l'obtenir sont interdites ;
-     - s'il y a des « autorisé » : l'item doit avoir au moins une étiquette autorisée. */
+     - s'il y a des « autorisé » : l'item doit en avoir au moins un dans chaque groupe utilisé (obtention ; palier / évènement). */
   const _OPT_OBTAIN = [
     ['mob', '💀 Drop de mob'], ['pnj_achat', '🛒 Achat chez un PNJ'], ['pnj_craft', '🔨 Craft par un PNJ'],
     ['forge', '⚒️ Forge'], ['autel', '🗿 Autel'], ['donjon', '🏰 Donjon'], ['quete', '📜 Quête'], ['autre', '❔ Autre / inconnu']
@@ -2407,10 +2407,12 @@ function loadAccessoriesForClass(classId) {
     if (tags.some(function(t) { return f.ban.has(t); })) return false;
     const types = f.obtainOf ? (f.obtainOf.get(item.id || item._id) || new Set(['autre'])) : null;
     if (types && f.banObtain && Array.from(types).every(function(t) { return f.ban.has('obt:' + t); })) return false;
-    if (f.allow.size) {
-      const all = types ? tags.concat(Array.from(types).map(function(t) { return 'obt:' + t; })) : tags;
-      if (!all.some(function(t) { return f.allow.has(t); })) return false;
+    // « Autorisé » : deux groupes indépendants (ET entre eux, OU à l'intérieur) — obtention d'un côté, palier / évènement de l'autre
+    const hasAllow = function(prefixes) { return Array.from(f.allow).some(function(t) { return prefixes.indexOf(t.slice(0, 4)) >= 0; }); };
+    if (hasAllow(['obt:'])) {
+      if (!types || !Array.from(types).some(function(t) { return f.allow.has('obt:' + t); })) return false;
     }
+    if (hasAllow(['pal:', 'evt:']) && !tags.some(function(t) { return f.allow.has(t); })) return false;
     return true;
   }
 
