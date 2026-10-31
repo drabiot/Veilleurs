@@ -60,9 +60,8 @@ async function handleInteraction(rawBody) {
   // PING → PONG (Discord vérifie l'endpoint avec ça)
   if (interaction.type === 1) return iResponse({ type: 1 });
 
-  // La commande /wiki est supprimée (elle lisait Firestore) : aucune suggestion, message d'information.
-  if (interaction.type === 4) return iResponse({ type: 8, data: { choices: [] } });
-  return iResponse({ type: 4, data: { content: 'La commande /wiki est désactivée.', flags: 64 } });
+  // Plus aucune commande : le bot n'en expose pas (la commande /wiki a été retirée).
+  return iResponse({ type: 4, data: { content: 'Commande indisponible.', flags: 64 } });
 }
 
 

@@ -243,7 +243,7 @@ const VALID_ID  = /^[^\/]{1,400}$/;
 /* ── Signalement (collection reports) → message dans le salon Discord des retours ── */
 const FICHE_TYPES = { item: 'Item', mob: 'Monstre', pnj: 'PNJ', quete: 'Quête', build: 'Build' };
 async function postReportToDiscord(env, id, r) {
-  if (!env.BOT_TOKEN) return;
+  if (!env.BOT_TOKEN) { console.error('[reports] BOT_TOKEN absent'); return; }
   const fiche = r.ficheId ? `${FICHE_TYPES[r.ficheType] || r.ficheType} · ${r.ficheName || r.ficheId}` : null;
   const embed = {
     title: fiche ? '⚑ Erreur signalée sur une fiche' : '⚑ Bug / Suggestion',
@@ -257,10 +257,11 @@ async function postReportToDiscord(env, id, r) {
     footer: { text: 'ID ' + id + (r.submittedBy ? ' · répondre : modération → Retours' : ' · pas de compte, réponse impossible') },
     timestamp: new Date().toISOString(),
   };
-  await fetch(`https://discord.com/api/v10/channels/${REPORTS_CHANNEL}/messages`, {
+  const res = await fetch(`https://discord.com/api/v10/channels/${REPORTS_CHANNEL}/messages`, {
     method: 'POST', headers: { Authorization: `Bot ${env.BOT_TOKEN}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ embeds: [embed], allowed_mentions: { parse: [] } }),
-  }).catch(() => {});
+  }).catch(e => { console.error('[reports] Discord injoignable', e.message); return null; });
+  if (res && !res.ok) console.error('[reports] Discord a refusé le message', res.status, (await res.text().catch(() => '')).slice(0, 300));
 }
 
 /* ── POST /db/write ── */
