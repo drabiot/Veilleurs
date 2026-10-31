@@ -182,13 +182,14 @@ function flagSvg(code, n) {
 
 const LANG_CSS = `
 .vcl-lang{position:relative;display:inline-block;margin-right:8px;vertical-align:middle}
-.vcl-lang-btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:0;border-bottom:1px solid transparent;color:#9a7040;border-radius:0;padding:3px 2px;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:500;line-height:1.2;letter-spacing:.12em;cursor:pointer;transition:color .2s,border-color .2s}
-.vcl-lang-btn:hover,.vcl-lang-btn[aria-expanded="true"]{color:#e0ac60;border-bottom-color:#e0ac60}
-.vcl-lang-btn .caret{font-size:8px;opacity:.7}
-.vcl-lang-btn svg,.vcl-lang-opt svg{display:block;width:18px;height:12px;border-radius:2px;flex:none}
-.vcl-lang-menu{position:fixed !important;z-index:2147483000;min-width:128px;background:#15120e;border:1px solid #9a7040;border-radius:3px;padding:3px;box-shadow:0 10px 28px rgba(0,0,0,.55)}
+.vcl-lang-btn{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 11px 0 10px;font-family:'Cinzel',serif;font-size:11.5px;font-weight:600;letter-spacing:.14em;line-height:1;color:#e3c48f;background:linear-gradient(180deg,rgba(224,172,96,.15),rgba(224,172,96,.04));border:1px solid rgba(224,172,96,.34);border-radius:6px;box-shadow:inset 0 1px 0 rgba(255,238,205,.10),0 1px 3px rgba(0,0,0,.45);cursor:pointer;transition:color .2s,border-color .2s,background .2s,box-shadow .2s}
+.vcl-lang-btn:hover,.vcl-lang-btn[aria-expanded="true"]{color:#f6dfae;border-color:rgba(224,172,96,.72);background:linear-gradient(180deg,rgba(224,172,96,.26),rgba(224,172,96,.09));box-shadow:inset 0 1px 0 rgba(255,238,205,.18),0 0 16px rgba(224,172,96,.16),0 1px 3px rgba(0,0,0,.45)}
+.vcl-lang-btn .caret{width:9px;height:9px;opacity:.75;transition:transform .2s}
+.vcl-lang-btn[aria-expanded="true"] .caret{transform:rotate(180deg)}
+.vcl-lang-btn svg:not(.caret),.vcl-lang-opt svg{display:block;width:18px;height:12px;border-radius:2px;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.45)}
+.vcl-lang-menu{position:fixed !important;z-index:2147483000;min-width:128px;background:#15120e;border:1px solid rgba(224,172,96,.4);border-radius:8px;padding:4px;box-shadow:0 10px 28px rgba(0,0,0,.55)}
 .vcl-lang-menu[hidden]{display:none}
-.vcl-lang-opt{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:0;border-radius:3px;color:#c9b99a;padding:6px 9px;font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.06em;font-weight:500;line-height:1.2;text-align:left;cursor:pointer}
+.vcl-lang-opt{display:flex;align-items:center;gap:8px;width:100%;background:transparent;border:0;border-radius:5px;color:#d8cdb8;padding:7px 10px;font-family:'Cinzel',serif;font-size:11.5px;font-weight:600;letter-spacing:.1em;line-height:1.2;text-align:left;cursor:pointer}
 .vcl-lang-opt:hover,.vcl-lang-opt:focus-visible{background:rgba(224,172,96,.14);outline:none}
 .vcl-lang-opt .check{margin-left:auto;padding-left:10px;color:#e0ac60}
 `;
@@ -209,7 +210,7 @@ function injectSwitch() {
   wrap.setAttribute('data-no-i18n', '');
   wrap.innerHTML = `
     <button type="button" class="vcl-lang-btn" id="vcl-lang-btn" aria-haspopup="menu" aria-expanded="false" title="${cur.label}">
-      ${flagSvg(cur.code, 0)}<span>${cur.code.toUpperCase()}</span><span class="caret">▾</span>
+      ${flagSvg(cur.code, 0)}<span>${cur.code.toUpperCase()}</span><svg class="caret" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3.5l3 3 3-3"/></svg>
     </button>
     <div class="vcl-lang-menu" id="vcl-lang-menu" role="menu" hidden>
       ${LANGUAGES.map((l, i) => `<button type="button" class="vcl-lang-opt" role="menuitemradio" aria-checked="${l.code === lang}" data-lang="${l.code}">

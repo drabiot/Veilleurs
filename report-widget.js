@@ -16,12 +16,13 @@
 
   // Bouton « Nous contacter » : report-chat.js (joueur connecté) lui donne l'état de ses tickets (window.vclSetTickets) et la liste à ouvrir.
   // Sans ticket (ou sans compte), le bouton ouvre directement le formulaire de nouveau ticket.
+  const CHAT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.5-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11.5h7M8.5 14.5h4"/></svg>';
   let btnEl = null, ticketState = null;
   function paintBtn() {
     if (!btnEl) return;
     const n = ticketState?.unread || 0;
     btnEl.classList.toggle('unread', n > 0);
-    btnEl.innerHTML = 'Nous contacter' + (n > 0 ? '<span class="vcl-report-count" aria-hidden="true">' + n + '</span>' : '');
+    btnEl.innerHTML = CHAT_ICON + '<span>Nous contacter</span>' + (n > 0 ? '<span class="vcl-report-count" aria-hidden="true">' + n + '</span>' : '');
     btnEl.title = n > 0 ? (n > 1 ? n + ' tickets avec une réponse des Veilleurs' : 'Un ticket avec une réponse des Veilleurs') : 'Signaler un bug, proposer une suggestion, poser une question';
   }
   window.vclSetTickets = s => { ticketState = s; paintBtn(); };

@@ -8,21 +8,30 @@
 }
 
 .vcl-auth-btn {
-  padding: 5px 13px;
-  font-size: 12px;
-  font-family: 'JetBrains Mono', monospace;
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.18);
-  border-radius: 5px;
-  color: var(--text, #c9b99a);
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  font-family: 'Cinzel', serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: #e3c48f;
+  background: linear-gradient(180deg, rgba(224,172,96,.15), rgba(224,172,96,.04));
+  border: 1px solid rgba(224,172,96,.34);
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255,238,205,.10), 0 1px 3px rgba(0,0,0,.45);
   cursor: pointer;
-  transition: background .15s, border-color .15s, color .15s;
   white-space: nowrap;
+  transition: color .2s, border-color .2s, background .2s, box-shadow .2s;
+  padding: 0 15px;
 }
 .vcl-auth-btn:hover {
-  background: rgba(255,255,255,.1);
-  border-color: rgba(255,255,255,.32);
-  color: var(--bright, #fff);
+  color: #f6dfae;
+  border-color: rgba(224,172,96,.72);
+  background: linear-gradient(180deg, rgba(224,172,96,.26), rgba(224,172,96,.09));
+  box-shadow: inset 0 1px 0 rgba(255,238,205,.18), 0 0 16px rgba(224,172,96,.16), 0 1px 3px rgba(0,0,0,.45);
 }
 
 #vcl-user-info {
@@ -49,15 +58,31 @@
 }
 
 .vcl-auth-role-badge {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: .68rem;
-  font-weight: 600;
-  letter-spacing: .12em;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 28px;
+  padding: 0 13px 0 11px;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
   text-transform: uppercase;
+  line-height: 1;
   white-space: nowrap;
-  /* couleur du rôle posée en JS (color) */
+  border-radius: 999px;
+  /* couleur du rôle posée en JS (color) : bordure, fond et lueur en sont dérivés */
+  border: 1px solid color-mix(in srgb, currentColor 50%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, currentColor 18%, transparent), color-mix(in srgb, currentColor 6%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, currentColor 22%, transparent);
 }
-.vcl-auth-role-badge::before { content: '◆'; font-size: .7em; margin-right: 6px; vertical-align: 1px; }
+.vcl-auth-role-badge::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
 
 /* ── Modal overlay ── */
 .vcl-auth-overlay {
