@@ -593,6 +593,13 @@
       if (filterSearch)   { add('search', '', `<span class="ac-v">“${escHtml(filterSearch)}”</span>`); }
       wrap.innerHTML = chips.join('');
       wrap.hidden = !chips.length;
+      // Lignes de stats renseignées + pastille de compte par groupe
+      document.querySelectorAll('.stat-filter-row').forEach(r => r.classList.toggle('is-set', (filterStats[r.dataset.stat] || 0) > 0));
+      document.querySelectorAll('.stat-group').forEach(g => {
+        const n = g.querySelectorAll('.stat-filter-row.is-set').length;
+        const c = g.querySelector('.stat-group-count');
+        c.textContent = n; c.hidden = !n;
+      });
       const badge = document.getElementById('filters-badge');
       badge.textContent = count;
       badge.hidden = !count;
@@ -1236,7 +1243,8 @@
         groupEl.className = 'stat-group';
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'stat-group-toggle';
-        toggleBtn.innerHTML = `${escHtml(group.label)} <span class="stat-group-arrow">▸</span>`;
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.innerHTML = `<span class="stat-group-name">${escHtml(group.label)}</span><span class="stat-group-count" hidden></span><span class="stat-group-arrow" aria-hidden="true">▸</span>`;
         const body = document.createElement('div');
         body.className = 'stat-group-body';
         body.style.display = 'none';
@@ -1244,16 +1252,18 @@
         group.stats.forEach(s => {
           const row = document.createElement('div');
           row.className = 'stat-filter-row';
-          row.innerHTML = `<label title="${escHtml(s.label)}">${escHtml(s.icon || '')} ${escHtml(s.label)}</label>
-            <span class="stat-filter-ge">≥</span>
-            <input type="number" min="0" step="1" placeholder="0" data-stat="${escHtml(s.id)}" />`;
+          row.dataset.stat = s.id;
+          row.innerHTML = `<span class="sf-ico" aria-hidden="true">${escHtml(s.icon || '')}</span>
+            <label for="sf-${escHtml(s.id)}" title="${escHtml(s.label)}">${escHtml(s.label)}</label>
+            <input type="number" id="sf-${escHtml(s.id)}" min="0" step="1" placeholder="0" aria-label="${escHtml(s.label)} (minimum)" data-stat="${escHtml(s.id)}" />`;
           body.appendChild(row);
         });
 
         toggleBtn.addEventListener('click', function() {
           const isOpen = body.style.display !== 'none';
           body.style.display = isOpen ? 'none' : 'flex';
-          this.querySelector('.stat-group-arrow').textContent = isOpen ? '▸' : '▾';
+          this.setAttribute('aria-expanded', String(!isOpen));
+          this.classList.toggle('open', !isOpen);
         });
 
         groupEl.appendChild(toggleBtn);
