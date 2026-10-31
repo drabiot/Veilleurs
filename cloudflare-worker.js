@@ -497,7 +497,9 @@ async function handleTrack(request, env) {
 
   const now = Date.now();
   const stmts = [];
+  const country = /^[A-Z]{2}$/.test(request.cf?.country || '') ? request.cf.country : '';   // pays déduit de l'IP par Cloudflare (l'IP n'est jamais stockée)
   for (const o of ops) {
+    if (country && o.col === 'user_visits' && 'lastSeen' in o.set) o.set.country = country;
     stmts.push(env.DB.prepare("INSERT OR IGNORE INTO track_docs (col, id, data, updated_at) VALUES (?, ?, '{}', ?)").bind(o.col, o.id, now));
     // json_set(data, chemin, valeur, …) : une seule écriture par document
     const parts = [], args = [];
@@ -609,8 +611,8 @@ async function handleStats(request, env) {
     const row = await q("SELECT data FROM track_docs WHERE col = 'user_visits' AND id = ?", String(body.id || '')).first();
     if (!row) return json({ user: null });
     const d = JSON.parse(row.data);
-    const { isAnonymous, pseudo, total, totalSessions, firstSeen, lastSeen } = d;
-    return json({ user: { id: body.id, isAnonymous, pseudo, total, totalSessions, firstSeen, lastSeen, ...uvGroups(d) } });
+    const { isAnonymous, pseudo, total, totalSessions, firstSeen, lastSeen, country, blang, slang } = d;
+    return json({ user: { id: body.id, isAnonymous, pseudo, total, totalSessions, firstSeen, lastSeen, country, blang, slang, ...uvGroups(d) } });
   }
 
   // Résumé : tout est agrégé ici, la page n'a plus à télécharger ni à parcourir chaque profil
@@ -618,7 +620,7 @@ async function handleStats(request, env) {
   const dayStart = Number(body.dayStart) || 0, weekStart = Number(body.weekStart) || 0;
   const TOP_ANON = 40;
 
-  const [pv, uvAgg, uvSec, members, anons, anonAgg, anonSec, items, searches, lgRecent, lgToday, lgWeek] = await Promise.all([
+  const [pv, uvAgg, uvSec, members, anons, anonAgg, anonSec, items, searches, lgRecent, lgToday, lgWeek, langAgg, countryAgg] = await Promise.all([
     q("SELECT id, data FROM track_docs WHERE col = 'page_views'").all(),
     q(`SELECT COUNT(*) n, SUM(${UV_ANON}) anons,
          SUM(json_extract(data, '$."devices.mobile"')) mobile, SUM(json_extract(data, '$."devices.desktop"')) desktop,
@@ -636,6 +638,9 @@ async function handleStats(request, env) {
     q("SELECT CASE WHEN json_extract(u.data, '$.discordName') GLOB '*[A-Za-z0-9]*[A-Za-z0-9]*' THEN json_extract(u.data, '$.discordName') ELSE COALESCE(u.pseudo, l.pseudo) END AS pseudo, l.ts FROM login_log l LEFT JOIN users u ON u.uid = l.uid ORDER BY l.ts DESC LIMIT 20").all(),
     q('SELECT COUNT(*) n, COUNT(DISTINCT uid) u FROM login_log WHERE ts >= ?', dayStart).first(),
     q('SELECT COUNT(*) n, COUNT(DISTINCT uid) u FROM login_log WHERE ts >= ?', weekStart).first(),
+    // Origine : langue principale du navigateur (« fr-FR » → « fr ») et pays, tous profils confondus (NULL = pas encore collecté)
+    q(`SELECT lower(substr(b, 1, instr(b || '-', '-') - 1)) k, COUNT(*) n, SUM(a) anons FROM (SELECT json_extract(data, '$.blang') b, ${UV_ANON} a FROM track_docs WHERE col = 'user_visits') GROUP BY k ORDER BY n DESC`).all(),
+    q(`SELECT json_extract(data, '$.country') k, COUNT(*) n, SUM(${UV_ANON}) anons FROM track_docs WHERE col = 'user_visits' GROUP BY k ORDER BY n DESC`).all(),
   ]);
 
   // Visites par jour : un doc « site » par jour (format actuel) ; à défaut, somme des anciens docs par section
@@ -665,7 +670,7 @@ async function handleStats(request, env) {
       if (!k.startsWith('dsec.') || k.length < 17 || k.slice(5, 15) < date35) continue;
       (days[k.slice(5, 15)] ??= {})[k.slice(16)] = v;
     }
-    return { id: r.id, pseudo: d.pseudo, isAnonymous: !!(d.isAnonymous ?? r.id.startsWith('anon_')), total: d.total || 0,
+    return { id: r.id, pseudo: d.pseudo, country: d.country || '', blang: d.blang || '', slang: d.slang || '', isAnonymous: !!(d.isAnonymous ?? r.id.startsWith('anon_')), total: d.total || 0,
       lastSeen: d.lastSeen || '', sections: uvGroups(d).sections || {}, days };
   };
   const memberRows = members.results.map(slim);
@@ -687,6 +692,7 @@ async function handleStats(request, env) {
       mobile: uvAgg.mobile || 0, desktop: uvAgg.desktop || 0, sessions: uvAgg.sessions || 0, sectionVisits: uvAgg.sectionVisits || 0,
       active7: uvAgg.active7 || 0, active30: uvAgg.active30 || 0, new7: uvAgg.new7 || 0, oneVisit: uvAgg.oneVisit || 0 },
     sections: Object.fromEntries(uvSec.results.map(r => [r.s, r.v])),
+    origins: { langs: langAgg.results.map(r => ({ k: r.k || '', n: r.n, anons: r.anons || 0 })), countries: countryAgg.results.map(r => ({ k: r.k || '', n: r.n, anons: r.anons || 0 })) },
     members: [...memberRows, ...anonRows],
     anonRest: restN ? { n: restN, total: (anonAgg.total || 0) - anonRows.reduce((s, a) => s + a.total, 0),
       lastSeen: anonAgg.lastSeen || '', sections: Object.fromEntries(Object.entries(restSections).filter(([, v]) => v > 0)) } : null,

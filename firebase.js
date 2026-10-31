@@ -359,11 +359,20 @@ export async function logPageView(section) {
     const isFirstSeen  = !localStorage.getItem(firstSeenKey);
     if (isFirstSeen) localStorage.setItem(firstSeenKey, today);
 
+    // Langue du navigateur (blang) et langue du site choisie/détectée (slang) : savoir dans quelle langue traduire
+    const langInfo = () => {
+      const blang = String(navigator.language || '').toLowerCase().slice(0, 12);
+      let slang = ''; try { slang = localStorage.getItem('vcl_lang') || ''; } catch {}
+      return { ...(/^[a-z]{2,3}(-[a-z0-9]{2,8})?$/.test(blang) && { blang }), ...(/^[a-z]{2,3}$/.test(slang) && { slang }) };
+    };
+
     // Appareil
     const device = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
 
     ops.push({ col: 'user_visits', id: visitorId,
-      set: { pseudo, isAnonymous, lastSeen: today, ...(isFirstSeen && { firstSeen: today }) },
+      set: { pseudo, isAnonymous, lastSeen: today, ...(isFirstSeen && { firstSeen: today }), ...langInfo(),
+        // pays : ajouté côté worker (en-tête Cloudflare), pas besoin de géolocaliser ici
+      },
       inc: { [`sections.${section}`]: 1, total: 1, [`devices.${device}`]: 1, [`dsec.${today}.${section}`]: 1 } });
   }
 

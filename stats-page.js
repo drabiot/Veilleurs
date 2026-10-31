@@ -50,6 +50,44 @@ function kpi(icon, color, val, label, extra = '') {
   </div>`;
 }
 
+// Noms de langues / pays en français via Intl (pas de table à maintenir)
+const _dn = {};
+const dispName = (type, code) => {
+  try { return (_dn[type] ??= new Intl.DisplayNames(['fr'], { type })).of(type === 'region' ? code.toUpperCase() : code) || code; }
+  catch { return code; }
+};
+const langLabel = c => c ? `${dispName('language', c)} (${c})` : 'Inconnue (pas encore collectée)';
+const countryLabel = c => c ? `${dispName('region', c)} (${c})` : 'Inconnu (pas encore collecté)';
+
+/** Section « Origine & langues » : qui est francophone, dans quelle langue traduire. */
+function originSection(s, esc) {
+  const o = s.origins;
+  if (!o) return '';
+  const known = o.langs.filter(l => l.k);
+  const knownN = known.reduce((t, l) => t + l.n, 0);
+  const unknownN = (o.langs.find(l => !l.k)?.n) || 0;
+  const fr = known.find(l => l.k === 'fr')?.n || 0;
+  const frPct = knownN ? Math.round(fr / knownN * 100) : 0;
+  const others = known.filter(l => l.k !== 'fr');
+  const topOther = others[0];
+  const bars = (list, label, color) => list.length
+    ? barRows(list.slice(0, 12).map(x => [x.k, x.n]), () => color, label, esc)
+    : '<div class="stats-note">Rien de collecté pour l'instant.</div>';
+  return `<div class="stats-section">
+    <div class="stats-section-title">Origine &amp; langues</div>
+    <div class="stats-kpi-grid">
+      ${kpi('🇫🇷', '#60a5fa', `${frPct} %`, 'Navigateur en français', `${fmt(fr)} sur ${fmt(knownN)} profils renseignés`)}
+      ${kpi('🌐', '#f97316', fmt(knownN - fr), 'Profils non francophones', topOther ? `1ʳᵉ langue : ${esc(dispName('language', topOther.k))} (${fmt(topOther.n)})` : '')}
+      ${kpi('❔', '#7a7a90', fmt(unknownN), 'Origine inconnue', 'profils pas revenus depuis l'ajout de ce suivi')}
+    </div>
+    <div class="stats-mid-grid">
+      <div><div class="stats-detail-title">Langue du navigateur</div>${bars(o.langs.filter(l => l.k), langLabel, '#60a5fa')}</div>
+      <div><div class="stats-detail-title">Pays (déduit de l'IP, jamais stockée)</div>${bars(o.countries.filter(c => c.k), countryLabel, '#4ade80')}</div>
+    </div>
+    <div class="stats-note">Langue = réglage du navigateur du visiteur, pas forcément celle qu'il parle. Les profils anonymes comptent un navigateur chacun. La donnée se remplit à la prochaine visite de chaque profil.</div>
+  </div>`;
+}
+
 function dayChart(days, key, unitSing, unitPlur, esc) {
   const max = Math.max(...days.map(d => d[key]), 1);
   return `<div class="stats-day-chart">${days.map((x, i) => {
@@ -135,7 +173,7 @@ function audienceTab(s, ctx, esc) {
   const monthRows = Object.keys(byMonth).sort().reverse()
     .map(m => `<tr><td style="font-weight:600;">${esc(fmtMonth(m))}</td><td style="font-weight:700;text-align:right;">${fmt(byMonth[m])}</td></tr>`).join('');
 
-  return `${kpis}${fidelity}
+  return `${kpis}${fidelity}${originSection(s, esc)}
     <div class="stats-mid-grid">
       <div class="stats-section"><div class="stats-section-title">Activité par heure (all-time)</div><div class="stats-hour-chart">${hourBars}</div></div>
       <div class="stats-section"><div class="stats-section-title">Connexions récentes</div><div class="stats-login-list">${loginRows}</div></div>
@@ -199,14 +237,15 @@ function membersTable(s, ctx, esc) {
     const click = u.id !== '__anon__';
     const name = u.isAnonymous && click ? ctx.anonName(u.id) : (u.pseudo || u.id);
     return `<tr class="stats-member-row" ${click ? `data-uid="${esc(u.id)}" style="cursor:pointer;" title="Voir l'historique"` : ''}>
-      <td style="display:flex;align-items:center;gap:6px;">${badge} ${esc(name)}</td>${cells}
+      <td style="display:flex;align-items:center;gap:6px;">${badge} ${esc(name)}</td>
+      <td style="color:var(--muted);font-size:11px;white-space:nowrap;" title="${esc([u.country && countryLabel(u.country), u.blang && 'navigateur : ' + u.blang, u.slang && 'site : ' + u.slang].filter(Boolean).join(' · '))}">${esc([u.country, u.blang].filter(Boolean).join(' · ') || '—')}</td>${cells}
       <td style="text-align:right;font-weight:700;">${fmt(u.total)}</td>
       <td style="text-align:right;color:var(--muted);font-size:11px;">${esc(fmtDate(u.lastSeen))}</td></tr>`;
   }).join('');
   return `<div class="stats-section" id="stats-membres-section">
     <div class="stats-section-title">Visites par membre</div>${filterBar}
     <div style="overflow-x:auto;"><table class="stats-table" id="stats-members-table">
-      <thead><tr><th>Membre</th>${cols.map(c => `<th style="text-align:right;">${esc(SECTION_ICONS[c])}</th>`).join('')}<th style="text-align:right;">Total</th><th style="text-align:right;">Dernière visite</th></tr></thead>
+      <thead><tr><th>Membre</th><th>Origine</th>${cols.map(c => `<th style="text-align:right;">${esc(SECTION_ICONS[c])}</th>`).join('')}<th style="text-align:right;">Total</th><th style="text-align:right;">Dernière visite</th></tr></thead>
       <tbody>${body}</tbody></table></div>
     <div id="stats-user-detail" class="stats-user-detail" style="display:none;"></div>
   </div>`;
@@ -291,6 +330,8 @@ function userDetailHtml(u, fallbackName, esc) {
     u.firstSeen ? `1ère visite ${esc(fmtDate(u.firstSeen))}` : '',
     u.lastSeen ? `dernière ${esc(fmtDate(u.lastSeen))}` : '',
     mob + desk > 0 ? `📱 ${mob} mobile · 🖥️ ${desk} desktop` : '',
+    u.country ? `🌍 ${esc(countryLabel(u.country))}` : '',
+    u.blang ? `🗣️ navigateur ${esc(u.blang)}${u.slang ? ` · site ${esc(u.slang)}` : ''}` : '',
   ].filter(Boolean).join(' · ');
   const list = (data, names, label, max = 12) => {
     if (!data || !Object.keys(data).length) return '';
