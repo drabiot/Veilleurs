@@ -337,6 +337,11 @@ html, body {
 .builds-grid.reorderable .build-card { cursor: grab; }
 .build-card.dragging { opacity: .4; }
 .build-card.drag-over { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(224,172,96,.35); }
+.reorder-hint {
+  padding: 8px 14px;
+  background: rgba(224,172,96,.06); border: 1px dashed rgba(224,172,96,.25);
+  border-radius: 4px; font-size: 11px; color: var(--muted);
+}
 .bc-meta {
   display: flex; align-items: center; gap: 10px;
   font-size: 10px; color: var(--muted); letter-spacing: .04em;
@@ -672,75 +677,6 @@ html, body {
 @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(8px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
 /* ============================================================
-   REFONTE — page Builds
-   ============================================================ */
-
-/* ── Sidebar filtres : sections en cartes ── */
-.filters-sidebar { padding: 22px 16px; gap: 14px; }
-.filter-section { padding: 12px 12px 14px; background: rgba(255,255,255,.018); border: 1px solid var(--rim); border-radius: 4px; }
-.filter-head { font-size: 10px; letter-spacing: .2em; padding: 0 0 8px; margin-bottom: 6px; }
-.class-chip { border-radius: 0; padding: 5px 11px; }
-.class-chip.active { background: linear-gradient(180deg, rgba(224,172,96,.2), rgba(224,172,96,.06)); }
-.filter-reset-btn { padding: 9px 10px; border-radius: 0; font-size: 10.5px; letter-spacing: 0; white-space: nowrap; }
-.filter-reset-btn:hover { border-color: rgba(217,97,74,.45); color: #e7826e; background: rgba(217,97,74,.06); }
-
-/* ── Centre ── */
-.builds-center { padding: 28px 34px 40px; gap: 20px; }
-.builds-top-bar { align-items: flex-end; justify-content: space-between; gap: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--rim); }
-.builds-title { font-size: 24px; letter-spacing: .14em; line-height: 1.2; }
-.builds-subtitle { margin-top: 4px; }
-.builds-actions { display: flex; align-items: center; gap: 14px; flex: 1 1 460px; max-width: 700px; }
-.search-wrap { flex: 1; min-width: 180px; }
-.search-input {
-  height: 46px; padding: 0 16px 0 40px; border-radius: 0; font-size: 12.5px;
-  background: rgba(255,255,255,.03) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239a7040' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") no-repeat 14px center;
-  border-bottom-color: var(--gold-dim);
-}
-.search-input::placeholder { color: var(--muted); }
-
-/* ── Barre de résultats : compteur · filtres rapides · tri ── */
-.builds-toolbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.builds-toolbar .builds-count { font-size: 12px; letter-spacing: .06em; color: var(--text); margin-right: auto; }
-.toolbar-filters { display: flex; gap: 8px; }
-.toolbar-filters .fav-toggle {
-  width: auto; padding: 8px 14px; border-radius: 999px; font-size: 11.5px;
-  background: rgba(255,255,255,.02); transition: border-color .15s, background .15s, color .15s;
-}
-.toolbar-filters .fav-toggle.active { background: linear-gradient(180deg, rgba(224,172,96,.24), rgba(224,172,96,.08)); }
-.sort-wrap { display: flex; align-items: center; gap: 8px; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-.sort-wrap .sort-select { width: auto; padding: 8px 12px; border-radius: 0; font-size: 12px; color-scheme: dark; }
-.sort-wrap .sort-select:hover { border-color: var(--gold-dim); }
-
-/* ── Cartes de build ── */
-.builds-grid { gap: 20px; grid-template-columns: repeat(auto-fill, 352px); }
-.build-card {
-  padding: 16px 18px 14px; gap: 12px; border-radius: 4px; border-color: var(--rim);
-  background: linear-gradient(165deg, #1b1611 0%, #120f0b 100%);
-  box-shadow: 0 6px 20px rgba(0,0,0,.35);
-  transition: border-color .2s, box-shadow .2s, transform .15s;
-}
-.build-card:hover { transform: translateY(-2px); border-color: var(--gold-dim); box-shadow: 0 10px 28px rgba(0,0,0,.5), 0 0 0 1px rgba(224,172,96,.1); }
-.bc-name { font-size: 15px; font-weight: 900; letter-spacing: .05em; }
-.bc-meta { font-size: 11px; gap: 8px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--rim); }
-.bc-pill { margin-left: auto; padding: 2px 9px; font-size: 10px; color: var(--gold); border: 1px solid var(--gold-dim); background: var(--gold-glow); white-space: nowrap; }
-.bc-mannequin-wrap { --s: 46px; gap: 4px; padding: 4px 0 8px; }
-.bc-mq-center { border-radius: 2px; }
-.bc-mq-level { color: var(--text); }
-.bc-slot { border-radius: 2px; }
-.bc-foot { padding-top: 12px; gap: 8px; flex-wrap: nowrap; }
-.bc-social { gap: 9px; font-size: 11px; }
-.bc-time { font-size: 10px; margin-left: 0; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.bc-actions { gap: 6px; margin-left: auto; }
-.bc-btn { padding: 7px 9px; font-size: 11px; border-radius: 0; }
-.bc-btn.primary {
-  padding: 7px 13px; font-weight: 700; letter-spacing: .03em; color: #1a130b; border-color: var(--gold);
-  background: linear-gradient(180deg, #ecbc72, #c88f43);
-}
-.bc-btn.primary:hover { background: linear-gradient(180deg, #f3c987, #d49a4c); color: #1a130b; box-shadow: 0 0 14px rgba(224,172,96,.35); }
-.bc-btn.fav.active { background: rgba(240,192,64,.12); }
-.load-more-btn { padding: 12px 28px; border-radius: 0; letter-spacing: .08em; }
-
-/* ============================================================
    RESPONSIVE
    ============================================================ */
 
@@ -801,18 +737,3 @@ html, body {
   .builds-center { padding: 12px 10px; }
 }
 .bc-btn-ren:hover { border-color: rgba(200,170,90,.4); color: var(--gold, #c8aa5a); background: rgba(200,170,90,.06); }
-
-@media (max-width: 900px) {
-  .builds-top-bar { align-items: stretch; }
-  .builds-actions { flex: 1 1 100%; max-width: none; }
-}
-@media (max-width: 640px) {
-  .bc-foot { flex-wrap: wrap; }
-  .builds-center { padding: 18px 12px 30px; }
-  .builds-actions { flex-direction: column; align-items: stretch; }
-  .cmp-open-btn { justify-content: flex-start; }
-  .builds-toolbar { gap: 10px; }
-  .builds-toolbar .builds-count { flex: 1 1 100%; }
-  .sort-wrap { margin-left: auto; }
-  .builds-grid { grid-template-columns: 1fr; }
-}
