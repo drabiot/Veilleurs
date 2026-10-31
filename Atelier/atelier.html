@@ -330,6 +330,7 @@
             <div class="opt-tabs" role="tablist">
               <button type="button" class="opt-tab active" data-tab="obt">Obtention<span class="opt-badge" data-badge="obt"></span></button>
               <button type="button" class="opt-tab" data-tab="pal">Paliers &amp; évènements<span class="opt-badge" data-badge="pal"></span></button>
+              <button type="button" class="opt-tab" data-tab="tit">Titres<span class="opt-badge" data-badge="tit"></span></button>
               <button type="button" class="opt-tab" data-tab="items">Items précis<span class="opt-badge" data-badge="items"></span></button>
             </div>
             <div class="opt-panel" data-panel="obt">
@@ -339,6 +340,10 @@
             <div class="opt-panel" data-panel="pal" hidden>
               <div class="opt-legend">Même principe : <span class="ok">✓ autorisé</span> / <span class="ko">✕ interdit</span>.</div>
               <div id="opt-panel-pal"></div>
+            </div>
+            <div class="opt-panel" data-panel="tit" hidden>
+              <div class="opt-legend">Le build optimisé choisit aussi le meilleur titre. <span class="ok">✓ autorisé</span> (seuls ceux-là) / <span class="ko">✕ interdit</span>. Tout interdire = aucun titre.</div>
+              <div id="opt-panel-tit" class="opt-chips"></div>
             </div>
             <div class="opt-panel" data-panel="items" hidden>
               <div class="opt-field">

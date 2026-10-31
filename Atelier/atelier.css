@@ -1696,3 +1696,4 @@ select.input-name option { background: var(--surface2); color: var(--text); }
 .opt-level-eq { flex: none; font-size: 9.5px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
 .opt-level .opt-x { flex: none; width: 24px; height: 24px; background: transparent; border: 1px solid var(--rim2); color: var(--muted); cursor: pointer; font-size: 11px; }
 .opt-level .opt-x:hover { color: #d9614a; border-color: rgba(217,97,74,.45); }
+.opt-tabs { overflow-x: auto; scrollbar-width: none; }

@@ -2497,8 +2497,8 @@ function loadAccessoriesForClass(classId) {
   }
 
   function _optUpdateBadges() {
-    const n = { obt: 0, pal: 0, items: _optExcl.size + _optForce.size };
-    Object.keys(_optTri).forEach(function(t) { if (t.indexOf('obt:') === 0) n.obt++; else n.pal++; });
+    const n = { obt: 0, pal: 0, tit: 0, items: _optExcl.size + _optForce.size };
+    Object.keys(_optTri).forEach(function(t) { if (t.indexOf('obt:') === 0) n.obt++; else if (t.indexOf('tit:') === 0) n.tit++; else n.pal++; });
     document.querySelectorAll('.opt-badge').forEach(function(b) { b.textContent = n[b.dataset.badge] || ''; });
   }
 
@@ -2518,7 +2518,10 @@ function loadAccessoriesForClass(classId) {
       group('Évènements &amp; World Boss', Object.keys(evtMap).sort().map(function(n) {
         return chip('evt:' + n, (evtMap[n] === 'worldboss' ? '👑 ' : evtMap[n] === 'event' ? '🎉 ' : '') + n);
       }));
-    document.querySelectorAll('#opt-panel-obt .opt-chip, #opt-panel-pal .opt-chip').forEach(function(b) {
+    document.getElementById('opt-panel-tit').innerHTML = (window._vclTitres || []).length
+      ? (window._vclTitres || []).map(function(t) { return chip('tit:' + t.id, t.name); }).join('')
+      : '<span class="opt-legend">Aucun titre disponible pour le moment.</span>';
+    document.querySelectorAll('#opt-panel-obt .opt-chip, #opt-panel-pal .opt-chip, #opt-panel-tit .opt-chip').forEach(function(b) {
       const paint = function() {
         const v = _optTri[b.dataset.tag] || 0;
         b.textContent = (v === 1 ? '✓ ' : v === -1 ? '✕ ' : '') + b.dataset.label;
@@ -2726,6 +2729,8 @@ function loadAccessoriesForClass(classId) {
       owned[k] = 1; nodes.push(k);
       const fx = effOf(k); if (fx) bonus[fx.stats] = (bonus[fx.stats] || 0) + fx.bonus;
     });
+    // Un chemin n'est utilisable que si l'arbre l'accepte tel quel (sinon les points seraient perdus)
+    const valid = function(path) { return ST.sanitize(nodes.concat(path), max).length === nodes.length + path.length; };
     while (nodes.length < max) {
       // BFS depuis les cases possédées, à travers les cases libres
       const par = {}, dist = {}, queue = [];
@@ -2742,6 +2747,7 @@ function loadAccessoriesForClass(classId) {
       Object.keys(dist).forEach(function(t) {
         if (!dist[t] || dist[t] > max - nodes.length) return;
         const path = []; for (let k = t; !owned[k]; k = par[k]) path.unshift(k);
+        if (!valid(path)) return;   // case clé (keystone) dont les voisins ne sont pas tous pris : le chemin serait rejeté à la fin
         const b = Object.assign({}, bonus);
         path.forEach(function(k) { const fx = effOf(k); if (fx) b[fx.stats] = (b[fx.stats] || 0) + fx.bonus; });
         const ratio = (scoreWith(b) - cur) / path.length;
@@ -2753,7 +2759,47 @@ function loadAccessoriesForClass(classId) {
         const fx = effOf(k); if (fx) bonus[fx.stats] = (bonus[fx.stats] || 0) + fx.bonus;
       });
     }
+    // Points restants : on les dépense quand même (meilleure case voisine, même à gain nul)
+    while (nodes.length < max) {
+      const cur = scoreWith(bonus);
+      let bestK = null, bestG = -Infinity;
+      Object.keys(owned).forEach(function(o) {
+        Object.keys(ST.graph.adj[o] || {}).forEach(function(n) {
+          if (owned[n] || !ST.graph.nodes[n] || !valid([n])) return;
+          const fx = effOf(n), b = Object.assign({}, bonus);
+          if (fx) b[fx.stats] = (b[fx.stats] || 0) + fx.bonus;
+          const g = scoreWith(b) - cur;
+          if (g > bestG) { bestG = g; bestK = n; }
+        });
+      });
+      if (!bestK) break;
+      owned[bestK] = 1; nodes.push(bestK);
+      const fx = effOf(bestK); if (fx) bonus[fx.stats] = (bonus[fx.stats] || 0) + fx.bonus;
+    }
     return ST.sanitize(nodes, max);
+  }
+
+  // Titre : meilleur titre autorisé pour cet équipement + cet arbre (aucun titre si aucun n'améliore le score)
+  function _optTitle(map, runes, req, prio, nodes) {
+    const list = (window._vclTitres || []).filter(function(t) {
+      if (_optTri['tit:' + t.id] === -1) return false;
+      return !Object.keys(_optTri).some(function(k) { return k.indexOf('tit:') === 0 && _optTri[k] === 1; }) || _optTri['tit:' + t.id] === 1;
+    });
+    if (!list.length) return null;
+    const savedEq = equipped, savedRunes = equippedRunes, savedNodes = skillNodes, savedTitre = activeTitre;
+    let base;
+    try {
+      equipped = map; equippedRunes = runes; skillNodes = nodes; activeTitre = null;
+      base = Object.assign({}, computeStats().mins);
+    } finally { equipped = savedEq; equippedRunes = savedRunes; skillNodes = savedNodes; activeTitre = savedTitre; }
+    let best = null, bestScore = _optScore(base, req, prio) + 1e-9;
+    list.forEach(function(t) {
+      const mins = Object.assign({}, base);
+      Object.keys(t.stats || {}).forEach(function(s) { if (s in mins) mins[s] += +t.stats[s] || 0; });
+      const sc = _optScore(mins, req, prio);
+      if (sc > bestScore) { bestScore = sc; best = t.id; }
+    });
+    return best;
   }
 
   // Priorités : liste de niveaux (du plus important au moins important), chaque niveau regroupe des stats à égalité
@@ -2904,19 +2950,24 @@ function loadAccessoriesForClass(classId) {
                        exclIds: new Set(_optExcl.keys()), forceIds: forceIds, forced: forced, locked: lockedItems };
         const pools = _optPrune(_optPools(), req, prio);
         // 1) équipement sans arbre → 2) arbre pour cet équipement → 3) équipement refait avec l'arbre → 4) arbre final
+        // Mode « compléter » : un titre déjà choisi est gardé ; sinon on cherche le meilleur titre autorisé
+        const lockedTitre = complete ? activeTitre : null;
+        activeTitre = lockedTitre;
         skillNodes = lockedNodes.slice();
         let found = _optSearch(pools, req, prio, Date.now() + 1500, lockedRunes);
         if (found) {
           const t1 = _optTree(found.map, found.runes, req, prio, lockedNodes);
-          skillNodes = t1;
+          const ti1 = lockedTitre || _optTitle(found.map, found.runes, req, prio, t1);
+          skillNodes = t1; activeTitre = ti1;
           const found2 = _optSearch(pools, req, prio, Date.now() + 1500, lockedRunes);
           if (found2) found = found2;
-          skillNodes = lockedNodes.slice();
           const t2 = _optTree(found.map, found.runes, req, prio, lockedNodes);
           skillNodes = t2.length ? t2 : t1;
+          activeTitre = lockedTitre || _optTitle(found.map, found.runes, req, prio, skillNodes);
         }
         equipped = found ? found.map : {};
         equippedRunes = found ? found.runes : {};
+        _setTitre(activeTitre);
         buildGrid(); buildLevelPanel(); saveToStorage(); renderStats(); renderPickerInfo(); renderItemList();
 
         const mins = computeStats().mins;
