@@ -181,7 +181,8 @@ function canWrite(ctx, op, col, id, old, neu) {
       if (isAdmin) return true;
       const ch = changed(old, neu);
       if (authed && old?.submittedBy === ctx.uid) {
-        if (!ch.every(k => ['messages', 'unreadUser', 'replySeen'].includes(k))) return false;
+        if (!ch.every(k => ['messages', 'unreadUser', 'replySeen', 'closedAt'].includes(k))) return false;
+        if (ch.includes('closedAt') && typeof neu?.closedAt !== 'number') return false;   // le joueur peut clore son ticket (jamais le rouvrir sans écrire)
         if (ch.includes('unreadUser') && neu?.unreadUser !== false) return false;
         if (ch.includes('replySeen') && neu?.replySeen !== true) return false;
         if (ch.includes('messages')) {
@@ -260,7 +261,7 @@ async function postReportToDiscord(env, id, r) {
   if (!env.BOT_TOKEN) { console.error('[reports] BOT_TOKEN absent'); return; }
   const fiche = r.ficheId ? `${FICHE_TYPES[r.ficheType] || r.ficheType} · ${r.ficheName || r.ficheId}` : null;
   const embed = {
-    title: fiche ? '⚑ Erreur signalée sur une fiche' : '⚑ Bug / Suggestion',
+    title: fiche ? '⚑ Erreur signalée sur une fiche' : ({ bug: '🐛 Nouveau ticket — Bug', suggestion: '💡 Nouveau ticket — Suggestion' }[r.category] || '❓ Nouveau ticket'),
     description: String(r.text || '').slice(0, 3900),
     color: fiche ? 0xe8b84b : 0x5865f2,
     fields: [
@@ -268,7 +269,7 @@ async function postReportToDiscord(env, id, r) {
       { name: 'Page', value: String(r.page || '—').slice(0, 100), inline: true },
       ...(fiche ? [{ name: 'Fiche', value: fiche.slice(0, 250) }] : []),
     ],
-    footer: { text: 'ID ' + id + (r.submittedBy ? ' · répondre : modération → Retours' : ' · pas de compte, réponse impossible') },
+    footer: { text: 'ID ' + id + (r.submittedBy ? ' · répondre : modération → Tickets' : ' · pas de compte, réponse impossible') },
     timestamp: new Date().toISOString(),
   };
   const res = await fetch(`https://discord.com/api/v10/channels/${REPORTS_CHANNEL}/messages`, {
@@ -287,7 +288,7 @@ async function postUserMessageToDiscord(env, id, r) {
     body: JSON.stringify({ embeds: [{
       title: '💬 Réponse du joueur', description: String(m.text).slice(0, 3900), color: 0x57f287,
       fields: [{ name: 'Joueur', value: String(r.pseudo || 'Anonyme').slice(0, 100), inline: true }, { name: 'Signalement', value: String(r.text || '').slice(0, 200) || '—' }],
-      footer: { text: 'ID ' + id + ' · répondre : modération → Retours' }, timestamp: new Date().toISOString(),
+      footer: { text: 'ID ' + id + ' · répondre : modération → Tickets' }, timestamp: new Date().toISOString(),
     }], allowed_mentions: { parse: [] } }),
   }).catch(e => { console.error('[reports] Discord injoignable', e.message); return null; });
   if (res && !res.ok) console.error('[reports] Discord a refusé le message', res.status, (await res.text().catch(() => '')).slice(0, 300));

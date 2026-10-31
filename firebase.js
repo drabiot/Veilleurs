@@ -464,13 +464,14 @@ export async function logSearchQuery(term) {
   } catch {}
 }
 
-/** Log un rapport bug/suggestion envoyé via le widget — collection reports. */
-export async function logReport(pseudo, page, text, fiche = null) {
+/** Crée un ticket (bug / suggestion / autre / erreur de fiche) depuis le widget « Nous contacter » — collection reports. */
+export async function logReport(pseudo, page, text, fiche = null, category = 'autre') {
   try {
     const data = {
       pseudo: pseudo || 'Anonyme',
       page:   page   || '',
       text:   String(text || '').slice(0, 2000),
+      category: ['bug', 'suggestion', 'autre', 'fiche'].includes(category) ? category : 'autre',   // type du ticket (widget « Nous contacter »)
       createdAt: serverTimestamp(),
     };
     // Connecté : le signalement est lié au compte, ce qui permet aux admins de répondre (popup à la prochaine visite)

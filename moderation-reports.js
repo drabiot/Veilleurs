@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════
-// RETOURS — signalements des joueurs (bug / suggestion / erreur sur une fiche), sous forme de conversations
+// TICKETS — conversations ouvertes par les joueurs (bouton « Nous contacter » : bug, suggestion, autre, erreur sur une fiche)
 // Chargé à la demande par moderation.js (_lazyPanel) ; init(ctx) définit les window.* du panneau.
 // Chaque signalement arrive aussi dans le salon Discord des retours (worker-store.js). Un signalement = le texte d'origine puis `messages`
 // [{ from: 'user'|'admin', text, at }] ; écrire ici ajoute un message des admins et pose unreadUser : une bulle « Nouveau message » apparaît
@@ -11,7 +11,8 @@ import { arrayUnion } from './d1db.js';
 
 export function init(ctx) {
 const { db, collection, getDocs, doc, updateDoc, deleteDoc, deleteField, query, orderBy, limit, toast, modal, setHash, showPanel, escHtml, writeAudit } = ctx;
-const S = { all: [], filter: 'todo' };
+const S = { all: [], filter: 'todo', cat: 'all' };
+const CATS = { bug: '🐛 Bug', suggestion: '💡 Suggestion', autre: '❓ Autre', fiche: '⚑ Fiche' };
 
 const FICHE_LABELS = { item: 'Item', mob: 'Monstre', pnj: 'PNJ', quete: 'Quête', build: 'Build' };
 function ficheUrl(type, id) {
@@ -38,8 +39,10 @@ function state(r) {
   if (r.closedAt && (last.at || 0) <= r.closedAt) return 'closed';
   return last.from === 'admin' ? 'wait' : 'todo';
 }
-const FILTERS = { todo: 'À traiter', wait: 'Attente du joueur', closed: 'Clos', all: 'Tous' };
-const inFilter = r => S.filter === 'all' || state(r) === S.filter;
+const lastAtOf = r => { const t = thread(r); return t[t.length - 1].at || 0; };
+const FILTERS = { todo: 'À traiter', wait: 'Attente du joueur', open: 'Ouverts', closed: 'Clos', all: 'Tous' };
+const inFilter = r => (S.filter === 'all' || (S.filter === 'open' ? state(r) !== 'closed' : state(r) === S.filter))
+  && (S.cat === 'all' || (r.ficheId ? 'fiche' : (r.category || 'autre')) === S.cat);
 
 window.showReports = async function showReports() {
   setHash('reports');
@@ -69,9 +72,11 @@ function render() {
   if (badge) { badge.textContent = todo; badge.style.display = todo ? '' : 'none'; }
   const bar = document.getElementById('reports-filters');
   if (bar) bar.innerHTML = Object.entries(FILTERS).map(([k, label]) =>
-    `<button class="btn ${S.filter === k ? 'btn-primary' : 'btn-ghost'}" style="font-size:12px;" onclick="repFilter('${k}')">${label}${k === 'todo' ? ` (${todo})` : ''}</button>`).join('');
+    `<button class="btn ${S.filter === k ? 'btn-primary' : 'btn-ghost'}" style="font-size:12px;" onclick="repFilter('${k}')">${label}${k === 'all' ? '' : ` (${k === 'open' ? S.all.length - count('closed') : count(k)})`}</button>`).join('');
+  const cbar = document.getElementById('reports-cats');
+  if (cbar) cbar.innerHTML = `<select onchange="repCat(this.value)" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:5px 8px;font-size:12px;"><option value="all">Toutes les catégories</option>${Object.entries(CATS).map(([k, l]) => `<option value="${k}"${S.cat === k ? ' selected' : ''}>${l}</option>`).join('')}</select>`;
   const rows = S.all.filter(inFilter);
-  if (!rows.length) { box.innerHTML = '<div class="empty">Aucun signalement.</div>'; return; }
+  if (!rows.length) { box.innerHTML = '<div class="empty">Aucun ticket.</div>'; return; }
   box.innerHTML = rows.map(r => {
     const url = r.ficheId ? ficheUrl(r.ficheType, r.ficheId) : null;
     const label = r.ficheId ? `${FICHE_LABELS[r.ficheType] || r.ficheType || 'Fiche'} · ${r.ficheName || r.ficheId}` : '';
@@ -89,12 +94,12 @@ function render() {
     const stLabel = { todo: '🔴 À traiter', wait: '🟡 Attente du joueur', closed: '⚪ Clos' }[st];
     let reply;
     if (!r.submittedBy) reply = '<div style="font-size:11px;color:var(--muted);">Envoyé sans compte : pas de réponse possible.</div>';
-    else reply = `<textarea id="rep-text-${id}" rows="2" maxlength="2000" placeholder="Répondre au joueur (bulle « Nouveau message » à sa prochaine visite)…" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 9px;font-size:12px;outline:none;resize:vertical;font-family:inherit;"></textarea>
+    else reply = `<textarea id="rep-text-${id}" rows="2" maxlength="2000" placeholder="Répondre au joueur (pastille sur « Nous contacter » à sa prochaine visite)…" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 9px;font-size:12px;outline:none;resize:vertical;font-family:inherit;"></textarea>
       <button class="btn" style="margin-top:6px;background:var(--accent);color:var(--on-accent);font-size:12px;" onclick="repReply('${id}')">Envoyer</button>`;
     const closeBtn = `<button class="btn btn-ghost" style="margin-top:6px;font-size:12px;" onclick="repClose('${id}', ${st === 'closed' ? 'false' : 'true'})">${st === 'closed' ? '↩ Rouvrir' : '✔ Clore'}</button>`;
     return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;font-size:12px;">
-        <div><b>${escHtml(r.pseudo || 'Anonyme')}</b> <span style="color:var(--muted);">· ${escHtml(r.page || '')} · ${stLabel}</span></div>
+        <div><span class="tag" style="font-size:10px;">${CATS[r.ficheId ? 'fiche' : (r.category || 'autre')]}</span> <b>${escHtml(r.pseudo || 'Anonyme')}</b> <span style="color:var(--muted);">· ${escHtml(r.page || '')} · ${fmt(lastAtOf(r))} · ${stLabel}</span></div>
         <button class="btn btn-ghost" style="font-size:11px;padding:3px 8px;color:var(--danger);" onclick="repDelete('${id}')" title="Supprimer">🗑️</button>
       </div>
       ${fiche}
@@ -105,6 +110,7 @@ function render() {
 }
 
 window.repFilter = k => { S.filter = k; render(); };
+window.repCat = k => { S.cat = k; render(); };
 
 window.repReply = async function repReply(id) {
   const r = S.all.find(x => x.id === id);
@@ -130,11 +136,11 @@ window.repClose = async function repClose(id, close) {
 };
 
 window.repDelete = async function repDelete(id) {
-  const ok = await modal.confirm('Supprimer ce signalement ?', 'Cette action est irréversible.');
+  const ok = await modal.confirm('Supprimer ce ticket ?', 'Cette action est irréversible.');
   if (!ok) return;
   try {
     await deleteDoc(doc(db, 'reports', id));
-    toast('Signalement supprimé', 'success');
+    toast('Ticket supprimé', 'success');
     await window._loadReports();
   } catch (e) {
     toast('Erreur : ' + e.message, 'error');

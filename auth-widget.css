@@ -329,10 +329,23 @@
 .vcl-chat-close:hover { color: #e8b84b; }
 .vcl-chat-body { overflow-y: auto; padding: 14px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
 .vcl-chat { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 10px; padding: 12px 14px; }
-.vcl-chat-head { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,.1); }
-.vcl-chat-label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #e8b84b; display: flex; align-items: center; gap: 8px; }
+.vcl-chat-head { cursor: pointer; }
+.vcl-chat-head:hover .vcl-chat-quote { color: #dde; }
+.vcl-chat-label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #e8b84b; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.vcl-chat-state { margin-left: auto; font-size: 10px; letter-spacing: 0; text-transform: none; color: #9aa; border: 1px solid rgba(255,255,255,.18); border-radius: 99px; padding: 1px 8px; }
+.vcl-chat-state.s-answered { color: #e8b84b; border-color: rgba(232,184,75,.5); }
+.vcl-chat-state.s-closed { color: #7a7a8a; }
+.vcl-chat-date { font-size: 10px; color: #6f6f80; margin-top: 4px; }
+.vcl-chat-detail { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,.12); }
+.vcl-chat-detail[hidden] { display: none; }
+.vcl-chat-empty { text-align: center; color: #8a8a9a; font-size: 13px; padding: 24px 0; }
+.vcl-reply-bar-actions { display: flex; align-items: center; gap: 10px; }
+.vcl-chat-new-ticket { background: rgba(232,184,75,.15); border: 1px solid #e8b84b; color: #e8b84b; border-radius: 8px; padding: 5px 12px; cursor: pointer; font-family: inherit; font-size: 12px; }
+.vcl-chat-new-ticket:hover { background: rgba(232,184,75,.3); }
+.vcl-chat-resolve { margin-top: 8px; background: none; border: 1px solid rgba(255,255,255,.18); color: #9aa; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-family: inherit; font-size: 11px; }
+.vcl-chat-resolve:hover { color: #6ee7a0; border-color: #6ee7a0; }
 .vcl-chat-new { background: #e8b84b; color: #1a1a2e; font-size: 9px; font-weight: 700; border-radius: 99px; padding: 1px 7px; letter-spacing: .04em; }
-.vcl-chat-quote { font-size: 12px; color: #aab; margin-top: 3px; word-break: break-word; }
+.vcl-chat-quote { font-size: 13px; color: #bbc; margin-top: 4px; word-break: break-word; }
 .vcl-chat-log { display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; padding-right: 2px; }
 .vcl-chat-msg { display: flex; flex-direction: column; max-width: 86%; }
 .vcl-chat-msg.admin { align-self: flex-start; align-items: flex-start; }

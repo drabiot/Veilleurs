@@ -14,37 +14,29 @@
       ' title="Signaler une erreur sur cette fiche">⚑ Signaler une erreur</button>';
   };
 
-  // Bulle « nouveau message » : alimentée par report-chat.js (window.vclSetReportBubble), éventuellement avant la création du bouton
-  let bubbleEl = null, bubbleState = null;
-  function paintBubble() {
-    if (!bubbleEl) return;
-    const s = bubbleState;
-    bubbleEl.hidden = !s || !s.total;
-    if (!s) return;
-    bubbleEl.classList.toggle('unread', s.unread > 0);
-    bubbleEl.textContent = s.unread > 0 ? '💬 ' + (s.unread > 1 ? s.unread + ' nouveaux messages' : 'Nouveau message') : '💬 Mes échanges';
+  // Bouton « Nous contacter » : report-chat.js (joueur connecté) lui donne l'état de ses tickets (window.vclSetTickets) et la liste à ouvrir.
+  // Sans ticket (ou sans compte), le bouton ouvre directement le formulaire de nouveau ticket.
+  let btnEl = null, ticketState = null;
+  function paintBtn() {
+    if (!btnEl) return;
+    const n = ticketState?.unread || 0;
+    btnEl.classList.toggle('unread', n > 0);
+    btnEl.innerHTML = '💬 Nous contacter' + (n > 0 ? ' <span class="vcl-report-count">' + n + '</span>' : '');
+    btnEl.title = n > 0 ? (n > 1 ? n + ' tickets avec une réponse des admins' : 'Un ticket avec une réponse des admins') : 'Signaler un bug, proposer une suggestion, poser une question';
   }
-  window.vclSetReportBubble = s => { bubbleState = s; paintBubble(); };
+  window.vclSetTickets = s => { ticketState = s; paintBtn(); };
 
   function init() {
     const logo = document.querySelector('.header-logo');
     if (!logo) return;
 
-    // ── Bug / Suggestion button ──────────────────────────
+    // ── Bouton « Nous contacter » ────────────────────────
     const btn = document.createElement('button');
     btn.className = 'vcl-report-btn';
     btn.id = 'vcl-report-btn';
-    btn.title = 'Signaler un bug / Suggestion';
-    btn.textContent = '⚑ Bug / Suggestion';
     logo.insertAdjacentElement('afterend', btn);
-
-    bubbleEl = document.createElement('button');
-    bubbleEl.className = 'vcl-report-bubble';
-    bubbleEl.hidden = true;
-    bubbleEl.title = 'Réponses des admins à tes signalements';
-    bubbleEl.onclick = () => bubbleState?.open?.();
-    btn.insertAdjacentElement('afterend', bubbleEl);
-    paintBubble();
+    btnEl = btn;
+    paintBtn();
 
     // ── Bug / Suggestion overlay ─────────────────────────
     const overlay = document.createElement('div');
@@ -52,9 +44,14 @@
     overlay.className = 'vcl-report-overlay hidden';
     overlay.innerHTML = [
       '<div class="vcl-report-modal">',
-      '  <h3>Bug / Suggestion</h3>',
+      '  <h3>Nouveau ticket</h3>',
       '  <p id="vcl-report-ctx" class="vcl-report-ctx" hidden></p>',
-      '  <textarea id="vcl-report-text" placeholder="Décris le bug ou ta suggestion..." rows="5"></textarea>',
+      '  <div id="vcl-report-cats" class="vcl-report-cats">',
+      '    <label><input type="radio" name="vcl-cat" value="bug" checked><span>🐛 Bug</span></label>',
+      '    <label><input type="radio" name="vcl-cat" value="suggestion"><span>💡 Suggestion</span></label>',
+      '    <label><input type="radio" name="vcl-cat" value="autre"><span>❓ Autre</span></label>',
+      '  </div>',
+      '  <textarea id="vcl-report-text" placeholder="Décris ton problème, ta suggestion ou ta question..." rows="5"></textarea>',
       '  <p id="vcl-report-login" class="vcl-report-login" hidden>💬 Connecte-toi pour recevoir une réponse de l\'équipe.',
       '    <a href="#" id="vcl-report-login-link">Se connecter</a></p>',
       '  <div class="vcl-report-actions">',
@@ -70,6 +67,7 @@
     const statusEl = document.getElementById('vcl-report-status');
 
     const ctxEl = document.getElementById('vcl-report-ctx');
+    const catsEl = document.getElementById('vcl-report-cats');
     const loginEl = document.getElementById('vcl-report-login');
     const loginLink = document.getElementById('vcl-report-login-link');
     // Sans compte, l'équipe ne peut pas répondre : on propose de se connecter (auth-widget.js sur le wiki, _vcl_auth sur creator.html)
@@ -89,6 +87,7 @@
     function open(ctx) {
       ficheCtx = ctx && ctx.id ? ctx : null;
       ctxEl.hidden = !ficheCtx;
+      catsEl.hidden = !!ficheCtx;   // erreur sur une fiche : pas de catégorie à choisir
       ctxEl.textContent = ficheCtx
         ? 'Fiche : ' + (FICHE_LABELS[ficheCtx.type] || ficheCtx.type) + ' · ' + (ficheCtx.name || ficheCtx.id)
         : '';
@@ -97,7 +96,8 @@
       textEl.focus();
     }
 
-    btn.onclick = () => open();
+    window.vclNewTicket = () => open();   // utilisé par la liste des tickets (report-chat.js)
+    btn.onclick = () => (ticketState?.total ? ticketState.open() : open());
     document.addEventListener('click', e => {
       const b = e.target.closest?.('[data-report-fiche]');
       if (!b) return;
@@ -129,11 +129,15 @@
         }
         // Les signalements sont enregistrés dans Firestore (collection reports), lus par l'admin
         if (typeof window._vclLogReport !== 'function') throw new Error('envoi indisponible sur cette page');
-        const sent = await window._vclLogReport(pseudo, page, text, ficheCtx);
+        const category = ficheCtx ? 'fiche' : (document.querySelector('input[name="vcl-cat"]:checked')?.value || 'autre');
+        const sent = await window._vclLogReport(pseudo, page, text, ficheCtx, category);
         if (!sent) throw new Error('envoi refusé, réessaie plus tard');
         statusEl.textContent = 'Envoyé !';
         textEl.value = '';
-        setTimeout(close, 1200);
+        setTimeout(() => {
+          close();
+          if (window._vcl_uid) window.vclTicketsRefresh?.({ open: true });   // connecté : on montre la liste, avec le nouveau ticket
+        }, 900);
       } catch (err) {
         statusEl.textContent = 'Erreur : ' + err.message;
         console.error('[report-widget]', err);

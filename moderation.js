@@ -483,7 +483,7 @@ const NAV_HUBS = [
       ]},
       { label: 'Communication', tabs: [
         { hash: 'bugs-connus',  label: '🐛 Bugs connus',      btn: 'btn-bugs-connus',      panel: 'bugs-connus-panel',      fn: () => showBugsConnus() },
-        { hash: 'reports',      label: '💬 Retours',          btn: 'btn-reports',          panel: 'reports-panel',          fn: () => showReports(), count: 'count-reports-panel' },
+        { hash: 'reports',      label: '🎫 Tickets',          btn: 'btn-reports',          panel: 'reports-panel',          fn: () => showReports(), count: 'count-reports-panel' },
         { hash: 'translations', label: '🌐 Traduction',       btn: 'btn-translations',     panel: 'translations-panel',     fn: () => showTranslations(), count: 'count-translations' },
       ]},
     ]},
@@ -871,7 +871,7 @@ _lazyPanel(() => import('./moderation-game-tools.js?v=5b63ecd5'), ['showEventsTo
 
 _lazyPanel(() => import('./moderation-bugs.js?v=0490d991'), ['showBugsConnus', '_loadBugsConnus', 'saveBugForm', 'startEditBug', 'cancelEditBug', 'saveEditBug', 'deleteBug']);
 
-_lazyPanel(() => import('./moderation-reports.js?v=96645d51'), ['showReports', '_loadReports', 'repFilter', 'repReply', 'repClose', 'repDelete']);
+_lazyPanel(() => import('./moderation-reports.js?v=380ba45d'), ['showReports', '_loadReports', 'repFilter', 'repReply', 'repClose', 'repCat', 'repDelete']);
 _lazyPanel(() => import('./moderation-translations.js?v=7dc401a8'), ['showTranslations', '_loadTranslations', 'trDecide', 'trAcceptAll', 'trSetStatus', 'trSearch', 'trExport', 'trClean']);
 
 // ══════════════════════════════════════════════════════

@@ -212,7 +212,8 @@ function _dispatch(uid, role, baseRole) {
     if (!user) {
       _setGlobals(null, 'visiteur', 'visiteur');
       _showLoginUI();
-      window.vclSetReportBubble?.(null);
+      window.vclSetTickets?.(null);
+      window.vclTicketsRefresh = null;
       _dispatch(null, 'visiteur', 'visiteur');
       return;
     }
