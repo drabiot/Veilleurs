@@ -159,8 +159,7 @@ function refreshList() {
 }
 
 function setFilter(k, v) {
-  filters[k] = v;
-  sidebarFilters?.classList.add('open');
+  filters[k] = v;   // le panneau reste replié : le filtre actif s'affiche en pastille sous « Filtres »
   refreshList();
   window._vclOpenSidebar?.();
 }
@@ -188,7 +187,6 @@ function applyTag(tag) {
   const pal = hit('palier', [...new Set(ITEMS.map(it => String(it.palier ?? 1)))]);
   if (pal) return setFilter('palier', pal);
   searchInput.value = String(tag);
-  sidebarFilters?.classList.add('open');
   refreshList();
   window._vclOpenSidebar?.();
 }
