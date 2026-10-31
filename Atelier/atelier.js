@@ -2747,6 +2747,9 @@ function loadAccessoriesForClass(classId) {
             return '<div style="color:' + (ok ? '#7ac47a' : '#d9614a') + '">' + (ok ? '✓' : '✗') + ' ' + (st ? st.label : id) +
               ' : ' + Math.round((mins[id] || 0) * 100) / 100 + ' / ' + req[id] + '</div>';
           }).join('') + '<div style="opacity:.6;margin-top:4px">Clique sur Générer pour une autre variante.</div>';
+        // Génération terminée : on ferme la fenêtre pour voir le build ; un minimum raté est signalé par une notification
+        closeModal();
+        if (unmet) import('../components/toast.js').then(function(m) { m.toast('Impossible de tout respecter : voici le build le plus proche.', 'warning'); }).catch(function() {});
       } catch (err) {
         console.error('[Atelier] build optimisé :', err);
         out.textContent = '⛔ Erreur pendant la génération.';
