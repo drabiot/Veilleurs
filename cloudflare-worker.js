@@ -712,9 +712,10 @@ async function handleDbSync(url, env) {
   const m = Object.fromEntries(meta.map(r => [r.k, r.v]));
   if (!m.rev || m['full:' + col] !== 0) return json({ error: 'Pas encore synchronisé' }, 503); // le client garde son cache local
   const rows = (since > 0
-    ? await env.DB.prepare('SELECT id, data, deleted FROM docs WHERE col = ? AND updated_at > ?').bind(col, since).all()
-    : await env.DB.prepare('SELECT id, data, deleted FROM docs WHERE col = ? AND deleted = 0').bind(col).all()).results;
-  const docs = rows.filter(r => !r.deleted).map(r => `{"id":${JSON.stringify(r.id)},"d":${r.data}}`).join(',');
+    ? await env.DB.prepare('SELECT id, data, deleted, updated_at FROM docs WHERE col = ? AND updated_at > ?').bind(col, since).all()
+    : await env.DB.prepare('SELECT id, data, deleted, updated_at FROM docs WHERE col = ? AND deleted = 0').bind(col).all()).results;
+  // « u » = révision de la dernière écriture du document : le Compendium s'en sert pour lister les entrées récemment ajoutées ou modifiées
+  const docs = rows.filter(r => !r.deleted).map(r => `{"id":${JSON.stringify(r.id)},"d":${r.data},"u":${r.updated_at | 0}}`).join(',');
   const deleted = JSON.stringify(rows.filter(r => r.deleted).map(r => r.id));
   return new Response(`{"rev":${m.rev},"epoch":${m.epoch},"docs":[${docs}],"deleted":${deleted}}`, {
     headers: { 'Content-Type': 'application/json', ...corsHeaders() },

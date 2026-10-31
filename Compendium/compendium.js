@@ -39,6 +39,11 @@ sortAlphaBtn.addEventListener('click', () => {
 
 /* Renvoie la liste filtrée/triée selon l'état courant */
 function currentItems() {
+  return textFilter().filter(it => passesFilters(it));
+}
+
+/* Filtre texte seul (la recherche) */
+function textFilter() {
   const q = searchInput.value.trim();
   const norm = normalize(q);
   ITEMS.forEach(item => {
@@ -78,8 +83,8 @@ function buildSidebarAlpha(items) {
       link.href       = `#${item.id}`;
       link.dataset.id = item.id;
       link.innerHTML = `
-        <span class="sidebar-item-dot" style="background:${color}"></span>
-        ${escHtml(item.name || '')}${item.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}`;
+        ${itemIconHtml(item)}
+        <span class="si-name">${escHtml(item.name || '')}</span>${item.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}`;
       link.addEventListener('click', (e) => {
         e.preventDefault();
         showItem(item.id, false);
@@ -96,6 +101,238 @@ function buildSidebarAlpha(items) {
     sidebarTree.querySelector(`.sidebar-item[data-id="${activeId}"]`)?.classList.add('active');
   }
 }
+
+/* ══════════════════════════════════
+   FILTRES DISCRETS (catégorie · rareté · palier)
+   Une ligne « Filtres » repliée sous les boutons de tri ; le panneau ne propose que des choix utiles
+   (valeurs présentes dans la recherche en cours, avec leur nombre d'items) et les filtres actifs restent visibles en pastilles.
+══════════════════════════════════ */
+const filters = { category: null, rarity: null, palier: null };
+const FILTER_LABELS = { category: 'Catégorie', rarity: 'Rareté', palier: 'Palier' };
+const sidebarFilters = document.getElementById('sidebar-filters');
+
+const filterKeyOf = (it, k) => (k === 'palier' ? String(it.palier ?? 1) : String(it[k] ?? ''));
+const anyFilterActive = () => Object.values(filters).some(Boolean);
+const passesFilters = (it, skip) => Object.keys(filters).every(k => k === skip || !filters[k] || filterKeyOf(it, k) === String(filters[k]));
+function filterValueLabel(k, v) {
+  if (k === 'category') return catData(v).label;
+  if (k === 'rarity')   return rarityLabel(v);
+  return vclPalierLabel(isNaN(+v) ? v : +v);
+}
+const palierRank = p => (p == -1 ? 3 : p == 'event' ? 2 : p == 'worldboss' ? 1 : 0);
+
+function filterOptionOrder(k, values) {
+  if (k === 'category') return values.sort((a, b) => ((CATEGORIES[a] && CATEGORIES[a].ordre) ?? 999) - ((CATEGORIES[b] && CATEGORIES[b].ordre) ?? 999));
+  if (k === 'rarity')   return values.sort((a, b) => rarityRank(a) - rarityRank(b));
+  return values.sort((a, b) => palierRank(a) - palierRank(b) || (Number(a) - Number(b) || 0));
+}
+
+function renderFilters() {
+  if (!sidebarFilters) return;
+  const open = sidebarFilters.classList.contains('open');
+  const base = textFilter().filter(it => !_hiddenQualityItem(it));
+  const active = Object.keys(filters).filter(k => filters[k]);
+
+  let html = `<div class="sf-bar"><button type="button" class="sf-toggle" aria-expanded="${open}">Filtres${active.length ? `<span class="sf-badge">${active.length}</span>` : ''}<span class="sf-caret">▾</span></button>`;
+  html += active.map(k => `<button type="button" class="sf-chip sf-chip-active" data-k="${k}" title="Retirer ce filtre">${escHtml(filterValueLabel(k, filters[k]))}<span class="sf-x">✕</span></button>`).join('');
+  html += '</div><div class="sf-panel">';
+  for (const k of Object.keys(filters)) {
+    const counts = new Map();
+    base.filter(it => passesFilters(it, k)).forEach(it => { const v = filterKeyOf(it, k); if (v) counts.set(v, (counts.get(v) || 0) + 1); });
+    if (filters[k] && !counts.has(String(filters[k]))) counts.set(String(filters[k]), 0);
+    if (counts.size < 2 && !filters[k]) continue;   // un seul choix possible : rien à filtrer, on ne l'affiche pas
+    html += `<div class="sf-group"><div class="sf-title">${FILTER_LABELS[k]}</div><div class="sf-opts">`
+      + filterOptionOrder(k, [...counts.keys()]).map(v => {
+        const on = String(filters[k]) === v;
+        return `<button type="button" class="sf-chip${on ? ' sf-chip-active' : ''}" data-k="${k}" data-v="${escHtml(v)}"${counts.get(v) === 0 && !on ? ' disabled' : ''}>${escHtml(filterValueLabel(k, v))}<small>${counts.get(v)}</small></button>`;
+      }).join('') + '</div></div>';
+  }
+  if (active.length) html += '<button type="button" class="sf-reset">Réinitialiser les filtres</button>';
+  html += '</div>';
+  sidebarFilters.innerHTML = html;
+}
+
+function refreshList() {
+  renderFilters();
+  const expand = currentSort === 'palier' && (anyFilterActive() || searchInput.value.trim().length > 0);
+  buildSidebar(currentItems(), expand);
+}
+
+function setFilter(k, v) {
+  filters[k] = v;
+  sidebarFilters?.classList.add('open');
+  refreshList();
+  window._vclOpenSidebar?.();
+}
+
+sidebarFilters?.addEventListener('click', e => {
+  const t = e.target.closest('button');
+  if (!t) return;
+  if (t.classList.contains('sf-toggle')) { sidebarFilters.classList.toggle('open'); renderFilters(); return; }
+  if (t.classList.contains('sf-reset')) { Object.keys(filters).forEach(k => { filters[k] = null; }); refreshList(); return; }
+  if (t.dataset.k) {
+    const k = t.dataset.k, v = t.dataset.v;
+    filters[k] = (!v || String(filters[k]) === v) ? null : v;
+    refreshList();
+  }
+});
+
+// Clic sur une étiquette de fiche : filtre si elle correspond à une catégorie, une rareté ou un palier, sinon recherche
+function applyTag(tag) {
+  const n = normalize(String(tag));
+  const hit = (k, vals) => vals.find(v => normalize(filterValueLabel(k, v)) === n || normalize(String(v)) === n);
+  const cat = hit('category', Object.keys(CATEGORIES));
+  if (cat) return setFilter('category', cat);
+  const rar = hit('rarity', Object.keys(RARITIES));
+  if (rar) return setFilter('rarity', rar);
+  const pal = hit('palier', [...new Set(ITEMS.map(it => String(it.palier ?? 1)))]);
+  if (pal) return setFilter('palier', pal);
+  searchInput.value = String(tag);
+  sidebarFilters?.classList.add('open');
+  refreshList();
+  window._vclOpenSidebar?.();
+}
+
+/* Icône d'item pour les listes (rareté en liseré) ; une image absente est remplacée par l'emoji de la catégorie */
+function itemIconHtml(item, cls = 'si-icon') {
+  const src = getItemImg(item);
+  const emoji = catData(item.category).emoji;
+  return `<span class="${cls}" style="--rc:${rarityColor(item.rarity)}">${src ? `<img loading="lazy" decoding="async" src="${escHtml(src)}" alt="" data-emoji="${escHtml(emoji)}">` : emoji}</span>`;
+}
+document.addEventListener('error', e => {
+  const img = e.target;
+  if (img && img.tagName === 'IMG' && img.dataset && img.dataset.emoji) img.replaceWith(document.createTextNode(img.dataset.emoji));
+}, true);
+
+/* ══════════════════════════════════
+   ACCUEIL DU GLOSSAIRE
+   Complétion des fiches, accès rapide par catégorie, dernières entrées ajoutées ou modifiées.
+   Complétion = champs requis de config/data_quality_standards (modération → Qualité), chargés par compendium.html dans window._vcl_dq.
+══════════════════════════════════ */
+const FIELD_LABELS = {
+  images: 'Image', lore: 'Lore', obtain: 'Obtention', craft: 'Craft', stats: 'Statistiques', lvl: 'Niveau', palier: 'Palier',
+  rarity: 'Rareté', category: 'Catégorie', effects: 'Effets', classes: 'Classes', tags: 'Tags', event: 'Évènement', set: 'Panoplie', desc: 'Description',
+};
+const DEFAULT_REQUIRED = ['images', 'lore', 'obtain'];
+
+function fieldEmpty(d, f) {
+  if (f === 'event') return d.palier === 'event' && !(typeof d.event === 'string' && d.event);
+  if (f === 'coords') return !d.coords || d.coords.x == null;
+  if (f === 'img' || f === 'images' || f === 'image') {
+    return !(d.img || d.image || (Array.isArray(d.images) && d.images.some(x => x)));
+  }
+  const v = d[f];
+  return v == null || v === '' || (Array.isArray(v) && v.length === 0);
+}
+function itemMissingFields(item) {
+  const std = window._vcl_dq?.items;
+  const req = new Set((std?.required?.length ? std.required : DEFAULT_REQUIRED).map(f => (f === 'img' || f === 'image') ? 'images' : f));
+  (std?.byCategory?.[item.category]?.required || []).forEach(f => req.add((f === 'img' || f === 'image') ? 'images' : f));
+  return [...req].filter(f => fieldEmpty(item, f));
+}
+const itemRevOf = it => (window._vclRevs?.items || {})[it._id || it.id] || 0;
+
+function buildHome() {
+  const vis = ITEMS.filter(it => !_hiddenQualityItem(it));
+  const ignored = window._vcl_dq?.ignored || new Set();
+  const counted = vis.filter(it => !ignored.has(it.id) && !ignored.has(it._id));
+  const rows = counted.map(it => ({ it, miss: itemMissingFields(it) }));
+  const done = rows.filter(r => !r.miss.length).length;
+  const pct = counted.length ? Math.floor(done / counted.length * 100) : 0;
+
+  // champs les plus souvent manquants
+  const missCount = {};
+  rows.forEach(r => r.miss.forEach(f => { missCount[f] = (missCount[f] || 0) + 1; }));
+  const topMiss = Object.entries(missCount).sort((a, b) => b[1] - a[1]).slice(0, 4);
+
+  // complétion par palier / par catégorie
+  const agg = keyFn => {
+    const m = new Map();
+    rows.forEach(r => { const k = keyFn(r.it); const e = m.get(k) || { total: 0, done: 0 }; e.total++; if (!r.miss.length) e.done++; m.set(k, e); });
+    return m;
+  };
+  const byPalier = agg(it => String(it.palier ?? 1));
+  const byCat = agg(it => it.category);
+  const catTotals = new Map();
+  vis.forEach(it => catTotals.set(it.category, (catTotals.get(it.category) || 0) + 1));
+
+  const paliers = [...byPalier.keys()].sort((a, b) => palierRank(a) - palierRank(b) || (Number(a) - Number(b) || 0));
+  const cats = Object.keys(CATEGORIES).filter(c => catTotals.has(c));
+
+  const recent = vis.filter(it => itemRevOf(it)).sort((a, b) => itemRevOf(b) - itemRevOf(a)).slice(0, 8);
+
+  const bar = (d, t) => `<span class="home-bar"><i style="width:${t ? Math.round(d / t * 100) : 0}%"></i></span>`;
+  const html = `
+    <div class="home-hero">
+      <div class="home-ring" style="--p:${pct}">
+        <svg viewBox="0 0 36 36" aria-hidden="true"><circle class="home-ring-bg" cx="18" cy="18" r="15.5" pathLength="100"/><circle class="home-ring-fg" cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="${pct} 100"/></svg>
+        <span class="home-ring-val">${pct}<small>%</small></span>
+      </div>
+      <div class="home-hero-text">
+        <div class="home-kicker">Complétion du glossaire</div>
+        <div class="home-big"><b>${done}</b><i>/ ${counted.length}</i> <span>items complets</span></div>
+        <div class="home-hint">Un item est complet quand tous ses champs requis sont renseignés.</div>
+        ${topMiss.length ? `<div class="home-missing"><span>Il manque surtout :</span>${topMiss.map(([f, n]) => `<em>${escHtml(FIELD_LABELS[f] || f)}<small>${n}</small></em>`).join('')}</div>` : ''}
+      </div>
+    </div>
+
+    ${recent.length ? `
+    <section class="home-section">
+      <h3 class="home-title">Récemment ajoutés ou modifiés</h3>
+      <div class="home-recent">${recent.map(it => `
+        <a class="home-recent-card" href="#${escHtml(it.id)}" data-id="${escHtml(it.id)}" style="--rc:${rarityColor(it.rarity)}">
+          ${itemIconHtml(it, 'home-icon')}
+          <span class="home-recent-name">${escHtml(it.name || '')}</span>
+          <span class="home-recent-meta">${escHtml(catData(it.category).label)} · ${escHtml(vclPalierLabel(it.palier ?? 1))}</span>
+        </a>`).join('')}
+      </div>
+    </section>` : ''}
+
+    <section class="home-section">
+      <h3 class="home-title">Accès rapide par catégorie</h3>
+      <div class="home-cats">${cats.map(c => {
+        const e = byCat.get(c) || { total: 0, done: 0 };
+        return `<button type="button" class="home-cat" data-cat="${escHtml(c)}">
+          <span class="home-cat-emoji">${catData(c).emoji}</span>
+          <span class="home-cat-label">${escHtml(catData(c).label)}</span>
+          <span class="home-cat-count">${catTotals.get(c)}</span>
+          ${bar(e.done, e.total)}
+        </button>`;
+      }).join('')}</div>
+    </section>
+
+    <section class="home-section">
+      <h3 class="home-title">Complétion par palier</h3>
+      <div class="home-paliers">${paliers.map(p => {
+        const e = byPalier.get(p);
+        return `<button type="button" class="home-palier" data-palier="${escHtml(p)}">
+          <span class="home-palier-label">${escHtml(vclPalierLabel(isNaN(+p) ? p : +p))}</span>
+          ${bar(e.done, e.total)}
+          <span class="home-palier-val">${e.total ? Math.floor(e.done / e.total * 100) : 0}%</span>
+          <span class="home-palier-n">${e.done}/${e.total}</span>
+        </button>`;
+      }).join('')}</div>
+    </section>`;
+
+  placeholder.className = 'glossary-home';
+  placeholder.innerHTML = html;
+}
+
+placeholder.addEventListener('click', e => {
+  const card = e.target.closest('.home-recent-card');
+  if (card) {
+    e.preventDefault();
+    const id = card.dataset.id;
+    ensureSidebarItem(id);
+    showItem(id, false);
+    history.pushState({ item: id }, '', `#${id}`);
+    return;
+  }
+  const cat = e.target.closest('.home-cat');
+  if (cat) { setFilter('category', cat.dataset.cat); return; }
+  const pal = e.target.closest('.home-palier');
+  if (pal) setFilter('palier', pal.dataset.palier);
+});
 
 /* ══════════════════════════════════
    ORDRE DE RARETÉ
@@ -385,8 +622,8 @@ function buildSidebar(items, expandAll = false) {
             link.dataset.id = item.id;
             if (window.location.hash.slice(1) === item.id) link.classList.add('active'); // catégorie remplie après coup
             link.innerHTML = `
-              <span class="sidebar-item-dot" style="background:${color}"></span>
-              ${escHtml(item.name || '')}${item.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}`;
+              ${itemIconHtml(item)}
+              <span class="si-name">${escHtml(item.name || '')}</span>${item.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}`;
             link.addEventListener('click', (e) => {
               e.preventDefault();
               showItem(item.id, false);
@@ -802,7 +1039,7 @@ function renderWebGL(container, modelPath, texturePath, accentColor) {
 /* ══════════════════════════════════
    RENDU CRAFT
 ══════════════════════════════════ */
-function renderCraft(craftList) {
+function renderCraft(craftList, resultData) {
   if (!craftList || craftList.length === 0) return '';
 
   // Détection nouveau format : tableau d'objets {name?, npcId?, items:[]}
@@ -821,46 +1058,57 @@ function renderCraft(craftList) {
     recettes = raw.map((items, i) => ({ name: null, npcId: null, items }));
   }
 
-  function renderRows(items) {
-    return items.map(entry => {
-      const currency = CURRENCIES[entry.id];
-      if (currency) {
-        return `
-          <div class="craft-ingredient-row">
-            <span class="craft-ingredient-qty">×${entry.qty}</span>
-            <span class="craft-ingredient-visual">
-              <span class="craft-ingredient-emoji">${currency.emoji}</span>
-            </span>
-            <span class="craft-ingredient-name craft-currency-name" style="color:${currency.color};">
-              ${currency.label}
-            </span>
-          </div>`;
-      }
-
-      const ingredient = ITEMS_BY_ID.get(entry.id);
-      let imgHtml;
-      if (ingredient) {
-        const imgSrc = getItemImg(ingredient);
-        imgHtml = imgSrc
-          ? `<img loading="lazy" decoding="async" class="craft-ingredient-img" src="${imgSrc}" alt="${escHtml(ingredient.name)}">`
-          : `<span class="craft-ingredient-emoji">${catData(ingredient.category).emoji}</span>`;
-      } else {
-        imgHtml = `<span class="craft-ingredient-emoji">❓</span>`;
-      }
-
-      const name  = ingredient ? escHtml(ingredient.name) : `<em style="color:#888">${escHtml(entry.id)}</em>`;
-      const color = ingredient ? rarityColor(ingredient.rarity) : '#666';
-      const nameHtml = ingredient
-        ? `<a class="craft-ingredient-name" href="#${escHtml(entry.id)}" style="color:${color}" data-id="${escHtml(entry.id)}">${name}</a>`
-        : `<span class="craft-ingredient-name" style="color:#888">${name}</span>`;
-
+  // Une tuile = icône (rareté en liseré, quantité en pastille) + nom cliquable
+  function tile(entry) {
+    const currency = CURRENCIES[entry.id];
+    if (currency) {
       return `
-        <div class="craft-ingredient-row">
-          <span class="craft-ingredient-qty">×${entry.qty}</span>
-          <span class="craft-ingredient-visual">${imgHtml}</span>
-          ${nameHtml}
+        <div class="craft-tile">
+          <span class="craft-tile-icon" style="--rc:${currency.color}"><span class="craft-ingredient-emoji">${currency.emoji}</span><span class="craft-tile-qty">×${entry.qty}</span></span>
+          <span class="craft-ingredient-name craft-currency-name" style="color:${currency.color};">${currency.label}</span>
         </div>`;
-    }).join('');
+    }
+    const ingredient = ITEMS_BY_ID.get(entry.id);
+    const color = ingredient ? rarityColor(ingredient.rarity) : '#666';
+    let imgHtml;
+    if (ingredient) {
+      const imgSrc = getItemImg(ingredient);
+      imgHtml = imgSrc
+        ? `<img loading="lazy" decoding="async" class="craft-ingredient-img" src="${imgSrc}" alt="${escHtml(ingredient.name)}" data-emoji="${escHtml(catData(ingredient.category).emoji)}">`
+        : `<span class="craft-ingredient-emoji">${catData(ingredient.category).emoji}</span>`;
+    } else {
+      imgHtml = `<span class="craft-ingredient-emoji">❓</span>`;
+    }
+    const name = ingredient ? escHtml(ingredient.name) : `<em style="color:#888">${escHtml(entry.id)}</em>`;
+    const nameHtml = ingredient
+      ? `<a class="craft-ingredient-name" href="#${escHtml(entry.id)}" style="color:${color}" data-id="${escHtml(entry.id)}">${name}</a>`
+      : `<span class="craft-ingredient-name" style="color:#888">${name}</span>`;
+    return `
+      <div class="craft-tile">
+        <span class="craft-tile-icon" style="--rc:${color}">${imgHtml}<span class="craft-tile-qty">×${entry.qty}</span></span>
+        ${nameHtml}
+      </div>`;
+  }
+
+  // Résultat du craft (cet item, avec la quantité fabriquée)
+  function resultTile() {
+    if (!resultData) return '';
+    const qty = +resultData.craft_qty > 1 ? +resultData.craft_qty : 0;
+    const color = rarityColor(resultData.rarity);
+    const src = getItemImg(resultData);
+    const icon = src
+      ? `<img loading="lazy" decoding="async" class="craft-ingredient-img" src="${src}" alt="" data-emoji="${escHtml(catData(resultData.category).emoji)}">`
+      : `<span class="craft-ingredient-emoji">${catData(resultData.category).emoji}</span>`;
+    return `
+      <div class="craft-arrow"><span>Fabrique</span></div>
+      <div class="craft-tile craft-result">
+        <span class="craft-tile-icon" style="--rc:${color}">${icon}${qty ? `<span class="craft-tile-qty">×${qty}</span>` : ''}</span>
+        <span class="craft-ingredient-name" style="color:${color}">${escHtml(resultData.name || '')}</span>
+      </div>`;
+  }
+
+  function renderRows(items) {
+    return `<div class="craft-flow"><div class="craft-tiles">${items.map(tile).join('')}</div>${resultTile()}</div>`;
   }
 
 function renderNpcHeader(recette, index) {
@@ -1056,16 +1304,23 @@ function renderItemStats(item) {
   // ─ Lignes de stats ─
   if (hasStats) {
     html += '<div class="stat-rows">';
-    for (const group of STAT_GROUPS) {
-      for (const statDef of group.stats) {
-        if (stats[statDef.id] == null) continue;
-        html += `<div class="stat-row">
+    const GROUP_COLORS = ['#e0795a', '#6aa8d8', '#8fcf8a', '#c79af0'];
+    const peak = v => Array.isArray(v) ? Math.max(...v.map(Number).filter(n => !isNaN(n)), 0) : (v != null && typeof v === 'object') ? Number(v.max ?? v.min) || 0 : Number(v) || 0;
+    STAT_GROUPS.forEach((group, gi) => {
+      const defs = group.stats.filter(sd => stats[sd.id] != null);
+      if (!defs.length) return;
+      const sc = GROUP_COLORS[gi % GROUP_COLORS.length];
+      html += `<div class="stat-group-title" style="--sc:${sc}">${escHtml(group.label)}</div>`;
+      for (const statDef of defs) {
+        const pct = statDef.max ? Math.max(4, Math.min(100, Math.abs(peak(stats[statDef.id])) / statDef.max * 100)) : 0;
+        html += `<div class="stat-row" style="--sc:${sc};--p:${pct.toFixed(0)}%">
           <span class="stat-row-icon">${escHtml(statDef.icon)}</span>
           <span class="stat-row-label">${escHtml(statDef.label)}</span>
           <span class="stat-row-value">${_statValHtml(stats[statDef.id], statDef.unit)}</span>
+          ${pct ? '<span class="stat-bar"></span>' : ''}
         </div>`;
       }
-    }
+    });
     html += '</div>';
   }
 
@@ -1085,9 +1340,7 @@ function renderItemStats(item) {
 
 // « Fabrique ×3 » : bandeau bien visible sous la liste d'ingrédients quand un craft donne plusieurs exemplaires
 function craftYieldHtml(d) {
-  const n = d && +d.craft_qty;
-  if (!(n > 1) || !getCraftSafe(d)) return '';
-  return `<div class="craft-yield"><span class="craft-yield-label">Fabrique</span><span class="craft-yield-qty">×${n}</span></div>`;
+  return '';   // la quantité fabriquée est affichée sur la tuile résultat du craft (renderCraft)
 }
 function getCraftSafe(d) { return d && Array.isArray(d.craft) ? d.craft.length : !!d?.craft; }
 
@@ -1331,7 +1584,13 @@ function renderSetSection(item) {
 
 function showItem(id, initialQuality = false) {
   const item = ITEMS_BY_ID.get(id);
-  if (!item) return;
+  if (!item) {
+    stopSlideshow();
+    stopWebGL();
+    placeholder.style.display = 'none';
+    itemDisplay.innerHTML = `<div class="item-notfound"><div class="item-notfound-icon">🕯️</div><div class="item-notfound-title">Item introuvable</div><p>Cette fiche n'existe pas ou plus : elle a peut-être été renommée ou retirée.</p><a class="item-notfound-link" href="compendium.html">← Retour à l'accueil du glossaire</a></div>`;
+    return;
+  }
 
   stopSlideshow();
   stopWebGL();
@@ -1422,7 +1681,7 @@ function showItem(id, initialQuality = false) {
   const hasRow = item.craft || item.effects || qualityItem?.craft || qualityItem?.effects || itemStatsHtml;
 
   itemDisplay.innerHTML = `
-    <div class="item-sheet">
+    <div class="item-sheet" style="--rc:${color}">
       <div class="item-header">
         <div class="item-image-wrap" style="color:${color}; border-color:${color};">
           <div class="item-image-bg" style="background:${color};"></div>
@@ -1458,14 +1717,14 @@ function showItem(id, initialQuality = false) {
       </div>
       <div class="effects-craft-row">
         <div id="item-effects-wrap">${renderEffects(currentEffects, d.cooldown_apply)}</div>
-        <div id="item-craft-wrap">${renderCraft(getCraft())}${craftYieldHtml(d)}</div>
+        <div id="item-craft-wrap">${renderCraft(getCraft(), d)}</div>
         ${itemStatsHtml ? `<div id="item-stats-wrap">${itemStatsHtml}</div>` : ''}
       </div>` : ''}
       <div class="item-sep"></div>
       ${renderUsedIn(item.id)}
       ${renderSetSection(item)}
       <div class="item-tags">
-        ${(item.tags || []).map(t => `<span class="item-tag">${t}</span>`).join('')}
+        ${(item.tags || []).map(t => `<button type="button" class="item-tag" data-tag="${escHtml(String(t))}" title="Voir les items de la même étiquette">${escHtml(String(t))}</button>`).join('')}
       </div>
     </div>`;
 
@@ -1499,7 +1758,7 @@ function showItem(id, initialQuality = false) {
       obtainEl.innerHTML = parseText(withAutoObtain(d2, v2.obtain), true);
       const nameEl = document.getElementById('item-name-text');
       if (nameEl) nameEl.textContent = d2.name || item.name;
-      craftWrap.innerHTML = renderCraft(getCraft()) + craftYieldHtml(d2);
+      craftWrap.innerHTML = renderCraft(getCraft(), d2);
 
       const effectsWrap = document.getElementById('item-effects-wrap');
       if (effectsWrap) effectsWrap.innerHTML = renderEffects(d2.effects ?? null, d2.cooldown_apply);
@@ -1554,6 +1813,11 @@ function showItem(id, initialQuality = false) {
   }
 }
 
+itemDisplay.addEventListener('click', e => {
+  const t = e.target.closest('.item-tag[data-tag]');
+  if (t) applyTag(t.dataset.tag);
+});
+
 /* ══════════════════════════════════
    RECHERCHE
 ══════════════════════════════════ */
@@ -1561,10 +1825,9 @@ function showItem(id, initialQuality = false) {
 let _searchLogTimer = null;
 let _sidebarSearchTimer = null;
 searchInput.addEventListener('input', () => {
-  const expandAll = currentSort === 'palier';
   // la liste (≈1 100 items) est reconstruite après 120 ms de pause plutôt qu'à chaque frappe
   clearTimeout(_sidebarSearchTimer);
-  _sidebarSearchTimer = setTimeout(() => buildSidebar(currentItems(), expandAll), 120);
+  _sidebarSearchTimer = setTimeout(refreshList, 120);
   // Log search query après 1.5s de pause (évite de logger chaque frappe)
   clearTimeout(_searchLogTimer);
   _searchLogTimer = setTimeout(() => {
@@ -1628,6 +1891,8 @@ function initCompendium() {
   }
 
   buildSidebar(ITEMS);
+  renderFilters();
+  buildHome();
   document.querySelector('.glossary-subtitle').innerHTML =
     '// BASE DE DONNÉES · VEILLEURS AU CLAIR DE LUNE &nbsp;·&nbsp; <span style="color:var(--gold);font-weight:600">' + ITEMS.length + '</span> items recensés';
 
@@ -1637,6 +1902,7 @@ function initCompendium() {
   const _toggleBtn = document.getElementById('sidebar-toggle');
   function _openSidebar()  { _sidebar?.classList.add('open');    _backdrop?.classList.add('open'); }
   function _closeSidebar() { _sidebar?.classList.remove('open'); _backdrop?.classList.remove('open'); }
+  window._vclOpenSidebar = () => { if (window.innerWidth <= 768) _openSidebar(); };
   _toggleBtn?.addEventListener('click', _openSidebar);
   _backdrop?.addEventListener('click', _closeSidebar);
   _sidebar?.addEventListener('click', e => {
@@ -1646,6 +1912,7 @@ function initCompendium() {
   const { id: initId, quality: initQuality } = parseHash(window.location.hash);
   if (initId) {
     const target = ITEMS_BY_ID.get(initId);
+    if (!target) showItem(initId, false);   // lien direct vers une fiche absente : message plutôt qu'un écran vide
     if (target) {
       buildSidebar(ITEMS);
       requestAnimationFrame(() => {

@@ -2,7 +2,7 @@
   "_comment": "Clé = texte français EXACT de la page ; valeur = anglais. {x} = variable. Les noms d'items/mobs/PNJ ne se traduisent pas. Glossaire : i18n/glossary.json. Vérifier avec : node tools/i18n-check.js [--coverage]",
   "_keep": [
     "Veilleurs au Clair de Lune", "Veilleurs au", "Clair de Lune", "[ VCL ]", "Compendium", "Builds", "Hall of Fame",
-    "⚑ Bug / Suggestion", "Bug / Suggestion", "Moonlight Watchers", "🐛 Bug", "💡 Suggestion", "🎫 Ticket", "👑 Admin", "[VCL] - Compendium", "◈ Type", "Boss", "Mini Boss", "≡ Items",
+    "⚑ Bug / Suggestion", "Bug / Suggestion", "Moonlight Watchers", "Image", "Classes", "Description", "🐛 Bug", "💡 Suggestion", "🎫 Ticket", "👑 Admin", "[VCL] - Compendium", "◈ Type", "Boss", "Mini Boss", "≡ Items",
     "🗺 Zone", "Inv.", "— Craft —", "— Artisans —", "Zoom", "Emoji", "Passages", "Craft", "Progression", "Stats", "✕ Reset",
     "↑ Export JSON", "↓ Import JSON", "— versions", "PATCH", "NOTES", "🌙 Veilleurs au Clair de Lune 🌙", "Contributions",
     "// FORUM · VEILLEURS AU CLAIR DE LUNE", "Runes", "Rare", "Event", "Godlike", "rare", "🔮 Unique", "minimum", "maximum", "Cols",
@@ -2912,5 +2912,23 @@
   "Envoyé, les admins sont prévenus.": "Sent, the admins have been notified.",
   "✔ Marquer comme résolu": "✔ Mark as resolved",
   "Toi": "You",
-  "Les Veilleurs": "The Watchers"
+  "Les Veilleurs": "The Watchers",
+  "_section_compendium_refonte": "Accueil du glossaire, filtres, craft et fiche (Compendium/compendium.js).",
+  "Complétion du glossaire": "Glossary completion",
+  "items complets": "complete items",
+  "Un item est complet quand tous ses champs requis sont renseignés.": "An item is complete when all of its required fields are filled in.",
+  "Il manque surtout :": "Mostly missing:",
+  "Récemment ajoutés ou modifiés": "Recently added or updated",
+  "Accès rapide par catégorie": "Quick access by category",
+  "Complétion par palier": "Completion by tier",
+  "Obtention": "How to obtain",
+  "Catégorie": "Category",
+  "Panoplie": "Set",
+  "Retirer ce filtre": "Remove this filter",
+  "Réinitialiser les filtres": "Reset filters",
+  "Fabrique": "Crafts",
+  "Voir les items de la même étiquette": "See items with the same tag",
+  "Item introuvable": "Item not found",
+  "Cette fiche n'existe pas ou plus : elle a peut-être été renommée ou retirée.": "This entry doesn't exist (anymore): it may have been renamed or removed.",
+  "← Retour à l'accueil du glossaire": "← Back to the glossary home"
 }

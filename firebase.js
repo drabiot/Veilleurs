@@ -700,9 +700,10 @@ async function _d1Load(colName) {
   const chk = _chkKey(colName) + (priv ? `_${user.uid}` : '');
   let cache = null;
   try { cache = JSON.parse(localStorage.getItem(key) || 'null'); } catch {}
-  const usable = cache && cache.rev > 0 && Date.now() - cache.ts < 7 * 24 * 3600e3;
+  // cache.rv : version du format de cache (2 = révisions par document, window._vclRevs) ; un ancien cache est rechargé une fois en entier
+  const usable = cache && cache.rev > 0 && (priv || cache.rv === 2) && Date.now() - cache.ts < 7 * 24 * 3600e3;
   if (usable) {
-    try { if (!_isReload && Date.now() - parseInt(localStorage.getItem(chk) || '0') < _D1_PAUSE_MS) return cache.data; } catch {}
+    try { if (!_isReload && Date.now() - parseInt(localStorage.getItem(chk) || '0') < _D1_PAUSE_MS) { (window._vclRevs = window._vclRevs || {})[colName] = cache.revs || {}; return cache.data; } } catch {}
   }
   const get = async since => {
     if (!priv) return fetch(`${DISCORD_WORKER}/db/sync?col=${colName}&since=${since}`).then(r => { if (!r.ok) throw new Error('d1 ' + r.status); return r.json(); });
@@ -715,16 +716,19 @@ async function _d1Load(colName) {
   if (delta && j.epoch !== cache.epoch) { j = await get(0); delta = false; } // rechargement complet demandé
   const row = x => desanitizeFromFirestore({ _id: x.id, ...x.d });
   let data;
+  const revs = delta && cache.revs ? { ...cache.revs } : {};   // id → révision de la dernière écriture (hors des documents : ils sont réécrits tels quels par le Creator)
   if (delta) {
     const byId = new Map(cache.data.map(d => [d._id, d]));
-    (j.deleted || []).forEach(id => byId.delete(id));
-    j.docs.forEach(x => byId.set(x.id, row(x)));
+    (j.deleted || []).forEach(id => { byId.delete(id); delete revs[id]; });
+    j.docs.forEach(x => { byId.set(x.id, row(x)); if (x.u) revs[x.id] = x.u; });
     data = ((j.deleted || []).length || j.docs.length) ? [...byId.values()] : cache.data;
   } else {
     data = j.docs.map(row);
+    j.docs.forEach(x => { if (x.u) revs[x.id] = x.u; });
   }
+  (window._vclRevs = window._vclRevs || {})[colName] = revs;
   try {
-    localStorage.setItem(key, JSON.stringify({ rev: j.rev, epoch: j.epoch, ts: Date.now(), data }));
+    localStorage.setItem(key, JSON.stringify({ rev: j.rev, rv: 2, epoch: j.epoch, ts: Date.now(), data, revs }));
     localStorage.setItem(chk, String(Date.now()));
   } catch {}
   return data;
