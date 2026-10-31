@@ -41,6 +41,8 @@ async function _runCaptureQueue() {
     } finally {
       card.classList.remove('is-capturing');   // en cas d'échec, le « ? » réapparaît
     }
+    // Respire entre deux captures pour ne pas bloquer le défilement / les clics
+    await new Promise(r => (window.requestIdleCallback ? requestIdleCallback(r, { timeout: 500 }) : setTimeout(r, 50)));
   }
   _captureRunning = false;
 }
@@ -55,7 +57,7 @@ let searchQuery      = '';
 let activeSort       = (() => { try { return localStorage.getItem('vcl_bestiaire_sort') || 'default'; } catch { return 'default'; } })();
 
 // Accent des cartes par type (halo, bordure, dégradé) et intensité : boss/worldboss > mini-boss > le reste
-const TYPE_ACCENT = { boss: '#e05555', worldboss: '#38bdf8', mini_boss: '#d86f6f', monstre: '#e09050', sbire: '#8090c0' };
+const TYPE_ACCENT = { boss: '#e05555', worldboss: '#38bdf8', mini_boss: '#b45fd6', monstre: '#e09050', sbire: '#8090c0' };
 const TYPE_TIER   = { boss: 'tier-boss', worldboss: 'tier-boss', mini_boss: 'tier-mini' };
 const REDUCED_MOTION = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -477,6 +479,23 @@ function _openFromCard(card, entity) {
   openModal(entity);
 }
 
+// Un seul jeu d'écouteurs pour toute la grille (au lieu de 3 par carte)
+entityGrid.addEventListener('mousedown', ev => { if (ev.target.closest('.entity-card')) ev.preventDefault(); });
+// THREE.js (~600 Ko) n'est utile qu'aux fiches 3D : on le précharge au premier survol d'un mob modélisé
+entityGrid.addEventListener('mouseover', ev => {
+  const card = ev.target.closest?.('.entity-card');
+  if (card?._entity?.morceaux?.length) ensureThree().catch(() => {});
+}, { passive: true });
+entityGrid.addEventListener('click', ev => {
+  const card = ev.target.closest('.entity-card');
+  if (card?._entity) _openFromCard(card, card._entity);
+});
+entityGrid.addEventListener('keydown', ev => {
+  if (ev.key !== 'Enter' && ev.key !== ' ') return;
+  const card = ev.target.closest('.entity-card');
+  if (card?._entity) { ev.preventDefault(); _openFromCard(card, card._entity); }
+});
+
 function makeCard(e) {
   const isMob = activeTab === 'monstres';
   const card = document.createElement('div');
@@ -488,7 +507,7 @@ function makeCard(e) {
 
   const _eImg = e.images?.[0] || e.img;
   // Grille : miniature WebP (≈10-30 Ko au lieu de 100-560 Ko) ; si elle n'existe pas encore, on retombe sur l'image d'origine
-  const _thumb = u => /\/img\/(mobs|compendium\/montages)\//.test(u || '') ? u.replace('/img/', '/img/thumbs/').replace(/\.(png|jpe?g)$/i, '.webp') : u;
+  const _thumb = thumbUrl;
   const imgHTML = _eImg
     ? `<img loading="lazy" decoding="async" src="${_thumb(_eImg)}" alt="${escHtml(e.name)}" onload="this.classList.add('loaded')" onerror="if(!this.dataset.fb&&this.src!==${JSON.stringify(_eImg).replace(/"/g, '&quot;')}){this.dataset.fb=1;this.src=${JSON.stringify(_eImg).replace(/"/g, '&quot;')}}else{this.style.display='none';this.nextElementSibling.style.display='flex'}">`
     : '';
@@ -504,6 +523,7 @@ function makeCard(e) {
   if (accent) card.style.setProperty('--tc', accent);
   const tier = isMob ? TYPE_TIER[e.type] : '';
   if (tier) card.classList.add(tier);
+  const aura = tier === 'tier-boss' ? '<span class="card-aura"></span>' : '';
 
   const palierBadge = `<span class="card-palier-badge">P${e.palier}</span>`;
   const codexBadge = (isMob && e.inCodex) ? `<span class="card-codex-badge">📖</span>` : '';
@@ -522,7 +542,7 @@ function makeCard(e) {
       </div>`;
   }
 
-  card.innerHTML = `
+  card.innerHTML = `${aura}
     <div class="card-img-wrap">
       ${imgHTML}${ph}
       ${typeBadge}
@@ -534,14 +554,12 @@ function makeCard(e) {
       ${behaviorHTML}
     </div>`;
 
-  card.addEventListener('mousedown', (ev) => ev.preventDefault());
-  card.addEventListener('click', () => _openFromCard(card, e));
-  card.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); _openFromCard(card, e); }
-  });
+  card._entity = e;   // lu par les écouteurs délégués de la grille (voir plus bas)
 
-  if (e.morceaux && e.morceaux.length > 0 && typeof MonstreViewer3D !== 'undefined') {
-    if (!_eImg) card.classList.add('is-capturing');   // reflet de chargement en attendant la capture (plutôt que le « ? »)
+  // Capture 3D uniquement en secours : une image existe pour tous les mobs modélisés, et la charger ne coûte
+  // ni THREE.js (~600 Ko), ni des centaines de fichiers de modèle, ni un rendu WebGL par mob.
+  if (!_eImg && e.morceaux && e.morceaux.length > 0 && typeof MonstreViewer3D !== 'undefined') {
+    card.classList.add('is-capturing');   // reflet de chargement en attendant la capture (plutôt que le « ? »)
     _queueCapture(card, e);
   }
   return card;
@@ -582,6 +600,7 @@ function buildGrid() {
       rec = { card: makeCard(e), sig };
       _cardCache.set(key, rec);
     }
+    rec.card._entity = e;   // l'objet peut avoir été recréé par un rechargement des données
     return rec.card;
   });
 
@@ -744,9 +763,36 @@ function attachModalHandlers() {
 
 }
 
-function openModal(entity, pushHistory = true) {
+let _currentEntity = null;
+let _navList = [];
+
+// Flèches ‹ › : fiche précédente / suivante dans la liste actuellement affichée (filtres et tri compris)
+const modalNav   = document.getElementById('modal-nav');
+const navPrev    = document.getElementById('modal-prev');
+const navNext    = document.getElementById('modal-next');
+const navCount   = document.getElementById('modal-nav-count');
+const entityId   = e => e.id || e._id;
+function updateModalNav() {
+  _navList = getFiltered();
+  const i = _currentEntity ? _navList.findIndex(e => entityId(e) === entityId(_currentEntity)) : -1;
+  modalNav.style.display = i >= 0 ? '' : 'none';   // fiche ouverte par lien et absente de la liste filtrée : pas de navigation
+  navPrev.disabled = i <= 0;
+  navNext.disabled = i < 0 || i >= _navList.length - 1;
+  navCount.textContent = i >= 0 ? `${i + 1} / ${_navList.length}` : '';
+}
+function navModal(d) {
+  const i = _navList.findIndex(e => entityId(e) === entityId(_currentEntity));
+  const next = _navList[i + d];
+  if (next) openModal(next, true, false);
+}
+navPrev.addEventListener('click', () => navModal(-1));
+navNext.addEventListener('click', () => navModal(1));
+
+function openModal(entity, pushHistory = true, animateModal = true) {
   if (_activeViewer) { _activeViewer.destroy(); _activeViewer = null; }
+  _currentEntity = entity;
   modalContent.innerHTML = '';
+  modalContent.closest('.mob-modal-scroll')?.scrollTo(0, 0);
   if (activeTab === 'monstres') {
     renderMobSheet(entity);
     window._vclLogContentView?.('mob', entity.id || entity._id, entity.name);
@@ -763,7 +809,7 @@ function openModal(entity, pushHistory = true) {
 
   // La fiche « sort » de la carte cliquée : origine de l'animation = centre de la carte
   const modalEl = document.getElementById('mob-modal');
-  if (modalEl) {
+  if (modalEl && animateModal) {
     modalEl.style.animation = 'none';   // le rectangle est lu sans transformation d'entrée
     if (_modalOrigin) {
       const m = modalEl.getBoundingClientRect();
@@ -775,7 +821,8 @@ function openModal(entity, pushHistory = true) {
     modalEl.style.animation = '';       // relance l'animation, même si une fiche était déjà ouverte
   }
   _modalOrigin = null;
-  modalCloseBtn.focus({ preventScroll: true });
+  updateModalNav();
+  if (animateModal) modalCloseBtn.focus({ preventScroll: true });
 
   if (pushHistory) {
     pushHash(activeTab, entity.id || entity._id);
@@ -805,7 +852,60 @@ modalOverlay.addEventListener('click', e => {
   if (el) el.click();
   modalOverlay.style.pointerEvents = '';
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); return; }
+  if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && modalOverlay.classList.contains('open')
+      && !document.getElementById('mob-3d-fullscreen-overlay')
+      && !/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName || '')) {
+    e.preventDefault();
+    navModal(e.key === 'ArrowLeft' ? -1 : 1);
+  }
+});
+
+// Actions de la fiche (délégation : le contenu est recréé à chaque ouverture)
+modalContent.addEventListener('click', e => {
+  const copyBtn = e.target.closest('[data-copy]');
+  if (copyBtn) {
+    e.preventDefault();
+    _copyText(copyBtn.dataset.copy, copyBtn);
+    return;
+  }
+  if (e.target.closest('[data-share]')) {
+    _copyText(location.href, e.target.closest('[data-share]'), 'Lien copié ✓');
+    return;
+  }
+  const regionBtn = e.target.closest('[data-region]');
+  if (regionBtn) {   // « Voir les monstres de cette région » : on filtre la grille et on ferme la fiche
+    activeRegions = new Set([regionBtn.dataset.region]);
+    setBlockOpen(document.getElementById('region-block-header'), document.getElementById('region-block-body'), true);
+    closeModal();
+    refreshAll();
+    return;
+  }
+  const kinBtn = e.target.closest('[data-kin]');
+  if (kinBtn) {
+    const m = MOBS.find(x => entityId(x) === kinBtn.dataset.kin);
+    if (m) openModal(m, true, false);
+  }
+});
+
+// Copie dans le presse-papiers, avec retour visuel sur le bouton
+function _copyText(text, btn, doneLabel) {
+  const done = () => {
+    btn.classList.add('is-done');
+    const label = btn.dataset.label ?? btn.textContent;
+    btn.dataset.label = label;
+    if (doneLabel) btn.textContent = doneLabel;
+    setTimeout(() => { btn.classList.remove('is-done'); if (doneLabel) btn.textContent = label; }, 1400);
+  };
+  (navigator.clipboard?.writeText(text) ?? Promise.reject()).then(done).catch(() => {
+    const ta = document.createElement('textarea');   // repli (http, vieux navigateurs)
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch {}
+    ta.remove();
+  });
+}
 
 let _fullscreenViewer = null;
 
@@ -895,33 +995,115 @@ function _openFullscreen3D(mob) {
 }
 
 /* ── Fiche Monstre ── */
+// Miniature WebP d'une image de mob / montage (≈10-30 Ko au lieu de 100-560 Ko) ; les autres URL restent telles quelles
+function thumbUrl(u) {
+  return /\/img\/(mobs|compendium\/montages)\//.test(u || '') ? u.replace('/img/', '/img/thumbs/').replace(/\.(png|jpe?g)$/i, '.webp') : u;
+}
+
+const DIFF_COLORS = ['', '#5fbf7a', '#a3c45c', '#e0ac60', '#e0763c', '#d84a4a'];
+const BEH_COLORS  = { passif: '#62b0df', neutre: '#d4c07a', agressif: '#df6262' };
+const ICO_PIN   = '<svg class="mh-ico" viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true"><path d="M8 14.6s4.6-4.3 4.6-8A4.6 4.6 0 0 0 3.4 6.6c0 3.7 4.6 8 4.6 8z"/><circle cx="8" cy="6.6" r="1.7"/></svg>';
+const ICO_CLOCK = '<svg class="mh-ico" viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.3 1.5"/></svg>';
+const ICO_REPEAT = '<svg class="mh-ico" viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5V6A2.5 2.5 0 0 1 5 3.5h7.5M10.5 1.5l2 2-2 2M13.5 8.5V10A2.5 2.5 0 0 1 11 12.5H3.5M5.5 14.5l-2-2 2-2"/></svg>';
+const ICO_COPY  = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5V3.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg>';
+
+// Emblème du palier : chiffre pour un palier numérique, glyphe pour Event / Archive / World Boss
+function palierEmblem(p) {
+  if (p === 'event')     return { glyph: '★', label: 'Event' };
+  if (p === 'worldboss') return { glyph: '☠', label: 'World Boss' };
+  if (p == -1)           return { glyph: 'A', label: 'Archive' };
+  return { glyph: String(p), label: 'Palier' };
+}
+
+function spawnLabel(st) {
+  if (!st) return '';
+  return typeof st === 'string' ? st : (st.max ? `${st.min}–${st.max} min` : `${st.min} min`);
+}
+
 function renderMobSheet(mob) {
-  const tc = TYPE_COLORS[mob.type] || { bg:'#333', text:'#aaa', border:'#44444455' };
+  const tc     = TYPE_COLORS[mob.type] || { bg:'#333', text:'#aaa', border:'#44444455' };
+  const accent = TYPE_ACCENT[mob.type] || '#9a7040';
+  const mid    = mob.id || mob._id;
 
-  const has3D = mob.morceaux && mob.morceaux.length > 0;
-  const imgContent = has3D
-    ? `<div id="mob-3d-container" class="mob-3d-container" style="position:relative;">
-        <button class="btn-expand-3d" id="btn-expand-3d" title="Agrandir le modèle 3D">⛶</button>
-      </div>`
-    : (mob.images?.[0] || mob.img)
-      ? `<img loading="lazy" decoding="async" src="${mob.images?.[0] || mob.img}" alt="${escHtml(mob.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><span class="mob-img-placeholder" style="display:none"><span class="ph-q">?</span></span>`
-      : `<span class="mob-img-placeholder"><span class="ph-q">?</span></span>`;
+  /* ── Portrait : l'image s'affiche tout de suite, le modèle 3D la remplace quand il est prêt ── */
+  const has3D  = mob.morceaux && mob.morceaux.length > 0;
+  const imgSrc = mob.images?.[0] || mob.img;
+  const stillHTML = imgSrc
+    ? `<img class="mh-still" decoding="async" fetchpriority="high" src="${imgSrc}" alt="${escHtml(mob.name)}" onerror="this.style.display='none';this.nextElementSibling&&(this.nextElementSibling.style.display='flex')">`
+    : '';
+  const phHTML = `<span class="mob-img-placeholder" ${imgSrc ? 'style="display:none"' : ''}><span class="ph-q">?</span></span>`;
+  const viewHTML = has3D
+    ? `<div id="mob-3d-container" class="mob-3d-container"><button class="btn-expand-3d" id="btn-expand-3d" title="Agrandir le modèle 3D">⛶</button></div>`
+    : '';
 
+  /* ── Palier ── */
+  const pe = palierEmblem(mob.palier);
+  const emblemHTML = `
+    <div class="mh-hex" title="${escHtml(pe.label === 'Palier' ? 'Palier ' + pe.glyph : pe.label)}">
+      <div class="mh-hex-in">
+        <span class="mh-hex-k">${escHtml(pe.label)}</span>
+        <span class="mh-hex-v">${escHtml(pe.glyph)}</span>
+      </div>
+    </div>`;
+
+  /* ── Difficulté : 5 segments, chacun à sa couleur (vert → rouge) ── */
+  const diff = Number(mob.difficulty) || 0;
+  const pips = Array.from({ length: 5 }, (_, i) =>
+    `<i class="mh-pip${i < diff ? ' on' : ''}" style="--pc:${DIFF_COLORS[i + 1]}"></i>`).join('');
+  const diffHTML = `
+    <div class="mh-tile mh-diff${diff ? '' : ' is-empty'}" ${diff ? `style="--dc:${DIFF_COLORS[diff]}"` : ''}>
+      <span class="mh-k">Difficulté</span>
+      <div class="mh-pips" aria-hidden="true">${pips}</div>
+      <span class="mh-v">${diff ? escHtml(DIFF_LABELS[diff] || '') : 'Non évaluée'}</span>
+    </div>`;
+
+  /* ── Région : tuile cliquable → filtre le bestiaire sur cette région ── */
+  const regionHTML = mob.region ? `
+    <button type="button" class="mh-tile mh-region" data-region="${escHtml(mob.region)}" title="Voir les monstres de cette région">
+      ${ICO_PIN}
+      <span class="mh-tile-txt">
+        <span class="mh-k">Région</span>
+        <span class="mh-v">${escHtml(getRegionLabel(mob.region))}</span>
+      </span>
+      <span class="mh-go" aria-hidden="true">→</span>
+    </button>` : '';
+
+  /* ── Apparition / réapparition ── */
+  const spawn = spawnLabel(mob.spawnTime);
+  const spawnHTML = spawn ? `
+    <div class="mh-tile mh-time">
+      ${ICO_CLOCK}
+      <span class="mh-tile-txt"><span class="mh-k">Apparition</span><span class="mh-v">${escHtml(spawn)}</span></span>
+    </div>` : '';
+  const respawnHTML = mob.respawnDelay ? `
+    <div class="mh-tile mh-time">
+      ${ICO_REPEAT}
+      <span class="mh-tile-txt"><span class="mh-k">Réapparition</span><span class="mh-v">${escHtml(String(mob.respawnDelay))}</span></span>
+    </div>` : '';
+
+  /* ── Attaques ── */
   let attacksHTML = '';
   if (mob.attacks && mob.attacks.length > 0) {
     attacksHTML = `
       <div class="mob-section">
-        <div class="mob-section-title">Attaques</div>
+        <div class="mob-section-title">Attaques<span class="mh-count">${mob.attacks.length}</span></div>
         <div class="mob-attacks-list">
-          ${mob.attacks.map(a => `
+          ${mob.attacks.map((a, i) => {
+            const hasDmg = a.dmg && a.dmg !== '—' && a.dmg !== '?';
+            return `
             <div class="mob-attack-row">
-              <div class="attack-name">${escHtml(a.name)}${a.dmg && a.dmg!=='—' ? ` <span class="attack-dmg">[ ${escHtml(a.dmg)} ]</span>` : ''}</div>
-              ${a.desc ? `<div class="attack-desc">${escHtml(a.desc)}</div>` : ''}
-            </div>`).join('')}
+              <span class="attack-n">${i + 1}</span>
+              <div class="attack-body">
+                <div class="attack-name">${escHtml(a.name)}${hasDmg ? `<span class="attack-dmg">${escHtml(a.dmg)}</span>` : ''}</div>
+                ${a.desc ? `<div class="attack-desc">${escHtml(a.desc)}</div>` : ''}
+              </div>
+            </div>`;
+          }).join('')}
         </div>
       </div>`;
   }
 
+  /* ── Butin ── */
   let lootHTML = '';
   // Filtrer les drops pointant vers un item absent de la collection publique
   // (item sensible → items_hidden, invisible au public).
@@ -953,9 +1135,10 @@ function renderMobSheet(mob) {
           <span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${escHtml(String(c.qty))}</span>
         </a>`;
       }).join('') : '';
+      const pct = Math.max(0, Math.min(100, Number(l.chance) || 0));
       return `
         <div class="loot-row-wrap">
-          <a class="loot-row" href="${href}">
+          <a class="loot-row loot-row-bar" href="${href}" style="--p:${pct}%;--rc:${rc}">
             ${imgPart}
             <span class="loot-name" style="color:${color}">${escHtml(name)}</span>
             ${l.qty ? `<span class="loot-drop-rate" style="color:#888;border-color:#88888833">×${l.qty}</span>` : ''}
@@ -966,7 +1149,7 @@ function renderMobSheet(mob) {
     }).join('');
     lootHTML = `
       <div class="mob-section">
-        <div class="mob-section-title">Butin</div>
+        <div class="mob-section-title">Butin<span class="mh-count">${visibleLoot.length}</span></div>
         <div class="mob-loot-list">${rows}</div>
       </div>`;
   }
@@ -977,85 +1160,110 @@ function renderMobSheet(mob) {
       <blockquote class="mob-lore">${escHtml(mob.lore).replace(/\n/g,'<br>')}</blockquote>
     </div>` : '';
 
-  const bcolor = BEHAVIOR_COLORS[mob.behavior] || '#888';
-
-  // Boss / mini-boss : liste à puces des coordonnées où il apparaît (coords + coords_more)
+  /* ── Localisation : boss / mini-boss / world boss, un point par pin de la carte ── */
   const locHTML = (() => {
     if (!['boss', 'mini_boss', 'worldboss'].includes(mob.type) || mob.sensible) return '';
     const pts = [mob.coords, ...(Array.isArray(mob.coords_more) ? mob.coords_more : [])].filter(c => c && c.x != null && c.z != null)
       .filter((c, i, arr) => arr.findIndex(o => o.x === c.x && o.z === c.z) === i); // doublons masqués (même règle que la carte : un pin par point distinct en X / Z)
     if (!pts.length) return '';
-    const fmt = c => `X ${c.x}${c.y ? ' · Y ' + c.y : ''} · Z ${c.z}`;
     // Chaque point est un pin de la carte (id du mob, puis id_1, id_2…) : le clic ouvre la carte centrée sur ce pin
-    const mid = mob.id || mob._id;
-    const href = (c, i) => `../Map/map.html?pnjId=${encodeURIComponent(i === 0 ? mid : mid + '_' + i)}`;
-    return `<div class="mob-loc">
-      <span class="mob-meta-key">Localisation</span>
-      <ul class="mob-loc-list">${pts.map((c, i) => `<li><a class="mob-loc-link" href="${href(c, i)}" target="_blank" title="Voir sur la carte">${escHtml(fmt(c))} <span aria-hidden="true">📍</span></a></li>`).join('')}</ul>
-    </div>`;
+    const href = i => `../Map/map.html?pnjId=${encodeURIComponent(i === 0 ? mid : mid + '_' + i)}`;
+    const chip = (c, i) => {
+      const txt = [c.x, c.y || null, c.z].filter(v => v != null).join(' ');   // « X Y Z » : se colle tel quel dans une commande
+      return `
+      <li class="mh-loc-chip">
+        <a class="mh-loc-link" href="${href(i)}" target="_blank" title="Voir sur la carte">
+          ${pts.length > 1 ? `<span class="mh-loc-n">${i + 1}</span>` : ICO_PIN}
+          <span class="mh-coord"><b>X</b>${escHtml(String(c.x))}</span>
+          ${c.y ? `<span class="mh-coord"><b>Y</b>${escHtml(String(c.y))}</span>` : ''}
+          <span class="mh-coord"><b>Z</b>${escHtml(String(c.z))}</span>
+        </a>
+        <button type="button" class="mh-copy" data-copy="${escHtml(txt)}" title="Copier les coordonnées" aria-label="Copier les coordonnées">${ICO_COPY}</button>
+      </li>`;
+    };
+    return `
+      <div class="mob-section full-width mh-loc">
+        <div class="mob-section-title">Localisation<span class="mh-count">${pts.length}</span>
+          <a class="mh-map-btn" href="${href(0)}" target="_blank">Voir sur la carte <span aria-hidden="true">↗</span></a>
+        </div>
+        <ul class="mh-loc-grid">${pts.map(chip).join('')}</ul>
+      </div>`;
   })();
 
-  const spawnBadgeHTML = (() => {
-    if (!mob.spawnTime) return '';
-    const st = mob.spawnTime;
-    const label = typeof st === 'string' ? st : (st.max ? `${st.min}–${st.max} min` : `${st.min} min`);
-    return `<div class="mob-spawn-badge">⏱ ${label}</div>`;
-  })();
+  /* ── Dans la même région ── */
+  const canSee = window._vcl_can_view_sensible;
+  const kin = mob.region
+    ? MOBS.filter(m => (m.id || m._id) !== mid && m.region === mob.region && (!m.sensible || canSee))
+        .sort((a, b) => (a.palier - b.palier) || ((a.ordre ?? 9999) - (b.ordre ?? 9999)))
+    : [];
+  const kinHTML = kin.length ? `
+    <div class="mob-section full-width">
+      <div class="mob-section-title">Dans la même région<span class="mh-count">${kin.length}</span></div>
+      <div class="mh-kin-list">
+        ${kin.slice(0, 12).map(m => {
+          const src = m.images?.[0] || m.img;
+          return `
+          <button type="button" class="mh-kin" data-kin="${escHtml(m.id || m._id)}" style="--kc:${TYPE_ACCENT[m.type] || '#9a7040'}" title="${escHtml(TYPE_LABELS[m.type] || '')}">
+            ${src ? `<img loading="lazy" decoding="async" src="${thumbUrl(src)}" alt="" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src='${escHtml(src)}'}else{this.style.visibility='hidden'}">` : '<span class="mh-kin-ph">?</span>'}
+            <span class="mh-kin-name">${escHtml(m.name)}</span>
+          </button>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  const bcolor = BEH_COLORS[mob.behavior] || '#888';
+
+  // Attaques et butin côte à côte ; si l'un des deux manque, l'autre prend toute la largeur
+  if (!attacksHTML !== !lootHTML) {
+    if (attacksHTML) attacksHTML = attacksHTML.replace('class="mob-section"', 'class="mob-section full-width"');
+    else             lootHTML    = lootHTML.replace('class="mob-section"', 'class="mob-section full-width"');
+  }
 
   modalContent.innerHTML = `
-    <div class="mob-sheet">
-      <div class="mob-header">
-        <div class="mob-image-wrap" style="color:${tc.text};border-color:${tc.border};">
-          <div class="mob-image-bg" style="background:${tc.bg};"></div>
-          <div class="mob-image-border" style="border-color:${tc.border};"></div>
-          <div class="mob-image-inner">${imgContent}</div>
+    <div class="mob-sheet is-mob" style="--tc:${accent}">
+      <div class="mh-hero">
+        <div class="mh-portrait">
+          ${emblemHTML}
+          <div class="mob-image-inner${has3D ? ' is-3d' : ''}">${stillHTML}${phHTML}${viewHTML}</div>
         </div>
-        <div class="mob-header-info">
-          <div class="mob-name-row">
-            <div class="mob-name">${escHtml(mob.name)}${mob.sensible ? ' <span style="font-size:11px;opacity:.65" title="Visible grâce à votre rôle">🔒</span>' : ''}</div>
-            ${spawnBadgeHTML}
-          </div>
-          <div class="mob-badge-row">
+        <div class="mh-info">
+          <div class="mh-badges">
             <span class="mob-type-badge" style="background:${tc.bg};color:${tc.text};border:1px solid ${tc.border};">${TYPE_LABELS[mob.type]||mob.type}</span>
-            <span class="mob-behavior-badge" style="color:${bcolor};border-color:${bcolor}44;">${BEHAVIOR_LABELS[mob.behavior]||mob.behavior}</span>
+            <span class="mob-behavior-badge" style="--bc:${bcolor}"><i></i>${BEHAVIOR_LABELS[mob.behavior]||mob.behavior||''}</span>
+            ${mob.is_underground ? '<span class="mob-behavior-badge mh-under" style="--bc:#b0956a"><i></i>Souterrain</span>' : ''}
           </div>
-          <div class="mob-meta-row">
-            <div class="mob-meta-item">
-              <span class="mob-meta-key">Palier</span>
-              <span class="mob-meta-val">⬡ ${mob.palier}</span>
-            </div>
-            <div class="mob-meta-item">
-              <span class="mob-meta-key">Difficulté</span>
-              <span class="mob-meta-val" style="display:flex;align-items:center;gap:6px;">
-				<span class="difficulty-stars">${diffStarsHTML(mob.difficulty)}</span>
-				<span style="font-size:9px;color:var(--muted);letter-spacing:.08em">${DIFF_LABELS[mob.difficulty]||''}</span>
-			  </span>
-            </div>
-            ${mob.region ? `
-            <div class="mob-meta-item">
-              <span class="mob-meta-key">Région</span>
-              <span class="mob-meta-val">
-                ${escHtml(getRegionLabel(mob.region))}
-                ${getMapZone(mob) ? `<a class="region-link" href="../Map/map.html">→ Carte</a>` : ''}
-              </span>
-            </div>` : ''}
+          <h2 class="mob-name">${escHtml(mob.name)}${mob.sensible ? ' <span style="font-size:11px;opacity:.65" title="Visible grâce à votre rôle">🔒</span>' : ''}</h2>
+          <div class="mh-stats">
+            ${diffHTML}
+            ${regionHTML}
+            ${spawnHTML}
+            ${respawnHTML}
           </div>
-          ${locHTML}
         </div>
       </div>
       <div class="mob-body-grid">
+        ${locHTML}
         ${attacksHTML}
         ${lootHTML}
         ${loreHTML}
+        ${kinHTML}
+      </div>
+      <div class="mh-actions">
+        <button type="button" class="mh-share" data-share>🔗 Copier le lien de la fiche</button>
       </div>
     </div>`;
 
   if (has3D) {
     const container = document.getElementById('mob-3d-container');
+    const inner     = container?.closest('.mob-image-inner');
     if (container && typeof MonstreViewer3D !== 'undefined') {
       ensureThree().then(() => {
-        _activeViewer = new MonstreViewer3D(container, { autoRotate: false });
-        _activeViewer.chargerDepuisData(mob);
+        if (!container.isConnected || !modalOverlay.classList.contains('open')) return;   // fiche fermée / changée pendant le chargement de THREE.js
+        const viewer = new MonstreViewer3D(container, { autoRotate: false, onDemand: true });
+        _activeViewer = viewer;
+        viewer.chargerDepuisData(mob)
+          .then(() => { if (inner?.isConnected) inner.classList.add('has-3d'); })   // l'image fait place au modèle
+          .catch(e => console.warn('[viewer3D]', mob.id, e));
       });
     }
   }
@@ -1342,10 +1550,15 @@ document.querySelectorAll('.sort-btn').forEach(btn => {
   });
 });
 
+// Anti-rebond : pas de recalcul de toute la grille à chaque frappe
+let _searchTimer = null;
 searchInput.addEventListener('input', () => {
-  searchQuery = searchInput.value.trim();
-  updateCounts();
-  buildGrid();
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => {
+    searchQuery = searchInput.value.trim();
+    updateCounts();
+    buildGrid();
+  }, 120);
 });
 
 document.querySelectorAll('.type-filter-cb').forEach(cb => {

@@ -390,6 +390,11 @@
   <div class="mob-modal-overlay" id="mob-modal-overlay">
     <div class="mob-modal" id="mob-modal" role="dialog" aria-modal="true">
       <button class="modal-close-btn" id="modal-close-btn" title="Fermer (Échap)">✕</button>
+      <div class="modal-nav" id="modal-nav" style="display:none">
+        <button type="button" class="modal-nav-btn" id="modal-prev" title="Fiche précédente (←)" aria-label="Fiche précédente">‹</button>
+        <span class="modal-nav-count" id="modal-nav-count" aria-live="polite"></span>
+        <button type="button" class="modal-nav-btn" id="modal-next" title="Fiche suivante (→)" aria-label="Fiche suivante">›</button>
+      </div>
       <div class="mob-modal-scroll">
         <div id="mob-modal-content"></div>
       </div>

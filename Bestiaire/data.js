@@ -61,7 +61,7 @@ const DIFF_LABELS     = ['', 'Très facile', 'Facile', 'Moyen', 'Difficile', 'Tr
 
 const TYPE_COLORS = {
   boss:    { bg: 'rgba(180,40,40,.85)',  text: '#ffc8c8', border: '#c0404055' },
-  mini_boss:    { bg: 'rgba(212, 95, 60, 0.85)',  text: '#ffc8c8', border: '#c0404055' },
+  mini_boss:    { bg: 'rgba(110, 48, 140, 0.88)', text: '#ecc8ff', border: '#b45fd666' },
   monstre: { bg: 'rgba(160,80,20,.85)', text: '#ffd9a0', border: '#c06c2055' },
   sbire:   { bg: 'rgba(50,50,70,.85)',  text: '#b0b8d0', border: '#5055a055' },
   worldboss: { bg: 'rgba(14,80,120,.88)', text: '#bfe6ff', border: '#38bdf866' },

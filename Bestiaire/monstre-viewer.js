@@ -37,7 +37,7 @@ class MonstreViewer3D {
 
     this._initScene();
     this._initControls();
-    this._loadConfig();
+    // La config (monstres.json) n'est lue qu'à la demande, dans charger() : chargerDepuisData() n'en a pas besoin
   }
 
   /* ─── Scène ─────────────────────────────────────────────────────────── */
@@ -88,6 +88,12 @@ class MonstreViewer3D {
     this.renderer.setSize(w, h);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
+    this._invalidate();
+  }
+
+  /** Force le rendu pendant `ms` millisecondes (nouveau contenu, redimensionnement…). */
+  _invalidate(ms = 600) {
+    this._renderUntil = Math.max(this._renderUntil || 0, performance.now() + ms);
   }
 
   _animate() {
@@ -96,9 +102,16 @@ class MonstreViewer3D {
     if (this.opts.autoRotate && !this._dragging) {
       this._orb.targetTheta += 0.004;
     }
-    this._orb.theta += (this._orb.targetTheta - this._orb.theta) * 0.08;
-    this._orb.phi   += (this._orb.targetPhi   - this._orb.phi)   * 0.08;
-    this._orb.r     += (this._orb.targetR     - this._orb.r)     * 0.08;
+    const o = this._orb;
+    const moving = Math.abs(o.targetTheta - o.theta) > 1e-4 || Math.abs(o.targetPhi - o.phi) > 1e-4 || Math.abs(o.targetR - o.r) > 1e-4;
+    o.theta += (o.targetTheta - o.theta) * 0.08;
+    o.phi   += (o.targetPhi   - o.phi)   * 0.08;
+    o.r     += (o.targetR     - o.r)     * 0.08;
+
+    // Rendu à la demande : un modèle immobile ne redessine pas 60 fois par seconde.
+    // Les chargements (modèles, textures) rouvrent une fenêtre de rendu via _invalidate().
+    // (option `onDemand` : le calibrateur modifie les pièces en direct et a besoin du rendu continu)
+    if (this.opts.onDemand && !moving && !this.opts.autoRotate && !this._dragging && performance.now() > (this._renderUntil || 0)) return;
 
     const { phi, theta, r } = this._orb;
     const cy = this._camHauteur || 0;
@@ -164,10 +177,7 @@ class MonstreViewer3D {
   }
 
   async charger(monsterId) {
-    if (!this._config) {
-      await new Promise(res => setTimeout(res, 300));
-      return this.charger(monsterId);
-    }
+    if (!this._config) await (this._cfgPromise ||= this._loadConfig());
 
     const monstre = this._config.find(m => m.id === monsterId);
     if (!monstre) {
@@ -184,9 +194,12 @@ class MonstreViewer3D {
     const loader  = new THREE.ObjectLoader();
     const baseUrl = this.opts.basePath + monstre.id + '/';
 
+    this._invalidate(30000);
     await Promise.all(monstre.morceaux.map(m => this._chargerMorceau(loader, baseUrl, m)));
 
     this._centrerVerticalement();
+    this._renderUntil = 0;
+    this._invalidate();
   }
 
   async chargerDepuisData(mobData) {
@@ -198,9 +211,12 @@ class MonstreViewer3D {
     this._orb.targetTheta = this._orb.theta = 0;
     this._camHauteur = cam.hauteur || 0;
 
+    this._invalidate(30000);   // le temps du chargement
     await Promise.all(mobData.morceaux.map(m => this._chargerMorceauDirect(m)));
     await this._attendreTextures();
     this._centrerVerticalement();
+    this._renderUntil = 0;
+    this._invalidate();
   }
 
   async _attendreTextures() {
