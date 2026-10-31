@@ -1607,21 +1607,6 @@ html, body {
   transition: color .25s, border-color .25s, background .25s;
 }
 .build-progress.complete { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow); }
-.atelier-guide {
-  display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
-  padding: 10px 20px; border-bottom: 1px solid var(--rim);
-  background: linear-gradient(90deg, transparent, rgba(224,172,96,.06), transparent);
-  font-size: 11.5px; color: var(--text);
-}
-.atelier-guide[hidden] { display: none; }
-.ag-step { display: flex; align-items: center; gap: 8px; }
-.ag-step b { color: var(--gold); font-weight: 600; }
-.ag-num {
-  width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; color: var(--gold);
-  border: 1px solid var(--gold-dim); background: var(--gold-glow);
-}
-.ag-arrow { color: var(--rim2); font-size: 16px; }
 
 /* ══ PICKER : cartes d'items ══ */
 .picker-toolbar {
@@ -1743,7 +1728,6 @@ html, body {
 @media (max-width: 768px) {
   .mobile-atelier-bar { position: sticky; top: 0; z-index: 5; background: rgba(14,12,10,.92); backdrop-filter: blur(6px); }
   .atelier-mobile-btn { padding: 8px 14px; font-size: 12px; }
-  .atelier-guide { font-size: 10.5px; gap: 8px; padding: 8px 12px; }
   .item-row .istat-block { grid-template-columns: 1fr; }
 }
 
@@ -1852,34 +1836,34 @@ html, body {
 .titre-empty { padding: 18px; font-size: 12px; color: var(--muted); text-align: center; }
 .tt-titre { font-family: 'Cinzel', serif; letter-spacing: .08em; color: var(--gold); }
 
-/* ══ ARBRE DE COMPÉTENCES : icône discrète en bas à droite du cadre ══ */
+/* ══ ARBRE DE COMPÉTENCES : icône en bas à droite du cadre ══ */
 .tree-btn {
-  position: absolute; right: 10px; bottom: 10px; z-index: 4; width: 40px; height: 40px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; color: var(--gold-dim);
-  background: rgba(14,11,8,.88); border: 1px solid var(--rim2);
-  box-shadow: 0 3px 10px rgba(0,0,0,.55);
-  transition: color .18s, border-color .18s, background .18s, box-shadow .18s;
+  position: absolute; right: 10px; bottom: 10px; z-index: 4; width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; color: var(--gold);
+  background: radial-gradient(circle at 50% 30%, rgba(224,172,96,.3), rgba(12,9,6,.94) 78%);
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 0 2px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.6), 0 0 12px rgba(224,172,96,.28);
+  transition: color .18s, transform .18s, box-shadow .18s;
 }
-.tree-btn:hover { color: var(--gold); border-color: var(--gold); background: rgba(224,172,96,.1); box-shadow: 0 3px 12px rgba(0,0,0,.6), 0 0 14px rgba(224,172,96,.25); }
-.tree-btn.has-points { color: var(--gold); border-color: var(--gold-dim); }
-.tree-ico { width: 22px; height: 22px; display: block; }
+.tree-btn:hover { color: #fff1cf; transform: scale(1.08); box-shadow: 0 0 0 2px rgba(0,0,0,.5), 0 5px 16px rgba(0,0,0,.65), 0 0 22px rgba(224,172,96,.5); }
+.tree-ico { width: 26px; height: 26px; display: block; filter: drop-shadow(0 0 4px rgba(224,172,96,.45)); }
 .tree-badge {
-  position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; line-height: 1;
-  color: #1a130b; background: var(--gold);
+  position: absolute; top: -5px; right: -5px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; line-height: 1;
+  color: #1a130b; background: var(--gold); box-shadow: 0 0 8px rgba(224,172,96,.6);
 }
 .tree-badge[hidden] { display: none; }
 @media (max-width: 768px) {
-  .tree-btn { width: 34px; height: 34px; right: 6px; bottom: 6px; }
-  .tree-ico { width: 19px; height: 19px; }
-  .class-drop { left: 6px; right: 46px; bottom: 6px; }
+  .tree-btn { width: 38px; height: 38px; right: 6px; bottom: 6px; }
+  .tree-ico { width: 21px; height: 21px; }
+  .class-drop { left: 6px; right: 50px; bottom: 6px; }
   .cd-cap { display: none; }
   .tp-name { font-size: 14px; }
 }
 
 /* ══ MENU DE CLASSE sous le personnage ══ */
 .class-picker[hidden] { display: none; }
-.class-drop { position: absolute; left: 10px; right: 58px; bottom: 10px; z-index: 4; --cls: var(--gold); }
+.class-drop { position: absolute; left: 10px; right: 66px; bottom: 10px; z-index: 4; --cls: var(--gold); }
 .class-drop-btn {
   width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 11px 7px 9px; cursor: pointer; text-align: left;
   font-family: inherit; color: var(--bright);
@@ -1912,51 +1896,6 @@ html, body {
 .cd-opt-lab { flex: 1; font-family: 'Cinzel', serif; font-size: 12px; font-weight: 600; letter-spacing: .06em; }
 .cd-opt-tick { opacity: 0; color: var(--cls); font-size: 12px; }
 .cd-opt.active .cd-opt-tick { opacity: 1; }
-
-/* ══ CENTRE : version apaisée (moins de lueurs, plus d'air) ══ */
-.mannequin-col::before { display: none; }                       /* plus de particules */
-.mq-skin {
-  background:
-    radial-gradient(ellipse 50% 7% at 50% 95%, rgba(224,172,96,.2) 0%, transparent 75%),
-    linear-gradient(180deg, rgba(0,0,0,.3), rgba(0,0,0,.42));
-  border-color: var(--rim2); box-shadow: none;
-}
-.mq-skin::before, .mq-skin::after, .mq-skin .sk-c::before, .mq-skin .sk-c::after { width: 12px; height: 12px; border-width: 1px; border-color: var(--gold-dim); }
-
-/* slots : cadre fin à la couleur de la rareté, sans halo */
-.slot:not(.filled):not(.slot-blocked) { border-style: solid; border-color: var(--rim); background: rgba(255,255,255,.012); }
-.slot:not(.filled):not(.slot-blocked) .slot-icon { opacity: .38; }
-.slot:not(.filled):not(.slot-blocked) .slot-label { opacity: .6; }
-.slot.filled {
-  border-color: color-mix(in srgb, var(--rar, var(--gold)) 42%, var(--rim));
-  background: linear-gradient(170deg, color-mix(in srgb, var(--rar, var(--gold)) 8%, transparent), rgba(255,255,255,.012));
-  box-shadow: none;
-}
-.slot.filled::before, .slot.filled::after { display: none; }
-.slot.filled:hover { border-color: var(--rar, var(--gold)); box-shadow: 0 0 10px color-mix(in srgb, var(--rar, var(--gold)) 18%, transparent); }
-.slot-dot { box-shadow: none; width: 5px; height: 5px; }
-.slot.filled .slot-name { color: var(--text); font-size: 7.5px; opacity: .85; }
-.slot:hover { transform: none; }
-
-/* titre : cartouche plus léger */
-.tp-orn { max-width: 38px; opacity: .7; }
-.tp-orn::after { box-shadow: none; width: 4px; height: 4px; }
-.tp-name { font-size: 15px; letter-spacing: .08em; filter: drop-shadow(0 1px 0 rgba(0,0,0,.85)); }
-.tp-name.long { font-size: 12.5px; }
-.title-plate:hover .tp-name:not(.empty), .title-plate[aria-expanded="true"] .tp-name { filter: drop-shadow(0 1px 0 rgba(0,0,0,.85)) drop-shadow(0 0 8px rgba(240,190,100,.45)); }
-.tp-name.empty { opacity: .8; }
-
-/* classe + arbre : pied du cadre plus sobre */
-.class-drop-btn { background: rgba(14,11,8,.86); backdrop-filter: none; border: 1px solid var(--rim2); border-bottom: 1px solid var(--rim2); box-shadow: none; padding: 6px 10px 6px 8px; }
-.class-drop-btn:hover { border-color: var(--gold-dim); box-shadow: none; }
-.cd-ico { font-size: 17px; }
-.cd-label { font-size: 12px; }
-.tree-btn { box-shadow: none; }
-
-/* bandeau d'aide et pastille de progression : très discrets */
-.atelier-guide { background: none; padding: 8px 20px; font-size: 11px; color: var(--muted); }
-.ag-num { width: 17px; height: 17px; font-size: 10px; }
-.build-progress { background: none; }
 
 /* ══════════════════════════════════
    RESPONSIVE
