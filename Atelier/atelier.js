@@ -2636,12 +2636,25 @@ function loadAccessoriesForClass(classId) {
     const r = document.querySelector('input[name="opt-mode"]:checked');
     return r ? r.value : 'zero';
   }
+  // Reflète la classe / le niveau (select + champ cachés ou réels) dans les puces et le curseur
+  function _optPaintBase() {
+    const sel = document.getElementById('opt-class'), lvl = document.getElementById('opt-level'), rng = document.getElementById('opt-level-range');
+    if (!sel || !lvl) return;
+    document.querySelectorAll('#opt-class-chips .opt-cls').forEach(function(c) { c.classList.toggle('on', c.dataset.c === (sel.value || '')); });
+    if (rng) rng.value = lvl.value || 1;
+  }
   function _optSyncMode() {
     const complete = _optMode() === 'complete';
-    ['opt-class', 'opt-level'].forEach(function(id) {
-      const el = document.getElementById(id);
-      el.disabled = complete; el.style.opacity = complete ? '.4' : '';
-    });
+    if (complete) {
+      document.getElementById('opt-class').value = activeClass || '';
+      document.getElementById('opt-level').value = buildLevel;
+    }
+    const grid = document.getElementById('opt-basegrid'), note = document.getElementById('opt-base-note');
+    if (grid) grid.classList.toggle('locked', complete);
+    if (note) note.hidden = !complete;
+    ['opt-class', 'opt-level', 'opt-level-range'].forEach(function(id) { const el = document.getElementById(id); if (el) el.disabled = complete; });
+    _optPaintBase();
+    _optUpdateBadges();
   }
 
   function _optObtainTypes() {
@@ -2687,47 +2700,88 @@ function loadAccessoriesForClass(classId) {
     return true;
   }
 
+  // Résumés affichés sur les étapes, compteurs des groupes de sources et phrase de synthèse du pied de fenêtre
   function _optUpdateBadges() {
-    const n = { obt: 0, pal: 0, tit: 0, items: _optExcl.size + _optForce.size };
-    Object.keys(_optTri).forEach(function(t) { if (t.indexOf('obt:') === 0) n.obt++; else if (t.indexOf('tit:') === 0) n.tit++; else n.pal++; });
-    if (!_optTitleOn) n.tit = 'non';
-    document.querySelectorAll('.opt-badge').forEach(function(b) { b.textContent = n[b.dataset.badge] || ''; });
+    if (!document.getElementById('opt-class') || !document.getElementById('opt-level')) return;
+    const cfg = _optConfig();
+    const cls = cfg.cls ? (CLASSES_BY_ID.get(cfg.cls) || { label: cfg.cls }).label : 'Toutes classes';
+    let nMin = 0;
+    document.querySelectorAll('#opt-mins > div').forEach(function(r) { const v = r.querySelector('.opt-min-val'); if (r.dataset.stat && v && v.value !== '') nMin++; });
+    const nPrio = _optLevels.reduce(function(a, l) { return a + l.length; }, 0);
+    const nOff = Object.keys(_optTri).filter(function(t) { return _optTri[t] === -1; }).length;
+    const nForce = _optForce.size, nExcl = _optExcl.size;
+    const plur = function(n, w) { return n + ' ' + w + (n > 1 ? 's' : ''); };
+    const set = function(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; };
+
+    const goals = [nMin ? plur(nMin, 'minimum') : '', nPrio ? plur(nPrio, 'priorité') : ''].filter(Boolean);
+    const srcs  = [nOff ? plur(nOff, 'exclusion') : '', !_optTitleOn ? 'sans titre' : ''].filter(Boolean);
+    const items = [nForce ? plur(nForce, 'imposé') : '', nExcl ? plur(nExcl, 'interdit') : ''].filter(Boolean);
+    set('os-base', cls + ' · Niv. ' + cfg.lvl);
+    set('os-goals', goals.length ? goals.join(' · ') : 'Aucun objectif');
+    set('os-sources', srcs.length ? srcs.join(' · ') : 'Tout autorisé');
+    set('os-items', items.length ? items.join(' · ') : 'Aucun');
+    set('opt-summary', [_optMode() === 'complete' ? 'Compléter' : 'De zéro', cls, 'Niv. ' + cfg.lvl].concat(goals, srcs, items).join(' · '));
+
+    ['obt', 'pal', 'evt', 'tit'].forEach(function(g) {
+      const chips = document.querySelectorAll('#opt-panel-' + g + ' .opt-src');
+      const on = Array.prototype.filter.call(chips, function(c) { return !c.classList.contains('off'); }).length;
+      document.querySelectorAll('[data-count="' + g + '"]').forEach(function(el) {
+        el.textContent = chips.length ? on + ' / ' + chips.length : '';
+        el.classList.toggle('partial', chips.length > 0 && on < chips.length);
+      });
+    });
   }
 
+  // Sources : une case par origine, cochée = autorisée. Décochée = interdite (_optTri[tag] = -1).
   function _optRenderTri() {
     const tiers = Array.from(new Set(ITEMS.map(function(i) { return i.palier; }).filter(function(p) { return p !== undefined && p !== null; })))
       .sort(function(a, b) { return _palierNum(b) - _palierNum(a); });
     const evtMap = {};
     ITEMS.forEach(function(i) { if (typeof i.event === 'string' && i.event) evtMap[i.event] = i.palier; });
-    const esc = function(s) { return String(s).replace(/"/g, '&quot;'); };
-    const chip = function(tag, label) { return '<button type="button" class="opt-chip" data-tag="' + esc(tag) + '" data-label="' + esc(label) + '"></button>'; };
-    const group = function(title, chips) {
-      return chips.length ? '<div class="opt-group"><div class="opt-group-title">' + title + '</div><div class="opt-chips">' + chips.join('') + '</div></div>' : '';
+
+    const paint = function(b) {
+      const off = _optTri[b.dataset.tag] === -1;
+      b.classList.toggle('off', off);
+      b.setAttribute('aria-pressed', String(!off));
     };
-    document.getElementById('opt-panel-obt').innerHTML = _OPT_OBTAIN.map(function(o) { return chip('obt:' + o[0], o[1]); }).join('');
-    document.getElementById('opt-panel-pal').innerHTML =
-      group('Paliers', tiers.map(function(p) { return chip('pal:' + p, vclPalierLabel(p)); })) +
-      group('Évènements &amp; World Boss', Object.keys(evtMap).sort().map(function(n) {
-        return chip('evt:' + n, (evtMap[n] === 'worldboss' ? '👑 ' : evtMap[n] === 'event' ? '🎉 ' : '') + n);
-      }));
-    document.getElementById('opt-panel-tit').innerHTML = (window._vclTitres || []).length
-      ? (window._vclTitres || []).map(function(t) { return chip('tit:' + t.id, t.name); }).join('')
-      : '<span class="opt-legend">Aucun titre disponible pour le moment.</span>';
-    document.querySelectorAll('#opt-panel-obt .opt-chip, #opt-panel-pal .opt-chip, #opt-panel-tit .opt-chip').forEach(function(b) {
-      const paint = function() {
-        const v = _optTri[b.dataset.tag] || 0;
-        b.textContent = (v === 1 ? '✓ ' : v === -1 ? '✕ ' : '') + b.dataset.label;
-        b.classList.toggle('allow', v === 1);
-        b.classList.toggle('ban', v === -1);
-      };
-      paint();
-      b.addEventListener('click', function() {
-        const v = _optTri[b.dataset.tag] || 0;
-        const nv = v === 0 ? 1 : v === 1 ? -1 : 0;
-        if (nv) _optTri[b.dataset.tag] = nv; else delete _optTri[b.dataset.tag];
-        paint(); _optUpdateBadges();
+    const fill = function(id, entries) {
+      const box = document.getElementById(id);
+      box.innerHTML = '';
+      entries.forEach(function(e) {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'opt-src'; b.dataset.tag = e[0];
+        const bx = document.createElement('span'); bx.className = 'os-box'; bx.setAttribute('aria-hidden', 'true');
+        const lb = document.createElement('span'); lb.textContent = e[1];
+        b.appendChild(bx); b.appendChild(lb);
+        paint(b);
+        b.addEventListener('click', function() {
+          if (_optTri[b.dataset.tag] === -1) delete _optTri[b.dataset.tag]; else _optTri[b.dataset.tag] = -1;
+          paint(b); _optUpdateBadges();
+        });
+        box.appendChild(b);
       });
+      return box;
+    };
+    fill('opt-panel-obt', _OPT_OBTAIN.map(function(o) { return ['obt:' + o[0], o[1]]; }));
+    fill('opt-panel-pal', tiers.map(function(p) { return ['pal:' + p, vclPalierLabel(p)]; }));
+    const evNames = Object.keys(evtMap).sort();
+    fill('opt-panel-evt', evNames.map(function(n) { return ['evt:' + n, (evtMap[n] === 'worldboss' ? '👑 ' : evtMap[n] === 'event' ? '🎉 ' : '') + n]; }));
+    document.getElementById('opt-card-evt').hidden = !evNames.length;
+    const titres = window._vclTitres || [];
+    const titBox = fill('opt-panel-tit', titres.map(function(t) { return ['tit:' + t.id, t.name]; }));
+    if (!titres.length) titBox.innerHTML = '<span class="opt-intro">Aucun titre disponible pour le moment.</span>';
+
+    document.querySelectorAll('.opt-lnk').forEach(function(l) {
+      l.onclick = function() {
+        const g = l.dataset.all || l.dataset.none, all = !!l.dataset.all;
+        document.querySelectorAll('#opt-panel-' + g + ' .opt-src').forEach(function(b) {
+          if (all) delete _optTri[b.dataset.tag]; else _optTri[b.dataset.tag] = -1;
+          paint(b);
+        });
+        _optUpdateBadges();
+      };
     });
+
     const syncTitle = function() {
       document.querySelectorAll('#opt-title-toggle button').forEach(function(b) { b.classList.toggle('active', (b.dataset.v === '1') === _optTitleOn); });
       document.getElementById('opt-panel-tit').classList.toggle('opt-off', !_optTitleOn);
@@ -2737,13 +2791,6 @@ function loadAccessoriesForClass(classId) {
       b.onclick = function() { _optTitleOn = b.dataset.v === '1'; syncTitle(); };
     });
     syncTitle();
-    document.querySelectorAll('.opt-tab').forEach(function(t) {
-      t.onclick = function() {
-        document.querySelectorAll('.opt-tab').forEach(function(x) { x.classList.toggle('active', x === t); });
-        document.querySelectorAll('.opt-panel').forEach(function(p) { p.hidden = p.dataset.panel !== t.dataset.tab; });
-      };
-    });
-    _optUpdateBadges();
   }
 
   function _optPools() {
@@ -3021,19 +3068,21 @@ function loadAccessoriesForClass(classId) {
       stats.forEach(function(sid) {
         const st = STATS_BY_ID.get(sid);
         const chip = document.createElement('button');
-        chip.type = 'button'; chip.className = 'opt-chip allow';
+        chip.type = 'button'; chip.className = 'opt-chip allow'; chip.title = 'Retirer';
         chip.textContent = (st ? (st.icon || '') + ' ' + st.label : sid) + ' ✕';
         chip.addEventListener('click', function() { stats.splice(stats.indexOf(sid), 1); _optRenderPrio(); });
         box.appendChild(chip);
       });
-      const used = new Set([].concat.apply([], _optLevels));
-      const sel = document.createElement('select');
-      sel.className = 'input-name';
-      sel.innerHTML = '<option value="">' + (stats.length ? '+ à égalité' : '+ stat') + '</option>' + ALL_STATS.filter(function(s) { return !used.has(s.id); }).map(function(s) {
-        return '<option value="' + s.id + '">' + (s.icon || '') + ' ' + s.label + '</option>';
-      }).join('');
-      sel.addEventListener('change', function() { if (sel.value) { stats.push(sel.value); _optRenderPrio(); } });
-      box.appendChild(sel);
+      const pop = document.createElement('span');
+      pop.className = 'opt-pop opt-pop-inline';
+      const add = document.createElement('button');
+      add.type = 'button'; add.className = 'opt-addstat opt-pop-btn';
+      add.textContent = stats.length ? '＋ à égalité' : '＋ stat';
+      add.addEventListener('click', function(e) {
+        e.stopPropagation();
+        _optOpenStatMenu(add, new Set([].concat.apply([], _optLevels)), function(id) { stats.push(id); _optRenderPrio(); });
+      });
+      pop.appendChild(add); box.appendChild(pop);
       row.appendChild(num); row.appendChild(box);
       if (_optLevels.length > 1) {
         const x = document.createElement('button');
@@ -3045,11 +3094,17 @@ function loadAccessoriesForClass(classId) {
     });
     if (_optLevels[_optLevels.length - 1].length) {
       const add = document.createElement('button');
-      add.type = 'button'; add.className = 'opt-link';
-      add.textContent = '+ Ajouter un niveau de priorité inférieur';
+      add.type = 'button'; add.className = 'opt-add';
+      add.textContent = '＋ Ajouter un niveau de priorité inférieur';
       add.addEventListener('click', function() { _optLevels.push([]); _optRenderPrio(); });
       wrap.appendChild(add);
+    } else if (_optLevels.length === 1) {
+      const hint = document.createElement('p');
+      hint.className = 'opt-note';
+      hint.textContent = 'Sans priorité, l\u2019optimiseur équilibre l\u2019ensemble des stats.';
+      wrap.appendChild(hint);
     }
+    _optUpdateBadges();
   }
 
   // Poids par niveau : chaque niveau pèse nettement plus que le suivant, les stats d'un même niveau pèsent pareil
@@ -3060,45 +3115,135 @@ function loadAccessoriesForClass(classId) {
     return out;
   }
 
-  function _optStatOptions(emptyLabel) {
-    return '<option value="">' + emptyLabel + '</option>' + ALL_STATS.map(function(s) {
-      return '<option value="' + s.id + '">' + (s.icon || '') + ' ' + s.label + '</option>';
-    }).join('');
+  /* ══ Menu de choix d'une stat : recherche + groupes (remplace les listes déroulantes natives) ══ */
+  let _optMenu = null;
+  function _optCloseStatMenu() { if (_optMenu) { _optMenu.remove(); _optMenu = null; } }
+  document.addEventListener('mousedown', function(e) {
+    if (_optMenu && !e.target.closest('.opt-statmenu') && !e.target.closest('.opt-pop-btn')) _optCloseStatMenu();
+  });
+  function _optOpenStatMenu(anchor, exclude, onPick) {
+    const wasOpen = _optMenu && _optMenu.parentNode === anchor.parentNode;
+    _optCloseStatMenu();
+    if (wasOpen) return;
+    const menu = document.createElement('div');
+    menu.className = 'opt-statmenu';
+    menu.innerHTML = '<input class="opt-statmenu-q" type="text" placeholder="Rechercher une stat…" autocomplete="off" /><div class="opt-statmenu-list"></div>';
+    const list = menu.querySelector('.opt-statmenu-list'), q = menu.querySelector('input');
+    const render = function() {
+      const f = _optNormName(q.value.trim());
+      list.innerHTML = '';
+      STAT_GROUPS.forEach(function(g) {
+        const stats = g.stats.filter(function(st) { return !exclude.has(st.id) && (!f || _optNormName(st.label).indexOf(f) >= 0); });
+        if (!stats.length) return;
+        const h = document.createElement('div');
+        h.className = 'opt-sm-group'; h.textContent = g.label;
+        list.appendChild(h);
+        stats.forEach(function(st) {
+          const b = document.createElement('button');
+          b.type = 'button'; b.className = 'opt-sm-item';
+          const ic = document.createElement('span'); ic.className = 'opt-sm-ico'; ic.textContent = st.icon || '';
+          const lb = document.createElement('span'); lb.textContent = st.label;
+          b.appendChild(ic); b.appendChild(lb);
+          b.addEventListener('click', function() { _optCloseStatMenu(); onPick(st.id); });
+          list.appendChild(b);
+        });
+      });
+      if (!list.children.length) list.innerHTML = '<div class="opt-note" style="padding:10px">Aucune stat.</div>';
+    };
+    q.addEventListener('input', render);
+    q.addEventListener('keydown', function(e) { if (e.key === 'Escape') { e.stopPropagation(); _optCloseStatMenu(); } });
+    render();
+    anchor.parentNode.appendChild(menu);
+    _optMenu = menu;
+    q.focus();
+  }
+
+  function _optPaintStatBtn(btn, id) {
+    const st = id ? STATS_BY_ID.get(id) : null;
+    btn.classList.toggle('empty', !st);
+    btn.textContent = st ? (st.icon || '') + ' ' + st.label : '＋ Choisir une stat';
   }
 
   function _optAddMinRow(statId, val) {
     const row = document.createElement('div');
     row.className = 'opt-min-row';
-    row.innerHTML = '<select class="input-name opt-min-stat">' + _optStatOptions('— stat —') + '</select>' +
+    row.dataset.stat = statId || '';
+    row.innerHTML = '<span class="opt-pop"><button type="button" class="opt-statbtn opt-pop-btn"></button></span>' +
       '<input class="input-name opt-min-val" type="number" step="any" placeholder="min" />' +
       '<button type="button" class="opt-x" title="Retirer">✕</button>';
-    row.querySelector('select').value = statId || '';
+    const btn = row.querySelector('.opt-statbtn');
+    _optPaintStatBtn(btn, statId);
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const used = new Set();
+      document.querySelectorAll('#opt-mins > div').forEach(function(r) { if (r !== row && r.dataset.stat) used.add(r.dataset.stat); });
+      _optOpenStatMenu(btn, used, function(id) {
+        row.dataset.stat = id; _optPaintStatBtn(btn, id); _optUpdateBadges();
+        const v = row.querySelector('.opt-min-val'); if (v) v.focus();
+      });
+    });
     row.querySelector('.opt-min-val').value = val != null ? val : '';
-    row.querySelector('.opt-x').addEventListener('click', function() { row.remove(); });
+    row.querySelector('.opt-x').addEventListener('click', function() { row.remove(); _optUpdateBadges(); });
     document.getElementById('opt-mins').appendChild(row);
   }
 
   document.getElementById('btn-optimize').addEventListener('click', function() {
     document.getElementById('modal-title').textContent = '🎯 Build Optimisé';
     const clsSel = document.getElementById('opt-class');
-    clsSel.innerHTML = '<option value="">👥 Toutes</option>' + CLASSES.map(function(c) {
-      return '<option value="' + c.id + '">' + c.ico + ' ' + c.label + '</option>';
+    clsSel.innerHTML = '<option value="">Toutes</option>' + CLASSES.map(function(c) {
+      return '<option value="' + c.id + '">' + c.label + '</option>';
     }).join('');
     clsSel.value = activeClass || '';
-    const lvl = document.getElementById('opt-level');
+
+    // Puces de classe (le select caché porte la valeur lue à la génération)
+    const chips = document.getElementById('opt-class-chips');
+    chips.innerHTML = '';
+    [{ id: '', ico: '👥', label: 'Toutes', color: null }].concat(CLASSES.map(function(c) {
+      return { id: c.id, ico: c.ico, label: c.label, color: c.color || null };
+    })).forEach(function(c) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'opt-cls'; b.dataset.c = c.id;
+      if (c.color) b.style.setProperty('--cls', c.color);
+      const ic = document.createElement('span'); ic.className = 'opt-cls-ico'; ic.textContent = c.ico;
+      const lb = document.createElement('span'); lb.textContent = c.label;
+      b.appendChild(ic); b.appendChild(lb);
+      b.addEventListener('click', function() { clsSel.value = c.id; _optPaintBase(); _optPruneForce(); _optUpdateBadges(); });
+      chips.appendChild(b);
+    });
+
+    const lvl = document.getElementById('opt-level'), rng = document.getElementById('opt-level-range');
     lvl.max = MAX_LEVEL; lvl.value = buildLevel;
+    rng.max = MAX_LEVEL; rng.value = buildLevel;
+    rng.oninput = function() { lvl.value = rng.value; _optPruneForce(); _optUpdateBadges(); };
+    lvl.oninput = lvl.onchange = function() { rng.value = lvl.value || 1; _optPruneForce(); _optUpdateBadges(); };
+
     _optRenderPrio();
-    if (!document.querySelector('#opt-mins .opt-min-stat')) _optAddMinRow();
+    if (!document.querySelector('#opt-mins .opt-min-row')) _optAddMinRow();
     _optRenderTri();
     document.querySelectorAll('input[name="opt-mode"]').forEach(function(r) { r.onchange = function() { _optSyncMode(); _optPruneForce(); }; });
     _optSyncMode();
     _optSetupPicker('opt-excl-q', 'opt-excl-list', 'opt-excl-chips', _optExcl);
     _optForceRender = _optSetupPicker('opt-force-q', 'opt-force-list', 'opt-force-chips', _optForce, _optEligible);
-    ['opt-class', 'opt-level'].forEach(function(id) { var el = document.getElementById(id); el.onchange = _optPruneForce; el.oninput = _optPruneForce; });
     _optPruneForce();
+
+    // Étapes
+    const goStep = function(step) {
+      _optCloseStatMenu();
+      document.querySelectorAll('.opt-step').forEach(function(b) {
+        const on = b.dataset.step === step;
+        b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on));
+      });
+      document.querySelectorAll('.opt-pane').forEach(function(p) { p.hidden = p.dataset.pane !== step; });
+    };
+    document.querySelectorAll('.opt-step').forEach(function(b) { b.onclick = function() { goStep(b.dataset.step); }; });
+    goStep('base');
+
     document.getElementById('opt-result').style.display = 'none';
+    _optUpdateBadges();
     openModal('optimize');
   });
+  // Toute saisie dans la fenêtre rafraîchit résumés et compteurs
+  document.getElementById('modal-zone-optimize').addEventListener('input', function() { _optUpdateBadges(); });
   document.getElementById('btn-opt-addmin').addEventListener('click', function() { _optAddMinRow(); });
 
   document.getElementById('btn-opt-run').addEventListener('click', function() {
@@ -3106,7 +3251,7 @@ function loadAccessoriesForClass(classId) {
     const out = document.getElementById('opt-result');
     const req = {};
     document.querySelectorAll('#opt-mins > div').forEach(function(row) {
-      const id = row.querySelector('select').value;
+      const id = row.dataset.stat;
       const v  = parseFloat(row.querySelector('.opt-min-val').value);
       if (id && !isNaN(v)) req[id] = Math.max(req[id] === undefined ? -Infinity : req[id], v);
     });

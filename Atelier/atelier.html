@@ -308,87 +308,118 @@
       </div>
 
       <div id="modal-zone-optimize" class="opt-zone" style="display:none">
-        <div class="opt-body">
-          <div class="opt-seg">
-            <label class="opt-seg-item">
-              <input type="radio" name="opt-mode" value="zero" checked />
-              <span class="opt-seg-body"><span class="opt-seg-title">De zéro</span><span class="opt-seg-sub">Vide l'équipement et cherche le meilleur build</span></span>
-            </label>
-            <label class="opt-seg-item">
-              <input type="radio" name="opt-mode" value="complete" />
-              <span class="opt-seg-body"><span class="opt-seg-title">Compléter</span><span class="opt-seg-sub">Garde l'équipé (classe, niveau, arbre) et remplit le reste</span></span>
-            </label>
-          </div>
+        <div class="opt-layout">
+          <nav class="opt-nav" role="tablist" aria-label="Étapes du build optimisé">
+            <button type="button" class="opt-step active" data-step="base" role="tab"><span class="os-n">1</span><span class="os-t"><b>Base</b><small id="os-base"></small></span></button>
+            <button type="button" class="opt-step" data-step="goals" role="tab"><span class="os-n">2</span><span class="os-t"><b>Objectifs</b><small id="os-goals"></small></span></button>
+            <button type="button" class="opt-step" data-step="sources" role="tab"><span class="os-n">3</span><span class="os-t"><b>Sources</b><small id="os-sources"></small></span></button>
+            <button type="button" class="opt-step" data-step="items" role="tab"><span class="os-n">4</span><span class="os-t"><b>Items précis</b><small id="os-items"></small></span></button>
+          </nav>
 
-          <div class="opt-row">
-            <div class="opt-field opt-grow">
-              <label class="opt-lab">Classe</label>
-              <select id="opt-class" class="input-name"></select>
-            </div>
-            <div class="opt-field" style="width:92px">
-              <label class="opt-lab">Niveau</label>
-              <input id="opt-level" class="input-name" type="number" min="1" />
-            </div>
-          </div>
+          <div class="opt-main">
 
-          <div class="opt-field">
-            <label class="opt-lab">Stats minimum <span class="opt-sub">— exigences à respecter</span></label>
-            <div id="opt-mins" class="opt-mins"></div>
-            <button type="button" id="btn-opt-addmin" class="opt-link">+ Ajouter une stat minimum</button>
-          </div>
-
-          <div class="opt-field">
-            <label class="opt-lab">Ordre de priorité <span class="opt-sub">— du plus important au moins important</span></label>
-            <div id="opt-prio" class="opt-prio-levels"></div>
-          </div>
-
-          <div class="opt-field">
-            <label class="opt-lab">Filtres d'items</label>
-            <div class="opt-tabs" role="tablist">
-              <button type="button" class="opt-tab active" data-tab="obt">Obtention<span class="opt-badge" data-badge="obt"></span></button>
-              <button type="button" class="opt-tab" data-tab="pal">Paliers &amp; évènements<span class="opt-badge" data-badge="pal"></span></button>
-              <button type="button" class="opt-tab" data-tab="tit">Titres<span class="opt-badge" data-badge="tit"></span></button>
-              <button type="button" class="opt-tab" data-tab="items">Items précis<span class="opt-badge" data-badge="items"></span></button>
-            </div>
-            <div class="opt-panel" data-panel="obt">
-              <div class="opt-legend">Clique une puce : <span class="ok">✓ autorisé</span> (seuls ceux-là) → <span class="ko">✕ interdit</span> → neutre.</div>
-              <div id="opt-panel-obt" class="opt-chips"></div>
-            </div>
-            <div class="opt-panel" data-panel="pal" hidden>
-              <div class="opt-legend">Même principe : <span class="ok">✓ autorisé</span> / <span class="ko">✕ interdit</span>.</div>
-              <div id="opt-panel-pal"></div>
-            </div>
-            <div class="opt-panel" data-panel="tit" hidden>
-              <div class="opt-toggle" id="opt-title-toggle" role="radiogroup">
-                <button type="button" data-v="1" class="active">Avec titre</button>
-                <button type="button" data-v="0">Sans titre</button>
+            <!-- ── 1. BASE ── -->
+            <section class="opt-pane" data-pane="base">
+              <h3 class="opt-h">Point de départ</h3>
+              <div class="opt-seg">
+                <label class="opt-seg-item">
+                  <input type="radio" name="opt-mode" value="zero" checked />
+                  <span class="opt-seg-body"><span class="opt-seg-ico">✦</span><span class="opt-seg-txt"><span class="opt-seg-title">De zéro</span><span class="opt-seg-sub">Vide l'équipement et cherche le meilleur build</span></span></span>
+                </label>
+                <label class="opt-seg-item">
+                  <input type="radio" name="opt-mode" value="complete" />
+                  <span class="opt-seg-body"><span class="opt-seg-ico">＋</span><span class="opt-seg-txt"><span class="opt-seg-title">Compléter</span><span class="opt-seg-sub">Garde l'équipé (classe, niveau, arbre) et remplit le reste</span></span></span>
+                </label>
               </div>
-              <div class="opt-legend">« Avec titre » : le meilleur titre est choisi. Tu peux le restreindre : <span class="ok">✓ autorisé</span> (seuls ceux-là) / <span class="ko">✕ interdit</span>.</div>
-              <div id="opt-panel-tit" class="opt-chips"></div>
-            </div>
-            <div class="opt-panel" data-panel="items" hidden>
-              <div class="opt-field">
-                <label class="opt-lab ko">Interdits</label>
-                <div class="opt-search">
-                  <input id="opt-excl-q" class="input-name" type="text" autocomplete="off" placeholder="Rechercher un item à interdire…" />
-                  <div id="opt-excl-list" class="opt-drop"></div>
+              <div class="opt-basegrid" id="opt-basegrid">
+                <div class="opt-card">
+                  <div class="opt-card-t">Classe</div>
+                  <select id="opt-class" hidden></select>
+                  <div id="opt-class-chips" class="opt-classchips"></div>
                 </div>
-                <div id="opt-excl-chips" class="opt-chips"></div>
-              </div>
-              <div class="opt-field">
-                <label class="opt-lab ok">Obligatoires <span class="opt-sub">— équipables avec la classe et le niveau choisis</span></label>
-                <div class="opt-search">
-                  <input id="opt-force-q" class="input-name" type="text" autocomplete="off" placeholder="Rechercher un item à imposer…" />
-                  <div id="opt-force-list" class="opt-drop"></div>
+                <div class="opt-card">
+                  <div class="opt-card-t">Niveau</div>
+                  <input id="opt-level" class="input-name" type="number" min="1" />
+                  <input id="opt-level-range" class="opt-range" type="range" min="1" step="1" aria-label="Niveau" />
                 </div>
-                <div id="opt-force-chips" class="opt-chips"></div>
               </div>
-            </div>
-          </div>
+              <p class="opt-note" id="opt-base-note" hidden>Mode « Compléter » : la classe et le niveau sont ceux du build en cours.</p>
+            </section>
 
-          <div id="opt-result" class="opt-result" style="display:none"></div>
+            <!-- ── 2. OBJECTIFS ── -->
+            <section class="opt-pane" data-pane="goals" hidden>
+              <h3 class="opt-h">Ce que tu veux atteindre</h3>
+              <div class="opt-card">
+                <div class="opt-card-t">Stats minimum <span class="opt-sub">exigences à respecter</span></div>
+                <div id="opt-mins" class="opt-mins"></div>
+                <button type="button" id="btn-opt-addmin" class="opt-add">＋ Ajouter une stat minimum</button>
+              </div>
+              <div class="opt-card">
+                <div class="opt-card-t">Ordre de priorité <span class="opt-sub">du plus important au moins important</span></div>
+                <div id="opt-prio" class="opt-prio-levels"></div>
+              </div>
+            </section>
+
+            <!-- ── 3. SOURCES ── -->
+            <section class="opt-pane" data-pane="sources" hidden>
+              <h3 class="opt-h">D'où peuvent venir les items&nbsp;?</h3>
+              <p class="opt-intro">Tout est autorisé par défaut. <b>Décoche</b> ce que tu veux exclure, ou utilise « Aucun » puis coche seulement ce que tu veux.</p>
+              <div class="opt-card">
+                <div class="opt-card-h"><div class="opt-card-t">Mode d'obtention</div><div class="opt-card-tools"><span class="opt-count" data-count="obt"></span><button type="button" class="opt-lnk" data-all="obt">Tout</button><button type="button" class="opt-lnk" data-none="obt">Aucun</button></div></div>
+                <div id="opt-panel-obt" class="opt-srcs"></div>
+              </div>
+              <div class="opt-card">
+                <div class="opt-card-h"><div class="opt-card-t">Paliers</div><div class="opt-card-tools"><span class="opt-count" data-count="pal"></span><button type="button" class="opt-lnk" data-all="pal">Tout</button><button type="button" class="opt-lnk" data-none="pal">Aucun</button></div></div>
+                <div id="opt-panel-pal" class="opt-srcs"></div>
+              </div>
+              <div class="opt-card" id="opt-card-evt">
+                <div class="opt-card-h"><div class="opt-card-t">Évènements &amp; World Boss</div><div class="opt-card-tools"><span class="opt-count" data-count="evt"></span><button type="button" class="opt-lnk" data-all="evt">Tout</button><button type="button" class="opt-lnk" data-none="evt">Aucun</button></div></div>
+                <div id="opt-panel-evt" class="opt-srcs"></div>
+              </div>
+              <div class="opt-card">
+                <div class="opt-card-h">
+                  <div class="opt-card-t">Titre</div>
+                  <div class="opt-toggle" id="opt-title-toggle" role="radiogroup">
+                    <button type="button" data-v="1" class="active">Avec titre</button>
+                    <button type="button" data-v="0">Sans titre</button>
+                  </div>
+                </div>
+                <p class="opt-intro">« Avec titre » : le meilleur titre est choisi parmi ceux cochés.</p>
+                <div class="opt-card-tools opt-tools-left"><span class="opt-count" data-count="tit"></span><button type="button" class="opt-lnk" data-all="tit">Tout</button><button type="button" class="opt-lnk" data-none="tit">Aucun</button></div>
+                <div id="opt-panel-tit" class="opt-srcs"></div>
+              </div>
+            </section>
+
+            <!-- ── 4. ITEMS PRÉCIS ── -->
+            <section class="opt-pane" data-pane="items" hidden>
+              <h3 class="opt-h">Cas particuliers</h3>
+              <p class="opt-intro">Impose un item précis dans le build, ou interdis-le, quelles que soient les sources choisies.</p>
+              <div class="opt-twocol">
+                <div class="opt-card opt-ok">
+                  <div class="opt-card-t">Obligatoires <span class="opt-sub">équipables avec la classe et le niveau</span></div>
+                  <div class="opt-search">
+                    <input id="opt-force-q" class="input-name" type="text" autocomplete="off" placeholder="Rechercher un item à imposer…" />
+                    <div id="opt-force-list" class="opt-drop"></div>
+                  </div>
+                  <div id="opt-force-chips" class="opt-chips"></div>
+                </div>
+                <div class="opt-card opt-ko">
+                  <div class="opt-card-t">Interdits</div>
+                  <div class="opt-search">
+                    <input id="opt-excl-q" class="input-name" type="text" autocomplete="off" placeholder="Rechercher un item à interdire…" />
+                    <div id="opt-excl-list" class="opt-drop"></div>
+                  </div>
+                  <div id="opt-excl-chips" class="opt-chips"></div>
+                </div>
+              </div>
+            </section>
+
+          </div>
         </div>
+
+        <div id="opt-result" class="opt-result" style="display:none"></div>
         <div class="opt-foot">
+          <div class="opt-summary" id="opt-summary"></div>
           <button id="btn-opt-run" class="action-btn primary opt-run">🎯 Générer</button>
         </div>
       </div>
