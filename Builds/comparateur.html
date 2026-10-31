@@ -254,8 +254,7 @@
       if (scores) {
         h += '<tr class="cmp-score-row"><td class="cmp-stat-col">⚖ ' + (hasScore ? 'Score personnalisé' : 'Score général') + '</td>';
         scores.forEach((s, i) => {
-          h += '<td' + (scores.winner === i ? ' class="is-winner"' : '') + '><div class="cmp-score-val">' + s.score + '</div>' +
-            '<div class="cmp-score-top">' + s.top.map(t => esc(t.stat.label)).join(' · ') + '</div></td>';
+          h += '<td' + (scores.winner === i ? ' class="is-winner"' : '') + '><div class="cmp-score-val">' + s.score + '</div></td>';
         });
         h += '</tr>';
       }
