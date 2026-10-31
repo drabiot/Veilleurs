@@ -2363,29 +2363,90 @@ function loadAccessoriesForClass(classId) {
     return score;
   }
 
-  // Filtres du build optimisé : paliers exclus (Event, World Boss, Archive…) et source d'obtention (mob / PNJ)
-  let _optFilter = { palier: new Set(), source: '', mobIds: null, pnjIds: null };
+  /* Filtres du build optimisé. Chaque puce a 3 états : neutre / autorisé (✓) / interdit (✕).
+     Étiquettes d'un item : « obt:<type> » (une ou plusieurs manières de l'obtenir), « pal:<palier> », « evt:<nom> ».
+     - interdit palier / évènement : l'item est écarté ;
+     - interdit type d'obtention : écarté seulement si TOUTES ses manières de l'obtenir sont interdites ;
+     - s'il y a des « autorisé » : l'item doit avoir au moins une étiquette autorisée. */
+  const _OPT_OBTAIN = [
+    ['mob', '💀 Drop de mob'], ['pnj_achat', '🛒 Achat chez un PNJ'], ['pnj_craft', '🔨 Craft par un PNJ'],
+    ['forge', '⚒️ Forge'], ['autel', '🗿 Autel'], ['donjon', '🏰 Donjon'], ['quete', '📜 Quête'], ['autre', '❔ Autre / inconnu']
+  ];
+  let _optTri = {};            // étiquette → 1 (autorisé) | -1 (interdit), mémorisé entre deux ouvertures de la fenêtre
+  let _optFilter = null;       // { allow:Set, ban:Set, obtainOf:Map(id → Set) } figé au lancement
 
-  function _optSourceSets() {
-    const mobIds = new Set(), pnjIds = new Set();
+  function _optObtainTypes() {
+    const mobIds = new Set(), buyIds = new Set(), craftIds = new Set();
     (window.store.mobs || []).forEach(function(m) { (Array.isArray(m.loot) ? m.loot : []).forEach(function(l) { if (l && l.id) mobIds.add(l.id); }); });
     (window.store.pnj || []).forEach(function(p) {
       if (window.vclIsSecretPnj && window.vclIsSecretPnj(p)) return;
-      [p.craft, p.sells].forEach(function(list) {
-        (Array.isArray(list) ? list : []).forEach(function(e) { const id = e && (e.id || e.itemId); if (id) pnjIds.add(id); });
-      });
+      (Array.isArray(p.sells) ? p.sells : []).forEach(function(e) { const id = e && (e.id || e.itemId); if (id) buyIds.add(id); });
+      (Array.isArray(p.craft) ? p.craft : []).forEach(function(e) { const id = e && (e.id || e.itemId); if (id) craftIds.add(id); });
     });
-    return { mobIds: mobIds, pnjIds: pnjIds };
+    const out = new Map();
+    ITEMS.forEach(function(item) {
+      const id = item.id || item._id, ob = typeof item.obtain === 'string' ? item.obtain : '', t = new Set();
+      if (mobIds.has(id) || /Obtenable en tuant/i.test(ob)) t.add('mob');
+      if (buyIds.has(id) || /Achetable/i.test(ob)) t.add('pnj_achat');
+      if (craftIds.has(id) || /Fabricable/i.test(ob)) t.add('pnj_craft');
+      if (/\[obtain:forge/.test(ob)) t.add('forge');
+      if (/\[obtain:altar/.test(ob)) t.add('autel');
+      if (/donjon/i.test(ob)) t.add('donjon');
+      if (/qu[êe]te|\[quest/i.test(ob)) t.add('quete');
+      if (!t.size) t.add('autre');
+      out.set(id, t);
+    });
+    return out;
   }
 
   function _optItemAllowed(item) {
-    if (_optFilter.palier.has(String(item.palier))) return false;
-    const src = _optFilter.source;
-    if (!src) return true;
-    const id = item.id || item._id, ob = typeof item.obtain === 'string' ? item.obtain : '';
-    const isMob = _optFilter.mobIds.has(id) || /Obtenable en tuant/i.test(ob);
-    const isPnj = _optFilter.pnjIds.has(id) || /\[npc:/.test(ob);
-    return src === 'mob' ? isMob : src === 'pnj' ? isPnj : (isMob || isPnj);
+    const f = _optFilter;
+    if (!f) return true;
+    const tags = ['pal:' + item.palier];
+    if (typeof item.event === 'string' && item.event) tags.push('evt:' + item.event);
+    if (tags.some(function(t) { return f.ban.has(t); })) return false;
+    const types = f.obtainOf ? (f.obtainOf.get(item.id || item._id) || new Set(['autre'])) : null;
+    if (types && f.banObtain && Array.from(types).every(function(t) { return f.ban.has('obt:' + t); })) return false;
+    if (f.allow.size) {
+      const all = types ? tags.concat(Array.from(types).map(function(t) { return 'obt:' + t; })) : tags;
+      if (!all.some(function(t) { return f.allow.has(t); })) return false;
+    }
+    return true;
+  }
+
+  function _optRenderTri() {
+    const wrap = document.getElementById('opt-tri');
+    const tiers = Array.from(new Set(ITEMS.map(function(i) { return i.palier; }).filter(function(p) { return p !== undefined && p !== null; })))
+      .sort(function(a, b) { return _palierNum(b) - _palierNum(a); });
+    const evtMap = {};
+    ITEMS.forEach(function(i) { if (typeof i.event === 'string' && i.event) evtMap[i.event] = i.palier; });
+    const group = function(title, chips) {
+      return chips.length ? '<div><div style="font-size:10px; color:var(--muted); margin:6px 0 4px;">' + title + '</div><div style="display:flex; flex-wrap:wrap; gap:5px;">' + chips.join('') + '</div></div>' : '';
+    };
+    const chip = function(tag, label) { return '<button type="button" class="opt-chip" data-tag="' + tag.replace(/"/g, '&quot;') + '" data-label="' + label.replace(/"/g, '&quot;') + '"></button>'; };
+    wrap.innerHTML =
+      group('Obtention', _OPT_OBTAIN.map(function(o) { return chip('obt:' + o[0], o[1]); })) +
+      group('Paliers', tiers.map(function(p) { return chip('pal:' + p, vclPalierLabel(p)); })) +
+      group('Évènements / World Boss', Object.keys(evtMap).sort().map(function(n) {
+        return chip('evt:' + n, (evtMap[n] === 'worldboss' ? '👑 ' : evtMap[n] === 'event' ? '🎉 ' : '') + n);
+      }));
+    wrap.querySelectorAll('.opt-chip').forEach(function(b) {
+      const paint = function() {
+        const v = _optTri[b.dataset.tag] || 0;
+        b.textContent = (v === 1 ? '✓ ' : v === -1 ? '✕ ' : '') + b.dataset.label;
+        b.style.cssText = 'font-size:11px; padding:3px 8px; border-radius:4px; cursor:pointer; background:' +
+          (v === 1 ? 'rgba(122,196,122,.18)' : v === -1 ? 'rgba(217,97,74,.18)' : 'transparent') +
+          '; border:1px solid ' + (v === 1 ? '#7ac47a' : v === -1 ? '#d9614a' : 'rgba(255,255,255,.18)') +
+          '; color:' + (v === 1 ? '#7ac47a' : v === -1 ? '#d9614a' : 'inherit') + ';';
+      };
+      paint();
+      b.addEventListener('click', function() {
+        const v = _optTri[b.dataset.tag] || 0;
+        const nv = v === 0 ? 1 : v === 1 ? -1 : 0;
+        if (nv) _optTri[b.dataset.tag] = nv; else delete _optTri[b.dataset.tag];
+        paint();
+      });
+    });
   }
 
   function _optPools() {
@@ -2618,14 +2679,7 @@ function loadAccessoriesForClass(classId) {
     lvl.max = MAX_LEVEL; lvl.value = buildLevel;
     document.querySelectorAll('.opt-prio').forEach(function(sel) { const v = sel.value; sel.innerHTML = _optStatOptions('— priorité —'); sel.value = v; });
     if (!document.querySelector('#opt-mins .opt-min-stat')) _optAddMinRow();
-    const exWrap = document.getElementById('opt-excl-paliers');
-    const prevEx = new Set(Array.from(exWrap.querySelectorAll('input:checked')).map(function(c) { return c.value; }));
-    const tiers = Array.from(new Set(ITEMS.map(function(i) { return i.palier; }).filter(function(p) { return p !== undefined && p !== null; })))
-      .sort(function(a, b) { return _palierNum(b) - _palierNum(a); });
-    exWrap.innerHTML = tiers.map(function(p) {
-      return '<label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" value="' + String(p).replace(/"/g, '') + '"' +
-        (prevEx.has(String(p)) ? ' checked' : '') + ' /> ' + vclPalierLabel(p) + '</label>';
-    }).join('');
+    _optRenderTri();
     document.getElementById('opt-result').style.display = 'none';
     openModal('optimize');
   });
@@ -2654,16 +2708,18 @@ function loadAccessoriesForClass(classId) {
 
     btn.disabled = true; btn.textContent = '⏳ Recherche…';
     out.style.display = 'block'; out.textContent = 'Recherche du meilleur équipement…';
-    const excl = new Set(Array.from(document.querySelectorAll('#opt-excl-paliers input:checked')).map(function(c) { return c.value; }));
-    const source = document.getElementById('opt-source').value;
+    const tri = Object.assign({}, _optTri);
     setTimeout(async function() {
       try {
-        let sets = { mobIds: null, pnjIds: null };
-        if (source) {
-          try { await window.store.load(['mobs', 'pnj']); sets = _optSourceSets(); }
+        const allow = new Set(Object.keys(tri).filter(function(t) { return tri[t] === 1; }));
+        const ban = new Set(Object.keys(tri).filter(function(t) { return tri[t] === -1; }));
+        const isObt = function(t) { return t.indexOf('obt:') === 0; };
+        let obtainOf = null;
+        if (Array.from(allow).some(isObt) || Array.from(ban).some(isObt)) {
+          try { await window.store.load(['mobs', 'pnj']); obtainOf = _optObtainTypes(); }
           catch (e) { console.error('[Atelier] sources mob/PNJ :', e); out.textContent = '⛔ Impossible de charger les mobs / PNJ.'; return; }
         }
-        _optFilter = { palier: excl, source: source, mobIds: sets.mobIds, pnjIds: sets.pnjIds };
+        _optFilter = { allow: allow, ban: ban, obtainOf: obtainOf, banObtain: Array.from(ban).some(isObt) };
         const pools = _optPrune(_optPools(), req, prio);
         // 1) équipement sans arbre → 2) arbre pour cet équipement → 3) équipement refait avec l'arbre → 4) arbre final
         skillNodes = [];

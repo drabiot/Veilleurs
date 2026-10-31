@@ -315,18 +315,10 @@
             <select id="opt-prio-2" class="input-name opt-prio" style="flex:1 1 0; width:auto; min-width:0"></select>
           </div>
         </div>
-        <div style="display:flex; flex-direction:column; gap:6px;">
-          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Catégories d'items à exclure</label>
-          <div id="opt-excl-paliers" style="display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px;"></div>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:4px;">
-          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Source d'obtention</label>
-          <select id="opt-source" class="input-name">
-            <option value="">Toutes</option>
-            <option value="any">Uniquement mob ou PNJ</option>
-            <option value="mob">Uniquement mob (drop)</option>
-            <option value="pnj">Uniquement PNJ (achat / craft)</option>
-          </select>
+        <div style="display:flex; flex-direction:column; gap:2px;">
+          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Filtres d'items</label>
+          <span style="font-size:11px; color:var(--muted);">Clique une puce : <b style="color:#7ac47a">✓ autorisé</b> (seulement ceux-là) → <b style="color:#d9614a">✕ interdit</b> → neutre.</span>
+          <div id="opt-tri"></div>
         </div>
         <div id="opt-result" class="modal-hint" style="display:none; font-size:12px; line-height:1.6;"></div>
         <div class="modal-foot">
