@@ -342,7 +342,11 @@
               <div id="opt-panel-pal"></div>
             </div>
             <div class="opt-panel" data-panel="tit" hidden>
-              <div class="opt-legend">Le build optimisé choisit aussi le meilleur titre. <span class="ok">✓ autorisé</span> (seuls ceux-là) / <span class="ko">✕ interdit</span>. Tout interdire = aucun titre.</div>
+              <div class="opt-toggle" id="opt-title-toggle" role="radiogroup">
+                <button type="button" data-v="1" class="active">Avec titre</button>
+                <button type="button" data-v="0">Sans titre</button>
+              </div>
+              <div class="opt-legend">« Avec titre » : le meilleur titre est choisi. Tu peux le restreindre : <span class="ok">✓ autorisé</span> (seuls ceux-là) / <span class="ko">✕ interdit</span>.</div>
               <div id="opt-panel-tit" class="opt-chips"></div>
             </div>
             <div class="opt-panel" data-panel="items" hidden>

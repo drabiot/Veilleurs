@@ -2499,6 +2499,7 @@ function loadAccessoriesForClass(classId) {
   function _optUpdateBadges() {
     const n = { obt: 0, pal: 0, tit: 0, items: _optExcl.size + _optForce.size };
     Object.keys(_optTri).forEach(function(t) { if (t.indexOf('obt:') === 0) n.obt++; else if (t.indexOf('tit:') === 0) n.tit++; else n.pal++; });
+    if (!_optTitleOn) n.tit = 'non';
     document.querySelectorAll('.opt-badge').forEach(function(b) { b.textContent = n[b.dataset.badge] || ''; });
   }
 
@@ -2536,6 +2537,15 @@ function loadAccessoriesForClass(classId) {
         paint(); _optUpdateBadges();
       });
     });
+    const syncTitle = function() {
+      document.querySelectorAll('#opt-title-toggle button').forEach(function(b) { b.classList.toggle('active', (b.dataset.v === '1') === _optTitleOn); });
+      document.getElementById('opt-panel-tit').classList.toggle('opt-off', !_optTitleOn);
+      _optUpdateBadges();
+    };
+    document.querySelectorAll('#opt-title-toggle button').forEach(function(b) {
+      b.onclick = function() { _optTitleOn = b.dataset.v === '1'; syncTitle(); };
+    });
+    syncTitle();
     document.querySelectorAll('.opt-tab').forEach(function(t) {
       t.onclick = function() {
         document.querySelectorAll('.opt-tab').forEach(function(x) { x.classList.toggle('active', x === t); });
@@ -2780,7 +2790,9 @@ function loadAccessoriesForClass(classId) {
   }
 
   // Titre : meilleur titre autorisé pour cet équipement + cet arbre (aucun titre si aucun n'améliore le score)
+  let _optTitleOn = true;   // « Avec titre » / « Sans titre »
   function _optTitle(map, runes, req, prio, nodes) {
+    if (!_optTitleOn) return null;
     const list = (window._vclTitres || []).filter(function(t) {
       if (_optTri['tit:' + t.id] === -1) return false;
       return !Object.keys(_optTri).some(function(k) { return k.indexOf('tit:') === 0 && _optTri[k] === 1; }) || _optTri['tit:' + t.id] === 1;

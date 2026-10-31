@@ -1697,3 +1697,8 @@ select.input-name option { background: var(--surface2); color: var(--text); }
 .opt-level .opt-x { flex: none; width: 24px; height: 24px; background: transparent; border: 1px solid var(--rim2); color: var(--muted); cursor: pointer; font-size: 11px; }
 .opt-level .opt-x:hover { color: #d9614a; border-color: rgba(217,97,74,.45); }
 .opt-tabs { overflow-x: auto; scrollbar-width: none; }
+.opt-toggle { display: inline-flex; align-self: flex-start; border: 1px solid var(--rim2); }
+.opt-toggle button { background: transparent; border: 0; padding: 6px 14px; color: var(--muted); font: inherit; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.opt-toggle button + button { border-left: 1px solid var(--rim2); }
+.opt-toggle button.active { color: var(--gold); background: var(--gold-glow); }
+.opt-chips.opt-off { opacity: .35; pointer-events: none; }
