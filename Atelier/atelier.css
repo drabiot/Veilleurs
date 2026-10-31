@@ -1852,44 +1852,34 @@ html, body {
 .titre-empty { padding: 18px; font-size: 12px; color: var(--muted); text-align: center; }
 .tt-titre { font-family: 'Cinzel', serif; letter-spacing: .08em; color: var(--gold); }
 
-/* ══ ARBRE DE COMPÉTENCES : icône en bas à droite du cadre ══ */
+/* ══ ARBRE DE COMPÉTENCES : icône discrète en bas à droite du cadre ══ */
 .tree-btn {
-  position: absolute; right: 10px; bottom: 10px; z-index: 4; width: 52px; height: 52px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; color: var(--gold);
-  background: radial-gradient(circle at 50% 32%, rgba(224,172,96,.34), rgba(10,8,6,.94) 76%);
-  border: 1px solid var(--gold);
-  box-shadow: 0 0 0 3px rgba(0,0,0,.5), 0 5px 16px rgba(0,0,0,.65), 0 0 16px rgba(224,172,96,.22), inset 0 0 12px rgba(224,172,96,.18);
-  transition: transform .18s, color .18s, box-shadow .18s;
+  position: absolute; right: 10px; bottom: 10px; z-index: 4; width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; color: var(--gold-dim);
+  background: rgba(14,11,8,.88); border: 1px solid var(--rim2);
+  box-shadow: 0 3px 10px rgba(0,0,0,.55);
+  transition: color .18s, border-color .18s, background .18s, box-shadow .18s;
 }
-.tree-btn:hover { transform: scale(1.09); color: #fff1cf; box-shadow: 0 0 0 3px rgba(0,0,0,.5), 0 6px 20px rgba(0,0,0,.7), 0 0 26px rgba(224,172,96,.5), inset 0 0 14px rgba(224,172,96,.3); }
-.tree-ico {
-  width: 28px; height: 28px; background: currentColor;
-  -webkit-mask: url(../img/skilltree-icon.png) center / contain no-repeat;
-          mask: url(../img/skilltree-icon.png) center / contain no-repeat;
-}
+.tree-btn:hover { color: var(--gold); border-color: var(--gold); background: rgba(224,172,96,.1); box-shadow: 0 3px 12px rgba(0,0,0,.6), 0 0 14px rgba(224,172,96,.25); }
+.tree-btn.has-points { color: var(--gold); border-color: var(--gold-dim); }
+.tree-ico { width: 22px; height: 22px; display: block; }
 .tree-badge {
-  position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; line-height: 1;
-  color: #1a130b; background: var(--gold); box-shadow: 0 0 10px rgba(224,172,96,.7);
+  position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; line-height: 1;
+  color: #1a130b; background: var(--gold);
 }
 .tree-badge[hidden] { display: none; }
-.tree-btn.has-points { animation: tree-pulse 2.6s ease-in-out infinite; }
-@keyframes tree-pulse {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(0,0,0,.5), 0 5px 16px rgba(0,0,0,.65), 0 0 14px rgba(224,172,96,.2), inset 0 0 12px rgba(224,172,96,.18); }
-  50%      { box-shadow: 0 0 0 3px rgba(0,0,0,.5), 0 5px 16px rgba(0,0,0,.65), 0 0 26px rgba(224,172,96,.55), inset 0 0 14px rgba(224,172,96,.3); }
-}
-@media (prefers-reduced-motion: reduce) { .tree-btn.has-points { animation: none; } }
 @media (max-width: 768px) {
-  .tree-btn { width: 42px; height: 42px; right: 6px; bottom: 6px; }
-  .tree-ico { width: 23px; height: 23px; }
-  .class-drop { left: 6px; right: 54px; bottom: 6px; }
+  .tree-btn { width: 34px; height: 34px; right: 6px; bottom: 6px; }
+  .tree-ico { width: 19px; height: 19px; }
+  .class-drop { left: 6px; right: 46px; bottom: 6px; }
   .cd-cap { display: none; }
   .tp-name { font-size: 14px; }
 }
 
 /* ══ MENU DE CLASSE sous le personnage ══ */
 .class-picker[hidden] { display: none; }
-.class-drop { position: absolute; left: 10px; right: 70px; bottom: 10px; z-index: 4; --cls: var(--gold); }
+.class-drop { position: absolute; left: 10px; right: 58px; bottom: 10px; z-index: 4; --cls: var(--gold); }
 .class-drop-btn {
   width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 11px 7px 9px; cursor: pointer; text-align: left;
   font-family: inherit; color: var(--bright);
