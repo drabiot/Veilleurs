@@ -2640,7 +2640,7 @@ function loadAccessoriesForClass(classId) {
       return cur;
     }
 
-    // Une passe de recherche locale sur les runes (une rune n'est équipable qu'une fois)
+    // Une passe de recherche locale sur les runes (la même rune peut équiper plusieurs pièces)
     function climbRunes(map, runes, cur) {
       for (let pass = 0; pass < 6; pass++) {
         let improved = false;
@@ -2649,8 +2649,6 @@ function loadAccessoriesForClass(classId) {
           runePool.forEach(function(r) {
             const rid = getItemId(r);
             if (runes[key] === rid) return;
-            const holder = Object.keys(runes).find(function(k) { return k !== key && runes[k] === rid; });
-            if (holder) return;
             const prev = runes[key];
             runes[key] = rid;
             const sc = evalState(map, runes);
