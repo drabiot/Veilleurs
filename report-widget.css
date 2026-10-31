@@ -208,3 +208,11 @@
 }
 .vcl-fiche-report:hover { opacity: 1; background: rgba(232,184,75,0.15); }
 .vcl-fiche-report-wrap { margin-top: 18px; text-align: right; }
+
+.vcl-report-login {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+  color: #9aa;
+}
+.vcl-report-login[hidden] { display: none; }
+.vcl-report-login a { color: #e8b84b; text-decoration: underline; }

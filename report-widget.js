@@ -35,6 +35,8 @@
       '  <h3>Bug / Suggestion</h3>',
       '  <p id="vcl-report-ctx" class="vcl-report-ctx" hidden></p>',
       '  <textarea id="vcl-report-text" placeholder="Décris le bug ou ta suggestion..." rows="5"></textarea>',
+      '  <p id="vcl-report-login" class="vcl-report-login" hidden>💬 Connecte-toi pour recevoir une réponse de l\'équipe.',
+      '    <a href="#" id="vcl-report-login-link">Se connecter</a></p>',
       '  <div class="vcl-report-actions">',
       '    <button id="vcl-report-cancel">Annuler</button>',
       '    <button id="vcl-report-submit">Envoyer</button>',
@@ -48,6 +50,19 @@
     const statusEl = document.getElementById('vcl-report-status');
 
     const ctxEl = document.getElementById('vcl-report-ctx');
+    const loginEl = document.getElementById('vcl-report-login');
+    const loginLink = document.getElementById('vcl-report-login-link');
+    // Sans compte, l'équipe ne peut pas répondre : on propose de se connecter (auth-widget.js sur le wiki, _vcl_auth sur creator.html)
+    const isLogged = () => !!(window._vcl_uid || window._vcl_auth?.currentUser);
+    function syncLogin() {
+      loginEl.hidden = isLogged();
+      loginLink.hidden = typeof window.vclOpenLogin !== 'function';
+    }
+    loginLink.onclick = e => {
+      e.preventDefault();
+      window.vclOpenLogin?.('Connecte-toi avec Discord pour recevoir la réponse de l\'équipe à ton signalement.');
+    };
+    document.addEventListener('vcl:auth-ready', syncLogin);
     let ficheCtx = null; // { type, id, name } de la fiche signalée, null = signalement général
 
     function close() { overlay.classList.add('hidden'); statusEl.textContent = ''; ficheCtx = null; }
@@ -57,6 +72,7 @@
       ctxEl.textContent = ficheCtx
         ? 'Fiche : ' + (FICHE_LABELS[ficheCtx.type] || ficheCtx.type) + ' · ' + (ficheCtx.name || ficheCtx.id)
         : '';
+      syncLogin();
       overlay.classList.remove('hidden');
       textEl.focus();
     }
