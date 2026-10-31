@@ -5271,6 +5271,14 @@
     "🔗 Mode Panoplie": {
       "page": "tutorial",
       "status": "auto"
+    },
+    "⏳ Calcul des stats de tes builds de l’Atelier…": {
+      "page": "builds",
+      "status": "auto"
+    },
+    "ℹ️ Les builds grisés n’ont pas pu être calculés automatiquement. Ouvre-les une fois dans l’Atelier (onglet Build 1 / 2 / 3), puis reviens ici.": {
+      "page": "builds",
+      "status": "auto"
     }
   }
 }

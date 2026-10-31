@@ -20,7 +20,7 @@
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
 
-    gtag('config', 'G-1ZEKMF3QVS');
+    if (!/[?&]vcl_stats=/.test(location.search)) gtag('config', 'G-1ZEKMF3QVS');   // iframe cachée du comparateur : pas une vraie visite
   </script>
 <script src="../no-spin.js?v=b9169870" defer></script>
 <script src="../sw-register.js" defer></script>
@@ -380,7 +380,8 @@
     import { collection, getDocs }
       from '../d1db.js';
     import { loadMaxLevel } from '../config-loader.js';
-    logPageView('atelier');
+    const STATS_MODE = new URLSearchParams(location.search).has('vcl_stats');   // iframe cachée du comparateur : calcule les stats des builds locaux
+    if (!STATS_MODE) logPageView('atelier');
     window.VCL_DB = { getHiddenByName, getHiddenById, getSecretById, COL };
     window._auth = auth;
     // Charger MAX_LEVEL depuis Firestore avant d'initialiser l'atelier
@@ -425,6 +426,13 @@
     const _urlBuildId = _urlParams.get('build');
     const _hasPreview = _urlParams.get('preview') === '1';
     if (!_urlBuildId && !_hasPreview) window._pageInit?.();
+    if (STATS_MODE) {   // pas d'await ici : le module suivant (chargement des titres) attend la fin de celui-ci
+      (async () => {
+        let filled = [];
+        try { filled = await window._vclFillStats?.((new URLSearchParams(location.search).get('vcl_stats') || '').split(',').filter(Boolean).map(Number)) || []; } catch (e) { console.warn('[Atelier] calcul des stats :', e); }
+        try { parent.postMessage({ vclStats: 'done', filled }, location.origin); } catch (e) {}
+      })();
+    }
     if (_urlBuildId) {
       try {
         const { loadBuildFromFirestore } = await import('../Builds/builds-publish.js');

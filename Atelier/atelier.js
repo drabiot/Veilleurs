@@ -1850,6 +1850,26 @@ function loadAccessoriesForClass(classId) {
 		}
 	}
 
+	/* Mode « calcul des stats » (page ouverte en iframe cachée par le comparateur, ?vcl_stats=0,1…) :
+	   les builds enregistrés avant l'ajout de `stats` n'en ont pas ; on ouvre chacun des index demandés, on le sauvegarde
+	   (saveToStorage écrit les stats), puis on revient au build actif. Retourne les index complétés. */
+	window._vclFillStats = async function (only) {
+		const orig = activeBuildIndex, filled = [];
+		for (let w = 0; w < 80 && window._vclTitres === undefined; w++) await new Promise(function (r) { setTimeout(r, 100); });   // les titres (stats du titre) se chargent en asynchrone
+		await new Promise(function (r) { setTimeout(r, 1500); });   // laisse finir l'initialisation de la page (sinon le titre manque dans les stats)
+		for (let i = 0; i < NUM_BUILDS; i++) {
+			if (only && only.length && only.indexOf(i) < 0) continue;
+			let p = null;
+			try { p = JSON.parse(localStorage.getItem(getBuildKey(i)) || 'null'); } catch (e) {}
+			if (!p || (!p.classe && !Object.keys(p.slots || {}).length)) continue;
+			loadBuild(i);
+			await new Promise(function (r) { setTimeout(r, 1000); });   // items sensibles restaurés en asynchrone
+			if (activeBuildIndex === i) { saveToStorage(); filled.push(i); }
+		}
+		if (activeBuildIndex !== orig) loadBuild(orig);
+		return filled;
+	};
+
 	function buildBuildTabs() {
   let bar = document.getElementById('build-tabs-bar');
   if (!bar) {

@@ -2875,5 +2875,9 @@
   "Parler a Eugeo (-112,88,202)": "Talk to Eugeo (-112,88,202)",
   "13 - Retour sur Aincrad": "13 - Back to Aincrad",
   "Retourne sur Aincrad : ouvre le menu du jeu et clique sur l'îcone Aincrad.": "Return to Aincrad: open the game menu and click the Aincrad icon.",
-  "Retourne sur Aincrad : ouvre le menu du jeu et clique sur l'îcone Aincrad": "Return to Aincrad: open the game menu and click the Aincrad icon"
+  "Retourne sur Aincrad : ouvre le menu du jeu et clique sur l'îcone Aincrad": "Return to Aincrad: open the game menu and click the Aincrad icon",
+
+  "_section_cmp": "Entrées ajoutées pour la page « cmp » (première passe Claude).",
+  "⏳ Calcul des stats de tes builds de l’Atelier…": "⏳ Calculating the stats of your Workshop builds…",
+  "ℹ️ Les builds grisés n’ont pas pu être calculés automatiquement. Ouvre-les une fois dans l’Atelier (onglet Build 1 / 2 / 3), puis reviens ici.": "ℹ️ The greyed-out builds could not be calculated automatically. Open them once in the Workshop (tab Build 1 / 2 / 3), then come back here."
 }

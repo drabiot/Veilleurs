@@ -129,8 +129,26 @@
       return out;
     }
 
+    /** Calcule les stats des builds locaux qui n'en ont pas (enregistrés avant l'ajout des stats) : l'Atelier, ouvert en iframe cachée
+     *  (?vcl_stats=1), ouvre chacun et le sauvegarde — comme si tu le faisais à la main. Reprend les valeurs ensuite via readLocalSlots(). */
+    let fillP = null;
+    function fillSlotStats() {
+      if (!readLocalSlots().some(b => b._noStats)) return Promise.resolve(false);
+      return fillP ??= new Promise(resolve => {
+        const f = document.createElement('iframe');
+        f.src = '../Atelier/atelier.html?vcl_stats=' + readLocalSlots().filter(b => b._noStats).map(b => b._id.slice(4)).join(',');
+        f.style.cssText = 'position:fixed;left:-9999px;top:0;width:1280px;height:800px;border:0;visibility:hidden';
+        f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+        const end = ok => { clearTimeout(t); removeEventListener('message', on); f.remove(); resolve(ok); };
+        const on = e => { if (e.origin === location.origin && e.source === f.contentWindow && e.data && e.data.vclStats === 'done') end(true); };
+        const t = setTimeout(() => end(false), 25000);
+        addEventListener('message', on);
+        document.body.appendChild(f);
+      }).finally(() => { fillP = null; });
+    }
+
     async function loadOne(id) {
-      if (/^slot\d$/.test(id)) return readLocalSlots().find(b => b._id === id) || null;
+      if (/^slot\d$/.test(id)) { await fillSlotStats(); return readLocalSlots().find(b => b._id === id) || null; }
       if (id === 'local') {
         const l = readLocal();
         return l ? { _id: 'local', name: (l.name || 'Mon build') + ' (Atelier)', classe: l.classe, level: l.level, authorPseudo: 'Vous', statsSnapshot: l.statsSnapshot } : null;
@@ -294,6 +312,10 @@
           pool = snap.docs.map(d => ({ _id: d.id, ...d.data() }));
         } catch { pool = []; }
       }
+      if (readLocalSlots().some(b => b._noStats)) {
+        list.innerHTML = '<div class="builds-loading">⏳ Calcul des stats de tes builds de l’Atelier…</div>';
+        await fillSlotStats();
+      }
       renderPicker();
       document.getElementById('cmp-picker-search').focus();
     });
@@ -304,7 +326,7 @@
       const used = new Set(ids());
       const match = b => !q || window.VCL.fuzzyMatch(q, b.name || '') || window.VCL.fuzzyMatch(q, b.authorPseudo || '');
       const row = b => '<button class="cmp-pick' + (b._noStats ? ' is-disabled' : '') + '" data-pick="' + esc(b._id) + '"><b>' + esc(b.name || 'Sans nom') + '</b><span>' + esc(classLabel(b)) + ' · Niv. ' + (b.level || 1) + ' · ' +
-        (b._noStats ? '⚠ stats non calculées — ouvre-le dans l’Atelier (voir note)' : '👤 ' + esc(b.authorPseudo || 'Anonyme')) + '</span></button>';
+        (b._noStats ? '⚠ stats non calculables — ouvre-le dans l’Atelier (voir note)' : '👤 ' + esc(b.authorPseudo || 'Anonyme')) + '</span></button>';
       const locals = [];
       const l = readLocal();
       if (l) locals.push({ _id: 'local', name: (l.name || 'Mon build') + ' (Atelier — dernier comparé)', classe: l.classe, level: l.level, authorPseudo: 'Vous', statsSnapshot: l.statsSnapshot });
@@ -312,7 +334,7 @@
       const lrows = locals.filter(b => !used.has(b._id)).filter(match);
       const rows = (pool || []).filter(b => !used.has(b._id)).filter(match).slice(0, 60);
       document.getElementById('cmp-picker-list').innerHTML =
-        (lrows.length ? '<div class="cmp-pick-group">Mes builds (Atelier, locaux)</div>' + (lrows.some(b => b._noStats) ? '<div class="cmp-hint cmp-nostats-note" id="cmp-nostats-note">ℹ️ Les builds grisés ne peuvent pas encore être comparés : leurs stats sont calculées par l’Atelier et enregistrées seulement quand tu ouvres le build dedans. Ouvre-le une fois dans l’Atelier (onglet Build 1 / 2 / 3), puis reviens ici.</div>' : '') + lrows.map(row).join('') : '') +
+        (lrows.length ? '<div class="cmp-pick-group">Mes builds (Atelier, locaux)</div>' + (lrows.some(b => b._noStats) ? '<div class="cmp-hint cmp-nostats-note" id="cmp-nostats-note">ℹ️ Les builds grisés n’ont pas pu être calculés automatiquement. Ouvre-les une fois dans l’Atelier (onglet Build 1 / 2 / 3), puis reviens ici.</div>' : '') + lrows.map(row).join('') : '') +
         (rows.length ? '<div class="cmp-pick-group">Builds publiés</div>' + rows.map(row).join('') : '') ||
         '<div class="cmp-hint">Aucun build.</div>';
       const all = locals.concat(pool || []);
