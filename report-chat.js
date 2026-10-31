@@ -32,14 +32,16 @@ function status(r) {
 
 export function initReportChat(db, uid) {
   let convs = [];
+  let loadFailed = false;
   let ov = null;
 
   async function load() {
     try {
+      loadFailed = false;
       const snap = await getDocs(query(collection(db, 'reports'), where('submittedBy', '==', uid)));
       convs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
         .sort((a, b) => isUnread(b) - isUnread(a) || (status(a) === 'closed') - (status(b) === 'closed') || lastAt(b) - lastAt(a))   // réponses non lues d'abord, clos en dernier.slice(0, 30);
-    } catch { convs = []; }
+    } catch (e) { convs = []; loadFailed = true; console.warn('[tickets]', e.message); }
     paint();
   }
 
@@ -89,7 +91,7 @@ export function initReportChat(db, uid) {
     ov.className = 'vcl-reply-overlay';
     ov.innerHTML = `<div class="vcl-reply-modal vcl-chat-modal"><div class="vcl-reply-bar"><div class="vcl-reply-title"><img class="vcl-chat-crest" src="${LOGO}" alt=""><div><h3>Nous contacter</h3><span class="vcl-reply-sub">Les Veilleurs te répondent</span></div></div>`
       + '<span class="vcl-reply-bar-actions"><button type="button" class="vcl-chat-new-ticket">＋ Nouveau ticket</button><button type="button" class="vcl-chat-close" title="Fermer">✕</button></span></div>'
-      + '<div class="vcl-chat-body">' + (convs.length ? convs.map(cardHtml).join('') : '<div class="vcl-chat-empty">Tu n\'as encore aucun ticket.</div>') + '</div></div>';
+      + '<div class="vcl-chat-body">' + (loadFailed ? '<div class="vcl-chat-empty"><b>⚠</b>Impossible de charger tes tickets pour le moment.<br>Réessaie dans un instant.</div>' : convs.length ? convs.map(cardHtml).join('') : '<div class="vcl-chat-empty">Tu n\'as encore aucun ticket.</div>') + '</div></div>';
     document.body.appendChild(ov);
     document.addEventListener('keydown', onKey);
     ov.onclick = async e => {

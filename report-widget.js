@@ -97,7 +97,8 @@
     }
 
     window.vclNewTicket = () => open();   // utilisé par la liste des tickets (report-chat.js)
-    btn.onclick = () => (ticketState?.total ? ticketState.open() : open());
+    // Connecté : toujours la liste des tickets (même vide, avec « Nouveau ticket ») ; sans compte : le formulaire
+    btn.onclick = () => (typeof window.vclTicketsRefresh === 'function' ? window.vclTicketsRefresh({ open: true }) : open());
     document.addEventListener('click', e => {
       const b = e.target.closest?.('[data-report-fiche]');
       if (!b) return;
