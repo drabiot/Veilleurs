@@ -60,10 +60,15 @@
       </div>
 
       <div class="cmp-toolbar">
-        <button class="cmp-btn" id="cmp-add">＋ Ajouter un build (publié ou local)</button>
-        <label class="cmp-check"><input type="checkbox" id="cmp-diff-only" /> Différences seulement</label>
+        <button class="cmp-btn cmp-btn-primary" id="cmp-add">＋ Ajouter un build</button>
+        <span class="cmp-toolbar-sep"></span>
+        <label class="cmp-switch" title="Masque les stats identiques sur tous les builds">
+          <input type="checkbox" id="cmp-diff-only" /><span class="cmp-switch-track"><span class="cmp-switch-knob"></span></span>
+          <span>Différences seulement</span>
+        </label>
+        <span class="cmp-toolbar-grow"></span>
+        <button class="cmp-btn" id="cmp-score-toggle">⚖ Score pondéré</button>
         <button class="cmp-btn" id="cmp-copy">🔗 Copier le lien</button>
-        <button class="cmp-btn" id="cmp-score-toggle">⚖ Score</button>
       </div>
 
       <div id="cmp-score-panel" class="cmp-score-panel" style="display:none">
@@ -95,6 +100,7 @@
 
     const C = window.VCLCompare;
     const MAX_BUILDS = 4;
+    const BCOL = ['#E0AC60', '#6fb3d9', '#c98ad9', '#7ac47a'];   // une couleur par build
     const LS_SEL = 'vcl_compare_sel';
     const LS_LOCAL = 'vcl_compare_local';   // écrit par l'Atelier : { name, classe, level, statsSnapshot }
     const LS_W = 'vcl_compare_weights';
@@ -176,17 +182,9 @@
       return c ? c.ico + ' ' + c.label : (b.classe || '—');
     }
     function fmt(v, stat) { return v + C.unitOf(stat); }
-    /** Flèche posée sur la bordure entre la valeur de référence et celle du build comparé : variation en %, verte (hausse) ou rouge (baisse).
-     *  Elle va toujours de la référence vers le build comparé (→ pour les colonnes à droite de la référence, ← pour celles à gauche). */
-    function arrow(d, ref, right) {
-      let pct = '';
-      if (ref) { const p = Math.round(d / Math.abs(ref) * 1000) / 10; pct = (p > 0 ? '+' : '') + p + '%'; }
-      return '<span class="cmp-arrow ' + (d > 0 ? 'up' : 'down') + (right ? ' to-right' : ' to-left') + '" aria-hidden="true">' +
-        (pct ? '<span class="p">' + pct + '</span>' : '') + '<span class="a">' + (right ? '→' : '←') + '</span></span>';
-    }
     function fmtDelta(d, stat, ref) {
       let t = (d > 0 ? '+' : '') + C.round2(d) + C.unitOf(stat);
-      if (ref) { const p = Math.round(d / Math.abs(ref) * 1000) / 10; t += ' <i class="cmp-pct">(' + (p > 0 ? '+' : '') + p + '%)</i>'; }
+      if (ref) { const p = Math.round(d / Math.abs(ref) * 1000) / 10; t += '<i>' + (p > 0 ? '+' : '') + p + '%</i>'; }
       return t;
     }
 
@@ -195,7 +193,10 @@
       document.getElementById('cmp-add').style.display = builds.length >= MAX_BUILDS ? 'none' : '';
       const body = document.getElementById('cmp-body');
       if (!builds.length) {
-        body.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">⚖</span>Aucun build à comparer.<br><span style="font-size:11px;opacity:.6">Utilise « Ajouter un build » ou coche ⚖ sur les cartes de la page Builds.</span></div>';
+        body.innerHTML = '<div class="cmp-empty"><span class="cmp-empty-ico">⚖</span><div class="cmp-empty-t">Aucun build à comparer</div>' +
+          '<div class="cmp-empty-s">Ajoute 2 à 4 builds (publiés ou de ton Atelier) pour voir leurs différences stat par stat.</div>' +
+          '<button class="cmp-btn cmp-btn-primary" id="cmp-add-empty">＋ Ajouter un build</button></div>';
+        const be = document.getElementById('cmp-add-empty'); if (be) be.addEventListener('click', () => document.getElementById('cmp-add').click());
         renderScorePanel();
         return;
       }
@@ -206,28 +207,43 @@
       const groups = C.compareStats(builds, STAT_GROUPS, refIdx);
       const n = builds.length;
 
-      let h = '<div class="cmp-table-wrap"><table class="cmp-table" style="--cols:' + n + '"><thead><tr><th class="cmp-stat-col"></th>';
+      // Nombre de stats où chaque build est en tête (parmi celles qui diffèrent)
+      const wins = builds.map(() => 0);
+      let diffRows = 0;
+      groups.forEach(g => g.rows.forEach(r => { if (r.diff) { diffRows++; r.best.forEach((b, i) => { if (b) wins[i]++; }); } }));
+
+      let h = '<div class="cmp-cards" style="--n:' + Math.min(MAX_BUILDS, n + (n < MAX_BUILDS ? 1 : 0)) + '">';
       builds.forEach((b, i) => {
         const win = scores && scores.winner === i;
-        h += '<th class="cmp-head' + (i === refIdx ? ' is-ref' : '') + (win ? ' is-winner' : '') + '">' +
-          (win ? '<div class="cmp-crown">👑 Meilleur</div>' : '') +
-          '<div class="cmp-bname" title="' + esc(b.name || 'Sans nom') + '">' + esc(b.name || 'Sans nom') + '</div>' +
-          '<div class="cmp-bmeta">' + esc(classLabel(b)) + ' · Niv. ' + (b.level || 1) + '</div>' +
-          '<div class="cmp-bmeta">👤 ' + esc(b.authorPseudo || 'Anonyme') + '</div>' +
-          '<div class="cmp-hbtns">' +
-            '<button class="cmp-mini' + (i === refIdx ? ' on' : '') + '" data-ref="' + i + '" title="Calculer les écarts par rapport à ce build">' + (i === refIdx ? '● Référence' : '○ Référence') + '</button>' +
-            (b._id !== 'local' && !/^slot/.test(b._id) ? '<a class="cmp-mini" href="builds.html?id=' + encodeURIComponent(b._id) + '" title="Voir le build">↗</a>' : '') +
-            '<button class="cmp-mini" data-rm="' + i + '" title="Retirer">✕</button>' +
-          '</div></th>';
+        const isRef = i === refIdx;
+        h += '<article class="cmp-card' + (isRef ? ' is-ref' : '') + (win ? ' is-winner' : '') + '" style="--bc:' + BCOL[i % BCOL.length] + '">' +
+          '<div class="cmp-card-top"><span class="cmp-card-idx">' + (i + 1) + '</span>' +
+            (win ? '<span class="cmp-crown">👑 Meilleur</span>' : (isRef && n > 1 ? '<span class="cmp-refbadge">Référence</span>' : '')) + '</div>' +
+          '<h3 class="cmp-card-name" title="' + esc(b.name || 'Sans nom') + '">' + esc(b.name || 'Sans nom') + '</h3>' +
+          '<div class="cmp-card-tags"><span class="cmp-tag">' + esc(classLabel(b)) + '</span><span class="cmp-tag">Niv. ' + (b.level || 1) + '</span></div>' +
+          '<div class="cmp-card-author">👤 ' + esc(b.authorPseudo || 'Anonyme') + '</div>' +
+          (scores ? '<div class="cmp-card-score"><b>' + scores[i].score + '</b><span>score</span></div>' : '') +
+          '<div class="cmp-card-wins"><b>' + wins[i] + '</b><span>/ ' + diffRows + ' stats en tête</span></div>' +
+          '<div class="cmp-card-actions">' +
+            (n > 1 ? '<button class="cmp-mini' + (isRef ? ' on' : '') + '" data-ref="' + i + '" title="Calculer les écarts par rapport à ce build">' + (isRef ? '● Référence' : '○ Référence') + '</button>' : '') +
+            (b._id !== 'local' && !/^slot/.test(b._id) ? '<a class="cmp-mini" href="builds.html?id=' + encodeURIComponent(b._id) + '" title="Voir le build">↗ Voir</a>' : '') +
+            '<button class="cmp-mini cmp-mini-x" data-rm="' + i + '" title="Retirer">✕</button>' +
+          '</div></article>';
+      });
+      if (n < MAX_BUILDS) h += '<button class="cmp-card cmp-card-add" id="cmp-add-card"><span>＋</span>Ajouter un build</button>';
+      h += '</div>';
+
+      h += '<div class="cmp-table-wrap"><table class="cmp-table" style="--cols:' + n + '"><thead><tr><th class="cmp-stat-col">Statistique</th>';
+      builds.forEach((b, i) => {
+        h += '<th class="cmp-head' + (i === refIdx ? ' is-ref' : '') + '" style="--bc:' + BCOL[i % BCOL.length] + '"><span class="cmp-dot"></span>' + esc(b.name || 'Sans nom') + '</th>';
       });
       h += '</tr></thead><tbody>';
 
       if (scores) {
-        h += '<tr class="cmp-score-row"><td class="cmp-stat-col">⚖ Score</td>';
+        h += '<tr class="cmp-score-row"><td class="cmp-stat-col">⚖ Score pondéré</td>';
         scores.forEach((s, i) => {
-          h += '<td><div class="cmp-score-val">' + s.score + '</div>' +
-            '<div class="cmp-score-bar"><span style="width:' + s.pct + '%"></span></div>' +
-            '<div class="cmp-score-top">' + s.top.map(t => esc(t.stat.label)).join(', ') + '</div></td>';
+          h += '<td' + (scores.winner === i ? ' class="is-winner"' : '') + '><div class="cmp-score-val">' + s.score + '</div>' +
+            '<div class="cmp-score-top">' + s.top.map(t => esc(t.stat.label)).join(' · ') + '</div></td>';
         });
         h += '</tr>';
       }
@@ -236,28 +252,29 @@
       groups.forEach(g => {
         const rows = diffOnly ? g.rows.filter(r => r.diff) : g.rows;
         if (!rows.length) return;
-        h += '<tr class="cmp-group"><td colspan="' + (n + 1) + '">' + esc(g.label) + '</td></tr>';
+        h += '<tr class="cmp-group"><td colspan="' + (n + 1) + '"><span>' + esc(g.label) + '</span></td></tr>';
         rows.forEach(r => {
           shown++;
-          h += '<tr class="cmp-row' + (r.diff ? ' has-diff' : '') + '"><td class="cmp-stat-col">' + (r.stat.icon || '') + ' ' + esc(r.stat.label) + '</td>';
+          h += '<tr class="cmp-row' + (r.diff ? ' has-diff' : '') + '"><td class="cmp-stat-col"><span class="cmp-sico">' + (r.stat.icon || '') + '</span>' + esc(r.stat.label) + '</td>';
           r.values.forEach((v, i) => {
             const d = r.deltas[i];
-            let cls = '';
-            if (r.diff) cls = r.best[i] ? ' best' : (r.worst[i] ? ' worst' : '');
+            let cls = i === refIdx ? ' is-ref' : '';
+            if (r.diff) cls += r.best[i] ? ' best' : (r.worst[i] ? ' worst' : '');
             let dh = '';
-            if (i !== refIdx && d !== 0) dh = '<span class="cmp-delta ' + (d > 0 ? 'up' : 'down') + '">' + fmtDelta(d, r.stat) + '</span>' + arrow(d, r.values[refIdx], i > refIdx);
+            if (i !== refIdx && d !== 0) dh = '<span class="cmp-chip ' + (d > 0 ? 'up' : 'down') + '">' + fmtDelta(d, r.stat, r.values[refIdx]) + '</span>';
             h += '<td class="cmp-cell' + cls + '"><span class="cmp-v">' + (v === 0 ? '—' : fmt(v, r.stat)) + '</span>' + dh + '</td>';
           });
           h += '</tr>';
         });
       });
       h += '</tbody></table></div>';
-      if (!shown) h += '<div class="builds-empty" style="padding:24px 0">' + (diffOnly ? 'Aucune différence entre ces builds.' : 'Aucune stat enregistrée.') + '</div>';
+      if (!shown) h += '<div class="cmp-empty cmp-empty-sm">' + (diffOnly ? 'Aucune différence entre ces builds.' : 'Aucune stat enregistrée.') + '</div>';
       if (n < 2) h += '<div class="cmp-hint" style="margin-top:12px">Ajoute au moins un second build pour voir les écarts.</div>';
       body.innerHTML = h;
 
       body.querySelectorAll('[data-ref]').forEach(el => el.addEventListener('click', () => { refIdx = +el.dataset.ref; render(); }));
       body.querySelectorAll('[data-rm]').forEach(el => el.addEventListener('click', () => { builds.splice(+el.dataset.rm, 1); render(); }));
+      const ac = document.getElementById('cmp-add-card'); if (ac) ac.addEventListener('click', () => document.getElementById('cmp-add').click());
       renderScorePanel();
     }
 

@@ -1366,16 +1366,19 @@ function loadAccessoriesForClass(classId) {
     try { filterEquip = localStorage.getItem('vcl_atelier_equip') === '1'; } catch (e) {}
     const wrap = document.createElement('div');
     wrap.id = 'equip-wrap';
-    wrap.className = 'picker-filters-wrap';
+    wrap.className = 'equip-wrap';
     const btn = document.createElement('button');
-    btn.className = 'rarity-chip equip-chip' + (filterEquip ? ' active' : '');
-    btn.textContent = '⚔ Équipables';
+    btn.className = 'equip-switch' + (filterEquip ? ' active' : '');
+    btn.innerHTML = '<span class="eq-ico">⚔</span>' +
+      '<span class="eq-txt"><span class="eq-title">Équipables uniquement</span><span class="eq-sub">Masque les items au-dessus du niveau du build</span></span>' +
+      '<span class="eq-track"><span class="eq-knob"></span></span>';
     btn.title = "Activé : masque les items dont le niveau requis dépasse le niveau du build";
-    btn.setAttribute('aria-pressed', String(filterEquip));
+    btn.setAttribute('role', 'switch');
+    btn.setAttribute('aria-checked', String(filterEquip));
     btn.addEventListener('click', function() {
       filterEquip = !filterEquip;
       btn.classList.toggle('active', filterEquip);
-      btn.setAttribute('aria-pressed', String(filterEquip));
+      btn.setAttribute('aria-checked', String(filterEquip));
       try { localStorage.setItem('vcl_atelier_equip', filterEquip ? '1' : '0'); } catch (e) {}
       renderItemList();
     });
