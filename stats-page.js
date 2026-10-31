@@ -72,13 +72,13 @@ function originSection(s, esc) {
   const topOther = others[0];
   const bars = (list, label, color) => list.length
     ? barRows(list.slice(0, 12).map(x => [x.k, x.n]), () => color, label, esc)
-    : '<div class="stats-note">Rien de collecté pour l'instant.</div>';
+    : '<div class="stats-note">Rien de collecté pour l\'instant.</div>';
   return `<div class="stats-section">
     <div class="stats-section-title">Origine &amp; langues</div>
     <div class="stats-kpi-grid">
       ${kpi('🇫🇷', '#60a5fa', `${frPct} %`, 'Navigateur en français', `${fmt(fr)} sur ${fmt(knownN)} profils renseignés`)}
       ${kpi('🌐', '#f97316', fmt(knownN - fr), 'Profils non francophones', topOther ? `1ʳᵉ langue : ${esc(dispName('language', topOther.k))} (${fmt(topOther.n)})` : '')}
-      ${kpi('❔', '#7a7a90', fmt(unknownN), 'Origine inconnue', 'profils pas revenus depuis l'ajout de ce suivi')}
+      ${kpi('❔', '#7a7a90', fmt(unknownN), 'Origine inconnue', 'profils pas revenus depuis l\'ajout de ce suivi')}
     </div>
     <div class="stats-mid-grid">
       <div><div class="stats-detail-title">Langue du navigateur</div>${bars(o.langs.filter(l => l.k), langLabel, '#60a5fa')}</div>
