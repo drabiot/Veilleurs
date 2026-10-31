@@ -10,7 +10,7 @@ import { collection, doc, getDocs, query, where, updateDoc, arrayUnion } from '.
 
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const ms = t => t?.toMillis?.() ?? t?.__ts ?? (typeof t === 'number' ? t : 0);
-const fmt = t => t ? new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+const fmt = t => t ? new Date(t).toLocaleString(document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
 
 const LOGO = new URL('img/VeilleursLogo.png', import.meta.url).href;   // blason des Veilleurs : en-tête et réponses des admins
 const CATS = { bug: '🐛 Bug', suggestion: '💡 Suggestion', autre: '❓ Autre', fiche: '⚑ Fiche' };
@@ -53,7 +53,7 @@ export function initReportChat(db, uid) {
     const admin = m.from === 'admin';
     return `<div class="vcl-chat-msg ${admin ? 'admin' : 'me'}">${admin ? `<img class="vcl-chat-avatar" src="${LOGO}" alt="">` : ''}
       <div class="vcl-chat-stack"><div class="vcl-chat-who">${admin ? 'Les Veilleurs' : 'Toi'} · ${fmt(m.at)}</div>
-      <div class="vcl-chat-text">${esc(m.text).split('\n').join('<br>')}</div></div></div>`;
+      <div class="vcl-chat-text" data-no-i18n>${esc(m.text).split('\n').join('<br>')}</div></div></div>`;
   }).join('');
 
   const cardHtml = r => {
@@ -62,7 +62,7 @@ export function initReportChat(db, uid) {
     return `<div class="vcl-chat c-${esc(cat)}${isUnread(r) ? ' is-unread' : ''}" data-id="${esc(r.id)}">
       <div class="vcl-chat-head" role="button" tabindex="0">
         <div class="vcl-chat-label"><span class="vcl-chip">${tag}</span>${isUnread(r) ? '<span class="vcl-chat-new">NOUVEAU</span>' : ''}<span class="vcl-chat-state s-${st}">${STATES[st]}</span></div>
-        <div class="vcl-chat-quote">${esc(String(r.text || '').slice(0, 140))}</div>
+        <div class="vcl-chat-quote" data-no-i18n>${esc(String(r.text || '').slice(0, 140))}</div>
         <div class="vcl-chat-date">Dernier message : ${fmt(lastAt(r))}</div>
       </div>
       <div class="vcl-chat-detail" hidden>
