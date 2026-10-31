@@ -228,6 +228,7 @@ function getPnjEffectiveTag(e) {
   return e.tag;
 }
 
+const _nameKey = e => (e._nk ??= normalize(e.name));
 function getFiltered() {
   const q = normalize(searchQuery);
   const filtered = getList().filter(e => {
@@ -274,7 +275,7 @@ function getFiltered() {
       if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
       if (a.ordre != null) return -1;
       if (b.ordre != null) return 1;
-      return normalize(a.name).localeCompare(normalize(b.name));
+      return _nameKey(a).localeCompare(_nameKey(b));
     });
   } else {
     filtered.sort((a, b) => {
@@ -282,12 +283,12 @@ function getFiltered() {
       if (a.ordre != null && b.ordre != null) return a.ordre - b.ordre;
       if (a.ordre != null) return -1;
       if (b.ordre != null) return 1;
-      return normalize(a.name).localeCompare(normalize(b.name));
+      return _nameKey(a).localeCompare(_nameKey(b));
     });
   }
 
   // Tri choisi : s'applique par-dessus l'ordre ci-dessus (tri stable → l'ordre du jeu reste le critère secondaire)
-  const byName = (a, b) => normalize(a.name).localeCompare(normalize(b.name));
+  const byName = (a, b) => _nameKey(a).localeCompare(_nameKey(b));
   if (activeSort === 'name')           filtered.sort(byName);
   else if (activeSort === 'name-desc') filtered.sort((a, b) => byName(b, a));
   else if (activeSort === 'type') {

@@ -1435,6 +1435,8 @@ function refreshZonePositions() {
    RENDU MARQUEURS
 ══════════════════════════════════ */
 function renderMarkers() {
+  _renderedZoom = zoomLevel; _renderedPan = { x: panOffset.x, y: panOffset.y };
+  _setOverlayShift(0, 0);
   clearQuestChain();
   markersLayer.innerHTML = '';
   document.querySelectorAll('.cluster-expanded').forEach(n => n.remove());
@@ -1712,10 +1714,26 @@ tooltip.addEventListener('mouseleave', () => hideTooltip());
 /* ══════════════════════════════════
    ZOOM & PAN
 ══════════════════════════════════ */
+/* Déplacement : les calques (marqueurs, zones, liens) sont simplement décalés en CSS (propriété `translate`, qui se
+   combine avec leur `transform`) ; la reconstruction complète n'a lieu qu'une fois par image pour le zoom et à la fin du geste. */
+var _renderedZoom = null, _renderedPan = { x: 0, y: 0 }, _renderRaf = 0;
+function _setOverlayShift(dx, dy) {
+  const t = (dx || dy) ? `${dx}px ${dy}px` : '';
+  [markersLayer, document.getElementById('zones-layer'), document.getElementById('quest-chain-layer'),
+    ...document.querySelectorAll('.passage-overlay-pin')].forEach(el => { if (el) el.style.translate = t; });
+}
+function _flushRender() {
+  if (_renderRaf) { cancelAnimationFrame(_renderRaf); _renderRaf = 0; }
+  renderMarkers();
+}
 function applyTransform() {
   mapCanvas.style.transform = `translate(calc(-50% + ${panOffset.x}px), calc(-50% + ${panOffset.y}px)) scale(${zoomLevel})`;
   zoomLevelEl.textContent   = Math.round(zoomLevel * 100) + '%';
-  renderMarkers();
+  if (isPanning && _renderedZoom === zoomLevel) {
+    _setOverlayShift(panOffset.x - _renderedPan.x, panOffset.y - _renderedPan.y);
+    return;
+  }
+  if (!_renderRaf) _renderRaf = requestAnimationFrame(() => { _renderRaf = 0; renderMarkers(); });
 }
 
 function zoomFromPoint(vpX, vpY, factor) {
@@ -1751,7 +1769,11 @@ window.addEventListener('mousemove', (e) => {
   panLastX = e.clientX; panLastY = e.clientY;
   applyTransform();
 });
-window.addEventListener('mouseup', () => { isPanning = false; mapViewport.style.cursor = VCL_CURSOR; });
+window.addEventListener('mouseup', () => {
+  const wasPanning = isPanning;
+  isPanning = false; mapViewport.style.cursor = VCL_CURSOR;
+  if (wasPanning && (panOffset.x !== _renderedPan.x || panOffset.y !== _renderedPan.y)) _flushRender();
+});
 
 let _pinchDist = 0;
 function _getTouchDist(e) {
@@ -1788,7 +1810,11 @@ mapViewport.addEventListener('touchmove', (e) => {
 }, { passive: false });
 mapViewport.addEventListener('touchend', (e) => {
   if (e.touches.length < 2) _pinchDist = 0;
-  if (e.touches.length === 0) isPanning = false;
+  if (e.touches.length === 0) {
+    const wasPanning = isPanning;
+    isPanning = false;
+    if (wasPanning && (panOffset.x !== _renderedPan.x || panOffset.y !== _renderedPan.y)) _flushRender();
+  }
 });
 
 // Mobile sidebar toggle

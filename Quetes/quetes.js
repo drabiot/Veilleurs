@@ -32,7 +32,20 @@ function ckKey(qid, oi, si) {
 function getCk(qid, oi, si)      { return localStorage.getItem(ckKey(qid, oi, si)) === '1'; }
 function setCk(qid, oi, si, val) { localStorage.setItem(ckKey(qid, oi, si), val ? '1' : '0'); }
 
-function getProgress(q) {
+/* Statut des quêtes mémoïsé : lire localStorage objectif par objectif à chaque carte / compteur / filtre était coûteux.
+   _qGen augmente à chaque écriture dans localStorage (ici ou depuis un autre onglet) et invalide le cache. */
+let _qGen = 0;
+['setItem', 'removeItem', 'clear'].forEach(fn => {
+  const orig = Storage.prototype[fn];
+  Storage.prototype[fn] = function () { if (this === localStorage) _qGen++; return orig.apply(this, arguments); };
+});
+window.addEventListener('storage', () => { _qGen++; });
+const _qStatus = new Map();   // id → { gen, done, total, pct, isDone, isStarted }
+let _trackedCache = null;     // { gen, ids }
+
+function _status(q) {
+  let st = _qStatus.get(q.id);
+  if (st && st.gen === _qGen) return st;
   let done = 0, total = 0;
   q.objectifs.forEach((o, i) => {
     if (Array.isArray(o)) {
@@ -41,28 +54,32 @@ function getProgress(q) {
       total++; if (getCk(q.id, i)) done++;
     }
   });
-  return { done, total, pct: total ? Math.round((done / total) * 100) : 0 };
+  const isDone = !!localStorage.getItem(`vcl_force_done_${q.id}`) || (done === total && total > 0);
+  const isStarted = !isDone && (!!localStorage.getItem(`vcl_force_wip_${q.id}`) || (done > 0 && done < total));
+  st = { gen: _qGen, done, total, pct: total ? Math.round((done / total) * 100) : 0, isDone, isStarted };
+  _qStatus.set(q.id, st);
+  return st;
 }
 
-function isQuestDone(q) {
-  if (localStorage.getItem(`vcl_force_done_${q.id}`)) return true;
-  const { done, total } = getProgress(q);
-  return done === total && total > 0;
+function getProgress(q) {
+  const { done, total, pct } = _status(q);
+  return { done, total, pct };
 }
 
-function isQuestStarted(q) {
-  if (isQuestDone(q)) return false;
-  if (localStorage.getItem(`vcl_force_wip_${q.id}`)) return true;
-  const { done, total } = getProgress(q);
-  return done > 0 && done < total;
-}
+function isQuestDone(q) { return _status(q).isDone; }
+
+function isQuestStarted(q) { return _status(q).isStarted; }
 
 /* ══════════════════════════════════
    TRACKING & FORCE STATUS
 ══════════════════════════════════ */
 function getTrackedIds() {
-  try { return new Set(JSON.parse(localStorage.getItem('vcl_tracked_quests') || '[]')); }
-  catch { return new Set(); }
+  if (!_trackedCache || _trackedCache.gen !== _qGen) {
+    let ids = [];
+    try { ids = JSON.parse(localStorage.getItem('vcl_tracked_quests') || '[]'); } catch {}
+    _trackedCache = { gen: _qGen, ids };
+  }
+  return new Set(_trackedCache.ids);
 }
 function setTrackedIds(set) {
   localStorage.setItem('vcl_tracked_quests', JSON.stringify([...set]));
@@ -1197,14 +1214,21 @@ function _buildGridCard(q, idx) {
       </div>
     </div>`;
 
-  card.addEventListener('mousedown', e => e.preventDefault());
-  card.addEventListener('click', () => openModal(q));
-  card.addEventListener('keydown', e => {
-    if (e.target !== card) return;
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(q); }
-  });
+  card._q = q;   // lu par les écouteurs délégués de la grille (plus bas)
   queteGrid.appendChild(card);
 }
+
+// Un seul jeu d'écouteurs pour toute la grille (au lieu de 3 par carte)
+queteGrid.addEventListener('mousedown', e => { if (e.target.closest('.quete-card')) e.preventDefault(); });
+queteGrid.addEventListener('click', e => {
+  const card = e.target.closest('.quete-card');
+  if (card && card._q) openModal(card._q);
+});
+queteGrid.addEventListener('keydown', e => {
+  const card = e.target.closest('.quete-card');
+  if (!card || e.target !== card || !card._q) return;
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(card._q); }
+});
 
 /* ══════════════════════════════════
    HASH ROUTING
@@ -1667,10 +1691,11 @@ if (_sortSelectEl) {
   });
 }
 
+let _searchTimer = null;
 searchInput.addEventListener('input', () => {
-  searchQuery = searchInput.value.trim();
   syncSearchClear();
-  buildGrid();
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => { searchQuery = searchInput.value.trim(); buildGrid(); }, 120);   // pas de reconstruction de la grille à chaque frappe
 });
 document.getElementById('search-clear')?.addEventListener('click', () => {
   searchInput.value = ''; searchQuery = ''; syncSearchClear(); buildGrid(); searchInput.focus();

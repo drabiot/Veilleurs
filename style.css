@@ -82,9 +82,10 @@ body {
   width: 220%;
   height: 280px;
   background: linear-gradient(90deg, transparent, rgba(224,172,96,.015), transparent);
-  filter: blur(50px);
+  will-change: transform;
   animation: fog-drift 35s ease-in-out infinite alternate;
 }
+@media (prefers-reduced-motion: reduce) { .fog { animation: none; } }
 .fog-1 { top: 25%; left: -60%; }
 .fog-2 { top: 60%; left: -40%; animation-delay: -15s; opacity: .5; }
 @keyframes fog-drift {

@@ -13,13 +13,28 @@ function normalize(str) {
 /** Distance de Levenshtein — helper interne pour fuzzyMatch */
 function _editDist(a, b) {
   if (Math.abs(a.length - b.length) > 4) return 99;
-  const dp = Array.from({length: a.length + 1}, (_, i) => [i, ...Array(b.length).fill(0)]);
-  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
-  for (let i = 1; i <= a.length; i++)
+  let prev = new Array(b.length + 1), cur = new Array(b.length + 1);
+  for (let j = 0; j <= b.length; j++) prev[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    cur[0] = i;
     for (let j = 1; j <= b.length; j++)
-      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1]
-        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
-  return dp[a.length][b.length];
+      cur[j] = a[i-1] === b[j-1] ? prev[j-1] : 1 + Math.min(prev[j], cur[j-1], prev[j-1]);
+    const t = prev; prev = cur; cur = t;
+  }
+  return prev[b.length];
+}
+
+/* Normalisation mémoïsée (cible et requête reviennent à chaque frappe) */
+const _fuzzyNormCache = new Map();
+function _fuzzyNorm(s) {
+  s = String(s ?? '');
+  let v = _fuzzyNormCache.get(s);
+  if (v === undefined) {
+    v = normalize(s).replace(/\s+/g, ' ').trim();
+    if (_fuzzyNormCache.size > 20000) _fuzzyNormCache.clear();
+    _fuzzyNormCache.set(s, v);
+  }
+  return v;
 }
 
 /**
@@ -27,8 +42,8 @@ function _editDist(a, b) {
  * exact=true → inclus uniquement si la cible contient la requête telle quelle (items sensibles).
  */
 function fuzzyMatch(query, target, exact = false) {
-  const nq = normalize(String(query ?? '')).replace(/\s+/g, ' ').trim();
-  const nt = normalize(String(target ?? '')).replace(/\s+/g, ' ').trim();
+  const nq = _fuzzyNorm(query);
+  const nt = _fuzzyNorm(target);
   if (!nq) return true;
   if (nt.includes(nq)) return true;
   if (exact) return false;

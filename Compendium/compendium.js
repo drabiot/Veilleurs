@@ -46,10 +46,6 @@ function currentItems() {
 function textFilter() {
   const q = searchInput.value.trim();
   const norm = normalize(q);
-  ITEMS.forEach(item => {
-	if (typeof item.name !== 'string') console.warn('Item sans name string:', item);
-	if (item.lore !== undefined && typeof item.lore !== 'string') console.warn('Lore invalide:', item);
-	});
   const filtered = q.length >= 1
     ? ITEMS.filter(item =>
         fuzzyMatch(norm, item.name || '', item.sensible === true) ||

@@ -2,7 +2,7 @@
    Les Veilleurs au Clair de Lune — app.js
 ═══════════════════════════════════════════════ */
 
-import { db, COL } from './firebase.js';
+import { db, COL, loadCollection } from './firebase.js';
 import { doc, getDoc, collection, getDocs } from './d1db.js';
 import { loadHonorTitles, findHonorTitle, honorBadgeHtml } from './honor-titles.js';
 
@@ -16,38 +16,37 @@ const _LB_SCAN_COLS = [
 ];
 
 async function loadLeaderboard() {
-  let excludedIds = new Set();
-  try {
-    const exSnap = await getDoc(doc(db, 'config', 'leaderboard_excluded'));
-    if (exSnap.exists()) excludedIds = new Set(exSnap.data().ids || []);
-  } catch {}
+  // Toutes les lectures en parallèle ; les collections passent par le cache local différentiel (loadCollection)
+  const cfg = id => getDoc(doc(db, 'config', id)).catch(() => null);
+  const [exSnap, pseudoSnap, resetSnap, honor, ...cols] = await Promise.all([
+    cfg('leaderboard_excluded'),
+    cfg('pseudos'),
+    cfg('leaderboard_reset'),
+    loadHonorTitles(),
+    ..._LB_SCAN_COLS.map(({ col }) => loadCollection(col).catch(() => [])),
+  ]);
+  const excludedIds = new Set(exSnap && exSnap.exists() ? (exSnap.data().ids || []) : []);
 
   const byKey = {};
-  for (const { col } of _LB_SCAN_COLS) {
-    try {
-      const snap = await getDocs(collection(db, col));
-      for (const d of snap.docs) {
-        const data = d.data();
-        const entryId = col + '/' + d.id;
-        if (excludedIds.has(entryId)) continue;
-        const raw = data._contributor;
-        const contribs = Array.isArray(raw) ? raw : (raw ? [raw] : []);
-        for (const c of contribs) {
-          const uid  = c.uid  || null;
-          const name = c.name || 'Inconnu';
-          if (!uid) continue; // invités : non comptés
-          const key = uid;
-          if (!byKey[key]) byKey[key] = { uid, name, count: 0 };
-          byKey[key].count += (c.modOnly ? 0 : 1) + (c.edits || 0); // création = 1, chaque modification approuvée = +1
-        }
+  _LB_SCAN_COLS.forEach(({ col }, i) => {
+    for (const d of cols[i]) {
+      const entryId = col + '/' + d._id;
+      if (excludedIds.has(entryId)) continue;
+      const raw = d._contributor;
+      const contribs = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+      for (const c of contribs) {
+        const uid  = c.uid  || null;
+        const name = c.name || 'Inconnu';
+        if (!uid) continue; // invités : non comptés
+        if (!byKey[uid]) byKey[uid] = { uid, name, count: 0 };
+        byKey[uid].count += (c.modOnly ? 0 : 1) + (c.edits || 0); // création = 1, chaque modification approuvée = +1
       }
-    } catch {}
-  }
+    }
+  });
 
   // Resolve current pseudo from single config/pseudos map
   try {
-    const pseudoSnap = await getDoc(doc(db, 'config', 'pseudos'));
-    if (pseudoSnap.exists()) {
+    if (pseudoSnap && pseudoSnap.exists()) {
       const pseudoMap = pseudoSnap.data();
       for (const e of Object.values(byKey)) {
         if (e.uid && pseudoMap[e.uid]) e.name = pseudoMap[e.uid];
@@ -59,15 +58,13 @@ async function loadLeaderboard() {
   // (clé = uid ou '__pseudo'). Seules les contributions arrivées depuis comptent.
   // Rien n'est supprimé des documents : supprimer config/leaderboard_reset rétablit le classement complet.
   try {
-    const resetSnap = await getDoc(doc(db, 'config', 'leaderboard_reset'));
-    const baseline = resetSnap.exists() ? (resetSnap.data().baseline || {}) : {};
+    const baseline = resetSnap && resetSnap.exists() ? (resetSnap.data().baseline || {}) : {};
     for (const [key, e] of Object.entries(byKey)) {
       e.count -= Number(baseline[key]) || 0;
       if (e.count <= 0) delete byKey[key];
     }
   } catch {}
 
-  const honor = await loadHonorTitles();
   const badge = e => honorBadgeHtml(findHonorTitle(honor, e.uid, e.name));
 
   const sorted = Object.values(byKey)
@@ -122,6 +119,4 @@ async function loadLeaderboard() {
   }
 }
 
-window._pageInit = () => {
-  loadLeaderboard();
-};
+loadLeaderboard();

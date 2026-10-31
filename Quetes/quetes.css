@@ -440,6 +440,7 @@ body.quetes-page { overflow: hidden; }
   transition: border-color .15s, background .15s, transform .15s, box-shadow .15s;
   position: relative;
   overflow: hidden;
+  content-visibility: auto; contain-intrinsic-size: auto 240px;   /* cartes hors écran : pas de mise en page ni de peinture */
   animation: card-in .2s ease forwards;
   display: flex;
   flex-direction: column;

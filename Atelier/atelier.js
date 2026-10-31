@@ -212,6 +212,7 @@ function getSkinPath(classId) {
 function initSkinViewer(W, colH) {
   const canvas = document.getElementById('mq-skin-canvas');
   if (!canvas) return;
+  if (typeof skinview3d === 'undefined') { window.addEventListener('load', () => initSkinViewer(W, colH), { once: true }); return; }   // bundle chargé en defer
 
   if (window.__skinViewer) {
     window.__skinViewer.dispose();
@@ -3476,9 +3477,11 @@ function loadAccessoriesForClass(classId) {
       console.warn('[atelier] sensible lookup:', err);
     }
   }
+  let _listTimer = null;
   document.getElementById('inp-search').addEventListener('input', function(e) {
     filterQ = e.target.value.trim();
-    renderItemList();
+    clearTimeout(_listTimer);
+    _listTimer = setTimeout(renderItemList, 120);   // pas de re-filtrage de tous les items à chaque frappe
     clearTimeout(_sensibleTimer);
     const raw = filterQ;
     _sensibleTimer = setTimeout(function() { _trySensibleLookup(raw); }, 250);
