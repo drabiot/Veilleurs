@@ -547,6 +547,54 @@ function loadAccessoriesForClass(classId) {
   }
 
   /* ══ SÉLECTEUR DE CLASSE ══ */
+  /* ══ MENU DE CLASSE (sous le personnage) ══
+     Vue du sélecteur #class-picker (caché) : un clic sur une entrée déclenche le bouton correspondant, donc toute la logique
+     de changement de classe (confirmation, retrait des items incompatibles, skin) reste au même endroit. */
+  function _classList() {
+    return [{ id: '', ico: '👥', label: 'Toutes', color: null }].concat(CLASSES.map(function(c) { return { id: c.id, ico: c.ico, label: c.label, color: c.color || null }; }));
+  }
+  function _syncClassDrop() {
+    const cur = _classList().find(function(c) { return c.id === (activeClass || ''); }) || _classList()[0];
+    const ico = document.getElementById('cd-ico'), lab = document.getElementById('cd-label'), drop = document.getElementById('class-drop');
+    if (ico) ico.textContent = cur.ico;
+    if (lab) lab.textContent = cur.label;
+    if (drop) drop.style.setProperty('--cls', cur.color || 'var(--gold)');
+    document.querySelectorAll('#class-drop-menu .cd-opt').forEach(function(o) {
+      const on = o.dataset.c === (activeClass || '');
+      o.classList.toggle('active', on); o.setAttribute('aria-selected', String(on));
+    });
+  }
+  function buildClassDrop() {
+    const menu = document.getElementById('class-drop-menu'), btn = document.getElementById('class-drop-btn');
+    if (!menu || !btn) return;
+    menu.innerHTML = '';
+    _classList().forEach(function(c) {
+      const o = document.createElement('button');
+      o.type = 'button'; o.className = 'cd-opt'; o.dataset.c = c.id; o.setAttribute('role', 'option');
+      if (c.color) o.style.setProperty('--cls', c.color);
+      o.innerHTML = '<span class="cd-opt-ico">' + c.ico + '</span><span class="cd-opt-lab">' + c.label + '</span><span class="cd-opt-tick">✓</span>';
+      o.addEventListener('click', function(e) {
+        e.stopPropagation();
+        closeMenu();
+        const src = document.querySelector('#class-picker .class-btn[data-c="' + c.id + '"]');
+        if (src && c.id !== (activeClass || '')) src.click();
+      });
+      menu.appendChild(o);
+    });
+    function closeMenu() { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
+    if (!btn.dataset.ready) {
+      btn.dataset.ready = '1';
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const open = menu.hidden;
+        menu.hidden = !open; btn.setAttribute('aria-expanded', String(open));
+      });
+      document.addEventListener('click', function(e) { if (!menu.hidden && !e.target.closest('#class-drop')) { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
+      document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && !menu.hidden) { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); } });
+    }
+    _syncClassDrop();
+  }
+
   function buildClassPicker() {
     const wrap = document.getElementById('class-picker');
     if (!wrap) return;
@@ -567,6 +615,8 @@ function loadAccessoriesForClass(classId) {
       wrap.appendChild(btn);
     });
 
+    buildClassDrop();
+
     wrap.addEventListener('click', function(e) {
       const btn = e.target.closest('.class-btn');
       if (!btn) return;
@@ -579,6 +629,7 @@ function loadAccessoriesForClass(classId) {
 
       function applyClassChange() {
 				activeClass = newClass;
+				_syncClassDrop();
 				wrap.querySelectorAll('.class-btn').forEach(function(b) { b.classList.remove('active'); });
 				btn.classList.add('active');
 				itemsAtRisk.forEach(function(slotId) {
@@ -1130,6 +1181,18 @@ function loadAccessoriesForClass(classId) {
 
     });
     _updateBuildProgress();
+    _renderTalentCards();
+  }
+
+  // Carte « Arbre de compétences » : points dépensés / disponibles
+  function _renderTalentCards() {
+    const el = document.getElementById('skilltree-val');
+    if (!el) return;
+    const max = window.VCLSkillTree ? window.VCLSkillTree.maxPoints(buildLevel) : 0;
+    const spent = skillNodes.length;
+    el.textContent = spent + ' / ' + max + ' point' + (max === 1 ? '' : 's');
+    el.classList.toggle('empty', spent === 0);
+    el.classList.toggle('full', max > 0 && spent >= max);
   }
 
   // Interrupteur « Masquer les stats à 0 » du panneau Statistiques (choix mémorisé)
@@ -2374,7 +2437,8 @@ function loadAccessoriesForClass(classId) {
     const btn = document.getElementById('btn-titre'), lab = document.getElementById('titre-btn-label');
     if (!btn || !lab) return;
     const t = _titreById(activeTitre);
-    lab.textContent = t ? t.name : 'Titre';
+    lab.textContent = t ? t.name : 'Aucun titre';
+    lab.classList.toggle('empty', !t);
     btn.classList.toggle('has-titre', !!t);
     btn.title = t ? 'Titre : ' + t.name : 'Titre';
   }

@@ -1791,33 +1791,84 @@ html, body {
 .tool-ico { font-size: 24px; filter: drop-shadow(0 0 6px rgba(224,172,96,.35)); }
 .tool-lbl { font-size: 9px; font-weight: 700; letter-spacing: .02em; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 
-/* ══ TITRE / ARBRE DE COMPÉTENCES : boutons rectangulaires ══ */
-.center-head-actions { gap: 10px; }
-.center-head-actions .skilltree-btn {
-  gap: 10px; padding: 8px 14px 8px 10px; cursor: pointer;
-  background: linear-gradient(180deg, rgba(224,172,96,.12), rgba(224,172,96,.03));
-  border: 1px solid var(--gold-dim); border-radius: 3px;
+/* ══ TITRE / ARBRE DE COMPÉTENCES : cartes d'identité du build ══ */
+.center-head { flex-wrap: wrap; }
+.center-head-actions {
+  flex: 1 1 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+  margin-top: 14px;
+}
+.titre-wrap { position: relative; min-width: 0; }
+.talent-card {
+  width: 100%; display: flex; align-items: center; gap: 12px; padding: 9px 14px 9px 10px; cursor: pointer; text-align: left;
+  font-family: inherit; color: var(--text);
+  background: linear-gradient(100deg, rgba(224,172,96,.15), rgba(224,172,96,.03) 75%);
+  border: 1px solid var(--rim2); border-left: 3px solid var(--gold);
   transition: border-color .2s, background .2s, box-shadow .2s, transform .12s;
 }
-.center-head-actions .skilltree-btn:hover {
-  border-color: var(--gold); transform: translateY(-1px);
-  background: linear-gradient(180deg, rgba(224,172,96,.24), rgba(224,172,96,.06));
-  box-shadow: 0 0 16px rgba(224,172,96,.2);
+.talent-card:hover {
+  border-color: var(--gold-dim); border-left-color: var(--gold); transform: translateY(-1px);
+  background: linear-gradient(100deg, rgba(224,172,96,.26), rgba(224,172,96,.06) 75%);
+  box-shadow: 0 4px 18px rgba(0,0,0,.35), 0 0 16px rgba(224,172,96,.14);
 }
-.center-head-actions .skilltree-btn-shape {
-  width: 30px; height: 30px; transform: none; border-radius: 3px;
-  background: rgba(0,0,0,.35); border: 1px solid var(--gold-dim); outline: none; box-shadow: none;
+.tc-ico {
+  flex-shrink: 0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  font-size: 19px; line-height: 1; color: var(--gold);
+  background: radial-gradient(circle at 50% 40%, rgba(224,172,96,.2), rgba(0,0,0,.4) 75%);
+  border: 1px solid var(--gold-dim); border-radius: 50%;
+  box-shadow: inset 0 0 8px rgba(224,172,96,.12);
 }
-.center-head-actions .skilltree-btn:hover .skilltree-btn-shape { box-shadow: none; background: rgba(224,172,96,.12); }
-.center-head-actions .skilltree-btn-ico { transform: none; width: 18px; height: 18px; }
-.center-head-actions .titre-btn-ico { transform: none; font-size: 17px; }
-.center-head-actions .skilltree-btn-label { color: var(--text); font-size: 11px; font-weight: 700; letter-spacing: .1em; }
-.center-head-actions .skilltree-btn:hover .skilltree-btn-label { color: var(--gold); }
-.center-head-actions .titre-btn.has-titre { border-color: var(--gold); }
-.center-head-actions .titre-btn.has-titre .skilltree-btn-label { color: var(--gold); }
-@media (max-width: 1250px) {
-  .center-head-actions .skilltree-btn { padding: 6px; }
+.tc-ico-tree::before {
+  content: ''; width: 20px; height: 20px; background: currentColor;
+  -webkit-mask: url(../img/skilltree-icon.png) center / contain no-repeat;
+          mask: url(../img/skilltree-icon.png) center / contain no-repeat;
 }
+.tc-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.tc-label { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--gold-dim); }
+.tc-value { font-size: 13px; font-weight: 700; color: var(--bright); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tc-value.empty { color: var(--muted); font-weight: 400; font-style: italic; }
+.tc-value.full { color: var(--gold); }
+.tc-chev { flex-shrink: 0; font-size: 16px; color: var(--muted); transition: color .2s, transform .2s; }
+.talent-card:hover .tc-chev { color: var(--gold); transform: translateX(2px); }
+.titre-btn[aria-expanded="true"] { border-color: var(--gold); background: linear-gradient(100deg, rgba(224,172,96,.26), rgba(224,172,96,.06) 75%); }
+.titre-btn[aria-expanded="true"] .tc-chev { transform: rotate(180deg); color: var(--gold); }
+.titre-menu { left: 0; right: 0; max-width: none; min-width: 0; }
+@media (max-width: 560px) { .center-head-actions { grid-template-columns: 1fr; gap: 8px; margin-top: 10px; } }
+
+/* ══ MENU DE CLASSE sous le personnage ══ */
+.class-picker[hidden] { display: none; }
+.class-drop { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); width: min(88%, 200px); z-index: 4; --cls: var(--gold); }
+.class-drop-btn {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 11px 7px 9px; cursor: pointer; text-align: left;
+  font-family: inherit; color: var(--bright);
+  background: linear-gradient(180deg, rgba(20,16,11,.92), rgba(10,8,6,.92)); backdrop-filter: blur(4px);
+  border: 1px solid color-mix(in srgb, var(--cls) 55%, var(--rim2)); border-bottom: 2px solid var(--cls);
+  box-shadow: 0 4px 16px rgba(0,0,0,.55), 0 0 14px color-mix(in srgb, var(--cls) 14%, transparent);
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.class-drop-btn:hover { border-color: var(--cls); box-shadow: 0 4px 18px rgba(0,0,0,.6), 0 0 18px color-mix(in srgb, var(--cls) 28%, transparent); }
+.cd-ico { font-size: 20px; line-height: 1; flex-shrink: 0; }
+.cd-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.15; }
+.cd-cap { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: .24em; text-transform: uppercase; color: var(--gold-dim); }
+.cd-label { font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cd-chev { flex-shrink: 0; font-size: 11px; color: var(--muted); transition: transform .2s, color .2s; }
+.class-drop-btn[aria-expanded="true"] .cd-chev { transform: rotate(180deg); color: var(--cls); }
+.class-drop-menu {
+  position: absolute; left: 0; right: 0; bottom: calc(100% + 6px); max-height: 260px; overflow-y: auto; padding: 4px;
+  background: linear-gradient(180deg, #1a150f, #100d09); border: 1px solid var(--gold-dim);
+  box-shadow: 0 -10px 30px rgba(0,0,0,.65);
+}
+.class-drop-menu[hidden] { display: none; }
+.cd-opt {
+  --cls: var(--gold); width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; cursor: pointer; text-align: left;
+  font-family: inherit; color: var(--text); background: none; border: 1px solid transparent; border-left: 3px solid transparent;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.cd-opt:hover { background: rgba(255,255,255,.05); color: var(--bright); }
+.cd-opt.active { color: var(--bright); background: linear-gradient(90deg, color-mix(in srgb, var(--cls) 22%, transparent), transparent); border-left-color: var(--cls); }
+.cd-opt-ico { font-size: 16px; width: 22px; text-align: center; }
+.cd-opt-lab { flex: 1; font-family: 'Cinzel', serif; font-size: 12px; font-weight: 600; letter-spacing: .06em; }
+.cd-opt-tick { opacity: 0; color: var(--cls); font-size: 12px; }
+.cd-opt.active .cd-opt-tick { opacity: 1; }
 
 /* ══════════════════════════════════
    RESPONSIVE
@@ -1948,10 +1999,7 @@ select.input-name option { background: var(--surface2); color: var(--text); }
 
 
 /* ══ TITRES (bouton à gauche de l'arbre de compétences + menu déroulant) ══ */
-.center-head-actions { display: flex; align-items: center; gap: 26px; flex-shrink: 0; }
 .titre-wrap { position: relative; }
-.titre-btn-ico { transform: rotate(-45deg); font-size: 15px; line-height: 1; color: currentColor; }
-.titre-btn.has-titre .skilltree-btn-label { color: var(--gold); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .titre-menu {
   position: absolute; top: calc(100% + 10px); left: 0; z-index: 250;
   min-width: 270px; max-width: 340px; max-height: 60vh; overflow-y: auto;
@@ -1972,9 +2020,7 @@ select.input-name option { background: var(--surface2); color: var(--text); }
 .titre-chip { font-size: 10px; padding: 1px 6px; border: 1px solid var(--rim2); border-radius: 10px; color: var(--muted); }
 .titre-row-none .titre-row-name { color: var(--muted); font-style: italic; }
 .titre-empty { padding: 12px; font-size: 12px; color: var(--muted); text-align: center; }
-@media (max-width: 700px) { .center-head-actions { gap: 12px; } .titre-menu { left: auto; right: 0; } }
 /* colonne centrale étroite : seuls les pictogrammes restent (les libellés sont dans l'infobulle) */
-@media (max-width: 1250px) { .center-head-actions .skilltree-btn-label { display: none; } .center-head-actions .titre-btn.has-titre .skilltree-btn-label { display: none; } .center-head-actions { gap: 16px; } }
 
 /* ── Fenêtre « Build optimisé » ── */
 .modal-backdrop.wide .modal-box { width: 580px; padding: 24px 26px 20px; }

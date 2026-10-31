@@ -139,8 +139,8 @@
 
       <!-- ── Gauche : classe + niveau + actions ── -->
       <aside class="sidebar sidebar-left">
-        <div class="sidebar-head">⬡ Classe</div>
-        <div id="class-picker" class="class-picker"></div>
+        <!-- La classe se choisit sous le personnage (menu #class-drop) ; ce bloc reste la source de logique, masqué -->
+        <div id="class-picker" class="class-picker" hidden></div>
 
         <div class="sidebar-head">⬡ Niveau du Build</div>
         <div id="level-panel" class="level-panel"></div>
@@ -175,19 +175,17 @@
           </div>
           <div class="center-head-actions">
             <div class="titre-wrap">
-              <button id="btn-titre" class="skilltree-btn titre-btn" title="Titre" aria-label="Titre" aria-haspopup="listbox" aria-expanded="false">
-                <span class="skilltree-btn-shape">
-                  <span class="titre-btn-ico" aria-hidden="true">⚜</span>
-                </span>
-                <span class="skilltree-btn-label" id="titre-btn-label">Titre</span>
+              <button id="btn-titre" class="talent-card titre-btn" title="Titre" aria-label="Titre" aria-haspopup="listbox" aria-expanded="false">
+                <span class="tc-ico" aria-hidden="true">⚜</span>
+                <span class="tc-body"><span class="tc-label">Titre</span><span class="tc-value empty" id="titre-btn-label">Aucun titre</span></span>
+                <span class="tc-chev" aria-hidden="true">▾</span>
               </button>
               <div id="titre-menu" class="titre-menu" role="listbox" hidden></div>
             </div>
-            <button id="btn-skilltree" class="skilltree-btn" title="Arbre de compétences" aria-label="Arbre de compétences">
-              <span class="skilltree-btn-shape">
-                <span class="skilltree-btn-ico" aria-hidden="true"></span>
-              </span>
-              <span class="skilltree-btn-label">Arbre de compétences</span>
+            <button id="btn-skilltree" class="talent-card" title="Arbre de compétences" aria-label="Arbre de compétences">
+              <span class="tc-ico tc-ico-tree" aria-hidden="true"></span>
+              <span class="tc-body"><span class="tc-label">Arbre de compétences</span><span class="tc-value empty" id="skilltree-val">0 / 0 points</span></span>
+              <span class="tc-chev" aria-hidden="true">›</span>
             </button>
           </div>
         </div>
@@ -211,6 +209,14 @@
                 <div class="mq-skin" id="mq-skin">
                   <span class="sk-c"></span>
                   <canvas id="mq-skin-canvas"></canvas>
+                  <div class="class-drop" id="class-drop">
+                    <button type="button" class="class-drop-btn" id="class-drop-btn" aria-haspopup="listbox" aria-expanded="false" title="Changer de classe">
+                      <span class="cd-ico" id="cd-ico">👥</span>
+                      <span class="cd-txt"><span class="cd-cap">Classe</span><span class="cd-label" id="cd-label">Toutes</span></span>
+                      <span class="cd-chev" aria-hidden="true">▴</span>
+                    </button>
+                    <div class="class-drop-menu" id="class-drop-menu" role="listbox" hidden></div>
+                  </div>
                 </div>
                 <div class="mq-col-right" id="col-right"></div>
               </div>
