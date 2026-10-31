@@ -172,14 +172,28 @@ function canWrite(ctx, op, col, id, old, neu) {
       if (op === 'delete') return isAdmin;
       return isAdmin || ((isContrib || (authed && old?.submittedBy === ctx.uid)) && old?.status === 'pending' && neu?.status === 'pending');
     }
-    case 'reports':
-      // Signalement : tout le monde peut en créer (submittedBy = son uid s'il est connecté, jamais celui d'un autre) ; la réponse est écrite par un admin ;
-      // l'auteur ne peut que marquer la réponse comme vue (replySeen)
+    case 'reports': {
+      // Signalement = conversation : `messages` [{ from: 'user'|'admin', text, at }] s'ajoute au texte d'origine.
+      // Tout le monde peut créer un signalement (submittedBy = son uid s'il est connecté, jamais celui d'un autre) ; les admins répondent ;
+      // l'auteur ne peut qu'ajouter ses propres messages (jamais modifier l'existant) et marquer la conversation comme lue.
       if (op === 'create') return Object.keys(neu || {}).length <= 20 && (neu?.submittedBy == null || neu.submittedBy === ctx.uid);
       if (op === 'delete') return isContrib;
       if (isAdmin) return true;
-      if (authed && old?.submittedBy === ctx.uid) return changed(old, neu).every(k => k === 'replySeen');
-      return isContrib && changed(old, neu).every(k => !['reply', 'replyBy', 'replyAt', 'replySeen'].includes(k));
+      const ch = changed(old, neu);
+      if (authed && old?.submittedBy === ctx.uid) {
+        if (!ch.every(k => ['messages', 'unreadUser', 'replySeen'].includes(k))) return false;
+        if (ch.includes('unreadUser') && neu?.unreadUser !== false) return false;
+        if (ch.includes('replySeen') && neu?.replySeen !== true) return false;
+        if (ch.includes('messages')) {
+          const o = old?.messages || [], n = neu?.messages;
+          if (!Array.isArray(n) || n.length <= o.length || n.length > 200) return false;
+          if (o.some((m, i) => JSON.stringify(m) !== JSON.stringify(n[i]))) return false;
+          if (!n.slice(o.length).every(m => m && m.from === 'user' && typeof m.text === 'string' && m.text.length >= 1 && m.text.length <= 2000 && Object.keys(m).length <= 3)) return false;
+        }
+        return true;
+      }
+      return isContrib && ch.every(k => !['reply', 'replyBy', 'replyAt', 'replySeen', 'messages', 'unreadUser', 'closedAt'].includes(k));
+    }
     case 'translation_proposals': {
       // Propositions de traduction (i18n/review.html, i18n/compare.html) → onglet « Traduction » de la modération
       if (op === 'delete') return isAdmin || (authed && old?.submittedBy === ctx.uid && old?.status === 'pending');
@@ -264,6 +278,21 @@ async function postReportToDiscord(env, id, r) {
   if (res && !res.ok) console.error('[reports] Discord a refusé le message', res.status, (await res.text().catch(() => '')).slice(0, 300));
 }
 
+// Le joueur répond dans la conversation : les admins sont prévenus dans le même salon
+async function postUserMessageToDiscord(env, id, r) {
+  if (!env.BOT_TOKEN) return;
+  const m = r.messages[r.messages.length - 1];
+  const res = await fetch(`https://discord.com/api/v10/channels/${REPORTS_CHANNEL}/messages`, {
+    method: 'POST', headers: { Authorization: `Bot ${env.BOT_TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ embeds: [{
+      title: '💬 Réponse du joueur', description: String(m.text).slice(0, 3900), color: 0x57f287,
+      fields: [{ name: 'Joueur', value: String(r.pseudo || 'Anonyme').slice(0, 100), inline: true }, { name: 'Signalement', value: String(r.text || '').slice(0, 200) || '—' }],
+      footer: { text: 'ID ' + id + ' · répondre : modération → Retours' }, timestamp: new Date().toISOString(),
+    }], allowed_mentions: { parse: [] } }),
+  }).catch(e => { console.error('[reports] Discord injoignable', e.message); return null; });
+  if (res && !res.ok) console.error('[reports] Discord a refusé le message', res.status, (await res.text().catch(() => '')).slice(0, 300));
+}
+
 /* ── POST /db/write ── */
 export async function handleStoreWrite(request, env, cors, execCtx) {
   let body;
@@ -272,7 +301,7 @@ export async function handleStoreWrite(request, env, cors, execCtx) {
   if (!ops.length || ops.length > 200) return json({ error: 'ops invalide' }, 400, cors);
   const ctx = await loadCtx(env, body.idToken);
   const now = Date.now();
-  const stmts = [], ids = [], newReports = [], cache = new Map(); // cache : état des documents au fil du lot
+  const stmts = [], ids = [], newReports = [], userMsgs = [], cache = new Map(); // cache : état des documents au fil du lot
   const key = (c, i) => c + '\u0000' + i;
   for (const op of ops) {
     const { col } = op;
@@ -292,6 +321,7 @@ export async function handleStoreWrite(request, env, cors, execCtx) {
     cache.set(k, neu);
     ids.push(id);
     if (col === 'reports' && kind === 'create') newReports.push([id, neu]);
+    if (col === 'reports' && kind === 'update' && Array.isArray(neu?.messages) && neu.messages.length > (old?.messages?.length || 0) && neu.messages[neu.messages.length - 1]?.from === 'user') userMsgs.push([id, neu]);
     if (col === 'users') {
       if (op.op === 'delete') stmts.push(env.DB.prepare('DELETE FROM users WHERE uid = ?').bind(id));
       else stmts.push(env.DB.prepare(`INSERT INTO users (uid, data, discord_id, pseudo, pending) VALUES (?, ?, ?, ?, NULL)
@@ -308,7 +338,10 @@ export async function handleStoreWrite(request, env, cors, execCtx) {
   // un item écrit, modifié ou supprimé : le bot Discord est lancé tout de suite (posts ajoutés / remplacés / supprimés sur les serveurs), au lieu d'attendre le cron
   // (aussi : file des soumissions acceptées, que le bot lit avant de poster un nouvel item)
   if (execCtx && ops.some(o => o.col === 'items' || (o.col === 'config' && o.id === 'discord_approved'))) execCtx.waitUntil(triggerBot(env).catch(() => {}));
-  if (execCtx) for (const [rid, r] of newReports) execCtx.waitUntil(postReportToDiscord(env, rid, r));
+  if (execCtx) {
+    for (const [rid, r] of newReports) execCtx.waitUntil(postReportToDiscord(env, rid, r));
+    for (const [rid, r] of userMsgs) execCtx.waitUntil(postUserMessageToDiscord(env, rid, r));
+  }
   return json({ ok: true, rev, ids }, 200, cors);
 }
 

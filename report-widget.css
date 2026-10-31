@@ -216,3 +216,31 @@
 }
 .vcl-report-login[hidden] { display: none; }
 .vcl-report-login a { color: #e8b84b; text-decoration: underline; }
+
+/* Bulle « nouveau message » à droite du bouton Bug / Suggestion (réponse des admins) */
+.vcl-report-bubble {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #bbb;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 3px 10px;
+  border-radius: 99px;
+  margin-left: 8px;
+  vertical-align: middle;
+  line-height: 1;
+  font-family: inherit;
+}
+.vcl-report-bubble[hidden] { display: none; }
+.vcl-report-bubble:hover { border-color: #e8b84b; color: #e8b84b; }
+.vcl-report-bubble.unread {
+  background: #e8b84b;
+  border-color: #e8b84b;
+  color: #1a1a2e;
+  font-weight: 700;
+  animation: vcl-bubble-pulse 1.8s ease-in-out infinite;
+}
+@keyframes vcl-bubble-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232,184,75,0.55); }
+  50%      { box-shadow: 0 0 0 6px rgba(232,184,75,0); }
+}

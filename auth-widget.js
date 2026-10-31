@@ -11,8 +11,9 @@ import { auth, db, getUserRole, loginWithDiscord, logout, hasRole, ROLES }
 import { loadHonorTitles, findHonorTitle, honorBadgeHtml } from './honor-titles.js';
 import { onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { doc, getDoc, collection, getDocs, query, where, updateDoc }
+import { doc, getDoc }
   from './d1db.js';
+import { initReportChat } from './report-chat.js';   // réponses des admins aux signalements (bulle à côté de « Bug / Suggestion »)
 
 // ── Display config ───────────────────────────────────
 const _baseDisplay = {
@@ -187,36 +188,6 @@ function _wireEvents() {
   };
 }
 
-// ── Réponses des admins aux signalements (bug / suggestion / erreur de fiche) ──
-// Au retour d'un joueur connecté qui a signalé quelque chose, un popup affiche la réponse des admins (une fois : replySeen).
-function _esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
-async function _showReportReplies(uid) {
-  try { if (sessionStorage.getItem('vcl_rr_' + uid)) return; } catch {}   // une vérification par session
-  let replies;
-  try {
-    const snap = await getDocs(query(collection(db, 'reports'), where('submittedBy', '==', uid)));
-    replies = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.reply && !r.replySeen)
-      .sort((a, b) => (a.replyAt?.toMillis?.() ?? 0) - (b.replyAt?.toMillis?.() ?? 0));
-  } catch { return; }
-  try { sessionStorage.setItem('vcl_rr_' + uid, '1'); } catch {}
-  if (!replies.length || document.getElementById('vcl-reply-overlay')) return;
-
-  const ov = document.createElement('div');
-  ov.id = 'vcl-reply-overlay';
-  ov.className = 'vcl-reply-overlay';
-  ov.innerHTML = '<div class="vcl-reply-modal"><h3>💬 Réponse à ton signalement</h3>'
-    + replies.map(r => '<div class="vcl-reply-item">'
-      + '<div class="vcl-reply-q">' + (r.ficheId ? _esc((r.ficheName || r.ficheId)) + ' — ' : '') + _esc(String(r.text || '').slice(0, 300)) + '</div>'
-      + '<div class="vcl-reply-a">' + _esc(r.reply).replace(/\n/g, '<br>') + '</div></div>').join('')
-    + '<div class="vcl-reply-actions"><button type="button" id="vcl-reply-ok">Merci !</button></div></div>';
-  document.body.appendChild(ov);
-  document.getElementById('vcl-reply-ok').onclick = () => {
-    ov.remove();
-    replies.forEach(r => updateDoc(doc(db, 'reports', r.id), { replySeen: true }).catch(() => {}));
-  };
-}
-
 // ── Globals & event ──────────────────────────────────
 function _setGlobals(uid, role, baseRole) {
   window._vcl_uid               = uid;
@@ -241,6 +212,7 @@ function _dispatch(uid, role, baseRole) {
     if (!user) {
       _setGlobals(null, 'visiteur', 'visiteur');
       _showLoginUI();
+      window.vclSetReportBubble?.(null);
       _dispatch(null, 'visiteur', 'visiteur');
       return;
     }
@@ -249,6 +221,6 @@ function _dispatch(uid, role, baseRole) {
     _setGlobals(user.uid, role, baseRole);
     _showUserUI(user, role, baseRole);
     _dispatch(user.uid, role, baseRole);
-    _showReportReplies(user.uid);
+    initReportChat(db, user.uid);
   });
 })();

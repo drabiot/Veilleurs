@@ -14,6 +14,18 @@
       ' title="Signaler une erreur sur cette fiche">⚑ Signaler une erreur</button>';
   };
 
+  // Bulle « nouveau message » : alimentée par report-chat.js (window.vclSetReportBubble), éventuellement avant la création du bouton
+  let bubbleEl = null, bubbleState = null;
+  function paintBubble() {
+    if (!bubbleEl) return;
+    const s = bubbleState;
+    bubbleEl.hidden = !s || !s.total;
+    if (!s) return;
+    bubbleEl.classList.toggle('unread', s.unread > 0);
+    bubbleEl.textContent = s.unread > 0 ? '💬 ' + (s.unread > 1 ? s.unread + ' nouveaux messages' : 'Nouveau message') : '💬 Mes échanges';
+  }
+  window.vclSetReportBubble = s => { bubbleState = s; paintBubble(); };
+
   function init() {
     const logo = document.querySelector('.header-logo');
     if (!logo) return;
@@ -25,6 +37,14 @@
     btn.title = 'Signaler un bug / Suggestion';
     btn.textContent = '⚑ Bug / Suggestion';
     logo.insertAdjacentElement('afterend', btn);
+
+    bubbleEl = document.createElement('button');
+    bubbleEl.className = 'vcl-report-bubble';
+    bubbleEl.hidden = true;
+    bubbleEl.title = 'Réponses des admins à tes signalements';
+    bubbleEl.onclick = () => bubbleState?.open?.();
+    btn.insertAdjacentElement('afterend', bubbleEl);
+    paintBubble();
 
     // ── Bug / Suggestion overlay ─────────────────────────
     const overlay = document.createElement('div');

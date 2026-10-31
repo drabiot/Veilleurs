@@ -308,7 +308,7 @@
 .podium-honor .honor-badge { margin-left: 0; }
 .podium-honor .honor-badge { white-space: normal; max-width: 100%; border-radius: 10px; line-height: 1.3; }
 
-/* ── Popup : réponse des admins à un signalement ── */
+/* ── Conversation avec les admins (report-chat.js) ── */
 .vcl-reply-overlay {
   position: fixed; inset: 0; z-index: 10000;
   background: rgba(0,0,0,.65); backdrop-filter: blur(6px);
@@ -316,19 +316,36 @@
   animation: vcl-fade-in .2s ease;
 }
 .vcl-reply-modal {
+  position: relative;
   background: linear-gradient(160deg, #1a1a2e 0%, #16213e 100%);
   border: 1px solid #e8b84b; border-radius: 10px;
-  padding: 24px 28px; width: min(480px, 90vw); max-height: 80vh; overflow-y: auto;
+  padding: 24px 28px; width: min(520px, 92vw); max-height: 82vh; overflow-y: auto;
   box-shadow: 0 8px 40px rgba(0,0,0,.6);
   animation: vcl-slide-up .22s ease;
 }
 .vcl-reply-modal h3 { margin: 0 0 14px; color: #e8b84b; font-size: 1.05rem; }
-.vcl-reply-item { margin-bottom: 14px; }
-.vcl-reply-q { font-size: 12px; color: #9aa; font-style: italic; border-left: 2px solid #445; padding-left: 8px; margin-bottom: 6px; word-break: break-word; }
-.vcl-reply-a { font-size: 14px; color: #eee; line-height: 1.5; word-break: break-word; }
-.vcl-reply-actions { text-align: right; margin-top: 6px; }
-.vcl-reply-actions button {
-  background: rgba(232,184,75,.15); border: 1px solid #e8b84b; color: #e8b84b;
-  border-radius: 6px; padding: 6px 18px; cursor: pointer; font-family: inherit; font-size: 13px;
+.vcl-chat-close { position: absolute; top: 10px; right: 12px; background: none; border: none; color: #888; font-size: 16px; cursor: pointer; }
+.vcl-chat-close:hover { color: #e8b84b; }
+.vcl-chat { border-top: 1px solid rgba(232,184,75,.2); padding-top: 12px; margin-top: 12px; }
+.vcl-chat:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+.vcl-chat-head { font-size: 12px; color: #9aa; font-style: italic; margin-bottom: 8px; word-break: break-word; }
+.vcl-chat-new { background: #e8b84b; color: #1a1a2e; font-style: normal; font-size: 10px; font-weight: 700; border-radius: 99px; padding: 1px 7px; margin-left: 4px; }
+.vcl-chat-log { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; padding-right: 4px; }
+.vcl-chat-msg { max-width: 85%; border-radius: 10px; padding: 7px 11px; word-break: break-word; }
+.vcl-chat-msg.admin { align-self: flex-start; background: rgba(232,184,75,.14); border: 1px solid rgba(232,184,75,.4); }
+.vcl-chat-msg.me { align-self: flex-end; background: rgba(96,165,250,.14); border: 1px solid rgba(96,165,250,.4); }
+.vcl-chat-who { font-size: 10px; color: #99a; margin-bottom: 2px; }
+.vcl-chat-text { font-size: 13px; color: #eee; line-height: 1.45; }
+.vcl-chat-send { display: flex; gap: 8px; margin-top: 10px; align-items: flex-end; }
+.vcl-chat-send textarea {
+  flex: 1; box-sizing: border-box; background: rgba(255,255,255,.05); border: 1px solid rgba(232,184,75,.3);
+  border-radius: 6px; color: #ddd; font-family: inherit; font-size: 13px; padding: 8px; resize: vertical; outline: none;
 }
-.vcl-reply-actions button:hover { background: rgba(232,184,75,.3); }
+.vcl-chat-send textarea:focus { border-color: #e8b84b; }
+.vcl-chat-send button {
+  background: rgba(232,184,75,.15); border: 1px solid #e8b84b; color: #e8b84b;
+  border-radius: 6px; padding: 7px 14px; cursor: pointer; font-family: inherit; font-size: 13px;
+}
+.vcl-chat-send button:hover:not(:disabled) { background: rgba(232,184,75,.3); }
+.vcl-chat-send button:disabled { opacity: .5; cursor: default; }
+.vcl-chat-status { font-size: 11px; color: #9aa; min-height: 14px; margin-top: 4px; }
