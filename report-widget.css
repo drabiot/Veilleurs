@@ -1,22 +1,24 @@
 .vcl-report-btn {
-  background: transparent;
-  border: 1px solid var(--gold-dim, #9a7040);
-  color: var(--gold, #E0AC60);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  color: var(--gold-dim, #9a7040);
   font-family: 'JetBrains Mono', monospace;
   font-size: .72rem;
-  letter-spacing: .08em;
+  letter-spacing: .12em;
+  text-transform: uppercase;
   cursor: pointer;
-  padding: 5px 13px;
-  border-radius: 3px;
-  margin-left: 12px;
+  padding: 3px 2px;
+  border-radius: 0;
+  margin-left: 14px;
   vertical-align: middle;
   white-space: nowrap;
-  transition: background .2s, color .2s;
   line-height: 1.2;
+  transition: color .2s, border-color .2s;
 }
 .vcl-report-btn:hover {
-  background: var(--gold, #E0AC60);
-  color: #0e0c0a;
+  color: var(--gold, #E0AC60);
+  border-bottom-color: var(--gold, #E0AC60);
 }
 .vcl-report-overlay {
   position: fixed !important;

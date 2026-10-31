@@ -49,18 +49,15 @@
 }
 
 .vcl-auth-role-badge {
-  padding: 4px 10px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: .66rem;
+  font-size: .68rem;
   font-weight: 600;
   letter-spacing: .12em;
   text-transform: uppercase;
-  border-radius: 3px;
   white-space: nowrap;
-  /* couleur du rôle posée en JS (color) : bordure et fond en sont dérivés */
-  border: 1px solid color-mix(in srgb, currentColor 55%, transparent);
-  background: color-mix(in srgb, currentColor 10%, transparent);
+  /* couleur du rôle posée en JS (color) */
 }
+.vcl-auth-role-badge::before { content: '◆'; font-size: .7em; margin-right: 6px; vertical-align: 1px; }
 
 /* ── Modal overlay ── */
 .vcl-auth-overlay {

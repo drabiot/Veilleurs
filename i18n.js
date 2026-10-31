@@ -182,8 +182,8 @@ function flagSvg(code, n) {
 
 const LANG_CSS = `
 .vcl-lang{position:relative;display:inline-block;margin-right:8px;vertical-align:middle}
-.vcl-lang-btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid #9a7040;color:#e0ac60;border-radius:3px;padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:500;line-height:1.2;letter-spacing:.08em;cursor:pointer;transition:background .2s,color .2s}
-.vcl-lang-btn:hover,.vcl-lang-btn[aria-expanded="true"]{background:#e0ac60;color:#0e0c0a}
+.vcl-lang-btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:0;border-bottom:1px solid transparent;color:#9a7040;border-radius:0;padding:3px 2px;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:500;line-height:1.2;letter-spacing:.12em;cursor:pointer;transition:color .2s,border-color .2s}
+.vcl-lang-btn:hover,.vcl-lang-btn[aria-expanded="true"]{color:#e0ac60;border-bottom-color:#e0ac60}
 .vcl-lang-btn .caret{font-size:8px;opacity:.7}
 .vcl-lang-btn svg,.vcl-lang-opt svg{display:block;width:18px;height:12px;border-radius:2px;flex:none}
 .vcl-lang-menu{position:fixed !important;z-index:2147483000;min-width:128px;background:#15120e;border:1px solid #9a7040;border-radius:3px;padding:3px;box-shadow:0 10px 28px rgba(0,0,0,.55)}
