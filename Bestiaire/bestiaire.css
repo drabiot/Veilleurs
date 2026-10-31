@@ -1604,73 +1604,14 @@ body.bestiaire-page {
   border: 1px solid var(--gold-dim);
   border-radius: 999px;
 }
-.mh-map-btn {
-  margin-left: auto;
-  padding: 2px 9px;
+.mh-sub {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  letter-spacing: .04em;
-  text-transform: none;
-  color: var(--gold);
-  text-decoration: none;
-  border: 1px solid var(--gold-dim);
-  transition: background .15s, color .15s;
-}
-.mh-map-btn:hover { background: var(--gold-glow); color: var(--bright); }
-
-/* Localisation : une pastille par point, cliquable vers la carte, copiable */
-.mh-loc-grid {
-  list-style: none;
-  margin: 0; padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
-  gap: 8px;
-}
-.mh-loc-chip {
-  display: flex;
-  align-items: stretch;
-  background: rgba(255,255,255,.03);
-  border: 1px solid var(--rim2);
-  transition: border-color .15s, background .15s;
-}
-.mh-loc-chip:hover { border-color: var(--gold-dim); background: rgba(255,255,255,.05); }
-.mh-loc-link {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  padding: 9px 12px;
-  color: var(--text);
-  text-decoration: none;
-}
-.mh-loc-n {
-  display: grid; place-items: center;
-  width: 20px; height: 20px;
-  flex-shrink: 0;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--bright);
-  background: color-mix(in srgb, var(--tc) 22%, transparent);
-  border: 1px solid color-mix(in srgb, var(--tc) 55%, transparent);
-  border-radius: 50%;
-}
-.mh-coord { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--bright); white-space: nowrap; }
-.mh-coord b { margin-right: 4px; font-size: 9px; font-weight: 700; letter-spacing: .06em; color: var(--gold); }
-.mh-copy {
-  width: 36px;
-  display: grid; place-items: center;
-  background: transparent;
-  border: none;
-  border-left: 1px solid var(--rim2);
   color: var(--muted);
-  cursor: pointer;
-  transition: color .15s, background .15s;
 }
-.mh-copy:hover { color: var(--gold); background: var(--gold-glow); }
-.mh-copy.is-done { color: #7fdf62; }
-.mh-copy:focus-visible, .mh-loc-link:focus-visible, .mh-map-btn:focus-visible, .mh-kin:focus-visible, .mh-share:focus-visible { outline: 1px solid var(--gold); outline-offset: -2px; }
+
+/* Focus clavier */
+.mh-kin:focus-visible, .mh-share:focus-visible { outline: 1px solid var(--gold); outline-offset: -2px; }
 
 /* Attaques : numérotées, dégâts en pastille */
 .mob-sheet.is-mob .mob-attack-row { flex-direction: row; align-items: flex-start; gap: 10px; }

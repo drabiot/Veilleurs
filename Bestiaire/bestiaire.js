@@ -853,6 +853,7 @@ modalOverlay.addEventListener('click', e => {
   modalOverlay.style.pointerEvents = '';
 });
 document.addEventListener('keydown', e => {
+  if (document.getElementById('vcl-map-ov')?.classList.contains('open')) return;   // la carte en pop-up gère elle-même Échap
   if (e.key === 'Escape') { closeModal(); return; }
   if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && modalOverlay.classList.contains('open')
       && !document.getElementById('mob-3d-fullscreen-overlay')
@@ -864,22 +865,15 @@ document.addEventListener('keydown', e => {
 
 // Actions de la fiche (délégation : le contenu est recréé à chaque ouverture)
 modalContent.addEventListener('click', e => {
-  const copyBtn = e.target.closest('[data-copy]');
-  if (copyBtn) {
-    e.preventDefault();
-    _copyText(copyBtn.dataset.copy, copyBtn);
-    return;
-  }
   if (e.target.closest('[data-share]')) {
     _copyText(location.href, e.target.closest('[data-share]'), 'Lien copié ✓');
     return;
   }
-  const regionBtn = e.target.closest('[data-region]');
-  if (regionBtn) {   // « Voir les monstres de cette région » : on filtre la grille et on ferme la fiche
-    activeRegions = new Set([regionBtn.dataset.region]);
-    setBlockOpen(document.getElementById('region-block-header'), document.getElementById('region-block-body'), true);
-    closeModal();
-    refreshAll();
+  const mapBtn = e.target.closest('[data-map]');
+  if (mapBtn) {   // carte en pop-up (map-overlay.js) avec tous les pins du mob ; repli : nouvel onglet
+    const u = new URL(mapBtn.dataset.map, location.href);
+    if (window.VCL_MAP_OVERLAY) { u.searchParams.set('embed', '1'); window.VCL_MAP_OVERLAY.open(u, mapBtn.dataset.mapTitle); }
+    else window.open(u.href, '_blank');
     return;
   }
   const kinBtn = e.target.closest('[data-kin]');
@@ -1004,8 +998,6 @@ const DIFF_COLORS = ['', '#5fbf7a', '#a3c45c', '#e0ac60', '#e0763c', '#d84a4a'];
 const BEH_COLORS  = { passif: '#62b0df', neutre: '#d4c07a', agressif: '#df6262' };
 const ICO_PIN   = '<svg class="mh-ico" viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" aria-hidden="true"><path d="M8 14.6s4.6-4.3 4.6-8A4.6 4.6 0 0 0 3.4 6.6c0 3.7 4.6 8 4.6 8z"/><circle cx="8" cy="6.6" r="1.7"/></svg>';
 const ICO_CLOCK = '<svg class="mh-ico" viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.3 1.5"/></svg>';
-const ICO_REPEAT = '<svg class="mh-ico" viewBox="0 0 16 16" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 7.5V6A2.5 2.5 0 0 1 5 3.5h7.5M10.5 1.5l2 2-2 2M13.5 8.5V10A2.5 2.5 0 0 1 11 12.5H3.5M5.5 14.5l-2-2 2-2"/></svg>';
-const ICO_COPY  = '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5V3.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg>';
 
 // Emblème du palier : chiffre pour un palier numérique, glyphe pour Event / Archive / World Boss
 function palierEmblem(p) {
@@ -1013,6 +1005,14 @@ function palierEmblem(p) {
   if (p === 'worldboss') return { glyph: '☠', label: 'World Boss' };
   if (p == -1)           return { glyph: 'A', label: 'Archive' };
   return { glyph: String(p), label: 'Palier' };
+}
+
+// Points d'apparition affichables sur la carte : boss / mini-boss / world boss, un par pin (coords, puis coords_more)
+function mapPoints(mob) {
+  if (!['boss', 'mini_boss', 'worldboss'].includes(mob.type) || mob.sensible) return [];
+  return [mob.coords, ...(Array.isArray(mob.coords_more) ? mob.coords_more : [])]
+    .filter(c => c && c.x != null && c.z != null)
+    .filter((c, i, arr) => arr.findIndex(o => o.x === c.x && o.z === c.z) === i);   // doublons masqués (même règle que la carte : un pin par point distinct en X / Z)
 }
 
 function spawnLabel(st) {
@@ -1057,28 +1057,32 @@ function renderMobSheet(mob) {
       <span class="mh-v">${diff ? escHtml(DIFF_LABELS[diff] || '') : 'Non évaluée'}</span>
     </div>`;
 
-  /* ── Région : tuile cliquable → filtre le bestiaire sur cette région ── */
-  const regionHTML = mob.region ? `
-    <button type="button" class="mh-tile mh-region" data-region="${escHtml(mob.region)}" title="Voir les monstres de cette région">
+  /* ── Localisation : tuile cliquable → carte en pop-up avec tous les pins du mob (boss / mini-boss / world boss).
+        Sans pin à montrer, simple tuile d'information sur la région. ── */
+  const nPins = mapPoints(mob).length;
+  const regionName = mob.region ? escHtml(getRegionLabel(mob.region)) : '';
+  const regionHTML = nPins ? `
+    <button type="button" class="mh-tile mh-region" data-map="../Map/map.html?pnjId=${encodeURIComponent(mid)}&amp;group=1" data-map-title="${escHtml(mob.name)}" title="Voir sur la carte">
       ${ICO_PIN}
       <span class="mh-tile-txt">
-        <span class="mh-k">Région</span>
-        <span class="mh-v">${escHtml(getRegionLabel(mob.region))}</span>
+        <span class="mh-k">Localisation</span>
+        <span class="mh-v">${regionName || 'Voir sur la carte'}</span>
+        ${nPins > 1 ? `<span class="mh-sub">${nPins} points</span>` : ''}
       </span>
-      <span class="mh-go" aria-hidden="true">→</span>
-    </button>` : '';
+      <span class="mh-go" aria-hidden="true">↗</span>
+    </button>`
+    : mob.region ? `
+    <div class="mh-tile">
+      ${ICO_PIN}
+      <span class="mh-tile-txt"><span class="mh-k">Région</span><span class="mh-v">${regionName}</span></span>
+    </div>` : '';
 
-  /* ── Apparition / réapparition ── */
+  /* ── Temps de spawn (un seul : spawnTime) ── */
   const spawn = spawnLabel(mob.spawnTime);
   const spawnHTML = spawn ? `
     <div class="mh-tile mh-time">
       ${ICO_CLOCK}
-      <span class="mh-tile-txt"><span class="mh-k">Apparition</span><span class="mh-v">${escHtml(spawn)}</span></span>
-    </div>` : '';
-  const respawnHTML = mob.respawnDelay ? `
-    <div class="mh-tile mh-time">
-      ${ICO_REPEAT}
-      <span class="mh-tile-txt"><span class="mh-k">Réapparition</span><span class="mh-v">${escHtml(String(mob.respawnDelay))}</span></span>
+      <span class="mh-tile-txt"><span class="mh-k">Temps de spawn</span><span class="mh-v">${escHtml(spawn)}</span></span>
     </div>` : '';
 
   /* ── Attaques ── */
@@ -1160,36 +1164,6 @@ function renderMobSheet(mob) {
       <blockquote class="mob-lore">${escHtml(mob.lore).replace(/\n/g,'<br>')}</blockquote>
     </div>` : '';
 
-  /* ── Localisation : boss / mini-boss / world boss, un point par pin de la carte ── */
-  const locHTML = (() => {
-    if (!['boss', 'mini_boss', 'worldboss'].includes(mob.type) || mob.sensible) return '';
-    const pts = [mob.coords, ...(Array.isArray(mob.coords_more) ? mob.coords_more : [])].filter(c => c && c.x != null && c.z != null)
-      .filter((c, i, arr) => arr.findIndex(o => o.x === c.x && o.z === c.z) === i); // doublons masqués (même règle que la carte : un pin par point distinct en X / Z)
-    if (!pts.length) return '';
-    // Chaque point est un pin de la carte (id du mob, puis id_1, id_2…) : le clic ouvre la carte centrée sur ce pin
-    const href = i => `../Map/map.html?pnjId=${encodeURIComponent(i === 0 ? mid : mid + '_' + i)}`;
-    const chip = (c, i) => {
-      const txt = [c.x, c.y || null, c.z].filter(v => v != null).join(' ');   // « X Y Z » : se colle tel quel dans une commande
-      return `
-      <li class="mh-loc-chip">
-        <a class="mh-loc-link" href="${href(i)}" target="_blank" title="Voir sur la carte">
-          ${pts.length > 1 ? `<span class="mh-loc-n">${i + 1}</span>` : ICO_PIN}
-          <span class="mh-coord"><b>X</b>${escHtml(String(c.x))}</span>
-          ${c.y ? `<span class="mh-coord"><b>Y</b>${escHtml(String(c.y))}</span>` : ''}
-          <span class="mh-coord"><b>Z</b>${escHtml(String(c.z))}</span>
-        </a>
-        <button type="button" class="mh-copy" data-copy="${escHtml(txt)}" title="Copier les coordonnées" aria-label="Copier les coordonnées">${ICO_COPY}</button>
-      </li>`;
-    };
-    return `
-      <div class="mob-section full-width mh-loc">
-        <div class="mob-section-title">Localisation<span class="mh-count">${pts.length}</span>
-          <a class="mh-map-btn" href="${href(0)}" target="_blank">Voir sur la carte <span aria-hidden="true">↗</span></a>
-        </div>
-        <ul class="mh-loc-grid">${pts.map(chip).join('')}</ul>
-      </div>`;
-  })();
-
   /* ── Dans la même région ── */
   const canSee = window._vcl_can_view_sensible;
   const kin = mob.region
@@ -1237,12 +1211,10 @@ function renderMobSheet(mob) {
             ${diffHTML}
             ${regionHTML}
             ${spawnHTML}
-            ${respawnHTML}
           </div>
         </div>
       </div>
       <div class="mob-body-grid">
-        ${locHTML}
         ${attacksHTML}
         ${lootHTML}
         ${loreHTML}

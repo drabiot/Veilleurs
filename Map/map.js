@@ -17,6 +17,7 @@ let panLastX       = 0;
 let panLastY       = 0;
 let panOffset      = { x: 0, y: 0 };
 let _searchFocusId = null;
+let _focusGroup    = null;   // Set d'ids : tous les pins d'un même mob (?pnjId=…&group=1) mis en avant ensemble
 
 /* ══════════════════════════════════
    DOM
@@ -1454,11 +1455,13 @@ function renderMarkers() {
   const markers = getFlatFloorMarkers(currentFloor);
   updateLegendAvailability(markers);
 
-  const focusedList = _searchFocusId ? markers.filter(m => m.id === _searchFocusId) : [];
+  if (_focusGroup && !_focusGroup.has(_searchFocusId)) _focusGroup = null;   // un autre pin a pris le focus
+  const isFocused = m => _focusGroup ? _focusGroup.has(m.id) : m.id === _searchFocusId;
+  const focusedList = _searchFocusId ? markers.filter(isFocused) : [];
   const isMultiFocus = focusedList.length > 1;
 
   const visible = markers.filter(m => {
-    if (m.id === _searchFocusId) return false;
+    if (isFocused(m)) return false;
     return isTypeVisible(m.type);
   });
 
@@ -1482,8 +1485,8 @@ function renderMarkers() {
       const s = gameToScreen(focused.gx, focused.gy);
       renderSingleMarker({ ...focused, sx: s.x, sy: s.y });
     });
-    markersLayer.querySelectorAll(`.marker[data-id="${_searchFocusId}"]`).forEach(el => {
-      el.classList.remove('marker-dimmed');
+    markersLayer.querySelectorAll('.marker').forEach(el => {
+      if (_focusGroup ? _focusGroup.has(el.dataset.id) : el.dataset.id === _searchFocusId) el.classList.remove('marker-dimmed');
     });
   }
   renderGhostPin();
@@ -2380,7 +2383,8 @@ function focusQuestOnMap(questId) {
   }
 }
 
-function focusPnjOnMap(pnjId) {
+// group = true : met en avant tous les pins du mob (id, id_1, id_2…) et cadre la vue dessus
+function focusPnjOnMap(pnjId, group = false) {
   if (!pnjId) return false;
   const byFloor = window._mapMarkers || {};
   for (const [f, markers] of Object.entries(byFloor)) {
@@ -2392,9 +2396,22 @@ function focusPnjOnMap(pnjId) {
     updateLayerBtn();
     goToFloor(+f);
     _searchFocusId = found.id;
-    const img = gameToPixel(found.gx, found.gy);
-    panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
-    panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
+    let pts = [found];
+    if (group) {
+      const re = new RegExp('^' + pnjId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(_\\d+)?$');
+      pts = markers.filter(m => re.test(m.id) && (m.layer || 'surface') === (found.layer || 'surface'));
+      if (pts.length > 1) _focusGroup = new Set(pts.map(m => m.id));
+    }
+    const imgs = pts.map(m => gameToPixel(m.gx, m.gy));
+    const minX = Math.min(...imgs.map(p => p.x)), maxX = Math.max(...imgs.map(p => p.x));
+    const minY = Math.min(...imgs.map(p => p.y)), maxY = Math.max(...imgs.map(p => p.y));
+    if (group && pts.length > 1) {
+      // Zoom qui fait tenir tous les pins dans la vue (avec de la marge), sans dépasser un zoom raisonnable
+      const w = Math.max(maxX - minX, 1), h = Math.max(maxY - minY, 1);
+      zoomLevel = Math.max(ZOOM_MIN, Math.min(3, (_vpW * 0.6) / w, (_vpH * 0.6) / h));
+    }
+    panOffset.x = -(((minX + maxX) / 2 - MAP_SIZE / 2) * zoomLevel);
+    panOffset.y = -(((minY + maxY) / 2 - MAP_SIZE / 2) * zoomLevel);
     applyTransform();
     return true;
   }
@@ -2475,7 +2492,7 @@ function initMap() {
     updateVpBounds();
     const targetFloor = (_ghostPin && _ghostPin.floor) ? _ghostPin.floor : _initHash.floor;
     goToFloor(targetFloor);
-    if (_pnjIdParam && focusPnjOnMap(_pnjIdParam)) {
+    if (_pnjIdParam && focusPnjOnMap(_pnjIdParam, _urlParams.get('group') === '1')) {
       // PNJ trouvé : layer + étage déjà réglés
     } else if (_questIdParam) {
       focusQuestOnMap(_questIdParam);
