@@ -200,7 +200,12 @@ function autoMobLootLines(item) {
    « au / aux » devant un nom de PNJ → « chez » ; « de Région » après le PNJ → « — Région » ; un nom qui commence par un article → « auprès de ». */
 function fixObtainGrammar(str) {
   if (typeof str !== 'string' || !str) return str;
-  const region = r => /_/.test(r) ? r.replace(/_/g, ' ').replace(/(^|\s)\S/g, c => c.toUpperCase()) : r;
+  // id de région stocké tel quel (« vallee_des_loups ») : on retrouve son vrai nom (avec accents), sinon on le met en forme
+  const region = r => {
+    if (!/^[a-z0-9_]+$/.test(r)) return r;
+    const n = window._regionIndex && window._regionIndex.get(r);
+    return n || r.replace(/_/g, ' ').replace(/(^|\s)\S/g, c => c.toUpperCase());
+  };
   return str
     .replace(/(^|\n)(\s*)npc:(?=(?:Fabricable|Achetable))/g, '$1$2')
     .replace(/\b(Fabricable|Achetable) (?:aux?|à la|à l['’]) (?=\[npc:)/g, '$1 chez ')
