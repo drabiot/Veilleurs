@@ -5,31 +5,28 @@
   font-family: 'Cinzel', serif;
   font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: .14em;
+  letter-spacing: .13em;
   text-transform: uppercase;
   line-height: 1;
-  color: #e3c48f;
-  background: linear-gradient(180deg, rgba(224,172,96,.15), rgba(224,172,96,.04));
-  border: 1px solid rgba(224,172,96,.34);
+  color: #a39173;
+  background: transparent;
+  border: 0;
   border-radius: 6px;
-  box-shadow: inset 0 1px 0 rgba(255,238,205,.10), 0 1px 3px rgba(0,0,0,.45);
   cursor: pointer;
   white-space: nowrap;
-  transition: color .2s, border-color .2s, background .2s, box-shadow .2s;
+  transition: color .18s, background .18s;
   gap: 8px;
-  padding: 0 16px 0 13px;
-  margin-left: 14px;
+  padding: 0 12px;
+  margin-left: 10px;
   vertical-align: middle;
 }
-.vcl-report-btn svg { width: 15px; height: 15px; flex: none; opacity: .9; transition: transform .2s; }
+.vcl-report-btn svg { width: 15px; height: 15px; flex: none; color: #E0AC60; opacity: .75; transition: opacity .18s; }
 .vcl-report-btn:hover {
-  color: #f6dfae;
-  border-color: rgba(224,172,96,.72);
-  background: linear-gradient(180deg, rgba(224,172,96,.26), rgba(224,172,96,.09));
-  box-shadow: inset 0 1px 0 rgba(255,238,205,.18), 0 0 16px rgba(224,172,96,.16), 0 1px 3px rgba(0,0,0,.45);
+  color: #ede0c8;
+  background: rgba(224,172,96,.10);
 }
-.vcl-report-btn:hover svg { transform: translateY(-1px) scale(1.06); opacity: 1; }
-.vcl-report-btn:focus-visible { outline: 2px solid rgba(224,172,96,.6); outline-offset: 2px; }
+.vcl-report-btn:hover svg { opacity: 1; }
+.vcl-report-btn:focus-visible { outline: 2px solid rgba(224,172,96,.5); outline-offset: 1px; }
 .vcl-report-overlay {
   position: fixed !important;
   inset: 0;

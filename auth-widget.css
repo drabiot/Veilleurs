@@ -14,24 +14,21 @@
   font-family: 'Cinzel', serif;
   font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: .14em;
+  letter-spacing: .13em;
   text-transform: uppercase;
   line-height: 1;
-  color: #e3c48f;
-  background: linear-gradient(180deg, rgba(224,172,96,.15), rgba(224,172,96,.04));
-  border: 1px solid rgba(224,172,96,.34);
+  color: #a39173;
+  background: transparent;
+  border: 0;
   border-radius: 6px;
-  box-shadow: inset 0 1px 0 rgba(255,238,205,.10), 0 1px 3px rgba(0,0,0,.45);
   cursor: pointer;
   white-space: nowrap;
-  transition: color .2s, border-color .2s, background .2s, box-shadow .2s;
-  padding: 0 15px;
+  transition: color .18s, background .18s;
+  padding: 0 12px;
 }
 .vcl-auth-btn:hover {
-  color: #f6dfae;
-  border-color: rgba(224,172,96,.72);
-  background: linear-gradient(180deg, rgba(224,172,96,.26), rgba(224,172,96,.09));
-  box-shadow: inset 0 1px 0 rgba(255,238,205,.18), 0 0 16px rgba(224,172,96,.16), 0 1px 3px rgba(0,0,0,.45);
+  color: #ede0c8;
+  background: rgba(224,172,96,.10);
 }
 
 #vcl-user-info {
@@ -61,27 +58,23 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 28px;
-  padding: 0 13px 0 11px;
+  height: 32px;
+  padding: 0 4px;
   font-family: 'Cinzel', serif;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: .14em;
+  letter-spacing: .13em;
   text-transform: uppercase;
   line-height: 1;
   white-space: nowrap;
-  border-radius: 999px;
-  /* couleur du rôle posée en JS (color) : bordure, fond et lueur en sont dérivés */
-  border: 1px solid color-mix(in srgb, currentColor 50%, transparent);
-  background: linear-gradient(180deg, color-mix(in srgb, currentColor 18%, transparent), color-mix(in srgb, currentColor 6%, transparent));
-  box-shadow: inset 0 1px 0 color-mix(in srgb, currentColor 22%, transparent);
+  /* couleur du rôle posée en JS (color) : texte et point lumineux */
 }
 .vcl-auth-role-badge::before {
   content: '';
   width: 6px; height: 6px;
   border-radius: 50%;
   background: currentColor;
-  box-shadow: 0 0 8px currentColor;
+  box-shadow: 0 0 7px currentColor;
 }
 
 /* ── Modal overlay ── */

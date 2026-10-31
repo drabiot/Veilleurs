@@ -182,8 +182,8 @@ function flagSvg(code, n) {
 
 const LANG_CSS = `
 .vcl-lang{position:relative;display:inline-block;margin-right:8px;vertical-align:middle}
-.vcl-lang-btn{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 11px 0 10px;font-family:'Cinzel',serif;font-size:11.5px;font-weight:600;letter-spacing:.14em;line-height:1;color:#e3c48f;background:linear-gradient(180deg,rgba(224,172,96,.15),rgba(224,172,96,.04));border:1px solid rgba(224,172,96,.34);border-radius:6px;box-shadow:inset 0 1px 0 rgba(255,238,205,.10),0 1px 3px rgba(0,0,0,.45);cursor:pointer;transition:color .2s,border-color .2s,background .2s,box-shadow .2s}
-.vcl-lang-btn:hover,.vcl-lang-btn[aria-expanded="true"]{color:#f6dfae;border-color:rgba(224,172,96,.72);background:linear-gradient(180deg,rgba(224,172,96,.26),rgba(224,172,96,.09));box-shadow:inset 0 1px 0 rgba(255,238,205,.18),0 0 16px rgba(224,172,96,.16),0 1px 3px rgba(0,0,0,.45)}
+.vcl-lang-btn{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 10px;font-family:'Cinzel',serif;font-size:11.5px;font-weight:600;letter-spacing:.13em;line-height:1;color:#a39173;background:transparent;border:0;border-radius:6px;cursor:pointer;transition:color .18s,background .18s}
+.vcl-lang-btn:hover,.vcl-lang-btn[aria-expanded="true"]{color:#ede0c8;background:rgba(224,172,96,.10)}
 .vcl-lang-btn .caret{width:9px;height:9px;opacity:.75;transition:transform .2s}
 .vcl-lang-btn[aria-expanded="true"] .caret{transform:rotate(180deg)}
 .vcl-lang-btn svg:not(.caret),.vcl-lang-opt svg{display:block;width:18px;height:12px;border-radius:2px;flex:none;box-shadow:0 0 0 1px rgba(0,0,0,.45)}
