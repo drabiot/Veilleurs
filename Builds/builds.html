@@ -61,7 +61,13 @@
     <div class="builds-layout">
 
       <!-- ── Sidebar Filtres ── -->
-      <aside class="filters-sidebar">
+      <div class="drawer-backdrop" id="drawer-backdrop"></div>
+      <aside class="filters-sidebar" id="filters-sidebar" aria-label="Filtres">
+
+        <div class="drawer-head">
+          <span class="drawer-title">Filtres</span>
+          <button type="button" class="drawer-close" id="drawer-close" aria-label="Fermer">✕</button>
+        </div>
 
         <div class="filter-section">
           <div class="filter-head">⬡ Classe</div>
@@ -87,16 +93,6 @@
         </div>
 
         <div class="filter-section">
-          <div class="filter-head">⬡ Trier par</div>
-          <select class="sort-select" id="sort-select">
-            <option value="manual">Ordre du wiki</option>
-            <option value="createdAt">Plus récents</option>
-            <option value="previewCount">Plus prévisualisés</option>
-            <option value="favoriteCount">Plus favoris</option>
-          </select>
-        </div>
-
-        <div class="filter-section">
           <button class="fav-toggle" id="fav-toggle">
             <span>⭐</span> Mes Favoris
           </button>
@@ -107,6 +103,8 @@
 
         <button class="filter-reset-btn" id="filter-reset">✕ Réinitialiser les filtres</button>
 
+        <button type="button" class="drawer-apply" id="drawer-apply">Voir les résultats</button>
+
       </aside>
 
       <!-- ── Centre ── -->
@@ -114,14 +112,34 @@
 
         <div class="builds-top-bar">
           <div>
-            <div class="builds-title">Builds Partagés</div>
+            <h1 class="builds-title">Builds Partagés</h1>
             <div class="builds-subtitle">// FORUM · VEILLEURS AU CLAIR DE LUNE</div>
           </div>
           <a href="comparateur.html" id="cmp-open" class="cmp-open-btn" title="Comparer des builds publiés ou tes builds de l'Atelier">⚖ Comparateur</a>
-          <div class="search-wrap">
-            <input type="text" id="search-input" class="search-input" placeholder="🔍  Rechercher un build, un auteur…" autocomplete="off" />
-          </div>
         </div>
+
+        <div class="builds-toolbar">
+          <div class="search-wrap">
+            <input type="search" id="search-input" class="search-input" placeholder="🔍  Rechercher un build, un auteur…" aria-label="Rechercher un build, un auteur…" autocomplete="off" />
+          </div>
+          <div class="sort-dd" id="sort-dd">
+            <button type="button" class="tb-btn sort-dd-btn" id="sort-dd-btn" aria-haspopup="listbox" aria-expanded="false">
+              <span class="sort-dd-lbl">Trier :</span> <span id="sort-dd-val">Ordre du wiki</span> <span class="sort-dd-caret" aria-hidden="true">▾</span>
+            </button>
+            <ul class="sort-dd-menu" id="sort-dd-menu" role="listbox"></ul>
+          </div>
+          <select id="sort-select" class="sr-only" tabindex="-1" aria-hidden="true">
+            <option value="manual">Ordre du wiki</option>
+            <option value="createdAt">Plus récents</option>
+            <option value="previewCount">Plus prévisualisés</option>
+            <option value="favoriteCount">Plus favoris</option>
+          </select>
+          <button type="button" class="tb-btn filters-open-btn" id="filters-open" aria-controls="filters-sidebar">
+            <span aria-hidden="true">⚙</span> <span>Filtres</span> <span class="tb-badge" id="filters-badge" hidden></span>
+          </button>
+        </div>
+
+        <div class="active-chips" id="active-chips" hidden></div>
 
         <div id="single-build-banner" class="single-build-banner" style="display:none">
           🔗 Build en accès par lien uniquement — non répertorié dans le forum.
@@ -130,7 +148,7 @@
 
         <div class="builds-count" id="builds-count"></div>
 
-        <div class="builds-grid" id="builds-grid">
+        <div class="builds-grid" id="builds-grid" aria-live="polite">
           <div class="builds-loading">Chargement des builds…</div>
         </div>
 
@@ -237,6 +255,12 @@
       ? new Map(ALL_SLOTS.map(s => [s.id, s]))
       : new Map();
 
+    // Icônes SVG des cartes (définies avant le premier rendu)
+    const _svg = d => `<svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+    const _ICO_EYE  = _svg('<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>');
+    const _ICO_STAR = _svg('<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>');
+    const _ICO_LINK = _svg('<path d="M10 13a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7"/>');
+
     // ── Auth ──────────────────────────────────────────────────────
     onAuthStateChanged(auth, async user => {
       currentUser = user;
@@ -280,6 +304,7 @@
     const maxLvl = window.MAX_LEVEL || 30;
     document.getElementById('filter-level').max = maxLvl;
     document.getElementById('filter-level').value = maxLvl;
+    _syncRange(document.getElementById('filter-level'));
     document.getElementById('filter-level-val').textContent = maxLvl;
     filterMaxLevel = maxLvl;
 
@@ -305,7 +330,7 @@
     async function _loadBuilds(append) {
       const grid = document.getElementById('builds-grid');
       if (!append) {
-        grid.innerHTML = '<div class="builds-loading">Chargement des builds…</div>';
+        grid.innerHTML = _skeletonHtml();
         allBuilds = [];
         lastDoc   = null;
       }
@@ -333,7 +358,7 @@
 
     async function _loadMyBuilds() {
       const grid = document.getElementById('builds-grid');
-      grid.innerHTML = '<div class="builds-loading">Chargement de vos builds…</div>';
+      grid.innerHTML = _skeletonHtml();
       if (!currentUser) {
         grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">🔒</span>Connectez-vous pour voir vos builds.</div>';
         return;
@@ -355,7 +380,7 @@
 
     async function _loadMyFavoritesBuilds() {
       const grid = document.getElementById('builds-grid');
-      grid.innerHTML = '<div class="builds-loading">Chargement de vos favoris…</div>';
+      grid.innerHTML = _skeletonHtml();
       if (!currentUser) {
         grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">🔒</span>Connectez-vous pour voir vos favoris.</div>';
         return;
@@ -381,7 +406,7 @@
 
     async function _loadSingleBuild(buildId) {
       const grid = document.getElementById('builds-grid');
-      grid.innerHTML = '<div class="builds-loading">Chargement du build…</div>';
+      grid.innerHTML = _skeletonHtml();
       try {
         const snap = await getDoc(doc(db, COL_BUILDS, buildId));
         if (!snap.exists()) {
@@ -461,18 +486,145 @@
         ? filtered.length + ' build' + (filtered.length > 1 ? 's' : '')
         : '';
 
+      _renderActiveChips();
+
       if (!filtered.length) {
-        grid.innerHTML = '<div class="builds-empty"><span class="builds-empty-icon">📋</span>Aucun build trouvé.<br><span style="font-size:11px;opacity:.6">Soyez le premier à publier !</span></div>';
+        grid.innerHTML = _emptyHtml();
+        grid.removeAttribute('aria-busy');
         document.getElementById('load-more-btn').style.display = 'none';
         return;
       }
 
-      grid.innerHTML = filtered.map(b => _buildCard(b)).join('');
+      // FLIP : on mémorise la position des cartes avant le rendu, puis on les anime vers leur nouvelle place
+      const before = new Map([...grid.querySelectorAll('.build-card[data-id]')].map(c => [c.dataset.id, c.getBoundingClientRect()]));
+      grid.innerHTML = filtered.map((b, i) => _buildCard(b)).join('');
+      grid.removeAttribute('aria-busy');
+      _animateCards(grid, before);
 
       const lmBtn = document.getElementById('load-more-btn');
       lmBtn.style.display = (hasMore && !filterSearch && !filterFavOnly && !filterMyBuilds && !isSingleView) ? 'block' : 'none';
 
       _attachCardListeners();
+    }
+
+    // ── Squelettes, état vide, animations ─────────────────────────
+    function _skeletonHtml(n = 6) {
+      const card = `
+        <div class="build-card skeleton" aria-hidden="true">
+          <div class="sk sk-line sk-title"></div>
+          <div class="sk sk-line sk-sub"></div>
+          <div class="sk sk-mannequin"></div>
+          <div class="sk sk-line sk-foot"></div>
+          <div class="sk sk-btn"></div>
+        </div>`;
+      document.getElementById('builds-grid')?.setAttribute('aria-busy', 'true');
+      return card.repeat(n);
+    }
+
+    function _filtersActive() {
+      return !!(filterClass || filterSearch || filterFavOnly || filterMyBuilds
+        || filterMaxLevel < maxLvl || Object.keys(filterStats).some(k => filterStats[k] > 0));
+    }
+
+    function _emptyHtml() {
+      if (_filtersActive()) {
+        return `<div class="builds-empty">
+          <span class="builds-empty-icon">🔍</span>
+          <div class="builds-empty-title">Aucun build ne correspond</div>
+          <p>Essaie d'assouplir tes filtres ou ta recherche.</p>
+          <div class="builds-empty-cta"><button type="button" class="action-btn primary" data-empty-reset>✕ Réinitialiser les filtres</button></div>
+        </div>`;
+      }
+      return `<div class="builds-empty">
+        <span class="builds-empty-icon">📋</span>
+        <div class="builds-empty-title">Aucun build trouvé.</div>
+        <p>Soyez le premier à publier !</p>
+        <div class="builds-empty-cta"><a class="action-btn primary" href="../Atelier/atelier.html">🔨 Créer un build dans l'Atelier</a></div>
+      </div>`;
+    }
+
+    function _animateCards(grid, before) {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const ease = 'cubic-bezier(.2,.7,.2,1)';
+      grid.querySelectorAll('.build-card[data-id]').forEach((card, i) => {
+        const prev = before.get(card.dataset.id);
+        if (prev) {
+          const now = card.getBoundingClientRect();
+          const dx = prev.left - now.left, dy = prev.top - now.top;
+          if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+            card.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: 'none' }], { duration: 340, easing: ease });
+          }
+        } else {
+          card.animate([{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }],
+            { duration: 420, delay: Math.min(i, 12) * 40, easing: ease, fill: 'backwards' });
+        }
+      });
+    }
+
+    // ── Filtres actifs (chips retirables) + compteur du bouton Filtres ──
+    function _statLabel(id) {
+      for (const g of (typeof STAT_GROUPS !== 'undefined' ? STAT_GROUPS : [])) {
+        const s = g.stats.find(x => x.id === id);
+        if (s) return s.label;
+      }
+      return id;
+    }
+
+    function _renderActiveChips() {
+      const wrap = document.getElementById('active-chips');
+      const chips = [];
+      const add = (kind, key, inner) => chips.push(
+        `<button type="button" class="ac-chip" data-clear="${escHtml(kind)}" data-key="${escHtml(key || '')}" title="Retirer le filtre">${inner}<span class="ac-x" aria-hidden="true">✕</span></button>`);
+      let count = 0;
+      if (filterClass) {
+        const c = (typeof CLASSES !== 'undefined' ? CLASSES : []).find(x => x.id === filterClass);
+        add('class', '', `<span>${escHtml(c ? c.ico : '')}</span> <span>${escHtml(c ? c.label : filterClass)}</span>`); count++;
+      }
+      if (filterMaxLevel < maxLvl) { add('level', '', `<span class="ac-k">Niveau max</span> <span class="ac-v">${filterMaxLevel}</span>`); count++; }
+      Object.entries(filterStats).filter(e => e[1] > 0).forEach(([id, v]) => {
+        add('stat', id, `<span class="ac-k">${escHtml(_statLabel(id))}</span> <span class="ac-v">≥ ${v}</span>`); count++;
+      });
+      if (filterFavOnly)  { add('fav', '', '<span>⭐</span> <span>Favoris</span>'); count++; }
+      if (filterMyBuilds) { add('mine', '', '<span>👤</span> <span>Mes builds</span>'); count++; }
+      if (filterSearch)   { add('search', '', `<span class="ac-v">“${escHtml(filterSearch)}”</span>`); }
+      wrap.innerHTML = chips.join('');
+      wrap.hidden = !chips.length;
+      const badge = document.getElementById('filters-badge');
+      badge.textContent = count;
+      badge.hidden = !count;
+    }
+
+    function _clearFilter(kind, key) {
+      let needReload = false;
+      if (kind === 'class') {
+        filterClass = '';
+        document.querySelectorAll('.class-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
+      } else if (kind === 'level') {
+        filterMaxLevel = maxLvl;
+        const lv = document.getElementById('filter-level');
+        lv.value = maxLvl; _syncRange(lv);
+        document.getElementById('filter-level-val').textContent = maxLvl;
+      } else if (kind === 'stat') {
+        delete filterStats[key];
+        const inp = document.querySelector(`input[data-stat="${CSS.escape(key)}"]`);
+        if (inp) inp.value = '';
+      } else if (kind === 'fav') {
+        filterFavOnly = false; needReload = true;
+        document.getElementById('fav-toggle').classList.remove('active');
+      } else if (kind === 'mine') {
+        filterMyBuilds = false; needReload = true;
+        document.getElementById('my-builds-toggle').classList.remove('active');
+      } else if (kind === 'search') {
+        filterSearch = '';
+        document.getElementById('search-input').value = '';
+      }
+      if (needReload) _reload(); else _renderBuilds(allBuilds);
+    }
+
+    // Curseur doré : --p = part remplie de la piste
+    function _syncRange(el) {
+      const min = +el.min || 0, max = +el.max || 100;
+      el.style.setProperty('--p', ((el.value - min) / (max - min || 1) * 100) + '%');
     }
 
     async function _handleRename(id) {
@@ -520,7 +672,11 @@
       const img      = _slotImgPath(slotId, b, slotImages[slotId]);
       const itemName = slots[slotId]?.name || '';
       const tipItem  = escHtml(itemName || label);
-      if (img)      return `<div class="bc-slot" data-tip="${tipItem}"${runeAttr}><img src="../${img.replace(/^\.\.\//, '')}" alt="${escHtml(itemName || slotId)}" loading="lazy" onerror="this.classList.add('bc-slot-empty-img')" /></div>`;
+      // Rareté de l'item (bordure + lueur du slot, ligne colorée dans l'infobulle)
+      const wikiItem = slots[slotId]?.id != null ? _itemsById.get(String(slots[slotId].id)) : null;
+      const rar      = wikiItem && typeof RARITIES !== 'undefined' ? RARITIES[wikiItem.rarity] : null;
+      const rarAttr  = rar ? ` data-rar="${escHtml(wikiItem.rarity)}" data-tip-rar="${escHtml(rar.label)}" style="--rc:${escHtml(rar.color)}"` : '';
+      if (img)      return `<div class="bc-slot${rar ? ' bc-slot-rar' : ''}" tabindex="0" data-tip="${tipItem}"${runeAttr}${rarAttr}><img src="../${img.replace(/^\.\.\//, '')}" alt="${escHtml(itemName || slotId)}" loading="lazy" onerror="this.classList.add('bc-slot-empty-img')" /></div>`;
       if (itemName) return `<div class="bc-slot bc-slot-noimg" data-tip="${tipItem}"${runeAttr}><span class="bc-slot-text">${escHtml(itemName.slice(0,10))}</span></div>`;
       return `<div class="bc-slot bc-slot-empty" data-tip="${tipItem}"${runeAttr}>${escHtml(ico)}</div>`;
     }
@@ -541,18 +697,24 @@
       const colR   = MQ_RIGHT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
       const botRow = MQ_BOT.map(id => _slotCell(id, b, canSeeSensible, runeNames)).join('');
 
+      const id = escHtml(b._id);
+      const menuItems = [
+        _canReorder() ? `<button type="button" role="menuitem" data-action="move-prev" data-id="${id}">◀ Déplacer avant</button><button type="button" role="menuitem" data-action="move-next" data-id="${id}">▶ Déplacer après</button>` : '',
+        (isOwn || isAdm) ? `<button type="button" role="menuitem" data-action="rename" data-id="${id}">✎ Renommer</button>` : '',
+        canDel ? `<button type="button" role="menuitem" class="danger" data-action="delete" data-id="${id}">✕ ${isAdm && !isOwn ? 'Supprimer (modération)' : 'Supprimer'}</button>` : '',
+      ].join('');
+
       const unlistedBadge = (b.visibility === 'unlisted') ? `<span class="bc-unlisted-badge">🔗 Lien uniquement</span>` : '';
       const adminBadge    = (!isOwn && isAdm) ? `<span class="bc-admin-badge">⬡ admin</span>` : '';
 
       return `
-        <div class="build-card" data-id="${escHtml(b._id)}"${_canReorder() ? ' draggable="true"' : ''}>
+        <div class="build-card" data-id="${escHtml(b._id)}" data-cls="${escHtml(b.classe || '')}"${_canReorder() ? ' draggable="true"' : ''}>
           <div class="bc-head">
             <div class="bc-name" title="${escHtml(b.name || 'Sans nom')}">${escHtml(b.name || 'Sans nom')}</div>
-            <div class="bc-head-right">
-              ${_canReorder() ? `<button class="bc-btn-move" data-action="move-prev" data-id="${escHtml(b._id)}" title="Déplacer avant">◀</button><button class="bc-btn-move" data-action="move-next" data-id="${escHtml(b._id)}" title="Déplacer après">▶</button>` : ''}
-              ${(isOwn || isAdm) ? `<button class="bc-btn-del bc-btn-ren" data-action="rename" data-id="${escHtml(b._id)}" title="Renommer">✎</button>` : ''}
-              ${canDel ? `<button class="bc-btn-del" data-action="delete" data-id="${escHtml(b._id)}" title="${isAdm && !isOwn ? 'Supprimer (modération)' : 'Supprimer'}">✕</button>` : ''}
-            </div>
+            ${menuItems ? `<div class="bc-head-right">
+              <button type="button" class="bc-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-label="Plus d'actions" title="Plus d'actions">⋯</button>
+              <div class="bc-menu" role="menu">${menuItems}</div>
+            </div>` : ''}
           </div>
           <div class="bc-meta">
             <span class="bc-author">👤 ${escHtml(b.authorPseudo || 'Anonyme')}</span>
@@ -562,7 +724,7 @@
             <div class="bc-mannequin-row">
               <div class="bc-mq-col">${colL}</div>
               <div class="bc-mq-center">
-                <span class="bc-mq-statsbtn" data-stats-id="${escHtml(b._id)}">📊 Stats</span>
+                <span class="bc-mq-statsbtn" role="button" tabindex="0" data-stats-id="${escHtml(b._id)}">📊 Stats</span>
                 <span class="bc-mq-cls-ico">${escHtml(clsIco)}</span>
                 <span class="bc-mq-cls-name">${escHtml(clsLbl)}</span>
                 <span class="bc-mq-level">Niv.&nbsp;${b.level || 1}</span>
@@ -573,15 +735,17 @@
           </div>
           ${b.comment ? `<div class="bc-comment" title="${escHtml(b.comment)}">💬 ${escHtml(b.comment)}</div>` : ''}
           <div class="bc-foot">
-            <div class="bc-social">
-              <span title="Prévisualisations">◉ ${b.previewCount || 0}</span>
-              <span title="Favoris">⭐ ${b.favoriteCount || 0}</span>
+            <div class="bc-foot-meta">
+              <div class="bc-social">
+                <span title="Prévisualisations">${_ICO_EYE}<span class="bc-prev-count">${b.previewCount || 0}</span></span>
+                <span title="Favoris">${_ICO_STAR}<span class="bc-fav-count">${b.favoriteCount || 0}</span></span>
+              </div>
+              <span class="bc-time">${escHtml(ago)}</span>
             </div>
-            <span class="bc-time">${escHtml(ago)}</span>
             <div class="bc-actions">
-              <button class="bc-btn" data-action="share" data-id="${escHtml(b._id)}" title="Copier le lien">🔗</button>
+              <button class="bc-btn bc-btn-icon" data-action="share" data-id="${escHtml(b._id)}" title="Copier le lien" aria-label="Copier le lien">${_ICO_LINK}</button>
               <button class="bc-btn primary" data-action="preview" data-id="${escHtml(b._id)}" title="Aperçu dans l'Atelier">◉ Aperçu</button>
-              <button class="bc-btn fav ${isFav ? 'active' : ''}" data-action="fav" data-id="${escHtml(b._id)}" title="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">⭐</button>
+              <button class="bc-btn bc-btn-icon fav ${isFav ? 'active' : ''}" data-action="fav" data-id="${escHtml(b._id)}" aria-pressed="${isFav}" aria-label="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}" title="${isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}">${_ICO_STAR}</button>
             </div>
           </div>
         </div>`;
@@ -645,32 +809,126 @@
         });
       });
       // Tooltips sur les thumbnails
+      function _fillSlotTip(el) {
+        const label = el.dataset.tip;
+        if (!label) return false;
+        tip.classList.remove('bc-tooltip-stats');
+        tip.innerHTML = '';
+        tip.appendChild(document.createTextNode(label));
+        if (el.dataset.tipRar) {
+          const r = document.createElement('span');
+          r.className = 'bc-tip-rar';
+          r.style.color = el.style.getPropertyValue('--rc');
+          r.textContent = el.dataset.tipRar;
+          tip.appendChild(r);
+        }
+        if (el.dataset.tipRune) {
+          const runeSpan = document.createElement('span');
+          runeSpan.className = 'bc-tip-rune';
+          runeSpan.textContent = el.dataset.tipRune;
+          tip.appendChild(runeSpan);
+        }
+        tip.style.display = 'block';
+        return true;
+      }
+      // Place l'infobulle sous/au-dessus d'un élément (tactile + clavier), sans sortir de l'écran
+      function _placeTipNear(el) {
+        const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+        tip.style.left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - 8)) + 'px';
+        tip.style.top  = (r.top - h - 8 < 8 ? r.bottom + 8 : r.top - h - 8) + 'px';
+      }
+      let _tipTimer = null;
       document.querySelectorAll('.bc-slot[data-tip]').forEach(el => {
-        el.addEventListener('mouseenter', function() {
-          const label = this.dataset.tip;
-          if (!label) return;
-          const rune = this.dataset.tipRune;
-          tip.innerHTML = '';
-          const nameNode = document.createTextNode(label);
-          tip.appendChild(nameNode);
-          if (rune) {
-            tip.appendChild(document.createElement('br'));
-            const runeSpan = document.createElement('span');
-            runeSpan.className = 'bc-tip-rune';
-            runeSpan.textContent = rune;
-            tip.appendChild(runeSpan);
-          }
-          tip.style.display = 'block';
-        });
+        el.addEventListener('mouseenter', function() { _fillSlotTip(this); });
         el.addEventListener('mousemove', function(e) {
           tip.style.left = (e.clientX + 14) + 'px';
           tip.style.top  = (e.clientY - 28) + 'px';
         });
-        el.addEventListener('mouseleave', function() {
-          tip.style.display = 'none';
+        el.addEventListener('mouseleave', function() { tip.style.display = 'none'; });
+        el.addEventListener('focus', function() { if (_fillSlotTip(this)) _placeTipNear(this); });
+        el.addEventListener('blur',  function() { tip.style.display = 'none'; });
+        // Tactile : un appui affiche l'infobulle quelques secondes
+        el.addEventListener('click', function(e) {
+          if (!window.matchMedia('(hover: none)').matches) return;
+          if (_fillSlotTip(this)) { _placeTipNear(this); clearTimeout(_tipTimer); _tipTimer = setTimeout(() => { tip.style.display = 'none'; }, 2600); }
         });
       });
+      // Tactile / clavier : le bouton Stats s'ouvre aussi au tap et à Entrée
+      document.querySelectorAll('.bc-mq-statsbtn').forEach(el => {
+        const open = () => {
+          const b = allBuilds.find(x => x._id === el.dataset.statsId);
+          if (!b) return;
+          tip.innerHTML = _statsTipHtml(b);
+          tip.classList.add('bc-tooltip-stats');
+          tip.style.display = 'block';
+          _placeTipNear(el);
+          clearTimeout(_tipTimer);
+          _tipTimer = setTimeout(() => { tip.style.display = 'none'; tip.classList.remove('bc-tooltip-stats'); }, 5000);
+        };
+        el.addEventListener('click', () => { if (window.matchMedia('(hover: none)').matches) open(); });
+        el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+        el.addEventListener('blur', () => { tip.style.display = 'none'; tip.classList.remove('bc-tooltip-stats'); });
+      });
     }
+
+    // ── Menu ⋯ des cartes ──────────────────────────────────────────
+    document.addEventListener('click', e => {
+      const btn = e.target.closest?.('.bc-menu-btn');
+      document.querySelectorAll('.bc-menu.open').forEach(m => {
+        if (!btn || m !== btn.nextElementSibling) { m.classList.remove('open'); m.previousElementSibling?.setAttribute('aria-expanded', 'false'); }
+      });
+      if (btn) {
+        const m = btn.nextElementSibling;
+        const open = m.classList.toggle('open');
+        btn.setAttribute('aria-expanded', String(open));
+        if (open) m.querySelector('button')?.focus({ preventScroll: true });
+      }
+    }, true);
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      document.querySelectorAll('.bc-menu.open').forEach(m => { m.classList.remove('open'); m.previousElementSibling?.setAttribute('aria-expanded', 'false'); m.previousElementSibling?.focus(); });
+      document.getElementById('sort-dd')?.classList.remove('open');
+      _closeDrawer();
+    });
+
+    // ── Tri : menu déroulant à l'habillage du site (le <select> reste la source de vérité) ──
+    function _setupSortDropdown() {
+      const sel = document.getElementById('sort-select');
+      const dd = document.getElementById('sort-dd');
+      const btn = document.getElementById('sort-dd-btn');
+      const menu = document.getElementById('sort-dd-menu');
+      const val = document.getElementById('sort-dd-val');
+      menu.innerHTML = [...sel.options].map(o =>
+        `<li role="presentation"><button type="button" role="option" data-v="${escHtml(o.value)}">${escHtml(o.textContent)}</button></li>`).join('');
+      const sync = () => {
+        const o = sel.options[sel.selectedIndex];
+        val.textContent = o.textContent;
+        menu.querySelectorAll('button').forEach(b => {
+          const on = b.dataset.v === sel.value;
+          b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on));
+        });
+      };
+      const setOpen = on => { dd.classList.toggle('open', on); btn.setAttribute('aria-expanded', String(on)); };
+      btn.addEventListener('click', e => { e.stopPropagation(); setOpen(!dd.classList.contains('open')); if (dd.classList.contains('open')) menu.querySelector('.active')?.focus(); });
+      menu.addEventListener('click', e => {
+        const b = e.target.closest('button[data-v]');
+        if (!b) return;
+        sel.value = b.dataset.v;
+        sel.dispatchEvent(new Event('change'));
+        sync(); setOpen(false); btn.focus();
+      });
+      menu.addEventListener('keydown', e => {
+        const items = [...menu.querySelectorAll('button')], i = items.indexOf(document.activeElement);
+        if (e.key === 'ArrowDown') { e.preventDefault(); items[Math.min(i + 1, items.length - 1)].focus(); }
+        if (e.key === 'ArrowUp')   { e.preventDefault(); items[Math.max(i - 1, 0)].focus(); }
+      });
+      document.addEventListener('click', e => { if (!dd.contains(e.target)) setOpen(false); });
+      sync();
+    }
+
+    // ── Tiroir de filtres (mobile) ──────────────────────────────────
+    function _openDrawer()  { document.body.classList.add('drawer-open'); document.getElementById('filters-open').setAttribute('aria-expanded', 'true'); }
+    function _closeDrawer() { document.body.classList.remove('drawer-open'); document.getElementById('filters-open')?.setAttribute('aria-expanded', 'false'); }
 
     // ── Comparateur : sélection de 2 à 4 builds (conservée dans localStorage) ──
     function _cmpSel() {
@@ -855,6 +1113,7 @@
         myFavoriteIds.add(buildId);
         btnEl.classList.add('active');
       }
+      btnEl.setAttribute('aria-pressed', String(!isFav));
 
       try {
         if (isFav) {
@@ -872,11 +1131,8 @@
           const build = allBuilds.find(b => b._id === buildId);
           if (build) {
             build.favoriteCount = (build.favoriteCount || 0) + (isFav ? -1 : 1);
-            const socialEl = card.querySelector('.bc-social');
-            if (socialEl) {
-              const spans = socialEl.querySelectorAll('span');
-              if (spans[1]) spans[1].textContent = '⭐ ' + Math.max(0, build.favoriteCount);
-            }
+            const countEl = card.querySelector('.bc-fav-count');
+            if (countEl) countEl.textContent = Math.max(0, build.favoriteCount);
           }
         }
       } catch(e) {
@@ -1013,6 +1269,23 @@
 
     // ── Events ───────────────────────────────────────────────────
     function _setupEventListeners() {
+      _setupSortDropdown();
+
+      // Tiroir de filtres (mobile)
+      document.getElementById('filters-open').addEventListener('click', _openDrawer);
+      document.getElementById('drawer-close').addEventListener('click', _closeDrawer);
+      document.getElementById('drawer-apply').addEventListener('click', _closeDrawer);
+      document.getElementById('drawer-backdrop').addEventListener('click', _closeDrawer);
+
+      // Chips de filtres actifs + bouton de l'état vide
+      document.getElementById('active-chips').addEventListener('click', e => {
+        const c = e.target.closest('.ac-chip');
+        if (c) _clearFilter(c.dataset.clear, c.dataset.key);
+      });
+      document.getElementById('builds-grid').addEventListener('click', e => {
+        if (e.target.closest('[data-empty-reset]')) document.getElementById('filter-reset').click();
+      });
+
       // Search
       document.getElementById('search-input').addEventListener('input', e => {
         filterSearch = e.target.value.trim();
@@ -1022,6 +1295,7 @@
       // Niveau slider (client-side)
       document.getElementById('filter-level').addEventListener('input', e => {
         filterMaxLevel = parseInt(e.target.value);
+        _syncRange(e.target);
         document.getElementById('filter-level-val').textContent = filterMaxLevel;
         _renderBuilds(allBuilds);
       });
@@ -1051,6 +1325,7 @@
         filterClass = ''; filterStats = {}; filterFavOnly = false; filterSearch = ''; filterMyBuilds = false;
         filterMaxLevel = maxLvl;
         document.getElementById('filter-level').value = maxLvl;
+        _syncRange(document.getElementById('filter-level'));
         document.getElementById('filter-level-val').textContent = maxLvl;
         document.getElementById('search-input').value = '';
         document.getElementById('fav-toggle').classList.remove('active');

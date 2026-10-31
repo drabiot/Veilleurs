@@ -2959,5 +2959,20 @@
   "Fiche précédente (←)": "Previous entry (←)",
   "Fiche suivante (→)": "Next entry (→)",
   "Fiche précédente": "Previous entry",
-  "Fiche suivante": "Next entry"
+  "Fiche suivante": "Next entry",
+  "Trier :": "Sort:",
+  "Voir les résultats": "See results",
+  "Retirer le filtre": "Remove filter",
+  "Plus d'actions": "More actions",
+  "Aucun build ne correspond": "No matching build",
+  "Essaie d'assouplir tes filtres ou ta recherche.": "Try loosening your filters or search.",
+  "🔨 Créer un build dans l'Atelier": "🔨 Create a build in the Workshop",
+  "Niveau max": "Max level",
+  "Mes builds": "My builds",
+  "◀ Déplacer avant": "◀ Move before",
+  "▶ Déplacer après": "▶ Move after",
+  "✎ Renommer": "✎ Rename",
+  "✕ Supprimer (modération)": "✕ Delete (moderation)",
+  "Retirer des favoris": "Remove from favorites",
+  "Rechercher un build, un auteur…": "Search a build, an author…"
 }
