@@ -681,10 +681,10 @@ function loadMapImage(n, layer) {
   if (layer === 'underground') {
     mapImg.style.opacity = '0';
     mapImg.style.zIndex  = '1';
-    mapImg.src = `../img/maps/floor-${n}_underground.webp`;
+    mapImg.src = `../img/maps/floor-${n}_underground.webp${n === 1 ? '?v=2' : ''}`;
     mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); document.getElementById('map-loading')?.remove(); };
     mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; document.getElementById('map-loading')?.remove(); };
-    ghost.src           = `../img/maps/floor-${n}.webp`;
+    ghost.src           = `../img/maps/floor-${n}.webp${n === 1 ? '?v=2' : ''}`;
     ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
     ghost.style.zIndex  = '0';
     ghost.style.opacity = '0.10';
@@ -694,7 +694,7 @@ function loadMapImage(n, layer) {
     mapImg.src = `../img/maps/floor-${n}_donjon.png`;
     mapImg.onload  = () => { mapImg.style.opacity = '1'; mapImg.removeAttribute('data-missing'); document.getElementById('map-loading')?.remove(); };
     mapImg.onerror = () => { mapImg.src = ''; mapImg.setAttribute('data-missing', 'true'); mapImg.style.opacity = '0'; document.getElementById('map-loading')?.remove(); };
-    ghost.src           = `../img/maps/floor-${n}_underground.webp`;
+    ghost.src           = `../img/maps/floor-${n}_underground.webp${n === 1 ? '?v=2' : ''}`;
     ghost.style.filter  = 'grayscale(60%) brightness(0.8)';
     ghost.style.zIndex  = '0';
     ghost.style.opacity = '0.10';
@@ -702,8 +702,8 @@ function loadMapImage(n, layer) {
     mapImg.style.opacity = '0';
     mapImg.style.zIndex  = '';
     // Étage 1 (5000 px, 12 Mo) : un aperçu de 1 Mo s'affiche tout de suite, puis la carte pleine résolution la remplace sans clignotement
-    const full = `../img/maps/floor-${n}.webp`;
-    const preview = n === 1 ? `../img/maps/floor-1.preview.webp` : null;
+    const full = `../img/maps/floor-${n}.webp${n === 1 ? '?v=2' : ''}`;
+    const preview = n === 1 ? `../img/maps/floor-1.preview.webp?v=2` : null;
     mapImg.dataset.target = full;
     mapImg.src = preview || full;
     if (preview) {

@@ -14,10 +14,12 @@ const FLOOR_DATA = {
 
 const MAP_CALIBRATION = {
   1: {
-    centerPixel: { x: 450,    y: 450   },
+    // Image 4952 px (source SAO-MC-Interactive-Map) = ancienne image 5000 px recadrée en (39,21), échelle 1:1.
+    // Repère de jeu inchangé : les marqueurs existants restent exactement au même endroit.
+    centerPixel: { x: 447.274, y: 450.545 },
     centerGame:  { x: 2545.6, y: 2550 },
     radiusPixel: 450,
-    radiusGame:  2498.1,
+    radiusGame:  2474.118,
   },
   2: {
     centerPixel: { x: 450,  y: 450 },

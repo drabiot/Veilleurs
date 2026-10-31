@@ -209,8 +209,8 @@ function _zeInitPanZoom() {
 
 function _zeMapSrc() {
   return _zeLayer === 'underground'
-    ? `img/maps/floor-${_zeFloor}_underground.webp`
-    : `img/maps/floor-${_zeFloor}.webp`;
+    ? `img/maps/floor-${_zeFloor}_underground.webp${_zeFloor === 1 ? '?v=2' : ''}`
+    : `img/maps/floor-${_zeFloor}.webp${_zeFloor === 1 ? '?v=2' : ''}`;
 }
 
 function _zeUpdateLayerButtons() {
