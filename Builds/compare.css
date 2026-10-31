@@ -211,3 +211,14 @@
   .cmp-v { font-size: 12.5px; }
 }
 @media (prefers-reduced-motion: reduce) { .cmp-card, .cmp-row, .cmp-switch-knob { transition: none; } }
+
+/* ── Cellules en barres : une barre par build, échelle commune à la ligne ── */
+.cmp-cell, .cmp-cell.best, .cmp-cell.worst { background: none; box-shadow: none; text-align: left !important; padding-left: 14px; padding-right: 14px; }
+.cmp-cell .cmp-v, .cmp-cell.best .cmp-v, .cmp-cell.worst .cmp-v { color: var(--text); font-weight: 400; font-size: 13px; text-decoration: none; }
+.cmp-cell.best .cmp-v { color: var(--bright); font-weight: 700; }
+.cmp-cell.best .cmp-v::after { content: none; }
+.cmp-bar { display: block; height: 6px; margin-top: 6px; border-radius: 3px; background: rgba(255,255,255,.05); overflow: hidden; }
+.cmp-bar i { display: block; height: 100%; border-radius: 3px; background: var(--bc, var(--gold)); opacity: .5; transition: width .35s cubic-bezier(.2,.7,.2,1); }
+.cmp-cell.best .cmp-bar i { opacity: 1; }
+.cmp-row:not(.has-diff) .cmp-bar i { opacity: .28; }
+.cmp-row:not(.has-diff) .cmp-v { color: var(--muted); }
