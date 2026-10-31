@@ -218,18 +218,32 @@
 .vcl-report-login a { color: #e8b84b; text-decoration: underline; }
 
 /* Bouton « Nous contacter » : pastille du nombre de tickets avec une réponse non lue */
-.vcl-report-btn.unread { animation: vcl-bubble-pulse 1.8s ease-in-out infinite; }
+.vcl-report-btn { position: relative; }
+.vcl-report-btn.unread { border-color: #e8b84b; }
+/* pastille de notification (rouge, en haut à droite du bouton) : nombre de tickets avec une réponse non lue */
 .vcl-report-count {
-  display: inline-block;
-  min-width: 14px;
-  padding: 1px 5px;
-  margin-left: 4px;
+  position: absolute;
+  top: -8px;
+  right: -9px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
   border-radius: 99px;
-  background: #e8b84b;
-  color: #1a1a2e;
-  font-size: 0.72rem;
+  background: #e5484d;
+  border: 2px solid #0e0c0a;
+  color: #fff;
+  font-size: 0.68rem;
   font-weight: 700;
+  line-height: 14px;
   text-align: center;
+  pointer-events: none;
+  animation: vcl-notif-ping 2s ease-out infinite;
+}
+@keyframes vcl-notif-ping {
+  0%   { box-shadow: 0 0 0 0 rgba(229,72,77,0.65); }
+  70%  { box-shadow: 0 0 0 8px rgba(229,72,77,0); }
+  100% { box-shadow: 0 0 0 0 rgba(229,72,77,0); }
 }
 @keyframes vcl-bubble-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(232,184,75,0.55); }
@@ -252,3 +266,44 @@
 }
 .vcl-report-cats input:checked + span { background: rgba(232,184,75,0.18); border-color: #e8b84b; color: #e8b84b; }
 .vcl-report-cats input:focus-visible + span { outline: 2px solid #e8b84b; outline-offset: 2px; }
+
+/* ── Thème « Veilleurs » du formulaire de ticket (brun chaud, or, Cinzel) ── */
+.vcl-report-overlay {
+  --v-bg: #13100d; --v-bg2: #191410; --v-bg3: #201810; --v-rim: #2e2418; --v-rim2: #3d3020;
+  --v-gold: #E0AC60; --v-gold-dim: #9a7040; --v-text: #c9b99a; --v-bright: #ede0c8; --v-muted: #6b5a45;
+  --v-bug: #c47a6a; --v-sugg: #7db87a; --v-other: #7aaccc;
+}
+.vcl-report-modal {
+  position: relative;
+  display: flex; flex-direction: column;
+  background: linear-gradient(165deg, #1b1510 0%, #110e0b 100%);
+  border: 1px solid var(--v-rim2); border-radius: 12px;
+  width: min(560px, 94vw); max-height: 86vh; overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(224,172,96,.12), 0 16px 56px rgba(0,0,0,.75), 0 0 60px rgba(224,172,96,.06);
+  color: var(--v-text);
+  animation: vcl-slide-up .24s ease;
+}
+.vcl-report-modal::before { content: ''; position: absolute; top: 0; left: 8%; right: 8%; height: 1px; pointer-events: none; background: linear-gradient(90deg, transparent, var(--v-gold), transparent); }
+
+.vcl-report-modal textarea {
+  box-sizing: border-box; background: #0e0c0a; border: 1px solid var(--v-rim); border-radius: 7px; color: var(--v-bright);
+  font-family: inherit; font-size: 13px; padding: 9px 11px; outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.vcl-report-modal textarea::placeholder { color: var(--v-muted); }
+.vcl-report-modal textarea:focus { border-color: var(--v-gold-dim); box-shadow: 0 0 0 3px rgba(224,172,96,.1); }
+
+.vcl-report-modal { padding: 22px 24px 20px; display: block; overflow-y: auto; width: min(500px, 92vw); }
+.vcl-report-modal h3 { margin: 0 0 16px; color: var(--v-gold); font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.vcl-report-modal h3::after { content: ''; display: block; height: 1px; margin-top: 10px; background: linear-gradient(90deg, var(--v-gold-dim), transparent); }
+.vcl-report-ctx { background: rgba(224,172,96,.08) !important; border-left-color: var(--v-gold) !important; color: var(--v-gold) !important; }
+.vcl-report-cats span { border-color: var(--v-rim2) !important; color: var(--v-muted) !important; background: var(--v-bg2); }
+.vcl-report-cats label:nth-child(1) input:checked + span { background: rgba(196,122,106,.15) !important; border-color: var(--v-bug) !important; color: var(--v-bug) !important; }
+.vcl-report-cats label:nth-child(2) input:checked + span { background: rgba(125,184,122,.15) !important; border-color: var(--v-sugg) !important; color: var(--v-sugg) !important; }
+.vcl-report-cats label:nth-child(3) input:checked + span { background: rgba(122,172,204,.15) !important; border-color: var(--v-other) !important; color: var(--v-other) !important; }
+.vcl-report-login { color: var(--v-muted) !important; }
+.vcl-report-login a { color: var(--v-gold) !important; }
+#vcl-report-cancel { background: transparent !important; color: var(--v-muted) !important; border-color: var(--v-rim2) !important; }
+#vcl-report-cancel:hover { color: var(--v-bright) !important; }
+#vcl-report-submit { background: linear-gradient(180deg, #E0AC60, #c48f45) !important; border: 1px solid #f0c27e !important; color: #1a1208 !important; font-weight: 700 !important; }
+#vcl-report-submit:hover { filter: brightness(1.1); }
+#vcl-report-status { color: var(--v-muted) !important; }
