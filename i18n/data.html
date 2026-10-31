@@ -193,9 +193,11 @@ function buildIndex() {
     for (const e of p.craft || []) if (e && (e.id || e.itemId)) push(IDX.pnjCraft, e.id || e.itemId, p);
     for (const e of p.sells || []) if (e && (e.id || e.itemId)) push(IDX.pnjSell, e.id || e.itemId, p);
   }
-  for (const it of ALL.items || []) for (const e of it.craft || []) if (e && e.id) push(IDX.usedIn, e.id, it);
+  for (const it of ALL.items || []) for (const rc of recipes(it)) for (const e of rc) push(IDX.usedIn, e.id, it);
 }
 const nm = id => IDX.item.get(id)?.name || id;
+// item.craft : liste de recettes, chacune = { ingrédient… } (objet indexé "0","1"…) ou ingrédient direct { id, qty }
+const recipes = it => (it.craft || []).map(e => (e && e.id ? [e] : Object.values(e || {}).filter(x => x && x.id))).filter(r => r.length);
 const more = (arr, n = 6) => arr.slice(0, n).map(esc).join(', ') + (arr.length > n ? ` … (+${arr.length - n})` : '');
 function mapLink(d, label) {
   const c = d.coords; if (!c || c.x == null || c.z == null) return '';
@@ -209,7 +211,8 @@ function context(r) {
   const img = (d.images && d.images[0]) || d.quality?.images?.[0] || '';
   if (r.key === 'items') {
     if (d.category || d.cat) L.push(`<b>${esc(d.category || '')}</b> ${esc(d.cat || '')}${d.lvl ? ' · lvl ' + d.lvl : ''}${d.rarity ? ' · ' + esc(d.rarity) : ''}`);
-    if (Array.isArray(d.craft) && d.craft.length) L.push('<b>Recipe:</b> ' + d.craft.map(e => `${e.qty || 1}× ${esc(nm(e.id))}`).join(', '));
+    const rcs = recipes(d);
+    if (rcs.length) L.push('<b>Recipe:</b> ' + rcs.map(rc => rc.map(e => `${e.qty || 1}× ${esc(nm(e.id))}`).join(', ')).join(' <i>or</i> '));
     const used = (IDX.usedIn.get(id) || []).map(i => i.name).filter(Boolean);
     if (used.length) L.push('<b>Used to craft:</b> ' + more(used));
     const by = IDX.pnjCraft.get(id) || [], sold = IDX.pnjSell.get(id) || [];
@@ -236,7 +239,7 @@ function context(r) {
 }
 document.addEventListener('click', e => {
   const a = e.target.closest('a.map'); if (!a) return;
-  const q = new URLSearchParams({ ghost_gx: a.dataset.gx, ghost_gz: a.dataset.gz, ghost_name: a.dataset.name || '' });
+  const q = new URLSearchParams({ embed: '1', ghost_gx: a.dataset.gx, ghost_gz: a.dataset.gz, ghost_name: a.dataset.name || '' });
   if (a.dataset.pnj) q.set('pnjId', a.dataset.pnj);
   $('map-title').textContent = '📍 ' + (a.dataset.name || '') + ' — ' + a.dataset.gx + ', ' + a.dataset.gz;
   $('map-frame').src = '../Map/map.html?' + q;

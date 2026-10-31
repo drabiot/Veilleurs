@@ -2358,7 +2358,7 @@ function focusQuestOnMap(questId) {
 }
 
 function focusPnjOnMap(pnjId) {
-  if (!pnjId) return;
+  if (!pnjId) return false;
   const byFloor = window._mapMarkers || {};
   for (const [f, markers] of Object.entries(byFloor)) {
     const found = markers.find(m => m.id === pnjId);
@@ -2373,8 +2373,9 @@ function focusPnjOnMap(pnjId) {
     panOffset.x = -((img.x - MAP_SIZE / 2) * zoomLevel);
     panOffset.y = -((img.y - MAP_SIZE / 2) * zoomLevel);
     applyTransform();
-    return;
+    return true;
   }
+  return false;
 }
 
 function initMap() {
@@ -2451,8 +2452,8 @@ function initMap() {
     updateVpBounds();
     const targetFloor = (_ghostPin && _ghostPin.floor) ? _ghostPin.floor : _initHash.floor;
     goToFloor(targetFloor);
-    if (_pnjIdParam) {
-      focusPnjOnMap(_pnjIdParam); // surcharge layer + goToFloor si underground
+    if (_pnjIdParam && focusPnjOnMap(_pnjIdParam)) {
+      // PNJ trouvé : layer + étage déjà réglés
     } else if (_questIdParam) {
       focusQuestOnMap(_questIdParam);
     } else if (_ghostPin && _ghostPin.floor === targetFloor) {

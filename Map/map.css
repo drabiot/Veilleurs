@@ -1059,3 +1059,6 @@
 .map-loading-ring { width: 46px; height: 46px; border-radius: 50%; border: 3px solid rgba(215,175,95,.18); border-top-color: #d7af5f; animation: map-spin 1s linear infinite; }
 @keyframes map-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .map-loading-ring { animation: none; } }
+
+/* ?embed=1 : la carte seule (fenêtre de l'outil de traduction) */
+html.embed .site-header, html.embed .map-sidebar, html.embed .map-sidebar-backdrop, html.embed .map-topbar, html.embed .map-searchbar, html.embed #vcl-report-btn, html.embed .report-widget { display: none !important; }
