@@ -1687,3 +1687,12 @@ select.input-name option { background: var(--surface2); color: var(--text); }
 .opt-drop small { color: var(--muted); font-size: 10.5px; }
 .opt-result { font-size: 12px; line-height: 1.6; padding: 10px 12px; border: 1px solid var(--rim2); background: rgba(255,255,255,.02); }
 @media (max-width: 560px) { .opt-seg { grid-template-columns: 1fr; } .opt-tab { padding: 8px 8px; font-size: 10px; } }
+.opt-prio-levels { display: flex; flex-direction: column; gap: 6px; }
+.opt-level { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--rim2); background: rgba(255,255,255,.02); }
+.opt-level-num { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--gold-glow); border: 1px solid var(--gold-dim); color: var(--gold); font-family: 'Cinzel', serif; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+.opt-level-stats { flex: 1 1 0; min-width: 0; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.opt-level-stats .opt-chip { padding: 3px 9px; }
+.opt-level-stats select { width: auto; min-width: 0; max-width: 150px; padding: 4px 6px; font-size: 10px; }
+.opt-level-eq { flex: none; font-size: 9.5px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.opt-level .opt-x { flex: none; width: 24px; height: 24px; background: transparent; border: 1px solid var(--rim2); color: var(--muted); cursor: pointer; font-size: 11px; }
+.opt-level .opt-x:hover { color: #d9614a; border-color: rgba(217,97,74,.45); }

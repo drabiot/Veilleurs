@@ -2359,7 +2359,7 @@ function loadAccessoriesForClass(classId) {
   function _optScore(mins, req, prio) {
     let score = 0;
     Object.keys(req).forEach(function(id) { score -= 1000 * Math.max(0, req[id] - (mins[id] || 0)) / _statNorm(id); });
-    prio.forEach(function(id) { score += 3 * (mins[id] || 0) / _statNorm(id); });
+    prio.forEach(function(p) { score += p.w * (mins[p.id] || 0) / _statNorm(p.id); });
     ALL_STATS.forEach(function(s) { score += 0.2 * (mins[s.id] || 0) / _statNorm(s.id); });
     return score;
   }
@@ -2756,6 +2756,61 @@ function loadAccessoriesForClass(classId) {
     return ST.sanitize(nodes, max);
   }
 
+  // Priorités : liste de niveaux (du plus important au moins important), chaque niveau regroupe des stats à égalité
+  let _optLevels = [[]];
+
+  function _optRenderPrio() {
+    const wrap = document.getElementById('opt-prio');
+    wrap.innerHTML = '';
+    _optLevels.forEach(function(stats, li) {
+      const row = document.createElement('div');
+      row.className = 'opt-level';
+      const num = document.createElement('span');
+      num.className = 'opt-level-num'; num.textContent = li + 1;
+      const box = document.createElement('div');
+      box.className = 'opt-level-stats';
+      stats.forEach(function(sid) {
+        const st = STATS_BY_ID.get(sid);
+        const chip = document.createElement('button');
+        chip.type = 'button'; chip.className = 'opt-chip allow';
+        chip.textContent = (st ? (st.icon || '') + ' ' + st.label : sid) + ' ✕';
+        chip.addEventListener('click', function() { stats.splice(stats.indexOf(sid), 1); _optRenderPrio(); });
+        box.appendChild(chip);
+      });
+      const used = new Set([].concat.apply([], _optLevels));
+      const sel = document.createElement('select');
+      sel.className = 'input-name';
+      sel.innerHTML = '<option value="">' + (stats.length ? '+ à égalité' : '+ stat') + '</option>' + ALL_STATS.filter(function(s) { return !used.has(s.id); }).map(function(s) {
+        return '<option value="' + s.id + '">' + (s.icon || '') + ' ' + s.label + '</option>';
+      }).join('');
+      sel.addEventListener('change', function() { if (sel.value) { stats.push(sel.value); _optRenderPrio(); } });
+      box.appendChild(sel);
+      row.appendChild(num); row.appendChild(box);
+      if (_optLevels.length > 1) {
+        const x = document.createElement('button');
+        x.type = 'button'; x.className = 'opt-x'; x.title = 'Supprimer ce niveau'; x.textContent = '✕';
+        x.addEventListener('click', function() { _optLevels.splice(li, 1); _optRenderPrio(); });
+        row.appendChild(x);
+      }
+      wrap.appendChild(row);
+    });
+    if (_optLevels[_optLevels.length - 1].length) {
+      const add = document.createElement('button');
+      add.type = 'button'; add.className = 'opt-link';
+      add.textContent = '+ Ajouter un niveau de priorité inférieur';
+      add.addEventListener('click', function() { _optLevels.push([]); _optRenderPrio(); });
+      wrap.appendChild(add);
+    }
+  }
+
+  // Poids par niveau : chaque niveau pèse nettement plus que le suivant, les stats d'un même niveau pèsent pareil
+  function _optPrioWeights() {
+    const levels = _optLevels.filter(function(l) { return l.length; });
+    const out = [];
+    levels.forEach(function(l, i) { l.forEach(function(id) { out.push({ id: id, w: 3 * Math.pow(2.5, levels.length - 1 - i) }); }); });
+    return out;
+  }
+
   function _optStatOptions(emptyLabel) {
     return '<option value="">' + emptyLabel + '</option>' + ALL_STATS.map(function(s) {
       return '<option value="' + s.id + '">' + (s.icon || '') + ' ' + s.label + '</option>';
@@ -2783,7 +2838,7 @@ function loadAccessoriesForClass(classId) {
     clsSel.value = activeClass || '';
     const lvl = document.getElementById('opt-level');
     lvl.max = MAX_LEVEL; lvl.value = buildLevel;
-    document.querySelectorAll('.opt-prio').forEach(function(sel) { const v = sel.value; sel.innerHTML = _optStatOptions('— priorité —'); sel.value = v; });
+    _optRenderPrio();
     if (!document.querySelector('#opt-mins .opt-min-stat')) _optAddMinRow();
     _optRenderTri();
     document.querySelectorAll('input[name="opt-mode"]').forEach(function(r) { r.onchange = function() { _optSyncMode(); _optPruneForce(); }; });
@@ -2806,7 +2861,7 @@ function loadAccessoriesForClass(classId) {
       const v  = parseFloat(row.querySelector('.opt-min-val').value);
       if (id && !isNaN(v)) req[id] = Math.max(req[id] === undefined ? -Infinity : req[id], v);
     });
-    const prio = Array.from(document.querySelectorAll('.opt-prio')).map(function(s) { return s.value; }).filter(Boolean);
+    const prio = _optPrioWeights();
 
     // Mode « compléter » : ce qui est équipé (items, runes, arbre) est gardé tel quel, classe et niveau aussi.
     // Mode « de zéro » : classe + niveau demandés, équipement vidé.
