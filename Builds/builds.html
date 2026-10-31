@@ -86,25 +86,6 @@
           </div>
         </div>
 
-        <div class="filter-section">
-          <div class="filter-head">⬡ Trier par</div>
-          <select class="sort-select" id="sort-select">
-            <option value="manual">Ordre du wiki</option>
-            <option value="createdAt">Plus récents</option>
-            <option value="previewCount">Plus prévisualisés</option>
-            <option value="favoriteCount">Plus favoris</option>
-          </select>
-        </div>
-
-        <div class="filter-section">
-          <button class="fav-toggle" id="fav-toggle">
-            <span>⭐</span> Mes Favoris
-          </button>
-          <button class="fav-toggle" id="my-builds-toggle" style="margin-top:4px;">
-            <span>👤</span> Mes Builds
-          </button>
-        </div>
-
         <button class="filter-reset-btn" id="filter-reset">✕ Réinitialiser les filtres</button>
 
       </aside>
@@ -113,13 +94,19 @@
       <main class="builds-center">
 
         <div class="builds-top-bar">
-          <div>
+          <div class="builds-heading">
             <div class="builds-title">Builds Partagés</div>
             <div class="builds-subtitle">// FORUM · VEILLEURS AU CLAIR DE LUNE</div>
           </div>
-          <a href="comparateur.html" id="cmp-open" class="cmp-open-btn" title="Comparer des builds publiés ou tes builds de l'Atelier">⚖ Comparateur</a>
-          <div class="search-wrap">
-            <input type="text" id="search-input" class="search-input" placeholder="🔍  Rechercher un build, un auteur…" autocomplete="off" />
+          <div class="builds-actions">
+            <div class="search-wrap">
+              <input type="text" id="search-input" class="search-input" placeholder="Rechercher un build, un auteur…" autocomplete="off" />
+            </div>
+            <a href="comparateur.html" id="cmp-open" class="cmp-open-btn" title="Comparer des builds publiés ou tes builds de l'Atelier">
+              <span class="cob-ico" aria-hidden="true">⚖</span>
+              <span class="cob-txt"><b>Comparateur</b><small>Mettre des builds côte à côte</small></span>
+              <span class="cob-count" id="cob-count" hidden></span>
+            </a>
           </div>
         </div>
 
@@ -128,9 +115,21 @@
           <a href="builds.html" style="color:var(--gold);text-decoration:none;margin-left:auto;font-size:11px;">← Voir tous les builds</a>
         </div>
 
-        <div id="reorder-hint" class="reorder-hint" style="display:none"></div>
-
-        <div class="builds-count" id="builds-count"></div>
+        <div class="builds-toolbar">
+          <div class="builds-count" id="builds-count"></div>
+          <div class="toolbar-filters">
+            <button class="fav-toggle" id="fav-toggle"><span>⭐</span> Mes favoris</button>
+            <button class="fav-toggle" id="my-builds-toggle"><span>👤</span> Mes builds</button>
+          </div>
+          <label class="sort-wrap"><span>Trier par</span>
+            <select class="sort-select" id="sort-select">
+              <option value="manual">Ordre du wiki</option>
+              <option value="createdAt">Plus récents</option>
+              <option value="previewCount">Plus prévisualisés</option>
+              <option value="favoriteCount">Plus favoris</option>
+            </select>
+          </label>
+        </div>
 
         <div class="builds-grid" id="builds-grid">
           <div class="builds-loading">Chargement des builds…</div>
@@ -458,13 +457,6 @@
 
       const canReorder = _canReorder();
       grid.classList.toggle('reorderable', canReorder);
-      const hint = document.getElementById('reorder-hint');
-      if (currentUserRole === 'admin' && !isSingleView) {
-        hint.style.display = 'block';
-        hint.textContent = canReorder
-          ? '⇅ Mode admin : glisse les cartes (ou utilise ◀ ▶) pour choisir l\'ordre vu par tous les visiteurs.'
-          : '⇅ Admin : pour réordonner, choisis « Ordre du wiki » et retire les filtres / la recherche.';
-      } else hint.style.display = 'none';
 
       count.textContent = filtered.length
         ? filtered.length + ' build' + (filtered.length > 1 ? 's' : '')
@@ -566,6 +558,7 @@
           <div class="bc-meta">
             <span class="bc-author">👤 ${escHtml(b.authorPseudo || 'Anonyme')}</span>
             ${unlistedBadge}${adminBadge}
+            <span class="bc-pill">${escHtml(clsLbl)} · Niv.&nbsp;${b.level || 1}</span>
           </div>
           <div class="bc-mannequin-wrap">
             <div class="bc-mannequin-row">
@@ -705,6 +698,8 @@
     function _renderCmpBar() {
       let bar = document.getElementById('cmp-bar');
       const sel = _cmpSel();
+      const cob = document.getElementById('cob-count');
+      if (cob) { cob.hidden = !sel.length; cob.textContent = sel.length; }
       if (!sel.length) { if (bar) bar.remove(); return; }
       if (!bar) { bar = document.createElement('div'); bar.id = 'cmp-bar'; bar.className = 'cmp-bar'; document.body.appendChild(bar); }
       bar.innerHTML = '<span>⚖ ' + sel.length + ' build' + (sel.length > 1 ? 's' : '') + ' sélectionné' + (sel.length > 1 ? 's' : '') + '</span>' +
