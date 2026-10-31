@@ -177,6 +177,15 @@
           <button class="action-btn danger" id="btn-delete-confirm">✕ Supprimer</button>
         </div>
       </div>
+      <div id="modal-zone-comment" style="display:none; flex-direction:column; gap:10px;">
+        <textarea id="comment-edit-inp" class="modal-ta" maxlength="500" aria-label="Commentaire du build" placeholder="Explique ton build : style de jeu, points forts, conseils…"></textarea>
+        <div class="modal-counter"><span id="comment-edit-count">0</span> / 500</div>
+        <div class="modal-error" id="comment-edit-err" style="display:none"></div>
+        <div class="modal-foot">
+          <button class="action-btn" id="btn-comment-cancel">Annuler</button>
+          <button class="action-btn primary" id="btn-comment-save">Enregistrer</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -638,6 +647,46 @@
       el.style.setProperty('--p', ((el.value - min) / (max - min || 1) * 100) + '%');
     }
 
+    // ── Modifier le commentaire d'un build déjà publié ─────────────
+    let pendingCommentId = null;
+    function _showModalZone(zone) {
+      document.getElementById('modal-zone-delete').style.display  = zone === 'delete'  ? 'flex' : 'none';
+      document.getElementById('modal-zone-comment').style.display = zone === 'comment' ? 'flex' : 'none';
+    }
+    function _handleEditComment(id) {
+      const b = allBuilds.find(x => x._id === id) || (shownBuilds || []).find(x => x._id === id);
+      if (!b) return;
+      pendingCommentId = id;
+      const ta = document.getElementById('comment-edit-inp');
+      ta.value = b.comment || '';
+      document.getElementById('comment-edit-count').textContent = ta.value.length;
+      document.getElementById('comment-edit-err').style.display = 'none';
+      document.getElementById('modal-title').textContent = '💬 Commentaire du build';
+      _showModalZone('comment');
+      document.getElementById('modal').classList.add('open');
+      ta.focus();
+    }
+    async function _saveComment() {
+      const id = pendingCommentId;
+      const b = allBuilds.find(x => x._id === id) || (shownBuilds || []).find(x => x._id === id);
+      if (!b) return;
+      const comment = document.getElementById('comment-edit-inp').value.trim().slice(0, 500);
+      const btn = document.getElementById('btn-comment-save');
+      btn.disabled = true;
+      try {
+        await updateDoc(doc(db, COL_BUILDS, id), { comment, updatedAt: serverTimestamp() });
+        b.comment = comment;
+        _closeModal();
+        _renderBuilds(allBuilds);
+        _showToast(comment ? '✓ Commentaire enregistré.' : '✓ Commentaire retiré.');
+      } catch (e) {
+        console.error('[builds] comment:', e);
+        const err = document.getElementById('comment-edit-err');
+        err.textContent = 'Enregistrement impossible : ' + (e.message || e);
+        err.style.display = 'block';
+      } finally { btn.disabled = false; }
+    }
+
     async function _handleRename(id) {
       const b = allBuilds.find(x => x._id === id) || (shownBuilds || []).find(x => x._id === id);
       if (!b) return;
@@ -711,7 +760,7 @@
       const id = escHtml(b._id);
       const menuItems = [
         _canReorder() ? `<button type="button" role="menuitem" data-action="move-prev" data-id="${id}">◀ Déplacer avant</button><button type="button" role="menuitem" data-action="move-next" data-id="${id}">▶ Déplacer après</button>` : '',
-        (isOwn || isAdm) ? `<button type="button" role="menuitem" data-action="rename" data-id="${id}">✎ Renommer</button>` : '',
+        (isOwn || isAdm) ? `<button type="button" role="menuitem" data-action="rename" data-id="${id}">✎ Renommer</button><button type="button" role="menuitem" data-action="comment" data-id="${id}">💬 Modifier le commentaire</button>` : '',
         canDel ? `<button type="button" role="menuitem" class="danger" data-action="delete" data-id="${id}">✕ ${isAdm && !isOwn ? 'Supprimer (modération)' : 'Supprimer'}</button>` : '',
       ].join('');
 
@@ -730,6 +779,7 @@
           <div class="bc-meta">
             <span class="bc-author">👤 ${escHtml(b.authorPseudo || 'Anonyme')}</span>
             ${unlistedBadge}${adminBadge}
+            ${b.comment ? `<button type="button" class="bc-comment-chip" data-comment-id="${escHtml(b._id)}" aria-label="Lire le commentaire de l'auteur">💬 <span>Commentaire</span></button>` : ''}
           </div>
           <div class="bc-mannequin-wrap">
             <div class="bc-mannequin-row">
@@ -744,7 +794,6 @@
             </div>
             <div class="bc-mq-bot">${botRow}<button class="bc-slot bc-skill" data-action="skills" data-id="${escHtml(b._id)}" title="Arbre de compétences" aria-label="Arbre de compétences"><span class="bc-skill-ico"></span></button></div>
           </div>
-          ${b.comment ? `<div class="bc-comment" title="${escHtml(b.comment)}">💬 ${escHtml(b.comment)}</div>` : ''}
           <div class="bc-foot">
             <div class="bc-foot-meta">
               <div class="bc-social">
@@ -771,6 +820,7 @@
           if (action === 'fav')     _handleFav(id, this);
           if (action === 'delete')  _handleDelete(id);
           if (action === 'rename')  _handleRename(id);
+          if (action === 'comment') _handleEditComment(id);
           if (action === 'skills')  _handleSkills(id);
           if (action === 'share')   _handleShare(id);
           if (action === 'compare') _toggleCompare(id, this);
@@ -806,6 +856,7 @@
           const b = allBuilds.find(x => x._id === this.dataset.statsId);
           if (!b) return;
           tip.innerHTML = _statsTipHtml(b);
+          tip.classList.remove('bc-tooltip-comment');
           tip.classList.add('bc-tooltip-stats');
           tip.style.display = 'block';
         });
@@ -823,7 +874,7 @@
       function _fillSlotTip(el) {
         const label = el.dataset.tip;
         if (!label) return false;
-        tip.classList.remove('bc-tooltip-stats');
+        tip.classList.remove('bc-tooltip-stats', 'bc-tooltip-comment');
         tip.innerHTML = '';
         tip.appendChild(document.createTextNode(label));
         if (el.dataset.tipRar) {
@@ -864,12 +915,34 @@
           if (_fillSlotTip(this)) { _placeTipNear(this); clearTimeout(_tipTimer); _tipTimer = setTimeout(() => { tip.style.display = 'none'; }, 2600); }
         });
       });
+      // Commentaire de l'auteur : texte complet (sauts de ligne conservés) au survol, au focus ou au tap
+      document.querySelectorAll('.bc-comment-chip').forEach(el => {
+        const show = () => {
+          const b = allBuilds.find(x => x._id === el.dataset.commentId);
+          if (!b || !b.comment) return false;
+          tip.classList.remove('bc-tooltip-stats');
+          tip.classList.add('bc-tooltip-comment');
+          tip.textContent = b.comment;
+          tip.style.display = 'block';
+          return true;
+        };
+        const hide = () => { tip.style.display = 'none'; tip.classList.remove('bc-tooltip-comment'); };
+        el.addEventListener('mouseenter', () => { if (show()) _placeTipNear(el); });
+        el.addEventListener('mouseleave', hide);
+        el.addEventListener('focus', () => { if (show()) _placeTipNear(el); });
+        el.addEventListener('blur', hide);
+        el.addEventListener('click', () => {
+          if (!window.matchMedia('(hover: none)').matches) return;
+          if (show()) { _placeTipNear(el); clearTimeout(_tipTimer); _tipTimer = setTimeout(hide, 9000); }
+        });
+      });
       // Tactile / clavier : le bouton Stats s'ouvre aussi au tap et à Entrée
       document.querySelectorAll('.bc-mq-statsbtn').forEach(el => {
         const open = () => {
           const b = allBuilds.find(x => x._id === el.dataset.statsId);
           if (!b) return;
           tip.innerHTML = _statsTipHtml(b);
+          tip.classList.remove('bc-tooltip-comment');
           tip.classList.add('bc-tooltip-stats');
           tip.style.display = 'block';
           _placeTipNear(el);
@@ -1157,7 +1230,7 @@
     function _handleDelete(buildId) {
       pendingDeleteId = buildId;
       document.getElementById('modal-title').textContent = '✕ Supprimer le Build';
-      document.getElementById('modal-zone-delete').style.display = 'flex';
+      _showModalZone('delete');
       document.getElementById('modal').classList.add('open');
     }
 
@@ -1364,6 +1437,11 @@
       document.getElementById('modal').addEventListener('click', e => { if (e.target === document.getElementById('modal')) _closeModal(); });
       document.getElementById('btn-delete-cancel').addEventListener('click', _closeModal);
       document.getElementById('btn-delete-confirm').addEventListener('click', _confirmDelete);
+      document.getElementById('btn-comment-cancel').addEventListener('click', _closeModal);
+      document.getElementById('btn-comment-save').addEventListener('click', _saveComment);
+      document.getElementById('comment-edit-inp').addEventListener('input', e => {
+        document.getElementById('comment-edit-count').textContent = e.target.value.length;
+      });
 
       // Mes Builds toggle
       document.getElementById('my-builds-toggle').addEventListener('click', function() {
@@ -1383,6 +1461,7 @@
     function _closeModal() {
       document.getElementById('modal').classList.remove('open');
       pendingDeleteId = null;
+      pendingCommentId = null;
     }
 
     async function _reload() {

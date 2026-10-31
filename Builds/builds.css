@@ -1008,3 +1008,20 @@ html, body {
 .stat-filter-row .vcl-step-btn { flex: 0 0 24px; font-size: 14px; background: var(--surface2); color: var(--muted); border-color: var(--rim2); }
 .stat-filter-row .vcl-step-btn:hover { color: var(--gold); border-color: var(--gold-dim); background: var(--surface); }
 .stat-filter-row.is-set .vcl-step-btn { border-color: var(--gold-dim); color: var(--gold-dim); }
+
+/* ============================================================
+   COMMENTAIRE D'AUTEUR — puce + infobulle (sauts de ligne conservés)
+   ============================================================ */
+.bc-meta { flex-wrap: wrap; }
+.bc-comment-chip {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border: 1px solid var(--rim2); border-radius: 999px; background: transparent;
+  color: var(--text); font-family: inherit; font-size: 11px; cursor: help; transition: all .15s;
+}
+.bc-comment-chip:hover, .bc-comment-chip:focus-visible { border-color: var(--gold-dim); color: var(--gold); background: var(--gold-glow); }
+.bc-tooltip.bc-tooltip-comment {
+  white-space: pre-wrap; overflow-wrap: anywhere; max-width: min(340px, calc(100vw - 24px));
+  max-height: 60vh; overflow: hidden; padding: 10px 12px; line-height: 1.55; font-size: 12px; color: var(--text);
+}
+.modal-counter { align-self: flex-end; font-size: 11px; color: var(--muted); }
+#comment-edit-inp { height: 160px; line-height: 1.5; }

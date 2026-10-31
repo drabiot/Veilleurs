@@ -2975,5 +2975,14 @@
   "✕ Supprimer (modération)": "✕ Delete (moderation)",
   "Retirer des favoris": "Remove from favorites",
   "Rechercher un build, un auteur…": "Search a build, an author…",
-  "Comparateur": "Comparator"
+  "Comparateur": "Comparator",
+  "💬 Commentaire": "💬 Comment",
+  "Lire le commentaire de l'auteur": "Read the author's comment",
+  "💬 Modifier le commentaire": "💬 Edit comment",
+  "💬 Commentaire du build": "💬 Build comment",
+  "Commentaire du build": "Build comment",
+  "Enregistrer": "Save",
+  "Explique ton build : style de jeu, points forts, conseils…": "Explain your build: playstyle, strengths, tips…",
+  "✓ Commentaire enregistré.": "✓ Comment saved.",
+  "✓ Commentaire retiré.": "✓ Comment removed."
 }
