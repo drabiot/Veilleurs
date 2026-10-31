@@ -2007,6 +2007,7 @@ function loadAccessoriesForClass(classId) {
   function openModal(mode) {
     const modal = document.getElementById('modal');
     modal.dataset.mode = mode;
+    modal.classList.toggle('wide', mode === 'optimize');
     const errEl = document.getElementById('modal-error');
     if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
     ['export', 'import', 'publish', 'reset', 'confirm-class', 'confirm-level', 'optimize'].forEach(function(m) {
@@ -2407,10 +2408,11 @@ function loadAccessoriesForClass(classId) {
         const b = document.createElement('button');
         b.type = 'button';
         b.textContent = name + ' ✕';
-        b.style.cssText = 'font-size:11px; padding:3px 8px; border-radius:4px; cursor:pointer; background:transparent; color:inherit; border:1px solid rgba(255,255,255,.25);';
+        b.className = 'opt-chip ' + (store === _optForce ? 'allow' : 'ban');
         b.addEventListener('click', function() { store.delete(id); renderChips(); });
         chips.appendChild(b);
       });
+      _optUpdateBadges();
     };
     const hide = function() { list.style.display = 'none'; list.innerHTML = ''; };
     inp.oninput = function() {
@@ -2423,10 +2425,9 @@ function loadAccessoriesForClass(classId) {
       list.innerHTML = '';
       hits.forEach(function(i) {
         const row = document.createElement('div');
-        row.textContent = i.name + ' · ' + vclPalierLabel(i.palier);
-        row.style.cssText = 'padding:5px 8px; cursor:pointer; font-size:12px;';
-        row.addEventListener('mouseenter', function() { row.style.background = 'rgba(255,255,255,.08)'; });
-        row.addEventListener('mouseleave', function() { row.style.background = ''; });
+        row.innerHTML = '<span></span><small></small>';
+        row.firstChild.textContent = i.name;
+        row.lastChild.textContent = vclPalierLabel(i.palier);
         row.addEventListener('mousedown', function(e) {
           e.preventDefault();
           store.set(getItemId(i), i.name); inp.value = ''; hide(); renderChips();
@@ -2448,7 +2449,7 @@ function loadAccessoriesForClass(classId) {
     const complete = _optMode() === 'complete';
     ['opt-class', 'opt-level'].forEach(function(id) {
       const el = document.getElementById(id);
-      el.disabled = complete; el.style.opacity = complete ? '.45' : '';
+      el.disabled = complete; el.style.opacity = complete ? '.4' : '';
     });
   }
 
@@ -2495,39 +2496,50 @@ function loadAccessoriesForClass(classId) {
     return true;
   }
 
+  function _optUpdateBadges() {
+    const n = { obt: 0, pal: 0, items: _optExcl.size + _optForce.size };
+    Object.keys(_optTri).forEach(function(t) { if (t.indexOf('obt:') === 0) n.obt++; else n.pal++; });
+    document.querySelectorAll('.opt-badge').forEach(function(b) { b.textContent = n[b.dataset.badge] || ''; });
+  }
+
   function _optRenderTri() {
-    const wrap = document.getElementById('opt-tri');
     const tiers = Array.from(new Set(ITEMS.map(function(i) { return i.palier; }).filter(function(p) { return p !== undefined && p !== null; })))
       .sort(function(a, b) { return _palierNum(b) - _palierNum(a); });
     const evtMap = {};
     ITEMS.forEach(function(i) { if (typeof i.event === 'string' && i.event) evtMap[i.event] = i.palier; });
+    const esc = function(s) { return String(s).replace(/"/g, '&quot;'); };
+    const chip = function(tag, label) { return '<button type="button" class="opt-chip" data-tag="' + esc(tag) + '" data-label="' + esc(label) + '"></button>'; };
     const group = function(title, chips) {
-      return chips.length ? '<div><div style="font-size:10px; color:var(--muted); margin:6px 0 4px;">' + title + '</div><div style="display:flex; flex-wrap:wrap; gap:5px;">' + chips.join('') + '</div></div>' : '';
+      return chips.length ? '<div class="opt-group"><div class="opt-group-title">' + title + '</div><div class="opt-chips">' + chips.join('') + '</div></div>' : '';
     };
-    const chip = function(tag, label) { return '<button type="button" class="opt-chip" data-tag="' + tag.replace(/"/g, '&quot;') + '" data-label="' + label.replace(/"/g, '&quot;') + '"></button>'; };
-    wrap.innerHTML =
-      group('Obtention', _OPT_OBTAIN.map(function(o) { return chip('obt:' + o[0], o[1]); })) +
+    document.getElementById('opt-panel-obt').innerHTML = _OPT_OBTAIN.map(function(o) { return chip('obt:' + o[0], o[1]); }).join('');
+    document.getElementById('opt-panel-pal').innerHTML =
       group('Paliers', tiers.map(function(p) { return chip('pal:' + p, vclPalierLabel(p)); })) +
-      group('Évènements / World Boss', Object.keys(evtMap).sort().map(function(n) {
+      group('Évènements &amp; World Boss', Object.keys(evtMap).sort().map(function(n) {
         return chip('evt:' + n, (evtMap[n] === 'worldboss' ? '👑 ' : evtMap[n] === 'event' ? '🎉 ' : '') + n);
       }));
-    wrap.querySelectorAll('.opt-chip').forEach(function(b) {
+    document.querySelectorAll('#opt-panel-obt .opt-chip, #opt-panel-pal .opt-chip').forEach(function(b) {
       const paint = function() {
         const v = _optTri[b.dataset.tag] || 0;
         b.textContent = (v === 1 ? '✓ ' : v === -1 ? '✕ ' : '') + b.dataset.label;
-        b.style.cssText = 'font-size:11px; padding:3px 8px; border-radius:4px; cursor:pointer; background:' +
-          (v === 1 ? 'rgba(122,196,122,.18)' : v === -1 ? 'rgba(217,97,74,.18)' : 'transparent') +
-          '; border:1px solid ' + (v === 1 ? '#7ac47a' : v === -1 ? '#d9614a' : 'rgba(255,255,255,.18)') +
-          '; color:' + (v === 1 ? '#7ac47a' : v === -1 ? '#d9614a' : 'inherit') + ';';
+        b.classList.toggle('allow', v === 1);
+        b.classList.toggle('ban', v === -1);
       };
       paint();
       b.addEventListener('click', function() {
         const v = _optTri[b.dataset.tag] || 0;
         const nv = v === 0 ? 1 : v === 1 ? -1 : 0;
         if (nv) _optTri[b.dataset.tag] = nv; else delete _optTri[b.dataset.tag];
-        paint();
+        paint(); _optUpdateBadges();
       });
     });
+    document.querySelectorAll('.opt-tab').forEach(function(t) {
+      t.onclick = function() {
+        document.querySelectorAll('.opt-tab').forEach(function(x) { x.classList.toggle('active', x === t); });
+        document.querySelectorAll('.opt-panel').forEach(function(p) { p.hidden = p.dataset.panel !== t.dataset.tab; });
+      };
+    });
+    _optUpdateBadges();
   }
 
   function _optPools() {
@@ -2754,13 +2766,13 @@ function loadAccessoriesForClass(classId) {
 
   function _optAddMinRow(statId, val) {
     const row = document.createElement('div');
-    row.style.cssText = 'display:flex; gap:6px; align-items:center;';
-    row.innerHTML = '<select class="input-name opt-min-stat" style="flex:1 1 0; width:auto; min-width:0">' + _optStatOptions('— stat —') + '</select>' +
-      '<input class="input-name opt-min-val" type="number" step="any" placeholder="min" style="flex:none; width:90px" />' +
-      '<button type="button" class="action-btn danger" style="flex:none; width:auto; padding:4px 9px;">✕</button>';
+    row.className = 'opt-min-row';
+    row.innerHTML = '<select class="input-name opt-min-stat">' + _optStatOptions('— stat —') + '</select>' +
+      '<input class="input-name opt-min-val" type="number" step="any" placeholder="min" />' +
+      '<button type="button" class="opt-x" title="Retirer">✕</button>';
     row.querySelector('select').value = statId || '';
     row.querySelector('.opt-min-val').value = val != null ? val : '';
-    row.querySelector('button').addEventListener('click', function() { row.remove(); });
+    row.querySelector('.opt-x').addEventListener('click', function() { row.remove(); });
     document.getElementById('opt-mins').appendChild(row);
   }
 

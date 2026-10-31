@@ -290,58 +290,84 @@
         </div>
       </div>
 
-      <div id="modal-zone-optimize" style="display:none; flex-direction:column; gap:10px; max-height:calc(90vh - 90px); overflow-y:auto; padding-right:6px">
-        <p class="modal-hint">Fixe tes exigences : l'outil cherche le meilleur équipement qui les respecte, puis maximise tes stats prioritaires.</p>
-        <div style="display:flex; flex-direction:column; gap:6px; font-size:12px;">
-          <label style="display:flex; align-items:flex-start; gap:6px; cursor:pointer;"><input type="radio" name="opt-mode" value="zero" checked /><span><b>De zéro</b> : vide l'équipement, cherche le meilleur build.</span></label>
-          <label style="display:flex; align-items:flex-start; gap:6px; cursor:pointer;"><input type="radio" name="opt-mode" value="complete" /><span><b>Compléter</b> : garde l'équipé (classe, niveau, arbre…) et remplit le reste.</span></label>
+      <div id="modal-zone-optimize" class="opt-zone" style="display:none">
+        <div class="opt-body">
+          <div class="opt-seg">
+            <label class="opt-seg-item">
+              <input type="radio" name="opt-mode" value="zero" checked />
+              <span class="opt-seg-body"><span class="opt-seg-title">De zéro</span><span class="opt-seg-sub">Vide l'équipement et cherche le meilleur build</span></span>
+            </label>
+            <label class="opt-seg-item">
+              <input type="radio" name="opt-mode" value="complete" />
+              <span class="opt-seg-body"><span class="opt-seg-title">Compléter</span><span class="opt-seg-sub">Garde l'équipé (classe, niveau, arbre) et remplit le reste</span></span>
+            </label>
+          </div>
+
+          <div class="opt-row">
+            <div class="opt-field opt-grow">
+              <label class="opt-lab">Classe</label>
+              <select id="opt-class" class="input-name"></select>
+            </div>
+            <div class="opt-field" style="width:92px">
+              <label class="opt-lab">Niveau</label>
+              <input id="opt-level" class="input-name" type="number" min="1" />
+            </div>
+          </div>
+
+          <div class="opt-field">
+            <label class="opt-lab">Stats minimum <span class="opt-sub">— exigences à respecter</span></label>
+            <div id="opt-mins" class="opt-mins"></div>
+            <button type="button" id="btn-opt-addmin" class="opt-link">+ Ajouter une stat minimum</button>
+          </div>
+
+          <div class="opt-field">
+            <label class="opt-lab">Stats à maximiser <span class="opt-sub">— jusqu'à 3, par ordre de priorité</span></label>
+            <div class="opt-row opt-prios">
+              <select id="opt-prio-0" class="input-name opt-prio"></select>
+              <select id="opt-prio-1" class="input-name opt-prio"></select>
+              <select id="opt-prio-2" class="input-name opt-prio"></select>
+            </div>
+          </div>
+
+          <div class="opt-field">
+            <label class="opt-lab">Filtres d'items</label>
+            <div class="opt-tabs" role="tablist">
+              <button type="button" class="opt-tab active" data-tab="obt">Obtention<span class="opt-badge" data-badge="obt"></span></button>
+              <button type="button" class="opt-tab" data-tab="pal">Paliers &amp; évènements<span class="opt-badge" data-badge="pal"></span></button>
+              <button type="button" class="opt-tab" data-tab="items">Items précis<span class="opt-badge" data-badge="items"></span></button>
+            </div>
+            <div class="opt-panel" data-panel="obt">
+              <div class="opt-legend">Clique une puce : <span class="ok">✓ autorisé</span> (seuls ceux-là) → <span class="ko">✕ interdit</span> → neutre.</div>
+              <div id="opt-panel-obt" class="opt-chips"></div>
+            </div>
+            <div class="opt-panel" data-panel="pal" hidden>
+              <div class="opt-legend">Même principe : <span class="ok">✓ autorisé</span> / <span class="ko">✕ interdit</span>.</div>
+              <div id="opt-panel-pal"></div>
+            </div>
+            <div class="opt-panel" data-panel="items" hidden>
+              <div class="opt-field">
+                <label class="opt-lab ko">Interdits</label>
+                <div class="opt-search">
+                  <input id="opt-excl-q" class="input-name" type="text" autocomplete="off" placeholder="Rechercher un item à interdire…" />
+                  <div id="opt-excl-list" class="opt-drop"></div>
+                </div>
+                <div id="opt-excl-chips" class="opt-chips"></div>
+              </div>
+              <div class="opt-field">
+                <label class="opt-lab ok">Obligatoires <span class="opt-sub">— équipables avec la classe et le niveau choisis</span></label>
+                <div class="opt-search">
+                  <input id="opt-force-q" class="input-name" type="text" autocomplete="off" placeholder="Rechercher un item à imposer…" />
+                  <div id="opt-force-list" class="opt-drop"></div>
+                </div>
+                <div id="opt-force-chips" class="opt-chips"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="opt-result" class="opt-result" style="display:none"></div>
         </div>
-        <div style="display:flex; gap:10px;">
-          <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
-            <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Classe</label>
-            <select id="opt-class" class="input-name"></select>
-          </div>
-          <div style="width:90px; display:flex; flex-direction:column; gap:4px;">
-            <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Niveau</label>
-            <input id="opt-level" class="input-name" type="number" min="1" />
-          </div>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:6px;">
-          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Stats minimum</label>
-          <div id="opt-mins" style="display:flex; flex-direction:column; gap:6px;"></div>
-          <button type="button" id="btn-opt-addmin" class="action-btn" style="font-size:10px; padding:5px 8px; align-self:flex-start;">+ Ajouter une stat minimum</button>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:6px;">
-          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Stats prioritaires à maximiser (jusqu'à 3)</label>
-          <div style="display:flex; gap:6px;">
-            <select id="opt-prio-0" class="input-name opt-prio" style="flex:1 1 0; width:auto; min-width:0"></select>
-            <select id="opt-prio-1" class="input-name opt-prio" style="flex:1 1 0; width:auto; min-width:0"></select>
-            <select id="opt-prio-2" class="input-name opt-prio" style="flex:1 1 0; width:auto; min-width:0"></select>
-          </div>
-        </div>
-        <details style="display:flex; flex-direction:column; gap:2px;">
-          <summary style="cursor:pointer; font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Filtres d'items (obtention, paliers, évènements)</summary>
-          <span style="font-size:11px; color:var(--muted);">Clique une puce : <b style="color:#7ac47a">✓ autorisé</b> (seulement ceux-là) → <b style="color:#d9614a">✕ interdit</b> → neutre.</span>
-          <div id="opt-tri"></div>
-        </details>
-        <details style="display:flex; flex-direction:column; gap:4px;">
-          <summary style="cursor:pointer; font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Items à interdire / obligatoires</summary>
-          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase; margin-top:6px;">Items à interdire</label>
-          <div style="position:relative;">
-            <input id="opt-excl-q" class="input-name" type="text" autocomplete="off" placeholder="Rechercher un item à exclure…" />
-            <div id="opt-excl-list" style="display:none; position:absolute; left:0; right:0; z-index:5; background:var(--bg2, #1a1612); border:1px solid rgba(255,255,255,.2);"></div>
-          </div>
-          <div id="opt-excl-chips" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
-          <label style="font-size:10px; margin-top:6px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Items obligatoires</label>
-          <div style="position:relative;">
-            <input id="opt-force-q" class="input-name" type="text" autocomplete="off" placeholder="Rechercher un item à imposer…" />
-            <div id="opt-force-list" style="display:none; position:absolute; left:0; right:0; z-index:5; background:var(--bg2, #1a1612); border:1px solid rgba(255,255,255,.2);"></div>
-          </div>
-          <div id="opt-force-chips" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
-        </details>
-        <div id="opt-result" class="modal-hint" style="display:none; font-size:12px; line-height:1.6;"></div>
-        <div class="modal-foot">
-          <button id="btn-opt-run" class="action-btn primary">🎯 Générer</button>
+        <div class="opt-foot">
+          <button id="btn-opt-run" class="action-btn primary opt-run">🎯 Générer</button>
         </div>
       </div>
 
