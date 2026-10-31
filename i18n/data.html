@@ -71,6 +71,7 @@
     <div class="bar" style="margin-top:6px">
       <input type="text" id="name" placeholder="Your name (optional)" size="18" />
       <button class="primary" id="b-send">📨 Send to the admins</button>
+      <button id="b-same-all" title="Mark every text currently shown as identical in English (use a filter first, e.g. type NPCs)">＝ Keep all shown as is</button>
       <span style="color:var(--muted);font-size:12px">Same draft as the review tool: nothing goes live until an admin approves it.</span>
     </div>
   </header>
@@ -78,7 +79,7 @@
     <details class="help">
       <summary>How this works (read once)</summary>
       <ul>
-        <li>This lists the <b>texts of the data sheets</b> (lore, descriptions, quest texts…) that have <b>no English yet</b>, newest sheets first. Names of items, mobs, NPCs, zones and events are never listed.</li>
+        <li>This lists the <b>texts of the data sheets</b> (lore, descriptions, quest texts…) that have <b>no English yet</b>, newest sheets first. Names (items, mobs, NPCs, zones, events…) are listed too: most need no translation, so click <b>＝ No translation needed</b> (or <b>＝ Keep all shown as is</b> for a whole filtered list).</li>
         <li>Write the English and click <b>Save</b> (<code>Ctrl+Enter</code>). If the text needs no translation (name, proper noun…), click <b>＝ No translation needed</b>.</li>
         <li>Keep placeholders like <code>{n}</code> and markup like <code>[npc:…|…]</code> exactly as they are.</li>
         <li>Then click <b>📨 Send to the admins</b>.</li>
@@ -122,10 +123,13 @@ const vars = s => [...String(s).matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().jo
 
 // Champs de texte libre à traduire, par collection ('a.b[]' = tableau). Les noms (name, label, zone, npc, event…) ne sont jamais traduits.
 const SPEC = {
-  items:   { label: 'Items',   col: COL.items,   fields: ['lore', 'quality.lore', 'effects[].label'] },
-  mobs:    { label: 'Mobs',    col: COL.mobs,    fields: ['lore', 'attacks[].desc'] },
-  quetes:  { label: 'Quests',  col: COL.quetes,  fields: ['titre', 'desc', 'objectifs[].texte'] },
-  regions: { label: 'Regions', col: COL.regions, fields: ['lore'] },
+  items:      { label: 'Items',      col: COL.items,      fields: ['name', 'quality.name', 'lore', 'quality.lore', 'effects[].label', 'event', 'tags[]'] },
+  mobs:       { label: 'Mobs',       col: COL.mobs,       fields: ['name', 'attacks[].name', 'attacks[].desc', 'lore'] },
+  pnj:        { label: 'NPCs',       col: COL.pnj,        fields: ['name', 'type'] },
+  quetes:     { label: 'Quests',     col: COL.quetes,     fields: ['titre', 'desc', 'objectifs[].texte', 'zone', 'npc', 'recompenses[].label'] },
+  regions:    { label: 'Regions',    col: COL.regions,    fields: ['name', 'lore'] },
+  donjons:    { label: 'Dungeons',   col: COL.donjons,    fields: ['name'] },
+  panoplies:  { label: 'Item sets',  col: COL.panoplies,  fields: ['label'] },
 };
 const nameOf = d => d.name || d.titre || d.label || d.id || '?';
 function pick(o, path) {
@@ -204,6 +208,12 @@ function card(r) {
 }
 ['f-col', 'f-age'].forEach(id => $(id).addEventListener('change', () => render()));
 $('f-q').addEventListener('input', () => render());
+$('b-same-all').onclick = () => {
+  const list = filtered();
+  if (!list.length || !confirm('Mark the ' + list.length + ' texts matching the current filters as "no translation needed"?')) return;
+  for (const r of list) { if (done(r.fr)) continue; draft.added.push({ fr: r.fr, en: r.fr }); draft.status[r.fr] = 'ok'; dict[r.fr] = r.fr; }
+  saveDraft(); render();
+};
 $('more').onclick = () => render(true);
 $('name').addEventListener('change', () => { draft.name = $('name').value.trim(); saveDraft(); });
 $('b-send').onclick = async () => {
