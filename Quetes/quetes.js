@@ -96,6 +96,8 @@ function _updateCardBadge(card, q) {
   const started = !done && isQuestStarted(q);
   badge.className   = `card-badge ${done ? 'badge-done' : started ? 'badge-wip' : 'badge-todo'}`;
   badge.textContent = done ? 'Terminée' : started ? 'En cours' : 'À faire';
+  card.classList.toggle('is-done', done);
+  card.classList.toggle('is-wip', started);
 }
 
 function _updateBulkBtn() {
@@ -167,8 +169,9 @@ window.toggleQuestDone = function(questId) {
     const btn  = card.querySelector('.card-done-btn');
     const trackBtn = card.querySelector('.card-track-btn');
     if (fill) fill.style.width = (isDone ? 100 : pct) + '%';
+    card.querySelector('.progress-wrap')?.setAttribute('aria-valuenow', isDone ? 100 : pct);
     if (lbl)  lbl.textContent  = isDone ? `${total}/${total}` : `${done}/${total}`;
-    if (btn)  { btn.textContent = isDone ? '↩' : '✓'; btn.title = isDone ? 'Marquer à faire' : 'Marquer terminée'; }
+    if (btn)  { btn.setAttribute('aria-pressed', isDone); btn.title = isDone ? 'Marquer à faire' : 'Marquer terminée'; btn.setAttribute('aria-label', btn.title); }
     if (isDone && trackBtn) trackBtn.remove();
     else if (!isDone && !trackBtn) {
       const topRight = card.querySelector('.card-top-right');
@@ -565,6 +568,88 @@ function updateStatutCounts() {
   document.getElementById('cnt-todo').textContent = base.filter(q => !isQuestDone(q) && !isQuestStarted(q)).length;
   document.getElementById('cnt-wip').textContent  = base.filter(q =>  isQuestStarted(q)).length;
   document.getElementById('cnt-done').textContent = base.filter(q =>  isQuestDone(q)).length;
+  updateProgressBanner(base);
+}
+
+/* Bandeau de progression globale de l'onglet courant */
+function updateProgressBanner(base) {
+  const total = base.length;
+  const nDone = base.filter(q => isQuestDone(q)).length;
+  const nWip  = base.filter(q => isQuestStarted(q)).length;
+  const nTodo = total - nDone - nWip;
+  const pct   = total ? Math.round((nDone / total) * 100) : 0;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('qprog-pct', pct + '%');
+  set('qprog-lbl', `${nDone} / ${total} quêtes terminées`);
+  set('qs-todo', nTodo); set('qs-wip', nWip); set('qs-done', nDone);
+  const fill = document.getElementById('qprog-fill');
+  if (fill) fill.style.width = pct + '%';
+  document.getElementById('qprog-bar')?.setAttribute('aria-valuenow', pct);
+  document.getElementById('qprog')?.classList.toggle('is-complete', total > 0 && nDone === total);
+}
+
+/* ══════════════════════════════════
+   PASTILLES DE FILTRES ACTIFS
+══════════════════════════════════ */
+const _STATUT_LABELS = { todo: 'À faire', wip: 'En cours', done: 'Terminées' };
+
+function resetAllFilters() {
+  searchQuery = '';
+  searchInput.value = '';
+  activePalier = 'all';
+  activeStatut = 'all';
+  document.querySelector('input[name="statut-filter"][value="all"]').checked = true;
+  syncSearchClear();
+  refreshAll();
+}
+
+function syncSearchClear() {
+  const btn = document.getElementById('search-clear');
+  if (btn) btn.hidden = !searchInput.value;
+}
+
+function renderActiveFilters() {
+  const box = document.getElementById('active-filters');
+  if (!box) return;
+  const chips = [];
+  if (searchQuery) chips.push({ icon: '🔍', label: `« ${searchQuery} »`, clear() {
+    searchInput.value = ''; searchQuery = ''; syncSearchClear(); buildGrid();
+  } });
+  if (activePalier !== 'all') chips.push({ icon: '⬡', label: `Palier ${activePalier}`, clear() { activePalier = 'all'; refreshAll(); } });
+  if (activeStatut !== 'all') chips.push({ icon: '✓', label: _STATUT_LABELS[activeStatut], clear() {
+    activeStatut = 'all';
+    document.querySelector('input[name="statut-filter"][value="all"]').checked = true;
+    buildGrid();
+  } });
+  const nZones = new Set(getTabQuests().map(q => q.zone)).size;
+  if (nZones && activeZones.size < nZones) chips.push({ icon: '🗺', label: `Zones ${activeZones.size}/${nZones}`, clear() { buildZoneFilters(); buildGrid(); } });
+
+  const badge = document.getElementById('filters-badge');
+  if (badge) { badge.hidden = chips.length === 0; badge.textContent = chips.length; }
+
+  box.hidden = chips.length === 0;
+  box.innerHTML = '';
+  if (!chips.length) return;
+  const lbl = document.createElement('span');
+  lbl.className = 'af-lbl';
+  lbl.textContent = 'Filtres actifs';
+  box.appendChild(lbl);
+  chips.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'af-chip';
+    b.title = 'Retirer ce filtre';
+    b.innerHTML = `<span>${c.icon}</span><span class="af-txt"></span><span class="af-x" aria-hidden="true">✕</span>`;
+    b.querySelector('.af-txt').textContent = c.label;
+    b.addEventListener('click', c.clear);
+    box.appendChild(b);
+  });
+  if (chips.length > 1) {
+    const r = document.createElement('button');
+    r.className = 'af-reset';
+    r.textContent = 'Tout réinitialiser';
+    r.addEventListener('click', resetAllFilters);
+    box.appendChild(r);
+  }
 }
 
 /* ══════════════════════════════════
@@ -971,10 +1056,14 @@ function _sortQuests(list, mode) {
 
 let _currentSort = 'default';
 
-function buildGrid() {
+function buildGrid(opts) {
+  const animate = !(opts && opts.animate === false);
   const entities = getFiltered();
   currentVisible = entities.slice();
   queteGrid.innerHTML = '';
+  queteGrid.removeAttribute('aria-busy');
+  queteGrid.classList.toggle('no-anim', !animate);
+  renderActiveFilters();
 
   if (entities.length === 0) {
     gridEmpty.style.display = 'flex';
@@ -1004,7 +1093,9 @@ function buildGrid() {
   paliers.forEach(p => {
     const heading = document.createElement('div');
     heading.className = 'palier-heading';
-    heading.textContent = `⬡ Palier ${p}`;
+    const nP = entities.filter(q => q.palier === p).length;
+    const dP = entities.filter(q => q.palier === p && isQuestDone(q)).length;
+    heading.innerHTML = `<span class="ph-hex">⬡</span><span class="ph-name">Palier ${p}</span><span class="ph-line"></span><span class="ph-count">${dP}/${nP}</span>`;
     queteGrid.appendChild(heading);
 
     _sortQuests(entities.filter(q => q.palier === p), 'default').forEach(q => {
@@ -1015,16 +1106,33 @@ function buildGrid() {
   _updateTrackAllBtn();
 }
 
+/* Récompense (carte) : XP/Cols en pastille, objets en tuile avec infobulle */
+function rewardCardChip(r) {
+  if (r.type === 'exp')  return `<span class="rw rw-xp"><b>${rewardVal(r, 'xp').toLocaleString('fr-FR')}</b> XP</span>`;
+  if (r.type === 'cols') return `<span class="rw rw-cols"><b>${rewardVal(r, 'cols').toLocaleString('fr-FR')}</b> Cols</span>`;
+  const item   = r.itemId ? dbItem(r.itemId) : null;
+  const color  = item ? rarityColor(item.rarity) : '#c0a0dc';
+  const name   = item ? item.name : (r.label || '?');
+  const imgSrc = item ? getItemImg(item) : null;
+  const inner  = imgSrc ? `<img loading="lazy" decoding="async" src="${imgSrc}" alt="">` : '📦';
+  const qty    = r.qte > 1 ? `<span class="card-item-qty">×${r.qte}</span>` : '';
+  const tip    = name + (r.qte > 1 ? ` ×${r.qte}` : '');
+  return `<span class="card-item-icon rw-item" data-tip="${tip}" style="--chip-color:${color}">${inner}${qty}</span>`;
+}
+
 function _buildGridCard(q, idx) {
   const card = document.createElement('div');
   const tracked = getTrackedIds().has(q.id);
-  card.className = `quete-card ${q.type}${tracked ? ' is-tracked' : ''}`;
-  card.dataset.id = q.id;
-  card.style.animationDelay = `${idx * 0.03}s`;
-
   const { done, total, pct } = getProgress(q);
   const effectiveDone    = isQuestDone(q);
   const effectiveStarted = !effectiveDone && isQuestStarted(q);
+  card.className = `quete-card ${q.type}${tracked ? ' is-tracked' : ''}${effectiveDone ? ' is-done' : ''}${effectiveStarted ? ' is-wip' : ''}`;
+  card.dataset.id = q.id;
+  card.style.animationDelay = `${Math.min(idx, 14) * 0.035}s`;
+  card.tabIndex = 0;
+  card.setAttribute('role', 'button');
+  card.setAttribute('aria-label', `${q.titre} — ${TYPE_LABELS[q.type] || ''}, palier ${q.palier}`);
+
   const zs      = getZoneStyle(q.zone);
   const mapUrl  = getMapUrl(q.zone);
   const cardZoneHref = q.id
@@ -1034,53 +1142,67 @@ function _buildGridCard(q, idx) {
   card.style.setProperty('--zone-color', zs.color);
   card.style.setProperty('--zone-dim',   zs.dim);
 
-  const rewFooter  = q.recompenses.slice(0, 3).map(r => rewardMiniTag(r)).join('');
-  const reqItems   = getQuestRequiredItems(q);
-  const itemsRow   = reqItems.length > 0
-    ? `<div class="card-items-row">${reqItems.slice(0, 6).map(it => renderCardItemIcon(it)).join('')}${reqItems.length > 6 ? `<span class="card-items-more">+${reqItems.length - 6}</span>` : ''}</div>`
+  const rews     = q.recompenses || [];
+  const rewMain  = rews.filter(r => r.type === 'exp' || r.type === 'cols');
+  const rewItems = rews.filter(r => r.type !== 'exp' && r.type !== 'cols');
+  const rewFooter = rewMain.map(rewardCardChip).join('')
+    + rewItems.slice(0, 4).map(rewardCardChip).join('')
+    + (rewItems.length > 4 ? `<span class="card-items-more">+${rewItems.length - 4}</span>` : '');
+
+  const reqItems = getQuestRequiredItems(q);
+  const itemsRow = reqItems.length > 0
+    ? `<div class="card-items-row"><span class="card-items-lbl">Objets</span>${reqItems.slice(0, 6).map(it => renderCardItemIcon(it)).join('')}${reqItems.length > 6 ? `<span class="card-items-more">+${reqItems.length - 6}</span>` : ''}</div>`
     : '';
   if (reqItems.length > 0) card.classList.add('has-items');
+
+  const zoneTag = (q.zone && q.zone !== 'undefined')
+    ? (cardZoneHref
+      ? `<a class="ctag ctag-zone" href="${cardZoneHref}"
+           style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}"
+           title="Voir sur la carte" onclick="event.stopPropagation()">🗺 ${q.zone}</a>`
+      : `<span class="ctag ctag-zone" style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}">🗺 ${q.zone}</span>`)
+    : (q.coords && q.coords.x != null && q.coords.z != null
+      ? `<a class="ctag ctag-zone ctag-coords" href="../Map/map.html?questId=${q.id}#floor-${q.palier}-surface" target="_blank" onclick="event.stopPropagation()">📍 X ${q.coords.x} · Z ${q.coords.z}</a>`
+      : '');
+
+  const doneTitle = effectiveDone ? 'Marquer à faire' : 'Marquer terminée';
 
   card.innerHTML = `
     <div class="type-stripe"></div>
     <div class="card-body">
       <div class="card-top">
-        <div class="card-title">${q.titre}</div>
+        <div class="card-meta">
+          <span class="ctag ctag-type" title="${TYPE_LABELS[q.type] || ''}">${TYPE_ICONS[q.type] || ''}</span>
+          <span class="ctag ctag-palier">P${q.palier}</span>
+          ${zoneTag}
+        </div>
         <div class="card-top-right">
           <span class="card-badge ${effectiveDone ? 'badge-done' : effectiveStarted ? 'badge-wip' : 'badge-todo'}">${effectiveDone ? 'Terminée' : effectiveStarted ? 'En cours' : 'À faire'}</span>
-          ${!effectiveDone ? `<button class="card-track-btn${tracked ? ' tracked' : ''}" onclick="event.stopPropagation();toggleTracked('${q.id}')" title="${tracked ? 'Ne plus suivre' : 'Suivre cette quête'}">🎯</button>` : ''}
+          ${!effectiveDone ? `<button class="card-track-btn${tracked ? ' tracked' : ''}" onclick="event.stopPropagation();toggleTracked('${q.id}')" title="${tracked ? 'Ne plus suivre' : 'Suivre cette quête'}" aria-label="${tracked ? 'Ne plus suivre' : 'Suivre cette quête'}">🎯</button>` : ''}
         </div>
       </div>
-      <div class="card-meta">
-        <span class="ctag ctag-palier">P${q.palier}</span>
-        ${(q.zone && q.zone !== 'undefined')
-          ? (cardZoneHref
-            ? `<a class="ctag ctag-zone" href="${cardZoneHref}"
-                 style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}"
-                 title="Voir sur la carte" onclick="event.stopPropagation()">🗺 ${q.zone}</a>`
-            : `<span class="ctag ctag-zone" style="color:${zs.color};border-color:${zs.dim};background:${zs.glow}">🗺 ${q.zone}</span>`)
-          : (q.coords && q.coords.x != null && q.coords.z != null
-            ? `<a class="ctag ctag-zone ctag-coords" href="../Map/map.html?questId=${q.id}#floor-${q.palier}-surface" target="_blank" onclick="event.stopPropagation()">📍 X ${q.coords.x} · Z ${q.coords.z}</a>`
-            : '')
-        }
-      </div>
+      <h3 class="card-title">${q.titre}</h3>
       <p class="card-desc">${q.desc || ''}</p>
       ${itemsRow}
     </div>
     <div class="card-footer">
-      <div class="card-rewards-footer">${rewFooter}</div>
+      <div class="card-rewards-footer">${rewFooter || '<span class="card-no-rew">Aucune récompense</span>'}</div>
       <div class="card-progress-wrap">
         <div class="card-progress">
-          <div class="progress-wrap"><div class="progress-fill" style="width:${effectiveDone ? 100 : pct}%"></div></div>
+          <div class="progress-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${effectiveDone ? 100 : pct}"><div class="progress-fill" style="width:${effectiveDone ? 100 : pct}%"></div></div>
           <span class="progress-lbl">${effectiveDone ? `${total}/${total}` : `${done}/${total}`}</span>
         </div>
-        ${q.npc ? `<span class="card-npc">🧑 ${resolvePnjName(q.npc)}</span>` : ''}
-        <button class="card-done-btn" onclick="event.stopPropagation();toggleQuestDone('${q.id}')" title="${effectiveDone ? 'Marquer à faire' : 'Marquer terminée'}">${effectiveDone ? '↩' : '✓'}</button>
+        ${q.npc ? `<span class="card-npc" title="PNJ">🧑 ${resolvePnjName(q.npc)}</span>` : ''}
+        <button class="card-done-btn" aria-pressed="${effectiveDone}" onclick="event.stopPropagation();toggleQuestDone('${q.id}')" title="${doneTitle}" aria-label="${doneTitle}"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       </div>
     </div>`;
 
   card.addEventListener('mousedown', e => e.preventDefault());
   card.addEventListener('click', () => openModal(q));
+  card.addEventListener('keydown', e => {
+    if (e.target !== card) return;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(q); }
+  });
   queteGrid.appendChild(card);
 }
 
@@ -1140,20 +1262,51 @@ window.addEventListener('popstate', () => {
 /* ══════════════════════════════════
    MODAL
 ══════════════════════════════════ */
+let _modalOpener = null;
+
+function _visibleIds() {
+  return [...queteGrid.querySelectorAll('.quete-card[data-id]')].map(c => c.dataset.id);
+}
+
+function _syncModalNav(q) {
+  const ids = _visibleIds();
+  const i = ids.indexOf(q.id);
+  const prev = document.getElementById('modal-prev');
+  const next = document.getElementById('modal-next');
+  if (prev) prev.disabled = i <= 0;
+  if (next) next.disabled = i < 0 || i >= ids.length - 1;
+}
+
+function modalStep(dir) {
+  const cur = window._currentModalQuest;
+  if (!cur) return;
+  const ids = _visibleIds();
+  const nid = ids[ids.indexOf(cur.id) + dir];
+  const nq = nid && getQuestById(nid);
+  if (nq) openModal(nq);
+}
+
 function openModal(q) {
+  const wasOpen = modalOverlay.classList.contains('open');
+  if (!wasOpen) _modalOpener = document.activeElement;
   window._currentModalQuest = q;
   modalContent.innerHTML = renderSheet(q);
   bindModalCheckboxes(q);
+  _syncModalNav(q);
+  modalContent.closest('.quest-modal-scroll')?.scrollTo(0, 0);
   // Bouton « Signaler une erreur » avec le contexte de la fiche
   window._vclLogContentView?.('quete', q.id, q.titre || q.name || q.id);
   modalOverlay.classList.add('open');
-  /* Met à jour le hash sans dupliquer */
+  if (!wasOpen) modalCloseBtn.focus({ preventScroll: true });
+  /* Met à jour le hash sans dupliquer (navigation ‹ › : on remplace l'entrée d'historique) */
   if (window.location.hash !== `#${q.id}`) {
-    history.pushState({ quest: q.id }, '', `#${q.id}`);
+    history[wasOpen ? 'replaceState' : 'pushState']({ quest: q.id }, '', `#${q.id}`);
   }
 }
 
 function closeModal() {
+  const wasOpen = modalOverlay.classList.contains('open');
+  const lastId  = window._currentModalQuest?.id;
   modalOverlay.classList.remove('open');
   window._currentModalQuest = null;
   _tipAnchor = null;
@@ -1168,6 +1321,11 @@ function closeModal() {
   if (window.location.hash) {
     history.pushState(null, '', window.location.pathname + window.location.search);
   }
+  if (wasOpen) {
+    const back = (_modalOpener && document.contains(_modalOpener)) ? _modalOpener
+      : queteGrid.querySelector(`.quete-card[data-id="${lastId}"]`);
+    back?.focus?.({ preventScroll: true });
+  }
 }
 
 modalCloseBtn.addEventListener('click', closeModal);
@@ -1179,7 +1337,15 @@ modalOverlay.addEventListener('click', e => {
   if (el) el.click();
   modalOverlay.style.pointerEvents = '';
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+document.getElementById('modal-prev')?.addEventListener('click', () => modalStep(-1));
+document.getElementById('modal-next')?.addEventListener('click', () => modalStep(1));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); setDrawer(false); return; }
+  if (!modalOverlay.classList.contains('open')) return;
+  if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); modalStep(-1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); modalStep(1); }
+});
 
 /* ── Bind checkboxes ── */
 /* Vrai si un objectif antérieur à `i` porte le tag `next` ET n'est pas coché.
@@ -1232,7 +1398,7 @@ window.questCheckAll = function(qid, checked) {
   // Re-rendre le modal pour refléter le nouvel état
   modalContent.innerHTML = renderSheet(q);
   bindModalCheckboxes(q);
-  buildGrid();
+  buildGrid({ animate: false });
   updateStatutCounts();
 };
 
@@ -1259,7 +1425,7 @@ function bindModalCheckboxes(q) {
         badge.className   = `quest-status-badge ${isDone ? 'badge-done' : isStarted ? 'badge-wip' : 'badge-todo'}`;
         badge.textContent = isDone ? 'Terminée' : isStarted ? 'En cours' : 'À faire';
       }
-      buildGrid();
+      buildGrid({ animate: false });
       updateStatutCounts();
     });
   });
@@ -1433,6 +1599,7 @@ function setActiveTab(tab) {
 ══════════════════════════════════ */
 function refreshAll() {
   _tabQuestsCache = null;
+  if (window.matchMedia('(max-width: 860px)').matches) setDrawer(false);
   updateHeader();
   buildPalierFilters();
   buildZoneFilters();
@@ -1460,8 +1627,23 @@ if (_sortSelectEl) {
 
 searchInput.addEventListener('input', () => {
   searchQuery = searchInput.value.trim();
+  syncSearchClear();
   buildGrid();
 });
+document.getElementById('search-clear')?.addEventListener('click', () => {
+  searchInput.value = ''; searchQuery = ''; syncSearchClear(); buildGrid(); searchInput.focus();
+});
+
+/* ── Tiroir filtres (mobile) ── */
+function setDrawer(open) {
+  document.getElementById('quetes-sidebar')?.classList.toggle('drawer-open', open);
+  document.getElementById('sidebar-backdrop')?.classList.toggle('show', open);
+  document.getElementById('filters-toggle')?.setAttribute('aria-expanded', open);
+}
+document.getElementById('filters-toggle')?.addEventListener('click', () =>
+  setDrawer(!document.getElementById('quetes-sidebar').classList.contains('drawer-open')));
+document.getElementById('drawer-close')?.addEventListener('click', () => setDrawer(false));
+document.getElementById('sidebar-backdrop')?.addEventListener('click', () => setDrawer(false));
 
 document.querySelectorAll('input[name="statut-filter"]').forEach(rb => {
   rb.addEventListener('change', () => {
@@ -1476,7 +1658,11 @@ document.querySelectorAll('input[name="statut-filter"]').forEach(rb => {
 function setLayout() {
   const header = document.querySelector('.site-header');
   const layout = document.querySelector('.quetes-layout');
-  if (header && layout) layout.style.top = header.getBoundingClientRect().height + 'px';
+  if (header && layout) {
+    const h = header.getBoundingClientRect().height;
+    layout.style.top = h + 'px';
+    document.documentElement.style.setProperty('--hdr-h', h + 'px');
+  }
 }
 setLayout();
 window.addEventListener('resize', setLayout);

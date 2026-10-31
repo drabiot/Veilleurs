@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="../report-widget.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-1ZEKMF3QVS"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -65,10 +65,17 @@
   <div class="quetes-layout">
 
     <!-- ══ SIDEBAR ══ -->
-    <aside class="quetes-sidebar">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <aside class="quetes-sidebar" id="quetes-sidebar" aria-label="Filtres">
+
+      <div class="sidebar-drawer-head">
+        <span class="palier-label">Filtres</span>
+        <button class="drawer-close" id="drawer-close" aria-label="Fermer les filtres">✕</button>
+      </div>
 
       <div class="sidebar-search">
-        <input type="text" id="sidebar-search" placeholder="🔍  Rechercher…" autocomplete="new-password" />
+        <input type="text" id="sidebar-search" placeholder="Rechercher…" autocomplete="new-password" aria-label="Rechercher" />
+        <button class="search-clear" id="search-clear" aria-label="Effacer la recherche" hidden>✕</button>
       </div>
 
       <div class="sidebar-sort-bar">
@@ -165,31 +172,49 @@
     <!-- ══ MAIN ══ -->
     <main class="quetes-main">
       <div class="quetes-main-header">
-        <div>
-          <h1 class="quetes-title" id="main-title">Quêtes Principales</h1>
+        <div class="qmh-text">
           <p class="quetes-subtitle" id="main-subtitle">// PRINCIPALES · VEILLEURS AU CLAIR DE LUNE</p>
+          <h1 class="quetes-title" id="main-title">Quêtes Principales</h1>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <div class="card-size-btns" id="card-size-btns">
-            <button class="card-size-btn" data-size="small" title="Petites cartes">⊞</button>
-            <button class="card-size-btn active" data-size="medium" title="Cartes moyennes">⊡</button>
-            <button class="card-size-btn" data-size="large" title="Grandes cartes">⊟</button>
+        <div class="qprog" id="qprog" aria-live="polite">
+          <div class="qprog-top">
+            <span class="qprog-pct" id="qprog-pct">0%</span>
+            <span class="qprog-lbl" id="qprog-lbl"></span>
           </div>
-          <button id="track-all-btn" class="bulk-complete-btn" onclick="trackAllVisible()">🎯 Suivre affichées</button>
-          <button id="bulk-complete-btn" class="bulk-complete-btn" onclick="bulkComplete()">✓ Tout terminer</button>
-          <select id="quest-sort" class="quest-sort">
-            <option value="default">Ordre par défaut</option>
-            <option value="profit">💰 Rentabilité (XP + Cols)</option>
-            <option value="exp">✨ XP décroissante</option>
-            <option value="cols">🪙 Cols décroissants</option>
-            <option value="alpha-asc">🔤 A → Z</option>
-            <option value="alpha-desc">🔤 Z → A</option>
-          </select>
-          <span id="result-count" class="result-count"></span>
+          <div class="qprog-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="qprog-bar"><i id="qprog-fill"></i></div>
+          <div class="qprog-stats">
+            <span class="qs qs-todo"><i></i><b id="qs-todo">0</b> à faire</span>
+            <span class="qs qs-wip"><i></i><b id="qs-wip">0</b> en cours</span>
+            <span class="qs qs-done"><i></i><b id="qs-done">0</b> terminées</span>
+          </div>
         </div>
       </div>
 
-      <div id="quete-grid" class="quete-grid"></div>
+      <div class="quetes-toolbar">
+        <button class="tb-btn filters-toggle" id="filters-toggle" aria-controls="quetes-sidebar">☰ Filtres <span class="tb-badge" id="filters-badge" hidden></span></button>
+        <div class="card-size-btns" id="card-size-btns" role="group" aria-label="Taille des cartes">
+          <button class="card-size-btn" data-size="small" title="Petites cartes" aria-label="Petites cartes">⊞</button>
+          <button class="card-size-btn active" data-size="medium" title="Cartes moyennes" aria-label="Cartes moyennes">⊡</button>
+          <button class="card-size-btn" data-size="large" title="Grandes cartes" aria-label="Grandes cartes">⊟</button>
+        </div>
+        <span class="tb-sep" aria-hidden="true"></span>
+        <button id="track-all-btn" class="bulk-complete-btn" onclick="trackAllVisible()">🎯 Suivre affichées</button>
+        <button id="bulk-complete-btn" class="bulk-complete-btn" onclick="bulkComplete()">✓ Tout terminer</button>
+        <span class="tb-spacer"></span>
+        <span id="result-count" class="result-count"></span>
+        <select id="quest-sort" class="quest-sort" aria-label="Trier">
+          <option value="default">Ordre par défaut</option>
+          <option value="profit">💰 Rentabilité (XP + Cols)</option>
+          <option value="exp">✨ XP décroissante</option>
+          <option value="cols">🪙 Cols décroissants</option>
+          <option value="alpha-asc">🔤 A → Z</option>
+          <option value="alpha-desc">🔤 Z → A</option>
+        </select>
+      </div>
+
+      <div class="active-filters" id="active-filters" hidden></div>
+
+      <div id="quete-grid" class="quete-grid" aria-busy="true"><div class="quete-card skeleton" aria-hidden="true"></div><div class="quete-card skeleton" aria-hidden="true"></div><div class="quete-card skeleton" aria-hidden="true"></div><div class="quete-card skeleton" aria-hidden="true"></div><div class="quete-card skeleton" aria-hidden="true"></div><div class="quete-card skeleton" aria-hidden="true"></div></div>
 
       <div id="grid-empty" class="grid-empty" style="display:none;">
         <div class="grid-empty-icon">📋</div>
@@ -201,8 +226,10 @@
 
   <!-- ══════ MODAL ══════ -->
   <div class="quest-modal-overlay" id="quest-modal-overlay">
-    <div class="quest-modal" role="dialog" aria-modal="true">
-      <button class="modal-close-btn" id="modal-close-btn" title="Fermer (Échap)">✕</button>
+    <div class="quest-modal" role="dialog" aria-modal="true" aria-label="Détail de la quête">
+      <button class="modal-nav-btn modal-prev" id="modal-prev" title="Quête précédente (←)" aria-label="Quête précédente">‹</button>
+      <button class="modal-nav-btn modal-next" id="modal-next" title="Quête suivante (→)" aria-label="Quête suivante">›</button>
+      <button class="modal-close-btn" id="modal-close-btn" title="Fermer (Échap)" aria-label="Fermer">✕</button>
       <div class="quest-modal-scroll">
         <div id="quest-modal-content"></div>
       </div>
