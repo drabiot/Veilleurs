@@ -196,7 +196,19 @@ function autoMobLootLines(item) {
   }
   return out;
 }
-function withAutoObtain(item, text) {
+/* Phrases d'obtention assemblées par concaténation (« Fabricable au [PNJ] de Région (x,y,z) ») : à l'affichage, on corrige ce qui ne colle pas.
+   « au / aux » devant un nom de PNJ → « chez » ; « de Région » après le PNJ → « — Région » ; un nom qui commence par un article → « auprès de ». */
+function fixObtainGrammar(str) {
+  if (typeof str !== 'string' || !str) return str;
+  const region = r => /_/.test(r) ? r.replace(/_/g, ' ').replace(/(^|\s)\S/g, c => c.toUpperCase()) : r;
+  return str
+    .replace(/(^|\n)(\s*)npc:(?=(?:Fabricable|Achetable))/g, '$1$2')
+    .replace(/\b(Fabricable|Achetable) (?:aux?|à la|à l['’]) (?=\[npc:)/g, '$1 chez ')
+    .replace(/\baux? (?=\[npc:[^|\]]+\|(?:L['’]|Le |La |Les ))/g, 'auprès de ')
+    .replace(/(\[npc:[^\]]+\]) de ([^\n(),\[\]]+?) (?=\(-?\d)/g, (m, tag, r) => `${tag} — ${region(r)} `);
+}
+function withAutoObtain(item, text) { return fixObtainGrammar(_withAutoObtain(item, text)); }
+function _withAutoObtain(item, text) {
   let base = typeof text === 'string' ? text : '';
   if (window.vclIsSecretItem?.(item)) return SECRET_FORGERON_OBTAIN; // item ajouté à la liste secrète : obtain entièrement caché
   // Ligne écrite à la main qui cite un forgeron secret masqué : remplacée en entier (elle peut donner son lieu), une seule fois
