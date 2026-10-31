@@ -227,6 +227,7 @@ function initSkinViewer(W, colH) {
   window.__skinViewer.autoRotate  = false;
   window.__skinViewer.zoom        = 0.70;
   window.__skinViewer.globalLight = 3;
+  if (window.__skinViewer.playerObject) window.__skinViewer.playerObject.position.y = -3;   // laisse la place au titre au-dessus de la tête
   window.__skinViewer.cameraLight = 1;
 
   canvas.addEventListener('wheel', function(e) {
@@ -1184,15 +1185,15 @@ function loadAccessoriesForClass(classId) {
     _renderTalentCards();
   }
 
-  // Carte « Arbre de compétences » : points dépensés / disponibles
+  // Bouton « Arbre de compétences » : badge = points encore à dépenser
   function _renderTalentCards() {
-    const el = document.getElementById('skilltree-val');
-    if (!el) return;
+    const btn = document.getElementById('btn-skilltree'), badge = document.getElementById('tree-badge');
+    if (!btn) return;
     const max = window.VCLSkillTree ? window.VCLSkillTree.maxPoints(buildLevel) : 0;
-    const spent = skillNodes.length;
-    el.textContent = spent + ' / ' + max + ' point' + (max === 1 ? '' : 's');
-    el.classList.toggle('empty', spent === 0);
-    el.classList.toggle('full', max > 0 && spent >= max);
+    const spent = skillNodes.length, left = Math.max(0, max - spent);
+    btn.title = 'Arbre de compétences — ' + spent + ' / ' + max + ' point' + (max === 1 ? '' : 's') + ' dépensé' + (spent > 1 ? 's' : '');
+    btn.classList.toggle('has-points', left > 0);
+    if (badge) { badge.textContent = left; badge.hidden = left <= 0; }
   }
 
   // Interrupteur « Masquer les stats à 0 » du panneau Statistiques (choix mémorisé)
@@ -2437,39 +2438,72 @@ function loadAccessoriesForClass(classId) {
     const btn = document.getElementById('btn-titre'), lab = document.getElementById('titre-btn-label');
     if (!btn || !lab) return;
     const t = _titreById(activeTitre);
-    lab.textContent = t ? t.name : 'Aucun titre';
+    lab.textContent = t ? t.name : 'Choisir un titre';
     lab.classList.toggle('empty', !t);
+    lab.classList.toggle('long', !!t && t.name.length > 17);
     btn.classList.toggle('has-titre', !!t);
     btn.title = t ? 'Titre : ' + t.name : 'Titre';
   }
+  // Bonus d'un titre, présentés comme toutes les stats du wiki : emoji, nom, valeur
+  function _titreStatsHTML(t) {
+    const st = t.stats || {};
+    const known = ALL_STATS.filter(function(s) { return +st[s.id]; });
+    const unknown = Object.keys(st).filter(function(k) { return +st[k] && !STATS_BY_ID.get(k); });
+    const row = function(icon, label, v, unit) {
+      return '<div class="istat-row"><span class="istat-icon">' + icon + '</span><span class="istat-label">' + escHtml(label) + '</span>' +
+        '<span class="istat-val"' + (v < 0 ? ' style="color:#d9614a"' : '') + '>' + (v > 0 ? '+' : '') + v + unit + '</span></div>';
+    };
+    const rows = known.map(function(s) { return row(s.icon || '', s.label, +st[s.id], s.id === 'vitesse_attaque' ? '%' : (s.unit || '')); })
+      .concat(unknown.map(function(k) { return row('', k, +st[k], ''); })).join('');
+    return rows ? '<div class="istat-block">' + rows + '</div>' : '<div class="tt-none">Aucun bonus</div>';
+  }
+  function _titreMatches(t, q) {
+    if (!q) return true;
+    if (_optNormName(t.name).indexOf(q) >= 0) return true;
+    return Object.keys(t.stats || {}).some(function(k) {
+      const s = STATS_BY_ID.get(k);
+      return +t.stats[k] && _optNormName(s ? s.label : k).indexOf(q) >= 0;
+    });
+  }
+  let _titreQuery = '';
   function _renderTitreMenu() {
     const menu = document.getElementById('titre-menu');
     if (!menu) return;
     const list = window._vclTitres || [];
-    menu.innerHTML = '';
-    const none = document.createElement('button');
-    none.type = 'button'; none.className = 'titre-row titre-row-none' + (activeTitre ? '' : ' active');
-    none.innerHTML = '<span class="titre-row-name">Aucun titre</span>';
-    none.addEventListener('click', function() { _chooseTitre(null); });
-    menu.appendChild(none);
-    if (!list.length) {
-      const e = document.createElement('div'); e.className = 'titre-empty'; e.textContent = 'Aucun titre disponible pour le moment.';
-      menu.appendChild(e); return;
-    }
-    list.forEach(function(t) {
-      const row = document.createElement('button');
-      row.type = 'button'; row.className = 'titre-row' + (t.id === activeTitre ? ' active' : '');
-      row.setAttribute('role', 'option');
-      const chips = Object.entries(t.stats || {}).filter(function(e) { return +e[1]; }).map(function(e) {
-        const st = STATS_BY_ID.get(e[0]), v = +e[1] || 0;
-        const unit = e[0] === 'vitesse_attaque' ? '%' : (st && st.unit ? st.unit : '');
-        return '<span class="titre-stat"><b' + (v < 0 ? ' class="neg"' : '') + '>' + (v > 0 ? '+' : '') + v + unit + '</b>' + escHtml(st ? st.label : e[0]) + '</span>';
-      }).join('');
-      row.innerHTML = '<span class="titre-row-name">' + escHtml(t.name) + '</span>' + (chips ? '<span class="titre-row-stats">' + chips + '</span>' : '');
-      row.addEventListener('click', function() { _chooseTitre(t.id === activeTitre ? null : t.id); }); // recliquer sur le titre actif le retire
-      if (t.id === activeTitre) row.title = 'Cliquer pour retirer ce titre';
-      menu.appendChild(row);
-    });
+    menu.innerHTML = '<div class="tm-search"><input id="titre-q" type="text" autocomplete="off" placeholder="🔍  Rechercher un titre ou une stat…" /></div><div class="tm-list"></div>';
+    const q = menu.querySelector('#titre-q'), box = menu.querySelector('.tm-list');
+    q.value = _titreQuery;
+    const fill = function() {
+      const f = _optNormName(_titreQuery.trim());
+      box.innerHTML = '';
+      if (!f) {
+        const none = document.createElement('button');
+        none.type = 'button'; none.className = 'titre-row titre-row-none' + (activeTitre ? '' : ' active');
+        none.innerHTML = '<span class="titre-row-name">Sans titre</span>';
+        none.addEventListener('click', function() { _chooseTitre(null); });
+        box.appendChild(none);
+      }
+      if (!list.length) {
+        const e = document.createElement('div'); e.className = 'titre-empty'; e.textContent = 'Aucun titre disponible pour le moment.';
+        box.appendChild(e); return;
+      }
+      let n = 0;
+      list.forEach(function(t) {
+        if (!_titreMatches(t, f)) return;
+        n++;
+        const row = document.createElement('button');
+        row.type = 'button'; row.className = 'titre-row' + (t.id === activeTitre ? ' active' : '');
+        row.setAttribute('role', 'option');
+        row.innerHTML = '<span class="titre-row-name">' + escHtml(t.name) + '</span>' + _titreStatsHTML(t);
+        row.addEventListener('click', function() { _chooseTitre(t.id === activeTitre ? null : t.id); }); // recliquer sur le titre actif le retire
+        if (t.id === activeTitre) row.title = 'Cliquer pour retirer ce titre';
+        box.appendChild(row);
+      });
+      if (!n) { const e = document.createElement('div'); e.className = 'titre-empty'; e.textContent = 'Aucun titre ne correspond.'; box.appendChild(e); }
+    };
+    q.addEventListener('input', function() { _titreQuery = q.value; fill(); });
+    q.addEventListener('keydown', function(e) { if (e.key === 'Escape') { e.stopPropagation(); _closeTitreMenu(); } });
+    fill();
   }
   function _setTitre(id) { activeTitre = id || null; _renderTitreBtn(); _renderTitreMenu(); }
   function _chooseTitre(id) {
@@ -2491,8 +2525,18 @@ function loadAccessoriesForClass(classId) {
       const open = menu.hidden;
       menu.hidden = !open;
       btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open) _renderTitreMenu();
+      if (open) { hideSetTooltip(); _renderTitreMenu(); const qi = document.getElementById('titre-q'); if (qi) qi.focus(); }
     });
+    const showTip = function(e) {
+      const t = _titreById(activeTitre), tip = document.getElementById('set-tooltip');
+      if (!t || !tip || !menu.hidden) return;
+      tip.style.width = '';
+      tip.innerHTML = '<div class="car-tt-header"><span class="car-tt-name tt-titre">' + escHtml(t.name) + '</span></div><div class="tt-sub">Titre</div><div class="car-tt-stats">' + _titreStatsHTML(t) + '</div>';
+      tip.classList.add('visible'); positionTooltip(e, tip);
+    };
+    btn.addEventListener('mouseenter', showTip);
+    btn.addEventListener('mousemove', function(e) { const tip = document.getElementById('set-tooltip'); if (tip && tip.classList.contains('visible') && menu.hidden && activeTitre) positionTooltip(e, tip); });
+    btn.addEventListener('mouseleave', hideSetTooltip);
     document.addEventListener('click', function(e) { if (!menu.hidden && !e.target.closest('.titre-wrap')) _closeTitreMenu(); });
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') _closeTitreMenu(); });
     window.addEventListener('vcl:titres', function() { _renderTitreMenu(); _renderTitreBtn(); renderStats(); });

@@ -173,21 +173,6 @@
             <div class="center-sub">// CONSTRUCTEUR D'ÉQUIPEMENT · VEILLEURS AU CLAIR DE LUNE</div>
             <span class="build-progress" id="build-progress">0 / 0 emplacements</span>
           </div>
-          <div class="center-head-actions">
-            <div class="titre-wrap">
-              <button id="btn-titre" class="talent-card titre-btn" title="Titre" aria-label="Titre" aria-haspopup="listbox" aria-expanded="false">
-                <span class="tc-ico" aria-hidden="true">⚜</span>
-                <span class="tc-body"><span class="tc-label">Titre</span><span class="tc-value empty" id="titre-btn-label">Aucun titre</span></span>
-                <span class="tc-chev" aria-hidden="true">▾</span>
-              </button>
-              <div id="titre-menu" class="titre-menu" role="listbox" hidden></div>
-            </div>
-            <button id="btn-skilltree" class="talent-card" title="Arbre de compétences" aria-label="Arbre de compétences">
-              <span class="tc-ico tc-ico-tree" aria-hidden="true"></span>
-              <span class="tc-body"><span class="tc-label">Arbre de compétences</span><span class="tc-value empty" id="skilltree-val">0 / 0 points</span></span>
-              <span class="tc-chev" aria-hidden="true">›</span>
-            </button>
-          </div>
         </div>
         <div class="atelier-guide" id="atelier-guide" hidden>
           <div class="ag-step"><span class="ag-num">1</span><span>Choisis une <b>classe</b></span></div>
@@ -209,6 +194,18 @@
                 <div class="mq-skin" id="mq-skin">
                   <span class="sk-c"></span>
                   <canvas id="mq-skin-canvas"></canvas>
+                  <div class="titre-wrap" id="titre-wrap">
+                    <button type="button" id="btn-titre" class="title-plate titre-btn" aria-label="Titre" aria-haspopup="listbox" aria-expanded="false">
+                      <span class="tp-orn" aria-hidden="true"></span>
+                      <span class="tp-name empty" id="titre-btn-label">Choisir un titre</span>
+                      <span class="tp-orn" aria-hidden="true"></span>
+                    </button>
+                    <div id="titre-menu" class="titre-menu" role="listbox" hidden></div>
+                  </div>
+                  <button type="button" id="btn-skilltree" class="tree-btn" aria-label="Arbre de compétences" title="Arbre de compétences">
+                    <span class="tree-ico" aria-hidden="true"></span>
+                    <span class="tree-badge" id="tree-badge" hidden></span>
+                  </button>
                   <div class="class-drop" id="class-drop">
                     <button type="button" class="class-drop-btn" id="class-drop-btn" aria-haspopup="listbox" aria-expanded="false" title="Changer de classe">
                       <span class="cd-ico" id="cd-ico">👥</span>
