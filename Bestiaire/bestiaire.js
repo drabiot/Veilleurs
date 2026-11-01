@@ -912,6 +912,7 @@ function _openFullscreen3D(mob) {
   const overlay = document.createElement('div');
   overlay.id = 'mob-3d-fullscreen-overlay';
   overlay.className = 'm3d-overlay';
+  overlay.style.cssText = 'position:fixed;z-index:99999';   // patchnotes.css force « body > * { position:relative } » (spécificité supérieure à la classe)
   overlay.style.setProperty('--m3d-accent', accent);
   overlay.setAttribute('role', 'dialog');
   overlay.setAttribute('aria-modal', 'true');
