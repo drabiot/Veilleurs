@@ -460,6 +460,7 @@ async function handleDiscordCallback(request, env) {
 //  POST /stats  admin   : { secret, action: 'summary' (défaut) | 'user' | 'reset' } — agrégats calculés en SQL ; même secret que le proxy Discord.
 // ══════════════════════════════════════════════════════════════
 
+const WIKI_INVITE_CODE = 'gnQXt4y4pn';   // lien Discord du wiki (report-widget.js), réservé à cet usage
 const TRACK_COLS    = new Set(['page_views', 'user_visits', 'item_views', 'search_logs']);
 const TRACK_ID_RE   = /^[A-Za-z0-9_\-]{1,120}$/;
 const TRACK_KEY_RE  = /^[A-Za-z0-9_.\-]{1,120}$/;
@@ -643,6 +644,14 @@ async function handleStats(request, env) {
     q(`SELECT json_extract(data, '$.country') k, COUNT(*) n, SUM(${UV_ANON}) anons FROM track_docs WHERE col = 'user_visits' GROUP BY k ORDER BY n DESC`).all(),
   ]);
 
+  // Arrivées réelles via le lien du wiki : compteur d'utilisations de l'invitation (Discord le tient lui-même ; il faut la permission « Gérer le serveur » pour le bot)
+  let discordInvite = null;
+  try {
+    const r = await fetch(`https://discord.com/api/v10/guilds/${env.DISCORD_GUILD_ID}/invites`, { headers: { Authorization: `Bot ${env.BOT_TOKEN}` } });
+    if (r.ok) { const inv = (await r.json()).find(i => i.code === WIKI_INVITE_CODE); if (inv) discordInvite = { uses: inv.uses || 0 }; else discordInvite = { error: 'invitation introuvable' }; }
+    else discordInvite = { error: 'HTTP ' + r.status };
+  } catch { discordInvite = { error: 'injoignable' }; }
+
   // Visites par jour : un doc « site » par jour (format actuel) ; à défaut, somme des anciens docs par section
   const days = {};
   const hours = Array(24).fill(0);
@@ -687,7 +696,7 @@ async function handleStats(request, env) {
   const restN = Math.max(0, (anonAgg.n || 0) - anonRows.length);
 
   return json({
-    daily, hours,
+    daily, hours, discordInvite,
     users: { total: uvAgg.n || 0, anons: uvAgg.anons || 0, members: (uvAgg.n || 0) - (uvAgg.anons || 0),
       mobile: uvAgg.mobile || 0, desktop: uvAgg.desktop || 0, sessions: uvAgg.sessions || 0, sectionVisits: uvAgg.sectionVisits || 0,
       active7: uvAgg.active7 || 0, active30: uvAgg.active30 || 0, new7: uvAgg.new7 || 0, oneVisit: uvAgg.oneVisit || 0 },

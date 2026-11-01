@@ -110,7 +110,7 @@ function barRows(entries, colorOf, labelOf, esc) {
 
 // ── Onglet Audience ───────────────────────────────────
 function audienceTab(s, ctx, esc) {
-  const { daily, users, logins, hours } = s;
+  const { daily, users, logins, hours, discordInvite } = s;
   const { today } = ctx;
   const d6 = statsDay(-6), d7 = statsDay(-7), d13 = statsDay(-13), d29 = statsDay(-29), d30 = statsDay(-30), d59 = statsDay(-59);
 
@@ -131,9 +131,10 @@ function audienceTab(s, ctx, esc) {
     ${kpi('📆', '#60a5fa', fmt(visits30), '30 derniers jours', delta(visits30, visits30p))}
     ${kpi('🌍', '#4ade80', fmt(visitsAll), 'All-time')}
     ${kpi('👤', '#f87171', fmt(logins.today), "Connexions aujourd'hui", `${fmt(logins.week)} sur 7 jours`)}
+    ${discordInvite?.uses != null ? kpi('🎉', '#5865F2', fmt(discordInvite.uses), 'Arrivées via le lien Discord du wiki', 'utilisations de l'invitation, depuis sa création') : ''}
     ${kpi('💬', '#5865F2', fmt(dcAll), 'Clics sur le lien Discord', `${fmt(dc7)} sur 7 jours${delta(dc7, dc7p) ? ' ' + delta(dc7, dc7p) : ''} · ${fmt(dcUAll)} navigateurs différents`)}
   </div>
-  <div class="stats-note">Discord : on compte les clics sur le bouton du wiki (depuis la mise en place de ce compteur), pas les arrivées réelles sur le serveur — Discord ne dit pas qui a cliqué.</div>`;
+  <div class="stats-note">Discord : « Arrivées » = compteur d'utilisations de l'invitation du wiki (tenu par Discord, ${discordInvite?.error ? 'indisponible : ' + esc(discordInvite.error) + ' — le bot a-t-il « Gérer le serveur » ?' : 'comptes déjà membres exclus'}). « Clics » = bouton du wiki, depuis la mise en place du compteur.</div>`;
 
   // Fidélité : le suivi anonyme est lié au navigateur, pas à la personne — on montre donc des taux plutôt qu'un « nombre de visiteurs »
   const returning = Math.max(0, users.total - users.oneVisit);
