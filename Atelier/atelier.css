@@ -1647,10 +1647,25 @@ html, body {
   background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rar) 22%, transparent), rgba(255,255,255,.02) 75%);
   border-color: color-mix(in srgb, var(--rar) 40%, var(--rim));
 }
-.item-row .istat-block { display: grid; grid-template-columns: 1fr 1fr; gap: 1px 14px; margin-top: 6px; }
-.item-row .istat-row { min-width: 0; }
-.item-row .istat-label { min-width: 0; }
-.item-row .istat-val { padding-left: 4px; }
+.item-row .istat-block {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: 0 18px; margin-top: 8px; padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, var(--rim2) 55%, transparent);
+}
+.item-row .istat-row {
+  min-width: 0; align-items: baseline; padding: 4px 2px;
+  border-bottom: 1px dotted color-mix(in srgb, var(--rim2) 45%, transparent);
+}
+.item-row .istat-icon { align-self: center; }
+/* nom complet : retour à la ligne plutôt que « … » */
+.item-row .istat-label {
+  min-width: 0; white-space: normal; overflow: visible; text-overflow: clip;
+  line-height: 1.25; overflow-wrap: anywhere;
+}
+.item-row .istat-val { padding-left: 6px; white-space: nowrap; }
+/* stat seule / dernière stat impaire : pleine largeur, pas de trou à droite */
+.item-row .istat-row:only-child,
+.item-row .istat-row:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
 /* ══ STATS ══ */
 .sdp-toggle {
@@ -1730,6 +1745,7 @@ html, body {
   .mobile-atelier-bar { position: sticky; top: 0; z-index: 5; background: rgba(14,12,10,.92); backdrop-filter: blur(6px); }
   .atelier-mobile-btn { padding: 8px 14px; font-size: 12px; }
   .item-row .istat-block { grid-template-columns: 1fr; }
+  .item-row .istat-row:last-child:nth-child(odd) { grid-column: auto; }
 }
 
 /* ── Respecte « réduire les animations » ── */

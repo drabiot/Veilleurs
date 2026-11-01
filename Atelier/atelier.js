@@ -240,10 +240,56 @@ function initSkinViewer(W, colH) {
   const walk = new skinview3d.WalkingAnimation();
   walk.speed = 0.4;
   window.__skinViewer.animation = walk;
+  placeTitreAboveHead(); requestAnimationFrame(placeTitreAboveHead);
 
   window.__skinViewer.loadSkin(getSkinPath(activeClass))
     .then(function() { loadAccessoriesForClass(activeClass); })
     .catch(function(err) { console.error('Skin init failed:', err); });
+}
+
+/* Colle le titre juste au-dessus de la tête, sous les onglets de build, sans écraser le bandeau Classe.
+   Si la place manque, le personnage descend puis rétrécit. */
+function placeTitreAboveHead() {
+  const v = window.__skinViewer, wrap = document.getElementById('titre-wrap'), canvas = document.getElementById('mq-skin-canvas');
+  const frame = document.getElementById('mq-skin');
+  if (!v || !wrap || !canvas || !frame || !v.playerObject || !v.camera) return;
+  try {
+    const V3 = v.camera.position.constructor;                         // skinview3d.THREE n'est pas exposé
+    const btn = wrap.firstElementChild;
+    const h = btn ? btn.offsetHeight : 30;
+    const fr = frame.getBoundingClientRect(), cr = canvas.getBoundingClientRect();
+    const bar = document.getElementById('build-tabs-bar');
+    const drop = document.getElementById('class-drop');
+    const feetLimit  = (drop ? drop.getBoundingClientRect().top - fr.top : cr.bottom - fr.top) - 6;
+    const off = cr.top - fr.top, ch = canvas.clientHeight;
+    const toPx = function(y) { return off + (1 - y) / 2 * ch; };
+    const measure = function() {
+      if (v.controls && v.controls.update) v.controls.update();
+      v.camera.updateMatrixWorld(true);
+      v.playerObject.updateMatrixWorld(true);
+      const sk = v.playerObject.skin;
+      const pt = function(o, y) { const w = o.localToWorld(new V3(0, y, 0)); return { w: w, px: toPx(w.clone().project(v.camera).y) }; };
+      const head = pt(sk.head, 8.5), feet = pt(sk.leftLeg, -12);   // haut du casque / bas des jambes
+      return { head: head.px, feet: feet.px, perUnit: (feet.px - head.px) / (head.w.y - feet.w.y) };
+    };
+    // Le titre reste calé sous les onglets ; le personnage se centre dans la place restante (tête sous le titre)
+    const titleTop = (bar ? bar.getBoundingClientRect().bottom - fr.top : 0) + 8;
+    wrap.style.top = Math.round(titleTop) + 'px';
+    const minHeadTop = titleTop + h + 14;
+    let zoom = 0.64, m;
+    for (let i = 0; i < 14; i++) {
+      v.zoom = zoom;
+      v.playerObject.position.y = -8;
+      m = measure();
+      const target = minHeadTop + Math.max(0, (feetLimit - minHeadTop - (m.feet - m.head)) / 2);
+      for (let k = 0; k < 6 && Math.abs(target - m.head) > 0.5 && m.perUnit > 0; k++) {
+        v.playerObject.position.y -= (target - m.head) / m.perUnit;
+        m = measure();
+      }
+      if (m.feet <= feetLimit) break;
+      zoom *= 0.94;                                                      // sinon, plus petit
+    }
+  } catch (e) {}
 }
 
 function updateSkinClass() {
@@ -3533,6 +3579,8 @@ function loadAccessoriesForClass(classId) {
 	} else {
 		initSkinViewer(W, colH);
 	}
+
+    placeTitreAboveHead(); requestAnimationFrame(placeTitreAboveHead);
 
     const totalW = 2 * S + W + 2 * G;
     const rowBot = document.getElementById('row-bot');
