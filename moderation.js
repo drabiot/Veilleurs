@@ -771,7 +771,7 @@ _lazyPanel(() => import('./moderation-leaderboard.js?v=6ffaeb75'), ['showLeaderb
 
 _lazyPanel(() => import('./moderation-audit.js?v=24907cd5'), ['showAuditLog', 'loadAuditLog', 'renderAuditLog', 'loadAuditLogMore']);
 
-_lazyPanel(() => import('./moderation-stats.js?v=ed046269'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques']);
+_lazyPanel(() => import('./moderation-stats.js?v=f43e87b4'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques']);
 
 
 _lazyPanel(() => import('./moderation-tags.js?v=922eadc4'), ['showTagsPanel', 'updateTagRuleValueOptions', 'loadTagRules', 'addTagRule', 'deleteTagRule', 'seedDefaultTagRules', 'applyTagRules']);
