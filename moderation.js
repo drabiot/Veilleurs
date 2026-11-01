@@ -219,7 +219,7 @@ window.toggleSidebar = function toggleSidebar() {
   localStorage.setItem('vcl_sidebar_hidden', hidden ? '1' : '');
 };
 
-_lazyPanel(() => import('./moderation-submissions.js?v=370d4b9c'), ['loadSubmissions', 'setFilter', 'setFilterSearch', 'loadSubDiff', 'applyDiffSelection', 'modImgFile', 'modImgDrop', 'modImgClear', 'modImgPaste', 'copyCode', 'toggleDetails', 'toggleEdit', 'onEditorInput', 'openInCreator', 'openEditorInCreator', 'approve', 'reject', 'restorePending', 'requestChanges', 'bulkDeleteSubs', 'bulkApproveSubs', 'deleteSub', 'renderSubs', 'updateCounts']);
+_lazyPanel(() => import('./moderation-submissions.js?v=0d393aab'), ['loadSubmissions', 'setFilter', 'setFilterSearch', 'loadSubDiff', 'applyDiffSelection', 'modImgFile', 'modImgDrop', 'modImgClear', 'modImgPaste', 'copyCode', 'toggleDetails', 'toggleEdit', 'onEditorInput', 'openInCreator', 'openEditorInCreator', 'approve', 'reject', 'restorePending', 'requestChanges', 'bulkDeleteSubs', 'bulkApproveSubs', 'deleteSub', 'renderSubs', 'updateCounts']);
 
 // id de région → nom affiché sur le wiki (« hanaka » → « Hanaka ») ; à défaut, l'id tel quel
 function _regionName(id) {
@@ -788,7 +788,7 @@ window.toggleSidebarSection = (id) => {
   if (chev) chev.textContent   = open ? '▾' : '▸';
 };
 
-_lazyPanel(() => import('./moderation-quality.js?v=8acdd552'), ['showCompletion', 'loadCompletion', 'renderCompletion', 'ignoreCompletionDoc', 'unignoreCompletionDoc', 'saveTableauDeChasse', 'saveCompletionFields', 'openCompletionInCreator', 'showCreatorValidation', 'loadCreatorValidation', '_setCvMode', '_setCvSubMode', '_onCvToggle', 'saveCreatorValidation']);
+_lazyPanel(() => import('./moderation-quality.js?v=dd0a1b7f'), ['showCompletion', 'loadCompletion', 'renderCompletion', 'ignoreCompletionDoc', 'unignoreCompletionDoc', 'saveTableauDeChasse', 'saveCompletionFields', 'openCompletionInCreator', 'showCreatorValidation', 'loadCreatorValidation', '_setCvMode', '_setCvSubMode', '_onCvToggle', 'saveCreatorValidation']);
 
 
 // ── Auto-scroll pendant le drag dans n'importe quelle liste draggable ──
@@ -871,7 +871,7 @@ _lazyPanel(() => import('./moderation-game-tools.js?v=5b63ecd5'), ['showEventsTo
 
 _lazyPanel(() => import('./moderation-bugs.js?v=0490d991'), ['showBugsConnus', '_loadBugsConnus', 'saveBugForm', 'startEditBug', 'cancelEditBug', 'saveEditBug', 'deleteBug']);
 
-_lazyPanel(() => import('./moderation-reports.js?v=380ba45d'), ['showReports', '_loadReports', 'repFilter', 'repReply', 'repClose', 'repCat', 'repDelete']);
+_lazyPanel(() => import('./moderation-reports.js?v=68d997e3'), ['showReports', '_loadReports', 'repFilter', 'repReply', 'repClose', 'repCat', 'repDelete']);
 _lazyPanel(() => import('./moderation-translations.js?v=7dc401a8'), ['showTranslations', '_loadTranslations', 'trDecide', 'trAcceptAll', 'trSetStatus', 'trSearch', 'trExport', 'trClean']);
 
 // ══════════════════════════════════════════════════════
@@ -892,5 +892,5 @@ window.showApiItems = async function showApiItems() {
 };
 
 // Couche « qualité des données » : observe les onglets-listes dès le chargement, donc importée tout de suite (et non au premier clic)
-import('./moderation-dq.js?v=e70bf703').then(m => m.init(_getPanelCtx())).catch(e => console.warn('[mod] couche qualité indisponible', e));
+import('./moderation-dq.js?v=645050de').then(m => m.init(_getPanelCtx())).catch(e => console.warn('[mod] couche qualité indisponible', e));
 
