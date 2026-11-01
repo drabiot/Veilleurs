@@ -2672,6 +2672,7 @@ function resetFormSilent() {
   activeTags = new Set();
   obtainSources = [];
   if (setDrop) setDrop.reset();
+  window._pendingRestoreSet = null; // set du brouillon restauré : buildSetSelect() le remettrait après l'arrivée des panoplies
   document.querySelectorAll('.r-btn, .cls-btn, .p-tag').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.stat-row').forEach(r => r.classList.remove('has-val'));
   document.getElementById('craft-list').innerHTML    = '';
