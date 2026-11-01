@@ -131,7 +131,7 @@ function audienceTab(s, ctx, esc) {
     ${kpi('📆', '#60a5fa', fmt(visits30), '30 derniers jours', delta(visits30, visits30p))}
     ${kpi('🌍', '#4ade80', fmt(visitsAll), 'All-time')}
     ${kpi('👤', '#f87171', fmt(logins.today), "Connexions aujourd'hui", `${fmt(logins.week)} sur 7 jours`)}
-    ${discordInvite?.uses != null ? kpi('🎉', '#5865F2', fmt(discordInvite.uses), 'Arrivées via le lien Discord du wiki', 'utilisations de l'invitation, depuis sa création') : ''}
+    ${discordInvite?.uses != null ? kpi('🎉', '#5865F2', fmt(discordInvite.uses), 'Arrivées via le lien Discord du wiki', 'utilisations de l’invitation, depuis sa création') : ''}
     ${kpi('💬', '#5865F2', fmt(dcAll), 'Clics sur le lien Discord', `${fmt(dc7)} sur 7 jours${delta(dc7, dc7p) ? ' ' + delta(dc7, dc7p) : ''} · ${fmt(dcUAll)} navigateurs différents`)}
   </div>
   <div class="stats-note">Discord : « Arrivées » = compteur d'utilisations de l'invitation du wiki (tenu par Discord, ${discordInvite?.error ? 'indisponible : ' + esc(discordInvite.error) + ' — le bot a-t-il « Gérer le serveur » ?' : 'comptes déjà membres exclus'}). « Clics » = bouton du wiki, depuis la mise en place du compteur.</div>`;
