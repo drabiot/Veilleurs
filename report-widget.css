@@ -27,6 +27,11 @@
 }
 .vcl-report-btn:hover svg { opacity: 1; }
 .vcl-report-btn:focus-visible { outline: 2px solid rgba(224,172,96,.5); outline-offset: 1px; }
+/* Lien Discord : même gabarit que « Nous contacter », hover bleu Discord discret */
+a.vcl-discord-btn { text-decoration: none; margin-left: 2px; }
+.vcl-discord-btn:hover { color: #ede0c8; background: rgba(88,101,242,.16); }
+.vcl-discord-btn:hover svg { color: #8f9bff; }
+@media (max-width: 720px) { .vcl-discord-btn span { display: none; } .vcl-discord-btn { padding: 0 9px; } }
 .vcl-report-overlay {
   position: fixed !important;
   inset: 0;
