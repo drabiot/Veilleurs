@@ -103,7 +103,10 @@
       <h3 class="info-title" id="info-title">J'ai des informations</h3>
       <p class="info-help">Pas besoin du Creator : écris ce que tu sais (où ça se trouve, comment l'obtenir, les stats, le nom exact…). Les admins s'occupent de la fiche.</p>
       <textarea id="info-text" rows="6" maxlength="1800" placeholder="Ce que tu sais sur cette fiche…"></textarea>
-      <p class="info-login" id="info-login" hidden>💬 Tu n'es pas connecté : tes informations seront envoyées de façon anonyme.</p>
+      <div class="info-login" id="info-login" hidden>
+        <input type="text" id="info-pseudo" maxlength="30" autocomplete="nickname" placeholder="Ton pseudo (obligatoire)">
+        <p>💬 Tu n'es pas connecté : indique un pseudo pour que les admins sachent qui remercier. Il est gardé sur cet appareil.</p>
+      </div>
       <div class="info-actions">
         <span class="info-status" id="info-status"></span>
         <button type="button" class="btn-ghost" id="info-cancel">Annuler</button>

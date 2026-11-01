@@ -9,7 +9,8 @@ import { store } from '../store.js';
 import { db, getCurrentUser, hasRole, doc, getDoc, setDoc, logPageView, logReport, collection, getDocs, query, where } from '../firebase.js';
 
 const WORKER = 'https://veilleurs.veilleurs-wiki.workers.dev';
-const SENT_KEY = 'vcl_chasse_sent'; // infos déjà envoyées par ce navigateur (visiteurs sans compte)
+const PSEUDO_KEY = 'vcl_chasse_pseudo'; // pseudo saisi par les visiteurs sans compte
+const SENT_KEY ='vcl_chasse_sent'; // infos déjà envoyées par ce navigateur (visiteurs sans compte)
 
 const MODES = [
   { key: 'items',     cre: 'item',     label: 'Items',     icon: '⚔️', disc: 'category' },
@@ -404,8 +405,9 @@ function openInfo(a) {
   $('info-text').value = '';
   $('info-status').textContent = '';
   $('info-login').hidden = !!state.user;
+  try { $('info-pseudo').value = localStorage.getItem(PSEUDO_KEY) || ''; } catch {}
   $('info-modal').hidden = false;
-  $('info-text').focus();
+  ($('info-pseudo').value || state.user ? $('info-text') : $('info-pseudo')).focus();
 }
 function closeInfo() { $('info-modal').hidden = true; infoTarget = null; }
 
@@ -414,9 +416,12 @@ async function sendInfo() {
   const status = $('info-status');
   if (!a) return;
   if (text.length < 5) { status.textContent = 'Écris au moins quelques mots.'; return; }
+  const typed = $('info-pseudo').value.trim().slice(0, 30);
+  if (!state.user && typed.length < 2) { status.textContent = 'Indique un pseudo (2 caractères minimum).'; $('info-pseudo').focus(); return; }
   const btn = $('info-send'); btn.disabled = true; status.textContent = 'Envoi…';
   try {
-    const pseudo = (state.user && document.getElementById('vcl-user-pseudo')?.textContent?.trim()) || (state.user ? 'Utilisateur' : 'Anonyme');
+    if (!state.user) { try { localStorage.setItem(PSEUDO_KEY, typed); } catch {} }
+    const pseudo = (state.user && document.getElementById('vcl-user-pseudo')?.textContent?.trim()) || (state.user ? 'Utilisateur' : typed);
     const head = `🎯 Chasse — ${a.name} (${MODE[a.mode].label}, ${KINDS[a.kind].label})\n\n`;
     const ok = await logReport(pseudo, 'chasse.html', head + text.slice(0, 1800), null, 'chasse', { mode: a.mode, id: a.id || '', name: a.name, kind: a.kind });
     if (!ok) throw new Error('envoi refusé, réessaie plus tard');
