@@ -73,6 +73,7 @@
       </a>
       <a href="../Atelier/atelier.html" class="nav-link"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
       <a href="../Builds/builds.html"  class="nav-link"><span class="nav-icon">📋</span><span class="nav-label">Builds</span></a>
+      <a href="../Chasse/chasse.html" class="nav-link"><span class="nav-icon">🎯</span><span class="nav-label">Chasse</span></a>
     </nav>
   </header>
 
@@ -367,11 +368,14 @@
   <script src="data.js?v=7329e358"></script>
   <script type="module">
     import { store } from '../store.js';
-    import { db, logPageView }    from '../firebase.js';
+    import { db, logPageView, getCurrentUser, hasRole } from '../firebase.js';
     import { getDoc, doc } from '../d1db.js';
     logPageView('map');
     await store.load(['pnj', 'regions', 'mobs', 'quetes', 'donjons', 'zones', 'mapMarkers']);
-    window._map_pnj        = store.pnj.filter(p => !window.vclIsSecretPnj(p)); // forgerons d'items secrets : position cachée
+    let isAdmin = false;
+    try { const u = await getCurrentUser(); isAdmin = !!u && hasRole(u.role, 'admin'); } catch {}
+    // forgerons d'items secrets : position cachée, sauf pour les admins
+    window._map_pnj        = isAdmin ? store.pnj : store.pnj.filter(p => !window.vclIsSecretPnj(p));
     window._map_regions    = store.regions;
     window._map_mobs       = store.mobs;
     window._map_quetes     = store.quetes;

@@ -465,15 +465,19 @@ export async function logSearchQuery(term) {
 }
 
 /** Crée un ticket (bug / suggestion / autre / erreur de fiche) depuis le widget « Nous contacter » — collection reports. */
-export async function logReport(pseudo, page, text, fiche = null, category = 'autre') {
+export async function logReport(pseudo, page, text, fiche = null, category = 'autre', chasse = null) {
   try {
     const data = {
       pseudo: pseudo || 'Anonyme',
       page:   page   || '',
       text:   String(text || '').slice(0, 2000),
-      category: ['bug', 'suggestion', 'autre', 'fiche'].includes(category) ? category : 'autre',   // type du ticket (widget « Nous contacter »)
+      category: ['bug', 'suggestion', 'autre', 'fiche', 'chasse'].includes(category) ? category : 'autre',   // type du ticket (widget « Nous contacter »)
       createdAt: serverTimestamp(),
     };
+    // « J'ai des informations » (page Chasse) : ticket rattaché à un avis, masqué de la liste des tickets du joueur
+    if (category === 'chasse' && chasse && chasse.mode) {
+      data.chasse = { mode: String(chasse.mode).slice(0, 20), id: String(chasse.id || '').slice(0, 120), name: String(chasse.name || '').slice(0, 200), kind: String(chasse.kind || '').slice(0, 10) };
+    }
     // Connecté : le signalement est lié au compte, ce qui permet aux admins de répondre (popup à la prochaine visite)
     if (auth.currentUser) data.submittedBy = auth.currentUser.uid;
     // Contexte de la fiche signalée (bouton « Signaler une erreur ») : type, id, nom

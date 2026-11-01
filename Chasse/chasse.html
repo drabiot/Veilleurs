@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="../img/VeilleursLogo.png" />
+  <title>[VCL] - Chasse au Clair de Lune</title>
+  <link rel="stylesheet" href="../Patchnotes/patchnotes.css" />
+  <link rel="stylesheet" href="chasse.css" />
+  <link rel="stylesheet" href="../auth-widget.css" />
+  <link rel="stylesheet" href="../report-widget.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Cinzel:wght@600;900&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-1ZEKMF3QVS"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-1ZEKMF3QVS');
+  </script>
+<script src="../no-spin.js?v=b9169870" defer></script>
+<script src="../sw-register.js" defer></script>
+<link rel="preconnect" href="https://veilleurs.veilleurs-wiki.workers.dev" crossorigin />
+</head>
+<body class="chasse-page">
+
+  <div class="ambient-bg" aria-hidden="true">
+    <div class="moon"></div>
+    <div class="fog fog-1"></div>
+    <div class="fog fog-2"></div>
+    <div class="vignette"></div>
+  </div>
+
+  <header class="site-header">
+    <div class="header-top">
+      <div class="header-left">
+        <div class="traffic-lights">
+          <span class="tl tl-red"></span>
+          <span class="tl tl-yellow"></span>
+          <span class="tl tl-green"></span>
+        </div>
+        <span class="header-sep">─────</span>
+        <a href="../index.html" class="header-logo">Veilleurs au Clair de Lune</a>
+      </div>
+      <div class="header-right"></div>
+    </div>
+    <nav class="header-nav">
+      <a href="../Patchnotes/patchnotes.html" class="nav-link"><span class="nav-icon">📜</span><span class="nav-label">Patchnotes</span></a>
+      <a href="../Map/map.html" class="nav-link"><span class="nav-icon">🗺️</span><span class="nav-label">Carte</span></a>
+      <a href="../Compendium/compendium.html" class="nav-link"><span class="nav-icon">📖</span><span class="nav-label">Compendium</span></a>
+      <a href="../Bestiaire/bestiaire.html" class="nav-link"><span class="nav-icon">💀</span><span class="nav-label">Bestiaire</span></a>
+      <a href="../Quetes/quetes.html" class="nav-link"><span class="nav-icon">❓</span><span class="nav-label">Quêtes</span></a>
+      <a href="../Atelier/atelier.html" class="nav-link"><span class="nav-icon">🔨</span><span class="nav-label">Atelier</span></a>
+      <a href="../Builds/builds.html" class="nav-link"><span class="nav-icon">📋</span><span class="nav-label">Builds</span></a>
+      <a href="chasse.html" class="nav-link active"><span class="nav-icon">🎯</span><span class="nav-label">Chasse</span></a>
+    </nav>
+  </header>
+
+  <main class="chasse-main">
+
+    <section class="chasse-hero">
+      <div class="chasse-eyebrow">// Ce qui manque au wiki · Veilleurs au Clair de Lune</div>
+      <h1 class="chasse-title" data-i18n-html>Chasse au <em>Clair de Lune</em></h1>
+      <p class="chasse-lead">Des fiches encore dans l'ombre, des champs restés vides, des données à raviver. Choisis une proie, ouvre le Creator et éclaire-la.</p>
+      <div class="chasse-rule" aria-hidden="true">☾</div>
+    </section>
+
+    <section class="chasse-phases" id="phases" aria-label="Types d'avis"></section>
+
+    <section class="chasse-toolbar" aria-label="Filtres">
+      <input type="search" id="q" class="chasse-search" placeholder="🔍  Rechercher une proie…" aria-label="Rechercher" autocomplete="off" />
+      <select id="palier" class="chasse-select" aria-label="Palier">
+        <option value="">Tous les paliers</option>
+        <option value="1">Palier 1</option>
+        <option value="2">Palier 2</option>
+        <option value="3">Palier 3</option>
+        <option value="event">Event</option>
+      </select>
+      <select id="sort" class="chasse-select" aria-label="Tri">
+        <option value="prio">Urgents d'abord</option>
+        <option value="palier">Par palier</option>
+        <option value="az">A → Z</option>
+      </select>
+      <button type="button" class="btn-avis" id="btn-avis" hidden>＋ Lancer un avis</button>
+      <div class="chasse-chips" id="chips"></div>
+    </section>
+
+    <section class="composer" id="composer" aria-label="Nouvel avis"></section>
+
+    <section id="list" class="avis-list" aria-live="polite">
+      <div class="chasse-state" style="grid-column:1/-1"><div class="big">☾</div><p>Chargement des ombres…</p></div>
+    </section>
+    <div class="lit-count" id="lit-count"></div>
+
+  </main>
+
+  <!-- « J'ai des informations » : pour ceux qui savent mais ne passent pas par le Creator -->
+  <div class="info-overlay" id="info-modal" hidden>
+    <div class="info-box" role="dialog" aria-modal="true" aria-labelledby="info-title">
+      <div class="info-eyebrow" id="info-kind"></div>
+      <h2 class="info-name" id="info-name"></h2>
+      <h3 class="info-title" id="info-title">J'ai des informations</h3>
+      <p class="info-help">Pas besoin du Creator : écris ce que tu sais (où ça se trouve, comment l'obtenir, les stats, le nom exact…). Les admins s'occupent de la fiche.</p>
+      <textarea id="info-text" rows="6" maxlength="1800" placeholder="Ce que tu sais sur cette fiche…"></textarea>
+      <p class="info-login" id="info-login" hidden>💬 Tu n'es pas connecté : tes informations seront envoyées de façon anonyme.</p>
+      <div class="info-actions">
+        <span class="info-status" id="info-status"></span>
+        <button type="button" class="btn-ghost" id="info-cancel">Annuler</button>
+        <button type="button" class="btn-gold" id="info-send">Envoyer aux admins</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../utils.js"></script>
+  <script type="module" src="chasse.js"></script>
+  <script type="module" src="../auth-widget.js"></script>
+  <script src="../report-widget.js"></script>
+</body>
+</html>

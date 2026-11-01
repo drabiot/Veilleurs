@@ -262,7 +262,7 @@ async function postReportToDiscord(env, id, r) {
   if (!env.BOT_TOKEN) { console.error('[reports] BOT_TOKEN absent'); return; }
   const fiche = r.ficheId ? `${FICHE_TYPES[r.ficheType] || r.ficheType} · ${r.ficheName || r.ficheId}` : null;
   const embed = {
-    title: fiche ? '⚑ Erreur signalée sur une fiche' : ({ bug: '🐛 Nouveau ticket — Bug', suggestion: '💡 Nouveau ticket — Suggestion' }[r.category] || '❓ Nouveau ticket'),
+    title: fiche ? '⚑ Erreur signalée sur une fiche' : ({ bug: '🐛 Nouveau ticket — Bug', suggestion: '💡 Nouveau ticket — Suggestion', chasse: '🎯 Chasse — informations reçues' }[r.category] || '❓ Nouveau ticket'),
     description: String(r.text || '').slice(0, 3900),
     color: fiche ? 0xe8b84b : 0x5865f2,
     fields: [

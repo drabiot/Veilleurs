@@ -1191,6 +1191,9 @@ window.approve = async (id) => {
     sub.comment    = comment;
     sub.reviewedBy = ctx.user.uid;
     _writeAudit('approve', 'submission', id, sub.data?.name || sub.data?.titre || sub.data?.id || id, { type: sub.type, comment });
+    // Chasse : la fiche vient d'être validée → les avis résolus et leurs « infos » (tickets) sont nettoyés (une seule fois, même en validation groupée)
+    clearTimeout(window._chSyncT);
+    window._chSyncT = setTimeout(() => { try { Promise.resolve(window.loadCompletion?.()).catch(() => {}); } catch {} }, 2000);
     updateCounts();
     renderSubs();
   } catch(e) {

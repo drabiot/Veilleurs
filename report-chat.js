@@ -42,6 +42,7 @@ export function initReportChat(db, uid) {
       loadFailed = false;
       const snap = await getDocs(query(collection(db, 'reports'), where('submittedBy', '==', uid)));
       convs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .filter(r => r.category !== 'chasse')   // « J'ai des informations » (page Chasse) : pas un ticket, il reste affiché dans la Chasse
         .sort((a, b) => isUnread(b) - isUnread(a) || (status(a) === 'closed') - (status(b) === 'closed') || lastAt(b) - lastAt(a))   // réponses non lues d'abord, clos en dernier.slice(0, 30);
     } catch (e) { convs = []; loadFailed = true; console.warn('[tickets]', e.message); }
     paint();

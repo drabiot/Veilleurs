@@ -1,0 +1,264 @@
+/* ══════════════════════════════════════════════════════
+   CHASSE AU CLAIR DE LUNE — ce qui manque au wiki
+   Le chrome (header, nav, fond lunaire) vient de Patchnotes/patchnotes.css.
+══════════════════════════════════════════════════════ */
+
+.chasse-page {
+  --c-create: #9b8fd1;   /* 🌑 fiche à créer   */
+  --c-fields: #E0AC60;   /* 🌓 champs manquants */
+  --c-update: #d08a6a;   /* 🌘 à raviver        */
+  --c-silver: #b9c6d6;
+  --c-soft:   #a99978;
+  --c-read:   'Lora', Georgia, 'Times New Roman', serif;
+}
+
+.chasse-main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 44px 32px 80px;
+}
+
+/* ── Hero ─────────────────────────────────────────── */
+.chasse-hero { text-align: center; margin-bottom: 34px; }
+.chasse-eyebrow {
+  font-size: .7rem; letter-spacing: .22em; color: var(--gold-dim);
+  text-transform: uppercase; margin-bottom: 14px;
+}
+.chasse-title {
+  font-family: 'Cinzel', serif; font-weight: 900;
+  font-size: clamp(1.9rem, 4.6vw, 3rem);
+  color: var(--bright); letter-spacing: .06em; line-height: 1.15;
+  text-shadow: 0 0 40px rgba(185,198,214,.18);
+}
+.chasse-title em { font-style: normal; color: var(--c-silver); }
+.chasse-lead {
+  max-width: 620px; margin: 16px auto 0;
+  font-family: var(--c-read); font-size: 1.02rem; line-height: 1.7; color: var(--c-soft);
+}
+.chasse-rule {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  margin: 26px auto 0; color: var(--gold-dim); font-size: .8rem; letter-spacing: .4em;
+}
+.chasse-rule::before, .chasse-rule::after {
+  content: ''; height: 1px; width: min(180px, 24vw);
+  background: linear-gradient(90deg, transparent, var(--rim2), transparent);
+}
+
+/* ── Phases (compteurs = filtres) ─────────────────── */
+.chasse-phases {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 26px;
+}
+.phase {
+  --pc: var(--c-silver);
+  position: relative; text-align: left; cursor: pointer;
+  padding: 16px 18px 14px; border-radius: 6px;
+  background: linear-gradient(180deg, rgba(32,24,16,.85), rgba(19,16,13,.9));
+  border: 1px solid var(--rim); color: var(--text);
+  font-family: inherit; transition: border-color .2s, transform .2s, background .2s;
+}
+.phase[data-kind="create"] { --pc: var(--c-create); }
+.phase[data-kind="fields"] { --pc: var(--c-fields); }
+.phase[data-kind="update"] { --pc: var(--c-update); }
+.phase:hover { border-color: var(--pc); transform: translateY(-2px); }
+.phase.active {
+  border-color: var(--pc);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pc) 13%, #1b150f), rgba(19,16,13,.95));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pc) 35%, transparent), 0 8px 26px -12px var(--pc);
+}
+.phase-moon { font-size: 1.5rem; line-height: 1; margin-bottom: 10px; filter: drop-shadow(0 0 8px color-mix(in srgb, var(--pc) 55%, transparent)); }
+.phase-count { font-family: 'Cinzel', serif; font-weight: 900; font-size: 1.9rem; color: var(--bright); line-height: 1; }
+.phase-label { margin-top: 6px; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--pc); }
+.phase-sub { margin-top: 2px; font-size: .68rem; color: var(--muted); }
+
+/* ── Barre d'outils ───────────────────────────────── */
+.chasse-toolbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+  padding: 12px 14px; margin-bottom: 20px; border-radius: 6px;
+  background: rgba(19,16,13,.8); border: 1px solid var(--rim);
+}
+.chasse-search {
+  flex: 1 1 220px; min-width: 0;
+  background: var(--surface); border: 1px solid var(--rim); border-radius: 4px;
+  color: var(--text); padding: 8px 12px; font: inherit; font-size: .8rem; outline: none;
+}
+.chasse-search:focus, .chasse-select:focus, .cf-input:focus { border-color: var(--gold-dim); }
+.chasse-select {
+  background: var(--surface); border: 1px solid var(--rim); border-radius: 4px;
+  color: var(--text); padding: 8px 10px; font: inherit; font-size: .78rem; outline: none; cursor: pointer;
+}
+.chasse-chips { display: flex; flex-wrap: wrap; gap: 6px; flex-basis: 100%; }
+.chip {
+  background: transparent; border: 1px solid var(--rim2); color: var(--c-soft);
+  border-radius: 999px; padding: 4px 12px; font: inherit; font-size: .72rem; cursor: pointer;
+  transition: all .15s;
+}
+.chip:hover { color: var(--bright); border-color: var(--gold-dim); }
+.chip.active { color: #14100a; background: var(--gold); border-color: var(--gold); font-weight: 700; }
+.chip .n { opacity: .65; margin-left: 4px; }
+.btn-avis {
+  margin-left: auto; background: transparent; border: 1px solid var(--gold-dim); color: var(--gold);
+  border-radius: 3px; padding: 7px 14px; font: inherit; font-size: .74rem; letter-spacing: .06em; cursor: pointer;
+  transition: background .2s, color .2s;
+}
+.btn-avis:hover { background: var(--gold-glow); color: var(--bright); }
+
+/* ── Composeur d'avis (admin) ─────────────────────── */
+.composer {
+  display: none; margin-bottom: 22px; padding: 20px 22px; border-radius: 6px;
+  background: linear-gradient(180deg, rgba(32,24,16,.9), rgba(19,16,13,.95));
+  border: 1px solid var(--gold-dim);
+}
+.composer.open { display: block; }
+.composer h3 { font-family: 'Cinzel', serif; color: var(--bright); font-size: 1.05rem; letter-spacing: .05em; margin-bottom: 14px; }
+.cf-kinds { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.cf-kind {
+  display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px 12px; border-radius: 4px;
+  border: 1px solid var(--rim2); color: var(--c-soft); font-size: .76rem; transition: all .15s;
+}
+.cf-kind input { display: none; }
+.cf-kind.on { color: var(--bright); border-color: var(--gold); background: var(--gold-glow); }
+.cf-grid { display: grid; grid-template-columns: 150px 1fr 140px; gap: 10px; margin-bottom: 10px; }
+.cf-input {
+  width: 100%; background: var(--surface); border: 1px solid var(--rim); border-radius: 4px;
+  color: var(--text); padding: 8px 10px; font: inherit; font-size: .8rem; outline: none;
+}
+textarea.cf-input { resize: vertical; min-height: 64px; font-family: var(--c-read); font-size: .9rem; }
+.cf-row { display: flex; align-items: center; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+.cf-check { display: flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--c-soft); cursor: pointer; }
+.cf-actions { margin-left: auto; display: flex; gap: 8px; }
+.btn-ghost, .btn-gold {
+  border-radius: 3px; padding: 7px 16px; font: inherit; font-size: .76rem; cursor: pointer;
+  border: 1px solid var(--rim2); background: transparent; color: var(--c-soft);
+}
+.btn-gold { border-color: var(--gold); background: var(--gold); color: #14100a; font-weight: 700; }
+.btn-gold:disabled { opacity: .5; cursor: wait; }
+.btn-ghost:hover { color: var(--bright); border-color: var(--gold-dim); }
+.cf-msg { font-size: .74rem; color: var(--removed); }
+
+/* ── Cartes d'avis ────────────────────────────────── */
+.avis-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+.avis {
+  --pc: var(--c-fields);
+  position: relative; display: flex; flex-direction: column; gap: 12px;
+  padding: 18px 18px 16px 20px; border-radius: 6px; overflow: hidden;
+  background: linear-gradient(180deg, #1c160f 0%, #151009 100%);
+  border: 1px solid var(--rim);
+  transition: border-color .2s, transform .2s, box-shadow .2s;
+}
+.avis[data-kind="create"] { --pc: var(--c-create); }
+.avis[data-kind="update"] { --pc: var(--c-update); }
+.avis::before { /* liseré de phase */
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: linear-gradient(180deg, var(--pc), transparent 85%);
+}
+.avis::after { /* halo lunaire */
+  content: ''; position: absolute; right: -50px; top: -50px; width: 150px; height: 150px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--pc) 16%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.avis:hover { border-color: color-mix(in srgb, var(--pc) 70%, var(--rim)); transform: translateY(-2px); box-shadow: 0 12px 30px -16px var(--pc); }
+.avis.urgent { border-color: color-mix(in srgb, #e5604a 55%, var(--rim)); }
+
+.avis-top { display: flex; align-items: center; gap: 8px; font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; }
+.avis-kind { color: var(--pc); display: flex; align-items: center; gap: 6px; }
+.avis-kind .moon-g { font-size: 1.1rem; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--pc) 60%, transparent)); }
+.avis-tag { color: var(--muted); }
+.avis-flame { margin-left: auto; color: #e5604a; font-weight: 700; }
+.avis-name {
+  font-family: 'Cinzel', serif; font-weight: 700; font-size: 1.12rem; color: var(--bright);
+  letter-spacing: .03em; line-height: 1.3; word-break: break-word;
+}
+.avis-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill {
+  font-size: .66rem; padding: 2px 9px; border-radius: 999px;
+  border: 1px solid var(--rim2); color: var(--c-soft); background: rgba(14,12,10,.5);
+}
+.pill.pal { color: var(--gold); border-color: var(--gold-dim); }
+.avis-body { font-family: var(--c-read); font-size: .92rem; line-height: 1.6; color: var(--c-soft); }
+.avis-body b { color: var(--text); font-weight: 600; }
+.miss { display: flex; flex-wrap: wrap; gap: 6px; }
+.miss span {
+  font-size: .7rem; padding: 3px 9px; border-radius: 4px;
+  color: var(--pc); background: color-mix(in srgb, var(--pc) 10%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--pc) 45%, transparent);
+}
+.avis-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 4px; }
+.btn-hunt {
+  flex: 1; text-align: center; text-decoration: none; cursor: pointer;
+  padding: 9px 12px; border-radius: 3px; font: inherit; font-size: .76rem; letter-spacing: .05em;
+  color: var(--pc); border: 1px solid color-mix(in srgb, var(--pc) 55%, transparent); background: transparent;
+  transition: background .2s, color .2s;
+}
+.btn-hunt:hover { background: var(--pc); color: #14100a; }
+.btn-x {
+  background: transparent; border: 1px solid var(--rim2); color: var(--muted); border-radius: 3px;
+  width: 34px; height: 34px; cursor: pointer; font-size: .85rem; transition: all .15s;
+}
+.btn-x:hover { color: var(--removed); border-color: var(--removed); }
+
+.avis-foot { flex-wrap: wrap; row-gap: 10px; }
+.btn-hunt { flex: 1 1 100%; white-space: nowrap; }
+/* « J'ai des infos » : action secondaire, discrète, sous le bouton principal */
+.btn-info {
+  display: inline-flex; align-items: center; gap: 7px; background: none; border: none; color: var(--c-soft);
+  padding: 4px 2px; font: inherit; font-size: .72rem; letter-spacing: .03em; cursor: pointer;
+  border-bottom: 1px dashed transparent; transition: color .2s, border-color .2s;
+}
+.btn-info:hover { color: var(--bright); border-bottom-color: var(--gold-dim); }
+.btn-info.done { color: var(--added); }
+.btn-x { margin-left: auto; }
+
+/* En attente des admins : une proposition est déjà partie */
+.wait {
+  display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 5px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pc) 14%, transparent), color-mix(in srgb, var(--pc) 4%, transparent));
+  border: 1px solid color-mix(in srgb, var(--pc) 40%, transparent);
+}
+.wait-moon { font-size: 1.35rem; line-height: 1; color: var(--pc); animation: wait-glow 2.8s ease-in-out infinite; }
+.wait-txt { display: flex; flex-direction: column; line-height: 1.3; }
+.wait-txt b { font-size: .78rem; letter-spacing: .06em; color: var(--bright); font-weight: 700; }
+.wait-txt small { font-size: .68rem; color: var(--c-soft); }
+@keyframes wait-glow { 0%, 100% { opacity: .55; text-shadow: none; } 50% { opacity: 1; text-shadow: 0 0 12px var(--pc); } }
+.avis.is-pending { border-style: dashed; }
+.avis.is-pending .avis-name { color: var(--c-silver); }
+@media (prefers-reduced-motion: reduce) { .wait-moon { animation: none; opacity: 1; } }
+
+/* Fenêtre « J'ai des informations » */
+.info-overlay { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(8,6,4,.78); backdrop-filter: blur(4px); }
+.info-overlay[hidden] { display: none; }
+body > .info-overlay { position: fixed !important; z-index: 200 !important; } /* patchnotes.css force position:relative sur les enfants directs du body */
+.info-box {
+  width: min(560px, 100%); padding: 26px 28px 22px; border-radius: 8px; position: relative;
+  background: linear-gradient(180deg, #1c160f, #120d09); border: 1px solid var(--gold-dim);
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,.8), 0 0 60px -30px var(--gold);
+}
+.info-eyebrow { font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold-dim); }
+.info-name { margin: 6px 0 2px; font-family: 'Cinzel', serif; font-size: 1.35rem; color: var(--bright); letter-spacing: .03em; }
+.info-title { font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; color: var(--c-silver); font-weight: 500; margin-bottom: 12px; }
+.info-help { font-family: var(--c-read); font-size: .92rem; line-height: 1.6; color: var(--c-soft); margin-bottom: 12px; }
+.info-box textarea {
+  width: 100%; resize: vertical; min-height: 120px; padding: 12px 14px; border-radius: 5px;
+  background: var(--surface); border: 1px solid var(--rim); color: var(--text); outline: none;
+  font-family: var(--c-read); font-size: .95rem; line-height: 1.55;
+}
+.info-box textarea:focus { border-color: var(--gold-dim); }
+.info-login { margin-top: 10px; font-size: .72rem; color: var(--muted); }
+.info-actions { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+.info-status { flex: 1; font-size: .74rem; color: var(--c-soft); }
+
+.chasse-state { text-align: center; padding: 70px 20px; color: var(--c-soft); font-family: var(--c-read); }
+.chasse-state .big { font-size: 2.4rem; margin-bottom: 10px; }
+.chasse-state p { font-size: 1rem; }
+.lit-count { text-align: center; margin-top: 30px; font-size: .72rem; color: var(--muted); letter-spacing: .08em; }
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 860px) {
+  .chasse-main { padding: 28px 16px 64px; }
+  .chasse-phases { grid-template-columns: repeat(2, 1fr); }
+  .cf-grid { grid-template-columns: 1fr; }
+  .avis-list { grid-template-columns: 1fr; }
+  .btn-avis { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .phase, .avis { transition: none; }
+}

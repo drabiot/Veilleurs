@@ -280,8 +280,12 @@ window.addEventListener('DOMContentLoaded', () => {
       if (type && data) {
         window._vcl_sessionMode = type; // mémorisé pour que applyCreatorConfig ne réinitialise pas le mode
         sessionStorage.setItem('_vcl_pendingMode', type); // persiste même si _vcl_sessionMode est effacé trop tôt
+        // Venu de la page Chasse : champs à surligner + bannière (même mécanique que l'onglet Chasse)
+        try { const co = JSON.parse(sessionStorage.getItem('chasseOrigin') || 'null'); if (co?.mode) _chasseOrigin = co; } catch (e) {}
+        sessionStorage.removeItem('chasseOrigin');
         switchMode(type);
         loadFromData(data, type);
+        if (_chasseOrigin) { _applyChasseHighlights(); _renderChassePanel(); }
         return; // skip restoreForm — data loaded from session
       }
     } catch(e) {}
@@ -309,6 +313,21 @@ window.addEventListener('DOMContentLoaded', () => {
       if (fId) { fId.value = ghostId; idLocked = true; update(); }
     }
   }
+
+  // Venu de la page Chasse (« fiche à créer ») : on pré-remplit le nom connu
+  try {
+    const cn = JSON.parse(sessionStorage.getItem('chasseNew') || 'null');
+    sessionStorage.removeItem('chasseNew');
+    if (cn?.name) {
+      switchMode(cn.type);
+      resetModeFormSilent(cn.type);   // sinon le brouillon précédent (restauré au démarrage) se mélange à la nouvelle fiche
+      // la soumission sera marquée « venue de la Chasse » : la page Chasse affichera « En attente des admins »
+      _chasseOrigin = { mode: { item: 'items', mob: 'mobs', pnj: 'pnj', region: 'regions', quest: 'quetes', panoplie: 'panoplies' }[cn.type] || cn.type, id: '', name: cn.name, missing: [] };
+      const nameId = { item: 'f-name', mob: 'mob-name', pnj: 'pnj-display-name', region: 'reg-name', quest: 'quest-titre', panoplie: 'panop-label' }[cn.type];
+      const el = nameId && document.getElementById(nameId);
+      if (el) { el.value = cn.name; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+  } catch (e) {}
 });
 
 // ═══════════════════════════════════════════════════
@@ -2382,6 +2401,21 @@ async function _buildQuestLoadDrop() {
 }
 
 // ── loadFromData : rempli un formulaire depuis un objet data (sessionStorage / modération) ──
+// Vide le formulaire du mode donné, sans confirmation (le brouillon restauré au démarrage ne doit pas se mélanger à ce qu'on charge)
+function resetModeFormSilent(type) {
+  switch (type) {
+    case 'mob':      resetMobForm();      break;
+    case 'pnj':      resetPnjForm();      break;
+    case 'region':   resetRegionForm();   break;
+    case 'quest':    resetQuestForm();    break;
+    case 'panoplie': resetPanoplieForm(); break;
+    default:
+      document.getElementById('editing-banner').style.display = 'none';
+      resetFormSilent();
+      renderCustomTags();
+  }
+}
+
 function loadFromData(data, type) {
   switch (type) {
     case 'mob':      loadMob(data);    break;
@@ -3888,7 +3922,7 @@ async function loadTableauDeChasse() {
   const setDocFn = window._vcl_setDoc;
   const docFn    = window._vcl_doc;
   let tdcModified = false;
-  const cleanedIds = {};
+  const cleanedIds = Array.isArray(tdcIds.avis) ? { avis: tdcIds.avis } : {}; // « avis » : géré par la page Chasse
   for (const { mode, cards } of groups) {
     const original = tdcIds[mode] || [];
     const stillNeeded = cards.filter(c => c.notFound || c.missing.length > 0).map(c => c.id);
@@ -4040,7 +4074,7 @@ function _applyChasseHighlights() {
 function _renderChassePanel() {
   const banner = document.getElementById('chasse-preview-banner');
   if (!banner) return;
-  if (!_chasseOrigin || !_chasseOrigin.missing?.length) {
+  if (!_chasseOrigin || (!_chasseOrigin.missing?.length && !_chasseOrigin.note)) {
     banner.style.display = 'none';
     banner.innerHTML = '';
     return;
@@ -4048,9 +4082,10 @@ function _renderChassePanel() {
   banner.style.display = '';
   banner.innerHTML = `
     <div class="chasse-banner">
-      <div class="chasse-banner-title">🎯 Tableau de chasse — <span style="font-weight:400;color:var(--muted);">${escHtml(_chasseOrigin.name)}</span></div>
+      <div class="chasse-banner-title">🎯 Chasse au Clair de Lune — <span style="font-weight:400;color:var(--muted);">${escHtml(_chasseOrigin.name)}</span></div>
+      ${_chasseOrigin.note ? `<div style="font-size:12px;color:var(--text);margin-bottom:8px;">À vérifier : ${escHtml(_chasseOrigin.note)}</div>` : ''}
       <div class="chasse-banner-fields">
-        ${_chasseOrigin.missing.map(f =>
+        ${(_chasseOrigin.missing || []).map(f =>
           `<span class="chasse-banner-field">${escHtml(f)}</span>`
         ).join('')}
       </div>

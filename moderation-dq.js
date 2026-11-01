@@ -8,7 +8,7 @@ const { modCache: _modCache } = ctx;
 // Couche commune posée sur les onglets-listes du hub. Elle observe chaque panneau et, après chaque rendu :
 //  - ajoute un badge de palier à chaque ligne et permet de trier par palier ;
 //  - (aside: true) ajoute « ⏸ Mettre de côté » : la ligne descend tout en bas, sous un séparateur.
-// Les onglets qui ont déjà leur propre « ignorer » (orphelins, Tableau de Chasse) gardent le leur et gagnent le tri.
+// Les onglets qui ont déjà leur propre « ignorer » (orphelins) ou leur propre tri (Chasse) gardent le leur et gagnent le tri.
 // Préférences (tri, lignes mises de côté) : localStorage, propres à chaque navigateur.
 const DQ_PANELS = [
   { panel: 'dead-links-panel',    aside: true },
@@ -19,7 +19,6 @@ const DQ_PANELS = [
   { panel: 'region-orphan-panel', aside: false },
   { panel: 'mob-orphan-panel',    aside: false },
   { panel: 'quest-orphan-panel',  aside: false },
-  { panel: 'completion-panel',    aside: false, onSort: () => window.renderCompletion?.() },
 ];
 const _DQ_ASIDE = 'vcl_dq_aside', _DQ_SORT = 'vcl_dq_sort';
 const _dqLoad = k => { try { return JSON.parse(localStorage.getItem(k) || '{}'); } catch { return {}; } };

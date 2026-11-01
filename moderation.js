@@ -422,7 +422,7 @@ const NAV_HUBS = [
         { hash: 'quest-orphans',  label: '📋 Quêtes orphelines',  btn: 'btn-quest-orphans',  panel: 'quest-orphan-panel',  fn: () => showQuestOrphans() },
       ]},
       { label: 'Complétude', tabs: [
-        { hash: 'completion',          label: '🎯 Tableau de Chasse', btn: 'btn-completion',         panel: 'completion-panel',         fn: () => showCompletion(), count: 'count-incomplete' },
+        { hash: 'completion',          label: '🎯 Chasse', btn: 'btn-completion',         panel: 'completion-panel',         fn: () => showCompletion(), count: 'count-incomplete' },
         { hash: 'obtain-legacy',       label: '🗂️ Obtentions libres', btn: 'btn-obtain-legacy',      panel: 'obtain-legacy-panel',      fn: () => showObtainLegacy(), count: 'count-obtain-legacy' },
         { hash: 'creator-validation',  label: '⚙️ Champs requis',     btn: 'btn-creator-validation', panel: 'creator-validation-panel', fn: () => showCreatorValidation() },
       ]},
@@ -691,7 +691,7 @@ _lazyPanel(() => import('./moderation-trash.js?v=6311a2da'), ['showTrash', 'load
 
 
 let CREATOR_PALIERS = [1, 2, 3]; // mis à jour dynamiquement depuis Firestore config/paliers
-let _paliersOpts = null; // options du champ palier (null = défaut du Tableau de chasse), lu par moderation-quality.js
+let _paliersOpts = null; // options du champ palier (null = défaut de la Chasse), lu par moderation-quality.js
 let _paliersConfig = []; // données complètes { id, label, color, floorName }
 _lazyPanel(() => import('./moderation-roles.js?v=1d2f83bc'), ['showPermissions', 'loadPermissions', '_setPermission', '_setCustomRoleBaseTier', 'showDiscordRoles', 'loadDiscordRoles', 'saveDiscordRoles', 'togglePermTech', '_setCollectionPerm', 'loadRoles', 'showCreateRoleForm', 'hideCreateRoleForm', 'createRole', 'deleteRole', 'showGenerateRulesModal', 'closeRulesModal', 'copyGeneratedRules', 'toggleCreatorTool', 'toggleCreatorPalier']);
 
@@ -702,7 +702,7 @@ async function _loadPaliersConfig() {
     if (snap.exists() && Array.isArray(snap.data().paliers) && snap.data().paliers.length) {
       _paliersConfig = snap.data().paliers;
       CREATOR_PALIERS = _paliersConfig.map(p => p.id);
-      // Options du champ palier du Tableau de chasse (moderation-quality.js)
+      // Options du champ palier de la Chasse (moderation-quality.js)
       _paliersOpts = _paliersConfig.map(p => [p.id, p.label]);
     }
   } catch(e) {

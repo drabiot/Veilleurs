@@ -80,6 +80,7 @@ export default {
     if (_path === '/guild/api' && request.method === 'POST') return handleGuildApi(request, env, { json });
     if (_path === '/guild/bot' && request.method === 'POST') return handleGuildBot(request, env, { json });
     if (_path === '/db/sync' && request.method === 'GET') return handleDbSync(new URL(request.url), env);
+    if (_path === '/chasse/pending' && request.method === 'GET') return handleChassePending(env);
     if (_path === '/db/read' && request.method === 'POST') return handleStoreRead(request, env, corsHeaders());
     if (_path === '/db/write' && request.method === 'POST') return handleStoreWrite(request, env, corsHeaders(), ctx);
     if (_path === '/db/refresh' && request.method === 'POST') return handleDbRefresh(request, env, ctx);
@@ -720,6 +721,24 @@ async function handleDbSync(url, env) {
   return new Response(`{"rev":${m.rev},"epoch":${m.epoch},"docs":[${docs}],"deleted":${deleted}}`, {
     headers: { 'Content-Type': 'application/json', ...corsHeaders() },
   });
+}
+
+/** GET /chasse/pending → [{ type, id, name, status }] : propositions en attente venues de la page Chasse.
+ *  Public : la page Chasse (wiki) affiche « En attente des admins » sans que les visiteurs puissent lire les soumissions.
+ *  Seules les soumissions lancées depuis la Chasse (fromTableauDeChasse) sont exposées, et seulement leur type, id et nom. */
+async function handleChassePending(env) {
+  if (!env.DB) return json({ error: 'DB indisponible' }, 503);
+  const rows = (await env.DB.prepare(
+    `SELECT data FROM docs WHERE col = 'submissions' AND deleted = 0
+       AND json_extract(data, '$.fromTableauDeChasse') = 1
+       AND json_extract(data, '$.status') IN ('pending', 'changes_requested')`).all()).results;
+  const out = [];
+  for (const r of rows) {
+    let s; try { s = JSON.parse(r.data); } catch { continue; }
+    const d = s.data || {};
+    out.push({ type: String(s.type || ''), id: String(d.id || ''), name: String(d.name || d.titre || d.label || ''), status: s.status });
+  }
+  return new Response(JSON.stringify(out), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=20', ...corsHeaders() } });
 }
 
 /** POST /db/refresh et /db/resync : anciens points d'entrée de la synchro Firestore → D1, désormais sans objet. */

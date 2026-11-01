@@ -12,7 +12,7 @@ import { arrayUnion } from './d1db.js';
 export function init(ctx) {
 const { db, collection, getDocs, doc, updateDoc, deleteDoc, deleteField, query, orderBy, limit, toast, modal, setHash, showPanel, escHtml, writeAudit } = ctx;
 const S = { all: [], filter: 'todo', cat: 'all' };
-const CATS = { bug: '🐛 Bug', suggestion: '💡 Suggestion', autre: '❓ Autre', fiche: '⚑ Fiche' };
+const CATS = { bug: '🐛 Bug', suggestion: '💡 Suggestion', autre: '❓ Autre', fiche: '⚑ Fiche', chasse: '🎯 Chasse' };
 
 const FICHE_LABELS = { item: 'Item', mob: 'Monstre', pnj: 'PNJ', quete: 'Quête', build: 'Build' };
 function ficheUrl(type, id) {
@@ -93,7 +93,8 @@ function render() {
     const seen = lastAdmin && r.submittedBy ? `<div style="font-size:10px;color:var(--muted);align-self:flex-end;">${unread ? '⏳ pas encore lu par le joueur' : '✅ lu par le joueur'}</div>` : '';
     const stLabel = { todo: '🔴 À traiter', wait: '🟡 Attente du joueur', closed: '⚪ Clos' }[st];
     let reply;
-    if (!r.submittedBy) reply = '<div style="font-size:11px;color:var(--muted);">Envoyé sans compte : pas de réponse possible.</div>';
+    if (r.category === 'chasse') reply = '<div style="font-size:11px;color:var(--muted);">🎯 Information reçue via la Chasse : pas de réponse au joueur. Le ticket est supprimé quand la fiche est complétée et validée.</div>';
+    else if (!r.submittedBy) reply = '<div style="font-size:11px;color:var(--muted);">Envoyé sans compte : pas de réponse possible.</div>';
     else reply = `<textarea id="rep-text-${id}" rows="2" maxlength="2000" placeholder="Répondre au joueur (pastille sur « Nous contacter » à sa prochaine visite)…" style="width:100%;box-sizing:border-box;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 9px;font-size:12px;outline:none;resize:vertical;font-family:inherit;"></textarea>
       <button class="btn" style="margin-top:6px;background:var(--accent);color:var(--on-accent);font-size:12px;" onclick="repReply('${id}')">Envoyer</button>`;
     const closeBtn = `<button class="btn btn-ghost" style="margin-top:6px;font-size:12px;" onclick="repClose('${id}', ${st === 'closed' ? 'false' : 'true'})">${st === 'closed' ? '↩ Rouvrir' : '✔ Clore'}</button>`;
