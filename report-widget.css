@@ -322,3 +322,11 @@ a.vcl-discord-btn { text-decoration: none; margin-left: 2px; }
 #vcl-report-submit { background: linear-gradient(180deg, #E0AC60, #c48f45) !important; border: 1px solid #f0c27e !important; color: #1a1208 !important; font-weight: 700 !important; }
 #vcl-report-submit:hover { filter: brightness(1.1); }
 #vcl-report-status { color: var(--v-muted) !important; }
+
+.vcl-report-pseudo {
+  display: block; width: 100%; box-sizing: border-box; margin: 10px 0 0; padding: 8px 10px;
+  font: inherit; font-size: 0.85rem; color: inherit; background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(232,184,75,0.35); border-radius: 4px; outline: none;
+}
+.vcl-report-pseudo[hidden] { display: none; }
+.vcl-report-pseudo:focus { border-color: #e8b84b; }

@@ -65,6 +65,7 @@
       '    <label><input type="radio" name="vcl-cat" value="autre"><span>❓ Autre</span></label>',
       '  </div>',
       '  <textarea id="vcl-report-text" placeholder="Décris ton problème, ta suggestion ou ta question..." rows="5"></textarea>',
+      '  <input type="text" id="vcl-report-pseudo" class="vcl-report-pseudo" maxlength="30" autocomplete="nickname" placeholder="Ton pseudo (obligatoire)" hidden>',
       '  <p id="vcl-report-login" class="vcl-report-login" hidden>💬 Connecte-toi pour recevoir une réponse de l\'équipe.',
       '    <a href="#" id="vcl-report-login-link">Se connecter</a></p>',
       '  <div class="vcl-report-actions">',
@@ -85,7 +86,11 @@
     const loginLink = document.getElementById('vcl-report-login-link');
     // Sans compte, l'équipe ne peut pas répondre : on propose de se connecter (auth-widget.js sur le wiki, _vcl_auth sur creator.html)
     const isLogged = () => !!(window._vcl_uid || window._vcl_auth?.currentUser);
+    const pseudoEl = document.getElementById('vcl-report-pseudo');
+    const PSEUDO_KEY = 'vcl_chasse_pseudo';   // même clé que la page Chasse : un seul pseudo mémorisé
     function syncLogin() {
+      pseudoEl.hidden = isLogged();
+      if (!pseudoEl.hidden && !pseudoEl.value) { try { pseudoEl.value = localStorage.getItem(PSEUDO_KEY) || ''; } catch {} }
       loginEl.hidden = isLogged();
       loginLink.hidden = typeof window.vclOpenLogin !== 'function';
     }
@@ -128,6 +133,8 @@
     document.getElementById('vcl-report-submit').onclick = async function () {
       const text = textEl.value.trim();
       if (!text) return;
+      const typed = pseudoEl.value.trim().slice(0, 30);
+      if (!isLogged() && typed.length < 2) { statusEl.textContent = 'Indique un pseudo (2 caractères minimum).'; pseudoEl.focus(); return; }
 
       this.disabled = true;
       statusEl.textContent = 'Envoi...';
@@ -136,13 +143,14 @@
         const page = window.location.pathname.split('/').pop() || 'index.html';
         // auth-widget.js (wiki) expose _vcl_uid + #vcl-user-pseudo
         // creator.html expose _vcl_auth.currentUser directement
-        let pseudo = 'Anonyme';
+        let pseudo = typed || 'Anonyme';
         if (window._vcl_uid) {
           pseudo = document.getElementById('vcl-user-pseudo')?.textContent?.trim() || 'Utilisateur';
         } else if (window._vcl_auth?.currentUser) {
           const u = window._vcl_auth.currentUser;
           pseudo = u.displayName || u.email?.split('@')[0] || 'Utilisateur';
         }
+        if (!isLogged()) { try { localStorage.setItem(PSEUDO_KEY, typed); } catch {} }
         // Les signalements sont enregistrés dans Firestore (collection reports), lus par l'admin
         if (typeof window._vclLogReport !== 'function') throw new Error('envoi indisponible sur cette page');
         const category = ficheCtx ? 'fiche' : (document.querySelector('input[name="vcl-cat"]:checked')?.value || 'autre');
