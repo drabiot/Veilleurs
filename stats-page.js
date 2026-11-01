@@ -120,6 +120,8 @@ function audienceTab(s, ctx, esc) {
   const uniq7 = sumRange(daily, d6, today, 'u'), uniq7p = sumRange(daily, d13, d7, 'u');
   const uniqToday = sumRange(daily, today, today, 'u');
   const visitsAll = daily.reduce((a, x) => a + x.c, 0);
+  const dc7 = sumRange(daily, d6, today, 'dc'), dc7p = sumRange(daily, d13, d7, 'dc');
+  const dcAll = daily.reduce((a, x) => a + (x.dc || 0), 0), dcUAll = daily.reduce((a, x) => a + (x.dcu || 0), 0);
 
   const kpis = `<div class="stats-kpi-grid">
     ${kpi('🧑‍🤝‍🧑', '#22d3ee', fmt(uniqToday), "Visiteurs uniques aujourd'hui")}
@@ -129,7 +131,9 @@ function audienceTab(s, ctx, esc) {
     ${kpi('📆', '#60a5fa', fmt(visits30), '30 derniers jours', delta(visits30, visits30p))}
     ${kpi('🌍', '#4ade80', fmt(visitsAll), 'All-time')}
     ${kpi('👤', '#f87171', fmt(logins.today), "Connexions aujourd'hui", `${fmt(logins.week)} sur 7 jours`)}
-  </div>`;
+    ${kpi('💬', '#5865F2', fmt(dcAll), 'Clics sur le lien Discord', `${fmt(dc7)} sur 7 jours${delta(dc7, dc7p) ? ' ' + delta(dc7, dc7p) : ''} · ${fmt(dcUAll)} navigateurs différents`)}
+  </div>
+  <div class="stats-note">Discord : on compte les clics sur le bouton du wiki (depuis la mise en place de ce compteur), pas les arrivées réelles sur le serveur — Discord ne dit pas qui a cliqué.</div>`;
 
   // Fidélité : le suivi anonyme est lié au navigateur, pas à la personne — on montre donc des taux plutôt qu'un « nombre de visiteurs »
   const returning = Math.max(0, users.total - users.oneVisit);

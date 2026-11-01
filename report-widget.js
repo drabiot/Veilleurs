@@ -48,6 +48,7 @@
     dc.target = '_blank';
     dc.rel = 'noopener noreferrer';
     dc.title = 'Rejoindre le Discord des Veilleurs';
+    dc.addEventListener('click', () => { try { window._vclLogDiscordClick?.(); } catch {} });
     dc.innerHTML = DISCORD_ICON + '<span>Discord</span>';
     btn.insertAdjacentElement('afterend', dc);
 

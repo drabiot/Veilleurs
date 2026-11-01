@@ -493,6 +493,18 @@ export async function logReport(pseudo, page, text, fiche = null, category = 'au
 // Exposé globalement pour report-widget.js (script non-module)
 window._vclLogReport = logReport;
 
+/** Clic sur le lien Discord du wiki : compté dans le doc « site » du jour (clics, et 1× par navigateur pour les uniques). Admins exclus. */
+export async function logDiscordClick() {
+  try {
+    if (await _trackingBlocked()) return;
+    const inc = { discord: 1 };
+    try { if (!localStorage.getItem('pv_dc')) { localStorage.setItem('pv_dc', '1'); inc.discordU = 1; } } catch {}
+    const today = _localDate();
+    await _track([{ col: 'page_views', id: 'site_' + today, set: { section: 'site', date: today }, inc }]);
+  } catch {}
+}
+window._vclLogDiscordClick = logDiscordClick;
+
 // ── Known Bugs ────────────────────────────────────────
 
 // ── Events : collection `events` (outil modération « Events ») = source unique des noms d'évènement ──

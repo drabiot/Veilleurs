@@ -659,7 +659,7 @@ async function handleStats(request, env) {
       }
       if (site.hours && typeof site.hours === 'object') for (let h = 0; h < 24; h++) hours[h] += site.hours[h] || 0;
     }
-    return { d: date, c: site ? site.count || 0 : legacy, u: site?.uniques || 0 };
+    return { d: date, c: site ? site.count || 0 : legacy, u: site?.uniques || 0, dc: site?.discord || 0, dcu: site?.discordU || 0 };
   });
 
   const slim = r => {
