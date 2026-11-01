@@ -43,7 +43,7 @@ window.loadStatistiques = async function loadStatistiques() {
   const container = document.getElementById('stats-content');
   container.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const { renderStats, statsDay } = await import('./stats-page.js?v=a8d64af4');
+    const { renderStats, statsDay } = await import('./stats-page.js?v=c0a7be0b');
     const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
     const [summary, items] = await Promise.all([
       _fetchStats('summary', {
