@@ -1639,3 +1639,13 @@ body.quetes-page { overflow: hidden; }
 .quest-sort { color-scheme: dark; }
 .quest-sort option { background: #17130e; color: #e3d6bb; }
 .quest-sort option:checked { background: #3a2c17; color: #f0c86a; }
+
+/* ── Correctifs : tags coupés en petite interface, double scrollbar ── */
+html:has(body.quetes-page) { overflow: hidden; }
+.card-top { flex-wrap: wrap; row-gap: 6px; }
+.card-meta { flex: 1 1 0; min-width: 0; flex-shrink: 1; }
+.card-top-right { flex-shrink: 0; margin-left: auto; }
+.ctag-zone { max-width: 100%; min-width: 0; }
+.quete-grid.size-small .card-meta { flex-basis: 100%; }
+.quete-grid.size-small .card-top-right { margin-left: 0; }
+.quest-modal-scroll { overscroll-behavior: contain; }
