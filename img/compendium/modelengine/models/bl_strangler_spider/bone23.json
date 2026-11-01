@@ -1,0 +1,1 @@
+{"textures":{"0":"modelengine:entity/models/bl_strangler_spider","particle":"#0"},"elements":[{"from":[3.56,8.0,7.97],"to":[12.440001,8.0,18.330002],"faces":{"up":{"uv":[2.25,5.0,0.0,2.5],"tintindex":0,"rotation":0,"texture":"#0"},"down":{"uv":[4.5,2.5,2.25,5.0],"tintindex":0,"rotation":0,"texture":"#0"}}}],"display":{"gui":{"rotation":[-150.0,-45.0,180.0]}},"gui_light":"front"}
