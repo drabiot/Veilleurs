@@ -423,7 +423,9 @@ window.dwPublishUnsentSend = async function() {
 
   for (const sub of subs) {
     try {
-      await sendApprovalWebhook(sub);
+      const itemId = sub.data?.id || sub.data?._id || sub.dataId;
+      if (!itemId) throw new Error('item sans identifiant');
+      await window.discordSyncItem(itemId);
       await updateDoc(doc(db, 'submissions', sub._id), { discord_sent: true });
       sub.discord_sent = true;
       done++;
@@ -523,7 +525,7 @@ window.dwPublishSelected = async function() {
     progText.textContent = `Envoi ${done + 1} / ${total} — ${item.name || ''}…`;
     progBar.style.width  = `${Math.round(done / total * 100)}%`;
     try {
-      await _sendSingleItemDiscord(item);
+      await window.discordSyncItem(item._id || item.id);
     } catch(e) {
       toast(`⛔ Erreur pour « ${item.name} » : ${e.message}`, 'error');
     }
@@ -765,77 +767,6 @@ async function _deleteExistingDiscordPost(docId) {
   } catch(e) { console.warn('[deletePost]', e); }
 }
 
-async function _sendSingleItemDiscord(item) {
-  item = await _maskSecret(item);
-  const cat    = item.category;
-  const palier = item.palier;
-  if (!cat || !palier) throw new Error('Catégorie ou palier manquant');
-  const key = `${cat}_${palier}`;
-  const channelId0 = await _channelOfItem(item);
-  if (!channelId0) throw new Error(`Aucun channel configuré pour ${key}`);
-
-  const [panList, pnjList] = await Promise.all([
-    cachedDocs(COL.panoplies).catch(() => []),
-    cachedDocs(COL.pnj).catch(() => []),
-  ]);
-  const allItemsList = await cachedDocs(COL.items).catch(() => []);
-  const maps = { ..._buildCardMaps(panList, pnjList), allItems: allItemsList };
-
-  const cardBlob  = await generateCardBlob(item, maps, 3);
-  const cardFname = `${item.id || item._id || 'item'}_card.png`;
-  const iconBlob  = await import('./card-renderer.js').then(m => m.generateIconBlob(item, 160)).catch(() => null);
-
-  const itemId   = item._id || item.id;
-  const wikiUrl  = itemId ? `https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${itemId}` : null;
-  const content  = wikiUrl ? `↗ [Lien vers le Wiki](<${wikiUrl}>)` : '';
-
-  const channelId = channelId0;
-  const postDocId = itemId ? `${key}_item_${itemId}` : null;
-
-  // Supprimer le post existant avant de recréer
-  if (postDocId) await _deleteExistingDiscordPost(postDocId);
-
-  const tags = [];
-  if (item.rarity) {
-    const rarLabel = window.VCL.RARITIES?.[item.rarity]?.label || item.rarity;
-    const rarEmoji = RARITY_EMOJI[item.rarity] || null;
-    const tagId = await _ensureTag(channelId, rarLabel, rarEmoji, 'rarity');
-    if (tagId) tags.push(tagId);
-  }
-  const slotTagId = await _ensureSlotTag(channelId, item.cat === 'jambieres' ? 'jambières' : item.cat, item.twoHanded);
-  if (slotTagId && !tags.includes(slotTagId)) tags.push(slotTagId);
-  const CLASSES = window._VCL_DATA?.CLASSES || [];
-  const sortedClasses = [...(item.classes || [])].sort((a, b) => {
-    const ai = CLASSES.findIndex(c => c.id === a);
-    const bi = CLASSES.findIndex(c => c.id === b);
-    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-  });
-  for (const cls of sortedClasses) {
-    const clsData = CLASSES.find(c => c.id === cls);
-    const label = clsData?.label || cls;
-    const emoji = clsData?.ico?.replace(/️/g, '') || null;
-    const tagId = await _ensureTag(channelId, label, emoji, 'class');
-    if (tagId && !tags.includes(tagId)) tags.push(tagId);
-  }
-  await _reorderChannelTags(channelId);
-
-  console.log('[send] applied_tags order:', tags);
-  // texture d'abord : Discord en fait la miniature du post dans la liste du forum ; la carte vient ensuite
-  const res = iconBlob
-    ? await _postBotForumThread(channelId, item.name || 'Item', content, iconBlob, `${item.id || item._id || 'item'}_texture.png`, tags, { blob: cardBlob, name: cardFname })
-    : await _postBotForumThread(channelId, item.name || 'Item', content, cardBlob, cardFname, tags);
-  if (!res) throw new Error('Échec de l\'envoi bot Discord');
-
-  if (postDocId) {
-    try {
-      await setDoc(doc(db, 'discord_posts', postDocId), {
-        itemId: String(itemId), itemName: item.name || '', webhookKey: key, channelId,
-        messageId: res.messageId, threadId: res.threadId,
-        sentAt: new Date().toISOString(),
-      });
-    } catch(e) { console.warn('discord_posts save failed:', e); }
-  }
-}
 
 window.testNewSubmissionWebhook = async function() {
   const url = document.getElementById('dw-new-submission')?.value?.trim();
@@ -894,310 +825,8 @@ async function _extractSubBlob(sub) {
   return _fetchItemImgBlob(sub.data);
 }
 
-async function sendApprovalWebhook(sub) {
-  console.log('[saw] called, type:', sub.type, 'cat:', sub.data?.category, 'palier:', sub.data?.palier);
-  if (sub.type !== 'item') return;
-  const cat = sub.data?.category;
-  if (!['arme', 'armure', 'accessoire'].includes(cat)) return;
-  const palier = sub.data?.palier;
-  if (!palier) return;
-  const key = `${cat}_${palier}`;
 
-  if (!_dwConfig) {
-    try {
-      const snap = await getDoc(doc(db, 'config', 'discord_webhooks'));
-      _dwConfig = snap.exists() ? snap.data() : {};
-    } catch { return; }
-  }
 
-  const channelId = await _getChannelId(key);
-  if (!channelId) return;
-
-  const [panList, pnjList] = await Promise.all([
-    cachedDocs(COL.panoplies).catch(() => []),
-    cachedDocs(COL.pnj).catch(() => []),
-  ]);
-  const allItemsList = await cachedDocs(COL.items).catch(() => []);
-  const maps = { ..._buildCardMaps(panList, pnjList), allItems: allItemsList };
-
-  const cardBlob  = await generateCardBlob(sub.data, maps, 3);
-  const cardFname = `${sub.data.id || sub.data._id || 'item'}_card.png`;
-
-  const subItemId = sub.data.id || sub.data._id;
-  const wikiUrl   = subItemId ? `https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${subItemId}` : null;
-  const content   = wikiUrl ? `↗ [Lien vers le Wiki](<${wikiUrl}>)` : '';
-
-  const postDocId = `${key}_${sub._id}`;
-  await _deleteExistingDiscordPost(postDocId);
-
-  const tags = [];
-  if (sub.data.rarity) {
-    const rarLabel = window.VCL.RARITIES?.[sub.data.rarity]?.label || sub.data.rarity;
-    const rarEmoji = RARITY_EMOJI[sub.data.rarity] || null;
-    const tagId = await _ensureTag(channelId, rarLabel, rarEmoji, 'rarity');
-    if (tagId) tags.push(tagId);
-  }
-  const slotTagId = await _ensureSlotTag(channelId, sub.data.cat, sub.data.twoHanded);
-  if (slotTagId && !tags.includes(slotTagId)) tags.push(slotTagId);
-  if (sub.data.set) {
-    const setLabel = panList.find(p => (p._id || p.id) === sub.data.set)?.label || sub.data.set.replace(/_/g, ' ');
-    const tagId = await _ensureTag(channelId, setLabel, '✨', 'set');
-    if (tagId && !tags.includes(tagId)) tags.push(tagId);
-  }
-  const CLASSES = window._VCL_DATA?.CLASSES || [];
-  const sortedClasses = [...(sub.data.classes || [])].sort((a, b) => {
-    const ai = CLASSES.findIndex(c => c.id === a);
-    const bi = CLASSES.findIndex(c => c.id === b);
-    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-  });
-  for (const cls of sortedClasses) {
-    const clsData = CLASSES.find(c => c.id === cls);
-    const label = clsData?.label || cls;
-    const emoji = clsData?.ico?.replace(/️/g, '') || null;
-    const tagId = await _ensureTag(channelId, label, emoji, 'class');
-    if (tagId && !tags.includes(tagId)) tags.push(tagId);
-  }
-  await _reorderChannelTags(channelId);
-
-  const res = await _postBotForumThread(channelId, sub.data.name || 'Item', content, cardBlob, cardFname, tags);
-  if (!res) { console.error('[saw] bot post failed'); return; }
-
-  try {
-    await setDoc(doc(db, 'discord_posts', postDocId), {
-      subId: sub._id, subName: sub.data.name || '', webhookKey: key, channelId,
-      messageId: res.messageId, threadId: res.threadId,
-      sentAt: new Date().toISOString(),
-    });
-  } catch(e) { console.warn('[saw] discord_posts save failed:', e); }
-}
-
-// ── Envoi groupé d'un set (plusieurs embeds dans un seul post) ──
-async function _sendSetGroupDiscord(subs) {
-  console.log('[sgd] called, subs:', subs.length);
-  if (!subs.length) return;
-  if (!_dwConfig) {
-    const snap = await getDoc(doc(db, 'config', 'discord_webhooks'));
-    _dwConfig = snap.exists() ? snap.data() : {};
-  }
-
-  // Webhook du premier item du set
-  const first  = subs[0];
-  const cat    = first.data?.category;
-  const palier = first.data?.palier;
-  if (!cat || !palier) throw new Error('Catégorie ou palier manquant');
-  const key = first.data.rarity === 'event' ? `${cat}_event` : `${cat}_${palier}`;
-  const url = _dwConfig[key];
-  if (!url) throw new Error(`Aucun webhook configuré pour ${key}`);
-
-  // Nom du thread = label du set
-  const setId = first.data.set;
-  let threadName = setId;
-  if (_dwConfig._setCache?.[setId]) {
-    threadName = _dwConfig._setCache[setId];
-  } else {
-    try {
-      const snap = await getDoc(doc(db, 'panoplies', setId));
-      if (snap.exists()) {
-        threadName = snap.data().label || setId;
-        if (!_dwConfig._setCache) _dwConfig._setCache = {};
-        _dwConfig._setCache[setId] = threadName;
-      }
-    } catch {}
-  }
-
-  const [panList, pnjList] = await Promise.all([
-    cachedDocs(COL.panoplies).catch(() => []),
-    cachedDocs(COL.pnj).catch(() => []),
-  ]);
-  const allItemsList = await cachedDocs(COL.items).catch(() => []);
-  const maps = { ..._buildCardMaps(panList, pnjList), allItems: allItemsList };
-
-  const files = []; // { blob, fname }
-
-  for (let i = 0; i < subs.length; i++) {
-    const sub = subs[i];
-    const cardBlob  = await generateCardBlob(sub.data, maps, 3);
-    const cardFname = `${sub.data.id || sub.data._id || `item_${i}`}_card.png`;
-    files.push({ blob: cardBlob, fname: cardFname });
-  }
-
-  // Embed minimal : liens wiki pour chaque item du set
-  const wikiLinks = subs.map(sub => {
-    const id = sub.data.id || sub.data._id;
-    return id ? `[🌐 ${sub.data.name || id}](<https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${id}>)` : null;
-  }).filter(Boolean).join('\n');
-  const setEmbed = wikiLinks ? { description: wikiLinks } : null;
-
-  // Vérifier si un thread Discord existe déjà pour ce set
-  let existingThreadId = null;
-  try {
-    const existingSnap = await getDoc(doc(db, 'discord_posts', `${key}_${setId}`));
-    if (existingSnap.exists()) existingThreadId = existingSnap.data().threadId || null;
-  } catch {}
-
-  // Discord : max 10 fichiers par message
-  let fetchUrl, payload;
-  if (existingThreadId) {
-    fetchUrl = `${url}?thread_id=${existingThreadId}&wait=true`;
-    payload  = { flags: 4096 };
-  } else {
-    fetchUrl = `${url}?wait=true`;
-    payload  = { thread_name: threadName, flags: 4096 };
-    const appliedTags = _resolveTagRules(first.data, (_dwConfig.tagRules || {})[key] || []);
-    if (appliedTags.length) payload.applied_tags = appliedTags;
-  }
-  if (setEmbed) payload.embeds = [setEmbed];
-
-  let discordRes = null;
-  if (files.length) {
-    const filesSlice = files.slice(0, 10);
-    const p  = { ...payload, attachments: filesSlice.map((f, i) => ({ id: i, filename: f.fname })) };
-    const fd = new FormData();
-    fd.append('payload_json', JSON.stringify(p));
-    filesSlice.forEach((f, i) => fd.append(`files[${i}]`, f.blob, f.fname));
-    const r = await fetch(fetchUrl, { method: 'POST', body: fd });
-    if (r.ok) discordRes = await r.json();
-  } else {
-    const r = await fetch(fetchUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (r.ok) discordRes = await r.json();
-  }
-
-  // Sauvegarder dans discord_posts seulement si nouveau thread créé
-  if (!existingThreadId && discordRes?.id) {
-    try {
-      await setDoc(doc(db, 'discord_posts', `${key}_${setId}`), {
-        setId, setName: threadName, webhookKey: key, webhookUrl: url,
-        messageId: discordRes.id,
-        threadId: discordRes.channel_id || null,
-        sentAt: new Date().toISOString(),
-      });
-    } catch(e) { console.warn('discord_posts save failed:', e); }
-  }
-}
-
-// Variante de _sendSetGroupDiscord pour items déjà publiés (pas des submissions)
-async function _sendSetGroupItemsDiscord(items) {
-  if (!items.length) return;
-  if (!_dwConfig) {
-    const snap = await getDoc(doc(db, 'config', 'discord_webhooks'));
-    _dwConfig = snap.exists() ? snap.data() : {};
-  }
-
-  const first  = items[0];
-  const cat    = first.category;
-  const palier = first.palier;
-  if (!cat || !palier) throw new Error('Catégorie ou palier manquant');
-  const key = first.rarity === 'event' ? `${cat}_event` : `${cat}_${palier}`;
-  const url = _dwConfig[key];
-  if (!url) throw new Error(`Aucun webhook configuré pour ${key}`);
-
-  const setId = first.set;
-  let threadName = setId;
-  if (_dwConfig._setCache?.[setId]) {
-    threadName = _dwConfig._setCache[setId];
-  } else {
-    try {
-      const snap = await getDoc(doc(db, 'panoplies', setId));
-      if (snap.exists()) {
-        threadName = snap.data().label || setId;
-        if (!_dwConfig._setCache) _dwConfig._setCache = {};
-        _dwConfig._setCache[setId] = threadName;
-      }
-    } catch {}
-  }
-
-  const [panList, pnjList] = await Promise.all([
-    cachedDocs(COL.panoplies).catch(() => []),
-    cachedDocs(COL.pnj).catch(() => []),
-  ]);
-  const allItemsList = await cachedDocs(COL.items).catch(() => []);
-  const maps = { ..._buildCardMaps(panList, pnjList), allItems: allItemsList };
-
-  const files = [];
-
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    const cardBlob  = await generateCardBlob(item, maps, 3);
-    const cardFname = `${item.id || item._id || `item_${i}`}_card.png`;
-    files.push({ blob: cardBlob, fname: cardFname });
-  }
-
-  // Embed minimal : liens wiki pour chaque item du set
-  const wikiLinks = items.map(item => {
-    const id = item.id || item._id;
-    return id ? `[🌐 ${item.name || id}](<https://drabiot.github.io/Veilleurs/Compendium/compendium.html#${id}>)` : null;
-  }).filter(Boolean).join('\n');
-  const setEmbed = wikiLinks ? { description: wikiLinks } : null;
-
-  // Vérifier si thread existant pour ce set
-  let existingThreadId = null;
-  try {
-    const existingSnap = await getDoc(doc(db, 'discord_posts', `${key}_${setId}`));
-    if (existingSnap.exists()) existingThreadId = existingSnap.data().threadId || null;
-  } catch {}
-
-  let fetchUrl, payload;
-  if (existingThreadId) {
-    fetchUrl = `${url}?thread_id=${existingThreadId}&wait=true`;
-    payload  = { flags: 4096 };
-  } else {
-    fetchUrl = `${url}?wait=true`;
-    payload  = { thread_name: threadName, flags: 4096 };
-    const appliedTags = _resolveTagRules(first, (_dwConfig.tagRules || {})[key] || []);
-    if (appliedTags.length) payload.applied_tags = appliedTags;
-  }
-  if (setEmbed) payload.embeds = [setEmbed];
-
-  const _doFetch = async (fUrl, fPayload) => {
-    if (files.length) {
-      const filesSlice = files.slice(0, 10);
-      const p  = { ...fPayload, attachments: filesSlice.map((f, i) => ({ id: i, filename: f.fname })) };
-      const fd = new FormData();
-      fd.append('payload_json', JSON.stringify(p));
-      filesSlice.forEach((f, i) => fd.append(`files[${i}]`, f.blob, f.fname));
-      return fetch(fUrl, { method: 'POST', body: fd });
-    }
-    return fetch(fUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fPayload) });
-  };
-
-  let discordRes = null;
-  let usedExistingThread = !!existingThreadId;
-  let r = await _doFetch(fetchUrl, payload);
-
-  if (!r.ok && existingThreadId) {
-    // Thread probablement archivé — recréer un nouveau thread
-    console.warn(`[dwPublish] thread ${existingThreadId} inaccessible (${r.status}), tentative de recréation…`);
-    const fallbackUrl     = `${url}?wait=true`;
-    const fallbackPayload = { thread_name: threadName };
-    const appliedTags = _resolveTagRules(first, (_dwConfig.tagRules || {})[key] || []);
-    if (appliedTags.length) fallbackPayload.applied_tags = appliedTags;
-    if (setEmbed) fallbackPayload.embeds = [setEmbed];
-    r = await _doFetch(fallbackUrl, fallbackPayload);
-    usedExistingThread = false;
-  }
-
-  if (r.ok) {
-    discordRes = await r.json();
-  } else {
-    const body = await r.text().catch(() => '');
-    throw new Error(`Discord ${r.status} : ${body.slice(0, 200)}`);
-  }
-
-  if (!usedExistingThread && discordRes?.id) {
-    try {
-      await setDoc(doc(db, 'discord_posts', `${key}_${setId}`), {
-        setId, setName: threadName, webhookKey: key, webhookUrl: url,
-        messageId: discordRes.id,
-        threadId: discordRes.channel_id || null,
-        sentAt: new Date().toISOString(),
-      });
-    } catch(e) { console.warn('discord_posts save failed:', e); }
-  }
-}
 
 // ── Item names cache (for craft display) ──────────────
 let _itemNamesCache = null;
@@ -1673,15 +1302,24 @@ async function _loadItem(id) {
   return desanitizeFromFirestore({ _id: snap.id, id: snap.id, ...snap.data() });
 }
 
-/** Reposte l'item dans son salon (supprime d'abord toute ancienne version). `auto` : ne fait rien si l'envoi automatique est désactivé. */
-window.discordSyncItem = async function(id, opts = {}) {
-  const r = await _routes(true);
-  if (opts.auto && r.enabled === false) return false; // actif par défaut : seul un « false » explicite le coupe
+// File des renvois (config/discord_resend : { items: { id: date } }) : le bot (GitHub Actions) la lit, poste l'item au format actuel (tags, miniature, carte) puis la vide.
+// La modération ne poste plus elle-même : un seul format, celui du bot.
+async function _queueResend(id) {
+  const ref = doc(db, 'config', 'discord_resend');
+  const snap = await getDoc(ref);
+  const items = (snap.exists() && snap.data().items) || {};
+  items[String(id)] = Date.now();
+  await setDoc(ref, { items });
+}
+
+/** Supprime l'ancien post de l'item puis demande son renvoi au bot (le nouveau post arrive en quelques minutes). */
+window.discordSyncItem = async function(id) {
+  await _routes(true);
   const item = await _loadItem(id);
-  const channel = await _channelOfItem(item, { auto: !!opts.auto });
-  if (!channel) { if (opts.auto) return false; throw new Error(`Aucun salon pour ${_itemKey(item)} (ni salon par défaut)`); }
+  const channel = await _channelOfItem(item);
+  if (!channel) throw new Error(`Aucun salon pour ${_itemKey(item)} (ni salon par défaut)`);
   await _deleteItemPosts(item._id);
-  await _sendSingleItemDiscord(item);
+  await _queueResend(item._id);
   return true;
 };
 
@@ -1763,7 +1401,7 @@ window.discordSendMissing = async function(onlyChannel) {
   await _bulk('Envoi', list, x => window.discordSyncItem(x.it.id));
 };
 window.discordResendItem = async function(id) {
-  try { await window.discordSyncItem(id); toast('Item renvoyé.', 'success'); await window.discordRenderSync(); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+  try { await window.discordSyncItem(id); toast('Renvoi demandé au bot : le nouveau post arrive dans quelques minutes.', 'success'); await window.discordRenderSync(); } catch (e) { toast('Erreur : ' + e.message, 'error'); }
 };
 window.discordDeletePost = async function(docId) {
   try { const p = (await _allPosts()).find(x => x._id === docId); if (p) await _deletePost(p); toast('Post supprimé.', 'success'); } catch (e) { toast('Erreur : ' + e.message, 'error'); }

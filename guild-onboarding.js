@@ -690,6 +690,30 @@ export async function handleGuildBot(request, env, deps) {
     if (rows.length) await env.DB.batch([env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'"), ...rows.map(r => env.DB.prepare("UPDATE docs SET deleted = 1, updated_at = (SELECT v FROM meta WHERE k = 'rev') WHERE col = 'discord_posts' AND id = ?").bind(r.id))]);
     return json({ ok: true, dropped: rows.length });
   }
+  if (body.action === 'main_post_set') { // posts faits par le bot à la demande de la modération : suivis dans discord_posts (comme avant les envois navigateur)
+    const list = (Array.isArray(body.posts) ? body.posts : []).slice(0, 100).filter(p => p && p.docId && p.itemId && SNOW.test(String(p.channelId || '')));
+    if (!list.length) return json({ ok: true, saved: 0 });
+    await env.DB.batch([
+      env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'"),
+      ...list.map(p => env.DB.prepare(`INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('discord_posts', ?, ?, (SELECT v FROM meta WHERE k = 'rev'), 0, 0)
+        ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at, deleted = 0`)
+        .bind(String(p.docId).slice(0, 200), JSON.stringify({ itemId: String(p.itemId), itemName: String(p.itemName || ''), webhookKey: String(p.key || ''), channelId: String(p.channelId), messageId: p.messageId || null, threadId: p.threadId || null, sentAt: new Date().toISOString() }))),
+    ]);
+    return json({ ok: true, saved: list.length });
+  }
+  if (body.action === 'resend_done') { // renvois traités : retirés de la file config/discord_resend (seulement si la demande n'a pas été renouvelée depuis)
+    const done = body.done && typeof body.done === 'object' ? body.done : {};
+    const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'config' AND id = 'discord_resend' AND deleted = 0").bind().first();
+    const cfg = jparse(row?.data);
+    if (!cfg || !cfg.items) return json({ ok: true, removed: 0 });
+    let removed = 0;
+    for (const [id, ts] of Object.entries(done)) if (cfg.items[id] === ts) { delete cfg.items[id]; removed++; }
+    if (removed) await env.DB.batch([
+      env.DB.prepare("UPDATE meta SET v = v + 1 WHERE k = 'rev'"),
+      env.DB.prepare("INSERT INTO docs (col, id, data, updated_at, deleted, gen) VALUES ('config', 'discord_resend', ?, (SELECT v FROM meta WHERE k = 'rev'), 0, 0) ON CONFLICT (col, id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at, deleted = 0").bind(JSON.stringify(cfg)),
+    ]);
+    return json({ ok: true, removed });
+  }
   if (body.action === 'main_missing') {
     const row = await env.DB.prepare("SELECT data FROM docs WHERE col = 'config' AND id = 'discord_routes' AND deleted = 0").bind().first();
     const cfg = jparse(row?.data);

@@ -339,7 +339,7 @@ export async function handleStoreWrite(request, env, cors, execCtx) {
   const rev = (await env.DB.prepare("SELECT v FROM meta WHERE k = 'rev'").first())?.v;
   // un item écrit, modifié ou supprimé : le bot Discord est lancé tout de suite (posts ajoutés / remplacés / supprimés sur les serveurs), au lieu d'attendre le cron
   // (aussi : file des soumissions acceptées, que le bot lit avant de poster un nouvel item)
-  if (execCtx && ops.some(o => o.col === 'items' || (o.col === 'config' && o.id === 'discord_approved'))) execCtx.waitUntil(triggerBot(env).catch(() => {}));
+  if (execCtx && ops.some(o => o.col === 'items' || (o.col === 'config' && (o.id === 'discord_approved' || o.id === 'discord_resend')))) execCtx.waitUntil(triggerBot(env).catch(() => {}));
   if (execCtx) {
     for (const [rid, r] of newReports) execCtx.waitUntil(postReportToDiscord(env, rid, r));
     for (const [rid, r] of userMsgs) execCtx.waitUntil(postUserMessageToDiscord(env, rid, r));
