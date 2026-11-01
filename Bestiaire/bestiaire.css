@@ -1725,3 +1725,76 @@ body.bestiaire-page {
   .mh-stats { grid-template-columns: 1fr; }
   .mob-sheet.is-mob { padding: 50px 18px 22px; }
 }
+
+/* ══════════════════════════════════
+   MODÈLE 3D PLEIN ÉCRAN
+══════════════════════════════════ */
+.m3d-overlay {
+  position: fixed; inset: 0; z-index: 99999;
+  display: flex; align-items: center; justify-content: center; padding: 28px;
+  background: rgba(6,5,4,.9); backdrop-filter: blur(6px);
+  animation: m3d-fade .22s ease both;
+}
+@keyframes m3d-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes m3d-rise { from { opacity: 0; transform: translateY(14px) scale(.985); } to { opacity: 1; transform: none; } }
+.m3d-stage {
+  position: relative; width: 100%; height: 100%; overflow: hidden;
+  border: 1px solid var(--rim2); border-radius: 3px;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 58%, color-mix(in srgb, var(--m3d-accent) 20%, transparent) 0%, transparent 70%),
+    radial-gradient(ellipse at 50% 40%, rgba(34,28,21,.95) 0%, rgba(14,12,9,.98) 70%, rgba(8,7,5,1) 100%);
+  box-shadow: 0 0 90px rgba(0,0,0,.85), 0 0 0 1px rgba(224,172,96,.07), inset 0 0 120px rgba(0,0,0,.55);
+  animation: m3d-rise .3s cubic-bezier(.2,.8,.2,1) both;
+}
+.m3d-stage::before {   /* grain / trame discrète */
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 3px);
+}
+.m3d-view { position: absolute; inset: 0; cursor: grab; z-index: 1; }
+.m3d-view:active { cursor: grabbing; }
+.m3d-view canvas { display: block; width: 100% !important; height: 100% !important; outline: none; }
+.m3d-floor {   /* halo au sol sous le modèle */
+  position: absolute; left: 50%; bottom: 13%; width: min(60%, 640px); height: 70px; transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, color-mix(in srgb, var(--m3d-accent) 35%, transparent) 0%, rgba(0,0,0,.35) 45%, transparent 72%);
+  filter: blur(6px); pointer-events: none; z-index: 0;
+}
+.m3d-corner { position: absolute; width: 22px; height: 22px; border: 0 solid var(--gold-dim); opacity: .7; pointer-events: none; z-index: 4; }
+.m3d-corner.tl { top: 8px; left: 8px; border-width: 2px 0 0 2px; }
+.m3d-corner.tr { top: 8px; right: 8px; border-width: 2px 2px 0 0; }
+.m3d-corner.bl { bottom: 8px; left: 8px; border-width: 0 0 2px 2px; }
+.m3d-corner.br { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; }
+.m3d-head { position: absolute; top: 26px; left: 32px; right: 90px; z-index: 3; pointer-events: none; }
+.m3d-kicker { display: block; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--m3d-accent); opacity: .9; }
+.m3d-title {
+  margin: 6px 0 0; font-family: 'Cinzel', serif; font-size: clamp(22px, 3vw, 34px); font-weight: 600;
+  letter-spacing: .04em; color: var(--bright); text-shadow: 0 2px 18px rgba(0,0,0,.8);
+}
+.m3d-title::after { content: ''; display: block; width: 64px; height: 2px; margin-top: 10px; background: linear-gradient(90deg, var(--m3d-accent), transparent); }
+.m3d-close {
+  position: absolute; top: 22px; right: 24px; z-index: 5; width: 34px; height: 34px; padding: 0;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  background: rgba(255,255,255,.05); border: 1px solid var(--rim2); border-radius: 3px;
+  color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 14px; transition: .15s;
+}
+.m3d-close:hover, .m3d-close:focus-visible { color: var(--gold); border-color: var(--gold-dim); background: var(--gold-glow); outline: none; }
+.m3d-loading {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .12em; color: var(--muted);
+  animation: m3d-pulse 1.2s ease-in-out infinite;
+}
+@keyframes m3d-pulse { 50% { opacity: .35; } }
+.m3d-hint {
+  position: absolute; left: 0; right: 0; bottom: 18px; z-index: 3; display: flex; justify-content: center; gap: 22px; flex-wrap: wrap;
+  padding: 0 16px; pointer-events: none;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .06em; color: rgba(220,205,175,.45);
+}
+.m3d-hint kbd {
+  font: inherit; color: var(--gold); padding: 1px 6px; margin-right: 4px;
+  border: 1px solid var(--rim2); border-radius: 3px; background: rgba(255,255,255,.04);
+}
+@media (max-width: 700px) {
+  .m3d-overlay { padding: 0; }
+  .m3d-stage { border-radius: 0; border: 0; }
+  .m3d-hint span:not(:first-child) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .m3d-overlay, .m3d-stage, .m3d-loading { animation: none; } }

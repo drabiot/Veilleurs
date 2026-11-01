@@ -905,76 +905,41 @@ function _copyText(text, btn, doneLabel) {
 let _fullscreenViewer = null;
 
 function _openFullscreen3D(mob) {
-  const existing = document.getElementById('mob-3d-fullscreen-overlay');
-  if (existing) existing.remove();
+  document.getElementById('mob-3d-fullscreen-overlay')?.remove();
   if (_fullscreenViewer) { _fullscreenViewer.destroy(); _fullscreenViewer = null; }
 
+  const accent = TYPE_ACCENT[mob.type] || '#9a7040';
   const overlay = document.createElement('div');
   overlay.id = 'mob-3d-fullscreen-overlay';
-  overlay.style.cssText = `
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 99999;
-    background: rgba(0,0,0,.92);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  `;
-
-  const inner = document.createElement('div');
-  inner.style.cssText = `
-    position: relative;
-    width: calc(100% - 80px);
-    height: calc(100% - 80px);
-    background: rgba(13,13,26,.95);
-    border: 1px solid rgba(255,255,255,.12);
-    box-shadow: 0 0 80px rgba(0,0,0,.85), 0 0 0 1px rgba(224,172,96,.07);
-  `;
-
-  const closeBtn = document.createElement('button');
-  closeBtn.textContent = '✕';
-  closeBtn.style.cssText = `
-    position: absolute;
-    top: 10px; right: 12px;
-    z-index: 10;
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.15);
-    color: rgba(255,255,255,.5);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 13px;
-    width: 28px; height: 28px;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    line-height: 1;
-    padding: 0;
-  `;
-
-  const container = document.createElement('div');
-  container.style.cssText = `width: 100%; height: 100%;`;
-
-  const hint = document.createElement('p');
-  hint.textContent = 'Clic + glisser pour tourner · Échap pour fermer';
-  hint.style.cssText = `
-    margin-top: 12px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    color: rgba(255,255,255,.3);
-    letter-spacing: .08em;
-  `;
-
-  inner.appendChild(closeBtn);
-  inner.appendChild(container);
-  overlay.appendChild(inner);
-  overlay.appendChild(hint);
+  overlay.className = 'm3d-overlay';
+  overlay.style.setProperty('--m3d-accent', accent);
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', mob.name || '');
+  overlay.innerHTML = `
+    <div class="m3d-stage">
+      <i class="m3d-corner tl"></i><i class="m3d-corner tr"></i><i class="m3d-corner bl"></i><i class="m3d-corner br"></i>
+      <header class="m3d-head">
+        <span class="m3d-kicker">// Modèle 3D</span>
+        <h2 class="m3d-title">${escHtml(mob.name || '')}</h2>
+      </header>
+      <button class="m3d-close" type="button" aria-label="Fermer" title="Fermer (Échap)">✕</button>
+      <div class="m3d-view"></div>
+      <div class="m3d-floor" aria-hidden="true"></div>
+      <div class="m3d-loading">Chargement du modèle…</div>
+      <footer class="m3d-hint"><span><kbd>Clic</kbd> + glisser pour tourner</span><span><kbd>Échap</kbd> pour fermer</span></footer>
+    </div>`;
   document.body.appendChild(overlay);
 
-  // Lancer le viewer après que le DOM soit rendu (et THREE chargé)
+  const container = overlay.querySelector('.m3d-view');
+  const loading = overlay.querySelector('.m3d-loading');
+  const closeBtn = overlay.querySelector('.m3d-close');
   requestAnimationFrame(async () => {
     await ensureThree();
+    if (!overlay.isConnected) return;
     _fullscreenViewer = new MonstreViewer3D(container, { autoRotate: true });
     _fullscreenViewer.chargerDepuisData(mob);
+    loading.remove();
   });
 
   const close = () => {
@@ -982,11 +947,11 @@ function _openFullscreen3D(mob) {
     overlay.remove();
     document.removeEventListener('keydown', onKey);
   };
-
   const onKey = (e) => { if (e.key === 'Escape') close(); };
   closeBtn.addEventListener('click', close);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
   document.addEventListener('keydown', onKey);
+  closeBtn.focus({ preventScroll: true });
 }
 
 /* ── Fiche Monstre ── */
