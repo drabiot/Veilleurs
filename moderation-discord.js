@@ -1696,12 +1696,10 @@ async function _markApproved(id) {
   await setDoc(ref, { items });
 }
 
-// Appelé par l'approbation d'une soumission d'item : jamais bloquant, jamais d'erreur remontée au modérateur
+// Appelé par l'approbation d'une soumission d'item : jamais bloquant, jamais d'erreur remontée au modérateur.
+// Seul le bot (GitHub Actions) poste automatiquement : ici on met juste l'item en file (un envoi navigateur ferait un doublon au format obsolète).
 window.discordAutoSync = async function(id) {
   try { await _markApproved(id); } catch (e) { console.warn('[discord approved]', e); toast('📣 Discord : item non mis en file pour le bot (' + e.message + ')', 'warning', 7000); }
-  try {
-    if (await window.discordSyncItem(id, { auto: true })) toast('📣 Item posté / mis à jour sur Discord.', 'success');
-  } catch (e) { console.warn('[discord auto]', e); toast('📣 Discord : ' + e.message, 'warning', 7000); }
 };
 
 // ── Opérations en lot (avec arrêt possible) ──
