@@ -162,6 +162,28 @@ class MonstreViewer3D {
         this._orb.targetPhi = Math.max(0.1, Math.min(Math.PI - 0.1, this._orb.targetPhi - dy * 0.012));
       }
     }, { passive: false });
+
+    // Zoom (molette, pincement, double-clic = recentrer) : option `zoom`, sinon la molette fait défiler la page
+    if (this.opts.zoom) {
+      const zoomBy = f => {
+        const base = this._baseR || 4;
+        this._orb.targetR = Math.max(base * 0.3, Math.min(base * 2.5, this._orb.targetR * f));
+        this._invalidate();
+      };
+      el.addEventListener('wheel', e => {
+        e.preventDefault();
+        zoomBy(Math.exp(Math.max(-120, Math.min(120, e.deltaY)) * 0.0015));
+      }, { passive: false });
+      el.addEventListener('dblclick', () => { this._orb.targetR = this._baseR || 4; this._invalidate(); });
+      let pinch = 0;
+      el.addEventListener('touchmove', e => {
+        if (e.touches.length !== 2) { pinch = 0; return; }
+        const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        if (pinch) zoomBy(pinch / d);
+        pinch = d;
+      }, { passive: true });
+      el.addEventListener('touchend', () => { pinch = 0; });
+    }
   }
 
   /* ─── Chargement config ─────────────────────────────────────────────── */
@@ -188,7 +210,7 @@ class MonstreViewer3D {
     this._vider();
 
     const cam = monstre.camera || {};
-    this._orb.targetR = this._orb.r = cam.distance || 4;
+    this._orb.targetR = this._orb.r = this._baseR = cam.distance || 4;
     this._camHauteur  = cam.hauteur || 0;
 
     const loader  = new THREE.ObjectLoader();
@@ -206,7 +228,7 @@ class MonstreViewer3D {
     this._vider();
 
     const cam = mobData.camera || {};
-    this._orb.targetR     = this._orb.r     = cam.distance || 4;
+    this._orb.targetR     = this._orb.r     = this._baseR = cam.distance || 4;
     this._orb.targetPhi   = this._orb.phi   = Math.PI / 2;
     this._orb.targetTheta = this._orb.theta = 0;
     this._camHauteur = cam.hauteur || 0;

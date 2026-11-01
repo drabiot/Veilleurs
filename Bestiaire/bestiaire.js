@@ -928,7 +928,7 @@ function _openFullscreen3D(mob) {
       <div class="m3d-view"></div>
       <div class="m3d-floor" aria-hidden="true"></div>
       <div class="m3d-loading">Chargement du modèle…</div>
-      <footer class="m3d-hint"><span><kbd>Clic</kbd> + glisser pour tourner</span><span><kbd>Échap</kbd> pour fermer</span></footer>
+      <footer class="m3d-hint"><span><kbd>Clic</kbd> + glisser pour tourner</span><span><kbd>Molette</kbd> zoom · double-clic : recentrer</span><span><kbd>Échap</kbd> pour fermer</span></footer>
     </div>`;
   document.body.appendChild(overlay);
 
@@ -938,7 +938,7 @@ function _openFullscreen3D(mob) {
   requestAnimationFrame(async () => {
     await ensureThree();
     if (!overlay.isConnected) return;
-    _fullscreenViewer = new MonstreViewer3D(container, { autoRotate: true });
+    _fullscreenViewer = new MonstreViewer3D(container, { autoRotate: true, zoom: true });
     _fullscreenViewer.chargerDepuisData(mob);
     loading.remove();
   });

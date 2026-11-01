@@ -724,6 +724,8 @@
   "// Modèle 3D": "// 3D model",
   "Chargement du modèle…": "Loading model…",
   "Clic": "Click",
+  "Molette": "Wheel",
+  "zoom · double-clic : recentrer": "zoom · double-click: reset",
   "Échap": "Esc",
   "+ glisser pour tourner": "+ drag to rotate",
   "pour fermer": "to close",
