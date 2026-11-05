@@ -683,7 +683,7 @@ const _toastImageRenames = pairs => pairs.length && toast(
   '🖼️ Texture : le chemin a changé. Renomme le fichier dans le dépôt (img/…) : ' + pairs.map(([a, b]) => `${a.split('/').pop()} → ${b.split('/').pop()}`).join(', '),
   'warning', 14000);
 
-_lazyPanel(() => import('./moderation-item-sync.js?v=3d35868a'), ['_syncPnjObtain', '_syncMobObtain', '_syncItemObtain', '_recordItemRename', '_renameItemReferences']);
+_lazyPanel(() => import('./moderation-item-sync.js?v=40d5987d'), ['_syncPnjObtain', '_syncMobObtain', '_syncItemObtain', '_recordItemRename', '_renameItemReferences']);
 
 
 
