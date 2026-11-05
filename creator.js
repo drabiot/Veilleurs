@@ -527,7 +527,7 @@ function saveForm() {
         z:             document.getElementById('pnj-z')?.value        || '',
         underground:   pnjUnderground,
         recycles: pnjRecycles.map(r => ({ itemId: r.itemId, qty: r.qty, reward: r.reward, time: r.time, cost: r.cost })),
-        crafts: pnjCrafts.map(c => ({ resultId: c.resultId, time: c.time, quality: c.quality, ingredients: c.ingredients.map(i => ({ itemId: i.itemId, qty: i.qty })) })),
+        crafts: pnjCrafts.map(c => ({ kind: c.kind || 'craft', price: c.price ?? '', resultId: c.resultId, time: c.time, quality: c.quality, ingredients: c.ingredients.map(i => ({ itemId: i.itemId, qty: i.qty })) })),
       },
       // Région form
       region: {
@@ -735,7 +735,7 @@ function restoreForm(forcedMode) {
       setPnjUnderground(!!p.underground);
       if (p.sells?.length) {
         ensureAllItemsIndex();
-        for (const s of p.sells) pnjCrafts.push(_saleAsCraft(s.itemId, s.buy));
+        pnjCrafts.push(..._tradeCardsFromSells(p.sells));
         renderPnjCrafts();
       }
       if (p.recycles?.length) {
@@ -747,7 +747,7 @@ function restoreForm(forcedMode) {
         ensureAllItemsIndex();
         for (const c of p.crafts) {
           pnjCrafts.push({
-            uid: pnjCraftUid++, resultId: c.resultId, time: c.time || '', quality: !!c.quality,
+            uid: pnjCraftUid++, kind: c.kind || 'craft', price: c.price ?? '', resultId: c.resultId, time: c.time || '', quality: !!c.quality,
             ingredients: c.ingredients?.map(i => ({ uid: pnjIngUid++, itemId: i.itemId, qty: i.qty })) || []
           });
         }
@@ -2787,7 +2787,7 @@ function loadPnj(pnj) {
   ensureAllItemsIndex();
   const sells = Array.isArray(pnj.sells) ? pnj.sells
     : pnj.sells && typeof pnj.sells === 'object' ? Object.values(pnj.sells) : [];
-  for (const s of sells) pnjCrafts.push(_saleAsCraft(s.id || '', s.buy));   // une vente = un craft qui ne coûte que des cols
+  pnjCrafts.push(..._tradeCardsFromSells(sells));
   if (sells.length) renderPnjCrafts();
   // Restore crafts — push entries with data, then render once
   const crafts = Array.isArray(pnj.craft) ? pnj.craft
@@ -6628,15 +6628,25 @@ function onRegNameInput() {
 }
 
 // ═══════════════════════════════════════
-// PNJ — VENTES (= crafts qui ne coûtent que des cols)
+// PNJ — VENTES / ACHATS (cartes simples : un item + un prix en Cols)
 // ═══════════════════════════════════════
-// Une vente est saisie comme une recette : résultat = l'item vendu, un seul ingrédient « Cols » dont la quantité est le prix.
-// À l'enregistrement, ces recettes redeviennent des entrées `sells` ({id, buy}) : le format des données (et tout ce qui le lit) ne change pas.
-function _saleAsCraft(itemId, buy) {
-  return { uid: pnjCraftUid++, resultId: itemId || '', time: '', quality: false,
-           ingredients: [{ uid: pnjIngUid++, itemId: 'cols', qty: buy != null && buy !== '' ? buy : '' }] };
+// kind 'buy'  = achat  : le joueur donne des Cols, reçoit l'item  -> sells[].buy
+// kind 'sell' = vente  : le joueur donne l'item, reçoit des Cols  -> sells[].price
+// kind absent / 'craft' = craft classique -> craft[]
+function _tradeCard(kind, itemId, price) {
+  return { uid: pnjCraftUid++, kind, resultId: itemId || '', price: price != null && price !== '' ? price : '',
+           time: '', quality: false, ingredients: [] };
 }
-const _isSaleCraft = (c, ings) => ings.length === 1 && ings[0].id === 'cols' && !c.time && !c.quality;
+function _tradeCardsFromSells(sells) {
+  const out = [];
+  for (const s of sells) {
+    const id = s.id || s.itemId || '';
+    const hasPrice = s.price != null && s.price !== '', hasBuy = s.buy != null && s.buy !== '';
+    if (hasBuy || !hasPrice) out.push(_tradeCard('buy', id, s.buy));
+    if (hasPrice) out.push(_tradeCard('sell', id, s.price));
+  }
+  return out;
+}
 
 // ═══════════════════════════════════════════════════
 // PNJ — RECYCLAGE (le joueur donne un item, le PNJ rend des Pièces de Recyclage après un délai)
@@ -6704,14 +6714,80 @@ function renderPnjRecycles() {
 // ═══════════════════════════════════════════════════
 function addPnjCraft() {
   ensureAllItemsIndex();
-  pnjCrafts.push({ uid: pnjCraftUid++, resultId: '', time: '', quality: false, ingredients: [] });
+  pnjCrafts.push({ uid: pnjCraftUid++, kind: 'craft', resultId: '', time: '', quality: false, ingredients: [] });
   renderPnjCrafts();
+}
+function addPnjTrade(kind) {   // 'buy' = achat, 'sell' = vente
+  ensureAllItemsIndex();
+  pnjCrafts.push(_tradeCard(kind, '', ''));
+  renderPnjCrafts();
+}
+
+// Carte simple achat / vente : « le joueur donne X → le joueur reçoit Y »
+function _renderTradeCard(c) {
+  const isBuy = c.kind === 'buy';
+  const col = isBuy ? '#60a5fa' : '#4ade80';
+  const card = document.createElement('div');
+  card.className = 'pnj-craft-card';
+
+  const title = document.createElement('div');
+  title.style.cssText = `font-size:11px;font-weight:700;color:${col};margin-bottom:6px;`;
+  title.textContent = isBuy ? "🛒 Achat — le joueur paie en Cols et reçoit l'item" : "💰 Vente — le joueur donne l'item et reçoit des Cols";
+  card.appendChild(title);
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px;align-items:end;';
+
+  const labeled = (label, el, color) => {
+    const w = document.createElement('div');
+    w.style.cssText = 'display:flex;flex-direction:column;gap:3px;min-width:0;';
+    const l = document.createElement('div');
+    l.style.cssText = `font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:${color};`;
+    l.textContent = label;
+    w.append(l, el);
+    return w;
+  };
+
+  const drop = makeSearchDrop(allItemsIndex, 'Item…', id => { c.resultId = id; update(); }, true);
+  if (c.resultId) {
+    const f = allItemsIndex.find(it => it.id === c.resultId);
+    drop.setValue(c.resultId, f ? f.name : c.resultId);
+  }
+  c.resDrop = drop;
+
+  const priceEl = document.createElement('input');
+  priceEl.type = 'number'; priceEl.min = '0'; priceEl.step = 'any'; priceEl.placeholder = 'Prix';
+  priceEl.value = c.price;
+  priceEl.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 6px;font-size:13px;text-align:center;outline:none;width:100%;box-sizing:border-box;';
+  priceEl.addEventListener('input', () => { c.price = priceEl.value === '' ? '' : parseFloat(priceEl.value); update(); });
+  const priceWrap = document.createElement('div');
+  priceWrap.style.cssText = 'display:flex;align-items:center;gap:6px;';
+  const unit = document.createElement('span');
+  unit.textContent = 'Cols'; unit.style.cssText = 'font-size:12px;color:var(--muted);font-weight:700;';
+  priceWrap.append(priceEl, unit);
+
+  const arrow = document.createElement('div');
+  arrow.textContent = '➜';
+  arrow.style.cssText = `font-size:20px;color:${col};padding-bottom:6px;`;
+
+  const GIVE = '#f87171', GET = '#4ade80';
+  const left  = isBuy ? labeled('💸 Le joueur paie', priceWrap, GIVE) : labeled('🎒 Le joueur donne', drop.element, GIVE);
+  const right = isBuy ? labeled('🎁 Le joueur reçoit', drop.element, GET) : labeled('🪙 Le joueur reçoit', priceWrap, GET);
+
+  const rm = document.createElement('button');
+  rm.className = 'btn-icon'; rm.textContent = '✕';
+  rm.addEventListener('click', () => { pnjCrafts = pnjCrafts.filter(e => e.uid !== c.uid); renderPnjCrafts(); update(); });
+
+  row.append(left, arrow, right, rm);
+  card.appendChild(row);
+  return card;
 }
 
 function renderPnjCrafts() {
   const list = document.getElementById('pnj-crafts-list');
   list.innerHTML = '';
   for (const c of pnjCrafts) {
+    if (c.kind === 'buy' || c.kind === 'sell') { list.appendChild(_renderTradeCard(c)); continue; }
     const card = document.createElement('div');
     card.className = 'pnj-craft-card';
 
@@ -6853,17 +6929,18 @@ function buildPnjObj() {
   if (id) obj.images = [`../img/compendium/montages/${id}.png`];
   if (instructions) obj.instructions = instructions;
 
-  // Les recettes qui ne coûtent que des Cols (sans durée ni qualité) sont des ventes : elles vont dans `sells`, les autres dans `craft`.
+  // Achats / ventes -> `sells` (une entrée par item : buy = prix d'achat joueur, price = prix de vente joueur) ; crafts -> `craft`.
   const sells = [], crafts = [];
+  const sellById = new Map();
   for (const c of pnjCrafts.filter(c => c.resultId)) {
-    const ings = c.ingredients.filter(i => i.itemId).map(i => ({ id: i.itemId, qty: i.qty }));
-    if (_isSaleCraft(c, ings)) {
-      const e = { id: c.resultId };
-      const price = parseFloat(ings[0].qty);
-      if (!isNaN(price) && price >= 0) e.buy = price;
-      sells.push(e);
+    if (c.kind === 'buy' || c.kind === 'sell') {
+      let e = sellById.get(c.resultId);
+      if (!e) { e = { id: c.resultId }; sellById.set(c.resultId, e); sells.push(e); }
+      const price = parseFloat(c.price);
+      if (!isNaN(price) && price >= 0) e[c.kind === 'buy' ? 'buy' : 'price'] = price;
       continue;
     }
+    const ings = c.ingredients.filter(i => i.itemId).map(i => ({ id: i.itemId, qty: i.qty }));
     const e = { id: c.resultId };
     if (c.time)    e.time = c.time;
     if (c.quality) e.quality = true;

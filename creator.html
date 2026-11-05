@@ -585,12 +585,13 @@
 
       <!-- Craft PNJ -->
       <div class="section" id="pnj-craft-section">
-        <div class="sec-head" onclick="toggleSec(this)">⚒️ Craft <span class="chev">▾</span></div>
+        <div class="sec-head" onclick="toggleSec(this)">🛒 Commerce <span class="chev">▾</span></div>
         <div class="sec-body">
-          <div class="hint" data-i18n-html>Chaque carte = une recette fabriquée par ce PNJ. Un item vendu s'ajoute ici aussi : une recette dont l'ingrédient est « <b>Cols</b> » (quantité = prix).</div>
           <div id="pnj-crafts-list" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;margin-bottom:8px;"></div>
           <div style="display:flex;gap:6px;">
-            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="addPnjCraft()">+ Ajouter une recette</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="addPnjCraft()">+ Ajouter un craft</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="addPnjTrade('sell')" title="Le joueur donne des items et reçoit des Cols">+ Ajouter une vente</button>
+            <button class="btn btn-ghost btn-sm" style="flex:1" onclick="addPnjTrade('buy')" title="Le joueur donne des Cols et reçoit des items">+ Ajouter un achat</button>
           </div>
         </div>
       </div>

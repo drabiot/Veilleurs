@@ -1,4 +1,5 @@
 {
+  "Accéder au Creator": "Open the Creator",
   "_comment": "Clé = texte français EXACT de la page ; valeur = anglais. {x} = variable. Les noms d'items/mobs/PNJ ne se traduisent pas. Glossaire : i18n/glossary.json. Vérifier avec : node tools/i18n-check.js [--coverage]",
   "_keep": [
     "Veilleurs au Clair de Lune", "Veilleurs au", "Clair de Lune", "[ VCL ]", "Compendium", "Builds", "Hall of Fame",
@@ -30,7 +31,7 @@
   "Bestiaire": "Bestiary",
   "Quêtes": "Quests",
   "Atelier": "Workshop",
-  "+ Contribuez au Wiki": "+ Contribute to the Wiki",
+
   "Modération": "Moderation",
 
   "wiki officiel de la guilde": "official guild wiki",
@@ -70,7 +71,7 @@
   "[VCL] MonPseudo": "[VCL] MyName",
   "Bienvenue ! Choisis ton identifiant :": "Welcome! Choose your username:",
 
-  "+ Ajouter un Item": "+ Add an Item",
+
   "⬡ Palier": "⬡ Floor",
   "Glossaire des Items": "Item Glossary",
   "// BASE DE DONNÉES · VEILLEURS AU CLAIR DE LUNE": "// DATABASE · VEILLEURS AU CLAIR DE LUNE",
@@ -80,7 +81,7 @@
   "Trier par ordre alphabétique": "Sort alphabetically",
   "Ouvrir les filtres": "Open filters",
 
-  "+ Ajouter une Entitée": "+ Add an Entity",
+
   "💀 Monstres": "💀 Monsters",
   "🧑 PNJ": "🧑 NPCs",
   "Monstre": "Monster",
@@ -113,7 +114,7 @@
   "Grandes icônes": "Large icons",
   "Fermer (Échap)": "Close (Esc)",
 
-  "+ Ajouter une Quête": "+ Add a Quest",
+
   "Princi.": "Main",
   "Second.": "Side",
   "✅ Statut": "✅ Status",
@@ -134,7 +135,7 @@
   "Cartes moyennes": "Medium cards",
   "Grandes cartes": "Large cards",
 
-  "+ Ajouter une Zone": "+ Add a Zone",
+
   "📌 Ajouter un pin": "📌 Add a pin",
   "📤 Exporter mes pins": "📤 Export my pins",
   "📥 Importer des pins": "📥 Import pins",
@@ -244,7 +245,7 @@
   "✕ Supprimer": "✕ Delete",
   "🔍 Rechercher un build, un auteur…": "🔍 Search a build, an author…",
 
-  "+ Ajouter un Équipement": "+ Add Equipment",
+
   "◈ Aperçu": "◈ Preview",
   "Build non sauvegardé — aucun emplacement modifié.": "Build not saved — no slot changed.",
   "↓ Enregistrer": "↓ Save",
@@ -1412,7 +1413,18 @@
   "Nom personnalisé…": "Custom name…",
   "🕳️ Oui": "🕳️ Yes",
   "(optionnel — comment accéder à ce PNJ)": "(optional — how to reach this NPC)",
-  "+ Ajouter une recette": "+ Add a recipe",
+  "🛒 Achat — le joueur paie en Cols et reçoit l'item": "🛒 Purchase — the player pays Cols and receives the item",
+  "💰 Vente — le joueur donne l'item et reçoit des Cols": "💰 Sale — the player gives the item and receives Cols",
+  "💸 Le joueur paie": "💸 Player pays",
+  "🎒 Le joueur donne": "🎒 Player gives",
+  "🎁 Le joueur reçoit": "🎁 Player receives",
+  "🪙 Le joueur reçoit": "🪙 Player receives",
+  "+ Ajouter un craft": "+ Add a craft",
+  "+ Ajouter une vente": "+ Add a sale",
+  "+ Ajouter un achat": "+ Add a purchase",
+  "Le joueur donne des items et reçoit des Cols": "The player gives items and receives Cols",
+  "Le joueur donne des Cols et reçoit des items": "The player gives Cols and receives items",
+  "🛒 Commerce": "🛒 Trade",
   "Ajoute une recette dont l'ingrédient est déjà « Cols » : il ne reste qu'à choisir l'item et le prix": "Adds a recipe whose ingredient is already “Cols”: you only have to choose the item and the price",
   "Chaque carte = un item que le joueur donne au PNJ, contre des Pièces de Recyclage après un délai.": "Each card = an item the player gives to the NPC, in exchange for Recycling Coins after a delay.",
   "+ Ajouter un recyclage": "+ Add a recycling",

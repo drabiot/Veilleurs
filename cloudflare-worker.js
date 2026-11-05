@@ -405,9 +405,9 @@ async function handleDiscordCallback(request, env) {
 
     // Appartenance + rôles via le bot (pas besoin du scope guilds.members.read)
     const mr = await fetch(`${DISCORD_API}/guilds/${env.DISCORD_GUILD_ID}/members/${me.id}`, { headers: { Authorization: `Bot ${env.BOT_TOKEN}` } });
-    if (mr.status === 404) return out({ error: 'Tu dois être membre du serveur Discord pour te connecter.' }, env.DISCORD_INVITE_URL);
-    if (!mr.ok) return fail("Impossible de vérifier ton appartenance au serveur.");
-    const member = await mr.json();
+    // Non-membre (404) : connexion autorisée quand même, sans rôle Discord → rôle par défaut (config/discordRoles.defaultRole)
+    if (!mr.ok && mr.status !== 404) return fail("Impossible de vérifier ton appartenance au serveur.");
+    const member = mr.ok ? await mr.json() : { roles: [], nick: null };
 
     const owner = await userFind(env, 'discordId', me.id);
     let uid, existing;
