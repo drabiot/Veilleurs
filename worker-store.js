@@ -150,7 +150,7 @@ function canWrite(ctx, op, col, id, old, neu) {
       if (isAdmin) return true;
       { const ch = changed(old, neu);
         const bump = f => Math.abs((neu?.[f] || 0) - (old?.[f] || 0)) === 1;
-        if (authed && old?.authorUid === ctx.uid && ch.every(k => ['name', 'visibility', 'updatedAt', 'slots', 'runes', 'skillNodes', 'statsSnapshot', 'classe', 'level', 'slotImages', 'sensibleSlots', 'runeNames', 'titre', 'comment'].includes(k))
+        if (authed && old?.authorUid === ctx.uid && ch.every(k => ['name', 'visibility', 'updatedAt', 'slots', 'runes', 'skillNodes', 'statsSnapshot', 'classe', 'level', 'slotImages', 'sensibleSlots', 'runeNames', 'titre', 'comment', 'buildType'].includes(k))
           && (!ch.includes('comment') || (typeof neu?.comment === 'string' && neu.comment.length <= 500))) return true;
         if (authed && ch.length === 1 && ch[0] === 'previewCount' && bump('previewCount')) return true;
         if (authed && ch.length === 1 && ch[0] === 'favoriteCount' && bump('favoriteCount')) return true;

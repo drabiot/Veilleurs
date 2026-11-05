@@ -353,6 +353,13 @@ html, body {
   border: 1px solid rgba(100,100,100,.3); border-radius: 2px;
   color: var(--muted);
 }
+.bc-type-badge {
+  font-size: 9px; font-weight: 700; padding: 1px 6px; letter-spacing: .06em;
+  border: 1px solid currentColor; border-radius: 2px;
+}
+.bc-type-pve   { color: #6fcf7f; }
+.bc-type-pvp   { color: #f07070; }
+.bc-type-mixte { color: #c9a0f0; }
 .bc-admin-badge {
   font-size: 9px; padding: 1px 5px;
   border: 1px solid rgba(224,172,96,.2); border-radius: 2px;

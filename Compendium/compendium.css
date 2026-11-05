@@ -1234,6 +1234,7 @@ a.craft-ingredient-name:hover {
 
 /* Valeur unique */
 .sv-single { color: var(--gold); }
+.sv-neg, .sv-single.sv-neg, .sv-min.sv-neg, .sv-max.sv-neg { color: #ff5a5a; }
 
 /* Min → Max */
 .sv-min {
@@ -1246,6 +1247,37 @@ a.craft-ingredient-name:hover {
   font-size: 10px;
 }
 .sv-max { color: var(--gold); }
+
+/* ── Filigranes de couleur : un bloc (palier / évènement / world boss) = une couleur, héritée par ses sous-catégories ── */
+.palier-block, .event-block { --wm: transparent; }
+.palier-block {
+  border-left: 3px solid var(--wm);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--wm) 7%, transparent), transparent 70%);
+}
+.palier-header .palier-label { color: color-mix(in srgb, var(--wm) 70%, var(--gold)); }
+.event-block {
+  border-left: 3px solid var(--wm);
+  margin: 2px 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--wm) 11%, transparent), transparent 75%);
+}
+.event-header { position: relative; overflow: hidden; border-left: 0 !important; color: color-mix(in srgb, var(--wm) 75%, #fff) !important; }
+.event-header::after {
+  content: attr(data-wm); position: absolute; right: 30px; top: 50%; transform: translateY(-50%) rotate(-8deg);
+  font-size: 30px; opacity: .13; pointer-events: none;
+}
+.event-header:hover { background: color-mix(in srgb, var(--wm) 12%, transparent) !important; }
+.event-body .categorie-block { border-left: 2px solid color-mix(in srgb, var(--wm) 45%, transparent); margin-left: 4px; }
+.event-body .categorie-header { background: color-mix(in srgb, var(--wm) 5%, transparent); }
+
+/* 🎯 Tableau de chasse */
+.hunt-dot { margin-left: auto; padding-left: 6px; font-size: 11px; opacity: .85; flex: none; }
+.hunt-ico {
+  display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
+  font-size: 14px; text-decoration: none; padding: 2px 6px; margin-left: 6px;
+  border: 1px solid rgba(224,172,96,.4); border-radius: 4px; background: rgba(224,172,96,.1);
+  transition: background .15s, transform .15s;
+}
+.hunt-ico:hover { background: rgba(224,172,96,.25); transform: scale(1.1); }
 
 /* Sous-catégories d'évènement (palier Event) */
 .event-header {

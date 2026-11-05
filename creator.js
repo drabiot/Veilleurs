@@ -6636,11 +6636,6 @@ function _saleAsCraft(itemId, buy) {
   return { uid: pnjCraftUid++, resultId: itemId || '', time: '', quality: false,
            ingredients: [{ uid: pnjIngUid++, itemId: 'cols', qty: buy != null && buy !== '' ? buy : '' }] };
 }
-function addPnjSale() {
-  ensureAllItemsIndex();
-  pnjCrafts.push(_saleAsCraft('', ''));
-  renderPnjCrafts();
-}
 const _isSaleCraft = (c, ings) => ings.length === 1 && ings[0].id === 'cols' && !c.time && !c.quality;
 
 // ═══════════════════════════════════════════════════
@@ -6726,13 +6721,17 @@ function renderPnjCrafts() {
 
     const resDrop = makeSearchDrop(allItemsIndex, 'Résultat…', id => {
       c.resultId = id;
-      if (id && typeof ITEMS !== 'undefined' && !c.ingredients.length) {
+      if (id && typeof ITEMS !== 'undefined') {
         const entry = allItemsIndex.find(it => it.id === id);
         const item  = entry?._raw;
-        if (item?.craft?.length) {
+        let filled = false;
+        if (item?.craft?.length && !c.ingredients.length) {
           c.ingredients = item.craft.map(ing => ({ uid: pnjIngUid++, itemId: ing.id || '', qty: ing.qty || 1 }));
-          renderPnjCrafts(); // re-render only when auto-fill happened
+          filled = true;
         }
+        // Délai de craft (craft_cd) de la fiche de l'item : recopié si la case est vide
+        if (item?.craft?.length && item.craft_cd && !c.time) { c.time = String(item.craft_cd); filled = true; }
+        if (filled) renderPnjCrafts(); // re-render only when auto-fill happened
       }
       update();
     }, true);

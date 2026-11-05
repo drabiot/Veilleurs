@@ -11,6 +11,22 @@ function vclPalierLabel(p) {
   return p == 'event' ? 'Event' : p == -1 ? 'Archive' : p == 'worldboss' ? 'World Boss' : 'Palier ' + p;
 }
 
+/* Couleur « filigrane » d'un bloc de la sidebar (palier / évènement / world boss) : stable et unique par nom */
+const _WM_FIXED = { halloween: '#ff7a1a', noel: '#5ec2ff', galiath: '#e53935', kazor: '#1fa774', paques: '#f2c94c', 'saint valentin': '#ff5c9d' };
+function vclWmColor(name) {
+  const k = String(name || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  for (const [key, c] of Object.entries(_WM_FIXED)) if (k.includes(key)) return c;
+  let h = 0;
+  for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return `hsl(${(h * 137) % 360} 62% 58%)`;
+}
+function vclPalierWm(p) {
+  const cfg = (window._vcl_paliers || []).find(x => String(x.id) === String(p));
+  if (cfg && cfg.color) return cfg.color;
+  return p === 'event' ? '#e08a2e' : p === 'worldboss' ? '#d9534f' : Number(p) < 0 ? '#7d8590' : vclWmColor('palier ' + p);
+}
+const _huntLinkHtml = id => `<a class="hunt-ico" href="../Chasse/chasse.html?focus=${encodeURIComponent('items:' + id)}" title="Cet item est sur le tableau de chasse : voir sa fiche" aria-label="Sur le tableau de chasse">🎯</a>`;
+
 const sidebarTree   = document.getElementById('sidebar-tree');
 const searchInput   = document.getElementById('sidebar-search');
 const placeholder   = document.getElementById('glossary-placeholder');
@@ -559,6 +575,7 @@ function buildSidebar(items, expandAll = false) {
       /* ── Bloc Palier ── */
       const palierBlock = document.createElement('div');
       palierBlock.className = 'palier-block';
+      palierBlock.style.setProperty('--wm', vclPalierWm(palier));
 
       const ph = document.createElement('div');
       ph.className = 'palier-header' + (expandAll ? ' open' : '');
@@ -617,7 +634,7 @@ function buildSidebar(items, expandAll = false) {
             if (window.location.hash.slice(1) === item.id) link.classList.add('active'); // catégorie remplie après coup
             link.innerHTML = `
               ${itemIconHtml(item)}
-              <span class="si-name">${escHtml(item.name || '')}</span>${item.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}`;
+              <span class="si-name">${escHtml(item.name || '')}</span>${item.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}${window._vclHunt?.has(item.id) ? '<span class="hunt-dot" title="Sur le tableau de chasse">🎯</span>' : ''}`;
             link.addEventListener('click', (e) => {
               e.preventDefault();
               showItem(item.id, false);
@@ -655,8 +672,10 @@ function buildSidebar(items, expandAll = false) {
           const total = Object.values(byEvent[evName]).reduce((n, arr) => n + arr.length, 0);
           const eb = document.createElement('div');
           eb.className = 'event-block';
+          eb.style.setProperty('--wm', vclWmColor(evName));
           const eh = document.createElement('div');
           eh.className = 'event-header' + (expandAll ? ' open' : '');
+          eh.dataset.wm = (palier === 'worldboss' ? ((window.WORLDBOSS_EMOJIS || {})[evName] || '☠️') : ((window.EVENT_EMOJIS || {})[evName] || '🎊'));
           eh.innerHTML = `<span class="event-label">${escHtml(palier === 'worldboss' ? ((window.WORLDBOSS_EMOJIS || {})[evName] || '☠️') : ((window.EVENT_EMOJIS || {})[evName] || '🎊'))} ${escHtml(evName)} <span class="categorie-count">${total}</span></span><span class="categorie-arrow">▶</span>`;
           const ebody = document.createElement('div');
           ebody.className = 'event-body' + (expandAll ? ' open' : '');
@@ -1245,7 +1264,9 @@ function formatDuration(sec) {
   return rm ? `${h} h ${rm}` : `${h} h`;
 }
 
-function _statValHtml(val, unit) {
+// Stats dont la valeur négative est un BONUS (ex. Hâte = délai des capacités) : jamais en rouge
+const _NEG_IS_BONUS = new Set(['hate']);
+function _statValHtml(val, unit, statId) {
   const u = unit || '';
   let mn, mx;
   if (Array.isArray(val)) {
@@ -1258,8 +1279,10 @@ function _statValHtml(val, unit) {
   if (mn == null || mn === '') return '—';
   const mnS = `${mn}${u}`;
   const mxS = (mx != null && mx !== '' && String(mx) !== String(mn)) ? `${mx}${u}` : null;
-  if (!mxS) return `<span class="sv-single">${escHtml(mnS)}</span>`;
-  return `<span class="sv-min" title="minimum">${escHtml(mnS)}</span><span class="sv-sep">▸</span><span class="sv-max" title="maximum">${escHtml(mxS)}</span>`;
+  const bad = !_NEG_IS_BONUS.has(statId);
+  const nc = v => (bad && parseFloat(v) < 0) ? ' sv-neg' : '';
+  if (!mxS) return `<span class="sv-single${nc(mn)}">${escHtml(mnS)}</span>`;
+  return `<span class="sv-min${nc(mn)}" title="minimum">${escHtml(mnS)}</span><span class="sv-sep">▸</span><span class="sv-max${nc(mx)}" title="maximum">${escHtml(mxS)}</span>`;
 }
 
 function renderItemStats(item) {
@@ -1306,7 +1329,7 @@ function renderItemStats(item) {
         html += `<div class="stat-row" style="--sc:${sc}">
           <span class="stat-row-icon">${escHtml(statDef.icon)}</span>
           <span class="stat-row-label">${escHtml(statDef.label)}</span>
-          <span class="stat-row-value">${_statValHtml(stats[statDef.id], statDef.unit)}</span>
+          <span class="stat-row-value">${_statValHtml(stats[statDef.id], statDef.unit, statDef.id)}</span>
         </div>`;
       }
     });
@@ -1554,7 +1577,8 @@ function renderSetSection(item) {
       const display = Array.isArray(val)
         ? `${sg(val[0])}–${val[1]}${unit}`
         : `${sg(val)}${unit}`;
-      return `<div>${escHtml(label)} <span class="set-bonus-val" style="color:${color};">${display}</span></div>`;
+      const _neg = !_NEG_IS_BONUS.has(statId) && (Array.isArray(val) ? parseFloat(val[0]) : parseFloat(val)) < 0;
+      return `<div>${escHtml(label)} <span class="set-bonus-val" style="color:${_neg ? '#ff5a5a' : color};">${display}</span></div>`;
     }).join('');
     return `<tr>
       <td class="set-bonus-pieces" style="color:${color};">${count} pièce${count > 1 ? 's' : ''}</td>
@@ -1682,7 +1706,7 @@ function showItem(id, initialQuality = false) {
           ${slideshowControls}
         </div>
         <div class="item-info">
-          <h2 class="item-name" id="item-name-text">${escHtml(d.name || item.name)}${item.sensible ? ' <span style="font-size:13px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}</h2>
+          <h2 class="item-name" id="item-name-text">${escHtml(d.name || item.name)}${window._vclHunt?.has(item.id) ? ' ' + _huntLinkHtml(item.id) : ''}${item.sensible ? ' <span style="font-size:13px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}</h2>
           <div class="item-rarity-badge" style="color:${color}; border-color:${color};">
             <span class="item-rarity-dot" style="background:${color};"></span>
             ${rlabel}

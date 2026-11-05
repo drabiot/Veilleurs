@@ -1403,6 +1403,14 @@ function renderPNJSheet(pnj) {
       <p class="mob-lore" style="font-style:normal;margin:0;">${escHtml(pnj.instructions).replace(/\n/g,'<br>')}</p>
     </div>` : '';
 
+  // Coordonnées toujours affichées ; le clic ouvre la carte sur le PNJ
+  const _pc = pnj.coords;
+  const pnjCoordsHtml = (_pc && _pc.x != null && !pnj.sensible) ? `
+            <div class="mob-meta-item">
+              <span class="mob-meta-key">Coordonnées</span>
+              <span class="mob-meta-val"><a class="region-link" href="../Map/map.html?pnjId=${encodeURIComponent(pnj.id)}" title="Voir sur la carte">📍 ${escHtml([_pc.x, _pc.y, _pc.z].filter(v => v != null && v !== '').join(', '))}</a></span>
+            </div>` : '';
+
   modalContent.innerHTML = `
     <div class="mob-sheet">
       <div class="mob-header">
@@ -1427,11 +1435,9 @@ function renderPNJSheet(pnj) {
             ${pnj.region ? `
             <div class="mob-meta-item">
               <span class="mob-meta-key">Région</span>
-              <span class="mob-meta-val">
-                ${escHtml(getRegionLabel(pnj.region))}
-                ${(pnj.coords && !pnj.sensible) ? `<a class="region-link" href="../Map/map.html?pnjId=${encodeURIComponent(pnj.id)}">→ Carte</a>` : ''}
-              </span>
+              <span class="mob-meta-val">${escHtml(getRegionLabel(pnj.region))}</span>
             </div>` : ''}
+            ${pnjCoordsHtml}
           </div>
         </div>
       </div>

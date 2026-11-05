@@ -296,6 +296,15 @@
           <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Commentaire <span style="opacity:.6">(optionnel)</span></label>
           <textarea id="publish-comment-inp" class="modal-ta" style="min-height:80px" maxlength="500" placeholder="Explique ton build : style de jeu, points forts, conseils…"></textarea>
         </div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <label for="publish-type-sel" style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Type de build <span style="opacity:.6">(optionnel)</span></label>
+          <select id="publish-type-sel" class="modal-ta" style="min-height:0; padding:6px 8px;">
+            <option value="">— Non précisé —</option>
+            <option value="pve">PvE</option>
+            <option value="pvp">PvP</option>
+            <option value="mixte">Mixte</option>
+          </select>
+        </div>
         <label class="export-secret-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
           <input type="checkbox" id="chk-publish-unlisted" />
           <span style="font-size:12px;">Lien uniquement — non répertorié dans le forum</span>

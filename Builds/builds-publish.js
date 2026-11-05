@@ -82,6 +82,7 @@ export async function publishBuild({ payload, stats, visibility, auth }) {
     sensibleSlots:  payload.sensibleSlots || {},   // { slotId: true } — marqueur only
     skillNodes:     Array.isArray(payload.skillNodes) ? payload.skillNodes : [],
     titre:          payload.titre || '',
+    buildType:      ['pve','pvp','mixte'].includes(payload.buildType) ? payload.buildType : '',
     comment:        String(payload.comment || '').trim().slice(0, 500),
     statsSnapshot:  statsSnapshot,
     previewCount:   0,

@@ -140,10 +140,20 @@ async function _renameItemReferences(oldId, newId, opts = {}) {
     if (opts.npcText && typeof v === 'string' && (v.includes(`[npc:${oldId}|`) || v.includes(`[npc:${oldId}]`))) {
       return { v: v.split(`[npc:${oldId}|`).join(`[npc:${newId}|`).split(`[npc:${oldId}]`).join(`[npc:${newId}]`), c: true };
     }
+    // Liens dans les textes (obtain, lore…) : [id|Nom], [item:id|Nom], [item:id]
+    if (!opts.npcText && typeof v === 'string' && v.includes(oldId)) {
+      let t = v;
+      for (const pre of ['[', '[item:']) for (const suf of ['|', ']']) t = t.split(pre + oldId + suf).join(pre + newId + suf);
+      if (t !== v) return { v: t, c: true };
+    }
     if (Array.isArray(v)) { let c = false; const o = v.map(x => { const r = deepRep(x); if (r.c) c = true; return r.v; }); return { v: o, c }; }
     if (v && typeof v === 'object' && typeof v.toMillis !== 'function') {
       let c = false; const o = {};
-      for (const [k, x] of Object.entries(v)) { const r = deepRep(x); if (r.c) c = true; o[k] = r.v; }
+      for (const [k, x] of Object.entries(v)) {
+        const r = deepRep(x); if (r.c) c = true;
+        // objet indexé par ID d'item (ex. { ancien_id: 3 })
+        if (k === oldId && !(newId in v)) { o[newId] = r.v; c = true; } else o[k] = r.v;
+      }
       return { v: o, c };
     }
     return { v, c: false };

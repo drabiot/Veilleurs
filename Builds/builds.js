@@ -9,6 +9,7 @@
     } from '../d1db.js';
     import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
     import { store } from '../store.js';
+    import { loadMaxLevel } from '../config-loader.js';
 
     logPageView('builds');
 
@@ -114,7 +115,8 @@
     _setupDragReorder();
 
     // Charger le niveau max depuis window si disponible
-    const maxLvl = window.MAX_LEVEL || 30;
+    const maxLvl = await loadMaxLevel(db, getDoc, doc);
+    window.MAX_LEVEL = maxLvl;
     document.getElementById('filter-level').max = maxLvl;
     document.getElementById('filter-level').value = maxLvl;
     _syncRange(document.getElementById('filter-level'));
@@ -487,6 +489,21 @@
       } finally { btn.disabled = false; }
     }
 
+    async function _handleCycleType(id) {
+      const b = allBuilds.find(x => x._id === id) || (shownBuilds || []).find(x => x._id === id);
+      if (!b) return;
+      const order = ['', 'pve', 'pvp', 'mixte'];
+      const buildType = order[(order.indexOf(b.buildType || '') + 1) % order.length];
+      try {
+        await updateDoc(doc(db, COL_BUILDS, id), { buildType, updatedAt: serverTimestamp() });
+        b.buildType = buildType;
+        _renderBuilds(allBuilds);
+      } catch (e) {
+        console.error('[builds] type:', e);
+        alert('Modification impossible : ' + (e.message || e));
+      }
+    }
+
     async function _handleRename(id) {
       const b = allBuilds.find(x => x._id === id) || (shownBuilds || []).find(x => x._id === id);
       if (!b) return;
@@ -560,11 +577,13 @@
       const id = escHtml(b._id);
       const menuItems = [
         _canReorder() ? `<button type="button" role="menuitem" data-action="move-prev" data-id="${id}">◀ Déplacer avant</button><button type="button" role="menuitem" data-action="move-next" data-id="${id}">▶ Déplacer après</button>` : '',
-        (isOwn || isAdm) ? `<button type="button" role="menuitem" data-action="rename" data-id="${id}">✎ Renommer</button><button type="button" role="menuitem" data-action="comment" data-id="${id}">💬 Modifier le commentaire</button>` : '',
+        (isOwn || isAdm) ? `<button type="button" role="menuitem" data-action="rename" data-id="${id}">✎ Renommer</button><button type="button" role="menuitem" data-action="comment" data-id="${id}">💬 Modifier le commentaire</button><button type="button" role="menuitem" data-action="buildtype" data-id="${id}">⚔ Type : ${b.buildType === 'pve' ? 'PvE → PvP' : b.buildType === 'pvp' ? 'PvP → Mixte' : b.buildType === 'mixte' ? 'Mixte → aucun' : 'aucun → PvE'}</button>` : '',
         canDel ? `<button type="button" role="menuitem" class="danger" data-action="delete" data-id="${id}">✕ ${isAdm && !isOwn ? 'Supprimer (modération)' : 'Supprimer'}</button>` : '',
       ].join('');
 
       const unlistedBadge = (b.visibility === 'unlisted') ? `<span class="bc-unlisted-badge">🔗 Lien uniquement</span>` : '';
+      const _BT = { pve: ['PvE', 'pve'], pvp: ['PvP', 'pvp'], mixte: ['Mixte', 'mixte'] }[b.buildType];
+      const typeBadge     = _BT ? `<span class="bc-type-badge bc-type-${_BT[1]}">${_BT[0]}</span>` : '';
       const adminBadge    = (!isOwn && isAdm) ? `<span class="bc-admin-badge">⬡ admin</span>` : '';
 
       return `
@@ -578,7 +597,7 @@
           </div>
           <div class="bc-meta">
             <span class="bc-author">👤 ${escHtml(b.authorPseudo || 'Anonyme')}</span>
-            ${unlistedBadge}${adminBadge}
+            ${typeBadge}${unlistedBadge}${adminBadge}
           </div>
           <div class="bc-mannequin-wrap">
             <div class="bc-mannequin-row">
@@ -621,6 +640,7 @@
           if (action === 'delete')  _handleDelete(id);
           if (action === 'rename')  _handleRename(id);
           if (action === 'comment') _handleEditComment(id);
+          if (action === 'buildtype') _handleCycleType(id);
           if (action === 'skills')  _handleSkills(id);
           if (action === 'share')   _handleShare(id);
           if (action === 'compare') _toggleCompare(id, this);

@@ -448,4 +448,22 @@ async function sendInfo() {
   }
   render();
   if (state.user && hasRole(state.user.role, 'admin')) { state.admin = true; initComposer(); render(); }
+  focusFromUrl();
 })();
+
+// ?focus=items:ID (lien 🎯 du compendium) : montre l'avis de cette fiche, défile jusqu'à lui et le met en évidence
+function focusFromUrl() {
+  const f = new URLSearchParams(location.search).get('focus');
+  if (!f) return;
+  const [mode, ...rest] = f.split(':');
+  const id = rest.join(':');
+  const a = state.avis.find(x => x.mode === mode && x.id === id);
+  if (!a) return;
+  state.kind = ''; state.mode = ''; state.palier = ''; state.q = '';
+  render();
+  const el = [...document.querySelectorAll('.avis')].find(n => n.dataset.key === a.key);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.add('focus-hit');
+  setTimeout(() => el.classList.remove('focus-hit'), 4000);
+}

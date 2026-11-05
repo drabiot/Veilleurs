@@ -2405,6 +2405,7 @@ function loadAccessoriesForClass(classId) {
     document.getElementById('publish-error').style.display = 'none';
     document.getElementById('chk-publish-unlisted').checked = false;
     document.getElementById('publish-comment-inp').value = '';
+    document.getElementById('publish-type-sel').value = '';
     document.getElementById('modal-title').textContent = '◈ Publier le Build';
     openModal('publish');
   });
@@ -2431,6 +2432,7 @@ function loadAccessoriesForClass(classId) {
       const payload = _buildPublishPayload();
       payload.name = name;
       payload.comment = document.getElementById('publish-comment-inp').value.trim();
+      payload.buildType = document.getElementById('publish-type-sel').value;
       const stats = computeStats();
       const { publishBuild } = await import('../Builds/builds-publish.js');
       const buildId = await publishBuild({ payload, stats, visibility, auth: window._auth });

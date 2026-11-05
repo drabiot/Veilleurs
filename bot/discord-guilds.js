@@ -49,8 +49,11 @@ async function refreshItems(since) {
   Object.assign(fetched, { rev: j.rev, full: since === 0, deleted: j.deleted || [] });
 }
 // Empreinte stable : clés triées, sans identifiants (un même item lu de deux façons donne la même empreinte)
-const stable = it => JSON.stringify(Object.fromEntries(Object.entries(it).filter(([k]) => k !== '_id' && k !== 'id').sort(([a], [b]) => (a < b ? -1 : 1))));
-const hashOf = x => crypto.createHash('sha1').update(Array.isArray(x) ? x.map(stable).join('|') : stable(x)).digest('base64').slice(0, 12);
+// Les champs de gestion (ordre d'affichage, contributeurs, dates de mise à jour…) ne changent rien au post : sans eux, un simple
+// réordonnancement ou une mise à jour de contributeur ne renvoyait plus l'item. Préfixe « v2: » = empreinte version 2.
+const META_KEYS = new Set(['id', 'ordre', 'order', 'updatedAt', 'createdAt', 'contributors', 'contributor', 'rev', 'sensible']);
+const stable = it => JSON.stringify(Object.fromEntries(Object.entries(it).filter(([k, v]) => !k.startsWith('_') && !META_KEYS.has(k) && v != null).sort(([a], [b]) => (a < b ? -1 : 1))));
+const hashOf = x => 'v2:' + crypto.createHash('sha1').update(Array.isArray(x) ? x.map(stable).join('|') : stable(x)).digest('base64').slice(0, 12);
 
 /** Salon d'un serveur qui reçoit cet item (le plus précis gagne) ; null = non concerné. */
 function route(cfg, it) {
@@ -121,7 +124,10 @@ function plan(cfg, st, itemMap, full = true, deleted = [], gate = null) {
     const e = st.posts[u.key];
     if (!e) { if (u.items.some(i => !st.seen[i._id] || approved(i))) todo.push({ ...u }); continue; }
     if (e.channelId !== u.ch.id) todo.push({ ...u, old: e });          // règle changée : déplacé
-    else if (e.h !== u.h) { if (cfg.replace !== false) todo.push({ ...u, old: e }); else hashFix.push([u.key, u.h]); } // item déjà posté puis modifié : toujours remplacé (le filtre ne concerne que les NOUVEAUX items)
+    else if (e.h !== u.h) { // item déjà posté puis modifié : remplacé (le filtre « nouveaux seulement » ne concerne que les NOUVEAUX items)
+      if (!String(e.h).startsWith('v2:') || cfg.replace === false) hashFix.push([u.key, u.h]); // ancienne empreinte : mise à jour sans renvoi
+      else todo.push({ ...u, old: e });
+    }
   }
   // supprimé du wiki : tous les items du post absents de la lecture complète, ou tous listés comme supprimés (lecture incrémentale)
   for (const [key, e] of Object.entries(st.posts)) {
