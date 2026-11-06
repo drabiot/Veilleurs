@@ -88,7 +88,6 @@
     <button class="filter-btn" id="btn-region-order"   onclick="showRegionOrder()">📍 Régions</button>
     <button class="filter-btn" id="btn-quest-order"    onclick="showQuestOrder()">📜 Quêtes</button>
     <button class="filter-btn" id="btn-panoplie-order" onclick="showPanoplieOrder()">🔗 Panoplies</button>
-    <button class="filter-btn" id="btn-api-items"          data-min-role="admin" onclick="showApiItems()">🔌 API</button>
     </div>
     <button class="filter-btn" id="btn-map-hub" onclick="showMapHub()">🗺️ Carte</button>
     <div id="map-legacy-btns" style="display:none;">
@@ -208,18 +207,6 @@
     <div id="audit-log-more" style="display:none;text-align:center;margin-top:12px;">
       <button class="btn btn-ghost" onclick="loadAuditLogMore()" style="font-size:12px;">Charger plus…</button>
     </div>
-  </main>
-
-  <!-- Panneau API (items SAO) -->
-  <main class="main" id="api-items-panel" style="display:none;overflow-y:auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <span style="font-size:15px;font-weight:700;">🔌 Items de l'API SAO</span>
-    </div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">
-      Compare chaque item de l'API avec le wiki : importe les nouveaux, ou corrige un item existant champ par champ (API ou wiki).
-      Les doublons sont détectés par nom (accents/apostrophes ignorés) puis par lien API↔wiki mémorisé.
-    </p>
-    <div id="api-items-body"><div class="empty">Chargement…</div></div>
   </main>
 
   <!-- Panneau Ordre des mobs -->

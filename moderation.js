@@ -324,7 +324,6 @@ const HASH_PANELS = {
   'bugs-connus':          () => showBugsConnus(),
   'reports':              () => showReports(),
   'translations':         () => showTranslations(),
-  'api-items':            () => showApiItems(),
   'config':               () => showConfigHub(),
 };
 
@@ -441,7 +440,6 @@ const NAV_HUBS = [
         { hash: 'panoplie-order', label: '🔗 Panoplies', btn: 'btn-panoplie-order', panel: 'panoplie-order-panel', fn: () => showPanoplieOrder() },
       ]},
       { label: 'Source externe', tabs: [
-        { hash: 'api-items', label: '🔌 API', btn: 'btn-api-items', panel: 'api-items-panel', fn: () => showApiItems() },
       ]},
     ]},
   { key: 'map', btn: 'btn-map-hub', badge: null, legacy: 'map-legacy-btns', def: 'map',
@@ -873,23 +871,6 @@ _lazyPanel(() => import('./moderation-bugs.js?v=0490d991'), ['showBugsConnus', '
 
 _lazyPanel(() => import('./moderation-reports.js?v=68d997e3'), ['showReports', '_loadReports', 'repFilter', 'repReply', 'repClose', 'repCat', 'repDelete']);
 _lazyPanel(() => import('./moderation-translations.js?v=7dc401a8'), ['showTranslations', '_loadTranslations', 'trDecide', 'trAcceptAll', 'trSetStatus', 'trSearch', 'trExport', 'trClean']);
-
-// ══════════════════════════════════════════════════════
-//  ONGLET API (items SAO) — logique dans moderation-api-items.js
-// ══════════════════════════════════════════════════════
-let _apiItemsTool = null;
-window.showApiItems = async function showApiItems() {
-  _setHash('api-items');
-  _showPanel('api-items-panel', 'btn-api-items');
-  const { createApiItemsTool } = await import('./moderation-api-items.js?v=836e72a6');
-  _apiItemsTool ??= createApiItemsTool({
-    db, doc, setDoc, updateDoc, getDoc, writeBatch, serverTimestamp, deleteField,
-    cachedDocs, invalidateModCache, store, COL, toast, modal,
-    writeAudit: _writeAudit, mergeContributors: _mergeContributors, readContribs: _readContribs,
-    getUser: () => ({ uid: currentUser?.uid, name: _userNames.get(currentUser?.uid) || currentUser?.email }),
-  });
-  await _apiItemsTool.show();
-};
 
 // Couche « qualité des données » : observe les onglets-listes dès le chargement, donc importée tout de suite (et non au premier clic)
 import('./moderation-dq.js?v=645050de').then(m => m.init(_getPanelCtx())).catch(e => console.warn('[mod] couche qualité indisponible', e));
