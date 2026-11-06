@@ -593,18 +593,47 @@ function _edRenderStarBar() {
   const el = document.getElementById('editor-stars');
   if (!el) return;
   if (!_edStarsOn()) { el.style.display = 'none'; el.innerHTML = ''; return; }
-  const lv = _ed.starLevel || 0;
+  const own = _edOwnStar();                                   // niveau d'étoile de la fiche elle-même (champ star)
+  const lv = _ed.starLevel > 0 ? _ed.starLevel : own;         // niveau affiché
   const btn = (i, label, active, lit, has, title) =>
-    `<button type="button" onclick="edSetStar(${i})" title="${title}" role="radio" aria-checked="${active}" style="width:30px;height:28px;padding:0;cursor:pointer;border-radius:5px;border:1px solid ${active ? (i ? '#f5b301' : '#ff5a5a') : 'var(--border)'};background:${active ? (i ? 'rgba(245,179,1,.15)' : 'rgba(255,90,90,.15)') : 'transparent'};color:${i === 0 ? (active ? '#ff5a5a' : 'var(--muted)') : (lit ? '#f5b301' : 'var(--muted)')};font-size:${i ? 17 : 13}px;line-height:1;position:relative;">${label}${has ? '<span style="position:absolute;bottom:2px;left:50%;margin-left:-2px;width:4px;height:4px;border-radius:50%;background:#f5b301;"></span>' : ''}</button>`;
+    `<button type="button" onclick="edStarClick(${i})" title="${title}" role="radio" aria-checked="${active}" style="width:30px;height:28px;padding:0;cursor:pointer;border-radius:5px;border:1px solid ${active ? (i ? '#f5b301' : '#ff5a5a') : 'var(--border)'};background:${active ? (i ? 'rgba(245,179,1,.15)' : 'rgba(255,90,90,.15)') : 'transparent'};color:${i === 0 ? (active ? '#ff5a5a' : 'var(--muted)') : (lit ? '#f5b301' : 'var(--muted)')};font-size:${i ? 17 : 13}px;line-height:1;position:relative;">${label}${has ? '<span style="position:absolute;bottom:2px;left:50%;margin-left:-2px;width:4px;height:4px;border-radius:50%;background:#f5b301;"></span>' : ''}</button>`;
   let html = btn(0, '✕', lv === 0, false, false, 'Niveau 0 : item de base');
   for (let i = 1; i <= _ED_STAR_MAX; i++) {
     const has = _ed.starDeltas[i] && Object.keys(_ed.starDeltas[i]).length;
     html += btn(i, i <= lv ? '★' : '☆', i === lv, i <= lv, has, `Étoile ${i}${has ? ' (champs modifiés)' : ''}`);
   }
-  if (lv > 0) html += `<span style="font-size:11px;color:var(--muted);margin-left:6px;max-width:260px;line-height:1.25;">Seules les différences avec le niveau ${lv - 1 || 'de base'} sont enregistrées (id, palier, catégorie et images : item de base).</span>`;
+  if (_ed.starLevel > 0) html += `<span style="font-size:11px;color:var(--muted);margin-left:6px;max-width:260px;line-height:1.25;">Seules les différences avec le niveau ${_ed.starLevel - 1 || 'de base'} sont enregistrées (id, palier, catégorie et images : item de base).</span>`;
   el.innerHTML = html;
   el.style.display = 'flex';
 }
+
+function _edOwnStar() { const n = +_ed.origData?.star; return n >= 1 && n <= _ED_STAR_MAX ? n : 0; }
+
+// Fiches du même item : même nom (accents/casse ignorés), id identique au palier près (…_p1 / …_p2)
+async function _edFamily() {
+  const stem = id => String(id).replace(/(_p\d+|_event|_archive)$/, '');
+  const key = (id, name) => stem(id) + '|' + normalize(String(name || ''));
+  const me = key(_ed.id, _ed.origData?.name);
+  const all = await cachedDocs('items').catch(() => []);
+  return all.filter(m => key(m.id || m._id, m.name) === me).map(m => ({ ...m, id: m.id || m._id }));
+}
+
+// Clic sur une étoile de la barre : niveau de cette fiche → surcharge dans la fiche ; niveau d'une autre fiche liée → on ouvre cette fiche
+window.edStarClick = async function(i) {
+  if (!_edStarsOn()) return;
+  const own = _edOwnStar();
+  const cur = _ed.starLevel > 0 ? _ed.starLevel : own;
+  if (i === cur) return;
+  if (i === 0 ? own === 0 : !!(_ed.starDeltas && _ed.starDeltas[i])) { window.edSetStar(i); return; }
+  const fam = await _edFamily();
+  const lvlOf = m => (+m.star > 0 ? +m.star : 0);
+  const byOwn = fam.find(m => m.id !== _ed.id && lvlOf(m) === i);
+  if (byOwn) { await window.showEditor('items', byOwn.id, null, _ed.origin); return; }
+  const ov = fam.find(m => m.id !== _ed.id && m.stars && m.stars[i]);
+  if (ov) { await window.showEditor('items', ov.id, null, _ed.origin); window.edSetStar(i); return; }
+  if (own === 0 && i > 0) { window.edSetStar(i); return; }   // fiche de base : nouveau niveau dans la fiche
+  toast(`Aucune fiche pour ce niveau d'étoile.`, 'info', 3500);
+};
 
 window.edSetStar = function(n) {
   n = Math.max(0, Math.min(_ED_STAR_MAX, +n || 0));
