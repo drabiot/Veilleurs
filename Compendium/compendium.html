@@ -50,7 +50,7 @@
         <a href="../index.html" class="header-logo">Veilleurs au Clair de Lune</a>
       </div>
       <div class="header-right">
-        <a href="../creator.html?mode=item" class="btn-add-item">+ Ajouter un Item</a>
+        <a href="../creator.html?mode=item" class="btn-add-item">Accéder au Creator</a>
       </div>
     </div>
     <nav class="header-nav">
@@ -147,6 +147,20 @@
     } catch (err) {
       console.warn('[Compendium] complétion indisponible :', err);
     }
+    // Stats dont le négatif est un bonus (config/game.negBonusStats, réglé dans la modération) + items du tableau de chasse (🎯)
+    try {
+      const g = await getDoc(doc(db, 'config', 'game'));
+      if (g.exists() && Array.isArray(g.data().negBonusStats)) {
+        _NEG_IS_BONUS.clear(); g.data().negBonusStats.forEach(s => _NEG_IS_BONUS.add(s));
+      }
+    } catch (err) { console.warn('[Compendium] config/game illisible :', err); }
+    window._vclHunt = new Set();
+    try {
+      const snap = await getDoc(doc(db, 'config', 'tableau_de_chasse'));
+      const t = snap.exists() ? snap.data() : {};
+      (t.items || []).filter(Boolean).forEach(id => window._vclHunt.add(id));
+      (Array.isArray(t.avis) ? t.avis : []).forEach(a => { if (a && a.mode === 'items' && a.kind === 'update' && a.docId) window._vclHunt.add(a.docId); });
+    } catch (err) { console.warn('[Compendium] tableau de chasse illisible :', err); }
     window._pageInit?.();
 
   </script>

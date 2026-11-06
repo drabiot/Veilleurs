@@ -11,19 +11,53 @@ function vclPalierLabel(p) {
   return p == 'event' ? 'Event' : p == -1 ? 'Archive' : p == 'worldboss' ? 'World Boss' : 'Palier ' + p;
 }
 
-/* Couleur « filigrane » d'un bloc de la sidebar (palier / évènement / world boss) : stable et unique par nom */
-const _WM_FIXED = { halloween: '#ff7a1a', noel: '#5ec2ff', galiath: '#e53935', kazor: '#1fa774', paques: '#f2c94c', 'saint valentin': '#ff5c9d' };
+/* Couleur « filigrane » d'un bloc de la sidebar (évènement / world boss) — attribuée automatiquement, sans réglage :
+   · palette de tons sourdus, assez éloignés les uns des autres pour qu'on ne confonde pas deux blocs voisins ;
+   · mots-clés connus (Halloween → orange, Noël → bleu glacé…) : couleur « parlante », jamais déplacée ;
+   · tout nouveau nom reçoit une teinte stable (empreinte du nom) et, si elle est déjà prise, la suivante libre.
+   Les couleurs ne changent que si deux noms se disputent la même teinte. */
+const _WM_PALETTE = ['#d9822b', '#5a9fd4', '#c75d5d', '#4fae8a', '#9b78c9', '#c9a24d', '#d4789a', '#5fb0b7', '#8ea854', '#b5805a', '#7d90d0', '#b96fb8'];
+const _WM_KEYWORDS = [   // testés sur le nom sans accents, en minuscules
+  [/halloween|toussaint|citrouille/, 0], [/\bnoel\b|hiver|christmas|neige/, 1], [/galiath|golem|volcan|diable|demon/, 2],
+  [/kazor|foret|printemps|elfe/, 3], [/mystique|magie|\bnuit\b|\blune\b|ombre/, 4], [/paques|soleil|\bete\b/, 5],
+  [/valentin|amour|coeur/, 6], [/glace|\bmer\b|ocean|\beau\b|poisson/, 7], [/automne|recolte/, 8], [/carnaval|\bfete\b|anniversaire/, 11],
+];
+const _wmNorm = n => String(n || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const _wmHash = k => { let h = 5381; for (const ch of k) h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0; return h; };
+let _wmMap = new Map();
+function vclAssignWm(names) {
+  const list = [...new Set(names)].sort((a, b) => a.localeCompare(b, 'fr'));
+  const used = new Set(), map = new Map();
+  for (const n of list) { // 1) mots-clés : couleur parlante
+    const k = _wmNorm(n), hit = _WM_KEYWORDS.find(([re, idx]) => re.test(k) && !used.has(idx));
+    if (hit) { map.set(n, _WM_PALETTE[hit[1]]); used.add(hit[1]); }
+  }
+  for (const n of list) { // 2) le reste : teinte d'après le nom, prochaine libre si prise (au-delà de la palette : on réutilise)
+    if (map.has(n)) continue;
+    let idx = _wmHash(_wmNorm(n)) % _WM_PALETTE.length, tries = 0;
+    while (used.has(idx) && tries++ < _WM_PALETTE.length) idx = (idx + 1) % _WM_PALETTE.length;
+    if (used.size >= _WM_PALETTE.length) used.clear();
+    map.set(n, _WM_PALETTE[idx]); used.add(idx);
+  }
+  _wmMap = map;
+}
 function vclWmColor(name) {
-  const k = String(name || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-  for (const [key, c] of Object.entries(_WM_FIXED)) if (k.includes(key)) return c;
-  let h = 0;
-  for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return `hsl(${(h * 137) % 360} 62% 58%)`;
+  return _wmMap.get(name) || _WM_PALETTE[_wmHash(_wmNorm(name)) % _WM_PALETTE.length];
 }
 function vclPalierWm(p) {
   const cfg = (window._vcl_paliers || []).find(x => String(x.id) === String(p));
   if (cfg && cfg.color) return cfg.color;
-  return p === 'event' ? '#e08a2e' : p === 'worldboss' ? '#d9534f' : Number(p) < 0 ? '#7d8590' : vclWmColor('palier ' + p);
+  return p === 'event' ? '#e08a2e' : p === 'worldboss' ? '#d9534f' : Number(p) < 0 ? '#7d8590' : _WM_PALETTE[(Math.abs(parseInt(p, 10)) || 0) % _WM_PALETTE.length];
+}
+/* 🎯 « info manquante » : à chaque endroit de la fiche où une donnée requise est vide (champs requis = modération → Qualité).
+   Lien : l'avis de la Chasse si l'item y figure, sinon la page Chasse. */
+function _missMark(item, field, label, cls = '') {
+  const href = window._vclHunt?.has(item.id) ? `../Chasse/chasse.html?focus=${encodeURIComponent('items:' + item.id)}` : '../Chasse/chasse.html';
+  return `<a class="miss-hunt ${cls}" href="${href}" title="Info manquante : ${escHtml(label)}. Voir le tableau de chasse">🎯<span>${escHtml(label)} à compléter</span></a>`;
+}
+/* « À chasser » = l'item figure sur le tableau de chasse (config/tableau_de_chasse). Un champ vide seul n'affiche jamais de 🎯. */
+function isToHunt(item) {
+  return !!item && !_hiddenQualityItem(item) && !!window._vclHunt?.has(item.id);
 }
 const _huntLinkHtml = id => `<a class="hunt-ico" href="../Chasse/chasse.html?focus=${encodeURIComponent('items:' + id)}" title="Cet item est sur le tableau de chasse : voir sa fiche" aria-label="Sur le tableau de chasse">🎯</a>`;
 
@@ -119,21 +153,23 @@ function buildSidebarAlpha(items) {
    Une ligne « Filtres » repliée sous les boutons de tri ; le panneau ne propose que des choix utiles
    (valeurs présentes dans la recherche en cours, avec leur nombre d'items) et les filtres actifs restent visibles en pastilles.
 ══════════════════════════════════ */
-const filters = { category: null, rarity: null, palier: null };
-const FILTER_LABELS = { category: 'Catégorie', rarity: 'Rareté', palier: 'Palier' };
+const filters = { category: null, rarity: null, palier: null, hunt: null };   // hunt : seulement les items du tableau de chasse 🎯
+const FILTER_LABELS = { category: 'Catégorie', rarity: 'Rareté', palier: 'Palier', hunt: 'Chasse' };
 const sidebarFilters = document.getElementById('sidebar-filters');
 
-const filterKeyOf = (it, k) => (k === 'palier' ? String(it.palier ?? 1) : String(it[k] ?? ''));
+const filterKeyOf = (it, k) => (k === 'palier' ? String(it.palier ?? 1) : k === 'hunt' ? (isToHunt(it) ? '1' : '') : String(it[k] ?? ''));
 const anyFilterActive = () => Object.values(filters).some(Boolean);
 const passesFilters = (it, skip) => Object.keys(filters).every(k => k === skip || !filters[k] || filterKeyOf(it, k) === String(filters[k]));
 function filterValueLabel(k, v) {
   if (k === 'category') return catData(v).label;
+  if (k === 'hunt')     return '🎯 À chasser';
   if (k === 'rarity')   return rarityLabel(v);
   return vclPalierLabel(isNaN(+v) ? v : +v);
 }
 const palierRank = p => (p == -1 ? 3 : p == 'event' ? 2 : p == 'worldboss' ? 1 : 0);
 
 function filterOptionOrder(k, values) {
+  if (k === 'hunt')     return values;
   if (k === 'category') return values.sort((a, b) => ((CATEGORIES[a] && CATEGORIES[a].ordre) ?? 999) - ((CATEGORIES[b] && CATEGORIES[b].ordre) ?? 999));
   if (k === 'rarity')   return values.sort((a, b) => rarityRank(a) - rarityRank(b));
   return values.sort((a, b) => palierRank(a) - palierRank(b) || (Number(a) - Number(b) || 0));
@@ -152,7 +188,7 @@ function renderFilters() {
     const counts = new Map();
     base.filter(it => passesFilters(it, k)).forEach(it => { const v = filterKeyOf(it, k); if (v) counts.set(v, (counts.get(v) || 0) + 1); });
     if (filters[k] && !counts.has(String(filters[k]))) counts.set(String(filters[k]), 0);
-    if (counts.size < 2 && !filters[k]) continue;   // un seul choix possible : rien à filtrer, on ne l'affiche pas
+    if (counts.size < (k === 'hunt' ? 1 : 2) && !filters[k]) continue;   // un seul choix possible : rien à filtrer, on ne l'affiche pas
     html += `<div class="sf-group"><div class="sf-title">${FILTER_LABELS[k]}</div><div class="sf-opts">`
       + filterOptionOrder(k, [...counts.keys()]).map(v => {
         const on = String(filters[k]) === v;
@@ -360,6 +396,19 @@ function rarityRank(key) {
 
 // Index O(1) pour les lookups d'items (peuplé dans initCompendium après Firestore).
 const ITEMS_BY_ID = new Map();
+// Référence à un niveau d'étoile défini dans la fiche : « id@n » (ex. epee_du_tutoriel_p1@1). get/has la résolvent vers la fiche + surcharges 1…n ;
+// showItem('id@n') ouvre la fiche au bon niveau.
+{
+  const _g = Map.prototype.get.bind(ITEMS_BY_ID), _h = Map.prototype.has.bind(ITEMS_BY_ID);
+  const _split = k => { const m = typeof k === 'string' ? k.match(/^(.+)@([1-5])$/) : null; return m && _h(m[1]) ? [m[1], +m[2]] : null; };
+  ITEMS_BY_ID.get = k => {
+    const v = _g(k); if (v !== undefined) return v;
+    const sp = _split(k); if (!sp) return undefined;
+    const b = _g(sp[0]); const o = applyStars(b, sp[1]);
+    return { ...o, id: k, name: (b.name || sp[0]) + ' ' + '★'.repeat(sp[1]), star: sp[1] };
+  };
+  ITEMS_BY_ID.has = k => _h(k) || !!_split(k);
+}
 const CRAFTED_BY = new Map();
 
 function rarityColor(rarityKey) {
@@ -562,11 +611,32 @@ function groupItems(items) {
 const _lazyFill = new Map();
 function ensureSidebarItem(id) { _lazyFill.get(id)?.(); }
 
+// La liste de gauche suit toujours la fiche affichée : on déplie son palier / sa catégorie (rendu paresseux compris), on la surligne et on la ramène dans la vue.
+// Valable pour tous les changements de fiche (étoiles, liens de craft, historique…), pas seulement les clics dans la liste.
+function revealInSidebar(id, activeDataId = id) {
+  ensureSidebarItem(id);
+  let target = null;
+  document.querySelectorAll('.sidebar-item').forEach(el => {
+    const on = el.dataset.id === activeDataId;
+    el.classList.toggle('active', on);
+    if (on) target = el;
+  });
+  if (!target) return;
+  for (const sel of ['.palier-body', '.categorie-body']) {
+    const body = target.closest(sel);
+    body?.classList.add('open');
+    body?.previousElementSibling?.classList.add('open');
+  }
+  requestAnimationFrame(() => target.scrollIntoView({ block: 'nearest' }));
+}
+
 function buildSidebar(items, expandAll = false) {
   if (currentSort === 'alpha') { buildSidebarAlpha(items); return; }
   sidebarTree.innerHTML = '';
   _lazyFill.clear();
   const grouped = groupItems(items);
+  // Couleurs des évènements / world boss : attribuées d'un coup pour qu'aucun voisin ne partage la même
+  vclAssignWm(items.filter(it => it.palier === 'event' || it.palier === 'worldboss').map(it => (typeof it.event === 'string' && it.event) || 'Autres'));
 
   Object.keys(grouped)
     .sort((a, b) => { const r = (p => p == -1 ? 3 : p == 'event' ? 2 : p == 'worldboss' ? 1 : 0); return r(a) - r(b) || (Number(a) - Number(b) || 0); })
@@ -634,7 +704,7 @@ function buildSidebar(items, expandAll = false) {
             if (window.location.hash.slice(1) === item.id) link.classList.add('active'); // catégorie remplie après coup
             link.innerHTML = `
               ${itemIconHtml(item)}
-              <span class="si-name">${escHtml(item.name || '')}</span>${item.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}${window._vclHunt?.has(item.id) ? '<span class="hunt-dot" title="Sur le tableau de chasse">🎯</span>' : ''}`;
+              <span class="si-name">${escHtml(item.name || '')}</span>${item.sensible ? ' <span style="font-size:9px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}${isToHunt(item) ? '<span class="hunt-dot" title="Infos à compléter">🎯</span>' : ''}`;
             link.addEventListener('click', (e) => {
               e.preventDefault();
               showItem(item.id, false);
@@ -1228,7 +1298,16 @@ function _realNormalOf(qualityItem) {
 
 // Entrées sans ligne dans la liste : une version « Qualité » dont la vraie version normale existe dans le même palier (on y accède par le
 // bouton Normal / Qualité), et une version normale « coquille » (l'item Qualité s'affiche seul à sa place).
+// Une seule ligne par famille d'étoiles et par palier dans la liste : une fiche d'un autre palier (ex. …_p2) garde sa ligne dans son palier ; les étoiles de la fiche relient les versions.
+// On ne masque qu'une fiche dont un « frère » (même nom, id identique au palier près) a un niveau d'étoile strictement plus bas : jamais deux fiches de même niveau.
+function _starSecondary(item) {
+  if (!item) return false;
+  const lvl = +item.star > 0 ? +item.star : 0;
+  const members = starFamilyMembers(item);
+  return members.length > 1 && members.some(m => m !== item && String(m.palier) === String(item.palier) && (+m.star > 0 ? +m.star : 0) < lvl);   // dans un même palier seulement : chaque palier garde sa ligne
+}
 function _hiddenQualityItem(item) {
+  if (_starSecondary(item)) return true;
   if (!isQualityOnly(item)) return _isShellNormal(item);
   const normal = _realNormalOf(item);
   return !!normal && String(normal.palier) === String(item.palier);
@@ -1265,6 +1344,7 @@ function formatDuration(sec) {
 }
 
 // Stats dont la valeur négative est un BONUS (ex. Hâte = délai des capacités) : jamais en rouge
+// Liste réglable dans la modération (Config Jeu → « Stats jamais en rouge », config/game.negBonusStats)
 const _NEG_IS_BONUS = new Set(['hate']);
 function _statValHtml(val, unit, statId) {
   const u = unit || '';
@@ -1595,8 +1675,55 @@ function renderSetSection(item) {
     </div>`;
 }
 
-function showItem(id, initialQuality = false) {
-  const item = ITEMS_BY_ID.get(id);
+/* Niveaux d'étoile : base.stars = { "1": {champ: valeur|null}, … } — chaque niveau ne stocke que ce qui change par rapport au niveau
+   d'en dessous (null = champ retiré). Résultat effectif du niveau n = base + deltas 1…n appliqués en cascade. */
+const STAR_MAX = 5;
+function starLevelsOf(item) {
+  return Object.keys(item?.stars || {}).map(Number).filter(n => n >= 1 && n <= STAR_MAX).sort((a, b) => a - b);
+}
+function applyStars(item, n) {
+  if (!item || !n || !item.stars) return item;
+  const o = { ...item };
+  delete o.stars;
+  for (let i = 1; i <= n; i++) {
+    const d = item.stars[i];
+    if (!d || typeof d !== 'object') continue;
+    for (const [k, v] of Object.entries(d)) { if (v === null) delete o[k]; else o[k] = v; }
+  }
+  return o;
+}
+
+/* Famille d'étoiles : fiches de même nom dont les ids ne diffèrent que par le palier (…_p1, …_p2) — chacune a sa propre fiche (son palier,
+   sa place dans la liste) ; `star` = niveau d'étoile que représente la fiche. Résultat : { niveau: {id, ov} } (ov = surcharge `stars` dans la fiche, 0 = fiche telle quelle). */
+var STAR_STEM_RE = /(_p\d+|_event|_archive)$/;
+var _starFamilies = null;
+function _starFamilyKeyOf(it) { return String(it.id).replace(STAR_STEM_RE, '') + '|' + normalize(String(it.name || '')); }
+function starFamilyMembers(item) {
+  if (!_starFamilies || _starFamilies._n !== ITEMS.length) {
+    _starFamilies = new Map(); _starFamilies._n = ITEMS.length;
+    for (const it of ITEMS) { const k = _starFamilyKeyOf(it); (_starFamilies.get(k) || _starFamilies.set(k, []).get(k)).push(it); }
+  }
+  return _starFamilies.get(_starFamilyKeyOf(item)) || [item];
+}
+function starFamilyMap(item) {
+  const members = starFamilyMembers(item);
+  const map = {};
+  for (const m of members) { const l = +m.star > 0 ? +m.star : 0; if (!(l in map)) map[l] = { id: m.id, ov: 0 }; }
+  for (const m of members) for (const l of starLevelsOf(m)) if (!(l in map)) map[l] = { id: m.id, ov: l };
+  return map;
+}
+
+function showItem(id, initialQuality = false, starLvl = 0) {
+  { const _m = typeof id === 'string' && id.match(/^(.+)@([1-5])$/); if (_m && ITEMS_BY_ID.has(_m[1])) { showItem(_m[1], initialQuality, +_m[2]); return; } }
+  const rawItem = ITEMS_BY_ID.get(id);
+  const ovLevels = starLevelsOf(rawItem);
+  const ovMax = ovLevels.length ? ovLevels[ovLevels.length - 1] : 0;
+  starLvl = Math.min(Math.max(0, +starLvl || 0), ovMax);        // niveau « surcharge » appliqué par-dessus la fiche
+  const item = applyStars(rawItem, starLvl);
+  const ownStar = +rawItem?.star > 0 ? +rawItem.star : 0;       // niveau d'étoile que représente la fiche elle-même
+  const curStar = starLvl > 0 ? starLvl : ownStar;
+  const famMap  = rawItem ? starFamilyMap(rawItem) : {};
+  const showStars = Object.keys(famMap).length > 1 || ownStar > 0;
   if (!item) {
     stopSlideshow();
     stopWebGL();
@@ -1610,9 +1737,7 @@ function showItem(id, initialQuality = false) {
   placeholder.style.display = 'none';
 
   const _activeDataId = initialQuality ? `${id}-quality` : id;
-  document.querySelectorAll('.sidebar-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.id === _activeDataId);
-  });
+  revealInSidebar(id, _activeDataId);
 
   // Item qualitatif chargé directement → rediriger vers le normal en mode qualité
   if (item.quality === true) {
@@ -1691,7 +1816,28 @@ function showItem(id, initialQuality = false) {
   const d = activeData();
   const itemStatsHtml = renderItemStats(item);
   const currentEffects = d.effects ?? null;
+  const _miss = new Set(isToHunt(item) ? itemMissingFields(item) : []);   // marques « à compléter » : seulement sur les items du tableau de chasse
+  // Obtention vide : encadré « modèle temporaire » avec le 🎯 à la place du texte
+  const _obtainHtml = (dd, vv) => {
+    const txt = withAutoObtain(dd, vv.obtain);
+    return String(txt || '').trim() || !_miss.has('obtain')
+      ? parseText(txt, true)
+      : `<div class="obtain-placeholder"><span>Comment l'obtenir ? Personne ne l'a encore renseigné.</span>${_missMark(item, 'Obtention', 'Obtention')}</div>`;
+  };
+  const _missBar = ['craft', 'stats', 'effects', 'classes', 'lvl', 'rarity', 'category', 'palier', 'event', 'set', 'tags', 'desc'].filter(f => _miss.has(f))
+    .map(f => _missMark(item, FIELD_LABELS[f] || f, FIELD_LABELS[f] || f)).join('');
   const hasRow = item.craft || item.effects || qualityItem?.craft || qualityItem?.effects || itemStatsHtml;
+
+  // Niveau d'étoile : cliquer une étoile l'allume (et celles d'avant) ; recliquer l'étoile active revient au niveau 0
+  const _STAR_PATH = 'M12 2.4l2.95 6.2 6.75.85-4.95 4.7 1.25 6.7L12 17.4l-6 3.45 1.25-6.7L2.3 9.45l6.75-.85z';
+  // Chaque étoile mène à la fiche de son niveau (même fiche avec surcharge, ou fiche d'un autre palier) ; cliquer l'étoile active revient au niveau 0
+  const starHtml = showStars ? `<div class="item-stars" role="radiogroup" aria-label="Niveau d'étoile" title="Niveau d'étoile">${[1, 2, 3, 4, 5].map(i => {
+    const tgt = i === curStar ? famMap[0] : famMap[i];
+    const ok = tgt && !(tgt.id === id && tgt.ov === starLvl);
+    const tn = tgt ? ITEMS_BY_ID.get(tgt.id) : null;
+    const tip = i === curStar ? (tgt ? 'Retirer l’étoile' : '') : (tgt ? i + ' étoile' + (i > 1 ? 's' : '') + (tgt.id !== id ? ' → ' + escHtml((tn?.name || tgt.id) + (tn?.palier != null ? ' (palier ' + tn.palier + ')' : '')) : '') : 'Pas de fiche pour ce niveau');
+    return `<button type="button" class="item-star${i <= curStar ? ' lit' : ''}${i === curStar ? ' active' : ''}${tgt ? '' : ' missing'}" ${ok ? `data-tid="${escHtml(tgt.id)}" data-tov="${tgt.ov}"` : 'disabled'} role="radio" aria-checked="${i === curStar}" title="${tip}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${_STAR_PATH}"/></svg></button>`;
+  }).join('')}</div>` : '';
 
   itemDisplay.innerHTML = `
     <div class="item-sheet" style="--rc:${color}">
@@ -1704,9 +1850,13 @@ function showItem(id, initialQuality = false) {
           </div>
           ${mediaTypeLabel(_slideMedia[0])}
           ${slideshowControls}
+          ${_miss.has('images') ? _missMark(item, 'Image', 'Image', 'miss-img') : ''}
         </div>
         <div class="item-info">
+          <div class="item-title-row">
           <h2 class="item-name" id="item-name-text">${escHtml(d.name || item.name)}${window._vclHunt?.has(item.id) ? ' ' + _huntLinkHtml(item.id) : ''}${item.sensible ? ' <span style="font-size:13px;opacity:.65;vertical-align:middle;" title="Visible grâce à votre rôle">🔒</span>' : ''}</h2>
+          ${starHtml}
+          </div>
           <div class="item-rarity-badge" style="color:${color}; border-color:${color};">
             <span class="item-rarity-dot" style="background:${color};"></span>
             ${rlabel}
@@ -1715,13 +1865,14 @@ function showItem(id, initialQuality = false) {
           ${item.set && SETS?.[item.set] ? `<div class="item-set-badge" style="color:${SETS[item.set].color || '#888'};border-color:${SETS[item.set].color || '#888'}40;">◈ ${escHtml(SETS[item.set].label)}</div>` : ''}
           ${qualityToggle}
           <blockquote class="item-lore" id="item-lore-text"${String(v.lore || '').trim() ? '' : ' hidden'}>${parseText(v.lore)}</blockquote>
+          ${_miss.has('lore') && !String(v.lore || '').trim() ? `<div class="miss-slot">${_missMark(item, 'Lore', 'Lore')}</div>` : ''}
         </div>
       </div>
 
       <div class="item-sep"></div>
       ${renderEvolutionChain(item)}
       <div class="item-section-title">Comment obtenir cet item</div>
-      <div class="item-obtain" id="item-obtain-text">${parseText(withAutoObtain(activeData(), v.obtain), true)}</div>
+      <div class="item-obtain" id="item-obtain-text">${_obtainHtml(activeData(), v)}</div>
       ${hasRow ? `
       <div class="effects-craft-titles" id="effects-craft-titles">
         <div class="item-section-title">${currentEffects?.length ? 'Effets' : ''}</div>
@@ -1733,6 +1884,7 @@ function showItem(id, initialQuality = false) {
         <div id="item-craft-wrap">${renderCraft(getCraft(), d)}</div>
         ${itemStatsHtml ? `<div id="item-stats-wrap">${itemStatsHtml}</div>` : ''}
       </div>` : ''}
+      ${_missBar ? `<div class="miss-bar">${_missBar}</div>` : ''}
       <div class="item-sep"></div>
       ${renderUsedIn(item.id)}
       ${renderSetSection(item)}
@@ -1768,7 +1920,7 @@ function showItem(id, initialQuality = false) {
       const v2 = getVariant();
       loreEl.innerHTML   = parseText(v2.lore);
       loreEl.hidden      = !String(v2.lore || '').trim(); // pas de lore : pas de bloc vide
-      obtainEl.innerHTML = parseText(withAutoObtain(d2, v2.obtain), true);
+      obtainEl.innerHTML = _obtainHtml(d2, v2);
       const nameEl = document.getElementById('item-name-text');
       if (nameEl) nameEl.textContent = d2.name || item.name;
       craftWrap.innerHTML = renderCraft(getCraft(), d2);
@@ -1827,6 +1979,14 @@ function showItem(id, initialQuality = false) {
 }
 
 itemDisplay.addEventListener('click', e => {
+  const st = e.target.closest('.item-star[data-tid]');
+  if (st) {
+    const tid = st.dataset.tid;
+    const curId = (location.hash || '').replace(/^#/, '').replace(/-quality$/, '');
+    showItem(tid, /-quality$/.test(location.hash || ''), +st.dataset.tov || 0);
+    if (tid !== curId) history.pushState({ item: tid }, '', `#${tid}`);
+    return;
+  }
   const t = e.target.closest('.item-tag[data-tag]');
   if (t) applyTag(t.dataset.tag);
 });

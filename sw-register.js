@@ -12,6 +12,9 @@
   };
   let last = 0;
 
+  // liens de coordonnées vers la carte : chargés ici (tôt, dans le <head>) pour que « [coords:…] » ne s'affiche jamais en brut
+  try { import(new URL('coord-links.js', cs.src).href).catch(() => {}); } catch { /* navigateur sans import() */ }
+
   if ('serviceWorker' in navigator) {
     const url = new URL('sw.js', cs.src);   // sw.js est à la racine du site ; sa portée couvre tous les dossiers
     window.addEventListener('load', () => { navigator.serviceWorker.register(url.href).catch(() => {}); });

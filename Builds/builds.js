@@ -45,6 +45,8 @@
 
     // Filtres
     let filterClass    = '';
+    let filterType     = '';   // '' | 'pve' | 'pvp' | 'mixte'
+    const TYPE_LABELS  = { pve: 'PvE', pvp: 'PvP', mixte: 'Mixte' };
     let filterMaxLevel = parseInt(document.getElementById('filter-level').max) || 30;
     let filterStats    = {};
     let filterFavOnly  = false;
@@ -262,6 +264,7 @@
 
       // Filtres client-side
       if (filterClass)    filtered = filtered.filter(b => b.classe === filterClass);
+      if (filterType)     filtered = filtered.filter(b => b.buildType === filterType);
       if (filterMaxLevel < maxLvl) filtered = filtered.filter(b => (b.level || 1) <= filterMaxLevel);
 
       const statEntries = Object.entries(filterStats).filter(e => e[1] > 0);
@@ -337,7 +340,7 @@
     }
 
     function _filtersActive() {
-      return !!(filterClass || filterSearch || filterFavOnly || filterMyBuilds
+      return !!(filterClass || filterType || filterSearch || filterFavOnly || filterMyBuilds
         || filterMaxLevel < maxLvl || Object.keys(filterStats).some(k => filterStats[k] > 0));
     }
 
@@ -395,6 +398,7 @@
         const c = (typeof CLASSES !== 'undefined' ? CLASSES : []).find(x => x.id === filterClass);
         add('class', '', `<span>${escHtml(c ? c.ico : '')}</span> <span>${escHtml(c ? c.label : filterClass)}</span>`); count++;
       }
+      if (filterType) { add('type', '', `<span class="ac-k">Type</span> <span class="ac-v">${TYPE_LABELS[filterType]}</span>`); count++; }
       if (filterMaxLevel < maxLvl) { add('level', '', `<span class="ac-k">Niveau max</span> <span class="ac-v">${filterMaxLevel}</span>`); count++; }
       Object.entries(filterStats).filter(e => e[1] > 0).forEach(([id, v]) => {
         add('stat', id, `<span class="ac-k">${escHtml(_statLabel(id))}</span> <span class="ac-v">≥ ${v}</span>`); count++;
@@ -420,7 +424,10 @@
       let needReload = false;
       if (kind === 'class') {
         filterClass = '';
-        document.querySelectorAll('.class-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
+        document.querySelectorAll('#class-chips .class-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
+      } else if (kind === 'type') {
+        filterType = '';
+        document.querySelectorAll('#type-chips .class-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
       } else if (kind === 'level') {
         filterMaxLevel = maxLvl;
         const lv = document.getElementById('filter-level');
@@ -874,7 +881,7 @@
     // Seulement sur la liste complète (aucun filtre) : sinon l'ordre des builds masqués serait ambigu.
     function _canReorder() {
       return currentUserRole === 'admin' && sortBy === 'manual' && !isSingleView
-        && !filterClass && !filterSearch && !filterFavOnly && !filterMyBuilds
+        && !filterClass && !filterType && !filterSearch && !filterFavOnly && !filterMyBuilds
         && filterMaxLevel >= maxLvl && !Object.keys(filterStats).length;
     }
 
@@ -1117,6 +1124,15 @@
         btn.dataset.class = c.id;
         wrap.appendChild(btn);
       });
+      const tw = document.getElementById('type-chips');
+      if (tw) tw.addEventListener('click', e => {
+        const chip = e.target.closest('.class-chip');
+        if (!chip) return;
+        tw.querySelectorAll('.class-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        filterType = chip.dataset.type;
+        _renderBuilds(allBuilds);
+      });
       wrap.addEventListener('click', e => {
         const chip = e.target.closest('.class-chip');
         if (!chip) return;
@@ -1229,7 +1245,7 @@
 
       // Reset filtres
       document.getElementById('filter-reset').addEventListener('click', () => {
-        filterClass = ''; filterStats = {}; filterFavOnly = false; filterSearch = ''; filterMyBuilds = false;
+        filterClass = ''; filterType = ''; filterStats = {}; filterFavOnly = false; filterSearch = ''; filterMyBuilds = false;
         filterMaxLevel = maxLvl;
         document.getElementById('filter-level').value = maxLvl;
         _syncRange(document.getElementById('filter-level'));
@@ -1237,7 +1253,8 @@
         document.getElementById('search-input').value = '';
         document.getElementById('fav-toggle').classList.remove('active');
         document.getElementById('my-builds-toggle').classList.remove('active');
-        document.querySelectorAll('.class-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
+        document.querySelectorAll('#class-chips .class-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
+        document.querySelectorAll('#type-chips .class-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
         document.querySelectorAll('input[data-stat]').forEach(i => { i.value = ''; });
         _reload();
       });

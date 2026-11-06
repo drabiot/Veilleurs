@@ -434,7 +434,8 @@ function renderRewardFull(r) {
 ══════════════════════════════════ */
 function formatObjectifText(texte, floor) {
   // (x, z) ou (x, y, z) — avec trois valeurs, la deuxième est la hauteur (Y)
-  return texte.replace(/\((-?\d+)\s*,\s*(-?\d+)(?:\s*,\s*(-?\d+))?\)/g, (_, a, b, c) => {
+  return texte.replace(/\[\s*coords?\s*:\s*(-?\d+)\s*,\s*(-?\d+)\s*\]|\((-?\d+)\s*,\s*(-?\d+)(?:\s*,\s*(-?\d+))?\)/gi, (_, a0, b0, a1, b1, c1) => {
+    const [a, b, c] = a0 != null ? [a0, b0, null] : [a1, b1, c1];
     const [x, y, z] = c != null ? [a, b, c] : [a, null, b];
     const label = y != null ? `X:${x}, Y:${y}, Z:${z}` : `X:${x}, Z:${z}`;
     if (floor != null) {

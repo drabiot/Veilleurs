@@ -298,7 +298,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // sans mode demandé dans l'adresse : on rouvre le dernier mode utilisé
   const _initMode   = (_validModes.includes(_hashMode) ? _hashMode : null) || _urlMode || (_validModes.includes(_lastMode) && _lastMode !== 'item' ? _lastMode : null);
   if (_initMode) switchMode(_initMode);
-  restoreForm(_initMode);
+  restoreForm(_initMode); renderStarRow();
 
   // Pré-remplir depuis le tracker d'IDs fantômes (moderation.html)
   if (_params.has('ghostid')) {
@@ -469,6 +469,7 @@ function saveForm() {
       palier:   document.getElementById('f-palier').value,
       eventName: document.getElementById('f-event-name')?.value || '',
       lvl:      document.getElementById('f-lvl').value,
+      starSelf: document.getElementById('f-star-self')?.value || '0',
       lore:     document.getElementById('f-lore').value,
       competence: document.getElementById('f-competence')?.value || '',
       scrollName: document.getElementById('f-scroll-name')?.value || '',
@@ -488,6 +489,7 @@ function saveForm() {
         }
         return s;
       })(),
+      stars:     (() => { try { _starCommit(); } catch {} return { level: starLevel, base: starLevel > 0 ? starBase : null, deltas: starDeltas }; })(),
       craft:     getCraft(),
       effects:   (() => { try { return getEffects(); } catch { return []; } })(),
       applyCd:   _applyCdValue(),
@@ -602,6 +604,7 @@ function restoreForm(forcedMode) {
     if (d.palier) _setPalierValue('f-palier', d.palier);
     _setEventName(d.eventName || '');
     if (d.lvl)    document.getElementById('f-lvl').value    = d.lvl;
+    { const _ss = document.getElementById('f-star-self'); if (_ss && d.starSelf) _ss.value = d.starSelf; }
     if (d.lore)   document.getElementById('f-lore').value   = d.lore;
     if (d.competence) { const el = document.getElementById('f-competence'); if (el) el.value = d.competence; }
     { const _s = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; }; _s('f-scroll-name', d.scrollName); _s('f-scroll-rarity', d.scrollRarity); }
@@ -813,6 +816,14 @@ function restoreForm(forcedMode) {
         renderQuestRecompenses();
       }
     }
+
+    // Niveaux d'étoile (le formulaire restauré est celui du niveau sauvegardé)
+    if (d.stars && typeof d.stars === 'object') {
+      starDeltas = d.stars.deltas || {};
+      starLevel  = d.stars.level > 0 && d.stars.base ? +d.stars.level : 0;
+      starBase   = starLevel > 0 ? d.stars.base : null;
+    }
+    renderStarRow();
 
     // Recompute ID après que selOcculte, selEvolutif et palier soient restaurés
     if (!idLocked && creatorMode === 'item') {
@@ -2083,11 +2094,12 @@ function ensureAllItemsIndex() {
   const rarityLabel = { commun:'Commun', rare:'Rare', epique:'Épique', legendaire:'Légendaire', mythique:'Mythique', godlike:'Godlike', event:'Event' };
   allItemsIndex.splice(0, allItemsIndex.length, ...ITEMS.map(it => ({
     id: it.id ?? it._id,
-    name: it.name || it.id || it._id,
+    name: (it.name || it.id || it._id) + _starSuffix(it),
     subtitle: [rarityLabel[it.rarity] || it.rarity, it.category, it.palier ? 'P'+it.palier : ''].filter(Boolean).join(' · '),
     search: ((it.name || '') + ' ' + (it.id || it._id || '') + ' ' + (it.category || '')).toLowerCase(),
     _raw: it
   })));
+  _addStarOverlayEntries(allItemsIndex);
   // La monnaie n'est pas un item : on l'ajoute pour pouvoir l'utiliser comme ingrédient (une vente = un craft payé en cols)
   if (!allItemsIndex.some(i => i.id === 'cols')) allItemsIndex.unshift({ id: 'cols', name: '🪙 Cols', subtitle: 'Monnaie', search: 'cols monnaie currency or argent gold prix', _raw: { id: 'cols', name: 'Cols' } });
 }
@@ -2191,8 +2203,9 @@ function initLoadSearch() {
   loadDrop = makeSearchDrop(allItemsIndex, 'Rechercher un item à éditer…', (id) => {
     if (!id) return;
     const entry = allItemsIndex.find(it => it.id === id);
+    if (entry?._starOf) { const base = allItemsIndex.find(it => it.id === entry._starOf); if (base) { loadItem(base._raw); setStarLevel(entry._starLvl, true); } return; }
     if (entry) loadItem(entry._raw);
-  });
+  }, false, 'item', { noStarAsk: true });
   wrap.appendChild(loadDrop.element);
 }
 
@@ -2452,15 +2465,76 @@ function loadPanoplie(p) {
   update();
 }
 
-function loadItem(item) {
+// Niveaux d'étoile définis DANS la fiche (stars) : une entrée de recherche chacun, « Nom ★n », d'id « base@n » (le compendium sait la résoudre)
+function _addStarOverlayEntries(index) {
+  const extra = [];
+  for (const e of index) {
+    const raw = e._raw || (typeof ITEMS !== 'undefined' ? ITEMS.find(m => (m.id ?? m._id) === e.id) : null);
+    if (!raw?.stars || typeof raw.stars !== 'object') continue;
+    for (const k of Object.keys(raw.stars).map(Number).filter(n => n >= 1 && n <= STAR_MAX).sort((a, b) => a - b)) {
+      extra.push({ ...e, id: `${e.id}@${k}`, name: `${raw.name || e.id} ${'★'.repeat(k)}`, _starOf: e.id, _starLvl: k });
+    }
+  }
+  index.push(...extra);
+}
+
+// « Épée du Tutoriel ★★★ » : une version étoilée est sélectionnable comme n'importe quel item, indépendamment de sa version sans étoile
+function _starSuffix(it) { const n = +it?.star; return n > 0 && n <= STAR_MAX ? ' ' + '★'.repeat(n) : ''; }
+
+// ── Famille d'étoiles : fiches de même nom dont les ids ne diffèrent que par le palier (…_p1, …_p2) ──
+const _STAR_STEM_RE = /(_p\d+|_event|_archive)$/;
+function _starFamilyKey(it) { return String(it.id ?? it._id ?? '').replace(_STAR_STEM_RE, '') + '|' + normalize(String(it.name || '')); }
+// { niveau: {id, ov} } : ov = niveau d'étoile « dans la fiche » (surcharge stars) ou 0 pour la fiche telle quelle
+function _starLevelMap(item) {
+  const key = _starFamilyKey(item);
+  const members = (typeof ITEMS !== 'undefined' ? ITEMS : []).filter(m => _starFamilyKey(m) === key);
+  const map = {};
+  for (const m of members) { const l = +m.star > 0 ? +m.star : 0; if (!(l in map)) map[l] = { id: m.id ?? m._id, ov: 0 }; }
+  for (const m of members) for (const k of Object.keys(m.stars || {})) { const l = +k; if (l >= 1 && l <= STAR_MAX && !(l in map)) map[l] = { id: m.id ?? m._id, ov: l }; }
+  return map;
+}
+// Question « quel niveau d'étoile ? » à la sélection d'un item dans un sélecteur (PNJ, mob, craft…). null = un seul niveau, pas de question.
+// Résout vers l'id de la fiche du niveau choisi (ex. epee_du_tutoriel_p1 + ★★★ → epee_du_tutoriel_p2).
+function _starRefChoice(id) {
+  const item = (typeof ITEMS !== 'undefined' ? ITEMS : []).find(m => (m.id ?? m._id) === id);
+  if (!item || !window._modal?.pick) return null;
+  const map = _starLevelMap(item);
+  const levels = Object.keys(map).map(Number).sort((a, b) => a - b);
+  if (levels.length < 2) return null;
+  const cur = +item.star > 0 ? +item.star : 0;
+  const opts = levels.map(l => ({
+    value: map[l].id,
+    label: l ? '★'.repeat(l) : '✕ Sans étoile',
+    title: map[l].ov || map[l].id !== id ? `Fiche ${map[l].id}${map[l].ov ? ' (étoile ' + map[l].ov + ')' : ''}` : 'Fiche choisie',
+    primary: l === cur
+  }));
+  const name = String(item.name || id).replace(/[<>&]/g, '');
+  return window._modal.pick(`<strong>${name}</strong> existe à plusieurs niveaux d'étoile.<br>Lequel est concerné ?`, opts).then(v => v || id);
+}
+
+function loadItem(item, opts = {}) {
+  const inPlace = !!opts.inPlace; // changement de niveau d'étoile : on recharge le formulaire sans le présenter comme une modification
   switchMode('item');
-  resetFormSilent();
+  resetFormSilent(inPlace);
   craftEntries = [];
   document.getElementById('craft-list').innerHTML = '';
 
+  // Niveaux d'étoile : item.stars = deltas ; le formulaire charge le niveau 0
+  if (!inPlace) {
+    starLevel = 0; starBase = null; starDeltas = {}; starLocked = true;
+    if (item.stars && typeof item.stars === 'object') {
+      for (const [k, v] of Object.entries(item.stars)) {
+        if (+k >= 1 && +k <= STAR_MAX && v && typeof v === 'object') starDeltas[+k] = _starClone(v);
+      }
+    }
+    renderStarRow();
+  }
+
   // Bannière
-  document.getElementById('editing-name').textContent = item.name || item.id;
-  document.getElementById('editing-banner').style.display = 'flex';
+  if (!inPlace) {
+    document.getElementById('editing-name').textContent = item.name || item.id;
+    document.getElementById('editing-banner').style.display = 'flex';
+  }
 
   // Identité
   document.getElementById('f-name').value = item.name || '';
@@ -2484,6 +2558,7 @@ function loadItem(item) {
     document.getElementById('f-palier')?.dispatchEvent(new Event('change', { bubbles: true }));
   }
   if (item.lvl) document.getElementById('f-lvl').value = String(item.lvl);
+  { const _ss = document.getElementById('f-star-self'); if (_ss) _ss.value = String(+item.star > 0 ? +item.star : 0); renderStarRow(); }
 
   // Set
   // (la liste statique SETS peut ne pas connaître une panoplie récente : on garde quand même la valeur, sinon elle serait effacée à la sauvegarde)
@@ -2547,9 +2622,9 @@ function loadItem(item) {
 
   // Met à jour le label + placeholder du commentaire en mode édition
   const _noteLabel = document.getElementById('submit-note-label');
-  if (_noteLabel) _noteLabel.textContent = '📝 Modification — quoi ?';
+  if (_noteLabel && !inPlace) _noteLabel.textContent = '📝 Modification — quoi ?';
   const _noteTA = document.getElementById('submitter-comment');
-  if (_noteTA) _noteTA.placeholder = 'Décris ce que tu as modifié pour que la modération sache quoi vérifier…';
+  if (_noteTA && !inPlace) _noteTA.placeholder = 'Décris ce que tu as modifié pour que la modération sache quoi vérifier…';
 
   // Rune slots
   if (item.rune_slots) document.getElementById('f-rune-slots').value = item.rune_slots;
@@ -2639,13 +2714,22 @@ function loadItem(item) {
   refreshCustomSelects();
   loadDrop?.reset();
   update();
-  document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
+  if (!inPlace) document.getElementById('formPanel').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function resetFormSilent() {
+function resetFormSilent(keepStars = false) {
   _skipSave = true;
+  if (!keepStars) { starLevel = 0; starBase = null; starDeltas = {}; starLocked = false; }
   document.querySelectorAll('#formPanel input[type=text], #formPanel input[type=number], #formPanel textarea').forEach(i => i.value = '');
   document.querySelectorAll('#formPanel select').forEach(s => s.selectedIndex = 0);
+  // Remise à zéro générique : tout champ qu'on ajoutera plus tard au formulaire revient à sa valeur par défaut sans rien à déclarer ici
+  // (la valeur d'un <input hidden> se confond avec son attribut : on mémorise sa valeur initiale une fois au chargement)
+  document.querySelectorAll('#formPanel input[type=hidden]').forEach(i => {
+    if (i.dataset.vclDef === undefined) i.dataset.vclDef = '';
+    i.value = i.dataset.vclDef;
+  });
+  document.querySelectorAll('#formPanel input[type=checkbox], #formPanel input[type=radio]').forEach(i => { i.checked = i.defaultChecked; });
+  { const _ss = document.getElementById('f-star-self'); if (_ss) _ss.value = '0'; } // niveau d'étoile (champ caché)
   selRarity = ''; selClasses = []; craftEntries = []; effectEntries = []; selTwoHanded = false; selEvolutif = false; selOcculte = false; selQualite = false; idLocked = false; evolutifEvolutions = []; evolutifEvolvedFrom = [];
   document.getElementById('qualite-btn')?.classList.remove('active');
   _autoEventName = '';
@@ -2689,9 +2773,15 @@ function resetFormSilent() {
   const _ss = document.getElementById('stat-search');
   if (_ss) _ss.value = '';
   filterStats(); // la recherche de stats est vidée : on réaffiche toutes les lignes (sinon seules les stats filtrées restent visibles)
+  renderStarRow(); // après la remise à zéro des champs : la rangée d'étoiles reflète le niveau remis à 0
+  for (const fn of _formResetHooks) { try { fn(keepStars); } catch (e) { console.warn('[reset hook]', e); } } // état propre à un module (variable JS, liste…) : onFormReset(fn)
   _skipSave = false;
   clearSavedForm();
 }
+// Les futurs blocs du formulaire qui gardent un état hors du DOM s'y inscrivent : onFormReset(() => { monEtat = []; render(); })
+var _formResetHooks = [];
+document.querySelectorAll('#formPanel input[type=hidden]').forEach(i => { if (i.dataset.vclDef === undefined) i.dataset.vclDef = i.getAttribute('value') ?? ''; });
+function onFormReset(fn) { if (typeof fn === 'function') _formResetHooks.push(fn); }
 
 function loadMob(mob) {
   switchMode('mob');
@@ -3136,7 +3226,7 @@ function refreshCustomSelects() {
 // onSelect(id, name) appelé à chaque sélection / désélection
 // Retourne { mount(container), getValue, reset }
 // ═══════════════════════════════════════════════════
-function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, createEntityType = 'item') {
+function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, createEntityType = 'item', dropOpts = {}) {
   let selectedId = '';
   let focusedIdx = -1;
   let viaEnter = false; // true quand la sélection vient de la touche Entrée (3e argument de onSelect)
@@ -3219,6 +3309,13 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
     inp.value = it.name;
     inp.classList.add('selected-item');
     list.classList.remove('open');
+    // Item qui existe à plusieurs niveaux d'étoile (même nom, ids qui ne diffèrent que par le palier…) : on demande lequel est concerné
+    const ask = null; // plus de question après coup : chaque version étoilée est une entrée à part dans la recherche (nom + ★)
+    if (ask) {
+      const ve = viaEnter;
+      ask.then(rid => { rid = rid || it.id; selectedId = rid; onSelect(rid, it.name, ve); });
+      return;
+    }
     onSelect(it.id, it.name, viaEnter);
   }
 
@@ -3320,9 +3417,11 @@ function ensureItemIndex() {
     .filter(it => CRAFT_CATEGORIES.has(it.category))
     .map(it => ({
       id: it.id,
-      name: it.name || it.id,
+      name: (it.name || it.id) + _starSuffix(it),
       search: ((it.name || '') + ' ' + it.id).toLowerCase()
     })));
+
+  _addStarOverlayEntries(itemIndex);
 
   // Ajouter les entrées virtuelles si elles ne sont pas déjà dans ITEMS
   const knownVirtual = new Set(itemIndex.map(i => i.id));
@@ -4097,7 +4196,7 @@ function _renderChassePanel() {
 
 function renderPreview() {
   const wrap = document.getElementById('preview-wrap');
-  const obj  = buildObj();
+  const obj  = _buildLevelObj();
 
   if (!obj.id && !obj.name) {
     wrap.innerHTML = '';
@@ -4548,7 +4647,7 @@ function renderHistory() {
 // ═══════════════════════════════════════════════════
 // BUILD & FORMAT OUTPUT
 // ═══════════════════════════════════════════════════
-function buildObj() {
+function _buildLevelObj() {
   const id       = document.getElementById('f-id').value.trim();
   const name     = document.getElementById('f-name').value.trim();
   const category = document.getElementById('f-category').value;
@@ -4574,6 +4673,7 @@ function buildObj() {
   if (category)              obj.category = category;
   if (palier)                obj.palier   = _palierVal(palier);
   if (lvl)                   obj.lvl      = +lvl;
+  { const _st = parseInt(document.getElementById('f-star-self')?.value) || 0; if (_st > 0 && _st <= 5) obj.star = _st; } // niveau d'étoile de CETTE fiche (versions étoilées d'un autre palier)
   {
     const tier = palier === 'event' ? 'events' : (palier ? 'P' + palier : '');
     const tp   = tier ? tier + '/' : '';
@@ -4622,6 +4722,111 @@ function buildObj() {
   if (craft.length && craft_cd) obj.craft_cd = craft_cd;
   { const cq = parseInt(document.getElementById('f-craft-qty')?.value); if (craft.length && cq > 1) obj.craft_qty = cq; }
   return obj;
+}
+
+// ═══════════════════════════════════════════════════
+// NIVEAUX D'ÉTOILE (0 = item de base, 1 à 5 = surcharges en cascade)
+// ═══════════════════════════════════════════════════
+// Stockage : item.stars = { "1": {champ: valeur, …}, "3": {…} } — uniquement ce qui change par rapport au niveau d'en dessous
+// (valeur null = champ retiré). L'id ne change jamais. Le formulaire affiche toujours le résultat effectif du niveau choisi.
+const STAR_MAX = 5;
+const STAR_STRUCT_KEYS = new Set(['id', 'palier', 'category', 'images', 'stars', 'star']); // communs à tous les niveaux
+let starLevel  = 0;
+let starBase   = null; // objet du niveau 0 mémorisé quand on édite un niveau > 0
+let starDeltas = {};   // { n: { champ: valeur | null } }
+let starLocked = false; // true = item existant en édition : le niveau d'étoile choisi à la recherche ne se change plus
+
+function _starClone(o) { return JSON.parse(JSON.stringify(o)); }
+
+function _starApply(obj, delta) {
+  for (const [k, v] of Object.entries(delta || {})) {
+    if (v === null) delete obj[k]; else obj[k] = _starClone(v);
+  }
+  return obj;
+}
+
+// Résultat effectif du niveau n d'après une base et des deltas
+function _starEffective(base, deltas, n) {
+  const o = _starClone(base);
+  for (let i = 1; i <= n; i++) if (deltas[i]) _starApply(o, deltas[i]);
+  return o;
+}
+
+function _starDiff(cur, prev) {
+  const d = {};
+  for (const k of new Set([...Object.keys(cur), ...Object.keys(prev)])) {
+    if (STAR_STRUCT_KEYS.has(k)) continue;
+    if (JSON.stringify(cur[k]) === JSON.stringify(prev[k])) continue;
+    d[k] = cur[k] !== undefined ? cur[k] : null;
+  }
+  return d;
+}
+
+// Mémorise le niveau en cours d'édition (base si niveau 0, sinon son delta)
+function _starCommit() {
+  const cur = _buildLevelObj();
+  if (starLevel === 0 || !starBase) { starBase = cur; return; }
+  const d = _starDiff(cur, _starEffective(starBase, starDeltas, starLevel - 1));
+  if (Object.keys(d).length) starDeltas[starLevel] = d; else delete starDeltas[starLevel];
+}
+
+function buildObj() {
+  const cur = _buildLevelObj();
+  const base = (starLevel === 0 || !starBase) ? cur : starBase;
+  const deltas = { ...starDeltas };
+  if (starLevel > 0 && starBase) {
+    const d = _starDiff(cur, _starEffective(starBase, starDeltas, starLevel - 1));
+    if (Object.keys(d).length) deltas[starLevel] = d; else delete deltas[starLevel];
+  }
+  const keys = Object.keys(deltas).filter(k => Object.keys(deltas[k]).length).sort((a, b) => a - b);
+  if (!keys.length) return base;
+  const out = { ...base };
+  out.stars = {};
+  for (const k of keys) out.stars[k] = deltas[k];
+  return out;
+}
+
+function setStarLevel(n, force = false) {
+  n = Math.max(0, Math.min(STAR_MAX, +n || 0));
+  // Nouvel item : le niveau choisi est celui de la fiche elle-même (même nom = même item, c'est le niveau d'étoile qui compte) → champ `star`
+  if (!starLocked && !force) {
+    const _ss = document.getElementById('f-star-self');
+    if (_ss) _ss.value = String(n);
+    renderStarRow(); update();
+    return;
+  }
+  if (n === starLevel || (starLocked && !force)) return;
+  _starCommit();
+  const target = _starEffective(starBase || _buildLevelObj(), starDeltas, n);
+  const keepBase = starBase, keepDeltas = starDeltas;
+  const note = document.getElementById('submitter-comment')?.value || '';
+  loadItem(target, { inPlace: true });
+  starBase = keepBase; starDeltas = keepDeltas; starLevel = n;
+  const ta = document.getElementById('submitter-comment');
+  if (ta) ta.value = note;
+  renderStarRow();
+  update();
+}
+
+function renderStarRow() {
+  const row = document.getElementById('star-row');
+  if (!row) return;
+  const own = parseInt(document.getElementById('f-star-self')?.value) || 0;   // niveau de la fiche elle-même
+  const shown = starLocked ? (starLevel > 0 ? starLevel : own) : own;          // niveau affiché
+  let html = `<button type="button" class="star-btn zero${shown === 0 ? ' active' : ''}" role="radio" aria-checked="${shown === 0}" title="Sans étoile" onclick="setStarLevel(0)">✕</button>`;
+  for (let i = 1; i <= STAR_MAX; i++) {
+    const has = starLocked && starDeltas[i] && Object.keys(starDeltas[i]).length;
+    html += `<button type="button" class="star-btn${i <= shown ? ' lit' : ''}${i === shown ? ' active' : ''}${has ? ' has-data' : ''}" role="radio" aria-checked="${i === shown}" title="Étoile ${i}${has ? ' (champs modifiés)' : ''}" onclick="setStarLevel(${i})">${i <= shown ? '★' : '☆'}</button>`;
+  }
+  row.innerHTML = html;
+  if (starLocked) row.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  const hint = document.getElementById('star-hint');
+  if (!hint) return;
+  hint.textContent = !starLocked
+    ? ''
+    : starLevel > 0
+      ? `Édition de l’étoile ${starLevel} : le niveau ne se change pas ici (les champs sont hérités du niveau inférieur).`
+      : (own > 0 ? `Édition de la version ${own} étoile${own > 1 ? 's' : ''} : le niveau ne se change pas ici.` : 'Édition de l’item de base : le niveau d’étoile ne se change pas ici.');
 }
 
 function toJS(val, depth = 0) {
@@ -4987,6 +5192,8 @@ function update() {
     return;
   }
   // ── Item mode (original) ──
+  // Nouvel item (ID non figé) : l'ID suit toujours nom_p{palier}, même si le palier arrive après le nom (liste des paliers chargée en différé, brouillon restauré…)
+  if (!idLocked) { const _autoId = _computeItemId(); if (_autoId && _autoId !== document.getElementById('f-id').value) document.getElementById('f-id').value = _autoId; }
   const obj = buildObj();
   if (!obj.id && !obj.name) {
     document.getElementById('out-code').textContent = '// Remplis le formulaire\n// pour générer le code ici.';
@@ -4997,7 +5204,7 @@ function update() {
     return;
   }
   const dup = isDuplicate(obj.id);
-  document.getElementById('id-duplicate-badge').style.display = dup ? '' : 'none';
+  document.getElementById('id-duplicate-badge').style.display = 'none'; // plus d'avertissement « ID déjà existant » pour les joueurs (la modération gère les doublons)
   const orphanMobs = getOrphanMobs(obj.id);
   const orphanBadge = document.getElementById('id-orphan-badge');
   orphanBadge.style.display = orphanMobs.length ? '' : 'none';
@@ -5546,43 +5753,7 @@ async function submitToDiscord() {
     }
   }
 
-  // Check for duplicates before submitting
-  {
-    const itemId   = document.getElementById('f-id').value.trim();
-    const itemName = document.getElementById('f-name').value.trim();
-    // Base ID pour le suffix : toujours recalculé avec palier pour éviter "slug_1" au lieu de "slug_p3_1"
-    const _baseId  = _computeItemId() || itemId;
-    function _nextFreeId() {
-      let suffix = 1;
-      let newId = `${_baseId}_${suffix}`;
-      while (isDuplicate(newId)) { suffix++; newId = `${_baseId}_${suffix}`; }
-      return newId;
-    }
-    if (isDuplicate(itemId)) {
-      const action = await window._modal?.choice(
-        `⚠️ <strong>${itemName || itemId}</strong> existe déjà.\nS'agit-il d'une modification de cet item, ou d'un nouvel item différent ?`,
-        { btn1: '✏️ Modification', btn2: '➕ Nouvel item', cancelLabel: 'Annuler' }
-      );
-      if (!action) return;
-      if (action === 'btn2') {
-        document.getElementById('f-id').value = _nextFreeId();
-        update();
-      }
-    } else {
-      const pendingItem = await hasPendingSubmission('item', itemName);
-      if (pendingItem) {
-        const action = await window._modal?.choice(
-          `⚠️ <strong>${itemName || itemId}</strong> est déjà en attente de validation.\nS'agit-il d'une modification de cet item, ou d'un nouvel item différent ?`,
-          { btn1: '✏️ Modification', btn2: '➕ Nouvel item', cancelLabel: 'Annuler' }
-        );
-        if (!action) return;
-        if (action === 'btn2') {
-          document.getElementById('f-id').value = _nextFreeId();
-          update();
-        }
-      }
-    }
-  }
+  // Plus de question « modification ou ajout ? » : la modération le détecte (même id + nouvelle étoile = ajout, base intacte).
 
   const btn = document.getElementById('btn-submit-discord');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }

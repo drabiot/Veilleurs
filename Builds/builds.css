@@ -181,6 +181,9 @@ html, body {
   transition: all .15s;
 }
 .class-chip:hover { border-color: var(--gold-dim); color: var(--text); }
+.class-chip.type-pve   { color: #6fcf7f; }
+.class-chip.type-pvp   { color: #f07070; }
+.class-chip.type-mixte { color: #c9a0f0; }
 .class-chip.active { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
 
 /* Niveau slider */
@@ -1003,7 +1006,7 @@ html, body {
 .sf-ico { font-size: 14px; text-align: center; line-height: 1; filter: saturate(.85); }
 .stat-filter-row label {
   flex: none; font-size: 11px; line-height: 1.3; color: var(--text); cursor: pointer;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; hyphens: auto; /* nom de stat lisible en entier */
 }
 .stat-filter-row.is-set label { color: var(--bright); }
 .stat-filter-row .vcl-step { width: 92px; height: 28px; }

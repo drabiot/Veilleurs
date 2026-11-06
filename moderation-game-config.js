@@ -8,6 +8,7 @@ const { setHash: _setHash, showPanel: _showPanel, escHtml, db, COL, doc, getDoc,
 // ── Config Jeu (paliers + MAX_LEVEL) ────────────────────
 let _gcPaliers  = [];
 let _gcMaxLevel = 18;
+let _gcNegOk = new Set(['hate']); // stats dont la valeur négative est un bonus (jamais en rouge sur le wiki)
 
 window.showGameConfig = async () => {
   if (ctx.role !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
@@ -33,6 +34,7 @@ async function _loadGameConfigData() {
          { id:3, label:'Palier 3', color:'#f87171', floorName:'Forêt Elfique' }];
     _gcMaxLevel = snapG.exists() && typeof snapG.data().maxLevel === 'number'
       ? snapG.data().maxLevel : 18;
+    _gcNegOk = new Set(snapG.exists() && Array.isArray(snapG.data().negBonusStats) ? snapG.data().negBonusStats : ['hate']);
     _renderGameConfig();
   } catch(e) {
     content.innerHTML = `<div style="color:var(--danger);">Erreur chargement : ${e.message}</div>`;
@@ -88,10 +90,24 @@ function _renderGameConfig() {
           style="${S.inp}width:110px;" oninput="_gcMaxLevel=+this.value">
         <span style="font-size:12px;color:var(--muted);">Niveau maximum des items et personnages</span>
       </div>
+    </div>
+
+    <div style="${S.section}">
+      <div style="${S.h}">Stats jamais en rouge</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Sur le wiki, une valeur négative s'affiche en rouge (malus). Coche les stats dont le négatif est un <b>bonus</b> (ex. Hâte : -2 % = capacités plus rapides) : elles restent à la couleur normale.</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;">
+        ${ALL_STATS.map(s => `
+        <label style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;">
+          <input type="checkbox" ${_gcNegOk.has(s.id) ? 'checked' : ''} onchange="gcToggleNegOk('${s.id}',this.checked)">
+          <span>${escHtml(s.icon)} ${escHtml(s.label)}</span>
+        </label>`).join('')}
+      </div>
     </div>`;
 
   content.innerHTML = html;
 }
+
+window.gcToggleNegOk = (id, on) => { if (on) _gcNegOk.add(id); else _gcNegOk.delete(id); };
 
 window.gcUpdatePalier = (idx, field, val) => { _gcPaliers[idx][field] = val; };
 // ID de palier : nombre (4, -1) ou texte libre (event, archive…) ; un ID purement numérique est stocké en nombre
@@ -148,7 +164,7 @@ window.saveGameConfig = async () => {
 
     await Promise.all([
       setDoc(doc(db, 'config', 'paliers'), { paliers: _gcPaliers }),
-      setDoc(doc(db, 'config', 'game'),    { maxLevel: maxLv }),
+      setDoc(doc(db, 'config', 'game'),    { maxLevel: maxLv, negBonusStats: [..._gcNegOk] }),
     ]);
 
     // Mettre à jour l'état en mémoire

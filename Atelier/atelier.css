@@ -2263,3 +2263,24 @@ select.input-name option { background: var(--surface2); color: var(--text); }
   .opt-foot { flex-direction: column; align-items: stretch; gap: 10px; }
   .opt-foot .opt-run { width: 100%; }
 }
+
+/* ── Menu déroulant aux couleurs du site (type de build à la publication) ── */
+.vsel { position: relative; }
+.vsel-btn {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: var(--deep); border: 1px solid var(--rim2); color: var(--text);
+  font: inherit; font-size: 12px; letter-spacing: .04em; padding: 9px 12px; cursor: pointer; text-align: left;
+  transition: border-color .15s, background .15s;
+}
+.vsel-btn:hover, .vsel.open .vsel-btn { border-color: var(--gold-dim); background: var(--surface); }
+.vsel-arrow { color: var(--gold-dim); font-size: 11px; transition: transform .15s; }
+.vsel.open .vsel-arrow { transform: rotate(180deg); }
+.vsel-list {
+  display: none; position: absolute; left: 0; right: 0; top: calc(100% + 3px); z-index: 20;
+  background: var(--surface); border: 1px solid var(--gold-dim); box-shadow: 0 8px 24px rgba(0,0,0,.6);
+}
+.vsel.open .vsel-list { display: block; }
+.vsel-opt { padding: 9px 12px; font-size: 12px; letter-spacing: .04em; color: var(--text); cursor: pointer; border-left: 2px solid transparent; }
+.vsel-opt:hover { background: var(--gold-glow); border-left-color: var(--gold); color: var(--bright); }
+.vsel-opt.sel { color: var(--gold); border-left-color: var(--gold-dim); }
+.vsel-pve { color: #6fcf7f; } .vsel-pvp { color: #f07070; } .vsel-mixte { color: #c9a0f0; }

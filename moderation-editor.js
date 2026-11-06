@@ -544,9 +544,88 @@ function _buildGenericForm(data, col) {
     </div>`;
 }
 
+// ── Niveaux d'étoile (items) : doc.stars = { "n": {champ: valeur|null} } — deltas en cascade, voir creator.js ──
+const _ED_STAR_MAX = 5;
+const _ED_STAR_STRUCT = new Set(['id', 'palier', 'category', 'images', 'stars', 'star']); // communs à tous les niveaux
+const _edClone = o => JSON.parse(JSON.stringify(o));
+function _edStarEffective(base, deltas, n) {
+  const o = _edClone(base);
+  for (let i = 1; i <= n; i++) for (const [k, v] of Object.entries(deltas[i] || {})) { if (v === null) delete o[k]; else o[k] = _edClone(v); }
+  return o;
+}
+function _edStarDiff(cur, prev) {
+  const d = {};
+  for (const k of new Set([...Object.keys(cur), ...Object.keys(prev)])) {
+    if (_ED_STAR_STRUCT.has(k) || JSON.stringify(cur[k]) === JSON.stringify(prev[k])) continue;
+    d[k] = cur[k] !== undefined ? cur[k] : null;
+  }
+  return d;
+}
+function _edStarsOn() { return _ed.collection === 'items' && !!_ed.starDeltas; }
+
+// Mémorise le niveau affiché dans le formulaire (base si niveau 0, sinon son delta)
+function _edStarCommit() {
+  const cur = _collectGenericForm();
+  if (!_ed.starLevel || !_ed.starBase) { _ed.starBase = cur; return; }
+  const d = _edStarDiff(cur, _edStarEffective(_ed.starBase, _ed.starDeltas, _ed.starLevel - 1));
+  if (Object.keys(d).length) _ed.starDeltas[_ed.starLevel] = d; else delete _ed.starDeltas[_ed.starLevel];
+}
+
+// Document à écrire : base + stars (deltas non vides)
+function _edFinalData() {
+  const cur = _collectGenericForm();
+  if (!_edStarsOn()) return cur;
+  let base = cur;
+  const deltas = { ..._ed.starDeltas };
+  if (_ed.starLevel > 0 && _ed.starBase) {
+    base = _ed.starBase;
+    const d = _edStarDiff(cur, _edStarEffective(base, deltas, _ed.starLevel - 1));
+    if (Object.keys(d).length) deltas[_ed.starLevel] = d; else delete deltas[_ed.starLevel];
+  }
+  const out = { ...base };
+  delete out.stars;
+  const keys = Object.keys(deltas).filter(k => Object.keys(deltas[k]).length).sort((a, b) => a - b);
+  if (keys.length) { out.stars = {}; for (const k of keys) out.stars[k] = deltas[k]; }
+  return out;
+}
+
+function _edRenderStarBar() {
+  const el = document.getElementById('editor-stars');
+  if (!el) return;
+  if (!_edStarsOn()) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const lv = _ed.starLevel || 0;
+  const btn = (i, label, active, lit, has, title) =>
+    `<button type="button" onclick="edSetStar(${i})" title="${title}" role="radio" aria-checked="${active}" style="width:30px;height:28px;padding:0;cursor:pointer;border-radius:5px;border:1px solid ${active ? (i ? '#f5b301' : '#ff5a5a') : 'var(--border)'};background:${active ? (i ? 'rgba(245,179,1,.15)' : 'rgba(255,90,90,.15)') : 'transparent'};color:${i === 0 ? (active ? '#ff5a5a' : 'var(--muted)') : (lit ? '#f5b301' : 'var(--muted)')};font-size:${i ? 17 : 13}px;line-height:1;position:relative;">${label}${has ? '<span style="position:absolute;bottom:2px;left:50%;margin-left:-2px;width:4px;height:4px;border-radius:50%;background:#f5b301;"></span>' : ''}</button>`;
+  let html = btn(0, '✕', lv === 0, false, false, 'Niveau 0 : item de base');
+  for (let i = 1; i <= _ED_STAR_MAX; i++) {
+    const has = _ed.starDeltas[i] && Object.keys(_ed.starDeltas[i]).length;
+    html += btn(i, i <= lv ? '★' : '☆', i === lv, i <= lv, has, `Étoile ${i}${has ? ' (champs modifiés)' : ''}`);
+  }
+  if (lv > 0) html += `<span style="font-size:11px;color:var(--muted);margin-left:6px;max-width:260px;line-height:1.25;">Seules les différences avec le niveau ${lv - 1 || 'de base'} sont enregistrées (id, palier, catégorie et images : item de base).</span>`;
+  el.innerHTML = html;
+  el.style.display = 'flex';
+}
+
+window.edSetStar = function(n) {
+  n = Math.max(0, Math.min(_ED_STAR_MAX, +n || 0));
+  if (!_edStarsOn() || n === (_ed.starLevel || 0)) return;
+  _edStarCommit();
+  const target = _edStarEffective(_ed.starBase, _ed.starDeltas, n);
+  const keepOrig = _ed.origData;
+  document.getElementById('editor-form').innerHTML = _buildGenericForm(target, 'items'); // remplace origData par le niveau affiché
+  _ed.levelOrig = n ? _ed.origData : null;
+  _ed.origData = keepOrig; // l'original du document reste celui du niveau 0 (renommage, contributeurs…)
+  _ed.starLevel = n;
+  _initFormExtras('#editor-form');
+  _populateSetDatalist();
+  _edRenderStarBar();
+};
+
 function _collectGenericForm() {
-  // On repart de l'original (indispensable pour les panoplies et PNJ)
-  const result = { ...(_ed.origData || {}) };
+  // On repart de l'original (indispensable pour les panoplies et PNJ) ; à un niveau d'étoile > 0, de l'original de ce niveau
+  const _src = _ed.levelOrig || _ed.origData || {};
+  const result = { ..._src };
+  delete result.stars; // géré à part (_edFinalData)
   
   // 1. On ramasse TOUT ce qui est Base / Dynamique
   // On cible tous les champs qui ne sont PAS dans l'onglet qualité
@@ -555,8 +634,8 @@ function _collectGenericForm() {
   allRows.forEach(row => {
     const data = _innerExtract(row);
     if (data) {
-      if (_criticalFields.has(data.key) && (data.value === null || data.value === '') && _ed.origData?.[data.key] != null) {
-        result[data.key] = _ed.origData[data.key];
+      if (_criticalFields.has(data.key) && (data.value === null || data.value === '') && _src[data.key] != null) {
+        result[data.key] = _src[data.key];
       } else {
         result[data.key] = data.value;
       }
@@ -799,10 +878,23 @@ window.showEditor = async function(collection, id, data, origin) {
     await _loadRegionsForEditor();
   }
 
+  // Niveaux d'étoile : doc.stars sort du formulaire (barre ★ en haut), le formulaire affiche le niveau choisi
+  _ed.docKeys = Object.keys(data);
+  _ed.starLevel = 0; _ed.starBase = null; _ed.levelOrig = null; _ed.starDeltas = null;
+  if (collection === 'items') {
+    _ed.starDeltas = {};
+    for (const [k, v] of Object.entries(data.stars && typeof data.stars === 'object' ? data.stars : {})) {
+      if (+k >= 1 && +k <= _ED_STAR_MAX && v && typeof v === 'object') _ed.starDeltas[+k] = _edClone(v);
+    }
+    const { stars: _st, ...noStars } = data;
+    data = noStars;
+  }
+
   // Construire le formulaire générique (variantes sensibles traitées comme leur collection publique)
   const _colAlias = { items_sensible: 'items', mobs_secret: 'mobs', pnj_secret: 'personnages' };
   const formCollection = _colAlias[collection] ?? collection;
   document.getElementById('editor-form').innerHTML = _buildGenericForm(data, formCollection);
+  _edRenderStarBar();
 
 
   // Basculer sur l'onglet qualité si l'item n'a pas de version normale
@@ -859,7 +951,7 @@ window.saveEditor = async function() {
   btn.disabled = true; btn.textContent = '⏳ Sauvegarde…';
 
   try {
-    const newData = _collectGenericForm();
+    const newData = _edFinalData();
 
     // ── Cas spécial : item sensible (items_hidden + items_secret) ──────────
     if (_ed.collection === 'items_sensible') {
@@ -985,7 +1077,7 @@ window.saveEditor = async function() {
 
       // Suppression UNIQUEMENT des champs qui ont réellement disparu du formulaire
       // On ignore 'quality' ici car il est géré globalement dans newData
-      Object.keys(_ed.origData).forEach(k => {
+      (_ed.docKeys || Object.keys(_ed.origData)).forEach(k => {
         if (!(k in newData) && k !== '_order') {
           patch[k] = deleteField();
         }
@@ -1030,6 +1122,7 @@ window.saveEditor = async function() {
       if (idx >= 0) Object.assign(ctx.sensState.pnjSecret[idx], newData);
     }
     _ed.origData = { ...newData };
+    _ed.docKeys = Object.keys(newData);
     // Mettre à jour le cache data-all (force rechargement propre)
     window._dataAllInvalidate?.();
 
@@ -1075,6 +1168,22 @@ function _editorCacheUpdate(col, id, newData) {
 
 // ── Delete entry (depuis l'éditeur) ──────────────────
 window.deleteCurrentEntry = async function() {
+  // Un niveau d'étoile (1 à 5) est affiché : on ne supprime QUE ce niveau, jamais l'item ni sa version de base
+  if (_edStarsOn() && _ed.starLevel > 0) {
+    const lv = _ed.starLevel;
+    if (!await modal.confirm(`Supprimer uniquement le niveau ${'★'.repeat(lv)} de "${_ed.id}" ?\n\nL'item de base et les autres niveaux sont conservés.`)) return;
+    delete _ed.starDeltas[lv];
+    _ed.starLevel = 0;
+    _ed.levelOrig = null;
+    const keepOrig = _ed.origData;
+    document.getElementById('editor-form').innerHTML = _buildGenericForm(_edClone(_ed.starBase || keepOrig), 'items');
+    _ed.origData = keepOrig;
+    _initFormExtras('#editor-form');
+    _populateSetDatalist();
+    _edRenderStarBar();
+    await window.saveEditor();
+    return;
+  }
   const typeName = _COL_LABELS[_ed.collection] || _ed.collection;
   if (!await modal.confirm(`Supprimer ce ${typeName} "${_ed.id}" ?\n\nL'entrée sera placée en corbeille (restaurable depuis l'onglet Admin > Corbeille).`)) return;
   const btn = document.getElementById('btn-delete-editor');

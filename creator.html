@@ -36,7 +36,6 @@
     </div>
     <div class="header-right">
       <a href="Compendium/compendium.html" class="btn btn-ghost" style="font-size:11px;">📖 Compendium</a>
-      <button id="btn-guide" class="btn btn-guide-tuto" onclick="openGuideMenu()" title="Tutoriel interactif">✦ Guide</button>
       <a href="moderation.html" id="btn-moderation" class="btn btn-ghost" style="display:none;font-size:11px;">🛡️ Modération</a>
       <input type="text" id="author-input" placeholder="👤 Pseudo…" oninput="saveAuthor()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 10px;font-size:11px;outline:none;width:110px;transition:border-color .15s;font-family:inherit;" title="Pseudo affiché dans la soumission Discord">
       <span class="copy-msg" id="copy-msg">✓ Copié !</span>
@@ -145,7 +144,7 @@
     </div>
 
     <!-- IDENTITÉ -->
-    <div class="section" data-tuto="item-identity">
+    <div class="section">
       <div class="sec-head" onclick="toggleSec(this)">📋 Identité <span class="chev">▾</span></div>
       <div class="sec-body">
         <div class="row2">
@@ -156,6 +155,12 @@
               <span id="id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant — il est possible que cet item existe déjà sur le wiki !</span>
               <span id="id-orphan-badge" style="display:none;font-size:11px;font-weight:700;color:var(--success);background:rgba(74,222,128,.1);border:1px solid var(--success);border-radius:10px;padding:1px 8px;cursor:default;" title="">✓ Drop orphelin</span>
             </div>
+          </div>
+          <div class="field" id="star-field">
+            <label>Niveau d'étoile</label>
+            <div class="star-row" id="star-row" role="radiogroup" aria-label="Niveau d'étoile"></div>
+            <div class="star-hint" id="star-hint"></div>
+            <input type="hidden" id="f-star-self" value="0">
           </div>
           <div class="field" style="display:none;" aria-hidden="true">
             <input type="text" id="f-id" placeholder="" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
@@ -394,7 +399,7 @@
     </div>
 
     <!-- LORE & OBTAIN -->
-    <div class="section" data-tuto="item-lore">
+    <div class="section">
       <div class="sec-head" onclick="toggleSec(this)">📖 Lore & Obtention <span class="chev">▾</span></div>
       <div class="sec-body">
         <div class="field" id="lore-field">
@@ -496,7 +501,7 @@
       </div>
 
       <!-- Identité PNJ -->
-      <div class="section" data-tuto="pnj-identity">
+      <div class="section">
         <div class="sec-head" onclick="toggleSec(this)">🧑 Identité <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="row2">
@@ -631,7 +636,7 @@
       </div>
 
       <!-- Identité Région -->
-      <div class="section" data-tuto="region-identity">
+      <div class="section">
         <div class="sec-head" onclick="toggleSec(this)">📍 Identité <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="row2">
@@ -726,7 +731,7 @@
       </div>
 
       <!-- Identité Panoplie -->
-      <div class="section" data-tuto="panoplie-identity">
+      <div class="section">
         <div class="sec-head" onclick="toggleSec(this)">🔗 Identité <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="row2">
@@ -747,7 +752,7 @@
       </div>
 
       <!-- Bonus -->
-      <div class="section" data-tuto="panoplie-bonus">
+      <div class="section">
         <div class="sec-head" onclick="toggleSec(this)">✨ Bonus par nombre de pièces <span class="chev">▾</span></div>
         <div class="sec-body">
           <div id="panop-bonuses-list"></div>
@@ -781,7 +786,7 @@
       </div>
 
       <!-- IDENTITÉ -->
-      <div class="section" data-tuto="quest-identity">
+      <div class="section">
         <div class="sec-head" onclick="toggleSec(this)">📜 Identité <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="row2">
@@ -848,7 +853,7 @@
       </div>
 
       <!-- OBJECTIFS -->
-      <div class="section" data-tuto="quest-objectives">
+      <div class="section">
         <div class="sec-head" onclick="toggleSec(this)">🎯 Objectifs <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="hint">Liste d'objectifs. Activez → Suite pour indiquer une suite logique entre deux étapes.</div>
@@ -860,7 +865,7 @@
       </div>
 
       <!-- RÉCOMPENSES -->
-      <div class="section" data-tuto="quest-rewards">
+      <div class="section">
         <div class="sec-head" onclick="toggleSec(this)">🏆 Récompenses <span class="chev">▾</span></div>
         <div class="sec-body">
           <div id="quest-rew-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px;"></div>
@@ -893,7 +898,7 @@
       </div>
 
       <!-- Identité Mob -->
-      <div class="section" data-tuto="mob-identity">
+      <div class="section">
         <div class="sec-head" onclick="toggleSec(this)">👾 Identité <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="row2">
@@ -1019,7 +1024,7 @@
       </div>
 
       <!-- Loot Mob -->
-      <div class="section" data-tuto="mob-loot">
+      <div class="section">
         <div class="sec-head" onclick="toggleSec(this)">🎁 Loot <span class="chev">▾</span></div>
         <div class="sec-body">
           <div class="hint">Items droppés par ce mob. Chance en % (0–100). Les IDs non encore définis sont acceptés — ils apparaîtront dans le tracker d'IDs fantômes.</div>
@@ -1421,7 +1426,6 @@ window._modal = modal;
     new ResizeObserver(setHeaderH).observe(document.querySelector('.site-header'));
   })();
 </script>
-<script src="components/tutorial.js"></script>
 <script src="report-widget.js"></script>
 </body>
 </html>

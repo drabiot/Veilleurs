@@ -13,6 +13,7 @@ import { onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { doc, getDoc }
   from './d1db.js';
+import './coord-links.js';   // coordonnées « [coords:X,Z] » / « (X, Y, Z) » dans les textes -> lien vers un pin sur la carte
 import { initReportChat } from './report-chat.js';   // réponses des admins aux signalements (bulle à côté de « Bug / Suggestion »)
 
 // ── Display config ───────────────────────────────────

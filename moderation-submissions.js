@@ -499,7 +499,12 @@ function buildCard(sub) {
     actionsHtml = `<div class="review-comment">💬 ${escHtml(sub.comment)}</div>`;
   }
 
-  const modBadge = sub.isModification
+  const _kind = _subKind(sub);
+  const modBadge = _kind === 'starfam'
+    ? `<span class="sub-type" style="background:rgba(245,179,1,.15);color:#f5b301;border:1px solid rgba(245,179,1,.35);" title="Nouvelle fiche : niveau d'étoile d'un item existant (même nom)">★ Ajout d'étoile ${+sub.data.star}</span>`
+    : _kind === 'star'
+    ? `<span class="sub-type" style="background:rgba(245,179,1,.15);color:#f5b301;border:1px solid rgba(245,179,1,.35);" title="Même id qu'un item existant, nouveau niveau d'étoile : l'item de base ne sera pas modifié">★ Ajout d'étoile ${_starsNew(sub.data, _existingItem(sub)).join(', ')}</span>`
+    : _kind === 'modif'
     ? `<span class="sub-type" style="background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3);">✏️ Modif</span>`
     : `<span class="sub-type" style="background:rgba(74,222,128,.12);color:var(--success);border:1px solid rgba(74,222,128,.3);">✨ Ajout</span>`;
   const chasseBadge = sub.fromTableauDeChasse
@@ -531,6 +536,7 @@ function buildCard(sub) {
         <button class="btn-toggle" onclick="toggleDetails('${sub._id}', this)">▾ Voir</button>
       </div>
       <div class="sub-details" id="details-${sub._id}">
+        ${_kind === 'starfam' ? (() => { const fam = _starFamilyOf(sub), n = +sub.data.star; return `<div style="margin-bottom:10px;border:1px solid rgba(245,179,1,.35);background:rgba(245,179,1,.06);border-radius:6px;padding:10px 12px;font-size:12px;"><div style="font-weight:700;color:#f5b301;">${'★'.repeat(n)} — ajoute le niveau d'étoile ${n} de « ${escHtml(fam[0].name || fam[0].id)} »</div><div style="color:var(--muted);margin-top:4px;">Nouvelle fiche <code>${escHtml(sub.data.id)}</code>, reliée à ${fam.map(x => '<code>' + escHtml(x.id || x._id) + '</code>' + (+x.star > 0 ? ' (' + '★'.repeat(+x.star) + ')' : '')).join(', ')}. Les fiches existantes ne sont pas modifiées.</div></div>`; })() : ''}
         ${sub.data?.id ? `<div id="diff-${sub._id}" style="margin-bottom:10px;"><button class="btn btn-ghost btn-sm" style="font-size:11px;" onclick="loadSubDiff('${sub._id}','${sub.type}','${String(sub.data?.id||'')}')">${sub.isModification ? '🔍 Voir les changements' : '🔍 Comparer avec item existant'}</button></div>` : ''}
         <div id="pretty-${sub._id}">${_buildPrettySummary(sub.data || {}, sub.type)}</div>
         <div id="screens-${sub._id}"></div>
@@ -700,6 +706,20 @@ window.loadSubDiff = async function(subId, type, docId) {
     }
     const sub = _st.all.find(s => s._id === subId);
     if (!sub) return;
+    // Ajout d'étoile(s) sur un item existant : ce n'est PAS une modification de l'item. On montre ce que le niveau ajoute, pas un diff contre la base.
+    if (type === 'item') {
+      const newLv = _starsNew(sub.data, current);
+      if (newLv.length) {
+        const ss = _subStars(sub.data, current);
+        const val = v => v === null ? '<i>retiré</i>' : escHtml(typeof v === 'object' ? JSON.stringify(v) : String(v));
+        el.innerHTML = `<div style="border:1px solid rgba(245,179,1,.35);background:rgba(245,179,1,.06);border-radius:6px;padding:10px 12px;font-size:12px;">
+          <div style="font-weight:700;color:#f5b301;margin-bottom:6px;">${newLv.map(k => '★'.repeat(+k)).join(' · ')} — ajout ${newLv.length > 1 ? 'des niveaux' : 'du niveau'} d'étoile de « ${escHtml(current.name || current.id)} »</div>
+          <div style="color:var(--muted);margin-bottom:6px;">L'item de base et les autres niveaux ne sont pas modifiés. Seuls ces champs sont ajoutés à ${newLv.length > 1 ? 'ces niveaux' : 'ce niveau'} :</div>
+          ${newLv.map(k => `<div style="margin:4px 0;"><b style="color:#f5b301;">${'★'.repeat(+k)}</b> ${Object.keys(ss[k] || {}).length ? Object.entries(ss[k]).map(([f, v]) => `<span style="display:inline-block;margin:2px 6px 2px 0;padding:1px 7px;border:1px solid var(--border);border-radius:3px;"><span style="color:var(--muted);">${escHtml(f)}</span> ${val(v)}</span>`).join('') : '<span style="color:var(--muted);">identique au niveau inférieur</span>'}</div>`).join('')}
+        </div>`;
+        return;
+      }
+    }
     let proposed = sub.data || {};
     // Modification d'item sensible : les champs items_secret absents de la soumission
     // seront préservés à l'approbation → les refléter dans le proposed du diff
@@ -936,6 +956,10 @@ function _parseObjectLiteral(src) {
       out += (src[k] === ':' && !['true', 'false', 'null'].includes(word)) ? '"' + word + '"' : word;
       i = j; continue;
     }
+    if (/\d/.test(ch) && !/[\w.\-+]$/.test(out)) {      // clé numérique hors chaîne (ex. niveaux d'étoile « 1: {…} ») : entre guillemets aussi
+      const m = /^\d+(?=\s*:)/.exec(src.slice(i));
+      if (m) { out += '"' + m[0] + '"'; i += m[0].length; continue; }
+    }
     out += ch; i++;
   }
   out = out.replace(/,\s*([}\]])/g, '$1').replace(/,\s*$/, '');   // virgules finales (hors chaînes : une virgule suivie de } ou ] n'existe pas dans un texte entre guillemets sans être déjà protégée)
@@ -1001,13 +1025,69 @@ window.openEditorInCreator = function() {
 // Champs que le Creator sait produire, par type de soumission (= ce que build*Obj() renvoie).
 // Tout autre champ d'un document existant est conservé quand une modification est approuvée.
 const _CREATOR_MANAGED_KEYS = {
-  item:     new Set(['cat','category','classes','competence','cooldown_apply','craft','craft_cd','craft_qty','effects','event','evolutif','evolutions','evolvedFrom','id','images','lore','lvl','name','obtain','occulte','palier','quality','rarity','rune_slots','sensible','set','skill_name','skill_rarity','stats','tags','twoHanded','unique']),
+  item:     new Set(['cat','category','classes','competence','cooldown_apply','craft','craft_cd','craft_qty','effects','event','evolutif','evolutions','evolvedFrom','id','images','lore','lvl','name','obtain','occulte','palier','quality','rarity','rune_slots','sensible','set','skill_name','skill_rarity','star','stats','tags','twoHanded','unique']),
   mob:      new Set(['id','name','type','behavior','palier','region','images','inCodex','sensible','lore','spawnTime','coords','coords_more','loot']),
   pnj:      new Set(['coords','craft','id','images','instructions','is_underground','name','palier','region','sells','sensible','tag','type']),
   region:   new Set(['canTp','coords','id','images','inCodex','lore','name','palier']),
   quest:    new Set(['id','type','palier','zone','npc','desc','coords','titre','objectifs','recompenses','statut']),
   panoplie: new Set(['bonuses','id','label']),
 };
+
+// ── Étoiles : détection côté modération ───────────────
+// Même id qu'un item existant + au moins un niveau d'étoile absent / différent = AJOUT d'étoile(s) : l'item de base n'est jamais réécrit,
+// seul `stars` est fusionné niveau par niveau. Même id sans nouvelle étoile = modification classique.
+const _STAR_SKIP = new Set(['id', 'palier', 'category', 'images', 'stars', 'star', 'nameHash', 'ordre']);
+const _starNorm = v => String(v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+// Surcharges d'étoile portées par une soumission : ses `stars` + (même id, `star` = n différent du niveau de la fiche existante) le niveau n
+// déduit en comparant la soumission au résultat effectif du niveau n-1 de l'item existant (base + surcharges 1…n-1). Jamais la base elle-même.
+function _subStars(subData, existing) {
+  const out = { ...((subData?.stars && typeof subData.stars === 'object') ? subData.stars : {}) };
+  const n = +subData?.star;
+  const own = +existing?.star > 0 ? +existing.star : 0;
+  if (existing && n >= 1 && n <= 5 && n !== own && !out[n]) {
+    const eff = { ...existing }; delete eff.stars; delete eff.star;
+    for (let i = 1; i < n; i++) for (const [k, v] of Object.entries(existing.stars?.[i] || {})) { if (v === null) delete eff[k]; else eff[k] = v; }
+    const d = {};
+    for (const k of Object.keys(subData)) { // seuls les champs fournis comptent : un champ absent d'une soumission « version étoilée » n'est pas une suppression
+      if (_STAR_SKIP.has(k) || k.startsWith('_')) continue;
+      if (k === 'name' && _starNorm(subData[k]) === _starNorm(eff[k])) continue;
+      if (JSON.stringify(subData[k]) === JSON.stringify(eff[k])) continue;
+      d[k] = subData[k];
+    }
+    out[n] = d;
+  }
+  return out;
+}
+function _starsNew(subData, existing) {
+  if (!existing) return [];
+  const ss = _subStars(subData, existing);
+  const es = existing.stars || {};
+  return Object.keys(ss).filter(k => JSON.stringify(ss[k]) !== JSON.stringify(es[k])).sort((a, b) => a - b);
+}
+function _existingItem(sub) {
+  const id = sub.data?.id;
+  return id ? (_modCache['items'] || []).find(x => (x.id || x._id) === id) || null : null;
+}
+// 'star' | 'modif' | 'add' (pour les items, d'après la base chargée ; sinon le drapeau de la soumission)
+// Fiches existantes qui sont « le même item » qu'une soumission étoilée : même nom, id identique au palier près (…_p1 / …_p2), autre id.
+// Même nom = même item ; c'est le niveau d'étoile qui compte.
+function _starFamilyOf(sub) {
+  const d = sub.data;
+  if (sub.type !== 'item' || !(+d?.star >= 1) || !d.id) return [];
+  const stem = String(d.id).replace(/(_p\d+|_event|_archive)$/, '');
+  const nm = _starNorm(d.name);
+  return (_modCache['items'] || []).filter(x => {
+    const xid = String(x.id || x._id || '');
+    return xid !== d.id && xid.replace(/(_p\d+|_event|_archive)$/, '') === stem && _starNorm(x.name) === nm;
+  });
+}
+function _subKind(sub) {
+  if (sub.type !== 'item') return sub.isModification ? 'modif' : 'add';
+  const ex = _existingItem(sub);
+  if (ex && _starsNew(sub.data, ex).length) return 'star';
+  if (!ex && _starFamilyOf(sub).length) return 'starfam';   // nouvelle fiche = niveau d'étoile d'un item déjà connu
+  return ex || sub.isModification ? 'modif' : 'add';
+}
 
 // ── Approve ───────────────────────────────────────────
 window.approve = async (id) => {
@@ -1058,6 +1138,23 @@ window.approve = async (id) => {
         dataId = nid;
         sub.data = { ...sub.data, id: nid };
         if (Array.isArray(sub.data.images)) sub.data.images = sub.data.images.map(p => typeof p === 'string' ? p.split(old).join(nid) : p);
+      }
+    }
+
+    // Item : même id qu'un item existant + nouvelle(s) étoile(s) → ajout d'étoile. On repart du document existant tel quel et on fusionne `stars`
+    // niveau par niveau : la version de base (et les étoiles déjà validées) ne sont jamais écrasées. Le reste d'une soumission déjà « modification » reste inchangé.
+    if (sub.type === 'item') {
+      const _exS = await getDoc(doc(db, 'items', String(dataId))).catch(() => null);
+      if (_exS?.exists()) {
+        const _ex = _exS.data();
+        const _new = _starsNew(sub.data, _ex);
+        if (_new.length) {
+          sub.data = { ..._ex, stars: { ...(_ex.stars || {}), ..._subStars(sub.data, _ex) } };
+          sub.isModification = true;
+          toast(`★ Ajout d'étoile ${_new.join(', ')} sur « ${dataId} » : l'item de base n'est pas modifié.`, 'info', 6000);
+        } else if (!sub.isModification) {
+          sub.isModification = true; // même id sans nouvelle étoile : modification (jamais un setDoc « d'ajout » par-dessus l'existant sans préserver ordre/images/contributeurs)
+        }
       }
     }
 

@@ -49,7 +49,7 @@
         <a href="../index.html" class="header-logo">Veilleurs au Clair de Lune</a>
       </div>
       <div class="header-right">
-        <a href="../creator.html?mode=item" class="btn-add-item">+ Ajouter un Équipement</a>
+        <a href="../creator.html?mode=item" class="btn-add-item">Accéder au Creator</a>
       </div>
     </div>
     <nav class="header-nav">
@@ -297,13 +297,17 @@
           <textarea id="publish-comment-inp" class="modal-ta" style="min-height:80px" maxlength="500" placeholder="Explique ton build : style de jeu, points forts, conseils…"></textarea>
         </div>
         <div style="display:flex; flex-direction:column; gap:6px;">
-          <label for="publish-type-sel" style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Type de build <span style="opacity:.6">(optionnel)</span></label>
-          <select id="publish-type-sel" class="modal-ta" style="min-height:0; padding:6px 8px;">
-            <option value="">— Non précisé —</option>
-            <option value="pve">PvE</option>
-            <option value="pvp">PvP</option>
-            <option value="mixte">Mixte</option>
-          </select>
+          <label style="font-size:10px; letter-spacing:.08em; color:var(--muted); text-transform:uppercase;">Type de build <span style="opacity:.6">(optionnel)</span></label>
+          <input type="hidden" id="publish-type-sel" value="" />
+          <div class="vsel" id="publish-type-dd">
+            <button type="button" class="vsel-btn" aria-haspopup="listbox" aria-expanded="false"><span class="vsel-label">— Non précisé —</span><span class="vsel-arrow">▾</span></button>
+            <div class="vsel-list" role="listbox">
+              <div class="vsel-opt" role="option" data-v="">— Non précisé —</div>
+              <div class="vsel-opt vsel-pve" role="option" data-v="pve">PvE</div>
+              <div class="vsel-opt vsel-pvp" role="option" data-v="pvp">PvP</div>
+              <div class="vsel-opt vsel-mixte" role="option" data-v="mixte">Mixte</div>
+            </div>
+          </div>
         </div>
         <label class="export-secret-toggle" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
           <input type="checkbox" id="chk-publish-unlisted" />

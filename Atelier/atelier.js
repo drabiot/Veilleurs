@@ -2405,10 +2405,31 @@ function loadAccessoriesForClass(classId) {
     document.getElementById('publish-error').style.display = 'none';
     document.getElementById('chk-publish-unlisted').checked = false;
     document.getElementById('publish-comment-inp').value = '';
-    document.getElementById('publish-type-sel').value = '';
+    window._pubTypeSet?.('');
     document.getElementById('modal-title').textContent = '◈ Publier le Build';
     openModal('publish');
   });
+
+  // Menu déroulant « Type de build » (aux couleurs du site, à la place du <select> natif)
+  (function() {
+    const dd = document.getElementById('publish-type-dd'), inp = document.getElementById('publish-type-sel');
+    if (!dd || !inp) return;
+    const btn = dd.querySelector('.vsel-btn'), lab = dd.querySelector('.vsel-label');
+    const close = () => { dd.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); };
+    window._pubTypeSet = v => {
+      inp.value = v;
+      const o = dd.querySelector('.vsel-opt[data-v="' + v + '"]');
+      lab.textContent = o ? o.textContent : '— Non précisé —';
+      lab.className = 'vsel-label' + (v ? ' vsel-' + v : '');
+      dd.querySelectorAll('.vsel-opt').forEach(x => x.classList.toggle('sel', x.dataset.v === v));
+      close();
+    };
+    btn.addEventListener('click', e => { e.stopPropagation(); const o = dd.classList.toggle('open'); btn.setAttribute('aria-expanded', o); });
+    dd.querySelectorAll('.vsel-opt').forEach(o => o.addEventListener('click', e => { e.stopPropagation(); window._pubTypeSet(o.dataset.v); }));
+    document.addEventListener('click', close);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && dd.classList.contains('open')) { close(); e.stopPropagation(); } }, true);
+    window._pubTypeSet('');
+  })();
 
   document.getElementById('btn-confirm-publish').addEventListener('click', async function() {
     const name = document.getElementById('publish-name-inp').value.trim();

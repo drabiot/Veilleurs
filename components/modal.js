@@ -125,6 +125,33 @@ export const modal = {
   },
 
   /**
+   * Dialogue de choix parmi N options (boutons en rangée).
+   * @param {string} message
+   * @param {Array<{ value: any, label: string, title?: string, primary?: boolean }>} options
+   * @param {{ cancelLabel?: string }} [opts]
+   * @returns {Promise<any|null>} la valeur choisie, ou null si annulé
+   */
+  pick(message, options = [], opts = {}) {
+    const { cancelLabel = 'Annuler' } = opts;
+    return new Promise(resolve => {
+      const overlay = makeOverlay();
+      overlay.innerHTML = `
+        <div class="vcl-modal-card">
+          <div class="vcl-modal-msg">${message}</div>
+          <div class="vcl-modal-btns" style="flex-wrap:wrap;justify-content:flex-start;margin-bottom:12px;">
+            ${options.map((o, i) => `<button class="btn ${o.primary ? '' : 'btn-ghost'}" data-pick="${i}" title="${(o.title || '').replace(/"/g, '&quot;')}"${o.primary ? ' style="background:var(--accent,#7c5cbf);color:#fff;"' : ''}>${o.label}</button>`).join('')}
+          </div>
+          <div class="vcl-modal-btns"><button class="btn btn-ghost" id="_vcl-cancel">${cancelLabel}</button></div>
+        </div>
+      `;
+      const close = val => { overlay.remove(); resolve(val); };
+      overlay.querySelectorAll('[data-pick]').forEach(b => b.addEventListener('click', () => close(options[+b.dataset.pick].value)));
+      overlay.querySelector('#_vcl-cancel').addEventListener('click', () => close(null));
+      overlay.addEventListener('click', e => { if (e.target === overlay) close(null); });
+    });
+  },
+
+  /**
    * Alerte asynchrone (un seul bouton OK).
    * @param {string} message
    * @param {{ label?: string }} [opts]

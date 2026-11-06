@@ -272,6 +272,7 @@
 
 /* En-tête : image + infos */
 .item-header {
+  position: relative;
   display: grid;
   grid-template-columns: 152px 1fr;
   gap: 28px;
@@ -1248,26 +1249,26 @@ a.craft-ingredient-name:hover {
 }
 .sv-max { color: var(--gold); }
 
-/* ── Filigranes de couleur : un bloc (palier / évènement / world boss) = une couleur, héritée par ses sous-catégories ── */
+/* ── Filigranes de couleur : un bloc (palier / évènement / world boss) = une teinte, héritée par ses sous-catégories. Volontairement discret. ── */
 .palier-block, .event-block { --wm: transparent; }
 .palier-block {
-  border-left: 3px solid var(--wm);
-  background: linear-gradient(90deg, color-mix(in srgb, var(--wm) 7%, transparent), transparent 70%);
+  border-left: 2px solid color-mix(in srgb, var(--wm) 55%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--wm) 4%, transparent), transparent 60%);
 }
-.palier-header .palier-label { color: color-mix(in srgb, var(--wm) 70%, var(--gold)); }
+.palier-header .palier-label { color: color-mix(in srgb, var(--wm) 35%, var(--gold)); }
 .event-block {
-  border-left: 3px solid var(--wm);
+  border-left: 2px solid color-mix(in srgb, var(--wm) 60%, transparent);
   margin: 2px 0;
-  background: linear-gradient(90deg, color-mix(in srgb, var(--wm) 11%, transparent), transparent 75%);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--wm) 5%, transparent), transparent 65%);
 }
-.event-header { position: relative; overflow: hidden; border-left: 0 !important; color: color-mix(in srgb, var(--wm) 75%, #fff) !important; }
+.event-header { position: relative; overflow: hidden; border-left: 0 !important; color: color-mix(in srgb, var(--wm) 45%, var(--text)) !important; }
 .event-header::after {
   content: attr(data-wm); position: absolute; right: 30px; top: 50%; transform: translateY(-50%) rotate(-8deg);
-  font-size: 30px; opacity: .13; pointer-events: none;
+  font-size: 26px; opacity: .06; pointer-events: none; filter: grayscale(.3);
 }
-.event-header:hover { background: color-mix(in srgb, var(--wm) 12%, transparent) !important; }
-.event-body .categorie-block { border-left: 2px solid color-mix(in srgb, var(--wm) 45%, transparent); margin-left: 4px; }
-.event-body .categorie-header { background: color-mix(in srgb, var(--wm) 5%, transparent); }
+.event-header:hover { background: color-mix(in srgb, var(--wm) 7%, transparent) !important; }
+.event-body .categorie-block { border-left: 1px solid color-mix(in srgb, var(--wm) 30%, transparent); margin-left: 4px; }
+.event-body .categorie-header { background: color-mix(in srgb, var(--wm) 2.5%, transparent); }
 
 /* 🎯 Tableau de chasse */
 .hunt-dot { margin-left: auto; padding-left: 6px; font-size: 11px; opacity: .85; flex: none; }
@@ -1531,3 +1532,33 @@ button.item-tag:hover { color: var(--gold); border-color: var(--gold-dim); backg
   .item-sheet > *, .item-image-inner img, .glossary-home, .sidebar-filters.open .sf-panel { animation: none; }
   .item-image-inner::after { transition: none; }
 }
+
+/* 🎯 Info manquante sur la fiche */
+.miss-hunt {
+  display: inline-flex; align-items: center; gap: 5px; text-decoration: none;
+  font-size: 11px; letter-spacing: .04em; color: var(--gold);
+  padding: 3px 8px; border: 1px dashed rgba(224,172,96,.5); border-radius: 4px; background: rgba(224,172,96,.07);
+  transition: background .15s, border-color .15s;
+}
+.miss-hunt:hover { background: rgba(224,172,96,.2); border-color: var(--gold); }
+.miss-slot { margin: 8px 0; }
+.miss-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 4px; }
+.miss-img { position: absolute; left: 8px; bottom: 8px; z-index: 5; background: rgba(14,12,10,.85); }
+
+/* Obtention manquante : modèle temporaire dans l'encadré */
+.obtain-placeholder { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.obtain-placeholder > span { color: var(--muted); font-style: italic; }
+
+/* Niveau d'étoile (fiche item) : à la suite du nom, cadre fin doré comme les badges Palier / Niveau */
+.item-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 10px; }
+.item-title-row .item-name { margin-bottom: 0; }
+.item-stars { display: inline-flex; align-items: center; gap: 2px; padding: 3px 7px; border: 1px solid rgba(215,175,95,.28); border-radius: 2px; background: rgba(215,175,95,.04); }
+.item-star { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: 2px; }
+.item-star svg { width: 17px; height: 17px; fill: transparent; stroke: #7a6238; stroke-width: 1.5; stroke-linejoin: round; transition: fill .15s, stroke .15s, filter .15s, transform .15s; }
+.item-star:hover svg { stroke: #d7af5f; transform: scale(1.18); }
+.item-star.lit svg { fill: #e0ac60; stroke: #f0c860; filter: drop-shadow(0 0 4px rgba(224,172,96,.55)); }
+.item-star:focus-visible { outline: 1px solid var(--gold-dim, #9a7040); outline-offset: 1px; }
+.item-star.missing { cursor: default; opacity: .35; }
+.item-star.missing:hover svg { transform: none; stroke: #7a6238; }
+.item-star:disabled { cursor: default; }
+.si-star { color: #e0ac60; font-size: .85em; letter-spacing: .5px; margin-left: 4px; text-shadow: 0 0 4px rgba(224,172,96,.45); }
