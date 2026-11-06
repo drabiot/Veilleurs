@@ -89,10 +89,14 @@
         </div>
 
         <div class="filter-section">
-          <div class="filter-head">⬡ Niveau max</div>
+          <div class="filter-head">⬡ Niveau (min – max)</div>
           <div class="level-range-row">
-            <span>1</span>
-            <input type="range" id="filter-level" min="1" max="30" value="30" step="1" />
+            <span class="level-range-val level-range-min" id="filter-level-min-val">1</span>
+            <div class="dual-range">
+              <div class="dr-track"><div class="dr-fill" id="dr-fill"></div></div>
+              <input type="range" id="filter-level-min" min="1" max="30" value="1" step="1" aria-label="Niveau minimum" />
+              <input type="range" id="filter-level" min="1" max="30" value="30" step="1" aria-label="Niveau maximum" />
+            </div>
             <span class="level-range-val" id="filter-level-val">30</span>
           </div>
         </div>

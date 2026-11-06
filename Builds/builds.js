@@ -47,6 +47,7 @@
     let filterClass    = '';
     let filterType     = '';   // '' | 'pve' | 'pvp' | 'mixte'
     const TYPE_LABELS  = { pve: 'PvE', pvp: 'PvP', mixte: 'Mixte' };
+    let filterMinLevel = 1;
     let filterMaxLevel = parseInt(document.getElementById('filter-level').max) || 30;
     let filterStats    = {};
     let filterFavOnly  = false;
@@ -121,6 +122,9 @@
     window.MAX_LEVEL = maxLvl;
     document.getElementById('filter-level').max = maxLvl;
     document.getElementById('filter-level').value = maxLvl;
+    document.getElementById('filter-level-min').max = maxLvl;
+    document.getElementById('filter-level-min').value = 1;
+    filterMinLevel = 1;
     _syncRange(document.getElementById('filter-level'));
     document.getElementById('filter-level-val').textContent = maxLvl;
     filterMaxLevel = maxLvl;
@@ -266,6 +270,7 @@
       if (filterClass)    filtered = filtered.filter(b => b.classe === filterClass);
       if (filterType)     filtered = filtered.filter(b => b.buildType === filterType);
       if (filterMaxLevel < maxLvl) filtered = filtered.filter(b => (b.level || 1) <= filterMaxLevel);
+      if (filterMinLevel > 1) filtered = filtered.filter(b => (b.level || 1) >= filterMinLevel);
 
       const statEntries = Object.entries(filterStats).filter(e => e[1] > 0);
       if (statEntries.length) {
@@ -341,7 +346,7 @@
 
     function _filtersActive() {
       return !!(filterClass || filterType || filterSearch || filterFavOnly || filterMyBuilds
-        || filterMaxLevel < maxLvl || Object.keys(filterStats).some(k => filterStats[k] > 0));
+        || filterMaxLevel < maxLvl || filterMinLevel > 1 || Object.keys(filterStats).some(k => filterStats[k] > 0));
     }
 
     function _emptyHtml() {
@@ -399,7 +404,7 @@
         add('class', '', `<span>${escHtml(c ? c.ico : '')}</span> <span>${escHtml(c ? c.label : filterClass)}</span>`); count++;
       }
       if (filterType) { add('type', '', `<span class="ac-k">Type</span> <span class="ac-v">${TYPE_LABELS[filterType]}</span>`); count++; }
-      if (filterMaxLevel < maxLvl) { add('level', '', `<span class="ac-k">Niveau max</span> <span class="ac-v">${filterMaxLevel}</span>`); count++; }
+      if (filterMinLevel > 1 || filterMaxLevel < maxLvl) { add('level', '', `<span class="ac-k">Niveau</span> <span class="ac-v">${filterMinLevel} – ${filterMaxLevel}</span>`); count++; }
       Object.entries(filterStats).filter(e => e[1] > 0).forEach(([id, v]) => {
         add('stat', id, `<span class="ac-k">${escHtml(_statLabel(id))}</span> <span class="ac-v">≥ ${v}</span>`); count++;
       });
@@ -429,10 +434,7 @@
         filterType = '';
         document.querySelectorAll('#type-chips .class-chip').forEach((c, i) => c.classList.toggle('active', i === 0));
       } else if (kind === 'level') {
-        filterMaxLevel = maxLvl;
-        const lv = document.getElementById('filter-level');
-        lv.value = maxLvl; _syncRange(lv);
-        document.getElementById('filter-level-val').textContent = maxLvl;
+        _resetLevelRange();
       } else if (kind === 'stat') {
         delete filterStats[key];
         const inp = document.querySelector(`input[data-stat="${CSS.escape(key)}"]`);
@@ -451,6 +453,23 @@
     }
 
     // Curseur doré : --p = part remplie de la piste
+    // Curseur à deux poignées : met à jour la zone dorée entre min et max + les valeurs affichées
+    function _syncDual() {
+      const mn = document.getElementById('filter-level-min'), mx = document.getElementById('filter-level');
+      const lo = +mn.min || 1, hi = +mx.max || 30, span = hi - lo || 1;
+      document.getElementById('dr-fill').style.left  = ((filterMinLevel - lo) / span * 100) + '%';
+      document.getElementById('dr-fill').style.right = ((hi - filterMaxLevel) / span * 100) + '%';
+      document.getElementById('filter-level-min-val').textContent = filterMinLevel;
+      document.getElementById('filter-level-val').textContent = filterMaxLevel;
+      // la poignée du dessus = celle qui peut encore bouger quand elles se touchent
+      mn.style.zIndex = filterMinLevel >= hi - 1 ? 3 : 2; mx.style.zIndex = 2;
+    }
+    function _resetLevelRange() {
+      filterMinLevel = 1; filterMaxLevel = maxLvl;
+      document.getElementById('filter-level-min').value = 1;
+      document.getElementById('filter-level').value = maxLvl;
+      _syncDual();
+    }
     function _syncRange(el) {
       const min = +el.min || 0, max = +el.max || 100;
       el.style.setProperty('--p', ((el.value - min) / (max - min || 1) * 100) + '%');
@@ -882,7 +901,7 @@
     function _canReorder() {
       return currentUserRole === 'admin' && sortBy === 'manual' && !isSingleView
         && !filterClass && !filterType && !filterSearch && !filterFavOnly && !filterMyBuilds
-        && filterMaxLevel >= maxLvl && !Object.keys(filterStats).length;
+        && filterMaxLevel >= maxLvl && filterMinLevel <= 1 && !Object.keys(filterStats).length;
     }
 
     // Place `id` à l'index `toIdx` (dans la liste actuelle), renumérote tout et n'écrit que les `order` modifiés
@@ -1217,11 +1236,18 @@
 
       // Niveau slider (client-side)
       document.getElementById('filter-level').addEventListener('input', e => {
-        filterMaxLevel = parseInt(e.target.value);
-        _syncRange(e.target);
-        document.getElementById('filter-level-val').textContent = filterMaxLevel;
+        filterMaxLevel = Math.max(parseInt(e.target.value), filterMinLevel);
+        e.target.value = filterMaxLevel;
+        _syncDual();
         _renderBuilds(allBuilds);
       });
+      document.getElementById('filter-level-min').addEventListener('input', e => {
+        filterMinLevel = Math.min(parseInt(e.target.value), filterMaxLevel);
+        e.target.value = filterMinLevel;
+        _syncDual();
+        _renderBuilds(allBuilds);
+      });
+      _syncDual();
 
       // Sort (client-side uniquement — tri appliqué dans _renderBuilds)
       document.getElementById('sort-select').addEventListener('change', e => {
@@ -1246,10 +1272,7 @@
       // Reset filtres
       document.getElementById('filter-reset').addEventListener('click', () => {
         filterClass = ''; filterType = ''; filterStats = {}; filterFavOnly = false; filterSearch = ''; filterMyBuilds = false;
-        filterMaxLevel = maxLvl;
-        document.getElementById('filter-level').value = maxLvl;
-        _syncRange(document.getElementById('filter-level'));
-        document.getElementById('filter-level-val').textContent = maxLvl;
+        _resetLevelRange();
         document.getElementById('search-input').value = '';
         document.getElementById('fav-toggle').classList.remove('active');
         document.getElementById('my-builds-toggle').classList.remove('active');

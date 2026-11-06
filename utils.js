@@ -10,6 +10,23 @@ function normalize(str) {
   return String(str ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
 
+/** Référence « id@n » = niveau d'étoile n défini dans la fiche (fiche de base + deltas stars 1…n en cascade).
+ *  `find(id)` retrouve une fiche par id ; renvoie la fiche telle quelle, ou la version étoilée (name + ★…, star = n), ou null. */
+function resolveStarItem(id, find) {
+  const it = find(id);
+  if (it) return it;
+  const m = typeof id === 'string' ? id.match(/^(.+)@([1-5])$/) : null;
+  const base = m && find(m[1]);
+  if (!base) return null;
+  const o = { ...base }; delete o.stars;
+  for (let i = 1; i <= +m[2]; i++) {
+    const d = base.stars && base.stars[i];
+    if (!d || typeof d !== 'object') continue;
+    for (const [k, v] of Object.entries(d)) { if (v === null) delete o[k]; else o[k] = v; }
+  }
+  return { ...o, id, name: (base.name || m[1]) + ' ' + '★'.repeat(+m[2]), star: +m[2] };
+}
+
 /** Distance de Levenshtein — helper interne pour fuzzyMatch */
 function _editDist(a, b) {
   if (Math.abs(a.length - b.length) > 4) return 99;

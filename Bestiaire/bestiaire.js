@@ -124,7 +124,19 @@ function findItem(id) {
     _itemsIndex = new Map(ITEMS.map(i => [i.id, i]));
     _itemsIndexSize = ITEMS.length;
   }
-  return _itemsIndex.get(id) || null;
+  const hit = _itemsIndex.get(id);
+  if (hit) return hit;
+  // Niveau d'étoile défini dans la fiche : « id@n » = fiche de base + deltas 1…n
+  const m = typeof id === 'string' ? id.match(/^(.+)@([1-5])$/) : null;
+  const base = m && _itemsIndex.get(m[1]);
+  if (!base) return null;
+  const o = { ...base }; delete o.stars;
+  for (let i = 1; i <= +m[2]; i++) {
+    const d = base.stars && base.stars[i];
+    if (!d || typeof d !== 'object') continue;
+    for (const [k, v] of Object.entries(d)) { if (v === null) delete o[k]; else o[k] = v; }
+  }
+  return { ...o, id, name: (base.name || m[1]) + ' ' + '★'.repeat(+m[2]), star: +m[2] };
 }
 
 // Lazy-load THREE.js (utilisé uniquement par MonstreViewer3D pour les mobs 3D).

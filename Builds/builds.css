@@ -1036,3 +1036,18 @@ html, body {
 }
 .modal-counter { align-self: flex-end; font-size: 11px; color: var(--muted); }
 #comment-edit-inp { height: 160px; line-height: 1.5; }
+
+/* ── Curseur de niveau à deux poignées (min / max sur la même barre) ── */
+.dual-range { position: relative; flex: 1; height: 22px; }
+.dual-range .dr-track { position: absolute; left: 0; right: 0; top: 9px; height: 4px; border-radius: 2px; background: var(--rim2); }
+.dual-range .dr-fill { position: absolute; top: 0; bottom: 0; border-radius: 2px; background: var(--gold); left: 0; right: 0; }
+.level-range-row .dual-range input[type=range] {
+  position: absolute; left: 0; top: 0; width: 100%; margin: 0; pointer-events: none; background: transparent;
+  -webkit-appearance: none; appearance: none; height: 22px;
+}
+.level-range-row .dual-range input[type=range]::-webkit-slider-runnable-track { background: transparent; height: 22px; }
+.level-range-row .dual-range input[type=range]::-moz-range-track { background: transparent; }
+.level-range-row .dual-range input[type=range]::-moz-range-progress { background: transparent; }
+.level-range-row .dual-range input[type=range]::-webkit-slider-thumb { pointer-events: auto; cursor: pointer; margin-top: 3px; }
+.level-range-row .dual-range input[type=range]::-moz-range-thumb { pointer-events: auto; cursor: pointer; }
+.level-range-min { text-align: left; }

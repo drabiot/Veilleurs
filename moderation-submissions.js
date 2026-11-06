@@ -249,7 +249,7 @@ function _wikiItem(id, esc, right = '') {
   if (id === 'cols') { // la monnaie n'est pas un item
     return `<div style="display:flex;align-items:center;gap:8px;padding:2px 0;font-size:12px;"><span style="width:22px;text-align:center;flex-shrink:0;">🪙</span><span style="color:#d7af5f;font-weight:600;">Cols</span>${right}</div>`;
   }
-  const it =(_modCache['items'] || []).find(x => (x.id || x._id) === id) || null;
+  const it = resolveStarItem(id, k => (_modCache['items'] || []).find(x => (x.id || x._id) === k)) || null;
   const name = it?.name || id;
   const color = it && typeof getRarityColor === 'function' ? getRarityColor(it.rarity) : '#8c8c8c';
   const img = it && typeof getItemImg === 'function' ? getItemImg(it) : null;
@@ -329,7 +329,7 @@ function _buildPrettySummary(data, type) {
   };
   const SLOT_LABELS = { arme_p:'Arme Principale', arme_s:'Arme Secondaire / Bouclier', anneau:'Anneau', amulette:'Amulette', bracelet:'Bracelet', artefact:'Artefact', gants:'Gants', casque:'Casque', plastron:'Plastron', 'jambières':'Jambières', bottes:'Bottes' };
   const statDef  = id => (typeof ALL_STATS !== 'undefined' ? ALL_STATS.find(x => x.id === id) : null);
-  const itemName = id => ((_modCache['items'] || []).find(i => (i.id || i._id) === id) || {}).name;
+  const itemName = id => (resolveStarItem(id, k => (_modCache['items'] || []).find(i => (i.id || i._id) === k)) || {}).name;
 
   if (type === 'item') {
     const rarColor = RARITY_COLORS[data.rarity] || 'var(--muted)';

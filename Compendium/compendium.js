@@ -1162,14 +1162,17 @@ function renderCraft(craftList, resultData) {
     } else {
       imgHtml = `<span class="craft-ingredient-emoji">❓</span>`;
     }
-    const name = ingredient ? escHtml(ingredient.name) : `<em style="color:#888">${escHtml(entry.id)}</em>`;
+    // Niveau d'étoile : affiché à part (jamais coupé par la troncature du nom)
+    const starN = ingredient ? (+ingredient.star > 0 ? +ingredient.star : 0) : 0;
+    const name = ingredient ? escHtml(starN ? String(ingredient.name).replace(/\s*★+\s*$/, '') : ingredient.name) : `<em style="color:#888">${escHtml(entry.id)}</em>`;
+    const starsHtml = starN ? `<span class="craft-tile-stars" title="${starN} étoile${starN > 1 ? 's' : ''}">${'★'.repeat(starN)}</span>` : '';
     const nameHtml = ingredient
       ? `<a class="craft-ingredient-name" href="#${escHtml(entry.id)}" style="color:${color}" data-id="${escHtml(entry.id)}">${name}</a>`
       : `<span class="craft-ingredient-name" style="color:#888">${name}</span>`;
     return `
       <div class="craft-tile">
         <span class="craft-tile-icon" style="--rc:${color}">${imgHtml}<span class="craft-tile-qty">×${entry.qty}</span></span>
-        ${nameHtml}
+        ${nameHtml}${starsHtml}
       </div>`;
   }
 

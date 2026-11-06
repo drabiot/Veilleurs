@@ -2475,6 +2475,19 @@ function _addStarOverlayEntries(index) {
   index.push(...extra);
 }
 
+// Fiche effective d'une entrée de recherche : pour « base@n », la fiche de base + deltas d'étoile 1…n (craft, craft_cd… du niveau)
+function _entryItem(entry) {
+  const raw = entry?._raw;
+  if (!raw || !entry._starLvl || !raw.stars) return raw;
+  const o = { ...raw }; delete o.stars;
+  for (let i = 1; i <= entry._starLvl; i++) {
+    const d = raw.stars[i];
+    if (!d || typeof d !== 'object') continue;
+    for (const [k, v] of Object.entries(d)) { if (v === null) delete o[k]; else o[k] = v; }
+  }
+  return o;
+}
+
 // « Épée du Tutoriel ★★★ » : une version étoilée est sélectionnable comme n'importe quel item, indépendamment de sa version sans étoile
 function _starSuffix(it) { const n = +it?.star; return n > 0 && n <= STAR_MAX ? ' ' + '★'.repeat(n) : ''; }
 
@@ -6981,7 +6994,7 @@ function renderPnjCrafts() {
       c.resultId = id;
       if (id && typeof ITEMS !== 'undefined') {
         const entry = allItemsIndex.find(it => it.id === id);
-        const item  = entry?._raw;
+        const item  = _entryItem(entry);
         let filled = false;
         if (item?.craft?.length && !c.ingredients.length) {
           c.ingredients = item.craft.map(ing => ({ uid: pnjIngUid++, itemId: ing.id || '', qty: ing.qty || 1 }));

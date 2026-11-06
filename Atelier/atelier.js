@@ -3615,7 +3615,35 @@ function loadAccessoriesForClass(classId) {
   window.addEventListener('resize', fitGrid);
 
   /* ══ INIT ══ */
+  // Niveaux d'étoile définis dans la fiche (stars) : une entrée par niveau « Nom ★n » (id « base@n »), juste après la fiche de base.
+  function expandStarEntries() {
+    if (ITEMS._starsExpanded) return;
+    ITEMS._starsExpanded = true;
+    const out = [];
+    ITEMS.forEach(function(it) {
+      out.push(it);
+      if (!it.stars || typeof it.stars !== 'object') return;
+      const lvls = Object.keys(it.stars).map(Number).filter(function(n) { return n >= 1 && n <= 5; }).sort(function(a, b) { return a - b; });
+      lvls.forEach(function(n) {
+        const o = Object.assign({}, it); delete o.stars;
+        for (let i = 1; i <= n; i++) {
+          const d = it.stars[i];
+          if (!d || typeof d !== 'object') continue;
+          Object.keys(d).forEach(function(k) { if (d[k] === null) delete o[k]; else o[k] = d[k]; });
+        }
+        o.id = getItemId(it) + '@' + n;
+        delete o._id;
+        o.name = (it.name || '') + ' ' + '★'.repeat(n);
+        o.star = n;
+        o._starOf = getItemId(it);
+        out.push(o);
+      });
+    });
+    if (out.length !== ITEMS.length) { ITEMS.length = 0; Array.prototype.push.apply(ITEMS, out); }
+  }
+
   function init() {
+    expandStarEntries();
     // Re-read active slot from meta on every call (handles preview, _exitPreview, normal reload)
     try {
       const meta = JSON.parse(localStorage.getItem(META_KEY) || '{}');

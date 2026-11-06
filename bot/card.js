@@ -408,7 +408,10 @@ async function drawItemCard(canvas, item, exportScale = null, maps = {}) {
 
   // Nom
   ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  const nameMaxW = RMAX - IX;
+  // Niveau d'étoile (item.star) : étoiles dessinées à droite du nom (polygones : aucune police n'est requise)
+  const starN = Math.max(0, Math.min(5, parseInt(item.star, 10) || 0));
+  const starsW = starN ? starN * 22 + 6 : 0;
+  const nameMaxW = RMAX - IX - starsW;
   let nameSize = 28;
   ctx.font = `bold ${nameSize}px "Cinzel", "Segoe UI Emoji"`;
   while (ctx.measureText(item.name || '?').width > nameMaxW && nameSize > 11) {
@@ -422,6 +425,16 @@ async function drawItemCard(canvas, item, exportScale = null, maps = {}) {
   ctx.fillStyle = rColor;
   ctx.fillText(item.name || '?', IX, NAME_Y);
   ctx.restore();
+  if (starN) {
+    const sx0 = IX + ctx.measureText(item.name || '?').width + 10, R = Math.min(10, nameSize * 0.42), cy = NAME_Y - nameSize * 0.36;
+    ctx.save(); ctx.fillStyle = '#f0c24b'; ctx.shadowColor = '#f0c24b'; ctx.shadowBlur = 8;
+    for (let k = 0; k < starN; k++) {
+      const cx = sx0 + R + k * 22; ctx.beginPath();
+      for (let j = 0; j < 10; j++) { const a = -Math.PI / 2 + j * Math.PI / 5, r = j % 2 ? R * 0.45 : R; ctx[j ? 'lineTo' : 'moveTo'](cx + r * Math.cos(a), cy + r * Math.sin(a)); }
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  }
 
   // Badges
   const subFields  = CAT_SUBTITLE[item.category] || ['slot', 'lvl'];

@@ -1502,6 +1502,7 @@ a.craft-ingredient-name:hover {
   flex: none; max-width: 100%; font-size: 10.5px; line-height: 1.3; word-break: break-word;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
+.craft-tile-stars { color: #f0c24b; font-size: 11px; line-height: 1; letter-spacing: 1px; margin-top: -3px; white-space: nowrap; }
 .craft-arrow { display: flex; align-items: center; gap: 10px; color: var(--gold-dim); font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; }
 .craft-arrow::before, .craft-arrow::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--rim2)); }
 .craft-arrow::after { background: linear-gradient(90deg, var(--rim2), transparent); }

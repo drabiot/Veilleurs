@@ -141,15 +141,30 @@ async function postChain(rest, channelId, ch, title, content, icon, cards, tagId
   return { threadId, messageId: ids[0], messageIds: ids.filter(Boolean) };
 }
 
+/** Niveaux d'étoile définis dans la fiche (stars : deltas cumulés 1…n) → un item « complet » par niveau. */
+const starLevels = it => Object.keys(it.stars || {}).map(Number).filter(n => n >= 1 && n <= 5).sort((a, b) => a - b);
+function starVariant(it, n) {
+  const o = { ...it }; delete o.stars;
+  for (let i = 1; i <= n; i++) { const d = it.stars[i]; if (!d || typeof d !== 'object') continue; for (const [k, v] of Object.entries(d)) { if (v === null) delete o[k]; else o[k] = v; } }
+  return { ...o, star: n, id: `${it.id}@${n}` };
+}
+const starTxt = n => (n > 0 ? ' ' + '★'.repeat(n) : '');
+
 /** Poste l'item dans le salon : un fil par item (forum) ou des messages (salon texte). */
 async function postItem(rest, channelId, item, ctx, channelInfo, opts = {}) {
   const it = publicItem(item, ctx);
   const ch = channelInfo || await rest.get(`/channels/${channelId}`);
-  const cardFile = { name: `${it.id}.png`, data: await card.generateCardBuffer(it, ctx.maps, 3) };
+  const own = parseInt(it.star, 10) > 0 ? parseInt(it.star, 10) : 0;  // niveau de cette fiche (versions étoilées d'un autre palier)
+  const lvls = starLevels(it);
+  const cardFiles = [{ name: `${it.id}.png`, data: await card.generateCardBuffer(it, ctx.maps, 3) }];   // une image par niveau d'étoile, dans le même post
+  for (const n of lvls) cardFiles.push({ name: `${it.id}_star${n}.png`, data: await card.generateCardBuffer(starVariant(it, n), ctx.maps, 3) });
   const icon = await card.generateIconBuffer(it, 160).catch(() => null); // texture : 1re image du fil = miniature dans la liste du forum
-  const content = `**${it.name}** · ${RAR[it.rarity] || it.rarity || ''}\n[Voir sur le wiki](<${WIKI}/Compendium/compendium.html#${it.id}>)`;
+  const stars = lvls.length ? `
+Niveaux d'étoile : ${[own, ...lvls.filter(n => n !== own)].map(n => n ? '★'.repeat(n) : 'sans étoile').join(' · ')}` : '';
+  const content = `**${it.name}${starTxt(own)}** · ${RAR[it.rarity] || it.rarity || ''}${stars}
+[Voir sur le wiki](<${WIKI}/Compendium/compendium.html#${it.id}>)`;
   const tagIds = [...await itemTagIds(rest, channelId, ch, it), ...(opts.eventTags ? [tagIdFor(ch, eventOf(it))] : [])].filter(Boolean);
-  return postChain(rest, channelId, ch, it.name, content, icon && { name: `${it.id}_texture.png`, data: icon }, [cardFile], [...new Set(tagIds)].slice(0, 5));
+  return postChain(rest, channelId, ch, String(it.name).slice(0, 100 - starTxt(own).length) + starTxt(own), content, icon && { name: `${it.id}_texture.png`, data: icon }, cardFiles, [...new Set(tagIds)].slice(0, 5));
 }
 
 /** Poste tous les items d'un set dans UN post au nom du set : liste de liens nommés, texture du premier item en miniature, puis une carte par message. */

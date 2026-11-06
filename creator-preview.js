@@ -8,7 +8,7 @@
 
   const esc = s => (typeof escHtml === 'function' ? escHtml(String(s ?? '')) : String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])));
   const wrap = () => document.getElementById('preview-wrap');
-  const itemById = id => (typeof ITEMS !== 'undefined' ? ITEMS.find(i => i.id === id) : null);
+  const itemById = id => (typeof ITEMS !== 'undefined' ? resolveStarItem(id, k => ITEMS.find(i => i.id === k)) : null);
   const imgOf = o => (o && o.images && o.images[0]) ? String(o.images[0]).replace(/^\.\.\//, '') : '';
   const paliers = () => window._vcl_paliers || (typeof _DEFAULT_PALIERS !== 'undefined' ? _DEFAULT_PALIERS : []);
   const palierLabel = p => { const f = paliers().find(x => String(x.id) === String(p)); return f ? f.label : (p === 'event' ? 'Event' : p === 'worldboss' ? 'World Boss' : p == -1 ? 'Archive' : 'Palier ' + p); };
