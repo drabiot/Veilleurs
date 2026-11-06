@@ -26,9 +26,10 @@
   }
 
   // ── Stats : seules les stats utilisées sont visibles, la recherche ajoute ──
+  let statsExpanded = false; // true = liste complète de toutes les stats (comme avant) ; false = seulement celles ajoutées
   function statsCompact() {
     const box = $('#stats-container'); if (!box) return;
-    box.classList.add('compact');
+    box.classList.toggle('compact', !statsExpanded);
     let total = 0;
     $$('.stat-row', box).forEach(r => {
       if (!r.querySelector('.srow-x')) { // ✕ : retire la ligne (vide les valeurs, la masque)
@@ -51,7 +52,7 @@
       g.classList.toggle('v2-empty', !any);
     });
     const head = box.previousElementSibling; // en-tête « Stat / Min / Max »
-    if (head) head.style.display = total ? 'grid' : 'none';
+    if (head) head.style.display = (total || statsExpanded) ? 'grid' : 'none';
   }
 
   // Recherche de stat : liste déroulante (noms seulement). ↑↓ + Entrée / clic = ajoute la stat, curseur sur sa valeur.
@@ -63,6 +64,22 @@
     statDrop = document.createElement('div');
     statDrop.id = 'stat-drop'; statDrop.hidden = true;
     statSearch.parentNode.appendChild(statDrop);
+
+    // Bouton « tout dérouler » : liste complète des stats, celles qui ont une valeur comptent dans l'item
+    const toggle = document.createElement('button');
+    toggle.type = 'button'; toggle.id = 'stats-expand'; toggle.className = 'btn btn-ghost btn-sm';
+    toggle.setAttribute('aria-pressed', 'false');
+    toggle.textContent = '☰ Tout afficher';
+    toggle.onclick = () => {
+      statsExpanded = !statsExpanded;
+      toggle.setAttribute('aria-pressed', String(statsExpanded));
+      toggle.textContent = statsExpanded ? '☰ Masquer les vides' : '☰ Tout afficher';
+      closeStatDrop();
+      statsCompact();
+      if (statsExpanded) $('#stats-container').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    };
+    const clearBtn = $('button[onclick="clearStats()"]', statSearch.parentNode);
+    statSearch.parentNode.insertBefore(toggle, clearBtn || null);
   }
   const closeStatDrop = () => { if (statDrop) { statDrop.hidden = true; statHits = []; } };
   function pickStat(row) {
@@ -91,7 +108,7 @@
   }
   function searchStats() {
     const q = statSearch.value.trim().toLowerCase();
-    if (!q) { closeStatDrop(); return; }
+    if (!q || statsExpanded) { closeStatDrop(); return; }   // liste complète affichée : la recherche filtre directement les lignes
     statDrop.style.width = statSearch.offsetWidth + 'px';
     const fm = typeof fuzzyMatch === 'function' ? fuzzyMatch : (a, b) => b.includes(a);
     statHits = [];

@@ -570,3 +570,8 @@
 /* barres collantes : translucides (même fond que la page, plus de bande plus sombre) ; la barre d'action reste plus dense car le contenu défile dessous */
 .mode-selector, #step-rail { backdrop-filter: blur(16px) saturate(1.1); }
 .actionbar { background: rgba(14,12,10,.86); }
+
+/* stats : bouton « tout afficher » + liste complète */
+#stats-expand { white-space: nowrap; flex-shrink: 0; height: 42px; border-radius: 22px; padding: 0 16px; }
+#stats-expand[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
+#stats-container:not(.compact) .stat-row:not(.v2-used):not(.v2-pin) .srow-x { visibility: hidden; }
