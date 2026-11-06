@@ -638,7 +638,7 @@ const _edCache = { regions: null, sets: null };
 const _shared = {};
 const _orderData = k => _shared[k]?.data ?? [];
 
-_lazyPanel(() => import('./moderation-editor.js?v=649128c4'), ['cpSvDown', 'cpHueDown', 'cpHexInput', 'cpRgbInput', 'edPickPreset', 'edSwitchTab', 'edAddGenField', 'edRenameField', 'edDelGenRow', 'edOpenRegions', 'edCloseRegions', 'edFilterRegions', 'edSelectRegion', 'showEditor', 'editorGoBack', 'saveEditor', 'deleteCurrentEntry']);
+_lazyPanel(() => import('./moderation-editor.js?v=7e20ebda'), ['cpSvDown', 'cpHueDown', 'cpHexInput', 'cpRgbInput', 'edPickPreset', 'edSwitchTab', 'edAddGenField', 'edRenameField', 'edDelGenRow', 'edOpenRegions', 'edCloseRegions', 'edFilterRegions', 'edSelectRegion', 'showEditor', 'editorGoBack', 'saveEditor', 'deleteCurrentEntry']);
 
 
 
