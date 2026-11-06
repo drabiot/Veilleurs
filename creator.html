@@ -8,7 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Cinzel:wght@600;900&display=swap">
 <title>Creator — Veilleurs au Clair de Lune</title>
-<link rel="stylesheet" href="creator.css?v=f1e0bceb">
+<link rel="stylesheet" href="creator.css?v=9d463941">
+<link rel="stylesheet" href="creator-wiki.css?v=33f21e07">
+<link rel="stylesheet" href="creator-v2.css?v=864f47a0">
 <link rel="stylesheet" href="report-widget.css">
 <script src="no-spin.js?v=b9169870" defer></script>
 <script src="sw-register.js" defer></script>
@@ -20,31 +22,28 @@
 
 <div class="ambient-bg" aria-hidden="true">
   <div class="moon"></div>
+  <div class="fog fog-1"></div>
+  <div class="fog fog-2"></div>
+  <div class="vignette"></div>
 </div>
 
 <header class="site-header">
   <div class="header-top">
     <div class="header-left">
-      <div class="traffic-lights">
-        <span class="tl tl-red"></span>
-        <span class="tl tl-yellow"></span>
-        <span class="tl tl-green"></span>
-      </div>
-      <span class="header-sep">─────</span>
       <a href="index.html" class="header-logo">Veilleurs au Clair de Lune</a>
       <span class="header-subtitle" id="header-subtitle">// CREATOR</span>
     </div>
     <div class="header-right">
-      <a href="Compendium/compendium.html" class="btn btn-ghost" style="font-size:11px;">📖 Compendium</a>
-      <a href="moderation.html" id="btn-moderation" class="btn btn-ghost" style="display:none;font-size:11px;">🛡️ Modération</a>
-      <input type="text" id="author-input" placeholder="👤 Pseudo…" oninput="saveAuthor()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 10px;font-size:11px;outline:none;width:110px;transition:border-color .15s;font-family:inherit;" title="Pseudo affiché dans la soumission Discord">
+      <a href="Compendium/compendium.html" class="btn btn-ghost hdr-btn">📖 Compendium</a>
+      <a href="moderation.html" id="btn-moderation" class="btn btn-ghost hdr-btn" style="display:none;">🛡️ Modération</a>
       <span class="copy-msg" id="copy-msg">✓ Copié !</span>
-      <span id="auth-user-status" style="font-size:11px;color:var(--muted);display:none;"></span>
-      <button class="btn btn-ghost" id="btn-login" onclick="openLoginModal()" style="display:none;font-size:11px;">🔑 Connexion</button>
-      <button class="btn btn-ghost" id="btn-change-pseudo" onclick="openChangePseudoModal()" style="display:none;font-size:11px;" title="Changer mon pseudo">✏️</button>
-      <button class="btn btn-ghost" id="btn-logout-hdr" onclick="doLogout()" style="display:none;font-size:11px;">🚪</button>
-      <button class="btn btn-primary" id="btn-submit-discord" onclick="submitToDiscord()" title="Soumettre (Ctrl + S ou Ctrl + Entrée)">◈ Soumettre</button>
-      <button class="btn btn-ghost" onclick="resetForm()" style="font-size:11px;">↺ Reset</button>
+      <div class="acct">
+        <input type="text" id="author-input" placeholder="Pseudo…" oninput="saveAuthor()" title="Pseudo affiché dans la soumission Discord" autocomplete="off">
+        <span id="auth-user-status" style="display:none;"></span>
+        <button class="btn btn-ghost hdr-btn" id="btn-login" onclick="openLoginModal()" style="display:none;">🔑 Connexion</button>
+        <button class="btn btn-ghost hdr-btn" id="btn-change-pseudo" onclick="openChangePseudoModal()" style="display:none;" title="Changer mon pseudo">✏️</button>
+        <button class="btn btn-ghost hdr-btn" id="btn-logout-hdr" onclick="doLogout()" style="display:none;" title="Déconnexion">🚪</button>
+      </div>
     </div>
   </div>
 </header>
@@ -100,8 +99,8 @@
     <div id="item-form">
 
     <!-- CHARGER UN ITEM -->
-    <div class="section" style="border-color:var(--accent);">
-      <div class="sec-head" style="background:rgba(122,90,248,.12);color:var(--accent);" onclick="toggleSec(this)">
+    <div class="section loader">
+      <div class="sec-head" onclick="toggleSec(this)">
         📂 Charger / Éditer un item existant <span class="chev">▾</span>
       </div>
       <div class="sec-body">
@@ -116,33 +115,6 @@
       <button class="btn btn-ghost btn-sm" onclick="clearEditingMode()">✕ Nouveau item</button>
     </div>
 
-    <!-- SCREENSHOTS -->
-    <div class="section" style="border-color:#e8a838;">
-      <div class="sec-head" style="background:rgba(232,168,56,.1);color:#e8a838;" onclick="toggleSec(this)">
-        📸 Screenshots
-        <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;margin-left:6px;">— optionnel mais fortement recommandé</span>
-        <span class="chev">▾</span>
-      </div>
-      <div class="sec-body">
-        <div class="hint" data-i18n-html style="color:#c8922a;border-left:3px solid #e8a838;padding-left:8px;background:rgba(232,168,56,.07);">
-          📋 Joins un screen de <b>l'infobulle</b> et/ou du <b>sprite</b> de l'item — ça nous permet de vérifier le nom exact, les stats et le sprite avant de valider ta soumission.
-        </div>
-        <div id="screens-drop-zone"
-             style="border:2px dashed rgba(232,168,56,.35);border-radius:8px;padding:18px 12px;text-align:center;cursor:pointer;transition:border-color .15s;margin-top:10px;min-height:60px;"
-             onclick="document.getElementById('screens-file-input').click()"
-             ondragover="event.preventDefault();this.style.borderColor='#e8a838'"
-             ondragleave="this.style.borderColor='rgba(232,168,56,.35)'"
-             ondrop="onScreensDrop(event)">
-          <div id="screens-placeholder" data-i18n-html style="color:var(--muted);font-size:12px;pointer-events:none;">
-            📋 Colle (Ctrl+V), glisse-dépose ou <u>clique</u> pour ajouter des screenshots
-          </div>
-          <div id="screens-preview-list" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px;"></div>
-        </div>
-        <input type="file" id="screens-file-input" accept="image/*" multiple style="display:none" onchange="onScreensFile(this.files)">
-        <div id="screens-count" style="font-size:11px;color:var(--muted);margin-top:6px;display:none;"></div>
-      </div>
-    </div>
-
     <!-- IDENTITÉ -->
     <div class="section">
       <div class="sec-head" onclick="toggleSec(this)">📋 Identité <span class="chev">▾</span></div>
@@ -152,7 +124,7 @@
             <label>Nom affiché *</label>
             <input type="text" id="f-name" placeholder="Épée du Dragon" oninput="onNameInput()">
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
-              <span id="id-duplicate-badge" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠️ ID déjà existant — il est possible que cet item existe déjà sur le wiki !</span>
+              <span id="id-duplicate-badge" title="Un item avec cet ID existe déjà sur le wiki" style="display:none;font-size:11px;font-weight:700;color:var(--danger);background:rgba(248,113,113,.12);border:1px solid var(--danger);border-radius:10px;padding:1px 8px;">⚠ Existe déjà</span>
               <span id="id-orphan-badge" style="display:none;font-size:11px;font-weight:700;color:var(--success);background:rgba(74,222,128,.1);border:1px solid var(--success);border-radius:10px;padding:1px 8px;cursor:default;" title="">✓ Drop orphelin</span>
             </div>
           </div>
@@ -378,7 +350,7 @@
 
     <!-- CRAFT -->
     <div class="section" id="craft-section">
-      <div class="sec-head" onclick="toggleSec(this)">🔨 Craft <span id="craft-badge" style="display:none;font-size:10px;background:rgba(215,175,95,.2);color:#e8d44a;border:1px solid rgba(215,175,95,.3);border-radius:8px;padding:1px 7px;font-weight:700;margin-left:4px;letter-spacing:.02em;"></span><span class="chev">▾</span></div>
+      <div class="sec-head" onclick="toggleSec(this)">🔨 Craft <span id="craft-badge" style="display:none;font-size:10px;background:rgba(224,172,96,.2);color:#e8d44a;border:1px solid rgba(224,172,96,.3);border-radius:8px;padding:1px 7px;font-weight:700;margin-left:4px;letter-spacing:.02em;"></span><span class="chev">▾</span></div>
       <div class="sec-body">
         <div class="hint">Ingrédients pour fabriquer cet item. Recherche par nom dans tous les items existants.</div>
         <div id="orphan-ids-bar" style="display:none;margin-bottom:8px;padding:7px 10px;background:#1e1a10;border:1px solid #4a3a10;border-radius:7px;">
@@ -388,12 +360,16 @@
         <div id="craft-list" style="display:flex;flex-direction:column;gap:8px;"></div>
         <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:4px" onclick="addCraft()">+ Ajouter un ingrédient</button>
         <div class="field" id="craft-cd-row" style="display:none;margin-top:10px;">
-          <label>⏱ CD de craft</label>
-          <input type="text" id="f-craft-cd" placeholder="ex: 5m, 2h, 1j,..." oninput="update()">
-          <div class="field-hint">Délai avant de pouvoir recrafter cet item. Mettez « aucun » si pas de restriction.</div>
-          <label style="margin-top:10px;display:block;">✖ Quantité fabriquée <span style="font-weight:400;color:var(--muted);font-size:10px;">(facultatif)</span></label>
-          <input type="number" id="f-craft-qty" min="1" step="1" placeholder="ex : 3 (vide = 1 seul exemplaire)" oninput="update()">
-          <div class="field-hint">Nombre d'exemplaires obtenus d'un seul craft (« ×3 » en jeu). Laisser vide pour 1.</div>
+          <div class="craft-meta">
+            <div class="cm-cd">
+              <label title="Délai avant de pouvoir recrafter l'item (« aucun » si pas de restriction)">CD de craft</label>
+              <input type="text" id="f-craft-cd" placeholder="5m, 2h, 1j…" oninput="update()">
+            </div>
+            <div class="cm-qty">
+              <label title="Nombre d'exemplaires obtenus par craft (vide = 1)">Quantité</label>
+              <input type="number" id="f-craft-qty" min="1" step="1" placeholder="1" oninput="update()">
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -427,14 +403,13 @@
           </div>
 
           <!-- Loot picker (mob uniquement) -->
-          <div id="obtain-loot-picker" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
-            <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Drops de ce mob — clique pour ajouter</div>
-            <div id="obtain-loot-entries" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+          <div id="obtain-loot-picker" class="loot-picker" style="display:none;">
+            <div class="lp-title">Drops de ce mob</div>
+            <div id="obtain-loot-entries" class="lp-entries"></div>
             <!-- Ajout manuel (item sensible non dans le loot du mob) -->
-            <div style="border-top:1px solid var(--border);padding-top:8px;display:flex;align-items:center;gap:6px;">
-              <span style="font-size:10px;color:var(--muted);white-space:nowrap;">Ajout manuel :</span>
-              <input type="number" id="obtain-manual-chance" min="0" max="100" step="0.1" placeholder="Chance %" style="background:var(--surface3);border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 8px;font-size:12px;outline:none;width:100px;">
-              <button class="btn btn-ghost btn-sm" onclick="addObtainMobManual()" style="white-space:nowrap;">+ Ajouter ce mob</button>
+            <div class="lp-manual">
+              <span class="pct-field"><input type="text" inputmode="decimal" autocomplete="off" id="obtain-manual-chance" placeholder="Taux de drop"><i aria-hidden="true">%</i></span>
+              <button class="btn btn-ghost" onclick="addObtainMobManual()">+ Ajouter ce mob</button>
             </div>
           </div>
 
@@ -446,15 +421,39 @@
           <!-- Override texte brut (chargé depuis item existant) -->
           <div id="obtain-override-wrap" style="display:none;margin-top:8px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-              <span style="font-size:10px;font-weight:700;color:#d7af5f;text-transform:uppercase;letter-spacing:.04em;">⚠️ Texte existant (prioritaire sur le builder)</span>
+              <span style="font-size:10px;font-weight:700;color:#E0AC60;text-transform:uppercase;letter-spacing:.04em;">⚠️ Texte existant (prioritaire sur le builder)</span>
               <button class="btn btn-ghost btn-sm" onclick="clearObtainOverride()">Utiliser le builder</button>
             </div>
-            <textarea id="f-obtain-override" style="background:var(--surface2);border:1px solid #d7af5f;border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;width:100%;resize:vertical;min-height:62px;outline:none;" oninput="update()"></textarea>
+            <textarea id="f-obtain-override" style="background:var(--surface2);border:1px solid #E0AC60;border-radius:6px;color:var(--text);padding:8px 10px;font-size:12px;font-family:inherit;width:100%;resize:vertical;min-height:62px;outline:none;" oninput="update()"></textarea>
           </div>
         </div>
       </div>
     </div>
 
+
+    <!-- SCREENSHOTS -->
+    <div class="section" id="screens-section">
+      <div class="sec-head" onclick="toggleSec(this)">
+        📸 Screenshots
+        <span class="sec-tag">recommandé</span>
+        <span class="chev">▾</span>
+      </div>
+      <div class="sec-body">
+        <div id="screens-drop-zone"
+             onclick="document.getElementById('screens-file-input').click()"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="this.classList.remove('drag-over');onScreensDrop(event)">
+          <div id="screens-placeholder" data-i18n-html>
+            <b>Infobulle</b> et/ou <b>sprite</b> de l'item<br>
+            <span>Colle (Ctrl+V), glisse-dépose ou <u>clique</u></span>
+          </div>
+          <div id="screens-preview-list" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:4px;"></div>
+        </div>
+        <input type="file" id="screens-file-input" accept="image/*" multiple style="display:none" onchange="onScreensFile(this.files)">
+        <div id="screens-count" style="font-size:11px;color:var(--muted);margin-top:6px;display:none;"></div>
+      </div>
+    </div>
 
     <!-- IMAGE DISCORD (désactivé) -->
     <div class="section" id="forum-img-section" style="display:none;">
@@ -484,8 +483,8 @@
     <div id="pnj-form">
 
       <!-- CHARGER UN PNJ -->
-      <div class="section" style="border-color:var(--accent);">
-        <div class="sec-head" style="background:rgba(122,90,248,.12);color:var(--accent);" onclick="toggleSec(this)">
+      <div class="section loader">
+        <div class="sec-head" onclick="toggleSec(this)">
           📂 Charger / Éditer un PNJ existant <span class="chev">▾</span>
         </div>
         <div class="sec-body">
@@ -619,8 +618,8 @@
     <div id="region-form">
 
       <!-- CHARGER UNE RÉGION -->
-      <div class="section" style="border-color:var(--accent);">
-        <div class="sec-head" style="background:rgba(122,90,248,.12);color:var(--accent);" onclick="toggleSec(this)">
+      <div class="section loader">
+        <div class="sec-head" onclick="toggleSec(this)">
           📂 Charger / Éditer une région existante <span class="chev">▾</span>
         </div>
         <div class="sec-body">
@@ -686,12 +685,12 @@
               <button id="reg-codex-no"  class="btn btn-ghost btn-sm" onclick="setRegCodex(false)">✕ Non</button>
             </div>
           </div>
-        </div>
-        <div class="field">
-          <label>Téléportation possible</label>
-          <div style="display:flex;gap:6px;margin-top:4px;">
-            <button id="reg-tp-yes"  class="btn btn-ghost btn-sm" onclick="setRegCanTp(true)">✈️ Oui</button>
-            <button id="reg-tp-no"   class="btn btn-ghost btn-sm" onclick="setRegCanTp(false)">✕ Non</button>
+          <div class="field">
+            <label>Téléportation possible</label>
+            <div style="display:flex;gap:6px;margin-top:4px;">
+              <button id="reg-tp-yes"  class="btn btn-ghost btn-sm" onclick="setRegCanTp(true)">✈️ Oui</button>
+              <button id="reg-tp-no"   class="btn btn-ghost btn-sm" onclick="setRegCanTp(false)">✕ Non</button>
+            </div>
           </div>
         </div>
       </div>
@@ -714,8 +713,8 @@
     <div id="panoplie-form" style="display:none;">
 
       <!-- CHARGER UNE PANOPLIE -->
-      <div class="section" style="border-color:var(--accent);">
-        <div class="sec-head" style="background:rgba(122,90,248,.12);color:var(--accent);" onclick="toggleSec(this)">
+      <div class="section loader">
+        <div class="sec-head" onclick="toggleSec(this)">
           📂 Charger / Éditer une panoplie existante <span class="chev">▾</span>
         </div>
         <div class="sec-body">
@@ -747,7 +746,6 @@
               <input type="text" id="panop-id" placeholder="cuivre" readonly style="color:var(--muted);font-family:monospace;font-size:12px;cursor:default;opacity:.7;">
             </div>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">La couleur de la panoplie est définie par la modération lors de la validation.</div>
         </div>
       </div>
 
@@ -757,7 +755,6 @@
         <div class="sec-body">
           <div id="panop-bonuses-list"></div>
           <button class="btn btn-ghost btn-sm" onclick="addPanopBonus()" style="margin-top:8px;">+ Ajouter un bonus</button>
-          <div style="font-size:11px;color:var(--muted);margin-top:8px;">Chaque ligne définit une stat qui s'active à partir de X pièces équipées. Tu peux avoir plusieurs stats pour le même palier.</div>
         </div>
       </div>
 
@@ -769,8 +766,8 @@
     <div id="quest-form">
 
       <!-- CHARGER UNE QUÊTE -->
-      <div class="section" style="border-color:var(--accent);">
-        <div class="sec-head" style="background:rgba(122,90,248,.12);color:var(--accent);" onclick="toggleSec(this)">
+      <div class="section loader">
+        <div class="sec-head" onclick="toggleSec(this)">
           📂 Charger / Éditer une quête existante <span class="chev">▾</span>
         </div>
         <div class="sec-body">
@@ -881,8 +878,8 @@
     <div id="mob-form">
 
       <!-- CHARGER UN MOB -->
-      <div class="section" style="border-color:var(--accent);">
-        <div class="sec-head" style="background:rgba(122,90,248,.12);color:var(--accent);" onclick="toggleSec(this)">
+      <div class="section loader">
+        <div class="sec-head" onclick="toggleSec(this)">
           📂 Charger / Éditer un mob existant <span class="chev">▾</span>
         </div>
         <div class="sec-body">
@@ -972,7 +969,7 @@
                 <!-- options peuplées dynamiquement par populatePalierSelects() -->
               </select>
             </div>
-            <div class="field">
+            <div class="field" style="display:none;" aria-hidden="true">
               <label>Region ID <span style="color:var(--muted);font-weight:400;font-size:10px;">(auto)</span></label>
               <input type="text" id="mob-regionid" placeholder="—" readonly style="font-family:monospace;font-size:12px;color:var(--muted);cursor:default;opacity:.7;">
             </div>
@@ -1027,12 +1024,6 @@
       <div class="section">
         <div class="sec-head" onclick="toggleSec(this)">🎁 Loot <span class="chev">▾</span></div>
         <div class="sec-body">
-          <div class="hint">Items droppés par ce mob. Chance en % (0–100). Les IDs non encore définis sont acceptés — ils apparaîtront dans le tracker d'IDs fantômes.</div>
-          <div style="display:grid;grid-template-columns:1fr 90px 28px;gap:6px;padding:0 2px;margin-top:8px;margin-bottom:4px;">
-            <span style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;">Item</span>
-            <span style="font-size:10px;color:var(--muted);font-weight:700;text-align:center;" title="Nombre entre 0 et 100, ou '?' si inconnu">Chance % <span style="opacity:.5;">/ ?</span></span>
-            <span></span>
-          </div>
           <div id="mob-loot-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
           <button class="btn btn-ghost btn-sm" style="width:100%;" onclick="addMobLoot()">+ Ajouter un drop</button>
         </div>
@@ -1345,12 +1336,22 @@ window._modal = modal;
 
 
 <!-- ═══ NOTE DE SOUMISSION (fixe en bas de page) ═══ -->
-<div id="submit-note-bar" style="position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid var(--accent);padding:8px 20px;z-index:200;display:flex;align-items:center;gap:12px;box-shadow:0 -2px 12px rgba(0,0,0,.25);">
-  <div id="submit-note-label" style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;flex-shrink:0;">📝 Note</div>
-  <textarea id="submitter-comment" rows="1" placeholder="Note pour la modération (optionnel pour un nouvel item)…" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;font-size:12px;outline:none;resize:none;border-radius:6px;font-family:inherit;line-height:1.4;transition:border-color .15s;height:34px;overflow:hidden;" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';this.style.borderColor=this.value?'var(--accent)':'var(--border)'"></textarea>
+<div id="submit-note-bar" class="actionbar">
+  <div class="vwrap">
+    <div id="vpop" hidden></div>
+    <button type="button" id="validation-chip" class="vchip ok" aria-haspopup="true">
+      <span class="vdot"></span><span id="vchip-text">Prêt à soumettre</span>
+    </button>
+  </div>
+  <div class="note-wrap">
+    <div id="submit-note-label">Note</div>
+    <textarea id="submitter-comment" rows="1" placeholder="Note pour la modération…" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+  </div>
+  <button class="btn btn-ghost" onclick="resetForm()" title="Vider le formulaire">↺ Reset</button>
+  <button class="btn btn-primary" id="btn-submit-discord" onclick="submitToDiscord()" data-kbd="Ctrl + S">◈ Soumettre</button>
 </div>
 
-<script src="creator.js?v=2c1dd8b5"></script>
+<script src="creator.js?v=62a31053"></script>
 <script>
 (function() {
   window._creatorScreenshots = [];
@@ -1427,5 +1428,7 @@ window._modal = modal;
   })();
 </script>
 <script src="report-widget.js"></script>
+<script src="creator-preview.js?v=7607b6da"></script>
+<script src="creator-v2.js?v=8c65eb22"></script>
 </body>
 </html>

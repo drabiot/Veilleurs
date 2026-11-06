@@ -456,6 +456,9 @@ function getAuthor() {
 // ═══════════════════════════════════════════════════
 let _skipSave = true; // true until restoreForm() completes — blocks saveForm() during early init and external scripts
 
+// Palier à sauvegarder : la valeur du select, ou celle en attente si la liste des paliers n'est pas encore chargée (sinon le brouillon perd le palier au 1er save après un refresh)
+function _savedPalier(id) { const el = document.getElementById(id); return el ? (el.value || el.dataset.vclPending || '') : ''; }
+
 function saveForm() {
   if (_skipSave) return;
   try {
@@ -466,7 +469,7 @@ function saveForm() {
       idLocked,
       category: document.getElementById('f-category').value,
       cat:      document.getElementById('f-cat').value,
-      palier:   document.getElementById('f-palier').value,
+      palier:   _savedPalier('f-palier'),
       eventName: document.getElementById('f-event-name')?.value || '',
       lvl:      document.getElementById('f-lvl').value,
       starSelf: document.getElementById('f-star-self')?.value || '0',
@@ -502,7 +505,7 @@ function saveForm() {
         idLocked:  mobIdLocked,
         type:      document.getElementById('mob-type')?.value || 'monstre',
         behavior:  document.getElementById('mob-behavior')?.value || 'agressif',
-        palier:    document.getElementById('mob-palier')?.value || '',
+        palier:    _savedPalier('mob-palier'),
         region:    document.getElementById('mob-region')?.value || '',
         regionSearch: document.getElementById('mob-region-search')?.value || '',
         lore:      document.getElementById('mob-lore')?.value   || '',
@@ -521,7 +524,7 @@ function saveForm() {
         displayName:   document.getElementById('pnj-display-name')?.value  || '',
         instructions:  document.getElementById('pnj-instructions')?.value  || '',
         type:          document.getElementById('pnj-type')?.value     || '',
-        palier:        document.getElementById('pnj-palier')?.value   || '',
+        palier:        _savedPalier('pnj-palier'),
         region:        document.getElementById('pnj-region')?.value   || '',
         regionSearch:  document.getElementById('pnj-region-search')?.value || '',
         x:             document.getElementById('pnj-x')?.value        || '',
@@ -536,7 +539,7 @@ function saveForm() {
         name:    document.getElementById('reg-name')?.value   || '',
         id:      document.getElementById('reg-id')?.value     || '',
         idLocked: regIdLocked,
-        palier:  document.getElementById('reg-palier')?.value || '',
+        palier:  _savedPalier('reg-palier'),
         lore:    document.getElementById('reg-lore')?.value   || '',
         inCodex: regInCodex,
         canTp:   regCanTp,
@@ -554,7 +557,7 @@ function saveForm() {
         titre:  document.getElementById('quest-titre')?.value || '',
         id:     document.getElementById('quest-id')?.value   || '',
         type:   document.getElementById('quest-type')?.value  || '',
-        palier: document.getElementById('quest-palier')?.value || '',
+        palier: _savedPalier('quest-palier'),
         npc:    document.getElementById('quest-npc')?.value   || '',
         desc:   document.getElementById('quest-desc')?.value  || '',
         zone:   _questZoneDrop ? _questZoneDrop.getValue() : '',
@@ -709,12 +712,12 @@ function restoreForm(forcedMode) {
         for (const l of m.loot) {
           addMobLoot();
           const entry = mobLootEntries[mobLootEntries.length - 1];
-          entry.chance = l.chance !== undefined ? l.chance : 100;
+          entry.chance = l.chance !== undefined ? l.chance : '?';
           entry.itemId = l.id;
           const row = document.getElementById(`mob-loot-${entry.uid}`);
           if (row) {
             const chInput = row.querySelectorAll('input')[1];
-            if (chInput) chInput.value = l.chance !== undefined ? l.chance : 100;
+            if (chInput) chInput.value = (l.chance === undefined || l.chance === '?') ? '' : l.chance;
             entry.drop?.setValue(l.id, itemIndex.find(it => it.id === l.id)?.name || l.id);
           }
         }
@@ -1143,7 +1146,7 @@ const OBTAIN_PLACEHOLDERS = {
 // % d'obtention d'un donjon : nombre 0-100, ou « ? » (taux inconnu → null). undefined = saisie invalide / vide.
 function _parseDonjonChance(raw) {
   const t = String(raw ?? '').trim().replace(',', '.');
-  if (t === '?') return null;
+  if (t === '?' || t === '') return null;   // vide = taux inconnu
   if (!/^\d+(\.\d+)?$/.test(t)) return undefined;
   const n = parseFloat(t);
   return n >= 0 && n <= 100 ? n : undefined;
@@ -1205,22 +1208,16 @@ function onObtainTypeChange(ev) {
       ? '<option value="">— Choisir un donjon —</option>' + allDonjonsLoot.map(d => `<option value="${escHtml(d.id)}">${escHtml(d.name)}</option>`).join('')
       : '<option value="">Aucun donjon — créez-en dans la Modération (Config › Donjons)</option>';
     const chance = document.createElement('input');
-    chance.type = 'text'; chance.id = 'obtain-donjon-chance'; chance.inputMode = 'decimal'; chance.autocomplete = 'off';
-    chance.placeholder = '% ou ?';
-    chance.title = "Obligatoire : pourcentage d'obtention (0-100), ou ? si le taux est inconnu";
-    chance.style.cssText = 'width:110px;height:38px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0 8px;font-size:12px;outline:none;';
-    const sync = () => {
-      const ok = !!sel.value && _parseDonjonChance(chance.value) !== undefined;
-      addBtn.disabled = !ok;
-      chance.style.borderColor = chance.value.trim() === '' || _parseDonjonChance(chance.value) !== undefined ? 'var(--border)' : 'var(--danger)';
-    };
-    // Ajout automatique dès que donjon + % sont valides : « ? » immédiatement, un nombre à la validation (Entrée / sortie du champ)
+    chance.id = 'obtain-donjon-chance';
+    const chanceWrap = _pctField(chance);
+    chance.title = "Taux d'obtention (0-100) ; laisser vide = inconnu";
+    const sync = () => { addBtn.disabled = !sel.value; };
+    // Choisir le donjon place le curseur sur le taux ; Entrée / sortie du champ ajoute la source (taux vide = « ? »)
     const tryAdd = () => { sync(); if (!addBtn.disabled) addObtainSource(); };
-    sel.addEventListener('change', tryAdd);
-    chance.addEventListener('input', () => { sync(); if (chance.value.trim() === '?' && !addBtn.disabled) addObtainSource(); });
+    sel.addEventListener('change', () => { sync(); if (sel.value) chance.focus(); });
     chance.addEventListener('change', tryAdd);
     chance.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); tryAdd(); } });
-    wrap.append(sel, chance);
+    wrap.append(sel, chanceWrap);
     container.appendChild(wrap);
     addBtn.disabled = true;
     addBtn.style.display = 'none';
@@ -1293,7 +1290,7 @@ function showLootPicker(mob) {
   entries.innerHTML = '';
 
   if (!mob.loot || !mob.loot.length) {
-    entries.innerHTML = '<span style="color:var(--muted);font-size:12px;font-style:italic;">Aucun drop listé pour ce mob.</span>';
+    entries.innerHTML = '';
     picker.style.display = '';
     return;
   }
@@ -2747,7 +2744,7 @@ function resetFormSilent(keepStars = false) {
   const _noteLabel = document.getElementById('submit-note-label');
   if (_noteLabel) _noteLabel.textContent = '📝 Note';
   const _noteTA = document.getElementById('submitter-comment');
-  if (_noteTA) { _noteTA.value = ''; _noteTA.placeholder = 'Note pour la modération (optionnel pour un nouvel item)…'; _noteTA.style.height = '34px'; _noteTA.style.borderColor = 'var(--border)'; }
+  if (_noteTA) { _noteTA.value = ''; _noteTA.placeholder = 'Note pour la modération…'; _noteTA.style.height = '34px'; _noteTA.style.borderColor = 'var(--border)'; }
   document.getElementById('evolutif-btn')?.classList.remove('active');
   document.getElementById('occulte-btn')?.classList.remove('active');
   const rarityField = document.getElementById('rarity-field');
@@ -2812,14 +2809,14 @@ function loadMob(mob) {
     for (const l of mob.loot) {
       addMobLoot();
       const entry = mobLootEntries[mobLootEntries.length - 1];
-      entry.chance = l.chance !== undefined ? l.chance : 100;
+      entry.chance = l.chance !== undefined ? l.chance : '?';
       entry.itemId = l.id;
       { const { id: _lid, chance: _lch, ...extra } = l; entry.extra = extra; }   // autres champs du drop (ex. qty « 2-4 ») : conservés tels quels
       const row = document.getElementById(`mob-loot-${entry.uid}`);
       if (row) {
         // Le second enfant du row est le champ chance (après le dropdown)
         const chInput = row.querySelectorAll('input')[1];
-        if (chInput) chInput.value = l.chance !== undefined ? l.chance : 100;
+        if (chInput) chInput.value = (l.chance === undefined || l.chance === '?') ? '' : l.chance;
         const name = itemIndex.find(it => it.id === l.id)?.name || l.id;
         entry.drop?.setValue(l.id, name);
       }
@@ -3283,8 +3280,8 @@ function makeSearchDrop(items, placeholder, onSelect, allowCreate = false, creat
         }
         const di = document.createElement('div');
         di.className = 'drop-item';
-        di.style.cssText = 'border-left:3px solid #d7af5f;';
-        di.innerHTML = `<span class="drop-item-name" style="color:#d7af5f;">➕ Créer « ${escHtml(inp.value)} »</span><span class="drop-item-id" style="color:#d7af5f;">→ ${escHtml(finalId)} · orphelin</span>`;
+        di.style.cssText = 'border-left:3px solid #E0AC60;';
+        di.innerHTML = `<span class="drop-item-name" style="color:#E0AC60;">➕ Créer « ${escHtml(inp.value)} »</span><span class="drop-item-id" style="color:#E0AC60;">→ ${escHtml(finalId)} · orphelin</span>`;
         di.addEventListener('mousedown', ev => {
           ev.preventDefault();
           const originalName = inp.value;
@@ -3860,9 +3857,12 @@ function _renderObtainInline(text) {
     // [npc:id|Nom] → badge violet
     .replace(/\[npc:([^\]|]+)\|([^\]]+)\]/g,
       (_, id, name) => `<span style="color:var(--accent);background:rgba(122,90,248,.12);border:1px solid rgba(122,90,248,.3);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name}</span>`)
+    // [dj:id|Donjon][chance] → badge doré (chance « ? » = taux inconnu)
+    .replace(/\[dj:([^\]|]+)\|([^\]]+)\](?:\[(\d+(?:\.\d+)?|\?)\])?/g,
+      (_, id, name, chance) => `<span style="color:#e8b44a;background:rgba(232,180,74,.1);border:1px solid rgba(232,180,74,.28);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name}${chance ? ' <b>' + chance + (chance === '?' ? '' : '%') + '</b>' : ''}</span>`)
     // [mob_id|Nom][chance] → badge rouge avec %
-    .replace(/\[([^\]:]+)\|([^\]]+)\]\[(\d+(?:\.\d+)?)\]/g,
-      (_, id, name, chance) => `<span style="color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name} <b>${chance}%</b></span>`)
+    .replace(/\[([^\]:]+)\|([^\]]+)\]\[(\d+(?:\.\d+)?|\?)\]/g,
+      (_, id, name, chance) => `<span style="color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name} <b>${chance}${chance === '?' ? '' : '%'}</b></span>`)
     // [mob_id|Nom] sans chance
     .replace(/\[([^\]:]+)\|([^\]]+)\]/g,
       (_, id, name) => `<span style="color:#f87171;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);border-radius:4px;padding:0 5px;font-size:10px;" title="${id}">${name}</span>`);
@@ -4092,7 +4092,7 @@ function renderTableauDeChasse(groups) {
         const pendingEl = document.createElement('span');
         pendingEl.className = 'chasse-missing';
         pendingEl.textContent = '⏳ En attente de validation';
-        pendingEl.style.color = 'var(--warn, #d7af5f)';
+        pendingEl.style.color = 'var(--warn, #E0AC60)';
         card.appendChild(pendingEl);
       } else if (missing.length) {
         const missingEl = document.createElement('span');
@@ -4207,17 +4207,23 @@ function renderPreview() {
   const rl = RARITY_LABELS[obj.rarity] || (obj.rarity || '');
   const ci = CAT_ICONS[obj.category]   || '📦';
 
-  let h = `<div class="item-card">`;
+  let h = `<div class="item-card" style="--rc:${rc}">`;
 
   // Header
   h += `<div class="ic-header">`;
-  h += `<div class="ic-img">${ci}</div>`;
+  { // vrai sprite du wiki s'il existe (chemins stockés en « ../img/… », relatifs au dossier Compendium) ; sinon l'icône de catégorie
+    const _src = (obj.images && obj.images[0]) ? String(obj.images[0]).replace(/^\.\.\//, '') : '';
+    h += _src
+      ? `<div class="ic-img"><img src="${escHtml(_src)}" alt="" onerror="this.parentNode.textContent='${ci}'"></div>`
+      : `<div class="ic-img">${ci}</div>`;
+  }
   h += `<div class="ic-info">`;
   if (obj.name)   h += `<div class="ic-name">${escHtml(obj.name)}</div>`;
+  { const _lvl = (starLocked && starLevel > 0) ? starLevel : (obj.star || 0);
+    if (_lvl > 0) h += `<div class="ic-stars" title="Niveau d'étoile ${_lvl}">${'★'.repeat(_lvl)}<span>${'★'.repeat(Math.max(0, STAR_MAX - _lvl))}</span></div>`; }
   if (obj.rarity) h += `<div class="ic-rarity" style="color:${rc}"><span class="ic-rarity-dot" style="background:${rc}"></span>${escHtml(rl)}</div>`;
   const meta = [];
   if (obj.category) meta.push(escHtml(obj.category));
-  if (obj.cat)      meta.push(escHtml(obj.cat));
   if (obj.palier)   meta.push('Palier ' + obj.palier);
   if (obj.lvl)      meta.push('Niv. ' + obj.lvl);
   if (obj.twoHanded) meta.push('Deux mains');
@@ -4903,8 +4909,8 @@ function _validationTarget(el) {
 function _highlightField(el, color) {
   const t = _validationTarget(el);
   if (!t) return;
-  t.style.borderColor = color;
-  t.style.boxShadow = `0 0 0 1px ${color}, 0 0 8px ${color}`;
+  t.style.borderColor = `color-mix(in srgb, ${color} 50%, transparent)`;   // discret : simple liseré teinté, pas de halo
+  t.style.boxShadow = '';
 }
 
 function renderValidation() {
@@ -4938,10 +4944,10 @@ function renderValidation() {
   for (const { field, msg } of warnings) {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:12px;';
-    row.innerHTML = `<span style="color:#d7af5f;font-weight:700;">⚠</span> <span style="color:#d7af5f;">${msg}</span>`;
+    row.innerHTML = `<span style="color:#E0AC60;font-weight:700;">⚠</span> <span style="color:#E0AC60;">${msg}</span>`;
     panel.appendChild(row);
     if (field) {
-      _highlightField(document.getElementById(field), '#d7af5f');
+      _highlightField(document.getElementById(field), '#E0AC60');
     }
   }
 }
@@ -5452,7 +5458,7 @@ async function _promptMissingFields(errors, warnings = []) {
     { id: 'legendaire', label: 'Légendaire', color: '#ff8000' },
     { id: 'mythique',   label: 'Mythique',   color: '#e6cc80' },
     { id: 'godlike',    label: 'Godlike',    color: '#ff4444' },
-    { id: 'event',      label: 'Événement',  color: '#d7af5f' },
+    { id: 'event',      label: 'Événement',  color: '#E0AC60' },
   ];
   const paliers = window._vcl_paliers || _DEFAULT_PALIERS;
   const palierOpts = paliers.map(p =>
@@ -6056,42 +6062,46 @@ function setMobCodex(val) {
 // ═══════════════════════════════════════════════════
 // MOB — LOOT
 // ═══════════════════════════════════════════════════
+// Champ « taux de drop » : chiffres seulement (0-100), « % » toujours affiché ; vide = « ? » à la soumission
+function _pctField(input) {
+  input.type = 'text'; input.inputMode = 'decimal'; input.autocomplete = 'off'; input.placeholder = 'Taux de drop';
+  input.addEventListener('input', () => {
+    let v = input.value.replace(',', '.').replace(/[^\d.]/g, '');
+    const i = v.indexOf('.'); if (i >= 0) v = v.slice(0, i + 1) + v.slice(i + 1).replace(/\./g, '');
+    if (v !== '' && +v > 100) v = '100';
+    if (v !== input.value) input.value = v;
+  });
+  const w = document.createElement('span');
+  w.className = 'pct-field';
+  const sfx = document.createElement('i'); sfx.textContent = '%'; sfx.setAttribute('aria-hidden', 'true');
+  w.append(input, sfx);
+  return w;
+}
+function _pctValue(raw) { const v = String(raw ?? '').trim(); return v === '' || isNaN(+v) ? '?' : +v; }
+
 function addMobLoot() {
   ensureItemIndex();
   const uid = mobLootUid++;
-  const entry = { uid, itemId: '', chance: 100 };
+  const entry = { uid, itemId: '', chance: '?' };
   mobLootEntries.push(entry);
 
   const row = document.createElement('div');
   row.id = `mob-loot-${uid}`;
-  row.style.cssText = 'display:grid;grid-template-columns:1fr 90px 28px;gap:6px;align-items:start;';
+  row.className = 'mob-loot-row';
 
   const drop = makeSearchDrop(itemIndex, 'Item droppé…', (id) => { entry.itemId = id; update(); }, true);
   entry.drop = drop;
 
-  // Chance : texte libre pour accepter "?" + nombres 0-100
   const chanceEl = document.createElement('input');
-  chanceEl.type = 'text'; chanceEl.value = '100'; chanceEl.placeholder = '% ou ?';
-  chanceEl.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:8px 6px;font-size:12px;text-align:center;outline:none;width:100%;transition:border-color .15s;font-family:monospace;';
-  chanceEl.addEventListener('focus', () => chanceEl.style.borderColor = 'var(--accent)');
-  chanceEl.addEventListener('blur',  () => {
-    chanceEl.style.borderColor = 'var(--border)';
-    // Nettoyer : garder "?" ou un nombre valide
-    const v = chanceEl.value.trim();
-    if (v !== '?' && (isNaN(+v) || +v < 0 || +v > 100)) chanceEl.value = '100';
-  });
-  chanceEl.addEventListener('input', () => {
-    const v = chanceEl.value.trim();
-    entry.chance = (v === '?' || v === '') ? '?' : (isNaN(+v) ? 100 : +v);
-    update();
-  });
+  const chanceWrap = _pctField(chanceEl);
+  chanceEl.addEventListener('input', () => { entry.chance = _pctValue(chanceEl.value); update(); });
 
   const rmBtn = document.createElement('button');
   rmBtn.className = 'btn-icon'; rmBtn.textContent = '✕';
   rmBtn.addEventListener('click', () => { mobLootEntries = mobLootEntries.filter(e => e.uid !== uid); row.remove(); update(); });
 
   row.appendChild(drop.element);
-  row.appendChild(chanceEl);
+  row.appendChild(chanceWrap);
   row.appendChild(rmBtn);
   document.getElementById('mob-loot-list').appendChild(row);
 }
@@ -6226,13 +6236,13 @@ function renderMobRegionDropdown() {
   // Pending regions (en attente de validation)
   if (pendingRegions.length) {
     const ph = document.createElement('div');
-    ph.style.cssText = 'padding:6px 12px 2px;font-size:11px;font-weight:700;color:#d7af5f;text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--surface3);';
+    ph.style.cssText = 'padding:6px 12px 2px;font-size:11px;font-weight:700;color:#E0AC60;text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--surface3);';
     ph.textContent = '⏳ En attente';
     dropdown.appendChild(ph);
     pendingRegions.forEach(r => {
       const item = document.createElement('div');
       item.className = 'region-drop-item';
-      item.style.cssText = 'padding:6px 24px;cursor:pointer;font-size:13px;color:#d7af5f;transition:background .1s;';
+      item.style.cssText = 'padding:6px 24px;cursor:pointer;font-size:13px;color:#E0AC60;transition:background .1s;';
       item.textContent = '⏳ ' + (r.name || r.id) + ' (en attente)';
       item.addEventListener('mousedown', e => { e.preventDefault(); selectMobRegion(r); });
       item.addEventListener('mouseover', () => item.style.background = 'var(--surface3)');
@@ -6333,13 +6343,13 @@ function renderPnjRegionDropdown() {
 
   if (pendingRegions.length) {
     const ph = document.createElement('div');
-    ph.style.cssText = 'padding:6px 12px 2px;font-size:11px;font-weight:700;color:#d7af5f;text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--surface3);';
+    ph.style.cssText = 'padding:6px 12px 2px;font-size:11px;font-weight:700;color:#E0AC60;text-transform:uppercase;letter-spacing:.06em;border-top:1px solid var(--surface3);';
     ph.textContent = '⏳ En attente';
     dropdown.appendChild(ph);
     pendingRegions.forEach(r => {
       const item = document.createElement('div');
       item.className = 'region-drop-item';
-      item.style.cssText = 'padding:6px 24px;cursor:pointer;font-size:13px;color:#d7af5f;transition:background .1s;';
+      item.style.cssText = 'padding:6px 24px;cursor:pointer;font-size:13px;color:#E0AC60;transition:background .1s;';
       item.textContent = '⏳ ' + (r.name || r.id) + ' (en attente)';
       item.addEventListener('mousedown', e => { e.preventDefault(); selectPnjRegion(r); });
       item.addEventListener('mouseover', () => item.style.background = 'var(--surface3)');
@@ -7214,30 +7224,27 @@ function removePanopBonus(uid) {
 function renderPanopBonuses() {
   const wrap = document.getElementById('panop-bonuses-list');
   if (!wrap) return;
-  if (!panopBonuses.length) {
-    wrap.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Aucun bonus. Clique sur « + Ajouter un bonus ».</div>';
-    return;
-  }
+  if (!panopBonuses.length) { wrap.innerHTML = ''; return; }
   const stats = panopStatChoices();
   const statsOpts = ['<option value="">— stat —</option>']
     .concat(stats.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.label)}${s.unit ? ' (' + s.unit + ')' : ''}</option>`))
     .join('');
   wrap.innerHTML = panopBonuses.map(b => `
-    <div class="panop-bonus-row" data-uid="${b.uid}" style="display:grid;grid-template-columns:118px minmax(120px,1fr) 150px auto auto;gap:8px;align-items:center;margin-bottom:6px;">
-      <div class="field" style="min-width:0;margin:0;">
-        <label style="font-size:10px;">Pièces</label>
+    <div class="panop-bonus-row pb-row" data-uid="${b.uid}">
+      <div class="field">
+        <label>Pièces</label>
         <input type="number" min="2" max="12" value="${b.pieces}" data-k="pieces" oninput="updatePanopBonus(${b.uid}, 'pieces', this.value)">
       </div>
-      <div class="field" style="min-width:0;margin:0;">
-        <label style="font-size:10px;">Stat</label>
-        <select data-k="stat" style="width:100%;" onchange="updatePanopBonus(${b.uid}, 'stat', this.value)">${statsOpts}</select>
+      <div class="field">
+        <label>Stat</label>
+        <select data-k="stat" onchange="updatePanopBonus(${b.uid}, 'stat', this.value)">${statsOpts}</select>
       </div>
-      <div class="field" style="min-width:0;margin:0;">
-        <label style="font-size:10px;">Valeur</label>
+      <div class="field">
+        <label>Valeur</label>
         <input type="number" step="any" value="${b.value}" data-k="value" oninput="updatePanopBonus(${b.uid}, 'value', this.value)">
       </div>
-      <button class="btn btn-ghost btn-sm" style="margin-top:14px;white-space:nowrap;" onclick="addPanopBonusAfter(${b.uid})" title="Ajouter un autre effet pour ${b.pieces} pièces">＋ effet</button>
-      <button class="btn btn-ghost btn-sm" style="margin-top:14px;" onclick="removePanopBonus(${b.uid})" title="Supprimer">🗑️</button>
+      <button class="btn btn-ghost" onclick="addPanopBonusAfter(${b.uid})" title="Ajouter un autre effet pour ${b.pieces} pièces">+ effet</button>
+      <button class="btn btn-ghost pb-del" onclick="removePanopBonus(${b.uid})" title="Supprimer" aria-label="Supprimer">✕</button>
     </div>
   `).join('');
   // Remettre les valeurs de select (innerHTML reset)

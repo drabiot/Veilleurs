@@ -1,0 +1,354 @@
+/* Généré par tools/build-creator-wiki-css.js — ne pas éditer à la main */
+
+/* ── Compendium/compendium.css ── */
+.wiki .item-sheet {  }
+.wiki .item-header { position: relative; display: grid; grid-template-columns: 152px 1fr; gap: 28px; margin-bottom: 28px; align-items: start; }
+.wiki .item-image-wrap { position: relative; width: 152px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0; }
+.wiki .item-image-bg { position: absolute; inset: 0; border-radius: 4px 4px 0 0; opacity: .22; pointer-events: none; }
+.wiki .item-image-border { position: absolute; inset: 0; border-radius: 4px; border: 2px solid; opacity: .55; pointer-events: none; z-index: 3; }
+.wiki .item-image-wrap::before,
+.wiki .item-image-wrap::after { content: ''; position: absolute; width: 12px; height: 12px; border-style: solid; opacity: .75; z-index: 4; pointer-events: none; }
+.wiki .item-image-wrap::before { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
+.wiki .item-image-wrap::after { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
+.wiki .item-image-inner { position: relative; width: 152px; height: 152px; display: flex; align-items: center; justify-content: center; border-radius: 4px 4px 0 0; overflow: hidden; flex-shrink: 0; }
+.wiki .item-image-wrap:not(:has(.slideshow-controls)) .item-image-inner { border-radius: 4px; }
+.wiki .item-image-inner img { width: 88%; height: 88%; object-fit: contain; image-rendering: pixelated; }
+.wiki .item-image-inner canvas { display: block; width: 100% !important; height: 100% !important; }
+.wiki .item-image-placeholder { font-size: 54px; opacity: .35; }
+.wiki .item-info { min-width: 0; }
+.wiki .item-name { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 900; color: var(--bright); letter-spacing: .04em; line-height: 1.2; margin-bottom: 10px; }
+.wiki .item-rarity-badge { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .15em; text-transform: uppercase; padding: 3px 10px; border-radius: 2px; margin-bottom: 16px; border: 1px solid; font-weight: 700; }
+.wiki .item-rarity-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.wiki .item-lore { position: relative; padding: 14px 16px 14px 22px; background: rgba(255,255,255,.025); border-left: 3px solid var(--gold-dim); font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text); font-style: italic; line-height: 1.75; border-radius: 0 2px 2px 0; }
+.wiki .item-lore::before { content: '"'; position: absolute; top: -4px; left: 8px; font-size: 52px; color: var(--gold-dim); font-family: 'Cinzel', serif; line-height: 1; pointer-events: none; }
+.wiki .item-sep { height: 1px; background: linear-gradient(90deg, var(--rim2), transparent); margin: 22px 0; }
+.wiki .item-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 22px; }
+.wiki .item-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; padding: 3px 9px; background: rgba(255,255,255,.04); border: 1px solid var(--rim2); color: var(--muted); }
+.wiki .item-set-badge { display: inline-flex; align-items: center; gap: 5px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; padding: 2px 9px; border-radius: 2px; border: 1px solid; margin-top: 6px; margin-bottom: 4px; cursor: default; }
+.wiki .item-set-section { display: flex; flex-direction: column; gap: 12px; margin-bottom: 4px; }
+.wiki .set-items-list { display: flex; flex-wrap: wrap; gap: 7px; }
+.wiki .set-item-link { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 4px 10px; border-radius: 2px; border: 1px solid; cursor: pointer; transition: opacity .15s, background .15s; user-select: none; }
+.wiki .set-item-link:hover { opacity: .8; }
+.wiki .set-item-link.set-item-active { font-weight: 700; }
+.wiki .set-bonuses-table { border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 12px; width: auto; }
+.wiki .set-bonus-pieces { font-weight: 700; padding: 3px 16px 3px 0; white-space: nowrap; letter-spacing: .04em; }
+.wiki .set-bonus-stat { color: var(--text); padding: 3px 0; }
+.wiki .set-bonus-val { font-weight: 700; }
+.wiki .item-section-title { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.wiki .item-obtain { position: relative; background: linear-gradient(135deg, rgba(19,16,13,.8) 0%, rgba(14,12,10,.8) 100%); border: 1px solid var(--rim2); padding: 16px 20px 16px 24px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text); line-height: 1.75; }
+.wiki .item-obtain::before { content: '◈'; position: absolute; top: 50%; left: -8px; transform: translateY(-50%); font-size: 12px; color: var(--gold); background: var(--bg); padding: 0 3px; }
+.wiki .item-list { margin: 6px 0 4px 4px; padding-left: 16px; display: flex; flex-direction: column; gap: 3px; }
+.wiki .item-list li { color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.6; list-style: none; display: flex; align-items: center; gap: 8px; padding-left: 0; }
+.wiki .item-craft { margin-top: 14px; }
+.wiki .craft-list { display: flex; flex-direction: column; }
+.wiki .craft-ingredient-row { display: flex; align-items: center; gap: 10px; padding: 3px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.15s; }
+.wiki .craft-ingredient-row:last-child { border-bottom: none; }
+.wiki .craft-ingredient-row:hover { background: rgba(255,255,255,0.03); }
+.wiki .craft-ingredient-qty { font-size: 12px; font-weight: 400; color: var(--text); min-width: 28px; text-align: right; font-family: 'JetBrains Mono', monospace; font-style: normal; }
+.wiki .craft-ingredient-visual { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.wiki .craft-ingredient-img { width: 20px; height: 20px; object-fit: contain; image-rendering: pixelated; }
+.wiki .craft-ingredient-emoji { font-size: 1rem; line-height: 1; }
+.wiki .craft-ingredient-name { font-size: 12px; font-family: 'JetBrains Mono', monospace; font-style: normal; color: var(--text); text-decoration: none; flex: 1; transition: filter 0.15s; }
+.wiki .craft-tabbed { padding-top: 0; }
+.wiki .craft-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.07); margin-bottom: 4px; }
+.wiki .craft-tab { background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; padding: 8px 14px; cursor: pointer; transition: color .15s, border-color .15s; margin-bottom: -1px; }
+.wiki .craft-tab:hover { color: var(--text); }
+.wiki .craft-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.wiki .craft-panel { display: none; }
+.wiki .craft-panel.active { display: block; }
+.wiki .craft-currency-name { font-weight: 700; }
+.wiki .effects-craft-titles { display: flex; gap: 16px; margin-top: 14px; }
+.wiki .effects-craft-titles > * { flex: 1; }
+.wiki .effects-craft-row { display: flex; gap: 16px; align-items: stretch; }
+.wiki .effects-craft-row > * { flex: 1; min-width: 0; }
+.wiki .effects-panel { background: linear-gradient(135deg, rgba(19,16,13,.8) 0%, rgba(14,12,10,.8) 100%); border: 1px solid var(--rim2); padding: 0; position: relative; }
+.wiki .effects-panel::before { content: '◈'; position: absolute; top: 50%; left: -8px; transform: translateY(-50%); font-size: 12px; color: var(--gold); background: var(--bg); padding: 0 3px; }
+.wiki .effect-row { display: flex; align-items: center; gap: 10px; padding: 8px 20px 8px 24px; border-bottom: 1px solid var(--rim); font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.75; }
+.wiki .effect-row:last-child { border-bottom: none; }
+.wiki .effect-icon { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+.wiki .effect-body { flex: 1; min-width: 0; }
+.wiki .effect-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); line-height: 1.3; }
+.wiki .effect-value { font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 700; line-height: 1.4; }
+.wiki .effect-duration { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .08em; color: var(--muted); white-space: nowrap; border: 1px solid var(--rim2); padding: 2px 7px; }
+.wiki .craft-npc-header { display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: rgba(255,255,255,.03); border-bottom: 1px solid var(--rim); transition: background .15s; }
+.wiki .craft-npc-header[data-npc-id]:hover { background: rgba(255,255,255,.06); }
+.wiki .craft-npc-header--plain { cursor: default; }
+.wiki .craft-npc-visual { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.wiki .craft-npc-img { width: 20px; height: 20px; object-fit: contain; image-rendering: pixelated; }
+.wiki .craft-npc-ico { font-size: 14px; color: var(--muted); }
+.wiki .craft-npc-name { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600; letter-spacing: .05em; }
+.wiki .craft-npc-arrow { font-size: 14px; color: var(--muted); opacity: 0; transition: opacity .15s; }
+.wiki .craft-npc-header[data-npc-id]:hover .craft-npc-arrow { opacity: 1; }
+.wiki .evo-chain-wrap { margin-bottom: 14px; }
+.wiki .evo-chain-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.wiki .evo-chain-link,
+.wiki .evo-chain-current { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 14px; border: 1px solid; white-space: nowrap; }
+.wiki .evo-chain-link { text-decoration: none; transition: filter .15s, opacity .15s; opacity: .85; }
+.wiki .evo-chain-link:hover { opacity: 1; filter: brightness(1.2); }
+.wiki .evo-chain-current { font-size: 13px; cursor: default; }
+.wiki .evo-arrow { font-size: 16px; color: var(--muted); flex-shrink: 0; }
+.wiki .evo-prev-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.wiki .evo-next-block { display: flex; flex-direction: column; gap: 6px; }
+.wiki .evo-tree-root { display: flex; flex-direction: column; gap: 4px; padding-left: 6px; }
+.wiki .evo-tree-node { display: flex; flex-direction: column; gap: 3px; }
+.wiki .evo-tree-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.wiki .evo-tree-children { padding-left: 20px; display: flex; flex-direction: column; gap: 3px; border-left: 1px solid var(--border); margin-left: 8px; padding-top: 2px; }
+.wiki .item-stats-panel { display: flex; flex-direction: column; background: linear-gradient(160deg, rgba(22,18,14,.92) 0%, rgba(13,11,9,.92) 100%); border: 1px solid var(--rim2); overflow: hidden; position: relative; }
+.wiki .item-stats-panel::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--gold) 0%, transparent 100%); opacity: .35; }
+.wiki .stat-reqs-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; padding: 8px 16px; border-bottom: 1px solid var(--rim); background: rgba(200,160,75,.04); flex-shrink: 0; }
+.wiki .stat-req-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 600; letter-spacing: .05em; color: var(--bright); background: rgba(255,255,255,.05); border: 1px solid var(--rim2); padding: 2px 8px; white-space: nowrap; }
+.wiki .stat-req-lvl { color: var(--gold); border-color: rgba(200,160,75,.4); background: rgba(200,160,75,.1); }
+.wiki .stat-req-class { color: var(--text); }
+.wiki .stat-rows { flex: 1; display: flex; flex-direction: column; }
+.wiki .stat-row { flex: 1; display: flex; align-items: center; gap: 10px; padding: 0 16px 0 20px; border-bottom: 1px solid var(--rim); font-family: 'JetBrains Mono', monospace; min-height: 32px; }
+.wiki .stat-rows .stat-row:last-child { border-bottom: none; }
+.wiki .stat-row-icon { font-size: 13px; width: 18px; text-align: center; flex-shrink: 0; opacity: .85; }
+.wiki .stat-row-label { flex: 1; font-size: 9px; letter-spacing: .08em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
+.wiki .stat-row-value { font-size: 12px; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+.wiki .scroll-skill { margin-top: 10px; padding: 10px 12px; border: 1px solid var(--border, #3a3126); border-left: 3px solid var(--accent, #c9a84c); border-radius: 6px; background: rgba(255,255,255,.02); }
+.wiki .scroll-skill-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wiki .scroll-skill-name { font-weight: 700; font-size: 14px; }
+.wiki .scroll-skill-rarity { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; border: 1px solid; border-radius: 4px; padding: 1px 6px; }
+.wiki .scroll-skill-desc { margin-top: 6px; font-size: 12.5px; line-height: 1.5; color: var(--text-dim, #bfb59a); }
+.wiki .item-lore[hidden] { display: none; }
+.wiki .effect-apply-cd { margin-top: 8px; padding: 8px 12px; font-size: 12.5px; line-height: 1.5; color: var(--text-dim, #bfb59a); border-top: 1px dashed var(--border, #3a3126); }
+.wiki .effect-apply-cd b { color: #f0a030; }
+.wiki .item-meta-badges { display: flex; flex-wrap: wrap; gap: 8px; margin: -4px 0 8px; }
+.wiki .item-meta-badge { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; border: 1px solid rgba(215,175,95,.28); border-radius: 2px; background: transparent; font-family: 'JetBrains Mono', monospace; cursor: default; }
+.wiki .item-meta-badge .imb-key { font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: var(--muted, #8c8270); font-weight: 700; }
+.wiki .item-meta-badge .imb-val { font-size: 11px; font-weight: 700; color: #d7af5f; letter-spacing: .05em; }
+.wiki .item-meta-badge.imb-lvl { border-color: rgba(240,160,48,.32); }
+.wiki .item-meta-badge.imb-lvl .imb-val { color: #e8963a; }
+.wiki .item-meta-badges + .item-set-badge { margin-top: 0; }
+.wiki .effects-craft-row > :empty,
+.wiki .effects-craft-titles > :empty { display: none; }
+.wiki .craft-yield { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding: 10px 16px; border: 1px solid rgba(215,175,95,.45); border-left: 3px solid #d7af5f; border-radius: 3px; background: rgba(215,175,95,.08); }
+.wiki .craft-yield-label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted, #8c8270); }
+.wiki .craft-yield-qty { font-size: 22px; font-weight: 700; color: #f0c860; line-height: 1; }
+.wiki .item-sheet { --rc: var(--gold);  }
+.wiki .item-image-wrap { background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(0,0,0,.4)); border-radius: 4px; filter: drop-shadow(0 8px 24px color-mix(in srgb, var(--rc) 30%, transparent)); }
+.wiki .item-image-bg { opacity: .34; background: radial-gradient(circle at 50% 38%, var(--rc) 0%, transparent 74%) !important; border-radius: 4px; }
+.wiki .item-image-inner::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2; background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,.16) 50%, transparent 62%); transform: translateX(-130%); transition: transform .8s ease; }
+.wiki .item-image-wrap:hover .item-image-inner::after { transform: translateX(130%); }
+.wiki .item-name { text-shadow: 0 0 30px color-mix(in srgb, var(--rc) 40%, transparent); }
+.wiki .item-name::after { content: ''; display: block; width: 46px; height: 2px; margin-top: 9px; background: var(--rc); box-shadow: 0 0 10px var(--rc); border-radius: 2px; }
+.wiki .item-rarity-badge { background: color-mix(in srgb, currentColor 12%, transparent); box-shadow: 0 0 14px color-mix(in srgb, currentColor 18%, transparent); }
+.wiki .item-lore { border-left-color: var(--rc); }
+.wiki .item-lore::before { color: var(--rc); opacity: .7; }
+.wiki .item-sheet > * {  }
+.wiki .item-sheet > :nth-child(2) {  }
+.wiki .item-sheet > :nth-child(3) {  }
+.wiki .item-sheet > :nth-child(4) {  }
+.wiki .item-sheet > :nth-child(5) {  }
+.wiki .item-sheet > :nth-child(n+6) {  }
+.wiki .item-image-inner img {  }
+.wiki .stat-row { min-height: 34px; transition: background .15s; }
+.wiki .stat-row:hover { background: rgba(255,255,255,.03); }
+.wiki .stat-row-icon { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; opacity: 1; background: color-mix(in srgb, var(--sc, var(--gold)) 14%, transparent); }
+.wiki .stat-row-label { font-size: 11px; letter-spacing: .02em; text-transform: none; color: var(--text); }
+.wiki .stat-row-value { font-size: 13px; }
+.wiki .craft-flow { display: flex; flex-direction: column; gap: 12px; padding: 14px; }
+.wiki .craft-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 14px 10px; }
+.wiki .craft-tile { display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center; min-width: 0; }
+.wiki .craft-tile-icon { --rc: #666; position: relative; width: 50px; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; background: color-mix(in srgb, var(--rc) 13%, #0e0c0a); border: 1px solid color-mix(in srgb, var(--rc) 55%, transparent); box-shadow: inset 0 0 12px rgba(0,0,0,.45); }
+.wiki .craft-tile-icon .craft-ingredient-img { width: 38px; height: 38px; }
+.wiki .craft-tile-icon .craft-ingredient-emoji { font-size: 24px; }
+.wiki .craft-tile-qty { position: absolute; right: -7px; bottom: -7px; min-width: 20px; padding: 1px 5px; border-radius: 99px; background: #1a1208; border: 1px solid var(--gold-dim); color: var(--gold); font-size: 10px; font-weight: 700; line-height: 1.4; text-align: center; }
+.wiki .craft-tile .craft-ingredient-name { flex: none; max-width: 100%; font-size: 10.5px; line-height: 1.3; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.wiki .craft-arrow { display: flex; align-items: center; gap: 10px; color: var(--gold-dim); font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: .22em; text-transform: uppercase; }
+.wiki .craft-arrow::before,
+.wiki .craft-arrow::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--rim2)); }
+.wiki .craft-arrow::after { background: linear-gradient(90deg, var(--rim2), transparent); }
+.wiki .craft-arrow span::after { content: ' ▾'; }
+.wiki .craft-result .craft-tile-icon { width: 60px; height: 60px; box-shadow: 0 0 20px color-mix(in srgb, var(--rc) 38%, transparent), inset 0 0 12px rgba(0,0,0,.45); }
+.wiki .craft-result .craft-ingredient-img { width: 46px; height: 46px; }
+.wiki .item-notfound { text-align: center; padding: 70px 20px; color: var(--muted);  }
+.wiki .item-notfound-icon { font-size: 46px; opacity: .6; }
+.wiki .item-notfound-title { font-family: 'Cinzel', serif; font-size: 18px; color: var(--bright); margin: 12px 0 6px; letter-spacing: .06em; }
+.wiki .item-notfound p { font-size: 12px; margin: 0 0 18px; }
+.wiki .item-notfound-link { color: var(--gold); font-size: 12px; text-decoration: none; border-bottom: 1px dashed var(--gold-dim); }
+.wiki .miss-hunt { display: inline-flex; align-items: center; gap: 5px; text-decoration: none; font-size: 11px; letter-spacing: .04em; color: var(--gold); padding: 3px 8px; border: 1px dashed rgba(224,172,96,.5); border-radius: 4px; background: rgba(224,172,96,.07); transition: background .15s, border-color .15s; }
+.wiki .miss-hunt:hover { background: rgba(224,172,96,.2); border-color: var(--gold); }
+.wiki .miss-slot { margin: 8px 0; }
+.wiki .miss-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 4px; }
+.wiki .miss-img { position: absolute; left: 8px; bottom: 8px; z-index: 5; background: rgba(14,12,10,.85); }
+.wiki .item-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 10px; }
+.wiki .item-title-row .item-name { margin-bottom: 0; }
+.wiki .item-stars { display: inline-flex; align-items: center; gap: 2px; padding: 3px 7px; border: 1px solid rgba(215,175,95,.28); border-radius: 2px; background: rgba(215,175,95,.04); }
+.wiki .item-star { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: 2px; }
+.wiki .item-star svg { width: 17px; height: 17px; fill: transparent; stroke: #7a6238; stroke-width: 1.5; stroke-linejoin: round; transition: fill .15s, stroke .15s, filter .15s, transform .15s; }
+.wiki .item-star:hover svg { stroke: #d7af5f; transform: scale(1.18); }
+.wiki .item-star.lit svg { fill: #e0ac60; stroke: #f0c860; filter: drop-shadow(0 0 4px rgba(224,172,96,.55)); }
+.wiki .item-star:focus-visible { outline: 1px solid var(--gold-dim, #9a7040); outline-offset: 1px; }
+.wiki .item-star.missing { cursor: default; opacity: .35; }
+.wiki .item-star.missing:hover svg { transform: none; stroke: #7a6238; }
+.wiki .item-star:disabled { cursor: default; }
+
+/* ── Bestiaire/bestiaire.css ── */
+.wiki .mob-modal-overlay { --muted: #9a8768; }
+.wiki .pnj-cat-header:focus-visible { outline: 1px solid var(--gold); outline-offset: -2px; }
+.wiki .pnj-cat-group { margin: 4px 0 2px; }
+.wiki .pnj-cat-header { display: flex; align-items: center; gap: 9px; padding: 6px 14px 6px 14px; cursor: pointer; user-select: none; border-radius: 4px; transition: background .12s; }
+.wiki .pnj-cat-header:hover { background: rgba(255,255,255,.04); }
+.wiki .pnj-cat-arrow { font-size: 7px; color: var(--muted); transition: transform .2s; flex-shrink: 0; }
+.wiki .pnj-cat-arrow.open { transform: rotate(90deg); }
+.wiki .pnj-cat-title { flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--text); }
+.wiki .pnj-cat-body { overflow: hidden; max-height: 0; transition: max-height .22s ease; margin-left: 16px; border-left: 2px solid transparent; padding-left: 4px; }
+.wiki .pnj-cat-body.open { max-height: 200px; }
+.wiki .pnj-cat-forgeron { border-left-color: #c8783c66; }
+.wiki .pnj-cat-marchand { border-left-color: #c9a84c66; }
+.wiki .mob-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0 ); padding: 24px; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .2s ease; }
+.wiki .mob-modal-overlay.open { opacity: 1; visibility: visible; pointer-events: none; }
+.wiki .mob-modal-overlay.open .mob-modal { pointer-events: all;  }
+.wiki .mob-modal { position: relative; width: 100%; max-width: 600px; max-height: 86vh; background: linear-gradient(160deg, rgba(22,18,14,.99) 0%, rgba(12,10,8,.99) 100%); border: 1px solid var(--rim2); overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 0 80px rgba(0,0,0,.85), 0 0 0 1px rgba(224,172,96,.07); }
+.wiki .mob-modal-scroll { overflow-y: auto; overflow-x: hidden; flex: 1; }
+.wiki .mob-modal-scroll::-webkit-scrollbar { width: 4px; }
+.wiki .mob-modal-scroll::-webkit-scrollbar-track { background: transparent; }
+.wiki .mob-modal-scroll::-webkit-scrollbar-thumb { background: var(--rim2); border-radius: 2px; }
+.wiki .mob-modal::before,
+.wiki .mob-modal::after { content: ''; position: absolute; width: 18px; height: 18px; border-style: solid; border-color: var(--gold-dim); opacity: .6; pointer-events: none; z-index: 5; }
+.wiki .mob-modal::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+.wiki .mob-modal::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+.wiki .mob-sheet { padding: 52px 28px 32px;  }
+.wiki .mob-header { display: grid; grid-template-columns: 140px 1fr; gap: 24px; align-items: start; margin-bottom: 24px; padding-bottom: 20px; }
+.wiki .mob-image-wrap { width: 140px; height: 140px; position: relative; flex-shrink: 0; }
+.wiki .mob-image-bg { position: absolute; inset: 0; opacity: .12; border-radius: 3px; }
+.wiki .mob-image-border { position: absolute; inset: 0; border: 2px solid; opacity: .4; border-radius: 3px; pointer-events: none; }
+.wiki .mob-image-wrap::before,
+.wiki .mob-image-wrap::after { content: ''; position: absolute; width: 11px; height: 11px; border-style: solid; opacity: .65; pointer-events: none; z-index: 4; }
+.wiki .mob-image-wrap::before { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
+.wiki .mob-image-wrap::after { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
+.wiki .mob-image-inner { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 3px; z-index: 2; }
+.wiki .mob-image-inner img { width: 82%; height: 82%; object-fit: contain; image-rendering: pixelated; }
+.wiki .mob-img-placeholder { font-size: 46px; }
+.wiki .mob-3d-container { width: 100%; height: 100%; cursor: grab; }
+.wiki .mob-3d-container:active { cursor: grabbing; }
+.wiki .mob-3d-container canvas { display: block; width: 100% !important; height: 100% !important; }
+.wiki .mob-header-info { display: flex; flex-direction: column; gap: 10px; padding-top: 2px; }
+.wiki .mob-name { font-family: 'Cinzel', serif; font-size: 21px; font-weight: 900; color: var(--bright); letter-spacing: .04em; line-height: 1.15; }
+.wiki .mob-badge-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.wiki .mob-type-badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: .1em; padding: 3px 9px; text-transform: uppercase; }
+.wiki .mob-behavior-badge { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .08em; padding: 3px 9px; border: 1px solid; }
+.wiki .mob-meta-row { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+.wiki .mob-meta-item { display: flex; align-items: center; gap: 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+.wiki .mob-meta-key { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); min-width: 62px; }
+.wiki .mob-meta-val { color: var(--text); }
+.wiki .mob-body-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
+.wiki .mob-section.full-width { grid-column: 1 / -1; }
+.wiki .mob-section { margin-bottom: 18px; }
+.wiki .mob-section-title { font-family: 'Cinzel', serif; font-size: 9px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--rim); display: flex; align-items: center; gap: 6px; }
+.wiki .mob-section-title::before { content: '◈'; font-size: 8px; opacity: .7; }
+.wiki .mob-attacks-list { display: flex; flex-direction: column; gap: 7px; }
+.wiki .mob-attack-row { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; background: rgba(255,255,255,.03); border: 1px solid var(--rim); border-left: 2px solid var(--gold-dim); }
+.wiki .attack-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; color: var(--bright); }
+.wiki .attack-desc { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); line-height: 1.55; }
+.wiki .attack-dmg { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #df7070; font-weight: 600; }
+.wiki .mob-loot-list { display: flex; flex-direction: column; }
+.wiki .loot-row-wrap { display: flex; flex-direction: column; }
+.wiki .loot-row-wrap:last-child > .loot-row { border-bottom: none; }
+.wiki .loot-row { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-bottom: 1px solid rgba(255,255,255,.04); transition: background .12s; cursor: pointer; text-decoration: none; }
+.wiki .loot-row:hover { background: rgba(255,255,255,.04); }
+.wiki .loot-row:last-child { border-bottom: none; }
+.wiki .loot-row-quality { border-left: 2px solid #d4a84088; }
+.wiki .loot-row-quality:hover { background: rgba(212,168,64,.06); }
+.wiki .loot-quality-badge { font-size: 9px; color: #d4a840; vertical-align: middle; margin-left: 3px; }
+.wiki .loot-img-wrap { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.wiki .loot-img-wrap img { width: 22px; height: 22px; object-fit: contain; image-rendering: pixelated; }
+.wiki .loot-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.wiki .loot-name { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wiki .loot-drop-rate { font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 1px 6px; border: 1px solid; flex-shrink: 0; }
+.wiki .mob-lore { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-style: italic; color: var(--muted); line-height: 1.7; padding: 12px 16px; background: rgba(255,255,255,.025); border: 1px solid var(--rim); border-left: 2px solid var(--gold-dim); }
+.wiki .mob-3d-fullscreen-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: rgba(8,6,4,.96); display: flex; flex-direction: column; align-items: center; justify-content: center;  }
+.wiki .mob-3d-fullscreen-inner { position: relative; width: calc(100vw - 80px); height: calc(100vh - 80px); background: linear-gradient(160deg, rgba(22,18,14,.99) 0%, rgba(12,10,8,.99) 100%); border: 1px solid rgba(224,172,96,.15); box-shadow: 0 0 120px rgba(0,0,0,.9), 0 0 0 1px rgba(224,172,96,.08); }
+.wiki .mob-3d-fullscreen-inner::before,
+.wiki .mob-3d-fullscreen-inner::after { content: ''; position: absolute; width: 16px; height: 16px; border-style: solid; border-color: var(--gold-dim); opacity: .6; pointer-events: none; z-index: 5; }
+.wiki .mob-3d-fullscreen-inner::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+.wiki .mob-3d-fullscreen-inner::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+.wiki .mob-3d-fullscreen-container { width: 100%; height: 100%; }
+.wiki .mob-3d-fullscreen-hint { margin-top: 12px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: .08em; opacity: .6; }
+.wiki .pnj-sells-hdr { display: flex; align-items: center; gap: 8px; padding: 4px 6px 6px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.wiki .pnj-col-hdr { font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; width: 78px; text-align: center; flex-shrink: 0; }
+.wiki .pnj-col-hdr-vente { color: #c9a84c; }
+.wiki .pnj-col-hdr-achat { color: #e07c45; }
+.wiki .pnj-val { font-family: 'JetBrains Mono', monospace; font-size: 9px; padding: 1px 6px; border: 1px solid; width: 78px; text-align: center; flex-shrink: 0; box-sizing: border-box; }
+.wiki .pnj-val-vente { color: #c9a84c; border-color: #c9a84c33; }
+.wiki .pnj-val-achat { color: #e07c45; border-color: #e07c4533; }
+.wiki .pnj-val-empty { color: rgba(255,255,255,.15); border-color: transparent; }
+.wiki .mob-name-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+.wiki .mob-name-row .mob-name { margin-bottom: 0; }
+.wiki .mob-spawn-badge { display: inline-flex; align-items: center; flex-shrink: 0; background: rgba(10, 10, 14, 0.82); border: 1px solid rgba(224, 172, 96, 0.45); color: var(--gold); font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: .05em; padding: 3px 9px; border-radius: 5px; white-space: nowrap; }
+.wiki .mob-loc { margin-top: 10px; }
+.wiki .mob-loc .mob-meta-key { display: block; margin-bottom: 4px; }
+.wiki .mob-loc-list { margin: 0; padding-left: 18px; list-style: disc; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text, #e8dcc0); line-height: 1.7; }
+.wiki .mob-loc-list li::marker { color: #d7af5f; }
+.wiki .mob-loc-link { color: inherit; text-decoration: none; border-bottom: 1px dotted rgba(215,175,95,.5); }
+.wiki .mob-loc-link:hover { color: #f0c860; border-bottom-color: #f0c860; }
+.wiki .mob-modal { max-width: 780px; }
+.wiki .mob-sheet.is-mob { position: relative; padding: 46px 30px 26px; background: radial-gradient(ellipse 75% 240px at 22% 0, color-mix(in srgb, var(--tc) 13%, transparent), transparent 72%); }
+.wiki .mob-sheet.is-mob::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--tc), transparent); opacity: .85; }
+.wiki .mh-hero { display: grid; grid-template-columns: 210px 1fr; gap: 28px; align-items: start; margin-bottom: 24px; }
+.wiki .mh-portrait { position: relative; width: 210px; height: 210px; background: radial-gradient(ellipse 80% 75% at 50% 62%, color-mix(in srgb, var(--tc) 30%, transparent) 0%, transparent 74%), rgba(0,0,0,.42); border: 1px solid color-mix(in srgb, var(--tc) 50%, var(--rim2)); box-shadow: 0 0 30px color-mix(in srgb, var(--tc) 20%, transparent), inset 0 0 34px rgba(0,0,0,.55); }
+.wiki .mh-portrait::before,
+.wiki .mh-portrait::after { content: ''; position: absolute; width: 12px; height: 12px; border-style: solid; border-color: var(--tc); pointer-events: none; z-index: 4; }
+.wiki .mh-portrait::before { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
+.wiki .mh-portrait::after { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
+.wiki .mh-portrait .mob-image-inner { border-radius: 0; }
+.wiki .mh-portrait .mh-still { width: 88%; height: 88%; object-fit: contain; image-rendering: pixelated; transition: opacity .4s ease; }
+.wiki .mh-portrait .mob-image-inner.has-3d .mh-still { opacity: 0; }
+.wiki .mh-portrait .mob-image-inner.is-3d .mob-3d-container { position: absolute; inset: 0; }
+.wiki .mh-portrait .mob-img-placeholder { font-size: 58px; }
+.wiki .mh-portrait .btn-expand-3d { top: 8px; right: 8px; }
+.wiki .mh-hex { position: absolute; top: -16px; left: -16px; z-index: 6; width: 68px; height: 76px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.7)) drop-shadow(0 0 10px rgba(224,172,96,.25)); }
+.wiki .mh-hex-in { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: linear-gradient(160deg, #f6d795, #b8812f 55%, #7a5218); }
+.wiki .mh-hex-in::before { content: ''; position: absolute; inset: 3px; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: linear-gradient(180deg, #1f160a, #0f0b06); }
+.wiki .mh-hex-k,
+.wiki .mh-hex-v { position: relative; }
+.wiki .mh-hex-k { font-family: 'JetBrains Mono', monospace; font-size: 6.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #d3a85f; max-width: 54px; text-align: center; line-height: 1.15; }
+.wiki .mh-hex-v { font-family: 'Cinzel', serif; font-size: 28px; font-weight: 900; line-height: 1; color: #f6d795; text-shadow: 0 0 12px rgba(224,172,96,.5); }
+.wiki .mh-info { display: flex; flex-direction: column; gap: 12px; min-width: 0; padding-top: 2px; }
+.wiki .mh-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding-right: 150px; }
+.wiki .mob-sheet.is-mob .mob-name { margin: 0; font-size: 30px; line-height: 1.1; text-shadow: 0 0 26px color-mix(in srgb, var(--tc) 35%, transparent); }
+.wiki .mob-sheet.is-mob .mob-behavior-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; color: color-mix(in srgb, var(--bc) 82%, #fff); border: 1px solid color-mix(in srgb, var(--bc) 35%, transparent); background: color-mix(in srgb, var(--bc) 10%, transparent); border-radius: 999px; }
+.wiki .mob-sheet.is-mob .mob-behavior-badge i { width: 6px; height: 6px; border-radius: 50%; background: var(--bc); box-shadow: 0 0 6px var(--bc); }
+.wiki .mh-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.wiki .mh-tile { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px 12px; background: rgba(255,255,255,.035); border: 1px solid var(--rim2); border-left: 2px solid color-mix(in srgb, var(--tc) 70%, var(--gold-dim)); color: var(--text); font: inherit; text-align: left; }
+.wiki .mh-tile-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.wiki .mh-k { display: block; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.wiki .mh-v { display: block; font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600; line-height: 1.2; color: var(--bright); }
+.wiki .mh-ico { color: var(--gold); flex-shrink: 0; }
+.wiki .mh-diff { flex-direction: column; align-items: flex-start; gap: 7px; border-left-color: var(--dc, var(--rim2)); }
+.wiki .mh-pips { display: flex; gap: 5px; padding-left: 4px; }
+.wiki .mh-pip { width: 22px; height: 8px; transform: skewX(-24deg); background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.06); }
+.wiki .mh-pip.on { background: var(--pc); border-color: transparent; box-shadow: 0 0 9px color-mix(in srgb, var(--pc) 65%, transparent); }
+.wiki .mh-diff .mh-v { color: var(--dc); }
+.wiki .mh-diff.is-empty .mh-v { font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 400; color: var(--muted); }
+.wiki .mh-region { cursor: pointer; transition: border-color .15s, background .15s; }
+.wiki .mh-region:hover { border-color: var(--gold-dim); background: var(--gold-glow); }
+.wiki .mh-region:focus-visible { outline: 1px solid var(--gold); outline-offset: -2px; }
+.wiki .mh-go { margin-left: auto; color: var(--gold); transition: transform .15s; }
+.wiki .mh-region:hover .mh-go { transform: translateX(3px); }
+.wiki .mob-sheet.is-mob .mob-section { margin-bottom: 20px; }
+.wiki .mob-sheet.is-mob .mob-section-title { margin-bottom: 10px; }
+.wiki .mh-count { margin-left: 4px; padding: 1px 7px; font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0; color: var(--gold); background: var(--gold-glow); border: 1px solid var(--gold-dim); border-radius: 999px; }
+.wiki .mh-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+.wiki .mh-kin:focus-visible,
+.wiki .mh-share:focus-visible { outline: 1px solid var(--gold); outline-offset: -2px; }
+.wiki .mob-sheet.is-mob .mob-attack-row { flex-direction: row; align-items: flex-start; gap: 10px; }
+.wiki .attack-n { display: grid; place-items: center; flex: 0 0 22px; height: 22px; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--bright); background: color-mix(in srgb, var(--tc) 18%, transparent); border: 1px solid color-mix(in srgb, var(--tc) 45%, transparent); }
+.wiki .attack-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.wiki .mob-sheet.is-mob .attack-dmg { display: inline-block; margin-left: 8px; padding: 1px 7px; font-size: 10px; font-weight: 700; color: #ff9a9a; background: rgba(223,112,112,.12); border: 1px solid rgba(223,112,112,.35); border-radius: 999px; }
+.wiki .loot-row-bar { position: relative; }
+.wiki .loot-row-bar::after { content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: var(--p, 0%); background: linear-gradient(90deg, transparent, var(--rc, #888)); opacity: .75; }
+.wiki .mob-sheet.is-mob .mob-lore { position: relative; padding: 16px 20px 16px 50px; font-family: Georgia, 'Times New Roman', serif; font-size: 13.5px; font-style: italic; line-height: 1.75; color: var(--text); background: linear-gradient(90deg, color-mix(in srgb, var(--tc) 9%, transparent), transparent 80%); border: 1px solid var(--rim); border-left: 2px solid var(--tc); }
+.wiki .mob-sheet.is-mob .mob-lore::before { content: '\201C'; position: absolute; left: 16px; top: 4px; font-family: 'Cinzel', serif; font-size: 46px; font-weight: 900; font-style: normal; line-height: 1; color: color-mix(in srgb, var(--tc) 70%, transparent); }
+.wiki .mh-kin-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.wiki .mh-kin { display: flex; align-items: center; gap: 8px; max-width: 100%; padding: 4px 11px 4px 4px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text); background: rgba(255,255,255,.03); border: 1px solid var(--rim2); border-bottom: 2px solid color-mix(in srgb, var(--kc) 65%, transparent); cursor: pointer; transition: border-color .15s, background .15s, color .15s; }
+.wiki .mh-kin:hover { border-color: var(--gold-dim); background: var(--gold-glow); color: var(--bright); }
+.wiki .mh-kin img,
+.wiki .mh-kin-ph { width: 30px; height: 30px; flex-shrink: 0; object-fit: contain; image-rendering: pixelated; background: rgba(0,0,0,.4); }
+.wiki .mh-kin-ph { display: grid; place-items: center; font-family: 'Cinzel', serif; font-weight: 900; color: var(--muted); }
+.wiki .mh-kin-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wiki .mh-actions { display: flex; justify-content: flex-end; margin-top: 4px; }
+.wiki .mh-share { padding: 5px 12px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .04em; color: var(--muted); background: transparent; border: 1px solid var(--rim2); cursor: pointer; transition: color .15s, border-color .15s; }
+.wiki .mh-share:hover,
+.wiki .mh-share.is-done { color: var(--gold); border-color: var(--gold-dim); }
