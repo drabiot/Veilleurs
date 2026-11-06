@@ -4773,7 +4773,8 @@ function _starCommit() {
   const cur = _buildLevelObj();
   if (starLevel === 0 || !starBase) { starBase = cur; return; }
   const d = _starDiff(cur, _starEffective(starBase, starDeltas, starLevel - 1));
-  if (Object.keys(d).length) starDeltas[starLevel] = d; else delete starDeltas[starLevel];
+  // Un niveau sans différence existe quand même (= identique au niveau d'en dessous) : on le garde tel quel s'il existait déjà
+  if (Object.keys(d).length) starDeltas[starLevel] = d; else if (starLevel in starDeltas) starDeltas[starLevel] = {};
 }
 
 function buildObj() {
@@ -4782,9 +4783,9 @@ function buildObj() {
   const deltas = { ...starDeltas };
   if (starLevel > 0 && starBase) {
     const d = _starDiff(cur, _starEffective(starBase, starDeltas, starLevel - 1));
-    if (Object.keys(d).length) deltas[starLevel] = d; else delete deltas[starLevel];
+    if (Object.keys(d).length) deltas[starLevel] = d; else if (starLevel in deltas) deltas[starLevel] = {};
   }
-  const keys = Object.keys(deltas).filter(k => Object.keys(deltas[k]).length).sort((a, b) => a - b);
+  const keys = Object.keys(deltas).sort((a, b) => a - b);   // les niveaux sans différence (« {} ») sont conservés : ils existent dans le wiki
   if (!keys.length) return base;
   const out = { ...base };
   out.stars = {};

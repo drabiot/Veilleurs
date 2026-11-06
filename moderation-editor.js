@@ -568,7 +568,8 @@ function _edStarCommit() {
   const cur = _collectGenericForm();
   if (!_ed.starLevel || !_ed.starBase) { _ed.starBase = cur; return; }
   const d = _edStarDiff(cur, _edStarEffective(_ed.starBase, _ed.starDeltas, _ed.starLevel - 1));
-  if (Object.keys(d).length) _ed.starDeltas[_ed.starLevel] = d; else delete _ed.starDeltas[_ed.starLevel];
+  // Un niveau sans différence existe quand même (= identique au niveau d'en dessous) : on le garde tel quel s'il existait déjà
+  if (Object.keys(d).length) _ed.starDeltas[_ed.starLevel] = d; else if (_ed.starLevel in _ed.starDeltas) _ed.starDeltas[_ed.starLevel] = {};
 }
 
 // Document à écrire : base + stars (deltas non vides)
@@ -580,11 +581,11 @@ function _edFinalData() {
   if (_ed.starLevel > 0 && _ed.starBase) {
     base = _ed.starBase;
     const d = _edStarDiff(cur, _edStarEffective(base, deltas, _ed.starLevel - 1));
-    if (Object.keys(d).length) deltas[_ed.starLevel] = d; else delete deltas[_ed.starLevel];
+    if (Object.keys(d).length) deltas[_ed.starLevel] = d; else if (_ed.starLevel in deltas) deltas[_ed.starLevel] = {};
   }
   const out = { ...base };
   delete out.stars;
-  const keys = Object.keys(deltas).filter(k => Object.keys(deltas[k]).length).sort((a, b) => a - b);
+  const keys = Object.keys(deltas).sort((a, b) => a - b);   // les niveaux sans différence (« {} ») sont conservés : ils existent dans le compendium
   if (keys.length) { out.stars = {}; for (const k of keys) out.stars[k] = deltas[k]; }
   return out;
 }
@@ -605,7 +606,7 @@ async function _edRenderStarBar() {
   const exists = { [own]: true };                             // niveau de cette fiche
   for (const m of fam) { if (m.id !== _ed.id) exists[lvlOf(m)] = true; }
   for (const m of fam) { if (m.id !== _ed.id) for (const k of Object.keys(m.stars || {})) exists[+k] = true; }
-  for (const k of Object.keys(_ed.starDeltas || {})) if (Object.keys(_ed.starDeltas[k]).length) exists[+k] = true;
+  for (const k of Object.keys(_ed.starDeltas || {})) exists[+k] = true;   // même un niveau sans différence (« {} ») : le compendium l'affiche
   const btn = (i, label, active, lit, ok, title) =>
     `<button type="button" ${ok ? `onclick="edStarClick(${i})"` : 'disabled'} title="${title}" role="radio" aria-checked="${active}" style="width:30px;height:28px;padding:0;cursor:${ok ? 'pointer' : 'default'};border-radius:5px;border:1px solid ${active ? (i ? '#f5b301' : '#ff5a5a') : 'var(--border)'};background:${active ? (i ? 'rgba(245,179,1,.15)' : 'rgba(255,90,90,.15)') : 'transparent'};color:${i === 0 ? (active ? '#ff5a5a' : 'var(--muted)') : (lit ? '#f5b301' : 'var(--muted)')};font-size:${i ? 17 : 13}px;line-height:1;position:relative;opacity:${ok ? 1 : .35};">${label}${ok && i ? '<span style="position:absolute;bottom:2px;left:50%;margin-left:-2px;width:4px;height:4px;border-radius:50%;background:#f5b301;"></span>' : ''}</button>`;
   let html = btn(0, '✕', lv === 0, false, !!exists[0], exists[0] ? 'Sans étoile (item de base)' : 'Pas de fiche sans étoile');
