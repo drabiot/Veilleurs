@@ -1657,6 +1657,44 @@ function loadAccessoriesForClass(classId) {
       '<optgroup label="Par statistique">' + statOpts + '</optgroup>';
     sel.value = _sortMode;
     sel.addEventListener('change', function() { _sortMode = sel.value; renderItemList(); });
+    buildSortDropdown(sel);
+  }
+
+  // Menu déroulant aux couleurs du site (remplace la liste native du <select> de tri, qui reste la source de vérité)
+  function buildSortDropdown(sel) {
+    const dd = document.getElementById('sort-dd');
+    if (!dd) return;
+    const esc = function(t) { return String(t).replace(/[&<>"]/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+    let html = '<button type="button" class="vsel-btn" aria-haspopup="listbox" aria-expanded="false"><span class="vsel-label"></span><span class="vsel-arrow">▾</span></button><div class="vsel-list" role="listbox">';
+    Array.from(sel.children).forEach(function(n) {
+      if (n.tagName === 'OPTGROUP') {
+        html += '<div class="vsel-group">' + esc(n.label) + '</div>';
+        Array.from(n.children).forEach(function(o) { html += '<div class="vsel-opt" role="option" data-v="' + esc(o.value) + '">' + esc(o.textContent) + '</div>'; });
+      } else html += '<div class="vsel-opt" role="option" data-v="' + esc(n.value) + '">' + esc(n.textContent) + '</div>';
+    });
+    dd.innerHTML = html + '</div>';
+    const btn = dd.querySelector('.vsel-btn'), lab = dd.querySelector('.vsel-label');
+    const close = function() { dd.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); };
+    const mark = function() {
+      const o = sel.options[sel.selectedIndex];
+      lab.textContent = o ? o.textContent : '';
+      dd.querySelectorAll('.vsel-opt').forEach(function(x) { x.classList.toggle('sel', x.dataset.v === sel.value); });
+    };
+    mark();
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      const open = dd.classList.toggle('open'); btn.setAttribute('aria-expanded', open);
+      if (open) { const s = dd.querySelector('.vsel-opt.sel'); if (s) s.scrollIntoView({ block: 'nearest' }); }
+    });
+    dd.querySelectorAll('.vsel-opt').forEach(function(o) {
+      o.addEventListener('click', function(e) {
+        e.stopPropagation();
+        sel.value = o.dataset.v; mark(); close();
+        sel.dispatchEvent(new Event('change'));
+      });
+    });
+    document.addEventListener('click', close);
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && dd.classList.contains('open')) { close(); e.stopPropagation(); } }, true);
   }
 
   function renderItemList() {
