@@ -1,0 +1,40 @@
+name: Forum Claude
+
+# /claude dans un fil du forum des demandes → Claude (lecture seule du dépôt) répond dans le fil. Lancé par le worker (claude-forum.js).
+# Secrets GitHub à créer (Settings → Secrets and variables → Actions) : BOT_TOKEN, ADMIN_SECRET (déjà là pour discord-bot.yml)
+# et CLAUDE_CODE_OAUTH_TOKEN (résultat de `claude setup-token`, abonnement Claude).
+on:
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Identifiant du travail (le jeton Discord est gardé par le worker, pas ici)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  answer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Installer Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Répondre dans le fil
+        run: node bot/forum-claude-run.js
+        env:
+          JOB: ${{ inputs.job }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      # Échec avant la réponse (installation, délai…) : le message « réfléchit… » serait resté bloqué
+      - name: Prévenir dans le fil en cas d'échec
+        if: failure()
+        run: node bot/forum-claude-run.js --fail
+        env:
+          JOB: ${{ inputs.job }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}

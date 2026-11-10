@@ -13,6 +13,7 @@
 // ── Constantes ──────────────────────────────────────────────
 import { handleStoreRead, handleStoreWrite, authUid } from './worker-store.js';
 import { handleGuildApi, handleGuildBot, finishGuildOauth } from './guild-onboarding.js';
+import { handleClaudeInteraction, handleClaudeJob } from './claude-forum.js';
 
 const FIREBASE_KEY   = 'AIzaSyBdeKmmEFxmGt7_37PF9uWhm5nz-6eaKq0';
 const CF_ACCOUNT_ID  = 'db3d4d15175ddbfbd2720490acc8fb53'; // identifiant public du compte Cloudflare (pas un secret)
@@ -54,13 +55,16 @@ function iResponse(data) {
   });
 }
 
-async function handleInteraction(rawBody) {
+async function handleInteraction(rawBody, env, ctx) {
   const interaction = JSON.parse(rawBody);
 
   // PING → PONG (Discord vérifie l'endpoint avec ça)
   if (interaction.type === 1) return iResponse({ type: 1 });
 
-  // Plus aucune commande : le bot n'en expose pas (la commande /wiki a été retirée).
+  // /claude : dans un fil du forum des demandes, Claude affine la demande (voir claude-forum.js)
+  if (interaction.type === 2 && interaction.data?.name === 'claude') return handleClaudeInteraction(interaction, env, ctx);
+
+  // Aucune autre commande : la commande /wiki a été retirée.
   return iResponse({ type: 4, data: { content: 'Commande indisponible.', flags: 64 } });
 }
 
@@ -78,6 +82,7 @@ export default {
     if (_path === '/discord/callback' && request.method === 'GET') return handleDiscordCallback(request, env);
     if (_path === '/discord/start' && request.method === 'POST') return handleDiscordStart(request, env);
     if (_path === '/guild/api' && request.method === 'POST') return handleGuildApi(request, env, { json });
+    if (_path === '/claude/job' && request.method === 'POST') return handleClaudeJob(request, env, { json });
     if (_path === '/guild/bot' && request.method === 'POST') return handleGuildBot(request, env, { json });
     if (_path === '/db/sync' && request.method === 'GET') return handleDbSync(new URL(request.url), env);
     if (_path === '/chasse/pending' && request.method === 'GET') return handleChassePending(env);
@@ -99,7 +104,7 @@ export default {
       const rawBody = await request.text();
       const valid = await verifyDiscordSignature(env.DISCORD_PUBLIC_KEY, sigHeader, tsHeader, rawBody);
       if (!valid) return new Response('Unauthorized', { status: 401 });
-      return handleInteraction(rawBody);
+      return handleInteraction(rawBody, env, ctx);
     }
 
     // ── Route: existing admin proxy ────────────────────────────
