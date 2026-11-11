@@ -57,7 +57,7 @@ window.loadStatistiques = async function loadStatistiques() {
       loadUser: id => _fetchStats('user', { id }).then(r => r.user),
       loadCloudflare: () => _fetchStats('cloudflare'),
       loadAudit: async uid => {
-        const { AUDIT_ACTION_LABELS } = await import('./moderation-audit.js?v=24907cd5');
+        const { AUDIT_ACTION_LABELS } = await import('./moderation-audit.js?v=26a9ce0d');
         const snap = await getDocs(query(collection(db, 'audit_log'),
           where('actorUid', '==', uid), orderBy('createdAt', 'desc'), limit(50)));
         return snap.docs.map(d => {

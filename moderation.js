@@ -240,7 +240,7 @@ window.toggleSidebar = function toggleSidebar() {
   localStorage.setItem('vcl_sidebar_hidden', hidden ? '1' : '');
 };
 
-_lazyPanel(() => import('./moderation-submissions.js?v=440ef067'), ['loadSubmissions', 'setFilter', 'setFilterSearch', 'loadSubDiff', 'applyDiffSelection', 'modImgFile', 'modImgDrop', 'modImgClear', 'modImgPaste', 'copyCode', 'toggleDetails', 'toggleEdit', 'onEditorInput', 'openInCreator', 'openEditorInCreator', 'approve', 'reject', 'restorePending', 'requestChanges', 'bulkDeleteSubs', 'bulkApproveSubs', 'deleteSub', 'renderSubs', 'updateCounts']);
+_lazyPanel(() => import('./moderation-submissions.js?v=abbd6555'), ['loadSubmissions', 'setFilter', 'setFilterSearch', 'loadSubDiff', 'applyDiffSelection', 'modImgFile', 'modImgDrop', 'modImgClear', 'modImgPaste', 'copyCode', 'toggleDetails', 'toggleEdit', 'onEditorInput', 'openInCreator', 'openEditorInCreator', 'approve', 'reject', 'restorePending', 'requestChanges', 'bulkDeleteSubs', 'bulkApproveSubs', 'deleteSub', 'renderSubs', 'updateCounts']);
 
 // id de région → nom affiché sur le wiki (« hanaka » → « Hanaka ») ; à défaut, l'id tel quel
 function _regionName(id) {
@@ -714,7 +714,7 @@ _lazyPanel(() => import('./moderation-trash.js?v=7463de63'), ['showTrash', 'load
 let CREATOR_PALIERS = [1, 2, 3]; // mis à jour dynamiquement depuis Firestore config/paliers
 let _paliersOpts = null; // options du champ palier (null = défaut de la Chasse), lu par moderation-quality.js
 let _paliersConfig = []; // données complètes { id, label, color, floorName }
-_lazyPanel(() => import('./moderation-roles.js?v=c4287baa'), ['showPermissions', 'loadPermissions', '_setPermission', '_setCustomRoleBaseTier', 'showDiscordRoles', 'loadDiscordRoles', 'saveDiscordRoles', 'togglePermTech', '_setCollectionPerm', 'loadRoles', 'showCreateRoleForm', 'hideCreateRoleForm', 'createRole', 'deleteRole', 'showGenerateRulesModal', 'closeRulesModal', 'copyGeneratedRules', 'toggleCreatorTool', 'toggleCreatorPalier']);
+_lazyPanel(() => import('./moderation-roles.js?v=47dd3287'), ['showPermissions', 'loadPermissions', '_setPermission', '_setCustomRoleBaseTier', 'showDiscordRoles', 'loadDiscordRoles', 'saveDiscordRoles', 'togglePermTech', '_setCollectionPerm', 'loadRoles', 'showCreateRoleForm', 'hideCreateRoleForm', 'createRole', 'deleteRole', 'showGenerateRulesModal', 'closeRulesModal', 'copyGeneratedRules', 'toggleCreatorTool', 'toggleCreatorPalier']);
 
 
 async function _loadPaliersConfig() {
@@ -790,9 +790,9 @@ _lazyPanel(() => import('./moderation-leaderboard.js?v=6ffaeb75'), ['showLeaderb
 
 
 
-_lazyPanel(() => import('./moderation-audit.js?v=24907cd5'), ['showAuditLog', 'loadAuditLog', 'renderAuditLog', 'loadAuditLogMore']);
+_lazyPanel(() => import('./moderation-audit.js?v=26a9ce0d'), ['showAuditLog', 'loadAuditLog', 'renderAuditLog', 'loadAuditLogMore']);
 
-_lazyPanel(() => import('./moderation-stats.js?v=f43e87b4'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques']);
+_lazyPanel(() => import('./moderation-stats.js?v=39baa944'), ['resetStatistiques', 'showStatistiques', 'loadStatistiques']);
 
 
 _lazyPanel(() => import('./moderation-tags.js?v=922eadc4'), ['showTagsPanel', 'updateTagRuleValueOptions', 'loadTagRules', 'addTagRule', 'deleteTagRule', 'seedDefaultTagRules', 'applyTagRules']);
