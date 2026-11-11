@@ -79,6 +79,12 @@ const CAP_DEFS = [
   { id: 'wiki',       label: '🌐 Gérer le contenu du wiki', desc: 'panoplies, évènements, config du jeu (paliers, effets, titres, donjons, worldboss, tags, pins, chasse, champs requis), outils carte / zones / diagnostic' },
   { id: 'trash',      label: '🗑️ Corbeille',                desc: 'restaurer les éléments supprimés (pas de suppression définitive)' },
   { id: 'tickets',    label: '🎫 Tickets des joueurs',      desc: 'lire et répondre aux signalements' },
+  { id: 'stats',        label: '📊 Statistiques',           desc: 'fréquentation et connexions (lecture ; la remise à zéro reste aux admins)' },
+  { id: 'audit',        label: '📋 Journal d\'audit',       desc: 'lecture seule (suppression réservée aux admins)' },
+  { id: 'leaderboard',  label: '🏆 Classement',             desc: 'exclusions, remise à zéro, migration de contributions' },
+  { id: 'translations', label: '🌐 Traductions',            desc: 'valider / refuser les propositions, écrire l\'anglais' },
+  { id: 'history',      label: '🗃️ Historique des soumissions', desc: 'supprimer les soumissions déjà approuvées / rejetées' },
+  { id: 'settings',     label: '⚙️ Réglages sensibles',     desc: 'config du Creator (outils actifs, paliers visibles), chemins d\'images' },
 ];
 
 let _permConfig    = null;
@@ -310,7 +316,7 @@ function _renderPermsForRole(roleId) {
         }
         const never = document.createElement('div');
         never.style.cssText = 'margin-top:6px;font-size:11px;color:var(--muted);';
-        never.textContent = 'Jamais attribuables : membres/rôles/permissions, secrets, Discord, statistiques, journal d\'audit, classement.';
+        never.textContent = 'Jamais attribuables : membres/rôles/permissions, secrets, Discord, remise à zéro des stats, suppression du journal d\'audit.';
         capsBox.appendChild(never);
       }
       const row2 = document.createElement('div');

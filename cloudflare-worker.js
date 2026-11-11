@@ -11,7 +11,7 @@
 // ══════════════════════════════════════════════════════════════
 
 // ── Constantes ──────────────────────────────────────────────
-import { handleStoreRead, handleStoreWrite, authUid } from './worker-store.js';
+import { handleStoreRead, handleStoreWrite, authUid, tokenHasCap } from './worker-store.js';
 import { handleGuildApi, handleGuildBot, finishGuildOauth } from './guild-onboarding.js';
 import { handleClaudeInteraction, handleClaudeJob } from './claude-forum.js';
 
@@ -574,7 +574,9 @@ function uvGroups(d) {
 async function handleStats(request, env) {
   let body;
   try { body = await request.json(); } catch { return json({ error: 'Bad JSON' }, 400); }
-  if (!env.ADMIN_SECRET || body.secret !== env.ADMIN_SECRET) return json({ error: 'Unauthorized' }, 401);
+  const bySecret = !!env.ADMIN_SECRET && body.secret === env.ADMIN_SECRET;
+  // Rôle perso avec le droit « stats » : accès par jeton de connexion, sans le secret admin ; jamais la remise à zéro
+  if (!bySecret && !(body.idToken && body.action !== 'reset' && await tokenHasCap(env, body.idToken, 'stats'))) return json({ error: 'Unauthorized' }, 401);
   if (!env.DB) return json({ error: 'D1 non configurée' }, 503);
   const q = (sql, ...args) => env.DB.prepare(sql).bind(...args);
 

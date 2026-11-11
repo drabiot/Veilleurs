@@ -169,11 +169,11 @@ onAuthStateChanged(auth, async user => {
 
 // Maps tool permission IDs → button ID(s) in the sidebar.
 // Default roles: 'admin' for privileged tools, 'contributeur' for the rest.
-// `cap` : droit spécial d'un rôle perso qui ouvre aussi l'outil (cf. CAPS dans worker-store.js). Classement et journal d'audit n'en ont pas : admins seulement.
+// `cap` : droit spécial d'un rôle perso qui ouvre aussi l'outil (cf. CAPS dans worker-store.js). 
 const MOD_TOOL_BUTTONS = {
   tool_trash:       { btns: ['btn-trash'],                             defaultRole: 'admin', cap: 'trash' },
-  tool_leaderboard: { btns: ['btn-leaderboard'],                       defaultRole: 'admin' },
-  tool_audit_log:   { btns: ['btn-audit-log'],                         defaultRole: 'admin' },
+  tool_leaderboard: { btns: ['btn-leaderboard'],                       defaultRole: 'admin', cap: 'leaderboard' },
+  tool_audit_log:   { btns: ['btn-audit-log'],                         defaultRole: 'admin', cap: 'audit' },
   tool_map:         { btns: ['btn-map-order'],                         defaultRole: 'contributeur', cap: 'wiki' },
   tool_zones:       { btns: ['btn-zone-list', 'btn-zone-editor'],       defaultRole: 'contributeur', cap: 'wiki' },
   tool_diagnostic:  { btns: ['btn-ghost-ids', 'btn-region-orphans'],   defaultRole: 'contributeur', cap: 'wiki' },

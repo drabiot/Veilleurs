@@ -10,7 +10,7 @@ const { getWorkerSecret: _getWorkerSecret, WORKER_URL, cachedDocs, invalidateMod
 async function _fetchStats(action = 'summary', extra = {}) {
   const r = await fetch(WORKER_URL + '/stats', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ secret: await _getWorkerSecret(), action, ...extra }),
+    body: JSON.stringify({ ...(ctx.role === 'admin' ? { secret: await _getWorkerSecret() } : { idToken: await ctx.auth.currentUser.getIdToken() }), action, ...extra }),
   });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(d.error || ('Stats HTTP ' + r.status));
@@ -31,7 +31,7 @@ window.resetStatistiques = async function() {
 
 // ══════════════════════════════════════════════════════
 window.showStatistiques = function() {
-  if (ctx.role !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
+  if (!ctx.hasCap('stats')) { toast('⛔ Réservé aux admins', 'error'); return; }
   _setHash('statistiques');
   document.getElementById('panel-statistiques').style.display = '';
   document.getElementById('btn-statistiques').classList.add('active');

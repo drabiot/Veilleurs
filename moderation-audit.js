@@ -23,7 +23,7 @@ let _auditLimit = 50;
 
 
 window.showAuditLog = async () => {
-  if (ctx.role !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
+  if (!ctx.hasCap('audit')) { toast('⛔ Réservé aux admins', 'error'); return; }
   _setHash('audit-log');
   document.getElementById('audit-log-panel').style.display = '';
   document.getElementById('btn-audit-log').classList.add('active');

@@ -99,8 +99,8 @@ async function loadCtx(env, idToken) {
    wiki       : gérer le contenu du wiki au-delà d'un contributeur : panoplies, évènements, réglages de contenu (WIKI_CONFIG_DOCS)
    trash      : Corbeille (interface ; l'accès aux données est déjà celui d'un contributeur)
    tickets    : tickets des joueurs (interface ; idem)
-   Jamais attribuables : gestion des comptes/rôles/permissions, secrets, Discord (bot, routes, webhooks), statistiques, journal d'audit, classement. */
-export const CAPS = ['moderation', 'wiki', 'trash', 'tickets'];
+   Jamais attribuables : gestion des comptes/rôles/permissions, secrets, Discord (bot, routes, webhooks), remise à zéro des stats, suppression du journal d'audit. */
+export const CAPS = ['moderation', 'wiki', 'trash', 'tickets', 'stats', 'audit', 'leaderboard', 'translations', 'history', 'settings'];
 // Documents config/* que le droit « wiki » autorise à écrire (toute autre clé de config reste réservée aux admins)
 const WIKI_CONFIG_DOCS = new Set([
   'paliers', 'game', 'effect_types', 'titres', 'worldboss_emojis', 'donjons_loot', 'secret_forgerons', 'tag_rules',
@@ -108,6 +108,15 @@ const WIKI_CONFIG_DOCS = new Set([
   'tableau_de_chasse', 'completion_ignored', 'data_quality_standards', 'required_admin_fields', 'item_renames',
 ]);
 const WIKI_CAP_COLS = new Set(['panoplies', 'events']);
+// Autres droits qui ouvrent l'écriture de documents config/* précis
+const CAP_CONFIG_DOCS = {
+  leaderboard:  new Set(['leaderboard_excluded', 'leaderboard_reset']),
+  translations: new Set(['i18n_en']),
+  settings:     new Set(['creator', 'image_paths']),
+};
+const capConfig = (ctx, id) => ctx.caps.has('wiki') && WIKI_CONFIG_DOCS.has(id) || Object.entries(CAP_CONFIG_DOCS).some(([c, set]) => ctx.caps.has(c) && set.has(id));
+// Vérifie un droit spécial pour un jeton (utilisé par POST /stats)
+export async function tokenHasCap(env, idToken, cap) { return (await loadCtx(env, idToken)).caps.has(cap); }
 
 const need = (ctx, level) => level === 'public' || ctx.tier >= TIER[level];
 // Traducteur : rôle perso « traducteur » ou palier autorisé par la permission « tool_translate » (admin par défaut), comme i18n/review.html
@@ -134,8 +143,9 @@ function canRead(ctx, col, id, data, listing) {
     case 'user_favorites': return !!ctx.uid && data?.uid === ctx.uid;
     case 'builds_sensible': return isContrib;
     case 'submissions': return isAdmin || ctx.caps.has('moderation') || (isContrib && data?.status === 'pending') || (!!ctx.uid && data?.submittedBy === ctx.uid);
+    case 'audit_log': return isAdmin || ctx.caps.has('audit') || need(ctx, colRule(ctx, 'audit_log').read);
     case 'reports': return isContrib || (!!ctx.uid && data?.submittedBy === ctx.uid);   // modération + l'auteur (pour voir la réponse des admins)
-    case 'translation_proposals': return isAdmin || (!!ctx.uid && data?.submittedBy === ctx.uid);   // les propositions : modération + leur auteur
+    case 'translation_proposals': return isAdmin || ctx.caps.has('translations') || (!!ctx.uid && data?.submittedBy === ctx.uid);   // les propositions : modération + leur auteur
     default: { const r = colRule(ctx, col); return !!r && need(ctx, r.read); }
   }
 }
@@ -158,7 +168,7 @@ function canWrite(ctx, op, col, id, old, neu) {
         if (op === 'delete') return isAdmin;
         return authed && changed(old, neu).every(k => k === ctx.uid);
       }
-      return isAdmin || (ctx.caps.has('wiki') && WIKI_CONFIG_DOCS.has(id));
+      return isAdmin || capConfig(ctx, id);
     case 'builds_published':
       if (col !== 'builds_published') { // favoritedBy/{uid}
         const uidDoc = id; return isMembre && ctx.uid === uidDoc && op !== 'update';
@@ -190,7 +200,7 @@ function canWrite(ctx, op, col, id, old, neu) {
           && (isContrib || ctx.creator?.tools?.[t] !== false);
       }
       // « moderation » : approuver / rejeter / remettre en attente ; supprimer seulement les soumissions encore en attente (l'historique reste aux admins)
-      if (op === 'delete') return isAdmin || (ctx.caps.has('moderation') && old?.status === 'pending');
+      if (op === 'delete') return isAdmin || ctx.caps.has('history') || (ctx.caps.has('moderation') && old?.status === 'pending');
       return isAdmin || ctx.caps.has('moderation') || ((isContrib || (authed && old?.submittedBy === ctx.uid)) && old?.status === 'pending' && neu?.status === 'pending');
     }
     case 'reports': {
@@ -218,8 +228,8 @@ function canWrite(ctx, op, col, id, old, neu) {
     }
     case 'translation_proposals': {
       // Propositions de traduction (i18n/review.html, i18n/compare.html) → onglet « Traduction » de la modération
-      if (op === 'delete') return isAdmin || (authed && old?.submittedBy === ctx.uid && old?.status === 'pending');
-      if (isAdmin) return true;
+      if (op === 'delete') return isAdmin || ctx.caps.has('translations') || (authed && old?.submittedBy === ctx.uid && old?.status === 'pending');
+      if (isAdmin || ctx.caps.has('translations')) return true;
       const str = (v, max) => typeof v === 'string' && v.length >= 1 && v.length <= max;
       if (op === 'create') return isTranslator(ctx) && neu?.submittedBy === ctx.uid && neu?.status === 'pending' && ['edit', 'new', 'flag'].includes(neu?.kind)
         && str(neu?.fr, 2000) && str(neu?.en, 2000) && typeof neu?.submitterName === 'string' && neu.submitterName.length <= 80 && Object.keys(neu).length <= 15;
@@ -414,7 +424,7 @@ export async function handleStoreRead(request, env, cors) {
   const deleted = rows.filter(r => r.deleted).map(r => r.id);
   let docs = rows.filter(r => !r.deleted).map(r => ({ id: r.id, d: jparse(r.data) || {} }));
   const top = col.split('/')[0];
-  const coarse = (COL_DEFAULTS[top] && !['items_hidden', 'users', 'config', 'reports'].includes(top)) ? colRule(ctx, top) : null;
+  const coarse = (COL_DEFAULTS[top] && !['items_hidden', 'users', 'config', 'reports', 'audit_log'].includes(top)) ? colRule(ctx, top) : null;
   if (coarse && !need(ctx, coarse.read)) return json({ error: 'Droits insuffisants', denied: true }, 403, cors);
   docs = docs.filter(x => canRead(ctx, col, x.id, x.d, listing));
   docs = docs.filter(x => where.every(w => matchWhere(x.d, x.id, w)));

@@ -1474,7 +1474,7 @@ window.bulkApproveSubs = async () => {
 // ── Delete submission ─────────────────────────────────
 window.deleteSub = async (id) => {
   const sub = _st.all.find(s => s._id === id);
-  if (ctx.role !== 'admin' && sub && sub.status !== 'pending') {
+  if (!ctx.hasCap('history') && sub && sub.status !== 'pending') {
     toast('⛔ Seuls les admins peuvent supprimer les soumissions approuvées/rejetées.', 'error');
     return;
   }
