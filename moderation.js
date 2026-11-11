@@ -708,13 +708,13 @@ _lazyPanel(() => import('./moderation-item-sync.js?v=40d5987d'), ['_syncPnjObtai
 
 
 
-_lazyPanel(() => import('./moderation-trash.js?v=6311a2da'), ['showTrash', 'loadTrash', 'restoreFromTrash', 'permanentDeleteTrash', 'emptyTrash']);
+_lazyPanel(() => import('./moderation-trash.js?v=7463de63'), ['showTrash', 'loadTrash', 'restoreFromTrash', 'permanentDeleteTrash', 'emptyTrash']);
 
 
 let CREATOR_PALIERS = [1, 2, 3]; // mis à jour dynamiquement depuis Firestore config/paliers
 let _paliersOpts = null; // options du champ palier (null = défaut de la Chasse), lu par moderation-quality.js
 let _paliersConfig = []; // données complètes { id, label, color, floorName }
-_lazyPanel(() => import('./moderation-roles.js?v=1d2f83bc'), ['showPermissions', 'loadPermissions', '_setPermission', '_setCustomRoleBaseTier', 'showDiscordRoles', 'loadDiscordRoles', 'saveDiscordRoles', 'togglePermTech', '_setCollectionPerm', 'loadRoles', 'showCreateRoleForm', 'hideCreateRoleForm', 'createRole', 'deleteRole', 'showGenerateRulesModal', 'closeRulesModal', 'copyGeneratedRules', 'toggleCreatorTool', 'toggleCreatorPalier']);
+_lazyPanel(() => import('./moderation-roles.js?v=c4287baa'), ['showPermissions', 'loadPermissions', '_setPermission', '_setCustomRoleBaseTier', 'showDiscordRoles', 'loadDiscordRoles', 'saveDiscordRoles', 'togglePermTech', '_setCollectionPerm', 'loadRoles', 'showCreateRoleForm', 'hideCreateRoleForm', 'createRole', 'deleteRole', 'showGenerateRulesModal', 'closeRulesModal', 'copyGeneratedRules', 'toggleCreatorTool', 'toggleCreatorPalier']);
 
 
 async function _loadPaliersConfig() {
@@ -783,7 +783,7 @@ function _getTierDisplay(id) {
 _lazyPanel(() => import('./moderation-quests.js?v=4dbe13c5'), ['showQuestOrder', 'renderQuestOrder', 'showQuestOrphans', 'loadQuestOrphans', 'saveQuestOrder', 'loadQuestOrder']);
 
 
-_lazyPanel(() => import('./moderation-users.js?v=e7d486e9'), ['showUsersPanel', 'loadUsers', 'filterUsers', 'suspendUser', 'unsuspendUser', 'setUserRole', 'deleteUserAccount']);
+_lazyPanel(() => import('./moderation-users.js?v=5fdb05ce'), ['showUsersPanel', 'loadUsers', 'filterUsers', 'suspendUser', 'unsuspendUser', 'setUserRole', 'deleteUserAccount']);
 
 
 _lazyPanel(() => import('./moderation-leaderboard.js?v=6ffaeb75'), ['showLeaderboard', 'loadLeaderboard', 'resetHomeLeaderboard', 'undoHomeLeaderboardReset', 'showLeaderboardUser', 'openLbMigrateDialog', 'closeLbMigrateDialog', 'lbMigrateSearchUsers', 'confirmLbMigrate']);
@@ -809,7 +809,7 @@ window.toggleSidebarSection = (id) => {
   if (chev) chev.textContent   = open ? '▾' : '▸';
 };
 
-_lazyPanel(() => import('./moderation-quality.js?v=dd0a1b7f'), ['showCompletion', 'loadCompletion', 'renderCompletion', 'ignoreCompletionDoc', 'unignoreCompletionDoc', 'saveTableauDeChasse', 'saveCompletionFields', 'openCompletionInCreator', 'showCreatorValidation', 'loadCreatorValidation', '_setCvMode', '_setCvSubMode', '_onCvToggle', 'saveCreatorValidation']);
+_lazyPanel(() => import('./moderation-quality.js?v=f933b0c7'), ['showCompletion', 'loadCompletion', 'renderCompletion', 'ignoreCompletionDoc', 'unignoreCompletionDoc', 'saveTableauDeChasse', 'saveCompletionFields', 'openCompletionInCreator', 'showCreatorValidation', 'loadCreatorValidation', '_setCvMode', '_setCvSubMode', '_onCvToggle', 'saveCreatorValidation']);
 
 
 // ── Auto-scroll pendant le drag dans n'importe quelle liste draggable ──
@@ -884,7 +884,7 @@ _lazyPanel(() => import('./moderation-data-all.js?v=52fe6b52'), ['showDataAll', 
 _lazyPanel(() => import('./moderation-map.js?v=eb70d7b3'), ['showMapPanel', 'deleteMapMarker', 'showZoneEditor', 'zeZoom', 'zeZoomReset', 'zeLayerChange', 'zeFloorChange', 'zeRenderSvg', 'zeRemovePoint', 'zeCheckSave', 'zoneEditorReset', 'zoneEditorSave', 'zeSearchMob', 'zeAddMobFromSelect', 'zeAddMob', 'zeRemoveMob', 'zeRenderMobList', 'showZoneList', 'loadZoneList', 'renderZoneList', 'migrateHardcodedZones', 'switchMapTab', 'loadPassages', 'renderPassageList', 'pgValidate', 'pgReset', 'pgSearchPins', 'pgAddLink', 'pgRemoveLink', 'saveNewPassage', 'deletePassage', 'loadAllMapPins', 'renderAllMapPins', 'loadPinColors', 'savePinColors', 'loadPinEmojis', 'savePinEmojis', 'saveIndividualPinEmoji', 'loadPinCategories', 'savePinCategories', 'loadPinTypes']);
 
 
-_lazyPanel(() => import('./moderation-game-config.js?v=8c403a76'), ['showGameConfig', 'gcUpdatePalier', 'gcAddPalier', 'gcToggleNegOk', 'gcRemovePalier', 'saveGameConfig']);
+_lazyPanel(() => import('./moderation-game-config.js?v=b715f0b8'), ['showGameConfig', 'gcUpdatePalier', 'gcAddPalier', 'gcToggleNegOk', 'gcRemovePalier', 'saveGameConfig']);
 
 
 _lazyPanel(() => import('./moderation-game-tools.js?v=5b63ecd5'), ['showEventsTool', 'moveVclEvent', 'createVclEvent', 'deleteVclEvent', 'setVclEventEmoji', 'showWorldbossTool', 'setVclWorldbossEmoji', 'showSecretForgerons', 'setSecretForgeronsHidden', 'showDiscordRoutes', 'setDiscordRoute', 'setDiscordEnabled', 'showDonjonsTool', 'createVclDonjon', 'moveVclDonjon', 'deleteVclDonjon', 'showTitresTool', 'createVclTitre', 'addVclTitreStat', 'removeVclTitreStat', 'renameVclTitre', 'moveVclTitre', 'deleteVclTitre', 'showEffectsTool', 'seedEffectTypes', 'saveEffectTypes', 'switchEffectsTab', 'addEffectType', 'addEffectTemplate']);
