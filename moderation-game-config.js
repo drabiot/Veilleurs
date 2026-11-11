@@ -11,7 +11,7 @@ let _gcMaxLevel = 18;
 let _gcNegOk = new Set(['hate']); // stats dont la valeur négative est un bonus (jamais en rouge sur le wiki)
 
 window.showGameConfig = async () => {
-  if (ctx.role !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
+  if (!ctx.hasCap('wiki')) { toast('⛔ Réservé aux admins', 'error'); return; }
   _setHash('game-config');
   document.getElementById('game-config-panel').style.display = '';
   document.getElementById('btn-game-config').classList.add('active');

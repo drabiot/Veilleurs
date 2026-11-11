@@ -73,6 +73,14 @@ const PERM_SECTIONS = [
   ]},
 ];
 
+// Droits spéciaux d'un rôle personnalisé (liste `caps` dans config/customRoles) — appliqués par le worker (CAPS dans worker-store.js) et par moderation.js (data-cap)
+const CAP_DEFS = [
+  { id: 'moderation', label: '🛡️ Modérer les soumissions', desc: 'approuver, rejeter, demander des modifications ; supprimer les soumissions en attente (l\'historique reste aux admins)' },
+  { id: 'wiki',       label: '🌐 Gérer le contenu du wiki', desc: 'panoplies, évènements, config du jeu (paliers, effets, titres, donjons, worldboss, tags, pins, chasse, champs requis), outils carte / zones / diagnostic' },
+  { id: 'trash',      label: '🗑️ Corbeille',                desc: 'restaurer les éléments supprimés (pas de suppression définitive)' },
+  { id: 'tickets',    label: '🎫 Tickets des joueurs',      desc: 'lire et répondre aux signalements' },
+];
+
 let _permConfig    = null;
 let _selectedRoleId = 'admin';
 
@@ -279,6 +287,32 @@ function _renderPermsForRole(roleId) {
       };
       inputEmoji.oninput = syncAvatar; inputColor.oninput = syncAvatar;
       row1.append(inputLabel, inputEmoji, inputColor);
+      // Droits spéciaux (rôles perso seulement) : au-delà du palier de base, appliqués par le worker (CAPS dans worker-store.js)
+      const capsBox = document.createElement('div');
+      const capChecks = {};
+      if (isCustom) {
+        capsBox.style.cssText = 'margin:4px 0 10px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface3);';
+        const capsTitle = document.createElement('div');
+        capsTitle.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;';
+        capsTitle.textContent = 'Droits spéciaux (palier Contributeur minimum)';
+        capsBox.appendChild(capsTitle);
+        const current = new Set(roleData.caps || []);
+        for (const c of CAP_DEFS) {
+          const lab = document.createElement('label');
+          lab.style.cssText = 'display:flex;gap:8px;align-items:flex-start;padding:3px 0;cursor:pointer;font-size:12px;';
+          const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: current.has(c.id) });
+          cb.style.marginTop = '2px';
+          capChecks[c.id] = cb;
+          const txt = document.createElement('span');
+          txt.innerHTML = `<b>${c.label}</b> — <span style="color:var(--muted);">${c.desc}</span>`;
+          lab.append(cb, txt);
+          capsBox.appendChild(lab);
+        }
+        const never = document.createElement('div');
+        never.style.cssText = 'margin-top:6px;font-size:11px;color:var(--muted);';
+        never.textContent = 'Jamais attribuables : membres/rôles/permissions, secrets, Discord, statistiques, journal d\'audit, classement.';
+        capsBox.appendChild(never);
+      }
       const row2 = document.createElement('div');
       row2.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;';
       const cancelBtn = Object.assign(document.createElement('button'), { className:'btn btn-ghost', textContent:'Annuler' });
@@ -295,14 +329,20 @@ function _renderPermsForRole(roleId) {
         const newEmoji = inputEmoji.value.trim() || roleData.emoji;
         const newColor = inputColor.value;
         const cr = _customRoles.find(r => r.id === roleId);
-        if (cr) { cr.label = newLabel; cr.emoji = newEmoji; cr.color = newColor; }
+        if (cr) {
+          cr.label = newLabel; cr.emoji = newEmoji; cr.color = newColor;
+          if (isCustom) {
+            const caps = CAP_DEFS.map(c => c.id).filter(id => capChecks[id]?.checked);
+            if (caps.length) cr.caps = caps; else delete cr.caps;
+          }
+        }
         await _saveRoles();
         _renderPermsSidebar();
         _renderPermsForRole(roleId);
         toast(`✅ Rôle "${newLabel}" mis à jour`, 'success');
       };
       row2.append(cancelBtn, saveBtn);
-      editEl.append(row1, row2);
+      editEl.append(row1, ...(isCustom ? [capsBox] : []), row2);
     }
   }
 

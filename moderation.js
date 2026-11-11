@@ -45,7 +45,10 @@ const _WIKI_ROOT = new URL('.', import.meta.url).href;
 const WORKER_URL  = 'https://veilleurs.veilleurs-wiki.workers.dev';
 
 let currentUser = null;
-let currentRole = 'visiteur';
+let currentRole = 'visiteur';   // palier de base : visiteur / membre / contributeur / admin (un rôle perso est ramené à son palier de base — c'est ce que lisent les panneaux via ctx.role)
+let currentRoleId = 'visiteur'; // identifiant exact du rôle du compte (ex. « gestionnaire »)
+let currentRoleLabel = 'visiteur'; // nom affiché du rôle (en-tête)
+let currentCaps = new Set();    // droits spéciaux du rôle perso (config/customRoles → caps) ; l'admin les a tous
 // État de la liste des soumissions (moderation-submissions.js) partagé avec le noyau et les autres panneaux
 const _st = { all: [], status: 'pending', type: 'all', search: '' };
 window._allSubsForVerify = () => _st.all; // lu par submission-verify.js
@@ -99,13 +102,14 @@ onAuthStateChanged(auth, async user => {
     try {
       const snap = await getDoc(doc(db, 'users', user.uid));
       _userData   = snap.exists() ? snap.data() : null;
-      currentRole = _userData?.role || 'membre';
+      currentRoleId = _userData?.role || 'membre';
       break;
     } catch {
       if (attempt === 0) await new Promise(r => setTimeout(r, 800));
-      else currentRole = 'membre';
+      else currentRoleId = 'membre';
     }
   }
+  await _resolveRole();
 
   // Vérifier la suspension avant toute chose
   if (_userData?.suspended) {
@@ -122,9 +126,11 @@ onAuthStateChanged(auth, async user => {
   // Masquer les éléments admin-only pour tout rôle non-admin.
   // La liste est pilotée par l'attribut data-min-role dans moderation.html —
   // ajouter data-min-role="admin" sur un bouton suffit, sans toucher au JS.
+  // Un élément peut en plus porter data-cap="wiki trash…" : il reste visible pour un rôle qui possède l'un de ces droits spéciaux.
   if (currentRole !== 'admin') {
     document.querySelectorAll('[data-min-role="admin"]').forEach(el => {
-      el.style.display = 'none';
+      const caps = (el.dataset.cap || '').split(/\s+/).filter(Boolean);
+      el.style.display = caps.some(c => currentCaps.has(c)) ? '' : 'none';
     });
   }
 
@@ -144,7 +150,7 @@ onAuthStateChanged(auth, async user => {
       updateDoc(doc(db, 'users', user.uid), { email: user.email }).catch(() => {});
     }
   } catch { document.getElementById('header-user').textContent = '👤 ' + user.email; }
-  document.getElementById('header-role').textContent   = currentRole;
+  document.getElementById('header-role').textContent   = _getTierDisplay(currentRoleId).label || currentRoleId;
   document.getElementById('btn-logout').style.display  = '';
 
   // Charger la config dynamique des paliers avant de router
@@ -154,7 +160,7 @@ onAuthStateChanged(auth, async user => {
   // Hash routing — navigue vers le panel correspondant au hash initial
   _routeToHash();
 
-  // Enregistrer la connexion dans l'audit log (contributeurs seulement, pas les admins)
+  // Enregistrer la connexion dans l'audit log (contributeurs et rôles perso de ce palier, pas les admins)
   if (currentRole === 'contributeur') {
     if (_userData?.pseudo) _userNames.set(currentUser.uid, _userData.pseudo);
     _writeAudit('login', 'session', currentUser.uid, _userData?.pseudo || user.email, {});
@@ -163,23 +169,38 @@ onAuthStateChanged(auth, async user => {
 
 // Maps tool permission IDs → button ID(s) in the sidebar.
 // Default roles: 'admin' for privileged tools, 'contributeur' for the rest.
+// `cap` : droit spécial d'un rôle perso qui ouvre aussi l'outil (cf. CAPS dans worker-store.js). Classement et journal d'audit n'en ont pas : admins seulement.
 const MOD_TOOL_BUTTONS = {
-  tool_trash:       { btns: ['btn-trash'],                             defaultRole: 'admin' },
+  tool_trash:       { btns: ['btn-trash'],                             defaultRole: 'admin', cap: 'trash' },
   tool_leaderboard: { btns: ['btn-leaderboard'],                       defaultRole: 'admin' },
   tool_audit_log:   { btns: ['btn-audit-log'],                         defaultRole: 'admin' },
-  tool_map:         { btns: ['btn-map-order'],                         defaultRole: 'contributeur' },
-  tool_zones:       { btns: ['btn-zone-list', 'btn-zone-editor'],       defaultRole: 'contributeur' },
-  tool_diagnostic:  { btns: ['btn-ghost-ids', 'btn-region-orphans'],   defaultRole: 'contributeur' },
-  tool_capture:     { btns: ['btn-capture-sprites'],                   defaultRole: 'contributeur' },
+  tool_map:         { btns: ['btn-map-order'],                         defaultRole: 'contributeur', cap: 'wiki' },
+  tool_zones:       { btns: ['btn-zone-list', 'btn-zone-editor'],       defaultRole: 'contributeur', cap: 'wiki' },
+  tool_diagnostic:  { btns: ['btn-ghost-ids', 'btn-region-orphans'],   defaultRole: 'contributeur', cap: 'wiki' },
+  tool_capture:     { btns: ['btn-capture-sprites'],                   defaultRole: 'contributeur', cap: 'wiki' },
 };
+
+// Palier de base + droits spéciaux du rôle du compte, d'après config/customRoles (un rôle perso comme « gestionnaire » n'est pas dans ROLES)
+async function _resolveRole() {
+  currentRole = currentRoleLabel = currentRoleId;
+  currentCaps = new Set();
+  if (ROLES.includes(currentRoleId)) return;
+  try {
+    const snap = await getDoc(doc(db, 'config', 'customRoles'));
+    const cr = (snap.exists() ? snap.data().roles || [] : []).find(r => r.id === currentRoleId);
+    currentRole = ROLES.includes(cr?.baseTier) ? cr.baseTier : 'visiteur';
+    if (currentRole !== 'visiteur' && Array.isArray(cr?.caps)) currentCaps = new Set(cr.caps);
+    currentRoleLabel = cr?.label || currentRoleId;
+  } catch { currentRole = 'visiteur'; }
+}
 
 async function _applyToolPermissions() {
   try {
     const snap = await getDoc(doc(db, 'config', 'permissions'));
     const minRole = snap.exists() ? (snap.data().minRole || {}) : {};
-    for (const [permId, { btns, defaultRole }] of Object.entries(MOD_TOOL_BUTTONS)) {
+    for (const [permId, { btns, defaultRole, cap }] of Object.entries(MOD_TOOL_BUTTONS)) {
       const required = minRole[permId] || defaultRole;
-      const visible = hasRole(currentRole, required);
+      const visible = hasRole(currentRole, required) || (!!cap && currentRole !== 'visiteur' && currentCaps.has(cap));
       for (const btnId of btns) {
         const el = document.getElementById(btnId);
         if (el) el.style.display = visible ? '' : 'none';
@@ -368,7 +389,9 @@ function _getPanelCtx() {
     getWorkerSecret: _getWorkerSecret, loadExternalScript: _loadExternalScript,
     toast, modal, store, escHtml, COL, get MANAGED_TIERS() { return MANAGED_TIERS; },
     setHash: _setHash, showPanel: _showPanel, cachedDocs, invalidateModCache, writeAudit: _writeAudit,
-    get role() { return currentRole; },
+    get role() { return currentRole; },        // palier de base (un rôle perso est ramené à son palier)
+    get roleId() { return currentRoleId; },    // identifiant exact du rôle
+    hasCap: c => currentRole === 'admin' || currentCaps.has(c),
     get user() { return currentUser; },
     userNames: _userNames,
     get allSubs() { return _st.all; },

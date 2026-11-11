@@ -167,7 +167,13 @@ window.setUserRole = async (uid, newRole, sel) => {
   const prev = sel.dataset.prev || sel.querySelector('option[selected]')?.value || sel.value;
   sel.disabled = true;
   try {
-    await updateDoc(doc(db, 'users', uid), { role: newRole });
+    // Un rôle à droits spéciaux (« Gestionnaire »…) est verrouillé : sinon la synchro Discord à la connexion le remplacerait par le rôle déduit des rôles Discord.
+    // Quand on quitte un tel rôle, le verrou est levé.
+    const hasCaps = id => (ctx.customRoles.find(r => r.id === id)?.caps || []).length > 0;
+    const patch = { role: newRole };
+    if (hasCaps(newRole)) patch.roleLocked = true;
+    else if (hasCaps(prev)) patch.roleLocked = deleteField();
+    await updateDoc(doc(db, 'users', uid), patch);
     const u = _allUsers.find(x => x.uid === uid);
     const pseudo = u?.pseudo || uid;
     if (u) u.role = newRole;

@@ -87,8 +87,27 @@ async function loadCtx(env, idToken) {
   const tierOf = r => BASE_TIERS.includes(r) ? BASE_TIERS.indexOf(r)
     : BASE_TIERS.indexOf((custom?.roles || []).find(x => x.id === r)?.baseTier || 'visiteur');
   const tier = uid ? tierOf(role) : 0;
-  return { uid, role, tier, perms: perms?.collections || {}, creator, toolMin: perms?.minRole || {} };
+  // Droits spéciaux du rôle personnalisé (ex. « Gestionnaire ») : liste `caps` du rôle dans config/customRoles, seulement connus de CAPS,
+  // et jamais en dessous du palier contributeur. Un compte ne peut pas modifier son propre rôle (users : admin uniquement).
+  const defCaps = (custom?.roles || []).find(x => x.id === role)?.caps;
+  const caps = new Set(uid && tier >= TIER.contributeur && !BASE_TIERS.includes(role) && Array.isArray(defCaps) ? defCaps.filter(c => CAPS.includes(c)) : []);
+  return { uid, role, tier, caps, perms: perms?.collections || {}, creator, toolMin: perms?.minRole || {} };
 }
+
+/* ── Droits spéciaux attribuables à un rôle personnalisé (config/customRoles → roles[].caps) ──
+   moderation : approuver / rejeter les soumissions (file de modération complète)
+   wiki       : gérer le contenu du wiki au-delà d'un contributeur : panoplies, évènements, réglages de contenu (WIKI_CONFIG_DOCS)
+   trash      : Corbeille (interface ; l'accès aux données est déjà celui d'un contributeur)
+   tickets    : tickets des joueurs (interface ; idem)
+   Jamais attribuables : gestion des comptes/rôles/permissions, secrets, Discord (bot, routes, webhooks), statistiques, journal d'audit, classement. */
+export const CAPS = ['moderation', 'wiki', 'trash', 'tickets'];
+// Documents config/* que le droit « wiki » autorise à écrire (toute autre clé de config reste réservée aux admins)
+const WIKI_CONFIG_DOCS = new Set([
+  'paliers', 'game', 'effect_types', 'titres', 'worldboss_emojis', 'donjons_loot', 'secret_forgerons', 'tag_rules',
+  'pin_type_colors', 'pin_type_emojis', 'pin_categories', 'custom_pin_types',
+  'tableau_de_chasse', 'completion_ignored', 'data_quality_standards', 'required_admin_fields', 'item_renames',
+]);
+const WIKI_CAP_COLS = new Set(['panoplies', 'events']);
 
 const need = (ctx, level) => level === 'public' || ctx.tier >= TIER[level];
 // Traducteur : rôle perso « traducteur » ou palier autorisé par la permission « tool_translate » (admin par défaut), comme i18n/review.html
@@ -114,7 +133,7 @@ function canRead(ctx, col, id, data, listing) {
       return data?.visibility === 'public' || (!!ctx.uid && data?.authorUid === ctx.uid) || isAdmin;
     case 'user_favorites': return !!ctx.uid && data?.uid === ctx.uid;
     case 'builds_sensible': return isContrib;
-    case 'submissions': return isAdmin || (isContrib && data?.status === 'pending') || (!!ctx.uid && data?.submittedBy === ctx.uid);
+    case 'submissions': return isAdmin || ctx.caps.has('moderation') || (isContrib && data?.status === 'pending') || (!!ctx.uid && data?.submittedBy === ctx.uid);
     case 'reports': return isContrib || (!!ctx.uid && data?.submittedBy === ctx.uid);   // modération + l'auteur (pour voir la réponse des admins)
     case 'translation_proposals': return isAdmin || (!!ctx.uid && data?.submittedBy === ctx.uid);   // les propositions : modération + leur auteur
     default: { const r = colRule(ctx, col); return !!r && need(ctx, r.read); }
@@ -139,7 +158,7 @@ function canWrite(ctx, op, col, id, old, neu) {
         if (op === 'delete') return isAdmin;
         return authed && changed(old, neu).every(k => k === ctx.uid);
       }
-      return isAdmin;
+      return isAdmin || (ctx.caps.has('wiki') && WIKI_CONFIG_DOCS.has(id));
     case 'builds_published':
       if (col !== 'builds_published') { // favoritedBy/{uid}
         const uidDoc = id; return isMembre && ctx.uid === uidDoc && op !== 'update';
@@ -170,8 +189,9 @@ function canWrite(ctx, op, col, id, old, neu) {
           && ['item', 'mob', 'pnj', 'region', 'quest', 'panoplie'].includes(t) && neu?.status === 'pending' && Object.keys(neu).length <= 30
           && (isContrib || ctx.creator?.tools?.[t] !== false);
       }
-      if (op === 'delete') return isAdmin;
-      return isAdmin || ((isContrib || (authed && old?.submittedBy === ctx.uid)) && old?.status === 'pending' && neu?.status === 'pending');
+      // « moderation » : approuver / rejeter / remettre en attente ; supprimer seulement les soumissions encore en attente (l'historique reste aux admins)
+      if (op === 'delete') return isAdmin || (ctx.caps.has('moderation') && old?.status === 'pending');
+      return isAdmin || ctx.caps.has('moderation') || ((isContrib || (authed && old?.submittedBy === ctx.uid)) && old?.status === 'pending' && neu?.status === 'pending');
     }
     case 'reports': {
       // Signalement = conversation : `messages` [{ from: 'user'|'admin', text, at }] s'ajoute au texte d'origine.
@@ -212,6 +232,7 @@ function canWrite(ctx, op, col, id, old, neu) {
       if (!r) return false;
       if (op === 'create' && r.createTier) return need(ctx, r.createTier);
       if (op === 'update' && r.noUpdate) return false;
+      if (ctx.caps.has('wiki') && WIKI_CAP_COLS.has(top)) return true;   // panoplies, events
       if (op === 'delete' && r.deleteTier) return need(ctx, r.deleteTier);
       return need(ctx, r.write);
     }

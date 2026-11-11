@@ -1070,7 +1070,7 @@ function _cvSubData(mode, subcat) {
 }
 
 window.showCreatorValidation = async () => {
-  if (ctx.role !== 'admin') { toast('⛔ Réservé aux admins', 'error'); return; }
+  if (!ctx.hasCap('wiki')) { toast('⛔ Réservé aux admins', 'error'); return; }
   _cvStats = {};
   _setHash('creator-validation');
   document.getElementById('creator-validation-panel').style.display = '';

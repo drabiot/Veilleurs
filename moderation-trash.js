@@ -27,7 +27,7 @@ window.loadTrash = async function loadTrash() {
     });
     const countEl = document.getElementById('count-trash');
     if (countEl) { countEl.textContent = items.length; countEl.style.display = items.length ? '' : 'none'; }
-    if (emptyBtn) emptyBtn.style.display = items.length ? '' : 'none';
+    if (emptyBtn) emptyBtn.style.display = items.length && ctx.role === 'admin' ? '' : 'none';
     if (!items.length) { listEl.innerHTML = '<div class="empty">Corbeille vide.</div>'; return; }
     listEl.innerHTML = '';
     const COL_LABELS_TRASH = { ...(_COL_LABELS || {}), items:'Item', mobs:'Mob', personnages:'PNJ', regions:'Région', panoplies:'Panoplie', quetes:'Quête', items_sensible:'Item Sensible' };
@@ -51,7 +51,7 @@ window.loadTrash = async function loadTrash() {
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0;">
           <button class="btn btn-approve" style="font-size:12px;" onclick="restoreFromTrash('${escHtml(item._trashId)}')">↩ Restaurer</button>
-          <button class="btn btn-reject"  style="font-size:12px;" onclick="permanentDeleteTrash('${escHtml(item._trashId)}')">🗑️ Supprimer</button>
+          ${ctx.role === 'admin' ? `<button class="btn btn-reject"  style="font-size:12px;" onclick="permanentDeleteTrash('${escHtml(item._trashId)}')">🗑️ Supprimer</button>` : ''}
         </div>`;
       listEl.appendChild(row);
     });
@@ -95,6 +95,7 @@ window.restoreFromTrash = async function restoreFromTrash(trashId) {
 };
 
 window.permanentDeleteTrash = async function permanentDeleteTrash(trashId) {
+  if (ctx.role !== 'admin') { toast('⛔ Suppression définitive réservée aux admins', 'error'); return; }
   if (!await modal.confirm('Supprimer définitivement cette entrée de la corbeille ? Cette action est irréversible.')) return;
   try {
     await deleteDoc(doc(db, 'trash', trashId));
@@ -106,6 +107,7 @@ window.permanentDeleteTrash = async function permanentDeleteTrash(trashId) {
 };
 
 window.emptyTrash = async function emptyTrash() {
+  if (ctx.role !== 'admin') { toast('⛔ Suppression définitive réservée aux admins', 'error'); return; }
   if (!await modal.confirm('Vider toute la corbeille ? Toutes les entrées seront supprimées définitivement et irrécupérables.')) return;
   try {
     const snap = await getDocs(collection(db, 'trash'));
